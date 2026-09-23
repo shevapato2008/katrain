@@ -36,10 +36,6 @@ vi.mock('../../api', async (importOriginal) => {
   };
 });
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
 // Mutable via `visionMock` so the G2 banner tests below can flip isVisionEnabled on
 // for a single test without disturbing the rest of the suite (which needs it inert).
@@ -152,7 +148,9 @@ vi.mock('../../hooks/useGameSession', () => ({
   useGameSession: () => ({
     sessionId: 'test-session',
     setSessionId: mockSetSessionId,
-    gameState: mockGameState,
+    // Real session updates replace the snapshot; mutating one shared object hides
+    // stale async closures in the analysis-response guard.
+    gameState: { ...mockGameState },
     setGameState: vi.fn(),
     error: null,
     onMove: mockOnMove,
@@ -455,7 +453,7 @@ describe('GamePage engine mode', () => {
       });
     });
 
-    it('clears the overlay + active kind when the board position changes (stale-overlay fix)', async () => {
+    it.each(['move', 'end'] as const)('clears the overlay and evaluation after a %s', async (change) => {
       (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
       });
@@ -463,15 +461,34 @@ describe('GamePage engine mode', () => {
 
       fireEvent.click(screen.getByText('领地'));
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+      expect(screen.getByTestId('engine-analysis-summary')).toHaveTextContent('60.0%');
 
       // Simulate the position advancing (a move played, human or AI) by mutating the
       // mocked session's current_node_id and re-rendering, the way React would after
       // useGameSession's underlying state updates.
-      mockGameState.current_node_id = 43;
+      if (change === 'move') mockGameState.current_node_id = 43;
+      else mockGameState.end_result = 'B+4.5';
       rerender(renderTree(true));
 
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
       expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+      expect(screen.queryByTestId('engine-analysis-summary')).toBeNull();
+    });
+
+    it.each([
+      [0.375, -2.2, '37.5%', '白', '2.2'],
+      [0.72, 4.5, '72.0%', '黑', '4.5'],
+    ])('shows territory winrate and leading side from the same analysis', async (winrate, delta, percent, side, margin) => {
+      vi.mocked(API.platformEngineAnalysis).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: Number(winrate), delta: Number(delta) },
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      const summary = await screen.findByTestId('engine-analysis-summary');
+      expect(summary).toHaveTextContent(`黑棋胜率 ${percent}`);
+      expect(summary).toHaveTextContent(`${side}领先 ${margin}`);
+      fireEvent.click(screen.getByText('领地'));
+      expect(screen.queryByTestId('engine-analysis-summary')).toBeNull();
     });
 
     it('does NOT clear the overlay on an unrelated re-render (same current_node_id)', async () => {
@@ -670,7 +687,8 @@ describe('GamePage engine mode', () => {
   });
 
   // G2: engine games (Golaxy 人机对弈 via the genmove tunnel) put a bare "human"
-  // player_type literal on BOTH seats (session.py:80/82) — neither literal check in
+  // player_type literal on BOTH seats (`create_multiplayer_session`'s two update_player
+  // calls, session.py) — neither literal check in
   // the old humanColor/isAI derivation ('player:human' / 'player:ai' / 'ai') can tell
   // which seat is the AI. `platform_engine_color` (Task 1: WebKaTrain state field,
   // "B"|"W"|null = the ENGINE's color) is the authoritative signal for engine games;
@@ -779,15 +797,18 @@ describe('GamePage engine mode', () => {
       });
     });
 
-    describe('AI-move banner (render)', () => {
-      it('engine game, human=W: banner shows the AI(B) move coordinate after AI plays', async () => {
+    describe('AI placement status in the right rail', () => {
+      const placementStatus = () => document.querySelector('.gtoggles .ghint');
+
+      it('engine game, human=W: status shows the AI(B) move coordinate after AI plays', async () => {
         visionMock.isVisionEnabled = true;
         mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
         mockGameState.player_to_move = 'W'; // human's turn, right after AI(B) moved
         mockGameState.last_move = [3, 3]; // -> "D4" (col=A+3='D', row=3+1=4; core row 0=bottom)
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(screen.queryByTestId('ai-move-banner')).toBeNull();
       });
 
       it('non-regression: engine game, human=B still shows the AI(W) move coordinate', async () => {
@@ -797,7 +818,7 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
       });
 
       it('non-regression: local HvAI (player:ai literal, no platform_engine_color) still shows the banner', async () => {
@@ -805,7 +826,7 @@ describe('GamePage engine mode', () => {
         // mockGameState default shape: B=player:human, W=player:ai, player_to_move='B', last_move=[3,3].
         renderPage(false);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
       });
 
       // Regression guard for the color-wording bug flagged in the task-3 report's
@@ -820,10 +841,9 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D4');
-        expect(banner).toHaveTextContent('黑');
-        expect(banner).not.toHaveTextContent('白');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(placementStatus()).toHaveTextContent('黑');
+        expect(placementStatus()).not.toHaveTextContent('白');
       });
 
       it('non-regression: engine game, human=B (AI=W): banner still tells the player to place the WHITE stone', async () => {
@@ -833,10 +853,9 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D4');
-        expect(banner).toHaveTextContent('白');
-        expect(banner).not.toHaveTextContent('黑');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(placementStatus()).toHaveTextContent('白');
+        expect(placementStatus()).not.toHaveTextContent('黑');
       });
 
       it('non-regression: local HvAI (player:ai literal on W, no platform_engine_color): banner says WHITE', async () => {
@@ -844,9 +863,8 @@ describe('GamePage engine mode', () => {
         // mockGameState default shape: B=player:human, W=player:ai -> AI is White.
         renderPage(false);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('白');
-        expect(banner).not.toHaveTextContent('黑');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('白'));
+        expect(placementStatus()).not.toHaveTextContent('黑');
       });
     });
   });

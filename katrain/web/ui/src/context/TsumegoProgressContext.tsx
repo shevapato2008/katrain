@@ -249,6 +249,7 @@ export interface TsumegoProgressContextValue {
    * (`GrowthPage` 头上那段:「拿不到就写 —,并说一句」),而不区分这两者的话
    * 一个刚断网的老用户会看到「累计已解题 0」。
    * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
+   * 重读途中保持原值；只有云端权威读取成功才清除。盒端本机降级缓存仍算读取失败。
    */
   serverLoadFailed: boolean;
   /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
@@ -316,23 +317,30 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
   const storeRef = useRef<KioskActivityStorage>(initialStore);
   const resolvedSignatureRef = useRef<string | null>(null);
   const fetchedSignatureRef = useRef<string | null>(null);
+  const latestRequestRef = useRef(0);
 
   const fetchAndMerge = useCallback((authToken: string | undefined, store: KioskActivityStorage) => {
-    setServerLoadFailed(false);
+    const request = ++latestRequestRef.current;
+    const stale = () => request !== latestRequestRef.current || store !== storeRef.current;
     TsumegoAPI.getProgress(authToken)
-      .then((serverMap) => {
+      .then(({ progress: serverMap, degraded }) => {
+        if (stale()) return;
+        setServerLoadFailed(degraded);
         setProgress((prev) => {
+          if (stale()) return prev;
           const merged = mergeProgressMaps(prev, serverMap);
           try {
             store.setItem(STORAGE_KEY, JSON.stringify(merged));
           } catch {
             // best-effort cache
           }
-          pushLocalAhead(prev, serverMap, authToken);
+          if (!degraded) pushLocalAhead(prev, serverMap, authToken);
           return merged;
         });
       })
-      .catch(() => setServerLoadFailed(true));
+      .catch(() => {
+        if (!stale()) setServerLoadFailed(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -340,6 +348,7 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
 
     let store = storeRef.current;
     if (resolvedSignatureRef.current !== signature) {
+      latestRequestRef.current += 1;
       resolvedSignatureRef.current = signature;
       store = kioskActivityStorage(isGuest ? null : identityKey, isGuest || !identityKey);
       storeRef.current = store;

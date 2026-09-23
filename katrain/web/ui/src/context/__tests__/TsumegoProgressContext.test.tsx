@@ -73,7 +73,7 @@ beforeEach(() => {
   localStorage.clear();
   __resetKioskActivityStorageForTests();
   mockUseAuth.mockReturnValue(aliceAuth());
-  mockGetProgress.mockResolvedValue({});
+  mockGetProgress.mockResolvedValue({ progress: {}, degraded: false });
   mockSaveProgress.mockResolvedValue({});
 });
 
@@ -190,8 +190,11 @@ describe('TsumegoProgressProvider — real, resolved user (Alice)', () => {
     mockUseAuth.mockReturnValue(aliceAuth({ token: 'tok' }));
     seedNamespaced(ALICE, { p1: { completed: false, attempts: 4 }, p2: { completed: false, attempts: 1 } });
     mockGetProgress.mockResolvedValue({
-      p1: { completed: true, attempts: 1 }, // completed OR -> true, attempts max(4,1) -> 4
-      p3: { completed: true, attempts: 2 }, // server-only
+      progress: {
+        p1: { completed: true, attempts: 1 }, // completed OR -> true, attempts max(4,1) -> 4
+        p3: { completed: true, attempts: 2 }, // server-only
+      },
+      degraded: false,
     });
 
     const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
@@ -277,6 +280,35 @@ describe('TsumegoProgressProvider — real, resolved user (Alice)', () => {
     const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
     await waitFor(() => expect(mockGetProgress).toHaveBeenCalled());
     expect(result.current.progress.p1).toMatchObject({ completed: true, attempts: 1 });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+  });
+
+  it('merges a board-local degraded answer but keeps the server failure visible and does not push it back', async () => {
+    seedNamespaced(ALICE, { local: { completed: true, attempts: 1 } });
+    mockGetProgress.mockResolvedValue({
+      progress: { cached: { completed: false, attempts: 2 } },
+      degraded: true,
+    });
+
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.progress.cached).toMatchObject({ attempts: 2 }));
+    expect(result.current.progress.local).toMatchObject({ completed: true });
+    expect(result.current.serverLoadFailed).toBe(true);
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  it('refresh keeps the failure state while loading and clears it only after an authoritative success', async () => {
+    mockGetProgress.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+
+    let resolve!: (answer: { progress: TsumegoProgressMap; degraded: boolean }) => void;
+    mockGetProgress.mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+    act(() => result.current.refresh());
+    expect(result.current.serverLoadFailed).toBe(true);
+
+    act(() => resolve({ progress: {}, degraded: false }));
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(false));
   });
 
   it('a different uuid (Bob) reads empty even though Alice has namespaced progress', () => {

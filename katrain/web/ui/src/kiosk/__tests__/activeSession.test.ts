@@ -61,6 +61,13 @@ describe('activeSession — real, resolved identity (namespaced localStorage)', 
     expect(readActiveSession('practice')).toBeNull();
   });
 
+  it('onBoard 可选:带着能原样读回,缺了也不判无效', () => {
+    writeActiveSession({ ...sample, onBoard: false });
+    expect(readActiveSession('game')).toEqual({ ...sample, onBoard: false });
+    writeActiveSession(sample);
+    expect(readActiveSession('game')).toEqual(sample);
+  });
+
   it('a different uuid reads empty even though Alice has an active session', () => {
     writeActiveSession(sample);
     setKioskIdentity('bob-uuid', false);

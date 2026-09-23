@@ -5,21 +5,19 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // by the endgame result card below.
 // 顶条那三颗常亮状态灯(Videocam / GpsFixed)和 Refresh、ExitToApp 一起撤了 ——
 // 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
-// `Lightbulb` 留着:它在这儿不是状态灯,是「AI 已落子,请把子摆到亮灯处」那条横幅的图标。
-import { EmojiEvents, Lightbulb } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { EmojiEvents } from '@mui/icons-material';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
-import { isFreeVsAi } from '../components/game/gameKinds';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
-import { readPlayOnBoard } from '../utils/playInput';
+import { readSessionPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
@@ -27,11 +25,16 @@ import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEsc
 import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
-import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { requestFailureKind } from '../../utils/requestFailure';
+import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
+import { countErrorMessage } from '../utils/countErrors';
 import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
+import { useGameCelebration } from '../hooks/useGameCelebration';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
 
@@ -43,11 +46,18 @@ export interface AiTurnState {
   ladderStalled: boolean;
 }
 
+interface AiPlacementStatus {
+  scopeKey: string;
+  nodeId: number;
+  text: string;
+}
+
 // Single-color human-seat derivation, shared by humanColor (turn enforcement / board
-// gating) and the AI-move banner effect below (G2 fix). `platform_engine_color`
+// gating) and the AI-placement status effect below (G2 fix). `platform_engine_color`
 // (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
 // authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
-// seats carry a bare "human" player_type literal there (session.py:80/82), so the
+// seats carry a bare "human" player_type literal there (`create_multiplayer_session`'s
+// two update_player calls in session.py), so the
 // player_type-based checks below can't tell which seat is the AI. Absent/null in
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
@@ -78,7 +88,7 @@ const readScreenFallback = (key: string): boolean => {
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
-// AND bare 'ai' (multiplayer session.py:80/82 + tests), PLUS the engine's color per
+// AND bare 'ai' (multiplayer `create_multiplayer_session` + tests), PLUS the engine's color per
 // `platform_engine_color` (G2 fix — engine games carry bare "human" on both seats, so
 // the literal checks alone can't find the AI seat there). Do NOT infer AI from "the
 // non-human color". Pure helper co-located here (not split into a new file) for unit
@@ -90,7 +100,8 @@ export function deriveAiTurnState(gameState: GameState, latestEventType: string 
     return pt === 'player:ai' || pt === 'ai' || c === gameState.platform_engine_color;
   };
   const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
-  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !endResultOf(gameState);
+  const aiThinking = !!aiColor && gameState.player_to_move === aiColor
+    && !(endResultOf(gameState) && !gameState.awaiting_count);
   // One owner for the AI-turn indicator: while the physical layer is confirming a
   // move (chip shows 确认中), suppress the 思考中 banner so they never stack.
   const physicalConfirming = latestEventType === 'move_pending';
@@ -107,12 +118,13 @@ interface EndgameCardProps {
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
   onReview: () => void;
+  celebrating: boolean;
   /** 升降级对弈 only: what this game did to the player's rank. null while it is
       still being fetched, and on every non-ladder game. */
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
-// GamePage's boardAnalysisToggles). 继续对弈 only hides this card via LOCAL `dismissed` state —
+// GamePage's boardAnalysisToggles). 留在棋盘 only hides this card via LOCAL `dismissed` state —
 // the game stays ended; useGameSession.handleAction has no 'resume' branch, so it is
 // deliberately never called here. 确认终局 calls the `onExit` prop (GamePage's handleExit).
 // `dismissed` is local rather than lifted to GamePage/reset via a useEffect, because GamePage
@@ -121,14 +133,15 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
     <Box data-testid="endgame-card" sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 70,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, px: 3, py: 2, borderRadius: 3,
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-      <EmojiEvents sx={{ color: 'primary.main' }} />
+      <EmojiEvents data-testid="result-trophy" className={celebrating ? 'game-win-trophy' : undefined}
+        sx={{ color: 'primary.main', fontSize: 32 }} />
       <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
       {/* 未识别的平台终局哨兵仍以无胜负 `Void` 收口；已知的停一手和认输会走各自语义。 */}
       {endResultOf(gameState) === 'Void' && gameState.platform_engine_color && (
@@ -146,7 +159,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
         {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('game:black_short', '黑')} {gameState.prisoner_count.B} / {t('game:white_short', '白')} {gameState.prisoner_count.W}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
-        <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
+        <Button variant="outlined" onClick={() => setDismissed(true)}>{t('game:stay_on_board', '留在棋盘')}</Button>
         <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
         <Button variant="contained" onClick={onExit} sx={{ bgcolor: 'primary.main' }}>{t('Confirm result', '确认终局')}</Button>
       </Box>
@@ -159,7 +172,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token, user, isAuthenticated } = useAuth();
-  const session = useGameSession({ token: token ?? undefined });
+  const session = useGameSession({ token: token ?? undefined, deferMoveSoundUntilPaint: true });
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -174,7 +187,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // ends, and only for a server-issued ladder game. The answer comes from the
   // server rather than from diffing two /api/ladder/me reads, because a game that
   // did not score has to be able to say so.
-  const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
+  const [aiPlacementStatus, setAiPlacementStatus] = useState<AiPlacementStatus | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   // Lazy-init from session.physicalReminder (not a plain `useState(false)`): if the page is
@@ -187,16 +200,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [timeoutError, setTimeoutError] = useState<{ scope: string; message: string } | null>(null);
+  const timeoutRequestRef = useRef(false);
   const timeoutAttemptRef = useRef<{
     key: string; checks: number; retries: number; timer: number | null;
   } | null>(null);
   const timeoutState = session.gameState;
   const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}|${timeoutState?.game_type}|${timeoutState ? deriveHumanColor(timeoutState) : ""}`;
+  const sessionIsGameOver = !!timeoutState && !!endResultOf(timeoutState) && !timeoutState.awaiting_count;
   useEffect(() => () => {
     const attempt = timeoutAttemptRef.current;
     if (attempt?.timer != null) window.clearTimeout(attempt.timer);
     timeoutAttemptRef.current = null;
   }, [timeoutScope]);
+
+  // 终局是权威状态：若倒计时恰好落在「退出确认」已打开期间，不能留下看似还可继续下的旧弹窗。
+  // This must stay above the loading return so the first game-state update never changes
+  // GamePage's Hook sequence (a production build otherwise leaves the kiosk black).
+  useEffect(() => {
+    if (sessionIsGameOver) setShowExitConfirm(false);
+  }, [sessionIsGameOver]);
 
   const [countError, setCountError] = useState<string | null>(null);
   // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
@@ -204,6 +226,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
+  const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
+  const sessionGone = session.connectionLost === 'gone';
+
+  // 一个信号,一处反应。三条通道(WS 关闭 / 404 / 200 session_gone)都汇进 `connectionLost`,
+  // 所以这里不用关心是哪条先发现的。清 resume 指针**只在这一支**做:这局在服务端确实没了,
+  // 不清的话「继续上一局」会转回这个死会话。
+  useEffect(() => {
+    if (!sessionGone) return;
+    setShowExitConfirm(false);
+    setShowResignConfirm(false);
+    clearActiveSession('game');
+  }, [sessionGone]);
+
   const [reviewError, setReviewError] = useState(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
@@ -215,12 +250,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // another platform gets engine-play analysis tunnels.
   const platform = 'golaxy';
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
+  const [engineEvaluation, setEngineEvaluation] = useState<{ winrate: number; delta: number } | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
   const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
   // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
   // calls before the first resolves (double quota spend + last-response-wins races).
   // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
-  const [pendingEngineKind, setPendingEngineKind] = useState<EngineAnalysisKind | null>(null);
+  const engineAnalysisPendingRef = useRef(false);
+  const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
+  const enginePositionRef = useRef(enginePositionKey);
+  enginePositionRef.current = enginePositionKey;
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
@@ -237,7 +276,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 「开局后不可改」),中途跟着 localStorage 变会把人从一块已经摆着子的盘上赶下来。
   // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
   // 而开局设置屏正是这么答的,两边不能给出两个答案。
-  const [playOnBoard] = useState(readPlayOnBoard);
+  // 开局那一刻定下的值优先(见 `readSessionPlayOnBoard`),与 `PlayInputGuard` 读同一个函数。
+  // 回落分支保留今天的三段式:从房间 / 跨平台引擎进来的局没有开局屏写下的 onBoard。
+  const { pathname } = useLocation();
+  const [playOnBoard] = useState(() => readSessionPlayOnBoard(pathname));
   // 本局降级刷新后仍保留；路由复用 GamePage 时，降级与锁定历史都不能带进下一局。
   const screenFallbackKey = `kiosk_screen_fallback:${sessionId ?? ''}`;
   const [physicalSession, setPhysicalSession] = useState(() => ({
@@ -251,14 +293,70 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setPhysicalSession((previous) => ({ ...previous, screenFallback: true }));
   }, [screenFallbackKey]);
   const physicalPlay = !physicalSession.screenFallback && isVisionEnabled
-    && playOnBoard
-    && (session.gameState?.board_size?.[0] ?? 19) === 19;
+    && playOnBoard.onBoard
+    && (playOnBoard.fromSession || (session.gameState?.board_size?.[0] ?? 19) === 19);
   const poseEverLocked = physicalSession.poseEverLocked;
   // 初次等待识别不是棋盘移动；只在本 session 锁定过之后提醒。
   if (physicalSession.sessionId === sessionId && physicalPlay && visionStatus.poseLocked && !poseEverLocked) {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
   const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
+
+  // Exact-board acknowledgements can race the game-state WebSocket in either order.
+  // Keep a small versioned cache and consume the vision stream by monotonic `seq`
+  // rather than array position (the hook trims its rolling window at 100 events).
+  const acknowledgedNodeIdsRef = useRef(new Set<number>());
+  const acknowledgedNodeOrderRef = useRef<number[]>([]);
+  const lastProcessedVisionSeqRef = useRef<number | null>(null);
+  const ignoredVisionEventsRef = useRef<typeof visionSync.syncEvents | null>(null);
+  const staleGameStateAfterSessionChangeRef = useRef<GameState | null>(null);
+  const visionBindingKey = physicalPlay ? sessionId ?? null : null;
+  const visionBindingKeyRef = useRef(visionBindingKey);
+  const visionConnectedRef = useRef(visionSync.connected);
+
+  useEffect(() => {
+    const bindingChanged = visionBindingKeyRef.current !== visionBindingKey;
+    const reconnected = visionConnectedRef.current === false && visionSync.connected === true;
+    if (bindingChanged || reconnected) {
+      acknowledgedNodeIdsRef.current.clear();
+      acknowledgedNodeOrderRef.current = [];
+      if (bindingChanged) {
+        const changedBetweenSessions = visionBindingKeyRef.current !== null && visionBindingKey !== null;
+        lastProcessedVisionSeqRef.current = null;
+        // useVisionSync clears its list after a binding change. Ignore this render's
+        // previous-binding array so an old acknowledgement cannot leak into the new session.
+        ignoredVisionEventsRef.current = visionSync.syncEvents;
+        staleGameStateAfterSessionChangeRef.current = changedBetweenSessions ? session.gameState : null;
+        setAiPlacementStatus(null);
+      }
+    }
+    visionBindingKeyRef.current = visionBindingKey;
+    visionConnectedRef.current = visionSync.connected;
+  }, [visionBindingKey, visionSync.connected, visionSync.syncEvents]);
+
+  useEffect(() => {
+    if (visionSync.syncEvents === ignoredVisionEventsRef.current) return;
+    ignoredVisionEventsRef.current = null;
+
+    const newEvents = visionSync.syncEvents
+      .filter((event) => typeof event.seq === 'number'
+        && (lastProcessedVisionSeqRef.current === null || event.seq > lastProcessedVisionSeqRef.current))
+      .sort((a, b) => a.seq - b.seq);
+    for (const event of newEvents) {
+      lastProcessedVisionSeqRef.current = event.seq;
+      const expectedNodeId = event.type === 'synced' ? event.data.expected_node_id : undefined;
+      if (typeof expectedNodeId !== 'number') continue;
+      if (!acknowledgedNodeIdsRef.current.has(expectedNodeId)) {
+        acknowledgedNodeIdsRef.current.add(expectedNodeId);
+        acknowledgedNodeOrderRef.current.push(expectedNodeId);
+        while (acknowledgedNodeOrderRef.current.length > 128) {
+          const expired = acknowledgedNodeOrderRef.current.shift();
+          if (expired !== undefined) acknowledgedNodeIdsRef.current.delete(expired);
+        }
+      }
+      setAiPlacementStatus((current) => current?.nodeId === expectedNodeId ? null : current);
+    }
+  }, [visionSync.syncEvents]);
 
   useEffect(() => {
     if (!session.physicalReminder) return;
@@ -281,12 +379,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     const gs = session.gameState;
     if (!gs || !sessionId) return;
-    if (endResultOf(gs)) { clearActiveSession('game'); return; }
+    if (endResultOf(gs) && !gs.awaiting_count) { clearActiveSession('game'); return; }
+    const route = window.location.pathname;
+    const previous = readActiveSession('game');
     writeActiveSession({
       kind: 'game',
       label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
-      route: window.location.pathname,
+      route,
       ts: Date.now(),
+      ...(previous?.route === route && typeof previous.onBoard === 'boolean' ? { onBoard: previous.onBoard } : {}),
     });
   }, [session.gameState?.current_node_id, session.gameState?.end_result, session.gameState?.terminal_result, sessionId]);
 
@@ -297,16 +398,40 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (loadFailed) clearActiveSession('game');
   }, [loadFailed]);
 
-  // Persistent amber banner when AI makes a move (vision mode: physical board player
-  // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
+  // AI move placement instruction. Keep scope, causal node and text together so a
+  // late render from another game/session can never surface stale coordinates.
   useEffect(() => {
-    if (!physicalPlay || !session.gameState) return;
-    const gs = session.gameState;
-    const human = deriveHumanColor(gs);
-    if (gs.last_move && !endResultOf(gs) && human && gs.player_to_move === human) {
-      setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
+    if (!physicalPlay || !session.gameState) {
+      setAiPlacementStatus(null);
+      return;
     }
-  }, [physicalPlay, session.gameState?.current_node_id]);
+    const gs = session.gameState;
+    if (gs === staleGameStateAfterSessionChangeRef.current) {
+      setAiPlacementStatus(null);
+      return;
+    }
+    staleGameStateAfterSessionChangeRef.current = null;
+    const human = deriveHumanColor(gs);
+    const ai = deriveAiTurnState(gs, null).aiColor;
+    if (!gs.last_move || endResultOf(gs) || !human || !ai || gs.player_to_move !== human) {
+      setAiPlacementStatus(null);
+      return;
+    }
+    const nodeId = gs.current_node_id;
+    if (acknowledgedNodeIdsRef.current.has(nodeId)) {
+      setAiPlacementStatus((current) => current?.nodeId === nodeId ? null : current);
+      return;
+    }
+    const scopeKey = `${sessionId ?? ''}|${gs.game_id}`;
+    const coord = formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]);
+    const text = `${t('AI played', 'AI 已落子')} ${coord} · ${ai === 'B'
+      ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
+      : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}`;
+    setAiPlacementStatus((current) => current?.scopeKey === scopeKey && current.nodeId === nodeId && current.text === text
+      ? current
+      : { scopeKey, nodeId, text });
+  }, [physicalPlay, session.gameState?.current_node_id, session.gameState?.game_id,
+    session.gameState?.end_result, session.gameState?.terminal_result, sessionId, t]);
 
   // Camera disconnect fallback
   useEffect(() => {
@@ -322,8 +447,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // that dialog is dismissed by the user, not by position changes. engineMode only.
   useEffect(() => {
     setEngineOverlay(null);
+    setEngineEvaluation(null);
     setActiveEngineKind(null);
-  }, [session.gameState?.current_node_id]);
+  }, [enginePositionKey]);
 
   // Task 11: the physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint)
   // mirror the 支招 (options) overlay above. Whenever activeEngineKind moves AWAY from
@@ -349,9 +475,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Trigger when either toggle is on, and re-trigger when the current node changes. The
   // result streams back over the game WebSocket (get_state broadcast). Ranked/rated games
   // block this server-side (analysis_allowed). Not used in engineMode (star阵 tunnel instead).
-  // A9:「图表」只在胜率块会渲染的人机自由对弈请求分析,避免本地两人局每手白算一次。
-  const wantAnalysis = analysisToggles.ownership
-    || (analysisToggles.score && isFreeVsAi({ gameType: session.gameState?.game_type, engineMode }));
+  // 本地双人局虽然不展示分析控件，数子仍读取同一份后台分析结果；因此图表默认开启时
+  // 也继续请求当前手分析。界面是否展示胜率块由 GameControlPanel 独立决定。
+  const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
@@ -363,6 +489,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type, gs?.analysis_delivered]);
 
+  // 双 pass 之后自动数子(v2-design §3.4)。只给本地对局与人机自由对弈(`autoCountEligible`);
+  // 判据取服务端下发的 `awaiting_count`,前端不自己数 pass。
+  const autoCount = useAutoCount({
+    sessionId,
+    awaitingCount: !!gs && !!gs.awaiting_count && autoCountEligible(gs, engineMode),
+    nodeId: gs?.current_node_id,
+    onState: session.setGameState,
+  });
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -410,6 +544,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
     String(user?.id ?? user?.username ?? 'anonymous'),
   );
+  const celebrating = useGameCelebration(
+    sessionId, session.gameState, session.gameState ? deriveHumanColor(session.gameState) : null,
+  );
 
   if (!session.gameState) {
     // 盒上全屏没有浏览器后退入口，加载中和加载失败都要能回到对弈。
@@ -441,8 +578,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }
 
   const gameState = session.gameState;
-  const isGameOver = !!endResultOf(gameState);
+  const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
+  // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
+  const localGame = gameState.game_type === 'pvp_local';
   const boardSize = gameState.board_size[0];
+  // 超时判负后(spec §3.3 步骤 3):`end_result` 由 `_do_timeout` 写成 `{赢家}+T`
+  // (`current_node.player` = 上一手落子方 = 赢家,见 `interface.py:_do_timeout`)。
+  // 只在本地对局说这句话 —— Global Constraints #1:钟/超时判负只对 `pvp_local` 生效。
+  const timeoutResult = localGame && isGameOver && gameState.end_result?.endsWith('+T') ? gameState.end_result : null;
+  const timeoutWinnerColor = (timeoutResult?.[0] as 'B' | 'W' | undefined) ?? null;
+  const timeoutLoserColor = timeoutWinnerColor === 'B' ? 'W' : timeoutWinnerColor === 'W' ? 'B' : null;
+
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
   // 花在已经能看见的东西上;而「自由对弈 / 升降级对弈」是这一屏唯一说不出别处的事
@@ -475,7 +621,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : message.includes('Analysis not available') ? (isRanked
       ? t('game:count_ranked_unscored', '升降级对局现在数不了子（本局不做形势分析）')
       : t('game:count_no_score', '形势分析没算出来，暂时数不了子，请稍后再试'))
-    : t('game:count_failed', '数子没有成功，请稍后再试');
+    /* `game:count_failed` 在 cn PO 里是「数子没有完成」—— 那是下面状态条上那个**标签**
+       (`:905` 在用),不是这里要说的**带重试建议的报错**。复用的话翻译表赢,
+       屏上把「请稍后再试」吃掉。另铸一个键。 */
+    : t('game:count_failed_retry', '数子没有成功，请稍后再试');
 
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now
@@ -505,7 +654,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       try {
         const res = await API.timeout(sessionId, token ?? undefined, expect);
         if (!current()) return;
-        if (res?.state) session.setGameState(res.state);
+        // Task 2's 200 空回执：这局在服务端已经没了。retryDelivery 重发救不回一个被
+        // 回收的会话 —— 落到这里必须直接报出去,不能再走下面的 setTimeoutError(null)
+        // (那条路以前只在真的送达成功时才走,现在会把「没了」悄悄当成「送达了」)。
+        // `'status' in res` alone is the complete discriminant: SessionResponse never
+        // has a `status` key, and `'session_gone'` is the only value SessionGoneResponse
+        // ever carries. Adding `&& res.status === 'session_gone'` here defeats TS's
+        // narrowing on the fall-through branch below (verified against tsc directly).
+        if ('status' in res) {
+          session.reportSessionGone();
+          return;
+        }
+        if (res.state) session.setGameState(res.state);
         setTimeoutError(null);
       } catch (e) {
         if (!current()) return;
@@ -526,6 +686,37 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     void send();
   };
 
+  // 本地双人局沿用 v2 的简单契约：钟到点后发一次无绑定 timeout，由后端在锁内按
+  // 当前局面和权威时钟核实。409/time_not_expired 带回的新状态直接用于重算；真正的
+  // 网络或服务错误才提示失败。GameControlPanel 会在钟仍停在 00:00 时隔 5 秒再触发。
+  const handleTimeExpired = async () => {
+    if (!sessionId || timeoutRequestRef.current) return;
+    timeoutRequestRef.current = true;
+    try {
+      const res = await API.timeout(sessionId);
+      // Same gone shape as the bound-timeout `send()` above: no `.state`, and retrying
+      // cannot bring an evicted session back. Report it and stop — do not clear
+      // timeoutError as if the timeout had been delivered.
+      if ('status' in res) {
+        session.reportSessionGone();
+        return;
+      }
+      if (res.state) session.setGameState(res.state);
+      setTimeoutError(null);
+    } catch (error) {
+      const detail = error instanceof ApiError && error.status === 409
+        ? (error.detail as { code?: string; state?: GameState } | undefined)
+        : undefined;
+      if (detail?.code === 'time_not_expired' && detail.state) {
+        session.setGameState(detail.state);
+      } else {
+        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '超时判定没有完成'), requestFailureKind(error), t) });
+      }
+    } finally {
+      timeoutRequestRef.current = false;
+    }
+  };
+
   // 本地双人局按轮到落子的一方认输，人机局始终按人的座位认输。
   const bothHuman = gameState.players_info.B.player_type === 'player:human'
     && gameState.players_info.W.player_type === 'player:human';
@@ -538,13 +729,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : t('Game in progress. Resign and exit?', '对局进行中，认输并退出？');
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
-  // aiColor also gates the persistent move banner above; physicalConfirming is folded
+  // aiColor also gates the physical placement status; physicalConfirming is folded
   // into showThinking already (see deriveAiTurnState) so PhysicalPlayStatusChip's 确认中
   // chip and the ai-thinking banner never stack.
   const { aiColor, showThinking, ladderStalled } = deriveAiTurnState(
     gameState,
     visionSync.latestEvent?.type ?? null,
   );
+  const placementScopeKey = `${sessionId ?? ''}|${gameState.game_id}`;
+  const physicalStatus = physicalPlay && aiColor !== null && aiPlacementStatus?.scopeKey === placementScopeKey
+    ? aiPlacementStatus.text
+    : null;
 
   // Board-loss precedence (state B + consolidation, B1.4): escalation is the ceiling —
   // PhysicalSyncEscalationDialog needs no suppression prop and always wins. Below it,
@@ -583,12 +778,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       // 数子:人机 / 本地对局由服务端当场数完并结束对局(没有对手握手)。
       if (!sessionId || countingRef.current) return;
       countingRef.current = true;
+      setCountError(null);
       setCounting(true);
       try {
         const res = await API.requestCount(sessionId);
         if (res?.state) session.setGameState(res.state);
-      } catch (e) {
-        setCountError(countFailureMessage(e instanceof Error ? e.message : ''));
+      } catch (error) {
+        // 结构化原因来自本地对局 v2；旧服务端/统一终局冲突仍由字符串回退覆盖。
+        setCountError(error instanceof ApiError
+          ? countErrorMessage(error, t)
+          : countFailureMessage(error instanceof Error ? error.message : ''));
       } finally {
         countingRef.current = false;
         setCounting(false);
@@ -603,7 +802,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (isGameOver) return;
     try {
       await session.onMove(x, y);
-      setAiMoveBanner(null);
+      setAiPlacementStatus(null);
     } catch (e) {
       console.error(e);
       if (engineMode) setEngineErrorToast(true);
@@ -616,6 +815,47 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     } else {
       navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked' : '/kiosk/play');
     }
+  };
+
+  // 本地对局「退出不保存」。这是 pvp_local 唯一的出口，所以 DELETE 失败也照样离开 ——
+  // 删不掉时服务端状态和「卡住不让走」时完全一样(会话都还挂在进程里)，攥着用户不放清理不出
+  // 任何东西，只是把 R1 那个「服务端调用失败 = 出不去」的陷阱换个触发点重演一遍。best-effort
+  // 发出去就算数：`delete_session`(server.py)只做 end_session + remove_session，
+  // `SessionManager.remove_session` 弹出字典、停引擎；`API.deleteSession` 这条请求本来就不持久化
+  // 任何东西，所以退出弹层那句
+  // 「这局还没下完，退出后不会保存」依旧成立。孤儿会话不可见也会自愈：clearActiveSession('game')
+  // 杀掉「继续上一局」指针，pvp_local 从不出现在 /api/v1/games/active/multiplayer 里，
+  // cleanup_expired 在 SESSION_TIMEOUT(3600s) 后照常回收它。
+  const handleExitWithoutSaving = () => {
+    if (sessionId) {
+      API.deleteSession(sessionId).catch((error) => {
+        console.warn('[game] delete-on-exit failed (best-effort, leaving anyway):', error);
+      });
+    }
+    setShowExitConfirm(false);
+    clearActiveSession('game');
+    navigate('/kiosk/play');
+  };
+
+  const handleLocalResign = async (color: 'B' | 'W') => {
+    try {
+      await session.handleAction('resign', { color });
+      setShowResignConfirm(false);
+    } catch (error) {
+      setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+    }
+  };
+
+  // 复盘本局:终局卡与(超时判负后的)右栏状态条**共用同一个入口**(v2-plan S3-5:
+  // 「有复盘本局键(复用终局已有的复盘入口)」)—— 存的是当前对局的 SGF,不是持久化的
+  // user_games id(那时可能还没落库),同一份 SGF 塞进 sessionStorage 给研究页读。
+  const handleReview = async () => {
+    if (!sessionId) return;
+    try {
+      const { sgf } = await API.saveSGF(sessionId);
+      getCurrentKioskActivityStorage().setItem('kioskReviewSgf', sgf);
+      navigate('/kiosk/research?from=game');
+    } catch (e) { console.error(e); setReviewError(true); }
   };
 
   /* 三个操作数,各挡各的:`physicalPlay` 是「实体盘在不在」,`analysis_allowed` 是
@@ -647,18 +887,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 星阵隧道分析 (领地/支招/变化图/数子) — engineMode only. Mutually exclusive: a new kind
   // replaces any prior overlay; clicking the already-active kind toggles it off.
   const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
-    if (pendingEngineKind) return; // in-flight guard: ignore double-taps until the current call settles
+    if (engineAnalysisPendingRef.current) return;
     if (activeEngineKind === kind) {
       setActiveEngineKind(null);
       setEngineOverlay(null);
+      setEngineEvaluation(null);
       return;
     }
     if (!sessionId || !isAuthenticated) return;
     // Capture the position identity at call time — if the board advances (a move
     // played) while this request is in flight, the response below is for a stale
     // position and must be discarded rather than resurrecting an old overlay.
-    const requestedNodeId = session.gameState?.current_node_id;
-    setPendingEngineKind(kind);
+    const requestedPosition = enginePositionKey;
+    engineAnalysisPendingRef.current = true;
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
       // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
@@ -666,13 +907,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       // below so a discarded overlay still updates the count that was actually spent.
       void refreshItemCounts();
       if (res.ok) {
-        if (session.gameState?.current_node_id !== requestedNodeId) return; // stale position — discard
+        if (enginePositionRef.current !== requestedPosition) return;
         const overlay: EngineOverlay =
           kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
           : kind === 'judge' ? { kind: 'judge', ownership: (res.data as { ownership: JudgePoint[] }).ownership }
           : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
         setEngineOverlay(overlay);
+        setEngineEvaluation(kind === 'area' ? res.data as { winrate: number; delta: number } : null);
         setActiveEngineKind(kind);
       } else {
         setInsufficientKind(kind);
@@ -681,7 +923,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       console.error(e);
       setEngineErrorToast(true);
     } finally {
-      setPendingEngineKind(null);
+      engineAnalysisPendingRef.current = false;
     }
   };
 
@@ -692,31 +934,59 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     variation: t('Variation Line', '变化图'),
   };
 
+  // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
+  // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
+  // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
+  const statusSlot = (timeoutLoserColor || autoCount.status !== 'idle') ? (
+    <div className="gstatus" data-testid="auto-count-status" data-tone={timeoutLoserColor || autoCount.status === 'failed' ? 'bad' : undefined}>
+      {!timeoutLoserColor && autoCount.status === 'counting' && <CircularProgress size={14} />}
+      <div>
+        <b>
+          {timeoutLoserColor
+            ? (timeoutLoserColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方')) + t('game:timeout_loss_suffix', '超时负')
+            : autoCount.status === 'failed' ? t('game:count_failed', '数子没有完成')
+            : t('game:counting', '正在数子…')}
+        </b>
+        <span>
+          {timeoutLoserColor
+            ? (timeoutWinnerColor === 'B' ? t('game:black_short', '黑') : t('game:white_short', '白')) + t('game:timeout_win_suffix', '超时胜')
+              + ' · ' + t('game:move_n', '第 {n} 手').replace('{n}', String((gameState.current_node_index ?? 0) + 1))
+              + ' · ' + t('game:saved_to_history', '已存进历史对局')
+            : autoCount.status === 'failed' ? `${autoCount.reason} · ${t('game:check_network_retry', '检查网络后重试')}`
+            : null}
+        </span>
+      </div>
+      {(timeoutLoserColor || autoCount.status === 'failed') && (
+        <button
+          type="button"
+          className="kiosk-btn kiosk-btn--pill"
+          onClick={() => { if (timeoutLoserColor) void handleReview(); else autoCount.retry(); }}
+        >
+          {timeoutLoserColor ? t('Review this game', '复盘本局') : t('game:retry', '重试')}
+        </button>
+      )}
+    </div>
+  ) : activeEngineKind === 'area' && engineEvaluation ? (
+    <div className="gstatus" data-testid="engine-analysis-summary" role="status">
+      <div>
+        <b>{t('game:golaxy_ai', '星阵围棋 · 人机')} · {t('Territory', '领地')}</b>
+        <span style={{ fontSize: 14, color: 'var(--text)' }}>
+          {t('live:black_winrate', '黑棋胜率')} {Number.isFinite(engineEvaluation.winrate) && engineEvaluation.winrate >= 0 && engineEvaluation.winrate <= 1
+            ? `${(engineEvaluation.winrate * 100).toFixed(1)}%` : '—'}
+          {' · '}
+          {Number.isFinite(engineEvaluation.delta)
+            ? `${engineEvaluation.delta < 0 ? t('game:white_short', '白') : t('game:black_short', '黑')}${t('live:lead_pts', '领先')} ${Math.abs(engineEvaluation.delta).toFixed(1)} ${t('game:points_unit', '目')}`
+            : `${t('research:col_score_diff', '目差')} —`}
+        </span>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
         <AiLadderSettlementAlert feedback={settlementFeedback} />
       </Box>
-      {/* Persistent AI-move banner: physical board player needs a coordinate hint.
-          Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
-      {physicalPlay && aiColor !== null && aiMoveBanner && (
-        <Box
-          data-testid="ai-move-banner"
-          sx={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
-            px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
-            bgcolor: 'var(--raise2)', borderTop: '2px solid', borderColor: 'warning.main',
-          }}
-        >
-          <Lightbulb sx={{ color: 'warning.main' }} />
-          <Typography sx={{ color: 'text.primary' }}>
-            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {aiColor === 'B'
-              ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
-              : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
-          </Typography>
-        </Box>
-      )}
-
       {/* 位置走 `.gthink`(go-screens.css)—— **居中在棋盘上,不是整页上**。
           这两块共用同一个槽(构造上互斥,见 deriveAiTurnState),所以位置也共用一个类:
           分开写过一次,结果是两处各写一遍 `left:'50%'`,改一处漏一处不会有人红。 */}
@@ -773,15 +1043,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {/* 断线持续显示；退出时可以保留这一局，回来重新取状态和建连。1008 保留原来的原因与登录提示。 */}
+      {/* 断线持续显示。三档都是固定文案，不接 session.error —— connectionLost 一旦置位就不会自动
+          清空，后续任何一次失败的 HTTP 动作都会把 ApiError 的原文写进 session.error，原来的
+          fallback 分支会把它原样印在这里(R2 的泄漏点，已经封死)。'rejected' 不复述服务端给的
+          1008 reason：如今只可能是 Invalid token / Session not found / Session unavailable
+          之一(server.py:3156/3162/3170)，7 寸屏上没有一条是用户能采取行动的。
+          'dropped' / 'gone' 都不点名对局屏当下具体哪个按钮能离开 —— 本地对局(pvp_local)的
+          退出弹层只有「继续下 / 退出不保存」，没有「先离开，不认输」那个键；而 'gone' 这一档自己的
+          说明弹层开着时，底下整块页面(含页控条的「退出对局」)都在遮罩之下点不到，指哪个具体按钮
+          都会指错。 */}
       <Snackbar
         open={!!session.connectionLost && !connectionNoticeDismissed}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
           {session.connectionLost === 'dropped'
-            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
-            : session.error}
+            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新，可以点「退出对局」离开这一局')
+            : session.connectionLost === 'gone'
+              ? t('game:session_gone_notice', '这一局在服务器上已经没有了，可以离开这一页。')
+              : t('game:connection_rejected', '实时连接被拒绝，棋盘不会自动更新，请重新登录后重试')}
         </Alert>
       </Snackbar>
 
@@ -834,6 +1114,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               playerColor={humanColor}
               engineOverlay={engineOverlay}
               externalRulers
+              suppressEndResultOverlay={!!timeoutLoserColor}
+              onPaintedNode={session.acknowledgePaintedNode}
             />
           </div>
           <div className="kiosk-board__ruler kiosk-board__ruler--right">
@@ -852,16 +1134,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             title={gameTitle}
             sub={gameSetupLine}
             // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
-            // 让屏幕重新以实体盘为准。上一版它只在 `syncStuck` 之后才出现 ——
+            // 以屏幕上的数字棋盘为权威重建识别基线。上一版它只在 `syncStuck` 之后才出现 ——
             // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
             action={physicalPlay ? {
               icon: 'arrows-clockwise',
-              label: t('Re-sync', '重置识别 · 让屏幕重新以实体盘为准'),
+              label: t('vision:resync_screen_authority', '重置识别 · 以屏幕上的数字棋盘局面为准'),
+              visibleLabel: t('Re-sync', '重置识别'),
               onClick: () => { void handleResetSync(); },
             } : undefined}
           />
           <GameControlPanel
-            onTimeout={handleClockExpired}
+            onTimeout={localGame ? undefined : handleClockExpired}
+            onTimeExpired={localGame ? handleTimeExpired : undefined}
             gameState={gameState}
             onAction={handleAction}
             onNavigate={session.onNavigate}
@@ -880,91 +1164,141 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onEngineAnalysis={handleEngineAnalysis}
             engineItemCounts={engineItemCounts}
             hardwareFault={hardwareFault}
+            physicalStatus={physicalStatus}
+            counting={autoCount.status === 'counting'}
+            statusSlot={statusSlot}
           />
         </div>
       </div>
 
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
-          继续对弈 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
+          留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it
           would be a silent no-op). 确认终局 (handleExit) navigates out. `key={sessionId}`
           remounts EndgameCard fresh (dismissed=false) whenever a new session/game loads.
           DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a
-          kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched. */}
-      {isGameOver && (
+          kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched.
+
+          `!timeoutLoserColor`:超时判负那一态已经在右栏状态条里说完了(设计稿 05b 就是
+          只有状态条、没有这张居中卡),两处同时出现会是两个「复盘本局」键叠在一起。 */}
+      {isGameOver && !timeoutLoserColor && (
         <EndgameCard
+          celebrating={celebrating}
           key={sessionId}
           gameState={gameState}
           t={t}
           onExit={handleExit}
-          onReview={async () => {
-            if (!sessionId) return;
-            try {
-              const { sgf } = await API.saveSGF(sessionId);
-              getCurrentKioskActivityStorage().setItem('kioskReviewSgf', sgf);
-              navigate('/kiosk/research?from=game');
-            } catch (e) { console.error(e); setReviewError(true); }
-          }}
+          onReview={handleReview}
         />
       )}
 
       {/* Resign confirmation (state D) */}
-      <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-        <DialogTitle sx={{ color: 'text.primary' }}>{resignTitle}</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button
-            color="error"
-            onClick={async () => {
-              try {
-                await session.handleAction('resign');
-                setShowResignConfirm(false);
-              } catch (error) {
-                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
-                return;
-              }
-              // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
-              // not it was reached via EngineMoveErrorDialog's 认输 button — so the
-              // physical engine-error recovery dialog (if open) is now irrelevant.
-              // No-op if it was never open (clearPhysicalEngineError just sets null->null).
-              session.clearPhysicalEngineError();
-            }}
-          >
-            {t('Resign', '认输')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {localGame ? (
+        /* 本地对局:两个人都在屏前,「认输」不能默认判轮到走的那一方(P5)—— 先问谁认输。 */
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+          <DialogTitle sx={{ color: 'text.primary' }}>{t('game:which_side_resigns', '哪一方认输？')}</DialogTitle>
+          <DialogContent><Typography>{t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</Typography></DialogContent>
+          <DialogActions disableSpacing sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="contained" color="error" sx={{ flex: 1 }} startIcon={<span className="disc b" />} onClick={() => { void handleLocalResign('B'); }}>
+                {t('game:black_resigns', '黑方认输')}
+              </Button>
+              <Button variant="contained" color="error" sx={{ flex: 1 }} startIcon={<span className="disc w" />} onClick={() => { void handleLocalResign('W'); }}>
+                {t('game:white_resigns', '白方认输')}
+              </Button>
+            </Box>
+            <Button variant="outlined" fullWidth onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+          </DialogActions>
+        </Dialog>
+      ) : (
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+          <DialogTitle sx={{ color: 'text.primary' }}>{resignTitle}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+            <Button
+              color="error"
+              onClick={async () => {
+                try {
+                  await session.handleAction('resign');
+                  setShowResignConfirm(false);
+                } catch (error) {
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  return;
+                }
+                // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
+                // not it was reached via EngineMoveErrorDialog's 认输 button — so the
+                // physical engine-error recovery dialog (if open) is now irrelevant.
+                // No-op if it was never open (clearPhysicalEngineError just sets null->null).
+                session.clearPhysicalEngineError();
+              }}
+            >
+              {t('Resign', '认输')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Exit confirmation */}
-      <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
-        <DialogTitle>{exitResignTitle}</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-          {session.connectionLost && (
+      {localGame ? (
+        /* 本地对局退出 = 删会话、不存谱(v2 D2)。已终局不会走到这里(handleExit 直接离开)。 */
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+          <DialogTitle>{t('game:exit_confirm_title', '退出这局？')}</DialogTitle>
+          <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
+          <DialogActions sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
+            <Button variant="outlined" color="error" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={handleExitWithoutSaving}>
+              {t('game:exit_unsaved', '退出不保存')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      ) : (
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+          <DialogTitle>{exitResignTitle}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
             <Button data-testid="exit-leave-keep" onClick={() => {
               setShowExitConfirm(false);
               navigate('/kiosk/play');
             }}>
               {t('game:leave_keep_game', '先离开，不认输')}
             </Button>
-          )}
-          <Button
-            color="error"
-            onClick={async () => {
-              try {
-                await session.handleAction('resign');
-              } catch (error) {
-                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
-                return;
-              }
-              // Same as the resign-confirm dialog above: this is another path that
-              // confirms a resign, so the engine-error recovery dialog (if open) must
-              // close too — no-op if it wasn't open.
-              session.clearPhysicalEngineError();
-              navigate('/kiosk/play');
-            }}
-          >
-            {t('Exit', '退出')}
+            <Button
+              color="error"
+              onClick={async () => {
+                try {
+                  await session.handleAction('resign');
+                } catch (error) {
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
+                  return;
+                }
+                // Same as the resign-confirm dialog above: this is another path that
+                // confirms a resign, so the engine-error recovery dialog (if open) must
+                // close too — no-op if it wasn't open.
+                session.clearPhysicalEngineError();
+                navigate('/kiosk/play');
+              }}
+            >
+              {t('Exit', '退出')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+
+      {/* 这局在服务端已经没了。说人话 + 给出口。说的是「本机没有这一局了」,不是「你认输了」:
+          回收会话不会结束远端对局(真正的远端认输在 gateway.py:399-420)。 */}
+      <Dialog open={sessionGone && !gameGoneAcknowledged}
+              onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+        <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
+        <DialogContent>
+          {/* 这里**不能**复用载入失败那一屏的 `game:unavailable_reason` —— 它第三条说
+              「或者它属于另一个账号」,而那种局根本产不出 `gone` 这个信号:别人的会话是
+              403 / `1008 "Session unavailable"`,落的是 `rejected`。只说能产出它的那两种。 */}
+          <Typography>{t('game:gone_reason', '可能是盒子重启过，或者这一局闲置太久被清理了。')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button data-testid="game-gone-leave"
+                  onClick={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+            {t('game:back_to_play', '回到对弈')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -990,12 +1324,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Vision sync overlay — suppressBoardLost consolidates the board-loss surfaces
           (see the precedence comment above recalOpen): its own board_lost modal is
           suppressed whenever the escalation dialog OR the recalibration modal is up. */}
-      {physicalPlay && (
+      {/* 终局后整个卸掉,不只是「不再新弹」。`visionRecovery` 里**唯一**能清掉 blocking 的
+          路径是收到 `synced`(visionRecovery.ts:84),而终局后那 26 分钟里 `synced` 是 0 条
+          (RK3562 2026-09-20 实测) ⇒ 后端停止比对也清不掉已经开着的那个弹窗,只有卸载能。 */}
+      {physicalPlay && !isGameOver && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}
           boardSize={session.gameState?.board_size?.[0] ?? 19}
           playerToMove={session.gameState?.player_to_move ?? null}
+          currentNodeId={session.gameState?.current_node_id ?? null}
           suppressBoardLost={escalationOpen || recalOpen}
         />
       )}

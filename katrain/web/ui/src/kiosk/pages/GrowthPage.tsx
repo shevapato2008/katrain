@@ -4,7 +4,19 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { getGrowthSummary, rankedWinrate, type GrowthSummary } from '../api/growthApi';
+import {
+  getGrowthActivity,
+  getGrowthDiagnosis,
+  getGrowthSummary,
+  trendPoints,
+  winrateCell,
+  type GrowthActivity,
+  type GrowthDiagnosis,
+  type GrowthSummary,
+} from '../api/growthApi';
+import ActivityCalendar from '../components/growth/ActivityCalendar';
+import DiagnosisPanel from '../components/growth/DiagnosisPanel';
+import RungTrend from '../components/growth/RungTrend';
 
 /**
  * 屏 22 · 成长(L1 两栏)。
@@ -29,15 +41,19 @@ import { getGrowthSummary, rankedWinrate, type GrowthSummary } from '../api/grow
  *    `opponent_rank_name`,而且 `ck_ai_ladder_ledger_decision` 强制 counted 的行必须有档位 ——
  *    也就是**已计入的局一局都不会漏**。稿子写「还没有战绩」是因为它以为没这张账本。
  *
- * 留下的只有「能力诊断」那一块:它要拿**已经跑过报告**的对局算,那是另一条链(复盘屏),
- * 稿子的诚实空态原样照搬。
+ * 「能力诊断」2026-09 接上了(见 `components/growth/DiagnosisPanel.tsx`):最近几份已完成报告里
+ * **你执的那一方**的手,按布局 / 中盘 / 官子三段数问题手,样本量写在旁边。在此之前那块是写死的
+ * 「样本 0 局」,还挂着一个标反了的「后端已有 · 界面未接」蓝标 —— 跨局汇总那时前后端都没有。
  *
- * ## 胜率为什么只算升降级局
+ * ## 胜率算哪些局
  *
- * `user_games.result` 存的是**哪一方赢**(`"B+R"`),表里**没有任何一列记这个用户坐的是哪一方**
- * (测试里对着 `__table__.columns` 断言过)。拿玩家名去猜就是在编。
- * `ai_ladder_game_ledger` 有 `user_color`,`result` 本身就是从这个用户视角写的 ——
- * 所以这一格的标签必须写明「升降级」,不能写成光秃秃的「胜率」。
+ * 2026-09 之前 `user_games` **没有一列记这个用户坐哪一方**,所以只有升降级局
+ * (`ai_ladder_game_ledger` 有 `user_color`)算得出胜负,标签只能写「升降级胜率」。
+ * 现在 `user_games.user_color` 补上了,人机局与平台引擎局也算得出;面对面、导入的谱、
+ * 以及这一列上线之前的非升降级局仍然没有这个事实 —— 它们**不进分母**,差额由屏上
+ * 那句「有 N 局没算进胜率」说出来。拿玩家名去猜执色就是在编,所以不猜。
+ *
+ * 云端还没部署到这一版时响应里没有新字段 ⇒ 数和标签**一起**退回升降级口径(`winrateCell`)。
  */
 
 /** 稿子那三条升降规矩。①② 与 `formatNetScoreValueText`(±3)一致;③ 是**改过的**:稿子写「上封 12 段」。 */
@@ -68,6 +84,28 @@ const GrowthPage = () => {
       // 失败就是失败:**不退回 0**。「一局没下」和「没读到」在屏上必须是两句话
       //(`summaryFailed` 那条 setnote)。abort 不算失败 —— 那是我们自己取消的。
       .catch(() => { if (!ac.signal.aborted) { setSummary(null); setSummaryFailed(true); } });
+    return () => ac.abort();
+  }, [token]);
+
+  // 诊断是另一条请求、另一份失败 —— 它读不到不该连累上面那四个数,反之亦然。
+  const [diag, setDiag] = useState<GrowthDiagnosis | null>(null);
+  const [diagFailed, setDiagFailed] = useState(false);
+  useEffect(() => {
+    const ac = new AbortController();
+    getGrowthDiagnosis(token ?? undefined, ac.signal)
+      .then((d) => { setDiag(d); setDiagFailed(false); })
+      .catch(() => { if (!ac.signal.aborted) { setDiag(null); setDiagFailed(true); } });
+    return () => ac.abort();
+  }, [token]);
+
+  // 近一年练棋日历:又一条独立的请求、独立的失败(同上)。
+  const [activity, setActivity] = useState<GrowthActivity | null>(null);
+  const [activityFailed, setActivityFailed] = useState(false);
+  useEffect(() => {
+    const ac = new AbortController();
+    getGrowthActivity(token ?? undefined, ac.signal)
+      .then((a) => { setActivity(a); setActivityFailed(false); })
+      .catch(() => { if (!ac.signal.aborted) { setActivity(null); setActivityFailed(true); } });
     return () => ac.abort();
   }, [token]);
 
@@ -126,16 +164,18 @@ const GrowthPage = () => {
   // 数没取到就是没取到。**四格一个都不许写 0** —— 「没下过」和「没读到」在屏上是两句话。
   const dash = t('growth:no_data', '—');
   const num = (v: number | undefined) => (v === undefined ? dash : String(v));
-  const wr = summary ? rankedWinrate(summary) : null;
+  const cell = summary ? winrateCell(summary) : null;
 
   const stats: { v: string; k: string; good?: boolean }[] = [
     { v: num(summary?.games_in_window), k: t('growth:stat_recent', '近 30 天对局') },
     {
-      v: wr === null ? dash : pct(wr),
+      v: cell?.value == null ? dash : pct(cell.value),
       // 口径必须写在标签里(共享外壳 §5 的原话:「一个光秃秃的 58% 谁也不知道是哪来的」)。
-      // 「升降级」三个字是**承重的**:只有那一种对局的胜负是从这个用户视角记下来的。
-      k: t('growth:stat_winrate', '升降级胜率 · 近 30 天'),
-      good: wr !== null && wr >= 0.5,
+      // 老云端只给得出升降级那一半 ⇒ 标签跟着退。显示一个口径、算另一个是这屏最容易犯的错。
+      k: cell?.scope === 'all'
+        ? t('growth:stat_winrate_all', '胜率 · 近 30 天')
+        : t('growth:stat_winrate', '升降级胜率 · 近 30 天'),
+      good: cell?.value != null && cell.value >= 0.5,
     },
     { v: solved === null ? dash : String(solved), k: t('growth:stat_solved', '累计已解题') },
     { v: num(summary?.ranked_total), k: t('growth:stat_ranked', '升降级局 · 累计') },
@@ -160,6 +200,16 @@ const GrowthPage = () => {
             {/* 条子只走**绝对值** —— 它说的是「离下一次变动还有多远」,不是方向。 */}
             <div className="gbar"><span style={{ width: pct(Math.min(1, metric.ratio)) }} /></div>
           </div>
+        )}
+
+        {/* 近 30 天档位走势(共享规范 §5 的左栏顺序:大数 → 进度 → 走势 → 两格)。
+            老云端不回 `rung_trend` 时整块不出现 —— 不画,不是画一条空轴。 */}
+        {summary && trendPoints(summary) && (
+          <RungTrend
+            points={trendPoints(summary)!}
+            days={summary.window_days}
+            placed={placement?.phase === 'placed'}
+          />
         )}
 
         <h3 className="gsec__h">{t('growth:rules_title', '升降的规矩')}</h3>
@@ -208,18 +258,21 @@ const GrowthPage = () => {
             {t('growth:local_note_c', '。账在云端,盒子上这一份可能少几局。')}
           </p>
         )}
+        {/* 胜率的分母比「近 30 天对局」小的时候,差额要说出来 —— 否则 10 局里只算了 2 局的
+            50% 和 10 局全算的 50% 在屏上长得一模一样。 */}
+        {cell && cell.scope === 'all' && cell.unknownGames > 0 && (
+          <p className="setnote" data-testid="growth-unknown-seat">
+            {t('growth:unknown_seat_a', '有 ')}
+            <b>{cell.unknownGames}</b>
+            {t('growth:unknown_seat_b', ' 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。')}
+          </p>
+        )}
+
+        {/* 近一年练棋日历(Fan 2026-09-22):数据条之下、诊断之上,占整栏宽 —— 左栏放不下一年 53 列。 */}
+        <ActivityCalendar activity={activity} failed={activityFailed} />
 
         <div className="gdiag">
-          <div className="panel gsec">
-            <h3>
-              {t('growth:diag_title', '能力诊断')}
-              <span className="wip have">{t('growth:diag_wip', '后端已有 · 界面未接')}</span>
-            </h3>
-            <div className="empty">
-              <h4>{t('growth:diag_empty_h', '样本 0 局')}</h4>
-              <p>{t('growth:diag_empty_p', '诊断要拿已经跑过报告的对局算——报告在后端有,界面还没读(见复盘屏)。够 30 局之前结论会抖,到时候也得把样本量写在旁边。')}</p>
-            </div>
-          </div>
+          <DiagnosisPanel diag={diag} failed={diagFailed} />
 
           <div className="panel gsec" data-testid="growth-by-rung">
             <h3>{t('growth:rung_title', '按对手强度')}</h3>

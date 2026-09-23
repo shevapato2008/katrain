@@ -18,6 +18,11 @@ class FakeCam:
         self.opened = False
         self.closed = False
         self.is_connected = False
+        self.control_calls = []
+        self.controls_effective = True
+        self.initial_exposure = 166.0
+        self.current_auto_exposure = 1.0
+        self.current_exposure = 222.0
         self._frame = np.zeros((8, 8, 3), np.uint8)
 
     def open(self):
@@ -34,6 +39,9 @@ class FakeCam:
 
     def read_frame(self):
         return self._frame.copy()
+
+    def request_controls(self, exposure=None, auto_exposure=None):
+        self.control_calls.append((exposure, auto_exposure))
 
 
 def _svc(camera):
@@ -72,6 +80,19 @@ class TestCaptureService:
         svc = _svc(cam)
         svc.start()
         assert svc.read_frame().shape == (8, 8, 3)
+
+    def test_runtime_controls_and_readbacks_delegate(self):
+        cam = FakeCam()
+        svc = _svc(cam)
+        svc.start()
+
+        svc.request_controls(exposure=222.0, auto_exposure=1.0)
+
+        assert cam.control_calls == [(222.0, 1.0)]
+        assert svc.controls_effective is True
+        assert svc.initial_exposure == 166.0
+        assert svc.current_auto_exposure == 1.0
+        assert svc.current_exposure == 222.0
 
     def test_capture_to_writes_file(self, tmp_path):
         cam = FakeCam()

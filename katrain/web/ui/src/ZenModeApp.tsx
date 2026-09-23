@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, apiPost, type GameState } from './api';
-import { websocketUrl, WS_POLICY_VIOLATION } from './utils/websocketUrl';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from './utils/websocketUrl';
+import { requestFailureKind } from './utils/requestFailure';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
@@ -132,7 +133,10 @@ function ZenModeApp() {
 
         /* 断了要说出来 —— 静默的 1008 会让棋盘停在人类那一手而毫无提示。 */
         ws.onclose = (event) => {
-          if (event.code === WS_POLICY_VIOLATION) {
+          if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+            console.warn('Session is gone on the server');
+            setStatusMessage(SESSION_GONE_MESSAGE);
+          } else if (event.code === WS_POLICY_VIOLATION) {
             console.error("Session WebSocket rejected:", event.reason);
             setStatusMessage(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新`);
           } else if (!event.wasClean) {
@@ -221,9 +225,28 @@ function ZenModeApp() {
       else if (action === 'mistake-prev') data = await API.findMistake(sessionId, 'undo');
       else if (action === 'mistake-next') data = await API.findMistake(sessionId, 'redo');
       
-      if (data) setGameState(data.state);
+      if (data) {
+        // resign can answer Task 2's 200 空回执 (session_gone) instead of a real
+        // SessionResponse. It carries no `.state` and does NOT mean the remote game
+        // ended (real remote resignation is gateway.py:399-420) - writing it into
+        // gameState would put `undefined` on screen.
+        // `'status' in data` alone is the complete discriminant (see GamePage.tsx's
+        // send()/handleTimeExpired() for why `&& data.status === 'session_gone'`
+        // defeats narrowing on the fall-through `data.state` read below).
+        if ('status' in data) {
+          setStatusMessage(SESSION_GONE_MESSAGE);
+          return;
+        }
+        setGameState(data.state);
+      }
     } catch (error) {
       console.error("Action failed", error);
+      // 同一个事实的**第二种**来路:会话没了,`/api/resign` 之外的端点回的是 404。
+      // 上面那条 200 回执已经说了人话,这里以前只有 console.error —— 于是同一件事,
+      // 从这条路来的用户什么也看不到,棋盘就那么停着。两条路说同一句。
+      if (requestFailureKind(error) === 'not_found') {
+        setStatusMessage(SESSION_GONE_MESSAGE);
+      }
     }
   };
 

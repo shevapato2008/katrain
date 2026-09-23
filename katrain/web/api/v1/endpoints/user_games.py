@@ -1,7 +1,7 @@
 """API endpoints for personal game library (user_games) and analysis data."""
 
 import json
-from typing import Optional, List
+from typing import Literal, Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from katrain.web.models import User
@@ -32,6 +32,9 @@ class UserGameCreate(BaseModel):
     move_count: int = 0
     category: str = "game"  # game / position
     game_type: Optional[str] = None
+    # 这个用户坐哪一方。盒子上的局就是 POST 到云端这里写进去的 —— 模型里没有这一格的话,
+    # pydantic 会**静默丢掉**它,云端那行永远是 NULL。算不出(面对面 / 导入)就不传。
+    user_color: Optional[Literal["B", "W"]] = None
     origin_device_id: Optional[str] = None
     event: Optional[str] = None
     round_name: Optional[str] = None
@@ -132,6 +135,7 @@ async def create_user_game(
             move_count=game_in.move_count,
             category=game_in.category,
             game_type=game_in.game_type,
+            user_color=game_in.user_color,
             origin_device_id=game_in.origin_device_id,
             event=game_in.event,
             game_date=game_in.game_date,

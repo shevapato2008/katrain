@@ -1107,9 +1107,8 @@ msgstr "Game End Sound"
 msgid "Pass"
 msgstr "Pass"
 
-#. TODO
 msgid "Close"
-msgstr "Close"
+msgstr "Закрити"
 
 #. TODO
 msgid "Best"
@@ -2321,10 +2320,10 @@ msgid "result:draw"
 msgstr "Нічия"
 
 msgid "result:points_zi"
-msgstr ""
+msgstr "каменів"
 
 msgid "result:points_moku"
-msgstr ""
+msgstr "оч."
 
 msgid "COUNT"
 msgstr "Підрахунок"
@@ -3447,6 +3446,172 @@ msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з �
 msgid "live:loading_match"
 msgstr "Завантаження партії…"
 
+msgid "game:black_resigns"
+msgstr "Чорні здаються"
+
+msgid "game:white_resigns"
+msgstr "Білі здаються"
+
+msgid "game:who_resigns"
+msgstr "Хто здається?"
+
+msgid "game:black_short"
+msgstr "Ч"
+
+msgid "game:white_short"
+msgstr "Б"
+
+msgid "game:black_side"
+msgstr "Чорні"
+
+msgid "game:white_side"
+msgstr "Білі"
+
+msgid "game:clock_timeout"
+msgstr "Час вичерпано"
+
+msgid "game:clock_byo_left"
+msgstr "Бьомі · залишилось {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Бьомі {len}с×{n}"
+
+msgid "game:move_n"
+msgstr "Хід {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " програють за часом"
+
+msgid "game:timeout_win_suffix"
+msgstr " перемагають за часом"
+
+msgid "game:saved_to_history"
+msgstr "Збережено в історії партій"
+
+msgid "game:timeout_check_failed"
+msgstr "Не вдалося підтвердити закінчення часу"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Ще триває аналіз цього ходу, спробуйте порахувати трохи пізніше"
+
+msgid "game:count_err_below_min"
+msgstr "Ще недостатньо ходів, підрахунок поки недоступний"
+
+msgid "game:count_err_game_over"
+msgstr "Ця партія вже завершена"
+
+msgid "game:count_err_network"
+msgstr "Не вдається під'єднатися до сервісу аналізу"
+
+msgid "game:count_err_http"
+msgstr "Не вдалося підрахувати очки ({status}), спробуйте ще раз"
+
+msgid "game:counting"
+msgstr "Підрахунок…"
+
+msgid "game:retry"
+msgstr "Повторити"
+
+msgid "game:exit_failed"
+msgstr "Не вдалося вийти, спробуйте ще раз"
+
+msgid "game:exit_unsaved_title"
+msgstr "Ця партія ще не завершена — вихід без збереження"
+
+msgid "game:keep_playing"
+msgstr "Продовжити гру"
+
+msgid "game:stay_on_board"
+msgstr "Залишитися біля дошки"
+
+msgid "game:exit_unsaved"
+msgstr "Вийти без збереження"
+
+msgid "play:local_needs_login"
+msgstr "Спершу увійдіть · зберігається автоматично після завершення"
+
+msgid "review:no_result_line"
+msgstr "Результат не записано"
+
+msgid "review:row_local"
+msgstr "Локальна партія · Два гравці"
+
+msgid "review:row_local_unnamed"
+msgstr "Локальна партія · Без імен"
+
+msgid "review:row_research"
+msgstr "Архів дослідження"
+
+msgid "game:count_failed"
+msgstr "Підрахунок не завершено"
+
+msgid "game:check_network_retry"
+msgstr "Перевірте мережу і спробуйте ще раз"
+
+msgid "game:both_passed"
+msgstr "Обидва гравці пасували"
+
+msgid "game:exit_confirm_title"
+msgstr "Вийти з цієї партії?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Ця партія ще не завершена — при виході вона не збережеться."
+
+msgid "game:which_side_resigns"
+msgstr "Яка сторона здається?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Суперника буде зараховано переможцем за здачею; ця партія збережеться в "
+"історії ігор."
+
+msgid "local:input_hint_v2"
+msgstr "Фізична дошка лише 19×19 — оберіть 13×13 або 9×9, щоб грати на екрані"
+
+msgid "local:komi_hint"
+msgstr "У партіях з форою комі = 0 — ця група згортається при виборі фори"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Годинник відлічує час на картці гравця · вичерпаний бьоймі — поразка за "
+"часом · без ліміту лише запис партії"
+
+msgid "local:clock_meta_count"
+msgstr "{n} рівнів"
+
+msgid "local:sound_hint_v2"
+msgstr "Той самий перемикач, що й звук ходу в Налаштуваннях · Звук"
+
+msgid "local:note3_a"
+msgstr "На екрані"
+
+msgid "local:note3_b"
+msgstr "немає підказок і оцінки позиції"
+
+msgid "local:note3_c"
+msgstr "; щойно обидва пасують,"
+
+msgid "local:note3_d"
+msgstr "підрахунок виконується автоматично"
+
+msgid "local:note3_e"
+msgstr " статус груп (жива/мертва) визначає рушій."
+
+msgid "local:note3_f"
+msgstr "Ця партія"
+
+msgid "local:note3_g"
+msgstr "лише фіксується, ваш розряд не змінюється"
+
+msgid "local:note3_h"
+msgstr "; вихід посеред партії"
+
+msgid "local:note3_i"
+msgstr "не збереже запис"
+
+msgid "local:note3_j"
+msgstr "."
+
 msgid "vision:offcenter_at"
 msgstr ": камінь стоїть не на перетині"
 
@@ -3465,5 +3630,3231 @@ msgstr "Усе одно зіграти на"
 msgid "vision:offcenter_dismiss"
 msgstr "Я поправлю"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "Камінь ({color}) зміщено: пересуньте його з {from} на {to}"
+
 msgid "review:start_analysis"
 msgstr "Почати аналіз"
+
+msgid "vision:resync_screen_authority"
+msgstr "Скинути розпізнавання · використовувати позицію на екрані"
+
+msgid "Re-sync"
+msgstr "Скинути розпізнавання"
+
+msgid "Back to play"
+msgstr "Назад до гри"
+
+msgid "setup:start"
+msgstr "Почати партію"
+
+msgid "ladder:start"
+msgstr "Почати рейтингову партію"
+
+msgid "play:free_setup_sub"
+msgstr "Налаштування партії · проти ШІ · без рейтингу"
+
+msgid "ladder:setup_sub"
+msgstr "Налаштування партії · рейтингова · аналіз вимкнено"
+
+msgid "local:setup_sub"
+msgstr "Налаштування партії · двоє гравців віч-на-віч"
+
+msgid "game:local_pvp"
+msgstr "Локальна партія"
+
+msgid "setup:game_terms"
+msgstr "Ця партія"
+
+msgid "setup:size"
+msgstr "Дошка"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Китайські правила"
+
+msgid "Japanese rules"
+msgstr "Японські правила"
+
+msgid "AGA rules"
+msgstr "Правила AGA"
+
+msgid "setup:rules_button"
+msgstr "Правила ШІ-турніру"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Китайські правила рахують площу: територія плюс свої камені — ходи у своїй "
+"території нічого не коштують"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Японські правила рахують лише територію — хід у свою територію коштує очко"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"Правила AGA рахують площу, але за кожен пас віддається камінь — результат "
+"збігається з територіальним рахунком"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Корейські правила рахують територію — той самий спосіб, що й японські, але з"
+" іншим комі"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Правила ШІ-турніру: рахунок за площею плюс пів-очка тому, хто першим пасує —"
+" це прибирає різницю в пів-очка. Лише рівні партії."
+
+msgid "setup:ha_even"
+msgstr "На рівних"
+
+msgid "setup:ha_sente"
+msgstr "Чорні перші, без комі"
+
+msgid "setup:ha_reverse"
+msgstr "Зворотне комі"
+
+msgid "setup:ha_free"
+msgstr "Власне комі"
+
+msgid "setup:ha_stones"
+msgstr "{n} каменів"
+
+msgid "setup:komi_derived"
+msgstr "Визначається правилами та форою"
+
+msgid "setup:komi_pick"
+msgstr "Торкніться, щоб змінити комі"
+
+msgid "setup:komi_none"
+msgstr "Без комі"
+
+msgid "setup:komi_sente"
+msgstr "Чорні ходять першими"
+
+msgid "setup:komi_handicap"
+msgstr "Чорні спершу ставлять {n} каменів"
+
+msgid "setup:komi_black_pays"
+msgstr "Чорні віддають"
+
+msgid "setup:komi_white_pays"
+msgstr "Білі віддають"
+
+msgid "setup:komi_points"
+msgstr "{n} очок"
+
+msgid "setup:unit_points"
+msgstr "оч."
+
+msgid "setup:unit_stones"
+msgstr "каменів"
+
+msgid "setup:seat"
+msgstr "Розташування"
+
+msgid "setup:side_black"
+msgstr "Чорні"
+
+msgid "setup:side_white"
+msgstr "Білі"
+
+msgid "setup:side_nigiri"
+msgstr "Нігірі"
+
+msgid "setup:nigiri_blocked"
+msgstr "За фори камені ставлять чорні"
+
+msgid "setup:black_side"
+msgstr "Чорні"
+
+msgid "setup:white_side"
+msgstr "Білі"
+
+msgid "setup:input_where"
+msgstr "Грати на"
+
+msgid "setup:on_screen"
+msgstr "Екран"
+
+msgid "setup:on_board"
+msgstr "Справжня дошка"
+
+msgid "setup:board_only_19"
+msgstr "Справжня дошка — 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Камеру не відкалібровано"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Перемикайтеся між справжньою дошкою та екраном будь-коли — після початку "
+"партії вибір фіксується"
+
+msgid "setup:seat_hint_not19"
+msgstr "Ця партія не 19x19, тож грати можна лише на екрані"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "На цьому пристрої камеру не відкалібровано — граємо на екрані"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Справжня дошка — 19x19; ця партія йде на екрані. Поверніться до 19x19, щоб "
+"знову її використати"
+
+msgid "Untimed"
+msgstr "Без часу"
+
+msgid "setup:time_byo_only"
+msgstr "Лише бійомі 30с x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 хв + 3x30с"
+
+msgid "60 min + 3x30s"
+msgstr "60 хв + 3x30с"
+
+msgid "local:move_sound_short"
+msgstr "Звук каменя"
+
+msgid "On"
+msgstr "Увімк."
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "setup:strength_rung"
+msgstr "Щабель {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} кю"
+
+msgid "setup:rank_dan"
+msgstr "{n} дан"
+
+msgid "setup:strength_up"
+msgstr "На щабель сильніше"
+
+msgid "setup:strength_down"
+msgstr "На щабель слабше"
+
+msgid "setup:strength_meta"
+msgstr "{n} щаблів · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Людиноподібний · фіксується після початку партії"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"Людиноподібний суперник помиляється так, як належить його щаблю; щабель "
+"описує суперника, а не ваш ранг"
+
+msgid "ladder:opponent"
+msgstr "Суперник"
+
+msgid "ladder:fixed_by_box"
+msgstr "Задано пристроєм"
+
+msgid "ladder:terms_fixed"
+msgstr "Нічого з цього змінити не можна"
+
+msgid "ladder:frozen_at_start"
+msgstr "Фіксується в момент початку партії"
+
+msgid "ladder:komi_note"
+msgstr "Щабель виміряно на цій дошці"
+
+msgid "ladder:stake"
+msgstr "Що вирішує ця партія"
+
+msgid "ladder:stake_win_promote"
+msgstr "Перемога · на щабель вище"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Поразка · на щабель нижче"
+
+msgid "ladder:stake_win_score"
+msgstr "Перемога · рахунок {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Поразка · рахунок {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Рахунок +3 підвищує, −3 знижує · зараз {n}"
+
+msgid "local:players"
+msgstr "Гравці"
+
+msgid "local:written_into_sgf"
+msgstr "Записується в кіфу"
+
+msgid "local:agree_first"
+msgstr "Домовтеся до початку гри"
+
+msgid "local:black_role_short"
+msgstr "першим"
+
+msgid "local:white_role_short"
+msgstr "другим"
+
+msgid "local:black_name"
+msgstr "Ім'я чорних"
+
+msgid "local:white_name"
+msgstr "Ім'я білих"
+
+msgid "local:tap_to_type"
+msgstr "Торкніться, щоб ввести"
+
+msgid "local:names_hint"
+msgstr "Залиште порожнім — у кіфу буде просто «Чорні» і «Білі»"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"Годинник іде на картках гравців · вичерпане бійомі — поразка за часом · без "
+"контролю просто ведеться запис"
+
+msgid "setup:note_r2_a"
+msgstr "Ці налаштування "
+
+msgid "setup:note_r2_b"
+msgstr "не можна змінити після початку партії"
+
+msgid "setup:note_r2_c"
+msgstr " — змінити їх посеред партії означає почати іншу; вільні партії "
+
+msgid "setup:note_r2_d"
+msgstr "не впливають на ваш ранг"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Блокується після початку партії"
+
+msgid "Session expired, please sign in again"
+msgstr "Сесія завершилася, увійдіть знову"
+
+msgid "Could not end that game, please retry"
+msgstr "Не вдалося завершити партію, спробуйте ще раз"
+
+msgid "Retry failed, please try again later"
+msgstr "Повтор не вдався, спробуйте пізніше"
+
+msgid "ladder:board_preview"
+msgstr "Попередній перегляд початкової позиції: порожня дошка"
+
+msgid "play:title"
+msgstr "Гра"
+
+msgid "login:box_gate_title"
+msgstr "Увійдіть на головному екрані StellaBox"
+
+msgid "login:box_gate_cta"
+msgstr "На головний екран StellaBox"
+
+msgid "vision:back_settings"
+msgstr "Налаштування"
+
+msgid "vision:board_lost_hint"
+msgstr ""
+"Перевірте, чи не закрита камера та чи не зсунулася дошка; після зсуву "
+"потрібне повторне калібрування"
+
+msgid "vision:calibrate_title"
+msgstr "Калібрування дошки"
+
+msgid "vision:calibrate_sub"
+msgstr "Спершу звільніть дошку · 13 точок: 4 кути + 9 хоші"
+
+msgid "vision:cancel_calibration"
+msgstr "Скасувати калібрування"
+
+msgid "vision:reuse_calibration"
+msgstr "Використати минуле калібрування"
+
+msgid "vision:camera_down"
+msgstr "Камеру не під'єднано · перейшли на сенсорний екран"
+
+msgid "vision:led_down"
+msgstr "LED не під'єднано · підсвічування-підказку вимкнено"
+
+msgid "vision:pose_lost"
+msgstr "Калібрування втрачено · відкалібруйте знову"
+
+msgid "grade:tabs"
+msgstr "Оцінка ходів"
+
+msgid "grade:fold_title"
+msgstr "Оцінка ходів · 7 щаблів"
+
+msgid "grade:match_other"
+msgstr "Інше"
+
+msgid "grade:axis_points_lost_short"
+msgstr "Втрати · оч."
+
+msgid "grade:pick_hint"
+msgstr "Торкніться ходу на графіку, щоб побачити подробиці"
+
+msgid "grade:summary"
+msgstr "Блискучих {a} · Поганих {b}"
+
+msgid "grade:sel_bad"
+msgstr "Хід {n} {m} · {s} · {g} · втрата {x} оч."
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"Хід {n} {m} · {s} · блиск {k} — це перший вибір рушія, якому він сам дав "
+"лише {p}% пріору (що нижче, то яскравіше)"
+
+msgid "grade:truncated_plot"
+msgstr "Малюється не більше {k} на сторону; ще {n} не показано"
+
+msgid "setup:this_game"
+msgstr "Ця партія буде"
+
+msgid "setup:board_preview_handicap"
+msgstr "Попередній перегляд початкової позиції: фора {n} каменів"
+
+msgid "setup:chinese_rules"
+msgstr "Китайські правила"
+
+msgid "setup:even"
+msgstr "На рівних"
+
+msgid "setup:handicap"
+msgstr "Фора"
+
+msgid "setup:handicap_n"
+msgstr "{n} каменів"
+
+msgid "setup:handicap_less"
+msgstr "На камінь менше"
+
+msgid "setup:handicap_more"
+msgstr "На камінь більше"
+
+msgid "setup:input"
+msgstr "Як робити ходи"
+
+msgid "setup:my_side"
+msgstr "Мій колір"
+
+msgid "setup:take_black"
+msgstr "Грати чорними"
+
+msgid "setup:take_white"
+msgstr "Грати білими"
+
+msgid "setup:no_camera_hint"
+msgstr ""
+"На цьому пристрої камеру ще не відкалібровано, тож справжня дошка недоступна"
+
+msgid "report:clear_variation"
+msgstr "Прибрати варіант"
+
+msgid "report:file_read_failed"
+msgstr "Не вдалося прочитати файл, спробуйте ще раз."
+
+msgid "report:import_options"
+msgstr "Спосіб імпорту"
+
+msgid "report:invalid_sgf"
+msgstr "Не вдалося розібрати SGF, перевірте вміст."
+
+msgid "report:library_load_failed"
+msgstr "Не вдалося завантажити кіфу, спробуйте ще раз."
+
+msgid "report:loading_detail"
+msgstr "Завантаження розбору"
+
+msgid "report:not_found"
+msgstr "Розбір не знайдено."
+
+msgid "report:preview_failed"
+msgstr "Не вдалося завантажити попередній перегляд кіфу"
+
+msgid "report:reload"
+msgstr "Перезавантажити"
+
+msgid "report:retry_load"
+msgstr "Повторити завантаження"
+
+msgid "report:retrying"
+msgstr "Повтор…"
+
+msgid "report:search_library"
+msgstr "Шукати в бібліотеці кіфу"
+
+msgid "report:sgf_content"
+msgstr "Вміст SGF"
+
+msgid "report:title_optional"
+msgstr "Назва (необов'язково)"
+
+msgid "report:unknown_type"
+msgstr "Тип невідомий"
+
+msgid "report:variation_preview"
+msgstr "Попередній перегляд варіанта · торкніться дошки, щоб закрити"
+
+msgid "live:title"
+msgstr "Трансляція"
+
+msgid "live:ai"
+msgstr "Поради ШІ"
+
+msgid "live:ai_note_a"
+msgstr "Поради ШІ — "
+
+msgid "live:ai_note_b"
+msgstr "результат обчислення KataGo всередині цієї коробки"
+
+msgid "live:ai_note_c"
+msgstr " — вони жодним чином не пов'язані з тим, що бачать гравці."
+
+msgid "live:as_black"
+msgstr "Чорні"
+
+msgid "live:as_white"
+msgstr "Білі"
+
+msgid "live:back_kifu"
+msgstr "Кіфу"
+
+msgid "live:black_wr"
+msgstr "Чорні {v}%"
+
+msgid "live:ended"
+msgstr "Завершена"
+
+msgid "live:follow"
+msgstr "Стежити за останнім ходом"
+
+msgid "live:load_failed"
+msgstr "Не вдалося завантажити цю партію"
+
+msgid "live:loading"
+msgstr "Завантаження партії"
+
+msgid "live:move_n"
+msgstr "Хід {n}"
+
+msgid "live:moves_title"
+msgstr "Ходи · зростає разом із трансляцією"
+
+msgid "live:no_moves"
+msgstr "У цій партії ще немає ходів"
+
+msgid "live:no_ownership"
+msgstr "Позицію для цього ходу ще не розраховано"
+
+msgid "live:pagebar_sub"
+msgstr "Джерело: {src} · хід {n}"
+
+msgid "live:played"
+msgstr "Хід зроблено"
+
+msgid "live:show"
+msgstr "Показати"
+
+msgid "live:thinking"
+msgstr "Думає"
+
+msgid "live:toggle_numbers"
+msgstr "Номери ходів"
+
+msgid "live:toggle_territory"
+msgstr "Територія"
+
+msgid "settings:nav_account"
+msgstr "Обліковий запис і платформи"
+
+msgid "settings:nav_board"
+msgstr "Справжня дошка"
+
+msgid "settings:nav_language"
+msgstr "Мова"
+
+msgid "settings:nav_move"
+msgstr "Ходи та підказки"
+
+msgid "settings:nav_sound"
+msgstr "Звук"
+
+msgid "settings:ui_language"
+msgstr "Мова інтерфейсу"
+
+msgid "settings:language_sub"
+msgstr "Це налаштування згодом перейде до системних налаштувань"
+
+msgid "settings:auto_advance_sub"
+msgstr "Діє в тренувальному таборі · увімкнено за замовчуванням"
+
+msgid "settings:board_secval"
+msgstr "Камера · калібрування · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "Обліковий запис StellaBox, спільний для всієї коробки"
+
+msgid "settings:box_account_sub"
+msgstr ""
+"Можна грати без входу — результати залишаться на цій коробці; вхід потрібен "
+"лише щоб забрати їх на інший пристрій"
+
+msgid "settings:guest_sub"
+msgstr "Локальний профіль на цій коробці"
+
+msgid "settings:switch_account_at_home"
+msgstr "Змінити обліковий запис на головному екрані"
+
+msgid "settings:sign_in"
+msgstr "Увійти"
+
+msgid "settings:platforms"
+msgstr "Облікові записи платформ"
+
+msgid "settings:platforms_sub"
+msgstr ""
+"Кожна платформа просить різні поля — під'єднуйте їх у міжплатформній грі"
+
+msgid "settings:go_connect"
+msgstr "Під'єднати"
+
+msgid "settings:calibrated"
+msgstr "Відкалібровано від увімкнення"
+
+msgid "settings:not_calibrated"
+msgstr "Ще не відкалібровано"
+
+msgid "settings:start_calib"
+msgstr "Почати калібрування"
+
+msgid "settings:ready"
+msgstr "Готово"
+
+msgid "settings:not_ready"
+msgstr "Не під'єднано"
+
+msgid "settings:on"
+msgstr "Увімк."
+
+msgid "settings:off"
+msgstr "Вимк."
+
+msgid "research:actions"
+msgstr "Дії дослідження"
+
+msgid "research:move_title"
+msgstr "Дослідження · хід {n}"
+
+msgid "research:ai_after_move"
+msgstr "Поради ШІ · після ходу {n}"
+
+msgid "research:analysis_failed"
+msgstr "Цей хід не вдалося проаналізувати"
+
+msgid "research:analyzed_moves"
+msgstr "Проаналізовано ходів"
+
+msgid "research:analyzing_move"
+msgstr "Аналіз цього ходу"
+
+msgid "research:cancel_scan"
+msgstr "Скасувати аналіз"
+
+msgid "research:clear_confirm_title"
+msgstr "Очистити всю дошку?"
+
+msgid "research:clear_confirm_msg"
+msgstr "Усі {n} ходів на дошці буде стерто, скасувати це неможливо."
+
+msgid "research:eta_label"
+msgstr "Залишилося приблизно"
+
+msgid "research:from_kifu"
+msgstr "Бібліотека кіфу"
+
+msgid "research:from_last_game"
+msgstr "Щойно зіграна партія"
+
+msgid "research:from_my_games"
+msgstr "Мої партії"
+
+msgid "research:full_scan"
+msgstr "Аналіз усієї партії"
+
+msgid "research:no_candidates"
+msgstr "ШІ не запропонував ходів-кандидатів"
+
+msgid "research:only_19_supported"
+msgstr "Підтримується лише 19x19; завантажено як 19x19"
+
+msgid "research:progress_lost"
+msgstr ""
+"Прогрес аналізу не читається п'ять разів поспіль — можливо, зв'язок втрачено"
+
+msgid "research:rescan"
+msgstr "Проаналізувати знову"
+
+msgid "research:retry_analysis"
+msgstr "Повторити аналіз"
+
+msgid "research:scan_broke"
+msgstr "Аналіз усієї партії не завершився"
+
+msgid "research:scan_cost"
+msgstr "Усього {n} ходів · по 500 візитів на хід"
+
+msgid "research:scan_failed"
+msgstr "Не вдалося запустити аналіз, спробуйте ще раз"
+
+msgid "research:scan_freeze"
+msgstr "До кінця дошка заблокована; скасувати можна будь-коли"
+
+msgid "research:scan_go"
+msgstr "Почати розрахунок"
+
+msgid "research:session_failed"
+msgstr "Не вдалося створити сесію дослідження, спробуйте ще раз"
+
+msgid "research:user_game_failed"
+msgstr "Не вдалося прочитати цю партію"
+
+msgid "growth:rank_title"
+msgstr "Ранг на цій коробці"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "Без рангу"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "Кваліфікаційні партії"
+
+msgid "growth:metric_placement"
+msgstr "Кваліфікаційні партії"
+
+msgid "growth:placement_done"
+msgstr "Завершено"
+
+msgid "growth:cell_solved"
+msgstr "Розв'язано задач"
+
+msgid "growth:metric_net"
+msgstr "Рахунок"
+
+msgid "growth:stat_ranked"
+msgstr "Рейтингові партії · всього"
+
+msgid "growth:stat_recent"
+msgstr "Партії за останні 30 днів"
+
+msgid "growth:stat_solved"
+msgstr "Усього розв'язано задач"
+
+msgid "growth:stat_winrate"
+msgstr "Відсоток перемог у рейтингу · за 30 днів"
+
+msgid "growth:summary_failed"
+msgstr ""
+"Ці числа не вдалося отримати — це не означає, що ви не грали. Загляньте "
+"пізніше."
+
+msgid "growth:rules_title"
+msgstr "Правила підвищення та зниження"
+
+msgid "growth:rule_up"
+msgstr "Рахунок +3 перемоги підвищує на щабель"
+
+msgid "growth:rule_down"
+msgstr "Рахунок −3 поразки знижує на щабель"
+
+msgid "growth:rule_bounds"
+msgstr "Нижня межа 20 кю · верхня «Понад людину»"
+
+msgid "growth:rung_title"
+msgstr "За силою суперника"
+
+msgid "growth:rung_w"
+msgstr "{n} перемог"
+
+msgid "growth:rung_l"
+msgstr "{n} поразок"
+
+msgid "growth:rung_empty_h"
+msgstr "Поки що немає результатів"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"Повзунок у налаштуваннях партії обирає силу суперника, а не ваш ранг. "
+"Перелічено лише реально зіграні щаблі — без рядків 0–0."
+
+msgid "growth:diag_title"
+msgstr "Діагностика рівня"
+
+msgid "growth:diag_wip"
+msgstr "Бекенд готовий · інтерфейс не під'єднано"
+
+msgid "growth:diag_empty_h"
+msgstr "0 партій у вибірці"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"Діагностика рахується за партіями, для яких уже є звіт — звіти є на бекенді,"
+" інтерфейс їх поки не читає (див. екран розбору). Менше 30 партій — висновок"
+" хитається, тож поруч буде вказано розмір вибірки."
+
+msgid "growth:local_note_a"
+msgstr "Ці числа — "
+
+msgid "growth:local_note_b"
+msgstr "запис цього пристрою"
+
+msgid "growth:local_note_c"
+msgstr ""
+". Журнал зберігається в хмарі; копія на коробці може відставати на кілька "
+"партій."
+
+msgid "game:black"
+msgstr "Чорні"
+
+msgid "game:white"
+msgstr "Білі"
+
+msgid "game:plays_black"
+msgstr "грає чорними"
+
+msgid "game:plays_white"
+msgstr "грає білими"
+
+msgid "game:actions"
+msgstr "Дії в партії"
+
+msgid "game:action_failed"
+msgstr "Не вдалося, спробуйте ще раз"
+
+msgid "game:back_to_play"
+msgstr "Назад до гри"
+
+msgid "game:board_lines"
+msgstr "{n}x{n}"
+
+msgid "game:handicap_n"
+msgstr "фора {n} каменів"
+
+msgid "game:no_handicap"
+msgstr "Без фори"
+
+msgid "game:points_unit"
+msgstr "оч."
+
+msgid "game:captures"
+msgstr "Полонені"
+
+msgid "game:display"
+msgstr "Відображення"
+
+msgid "game:thinking"
+msgstr "Думає"
+
+msgid "game:played"
+msgstr "Хід зроблено"
+
+msgid "game:your_turn"
+msgstr "Ваш хід"
+
+msgid "game:ended"
+msgstr "Партію завершено"
+
+msgid "game:time_left"
+msgstr "Залишилось"
+
+msgid "game:time_up"
+msgstr "Час вичерпано"
+
+msgid "game:untimed"
+msgstr "Без часу"
+
+msgid "game:byo_left"
+msgstr "Бійомі · залишилось {n}"
+
+msgid "game:first_move"
+msgstr "Перший хід"
+
+msgid "game:prev_move"
+msgstr "Попередній хід"
+
+msgid "game:next_move"
+msgstr "Наступний хід"
+
+msgid "game:last_move"
+msgstr "Останній хід"
+
+msgid "game:moves_title"
+msgstr "Ходи · координати перетинів"
+
+msgid "game:no_moves"
+msgstr "У цій партії ще немає ходів"
+
+msgid "game:online_pvp"
+msgstr "Онлайн-партія"
+
+msgid "game:exit_game"
+msgstr "Покинути партію"
+
+msgid "game:leave_keep_game"
+msgstr "Вийти, не здаючись"
+
+msgid "game:resign_confirm_side"
+msgstr "{side} здається?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "Партія триває — {side} здається і виходить?"
+
+msgid "game:count_game_over"
+msgstr "Ця партія вже завершена"
+
+msgid "game:count_min"
+msgstr "Для підрахунку потрібно щонайменше {n} ходів"
+
+msgid "game:count_too_early"
+msgstr "Ходів поки замало для підрахунку"
+
+msgid "game:count_not_your_turn"
+msgstr "Рахувати можна лише у свій хід"
+
+msgid "game:count_position_changed"
+msgstr "Позиція змінилася під час підрахунку, порахуйте знову"
+
+msgid "game:count_no_score"
+msgstr ""
+"Аналіз позиції не завершено, підрахунок поки неможливий — спробуйте пізніше"
+
+msgid "game:count_ranked_unscored"
+msgstr ""
+"Рейтингові партії зараз порахувати не можна (у цій партії немає аналізу "
+"позиції)"
+
+msgid "game:eval_title"
+msgstr "Імовірність перемоги · рідний канал KataGo"
+
+msgid "game:eval_graph"
+msgstr "Динаміка ймовірності перемоги та різниці очок"
+
+msgid "game:eval_black_100"
+msgstr "Чорні 100"
+
+msgid "game:eval_white_100"
+msgstr "Білі 100"
+
+msgid "game:eval_black_lead"
+msgstr "Чорні +{n}"
+
+msgid "game:eval_white_lead"
+msgstr "Білі +{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · проти ШІ"
+
+msgid "game:golaxy_items"
+msgstr "Предмети Golaxy · кожне натискання витрачає один"
+
+msgid "game:golaxy_judge_hint"
+msgstr "Підрахунок лише показує поточну позицію й не завершує партію"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "У партіях із роботом Golaxy поки не можна скасовувати ходи"
+
+msgid "game:engine_ended_no_result"
+msgstr ""
+"Golaxy повернув невідомий сигнал завершення · ця партія лишається без "
+"результату"
+
+msgid "game:connection_dropped"
+msgstr ""
+"Живе з'єднання обірвалося, дошка сама оновлюватися не буде. Натисніть "
+"«Покинути партію» → «Вийти, не здаючись», потім поверніться через "
+"«Продовжити останню партію»"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr ""
+"Повторне калібрування вмикає світлодіоди й потребує зняти всі камені з "
+"дошки. Якщо дошку не рухали, натисніть «Все одно продовжити»"
+
+msgid "game:timeout_failed"
+msgstr "Рішення про прострочення часу не завершилося"
+
+msgid "game:timeout_not_delivered"
+msgstr ""
+"Рішення про прострочення не доставлено — перевірте з'єднання та увійдіть у "
+"партію знову"
+
+msgid "game:unavailable_title"
+msgstr "Цю партію більше не можна відкрити"
+
+msgid "game:unavailable_reason"
+msgstr ""
+"Можливо, коробка перезавантажувалася, партію прибрали після тривалого "
+"простою, або вона належить іншому обліковому запису."
+
+msgid "lobby:hall_title"
+msgstr "Онлайн-лобі"
+
+msgid "lobby:hall_sub"
+msgstr "Грайте з людьми на інших коробках · або заходьте подивитися"
+
+msgid "lobby:loading"
+msgstr "Завантаження…"
+
+msgid "lobby:load_failed"
+msgstr "Лобі недоступне — немає мережі або сервісу"
+
+msgid "lobby:players"
+msgstr "Гравці онлайн"
+
+msgid "lobby:online_count"
+msgstr "{n} онлайн"
+
+msgid "lobby:games_count"
+msgstr "{n} партій"
+
+msgid "lobby:no_players_now"
+msgstr "Зараз онлайн лише ви"
+
+msgid "lobby:no_games_now"
+msgstr "Зараз ніхто не грає"
+
+msgid "lobby:idle"
+msgstr "Вільний"
+
+msgid "lobby:in_game"
+msgstr "У партії"
+
+msgid "lobby:this_is_you"
+msgstr "Це ви"
+
+msgid "lobby:vs"
+msgstr "проти"
+
+msgid "lobby:plays_black"
+msgstr "грає чорними"
+
+msgid "lobby:plays_white"
+msgstr "грає білими"
+
+msgid "lobby:move_no"
+msgstr "Хід {n}"
+
+msgid "lobby:note_a"
+msgstr "Запросити можна того, хто "
+
+msgid "lobby:note_b"
+msgstr ""
+"; тих, хто грає, запросити не можна. Ліворуч партії, що тривають — натисніть"
+" на свою, щоб повернутися."
+
+msgid "lobby:match_mode"
+msgstr "Який тип добору"
+
+msgid "lobby:mode_free"
+msgstr "Вільна партія"
+
+msgid "lobby:mode_rated"
+msgstr "Рейтинговий матч"
+
+msgid "lobby:ladder_name"
+msgstr "Рейтингові партії"
+
+msgid "lobby:rated_why_a"
+msgstr "Для рейтингових матчів потрібно зіграти 5 кваліфікаційних партій у "
+
+msgid "lobby:rated_why_b"
+msgstr " — вам залишилося {n}."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr ", зігравши 5 кваліфікаційних партій."
+
+msgid "lobby:start_match"
+msgstr "Почати добір"
+
+msgid "lobby:cancel_match"
+msgstr "Скасувати добір"
+
+msgid "lobby:matching_title"
+msgstr "Пошук суперника"
+
+msgid "lobby:matching_lead_a"
+msgstr "Сервер поставив вас у чергу на "
+
+msgid "lobby:matching_lead_b"
+msgstr ""
+" — щойно знайдеться суперник, партія почнеться одразу, без підтвердження."
+
+msgid "lobby:matching_tc_free"
+msgstr "Старт при доборі · без рейтингу"
+
+msgid "lobby:matching_tc_rated"
+msgstr "Старт при доборі · рейтингова"
+
+msgid "lobby:waited_a"
+msgstr "Очікування "
+
+msgid "lobby:waited_b"
+msgstr " с"
+
+msgid "lobby:invite_title"
+msgstr "{name} запрошує вас на партію"
+
+msgid "lobby:invite_kind"
+msgstr "Вільна партія · без рейтингу"
+
+msgid "lobby:invite_lead_a"
+msgstr "Прийняття одразу починає партію"
+
+msgid "lobby:invite_lead_b"
+msgstr "; той, хто запрошує, грає чорними."
+
+msgid "lobby:invite_no_decline"
+msgstr ""
+"Відмова лише закриє це вікно — співрозмовник нічого не дізнається; "
+"запрошення спливає за 2 хвилини"
+
+msgid "lobby:invite_expired"
+msgstr "Це запрошення спливло або вже використане — попросіть запросити знову"
+
+msgid "lobby:accept_and_play"
+msgstr "Прийняти й почати"
+
+msgid "lobby:need_login"
+msgstr "Потрібен вхід"
+
+msgid "lobby:gate_title"
+msgstr "Увійдіть, щоб потрапити в онлайн-лобі"
+
+msgid "lobby:gate_why"
+msgstr ""
+"Лобі надсилає ваше ім'я та статус людям на інших коробках, тож працює за "
+"обліковим записом. У гостя його немає — і показувати нічого."
+
+msgid "lobby:gate_fact_k"
+msgstr "Після входу"
+
+msgid "lobby:gate_fact_v"
+msgstr "інші побачать вас у списку й зможуть запросити"
+
+msgid "lobby:gate_fact_note"
+msgstr ""
+"У списку лише ті, хто зараз онлайн: ви там, поки тут, і зникаєте, коли "
+"виходите"
+
+msgid "lobby:gate_rule_a"
+msgstr "Вхід потрібен лише для цього."
+
+msgid "lobby:gate_rule_b"
+msgstr ""
+"Партії з ШІ, локальні партії, тренувальний табір, розбори та кіфу доступні й"
+" гостю."
+
+msgid "lobby:go_login"
+msgstr "Перейти до входу"
+
+msgid "baipu:title"
+msgstr "Розкладка партії"
+
+msgid "baipu:back_kifu"
+msgstr "Кіфу"
+
+msgid "baipu:actions"
+msgstr "Дії розкладки"
+
+msgid "baipu:black"
+msgstr "Чорні"
+
+msgid "baipu:white"
+msgstr "Білі"
+
+msgid "baipu:black_s"
+msgstr "Ч"
+
+msgid "baipu:white_s"
+msgstr "Б"
+
+msgid "baipu:stones_unit"
+msgstr "каменів"
+
+msgid "baipu:which_move"
+msgstr "Номер ходу"
+
+msgid "baipu:board_label"
+msgstr "Дошка розкладки: кружечок показує, куди йде наступний камінь"
+
+msgid "baipu:loading"
+msgstr "Завантаження цього кіфу"
+
+msgid "baipu:load_failed"
+msgstr "Не вдалося прочитати це кіфу"
+
+msgid "baipu:no_sgf"
+msgstr "На цій коробці немає цього кіфу"
+
+msgid "baipu:no_moves"
+msgstr "У цьому кіфу немає ходів"
+
+msgid "baipu:pagebar_sub"
+msgstr "Хід {i} з {n} · знято кадрів: {f}"
+
+msgid "baipu:place_at"
+msgstr "Наступний камінь · {c}"
+
+msgid "baipu:place_none"
+msgstr "На цьому кроці камінь не ставиться"
+
+msgid "baipu:pass"
+msgstr "Пас"
+
+msgid "baipu:led_on"
+msgstr "Вогник горить — поставте {color} камінь на підсвічений перетин"
+
+msgid "baipu:led_down"
+msgstr ""
+"Вогник не горить — натисніть угорі праворуч, щоб запалити, або знайдіть {c} "
+"за координатою"
+
+msgid "baipu:relight"
+msgstr "Запалити знову"
+
+msgid "baipu:legend_black"
+msgstr "Червоний = поставити чорний камінь"
+
+msgid "baipu:legend_white"
+msgstr "Зелений = поставити білий камінь"
+
+msgid "baipu:legend_remove"
+msgstr "Синій = зняти цей камінь"
+
+msgid "baipu:cam_title"
+msgstr "Камера · один кадр на хід"
+
+msgid "baipu:capture_off"
+msgstr "До цього пристрою не під'єднано захоплення"
+
+msgid "baipu:capturing"
+msgstr "Триває зйомка, приберіть руки"
+
+msgid "baipu:capturing_hint"
+msgstr "Рука в кадрі — хід не зніметься й доведеться повторити."
+
+msgid "baipu:hands_off"
+msgstr "Приберіть руки з дошки"
+
+msgid "baipu:confirm"
+msgstr "Підтвердити камінь"
+
+msgid "baipu:confirm_done_reason"
+msgstr "Це кіфу вже розкладено до кінця"
+
+msgid "baipu:failed_title"
+msgstr "Цей хід не знято"
+
+msgid "baipu:failed_hint"
+msgstr "Залиште камінь на місці — натисніть «Підтвердити камінь» ще раз"
+
+msgid "baipu:failed_hint_geometry"
+msgstr ""
+"Дошка більше не збігається — відкалібруйте в налаштуваннях; повторне "
+"натискання не допоможе"
+
+msgid "baipu:frames_n"
+msgstr "Знято кадрів: {n}"
+
+msgid "baipu:no_frame_yet"
+msgstr "Кадри ще не збережено"
+
+msgid "baipu:latest_saved"
+msgstr "Останнє збереження {f}"
+
+msgid "baipu:removed_n"
+msgstr "Знято каменів цим ходом: {n}"
+
+msgid "baipu:removal_title"
+msgstr "Зніміть {n} захоплених каменів"
+
+msgid "baipu:removal_hint"
+msgstr ""
+"Ті, що світяться синім — захоплені камені знімають руками; потім натисніть "
+"«Знято»"
+
+msgid "baipu:removed_done"
+msgstr "Знято каменів: {n}"
+
+msgid "baipu:moves_title"
+msgstr "Вже розкладено"
+
+msgid "baipu:moves_value"
+msgstr "{k} з {n}"
+
+msgid "baipu:undo"
+msgstr "Повернути останній хід"
+
+msgid "baipu:undo_ask"
+msgstr "Повернути останній хід?"
+
+msgid "baipu:undo_body"
+msgstr ""
+"Спершу зніміть щойно поставлений камінь (і поверніть зняті), потім натисніть"
+" «Повернено»."
+
+msgid "baipu:undo_done"
+msgstr "Повернено"
+
+msgid "baipu:undo_reason"
+msgstr "Перший камінь ще не поставлено"
+
+msgid "baipu:finish"
+msgstr "Завершити"
+
+msgid "baipu:finish_reason"
+msgstr "Залишилося розкласти {n} ходів"
+
+msgid "baipu:done_title"
+msgstr "Це кіфу розкладено повністю"
+
+msgid "baipu:done_hint"
+msgstr "Усього {n} ходів · знято кадрів: {f}"
+
+msgid "baipu:restart"
+msgstr "Почати спочатку"
+
+msgid "baipu:resume"
+msgstr "Продовжити розкладку"
+
+msgid "baipu:resume_ask"
+msgstr "Продовжити з минулого разу?"
+
+msgid "baipu:resume_body"
+msgstr ""
+"Минулого разу ви дійшли до ходу {n}. Почавши знову, ви перезапишете вже "
+"зняті кадри."
+
+msgid "baipu:exit"
+msgstr "Вийти"
+
+msgid "baipu:exit_ask"
+msgstr "Вийти з розкладки?"
+
+msgid "baipu:exit_body"
+msgstr "Прогрес збережено — зможете продовжити, коли повернетесь."
+
+msgid "baipu:drift_corrected"
+msgstr "Дошка зсунулася; виправлено автоматично"
+
+msgid "baipu:drift_frozen"
+msgstr "Геометрію не коригували"
+
+msgid "baipu:drift_stale"
+msgstr "Цей кадр не вдалося перекоригувати, використано попередню геометрію"
+
+msgid "baipu:drift_word_corrected"
+msgstr "Виправлено"
+
+msgid "baipu:drift_word_frozen"
+msgstr "Не виправлено"
+
+msgid "baipu:drift_word_stale"
+msgstr "Взято попередню"
+
+msgid "tsumego:loadingTitle"
+msgstr "Задачі"
+
+msgid "tsumego:actions"
+msgstr "Дії із задачею"
+
+msgid "tsumego:allProblems"
+msgstr "Усі задачі"
+
+msgid "tsumego:autoAdvance"
+msgstr "Переходити до наступної задачі після правильної відповіді"
+
+msgid "tsumego:backToUnit"
+msgstr "Назад до блоку"
+
+msgid "tsumego:backToWrong"
+msgstr "До помилок"
+
+msgid "tsumego:bankEmpty"
+msgstr "У банку задач поки порожньо"
+
+msgid "tsumego:category_unit"
+msgstr "видів"
+
+msgid "tsumego:chooseByLevel"
+msgstr "Вибір за силою"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "Хмарний банк задач недоступний"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr ""
+"Банк задач у хмарі, на коробці нічого не зберігається. Натисніть "
+"«Повторити», коли мережа або хмара повернуться."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr ""
+"Банк задач у хмарі, на коробці нічого не зберігається. Поверніться й зайдіть"
+" знову, коли мережа або хмара відновляться."
+
+msgid "tsumego:kyuRanks"
+msgstr "Кю"
+
+msgid "tsumego:danRanks"
+msgstr "Дан"
+
+msgid "tsumego:rankBoundary"
+msgstr "Межа між кю та даном"
+
+msgid "tsumego:dao"
+msgstr "задач"
+
+msgid "tsumego:levelsUnit"
+msgstr "щаблів"
+
+msgid "tsumego:goCalibrate"
+msgstr "До калібрування"
+
+msgid "tsumego:greetSub"
+msgstr "Оцінка одразу при ході — хибний хід тут же скасовується"
+
+msgid "tsumego:isFirst"
+msgstr "Це перша задача"
+
+msgid "tsumego:lastTimeShort"
+msgstr "Минулого разу"
+
+msgid "tsumego:loadingProblem"
+msgstr "Завантаження задачі…"
+
+msgid "tsumego:problemLoadError"
+msgstr "Не вдалося завантажити цю задачу"
+
+msgid "tsumego:modes"
+msgstr "Режим"
+
+msgid "tsumego:next"
+msgstr "Наступна задача"
+
+msgid "tsumego:prev"
+msgstr "Попередня задача"
+
+msgid "tsumego:noMoveYet"
+msgstr "Ходу ще немає"
+
+msgid "tsumego:noSequence"
+msgstr ""
+"Номери задач цього виду не прочиталися — «назад/вперед» поки недоступні"
+
+msgid "tsumego:noWrong"
+msgstr "У цьому виді зараз немає розв'язаних неправильно задач"
+
+msgid "tsumego:physicalBoard"
+msgstr "Справжня дошка"
+
+msgid "tsumego:physClear"
+msgstr "Звільніть дошку"
+
+msgid "tsumego:physClearLeft"
+msgstr " (залишилось {n})"
+
+msgid "tsumego:physConnecting"
+msgstr "Під'єднуємо камеру та модель розпізнавання, зачекайте…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr ""
+"Для справжньої дошки спершу потрібно підтвердити калібрування (і знову після"
+" перезапуску служби)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "Калібрування дошки більше не дійсне, відкалібруйте знову"
+
+msgid "tsumego:physNeed19"
+msgstr "Справжня дошка підтримує лише задачі 19x19"
+
+msgid "tsumego:physNoCamera"
+msgstr "Камеру не виявлено / службу зору вимкнено"
+
+msgid "tsumego:physNoLed"
+msgstr "LED не під'єднано, дотримуйтесь підказок на екрані."
+
+msgid "tsumego:physRemove"
+msgstr "Неправильно: зніміть {n} каменів (синє світло)"
+
+msgid "tsumego:physRestore"
+msgstr " і поверніть {n} знятих каменів (червоне / зелене світло)"
+
+msgid "tsumego:physReply"
+msgstr ""
+"Розставте камені за підсвіткою дошки (відповідь / взяття), щоб дошка й екран"
+" збіглися."
+
+msgid "tsumego:physVerify"
+msgstr ""
+"Перевіряємо, чи збігається дошка із задачею — поправте камені за підсвіткою."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr "Поставте чорний камінь у точку розв'язку — дошка розпізнає його сама"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr "Поставте білий камінь у точку розв'язку — дошка розпізнає його сама"
+
+msgid "tsumego:preparingBoard"
+msgstr "Підготовка"
+
+msgid "tsumego:progressUnread"
+msgstr "Не вдалося прочитати історію розв'язань"
+
+msgid "tsumego:progressUnreadBody"
+msgstr ""
+"Без історії розв'язань не можна сказати, які задачі цього виду ви зробили "
+"неправильно. Натисніть «Повторити», коли мережа повернеться."
+
+msgid "tsumego:removeAt"
+msgstr "Зняти {coord}"
+
+msgid "tsumego:setupDone"
+msgstr "Дошка готова · ваш хід"
+
+msgid "tsumego:setupExtra"
+msgstr ""
+"На дошці {n} зайвих або не того кольору каменів — зніміть їх (на екрані ✕, "
+"на дошці блимає білим)"
+
+msgid "tsumego:setupMatched"
+msgstr "Збіглося каменів: {matched}/{total}"
+
+msgid "tsumego:setupSkip"
+msgstr "Пропустити розстановку"
+
+msgid "tsumego:setupStageBlack"
+msgstr "Розставте чорні камені"
+
+msgid "tsumego:setupStageWhite"
+msgstr "Розставте білі камені"
+
+msgid "tsumego:solvedInCategory"
+msgstr "Розв'язано в цьому виді"
+
+msgid "tsumego:solvedShort"
+msgstr "Правильно"
+
+msgid "tsumego:specializedPractice"
+msgstr "Цільова практика"
+
+msgid "tsumego:these_n_problems"
+msgstr "ці {n} задач"
+
+msgid "tsumego:thisProblem"
+msgstr "ця задача"
+
+msgid "tsumego:tries_n"
+msgstr "{n} спроб"
+
+msgid "tsumego:tryModeShort"
+msgstr "Спробувати"
+
+msgid "tsumego:undoMove"
+msgstr "Повернути хід"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr ""
+"На справжній дошці хід повернути не можна; щоб почати знову, натисніть "
+"«Розставити знову»"
+
+msgid "tsumego:unitUnknown"
+msgstr "цей блок"
+
+msgid "tsumego:unit_n"
+msgstr "Блок {n}"
+
+msgid "tsumego:unit_range"
+msgstr "У цьому виді всього {total} задач, тож блоків лише {units}."
+
+msgid "tsumego:unit_size"
+msgstr "{n} задач у блоці"
+
+msgid "tsumego:unit_total"
+msgstr "{n} задач"
+
+msgid "tsumego:wrongProgress"
+msgstr "Помилки · {i} з {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "Помилки, задача {n}"
+
+msgid "tsumego:wrongSet"
+msgstr "Помилки"
+
+msgid "tsumego:wrongShort"
+msgstr "Неправильно"
+
+msgid "tsumego:wrongState"
+msgstr "Була помилка"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "Помилилися й ще не розв'язали"
+
+msgid "tsumego:wrong_now"
+msgstr "Зараз {n}"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} задач"
+
+msgid "tsumego:yourLevel"
+msgstr "Ваш рівень"
+
+msgid "tsumego:yourMoves"
+msgstr "Ваші ходи"
+
+msgid "tsumego:problem_no"
+msgstr "Задача {n}"
+
+msgid "kifu:title"
+msgstr "Кіфу"
+
+msgid "kifu:back_kifu"
+msgstr "Кіфу"
+
+msgid "kifu:greet_a"
+msgstr "Чужі "
+
+msgid "kifu:greet_b"
+msgstr "партії"
+
+msgid "kifu:greet_sub"
+msgstr "Відомі партії, професійні трансляції та розкладка на справжній дошці"
+
+msgid "kifu:famous_records"
+msgstr "Відомі партії"
+
+msgid "kifu:search_records"
+msgstr "Шукати кіфу"
+
+msgid "kifu:search_sub"
+msgstr "Одне поле пошуку, нечіткий збіг"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "Пошук за гравцем, турніром або роком"
+
+msgid "kifu:searching"
+msgstr "Пошук"
+
+msgid "kifu:no_results_cn"
+msgstr "Відповідних кіфу немає"
+
+msgid "kifu:no_results_hint"
+msgstr "Спробуйте іншого гравця, турнір або рік."
+
+msgid "kifu:list_failed"
+msgstr "Не вдалося прочитати бібліотеку кіфу"
+
+msgid "kifu:pro_live"
+msgstr "Професійні трансляції"
+
+msgid "kifu:live_now"
+msgstr "Триває зараз"
+
+msgid "kifu:not_started"
+msgstr "Не почалася"
+
+msgid "kifu:ended"
+msgstr "Завершена"
+
+msgid "kifu:place_on_board"
+msgstr "Розкласти на справжній дошці"
+
+msgid "kifu:place_sub"
+msgstr "Підсвічування вказує хід за ходом"
+
+msgid "kifu:import_sgf"
+msgstr "Імпорт SGF"
+
+msgid "kifu:import_sub"
+msgstr "Локальний файл — працює й офлайн"
+
+msgid "kifu:bad_sgf"
+msgstr "Це не коректний файл SGF"
+
+msgid "kifu:read_failed"
+msgstr "Не вдалося прочитати файл"
+
+msgid "kifu:recent"
+msgstr "Нещодавно розкладені"
+
+msgid "kifu:on_this_box"
+msgstr "Зберігається на цій коробці"
+
+msgid "kifu:no_recent"
+msgstr "На цій коробці ще нічого не розкладали"
+
+msgid "kifu:no_recent_hint"
+msgstr ""
+"Виберіть згори або імпортуйте SGF — вибране кіфу зберігається повністю на "
+"коробці, і його можна дорозкласти офлайн."
+
+msgid "kifu:cache_gone"
+msgstr "Локальна копія цього кіфу зникла — виберіть його знову"
+
+msgid "kifu:cannot_start"
+msgstr "Це розкласти не можна"
+
+msgid "kifu:done_tag"
+msgstr "Розкладено повністю"
+
+msgid "kifu:placed_all"
+msgstr "Готово"
+
+msgid "kifu:placed_at"
+msgstr "До ходу "
+
+msgid "kifu:resume_at"
+msgstr "Минулого разу до ходу "
+
+msgid "kifu:resume"
+msgstr "Продовжити"
+
+msgid "kifu:resume_baipu"
+msgstr "Продовжити розкладку"
+
+msgid "kifu:resume_hint"
+msgstr "Підсвічування вкаже, куди ставити наступний камінь"
+
+msgid "kifu:keep_placing"
+msgstr "Продовжити розкладати"
+
+msgid "kifu:detail_actions"
+msgstr "Що можна зробити з цією партією"
+
+msgid "kifu:replay"
+msgstr "Покрокове відтворення"
+
+msgid "kifu:to_research"
+msgstr "Відкрити в дослідженні"
+
+msgid "kifu:board_label"
+msgstr "Дошка відтворення"
+
+msgid "kifu:board_lines"
+msgstr "ліній"
+
+msgid "kifu:handicap_pre"
+msgstr "Фора "
+
+msgid "kifu:handicap_unit"
+msgstr " каменів"
+
+msgid "kifu:komi_black"
+msgstr "Чорні віддають"
+
+msgid "kifu:komi_unit"
+msgstr " оч."
+
+msgid "kifu:games_unit"
+msgstr "партій"
+
+msgid "kifu:move_ordinal"
+msgstr "Хід "
+
+msgid "kifu:total_prefix"
+msgstr "з "
+
+msgid "kifu:versus"
+msgstr "проти"
+
+msgid "kifu:source_prefix"
+msgstr "Джерело: "
+
+msgid "kifu:untitled_game"
+msgstr "Партія без назви"
+
+msgid "kifu:whole_game"
+msgstr "Уся партія"
+
+msgid "kifu:moves_title"
+msgstr "Ходи · координати перетинів"
+
+msgid "kifu:no_moves"
+msgstr "У цьому кіфу немає ходів"
+
+msgid "kifu:need_sgf"
+msgstr "Кіфу цієї партії ще не отримано"
+
+msgid "kifu:load_failed"
+msgstr "Не вдалося прочитати цю партію"
+
+msgid "kifu:loading_this_game"
+msgstr "Завантаження партії"
+
+msgid "kifu:loading_hint"
+msgstr "І кіфу, і покроковий журнал беруться з сервера."
+
+msgid "kifu:retry"
+msgstr "Повторити"
+
+msgid "kifu:pass"
+msgstr "Пас"
+
+msgid "kifu:to_start"
+msgstr "На початок"
+
+msgid "kifu:to_end"
+msgstr "У кінець"
+
+msgid "kifu:prev_move"
+msgstr "Попередній хід"
+
+msgid "kifu:next_move"
+msgstr "Наступний хід"
+
+msgid "kifu:prev_page"
+msgstr "Попередня сторінка"
+
+msgid "kifu:next_page"
+msgstr "Наступна сторінка"
+
+msgid "kifu:collapsed"
+msgstr "Згорнуто"
+
+msgid "kifu:expanded"
+msgstr "Розгорнуто"
+
+msgid "kifu:today"
+msgstr "сьогодні"
+
+msgid "kifu:yesterday"
+msgstr "вчора"
+
+msgid "kifu:day_before"
+msgstr "позавчора"
+
+msgid "review:back_review"
+msgstr "Розбір"
+
+msgid "review:you"
+msgstr "Ви"
+
+msgid "review:black"
+msgstr "Чорні"
+
+msgid "review:white"
+msgstr "Білі"
+
+msgid "review:win"
+msgstr "перемога"
+
+msgid "review:lose"
+msgstr "поразка"
+
+msgid "review:by_resign"
+msgstr "здачею"
+
+msgid "review:by_time"
+msgstr "за часом"
+
+msgid "review:by_forfeit"
+msgstr "відмовою"
+
+msgid "review:void_result"
+msgstr "Ця партія лишилася без результату"
+
+msgid "review:unfinished_line"
+msgstr "Вийшли після ходу {n}"
+
+msgid "review:sec_games"
+msgstr "Минулі партії"
+
+msgid "review:all_games"
+msgstr "Усього {n} партій"
+
+msgid "review:local_games"
+msgstr "{n} на цій коробці"
+
+msgid "review:facing_games"
+msgstr "{n} віч-на-віч"
+
+msgid "review:matched_games"
+msgstr "Знайдено {n}"
+
+msgid "review:filter_label"
+msgstr "Фільтрувати партії за джерелом"
+
+msgid "review:filter_all"
+msgstr "Усі"
+
+msgid "review:filter_local"
+msgstr "Віч-на-віч"
+
+msgid "review:search_toggle"
+msgstr "Фільтр і пошук минулих партій"
+
+msgid "review:list_loading"
+msgstr "Завантаження ваших партій"
+
+msgid "review:list_failed"
+msgstr "Не вдалося прочитати список партій"
+
+msgid "review:no_games"
+msgstr "Зіграних партій поки немає"
+
+msgid "review:no_games_hint"
+msgstr ""
+"Завершена партія записується сюди автоматично; нижче можна імпортувати SGF."
+
+msgid "review:no_local_games"
+msgstr "Партій віч-на-віч поки немає"
+
+msgid "review:no_local_games_hint"
+msgstr ""
+"Партії, де двоє грають на одній коробці («Гра · Двоє»), записуються тут."
+
+msgid "review:no_match"
+msgstr "Відповідних партій немає"
+
+msgid "review:no_match_hint"
+msgstr "Спробуйте інше ім'я гравця або турніру."
+
+msgid "review:row_ai"
+msgstr "Проти ШІ"
+
+msgid "review:row_human"
+msgstr "Людина проти людини"
+
+msgid "review:row_ranked"
+msgstr "Рейтингова партія"
+
+msgid "review:row_import"
+msgstr "Імпортоване кіфу"
+
+msgid "review:row_library"
+msgstr "Бібліотека кіфу"
+
+msgid "review:row_vs"
+msgstr "проти"
+
+msgid "review:rail_title"
+msgstr "Ця партія"
+
+msgid "review:rail_none"
+msgstr "Партію ще не вибрано"
+
+msgid "review:rail_board"
+msgstr "Фінальна позиція вибраної партії"
+
+msgid "review:board_failed"
+msgstr "Не вдалося прочитати кіфу цієї партії"
+
+msgid "review:sec_winrate"
+msgstr "Імовірність перемоги в цій партії"
+
+msgid "review:black_winrate"
+msgstr "Імовірність перемоги чорних"
+
+msgid "review:black_lead"
+msgstr "Чорні попереду"
+
+msgid "review:perspective"
+msgstr "З погляду {color}"
+
+msgid "review:plot_label"
+msgstr "Імовірність перемоги за ходами — згори чорні, знизу білі"
+
+msgid "review:plot_pick_label"
+msgstr "Імовірність перемоги за ходами — натисніть, щоб перейти до ходу"
+
+msgid "review:plot_loading"
+msgstr "Завантаження звіту щодо цієї партії"
+
+msgid "review:plot_pick"
+msgstr "Виберіть партію нижче"
+
+msgid "review:plot_thin"
+msgstr "Ходи, які звіт ще не порахував"
+
+msgid "review:plot_unanalyzed"
+msgstr ""
+"Цю партію ще не проаналізовано — виберіть рівень у «Створити звіт» нижче"
+
+msgid "review:sec_report"
+msgstr "Створити звіт"
+
+msgid "review:two_tiers"
+msgstr "Два рівні: 500 / 2000 візитів"
+
+msgid "review:tier_standard"
+msgstr "Стандарт"
+
+msgid "review:tier_standard_sub"
+msgstr "500 візитів на хід"
+
+msgid "review:tier_deep"
+msgstr "Глибокий"
+
+msgid "review:tier_deep_sub"
+msgstr "2000 візитів на хід · учетверо повільніше"
+
+msgid "review:visits_each"
+msgstr "{n} візитів на хід"
+
+msgid "review:analyzed_progress"
+msgstr "Проаналізовано {a} з {b} ходів"
+
+msgid "review:resume_analysis"
+msgstr "Продовжити аналіз"
+
+msgid "review:recompute"
+msgstr "Перерахувати"
+
+msgid "review:recompute_failed"
+msgstr "Перерахунок не пройшов"
+
+msgid "review:refresh_failed"
+msgstr "Оновлення не пройшло"
+
+msgid "review:no_task"
+msgstr "Для цієї партії ще немає завдання звіту"
+
+msgid "review:tasks_failed"
+msgstr "Із завданнями звіту щось пішло не так"
+
+msgid "review:tag_analyzed"
+msgstr "Проаналізована"
+
+msgid "review:tag_unanalyzed"
+msgstr "Не проаналізована"
+
+msgid "review:cell_unanalyzed"
+msgstr "Не проаналізована"
+
+msgid "review:tag_partial"
+msgstr "Пораховано лише {a}/{b}"
+
+msgid "review:tag_running"
+msgstr "Аналіз {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "Аналіз не вдався"
+
+msgid "review:tag_unfinished"
+msgstr "Не завершена"
+
+msgid "review:failure_bad_sgf"
+msgstr "Не вдалося прочитати це кіфу"
+
+msgid "review:failure_no_credits"
+msgstr "Недостатньо кредитів"
+
+msgid "review:failure_not_found"
+msgstr "Його вже немає"
+
+msgid "review:failure_offline"
+msgstr "Хмара тимчасово недоступна"
+
+msgid "review:moves_failed"
+msgstr "Не вдалося прочитати звіт"
+
+msgid "review:detail_failed"
+msgstr "Не вдалося прочитати цей звіт"
+
+msgid "review:open_report"
+msgstr "Відкрити звіт"
+
+msgid "review:delete_game"
+msgstr "Видалити"
+
+msgid "review:to_research"
+msgstr "Відкрити в дослідженні"
+
+msgid "review:toggles"
+msgstr "Відображення"
+
+msgid "review:accuracy"
+msgstr "Точність"
+
+msgid "review:brilliants"
+msgstr "Блискучі ходи"
+
+msgid "review:mistakes"
+msgstr "Помилки"
+
+msgid "review:took"
+msgstr "зайняло {d}"
+
+msgid "review:import_card"
+msgstr "Імпортувати кіфу для розбору"
+
+msgid "review:import_card_sub"
+msgstr "Локальний SGF або бібліотека кіфу"
+
+msgid "platform:platforms"
+msgstr "Платформи"
+
+msgid "platform:back_to_platforms"
+msgstr "Міжплатформно"
+
+msgid "platform:connect_sub"
+msgstr "Під'єднайте зовнішній го-сервер і грайте на цій справжній дошці"
+
+msgid "platform:connected"
+msgstr "Під'єднано"
+
+msgid "platform:disconnected"
+msgstr "Не під'єднано"
+
+msgid "platform:what_you_get"
+msgstr "Після під'єднання"
+
+msgid "platform:get_board"
+msgstr "Грати на цій справжній дошці"
+
+msgid "platform:get_board_sub"
+msgstr "Поставлений камінь і є вашим ходом — суперник бачить той самий"
+
+msgid "platform:get_kifu"
+msgstr "Кіфу зберігається автоматично"
+
+msgid "platform:get_kifu_sub"
+msgstr "Потрапляє в бібліотеку кіфу і може бути надіслане на розбір"
+
+msgid "platform:get_rank"
+msgstr "Ваш ранг на цій коробці не змінюється"
+
+msgid "platform:get_rank_sub"
+msgstr "Результати там ідуть лише в журнал тієї платформи"
+
+msgid "platform:icon_board"
+msgstr "Дошка"
+
+msgid "platform:icon_kifu"
+msgstr "Кіфу"
+
+msgid "platform:icon_rank"
+msgstr "Ранг"
+
+msgid "platform:sign_in_to"
+msgstr "Вхід · {name}"
+
+msgid "platform:logging_in"
+msgstr "Виконується вхід…"
+
+msgid "platform:login_failed"
+msgstr "Вхід не вдався"
+
+msgid "platform:logout"
+msgstr "Вийти"
+
+msgid "platform:logout_ask"
+msgstr "Від'єднати {name}?"
+
+msgid "platform:logout_body"
+msgstr ""
+"Ця коробка більше не буде під цим обліковим записом. Наступного разу "
+"доведеться увійти знову."
+
+msgid "platform:pw_fields"
+msgstr "Ім'я користувача + пароль"
+
+msgid "platform:pw_note"
+msgstr "Надсилається лише тій платформі й не зберігається на коробці"
+
+msgid "platform:user_note"
+msgstr "Ім'я облікового запису на тому боці, не обліковий запис коробки"
+
+msgid "platform:sms_fields"
+msgstr "Номер телефону + код"
+
+msgid "platform:phone_note"
+msgstr "Потрібен лише щоб отримати від платформи ключ входу"
+
+msgid "platform:sms_get"
+msgstr "Отримати код"
+
+msgid "platform:sms_again"
+msgstr "Повторити через {n} с"
+
+msgid "platform:sms_failed"
+msgstr "Код не вдалося надіслати"
+
+msgid "platform:need_phone"
+msgstr "Спершу введіть номер телефону"
+
+msgid "platform:code_note"
+msgstr "Шість цифр · дійсний 60 секунд"
+
+msgid "platform:lobby_title"
+msgstr "{name} · лобі"
+
+msgid "platform:lobby_sub"
+msgstr "Киньте комусь виклик або дайте платформі підібрати суперника"
+
+msgid "platform:enter_lobby"
+msgstr "Увійти в лобі"
+
+msgid "platform:enter_engine"
+msgstr "Грати з ШІ"
+
+msgid "platform:no_play_yet"
+msgstr "Грати поки не можна"
+
+msgid "platform:cap_live"
+msgstr "Гра в реальному часі"
+
+msgid "platform:cap_engine"
+msgstr "Проти ШІ"
+
+msgid "platform:cap_automatch"
+msgstr "Автодобір"
+
+msgid "platform:cap_rooms"
+msgstr "Кімнати"
+
+msgid "platform:find_by_name"
+msgstr "Знайти за ім'ям користувача"
+
+msgid "platform:find_hint"
+msgstr "Введіть і натисніть Enter; немає результату — такої людини там немає"
+
+msgid "platform:results"
+msgstr "Знайдені гравці"
+
+msgid "platform:no_such_player"
+msgstr "Там немає такої людини"
+
+msgid "platform:search_first"
+msgstr ""
+"Введіть ім'я й натисніть Enter або дайте платформі підібрати суперника"
+
+msgid "platform:users_failed"
+msgstr "Не вдалося отримати список гравців з платформи"
+
+msgid "platform:idle"
+msgstr "Вільний"
+
+msgid "platform:in_game"
+msgstr "У партії"
+
+msgid "platform:challenge"
+msgstr "Виклик"
+
+msgid "platform:challenge_terms"
+msgstr "Надіслати виклик"
+
+msgid "platform:challenge_ask"
+msgstr "Викликати {name}?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19x19 · китайські правила · рейтингова."
+
+msgid "platform:challenge_ask_tail"
+msgstr ""
+"Після надсилання відкликати не можна; якщо приймуть, гратимете на {name}, а "
+"не тут."
+
+msgid "platform:challenge_send"
+msgstr "Надіслати виклик"
+
+msgid "platform:challenge_sent"
+msgstr "Виклик надіслано. Якщо приймуть, гратимете на {name}, а не тут."
+
+msgid "platform:challenge_failed"
+msgstr "Виклик не вдалося надіслати"
+
+msgid "platform:automatch"
+msgstr "Автодобір"
+
+msgid "platform:automatch_body"
+msgstr "Нехай {name} підбере суперника"
+
+msgid "platform:automatch_hint"
+msgstr ""
+"Черга на боці {name}. Після добору партія сюди не повернеться — продовжите "
+"на {name}."
+
+msgid "platform:automatch_start"
+msgstr "Почати добір"
+
+msgid "platform:automatch_cancel"
+msgstr "Скасувати добір"
+
+msgid "platform:automatch_failed"
+msgstr "Добір не запустився"
+
+msgid "platform:seeking"
+msgstr "Пошук суперника"
+
+msgid "platform:engine_title"
+msgstr "{name} · проти ШІ"
+
+msgid "platform:engine_sub"
+msgstr "Налаштування партії · не впливає на ранг коробки"
+
+msgid "platform:opponent"
+msgstr "Суперник"
+
+msgid "platform:rung_n"
+msgstr "Щабель {i} з {n}"
+
+msgid "platform:stronger"
+msgstr "Сильніший суперник"
+
+msgid "platform:weaker"
+msgstr "Слабший суперник"
+
+msgid "platform:levels_from"
+msgstr "{n} щаблів від {name}"
+
+msgid "platform:levels_failed"
+msgstr "Не вдалося отримати рівні сили з платформи"
+
+msgid "platform:display_elo"
+msgstr "Показаний Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "приблизно {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "Ранг належить {name}"
+
+msgid "platform:terms_fixed"
+msgstr "Умови зафіксовані"
+
+msgid "platform:terms_body"
+msgstr "Китайські правила · рейтингова"
+
+msgid "platform:terms_hint"
+msgstr "Ці три тут не вибираються — саме це й надсилається"
+
+msgid "platform:only_19"
+msgstr "{name} дає лише 19x19 · китайські правила"
+
+msgid "platform:fixed"
+msgstr "Фіксовано"
+
+msgid "platform:untimed"
+msgstr "Без часу"
+
+msgid "platform:nigiri"
+msgstr "Нігірі"
+
+msgid "platform:black_first"
+msgstr "Чорні перші, без комі"
+
+msgid "platform:handicap_range"
+msgstr "{n} щаблів · на рівних / чорні перші / 2 – 9 каменів"
+
+msgid "platform:komi_0"
+msgstr "Без комі"
+
+msgid "platform:komi_75"
+msgstr "Чорні віддають 7,5 очка"
+
+msgid "platform:komi_n"
+msgstr "Чорні віддають {n} каменів"
+
+msgid "platform:summary_note"
+msgstr ""
+"Комі йде за форою і не є окремою опцією. Результати йдуть лише в журнал "
+"{name}."
+
+msgid "tutorial:title_cn"
+msgstr "Курси"
+
+msgid "tutorial:categories_cn"
+msgstr "Категорії"
+
+msgid "tutorial:greet_sub"
+msgstr ""
+"Бекенд складається з п'яти шарів; контент не створюється на цій коробці"
+
+msgid "tutorial:loading_cn"
+msgstr "Синхронізація курсів із хмарою"
+
+msgid "tutorial:loadFailed"
+msgstr "Завантаження не вдалося, спробуйте пізніше"
+
+msgid "tutorial:empty"
+msgstr "Курсів поки немає"
+
+msgid "tutorial:empty_hint"
+msgstr ""
+"У хмарній бібліотеці курсів поки немає книжок; за двома посиланнями нижче "
+"контент уже є."
+
+msgid "tutorial:instead_cn"
+msgstr "Що можна тренувати зараз"
+
+msgid "tutorial:go_training"
+msgstr "До тренувального табору"
+
+msgid "tutorial:go_training_sub"
+msgstr "Шість видів задач · доступні просто зараз"
+
+msgid "tutorial:go_baipu"
+msgstr "До розкладки партій"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "Розкладіть відому партію хід за ходом"
+
+msgid "tutorial:count_line"
+msgstr "{n} категорій · усього {b} книжок"
+
+msgid "tutorial:books_n"
+msgstr "{n} книжок"
+
+msgid "tutorial:books_synced"
+msgstr "{n} книжок · контент синхронізується з хмарою"
+
+msgid "tutorial:synced"
+msgstr "Синхронно з хмарою"
+
+msgid "tutorial:pick_book"
+msgstr "Виберіть книжку"
+
+msgid "tutorial:books_loading"
+msgstr "Завантаження книжок цієї категорії"
+
+msgid "tutorial:books_failed"
+msgstr "Не вдалося прочитати книжки цієї категорії"
+
+msgid "tutorial:books_empty"
+msgstr "У цій категорії немає жодної книжки"
+
+msgid "tutorial:books_empty_hint"
+msgstr ""
+"Хмара ще не синхронізувала цю категорію; в інших контент уже може бути."
+
+msgid "tutorial:anatomy_cn"
+msgstr "Який вигляд має урок"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} розділів"
+
+msgid "tutorial:sections_n"
+msgstr "{n} секцій"
+
+msgid "tutorial:figures_n"
+msgstr "{n} діаграм"
+
+msgid "tutorial:moves_n"
+msgstr "{n} ходів"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} с"
+
+msgid "tutorial:has_video"
+msgstr "Є відео"
+
+msgid "tutorial:back_toc"
+msgstr "Зміст"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · зміст"
+
+msgid "tutorial:toc_count"
+msgstr "{c} розділів · {s} секцій"
+
+msgid "tutorial:toc_loading"
+msgstr "Завантаження змісту книжки"
+
+msgid "tutorial:toc_failed"
+msgstr "Не вдалося прочитати зміст книжки"
+
+msgid "tutorial:toc_empty"
+msgstr "У цій книжці поки немає розділів"
+
+msgid "tutorial:toc_empty_hint"
+msgstr "Список книжок синхронізовано, текст — ні; річ не у вашій коробці."
+
+msgid "tutorial:no_sections"
+msgstr "У цьому розділі поки немає секцій"
+
+msgid "tutorial:section_n"
+msgstr "Секція {n}"
+
+msgid "tutorial:section_loading"
+msgstr "Завантаження секції"
+
+msgid "tutorial:section_failed"
+msgstr "Не вдалося прочитати секцію"
+
+msgid "tutorial:figures_in_section"
+msgstr "Діаграми цієї секції"
+
+msgid "tutorial:no_figures"
+msgstr "У цій секції поки немає діаграм"
+
+msgid "tutorial:no_figures_hint"
+msgstr ""
+"У змісті ця секція є, але текст не синхронізовано; річ не у вашій коробці."
+
+msgid "tutorial:figure_ordinal"
+msgstr "Діаграма {i} з {n}"
+
+msgid "tutorial:figure_actions"
+msgstr "Гортання та пояснення"
+
+msgid "tutorial:prev_figure"
+msgstr "Попередня діаграма"
+
+msgid "tutorial:next_figure"
+msgstr "Наступна діаграма"
+
+msgid "tutorial:back_to_diagram"
+msgstr "Назад до діаграми"
+
+msgid "tutorial:board_label"
+msgstr "{label}: діаграма цієї секції"
+
+msgid "tutorial:board_view"
+msgstr "Скільки показувати"
+
+msgid "tutorial:fullBoard"
+msgstr "Уся дошка"
+
+msgid "tutorial:partial"
+msgstr "Фрагмент"
+
+msgid "tutorial:moves"
+msgstr "Ходи"
+
+msgid "tutorial:step_back"
+msgstr "На хід назад"
+
+msgid "tutorial:step_fwd"
+msgstr "На хід уперед"
+
+msgid "tutorial:step_n"
+msgstr "Перейти до ходу {n}"
+
+msgid "tutorial:step_total"
+msgstr "У цій діаграмі {n} ходів"
+
+msgid "tutorial:step_zero"
+msgstr "Лише початкові камені"
+
+msgid "tutorial:tag_video"
+msgstr "Відеопояснення"
+
+msgid "tutorial:tag_audio"
+msgstr "Аудіопояснення"
+
+msgid "tutorial:tag_text"
+msgstr "Текстове пояснення"
+
+msgid "tutorial:tag_none"
+msgstr "Пояснення поки немає"
+
+msgid "tutorial:teach_none"
+msgstr "Пояснення поки немає"
+
+msgid "tutorial:teach_none_reason"
+msgstr ""
+"Для цієї діаграми пояснення ще не записано; воно з'явиться після "
+"синхронізації з хмарою"
+
+msgid "tutorial:text_only"
+msgstr "Лише текстове пояснення"
+
+msgid "tutorial:text_only_reason"
+msgstr "У цієї діаграми є лише текст, він наведений вище"
+
+msgid "tutorial:no_explain"
+msgstr "У книжці немає тексту до цієї діаграми, і пояснення теж не записано."
+
+msgid "tutorial:watch_video"
+msgstr "Дивитися відеопояснення"
+
+msgid "tutorial:play_audio"
+msgstr "Відтворити аудіопояснення"
+
+msgid "tutorial:stop_audio"
+msgstr "Зупинити"
+
+msgid "19x19"
+msgstr "19x19"
+
+msgid "19×19 only"
+msgstr "Лише 19×19"
+
+msgid "20 problems per unit"
+msgstr "20 задач у блоці"
+
+msgid "Korean rules"
+msgstr "Корейські правила"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr ""
+"Помилка зв'язку з ШІ — повторіть хід або вийдіть, щоб залишити партію."
+
+msgid "AI is thinking…"
+msgstr "ШІ думає…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "Підказки ШІ (білі вогники)"
+
+msgid "Accept as my move"
+msgstr "Прийняти як свій хід"
+
+msgid "All games"
+msgstr "Усі партії"
+
+msgid "Auto-advance after solving · current"
+msgstr "Автоперехід після розв'язання · зараз"
+
+msgid "Average time"
+msgstr "Середній час"
+
+msgid "Average tries"
+msgstr "Середня кількість спроб"
+
+msgid "Board may have moved"
+msgstr "Можливо, дошку зсунули"
+
+msgid "Board may have moved — recognition paused"
+msgstr "Можливо, дошку зсунули — розпізнавання призупинено"
+
+msgid "Board mismatch"
+msgstr "Дошка не збігається з партією"
+
+msgid "Board restored"
+msgstr "Дошку відновлено за вказівками"
+
+msgid "Cached SGF no longer available"
+msgstr "Кешований SGF більше недоступний"
+
+msgid "Calibration"
+msgstr "Калібрування"
+
+msgid "Camera"
+msgstr "Камера"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "Камеру від'єднано, перейшли в сенсорний режим"
+
+msgid "Cancel"
+msgstr "Скасувати"
+
+msgid "Categories"
+msgstr "Види задач"
+
+msgid "Challenge others · rated queue available"
+msgstr "Викликати інших · є рейтингова черга"
+
+msgid "Chart"
+msgstr "Графік"
+
+msgid "Choose a way to start playing"
+msgstr "Виберіть спосіб почати гру"
+
+msgid "Choose one category"
+msgstr "Виберіть вид задач"
+
+msgid "Confirm"
+msgstr "Підтвердити хід"
+
+msgid "Confirm resign?"
+msgstr "Підтвердити здачу?"
+
+msgid "Confirm result"
+msgstr "Підтвердити результат"
+
+msgid "Confirming…"
+msgstr "Підтвердження…"
+
+msgid "Connected · goes to the lobby"
+msgstr "Під'єднано · веде в лобі"
+
+msgid "Connected · plays the engine"
+msgstr "Під'єднано · гра з рушієм"
+
+msgid "Continue"
+msgstr "Продовжити"
+
+msgid "Continue anyway"
+msgstr "Все одно продовжити"
+
+msgid "Continue on screen"
+msgstr "Продовжити на екрані"
+
+msgid "Continue practicing"
+msgstr "Продовжити тренування"
+
+msgid "Cross-Platform"
+msgstr "Міжплатформна гра"
+
+msgid "Cross-Platform Play"
+msgstr "Міжплатформна гра"
+
+msgid "Difficulty"
+msgstr "Складність"
+
+msgid "Ended"
+msgstr "Завершена"
+
+msgid "Enter Live"
+msgstr "Увійти в трансляцію"
+
+msgid "Every game played, with its review report"
+msgstr "Кожна зіграна партія разом зі звітом розбору"
+
+msgid "Exit"
+msgstr "Вийти"
+
+msgid "Failed to read file"
+msgstr "Не вдалося прочитати файл"
+
+msgid "Failed to start game"
+msgstr "Не вдалося створити партію"
+
+msgid "Focused training"
+msgstr "Цільове тренування"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "Партія триває. Здатися й вийти?"
+
+msgid "Geometry locked"
+msgstr "Геометрію зафіксовано"
+
+msgid "Guest"
+msgstr "Гість"
+
+msgid "Hide Hint"
+msgstr "Сховати підказку"
+
+msgid "Hint"
+msgstr "Підказка"
+
+msgid "Hints"
+msgstr "Підказки ШІ"
+
+msgid "Hint failed"
+msgstr "Підказка не вдалася, спробуйте пізніше"
+
+msgid "Hint is not enabled"
+msgstr "Підказки не увімкнено"
+
+msgid "History"
+msgstr "Історія"
+
+msgid "Ignore"
+msgstr "Ігнорувати"
+
+msgid "Import SGF"
+msgstr "Імпортувати кіфу"
+
+msgid "Insufficient balance"
+msgstr "Недостатньо коштів"
+
+msgid "Judged on placement"
+msgstr "Оцінка одразу при ході"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "Оцінка одразу при ході · хибний хід тут же скасовується"
+
+msgid "Keep waiting"
+msgstr "Продовжити чекати"
+
+msgid "Load more"
+msgstr "Завантажити ще"
+
+msgid "Loading"
+msgstr "Завантаження..."
+
+msgid "Loading…"
+msgstr "Завантаження…"
+
+msgid "Loading categories…"
+msgstr "Завантаження видів задач…"
+
+msgid "Loading problem set…"
+msgstr "Завантаження банку задач…"
+
+msgid "Logging in..."
+msgstr "Виконується вхід..."
+
+msgid "Login failed"
+msgstr "Вхід не вдався"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr "Змішує всі види цього щабля й об'єднує по 20 задач у блок"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "Усі види цього щабля вперемішку, по 20 задач у блоці"
+
+msgid "Mixed"
+msgstr "Змішані"
+
+msgid "Mixed categories"
+msgstr "Змішані види"
+
+msgid "Mixed training"
+msgstr "Змішане тренування"
+
+msgid "Next up"
+msgstr "Наступна"
+
+msgid "No 19×19 records found"
+msgstr "Кіфу 19×19 не знайдено"
+
+msgid "No categories at this level yet"
+msgstr "На цьому щаблі поки немає видів задач"
+
+msgid "No live matches"
+msgstr "Трансляцій немає"
+
+msgid "No problems for this level"
+msgstr "Для цього щабля задач немає"
+
+msgid "No problems in this category yet"
+msgstr "У цьому виді поки немає задач"
+
+msgid "No such unit"
+msgstr "Такого блоку немає"
+
+msgid "Not a valid SGF file"
+msgstr "Це не коректний файл SGF"
+
+msgid "Not attempted"
+msgstr "Не розв'язувалася"
+
+msgid "Not available in ranked games"
+msgstr "Недоступно в рейтингових партіях"
+
+msgid "Not calibrated"
+msgstr "Не відкалібровано"
+
+msgid "Not signed in"
+msgstr "Не ввійшли"
+
+msgid "Not wired up yet"
+msgstr "Ще не під'єднано"
+
+msgid "Now Live"
+msgstr "Триває зараз"
+
+msgid "Online Lobby"
+msgstr "Онлайн-лобі"
+
+msgid "Only the ones I got wrong"
+msgstr "Лише помилки"
+
+msgid "Other practice"
+msgstr "Інша практика"
+
+msgid "Other sets"
+msgstr "Інший набір"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Username"
+msgstr "Ім'я користувача"
+
+msgid "Physical board out of sync"
+msgstr "Справжня дошка давно не встигає за партією"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "Сила на ваш вибір · доступна оцінка позиції"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr ""
+"Поставте (червоний/зелений) або зніміть (синій) підсвічені камені й "
+"підтвердіть — або продовжуйте на екрані."
+
+msgid "Place these stones"
+msgstr "Поставте ці камені (червоний / зелений)"
+
+msgid "Remove these stones"
+msgstr "Зніміть ці камені (синій)"
+
+msgid "Play vs AI"
+msgstr "Грати з ШІ"
+
+msgid "Play vs Human"
+msgstr "Грати з людиною"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "Спершу поставте камінь ШІ на підсвічену точку"
+
+msgid "Possible move detected at"
+msgstr "Можливий хід виявлено на"
+
+msgid "Problem set unavailable"
+msgstr "Банк задач недоступний"
+
+msgid "Problems per unit · current"
+msgstr "Задач у блоці · зараз"
+
+msgid "Re-align board"
+msgstr "Вирівняти дошку знову"
+
+msgid "Re-align failed — try again"
+msgstr "Не вдалося вирівняти — спробуйте ще раз"
+
+msgid "Re-sync failed, please retry"
+msgstr "Не вдалося пересинхронізувати розпізнавання, спробуйте ще раз"
+
+msgid "Recalibrate"
+msgstr "Відкалібрувати знову"
+
+msgid "Recalibrate board"
+msgstr "Відкалібрувати дошку знову"
+
+msgid "Recent"
+msgstr "Нещодавні"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "Перерозв'язати помилки цього виду"
+
+msgid "Register / Sign in"
+msgstr "Реєстрація / вхід"
+
+msgid "Reset"
+msgstr "Розставити знову"
+
+msgid "Resign failed, retry"
+msgstr "Не вдалося здатися, спробуйте ще раз"
+
+msgid "Resume"
+msgstr "Відновити"
+
+msgid "Resume last game"
+msgstr "Продовжити останню партію"
+
+msgid "Score"
+msgstr "Підрахунок"
+
+msgid "Search players, events..."
+msgstr "Пошук гравців, турнірів..."
+
+msgid "Select a match"
+msgstr "Виберіть партію"
+
+msgid "Select category"
+msgstr "Виберіть вид задач"
+
+msgid "Select or import a game to begin"
+msgstr "Виберіть або імпортуйте партію, щоб почати"
+
+msgid "Sign out"
+msgstr "Вийти"
+
+msgid "Signed in"
+msgstr "Ввійшли"
+
+msgid "Solved"
+msgstr "Розв'язано"
+
+msgid "Solved in this unit"
+msgstr "Розв'язано в цьому блоці"
+
+msgid "Start"
+msgstr "Почати"
+
+msgid "Start placing"
+msgstr "Почати розкладку"
+
+msgid "Stone Placement"
+msgstr "Розкладка партії"
+
+msgid "StellaBox account"
+msgstr "Обліковий запис StellaBox"
+
+msgid "Tap to connect"
+msgstr "Торкніться, щоб увійти"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "Щабель за вашою силою · аналіз вимкнено"
+
+msgid "Time"
+msgstr "Час"
+
+msgid "To place"
+msgstr "Поставити"
+
+msgid "To remove"
+msgstr "Зняти"
+
+msgid "Today we practice {what}"
+msgstr "Сьогодні тренуємо {what}"
+
+msgid "what"
+msgstr "щось"
+
+msgid "Top Matches"
+msgstr "Популярні партії"
+
+msgid "Try"
+msgstr "Спробувати"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "Спробуйте інший запит або імпортуйте файл SGF."
+
+msgid "Two players on the same physical board"
+msgstr "Двоє на одній справжній дошці"
+
+msgid "Units"
+msgstr "Блоки"
+
+msgid "Upcoming"
+msgstr "Незабаром"
+
+msgid "Wrong"
+msgstr "Помилки"
+
+msgid "You are here"
+msgstr "Ви тут"
+
+msgid "game:count_failed_retry"
+msgstr "Підрахунок не пройшов, спробуйте пізніше"
+
+msgid "min"
+msgstr "хв"
+
+msgid "sec"
+msgstr "с"
+
+msgid "problems count"
+msgstr "задач"
+
+msgid "score"
+msgstr "різниця очок"
+
+msgid "winrate"
+msgstr "імовірність перемоги"
+
+msgid "{item} exhausted"
+msgstr "{item} вичерпано"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr ""
+"{item} недостатньо — поповніть у застосунку Golaxy; цей термінал цього не "
+"зробить."
+
+msgid "game:connection_rejected"
+msgstr ""
+"Живе з'єднання відхилено, дошка сама оновлюватися не буде — увійдіть знову й"
+" повторіть"
+
+msgid "game:gone_reason"
+msgstr ""
+"Можливо, коробка перезавантажувалася або партію прибрали після тривалого "
+"простою."
+
+msgid "game:resign_failed"
+msgstr "Здатися не вдалося"
+
+msgid "game:session_gone_notice"
+msgstr "Цієї партії на сервері більше немає — можна залишити сторінку."
+
+msgid "settings:nav_about"
+msgstr "Про програму"
+
+msgid "settings:about_version"
+msgstr "Версія"
+
+msgid "settings:about_local"
+msgstr "Цей пристрій"
+
+msgid "settings:about_cloud"
+msgstr "Хмара"
+
+msgid "settings:engine_ok"
+msgstr "Доступний"
+
+msgid "settings:engine_down"
+msgstr "Немає зв'язку"
+
+msgid "settings:engine_unset"
+msgstr "Не налаштовано"
+
+msgid "settings:engine_code"
+msgstr "Рушій повернув {code}"
+
+msgid "settings:camera_connected"
+msgstr "Під'єднано"
+
+msgid "settings:geometry_calibrated"
+msgstr "Відкалібровано"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Не відкалібровано"
+
+msgid "settings:led_serial_connected"
+msgstr "Порт під'єднано"
+
+msgid "settings:calib_no_camera"
+msgstr "На цьому пристрої немає камери"
+
+msgid "settings:ladder_detail_open"
+msgstr "Докладніше про розряд ШІ"
+
+msgid "settings:ladder_detail_close"
+msgstr "Згорнути"
+
+msgid "growth:cal_aria"
+msgstr "Календар занять за рік"
+
+msgid "growth:cal_title"
+msgstr "За рік"
+
+msgid "growth:cal_days_unit"
+msgstr "дн."
+
+msgid "growth:cal_sub"
+msgstr "Гра або задача"
+
+msgid "growth:cal_local"
+msgstr "Локально"
+
+msgid "growth:cal_failed"
+msgstr "Календар не завантажився. Загляньте пізніше."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "Пн"
+
+msgid "growth:cal_wed"
+msgstr "Ср"
+
+msgid "growth:cal_fri"
+msgstr "Пт"
+
+msgid "growth:trend_title"
+msgstr "Динаміка за 30 днів"
+
+msgid "growth:trend_aria"
+msgstr "Динаміка щабля за 30 днів, пік {r}"
+
+msgid "growth:trend_peak"
+msgstr "Пік {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"За 30 днів рейтингові партії після кваліфікації були менш ніж у два дні — на"
+" лінію не вистачає."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"Лінія починається після кваліфікації: у кваліфікаційних партіях суперники "
+"перевіряють вашу силу, це не ваш щабель."
+
+msgid "growth:diag_bad_count"
+msgstr "Помилки {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Найслабше"
+
+msgid "growth:diag_loading"
+msgstr "Завантаження…"
+
+msgid "growth:diag_failed"
+msgstr "Діагностика не завантажилася"
+
+msgid "growth:diag_failed_p"
+msgstr "Це не означає, що звітів ще немає. Загляньте пізніше."
+
+msgid "growth:diag_go_report"
+msgstr "До розбору"
+
+msgid "growth:diag_no_report"
+msgstr "Звітів розбору поки немає"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Діагностика рахується за партіями зі звітом: дограйте партію, створіть звіт "
+"у розборі — і тут з'являться числа."
+
+msgid "growth:diag_no_seat"
+msgstr "Ці звіти поки не врахувати"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Звітів: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — але ті партії зіграно до того, як записувався ваш колір, і ваші ходи не "
+"відокремити. Зіграйте ще партію, створіть звіт — і тут з'являться числа."
+
+msgid "growth:diag_offline"
+msgstr "Зараз звіти у хмарі недоступні"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Звіти зберігаються у хмарі, у копії на цій коробці їх немає. Загляньте "
+"знову, коли буде мережа."
+
+msgid "growth:diag_ungraded"
+msgstr "У звітах поки немає оцінених ходів"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Ходи з недостатнім пошуком не оцінюються. Коли звіти дорахуються, тут "
+"з'являться числа."
+
+msgid "growth:diag_local_a"
+msgstr " Це "
+
+msgid "growth:diag_local_b"
+msgstr ", кількох звітів може бракувати."
+
+msgid "growth:diag_sample_a"
+msgstr "Рахуються лише партії зі звітом. Звітів: "
+
+msgid "growth:diag_sample_b"
+msgstr ", ваших ходів: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Звітів без записаного кольору: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Вибірка мала — висновок може коливатися."
+
+msgid "growth:stat_winrate_all"
+msgstr "Відсоток перемог · за 30 днів"
+
+msgid "growth:unknown_seat_a"
+msgstr "Партій не враховано у відсотку перемог: "
+
+msgid "growth:unknown_seat_b"
+msgstr " — очні партії, імпортовані записи та партії без записаного кольору."

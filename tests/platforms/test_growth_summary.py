@@ -2,10 +2,10 @@
 
 这里守的是**口径**,不是数字本身:
 
-1. **胜率只能从升降级账本算。** `user_games.result` 存的是「哪一方赢」(`"B+R"`),
-   这张表**没有任何一列记这个用户坐的是哪一方**。第一条用例把这件事钉死:
-   同一局,`result` 说黑赢,而这个用户可能是白 —— 从 `user_games` 推不出胜负。
-   `ai_ladder_game_ledger` 有 `user_color`,`result` 本身就是**从这个用户视角**写的。
+1. **升降级胜率从账本算。** `ai_ladder_game_ledger` 有 `user_color`,`result` 本身就是
+   **从这个用户视角**写的 win/loss。(2026-09 起 `user_games` 也有了 `user_color`,
+   「全部算得出执色的局」那个胜率在 `UserGameRepository.decided_since`,
+   见 `tests/web_ui/test_user_game_color.py`;这里守的是升降级那一半。)
 2. **没打过的档不出现。** 稿子原话「没打过的档一律不列,不摆一排 0 胜 0 负」——
    GROUP BY 天然满足,但要有人守着,别哪天改成「补齐 41 档」。
 3. **`counted=False` 的行一局都不算。** 那是已经判过「这一局不作数」的局,
@@ -103,11 +103,10 @@ SINCE = NOW - timedelta(days=30)
 
 
 def test_winrate_comes_from_the_ledger_because_user_games_cannot_say_who_won(db):
-    """**这一条是整个设计的理由。**
+    """同一个用户的两局:账本说「他赢了一局、输了一局」,胜负从账本的用户视角读。
 
-    同一个用户的两局:账本说「他赢了一局、输了一局」。而 `user_games` 那边即使存了
-    `result="B+R"`,也**说不出他是不是黑** —— 表里根本没有这一列。
-    所以胜率这一格只对升降级局成立,而且标签必须写明。
+    这条原先还断言 `UserGame` 里**没有** `user_color` —— 2026-09 那一列加上了(可空,
+    算不出就 NULL,见 `models_db.UserGame.user_color`),那句反面断言随之作废。
     """
     uid = _user(db)
     _ledger(db, user_id=uid, game_id="g1", result="win", settled_at=IN_WINDOW)
@@ -115,11 +114,6 @@ def test_winrate_comes_from_the_ledger_because_user_games_cannot_say_who_won(db)
 
     summary = AiLadderRankedRepository(db).growth_summary(uid, since=SINCE)
     assert (summary["ranked_wins_in_window"], summary["ranked_losses_in_window"]) == (1, 1)
-
-    # 反面:`UserGame` 里连「这个用户是黑还是白」的列都没有 —— 不是没填,是不存在。
-    columns = {c.name for c in models_db.UserGame.__table__.columns}
-    assert "user_color" not in columns
-    assert not columns & {"user_seat", "player_color", "is_black"}
 
 
 def test_window_separates_recent_from_old_but_the_all_time_total_does_not(db):

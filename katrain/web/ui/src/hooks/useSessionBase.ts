@@ -4,7 +4,8 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../api';
-import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { readAudioPref } from '../utils/audioPrefs';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 
 export interface UseSessionBaseOptions {
     onStateUpdate?: (state: GameState) => void;
@@ -47,6 +48,10 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
     const playSound = useCallback((sound: string) => {
+        // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、useGameSession、这里,读的都是
+        // audioPrefs 的 sfx —— 研究屏走的是这个 hook,不是 useGameSession。galaxy 也走这个 hook:
+        // 它从不写这把键,readAudioPref 缺键当开,行为不变。
+        if (!readAudioPref('sfx')) return;
         if (!audioCache.current[sound]) {
             audioCache.current[sound] = new Audio(`/assets/sounds/${sound}.wav`);
         }
@@ -84,7 +89,10 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
                 /* 断了要说出来 —— 静默的 1008 正是这次三周无人察觉的原因。 */
                 ws.onclose = (event) => {
                     if (wsRef.current !== ws) return;  // 自己关的
-                    if (event.code === WS_POLICY_VIOLATION) {
+                    if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                        console.warn('Session is gone on the server');
+                        setError(SESSION_GONE_MESSAGE);
+                    } else if (event.code === WS_POLICY_VIOLATION) {
                         console.error('Session WebSocket rejected:', event.reason);
                         setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
                     } else if (!event.wasClean) {

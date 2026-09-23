@@ -170,7 +170,9 @@ describe('N25 · 对局屏错误条与断线出口', () => {
     sessionMock.connectionLost = 'dropped';
     const view = renderPage();
     try {
-      const copy = /点「退出对局」→「先离开，不认输」，再从「继续上一局」回来/;
+      // Generic copy on purpose: it must hold for every exit-dialog shape, including
+      // pvp_local's (继续下 / 退出不保存 — no "先离开，不认输" option there).
+      const copy = /实时连接断了，棋盘不会自动更新，可以点「退出对局」离开这一局/;
       expect(screen.getByText(copy)).toBeInTheDocument();
       expect(screen.queryByText(/请刷新页面/)).toBeNull();
       act(() => { vi.advanceTimersByTime(10000); });
@@ -183,12 +185,17 @@ describe('N25 · 对局屏错误条与断线出口', () => {
     } finally { view.unmount(); vi.useRealTimers(); }
   });
 
-  it('被服务端拒绝仍显示原句，保留原因与重新登录提示', () => {
+  // R2: connectionLost is sticky, so a later failed HTTP action can overwrite session.error
+  // with an ApiError's raw text - the old fallback branch here rendered session.error
+  // verbatim and would leak it. Both assertions matter: the positive one dies if the fixed
+  // copy is ever deleted, the negative one dies if anyone reintroduces `: session.error`.
+  it('被服务端拒绝时显示固定文案，不泄漏原始请求错误文本', () => {
     sessionMock.gameState = makeState();
-    sessionMock.error = '实时连接被拒绝（Invalid token），棋盘不会自动更新，请重新登录后重试';
+    sessionMock.error = 'Request failed 409: {"detail": "not your turn"}';
     sessionMock.connectionLost = 'rejected';
     renderPage();
-    expect(screen.getByText(sessionMock.error)).toBeInTheDocument();
+    expect(screen.getByText('实时连接被拒绝，棋盘不会自动更新，请重新登录后重试')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 
   it.each(['dropped', 'rejected'] as const)('断线 %s：先离开不认输，真实继续指针返回同一局', (reason) => {
@@ -219,11 +226,15 @@ describe('N25 · 对局屏错误条与断线出口', () => {
     expect(createSession).not.toHaveBeenCalled();
   });
 
-  it('连着时退出框没有先离开', () => {
+  // R1: leaving without resigning is a purely local act and is always legitimate, so it is
+  // never gated on connectionLost — a Golaxy resign rejection returns 409 with a perfectly
+  // healthy WebSocket, and gating this button on the connection state would trap that user
+  // behind a different failure. Do NOT reintroduce a `session.connectionLost &&` guard here.
+  it('连着时退出框也有先离开(R1:不认输永远可选,不看连接状态)', () => {
     sessionMock.gameState = makeState();
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
-    expect(within(screen.getByRole('dialog')).queryByText('先离开，不认输')).toBeNull();
+    expect(within(screen.getByRole('dialog')).getByText('先离开，不认输')).toBeInTheDocument();
   });
 });
 
@@ -273,14 +284,16 @@ describe('N17 · 取状态失败时对局屏给出口', () => {
 });
 
 describe('N21 · 本地对局的认输框说出是哪一方', () => {
-  it('两个人面对面、轮到白:标题是「白方认输？」', () => {
+  it('两个人面对面时先问哪一方认输，不能拿轮次猜认输方', () => {
     sessionMock.gameState = makeState({
       game_type: 'pvp_local', player_to_move: 'W',
       players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
     });
     renderPage();
     fireEvent.click(screen.getByText('MOCK_RESIGN'));
-    expect(screen.getByText('白方认输？')).toBeInTheDocument();
+    expect(screen.getByText('哪一方认输？')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '白方认输' })).toBeInTheDocument();
   });
 
   it('人机局仍是「确认认输？」—— 认输的一定是人,不用点名', () => {
@@ -553,15 +566,15 @@ describe('A18 · 时间耗尽判超时', () => {
 
 });
 
-describe('A9(与拍板无关的一半)· 不渲染胜率块的局不白算分析', () => {
-  it('本地对局:「图表」开关默认开着,也不请求按需分析', () => {
+describe('A9 · 对局分析按实际用途请求', () => {
+  it('本地对局不显示胜率块，但继续请求后台分析供数子使用', () => {
     const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
     sessionMock.gameState = makeState({
       game_type: 'pvp_local',
       players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
     });
     renderPage();
-    expect(spy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith('play-ai-s1');
   });
 
   it('人机自由对弈照旧请求(默认开还是关等 Fan 定,本轮不动)', () => {

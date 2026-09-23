@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -43,7 +44,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: IDS });
@@ -65,7 +66,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     implementationCaption:
       '实现:/kiosk/tsumego/15k/capturing/1 @1024×600 · 时钟冻 16:40 · 题号 45 个是 fixture,进度造进 tsumego_progress:u1(真存储真格式,钥匙分人)· '
       + '三处按 Fan「别写那么多小字」改了:两条组标题右端的说明去掉、数据条标签去掉「· 当前单元」、错题那行点名「这一类」 · '
-      + '「只做错过的」不摆按不动的「开始」,只挂 §14 琥珀标',
+      + '「只做错过的」已接通(T1):行尾是「开始」,进错题页 · 「整级」那行改成「这一级的全部题，按分类排好」(N8:不是混排)',
   });
   console.log(`[fourup 13-problems] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

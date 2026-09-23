@@ -2,7 +2,7 @@ import logging
 import time
 import threading
 import copy
-from typing import Callable, Optional
+from typing import Callable, NamedTuple, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
 
@@ -26,6 +26,7 @@ from katrain.core.engine import create_engine
 from katrain.core.game import Game
 from katrain.core.lang import i18n
 from katrain.gui.theme import Theme
+from katrain.web.core.game_end_rules import is_awaiting_count, scaled_count_min_moves
 from katrain.web.models import EndgameConflict, GameEnd
 
 # Configure standard logging
@@ -69,6 +70,12 @@ class NullEngine:
 
     def shutdown(self, finish=False):
         return None
+
+
+class _CommittedAIMove(NamedTuple):
+    game: Game
+    node: object
+    sound_name: Optional[str]
 
 
 class MockMoveTree:
@@ -191,6 +198,10 @@ class WebKaTrain(KaTrainBase):
         self.ai_lock = threading.Lock()
         self.ai_ladder_commit_lock = threading.RLock()
         self._ai_move_pending = False
+        self._broadcast_lock = threading.Lock()
+        self._last_broadcast_time = 0.0
+        self._pending_broadcast = False
+        self._pending_post_broadcast = []
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
@@ -256,6 +267,12 @@ class WebKaTrain(KaTrainBase):
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
         # 没写过的局(星阵人机、大厅房间)继承 config.json 默认时限且不暂停,前端不许把它当计时局。
         self.timer_configured = False
+        # Fan 2026-09-20:「我要看到电子棋盘再开始计时」。
+        # 一局被创建的时刻和它**可以下第一手**的时刻不是同一刻:RK3562 实测那一局
+        # 10:36:10 建局、10:37:19 视觉才绑上 —— 中间 69 秒全记在人类头上,而那段时间里
+        # 用户还在标定屏、碰都碰不到棋盘。`timer_paused` 不能拿来干这件事:它是用户可见的
+        # 「暂停」,会在状态里报出去、还有开关端点。所以另立一个只进不出的起步闩。
+        self.clock_started = False
         self.last_timer_update = time.time()
         self.main_time_used_by_player = {"B": 0, "W": 0}
         self.show_children = False
@@ -267,7 +284,11 @@ class WebKaTrain(KaTrainBase):
         self.show_coordinates = True
         self.zen_mode = False
         self.preview_pv = []
-        self.active_game_timer = self.config("timer")
+        self.active_game_timer = copy.deepcopy(self.config("timer"))
+        # Existing box configs predate the web countdown and have no `sound`
+        # key. Keep their historical audible default instead of exposing
+        # `undefined` to clients that correctly require an explicit boolean.
+        self.active_game_timer.setdefault("sound", True)
 
         # Initialize language from config
         from katrain.web.core.config import settings
@@ -341,8 +362,7 @@ class WebKaTrain(KaTrainBase):
         configured = self.config("game/count_min_moves", 100)
         if not self.game:
             return configured
-        width, height = self.game.board_size
-        return max(1, int(configured * width * height / 361))
+        return scaled_count_min_moves(configured, self.game.board_size[0])
 
     #: 数子 / 双停终局时服务端自己补一次形势分析,最多等这么久(秒)。
     ENSURE_SCORE_TIMEOUT_S = 15.0
@@ -711,6 +731,9 @@ class WebKaTrain(KaTrainBase):
             },
             "engine": getattr(self, "last_engine", None),
             "count_min_moves": self.count_min_moves(),
+            # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
+            # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
+            "awaiting_count": is_awaiting_count(self),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,
@@ -788,6 +811,7 @@ class WebKaTrain(KaTrainBase):
                 self.engine.on_new_game()
 
             self.active_game_timer = copy.deepcopy(self.config("timer"))
+            self.active_game_timer.setdefault("sound", True)
 
             # Update global config for persistence of defaults
             if size:
@@ -833,6 +857,7 @@ class WebKaTrain(KaTrainBase):
 
             # Reset timer state for new game
             self.timer_paused = self.config("timer/paused")
+            self.clock_started = False  # 新的一局重新等「棋盘可用」;见 __init__ 那段说明
             self.last_timer_update = time.time()
             self.main_time_used_by_player = {"B": 0, "W": 0}
 
@@ -887,8 +912,29 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
 
+    @staticmethod
+    def _run_post_broadcast(callbacks, state):
+        for callback in callbacks:
+            try:
+                callback(state)
+            except Exception:
+                logger.exception("Error in post-broadcast callback")
+
+    def _broadcast_current_state(self, post_broadcast):
+        callback = self.update_state_callback
+        if callback is None:
+            return
+        state = self.get_state()
+        callback(state)
+        self._run_post_broadcast(post_broadcast, state)
+
     def update_state(self, **_kwargs):
-        """Called when the game state changes."""
+        """Called when the game state changes.
+
+        ``_post_broadcast`` is a private one-shot hook. It receives the exact state
+        delivered by the immediate or trailing broadcast, after the state callback.
+        """
+        post_broadcast = _kwargs.pop("_post_broadcast", None)
         now = time.time()
 
         # --- Diagnostic: log call frequency every 5s ---
@@ -907,24 +953,40 @@ class WebKaTrain(KaTrainBase):
         if not hasattr(self, "_last_broadcast_time"):
             self._last_broadcast_time = 0.0
             self._pending_broadcast = False
+            self._pending_post_broadcast = []
+            self._broadcast_lock = threading.Lock()
 
         if self.update_state_callback:
-            if now - self._last_broadcast_time < 0.25:
-                # Too soon – schedule a trailing broadcast so the final state is always sent
-                if not self._pending_broadcast:
-                    self._pending_broadcast = True
+            broadcast_now = None
+            schedule_delayed = False
+            with self._broadcast_lock:
+                if now - self._last_broadcast_time < 0.25:
+                    if post_broadcast is not None:
+                        self._pending_post_broadcast.append(post_broadcast)
+                    # Too soon – schedule a trailing broadcast so the final state is always sent
+                    if not self._pending_broadcast:
+                        self._pending_broadcast = True
+                        schedule_delayed = True
+                else:
+                    self._last_broadcast_time = now
+                    broadcast_now = [post_broadcast] if post_broadcast is not None else []
 
-                    def _delayed_broadcast():
-                        time.sleep(0.25)
+            if schedule_delayed:
+                def _delayed_broadcast():
+                    time.sleep(0.25)
+                    with self._broadcast_lock:
                         self._pending_broadcast = False
-                        if self.update_state_callback:
-                            self._last_broadcast_time = time.time()
-                            self.update_state_callback(self.get_state())
+                        callbacks = self._pending_post_broadcast
+                        self._pending_post_broadcast = []
+                        self._last_broadcast_time = time.time()
+                    try:
+                        self._broadcast_current_state(callbacks)
+                    except Exception:
+                        logger.exception("Error in delayed state broadcast")
 
-                    threading.Thread(target=_delayed_broadcast, daemon=True).start()
-            else:
-                self._last_broadcast_time = now
-                self.update_state_callback(self.get_state())
+                threading.Thread(target=_delayed_broadcast, daemon=True).start()
+            elif broadcast_now is not None:
+                self._broadcast_current_state(broadcast_now)
 
         # Handle logic that might change the state (like AI moving)
         self._do_update_state()
@@ -985,6 +1047,21 @@ class WebKaTrain(KaTrainBase):
             else:
                 self.engine.stop_pondering()
 
+    def start_clock(self) -> bool:
+        """「棋盘可用了,可以开始计时」。幂等:只有第一次返回 True。
+
+        调用者是**能看见棋盘就绪**的那一层,不是建局那一层:
+          - 屏幕落子的局:对局页的 WS 接上(棋盘已经画出来了);
+          - 实体盘的局:视觉绑定成功(在那之前一颗子也放不进去)。
+        哪个信号后到就由哪个真正启动 —— 本方法幂等,先到的那次是空操作。
+        """
+        with self.ai_ladder_commit_lock:
+            if self.clock_started:
+                return False
+            self.clock_started = True
+            self.last_timer_update = time.time()
+            return True
+
     def update_timer(self):
         # r1:整段进对局提交锁。`get_state` 会被广播线程、引擎回调线程、请求线程并发调用;两次结算读到同一个
         # `last_timer_update` 会把同一段 dt 记两遍 —— 超时由服务端时钟核实(Task 6)以后,这就是「提前判负」。
@@ -994,6 +1071,16 @@ class WebKaTrain(KaTrainBase):
             dt = now - self.last_timer_update
             self.last_timer_update = now
 
+            # `last_timer_update` 上面已经推到 now,所以直接 return 就等于把这段 dt 丢掉 ——
+            # 与 timer_paused 同一个机制,起步时不会补记一大段。
+            if not self.clock_started:
+                # 兜底:盘上已经有一手了,钟无论如何必须在走。
+                # 需要它的是「用户在盒子上选了屏幕落子」那种局 —— 它永远不会有视觉绑定,
+                # 没这一条钟就永远不起步,于是整局不计时、超时也永远不判。
+                if self.game and self.game.current_node is not None and not self.game.current_node.is_root:
+                    self.clock_started = True
+                else:
+                    return
             if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
                 return
 
@@ -1180,21 +1267,37 @@ class WebKaTrain(KaTrainBase):
             self.players_info[bw].name = name
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)
 
-    def play_stone_sound(self):
-        if self.message_callback:
-            if self.game.last_capture:
-                self.message_callback("sound", {"sound": "capturing"})
-            elif not self.game.current_node.is_pass:
-                import random
+    @staticmethod
+    def _stone_sound_name(game, node):
+        if node.is_pass:
+            return None
+        if game.last_capture:
+            return "capturing"
 
-                self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+        import random
+
+        return f"stone{random.randint(1, 5)}"
+
+    def play_stone_sound(self, sound_name: str, *, after_node_id: int | None = None):
+        if self.message_callback:
+            payload = {"sound": sound_name}
+            if after_node_id is not None:
+                payload["after_node_id"] = after_node_id
+            self.message_callback("sound", payload)
 
     def _do_ai_move_and_broadcast(self, cn):
         """Background thread: generate AI move then broadcast state update."""
         game = self.game
         before = getattr(game, "terminal", None)
+        committed_node = None
+        sound_name = None
         try:
-            self._do_ai_move(cn)
+            committed = self._do_ai_move(cn)
+            if committed is not None:
+                with self.ai_ladder_commit_lock:
+                    if committed.game is game and self.game is game and game.current_node is committed.node:
+                        committed_node = committed.node
+                        sound_name = committed.sound_name
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
@@ -1205,7 +1308,23 @@ class WebKaTrain(KaTrainBase):
             # Use update_state() instead of bare callback — this both broadcasts
             # AND re-runs _do_update_state(), which re-triggers AI if the game
             # tree changed (e.g., user undid + replayed while this thread ran).
-            self.update_state()
+            post_broadcast = None
+            if committed_node is not None and sound_name is not None:
+                expected_game_id = game.game_id
+                expected_node_id = id(committed_node)
+
+                def _play_committed_sound(state):
+                    if (
+                        state.get("game_id") == expected_game_id
+                        and state.get("current_node_id") == expected_node_id
+                    ):
+                        try:
+                            self.play_stone_sound(sound_name, after_node_id=expected_node_id)
+                        except Exception as e:
+                            logger.exception("Error in AI move sound: %s", e)
+
+                post_broadcast = _play_committed_sound
+            self.update_state(_post_broadcast=post_broadcast)
             # N22:这条线程跑完时这一局的终局事实与开始时不是同一个 —— 告诉会话去收尾(补分、落账、进结算)。
             # 用「不是同一个」而不是「开始时没有」:悔棋另开分支后的第二次终局也要叫(局面线语义,评审 r1 M2)。
             # 若终局是人在生成期间发请求写的,这里也会叫一次,与请求自己的收尾在 `end_game_lock` 下串行,
@@ -1261,7 +1380,12 @@ class WebKaTrain(KaTrainBase):
                         return
                     self.last_ladder_error = False
                     self._reset_ladder_stall_retry()
-                    self.play_stone_sound()
+                    _move, committed_node = result
+                    with self.ai_ladder_commit_lock:
+                        if game.current_node is not committed_node:
+                            return
+                        sound_name = self._stone_sound_name(game, committed_node)
+                        return _CommittedAIMove(game, committed_node, sound_name)
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
@@ -1311,6 +1435,18 @@ class WebKaTrain(KaTrainBase):
         deadline = getattr(self, "_ladder_retry_at", 0.0)
         return not deadline or time.time() < deadline
 
+    def next_player_to_move(self) -> str | None:
+        """The colour the LIVE game expects next ("B"/"W"), or None if there is no game yet.
+
+        Same authority `_do_play`'s `expected_player` guard uses
+        (`current_node.next_player`). Exposed so the cross-platform vision path can
+        re-check the turn against the live game instead of `session.last_state`, which
+        is a broadcast frame and can be stale by the time a confirmed move is committed.
+        """
+        game = self.game
+        node = game.current_node if game is not None else None
+        return node.next_player if node is not None else None
+
     def _do_play(self, coords, guard=False, expected_player=None):
         """落一手。
 
@@ -1324,6 +1460,8 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.constants import STATUS_TEACHING
 
         played = False
+        node = None
+        sound_name = None
         status_message = error_message = None
         with self.ai_ladder_commit_lock:
             self.update_timer()
@@ -1354,6 +1492,7 @@ class WebKaTrain(KaTrainBase):
                 try:
                     node = self.game.play(Move(coords, player=self.next_player_info.player))
                     played = True
+                    sound_name = self._stone_sound_name(game, node)
                     if guard:
                         self.game.record_two_pass_end(node)
                 except IllegalMoveException as e:
@@ -1368,8 +1507,8 @@ class WebKaTrain(KaTrainBase):
             self.controls.set_status(status_message, STATUS_TEACHING)
         if error_message is not None:
             self.log(error_message, OUTPUT_ERROR)
-        if played:
-            self.play_stone_sound()
+        if played and sound_name is not None:
+            self.play_stone_sound(sound_name, after_node_id=id(node))
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":
@@ -1640,6 +1779,10 @@ class WebKaTrain(KaTrainBase):
                     raise EndgameConflict("position_changed")
             target.end_state = result
             game.game_result = result  # 只写不读(grep 核过),与数子 / 升降级认输原写法一致
+            # 棋谱根节点的 RE 也在这里写:get_sgf() 直接导出根节点,不经 update_root_properties。
+            # 云端结算逐字核对「结算单 result == 棋谱 RE」,从前认输 / 超时的棋谱没有 RE,
+            # 升降级成绩被 422 拒收、永不重试(RK3562 2026-09-20~22 三局)。
+            game.root.set_property("RE", result)
             game.terminal = GameEnd(game, target, result)
             return game.terminal
 

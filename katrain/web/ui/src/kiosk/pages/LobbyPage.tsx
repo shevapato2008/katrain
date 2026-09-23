@@ -112,6 +112,9 @@ type Placement =
   | { placed: true }
   | { placed: false; remaining: number | null };
 
+/** 房间对局前被标定台拦下时,返回回到大厅(见 `hooks/useBackTo`)。这一页只在大厅路由上。 */
+const BACK_TO_LOBBY = { backTo: '/kiosk/play/pvp/lobby' };
+
 const LobbyPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -199,7 +202,7 @@ const LobbyPage = () => {
       const data = JSON.parse(event.data) as Record<string, string | number>;
       if (data.type === 'match_found') {
         setIsMatching(false);
-        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`);
+        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`, { state: BACK_TO_LOBBY });
       } else if (data.type === 'lobby_update') {
         void fetchLists();
       } else if (data.type === 'invitation') {
@@ -348,7 +351,7 @@ const LobbyPage = () => {
             <Cell
               key={g.session_id}
               {...(mine
-                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`) }
+                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`, { state: BACK_TO_LOBBY }) }
                 : {})}
               className={mine ? 'gcard is-mine' : 'gcard is-static'}
               data-testid="lobby-game"
@@ -515,7 +518,7 @@ const LobbyPage = () => {
               {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,两半都不成立:
                   后端没有 decline,这颗「拒绝」只关掉本地这个窗;
                   🔴 而「没有期限」**已经被我们自己 2026-08-25 那次提交证伪** ——
-                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py:369`)。
+                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py`)。
                   屏上那句话不会自己跟着改,所以这是**过期的不是注释,是屏上的句子**。 */}
               <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效')}</span>
             </div>

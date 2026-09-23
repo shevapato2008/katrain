@@ -27,38 +27,57 @@ import { resolve } from 'node:path';
 
 const CSS = resolve(__dirname, '../../kiosk-shell/go-screens.css');
 
-/** 去掉注释后,收集所有**裸单类**选择器(`.foo {`)及其出现的行号。 */
-function bareClassSelectors(css: string): Map<string, number[]> {
-  const lines = css.split('\n');
+/**
+ * 去掉注释后,收集所有**顶层裸单类**选择器(`.foo {`)及其出现的行号。
+ *
+ * ⚠️ `@media` / `@supports` / `@container` **块内的重声明不算碰撞** —— 那是同一个类
+ * 对同一屏的条件覆盖(`prefers-reduced-motion` 就必须这么写),不是两屏各写各的。
+ * 这一条是被一次误报换来的(2026-09-20:`.game-win-trophy` 的 reduced-motion 覆盖被判成碰撞)。
+ * 按「误报=判据选错了对象,不是再加一个例外」处理:改的是判据(补上 at-rule 嵌套),不是加白名单。
+ */
+export function bareClassSelectors(css: string): Map<string, number[]> {
+  // 先整体去注释,但保留换行以便行号仍然准。
+  let stripped = '';
+  let i = 0;
+  while (i < css.length) {
+    if (css[i] === '/' && css[i + 1] === '*') {
+      const end = css.indexOf('*/', i + 2);
+      const chunk = css.slice(i, end === -1 ? css.length : end + 2);
+      stripped += chunk.replace(/[^\n]/g, '');   // 注释整体换成等量换行
+      i = end === -1 ? css.length : end + 2;
+    } else {
+      stripped += css[i];
+      i += 1;
+    }
+  }
+
   const out = new Map<string, number[]>();
-  let inComment = false;
-  lines.forEach((raw, i) => {
-    let line = raw;
-    if (inComment) {
-      const end = line.indexOf('*/');
-      if (end === -1) return;
-      line = line.slice(end + 2);
-      inComment = false;
-    }
-    // 同一行里可能开一段注释
-    for (;;) {
-      const start = line.indexOf('/*');
-      if (start === -1) break;
-      const end = line.indexOf('*/', start + 2);
-      if (end === -1) { line = line.slice(0, start); inComment = true; break; }
-      line = line.slice(0, start) + line.slice(end + 2);
-    }
-    const brace = line.indexOf('{');
-    if (brace === -1) return;
-    const selector = line.slice(0, brace).trim();
-    if (!selector || selector.startsWith('@')) return;
-    for (const part of selector.split(',')) {
-      const p = part.trim();
-      if (/^\.[A-Za-z0-9_-]+$/.test(p)) {
-        out.set(p, [...(out.get(p) ?? []), i + 1]);
+  let depth = 0;
+  const atRuleDepths: number[] = [];
+  let buf = '';
+  let line = 1;
+  for (const ch of stripped) {
+    if (ch === '\n') { line += 1; buf += ch; continue; }
+    if (ch === '{') {
+      const selector = buf.trim();
+      if (selector.startsWith('@')) {
+        atRuleDepths.push(depth);
+      } else if (atRuleDepths.length === 0) {
+        for (const part of selector.split(',')) {
+          const p = part.trim();
+          if (/^\.[A-Za-z0-9_-]+$/.test(p)) out.set(p, [...(out.get(p) ?? []), line]);
+        }
       }
+      depth += 1;
+      buf = '';
+    } else if (ch === '}') {
+      depth -= 1;
+      while (atRuleDepths.length && atRuleDepths[atRuleDepths.length - 1] >= depth) atRuleDepths.pop();
+      buf = '';
+    } else {
+      buf += ch;
     }
-  });
+  }
   return out;
 }
 
@@ -69,6 +88,32 @@ describe('go-screens.css 跨屏类名碰撞', () => {
       .filter(([, lines]) => lines.length > 1)
       .map(([name, lines]) => `${name} 在 ${lines.join(' / ')} 行各定义了一次`);
     expect(dupes, '两屏各写各的同名类 —— 后一条不会覆盖前一条没写的属性,漏过去的那几个会跨屏生效').toEqual([]);
+  });
+
+  it('判据本身:顶层同名要抓,@media 里的条件覆盖不算碰撞', () => {
+    // 收窄之后最该担心的是「漏掉真碰撞」,所以这两格必须一起在场。
+    const collision = bareClassSelectors(`
+      .gside { display: flex; gap: 6px; }
+      .gcard { color: red; }
+      .gside { flex-direction: column; }
+    `);
+    expect(collision.get('.gside')?.length).toBe(2);
+
+    const mediaOverride = bareClassSelectors(`
+      .game-win-trophy { animation: spin 1.6s; }
+      @media (prefers-reduced-motion: reduce) {
+        .game-win-trophy { animation: none; }
+      }
+    `);
+    expect(mediaOverride.get('.game-win-trophy')?.length).toBe(1);
+
+    // at-rule 出来之后照常再抓 —— 别把嵌套状态漏在栈里。
+    const afterAtRule = bareClassSelectors(`
+      .gcol { color: red; }
+      @media (min-width: 1px) { .gcol { color: blue; } }
+      .gcol { color: green; }
+    `);
+    expect(afterAtRule.get('.gcol')?.length).toBe(2);
   });
 
   it('这份扫描确实扫到了东西 —— 不是空过', () => {

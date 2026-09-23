@@ -34,7 +34,14 @@ _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
 
 
 def _komi_for_handicap(h: int) -> float:
-    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules)."""
+    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules).
+
+    ⚠️ kiosk 本地那条路(`web/ui/src/kiosk/utils/setupOptions.ts` 的 `resolveGameTerms`)
+    对让 N 子给的是 **komi = 0**,不是这里的 N。**两边都对,别去统一。**
+    对面的引擎不是同一个:星阵不另加让子补偿,所以那 N 目要由 komi 带过去;
+    而 KataGo 的中国规则 `whiteHandicapBonusRule = WHB_N` 会自己给白方加 N,
+    komi 再写 N 就补两遍。净补偿两边都是白方 +N。
+    """
     if h == 0:
         return 7.5  # 分先 (even game)
     if h == -1:

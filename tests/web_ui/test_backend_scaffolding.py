@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from katrain.web.api.v1.endpoints import health as health_endpoint
 from katrain.web.core.config import Settings
 from katrain.web.server import create_app
 
@@ -42,3 +43,40 @@ def test_health_check(client):
     versioned = client.get("/api/v1/health")
     assert versioned.status_code == 200
     assert set(versioned.json()) == set(data)
+
+
+@pytest.mark.parametrize(
+    ("katago_status", "expected_local"),
+    [(200, "reachable"), (503, "error_503")],
+)
+def test_versioned_health_maps_local_katago_http_status(client, monkeypatch, katago_status, expected_local):
+    class StubResponse:
+        status_code = katago_status
+
+    class StubAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def get(self, _url):
+            return StubResponse()
+
+    monkeypatch.setattr(health_endpoint.httpx, "AsyncClient", lambda **_kwargs: StubAsyncClient())
+
+    response = client.get("/api/v1/health")
+
+    assert response.status_code == 200
+    assert response.json()["engines"]["local"] == expected_local
+
+
+def test_versioned_health_reports_the_product_version(client):
+    """The kiosk settings screen's 关于 group reads the version from here.
+
+    Compared against the constant rather than a literal: the front end has no other source
+    (its package.json says 0.0.0), so a stale hard-coded string here would show on every box.
+    """
+    from katrain.core.constants import VERSION
+
+    assert client.get("/api/v1/health").json()["version"] == VERSION

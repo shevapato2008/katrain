@@ -44,6 +44,49 @@ describe('KioskPagebar', () => {
     expect(back).toHaveAttribute('aria-busy', 'true');
   });
 
+  test('卡顿时排队的几下返回只算一次:这一屏画出来之前按下的不算(RK3562 实测连退出了 katrain)', () => {
+    // 触屏抬起那一刻的时间戳,和 `performance.now()` 同一个时钟。jsdom 默认给 Date.now(),永远算「新的」。
+    const tapAt = (el: Element, t: number) => {
+      const ev = new MouseEvent('click', { bubbles: true });
+      Object.defineProperty(ev, 'timeStamp', { value: t });
+      el.dispatchEvent(ev);
+    };
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    const onBack = vi.fn();
+    render(<KioskPagebar title="x" backLabel="返回" onBack={onBack} />);
+    const back = screen.getByRole('button', { name: /返回/ });
+    tapAt(back, 400); // 这一屏出来之前按的 —— 用户按的是上一屏的返回
+    expect(onBack).not.toHaveBeenCalled();
+    now.mockReturnValue(2000);
+    tapAt(back, 1500); // 看见这一屏之后按的:生效
+    tapAt(back, 1600); // 同一次卡顿里排在它后面的:不算
+    expect(onBack).toHaveBeenCalledTimes(1);
+    tapAt(back, 2500); // 生效之后再按(比如返回只弹了个确认框):照常
+    expect(onBack).toHaveBeenCalledTimes(2);
+    now.mockRestore();
+  });
+
+  test('页级动作可选择显示文字，同时保留更完整的 accessible name', () => {
+    render(<KioskPagebar title="x" action={{
+      icon: 'arrows-clockwise',
+      label: '重置识别 · 以屏幕上的数字棋盘局面为准',
+      visibleLabel: '重置识别',
+      onClick: () => {},
+    }} />);
+    const action = screen.getByRole('button', { name: '重置识别 · 以屏幕上的数字棋盘局面为准' });
+    expect(action).toHaveTextContent('重置识别');
+    expect(action).toHaveClass('kiosk-pagebar__iconbtn--labeled');
+  });
+
+  test('未提供 visibleLabel 的旧动作仍是纯图标按钮', () => {
+    render(<KioskPagebar title="x" action={{
+      icon: 'arrows-clockwise', label: '重新点灯', onClick: () => {},
+    }} />);
+    const action = screen.getByRole('button', { name: '重新点灯' });
+    expect(action).toHaveTextContent('');
+    expect(action).not.toHaveClass('kiosk-pagebar__iconbtn--labeled');
+  });
+
   test('分段是单选组:左右方向键在段间走,不用 Tab 逐个过', () => {
     const onChange = vi.fn();
     render(<KioskPagebar title="x" segment={{ value: 'b', options: [['a', 'A'], ['b', 'B']], onChange }} />);

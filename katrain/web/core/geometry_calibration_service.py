@@ -3,15 +3,23 @@
 from __future__ import annotations
 
 import logging
+import os
+import shutil
+import tempfile
 import threading
 import time
 from pathlib import Path
 
 import numpy as np
 
-from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON
+from katrain.vision.camera import (
+    CAMERA_AUTO_EXPOSURE_MANUAL,
+    CAMERA_AUTO_EXPOSURE_ON,
+    _auto_exposure_readback_matches,
+)
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
+from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +30,14 @@ CAMERA_AUTO_EXPOSURE_OFF = CAMERA_AUTO_EXPOSURE_MANUAL
 
 class CalibrationBusy(RuntimeError):
     pass
+
+
+class CalibrationCancelled(RuntimeError):
+    """Cancellation accepted before the durable publication boundary."""
+
+
+class LegacyPublishRollbackError(RuntimeError):
+    """Legacy geometry publication failed and its previous files could not be restored."""
 
 
 class GeometryCalibrationService:
@@ -56,18 +72,27 @@ class GeometryCalibrationService:
         *,
         led,
         capture,
-        save_path,
+        save_path=None,
+        persist_state=None,
         initial_lock=None,
         on_success=None,
         on_degraded=None,
         on_suspend=None,
         on_resume=None,
         calibrator_factory=LedGeometryCalibrator,
+        drift_needed=None,
     ):
         self.led = led
         self.capture = capture
-        self.save_path = Path(save_path).expanduser()
+        # 有人用摄像头时才做漂移检测(每次 ~0.5 s CPU)。None = 一直检测(旧行为)。
+        self._drift_needed = drift_needed
+        if save_path is None and persist_state is None:
+            raise ValueError("save_path or persist_state is required")
+        self.save_path = Path(save_path).expanduser() if save_path is not None else None
+        self.persist_state = persist_state
         self.current_lock = initial_lock
+        # Geometry-only runtime/UI notification. Durable geometry + exposure publication
+        # belongs to persist_state and is already committed before this callback runs.
         self.on_success = on_success or (lambda _lock: None)
         # Called once when drift flips a ready lock to degraded — used to invalidate the
         # downstream vision worker so it stops recognizing on a stale (shifted) warp.
@@ -82,6 +107,7 @@ class GeometryCalibrationService:
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
+        self._publish_started = False
         self._thread = None
         self._geometry_revision = 0
         self._detected_anchors = []
@@ -108,6 +134,7 @@ class GeometryCalibrationService:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
             self._cancel_event = threading.Event()
+            self._publish_started = False
             self._drift_monitor = None
             self._detected_anchors = []
             self._status.update(
@@ -121,7 +148,9 @@ class GeometryCalibrationService:
             self._thread.start()
 
     def cancel(self) -> None:
-        self._cancel_event.set()
+        with self._lock:
+            if not self._publish_started:
+                self._cancel_event.set()
         if self.led is not None:
             try:
                 self.led.clear(strict=True)
@@ -253,7 +282,8 @@ class GeometryCalibrationService:
             return
         logger.info(
             "geometry exposure converge: start median=%.0f clip=%.3f -> hardware AE",
-            stats["median"], stats["clip_frac"],
+            stats["median"],
+            stats["clip_frac"],
         )
         request(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
         deadline = time.monotonic() + self.EXPOSURE_CONVERGE_TIMEOUT_S
@@ -336,7 +366,119 @@ class GeometryCalibrationService:
     def _in_target_band(self, stats: dict) -> bool:
         return self.EXPOSURE_TARGET_LO <= stats["median"] <= self.EXPOSURE_TARGET_HI
 
+    @staticmethod
+    def _finite_control_readback(value) -> float | None:
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return None
+        return value if np.isfinite(value) else None
+
+    def _snapshot_exposure_controls(self) -> float | None:
+        # CAP_PROP_EXPOSURE is intentionally absent.  On the RK3562 UVC driver its
+        # readback can stay at a stale shadow value (for example 5000) after AE has
+        # converged; writing that value back on rollback makes the next frame black.
+        return self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+
+    def _restore_exposure_controls(self, auto_exposure: float | None) -> None:
+        request = getattr(self.capture, "request_controls", None)
+        if request is None:
+            return
+        if auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
+            target_auto_exposure = CAMERA_AUTO_EXPOSURE_MANUAL
+            request(auto_exposure=target_auto_exposure)
+        elif auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, auto_exposure):
+            target_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
+            request(auto_exposure=target_auto_exposure)
+        else:
+            return
+
+        grab = getattr(self.capture, "grab_fresh", None)
+        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
+            effective = getattr(self.capture, "controls_effective", None)
+            if effective is not None or grab is None:
+                break
+            grab(settle_ms=0.0)
+        effective = getattr(self.capture, "controls_effective", None)
+        current_auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+        restored = (
+            effective is True
+            and current_auto_exposure is not None
+            and _auto_exposure_readback_matches(target_auto_exposure, current_auto_exposure)
+        )
+        if not restored:
+            logger.warning(
+                "geometry exposure restore readback failed: controls_effective=%r "
+                "target_auto=%r current_auto=%r",
+                effective,
+                target_auto_exposure,
+                current_auto_exposure,
+            )
+
+    def _cancel_if_requested(self) -> bool:
+        if not self._cancel_event.is_set():
+            return False
+        with self._lock:
+            self._status["phase"] = "cancelled"
+        return True
+
+    def _before_publish(self) -> None:
+        """Linearize cancellation immediately before the durable pointer/file swap."""
+        with self._lock:
+            if self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled before publication")
+            self._publish_started = True
+
+    def _persist_legacy(self, lock) -> None:
+        """Stage both legacy files before crossing the publication boundary."""
+        self.save_path.parent.mkdir(parents=True, exist_ok=True)
+        staging_path = Path(tempfile.mkdtemp(prefix=f".{self.save_path.name}.", dir=self.save_path.parent))
+        try:
+            staged_path = staging_path / self.save_path.name
+            staged_sidecar = staged_path.with_suffix(".json")
+            final_sidecar = self.save_path.with_suffix(".json")
+            backup_path = staging_path / "previous.npz"
+            backup_sidecar = staging_path / "previous.json"
+            save_geometry_lock(lock, staged_path)
+            previous_files = (
+                (self.save_path, backup_path, self.save_path.exists()),
+                (final_sidecar, backup_sidecar, final_sidecar.exists()),
+            )
+            for final_path, backup, existed in previous_files:
+                if existed:
+                    shutil.copyfile(final_path, backup)
+            self._before_publish()
+            try:
+                os.replace(staged_path, self.save_path)
+                os.replace(staged_sidecar, final_sidecar)
+            except Exception as publish_exc:
+                rollback_errors = []
+                for final_path, backup, existed in previous_files:
+                    try:
+                        if existed:
+                            os.replace(backup, final_path)
+                        else:
+                            final_path.unlink(missing_ok=True)
+                    except Exception as rollback_exc:
+                        rollback_errors.append(f"{final_path.name}: {rollback_exc}")
+                if rollback_errors:
+                    detail = "; ".join(rollback_errors)
+                    raise LegacyPublishRollbackError(
+                        f"legacy geometry publish failed ({publish_exc}); rollback failed ({detail}); "
+                        "persisted geometry state is unknown"
+                    ) from publish_exc
+                raise
+        finally:
+            try:
+                shutil.rmtree(staging_path)
+            except Exception as cleanup_exc:
+                # Publication/rollback has already reached its definitive outcome;
+                # staging cleanup must not make callers infer the opposite state.
+                logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
+
     def _run(self) -> None:
+        exposure_snapshot = self._snapshot_exposure_controls()
+        committed = False
         try:
             # Free the CPU the vision worker hogs for the whole run; on_resume (finally)
             # re-arms it on the new lock (success) or the previous one (failure/cancel).
@@ -352,7 +494,7 @@ class GeometryCalibrationService:
                 anchor_observer=self._anchor_observed,
             )
             result = calibrator.calibrate()
-            if self._cancel_event.is_set() or result.reason == "cancelled":
+            if self._cancel_if_requested() or result.reason == "cancelled":
                 with self._lock:
                     self._status["phase"] = "cancelled"
                 return
@@ -370,17 +512,36 @@ class GeometryCalibrationService:
                     self._status["metrics"] = metrics
                 return
 
-            save_geometry_lock(result.lock, self.save_path)
-            self.current_lock = result.lock
-            self.on_success(result.lock)
-            self._init_drift_monitor(result.lock)
+            drift_monitor = self._prepare_drift_monitor(result.lock)
             fit = result.fit
             metrics = {
                 "inlier_count": getattr(fit, "inlier_count", None),
                 "rms_residual": getattr(fit, "rms_residual", None),
                 "max_residual": getattr(fit, "max_residual", None),
             }
+            if self._cancel_if_requested():
+                return
+            if self.persist_state is None:
+                self._persist_legacy(result.lock)
+            else:
+                auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+                if (
+                    getattr(self.capture, "controls_effective", None) is not True
+                    or auto_exposure is None
+                    or not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure)
+                ):
+                    raise RuntimeError("camera is not in verified manual exposure mode after calibration")
+                # Persist the replay-safe procedure, never the driver's unreliable
+                # CAP_PROP_EXPOSURE shadow readback.
+                self.persist_state(
+                    result.lock,
+                    CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK,
+                    self._before_publish,
+                )
+            committed = True
             with self._lock:
+                self.current_lock = result.lock
+                self._drift_monitor = drift_monitor
                 self._geometry_revision += 1
                 self._status.update(
                     phase="ready",
@@ -390,11 +551,41 @@ class GeometryCalibrationService:
                     error=None,
                     metrics=metrics,
                 )
-        except Exception as exc:
+            try:
+                self.on_success(result.lock)
+            except Exception as exc:
+                logger.warning("geometry calibration on_success failed after commit: %s", exc)
+        except CalibrationCancelled:
             with self._lock:
-                self._status["phase"] = "failed"
-                self._status["error"] = str(exc)
+                self._status["phase"] = "cancelled"
+        except LegacyPublishRollbackError as exc:
+            logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
+            with self._lock:
+                self.current_lock = None
+                self._drift_monitor = None
+                self._status.update(
+                    phase="failed",
+                    session_calibrated=False,
+                    last_valid=False,
+                    error=str(exc),
+                )
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.error("runtime geometry invalidation failed after legacy rollback error: %s", invalidate_exc)
+        except Exception as exc:
+            if committed:
+                logger.warning("geometry calibration post-commit update failed: %s", exc)
+            else:
+                with self._lock:
+                    self._status["phase"] = "failed"
+                    self._status["error"] = str(exc)
         finally:
+            if not committed:
+                try:
+                    self._restore_exposure_controls(exposure_snapshot)
+                except Exception as exc:
+                    logger.warning("geometry exposure restore failed: %s", exc)
             if self.led is not None:
                 try:
                     self.led.clear(strict=True)
@@ -405,23 +596,30 @@ class GeometryCalibrationService:
             except Exception:
                 pass
 
-    def _init_drift_monitor(self, lock) -> None:
+    def _prepare_drift_monitor(self, lock):
         if not hasattr(self.capture, "grab_fresh"):
-            return
+            return None
         frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
         if frame is None:
-            return
+            return None
         from katrain.vision.geometry_drift import GeometryDriftMonitor
 
         horizontal = np.linalg.norm(lock.points[:, 1:] - lock.points[:, :-1], axis=2)
         vertical = np.linalg.norm(lock.points[1:] - lock.points[:-1], axis=2)
         spacing = float(np.median(np.concatenate([horizontal.ravel(), vertical.ravel()])))
-        self._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=spacing)
+        return GeometryDriftMonitor(frame, cell_spacing_px=spacing)
+
+    def _init_drift_monitor(self, lock) -> None:
+        self._drift_monitor = self._prepare_drift_monitor(lock)
 
     def _drift_loop(self) -> None:
         while not self._drift_stop.wait(1.0):
             monitor = self._drift_monitor
             if monitor is None or not hasattr(self.capture, "grab_fresh"):
+                continue
+            # RK3562 实测:没在下实体棋时这里每秒 ~0.5 s CPU(katrain 的 31%)。恢复后下一秒就检测,
+            # 空闲期间被碰歪的盘在开局一秒内照样能发现。
+            if self._drift_needed is not None and not self._drift_needed():
                 continue
             with self._lock:
                 if self._status["phase"] != "ready":

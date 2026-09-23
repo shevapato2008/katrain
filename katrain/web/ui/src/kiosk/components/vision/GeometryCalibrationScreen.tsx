@@ -55,6 +55,13 @@ const STEPS = [
   { key: 'baseline', title: '生成空盘基线', hint: '之后识子都拿它作底' },
 ] as const;
 
+/**
+ * 实时画面按屏上尺寸推(后端 `?scale=`)。画面区只有 ~514 px 宽:原样推 1920x1080 / 1056x1056 时,
+ * RK3562 上标定收尾那 19 s 里页面主线程 6.8 s 花在解码/绘制这些大图上(JS 合计 <2%),点击排队。
+ * 缩完仍不小于显示尺寸:原始 1920/3 = 640,俯视 1056/2 = 528。
+ */
+const RAW_STREAM_SCALE = 3;
+const WARPED_STREAM_SCALE = 2;
 const ACTIVE_PHASES = new Set(['waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline']);
 
 const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
@@ -350,9 +357,10 @@ export function GeometryCalibrationScreen({
   const preview: ReactNode = view === 'raw' ? (
     <GeometryVideoPanel
       fill
-      src="/api/v1/geometry/stream"
+      src={`/api/v1/geometry/stream?scale=${RAW_STREAM_SCALE}`}
       alt="摄像头原始画面"
-      onImageLoad={setRawFrame}
+      // 锚点坐标是相机原始像素 ⇒ 缩过的图要乘回去,覆盖层才对得上。
+      onImageLoad={(s) => setRawFrame({ width: s.width * RAW_STREAM_SCALE, height: s.height * RAW_STREAM_SCALE })}
       overlay={<CameraGeometryOverlay modelForViewport={rawModelForViewport} label="原始画面棋盘几何叠加层" />}
     />
   ) : (
@@ -360,7 +368,7 @@ export function GeometryCalibrationScreen({
       fill
       /* ⚠️ `&& !active` 不是多余的:运行中 `layout` 往往非空(上一次的锁还在磁盘上),
          照播就是在放**一份正在被这次运行作废的**几何 —— 常驻分段方案里唯一会骗人的那一格。 */
-      src={layout && !active ? `/api/v1/geometry/warped-stream?revision=${layout.revision}` : undefined}
+      src={layout && !active ? `/api/v1/geometry/warped-stream?revision=${layout.revision}&scale=${WARPED_STREAM_SCALE}` : undefined}
       alt="俯视矫正画面"
       waitingText={active ? '标定进行中，俯视画面在完成后重新生成' : '完成 LED 标定后生成俯视画面'}
       overlay={<CameraGeometryOverlay modelForViewport={warpedModelForViewport} label="俯视画面棋盘几何叠加层" />}

@@ -101,6 +101,7 @@ class FakeKaTrain:
 
     def __init__(self, username: str):
         self.ai_ladder_commit_lock = threading.RLock()
+        self.clock_started = False
         self.calls = []
         self.config_updates = []
         self.game_type = "free"
@@ -138,6 +139,14 @@ class FakeKaTrain:
             "end_result": None,
             "player_to_move": "B",
         }
+
+    def start_clock(self):
+        # 与 WebKaTrain.start_clock 同语义:幂等,只有第一次返回 True。
+        # 实体盘绑定 = 「棋盘可用」那一刻,钟从这里起步。
+        if self.clock_started:
+            return False
+        self.clock_started = True
+        return True
 
     def __call__(self, action, *args, **kwargs):
         self.calls.append((action, kwargs))
@@ -803,7 +812,8 @@ async def test_ranked_session_rejects_canonical_mutation_and_analysis_endpoints(
                 resolved_path, headers=api_app.state._test_headers, json={"session_id": session_id, **payload}
             )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -869,7 +879,7 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
             ),
         )
 
-    assert [response.status_code for response in responses] == [200, 200, 200, 200, 200]
+    assert [response.status_code for response in responses] == [200, 200, 409, 200, 200]
 
 
 @pytest.mark.asyncio
@@ -921,7 +931,8 @@ async def test_pending_ranked_user_cannot_analyze_a_second_free_session(api_app,
             json={"session_id": free.session_id, **payload},
         )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -975,6 +986,18 @@ async def test_free_session_creation_registers_auto_analysis_before_ranked_start
     assert created.status_code == 200
     assert started.status_code == 409
     assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_ended_free_session_analysis_does_not_block_ranked_start(api_app, client):
+    async with client as ac:
+        created = await ac.post("/api/session", headers=api_app.state._test_headers)
+        free = api_app.state.session_manager.get_session(created.json()["session_id"])
+        free.game_ended = True
+        started = await start_ranked(api_app, ac)
+
+    assert created.status_code == 200
+    assert started.status_code == 201
 
 
 @pytest.mark.asyncio
@@ -1084,9 +1107,14 @@ async def test_ranked_start_rejects_preexisting_background_analysis(api_app, cli
         )
         started = await start_ranked(api_app, ac)
 
-    assert analysis.status_code == 200
-    assert started.status_code == 409
-    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+    if analysis_path == "/api/nav":
+        assert analysis.status_code == 409
+        assert started.status_code == 201
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is not None
+    else:
+        assert analysis.status_code == 200
+        assert started.status_code == 409
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
 
 
 @pytest.mark.asyncio
@@ -1101,7 +1129,7 @@ async def test_pending_ranked_user_navigation_does_not_trigger_free_session_anal
             json={"session_id": free.session_id, "node_id": 0},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 409
     assert free.katrain.calls == calls_before
 
 
@@ -1314,7 +1342,7 @@ async def test_settled_ranked_game_rejects_public_and_vision_moves_without_chang
         ).status_code == 200
         sgf_before = session.katrain.get_sgf()
         snapshot = session.ai_ladder_snapshot
-        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
         api_app.state.ranked_vision_binding = SimpleNamespace(
             session_id=session_id,
             user_id=snapshot.user_id,
@@ -1385,7 +1413,7 @@ async def test_ranked_vision_bind_requires_owner_and_freezes_identity(api_app, c
         vision.bound_session_id = session_id
 
     vision.bind_session = bind_session
-    vision.set_expected_from_stones = lambda stones: None
+    vision.set_expected_from_stones = lambda stones, **_kwargs: None
     api_app.state.vision = vision
     async with client as ac:
         started = await start_ranked(api_app, ac)
@@ -1482,7 +1510,7 @@ async def test_confirmed_ranked_vision_move_plays_exactly_once_on_human_turn(api
     api_app.state.ranked_vision_binding = SimpleNamespace(
         session_id=session_id, user_id=snapshot.user_id, user_color=snapshot.user_color, game_id=snapshot.game_id
     )
-    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
 
     handler = __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move
     first, duplicate = await asyncio.gather(
@@ -1512,7 +1540,9 @@ async def test_confirmed_ranked_vision_move_rejects_ai_turn_and_seat_tamper(api_
     else:
         session.katrain.players_info["W"].player_subtype = "ai:default"
     before = list(session.katrain._state["history"])
-    vision = SimpleNamespace(bound_session_id=session.session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(
+        bound_session_id=session.session_id, set_expected_from_stones=lambda stones, **_kwargs: None
+    )
 
     delay = await __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move(
         api_app, vision, session.session_id, SimpleNamespace(col=3, row=3, color=1), logging.getLogger("vision")

@@ -40,6 +40,13 @@ MIN_LOCATED_ANCHORS = 9
 #     贴着噪声底(只高 1.03-1.20 倍)。**这一半不动**:再往上抬会把"ROI 被投毒之后
 #     靠全画幅捞回来"的锚点一起毙掉,而没有实测数据支持某个具体的更高值。
 PEAK_MIN_ROI = 15.0
+
+# 每颗锚点点亮后先等 settle_ms 拍一帧,再每隔 HOLD_STEP_MS 补拍 HOLD_EXTRA_FRAMES 帧(灯一共亮约 1 s),
+# 逐像素取最小再与暗帧做差:**只有每一帧都亮的地方才算 LED**。2026-09-21 RK3562:角点三轮被棋盘外
+# 一闪而过的变化抢走(当次锁反算 row 1.47 / col -3.63;人不在旁边时 12/12 全对),单帧检测挡不住;
+# Fan 定的做法是「一个点多亮一会儿」,不是「同一点闪两次」。
+HOLD_EXTRA_FRAMES = 3
+HOLD_STEP_MS = 300.0
 PEAK_MIN_FULL = 20.0
 
 # 「本轮 ROI 预筛整个没生效」的报警线。某个**角**被眩光抢到别处时(正是本分支要修的
@@ -76,6 +83,9 @@ class LedCentroidResult:
     area: int = 0
     margin: float = 0.0
     reason: str | None = None
+    # Integrated brightness of the dominant blob (sum of its lit-minus-dark delta). The runtime LED
+    # brightness loop (worker_inprocess.measure_led_glow) steers guidance brightness on it.
+    score: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -180,13 +190,15 @@ def detect_led_centroid(
     second_score = blobs[1][0] if len(blobs) > 1 else 0.0
     margin = score / max(second_score, 1.0)
     if len(blobs) > 1 and margin < 1.3:
-        return LedCentroidResult(ok=False, peak=peak, area=area, margin=margin, reason="ambiguous_blobs")
+        return LedCentroidResult(
+            ok=False, peak=peak, area=area, margin=margin, reason="ambiguous_blobs", score=score
+        )
 
     ys, xs = np.where(labels == label)
     weights = np.maximum(delta[ys, xs], 0.0)
     total = float(weights.sum())
     centroid = (float(np.dot(xs, weights) / total), float(np.dot(ys, weights) / total))
-    return LedCentroidResult(ok=True, centroid=centroid, peak=peak, area=area, margin=margin)
+    return LedCentroidResult(ok=True, centroid=centroid, peak=peak, area=area, margin=margin, score=score)
 
 
 def fit_geometry_from_anchors(
@@ -302,8 +314,8 @@ def first_nondegenerate_quad(detected):
 class LedGeometryCalibrator:
     """Orchestrate strict LED flashes and fresh-frame geometry capture."""
 
-    # (通道, 颜色名) —— 亮度由 FLASH_LEVELS 决定,不再写死在 RGB 里。
-    COLOR_CHANNELS = ((1, "green"), (2, "red"), (0, "blue"))
+    # (通道, 颜色名) —— 几何标定的软件契约只允许绿色。
+    COLOR_CHANNELS = ((1, "green"),)
     # 先暗后亮:暗处 96 档 peak 94-198 已充裕且不削顶;只在 low_signal 时才拉满。
     FLASH_LEVELS = (96, 255)
 
@@ -437,8 +449,9 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=show_failed", row, col, color_name, level,
                     )
                     break
-                lit, _seq, _ts = self.capture.grab_fresh(
+                lit, _seq, lit_ts = self.capture.grab_fresh(
                     after_ts=shown.get("shown_at"), settle_ms=self.settle_ms)
+                lit = self._hold_min(lit, lit_ts)
                 if dark is None or lit is None:
                     attempts.append({"row": row, "col": col, "color": color_name,
                                      "level": level, "reason": "no_frame"})
@@ -485,6 +498,18 @@ class LedGeometryCalibrator:
                 self.anchor_observer(row, col, point, color_name)
                 return result.centroid
         return None
+
+    def _hold_min(self, lit, lit_ts):
+        """灯亮着的时候再连拍 HOLD_EXTRA_FRAMES 帧,逐像素取最小 —— 只有每一帧都亮的地方留下来。"""
+        if lit is None:
+            return None
+        frames, ts = [lit], lit_ts
+        for _ in range(HOLD_EXTRA_FRAMES):
+            frame, _seq, ts = self.capture.grab_fresh(after_ts=ts, settle_ms=HOLD_STEP_MS)
+            if frame is None:
+                break
+            frames.append(frame)
+        return np.minimum.reduce(frames)
 
     def _build_lock(self, fit, frames, detected, attempts):
         M = np.asarray(fit.M, np.float64)

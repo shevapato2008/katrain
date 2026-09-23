@@ -30,3 +30,13 @@ export function websocketUrl(path: string, token?: string | null): string {
 
 /** 服务端在拒绝凭据时用的 close code（RFC 6455 的 policy violation）。 */
 export const WS_POLICY_VIOLATION = 1008;
+
+/** 服务端回收一局时在 1008 的 `reason` 里发的暗号（`katrain/web/session.py`）。 */
+export const WS_SESSION_GONE_REASON = 'session_gone';
+
+/* 这一局在服务器上已经没有了(闲置回收 / 盒子重启 / 被删)。三条通道都可能先发现它:
+   WS 被 1008 "session_gone" 关掉、任何动作回 404、或 200 `session_gone` 体。
+   文案放这里是因为 `/ws/{session_id}` 有三个消费者(useGameSession / useSessionBase /
+   ZenModeApp),只改一个 = 另外两屏把内部暗号 `session_gone` 原样印给用户、还叫他去重新登录。
+   说的是「本机没有这一局了」,不是「你认输了」—— 回收会话不会结束远端对局。 */
+export const SESSION_GONE_MESSAGE = '这一局在服务器上已经没有了，可以离开这一页。';

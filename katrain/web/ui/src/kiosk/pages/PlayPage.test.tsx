@@ -21,6 +21,9 @@ vi.mock('../utils/activeSession', () => ({ readActiveSession }));
 const { useAuthMock } = vi.hoisted(() => ({ useAuthMock: vi.fn() }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: useAuthMock }));
 
+const { useEngineReadinessMock } = vi.hoisted(() => ({ useEngineReadinessMock: vi.fn() }));
+vi.mock('../context/EngineReadinessContext', () => ({ useEngineReadiness: useEngineReadinessMock }));
+
 // 跨平台对弈 section fetches API.platformStatus(token); stub it per-test.
 const { platformStatusMock } = vi.hoisted(() => ({ platformStatusMock: vi.fn() }));
 vi.mock('../../api', () => ({ API: { platformStatus: platformStatusMock } }));
@@ -91,6 +94,8 @@ describe('PlayPage', () => {
     readActiveSession.mockReturnValue(null);
     useAuthMock.mockReset();
     useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    useEngineReadinessMock.mockReset();
+    useEngineReadinessMock.mockReturnValue('ready');
     platformStatusMock.mockReset();
     platformStatusMock.mockResolvedValue({ platforms: [] });
   });
@@ -106,6 +111,39 @@ describe('PlayPage', () => {
     // 稿子四张一模一样 —— 差别由**内容**表达,不由卡的等级表达:
     // 把一张卡做成主推,等于替用户决定他该下哪一种。
     for (const b of buttons) expect(b!.className).toBe('kiosk-card');
+  });
+
+  it.each([
+    ['warming', 'AI 引擎准备中，稍后即可开始'],
+    ['unavailable', 'AI 引擎暂未就绪，请稍后重试'],
+  ])('disables only AI modes while engine readiness is %s', (readiness, subtitle) => {
+    useEngineReadinessMock.mockReturnValue(readiness);
+    renderPage();
+
+    expect(screen.getByText('自由对弈').closest('button')).toBeDisabled();
+    expect(screen.getByText('升降级对弈').closest('button')).toBeDisabled();
+    expect(screen.getByText('本地对局').closest('button')).toBeEnabled();
+    expect(screen.getByText('在线大厅').closest('button')).toBeEnabled();
+    expect(screen.getAllByText(subtitle)).toHaveLength(2);
+  });
+
+  it('restores AI mode subtitles and navigation when the engine is ready', () => {
+    useEngineReadinessMock.mockReturnValue('ready');
+    renderPage();
+
+    const free = screen.getByText('自由对弈').closest('button')!;
+    const ranked = screen.getByText('升降级对弈').closest('button')!;
+    expect(free).toBeEnabled();
+    expect(ranked).toBeEnabled();
+    expect(free).toHaveTextContent('自己挑强度 · 可以看形势判断');
+    expect(ranked).toHaveTextContent('按棋力自动配档 · 全程封分析');
+
+    fireEvent.click(free);
+    fireEvent.click(ranked);
+    expect(mockNavigate.mock.calls).toEqual([
+      ['/kiosk/play/ai/setup/free'],
+      ['/kiosk/play/ai/setup/ranked'],
+    ]);
   });
 
   it('hides the resume bar when there is no active session', () => {
@@ -267,14 +305,37 @@ describe('PlayPage', () => {
     expect(platformButtons()[1]).toHaveTextContent('点击登录');   // [1] = 星阵,不是野狐
   });
 
+  it('本地对局卡片未登录时说要先登录', () => {
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: false, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('要先登录 · 下完自动存谱');
+    expect(card).not.toHaveTextContent('两人在同一块实体盘上下');
+  });
+
+  it('本地对局卡片已登录时仍说两人在同一块实体盘上下', () => {
+    useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('两人在同一块实体盘上下');
+    expect(card).not.toHaveTextContent('要先登录');
+  });
+
   it('keeps disconnected defaults after logout when an older request resolves', async () => {
-    let auth: { user: { username: string } | null; isAuthenticated: boolean; token: string | null } =
-      { user: { username: '友' }, isAuthenticated: true, token: 'A' };
+    let auth = {
+      user: { username: '友' } as { username: string } | null,
+      isAuthenticated: true,
+      token: 'A' as string | null,
+    };
     const requestA = deferred<{ platforms: PlatformInfo[] }>();
     useAuthMock.mockImplementation(() => auth);
     platformStatusMock.mockReturnValue(requestA.promise);
     const view = renderPage();
 
+    // 登出 = user 和 token 一起清掉(`AuthContext.logout` 就是这么做的)。
+    // 只清 token、人还登录着 —— 那是严格盒端 SSO 的**常态**,不是登出(见下一条)。
     auth = { user: null, isAuthenticated: false, token: null };
     view.rerender(pageElement());
     expectAllDisconnected();
@@ -283,6 +344,26 @@ describe('PlayPage', () => {
       requestA.resolve({ platforms: [platformRecord('golaxy', true)] });
       await requestA.promise;
     });
+    expectAllDisconnected();
+  });
+
+  /**
+   * 回归钉子(P16):严格盒端 SSO 里 `token` 恒为 null,身份在 HttpOnly cookie 里。
+   * 原来的 `if (token)` 让盒上**已登录**的人永远只看到兜底状态 ——
+   * 而 `/api/v1/platforms/status` 认 cookie,请求发出去本来就会成功。
+   */
+  it('盒上 token 恒为 null 但已登录:照常请求平台状态,连上的平台照实显示', async () => {
+    useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    platformStatusMock.mockResolvedValue({ platforms: [platformRecord('golaxy', true)] });
+    renderPage();
+    await waitFor(() => expect(platformStatusMock).toHaveBeenCalledWith(null));
+    await waitFor(() => expect(platformButtons()[1]).toHaveTextContent('已连接'));   // [1] = 星阵
+  });
+
+  it('游客不请求平台状态 —— 那个端点要登录,发了也是 401', () => {
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: false, token: null });
+    renderPage();
+    expect(platformStatusMock).not.toHaveBeenCalled();
     expectAllDisconnected();
   });
 

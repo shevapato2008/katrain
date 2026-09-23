@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from katrain.vision.board_state import BoardStateExtractor, EMPTY, BLACK, WHITE
+from katrain.vision.board_state import BoardStateExtractor, EMPTY, BLACK, WHITE, COLOR_FLIP_RELEASE_FRAMES
 from katrain.vision.config import BoardConfig
 from katrain.vision.coordinates import grid_to_physical
 from katrain.vision.stone_detector import Detection
@@ -383,9 +383,7 @@ class TestStickyAssignment:
 
     def _run(self, dets, sticky):
         ex = BoardStateExtractor(BoardConfig())
-        return ex.detections_to_board(
-            dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True, sticky_board=sticky
-        )
+        return ex.detections_to_board(dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True, sticky_board=sticky)
 
     def test_snaps_to_established_cell(self):
         sticky = np.zeros((19, 19), dtype=int)
@@ -483,8 +481,13 @@ class TestSustainAtLitCells:
     def _run(self, dets, masked, prev):
         ex = BoardStateExtractor(BoardConfig())
         return ex.detections_to_board(
-            dets, img_w=self.IMG, img_h=self.IMG, occupancy_aware=True,
-            masked_cells=masked, prev_board=prev, add_threshold=0.40,
+            dets,
+            img_w=self.IMG,
+            img_h=self.IMG,
+            occupancy_aware=True,
+            masked_cells=masked,
+            prev_board=prev,
+            add_threshold=0.40,
         )
 
     def _prev_white(self):
@@ -507,3 +510,92 @@ class TestSustainAtLitCells:
         dets = [self._det(5, 5, 2, 0.6)]  # no lamp here: this is a model misread
         board = self._run(dets, set(), self._prev_white())
         assert board[5][5] == WHITE
+
+
+IMG = 640  # square, matching the grid_to_pixel pattern already used at test_board_state.py:101
+
+
+def _det_at(cfg, row, col, class_id, confidence):
+    """A detection centred on intersection (row, col). grid_to_pixel takes (pos_x=col, pos_y=row)."""
+    from katrain.vision.coordinates import grid_to_pixel
+
+    px, py = grid_to_pixel(col, row, IMG, IMG, cfg)
+    return Detection(x_center=px, y_center=py, class_id=class_id, confidence=confidence)
+
+
+class TestColorInvariant:
+    """L3: an established stone does not change colour. Measured on RK3562 2026-09-20:
+    65 colour flips on already-placed points in one game, one point flipping 41 times
+    over 27 minutes, 8 of them reaching the client as a board mismatch."""
+
+    def _prev_with_white(self):
+        prev = np.zeros((19, 19), dtype=int)
+        prev[17][15] = WHITE
+        return prev
+
+    def test_single_frame_flip_is_suppressed(self, extractor, cfg):
+        prev = self._prev_with_white()
+        black_det = [_det_at(cfg, 17, 15, class_id=0, confidence=0.9)]  # class 0 -> BLACK
+        board = extractor.detections_to_board(black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        assert board[17][15] == WHITE  # established colour held
+
+    def test_sustained_flip_is_released(self, extractor, cfg):
+        """A flip that persists is a real wrong-colour placement, not noise — it must
+        get through, or sync.py's wrong-colour warning becomes dead code."""
+        prev = self._prev_with_white()
+        black_det = [_det_at(cfg, 17, 15, class_id=0, confidence=0.9)]
+        board = None
+        for _ in range(COLOR_FLIP_RELEASE_FRAMES):
+            board = extractor.detections_to_board(
+                black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev
+            )
+        assert board[17][15] == BLACK
+
+    def test_the_release_latches_until_the_stable_board_adopts_it(self):
+        """THE regression. The workers need two CONSECUTIVE agreeing frames before the
+        stable board changes, and `prev_board` is that stable board — so a release that
+        lasts one frame never lands and the established colour is stuck forever. Reproduce
+        the worker's own voting loop rather than trusting a single extractor call."""
+        ex = BoardStateExtractor()
+        cfg = BoardConfig()
+        prev_stable = np.zeros((19, 19), dtype=int)
+        prev_stable[17][15] = WHITE
+        prev_observed = None
+        black_det = [_det_at(cfg, 17, 15, class_id=0, confidence=0.9)]
+
+        for _ in range(COLOR_FLIP_RELEASE_FRAMES + 3):
+            observed = ex.detections_to_board(
+                black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev_stable
+            )
+            if prev_observed is not None:
+                prev_stable = np.where(observed == prev_observed, observed, prev_stable)
+            prev_observed = observed
+
+        assert prev_stable[17][15] == BLACK  # the correction actually reached the stable board
+
+    def test_streak_resets_when_the_colour_agrees_again(self, extractor, cfg):
+        prev = self._prev_with_white()
+        black_det = [_det_at(cfg, 17, 15, class_id=0, confidence=0.9)]
+        white_det = [_det_at(cfg, 17, 15, class_id=1, confidence=0.9)]  # class 1 -> WHITE
+
+        for _ in range(COLOR_FLIP_RELEASE_FRAMES - 1):
+            extractor.detections_to_board(black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        # One agreeing frame clears the streak...
+        extractor.detections_to_board(white_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        # ...so the next disagreeing frame is back at streak 1 and is suppressed.
+        board = extractor.detections_to_board(black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        assert board[17][15] == WHITE
+
+    def test_a_new_stone_on_an_empty_point_is_unaffected(self, extractor, cfg):
+        prev = np.zeros((19, 19), dtype=int)  # nothing established anywhere
+        black_det = [_det_at(cfg, 17, 15, class_id=0, confidence=0.9)]
+        board = extractor.detections_to_board(black_det, img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        assert board[17][15] == BLACK
+
+    def test_removal_is_unaffected(self, extractor, cfg):
+        """No detection at all near the cell -> the existing presence sustain does not
+        fire either, and the stone leaves the board. The colour invariant must not
+        resurrect it."""
+        prev = self._prev_with_white()
+        board = extractor.detections_to_board([], img_w=IMG, img_h=IMG, occupancy_aware=True, prev_board=prev)
+        assert board[17][15] == EMPTY

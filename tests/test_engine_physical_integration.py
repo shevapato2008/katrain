@@ -170,7 +170,7 @@ class FakeVisionForOrchestrator:
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
 
     def pause_detection(self):
@@ -732,7 +732,11 @@ class TestCase7ResignWhileWaitingForRemoval:
                 for command in worker.commands
                 if command in (CommandType.PAUSE_DETECTION, CommandType.RESUME_DETECTION)
             ]
-            assert pause_commands[-1] == CommandType.RESUME_DETECTION
+            # 原来这里期望 RESUME —— 恢复态释放完就把检测放回去。终局即停止比对之后不再如此:
+            # engine_error / awaiting_removal 确实释放了(上面的 _wait_until 守着),但
+            # game_over 接着把检测按住,所以最后一条命令是 PAUSE。这正是目的 ——
+            # 认输之后实体盘上再放多少子都不该被拿来和一局已经结束的棋比对。
+            assert pause_commands[-1] == CommandType.PAUSE_DETECTION
 
             delay = await _handle_confirmed_move(stack.app, stack.vision, session_id, stone, log)
 

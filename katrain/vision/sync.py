@@ -82,6 +82,7 @@ class SyncStateMachine:
         degraded_recovery: float = 0.45,
         degraded_enter_seconds: float = 10.0,
         degraded_exit_seconds: float = 5.0,
+        missing_hold_seconds: float = 7.0,
     ):
         self._board_size = board_size
         self._illegal_change_frames = illegal_change_frames
@@ -94,11 +95,22 @@ class SyncStateMachine:
         # Board state
         self._expected_board: np.ndarray = np.zeros((board_size, board_size), dtype=int)
         self._prev_expected_board: np.ndarray | None = None
+        self._expected_node_id: int | None = None
+        self._pending_expected_node_id: int | None = None
         self._target_board: np.ndarray | None = None
 
         # Mismatch tracking
         self._mismatch_board: np.ndarray | None = None
         self._mismatch_count: int = 0
+
+        # A live stone vision cannot see is held back until it has been continuously
+        # invisible for BOTH missing_hold_seconds of real time AND illegal_change_frames
+        # of actually-observed frames. Wall-clock alone is not enough: gating.py's
+        # should_feed_sync_frame stops feeding frames while the scene moves, so a 3-second
+        # occlusion arrives here as two frames 3 seconds apart. The old gate was the frame
+        # counter alone, which at the board's 6-15 fps is 0.3-0.8s — an arm passing over.
+        self._missing_hold_seconds = missing_hold_seconds
+        self._missing_since: dict[tuple[int, int], list] = {}  # (row,col) -> [first_seen_ts, frames]
 
         # Machine state
         self._state: SyncState = SyncState.UNBOUND
@@ -116,20 +128,28 @@ class SyncStateMachine:
 
     # -- public API ----------------------------------------------------------
 
-    def set_expected_board(self, board: np.ndarray) -> None:
+    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Set the expected board (from game engine).
 
-        Keeps the previous expected board so ``_compare_boards`` can tell "digital
-        stone the player hasn't placed yet" from "stone that must come off". This is
-        called on every ``game_update`` (digital authority) and coalesced to the
-        latest state under throttling; a stale ``prev`` only ever biases points
-        toward the safe "placement pending" bucket, never fabricates the
-        ``prev == observed`` match "removal needed" requires, so no
-        sequencing/hash mechanism is needed here.
+        Keeps the previous distinct expected board so ``_compare_boards`` can tell
+        "digital stone the player hasn't placed yet" from "stone that must come
+        off". Repeating the same matrix does not advance that baseline. A new node
+        revision is tracked independently and acknowledged once vision observes an
+        exact physical match.
         """
-        if self._expected_board is not None:
+        if not np.array_equal(board, self._expected_board):
             self._prev_expected_board = self._expected_board.copy()
-        self._expected_board = board.copy()
+            self._expected_board = board.copy()
+            if self._state == SyncState.CAPTURE_PENDING:
+                self._pending_captures = [
+                    (r, c, color) for r, c, color in self._pending_captures if int(board[r, c]) != color
+                ]
+                if not self._pending_captures:
+                    self._state = SyncState.SYNCED
+
+        if expected_node_id != self._expected_node_id:
+            self._expected_node_id = expected_node_id
+            self._pending_expected_node_id = expected_node_id
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
         """Enter tsumego setup mode with a target position."""
@@ -172,30 +192,34 @@ class SyncStateMachine:
                 events.append(SyncEvent(SyncEventType.BOARD_LOST))
             return events
 
-        if self._state == SyncState.BOARD_LOST:
+        was_board_lost = self._state == SyncState.BOARD_LOST
+        if was_board_lost and self._target_board is not None:
             # A transient loss during setup (a hand occluding a corner while placing
             # stones) must NOT abandon setup: resume it so subsequently placed stones
             # keep reporting as SETUP_PROGRESS instead of dropping to compare mode and
             # being flagged as ILLEGAL_CHANGE.
-            self._state = SyncState.SETUP_IN_PROGRESS if self._target_board is not None else SyncState.SYNCED
-            events.append(SyncEvent(SyncEventType.BOARD_REACQUIRED))
-            # Fall through to remaining checks with the new frame.
+            self._state = SyncState.SETUP_IN_PROGRESS
 
         # 2. Degraded-mode hysteresis
+        was_degraded = self._state == SyncState.DEGRADED
         degraded_events = self._check_degraded(mean_confidence, now)
         events.extend(degraded_events)
         if self._state == SyncState.DEGRADED:
+            return events
+        if was_degraded:
             return events
 
         # 3. Setup mode
         if self._state == SyncState.SETUP_IN_PROGRESS and self._target_board is not None:
             setup_events = self._check_setup(observed_board)
             events.extend(setup_events)
-            return events
+        else:
+            # 4. Compare with expected board before declaring recovery: a visible
+            # frame can still contain the same displacement that caused BOARD_LOST.
+            events.extend(self._compare_boards(observed_board, now))
 
-        # 4. Compare with expected board
-        compare_events = self._compare_boards(observed_board)
-        events.extend(compare_events)
+        if was_board_lost and self._state != SyncState.BOARD_LOST:
+            events.insert(0, SyncEvent(SyncEventType.BOARD_REACQUIRED))
 
         return events
 
@@ -206,9 +230,12 @@ class SyncStateMachine:
         else:
             self._expected_board = np.zeros((self._board_size, self._board_size), dtype=int)
         self._prev_expected_board = None
+        self._expected_node_id = None
+        self._pending_expected_node_id = None
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
+        self._missing_since = {}
         self._pending_captures = []
         self._degraded_timer_start = None
         self._degraded_recovery_start = None
@@ -288,11 +315,13 @@ class SyncStateMachine:
             self._target_board = None
             self._expected_board = observed_board.copy()
             self._prev_expected_board = None
+            self._expected_node_id = None
+            self._pending_expected_node_id = None
             self._state = SyncState.SYNCED
 
         return events
 
-    def _compare_boards(self, observed_board: np.ndarray) -> list[SyncEvent]:
+    def _compare_boards(self, observed_board: np.ndarray, now: float) -> list[SyncEvent]:
         """Compare observed board with expected board and emit sync events."""
         events: list[SyncEvent] = []
         diff_mask = observed_board != self._expected_board
@@ -300,15 +329,7 @@ class SyncStateMachine:
         diff_positions = list(zip(*np.where(diff_mask)))
         diff_count = len(diff_positions)
 
-        # 4a. Many simultaneous changes → board displaced / lost
-        if diff_count >= self._board_lost_threshold:
-            self._state = SyncState.BOARD_LOST
-            events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
-            self._mismatch_board = None
-            self._mismatch_count = 0
-            return events
-
-        # 4b. Classify against the previous expected board (digital authority).
+        # 4a. Classify against the previous expected board (digital authority).
         #     Newly-expected stone the player hasn't placed yet is NOT an anomaly;
         #     a live stone that vanished physically IS one (review Codex B2) — it must
         #     ride the debounced mismatch flow, never the instantly-self-clearing
@@ -342,6 +363,58 @@ class SyncStateMachine:
                 # Color changed — treat as unexpected
                 unexpected.append((r, c, observed_val))
 
+        # 4a-bis. Hold back a missing stone until it has been continuously invisible for
+        # both a real elapsed period and a minimum number of observed frames — see
+        # `_missing_hold_seconds`. `missing_anomaly` itself is left intact because the
+        # board-lost check below must still react immediately: a displaced board produces
+        # many missing points at once and is not something to wait out.
+        held_missing: list[tuple[int, int, int]] = []
+        ripe_missing: list[tuple[int, int, int]] = []
+        seen_missing: set[tuple[int, int]] = set()
+        for r, c, clr in missing_anomaly:
+            cell = (r, c)
+            seen_missing.add(cell)
+            entry = self._missing_since.get(cell)
+            if entry is None:
+                entry = [now, 0]
+                self._missing_since[cell] = entry
+            entry[1] += 1
+            # entry[1] >= self._illegal_change_frames (D5's second condition) is defence
+            # in depth: it is CURRENTLY structurally redundant with the pre-existing
+            # _mismatch_count stability debounce below (4d), because both are gated at
+            # the same self._illegal_change_frames threshold and both accumulate over the
+            # same event stream — frames where this cell is in missing_anomaly. By the
+            # time _mismatch_count could reach that threshold and fire, this cell has by
+            # construction already been observed that many times, so this clause cannot
+            # currently change WHETHER ILLEGAL_CHANGE eventually fires — only, in the rare
+            # case where wall-clock alone would have gone ripe earlier (a long occlusion
+            # gap followed by fast frames), WHEN the debounce starts counting, delaying the
+            # fire. Every test but one in this class cannot tell "this clause present" from
+            # "this clause deleted" — a green suite there is not evidence it is unnecessary,
+            # only that today's debounce already implies it for the ordinary case. See
+            # test_frame_count_condition_delays_ripening_after_a_long_gap in
+            # test_sync.py::TestMissingStoneHold for the one ordering that DOES distinguish
+            # them. Keep this clause — it makes D5's intent explicit in code and it is what
+            # protects the missing path if the debounce is ever loosened or removed
+            # independently.
+            if now - entry[0] >= self._missing_hold_seconds and entry[1] >= self._illegal_change_frames:
+                ripe_missing.append((r, c, clr))
+            else:
+                held_missing.append((r, c, clr))
+        for cell in list(self._missing_since):
+            if cell not in seen_missing:
+                del self._missing_since[cell]
+
+        # 4b. Many unexplained changes → board displaced / lost. Captures and
+        # digitally requested placements are known changes, even for large groups.
+        if len(unexpected) + len(missing_anomaly) >= self._board_lost_threshold:
+            if self._state != SyncState.BOARD_LOST:
+                events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
+            self._state = SyncState.BOARD_LOST
+            self._mismatch_board = None
+            self._mismatch_count = 0
+            return events
+
         # 4c. Capture-pending logic (sticky)
         if removal_needed and self._state != SyncState.CAPTURE_PENDING:
             self._pending_captures = removal_needed
@@ -366,13 +439,13 @@ class SyncStateMachine:
                 self._pending_captures = still_pending
                 return events
 
-        # 4d. Anomaly tracking: unexpected extras AND missing live stones both count.
-        if unexpected or missing_anomaly:
+        # 4d. Anomaly tracking: unexpected extras AND ripe missing live stones both count.
+        if unexpected or ripe_missing:
             # Build a fingerprint of current anomalous positions for stability check.
             current_mismatch = np.zeros_like(self._expected_board)
             for r, c, clr in unexpected:
                 current_mismatch[r, c] = clr
-            for r, c, clr in missing_anomaly:
+            for r, c, clr in ripe_missing:
                 current_mismatch[r, c] = clr + 2  # distinct fingerprint values (3/4)
 
             if self._mismatch_board is not None and np.array_equal(current_mismatch, self._mismatch_board):
@@ -388,7 +461,7 @@ class SyncStateMachine:
                         SyncEventType.ILLEGAL_CHANGE,
                         data={
                             "positions": [(r, c, clr) for r, c, clr in unexpected],
-                            "missing": [(r, c, clr) for r, c, clr in missing_anomaly + placement_pending],
+                            "missing": [(r, c, clr) for r, c, clr in ripe_missing + placement_pending],
                         },
                     )
                 )
@@ -399,12 +472,63 @@ class SyncStateMachine:
 
             return events
 
-        # 4e. No differences — everything matches
+        if held_missing:
+            # Still waiting out the hold — not yet an anomaly, but not a clean frame
+            # either. The versioned ack itself can't fire here regardless (4e's
+            # diff_count == 0 gate is already false: a held-missing cell differs from
+            # expected by definition, via the raw diff computed at the top of this
+            # method — this block doesn't change that). What THIS block actually
+            # prevents is 4e unconditionally forcing self._state = SyncState.SYNCED and
+            # emitting a bare (unversioned) SYNCED event whenever the state wasn't
+            # already SYNCED — e.g. thrashing MISMATCH_WARNING back to SYNCED (telling
+            # the user "in sync" via /api/vision-status) the instant an unrelated
+            # anomaly clears on the same frame a stone is still being held missing.
+            self._mismatch_board = None
+            self._mismatch_count = 0
+            # ...but BOARD_LOST is not one of the states this block may preserve. Leaving
+            # it set makes update()'s recovery test (`was_board_lost and state !=
+            # BOARD_LOST`) false, so BOARD_REACQUIRED is withheld until the hold ripens:
+            # measured t+7.5s against pre-L4's t+2.5s with one stone occluded by a hand
+            # as the board comes back. Reaching this line already proves the board is
+            # back — every corner was found and the whole board compared, and 4b did not
+            # re-declare it lost — so continuing to tell the user "board lost" is simply
+            # false for those ~5s. Scope, stated narrowly because the obvious reading is
+            # wrong: `should_detect_moves` short-circuits on `if bound: return True`
+            # (gating.py:47-48), so a BOUND cross-platform game keeps detecting moves
+            # throughout and loses nothing but an honest status. The sync_state whitelist
+            # below that line applies only when `bound` is False, so actual detection
+            # blocking is confined to MONITOR mode (physical tsumego). Both are worth
+            # fixing; only the second is a functional outage.
+            # Only the board-level verdict is updated here; the occluded cell's own
+            # hold keeps running, and MISMATCH_WARNING — not SYNCED — is both the honest
+            # word for "a stone is still unaccounted for" and exactly what this frame
+            # reported before the hold existed.
+            if self._state == SyncState.BOARD_LOST:
+                self._state = SyncState.MISMATCH_WARNING
+            return events
+
+        # 4e. No anomalies — exact matches and placement-pending-only frames are
+        # both legacy-SYNCED, but only exact physical equality acknowledges a
+        # versioned expected-board command.
         self._mismatch_board = None
         self._mismatch_count = 0
-        if self._state != SyncState.SYNCED:
-            self._state = SyncState.SYNCED
-            events.append(SyncEvent(SyncEventType.SYNCED))
+        was_synced = self._state == SyncState.SYNCED
+        self._state = SyncState.SYNCED
+        synced_event: SyncEvent | None = None
+
+        if diff_count == 0:
+            self._prev_expected_board = self._expected_board.copy()
+            if self._pending_expected_node_id is not None:
+                synced_event = SyncEvent(
+                    SyncEventType.SYNCED,
+                    data={"expected_node_id": self._pending_expected_node_id},
+                )
+                self._pending_expected_node_id = None
+
+        if synced_event is None and not was_synced:
+            synced_event = SyncEvent(SyncEventType.SYNCED)
+        if synced_event is not None:
+            events.append(synced_event)
 
         return events
 

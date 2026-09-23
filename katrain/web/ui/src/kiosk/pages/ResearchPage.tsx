@@ -12,6 +12,7 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { useResearchBoard, type BoardTool } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ruleNameOf } from '../utils/setupOptions';
 import { useAuth } from '../../context/AuthContext';
 import { API } from '../../api';
 import { durationLabel } from '../utils/durationLabel';
@@ -534,9 +535,13 @@ const ResearchPage = () => {
    * 腾出来的这一行拿去说**规则/贴目/让子** —— 那三个控件这一版删掉了(四个入口都自带这些
    * 值,`loadFromSGF` 会 set),但**删控件不等于可以不说值**:用户得知道 AI 是按什么规则算的。
    */
-  const rulesName = board.rules === 'japanese' ? t('research:rules_japanese', '日本规则')
-    : board.rules === 'korean' ? t('research:rules_korean', '韩国规则')
-      : t('research:rules_chinese', '中国规则');
+  /* 规则名走查表,**未知值原样回显**。
+     原来是一条三元链:非 japanese/korean 一律说「中国规则」—— 所以今天一局
+     `RU[aga]` 早就被显示成「中国规则」了,而这一屏上那句话的全部意义就是
+     「AI 是按什么规则算的」。加了 AI 赛规则(`RU[aga-button]`)之后只会更错。
+     `ruleNameOf` 顺带做 wire → key 的反查:写进 SGF 的是 `aga-button`,
+     表里的 key 是 `button`,只有这一条两边不同名。 */
+  const rulesName = ruleNameOf(t, board.rules);
   const toolName = TOOLS.find((x) => x.value === board.boardTool)?.value === 'delete'
     ? t('research:delete', '删除')
     : board.boardTool === 'black' ? t('research:place_black', '摆黑')

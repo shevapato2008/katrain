@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -34,7 +35,7 @@ test('四图:单元列表 ←→ sample-go/shots/12-units.png', async ({ page })
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: IDS });
@@ -55,7 +56,8 @@ test('四图:单元列表 ←→ sample-go/shots/12-units.png', async ({ page })
     referenceCaption:
       '参考:sample-go/shots/12-units.png · 布局 B(无棋盘 ⇒ 页控条通栏 x16)· 稿子上的九个单元是形状示意,真实 15 级·吃子 630 题 = 32 个',
     implementationCaption:
-      '实现:/kiosk/tsumego/15k/capturing @1024×600 · 时钟冻 16:40 · 题号 180 个是 fixture(单元怎么分、每格写什么范围由页面算)· **进度没造**:环里那些 0% 是真的一道没做 · 「只做错过的」灰是真的(算得出、没地方去)',
+      '实现:/kiosk/tsumego/15k/capturing @1024×600 · 时钟冻 16:40 · 题号 180 个是 fixture(单元怎么分、每格写什么范围由页面算)· **进度没造**:环里那些 0% 是真的一道没做'
+      + ' · 「只做错过的」已接通(T1),这里灰是因为**进度没造** ⇒ 0 道 · 「整级」副标改成「按分类排好，不分单元」(N8:整级页不是混排,稿子那句不成立)',
   });
   console.log(`[fourup 12-units] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

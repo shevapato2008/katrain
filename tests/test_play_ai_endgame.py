@@ -304,6 +304,21 @@ def test_moves_without_the_guard_neither_record_nor_freeze_a_two_pass_end():
     assert w.game.current_node.move.coords == (3, 3)
 
 
+@pytest.mark.parametrize("result", ["W+T", "B+R", "W+3.5"])
+def test_the_committed_result_is_the_sgf_root_re(result):
+    """The cloud refuses a ranked settlement whose game_record SGF RE is not exactly its result
+    (ai_ladder_ranked `_validated_game_record`, since c43e5702 2026-08-09). get_sgf() never carried RE for a
+    resigned or timed-out game, so every such ranked game on the RK3562 was refused with
+    422 "game_record SGF result does not match" and never reached the cloud (board sync_queue ids 9-11)."""
+    from katrain.core.sgf_parser import SGF
+
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w._do_play((3, 3), guard=True)
+    w._commit_end_state(result)
+    assert SGF.parse_sgf(w.get_sgf()).get_property("RE") == result
+
+
 def test_a_ranked_game_ended_on_another_device_takes_nothing_locally():
     """S11:远端终局标记与本地写入同一把锁;标记之后本地既不写结果,也不接受带 guard 的落子。"""
     w = _web_katrain()
@@ -352,7 +367,7 @@ def test_a_vision_stone_after_the_game_ended_is_not_played():
         def __init__(self):
             self.expected_pushes = []
 
-        def set_expected_from_stones(self, stones, board_size=19):
+        def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
             self.expected_pushes.append(stones)
 
     vision = _Vision()
@@ -363,7 +378,52 @@ def test_a_vision_stone_after_the_game_ended_is_not_played():
 
     assert delay == 0.5
     assert w.game.current_node is ended_node and not ended_node.children
-    assert vision.expected_pushes
+    # 终局那一支**不再**重新布防。重新布防会把同一个冻结盘面再推一遍,于是实体盘上那颗
+    # 剩下的子每个一致性窗口重新确认、重新被拒 —— RK3562 2026-09-20 实测:一局结束后
+    # 26 分钟里 732 次拒绝、191 次「盘面与对局不一致」弹窗。
+    # 非终局的拒绝(轮次过期等)仍然要重新布防,由下面那条用例守着。
+    assert vision.expected_pushes == []
+
+
+def test_a_non_terminal_refusal_still_rearms_detection():
+    """收窄的只有「已终局 / 远端已结束」这两支。
+
+    轮次过期是**暂时的** —— 局面真的会变,不重新布防就会让实体盘和数字盘一直错着。
+    这条用例和上一条是一对:少了它,把 `_rearm_unless_terminal` 收成「一律不布防」也照样全绿。
+    """
+    import asyncio
+    import logging
+    from types import SimpleNamespace
+
+    from katrain.vision.ipc import ConfirmedMove
+    from katrain.web.server import _handle_confirmed_move
+
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w._do_play((3, 3), guard=True)  # 落完黑,真实局面轮到白
+    stale = w.get_state()
+    stale["player_to_move"] = "B"  # 过期的广播帧还说轮到黑
+    session = SimpleNamespace(katrain=w, last_state=stale, lock=threading.Lock())
+
+    class _Manager:
+        def get_session(self, session_id):
+            return session
+
+    class _Vision:
+        def __init__(self):
+            self.expected_pushes = []
+
+        def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
+            self.expected_pushes.append(stones)
+
+    vision = _Vision()
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    black_stone = ConfirmedMove(col=15, row=15, color=1)  # 过得了 R1.3(帧上说轮到黑),锁里才发现是白
+
+    delay = asyncio.run(_handle_confirmed_move(app, vision, "s", black_stone, logging.getLogger("play-ai-test")))
+
+    assert delay == 0.5
+    assert vision.expected_pushes, "非终局拒绝必须重新布防"
 
 
 def test_two_threads_settling_the_clock_do_not_count_the_same_seconds_twice(monkeypatch):
@@ -448,7 +508,7 @@ def test_play_notices_are_emitted_after_releasing_the_commit_lock(monkeypatch, n
 # ---------------------------------------------------------------- N23 数子门槛按路数
 
 
-@pytest.mark.parametrize("size,expected", [(19, 100), (13, 46), (9, 22)])
+@pytest.mark.parametrize("size,expected", [(19, 100), (13, 47), (9, 22)])
 def test_count_threshold_scales_with_board_size(size, expected):
     """配置里的 100 是 19 路的数;小棋盘按交叉点数等比缩小,和 AI 认输门槛(core/ai.py should_ai_resign)同一种缩放。"""
     w = _web_katrain()

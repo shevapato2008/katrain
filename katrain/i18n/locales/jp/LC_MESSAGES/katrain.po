@@ -1060,9 +1060,8 @@ msgstr "Game End Sound"
 msgid "Pass"
 msgstr "Pass"
 
-#. TODO
 msgid "Close"
-msgstr "Close"
+msgstr "閉じる"
 
 #. TODO
 msgid "Best"
@@ -3359,6 +3358,168 @@ msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
 msgid "live:loading_match"
 msgstr "棋譜を読み込み中…"
 
+msgid "game:black_resigns"
+msgstr "黒番投了"
+
+msgid "game:white_resigns"
+msgstr "白番投了"
+
+msgid "game:who_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:black_short"
+msgstr "黒"
+
+msgid "game:white_short"
+msgstr "白"
+
+msgid "game:black_side"
+msgstr "黒番"
+
+msgid "game:white_side"
+msgstr "白番"
+
+msgid "game:clock_timeout"
+msgstr "時間切れ"
+
+msgid "game:clock_byo_left"
+msgstr "秒読み · 残り{n}回"
+
+msgid "game:clock_byo_spec"
+msgstr "秒読み{len}秒×{n}"
+
+msgid "game:move_n"
+msgstr "第{n}手"
+
+msgid "game:timeout_loss_suffix"
+msgstr "時間切れ負け"
+
+msgid "game:timeout_win_suffix"
+msgstr "時間切れ勝ち"
+
+msgid "game:saved_to_history"
+msgstr "対局履歴に保存しました"
+
+msgid "game:timeout_check_failed"
+msgstr "時間切れの判定が完了しませんでした"
+
+msgid "game:count_err_analysis_pending"
+msgstr "この手の形勢をまだ計算中です。少し待ってから数え直してください"
+
+msgid "game:count_err_below_min"
+msgstr "まだ手数が足りないため、いまは数えられません"
+
+msgid "game:count_err_game_over"
+msgstr "この対局はすでに終了しています"
+
+msgid "game:count_err_network"
+msgstr "解析サービスに接続できません"
+
+msgid "game:count_err_http"
+msgstr "数え上げに失敗しました（{status}）。もう一度お試しください"
+
+msgid "game:counting"
+msgstr "計算中…"
+
+msgid "game:retry"
+msgstr "再試行"
+
+msgid "game:exit_failed"
+msgstr "退出に失敗しました。もう一度お試しください"
+
+msgid "game:exit_unsaved_title"
+msgstr "この対局はまだ終わっていません。退出すると保存されません"
+
+msgid "game:keep_playing"
+msgstr "対局を続ける"
+
+msgid "game:stay_on_board"
+msgstr "盤面に留まる"
+
+msgid "game:exit_unsaved"
+msgstr "保存せずに退出"
+
+msgid "play:local_needs_login"
+msgstr "先にログインが必要 · 終局後は自動で保存されます"
+
+msgid "review:no_result_line"
+msgstr "棋譜に結果が記録されていません"
+
+msgid "review:row_local"
+msgstr "対面対局 · 二人"
+
+msgid "review:row_local_unnamed"
+msgstr "対面対局 · 名前なし"
+
+msgid "review:row_research"
+msgstr "研究アーカイブ"
+
+msgid "game:count_failed"
+msgstr "目算が完了しませんでした"
+
+msgid "game:check_network_retry"
+msgstr "ネットワークを確認して再試行してください"
+
+msgid "game:both_passed"
+msgstr "両者ともパスしました"
+
+msgid "game:exit_confirm_title"
+msgstr "この対局を終了しますか？"
+
+msgid "game:exit_unsaved_body"
+msgstr "この対局はまだ終わっていません。終了すると保存されません。"
+
+msgid "game:which_side_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:resign_local_body"
+msgstr "相手の中押し勝ちとして記録され、この対局は対局履歴に保存されます。"
+
+msgid "local:input_hint_v2"
+msgstr "実盤は19路のみ・13路や9路を選ぶと画面上で対局します"
+
+msgid "local:komi_hint"
+msgstr "置き碁はコミ0・置石を選ぶとこのグループは畳まれます"
+
+msgid "local:clock_hint_v2"
+msgstr "時計はプレイヤーカード上でカウントダウン・秒読みを使い切ると時間切れ負け・無制限なら記譜のみ"
+
+msgid "local:clock_meta_count"
+msgstr "{n} 段階"
+
+msgid "local:sound_hint_v2"
+msgstr "「設定・サウンド」内の着手音と同じスイッチです"
+
+msgid "local:note3_a"
+msgstr "画面上では"
+
+msgid "local:note3_b"
+msgstr "ヒントや形勢判断はありません"
+
+msgid "local:note3_c"
+msgstr "。両者がパスすると"
+
+msgid "local:note3_d"
+msgstr "自動的に目算します"
+
+msgid "local:note3_e"
+msgstr "、死活は思考エンジンが判定します。"
+
+msgid "local:note3_f"
+msgstr "この対局は"
+
+msgid "local:note3_g"
+msgstr "記録だけ残り、段位は変わりません"
+
+msgid "local:note3_h"
+msgstr "。途中で終了すると"
+
+msgid "local:note3_i"
+msgstr "記録は保存されません"
+
+msgid "local:note3_j"
+msgstr "。"
+
 msgid "vision:offcenter_at"
 msgstr "の石がずれています"
 
@@ -3377,5 +3538,3108 @@ msgstr "この位置に打つ:"
 msgid "vision:offcenter_dismiss"
 msgstr "置き直す"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}石がずれています。{from} から {to} へ動かしてください"
+
 msgid "review:start_analysis"
 msgstr "解析を開始"
+
+msgid "vision:resync_screen_authority"
+msgstr "認識をリセット・画面上のデジタル盤面を基準にする"
+
+msgid "Re-sync"
+msgstr "認識をリセット"
+
+msgid "Back to play"
+msgstr "対局に戻る"
+
+msgid "setup:start"
+msgstr "対局開始"
+
+msgid "ladder:start"
+msgstr "段級位戦を開始"
+
+msgid "play:free_setup_sub"
+msgstr "対局設定 · AI対戦 · 段級位に反映しない"
+
+msgid "ladder:setup_sub"
+msgstr "対局設定 · 段級位に反映 · 解析は終始オフ"
+
+msgid "local:setup_sub"
+msgstr "対局設定 · 対面二人打ち"
+
+msgid "game:local_pvp"
+msgstr "ローカル対局"
+
+msgid "setup:game_terms"
+msgstr "この対局"
+
+msgid "setup:size"
+msgstr "路数"
+
+msgid "setup:size_n"
+msgstr "{n}路"
+
+msgid "setup:size_19"
+msgstr "19路"
+
+msgid "Chinese rules"
+msgstr "中国ルール"
+
+msgid "Japanese rules"
+msgstr "日本ルール"
+
+msgid "AGA rules"
+msgstr "AGAルール"
+
+msgid "setup:rules_button"
+msgstr "AI大会ルール"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr "中国ルールは地と石を数えます。自分の地に打っても損になりません"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr "日本ルールは地のみを数えます。自分の地に打つと一目損になります"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr "AGAルールは地と石を数えますが、パスごとに石を渡すため結果は日本ルールと一致します"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr "韓国ルールは地を数えます。日本ルールと同じ計算で、コミの慣習だけが異なります"
+
+msgid "setup:rules_button_hint"
+msgstr "AI大会ルール:地と石を数え、先にパスした側が半目を得ます。数え方の偶奇差を消すためで、互先のみです"
+
+msgid "setup:ha_even"
+msgstr "互先"
+
+msgid "setup:ha_sente"
+msgstr "定先"
+
+msgid "setup:ha_reverse"
+msgstr "逆コミ"
+
+msgid "setup:ha_free"
+msgstr "コミ指定"
+
+msgid "setup:ha_stones"
+msgstr "{n}子"
+
+msgid "setup:komi_derived"
+msgstr "ルールと置石で決まります"
+
+msgid "setup:komi_pick"
+msgstr "タップしてコミを変更"
+
+msgid "setup:komi_none"
+msgstr "コミなし"
+
+msgid "setup:komi_sente"
+msgstr "黒番先行"
+
+msgid "setup:komi_handicap"
+msgstr "黒が先に{n}子置きます"
+
+msgid "setup:komi_black_pays"
+msgstr "黒がコミ出し"
+
+msgid "setup:komi_white_pays"
+msgstr "白がコミ出し"
+
+msgid "setup:komi_points"
+msgstr "{n}目"
+
+msgid "setup:unit_points"
+msgstr "目"
+
+msgid "setup:unit_stones"
+msgstr "子"
+
+msgid "setup:seat"
+msgstr "座り方"
+
+msgid "setup:side_black"
+msgstr "黒番"
+
+msgid "setup:side_white"
+msgstr "白番"
+
+msgid "setup:side_nigiri"
+msgstr "ニギリ"
+
+msgid "setup:nigiri_blocked"
+msgstr "置碁では黒が先に石を置きます"
+
+msgid "setup:black_side"
+msgstr "黒"
+
+msgid "setup:white_side"
+msgstr "白"
+
+msgid "setup:input_where"
+msgstr "打つ場所"
+
+msgid "setup:on_screen"
+msgstr "画面"
+
+msgid "setup:on_board"
+msgstr "実物の碁盤"
+
+msgid "setup:board_only_19"
+msgstr "実物の碁盤は19路です"
+
+msgid "setup:board_not_ready"
+msgstr "カメラが未校正です"
+
+msgid "setup:seat_hint_ready"
+msgstr "実物の碁盤と画面はいつでも切り替えられます。対局開始後は固定されます"
+
+msgid "setup:seat_hint_not19"
+msgstr "この対局は19路ではないため、画面でのみ打てます"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "この端末はカメラが未校正のため、画面で打ちます"
+
+msgid "setup:size_not19_hint"
+msgstr "実物の碁盤は19路です。この対局は画面で進み、19路に戻せばまた碁盤を使えます"
+
+msgid "Untimed"
+msgstr "時間無制限"
+
+msgid "setup:time_byo_only"
+msgstr "秒読みのみ 30秒×3"
+
+msgid "5 min + 3x30s"
+msgstr "5分+30秒×3"
+
+msgid "60 min + 3x30s"
+msgstr "60分+30秒×3"
+
+msgid "local:move_sound_short"
+msgstr "着手音"
+
+msgid "On"
+msgstr "オン"
+
+msgid "Off"
+msgstr "オフ"
+
+msgid "setup:strength_rung"
+msgstr "第{n}段階"
+
+msgid "setup:rank_kyu"
+msgstr "{n}級"
+
+msgid "setup:rank_dan"
+msgstr "{n}段"
+
+msgid "setup:strength_up"
+msgstr "一段階強く"
+
+msgid "setup:strength_down"
+msgstr "一段階弱く"
+
+msgid "setup:strength_meta"
+msgstr "全{n}段階 · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "人間風 · 対局開始後は変更できません"
+
+msgid "setup:strength_hint2"
+msgstr "人間風のAIはその段階らしい間違いをします。段階は相手の強さであり、あなたの段級位ではありません"
+
+msgid "ladder:opponent"
+msgstr "対戦相手"
+
+msgid "ladder:fixed_by_box"
+msgstr "端末で決まっています"
+
+msgid "ladder:terms_fixed"
+msgstr "いずれも変更できません"
+
+msgid "ladder:frozen_at_start"
+msgstr "対局開始の時点で固定されます"
+
+msgid "ladder:komi_note"
+msgstr "この碁盤で測った段階です"
+
+msgid "ladder:stake"
+msgstr "この一局で動く分"
+
+msgid "ladder:stake_win_promote"
+msgstr "勝ち · 一段階昇格"
+
+msgid "ladder:stake_loss_demote"
+msgstr "負け · 一段階降格"
+
+msgid "ladder:stake_win_score"
+msgstr "勝ち · 通算 {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "負け · 通算 {n}"
+
+msgid "ladder:stake_rule"
+msgstr "通算 +3 で昇格、−3 で降格 · 現在 {n}"
+
+msgid "local:players"
+msgstr "対局者"
+
+msgid "local:written_into_sgf"
+msgstr "棋譜に記録されます"
+
+msgid "local:agree_first"
+msgstr "打つ前に決めておきましょう"
+
+msgid "local:black_role_short"
+msgstr "先番"
+
+msgid "local:white_role_short"
+msgstr "後番"
+
+msgid "local:black_name"
+msgstr "黒番の名前"
+
+msgid "local:white_name"
+msgstr "白番の名前"
+
+msgid "local:tap_to_type"
+msgstr "タップして入力"
+
+msgid "local:names_hint"
+msgstr "空欄のままなら棋譜には「黒」「白」と記録されます"
+
+msgid "local:seat_hint_ready"
+msgstr "時計は対局者カードで進みます · 秒読みを使い切ると時間切れ負け · 無制限なら記録のみ"
+
+msgid "setup:note_r2_a"
+msgstr "これらの項目は"
+
+msgid "setup:note_r2_b"
+msgstr "対局開始後は変更できません"
+
+msgid "setup:note_r2_c"
+msgstr "。途中で変えれば別の一局になります。自由対局は"
+
+msgid "setup:note_r2_d"
+msgstr "段級位に反映しません"
+
+msgid "setup:note_h"
+msgstr "。"
+
+msgid "setup:locked_after_start"
+msgstr "対局開始後は変更不可"
+
+msgid "Session expired, please sign in again"
+msgstr "セッションが切れました。もう一度サインインしてください"
+
+msgid "Could not end that game, please retry"
+msgstr "対局を終了できませんでした。もう一度お試しください"
+
+msgid "Retry failed, please try again later"
+msgstr "再試行に失敗しました。しばらくしてからお試しください"
+
+msgid "ladder:board_preview"
+msgstr "開始局面のプレビュー:空の盤"
+
+msgid "play:title"
+msgstr "対局"
+
+msgid "login:box_gate_title"
+msgstr "StellaBox のホーム画面でサインインしてください"
+
+msgid "login:box_gate_cta"
+msgstr "StellaBox のホームへ"
+
+msgid "vision:back_settings"
+msgstr "設定"
+
+msgid "vision:board_lost_hint"
+msgstr "カメラが遮られていないか、碁盤が動いていないか確認してください。動いた場合は再校正が必要です"
+
+msgid "vision:calibrate_title"
+msgstr "碁盤の校正"
+
+msgid "vision:calibrate_sub"
+msgstr "まず碁盤を空にしてください · 四隅 + 星 9 点の計 13 点"
+
+msgid "vision:cancel_calibration"
+msgstr "校正を中止"
+
+msgid "vision:reuse_calibration"
+msgstr "前回の校正を使う"
+
+msgid "vision:camera_down"
+msgstr "カメラ未接続 · タッチ操作に切り替えました"
+
+msgid "vision:led_down"
+msgstr "LED 未接続 · 点灯によるガイドは行いません"
+
+msgid "vision:pose_lost"
+msgstr "校正が失われました · 再校正してください"
+
+msgid "grade:tabs"
+msgstr "着手評価"
+
+msgid "grade:fold_title"
+msgstr "着手評価 · 7 段階"
+
+msgid "grade:match_other"
+msgstr "その他"
+
+msgid "grade:axis_points_lost_short"
+msgstr "損失 · 目"
+
+msgid "grade:pick_hint"
+msgstr "グラフ上の着手をタップすると詳細が出ます"
+
+msgid "grade:summary"
+msgstr "妙手 {a} · 悪手 {b}"
+
+msgid "grade:sel_bad"
+msgstr "第 {n} 手 {m} · {s} · {g} · {x} 目損"
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"第 {n} 手 {m} · {s} · 妙手度 {k} —— エンジンの第一候補でありながら、事前確率は {p}% しかありません（低いほど妙手）"
+
+msgid "grade:truncated_plot"
+msgstr "各手番につき最大 {k} 件まで表示、ほかに {n} 件は未表示"
+
+msgid "setup:this_game"
+msgstr "この対局は"
+
+msgid "setup:board_preview_handicap"
+msgstr "開始局面のプレビュー:{n} 子局"
+
+msgid "setup:chinese_rules"
+msgstr "中国ルール"
+
+msgid "setup:even"
+msgstr "互先"
+
+msgid "setup:handicap"
+msgstr "置石"
+
+msgid "setup:handicap_n"
+msgstr "{n} 子"
+
+msgid "setup:handicap_less"
+msgstr "置石を一つ減らす"
+
+msgid "setup:handicap_more"
+msgstr "置石を一つ増やす"
+
+msgid "setup:input"
+msgstr "着手の入力方法"
+
+msgid "setup:my_side"
+msgstr "自分の手番"
+
+msgid "setup:take_black"
+msgstr "黒を持つ"
+
+msgid "setup:take_white"
+msgstr "白を持つ"
+
+msgid "setup:no_camera_hint"
+msgstr "この端末はカメラが未校正のため、実物の碁盤は使えません"
+
+msgid "report:clear_variation"
+msgstr "変化図を消す"
+
+msgid "report:file_read_failed"
+msgstr "ファイルを読み込めませんでした。もう一度お試しください。"
+
+msgid "report:import_options"
+msgstr "取り込み方法"
+
+msgid "report:invalid_sgf"
+msgstr "SGF を解析できません。内容をご確認ください。"
+
+msgid "report:library_load_failed"
+msgstr "棋譜を読み込めませんでした。もう一度お試しください。"
+
+msgid "report:loading_detail"
+msgstr "検討を読み込んでいます"
+
+msgid "report:not_found"
+msgstr "検討が見つかりません。"
+
+msgid "report:preview_failed"
+msgstr "棋譜のプレビューを読み込めません"
+
+msgid "report:reload"
+msgstr "再読み込み"
+
+msgid "report:retry_load"
+msgstr "読み込みを再試行"
+
+msgid "report:retrying"
+msgstr "再試行中…"
+
+msgid "report:search_library"
+msgstr "棋譜ライブラリを検索"
+
+msgid "report:sgf_content"
+msgstr "SGF の内容"
+
+msgid "report:title_optional"
+msgstr "タイトル（任意）"
+
+msgid "report:unknown_type"
+msgstr "種類不明"
+
+msgid "report:variation_preview"
+msgstr "変化図のプレビュー · 盤をタップで閉じる"
+
+msgid "live:title"
+msgstr "ライブ"
+
+msgid "live:ai"
+msgstr "AI の推奨"
+
+msgid "live:ai_note_a"
+msgstr "「AI の推奨」は"
+
+msgid "live:ai_note_b"
+msgstr "この端末内の KataGo がその場で計算したものです"
+
+msgid "live:ai_note_c"
+msgstr "。対局者が見ているものとは関係ありません。"
+
+msgid "live:as_black"
+msgstr "黒番"
+
+msgid "live:as_white"
+msgstr "白番"
+
+msgid "live:back_kifu"
+msgstr "棋譜"
+
+msgid "live:black_wr"
+msgstr "黒 {v}%"
+
+msgid "live:ended"
+msgstr "終局"
+
+msgid "live:follow"
+msgstr "最新手に追従"
+
+msgid "live:load_failed"
+msgstr "この対局を読み込めません"
+
+msgid "live:loading"
+msgstr "この対局を読み込んでいます"
+
+msgid "live:move_n"
+msgstr "第 {n} 手"
+
+msgid "live:moves_title"
+msgstr "棋譜 · 中継に合わせて伸びます"
+
+msgid "live:no_moves"
+msgstr "この対局にはまだ着手がありません"
+
+msgid "live:no_ownership"
+msgstr "この手の形勢はまだ計算されていません"
+
+msgid "live:pagebar_sub"
+msgstr "出典：{src} · 第 {n} 手"
+
+msgid "live:played"
+msgstr "着手済み"
+
+msgid "live:show"
+msgstr "表示"
+
+msgid "live:thinking"
+msgstr "考慮中"
+
+msgid "live:toggle_numbers"
+msgstr "手数"
+
+msgid "live:toggle_territory"
+msgstr "形勢"
+
+msgid "settings:nav_account"
+msgstr "アカウントと対局サイト"
+
+msgid "settings:nav_board"
+msgstr "実物の碁盤"
+
+msgid "settings:nav_language"
+msgstr "言語"
+
+msgid "settings:nav_move"
+msgstr "着手とヒント"
+
+msgid "settings:nav_sound"
+msgstr "サウンド"
+
+msgid "settings:ui_language"
+msgstr "表示言語"
+
+msgid "settings:language_sub"
+msgstr "この項目は将来、システム設定に移ります"
+
+msgid "settings:auto_advance_sub"
+msgstr "トレーニングで有効 · 初期設定はオン"
+
+msgid "settings:board_secval"
+msgstr "カメラ · 校正 · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "StellaBox アカウント（端末全体で共用）"
+
+msgid "settings:box_account_sub"
+msgstr "サインインしなくても使えます。成績はこの端末に残り、サインインは別の端末へ持ち出すためのものです"
+
+msgid "settings:guest_sub"
+msgstr "この端末のローカルプロフィール"
+
+msgid "settings:switch_account_at_home"
+msgstr "ホーム画面でアカウントを切り替え"
+
+msgid "settings:sign_in"
+msgstr "サインイン"
+
+msgid "settings:platforms"
+msgstr "対局サイトのアカウント"
+
+msgid "settings:platforms_sub"
+msgstr "サイトごとに入力項目が異なります。対局サイト対局の画面で接続してください"
+
+msgid "settings:go_connect"
+msgstr "接続する"
+
+msgid "settings:calibrated"
+msgstr "今回の起動で校正済み"
+
+msgid "settings:not_calibrated"
+msgstr "未校正"
+
+msgid "settings:start_calib"
+msgstr "校正を開始"
+
+msgid "settings:ready"
+msgstr "準備完了"
+
+msgid "settings:not_ready"
+msgstr "未接続"
+
+msgid "settings:on"
+msgstr "オン"
+
+msgid "settings:off"
+msgstr "オフ"
+
+msgid "research:actions"
+msgstr "研究の操作"
+
+msgid "research:move_title"
+msgstr "研究 · 第 {n} 手"
+
+msgid "research:ai_after_move"
+msgstr "AI の推奨 · 第 {n} 手のあと"
+
+msgid "research:analysis_failed"
+msgstr "この手は解析できません"
+
+msgid "research:analyzed_moves"
+msgstr "解析済みの手数"
+
+msgid "research:analyzing_move"
+msgstr "この手を解析中"
+
+msgid "research:cancel_scan"
+msgstr "解析を中止"
+
+msgid "research:clear_confirm_title"
+msgstr "盤面をすべて消しますか？"
+
+msgid "research:clear_confirm_msg"
+msgstr "盤上の {n} 手をすべて消します。この操作は取り消せません。"
+
+msgid "research:eta_label"
+msgstr "残り目安"
+
+msgid "research:from_kifu"
+msgstr "棋譜ライブラリ"
+
+msgid "research:from_last_game"
+msgstr "たった今終えた対局"
+
+msgid "research:from_my_games"
+msgstr "自分の対局"
+
+msgid "research:full_scan"
+msgstr "全局解析"
+
+msgid "research:no_candidates"
+msgstr "AI は候補手を出しませんでした"
+
+msgid "research:only_19_supported"
+msgstr "19 路のみ対応です。19 路として読み込みました"
+
+msgid "research:progress_lost"
+msgstr "解析の進捗を 5 回続けて取得できませんでした。接続が切れている可能性があります"
+
+msgid "research:rescan"
+msgstr "解析をやり直す"
+
+msgid "research:retry_analysis"
+msgstr "解析を再試行"
+
+msgid "research:scan_broke"
+msgstr "全局解析が最後まで走りませんでした"
+
+msgid "research:scan_cost"
+msgstr "全 {n} 手 · 1 手あたり 500 回探索"
+
+msgid "research:scan_failed"
+msgstr "解析を開始できませんでした。もう一度お試しください"
+
+msgid "research:scan_freeze"
+msgstr "解析が終わるまで盤面は変えられません。いつでも中止できます"
+
+msgid "research:scan_go"
+msgstr "解析を開始"
+
+msgid "research:session_failed"
+msgstr "研究セッションを作成できません。もう一度お試しください"
+
+msgid "research:user_game_failed"
+msgstr "この対局を読み込めません"
+
+msgid "growth:rank_title"
+msgstr "この端末での段級位"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "未認定"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "認定局"
+
+msgid "growth:metric_placement"
+msgstr "認定局"
+
+msgid "growth:placement_done"
+msgstr "完了"
+
+msgid "growth:cell_solved"
+msgstr "解いた問題"
+
+msgid "growth:metric_net"
+msgstr "通算得点"
+
+msgid "growth:stat_ranked"
+msgstr "段級位戦 · 累計"
+
+msgid "growth:stat_recent"
+msgstr "直近 30 日の対局"
+
+msgid "growth:stat_solved"
+msgstr "解いた問題の累計"
+
+msgid "growth:stat_winrate"
+msgstr "段級位戦の勝率 · 直近 30 日"
+
+msgid "growth:summary_failed"
+msgstr "これらの数値を取得できませんでした。「一局も打っていない」という意味ではありません。あとでもう一度ご確認ください。"
+
+msgid "growth:rules_title"
+msgstr "昇降の決まり"
+
+msgid "growth:rule_up"
+msgstr "通算 +3 で一段階昇格"
+
+msgid "growth:rule_down"
+msgstr "通算 −3 で一段階降格"
+
+msgid "growth:rule_bounds"
+msgstr "下限 20 級 · 上限「人間超え」"
+
+msgid "growth:rung_title"
+msgstr "相手の強さ別"
+
+msgid "growth:rung_w"
+msgstr "{n} 勝"
+
+msgid "growth:rung_l"
+msgstr "{n} 敗"
+
+msgid "growth:rung_empty_h"
+msgstr "まだ戦績がありません"
+
+msgid "growth:rung_empty_p"
+msgstr "対局設定のスライダーは相手の強さを選ぶもので、あなたの段級位ではありません。実際に打った段階だけを並べ、0 勝 0 敗の行は出しません。"
+
+msgid "growth:diag_title"
+msgstr "棋力診断"
+
+msgid "growth:diag_wip"
+msgstr "バックエンドは実装済み · 画面は未接続"
+
+msgid "growth:diag_empty_h"
+msgstr "サンプル 0 局"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"診断はレポート済みの対局から計算します。レポートはバックエンドにありますが、画面はまだ読み込んでいません（検討画面を参照）。30 "
+"局に満たないうちは結論がぶれるため、サンプル数も併記します。"
+
+msgid "growth:local_note_a"
+msgstr "これらの数値は"
+
+msgid "growth:local_note_b"
+msgstr "この端末の記録です"
+
+msgid "growth:local_note_c"
+msgstr "。台帳はクラウドにあり、この端末の控えは数局少ないことがあります。"
+
+msgid "game:black"
+msgstr "黒"
+
+msgid "game:white"
+msgstr "白"
+
+msgid "game:plays_black"
+msgstr "黒番"
+
+msgid "game:plays_white"
+msgstr "白番"
+
+msgid "game:actions"
+msgstr "対局の操作"
+
+msgid "game:action_failed"
+msgstr "この操作は失敗しました。もう一度お試しください"
+
+msgid "game:back_to_play"
+msgstr "対局に戻る"
+
+msgid "game:board_lines"
+msgstr "{n} 路"
+
+msgid "game:handicap_n"
+msgstr "{n} 子局"
+
+msgid "game:no_handicap"
+msgstr "置石なし"
+
+msgid "game:points_unit"
+msgstr "目"
+
+msgid "game:captures"
+msgstr "アゲハマ"
+
+msgid "game:display"
+msgstr "表示"
+
+msgid "game:thinking"
+msgstr "考慮中"
+
+msgid "game:played"
+msgstr "着手済み"
+
+msgid "game:your_turn"
+msgstr "あなたの番"
+
+msgid "game:ended"
+msgstr "終局"
+
+msgid "game:time_left"
+msgstr "残り"
+
+msgid "game:time_up"
+msgstr "時間切れ"
+
+msgid "game:untimed"
+msgstr "時間無制限"
+
+msgid "game:byo_left"
+msgstr "秒読み · 残り {n} 回"
+
+msgid "game:first_move"
+msgstr "初手"
+
+msgid "game:prev_move"
+msgstr "前の手"
+
+msgid "game:next_move"
+msgstr "次の手"
+
+msgid "game:last_move"
+msgstr "最終手"
+
+msgid "game:moves_title"
+msgstr "棋譜 · 交点の座標"
+
+msgid "game:no_moves"
+msgstr "この対局にはまだ着手がありません"
+
+msgid "game:online_pvp"
+msgstr "オンライン対局"
+
+msgid "game:exit_game"
+msgstr "対局を抜ける"
+
+msgid "game:leave_keep_game"
+msgstr "投了せずに抜ける"
+
+msgid "game:resign_confirm_side"
+msgstr "{side}が投了しますか？"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "対局中です。{side}が投了して退出しますか？"
+
+msgid "game:count_game_over"
+msgstr "この対局はすでに終わっています"
+
+msgid "game:count_min"
+msgstr "整地には少なくとも {n} 手必要です"
+
+msgid "game:count_too_early"
+msgstr "手数が足りないため、まだ整地できません"
+
+msgid "game:count_not_your_turn"
+msgstr "自分の手番のときだけ整地できます"
+
+msgid "game:count_position_changed"
+msgstr "整地中に局面が変わりました。もう一度お願いします"
+
+msgid "game:count_no_score"
+msgstr "形勢判断が完了せず、まだ整地できません。しばらくしてからお試しください"
+
+msgid "game:count_ranked_unscored"
+msgstr "段級位戦では今は整地できません（この対局では形勢判断を行いません）"
+
+msgid "game:eval_title"
+msgstr "勝率 · KataGo ネイティブチャネル"
+
+msgid "game:eval_graph"
+msgstr "この対局の勝率と目差の推移"
+
+msgid "game:eval_black_100"
+msgstr "黒 100"
+
+msgid "game:eval_white_100"
+msgstr "白 100"
+
+msgid "game:eval_black_lead"
+msgstr "黒+{n}"
+
+msgid "game:eval_white_lead"
+msgstr "白+{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · AI 対局"
+
+msgid "game:golaxy_items"
+msgstr "Golaxy のアイテム · 押すたびに 1 つ消費"
+
+msgid "game:golaxy_judge_hint"
+msgstr "整地は現在の形勢を見るだけで、対局は終わりません"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "Golaxy のロボット対局は待った（着手の取り消し）に未対応です"
+
+msgid "game:engine_ended_no_result"
+msgstr "Golaxy から認識できない終局信号が返りました · この対局は勝敗を判定しません"
+
+msgid "game:connection_dropped"
+msgstr ""
+"リアルタイム接続が切れたため、盤面は自動更新されません。「対局を抜ける」→「投了せずに抜ける」を押し、「前回の対局を続ける」から戻ると再接続されます"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr "再校正では LED が点灯し、盤上の石をすべて取り除く必要があります。碁盤が動いていなければ「このまま続ける」を押してください"
+
+msgid "game:timeout_failed"
+msgstr "時間切れの判定が完了しませんでした"
+
+msgid "game:timeout_not_delivered"
+msgstr "時間切れの判定が届きませんでした。接続を確認してこの対局に入り直してください"
+
+msgid "game:unavailable_title"
+msgstr "この対局はもう開けません"
+
+msgid "game:unavailable_reason"
+msgstr "端末が再起動した、放置が長くて整理された、または別のアカウントの対局である可能性があります。"
+
+msgid "lobby:hall_title"
+msgstr "オンラインロビー"
+
+msgid "lobby:hall_sub"
+msgstr "他の端末の人と対局 · 観戦もできます"
+
+msgid "lobby:loading"
+msgstr "読み込み中…"
+
+msgid "lobby:load_failed"
+msgstr "ロビーに接続できません。ネットワークかサービスがつながっていません"
+
+msgid "lobby:players"
+msgstr "オンラインの棋士"
+
+msgid "lobby:online_count"
+msgstr "オンライン {n} 人"
+
+msgid "lobby:games_count"
+msgstr "{n} 局"
+
+msgid "lobby:no_players_now"
+msgstr "今はあなただけがオンラインです"
+
+msgid "lobby:no_games_now"
+msgstr "今は誰も対局していません"
+
+msgid "lobby:idle"
+msgstr "待機中"
+
+msgid "lobby:in_game"
+msgstr "対局中"
+
+msgid "lobby:this_is_you"
+msgstr "これがあなたです"
+
+msgid "lobby:vs"
+msgstr "対"
+
+msgid "lobby:plays_black"
+msgstr "黒番"
+
+msgid "lobby:plays_white"
+msgstr "白番"
+
+msgid "lobby:move_no"
+msgstr "第 {n} 手"
+
+msgid "lobby:note_a"
+msgstr "の人は招待でき、"
+
+msgid "lobby:note_b"
+msgstr "対局中の人は招待できません。左は進行中の対局で、自分の対局はタップで戻れます。"
+
+msgid "lobby:match_mode"
+msgstr "どちらでマッチングするか"
+
+msgid "lobby:mode_free"
+msgstr "自由対局"
+
+msgid "lobby:mode_rated"
+msgstr "ランク戦"
+
+msgid "lobby:ladder_name"
+msgstr "段級位戦"
+
+msgid "lobby:rated_why_a"
+msgstr "ランク戦の前に"
+
+msgid "lobby:rated_why_b"
+msgstr "で認定局を 5 局終える必要があります。あと {n} 局です。"
+
+msgid "lobby:rated_why_b_unknown"
+msgstr "で認定局を 5 局終えてください。"
+
+msgid "lobby:start_match"
+msgstr "マッチングを開始"
+
+msgid "lobby:cancel_match"
+msgstr "マッチングを中止"
+
+msgid "lobby:matching_title"
+msgstr "対戦相手を探しています"
+
+msgid "lobby:matching_lead_a"
+msgstr "サーバーがあなたを"
+
+msgid "lobby:matching_lead_b"
+msgstr "の待ち行列に入れました。マッチすればそのまま対局が始まり、再確認はありません。"
+
+msgid "lobby:matching_tc_free"
+msgstr "マッチ即対局 · 段級位に反映しない"
+
+msgid "lobby:matching_tc_rated"
+msgstr "マッチ即対局 · 段級位に反映"
+
+msgid "lobby:waited_a"
+msgstr "待機 "
+
+msgid "lobby:waited_b"
+msgstr " 秒"
+
+msgid "lobby:invite_title"
+msgstr "{name} さんが対局に誘っています"
+
+msgid "lobby:invite_kind"
+msgstr "自由対局 · 段級位に反映しない"
+
+msgid "lobby:invite_lead_a"
+msgstr "受けるとすぐに対局が始まります"
+
+msgid "lobby:invite_lead_b"
+msgstr "。招待した側が黒番です。"
+
+msgid "lobby:invite_no_decline"
+msgstr "拒否してもこの画面を閉じるだけで、相手には何も伝わりません。招待は 2 分で期限切れです"
+
+msgid "lobby:invite_expired"
+msgstr "この招待は期限切れか、すでに使われています。もう一度誘ってもらってください"
+
+msgid "lobby:accept_and_play"
+msgstr "受けて対局開始"
+
+msgid "lobby:need_login"
+msgstr "サインインが必要です"
+
+msgid "lobby:gate_title"
+msgstr "サインインするとオンラインロビーに入れます"
+
+msgid "lobby:gate_why"
+msgstr ""
+"ロビーはあなたの名前とオンライン状態を他の端末の人に送るため、アカウント単位で動きます。ゲストにはアカウントがなく、見せられる身元もありません。"
+
+msgid "lobby:gate_fact_k"
+msgstr "サインイン後"
+
+msgid "lobby:gate_fact_v"
+msgstr "他の人が一覧であなたを見つけ、誘えるようになります"
+
+msgid "lobby:gate_fact_note"
+msgstr "一覧には今つながっている人だけが並びます。いる間は表示され、抜ければ消えます"
+
+msgid "lobby:gate_rule_a"
+msgstr "サインインが関係するのはここだけです。"
+
+msgid "lobby:gate_rule_b"
+msgstr "AI 対局、ローカル対局、トレーニング、検討、棋譜はゲストのままで使えます。"
+
+msgid "lobby:go_login"
+msgstr "サインインへ"
+
+msgid "baipu:title"
+msgstr "並べ"
+
+msgid "baipu:back_kifu"
+msgstr "棋譜"
+
+msgid "baipu:actions"
+msgstr "並べの操作"
+
+msgid "baipu:black"
+msgstr "黒"
+
+msgid "baipu:white"
+msgstr "白"
+
+msgid "baipu:black_s"
+msgstr "黒"
+
+msgid "baipu:white_s"
+msgstr "白"
+
+msgid "baipu:stones_unit"
+msgstr "子"
+
+msgid "baipu:which_move"
+msgstr "何手目"
+
+msgid "baipu:board_label"
+msgstr "並べ用の盤面：丸印が次に置く点です"
+
+msgid "baipu:loading"
+msgstr "この棋譜を読み込んでいます"
+
+msgid "baipu:load_failed"
+msgstr "この棋譜を読み込めません"
+
+msgid "baipu:no_sgf"
+msgstr "この端末にはその棋譜がありません"
+
+msgid "baipu:no_moves"
+msgstr "この棋譜には着手がありません"
+
+msgid "baipu:pagebar_sub"
+msgstr "第 {i} / {n} 手 · {f} フレーム取得済み"
+
+msgid "baipu:place_at"
+msgstr "次に置く点 · {c}"
+
+msgid "baipu:place_none"
+msgstr "この手では石を置きません"
+
+msgid "baipu:pass"
+msgstr "パス"
+
+msgid "baipu:led_on"
+msgstr "点灯しました —— {color}の石を光っている交点に置いてください"
+
+msgid "baipu:led_down"
+msgstr "点灯していません —— 右上を押して点け直すか、座標 {c} を見て自分で探してください"
+
+msgid "baipu:relight"
+msgstr "点け直す"
+
+msgid "baipu:legend_black"
+msgstr "赤の光 = 黒石を置く"
+
+msgid "baipu:legend_white"
+msgstr "緑の光 = 白石を置く"
+
+msgid "baipu:legend_remove"
+msgstr "青の光 = 取り上げる"
+
+msgid "baipu:cam_title"
+msgstr "カメラ · この手で 1 フレーム取得します"
+
+msgid "baipu:capture_off"
+msgstr "この端末にはキャプチャが接続されていません"
+
+msgid "baipu:capturing"
+msgstr "撮影中です。手を入れないでください"
+
+msgid "baipu:capturing_hint"
+msgstr "手が写るとこの手は取得できず、やり直しになります。"
+
+msgid "baipu:hands_off"
+msgstr "盤の上に手を置かないでください"
+
+msgid "baipu:confirm"
+msgstr "着手を確定"
+
+msgid "baipu:confirm_done_reason"
+msgstr "この棋譜は最後まで並べ終えています"
+
+msgid "baipu:failed_title"
+msgstr "この手は取得できませんでした"
+
+msgid "baipu:failed_hint"
+msgstr "石はそのままに —— もう一度「着手を確定」を押してください"
+
+msgid "baipu:failed_hint_geometry"
+msgstr "碁盤の位置がずれています —— 設定から再校正してください。押し直しても解決しません"
+
+msgid "baipu:frames_n"
+msgstr "{n} フレーム取得済み"
+
+msgid "baipu:no_frame_yet"
+msgstr "まだフレームを保存していません"
+
+msgid "baipu:latest_saved"
+msgstr "最後に保存 {f}"
+
+msgid "baipu:removed_n"
+msgstr "この手で {n} 子アゲハマ"
+
+msgid "baipu:removal_title"
+msgstr "アゲハマの {n} 子を取り除いてください"
+
+msgid "baipu:removal_hint"
+msgstr "青く光っている石です —— アゲハマは手で取り除き、終わったら「取り除いた」を押してください"
+
+msgid "baipu:removed_done"
+msgstr "{n} 子を取り除きました"
+
+msgid "baipu:moves_title"
+msgstr "並べ終えた手"
+
+msgid "baipu:moves_value"
+msgstr "{k} 手 / 全 {n}"
+
+msgid "baipu:undo"
+msgstr "直前の手を戻す"
+
+msgid "baipu:undo_ask"
+msgstr "直前の手を戻しますか？"
+
+msgid "baipu:undo_body"
+msgstr "まず今置いた石を盤から取り除き（アゲハマも戻して）、「戻した」を押してください。"
+
+msgid "baipu:undo_done"
+msgstr "戻した"
+
+msgid "baipu:undo_reason"
+msgstr "まだ 1 手目を置いていません"
+
+msgid "baipu:finish"
+msgstr "完了"
+
+msgid "baipu:finish_reason"
+msgstr "あと {n} 手残っています"
+
+msgid "baipu:done_title"
+msgstr "この棋譜を並べ終えました"
+
+msgid "baipu:done_hint"
+msgstr "全 {n} 手 · {f} フレーム取得"
+
+msgid "baipu:restart"
+msgstr "最初から並べる"
+
+msgid "baipu:resume"
+msgstr "続きから並べる"
+
+msgid "baipu:resume_ask"
+msgstr "前回の続きから並べますか？"
+
+msgid "baipu:resume_body"
+msgstr "前回は第 {n} 手まで並べました。やり直すと取得済みのフレームを上書きします。"
+
+msgid "baipu:exit"
+msgstr "抜ける"
+
+msgid "baipu:exit_ask"
+msgstr "並べを終了しますか？"
+
+msgid "baipu:exit_body"
+msgstr "進捗は保存済みです。戻れば続きから並べられます。"
+
+msgid "baipu:drift_corrected"
+msgstr "碁盤が動いたため自動で補正しました"
+
+msgid "baipu:drift_frozen"
+msgstr "幾何補正は行われていません"
+
+msgid "baipu:drift_stale"
+msgstr "このフレームは再補正できず、前回の幾何をそのまま使いました"
+
+msgid "baipu:drift_word_corrected"
+msgstr "補正済み"
+
+msgid "baipu:drift_word_frozen"
+msgstr "未補正"
+
+msgid "baipu:drift_word_stale"
+msgstr "前回を流用"
+
+msgid "tsumego:loadingTitle"
+msgstr "問題"
+
+msgid "tsumego:actions"
+msgstr "問題の操作"
+
+msgid "tsumego:allProblems"
+msgstr "すべての問題"
+
+msgid "tsumego:autoAdvance"
+msgstr "正解すると次の問題へ自動で進む"
+
+msgid "tsumego:backToUnit"
+msgstr "ユニットに戻る"
+
+msgid "tsumego:backToWrong"
+msgstr "間違えた問題へ戻る"
+
+msgid "tsumego:bankEmpty"
+msgstr "問題集にはまだ問題がありません"
+
+msgid "tsumego:category_unit"
+msgstr "種類"
+
+msgid "tsumego:chooseByLevel"
+msgstr "棋力から選ぶ"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "クラウドの問題集に接続できません"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr "問題集はクラウドにあり、端末には保存されません。ネットワークかクラウドが戻ってから再試行してください。"
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr "問題集はクラウドにあり、端末には保存されません。ネットワークかクラウドが戻ってから、戻って入り直してください。"
+
+msgid "tsumego:kyuRanks"
+msgstr "級位"
+
+msgid "tsumego:danRanks"
+msgstr "段位"
+
+msgid "tsumego:rankBoundary"
+msgstr "級位と段位の境目"
+
+msgid "tsumego:dao"
+msgstr "問"
+
+msgid "tsumego:levelsUnit"
+msgstr "段階"
+
+msgid "tsumego:goCalibrate"
+msgstr "校正へ"
+
+msgid "tsumego:greetSub"
+msgstr "打った瞬間に判定、間違えればその場で戻します"
+
+msgid "tsumego:isFirst"
+msgstr "これが最初の問題です"
+
+msgid "tsumego:lastTimeShort"
+msgstr "前回"
+
+msgid "tsumego:loadingProblem"
+msgstr "この問題を読み込み中…"
+
+msgid "tsumego:problemLoadError"
+msgstr "この問題を読み込めません"
+
+msgid "tsumego:modes"
+msgstr "モード"
+
+msgid "tsumego:next"
+msgstr "次の問題"
+
+msgid "tsumego:prev"
+msgstr "前の問題"
+
+msgid "tsumego:noMoveYet"
+msgstr "まだ打っていません"
+
+msgid "tsumego:noSequence"
+msgstr "この種類の問題番号を取得できず、前後の問題へは移動できません"
+
+msgid "tsumego:noWrong"
+msgstr "この種類で今、間違えた問題はありません"
+
+msgid "tsumego:physicalBoard"
+msgstr "実物の碁盤"
+
+msgid "tsumego:physClear"
+msgstr "碁盤を空にしてください"
+
+msgid "tsumego:physClearLeft"
+msgstr "（残り {n} 個）"
+
+msgid "tsumego:physConnecting"
+msgstr "カメラと認識モデルを接続しています。しばらくお待ちください…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr "実物の碁盤は先に校正の確認が必要です（サービス再起動後はもう一度）"
+
+msgid "tsumego:physGeoDrift"
+msgstr "碁盤の校正が無効になりました。再校正してください"
+
+msgid "tsumego:physNeed19"
+msgstr "実物の碁盤は 19 路の問題のみ対応です"
+
+msgid "tsumego:physNoCamera"
+msgstr "カメラが検出されません / 画像認識サービスが無効です"
+
+msgid "tsumego:physNoLed"
+msgstr "LED が接続されていません。画面の指示に従ってください。"
+
+msgid "tsumego:physRemove"
+msgstr "不正解です：{n} 個の石を戻してください（青の光）"
+
+msgid "tsumego:physRestore"
+msgstr "、そしてアゲハマの {n} 個を戻してください（赤 / 緑の光）"
+
+msgid "tsumego:physReply"
+msgstr "盤の光に従って石を置いてください（応手 / アゲハマ）。盤と画面を一致させます。"
+
+msgid "tsumego:physVerify"
+msgstr "盤面と問題図が一致するか確認中です。光に従って石を調整してください。"
+
+msgid "tsumego:placeAnswerBlack"
+msgstr "正解の点に黒石を一つ置いてください。盤が自動で認識します"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr "正解の点に白石を一つ置いてください。盤が自動で認識します"
+
+msgid "tsumego:preparingBoard"
+msgstr "準備中"
+
+msgid "tsumego:progressUnread"
+msgstr "解答履歴を読み込めません"
+
+msgid "tsumego:progressUnreadBody"
+msgstr "解答履歴が読めないと、この種類で何を間違えたかを言えません。ネットワークが戻ってから再試行してください。"
+
+msgid "tsumego:removeAt"
+msgstr "{coord} を取り除く"
+
+msgid "tsumego:setupDone"
+msgstr "配置完了 · あなたの番です"
+
+msgid "tsumego:setupExtra"
+msgstr "盤上に余分／色違いの石が {n} 個あります。先に取り除いてください（画面では赤い ✕、実物の盤では白の点滅）"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total} 個が一致"
+
+msgid "tsumego:setupSkip"
+msgstr "配置を省く"
+
+msgid "tsumego:setupStageBlack"
+msgstr "黒石を置いてください"
+
+msgid "tsumego:setupStageWhite"
+msgstr "白石を置いてください"
+
+msgid "tsumego:solvedInCategory"
+msgstr "この種類で正解済み"
+
+msgid "tsumego:solvedShort"
+msgstr "正解"
+
+msgid "tsumego:specializedPractice"
+msgstr "分野別練習"
+
+msgid "tsumego:these_n_problems"
+msgstr "この {n} 問"
+
+msgid "tsumego:thisProblem"
+msgstr "この問題"
+
+msgid "tsumego:tries_n"
+msgstr "{n} 回"
+
+msgid "tsumego:tryModeShort"
+msgstr "試し打ち"
+
+msgid "tsumego:undoMove"
+msgstr "一手戻す"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr "実物の碁盤では一手戻せません。やり直すには「並べ直す」を押してください"
+
+msgid "tsumego:unitUnknown"
+msgstr "このユニット"
+
+msgid "tsumego:unit_n"
+msgstr "第 {n} ユニット"
+
+msgid "tsumego:unit_range"
+msgstr "この種類は全 {total} 問で、ユニットは {units} 個だけです。"
+
+msgid "tsumego:unit_size"
+msgstr "{n} 問で 1 ユニット"
+
+msgid "tsumego:unit_total"
+msgstr "{n} 問"
+
+msgid "tsumego:wrongProgress"
+msgstr "間違えた問題 {i} / {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "間違えた問題の {n} 問目"
+
+msgid "tsumego:wrongSet"
+msgstr "間違えた問題"
+
+msgid "tsumego:wrongShort"
+msgstr "不正解"
+
+msgid "tsumego:wrongState"
+msgstr "間違えたことがある"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "間違えたまま、まだ正解していない"
+
+msgid "tsumego:wrong_now"
+msgstr "現在 {n} 問"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} 問"
+
+msgid "tsumego:yourLevel"
+msgstr "あなたの棋力"
+
+msgid "tsumego:yourMoves"
+msgstr "あなたの手"
+
+msgid "tsumego:problem_no"
+msgstr "第 {n} 問"
+
+msgid "kifu:title"
+msgstr "棋譜"
+
+msgid "kifu:back_kifu"
+msgstr "棋譜"
+
+msgid "kifu:greet_a"
+msgstr "ほかの人の"
+
+msgid "kifu:greet_b"
+msgstr "碁"
+
+msgid "kifu:greet_sub"
+msgstr "名局、プロの中継、そして棋譜を実物の盤に並べること"
+
+msgid "kifu:famous_records"
+msgstr "名局の棋譜"
+
+msgid "kifu:search_records"
+msgstr "棋譜を検索"
+
+msgid "kifu:search_sub"
+msgstr "検索ボックス 1 つ、あいまい一致"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "棋士・棋戦・年で検索できます"
+
+msgid "kifu:searching"
+msgstr "検索中"
+
+msgid "kifu:no_results_cn"
+msgstr "一致する棋譜はありません"
+
+msgid "kifu:no_results_hint"
+msgstr "棋士名、棋戦名、年を変えてお試しください。"
+
+msgid "kifu:list_failed"
+msgstr "棋譜ライブラリを読み込めません"
+
+msgid "kifu:pro_live"
+msgstr "プロの中継"
+
+msgid "kifu:live_now"
+msgstr "中継中"
+
+msgid "kifu:not_started"
+msgstr "未開始"
+
+msgid "kifu:ended"
+msgstr "終局"
+
+msgid "kifu:place_on_board"
+msgstr "実物の盤に並べる"
+
+msgid "kifu:place_sub"
+msgstr "光が一手ずつ置く場所を示します"
+
+msgid "kifu:import_sgf"
+msgstr "SGF を取り込む"
+
+msgid "kifu:import_sub"
+msgstr "ローカルファイル。オフラインでも並べられます"
+
+msgid "kifu:bad_sgf"
+msgstr "有効な SGF ファイルではありません"
+
+msgid "kifu:read_failed"
+msgstr "ファイルを読み込めませんでした"
+
+msgid "kifu:recent"
+msgstr "最近並べた棋譜"
+
+msgid "kifu:on_this_box"
+msgstr "この端末に保存"
+
+msgid "kifu:no_recent"
+msgstr "この端末ではまだ棋譜を並べていません"
+
+msgid "kifu:no_recent_hint"
+msgstr "上から選ぶか、SGF を取り込んでください。選んだ棋譜は丸ごと端末に保存され、オフラインでも最後まで並べられます。"
+
+msgid "kifu:cache_gone"
+msgstr "この棋譜のローカルキャッシュが失われました。選び直してください"
+
+msgid "kifu:cannot_start"
+msgstr "これは並べられません"
+
+msgid "kifu:done_tag"
+msgstr "並べ終え"
+
+msgid "kifu:placed_all"
+msgstr "並べ終え"
+
+msgid "kifu:placed_at"
+msgstr "第 "
+
+msgid "kifu:resume_at"
+msgstr "前回は第 "
+
+msgid "kifu:resume"
+msgstr "続ける"
+
+msgid "kifu:resume_baipu"
+msgstr "並べを続ける"
+
+msgid "kifu:resume_hint"
+msgstr "光が次の一手の場所を示します"
+
+msgid "kifu:keep_placing"
+msgstr "続きから並べる"
+
+msgid "kifu:detail_actions"
+msgstr "この対局でできること"
+
+msgid "kifu:replay"
+msgstr "一手ずつ再生"
+
+msgid "kifu:to_research"
+msgstr "研究で開く"
+
+msgid "kifu:board_label"
+msgstr "棋譜再生の盤面"
+
+msgid "kifu:board_lines"
+msgstr "路"
+
+msgid "kifu:handicap_pre"
+msgstr "置石 "
+
+msgid "kifu:handicap_unit"
+msgstr " 子"
+
+msgid "kifu:komi_black"
+msgstr "黒コミ出し"
+
+msgid "kifu:komi_unit"
+msgstr " 目"
+
+msgid "kifu:games_unit"
+msgstr "局"
+
+msgid "kifu:move_ordinal"
+msgstr "第 "
+
+msgid "kifu:total_prefix"
+msgstr "全 "
+
+msgid "kifu:versus"
+msgstr "対"
+
+msgid "kifu:source_prefix"
+msgstr "出典："
+
+msgid "kifu:untitled_game"
+msgstr "無題の対局"
+
+msgid "kifu:whole_game"
+msgstr "全譜"
+
+msgid "kifu:moves_title"
+msgstr "棋譜 · 交点の座標"
+
+msgid "kifu:no_moves"
+msgstr "この棋譜には着手がありません"
+
+msgid "kifu:need_sgf"
+msgstr "この対局の棋譜はまだ取得していません"
+
+msgid "kifu:load_failed"
+msgstr "この対局を読み込めません"
+
+msgid "kifu:loading_this_game"
+msgstr "この対局を読み込んでいます"
+
+msgid "kifu:loading_hint"
+msgstr "棋譜も一手ごとの記録もサーバーから取得します。"
+
+msgid "kifu:retry"
+msgstr "再試行"
+
+msgid "kifu:pass"
+msgstr "パス"
+
+msgid "kifu:to_start"
+msgstr "初手に戻る"
+
+msgid "kifu:to_end"
+msgstr "最後へ"
+
+msgid "kifu:prev_move"
+msgstr "前の手"
+
+msgid "kifu:next_move"
+msgstr "次の手"
+
+msgid "kifu:prev_page"
+msgstr "前のページ"
+
+msgid "kifu:next_page"
+msgstr "次のページ"
+
+msgid "kifu:collapsed"
+msgstr "折りたたみ"
+
+msgid "kifu:expanded"
+msgstr "展開済み"
+
+msgid "kifu:today"
+msgstr "今日"
+
+msgid "kifu:yesterday"
+msgstr "昨日"
+
+msgid "kifu:day_before"
+msgstr "一昨日"
+
+msgid "review:back_review"
+msgstr "検討"
+
+msgid "review:you"
+msgstr "あなた"
+
+msgid "review:black"
+msgstr "黒"
+
+msgid "review:white"
+msgstr "白"
+
+msgid "review:win"
+msgstr "勝ち"
+
+msgid "review:lose"
+msgstr "負け"
+
+msgid "review:by_resign"
+msgstr "中押し"
+
+msgid "review:by_time"
+msgstr "時間切れ"
+
+msgid "review:by_forfeit"
+msgstr "棄権"
+
+msgid "review:void_result"
+msgstr "この対局は勝敗が決まりませんでした"
+
+msgid "review:unfinished_line"
+msgstr "第 {n} 手で退出しました"
+
+msgid "review:sec_games"
+msgstr "これまでの対局"
+
+msgid "review:all_games"
+msgstr "全 {n} 局"
+
+msgid "review:local_games"
+msgstr "この端末で {n} 局"
+
+msgid "review:facing_games"
+msgstr "対面 {n} 局"
+
+msgid "review:matched_games"
+msgstr "{n} 局が該当"
+
+msgid "review:filter_label"
+msgstr "出典で対局を絞り込む"
+
+msgid "review:filter_all"
+msgstr "すべて"
+
+msgid "review:filter_local"
+msgstr "対面"
+
+msgid "review:search_toggle"
+msgstr "過去の対局を絞り込み・検索"
+
+msgid "review:list_loading"
+msgstr "あなたの対局を読み込んでいます"
+
+msgid "review:list_failed"
+msgstr "対局一覧を読み込めません"
+
+msgid "review:no_games"
+msgstr "まだ対局がありません"
+
+msgid "review:no_games_hint"
+msgstr "対局を終えると自動でここに記録されます。下から SGF を取り込むこともできます。"
+
+msgid "review:no_local_games"
+msgstr "対面での対局はまだありません"
+
+msgid "review:no_local_games_hint"
+msgstr "「対局 · 人対人」で 2 人が同じ端末で打った対局がここに記録されます。"
+
+msgid "review:no_match"
+msgstr "一致する対局はありません"
+
+msgid "review:no_match_hint"
+msgstr "棋士名や棋戦名を変えてお試しください。"
+
+msgid "review:row_ai"
+msgstr "AI 対局"
+
+msgid "review:row_human"
+msgstr "人対人"
+
+msgid "review:row_ranked"
+msgstr "段級位戦"
+
+msgid "review:row_import"
+msgstr "取り込んだ棋譜"
+
+msgid "review:row_library"
+msgstr "棋譜ライブラリ"
+
+msgid "review:row_vs"
+msgstr "対"
+
+msgid "review:rail_title"
+msgstr "選んだ対局"
+
+msgid "review:rail_none"
+msgstr "対局が選ばれていません"
+
+msgid "review:rail_board"
+msgstr "選んだ対局の終局図"
+
+msgid "review:board_failed"
+msgstr "この対局の棋譜を読み込めません"
+
+msgid "review:sec_winrate"
+msgstr "この対局の勝率"
+
+msgid "review:black_winrate"
+msgstr "黒の勝率"
+
+msgid "review:black_lead"
+msgstr "黒優勢"
+
+msgid "review:perspective"
+msgstr "{color}番の視点"
+
+msgid "review:plot_label"
+msgstr "一手ごとの勝率 —— 上が黒優勢、下が白優勢"
+
+msgid "review:plot_pick_label"
+msgstr "一手ごとの勝率 —— タップでその手に移動"
+
+msgid "review:plot_loading"
+msgstr "この対局のレポートを読み込んでいます"
+
+msgid "review:plot_pick"
+msgstr "下から対局を選んでください"
+
+msgid "review:plot_thin"
+msgstr "レポートでまだ計算していない手"
+
+msgid "review:plot_unanalyzed"
+msgstr "この対局はまだ解析していません —— 下の「レポートを作成」で段階を選んでください"
+
+msgid "review:sec_report"
+msgstr "レポートを作成"
+
+msgid "review:two_tiers"
+msgstr "2 段階：500 / 2000 回の探索"
+
+msgid "review:tier_standard"
+msgstr "標準"
+
+msgid "review:tier_standard_sub"
+msgstr "1 手あたり 500 回探索"
+
+msgid "review:tier_deep"
+msgstr "精読"
+
+msgid "review:tier_deep_sub"
+msgstr "1 手あたり 2000 回探索 · 4 倍遅い"
+
+msgid "review:visits_each"
+msgstr "1 手あたり {n} 回探索"
+
+msgid "review:analyzed_progress"
+msgstr "{b} 手中 {a} 手を解析済み"
+
+msgid "review:resume_analysis"
+msgstr "解析を続ける"
+
+msgid "review:recompute"
+msgstr "再計算"
+
+msgid "review:recompute_failed"
+msgstr "再計算できませんでした"
+
+msgid "review:refresh_failed"
+msgstr "更新できませんでした"
+
+msgid "review:no_task"
+msgstr "この対局にはまだレポートのタスクがありません"
+
+msgid "review:tasks_failed"
+msgstr "レポートのタスクでエラーが起きました"
+
+msgid "review:tag_analyzed"
+msgstr "解析済み"
+
+msgid "review:tag_unanalyzed"
+msgstr "未解析"
+
+msgid "review:cell_unanalyzed"
+msgstr "未解析"
+
+msgid "review:tag_partial"
+msgstr "{a}/{b} まで計算"
+
+msgid "review:tag_running"
+msgstr "解析中 {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "解析に失敗"
+
+msgid "review:tag_unfinished"
+msgstr "未終局"
+
+msgid "review:failure_bad_sgf"
+msgstr "この棋譜を読み込めません"
+
+msgid "review:failure_no_credits"
+msgstr "クレジットが足りません"
+
+msgid "review:failure_not_found"
+msgstr "すでに存在しません"
+
+msgid "review:failure_offline"
+msgstr "クラウドは一時的に利用できません"
+
+msgid "review:moves_failed"
+msgstr "レポートを読み込めません"
+
+msgid "review:detail_failed"
+msgstr "このレポートを読み込めません"
+
+msgid "review:open_report"
+msgstr "レポートを開く"
+
+msgid "review:delete_game"
+msgstr "削除"
+
+msgid "review:to_research"
+msgstr "研究で開く"
+
+msgid "review:toggles"
+msgstr "表示"
+
+msgid "review:accuracy"
+msgstr "正確度"
+
+msgid "review:brilliants"
+msgstr "妙手"
+
+msgid "review:mistakes"
+msgstr "悪手"
+
+msgid "review:took"
+msgstr "{d} かかりました"
+
+msgid "review:import_card"
+msgstr "棋譜を取り込んで検討"
+
+msgid "review:import_card_sub"
+msgstr "ローカルの SGF、または棋譜ライブラリ"
+
+msgid "platform:platforms"
+msgstr "対局サイト"
+
+msgid "platform:back_to_platforms"
+msgstr "対局サイト連携"
+
+msgid "platform:connect_sub"
+msgstr "外部の囲碁サイトにつないで、この実物の盤で打ちます"
+
+msgid "platform:connected"
+msgstr "接続済み"
+
+msgid "platform:disconnected"
+msgstr "未接続"
+
+msgid "platform:what_you_get"
+msgstr "接続すると"
+
+msgid "platform:get_board"
+msgstr "この実物の盤で打てます"
+
+msgid "platform:get_board_sub"
+msgstr "石を置けばそれが着手です。相手にも同じ手が見えます"
+
+msgid "platform:get_kifu"
+msgstr "対局後に棋譜を自動保存"
+
+msgid "platform:get_kifu_sub"
+msgstr "棋譜ライブラリに入り、検討にも送れます"
+
+msgid "platform:get_rank"
+msgstr "端末内の段級位には影響しません"
+
+msgid "platform:get_rank_sub"
+msgstr "向こうの勝敗は向こうの記録にだけ入ります"
+
+msgid "platform:icon_board"
+msgstr "盤"
+
+msgid "platform:icon_kifu"
+msgstr "譜"
+
+msgid "platform:icon_rank"
+msgstr "段位"
+
+msgid "platform:sign_in_to"
+msgstr "サインイン · {name}"
+
+msgid "platform:logging_in"
+msgstr "サインイン中…"
+
+msgid "platform:login_failed"
+msgstr "サインインに失敗しました"
+
+msgid "platform:logout"
+msgstr "サインアウト"
+
+msgid "platform:logout_ask"
+msgstr "{name} との接続を切りますか？"
+
+msgid "platform:logout_body"
+msgstr "この端末はそのアカウントではなくなります。次に入るときは再度サインインが必要です。"
+
+msgid "platform:pw_fields"
+msgstr "ユーザー名 + パスワード"
+
+msgid "platform:pw_note"
+msgstr "そのサイトにのみ送られ、端末には保存されません"
+
+msgid "platform:user_note"
+msgstr "向こうのアカウント名であり、端末のアカウントではありません"
+
+msgid "platform:sms_fields"
+msgstr "電話番号 + 認証コード"
+
+msgid "platform:phone_note"
+msgstr "サイトからログイン用の資格情報を得るためだけに使います"
+
+msgid "platform:sms_get"
+msgstr "認証コードを取得"
+
+msgid "platform:sms_again"
+msgstr "{n} 秒後に再送できます"
+
+msgid "platform:sms_failed"
+msgstr "認証コードを送信できませんでした"
+
+msgid "platform:need_phone"
+msgstr "先に電話番号を入力してください"
+
+msgid "platform:code_note"
+msgstr "6 桁の数字 · 60 秒間有効"
+
+msgid "platform:lobby_title"
+msgstr "{name} · ロビー"
+
+msgid "platform:lobby_sub"
+msgstr "誰かに挑戦するか、サイトに相手を探してもらいます"
+
+msgid "platform:enter_lobby"
+msgstr "ロビーに入る"
+
+msgid "platform:enter_engine"
+msgstr "AI と対局"
+
+msgid "platform:no_play_yet"
+msgstr "まだ対局できません"
+
+msgid "platform:cap_live"
+msgstr "リアルタイム対局"
+
+msgid "platform:cap_engine"
+msgstr "AI 対局"
+
+msgid "platform:cap_automatch"
+msgstr "自動マッチング"
+
+msgid "platform:cap_rooms"
+msgstr "ルーム"
+
+msgid "platform:find_by_name"
+msgstr "ユーザー名で探す"
+
+msgid "platform:find_hint"
+msgstr "入力して Enter。見つからなければ向こうにその人はいません"
+
+msgid "platform:results"
+msgstr "見つかった棋士"
+
+msgid "platform:no_such_player"
+msgstr "向こうにその人はいません"
+
+msgid "platform:search_first"
+msgstr "ユーザー名を入力して Enter、またはサイトに相手を探してもらってください"
+
+msgid "platform:users_failed"
+msgstr "サイトから一覧を取得できませんでした"
+
+msgid "platform:idle"
+msgstr "待機中"
+
+msgid "platform:in_game"
+msgstr "対局中"
+
+msgid "platform:challenge"
+msgstr "挑戦"
+
+msgid "platform:challenge_terms"
+msgstr "挑戦を送る"
+
+msgid "platform:challenge_ask"
+msgstr "{name} に挑戦しますか？"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19 路 · 中国ルール · 段級位に反映。"
+
+msgid "platform:challenge_ask_tail"
+msgstr "送ると取り消せません。相手が受けたら {name} 上で打つことになり、この端末には戻りません。"
+
+msgid "platform:challenge_send"
+msgstr "挑戦を送信"
+
+msgid "platform:challenge_sent"
+msgstr "挑戦を送りました。相手が受けたら {name} 上で打つことになり、この端末には戻りません。"
+
+msgid "platform:challenge_failed"
+msgstr "挑戦を送信できませんでした"
+
+msgid "platform:automatch"
+msgstr "自動マッチング"
+
+msgid "platform:automatch_body"
+msgstr "{name} に相手を探してもらう"
+
+msgid "platform:automatch_hint"
+msgstr "待ち行列は {name} 側にあります。マッチしてもこの端末には戻らず、{name} 上で続けます。"
+
+msgid "platform:automatch_start"
+msgstr "マッチングを開始"
+
+msgid "platform:automatch_cancel"
+msgstr "マッチングを中止"
+
+msgid "platform:automatch_failed"
+msgstr "マッチングを開始できませんでした"
+
+msgid "platform:seeking"
+msgstr "対戦相手を探しています"
+
+msgid "platform:engine_title"
+msgstr "{name} · AI 対局"
+
+msgid "platform:engine_sub"
+msgstr "対局設定 · 端末内の段級位には反映しません"
+
+msgid "platform:opponent"
+msgstr "対戦相手"
+
+msgid "platform:rung_n"
+msgstr "第 {i} / {n} 段階"
+
+msgid "platform:stronger"
+msgstr "一段階強い相手に"
+
+msgid "platform:weaker"
+msgstr "一段階弱い相手に"
+
+msgid "platform:levels_from"
+msgstr "{name} が {n} 段階を提供"
+
+msgid "platform:levels_failed"
+msgstr "サイトから棋力の段階を取得できませんでした"
+
+msgid "platform:display_elo"
+msgstr "表示 Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "目安 {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "段級位は {name} 側のものです"
+
+msgid "platform:terms_fixed"
+msgstr "条件は固定です"
+
+msgid "platform:terms_body"
+msgstr "中国ルール · 段級位に反映"
+
+msgid "platform:terms_hint"
+msgstr "この 3 つは画面で選べません。この条件のまま送られます"
+
+msgid "platform:only_19"
+msgstr "{name} は 19 路のみ · 中国ルール"
+
+msgid "platform:fixed"
+msgstr "固定"
+
+msgid "platform:untimed"
+msgstr "時間無制限"
+
+msgid "platform:nigiri"
+msgstr "ニギリ"
+
+msgid "platform:black_first"
+msgstr "定先"
+
+msgid "platform:handicap_range"
+msgstr "{n} 段階 · 互先 / 定先 / 2 – 9 子"
+
+msgid "platform:komi_0"
+msgstr "コミなし"
+
+msgid "platform:komi_75"
+msgstr "黒コミ 7.5 目"
+
+msgid "platform:komi_n"
+msgstr "黒コミ {n} 子"
+
+msgid "platform:summary_note"
+msgstr "コミは置石に連動し、別の選択肢ではありません。勝敗は {name} の記録にのみ入ります。"
+
+msgid "tutorial:title_cn"
+msgstr "講座"
+
+msgid "tutorial:categories_cn"
+msgstr "カテゴリ"
+
+msgid "tutorial:greet_sub"
+msgstr "バックエンドは 5 層構造で、内容はこの端末では生成しません"
+
+msgid "tutorial:loading_cn"
+msgstr "クラウドと講座を同期しています"
+
+msgid "tutorial:loadFailed"
+msgstr "読み込みに失敗しました。しばらくしてからお試しください"
+
+msgid "tutorial:empty"
+msgstr "講座はまだありません"
+
+msgid "tutorial:empty_hint"
+msgstr "クラウドの講座ライブラリにはまだ本がありません。下の 2 か所には今も内容があります。"
+
+msgid "tutorial:instead_cn"
+msgstr "今できる練習"
+
+msgid "tutorial:go_training"
+msgstr "トレーニングへ"
+
+msgid "tutorial:go_training_sub"
+msgstr "6 種類の問題 · 今すぐ解けます"
+
+msgid "tutorial:go_baipu"
+msgstr "並べへ"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "名局を一手ずつ並べてみる"
+
+msgid "tutorial:count_line"
+msgstr "{n} カテゴリ · 全 {b} 冊"
+
+msgid "tutorial:books_n"
+msgstr "{n} 冊"
+
+msgid "tutorial:books_synced"
+msgstr "{n} 冊 · 内容はクラウドに同期"
+
+msgid "tutorial:synced"
+msgstr "クラウドに同期"
+
+msgid "tutorial:pick_book"
+msgstr "本を選ぶ"
+
+msgid "tutorial:books_loading"
+msgstr "このカテゴリの書目を読み込んでいます"
+
+msgid "tutorial:books_failed"
+msgstr "このカテゴリの書目を読み込めません"
+
+msgid "tutorial:books_empty"
+msgstr "このカテゴリには本が 1 冊もありません"
+
+msgid "tutorial:books_empty_hint"
+msgstr "クラウドはまだこのカテゴリを同期していません。ほかのカテゴリには既にあるかもしれません。"
+
+msgid "tutorial:anatomy_cn"
+msgstr "1 課はこんな形です"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} 章"
+
+msgid "tutorial:sections_n"
+msgstr "{n} 節"
+
+msgid "tutorial:figures_n"
+msgstr "{n} 図"
+
+msgid "tutorial:moves_n"
+msgstr "{n} 手"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} 秒"
+
+msgid "tutorial:has_video"
+msgstr "動画あり"
+
+msgid "tutorial:back_toc"
+msgstr "目次"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · 目次"
+
+msgid "tutorial:toc_count"
+msgstr "{c} 章 · {s} 節"
+
+msgid "tutorial:toc_loading"
+msgstr "この本の目次を読み込んでいます"
+
+msgid "tutorial:toc_failed"
+msgstr "この本の目次を読み込めません"
+
+msgid "tutorial:toc_empty"
+msgstr "この本にはまだ章がありません"
+
+msgid "tutorial:toc_empty_hint"
+msgstr "書目は同期されましたが本文はまだです。この端末の問題ではありません。"
+
+msgid "tutorial:no_sections"
+msgstr "この章にはまだ節がありません"
+
+msgid "tutorial:section_n"
+msgstr "第 {n} 節"
+
+msgid "tutorial:section_loading"
+msgstr "この節を読み込んでいます"
+
+msgid "tutorial:section_failed"
+msgstr "この節を読み込めません"
+
+msgid "tutorial:figures_in_section"
+msgstr "この節の図"
+
+msgid "tutorial:no_figures"
+msgstr "この節にはまだ図がありません"
+
+msgid "tutorial:no_figures_hint"
+msgstr "目次にはこの節がありますが、本文はまだ同期されていません。この端末の問題ではありません。"
+
+msgid "tutorial:figure_ordinal"
+msgstr "第 {i} / {n} 図"
+
+msgid "tutorial:figure_actions"
+msgstr "図めくりと解説"
+
+msgid "tutorial:prev_figure"
+msgstr "前の図"
+
+msgid "tutorial:next_figure"
+msgstr "次の図"
+
+msgid "tutorial:back_to_diagram"
+msgstr "図に戻る"
+
+msgid "tutorial:board_label"
+msgstr "{label}：この節の変化図"
+
+msgid "tutorial:board_view"
+msgstr "表示範囲"
+
+msgid "tutorial:fullBoard"
+msgstr "全盤"
+
+msgid "tutorial:partial"
+msgstr "部分図"
+
+msgid "tutorial:moves"
+msgstr "手数"
+
+msgid "tutorial:step_back"
+msgstr "一手戻す"
+
+msgid "tutorial:step_fwd"
+msgstr "一手進める"
+
+msgid "tutorial:step_n"
+msgstr "第 {n} 手まで進める"
+
+msgid "tutorial:step_total"
+msgstr "この図は全 {n} 手です"
+
+msgid "tutorial:step_zero"
+msgstr "配置のみ"
+
+msgid "tutorial:tag_video"
+msgstr "動画解説"
+
+msgid "tutorial:tag_audio"
+msgstr "音声解説"
+
+msgid "tutorial:tag_text"
+msgstr "文章解説"
+
+msgid "tutorial:tag_none"
+msgstr "解説なし"
+
+msgid "tutorial:teach_none"
+msgstr "解説なし"
+
+msgid "tutorial:teach_none_reason"
+msgstr "この図の解説はまだ収録されていません。クラウドが同期すると表示されます"
+
+msgid "tutorial:text_only"
+msgstr "文章解説のみ"
+
+msgid "tutorial:text_only_reason"
+msgstr "この図は文章解説のみで、上に載せてあります"
+
+msgid "tutorial:no_explain"
+msgstr "この図には本文の説明がなく、解説も収録されていません。"
+
+msgid "tutorial:watch_video"
+msgstr "動画解説を見る"
+
+msgid "tutorial:play_audio"
+msgstr "音声解説を再生"
+
+msgid "tutorial:stop_audio"
+msgstr "停止"
+
+msgid "19x19"
+msgstr "19 路"
+
+msgid "19×19 only"
+msgstr "19 路のみ"
+
+msgid "20 problems per unit"
+msgstr "20 問で 1 ユニット"
+
+msgid "Korean rules"
+msgstr "韓国ルール"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr "AI との接続エラーです。もう一度打つか、退出して対局を放棄してください。"
+
+msgid "AI is thinking…"
+msgstr "AI が考えています…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "AI のヒント（白の点滅）"
+
+msgid "Accept as my move"
+msgstr "自分の着手として採用"
+
+msgid "All games"
+msgstr "すべての対局"
+
+msgid "Auto-advance after solving · current"
+msgstr "正解後に自動で次へ · 現在"
+
+msgid "Average time"
+msgstr "平均所要時間"
+
+msgid "Average tries"
+msgstr "平均試行回数"
+
+msgid "Board may have moved"
+msgstr "碁盤が動いた可能性があります"
+
+msgid "Board may have moved — recognition paused"
+msgstr "碁盤が動いた可能性があるため、認識を一時停止しました"
+
+msgid "Board mismatch"
+msgstr "盤面と対局が一致しません"
+
+msgid "Board restored"
+msgstr "指示どおり復元しました"
+
+msgid "Cached SGF no longer available"
+msgstr "キャッシュした棋譜は無効になりました"
+
+msgid "Calibration"
+msgstr "幾何校正"
+
+msgid "Camera"
+msgstr "カメラ"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "カメラが切断され、タッチ操作に切り替えました"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Categories"
+msgstr "問題の種類"
+
+msgid "Challenge others · rated queue available"
+msgstr "対局を申し込む · 認定キューあり"
+
+msgid "Chart"
+msgstr "グラフ"
+
+msgid "Choose a way to start playing"
+msgstr "対局の始め方を選んでください"
+
+msgid "Choose one category"
+msgstr "問題の種類を 1 つ選ぶ"
+
+msgid "Confirm"
+msgstr "着手を確定"
+
+msgid "Confirm resign?"
+msgstr "投了しますか？"
+
+msgid "Confirm result"
+msgstr "終局を確定"
+
+msgid "Confirming…"
+msgstr "確定中…"
+
+msgid "Connected · goes to the lobby"
+msgstr "接続済み · ロビーへ"
+
+msgid "Connected · plays the engine"
+msgstr "接続済み · AI と対局"
+
+msgid "Continue"
+msgstr "続ける"
+
+msgid "Continue anyway"
+msgstr "このまま続ける"
+
+msgid "Continue on screen"
+msgstr "画面で打ち続ける"
+
+msgid "Continue practicing"
+msgstr "前回の続きから"
+
+msgid "Cross-Platform"
+msgstr "対局サイト連携"
+
+msgid "Cross-Platform Play"
+msgstr "対局サイト連携"
+
+msgid "Difficulty"
+msgstr "難易度"
+
+msgid "Ended"
+msgstr "終了"
+
+msgid "Enter Live"
+msgstr "ライブに入る"
+
+msgid "Every game played, with its review report"
+msgstr "打ったすべての対局と、その検討レポート"
+
+msgid "Exit"
+msgstr "退出"
+
+msgid "Failed to read file"
+msgstr "ファイルを読み込めませんでした"
+
+msgid "Failed to start game"
+msgstr "対局を開始できませんでした"
+
+msgid "Focused training"
+msgstr "分野別練習"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "対局中です。投了して退出しますか？"
+
+msgid "Geometry locked"
+msgstr "幾何は固定済み"
+
+msgid "Guest"
+msgstr "ゲスト"
+
+msgid "Hide Hint"
+msgstr "ヒントを隠す"
+
+msgid "Hint"
+msgstr "ヒント"
+
+msgid "Hints"
+msgstr "AI のヒント"
+
+msgid "Hint failed"
+msgstr "ヒントを出せませんでした。しばらくしてからお試しください"
+
+msgid "Hint is not enabled"
+msgstr "ヒント機能は有効ではありません"
+
+msgid "History"
+msgstr "履歴"
+
+msgid "Ignore"
+msgstr "無視"
+
+msgid "Import SGF"
+msgstr "棋譜を取り込む"
+
+msgid "Insufficient balance"
+msgstr "残高が不足しています"
+
+msgid "Judged on placement"
+msgstr "打った瞬間に判定"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "打った瞬間に判定 · 間違えればその場で戻します"
+
+msgid "Keep waiting"
+msgstr "待ち続ける"
+
+msgid "Load more"
+msgstr "さらに読み込む"
+
+msgid "Loading"
+msgstr "読み込み中..."
+
+msgid "Loading…"
+msgstr "読み込み中…"
+
+msgid "Loading categories…"
+msgstr "問題の種類を読み込み中…"
+
+msgid "Loading problem set…"
+msgstr "問題集を読み込み中…"
+
+msgid "Logging in..."
+msgstr "サインイン中..."
+
+msgid "Login failed"
+msgstr "サインインに失敗しました"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr "この難度の全種類を混ぜ、20 問ごとに 1 ユニットにまとめます"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "この難度の全種類を混ぜ、20 問で 1 ユニット"
+
+msgid "Mixed"
+msgstr "総合"
+
+msgid "Mixed categories"
+msgstr "種類混合"
+
+msgid "Mixed training"
+msgstr "総合練習"
+
+msgid "Next up"
+msgstr "次の問題"
+
+msgid "No 19×19 records found"
+msgstr "19 路の棋譜が見つかりません"
+
+msgid "No categories at this level yet"
+msgstr "この段階にはまだ問題の種類がありません"
+
+msgid "No live matches"
+msgstr "中継はありません"
+
+msgid "No problems for this level"
+msgstr "この難度には問題がありません"
+
+msgid "No problems in this category yet"
+msgstr "この種類にはまだ問題がありません"
+
+msgid "No such unit"
+msgstr "そのユニットはありません"
+
+msgid "Not a valid SGF file"
+msgstr "有効な SGF ファイルではありません"
+
+msgid "Not attempted"
+msgstr "未挑戦"
+
+msgid "Not available in ranked games"
+msgstr "段級位戦では使えません"
+
+msgid "Not calibrated"
+msgstr "未校正"
+
+msgid "Not signed in"
+msgstr "未サインイン"
+
+msgid "Not wired up yet"
+msgstr "まだ接続されていません"
+
+msgid "Now Live"
+msgstr "中継中"
+
+msgid "Online Lobby"
+msgstr "オンラインロビー"
+
+msgid "Only the ones I got wrong"
+msgstr "間違えた問題だけ"
+
+msgid "Other practice"
+msgstr "ほかの練習"
+
+msgid "Other sets"
+msgstr "別のセット"
+
+msgid "Password"
+msgstr "パスワード"
+
+msgid "Username"
+msgstr "ユーザー名"
+
+msgid "Physical board out of sync"
+msgstr "実物の碁盤が長時間、対局に追いついていません"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "強さを自分で選ぶ · 形勢判断が見られます"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr "光の指示どおりに石を置き（赤/緑）または取り除き（青）、確定してください。画面で続けることもできます。"
+
+msgid "Place these stones"
+msgstr "ここに置いてください（赤/緑の光）"
+
+msgid "Remove these stones"
+msgstr "ここを取り除いてください（青の光）"
+
+msgid "Play vs AI"
+msgstr "AI と対局"
+
+msgid "Play vs Human"
+msgstr "人と対局"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "まず AI の石を光っている点に置いてください"
+
+msgid "Possible move detected at"
+msgstr "着手らしきものを検出："
+
+msgid "Problem set unavailable"
+msgstr "問題集を読み込めません"
+
+msgid "Problems per unit · current"
+msgstr "1 ユニットの問題数 · 現在"
+
+msgid "Re-align board"
+msgstr "位置を合わせ直す"
+
+msgid "Re-align failed — try again"
+msgstr "位置合わせに失敗しました。もう一度お試しください"
+
+msgid "Re-sync failed, please retry"
+msgstr "認識のリセットに失敗しました。もう一度お試しください"
+
+msgid "Recalibrate"
+msgstr "再校正"
+
+msgid "Recalibrate board"
+msgstr "碁盤を再校正"
+
+msgid "Recent"
+msgstr "最近"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "この種類で間違えた問題をやり直す"
+
+msgid "Register / Sign in"
+msgstr "登録 / サインイン"
+
+msgid "Reset"
+msgstr "並べ直す"
+
+msgid "Resign failed, retry"
+msgstr "投了できませんでした。もう一度お試しください"
+
+msgid "Resume"
+msgstr "再開"
+
+msgid "Resume last game"
+msgstr "前回の対局を続ける"
+
+msgid "Score"
+msgstr "整地"
+
+msgid "Search players, events..."
+msgstr "棋士・棋戦を検索..."
+
+msgid "Select a match"
+msgstr "対局を選んでください"
+
+msgid "Select category"
+msgstr "問題の種類を選ぶ"
+
+msgid "Select or import a game to begin"
+msgstr "棋譜を選ぶか取り込んで始めてください"
+
+msgid "Sign out"
+msgstr "サインアウト"
+
+msgid "Signed in"
+msgstr "サインイン済み"
+
+msgid "Solved"
+msgstr "正解"
+
+msgid "Solved in this unit"
+msgstr "このユニットで正解済み"
+
+msgid "Start"
+msgstr "開始"
+
+msgid "Start placing"
+msgstr "並べを開始"
+
+msgid "Stone Placement"
+msgstr "並べ"
+
+msgid "StellaBox account"
+msgstr "StellaBox アカウント"
+
+msgid "Tap to connect"
+msgstr "タップしてサインイン"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "棋力に応じて段階を自動設定 · 解析は終始オフ"
+
+msgid "Time"
+msgstr "所要時間"
+
+msgid "To place"
+msgstr "置く分"
+
+msgid "To remove"
+msgstr "取り除く分"
+
+msgid "Today we practice {what}"
+msgstr "今日は{what}を練習"
+
+msgid "what"
+msgstr "何か"
+
+msgid "Top Matches"
+msgstr "注目の対局"
+
+msgid "Try"
+msgstr "試し打ち"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "別のキーワードで検索するか、SGF ファイルを取り込んでください。"
+
+msgid "Two players on the same physical board"
+msgstr "2 人が同じ実物の碁盤で打ちます"
+
+msgid "Units"
+msgstr "ユニット"
+
+msgid "Upcoming"
+msgstr "まもなく開始"
+
+msgid "Wrong"
+msgstr "間違えた問題"
+
+msgid "You are here"
+msgstr "ここです"
+
+msgid "game:count_failed_retry"
+msgstr "整地できませんでした。しばらくしてからお試しください"
+
+msgid "min"
+msgstr "分"
+
+msgid "sec"
+msgstr "秒"
+
+msgid "problems count"
+msgstr "問"
+
+msgid "score"
+msgstr "目差"
+
+msgid "winrate"
+msgstr "勝率"
+
+msgid "{item} exhausted"
+msgstr "{item}を使い切りました"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr "{item}の回数が足りません。Golaxy アプリでチャージしてください。この端末では代行できません。"
+
+msgid "game:connection_rejected"
+msgstr "リアルタイム接続が拒否されたため、盤面は自動更新されません。サインインし直してからお試しください"
+
+msgid "game:gone_reason"
+msgstr "端末が再起動したか、放置が長くて対局が整理された可能性があります。"
+
+msgid "game:resign_failed"
+msgstr "投了できませんでした"
+
+msgid "game:session_gone_notice"
+msgstr "この対局はサーバー上にもうありません。このページを離れて構いません。"
+
+msgid "settings:nav_about"
+msgstr "情報"
+
+msgid "settings:about_version"
+msgstr "バージョン"
+
+msgid "settings:about_local"
+msgstr "この端末"
+
+msgid "settings:about_cloud"
+msgstr "クラウド"
+
+msgid "settings:engine_ok"
+msgstr "利用可能"
+
+msgid "settings:engine_down"
+msgstr "接続できません"
+
+msgid "settings:engine_unset"
+msgstr "未設定"
+
+msgid "settings:engine_code"
+msgstr "エンジンの応答: {code}"
+
+msgid "settings:camera_connected"
+msgstr "接続済み"
+
+msgid "settings:geometry_calibrated"
+msgstr "校正済み"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "未校正"
+
+msgid "settings:led_serial_connected"
+msgstr "シリアル接続済み"
+
+msgid "settings:calib_no_camera"
+msgstr "この端末にはカメラがありません"
+
+msgid "settings:ladder_detail_open"
+msgstr "AI段位の詳細を見る"
+
+msgid "settings:ladder_detail_close"
+msgstr "閉じる"
+
+msgid "growth:cal_aria"
+msgstr "直近1年の練習カレンダー"
+
+msgid "growth:cal_title"
+msgstr "直近1年"
+
+msgid "growth:cal_days_unit"
+msgstr "日"
+
+msgid "growth:cal_sub"
+msgstr "対局か詰碁"
+
+msgid "growth:cal_local"
+msgstr "この端末の記録"
+
+msgid "growth:cal_failed"
+msgstr "カレンダーを読み込めませんでした。後でもう一度ご確認ください。"
+
+msgid "growth:cal_less"
+msgstr "少"
+
+msgid "growth:cal_more"
+msgstr "多"
+
+msgid "growth:cal_month"
+msgstr "{m}月"
+
+msgid "growth:cal_mon"
+msgstr "月"
+
+msgid "growth:cal_wed"
+msgstr "水"
+
+msgid "growth:cal_fri"
+msgstr "金"
+
+msgid "growth:trend_title"
+msgstr "直近 30 日の推移"
+
+msgid "growth:trend_aria"
+msgstr "直近 30 日の段階の推移、最高 {r}"
+
+msgid "growth:trend_peak"
+msgstr "最高 {r}"
+
+msgid "growth:trend_thin"
+msgstr "直近 30 日で認定後の段級位戦が 2 日分に届かず、まだ線になりません。"
+
+msgid "growth:trend_unplaced"
+msgstr "認定が終わってから描き始めます。認定局の相手はあなたの実力を試しているだけで、あなたの段階ではありません。"
+
+msgid "growth:diag_bad_count"
+msgstr "疑問手 {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "最弱"
+
+msgid "growth:diag_loading"
+msgstr "読み込み中…"
+
+msgid "growth:diag_failed"
+msgstr "診断を読み込めませんでした"
+
+msgid "growth:diag_failed_p"
+msgstr "「レポートがまだない」という意味ではありません。後でもう一度ご確認ください。"
+
+msgid "growth:diag_go_report"
+msgstr "検討へ"
+
+msgid "growth:diag_no_report"
+msgstr "検討レポートがまだありません"
+
+msgid "growth:diag_no_report_p"
+msgstr "診断はレポートのある対局から計算します。一局打ち終えて検討でレポートを作れば、ここに数が出ます。"
+
+msgid "growth:diag_no_seat"
+msgstr "これらのレポートはまだ数えられません"
+
+msgid "growth:diag_no_seat_a"
+msgstr "レポートは "
+
+msgid "growth:diag_no_seat_b"
+msgstr " 件ありますが、その対局では黒白が記録されておらず、どの手があなたの手か分かりません。もう一局打ってレポートを作れば、ここに数が出ます。"
+
+msgid "growth:diag_offline"
+msgstr "いまクラウドのレポートを読み込めません"
+
+msgid "growth:diag_offline_p"
+msgstr "レポートはクラウドにあり、この端末の控えにはありません。ネットにつながったらもう一度ご確認ください。"
+
+msgid "growth:diag_ungraded"
+msgstr "レポートにまだ評価済みの手がありません"
+
+msgid "growth:diag_ungraded_p"
+msgstr "探索量が足りない手は評価しません。レポートが最後まで走れば、ここに数が出ます。"
+
+msgid "growth:diag_local_a"
+msgstr "これは"
+
+msgid "growth:diag_local_b"
+msgstr "。数件少ないことがあります。"
+
+msgid "growth:diag_sample_a"
+msgstr "レポートのある対局だけを数えます：直近 "
+
+msgid "growth:diag_sample_b"
+msgstr " 件のレポートで、あなたが打った "
+
+msgid "growth:diag_sample_c"
+msgstr " 手。"
+
+msgid "growth:diag_skipped_a"
+msgstr "ほかに "
+
+msgid "growth:diag_skipped_b"
+msgstr " 件は黒白の記録がありません。"
+
+msgid "growth:diag_thin"
+msgstr "サンプルが少なく、結論はぶれます。"
+
+msgid "growth:stat_winrate_all"
+msgstr "勝率 · 直近 30 日"
+
+msgid "growth:unknown_seat_a"
+msgstr "勝率に入れていない対局が "
+
+msgid "growth:unknown_seat_b"
+msgstr " 局あります：対面の対局、読み込んだ棋譜、黒白が記録されていない対局です。"

@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { KioskCard } from './KioskCard';
 
 const tile = (c: HTMLElement) => c.querySelector('.kiosk-card__tile') as HTMLElement;
+const cardCss = () => readFileSync(resolve(__dirname, '../../kiosk-shell/card.css'), 'utf8');
 
 describe('KioskCard —— 图标卡与环卡是**同一张卡**,只换衬里那一块', () => {
   test('不传 ring 就是图标卡:衬里是内联 svg 图标,没有 is-ring', () => {
@@ -59,6 +62,12 @@ describe('环:读不到值要说读不到', () => {
 });
 
 describe('「还不能用」的两种,点不动', () => {
+  test('disabled 卡有明确的压暗和不可点击 cursor', () => {
+    expect(cardCss()).toMatch(
+      /\.kiosk-card:disabled\s*\{[^}]*opacity:\s*\.45;[^}]*cursor:\s*default;[^}]*\}/s,
+    );
+  });
+
   test('soon 的文案由调用方给,并且卡是 disabled 的', () => {
     render(<KioskCard title="野狐围棋" sub="接口还没通" icon="globe-hemisphere-west" soon="即将上线" />);
     expect(screen.getByText('即将上线')).toBeInTheDocument();

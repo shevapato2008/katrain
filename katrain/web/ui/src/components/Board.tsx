@@ -36,6 +36,14 @@ export interface BoardProps {
    * 还有一件跟着关掉:**盘内不再画坐标**(`drawCoordinates`),那是外面那四条带的活。
    */
   externalRulers?: boolean;
+  /**
+   * 超时判负态:kiosk GamePage 右栏状态条(`.gstatus`)已经说过一遍结果,
+   * 棋盘不再叠加半透明遮罩 + 大字(设计稿 05b 棋盘完整可见)。默认 `false`,
+   * galaxy 与其它终局态(数子/认输等)逐字不变。
+   */
+  suppressEndResultOverlay?: boolean;
+  /** Reports that the visible canvas has finished drawing this game-state node. */
+  onPaintedNode?: (nodeId: number) => void;
 }
 
 const ASSETS = {
@@ -58,11 +66,15 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null, externalRulers = false }) => {
+const Board: React.FC<BoardProps> = ({
+  gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null,
+  externalRulers = false, suppressEndResultOverlay = false, onPaintedNode,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(800);
+  const [imagesReady, setImagesReady] = useState(false);
   const { t } = useTranslation();
 
   // Translate game result
@@ -81,9 +93,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     const assetKeys = Object.keys(ASSETS);
     if (assetKeys.every(k => imageCache[k])) {
       imagesRef.current = { ...imageCache };
-      renderBoard();
+      setImagesReady(true);
       return;
     }
+    let cancelled = false;
     const loadImages = async () => {
       const entries = Object.entries(ASSETS);
       await Promise.all(
@@ -101,9 +114,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
             })
         )
       );
-      renderBoard();
+      if (!cancelled) setImagesReady(true);
     };
     loadImages();
+    return () => { cancelled = true; };
   }, []);
 
   // Track container size for responsive canvas
@@ -160,7 +174,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay, imagesReady]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const m = externalRulers ? 0.5 : 1.5;
@@ -515,7 +529,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     }
 
     // Game End Result
-    if (gameState.end_result) {
+    if (gameState.end_result && !gameState.awaiting_count && !suppressEndResultOverlay) {
       const centerX = layout.offsetX + layout.boardWidth / 2;
       const centerY = layout.offsetY + layout.boardHeight / 2;
 
@@ -539,6 +553,11 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       } else {
         ctx.fillText(translatedResult, centerX, centerY);
       }
+    }
+    // A state-only redraw can run before the image assets finish loading. Do not release
+    // kiosk move audio until the stone image for this node can actually be visible.
+    if (Object.keys(ASSETS).every(key => imagesRef.current[key])) {
+      onPaintedNode?.(gameState.current_node_id);
     }
   };
 

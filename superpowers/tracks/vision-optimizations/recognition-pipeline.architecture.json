@@ -1,0 +1,544 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "实体棋盘落子识别流程",
+    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23",
+    "output": "recognition-pipeline.html",
+    "visual_preset": "blueprint",
+    "animation": "none",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1440,
+      940
+    ],
+    "views": [
+      {
+        "id": "pixels",
+        "label": "画面 → 检测",
+        "focus": [
+          "capture",
+          "warp",
+          "enhance",
+          "yolo"
+        ],
+        "note": "只处理静止的画面；透视校正后，8 帧平均和 CLAHE 只给模型用。"
+      },
+      {
+        "id": "board",
+        "label": "检测 → 盘面",
+        "focus": [
+          "yolo",
+          "assign",
+          "hyst",
+          "vote"
+        ],
+        "note": "视差修正后落到交叉点，三档滞回决定一颗子能不能进来、能不能留下。"
+      },
+      {
+        "id": "reference",
+        "label": "参照帧比对（09-23）",
+        "focus": [
+          "warp",
+          "refstore",
+          "refcheck",
+          "game"
+        ],
+        "note": "棋谱推进时拍参照、长考时每分钟逐格续期；比对只影响下游，不改识别历史。当前是影子模式。"
+      },
+      {
+        "id": "confirm",
+        "label": "盘面 → 落子",
+        "focus": [
+          "refcheck",
+          "movedet",
+          "sync",
+          "server",
+          "game"
+        ],
+        "note": "连续几帧一致才算落子；提交前再核一次子还在、轮到谁。"
+      },
+      {
+        "id": "lamps",
+        "label": "指引灯",
+        "focus": [
+          "game",
+          "led"
+        ],
+        "note": "AI 落子处亮灯；worker 量光斑，服务端据此调亮度。"
+      }
+    ],
+    "repository": {
+      "url": "https://github.com/shevapato2008/katrain",
+      "revision": "c70cf9254f2cdcde50b46ff785ba608b1798dfe5"
+    }
+  },
+  "components": [
+    {
+      "id": "capture",
+      "type": "external",
+      "label": "取帧 · 静止闸",
+      "sublabel": "1080p · 有手在动就丢弃",
+      "pos": [
+        60,
+        120
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 315,
+          "label": "_motion_is_stable"
+        }
+      ]
+    },
+    {
+      "id": "warp",
+      "type": "backend",
+      "label": "透视校正",
+      "sublabel": "几何锁 → 1056² 俯视图",
+      "pos": [
+        330,
+        120
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 331,
+          "label": "_warp_frame"
+        }
+      ]
+    },
+    {
+      "id": "enhance",
+      "type": "backend",
+      "label": "8 帧平均 + CLAHE",
+      "sublabel": "只喂给模型",
+      "pos": [
+        600,
+        120
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 741,
+          "label": "averager / enhance"
+        }
+      ]
+    },
+    {
+      "id": "yolo",
+      "type": "backend",
+      "label": "YOLO · RKNN",
+      "sublabel": "黑 · 白 · 红灯 · 绿灯",
+      "pos": [
+        870,
+        120
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 749,
+          "label": "detector.detect"
+        }
+      ]
+    },
+    {
+      "id": "assign",
+      "type": "backend",
+      "label": "落点分配",
+      "sublabel": "视差修正 k≈0.990 · 占用感知",
+      "tag": "09-21/22",
+      "pos": [
+        1140,
+        120
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/board_state.py",
+          "line": 119,
+          "label": "apply_parallax"
+        },
+        {
+          "path": "katrain/vision/parallax.py",
+          "line": 109,
+          "label": "mount_parallax_for_lock"
+        }
+      ]
+    },
+    {
+      "id": "hyst",
+      "type": "security",
+      "label": "三档滞回",
+      "sublabel": "新增 0.40 · 保持 0.30 · 维持 0.20",
+      "tag": "09-22",
+      "pos": [
+        1140,
+        330
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/board_state.py",
+          "line": 144,
+          "label": "_passes_hysteresis"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 347,
+          "label": "_game_stone_sustain"
+        }
+      ]
+    },
+    {
+      "id": "vote",
+      "type": "backend",
+      "label": "两帧投票",
+      "sublabel": "连续两帧一致才改",
+      "pos": [
+        870,
+        330
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 800
+        }
+      ]
+    },
+    {
+      "id": "refcheck",
+      "type": "security",
+      "label": "参照帧比对",
+      "sublabel": "逐格 ZNCC ≥ 0.90 · 有限次否决",
+      "tag": "09-23 · 影子",
+      "pos": [
+        590,
+        330
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 376,
+          "label": "_reference_check"
+        }
+      ]
+    },
+    {
+      "id": "refstore",
+      "type": "database",
+      "label": "参照帧",
+      "sublabel": "推进时拍 · 每分钟逐格续期",
+      "tag": "09-23",
+      "pos": [
+        320,
+        330
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/reference_frame.py",
+          "line": 147,
+          "label": "ReferenceFrame"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 502,
+          "label": "_refresh_reference"
+        }
+      ]
+    },
+    {
+      "id": "movedet",
+      "type": "backend",
+      "label": "落子确认",
+      "sublabel": "峰值 ≥ 0.70 走 3 帧，否则 5 帧",
+      "pos": [
+        590,
+        540
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/move_detector.py",
+          "line": 253,
+          "label": "detect_new_move"
+        }
+      ]
+    },
+    {
+      "id": "sync",
+      "type": "backend",
+      "label": "盘面同步",
+      "sublabel": "缺子先等 7 s · 提示多子缺子",
+      "pos": [
+        870,
+        540
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/sync.py",
+          "line": 164,
+          "label": "SyncStateMachine.update"
+        }
+      ]
+    },
+    {
+      "id": "server",
+      "type": "security",
+      "label": "提交前复核",
+      "sublabel": "子还在 (L0a) · 轮到谁 (L0b)",
+      "pos": [
+        590,
+        760
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/web/server.py",
+          "line": 3815,
+          "label": "_handle_confirmed_move"
+        }
+      ]
+    },
+    {
+      "id": "game",
+      "type": "database",
+      "label": "棋谱",
+      "sublabel": "落子 · 下发新的期望盘面",
+      "pos": [
+        320,
+        760
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/web/core/physical_play_orchestrator.py",
+          "line": 138,
+          "label": "on_game_state"
+        }
+      ]
+    },
+    {
+      "id": "led",
+      "type": "external",
+      "label": "指引灯",
+      "sublabel": "AI 落子亮灯 · 按光斑调亮度",
+      "tag": "09-22",
+      "pos": [
+        30,
+        760
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/web/core/physical_play.py",
+          "line": 130,
+          "label": "LedPlanner.tick"
+        },
+        {
+          "path": "katrain/web/server.py",
+          "line": 3659,
+          "label": "_adjust_led_brightness"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "视觉 worker · 每帧",
+      "wraps": [
+        "capture",
+        "warp",
+        "enhance",
+        "yolo",
+        "assign",
+        "hyst",
+        "vote",
+        "refcheck",
+        "refstore",
+        "movedet",
+        "sync"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "katrain web 服务",
+      "wraps": [
+        "server",
+        "game",
+        "led"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "capture",
+      "to": "warp",
+      "variant": "emphasis"
+    },
+    {
+      "from": "warp",
+      "to": "enhance",
+      "variant": "emphasis"
+    },
+    {
+      "from": "enhance",
+      "to": "yolo",
+      "variant": "emphasis"
+    },
+    {
+      "from": "yolo",
+      "to": "assign",
+      "variant": "emphasis"
+    },
+    {
+      "from": "assign",
+      "to": "hyst",
+      "variant": "emphasis"
+    },
+    {
+      "from": "hyst",
+      "to": "vote",
+      "variant": "emphasis"
+    },
+    {
+      "from": "vote",
+      "to": "refcheck",
+      "variant": "emphasis"
+    },
+    {
+      "from": "refcheck",
+      "to": "movedet",
+      "variant": "emphasis"
+    },
+    {
+      "from": "refcheck",
+      "to": "sync"
+    },
+    {
+      "from": "movedet",
+      "to": "server",
+      "variant": "emphasis"
+    },
+    {
+      "from": "server",
+      "to": "game",
+      "variant": "emphasis"
+    },
+    {
+      "from": "warp",
+      "to": "refstore",
+      "label": "平均前灰度",
+      "variant": "dashed",
+      "labelAt": [
+        425,
+        250
+      ]
+    },
+    {
+      "from": "refstore",
+      "to": "refcheck",
+      "variant": "dashed"
+    },
+    {
+      "from": "game",
+      "to": "refstore",
+      "label": "期望盘面",
+      "variant": "dashed"
+    },
+    {
+      "from": "game",
+      "to": "led",
+      "label": "AI 落子"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "看得准",
+      "items": [
+        "视差修正：参数从几何锁推出，不用摆子标定（09-22）",
+        "占用感知分配：高置信度先占位，其余挪到最近空点",
+        "指引灯按实测光斑调亮度，夜里不再把白子照没（09-22）"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "留得住",
+      "items": [
+        "0.20 维持档只留棋谱里已有的子（09-22）",
+        "颜色不一致先保持 15 帧再改",
+        "缺子先等 7 秒，再提示盘面不一致"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "白天抗光（09-23，影子模式）",
+      "items": [
+        "逐格和参照帧比结构，结构没变就不信检测器的改口",
+        "否决有上限：缺子 90 帧、多子或变色 10 帧",
+        "长考时每分钟逐格续期，没解释的变化不吸收"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "提交前兜底",
+      "items": [
+        "落子确认：峰值置信度 ≥ 0.70 走 3 帧，否则 5 帧",
+        "卡住的弱检测 12 帧后弹确认卡",
+        "提交前再看一次子还在、是不是轮到这一方"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
+import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
 import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
@@ -23,6 +23,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
+}));
+
 // Only `readPhysicalMode` is mocked (D1.3) — every other export (sequenceKey,
 // AUTO_ADVANCE_KEY, PHYSICAL_MODE_KEY, readAutoAdvance, levelChinese, ...) passes through
 // unmocked so the rest of the test file's existing behavior is unaffected.
@@ -30,10 +35,6 @@ vi.mock('../pages/tsumegoUnits', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../pages/tsumegoUnits')>();
   return { ...actual, readPhysicalMode: () => mockReadPhysicalMode() };
 });
-
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
 
 // 视觉默认关掉(BoardSetupGuide / API.visionSetupMode 那条分支保持不动)。
 // ⚠️ **可切换**:实体模式真正的开关是 `physicalEnabled = 用户开关 && 视觉就绪 && 19 路`,
@@ -57,6 +58,13 @@ vi.mock('../context/VisionContext', () => ({
     refreshStatus: vi.fn(),
   }),
 }));
+
+// 几何状态:默认 null(= 没有 GeometryProvider,页面不管几何,和改之前一样);单条用例按需造。
+const { mockGeometry } = vi.hoisted(() => ({ mockGeometry: { value: null as null | { status: unknown } } }));
+vi.mock('../context/GeometryContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../context/GeometryContext')>();
+  return { ...actual, useOptionalGeometry: () => mockGeometry.value };
+});
 
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({
@@ -179,6 +187,7 @@ beforeEach(() => {
   mockReadPhysicalMode.mockReturnValue(false);
   mockVision.enabled = false;
   mockVision.recognitionReady = false;
+  mockGeometry.value = null;
   // Seed the prev/next sequence the units page would have written.
   sessionStorage.setItem(sequenceKey('15k', '手筋'), JSON.stringify(SEQUENCE));
 });
@@ -291,6 +300,71 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
     // 9 路题 ⇒ 这条分支根本不该开。
     expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('19 路');
+  });
+
+  it('服务重启后识别已就绪、几何本次开机没确认:实体开关按不动,提示去确认并给「去标定」(T9)', () => {
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;   // 启动时持久化的锁已经推进识别 worker
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    mockGeometry.value = {
+      status: {
+        phase: 'required', session_calibrated: false, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+      },
+    };
+    renderPage('p1');
+    expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
+    expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('物理棋盘需先确认棋盘标定');
+    expect(screen.getByRole('button', { name: '去标定' })).toBeInTheDocument();
+  });
+
+  it('几何本次开机确认过了,实体开关才按得动', () => {
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    mockGeometry.value = {
+      status: {
+        phase: 'ready', session_calibrated: true, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: true },
+      },
+    };
+    renderPage('p1');
+    expect(screen.getByTestId('physical-mode-toggle')).not.toBeDisabled();
+  });
+
+  it('屏幕进入、页内打开实体开关之后几何失效:开关还开着,旁边照样写原因并给「去标定」(T9)', () => {
+    // 屏幕模式进来 ⇒ `TsumegoInputGuard` 挂载时没套 `PhysicalBoardGuard`,几何中途失效时没有守卫接管,
+    // 只剩页内的提示能说话。改之前 `physicalHint` 在开关开着时一律返回 null。
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    const geo = (phase: 'ready' | 'degraded') => ({
+      status: {
+        phase, session_calibrated: true, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: phase === 'ready' },
+      },
+    });
+    mockGeometry.value = geo('ready');
+    const view = renderPage('p1');
+    fireEvent.click(screen.getByTestId('physical-mode-toggle'));
+    expect(screen.getByTestId('physical-mode-toggle')).toHaveAttribute('aria-checked', 'true');
+
+    // 被动漂移检测把 ready 翻成 degraded,`GeometryProvider` 的轮询带回来。
+    mockGeometry.value = geo('degraded');
+    view.rerender(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}>
+          <Routes>
+            <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const toggle = screen.getByTestId('physical-mode-toggle');
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(toggle).not.toBeDisabled();   // 关掉永远允许
+    expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('棋盘标定已失效');
+    expect(screen.getByRole('button', { name: '去标定' })).toBeInTheDocument();
   });
 
   it('做对了显示成功提示', () => {
@@ -433,6 +507,24 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       renderPage();
       expect(screen.getByTestId('puzzle-error')).toHaveTextContent('Problem not found');
     });
+
+    it('连不上云端(HTTP 503)时说「连不上云端题库」,不说「这道题读不到」', () => {
+      hookReturn = { ...defaultHookReturn, error: 'HTTP 503' };
+      renderPage();
+      const box = screen.getByTestId('puzzle-error');
+      expect(box).toHaveTextContent('连不上云端题库');
+      expect(box).not.toHaveTextContent('这道题读不到');
+    });
+
+    // 做题屏没有重试键(useTsumegoProblem 不出 reload) —— 503 那句话不能叫人「点重试」,
+    // 也不能真的画一个按了没用的「重试」按钮。
+    it('连不上云端(HTTP 503)时不提「重试」、也没有重试按钮', () => {
+      hookReturn = { ...defaultHookReturn, error: 'HTTP 503' };
+      renderPage();
+      const box = screen.getByTestId('puzzle-error');
+      expect(box).not.toHaveTextContent('重试');
+      expect(screen.queryByRole('button', { name: '重试' })).toBeNull();
+    });
   });
 
   // ---- SuccessOverlay + 自动下一题 ----
@@ -526,7 +618,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       renderPage('p1');
       const undoBtn = action('退一手');
       expect(undoBtn).toBeDisabled();
-      expect(undoBtn).toHaveAttribute('title', expect.stringContaining('拿掉'));
+      // 原来写「请直接把子拿掉，按灯光提示走」—— 状态机里没有这条流程,拿掉子机器毫无反应(T4)。
+      expect(undoBtn).toHaveAttribute('title', '实体棋盘上退不了一手；想重来，按「重摆」');
     });
 
     it('LED 没连上要说出来 —— 不然人只会觉得灯坏了', () => {
@@ -534,6 +627,158 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       physicalReturn = { ...defaultPhysicalReturn, phase: 'replying', ledOk: false };
       renderPage('p1');
       expect(screen.getByTestId('puzzle-led-down')).toBeInTheDocument();
+    });
+  });
+
+  it('进一道题就把「上次」三样记在这个账号名下(N10)', () => {
+    renderPage('p1');
+    expect(localStorage.getItem(`kiosk_tsumego_last_level:${TEST_UUID}`)).toBe('15k');
+    expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('手筋');
+    expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
+      label: '15 级 · 手筋 · 第 2 题',
+      route: '/kiosk/tsumego/problem/p1',
+    });
+    // 不分人的旧钥匙一个都不写。
+    expect(localStorage.getItem('kiosk_tsumego_last_level')).toBeNull();
+    expect(localStorage.getItem('kiosk_active_practice')).toBeNull();
+  });
+
+  describe('综合训练模式 ?set=all', () => {
+    const renderAll = (problemId: string) =>
+      render(
+        <ThemeProvider theme={kioskTheme}>
+          <MemoryRouter initialEntries={[`/kiosk/tsumego/problem/${problemId}?set=all`]}>
+            <Routes>
+              <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+
+    beforeEach(() => {
+      sessionStorage.setItem(sequenceKey('15k', 'all'), JSON.stringify(['q3', 'p1', 'q41']));
+    });
+
+    it('页控条显示综合训练，上下题沿整级题序并保留 ?set=all', () => {
+      renderAll('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('第 2 题');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('15 级 · 综合训练');
+      fireEvent.click(screen.getByRole('button', { name: '上一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q3?set=all');
+      fireEvent.click(screen.getByRole('button', { name: '下一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=all');
+    });
+
+    it('题目标签仍显示真实题型；返回和接着上次保持综合训练上下文', () => {
+      renderAll('p1');
+      const tags = Array.from(document.querySelectorAll('.kiosk-tag')).map((node) => node.textContent);
+      expect(tags).toEqual(['手筋', '15 级']);
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('第 1 单元'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/all/1');
+      expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('all');
+      expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
+        label: '15 级 · 综合训练 · 第 2 题',
+        route: '/kiosk/tsumego/problem/p1?set=all',
+      });
+    });
+
+    it('整级题序不含当前题时退回真实题型，不冒充综合训练', async () => {
+      sessionStorage.setItem(sequenceKey('15k', 'all'), JSON.stringify(['x', 'y']));
+      renderAll('p1');
+      await waitFor(() => expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('15 级 · 手筋'));
+      fireEvent.click(screen.getByRole('button', { name: '下一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+  });
+
+  describe('错题模式 ?set=wrong(T1)', () => {
+    // 整类顺序表是 ['p0','p1','p2'](最外层 beforeEach 写的);错题快照是另一条。
+    // hook mock 恒返回 id 'p1' 的题,**路由参数**决定这一道在序列里排第几 —— 与原有用例同一个做法。
+    const renderWrong = (problemId: string, search = '?set=wrong') =>
+      render(
+        <ThemeProvider theme={kioskTheme}>
+          <MemoryRouter initialEntries={[`/kiosk/tsumego/problem/${problemId}${search}`]}>
+            <Routes>
+              <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+    const button = (name: string) => screen.getByRole('button', { name });
+
+    beforeEach(() => {
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['q3', 'p1', 'q41']));
+    });
+
+    it('页控条写「错题 第 i / n 道」;上/下一题只在快照里走,而且带着 ?set=wrong', () => {
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 2 / 3 道');
+      fireEvent.click(button('上一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q3?set=wrong');
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
+    });
+
+    it('最后一道时键写「返回错题」,回错题页;页控条返回键同一个去处', () => {
+      renderWrong('q41');
+      fireEvent.click(button('返回错题'));
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+    });
+
+    it('单元块换成「错题 · n 道」,点阵画的是快照那几道', () => {
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 3 道');
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i')).toHaveLength(3);
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i.now')).toHaveLength(1);
+    });
+
+    it('快照很长时点阵最多画 20 个(当前这道所在的那 20 个)—— 右栏不滚,多一行就把动作区顶出画布', () => {
+      // 造的是**输入**(45 道错题);断言的是组件算出来的 <i> 个数,不是布局结论。
+      // 上限 20 = 整类模式一个单元的点数 ⇒ 右栏的高度来源和改之前同一个最大值。
+      const long = Array.from({ length: 45 }, (_, i) => (i === 25 ? 'p1' : `w${i}`));
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(long));
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 26 / 45 道');
+      expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 45 道');
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i')).toHaveLength(20);
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i.now')).toHaveLength(1);
+    });
+
+    it('「接着上次」记下带 ?set=wrong 的路由 —— 点「继续」回来还在错题里', () => {
+      renderWrong('p1');
+      expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
+        label: '15 级 · 手筋 · 错题第 2 道',
+        route: '/kiosk/tsumego/problem/p1?set=wrong',
+      });
+    });
+
+    it('快照里没有这道题(深链、换了标签页)⇒ 退回整类,不假装还在错题里', () => {
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['x', 'y']));
+      renderWrong('p1');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('同一标签页甲→乙→甲:别的账号写下的快照不认,就算里面恰好有这道题 —— 退回整类', () => {
+      // 当前账号自己的快照没了,标签页里只剩另一账号点错题页时写的那份,而它恰好也含 p1。
+      // 不分人的钥匙在这里会过 `includes('p1')`,甲点「继续」就进了乙的错题、下一题去 b2。
+      localStorage.removeItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`);
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:another-user`, JSON.stringify(['p1', 'b2']));
+      renderWrong('p1');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('没带 ?set=wrong 时,就算 sessionStorage 里有快照也照整类走', () => {
+      renderWrong('p1', '');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
     });
   });
 });

@@ -209,6 +209,8 @@ class TestRecordPlatformEngineGame:
             "source": "play_ai",
             "player_black": "小明",
             "player_white": "[golaxy] 星铠虾",
+            # 两个座位都不标 human,执色只有这里知道(`_user_seat` 在这种局里是 None)。
+            "user_color": "B",
         }
 
     async def test_human_on_white_gets_the_name_on_white(self, monkeypatch):
@@ -219,6 +221,7 @@ class TestRecordPlatformEngineGame:
 
         overrides = record.await_args.kwargs["data_overrides"]
         assert (overrides["player_black"], overrides["player_white"]) == ("[golaxy] 星铠虾", "小明")
+        assert overrides["user_color"] == "W"
 
     async def test_nothing_is_written_without_a_result_or_a_user(self, monkeypatch):
         record = AsyncMock()
@@ -258,6 +261,8 @@ class TestRecordPlatformEngineGame:
         data = kwargs["data"]
         assert data["source"] == "play_ai"
         assert (data["player_black"], data["player_white"]) == ("小明", "[golaxy] 星铠虾")
+        # 覆盖值真的落进了那一行:平台引擎局的执色是引擎的另一边。
+        assert data["user_color"] == "B"
         assert data["result"] == "Void"
 
 

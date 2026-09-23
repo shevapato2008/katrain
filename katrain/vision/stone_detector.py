@@ -29,43 +29,11 @@ class Detection:
         return CLASS_NAMES.get(self.class_id, f"unknown_{self.class_id}")
 
 
-# Shadow duplicates (RK3562 daylight game, 2026-09-23): side light makes the model box a stone together
-# with its shadow a second time, centred 0.56-0.75 cells off the stone -- outside the centre-distance
-# radius used below -- and that box then became a phantom on the neighbouring point (H5: 16 prompts in
-# one game). Labelled against the game record on 12 board frames, two REAL stones' boxes overlap at
-# most 0.233 of the smaller box (J2+J3; boxes are ~1.1 cells wide), while every shadow box that could
-# become a phantom overlaps its stone by >= 0.326. See
-# superpowers/tracks/vision-optimizations/shadow-dedup/design.md.
-DEDUP_OVERLAP_MIN = 0.27
-# ...but only between boxes of similar size: the overlap is measured against the SMALLER box, so a hand
-# misread as one big box would otherwise swallow every stone under it. Measured: shadow pairs <= 1.58,
-# neighbouring real stones <= 1.21.
-DEDUP_MAX_SIDE_RATIO = 2.0
-
-
-def _overlap_of_smaller(a: tuple, b: tuple) -> float:
-    """Intersection area of two (x1, y1, x2, y2) boxes over the smaller box's area; 0.0 when either has none."""
-    area_a = (a[2] - a[0]) * (a[3] - a[1])
-    area_b = (b[2] - b[0]) * (b[3] - b[1])
-    smaller = area_a if area_a < area_b else area_b
-    if smaller <= 0:
-        return 0.0
-    w = min(a[2], b[2]) - max(a[0], b[0])
-    if w <= 0:
-        return 0.0
-    h = min(a[3], b[3]) - max(a[1], b[1])
-    if h <= 0:
-        return 0.0
-    return w * h / smaller
-
-
 def dedup_detections(detections: list["Detection"]) -> list["Detection"]:
-    """Suppress duplicate boxes that NMS misses. Two detections are the same object when their centres
-    are closer than half the smaller box's mean side (size-variant boxes on one stone -- a tight box
-    nested in a loose one -- can have mutual IoU below the NMS threshold), or, for two STONE boxes of
-    similar size (larger mean side <= DEDUP_MAX_SIDE_RATIO x smaller), when they overlap by at least
-    DEDUP_OVERLAP_MIN of the smaller box (a stone boxed a second time together with its shadow).
-    Keep the higher confidence.
+    """Suppress duplicate boxes that NMS misses: size-variant boxes on the SAME stone
+    (a tight box nested in a loose one) can have mutual IoU below the NMS threshold, so
+    one stone yields several boxes. Two detections whose centers are closer than half
+    the smaller box's mean side are the same object — keep the higher confidence.
 
     Grouping: black/white dedup against each other (one stone misread as both colors
     must not yield two stones — the loser would otherwise spill to a neighbouring empty
@@ -78,19 +46,16 @@ def dedup_detections(detections: list["Detection"]) -> list["Detection"]:
     scans.  It used to compare every detection against every detection kept so far —
     O(k^2) in interpreted Python, measured on the RK3562 kiosk at 6 / 31 / 86 ms for
     60 / 130 / 213 stones, i.e. the single largest reason recognition slowed down as a
-    game filled up.  Duplicates are by definition local, so candidates are now looked up
-    in a uniform spatial grid and only the few genuine neighbours are tested.
+    game filled up.  Duplicates are by definition local (a pair can only clash within
+    ``0.5 * min_side``), so candidates are now looked up in a uniform spatial grid and
+    only the few genuine neighbours are tested.
 
-    Grid: each box's reach -- half its larger bbox extent plus how far its centre sits from the bbox
-    midpoint -- bounds, per axis, how far the centre of any box it can merge with may be (the centre rule's
-    radius is always inside it). The cell is twice the largest reach, so the 3x3 scan never misses a pair and
-    the result is identical to the scalar O(k^2) scan. A box reaching further than twice the median (a hand
-    or sleeve read as one big box, a non-finite coordinate) stays out of the grid and is checked against
-    every kept box instead, so one such box cannot turn the whole scan back into O(k^2).
-
-    The overlap clause only ever ADDS merges, but the greedy output is not monotone: a box that the
-    centre rule alone drops because B was kept survives once B itself is merged into A by the overlap
-    clause.
+    Grid cell = ``0.5 * max_side`` over the whole batch, which is an upper bound on any
+    pair's clash radius — so two detections closer than their radius always land in the
+    same or an adjacent cell, and scanning the 3x3 neighbourhood can never miss a pair.
+    The arithmetic inside the test is untouched (same ``math.hypot``, same ``min``, same
+    ordering), so this is bit-identical to the previous implementation, not merely
+    equivalent.
     """
     n = len(detections)
     if n < 2:
@@ -105,78 +70,39 @@ def dedup_detections(detections: list["Detection"]) -> list["Detection"]:
     if max_side <= 0:
         return dets  # every min_side would be <= 0: nothing can dedup anything
 
-    # How far apart, on each axis, the centres of two boxes that either rule can merge may be: at most the sum
-    # of their reaches, where reach = half the larger bbox extent + how far off-centre (x_center, y_center) is
-    # from the bbox midpoint, summed over both axes (0 for every backend, but Detection does not enforce it;
-    # the sum -- not a per-axis max -- is what lets a NaN on either axis propagate into reach, instead of being
-    # swallowed by max() and silently landing the box in the grid). The centre rule's radius, 0.5 * min_side,
-    # is always inside that sum.
-    reach = [
-        (
-            max(d.bbox[2] - d.bbox[0], d.bbox[3] - d.bbox[1]) / 2.0
-            + abs(d.x_center - (d.bbox[0] + d.bbox[2]) / 2.0)
-            + abs(d.y_center - (d.bbox[1] + d.bbox[3]) / 2.0)
-            if s > 0
-            else 0.0
-        )
-        for d, s in zip(dets, sides)
-    ]
-    # A box reaching further than twice the median (a hand or sleeve read as one big box; a non-finite
-    # coordinate) stays out of the grid and is checked linearly, so it cannot size the grid for every other
-    # box -- one 1056 px box would otherwise put the whole board in one bucket.
-    finite = sorted(r for r in reach if 0 < r < math.inf)
-    limit = 2.0 * finite[len(finite) // 2] if finite else 0.0
-    # Two gridded boxes that can clash are closer than 2 * max(reach) on each axis, so with this cell they
-    # land in the same or an adjacent bucket and the 3x3 scan never misses one.
-    cell = 2.0 * max((r for r in reach if 0 < r <= limit), default=1.0)
-    # (cell_x, cell_y) -> indices of KEPT gridded detections.  A detection with side <= 0 makes min_side <= 0
-    # against everything, so it can neither be a duplicate nor suppress one — it is never queried and never
-    # inserted.
+    cell = 0.5 * max_side
+    # (cell_x, cell_y) -> indices of KEPT detections with a positive side.  A detection
+    # with side <= 0 makes min_side <= 0 against everything, so it can neither be a
+    # duplicate nor suppress one — it is never queried and never inserted.
     buckets: dict[tuple[int, int], list[int]] = {}
     neighbourhood = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
-    wide: list[int] = []  # KEPT detections outside the grid
-    boxed: list[int] = []  # every KEPT detection with a positive side
 
     kept: list[Detection] = []
     for i, det in enumerate(dets):
         d_side = sides[i]
         is_dup = False
         if d_side > 0:
-            gridded = reach[i] <= limit  # False for NaN too
-            if gridded:
-                bx, by = int(det.x_center // cell), int(det.y_center // cell)
-                candidates = [j for dx, dy in neighbourhood for j in buckets.get((bx + dx, by + dy), ())] + wide
-            else:
-                candidates = boxed
+            bx, by = int(det.x_center // cell), int(det.y_center // cell)
             det_is_stone = det.class_id in STONE_CLASS_IDS
-            for j in candidates:
-                other = dets[j]
-                if (other.class_id in STONE_CLASS_IDS) != det_is_stone:
-                    continue  # stone vs LED: different groups
-                if not det_is_stone and det.class_id != other.class_id:
-                    continue  # LED classes: same-class only
-                min_side = d_side if d_side < sides[j] else sides[j]
-                if min_side <= 0:
-                    continue
-                if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
-                    is_dup = True
-                    break
-                if det_is_stone:
-                    max_pair_side = d_side if d_side > sides[j] else sides[j]
-                    if (
-                        max_pair_side <= DEDUP_MAX_SIDE_RATIO * min_side
-                        and _overlap_of_smaller(det.bbox, other.bbox) >= DEDUP_OVERLAP_MIN
-                    ):
+            for dx, dy in neighbourhood:
+                for j in buckets.get((bx + dx, by + dy), ()):
+                    other = dets[j]
+                    if (other.class_id in STONE_CLASS_IDS) != det_is_stone:
+                        continue  # stone vs LED: different groups
+                    if not det_is_stone and det.class_id != other.class_id:
+                        continue  # LED classes: same-class only
+                    min_side = d_side if d_side < sides[j] else sides[j]
+                    if min_side <= 0:
+                        continue
+                    if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
                         is_dup = True
                         break
+                if is_dup:
+                    break
         if not is_dup:
             kept.append(det)
             if d_side > 0:
-                boxed.append(i)
-                if gridded:
-                    buckets.setdefault((bx, by), []).append(i)
-                else:
-                    wide.append(i)
+                buckets.setdefault((int(det.x_center // cell), int(det.y_center // cell)), []).append(i)
     return kept
 
 

@@ -354,7 +354,9 @@ export function GeometryCalibrationScreen({
   const cells: StatusCell[] = loaded ? [
     { label: '摄像头', value: cameraReady ? '已连接' : '未连接', tone: cameraReady ? 'good' : 'bad' },
     calibValue(),
-    { label: 'LED', value: ledReady ? '就绪' : '未连接', tone: ledReady ? 'good' : 'bad' },
+    // 复用设置屏那个 key:同一件事只有一种说法,也不用新增译文。「未连接」照这一行原来的写法。
+    { label: 'LED', value: ledReady ? t('settings:led_serial_connected', '串口已连接') : '未连接',
+      tone: ledReady ? 'good' : 'bad' },
   ] : [
     { label: '摄像头', value: '—' }, { label: '标定', value: '—' }, { label: 'LED', value: '—' },
   ];
@@ -502,6 +504,7 @@ export function GeometryCalibrationScreen({
               {/* 稿子把「采集熄灯参考帧」画成独立一步,而它其实是**每个点各做一次**的动作。
                   删掉那一步不等于可以不说这件事 —— 挪到这儿,它解释的正是「为什么没有那一步」。 */}
               <br />每个定位点都<b>先熄灯拍一张、亮灯再拍一张</b>，两张相减才找得出灯在哪。
+              <br />{t('vision:led_serial_note', 'LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。')}
               {reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}

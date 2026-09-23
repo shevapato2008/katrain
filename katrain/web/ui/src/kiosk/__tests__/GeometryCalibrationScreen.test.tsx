@@ -177,6 +177,13 @@ describe('屏 26 棋盘标定', () => {
     expect(cells()[2]).toContain('未连接');
   });
 
+  it('LED 那一格只说串口通了,不说「就绪」', () => {
+    // 照该文件写法:改模块级 status(beforeEach 里 led_ready 已是 true),再无参 renderScreen();`cells()` 取三格文字
+    renderScreen();
+    expect(cells().some((c) => c.includes('串口已连接'))).toBe(true);
+    expect(cells().some((c) => c.includes('就绪'))).toBe(false);
+  });
+
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
 
   /**

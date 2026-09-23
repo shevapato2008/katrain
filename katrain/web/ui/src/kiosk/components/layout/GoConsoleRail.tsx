@@ -67,7 +67,9 @@ const ledCell = (connected?: boolean | null): StatusCell =>
   connected == null
     ? { label: 'LED', value: '—' }
     // 没连上是**琥珀不是红**:没有它照样能下棋,只是没有提示灯。摄像头没连上才是故障。
-    : { label: 'LED', value: connected ? '就绪' : '未连接', tone: connected ? 'good' : 'warn' };
+    // 「已连接」而不是「就绪」:这一格读的是串口开没开(`led_service.is_connected()`),灯带某段坏了它照样是真 ——
+    // 「就绪」声称的比它知道的多。宽度与摄像头那格同为三个字(Fan 2026-09-23,视觉赛道 V4)。
+    : { label: 'LED', value: connected ? '已连接' : '未连接', tone: connected ? 'good' : 'warn' };
 
 const geometryCell = (phase?: string): StatusCell => {
   if (phase === undefined) return { label: '标定', value: '—' };

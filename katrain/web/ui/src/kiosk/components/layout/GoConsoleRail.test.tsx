@@ -33,7 +33,8 @@ describe('GoConsoleRail —— 状态格接真硬件', () => {
     expect(lampOf('LED')).toBe('var(--good)');
     expect(screen.getByText('未连接')).toBeInTheDocument();
     expect(screen.getByText('已标定')).toBeInTheDocument();
-    expect(screen.getByText('就绪')).toBeInTheDocument();
+    expect(screen.getByText('LED').parentElement?.querySelector('.kiosk-status__v')?.textContent).toBe('已连接');
+    expect(screen.queryByText('就绪')).toBeNull();
   });
 
   // ⚠️ 这一条守的是旧 `SmartBoardConsole.tsx:83` 那个 `ledConnected ?? false`:

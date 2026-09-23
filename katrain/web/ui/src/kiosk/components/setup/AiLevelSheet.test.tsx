@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AiLevelSheet from './AiLevelSheet';
@@ -34,5 +34,32 @@ describe('AiLevelSheet', () => {
     render(<AiLevelSheet levels={[]} currentElo={null} onPick={() => {}} onClose={() => {}} testId="sheet" />);
     expect(screen.queryAllByTestId('level-row')).toHaveLength(0);
     expect(screen.getByTestId('sheet')).toHaveTextContent('没能从平台取回棋力档');
+  });
+
+  it('按 Escape 关闭面板', () => {
+    const onClose = vi.fn();
+    render(<AiLevelSheet levels={mk(39)} currentElo={null} onPick={() => {}} onClose={onClose} testId="sheet" />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('卸载之后不再响应 Escape —— 监听器被真的移除了', () => {
+    const onClose = vi.fn();
+    const { unmount } = render(
+      <AiLevelSheet levels={mk(39)} currentElo={null} onPick={() => {}} onClose={onClose} testId="sheet" />,
+    );
+    unmount();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('打开时把当前选中的那一档滚进视口', () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<AiLevelSheet levels={mk(39)} currentElo={310} onPick={() => {}} onClose={() => {}} testId="sheet" />);
+    const rows = screen.getAllByTestId('level-row');
+    const currentButton = within(rows[21]).getByRole('button');
+    expect(scrollIntoView).toHaveBeenCalledOnce();
+    expect(scrollIntoView.mock.instances[0]).toBe(currentButton);
   });
 });

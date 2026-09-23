@@ -614,6 +614,44 @@ GitHub 本机实测直连可用（`git ls-remote` exit 0）。**不再从旧 rel
 **盘面：** 71% → **72%（70G/97G，剩余 28G）**。本次三项都不是为了立刻腾空间，
 是把「每年 24G」和「每次 +1.6G」两个源头堵上；SSH 那项与磁盘无关。
 
+### 2026-09-23 — 发布 `4092f054`：围棋 kiosk 成长赛道（非迁移，**含一条 DDL**）
+
+先测试环境（home-ubuntu）再生产，Fan 2026-08-31 定的顺序。测试环境当天先发并在 RK3562 上验过。
+
+**内容**：成长屏（屏 22）四块——胜率覆盖所有算得出执色的对局、能力诊断按布局/中盘/官子算失误率、
+近 30 天档位走势、近一年练棋日历（新端点 `GET /api/v1/growth/activity`）；43 个新 key 的 11 语种译文。
+合并时 develop 尖端是 `333c9a10`，比我推的 `84ee0ddf` 多 10 个视觉赛道提交（只动 `katrain/vision/**` 与文档，
+云端不跑视觉，前端与依赖零改动）。
+
+**DDL**：`user_games.user_color`（`varchar(1)`，**可空**），由启动时的 `add_missing_columns` 加，
+日志 `migrate: added column user_games.user_color`。可空 ⇒ 老行保持 NULL、**不回填**（那个事实当时没记下来）。
+
+**`git clone --depth 1` 这次失败了，改用旧 release 的 `.git` 兜底。**
+直连 GitHub `git ls-remote` 通，但 `clone --depth 1` 两次都在 index-pack 阶段炸：
+`could not open '.../pack/tmp_pack_XXXX' for reading` → `fetch-pack: invalid index-pack output`，`EXIT=128`，
+git 自己把目录清掉。机器有 62G 内存、13G 盘，dmesg 无 OOM ⇒ 更像拉取中途断。
+**可用替代（这次跑通）**：`git -C releases/29aa20f7 fetch --depth 1 origin release/ucloud-20260805`
+（shallow 仓会把已有对象当 have 报上去，传的是增量，秒级完成）→
+`git -C releases/29aa20f7 archive 4092f054 | tar -x -C releases/4092f054`。
+**新目录不带 `.git`**（1.2G，比 clone 的 1.5G 再省 300M）——三个部署脚本里 `git` 一次都没出现，用不上。
+⚠️ 第一次失败被我自己的管道吞了：`git clone ... | tail -3` 的退出码是 `tail` 的，
+显示成功而目录只有 88M。**发布流程里的命令不要接管道**。
+
+- 镜像 `katrain-web:4092f054`，`image_id=sha256:df4ea2eedee8c594267776ad9118dcf12237e0c6f5a9abb3e393876c71a5cbff`，
+  `size_bytes=543434114`（上一版 542526049，+908065）。容器内容自检全过。
+- `--phase full` 仍只有那两条容量闸（`available_bytes=7666974720`），`checks=2`，同因越过。
+  ⚠️ **盘面已到 93%（7.2G 可用）**，上一次发布时是 20.8G。九个 release 目录占 ~15G，需要决定回收哪些。
+- env 备份 `/opt/katrain/backups/ucloud.env.20260923T133337.bak`，diff **恰好 1 行**（只有 `WEB_IMAGE`），
+  `CRON_IMAGE` 不动（判据：`git diff --name-only 29aa20f7 4092f054 -- katrain/cron/` 命中 0 个文件）。
+- 起服务用的是**完整命令**（`-f compose.yml -f compose.production.yml --profile production`）并点名
+  `katrain-web katrain-cron`，KataGo 与 postgres 只被等健康、没有重建。
+- **回滚锚点**：目录 `releases/29aa20f7` + 镜像摘要 `sha256:17f331273ea6f0003e9b7aa97cfe21a91c4bf60ec5529a43448e1a4c93f8f976`。
+
+**验证**：`config_files` 标签是两个文件；`KATRAIN_PREVIEW_MODE=0`；库是 `katrain_prod_20260725`；
+`/api/v1/live/matches` **200**（短命令那个病的探针）、平台适配器注册 3 条；
+外网 `/`、`/galaxy`、`/galaxy/research`、`/galaxy/live`、`/api/v1/health` 全 200；
+`/api/translations?lang=de` 里读得到 `growth:cal_title` / `growth:diag_weakest`（译文随镜像编译进 `.mo`）。
+
 ### 2026-08-25（夜）— 发布 `e9a7889e` + **把生产从 preview profile 切回 production**
 
 两件分开做、分开验，为的是出事时能归因。

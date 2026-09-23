@@ -227,6 +227,7 @@ export function GeometryCalibrationScreen({
   const handleRelocate = async () => {
     setRelocating(true);
     setRelocateError(null);
+    setActionError(null);
     try {
       await relocate();
     } catch (err) {

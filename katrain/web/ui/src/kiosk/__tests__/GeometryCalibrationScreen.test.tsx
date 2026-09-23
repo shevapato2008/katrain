@@ -271,6 +271,23 @@ describe('屏 26 棋盘标定', () => {
   });
 
   /**
+   * 🔴 Fix round 1:`actionError`(「沿用上次标定」失败留下的)只在 `start()` / `reuseExisting()`
+   * 里清,`handleRelocate` 没碰它 —— 沿用失败之后再按「对齐外框」并成功,诊断链条会落到
+   * 那条陈旧的 `actionError` 上,「健康状态不给诊断」这句话就不成立了。
+   */
+  it('沿用失败留下的诊断卡,对齐外框成功之后要跟着清掉', async () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    confirmExisting.mockRejectedValue(new Error('沿用失败'));
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: '沿用上次标定' }));
+    expect(await screen.findByText('沿用失败')).toBeInTheDocument();
+
+    relocate.mockResolvedValue(undefined);
+    fireEvent.click(screen.getByTestId('calib-relocate'));
+    await waitFor(() => expect(screen.queryByText('沿用失败')).toBeNull());
+  });
+
+  /**
    * 🔴 运行中稿子那两颗键**一颗都不成立**:「沿用上次标定」服务端会 `ValueError`,
    * 「重新开始标定」会撞 409。而一次标定是分钟级的 —— 没有退出路径 = 卡死。
    */

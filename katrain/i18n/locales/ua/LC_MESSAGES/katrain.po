@@ -6956,6 +6956,9 @@ msgstr "Не під'єднано · увійдіть за акаунтом і п
 msgid "platform:login_title"
 msgstr "Вхід у {name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "Ваш ранг також береться з цього облікового запису"
+
 msgid "platform:login_tabs"
 msgstr "Спосіб входу"
 

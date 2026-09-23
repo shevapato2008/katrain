@@ -6943,6 +6943,9 @@ msgstr "Not connected · sign in with {name}'s account and password"
 msgid "platform:login_title"
 msgstr "Sign in to {name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "Your rank also comes from this account"
+
 msgid "platform:login_tabs"
 msgstr "Sign-in method"
 

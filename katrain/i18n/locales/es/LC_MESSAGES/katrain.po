@@ -6839,6 +6839,9 @@ msgstr "Sin conexión · inicia sesión con la cuenta y contraseña de {name}"
 msgid "platform:login_title"
 msgstr "Iniciar sesión en {name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "Tu rango también proviene de esta cuenta"
+
 msgid "platform:login_tabs"
 msgstr "Método de acceso"
 

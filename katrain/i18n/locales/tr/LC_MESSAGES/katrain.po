@@ -6980,6 +6980,9 @@ msgstr "Bağlı değil · {name} hesabı ve parolasıyla giriş yapın"
 msgid "platform:login_title"
 msgstr "{name} girişi"
 
+msgid "platform:login_rank_from_account"
+msgstr "Seviyeniz de bu hesaptan alınır"
+
 msgid "platform:login_tabs"
 msgstr "Giriş yöntemi"
 

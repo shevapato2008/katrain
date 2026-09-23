@@ -6991,6 +6991,9 @@ msgstr "Non connecté · connexion avec le compte et le mot de passe de {name}"
 msgid "platform:login_title"
 msgstr "Connexion à {name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "Votre rang provient aussi de ce compte"
+
 msgid "platform:login_tabs"
 msgstr "Méthode de connexion"
 

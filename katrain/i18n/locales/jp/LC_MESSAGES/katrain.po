@@ -6723,6 +6723,9 @@ msgstr "未接続 · {name}のアカウントとパスワードでログイン"
 msgid "platform:login_title"
 msgstr "{name}にログイン"
 
+msgid "platform:login_rank_from_account"
+msgstr "段位もこのアカウントから取得されます"
+
 msgid "platform:login_tabs"
 msgstr "ログイン方法"
 

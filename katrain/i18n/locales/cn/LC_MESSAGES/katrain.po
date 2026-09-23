@@ -6550,6 +6550,9 @@ msgstr "未连接 · 用{name}的账号密码登录"
 msgid "platform:login_title"
 msgstr "登录{name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "段位也从这个账号来"
+
 msgid "platform:login_tabs"
 msgstr "登录方式"
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API } from '../../api';
 import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { interpolate } from '../utils/interpolate';
+import { spaceCjkLatin } from '../utils/cjkSpace';
 import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
@@ -66,6 +67,37 @@ const PLATFORM_LOGIN_MODES: Record<string, readonly LoginMode[]> = {
  * 而「星阵进人机开局、其余进大厅」今天是协议层面的恒定事实(PROTOCOL.md),不是要猜的。 */
 const engineCapable = (platform: string) => platform === 'golaxy';
 
+/**
+ * `.xpfield` 一格:真 `<input>`(必须真能输入,判例见屏 04)+ 右端常驻的绿色「点此输入」
+ * 提示(设计源 `.xpfield i`)。这句提示不是 placeholder —— placeholder 一输入就消失,
+ * 触屏上就再没有任何「这里能点」的信号了;`.xpfield i` 在设计源里是和值同时常驻的第二个
+ * 子元素,所以这里也让它跟 `value` 并存,不随输入消失(见 Task 8b 视觉关卡第⑤条)。
+ */
+function XpField(props: {
+  testId: string;
+  type: string;
+  ariaLabel: string;
+  value: string;
+  onChange: (v: string) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  tapHint: string;
+}) {
+  return (
+    <span className="xpfield">
+      <input
+        data-testid={props.testId}
+        type={props.type}
+        aria-label={props.ariaLabel}
+        placeholder={props.tapHint}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+        onKeyDown={props.onKeyDown}
+      />
+      <i>{props.tapHint}</i>
+    </span>
+  );
+}
+
 const PlatformLoginPage = () => {
   const { t } = useTranslation();
   const { platform = '' } = useParams<{ platform: string }>();
@@ -92,7 +124,13 @@ const PlatformLoginPage = () => {
   useKeyboardInset('[data-testid="platform-login-page"] .xplogin__main');
 
   const meta = PLATFORM_META[platform];
+  // 页控条标题用全称(`name`);组标题和主按钮用短名 —— 「登录星阵围棋」是错的,
+  // 稿子 07/08 两屏都写的是「登录星阵」/「登录 OGS」(短名)。
   const name = meta ? t(meta.label, meta.labelCn) : platform;
+  const shortName = meta ? t(meta.shortLabel, meta.shortLabelCn) : platform;
+  // 中西文之间补空格(`spaceCjkLatin`,见其头注)——「登录OGS」要变成「登录 OGS」,
+  // 「登录星阵」本身没有中西文边界,函数在这类输入上是恒等的。
+  const loginTitle = spaceCjkLatin(interpolate(t('platform:login_title', '登录{name}'), { name: shortName }));
   const isSms = mode === 'sms';
   const isScan = mode === 'scan';
 
@@ -157,7 +195,13 @@ const PlatformLoginPage = () => {
         <PlatformLoginAside platform={platform} />
         <div className="xplogin__main">
           <div className="xpcol">
-            <KioskSecLabel zh={interpolate(t('platform:login_title', '登录{name}'), { name })} en="Sign in" />
+            <KioskSecLabel
+              zh={loginTitle}
+              en="Sign in"
+              // 段位从这个账号来 —— 只有 OGS 这一屏画了这句(稿子 08),星阵两屏(07a/07b)没有,
+              // 不许顺手也给星阵加上。
+              value={platform === 'ogs' ? t('platform:login_rank_from_account', '段位也从这个账号来') : undefined}
+            />
 
             {tabs.length > 1 && (
               <span className="xptabs">
@@ -179,14 +223,13 @@ const PlatformLoginPage = () => {
                   <span className="iglab">
                     {platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
                   </span>
-                  <input
-                    className="xpfield"
-                    data-testid="login-field-user"
+                  <XpField
+                    testId="login-field-user"
                     type={platform === 'golaxy' ? 'tel' : 'text'}
-                    aria-label={platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
-                    placeholder={t('local:tap_to_type', '点此输入')}
+                    ariaLabel={platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
                     value={account}
-                    onChange={(e) => setAccount(e.target.value)}
+                    onChange={setAccount}
+                    tapHint={t('local:tap_to_type', '点此输入')}
                   />
                 </div>
 
@@ -196,15 +239,14 @@ const PlatformLoginPage = () => {
                   </span>
                   {isSms ? (
                     <>
-                      <input
-                        className="xpfield"
-                        data-testid="login-field-password"
+                      <XpField
+                        testId="login-field-password"
                         type="text"
-                        aria-label={t('platform:login_field_code', '验证码')}
-                        placeholder={t('local:tap_to_type', '点此输入')}
+                        ariaLabel={t('platform:login_field_code', '验证码')}
                         value={secret}
-                        onChange={(e) => setSecret(e.target.value)}
+                        onChange={setSecret}
                         onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+                        tapHint={t('local:tap_to_type', '点此输入')}
                       />
                       <button
                         type="button"
@@ -219,15 +261,14 @@ const PlatformLoginPage = () => {
                       </button>
                     </>
                   ) : (
-                    <input
-                      className="xpfield"
-                      data-testid="login-field-password"
+                    <XpField
+                      testId="login-field-password"
                       type="password"
-                      aria-label={t('Password', '密码')}
-                      placeholder={t('local:tap_to_type', '点此输入')}
+                      ariaLabel={t('Password', '密码')}
                       value={secret}
-                      onChange={(e) => setSecret(e.target.value)}
+                      onChange={setSecret}
                       onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+                      tapHint={t('local:tap_to_type', '点此输入')}
                     />
                   )}
                 </div>
@@ -244,9 +285,7 @@ const PlatformLoginPage = () => {
                     disabled={busy}
                     onClick={() => { void submit(); }}
                   >
-                    {busy
-                      ? t('platform:logging_in', '正在登录…')
-                      : interpolate(t('platform:login_title', '登录{name}'), { name })}
+                    {busy ? t('platform:logging_in', '正在登录…') : loginTitle}
                   </button>
                 </div>
               </>

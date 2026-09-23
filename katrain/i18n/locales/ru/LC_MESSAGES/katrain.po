@@ -6879,6 +6879,9 @@ msgstr "Не подключено · вход по аккаунту и паро�
 msgid "platform:login_title"
 msgstr "Вход в {name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "Ваш ранг также берётся из этого аккаунта"
+
 msgid "platform:login_tabs"
 msgstr "Способ входа"
 

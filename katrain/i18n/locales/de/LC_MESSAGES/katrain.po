@@ -7020,6 +7020,9 @@ msgstr "Nicht verbunden · Anmeldung mit {name}-Konto und Passwort"
 msgid "platform:login_title"
 msgstr "Bei {name} anmelden"
 
+msgid "platform:login_rank_from_account"
+msgstr "Ihr Rang stammt ebenfalls aus diesem Konto"
+
 msgid "platform:login_tabs"
 msgstr "Anmeldemethode"
 

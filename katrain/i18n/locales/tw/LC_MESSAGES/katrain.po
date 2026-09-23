@@ -6697,6 +6697,9 @@ msgstr "未連接 · 用{name}的帳號密碼登入"
 msgid "platform:login_title"
 msgstr "登入{name}"
 
+msgid "platform:login_rank_from_account"
+msgstr "段位也是從這個帳號來的"
+
 msgid "platform:login_tabs"
 msgstr "登入方式"
 

@@ -6664,6 +6664,9 @@ msgstr "연결 안 됨 · {name} 계정과 비밀번호로 로그인"
 msgid "platform:login_title"
 msgstr "{name} 로그인"
 
+msgid "platform:login_rank_from_account"
+msgstr "단수도 이 계정에서 가져옵니다"
+
 msgid "platform:login_tabs"
 msgstr "로그인 방식"
 

@@ -3981,7 +3981,7 @@ msgid "vision:cancel_calibration"
 msgstr "Скасувати калібрування"
 
 msgid "vision:reuse_calibration"
-msgstr "Використати минуле калібрування"
+msgstr "Минуле калібрування"
 
 msgid "vision:camera_down"
 msgstr "Камеру не під'єднано · перейшли на сенсорний екран"

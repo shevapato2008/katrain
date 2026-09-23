@@ -36,7 +36,8 @@ const OUT = resolve(process.cwd(),
  *    改成照稿:四角绿、星位琥珀。
  *
  *  ④ **稿子那两颗键在这一刻一颗都不成立** ⇒ 运行中整行换成一颗满宽的「取消标定」。
- *    「沿用上次标定」要 `phase ∈ {required,failed}`(否则服务端 `ValueError`),
+ *    「沿用上次标定」要 `phase ∈ {required,failed,cancelled}`(否则服务端 `ValueError`;
+ *    2026-09-20 起 `_REUSABLE_PHASES` 加了 `cancelled`,V2 之后过期的是「只有 required/failed」这句),
  *    「重新开始标定」会撞 `CalibrationBusy` → 409。照画就是两颗按不动的键。
  *    而一次标定要逐个点亮 13 个 LED、每个 clear→拍→点亮→拍,是分钟级的 ——
  *    **没有退出路径的分钟级流程,在 7 寸触摸屏上就是卡死。**
@@ -124,13 +125,15 @@ test('四图:棋盘标定 ←→ sample-go/shots/26-calib.png', async ({ page })
       + '**此刻画不出网格**:单应矩阵要 13 个点全部定位之后才算得出来，'
       + '标定进行中能诚实画的只有已经找到的那些点；稿子那张网格是「标定完成之后」的样子 · '
       + '**运行中整行只有一颗「取消标定」**:稿子那两颗此刻一颗都不成立('
-      + '沿用要 phase∈{required,failed} 否则服务端 ValueError，重新开始会撞 409)，'
+      + '沿用要 phase∈{required,failed,cancelled} 否则服务端 ValueError，重新开始会撞 409)，'
       + '而分钟级流程没有退出路径在 7 寸触屏上就是卡死 · '
       + '**多一个视图分段**(原始画面/俯视矫正，两段常驻都能按，切过去没标定时那块自己说人话) · '
       + '**三格状态跟真值走**，还没读到时一律「—」不给 tone(DEFAULT_STATUS 三个 capability 全 false，'
       + '照画会在还没问过的时候说「未连接」) · '
       + '**右栏中段可滚**:稿子那五块按共享 token 算 462/460 差 2px 装不下，'
-      + '且那本账只在它画的那一个状态下勉强平——失败时要多一张诊断卡，当场顶破',
+      + '且那本账只在它画的那一个状态下勉强平——失败时要多一张诊断卡，当场顶破 · '
+      + '**LED 那格写「串口已连接」**（只说串口通了，视觉赛道 V4），稿子那格还是「就绪」：'
+      + '稿子源头已改、参考图未重拍，这一个词是已知差异',
   });
   console.log(`[fourup 26-calib] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

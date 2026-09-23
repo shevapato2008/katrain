@@ -248,3 +248,21 @@
 - **四图关卡：** 只适用 **K4 屏 17 上线态**（文案、图标变了）。`KATRAIN_PW_VISUAL_PORT=5273 npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-17-baipu.fourup.spec.ts`，四张图逐项比对，**Fan 确认之前不进 K4 后端任务**。K1/K2/N9 改的是导航、错误态文案（参考图里没有这些态），按相称性各取一张真运行时截图给 Fan 过目即可，不做四图。
 - **承重关卡：** 反查——K4 上线态折叠块三行换三行、页控条副标题变短、无新增节点，撤回改动不改变任何高度来源 ⇒ 不新增测量；但既有真浏览器闸 `kiosk-shell-scroll.spec.ts` 摆谱三条就量在这条链上（241 手造溢出、右栏 516、动作区贴底、着法块 ≥3 行），默认路径现在是上线态，必须跑绿作为证据；两条采集态用例（失败、遮罩）改为显式 `collect=true` 继续守采集态。
 - **必须上板（RK3562，一次只跑一家；前端部署 `build:smartbox-kiosk-2d` 严格包，不是 `build:kiosk-2d`）：** ① K4：盒子默认 provisioning 下，未标定时从屏 16 进摆谱可直接摆完，`/root/.katrain/baipu_captures/` 无新目录（服务以 root 跑），灯色正确；设置里开始重新标定后按返回再进摆谱，先看到「棋盘标定还在进行」、取消后才进摆谱；② K1：摆完 / 退出落在棋谱屏，Dock 可见；③ N9：拔网后屏 15 搜索说「要联网」；④ 顺带记录 S5 屏 15「导入 SGF」能否弹出文件选择器、上线态有无误触连跳。结果回填本节。
+
+## 8. 2026-09-23 改判:屏 15 名局列表默认摊开、直播前后端收尾
+
+**Fan 原话:**「我之前要求把直播模块移除,但我发现直播模块的列表被移动到棋谱库模块了,当前部署在 RK3562 板子上是这么个情况。请恢复棋谱库默认的棋谱列表,移除直播列表。」
+
+**根因:** 直播赛道删 kiosk 直播的两个提交(`c95fa8ae` / `75cecb02`)一直在 `feature/kiosk-go-live` 上没并进 develop;而屏 15 的名局列表收在「搜棋谱」开关后面 ⇒ 盒上首屏能看见的一排行是「职业直播」。
+
+**做了什么**(计划 `plan-2026-09-23-kifu-list-default.md`):
+- 并入 `feature/kiosk-go-live`(`c87cf747`):路由、两屏、屏 15 直播组、问候副标 11 语种。
+- 稿子先改(smartbox `feat/kiosk-go-kifu-list-design-2026-09-23`,artifact `e4d3c7ef` 第 34–35 版):屏 15 名局列表一进来就摊开、三张卡拆掉、屏 18 直播删掉,闸 36→35 屏。
+- 前端 `15691f0a`:列表默认摊开,搜索框常驻、「导入 SGF」贴在右边;空库说「未找到棋谱」;修掉挂载时防抖把进屏就翻的页弹回第 1 页。
+- 后端 `2ca59dcc`:删盒上 `/api/v1/board/live/*` 代理与 `RemoteAPIClient` 的 live 读方法;kiosk 包不再拉直播译名表;`verify-kiosk.sh` 拦 kiosk 包里任何直播接口路径。
+
+**作废:** §3 K1 验收里「屏 15 点『摆到实体盘』后搜索区展开并发出 `page_size: 6` 的列表请求」—— 那张卡已拆。挑谱 = 列表点一行进屏 16 再「摆到实体盘」。
+
+**登记不修:** `KifuPage` 的「最近摆过」首帧读默认 store(`listRecent()` 不带身份,develop 上既有);`kiosk-shell-contract` 闸四在 develop 上就红(`GamePage.tsx game:connection_dropped` 默认值与 PO 不一致,不是本赛道的文件)。
+
+**待上板:** 盒上部署 `build:smartbox-kiosk-2d` 严格包后,棋谱屏首屏应是名局六行;断网时列表说「要联网」、最近摆过与导入 SGF 照常。

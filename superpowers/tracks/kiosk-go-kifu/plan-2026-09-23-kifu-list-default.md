@@ -57,7 +57,7 @@
 - Consumes: `KifuAPI.getAlbums({ q?: string, page: number, page_size: number }) → Promise<{ items: KifuAlbumSummary[], total: number, page: number, page_size: number }>`(不变)
 - Produces: DOM 契约 —— `data-testid="kifu-search"` 从挂载起就在;里面 `.ksearch__bar` 放 `input.ksearch__box[type=search]` 与 `button.ksearch__import`(文案「导入 SGF」);结果行仍是 `.kiosk-rows > button.kiosk-row`;翻页 `.kpager`。屏上不再有 `.kiosk-card`。
 
-- [ ] **Step 1: 改写失败测试** —— 把 `KifuPage.test.tsx` 里 `describe('屏 15 棋谱 · 问候与三张卡')` 与 `describe('屏 15 棋谱 · 搜棋谱是开关不是跳转')` 两组整段换成:
+- [x] **Step 1: 改写失败测试** —— 把 `KifuPage.test.tsx` 里 `describe('屏 15 棋谱 · 问候与三张卡')` 与 `describe('屏 15 棋谱 · 搜棋谱是开关不是跳转')` 两组整段换成:
 
 ```tsx
 describe('屏 15 棋谱 · 问候与列表头', () => {
@@ -198,12 +198,12 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
 同时把文件头注释里「收起时不拉列表 … `page_size: 1`」那条改成:
 「列表默认摊开(2026-09-23 Fan)—— 断言落在 `getAlbums` 的调用次数与参数形状上:进来只有一发,就是第一页六局」。
 
-- [ ] **Step 2: 跑测试确认红**
+- [x] **Step 2: 跑测试确认红**
 
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KifuPage.test.tsx`
 Expected: FAIL —— 「没有卡片」(找到 3 张 `.kiosk-card`)、「进来就拉第一页」(第一发是 `page_size: 1`)等新用例红。
 
-- [ ] **Step 3: 实现** —— `KifuPage.tsx`:
+- [x] **Step 3: 实现** —— `KifuPage.tsx`:
 
   1. 删 `import { KioskCard } from '../shell/KioskCard';`,加 `import { Icon } from '../shell/icons';`。
   2. 删 `const [searchOpen, setSearchOpen] = useState(false);` 与整个「收起时只探一个数」效应。
@@ -284,14 +284,14 @@ Expected: FAIL —— 「没有卡片」(找到 3 张 `.kiosk-card`)、「进来
 
   (`.kpager` 两行不动。`.kiosk-row__end select.ksearch__box` 那条是别屏借用,`flex:1` 对它无害 —— 它在行尾 flex 里本来就被 `width` 定住;跑几何闸确认。)
 
-- [ ] **Step 4: 跑测试确认绿**
+- [x] **Step 4: 跑测试确认绿**
 
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KifuPage.test.tsx && npx tsc -b && npx eslint src/kiosk/pages/KifuPage.tsx src/kiosk/__tests__/KifuPage.test.tsx`
 Expected: PASS;tsc 0;eslint 0 problems。
 
   **变异一次**:注掉 `if (searchInput === query) return;` → 「进来马上翻页」应红 → 恢复。(第一版用 `shouldAdvanceTime` 写的这条对变异是绿的:`findBy*` 让真时间流过 350ms,点击晚于那一下。)
 
-- [ ] **Step 5: 真浏览器 —— 滚动闸与几何闸**
+- [x] **Step 5: 真浏览器 —— 滚动闸与几何闸**
 
 `kiosk-shell-scroll.spec.ts` 屏 15 那条删掉两行「展开搜索」(`getByRole('button', { name: /搜棋谱/ }).click()` 与其注释),
 保留 `await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');`。判据不变:造出溢出 > 100、真滚轮滚到底、「最近摆过」末行进得了视野。
@@ -299,7 +299,7 @@ Expected: PASS;tsc 0;eslint 0 problems。
 Run: `cd katrain/web/ui && npm run build && KATRAIN_PW_E2E_PORT=8112 npx playwright test tests/kiosk-shell-scroll.spec.ts tests/kiosk-shell-geometry.spec.ts tests/kiosk-shell-contract.spec.ts`
 Expected: 全过(与本分支改动前的名字集合比,只有屏 15 那条的步骤变了,没有用例消失)。
 
-- [ ] **Step 6: 四图**
+- [x] **Step 6: 四图**
 
 `reference-shots.json` 的 `15-kifu.png` 改成
 `{"sha256": "3a868711d4314ab72240d0a5a0836786909c8bf9123d4f948c35dcc6a793ba62", "shotFrom": "feat/kiosk-go-kifu-list-design-2026-09-23"}`。
@@ -308,7 +308,7 @@ Expected: 全过(与本分支改动前的名字集合比,只有屏 15 那条的�
 Run: `cd katrain/web/ui && KATRAIN_PW_VISUAL_PORT=5273 npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-15-kifu.fourup.spec.ts`
 Expected: 生成 `superpowers/tracks/kiosk-go-shell-align/visual/15-kifu/1024x600/` 四张;逐项对比构图 / 间距 / 层级 / 字色 / 图标 / 文案 / 状态语义。**Fan 确认。**
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add katrain/web/ui/src/kiosk/pages/KifuPage.tsx katrain/web/ui/src/kiosk-shell/go-screens.css \
@@ -335,7 +335,7 @@ git commit -m "feat(kiosk-go): 屏 15 棋谱名局列表一进来就摊开 —�
 - Consumes: 无(与 Task 1 无接口依赖)。
 - Produces: 盒上 `GET /api/v1/board/live/*` → 404;kiosk-2d 包里 `grep -E "/api/v1/(board/)?live"` 零命中。
 
-- [ ] **Step 1: 写失败测试** —— `tests/web_ui/test_board_no_live.py`:
+- [x] **Step 1: 写失败测试** —— `tests/web_ui/test_board_no_live.py`:
 
 ```python
 """盒上没有直播(Fan 2026-09-22:kiosk 端删掉整个直播模块,只在 galaxy 保留)。
@@ -389,19 +389,19 @@ def test_remote_client_has_no_live_reads():
     assert [n for n in dir(RemoteAPIClient) if "live" in n] == []
 ```
 
-- [ ] **Step 2: 跑测试确认红**
+- [x] **Step 2: 跑测试确认红**
 
 Run: `CI=true uv run --extra web pytest tests/web_ui/test_board_no_live.py -q -p no:cacheprovider`
 Expected: 4 条里 3 条 404 用例 FAIL(现在是 200)+ `test_remote_client_has_no_live_reads` FAIL;教程那条 PASS。
 
-- [ ] **Step 3: 实现后端** —— 删 `board.py` 从 `@router.get("/live/matches")` 到 `proxy_live_translations` 结束的 8 个函数(保留 `# ── Live Match Proxy` 注释块上方的 `_get_remote_client` / `_proxy`,把那段注释改成「盒上只读代理」通用说明);删 `remote_client.py` 的 `# ── Live (read-only) ──` 一段;`git rm tests/web_ui/test_board_live_proxy.py`。
+- [x] **Step 3: 实现后端** —— 删 `board.py` 从 `@router.get("/live/matches")` 到 `proxy_live_translations` 结束的 8 个函数(保留 `# ── Live Match Proxy` 注释块上方的 `_get_remote_client` / `_proxy`,把那段注释改成「盒上只读代理」通用说明);删 `remote_client.py` 的 `# ── Live (read-only) ──` 一段;`git rm tests/web_ui/test_board_live_proxy.py`。
 
-- [ ] **Step 4: 跑测试确认绿**
+- [x] **Step 4: 跑测试确认绿**
 
 Run: `CI=true uv run --extra web pytest tests/web_ui/test_board_no_live.py tests/web_ui/test_live_list_demotion.py -q -p no:cacheprovider`
 Expected: PASS(后一个文件是云端直播的,确认没被牵连)。
 
-- [ ] **Step 5: 前端两处 + 构建闸**
+- [x] **Step 5: 前端两处 + 构建闸**
 
 `src/i18n.ts` 的 `loadLiveTranslations` 开头加:
 
@@ -432,12 +432,12 @@ Expected: `✅ kiosk boundary clean`。
 
 **变异一次**(闸的红分支要跑过):临时删掉 `i18n.ts` 那行 `if (__KIOSK_2D_ONLY__) return;` → `npm run build:kiosk-2d` 应输出 `❌ Found live API path` 并退出非 0 → 恢复。
 
-- [ ] **Step 6: 两个包 + 盒上严格包都要过**
+- [x] **Step 6: 两个包 + 盒上严格包都要过**
 
 Run: `cd katrain/web/ui && npm run build && npm run build:smartbox-kiosk-2d && npx vitest run`
 Expected: 两次构建成功,严格包 verify 过;vitest 全绿。
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add katrain/web/api/v1/endpoints/board.py katrain/web/core/remote_client.py tests/web_ui/test_board_no_live.py \
@@ -454,8 +454,8 @@ git commit -m "feat(kiosk-go): 盒上直播后端跟着删 —— board/live 代
 - Modify(smartbox 分支 `feat/kiosk-go-kifu-list-design-2026-09-23`):`superpowers/shared/kiosk-shell/sample-go/build.py` 的 `PROGRESS.kifu` 标回 `done`,重建两份 HTML、跑 `gate.mjs`、重发 artifact `e4d3c7ef`。
 - Modify: `superpowers/tracks/kiosk-go-kifu/prd.md`(加一节「2026-09-23 改判」:列表默认摊开、K1 验收里「摆到实体盘卡展开搜索」那条作废;直播后端尾巴已收)。
 
-- [ ] **Step 1:** `build.py` 里 `kifu: ["shell", …]` 改 `kifu: ["done", "2026-09-23 · /kiosk/kifu —— 名局列表默认摊开、直播已删(前后端)"]`;`python3 build.py && python3 build.py --proto && node gate.mjs`,Expected `908 条合规断言全过`;还原除 `15-kifu.png` 以外抖动的截图;提交;用 Artifact 工具以同一 URL 重发 `go-kiosk.html`。
-- [ ] **Step 2:** PRD 追加改判一节,提交 `docs(kiosk-go-kifu): 2026-09-23 屏 15 列表默认摊开、直播后端收尾`。
+- [x] **Step 1:** `build.py` 里 `kifu: ["shell", …]` 改 `kifu: ["done", "2026-09-23 · /kiosk/kifu —— 名局列表默认摊开、直播已删(前后端)"]`;`python3 build.py && python3 build.py --proto && node gate.mjs`,Expected `908 条合规断言全过`;还原除 `15-kifu.png` 以外抖动的截图;提交;用 Artifact 工具以同一 URL 重发 `go-kiosk.html`。
+- [x] **Step 2:** PRD 追加改判一节,提交 `docs(kiosk-go-kifu): 2026-09-23 屏 15 列表默认摊开、直播后端收尾`。
 
 ---
 

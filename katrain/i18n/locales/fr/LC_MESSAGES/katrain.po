@@ -5955,6 +5955,9 @@ msgstr "Elo affiché {v}"
 msgid "platform:ref_rank"
 msgstr "équivaut à {r}"
 
+msgid "platform:plate_aria"
+msgstr "Adversaire actuel {name} {level}, {rung} ; toucher pour tout voir"
+
 msgid "platform:rank_is_theirs"
 msgstr "Le niveau appartient à {name}"
 

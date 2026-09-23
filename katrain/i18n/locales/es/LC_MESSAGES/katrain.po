@@ -5807,6 +5807,9 @@ msgstr "Elo mostrado {v}"
 msgid "platform:ref_rank"
 msgstr "equivale a {r}"
 
+msgid "platform:plate_aria"
+msgstr "Oponente actual {name} {level}, {rung}; toca para ver todos"
+
 msgid "platform:rank_is_theirs"
 msgstr "El rango es de {name}"
 

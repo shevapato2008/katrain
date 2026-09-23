@@ -5980,6 +5980,9 @@ msgstr "Angezeigtes Elo {v}"
 msgid "platform:ref_rank"
 msgstr "etwa {r}"
 
+msgid "platform:plate_aria"
+msgstr "Aktueller Gegner {name} {level}, {rung}; antippen für alle"
+
 msgid "platform:rank_is_theirs"
 msgstr "Der Rang gehört zu {name}"
 

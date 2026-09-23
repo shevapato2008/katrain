@@ -5859,6 +5859,9 @@ msgstr "Показанный Elo {v}"
 msgid "platform:ref_rank"
 msgstr "примерно {r}"
 
+msgid "platform:plate_aria"
+msgstr "Текущий соперник {name} {level}, {rung}; нажмите, чтобы увидеть всех"
+
 msgid "platform:rank_is_theirs"
 msgstr "Ранг принадлежит {name}"
 

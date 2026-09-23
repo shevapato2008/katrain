@@ -5749,6 +5749,9 @@ msgstr "表示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "目安 {r}"
 
+msgid "platform:plate_aria"
+msgstr "現在の対戦相手 {name} {level}、{rung}；タップして全て見る"
+
 msgid "platform:rank_is_theirs"
 msgstr "段級位は {name} 側のものです"
 

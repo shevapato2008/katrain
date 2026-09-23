@@ -5679,6 +5679,9 @@ msgstr "표시 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "{r} 수준"
 
+msgid "platform:plate_aria"
+msgstr "현재 상대 {name} {level}, {rung}; 눌러서 전체 보기"
+
 msgid "platform:rank_is_theirs"
 msgstr "기력은 {name} 쪽 것입니다"
 

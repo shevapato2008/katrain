@@ -5724,6 +5724,9 @@ msgstr "展示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "對標{r}"
 
+msgid "platform:plate_aria"
+msgstr "目前對手 {name} {level}，{rung}；點開看全部"
+
 msgid "platform:rank_is_theirs"
 msgstr "段位是 {name} 那邊的"
 

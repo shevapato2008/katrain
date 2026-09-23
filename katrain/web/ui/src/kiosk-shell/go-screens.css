@@ -1834,3 +1834,16 @@ button.kiosk-row.figrow { flex: none; }
 /* 升降级那段对手说明在这三屏里收一档行距:它是一段读数,不是正文。
    (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
 .kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }
+
+/* 屏 09 对手名牌 —— <button> 给了背景就必须给 color,否则 h4 继承浏览器默认黑 */
+.aiplate {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  height: 56px; padding: 0 12px; margin-bottom: 10px;
+  border: 1px solid var(--hair); border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--text);
+  text-align: left; cursor: pointer;
+}
+.aiplate h4 { margin: 0; font-size: 15px; color: var(--text); }
+.aiplate p  { margin: 2px 0 0; font-size: 12px; color: var(--dim); }
+.aiplate .rung { margin-left: auto; font-size: 13px; color: var(--dim); white-space: nowrap; }

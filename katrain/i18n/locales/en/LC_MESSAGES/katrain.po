@@ -5917,6 +5917,9 @@ msgstr "Displayed Elo {v}"
 msgid "platform:ref_rank"
 msgstr "about {r}"
 
+msgid "platform:plate_aria"
+msgstr "Current opponent {name} {level}, {rung}; tap to see all"
+
 msgid "platform:rank_is_theirs"
 msgstr "The rank belongs to {name}"
 

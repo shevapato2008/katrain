@@ -5954,6 +5954,9 @@ msgstr "Gösterilen Elo {v}"
 msgid "platform:ref_rank"
 msgstr "yaklaşık {r}"
 
+msgid "platform:plate_aria"
+msgstr "Mevcut rakip {name} {level}, {rung}; tümünü görmek için dokun"
+
 msgid "platform:rank_is_theirs"
 msgstr "Derece {name} tarafına aittir"
 

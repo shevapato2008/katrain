@@ -457,7 +457,6 @@ def test_the_reference_is_dropped_by_every_discontinuity():
         WorkerCommand(action=CommandType.BIND),
         WorkerCommand(action=CommandType.RESET_SYNC),
         WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": _empty_board().tolist()}),
-        WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
     ):
         adapter = _with_reference("on", _board_frame(), _empty_board())
         adapter._cmd_queue.put(command)
@@ -469,7 +468,36 @@ def test_the_reference_is_dropped_by_every_discontinuity():
     assert adapter._reference is None and adapter._ref_sampler is None
 
 
-def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
+def test_a_pause_does_not_drop_the_reference():
+    """2026-09-24 现场故障:每落一手编排器都会暂停(等盘面跟上),于是参考帧一局被销毁 12 次,
+    否决在绝大部分时间里根本不可用 —— (18,12) 那颗假白子被 zncc=1.00 连否 3 帧,参考帧一丢
+    它就直冲 UI,弹了 12 次 illegal_change。
+
+    暂停期间**不建**新参考仍然保留(那半边该保守),但**不许销毁**已有的:否决是按像素闸的
+    (`disagree` 要求 `unchanged` 到 REFERENCE_ZNCC),人在暂停时真动了子,那一格相关度就掉下来、
+    否决不了;剩下的由 REFERENCE_HOLD_* 的预算上限兜住。
+    """
+    for command in (
+        WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
+        WorkerCommand(action=CommandType.PAUSE_DETECTION),
+    ):
+        adapter = _with_reference("on", _board_frame(), _empty_board())
+        adapter._cmd_queue.put(command)
+        adapter._drain_commands()
+        assert adapter._paused is True, command.action
+        assert adapter._reference is not None, f"{command.action} 把参考帧丢了 —— 否决随之失效"
+
+
+def test_a_pause_still_blocks_taking_a_new_reference():
+    """保守的那半边不许一起放开:暂停期间画面里可能正在被人动,不能把那个状态冻成新基准。"""
+    adapter = _with_reference("on", _board_frame(), _empty_board())
+    adapter._reference = None
+    adapter._paused = True
+    adapter._maybe_capture_reference(_empty_board(), _empty_board(), _board_frame())
+    assert adapter._reference is None
+
+
+def test_an_undo_or_a_jump_marks_the_reference_stale_but_never_empties_the_slot():
     ref_board = _empty_board()
     ref_board[4][4] = BLACK
     one_more = ref_board.copy()
@@ -484,7 +512,10 @@ def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
         adapter = _with_reference("on", _board_frame([(4, 4, BLACK)]), ref_board)
         adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
         adapter._drain_commands()
-        assert (adapter._reference is not None) is kept
+        # Fan 2026-09-24 的原则:照到新的参考帧才允许销毁旧的。空置换不来空间(任何时刻只持有
+        # 一份),只会让否决整个失效 —— (18,12) 那颗假白子就是从这个空窗逃出去的。
+        assert adapter._reference is not None, "记账理由不许把槽位清空"
+        assert adapter._ref_stale is not kept
 
 
 def test_one_passing_veto_does_not_freeze_the_reference_for_good():

@@ -290,6 +290,8 @@ class InProcessAdapter:
             self._ref_mode = "shadow"
         self._ref_sampler: CellSampler | None = None
         self._reference: ReferenceFrame | None = None
+        self._ref_compare_failed = False  # 只吼一次的闩
+        self._ref_stale = False  # 不再领先一手;等新参考照上来替换,期间照常按像素否决
         grid = (board_config.grid_size, board_config.grid_size)
         self._ref_hold = np.zeros(grid, dtype=int)  # veto frames spent per cell, over this reference's life
         self._ref_released = np.zeros(grid, dtype=bool)  # cells whose budget ran out: no longer vetoed
@@ -419,9 +421,15 @@ class InProcessAdapter:
         return kept
 
     def _invalidate_reference(self, reason: str) -> None:
+        """只在参考帧**没法再比**时才销毁(换了单应/换了帧尺寸/比对本身失败)。
+
+        记账类的理由(暂停、对局不再领先一手)一律不走这里 —— 见 Fan 2026-09-24 的原则:
+        照到新的参考帧才允许销毁旧的。空置不省空间(任何时刻只持有一份),只会让否决失效。
+        """
         if self._reference is not None:
             logger.info("refcheck reference dropped: %s", reason)
         self._reference = None
+        self._ref_stale = False
         self._reset_reference_budget()
 
     def _reset_reference_budget(self) -> None:
@@ -446,13 +454,16 @@ class InProcessAdapter:
         sampler = reference.sampler
         if gray.shape[:2] != (sampler.img_h, sampler.img_w):  # the next capture rebuilds the sampler
             self._ref_sampler = None
-            self._invalidate_reference("frame size")
-            return board
+            return board  # 这一帧比不了 —— 但**不销毁**:下一次拍到新参考自会替换它(Fan 的原则)
         try:
             unchanged, sim = reference.unchanged(gray, REFERENCE_ZNCC)
         except Exception:  # a real bug here must be loud, and must never take recognition down with it
-            logger.warning("refcheck comparison failed; dropping the reference", exc_info=True)
-            self._invalidate_reference("comparison failed")
+            # 比对**失败**不等于旧参考作废。销毁它换不来空间(任何时刻只持有一份),只会让一次
+            # 偶发异常永久关掉否决 —— 而新参考要等「不暂停 + 无亮灯 + 盘面等于记录」才拍得成。
+            # 只跳过这一帧;真拍到新的那一刻它自然被替换。每份参考只吼一次,免得逐帧刷屏。
+            if not self._ref_compare_failed:
+                self._ref_compare_failed = True
+                logger.warning("refcheck comparison failed; skipping this frame, keeping the reference", exc_info=True)
             return board
         for row, col in self._lit_points:
             unchanged[row][col] = False  # a lit lamp changes the cell's look on its own
@@ -526,6 +537,16 @@ class InProcessAdapter:
 
         Only ever called on a still frame (the loop reaches it inside its motion gate), so motion is
         not re-checked here.
+
+        `self._paused` blocks **taking** a new reference, and that is all it should do. Dropping the
+        reference the pause began with was the 2026-09-24 field failure: every move pauses the
+        orchestrator (lag while the board catches up), so the reference died 12 times in one game and
+        the veto was unavailable for almost all of it -- (18,12) was vetoed for 3 frames at zncc=1.00,
+        then the reference went and the same false white stone reached the screen as 12 popups.
+        Keeping it across a pause is safe because the veto is gated on the pixels, not on game state:
+        `disagree` requires `unchanged` at REFERENCE_ZNCC, so anything the player physically moves
+        while paused drops that cell's correlation and cannot be vetoed. REFERENCE_HOLD_* bounds
+        whatever is left.
         """
         expected = self._expected_np
         if (
@@ -552,6 +573,8 @@ class InProcessAdapter:
             extractor = self._active_extractor()
             self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
         self._reference = ReferenceFrame(self._ref_sampler, gray, board)
+        self._ref_stale = False
+        self._ref_compare_failed = False
         self._ref_taken_at = now
         self._reset_reference_budget()
 
@@ -1189,7 +1212,16 @@ class InProcessAdapter:
                     kept = bool(np.all((ref_board == EMPTY) | (board == ref_board)))
                     added = int(((ref_board == EMPTY) & (board != EMPTY)).sum())
                     if not kept or added > 1:
-                        self._invalidate_reference("expected board is no longer a move ahead")
+                        # 只**标记**它不再是「领先一手」的那一份,**不销毁**。
+                        # Fan 2026-09-24 定的原则:照到新的参考帧才允许销毁旧的 —— 空置期间
+                        # 否决整个失效,而那正是 (18,12) 那颗假白子的逃逸路径(zncc=1.00 被连否
+                        # 3 帧,参考帧一丢就直冲 UI,弹了 12 次 illegal_change)。
+                        # 空置换不来任何空间:任何时刻都只持有一份,新的一照就把旧的替换掉。
+                        # 留着也不会误否决:否决要同时满足「像素没变」与「检测 != 参考」,而
+                        # 像素没变 ⇒ 物理状态与拍参考那刻相同 ⇒ 参考里那个读数就是这堆像素的
+                        # 正确解读(悔棋后人真拿走子 ⇒ 像素变 ⇒ 否决不了;没拿走 ⇒ 两者一致 ⇒
+                        # 无分歧)。残余风险仍由 REFERENCE_HOLD_SUPPRESS 的预算上限兜住。
+                        self._ref_stale = True
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
@@ -1253,13 +1285,10 @@ class InProcessAdapter:
                     self._move_armed = False
             elif cmd.action == CommandType.SET_PAUSED:
                 self._paused = cmd.data.get("paused", False)
-                if self._paused:
-                    self._invalidate_reference("paused")
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
-                self._invalidate_reference("paused")
             elif cmd.action == CommandType.RESUME_DETECTION:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:

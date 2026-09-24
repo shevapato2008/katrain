@@ -10,6 +10,8 @@ import pytest
 from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
 from katrain.web.server import (
     LED_GLARE_BRIGHTEN_STEP,
+    LED_GLARE_MAX_GLOW,
+    LED_GLOW_DEADBAND,
     LED_GLOW_TARGET,
     _adjust_led_brightness,
     _load_guidance_scale,
@@ -217,12 +219,32 @@ def test_glare_while_still_converging_does_nothing():
 def test_a_glare_brighten_cannot_overshoot_past_what_white_stones_survive():
     """反光调亮是在「灯根本看不见」时盲调的一步,一步都不许把读数推过白子认不出的那条线。
 
-    最坏情形:已经收敛在目标上限(读数 = RECOGNISABLE_GLOW)时撞上反光,再抬一步。
-    glow ~ brightness² ⇒ 抬 k 倍之后读数 = 读数 × k²。两个界都是现场锚点的字面量,
-    所以把 1.25 改成 1.4 这条会红 —— 上一条测试(字面量期望值)挡不住这个方向。
+    ⚠️ 这条闸的第一版**量错了对象**:它拿 `RECOGNISABLE_GLOW × STEP²` 算最坏情形,可是
+    收敛态并不停在目标值 —— 死区是 ratio∈[0.8,1.25],读数可以停在 LED_GLOW_TARGET/0.8 = 43750。
+    从那里抬满 1.25 步是 68359,**越过 60000**。仿真里复现了这一格(稳态最坏读数 67478)。
+    所以最坏情形要**扫过整个死区**,不是取目标值那一点。
     """
-    worst_case_glow = RECOGNISABLE_GLOW * LED_GLARE_BRIGHTEN_STEP**2
-    assert worst_case_glow < UNRECOGNISABLE_GLOW, f"一步反光调亮会把读数推到 {worst_case_glow:.0f}"
+    for ratio in (LED_GLOW_DEADBAND[0], 1.0, LED_GLOW_DEADBAND[1]):
+        settled_score = LED_GLOW_TARGET / ratio  # 收敛可能停在死区里的任何读数
+        app = _app(0.6, settled=True)
+        app.state.led_glow_settled_score = settled_score
+        _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
+        step = app.state.led.guidance_scale / 0.6
+        worst = settled_score * step**2  # glow ~ brightness²
+        assert worst < UNRECOGNISABLE_GLOW, f"收敛在 {settled_score:.0f} 时抬一步会到 {worst:.0f}"
+        assert worst <= LED_GLARE_MAX_GLOW * 1.001, f"抬一步到 {worst:.0f},超过了自己定的天花板"
+
+
+def test_a_glare_brighten_without_a_remembered_score_still_cannot_run_away():
+    """落盘文件缺 settled_score(旧版本写的文件 / 坏值归零)时的退路:只受 STEP 约束。
+
+    这条不是「安全」的证明,是把退化路径的边界钉住 —— 它比有 settled_score 时更宽,
+    所以必须确认它至少不会一步冲上满亮度。
+    """
+    app = _app(0.6, settled=True)
+    app.state.led_glow_settled_score = 0.0
+    _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
+    assert app.state.led.guidance_scale == pytest.approx(0.75)  # 0.6 x 1.25,字面量
 
 
 def test_a_failure_that_is_not_glare_changes_nothing_and_keeps_the_latch():
@@ -276,7 +298,13 @@ def test_settling_without_a_scale_change_still_writes_the_latch(tmp_path):
     _read(app, LED_GLOW_TARGET)  # ratio = 1.0,正中死区
     assert app.state.led.set_calls == []  # 亮度确实没动
     saved = json.loads((tmp_path / "led" / "guidance.json").read_text(encoding="utf-8"))
-    assert saved == {"guidance_scale": pytest.approx(0.6), "settled": True}
+    assert saved == {
+        "guidance_scale": pytest.approx(0.6),
+        "settled": True,
+        # 收敛时那次读数也要活过重启:没有它,下次撞上反光的盲抬那一步会退回按目标值算,
+        # 而死区允许收敛在 43750,按目标值算会抬过 60000 那条线。
+        "settled_score": pytest.approx(LED_GLOW_TARGET),
+    }
 
     fresh = _app(1.0, hardware_vision_dir=str(tmp_path))  # 重启
     _load_guidance_scale(fresh, logging.getLogger("t"))

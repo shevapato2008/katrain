@@ -3694,8 +3694,13 @@ LED_GLOW_RELATCH = (0.5, 2.0)
 LED_GLARE_CLIPPED_FRAC = 0.02
 # 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以走「小步 + 下一盏灯复测」而不是一次拉满:
 # 1.25 正好是死区上沿的倒数 —— 抬一步之后,一次干净读数就能判断够不够。
-# 上限由现场锚点卡死:收敛在 35000 时抬一步 = 35000×1.25² = 54688 < 60000(白子认不出的那条线)。
 LED_GLARE_BRIGHTEN_STEP = 1.25
+# 但**光有步长上限不够**:调亮是在「灯根本看不见」时盲抬的一步,它必须按**收敛时那次读数**算,
+# 不能按目标值算。收敛态并不停在 35000 —— 死区是 ratio∈[0.8,1.25],读数可以停在 43750;
+# 从那里抬 1.25 步就是 43750×1.25²=68359,**越过 60000 那条白子认不出的实测线**(仿真里复现了)。
+# 所以真正的闸是这个读数天花板:抬完之后的预测读数不许超过它。取 50000 —— 落在 35000(实测能认)
+# 与 60000(实测认不出)之间并留出余量;真实边界在这两个锚点之间的什么位置,现场还没测过。
+LED_GLARE_MAX_GLOW = 50000.0
 
 
 def _guidance_state_path(app: FastAPI):
@@ -3724,15 +3729,20 @@ def _load_guidance_scale(app: FastAPI, log) -> None:
         if not math.isfinite(scale):
             raise ValueError(f"guidance_scale is not a finite number: {scale!r}")
         settled = bool(saved.get("settled", False))
+        settled_score = float(saved.get("settled_score", 0.0) or 0.0)
+        if not math.isfinite(settled_score) or settled_score < 0:
+            settled_score = 0.0  # 缺/坏就当没有:反光那一步退回只受 STEP 约束,不会更危险
+
     except Exception as exc:  # 坏文件不该挡住开机:回落到默认亮度,像没有这个文件一样
         log.warning("Ignoring unreadable LED guidance state at %s: %s", path, exc)
         return
     led.set_guidance_scale(scale)
     app.state.led_glow_settled = settled
+    app.state.led_glow_settled_score = settled_score
     log.info("LED guidance brightness restored: %.2f (settled=%s) from %s", led.guidance_scale, settled, path)
 
 
-def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, log) -> None:
+def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, settled_score: float, log) -> None:
     path = _guidance_state_path(app)
     if path is None:
         return
@@ -3745,7 +3755,12 @@ def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, log) -> None
         # 开局第一盏灯从满亮度起步,而测量发生在**裸灯上、玩家伸手之前**,`set_guidance_scale` 当场
         # 就把那盏灯按新亮度重发 —— 修正落在同一颗子上。落盘是省掉那一瞬的优化,不是正确性的前提。
         tmp = path.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps({"guidance_scale": round(scale, 4), "settled": settled}), encoding="utf-8")
+        tmp.write_text(
+            json.dumps(
+                {"guidance_scale": round(scale, 4), "settled": settled, "settled_score": round(settled_score, 1)}
+            ),
+            encoding="utf-8",
+        )
         os.replace(tmp, path)
     except Exception as exc:  # 落盘失败不该影响这一局:亮度已经在内存里生效了
         log.warning("Could not persist LED guidance brightness to %s: %s", path, exc)
@@ -3783,8 +3798,12 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
         # `and settled` 是承重的:抬完就解锁 ⇒ **一次收敛之后最多只抬一次**,棘轮在结构上不可能存在。
         # 没有它:0.665 →1.25→ 0.831 →1.25→ 1.00,两次误判就回到 09-24 那个卡死 16 分钟的亮度并落盘,
         # 而 led_glow 只在有新灯点亮时才产生(worker `lit - self._lit_points`)⇒ 白子认不出就没有下一个
-        # 读数 ⇒ 环再也下不来。此时 `before` 必然就是收敛值,所以一步的上限有现场锚点背书(见常量注释)。
-        after = min(1.0, before * LED_GLARE_BRIGHTEN_STEP)
+        # 读数 ⇒ 环再也下不来。此时 `before` 必然就是收敛值。
+        # 步长按**收敛时那次实测读数**封顶,不按目标值:死区允许收敛在 43750,从那里抬满 1.25 步
+        # 会到 68359,越过 60000 那条线。glow ~ brightness² ⇒ 读数抬到天花板对应的亮度比是开平方。
+        settled_score = float(getattr(app.state, "led_glow_settled_score", 0.0) or 0.0)
+        headroom = (LED_GLARE_MAX_GLOW / settled_score) ** 0.5 if settled_score > 0 else LED_GLARE_BRIGHTEN_STEP
+        after = min(1.0, before * min(LED_GLARE_BRIGHTEN_STEP, max(1.0, headroom)))
         now_settled = False
         why = "glare"
     elif not usable:
@@ -3829,9 +3848,15 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
         led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
     if changed or now_settled != settled:
         app.state.led_glow_settled = now_settled
+        # 收敛时那次读数要记下来:下次撞上反光,盲抬那一步的上限得按它算,不能按目标值算
+        # (死区允许收敛在 43750,按目标值算会抬过 60000 那条线)。
+        if now_settled:
+            app.state.led_glow_settled_score = score
         # 落盘的是**生效后**的值(set_guidance_scale 会把它夹进 [MIN,1]),不是我们算出来的那个 ——
         # 存一个从没真正生效过的数字,下次开机就从它起步,等于把一个没验证过的亮度当成学习结果。
-        _save_guidance_scale(app, led.guidance_scale, now_settled, log)
+        _save_guidance_scale(
+            app, led.guidance_scale, now_settled, float(getattr(app.state, "led_glow_settled_score", 0.0) or 0.0), log
+        )
 
 
 async def _vision_event_pump(app: FastAPI):

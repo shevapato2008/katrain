@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 堵上三个安全问题：教程的四个写接口未登录也能调用；`GET /board/devices` 把所有盒子的 IP 发给任意登录用户；生产上的 `admin/admin` 还能登录。同时让教程页只对管理员显示编辑控件。
+**Goal:** 堵上三个安全问题：教程的四个写接口未登录也能调用；`GET /board/devices` 把所有盒子的 IP 发给任意登录用户；生产上的 `admin/admin` 还能登录。评审又发现第四个：有效期 90 天的 refresh token 能直接当 Bearer 用（Task 3，Fan 2026-09-24 定保留）。同时让教程页只对管理员显示编辑控件。
 
 **Architecture:** 后端把 5 个接口的依赖换成现成的 `get_current_admin_user`（`katrain/web/api/v1/endpoints/auth.py:155`）。前端在 `AuthContext` 的 User 类型里声明 `is_admin`（`/auth/me` 一直在返回这个字段），`TutorialFigurePage` 根据它决定是否渲染编辑控件。`admin/admin` 怎么处置由 Fan 决定，按他的决定改生产库。
 
@@ -494,7 +494,7 @@ git show --stat HEAD | tail -4
 
 ### Task 3: Bearer 只认 access token
 
-2026-09-24 评审时发现：`get_user_from_token`（`katrain/web/api/v1/endpoints/auth.py:118`）只验签名和 `sub`，不看 `type`。所以有效期 90 天的 refresh token 能直接当 Bearer 用，也能调 Task 1、2 刚收紧的管理员接口；access token 的有效期只有 7 天。仓里签发 JWT 的只有两处（`katrain/web/core/auth.py:34,47`）：`create_access_token` 写 `type: "access"`（2026-02-12 起就有），`create_refresh_token` 写 `type: "refresh"`。前端从不使用 refresh token；本机回环登录的 SSO cookie 里放的也是 access token（`auth.py:467`）；Python 侧只有 `remote_client` 用 refresh token，走的是 `/auth/refresh`，那里本来就要求 `type == "refresh"`。所以只收 access token 不会误伤现有调用方。**这一项是评审新增的，不在 spec §4 的三个问题里，Fan 可以删掉。**
+2026-09-24 评审时发现：`get_user_from_token`（`katrain/web/api/v1/endpoints/auth.py:118`）只验签名和 `sub`，不看 `type`。所以有效期 90 天的 refresh token 能直接当 Bearer 用，也能调 Task 1、2 刚收紧的管理员接口；access token 的有效期只有 7 天。仓里签发 JWT 的只有两处（`katrain/web/core/auth.py:34,47`）：`create_access_token` 写 `type: "access"`（2026-02-12 起就有），`create_refresh_token` 写 `type: "refresh"`。前端从不使用 refresh token；本机回环登录的 SSO cookie 里放的也是 access token（`auth.py:467`）；Python 侧只有 `remote_client` 用 refresh token，走的是 `/auth/refresh`，那里本来就要求 `type == "refresh"`。所以只收 access token 不会误伤现有调用方。**这一项是评审新增的，不在 spec §4 原来的三个问题里；Fan 2026-09-24 定：保留。**
 
 **Files:**
 - Modify: `katrain/web/api/v1/endpoints/auth.py:125-129`（`get_user_from_token` 的解码段）
@@ -1263,7 +1263,7 @@ SH
 
 ## Self-Review 记录
 
-- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 6；前端只读落在 Task 4；承重实测落在 Task 5；「会改变谁能编辑教程」落在 Task 6；「先测试机再生产」落在 Task 7。Task 3（Bearer 只认 access token）是评审新增的，spec 里没有。
+- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 6；前端只读落在 Task 4；承重实测落在 Task 5；「会改变谁能编辑教程」落在 Task 6；「先测试机再生产」落在 Task 7。Task 3（Bearer 只认 access token）是评审新增的，Fan 2026-09-24 定保留，对应 spec §4 表格的第四行。
 - 占位符：`<用户名>`、`<站点>`、`<SHA>`、`<TS>`、`<WEB_ID>`、`<CRON_ID>`、`<GITDIR>` 都是**运行时才知道的输入**，每一个都写明了从哪一步、哪条命令的输出取得，不属于没写完的内容。
 - 名字一致：`_create_admin_and_login`、`_fake_tts`、`canEdit`、`AuthUser`、`newfail.sh`、`anchors-<SHA>.txt` 在各任务之间用法一致。
 - 2026-09-24 按 writing-plans 模板复核：原来单独的「准备环境 + 记录基线」（旧 Task 0）和「回归验证 + 两套构建」（旧 Task 5）并进了用到它们的任务；每个任务都有 Interfaces；「有失败就 `git stash` 回去复跑」改成了事先按用例名字记 vitest 基线（katrain 的十个 worktree 共用一条 stash 栈）。

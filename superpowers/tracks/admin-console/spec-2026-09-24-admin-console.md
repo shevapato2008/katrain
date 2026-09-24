@@ -32,7 +32,7 @@
 | E5 | 目标视口 **1440×900**（桌面浏览器） | 四图对比和布局实测都在这个视口下做 |
 | E6 | 后台端口 8010；隧道到本机的端口：测试机用 8010，生产用 8011 | 两条隧道可以同时开着，不会混 |
 | E7 | 审计日志第一版只记登录成功 / 失败 / 登出，暂不做查看页 | 切片 1 没有写操作；查看页和用户管理切片一起做 |
-| E8 | 后台会话令牌放在浏览器的 sessionStorage，用 `Authorization: Bearer` 发送，**不用 cookie**；关掉标签页要重新登录 | cookie 不按端口隔离，本机任何被同一浏览器打开过的 localhost 服务都能拿到它（§5.3，2026-09-24 评审） |
+| E8 | 后台会话令牌放在浏览器的 localStorage，用 `Authorization: Bearer` 发送，**不用 cookie**；关标签页、重启浏览器都保持登录，直到 8 小时后过期或点「登出」（Fan 2026-09-24 定：要保持登录。原先放 sessionStorage，关标签页就要重新登录） | cookie 不按端口隔离，本机任何被同一浏览器打开过的 localhost 服务都能拿到它；localStorage 和 sessionStorage 一样按「协议+主机+端口」隔离，换过来只多出两条有上限的风险（§5.3，2026-09-24 评审） |
 
 ## 3. 现状（2026-09-24 读代码核实）
 
@@ -53,7 +53,7 @@
 | 教程的四个写接口未登录也能调用 | `tutorials.py:150/195/212/232`（改棋盘 / 生成语音 / 改解说 / 审核） | 统一改成 `Depends(get_current_admin_user)`：未登录 401，非管理员 403，guest 403；`changed_by` / `verified_by` 记管理员用户名 |
 | `GET /board/devices` 把全部盒子的 IP 返回给任意登录用户 | `board.py:84` | 改成 `get_current_admin_user`。`POST /board/heartbeat` **不动**，那是盒子自己上报用的 |
 | 生产上的 `admin/admin` 还能登录（9/6 的记录） | 生产库 | 撤掉 `is_admin` 并把口令换成谁也不知道的随机值（执行前 Fan 点头）。**只改口令、保留管理员身份不行**：已经签发出去的令牌不会失效，旧 refresh token 还能去 `/auth/refresh` 换新的 access token。要保留 `admin` 当管理员，就得先轮换 `KATRAIN_SECRET_KEY`（全部用户和盒子重新登录一次），那要单独出计划 |
-| （2026-09-24 评审新增，Fan 可删）有效期 90 天的 refresh token 能直接当 Bearer 用，包括调管理员接口 | `auth.py:118` `get_user_from_token` 不看 `type` | 只收 `type == "access"` 的令牌。仓里只有 access / refresh 两种 JWT，前端从不用 refresh token，`/auth/refresh` 本来就单独校验 |
+| （2026-09-24 评审新增；Fan 同日定：保留）有效期 90 天的 refresh token 能直接当 Bearer 用，包括调管理员接口 | `auth.py:118` `get_user_from_token` 不看 `type` | 只收 `type == "access"` 的令牌。仓里只有 access / refresh 两种 JWT，前端从不用 refresh token，`/auth/refresh` 本来就单独校验 |
 
 前端改动：`AuthContext` 的 User 类型加上 `is_admin?: boolean`。`TutorialFigurePage` 只对管理员显示以下控件：编辑、逻辑检查、确认审核、初始化空棋盘、编辑模式下的工具条和取消/保存、编辑讲解、生成语音、保存文字、识别调试面板。非管理员看到的是：棋盘、手数滑条、原书页对照、讲解文字、音频、视频。
 
@@ -102,11 +102,15 @@ katrain/web/admin/
   - 校验时**必须同时**满足：用 `audience="katrain-admin"` 解码，并且**显式比较** `aud == "katrain-admin"`、`type == "admin_session"`、`env == KATRAIN_ADMIN_ENV`，三道检查各有一条伪造令牌的测试。
   - 原因：2026-09-24 实测 python-jose 的行为是，**传了 audience、而 token 里根本没有 aud 时，照样放行**。只靠 aud，公开站点的 access token 就能进后台。
   - 反方向不用改公开站点：公开站点解码时不传 audience，带 aud 的 token 会被 jose 以「Invalid audience」拒掉（同日实测）。
-- **令牌放在哪**：登录接口在响应体里返回令牌，前端存进 **sessionStorage**，每次请求带 `Authorization: Bearer`。**不用 cookie**：cookie 不按端口隔离，管理员用同一个浏览器打开过的任何一个 `http://localhost:<端口>` 服务，都能让浏览器把 cookie 送过去（先把浏览器引到它自己的页面，再同站请求一次），Path、SameSite、换主机名都挡不住（Codex 第二轮评审指出，第一轮改的 Path=/api/admin 只是降低了概率）。sessionStorage 按「协议+主机+端口」隔离，别的端口上的页面读不到；两条隧道（本机 8010 / 8011）也就天然各存各的。代价：关掉标签页要重新登录。
-- **页面防线**：后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）。令牌在 sessionStorage 里，页面上万一出现注入，也执行不了外来脚本，发不出令牌。
+- **令牌放在哪**：登录接口在响应体里返回令牌，前端存进 **localStorage**（键 `katrain_admin_token`），每次请求带 `Authorization: Bearer`。**不用 cookie**：cookie 不按端口隔离，管理员用同一个浏览器打开过的任何一个 `http://localhost:<端口>` 服务，都能让浏览器把 cookie 送过去（先把浏览器引到它自己的页面，再同站请求一次），Path、SameSite、换主机名都挡不住（Codex 第二轮评审指出，第一轮改的 Path=/api/admin 只是降低了概率）。localStorage 按「协议+主机+端口」隔离，别的端口上的页面读不到；两条隧道（本机 8010 / 8011）也就天然各存各的。
+- **保持登录**（Fan 2026-09-24 定）：关标签页、重启浏览器都不用重新登录，直到令牌 8 小时后过期，或者点「登出」。原先放 sessionStorage，隔离性相同，只是关标签页就丢。换成 localStorage 多出两条风险，上限都是「令牌 8 小时就过期，而且只能经 SSH 隧道使用」：
+  - 令牌留在浏览器里：同一台电脑、同一个浏览器的人，这 8 小时里只要能开隧道，就不用再输口令。在别人也会用的电脑上（例如烧录用的 Windows 机），用完要点「登出」。
+  - 以后本机如果有别的程序占了同一个端口（8010 / 8011），又在这个浏览器里打开了页面，它能读到还没过期的令牌。
+  - 页面注入的风险不变：页面上的脚本本来就读得到 sessionStorage，两种存法都靠 CSP 挡。
+- **页面防线**：后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）。令牌在 localStorage 里，页面上万一出现注入，也执行不了外来脚本，发不出令牌。
 - **每次请求**都按用户名重新查一次库，并要求 `is_admin = true`，撤权立即生效。
 - **不需要 CSRF 头**：浏览器不会自动带上 Authorization，别的网页伪造不出带令牌的请求。
-- **登出**：服务端不存会话。前端丢掉令牌就是登出，服务端记一笔审计；已经发出去的令牌要么 8 小时后过期，要么随撤权（`is_admin`）立即失效。
+- **登出**：服务端不存会话。点「登出」就是前端丢掉令牌，服务端记一笔审计；关标签页不算登出。同一个浏览器的多个标签页共用一份登录：在一个标签页登出，别的标签页的下一次请求就回到登录页。所以前端只在 storage 被禁用时才把令牌放进内存，否则别的标签页会拿内存里的旧令牌接着用（切片 1 Task 2 有测试）。已经发出去的令牌要么 8 小时后过期，要么随撤权（`is_admin`）立即失效。
 - **登录失败**只回一句笼统的话：「用户名或密码错误，或该账号没有后台权限」；具体原因（查无此人 / 口令错 / 不是管理员）写进审计日志。
 - 不做登录限流：入口在 SSH 之后，想暴力试口令得先有 SSH 权限。
 

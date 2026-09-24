@@ -17,8 +17,8 @@
 ## Global Constraints
 
 - 后台 API 前缀 `/api/admin`，端口 8010。`KATRAIN_ADMIN_ENV ∈ {local, test, prod}`。
-- 会话令牌放在前端的 sessionStorage（键 `katrain_admin_token`），每次请求带 `Authorization: Bearer <令牌>`，8 小时过期。**后台不用 cookie**：cookie 不按端口隔离，本机任何一个被同一浏览器打开过的 localhost 服务都能拿到它（spec §5.3）。
-- 后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）：令牌在 sessionStorage 里，页面上万一出现注入，也发不出令牌。
+- 会话令牌放在前端的 localStorage（键 `katrain_admin_token`），每次请求带 `Authorization: Bearer <令牌>`，8 小时过期；关标签页、重启浏览器都保持登录（Fan 2026-09-24 定，spec E8）。storage 能用时，前端不在内存里另存令牌：否则别的标签页点了「登出」，这一页还会拿旧令牌接着用。**后台不用 cookie**：cookie 不按端口隔离，本机任何一个被同一浏览器打开过的 localhost 服务都能拿到它（spec §5.3）。
+- 后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）：令牌在 localStorage 里，页面上万一出现注入，也发不出令牌。
 - 会话令牌的内容是 `{sub, type:"admin_session", aud:"katrain-admin", env, exp}`，校验时 **type、aud、env 三项都要查**。
 - cron：心跳 30 秒一次；超过 120 秒没有心跳算失联；loop 超过 300 秒没有推进算卡住；运行历史保留 14 天；间隔 ≥ 60 秒的任务每次运行都记历史，更频繁的只记不成功的。
 - `katrain/cron/**` 只许 import 标准库、sqlalchemy 和 `katrain.cron.*`（由 `tests/web_ui/test_cron_import_boundary.py` 守着）。
@@ -40,7 +40,8 @@
 - cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能停在最后一次的「正常」；重启之后，被打断的那次运行在历史里是「失败」，不是永远「运行中」→ Task 9 的 offline 用例、Task 7 的 `test_register_closes_runs_left_running_by_a_process_that_died`，加上 Task 12 的实停验证。
 - cron 比 katrain-web 先启动（两边同时 `up`，表还没建）：web 建好表之后，下一次心跳就要把 9 行状态补上，不能一直空到下次重启 → Task 7 的 `test_heartbeat_fills_in_rows_when_the_table_appeared_after_register`。
 - 任务吞掉了异常、只打了一条 ERROR 日志（cleanup.py 的写法）：必须显示「有报错」，不能显示「成功」→ Task 7 的 `test_a_job_that_swallows_its_exception_is_recorded_as_errors_not_success`。
-- 同一个浏览器里同时开着测试和生产两条隧道，或者本机另一个端口上跑着别的服务：后台会话不能串号，也不能被那个服务拿到。令牌只放在按端口隔离的 sessionStorage 里，登录不设任何 cookie → Task 6 的 `test_login_returns_a_token_and_sets_no_cookie`、`test_token_for_other_env_is_rejected`，Task 2 `client.test.ts` 的 Authorization 用例，外加 `SignInPage.test.tsx` 的环境标签。
+- 同一个浏览器里同时开着测试和生产两条隧道，或者本机另一个端口上跑着别的服务：后台会话不能串号，也不能被那个服务拿到。令牌只放在按端口隔离的 localStorage 里，登录不设任何 cookie → Task 6 的 `test_login_returns_a_token_and_sets_no_cookie`、`test_token_for_other_env_is_rejected`，Task 2 `client.test.ts` 的 Authorization 用例，外加 `SignInPage.test.tsx` 的环境标签。
+- 同一个浏览器开着两个后台标签页，在其中一个点「登出」：另一个的下一次请求必须回到登录页，不能拿内存里的旧令牌接着用 → Task 2 `client.test.ts` 的「别的标签页登出」用例。
 - 管理员登录期间被撤掉权限：下一次请求就必须回到登录页 → Task 6 的 `test_revoking_is_admin_takes_effect_on_next_request`。
 
 ---
@@ -164,7 +165,7 @@ git show --stat HEAD | tail -12
 
 **Interfaces:**
 - Produces（TS 契约，Task 3 定稿，Task 10 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`AdminLogin`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
-- Produces：`adminFetch<T>(path, init?)`（有令牌就带 `Authorization: Bearer`，从不带 cookie）、`getToken()` / `setToken(token)` / `clearToken()`（sessionStorage 键 `katrain_admin_token`）、`errorText(e)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
+- Produces：`adminFetch<T>(path, init?)`（有令牌就带 `Authorization: Bearer`，从不带 cookie）、`getToken()` / `setToken(token)` / `clearToken()`（localStorage 键 `katrain_admin_token`；只有 storage 被禁用时才退回内存）、`errorText(e)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
 - Produces：data-testid `admin-env`、`admin-main`、`cron-error`、`cron-loading`、`cron-empty`、`cron-process`、`cron-table`、`cron-row-<name>`、`health-<state>`、`queue-live`、`queue-report`、`run-history-scroll`、`signin-env`
 
 - [ ] **Step 1：改任何代码之前：装 Python 依赖，确认 `katrain/config.json` 是干净的，记录两份基线，写好「只报新增失败」的小脚本**（切片 0 已在这个 worktree 里装过依赖时，`uv sync` 很快结束）
@@ -246,7 +247,7 @@ Expected：
 `src/admin/api/client.test.ts`：
 ```ts
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { adminFetch, clearToken, setToken } from './client';
+import { adminFetch, clearToken, getToken, setToken } from './client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -281,6 +282,19 @@ describe('adminFetch', () => {
   it('其他错误抛 AdminApiError，带状态码和说明', async () => {
     vi.stubGlobal('fetch', reply(503, { detail: 'cron 状态表不存在' }));
     await expect(adminFetch('/x')).rejects.toMatchObject({ name: 'AdminApiError', status: 503, message: 'cron 状态表不存在' });
+  });
+});
+
+describe('会话令牌', () => {
+  it('存在 localStorage 里：关标签页、重启浏览器之后还在', () => {
+    setToken('t-keep');
+    expect(localStorage.getItem('katrain_admin_token')).toBe('t-keep');
+  });
+
+  it('别的标签页点了「登出」，这一页也立即拿不到令牌：内存里不留副本', () => {
+    setToken('t-shared');
+    localStorage.removeItem('katrain_admin_token'); // 另一个标签页的 clearToken()
+    expect(getToken()).toBeNull();
   });
 });
 ```
@@ -568,32 +582,35 @@ export interface CronQueuesResponse { observed_at: string; live_analysis: QueueS
 
 `src/admin/api/client.ts`：
 ```ts
-// 后台的所有请求都走这里。会话令牌放在 sessionStorage：它按「协议+主机+端口」隔离，本机别的端口上的页面读不到；
-// 每次请求带 Authorization: Bearer。不用 cookie —— cookie 不分端口（spec §5.3）。
+// 后台的所有请求都走这里。会话令牌放在 localStorage：它按「协议+主机+端口」隔离，本机别的端口上的页面读不到；
+// 关标签页、重启浏览器之后还在，直到 8 小时后过期或点「登出」（spec E8）。每次请求带 Authorization: Bearer。
+// 不用 cookie —— cookie 不分端口（spec §5.3）。
 const TOKEN_KEY = 'katrain_admin_token';
-let memoryToken: string | null = null; // 浏览器禁用 storage 时的退路：只活到刷新页面为止
+// 只在浏览器禁用 storage 时用，活到刷新页面为止。storage 能用时它必须是空的：
+// 否则别的标签页点了「登出」，这一页还会从内存里拿出旧令牌接着用。
+let memoryToken: string | null = null;
 
 export function getToken(): string | null {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) ?? memoryToken;
+    return localStorage.getItem(TOKEN_KEY) ?? memoryToken;
   } catch {
     return memoryToken;
   }
 }
 
 export function setToken(token: string): void {
-  memoryToken = token;
   try {
-    sessionStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_KEY, token);
+    memoryToken = null;
   } catch {
-    /* storage blocked: memoryToken still carries this page */
+    memoryToken = token; // storage blocked: only this page carries the token
   }
 }
 
 export function clearToken(): void {
   memoryToken = null;
   try {
-    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   } catch {
     /* nothing was stored */
   }
@@ -656,7 +673,7 @@ export const getHealth = async (): Promise<AdminHealth> =>
 
 export const getMe = async (): Promise<AdminMe> => {
   if (useFixture) return (await fixture()).meFixture();
-  if (!getToken()) throw new AdminAuthError(); // 这个标签页还没登录过：不必去问服务端
+  if (!getToken()) throw new AdminAuthError(); // 这个浏览器还没登录过，或者已经登出：不必去问服务端
   return adminFetch<AdminMe>('/api/admin/auth/me');
 };
 
@@ -1827,7 +1844,7 @@ def test_startup_guards_accept_a_sane_config(monkeypatch):
 
 
 def test_every_response_carries_the_csp(tmp_path):
-    """令牌在前端 sessionStorage 里（session.py 说明了为什么不用 cookie），页面这一侧靠 CSP：只许本源脚本、只许向本源发请求。"""
+    """令牌在前端 localStorage 里（session.py 说明了为什么不用 cookie），页面这一侧靠 CSP：只许本源脚本、只许向本源发请求。"""
     (tmp_path / "admin.html").write_text("<html>admin</html>", encoding="utf-8")
     client = _client(tmp_path)
     for path in ("/", "/api/admin/health", "/api/admin/nope"):
@@ -1858,7 +1875,7 @@ def test_public_app_exposes_no_admin_routes(app):
 """katrain-admin 的启动配置与启动闸。
 
 后台绝不能在盒子上跑，也不能用弱密钥签会话。环境名会写进令牌：测试机与生产两条隧道各在自己的
-本机端口上，令牌放在按端口隔离的 sessionStorage 里，env 再兜一层，互不串号。
+本机端口上，令牌放在按端口隔离的 localStorage 里，env 再兜一层，互不串号。
 """
 import os
 
@@ -1898,7 +1915,7 @@ from katrain.web.admin import settings as admin_settings
 
 DEFAULT_STATIC_DIR = Path(__file__).resolve().parent.parent / "static-admin"
 NOT_BUILT = "后台前端未构建：在 katrain/web/ui 下运行 npm run build:admin"
-# 令牌在前端 sessionStorage 里（session.py），页面这一侧的防线是 CSP：只许加载本源的脚本、只许向本源发请求，
+# 令牌在前端 localStorage 里（session.py），页面这一侧的防线是 CSP：只许加载本源的脚本、只许向本源发请求，
 # 页面上万一出现注入，也执行不了外来脚本、发不出令牌。MUI（emotion）运行时插 <style>，所以 style-src 要 'unsafe-inline'。
 CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
@@ -2071,7 +2088,7 @@ def _audit(Session):
 
 
 def test_login_returns_a_token_and_sets_no_cookie(ctx):
-    """令牌只交给页面自己（sessionStorage 按端口隔离）。cookie 不分端口，本机别的服务会收到它。"""
+    """令牌只交给页面自己（localStorage 按端口隔离）。cookie 不分端口，本机别的服务会收到它。"""
     client, Session = ctx
     r = login(client)
     body = r.json()
@@ -2187,9 +2204,9 @@ def test_logout_is_audited(ctx):
 ```python
 """后台会话：签发 / 校验令牌、require_admin 依赖。
 
-令牌交给前端放在 sessionStorage，每次请求带 `Authorization: Bearer <令牌>`；**不用 cookie**。cookie 不按端口
+令牌交给前端放在 localStorage，每次请求带 `Authorization: Bearer <令牌>`；**不用 cookie**。cookie 不按端口
 隔离：管理员用同一个浏览器打开过的任何一个 http://localhost:<端口> 服务，都能让浏览器把 cookie 送过去（先把浏览器
-引到它自己的页面，再同站请求一次；Path、SameSite、换主机名都挡不住），拿到就能在隧道开着时重放。sessionStorage
+引到它自己的页面，再同站请求一次；Path、SameSite、换主机名都挡不住），拿到就能在隧道开着时重放。localStorage
 按「协议+主机+端口」隔离，别的端口上的页面读不到；浏览器也不会自动带上它，所以不需要 CSRF 头。页面这一侧的防线是
 app.py 给每个响应加的 CSP。
 
@@ -2197,7 +2214,7 @@ app.py 给每个响应加的 CSP。
   1. aud == "katrain-admin"，**必须显式比较**：python-jose 在传了 audience、而令牌里根本没有 aud 时照样放行
      （2026-09-24 实测），只靠 decode 的 audience 参数，公开站点的 token 就能进后台。
   2. type == "admin_session"：aud 碰巧对上的别种令牌也进不来。
-  3. env == 当前环境：测试与生产两条隧道各在自己的端口上，sessionStorage 本来就分开，env 再兜一层。
+  3. env == 当前环境：测试与生产两条隧道各在自己的端口上，localStorage 本来就分开，env 再兜一层。
 反方向：公开站点解码时不传 audience，带 aud 的令牌会被 jose 以 "Invalid audience" 拒掉（同日实测），
 所以后台令牌也进不了公开站点。
 """
@@ -3657,7 +3674,7 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
 | 测试（home-ubuntu） | `ssh -N -L 8010:127.0.0.1:8010 home-ubuntu` | http://localhost:8010 |
 | 生产（ucloud-v100） | `ssh -N -L 8011:127.0.0.1:8010 ucloud-v100` | http://localhost:8011 |
 
-两条隧道可以同时开着：本机端口不同，登录状态也按端口各存各的（放在浏览器的 sessionStorage 里），不会串号；关掉标签页就要重新登录。页头会醒目地标出当前是哪个环境。
+两条隧道可以同时开着：本机端口不同，登录状态也按端口各存各的（放在浏览器的 localStorage 里），不会串号。登录一次管 8 小时，关标签页、重启浏览器都不用重新登录；**在别人也会用的电脑上（例如烧录用的 Windows 机），用完点页头的「登出」**。页头会醒目地标出当前是哪个环境。
 
 ## Windows：做成双击即用
 
@@ -4115,7 +4132,7 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
   - 同形状排查：切片 0 那一轮的发现（看盘、回滚锚点、clone 兜底、`pipefail`、zsh 分词、每次调用都是新 shell）在这份计划里同样存在，一并改了；另外发现变异检查原先写的是用 `git checkout` 还原，那会冲掉本任务还没提交的改动，已改成先备份再还原。
   - 两家的发现没有重合：切片 0 那一轮盯发布与令牌，这一轮盯 cron 语义与会话边界。
 - **2026-09-24 Codex 第二轮（9 条）之后的修订**，全部采纳：
-  - 会话改成令牌放 sessionStorage + `Authorization: Bearer`，**不用 cookie**，所有响应加 CSP。第一轮的 `Path=/api/admin` 只是降低概率：本机被攻陷的服务可以先把浏览器引到它自己的页面，再同站请求自己的 `/api/admin/…`，cookie 照样送过去；换成每环境一个主机名也一样，端口不参与 cookie 匹配。sessionStorage 按端口隔离，是这一类问题的根治。代价写进 spec E8：关掉标签页要重新登录。
+  - 会话改成令牌放 sessionStorage + `Authorization: Bearer`，**不用 cookie**，所有响应加 CSP。第一轮的 `Path=/api/admin` 只是降低概率：本机被攻陷的服务可以先把浏览器引到它自己的页面，再同站请求自己的 `/api/admin/…`，cookie 照样送过去；换成每环境一个主机名也一样，端口不参与 cookie 匹配。sessionStorage 按端口隔离，是这一类问题的根治。代价原本是关掉标签页要重新登录（spec E8）；Fan 2026-09-24 改为保持登录，见本节最后一条。
   - 本地装不上 APScheduler：Task 8 新增 `cron` extra（APScheduler 3.x、bs4、lxml），并给 `requirements-cron.txt` 加上 `<4`。
   - 表晚建：调度器最多等 60 秒登记成功，再发起第一次运行；之后每次心跳重试**完整**登记；登记只收尾本进程启动之前留下的 `running`。
   - 备份比对：dump 前后各数一遍，恢复出来的行数必须落在两数之间，对不上就非零退出。
@@ -4130,3 +4147,4 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
   - 公开令牌同时被 aud、type 两道挡住，删掉任何一道它都还是绿的，原 Step 5 的「删 type 检查、看它变红」照做会红不了。现在用伪造令牌给每道检查各配一条测试，另加一条对照用例证明伪造出来的令牌本身能进。
   - 「心跳重试登记」那条测试最后自己调了 `ensure_registered()`，心跳漏掉重试它也照样绿，已去掉。
   - 前端也真跑了一遍（导出代码树 + 主工作树的 node_modules）：`tsc -b` 通过（先放一个类型错误确认它确实在查 admin 的文件）；vitest 起初 1 条失败，是 `client.test.ts` 的 `reply()` 给两次 fetch 返回同一个 `Response`，第二次读 body 报 `Body is unusable`，第一版就有这个问题，已改成每次返回新的；ESLint 报出两处 error，原计划误写成「warning 可以接受」，已按仓里先例补上 `eslint-disable-next-line … -- 理由`。
+- **2026-09-24 Fan 定：后台保持登录。** 令牌从 sessionStorage 换到 localStorage，两者隔离性相同（都按协议+主机+端口），多出的两条风险和上限写在 spec §5.3。换存储顺带暴露一个原先不存在的问题：旧的内存兜底每次登录都在内存里存一份，换成多个标签页共用的 localStorage 之后，别的标签页点了「登出」，这一页还会从内存里拿出旧令牌接着用。现在只在 storage 被禁用时才放内存，`client.test.ts` 加了两条用例（存在 localStorage 里；别的标签页登出后本页拿不到令牌）。前端按新原文重新实跑：`tsc -b`、eslint 通过，vitest 11 条全过；两次变异（登录时照旧在内存里存一份 / 换回 sessionStorage）各让对应的用例变红。

@@ -254,7 +254,7 @@ async def _lifespan_server(app: FastAPI, log):
     # 谁都读得到，凭它能自签任意用户的 token。
     assert_secret_key_is_safe(settings.KATRAIN_MODE, settings.SECRET_KEY)
 
-    from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
+    from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
@@ -278,32 +278,6 @@ async def _lifespan_server(app: FastAPI, log):
     user_game_repo = UserGameRepository(session_factory)
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
-
-    # 首个管理员账号只在显式注入口令时创建。
-    # 曾经这里硬编码创建一个用户名和口令都固定为同一个公开已知词的账号，配合
-    # "按用户名无条件提权"等于把管理接口敞开。两者一起拆掉。
-    if not repo.list_users():
-        pwd = settings.ADMIN_BOOTSTRAP_PASSWORD
-        if pwd:
-            try:
-                created = repo.create_user("admin", get_password_hash(pwd))
-                from katrain.web.core import models_db
-
-                _s = session_factory()
-                try:
-                    row = _s.query(models_db.User).filter(models_db.User.id == created["id"]).one()
-                    row.is_admin = True
-                    _s.commit()
-                finally:
-                    _s.close()
-                log.info("已按 ADMIN_BOOTSTRAP_PASSWORD 创建初始管理员")
-            except ValueError:
-                pass
-        else:
-            log.warning(
-                "数据库为空且未设置 KATRAIN_ADMIN_BOOTSTRAP_PASSWORD —— 未创建任何账号。"
-                "设置该环境变量后重启即可创建初始管理员。"
-            )
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:

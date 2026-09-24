@@ -10,6 +10,8 @@
 
 **Spec:** `superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md` §4
 
+> **2026-09-24 变更（优先于下方旧 Task 6–7 原文）**：Fan 已决定后台使用专用账号，不再把 Galaxy 用户提升为管理员；允许旧管理操作在新后台上线前暂停。Task 6 的 Step 2–6 中“给公开用户授权、公开 `/auth/me` 验管理员”的指令已失效，**不得执行**。发布前安全补丁还需移除空库时公开 web 自动创建 `admin` 的路径。旧 `admin` 在本机、测试、生产各库的撤权和随机化口令、每次 push/部署/远程连接仍须按交接文件取得当场授权；撤权和补丁部署视为同一安全发布窗口。切片 0 推到 develop 前不得提交新后台半成品。后续教程管理先于 cron，设计与四图确认后才进入后端。
+
 ## Global Constraints
 
 - 顺序：**先测试机 home-ubuntu（go.sailorvoyage.top），再生产 ucloud-v100（modelstella.com）**（Fan 2026-08-31）。
@@ -18,7 +20,7 @@
 - 新文件名不许以 `log` 开头（根 `.gitignore:16` 的 `log*` 加上 `core.ignorecase=true` 会静默吞掉）。
 - 不在共享的主工作树 `~/Repositories/katrain` 里切分支或提交；所有工作都在 worktree `~/Repositories/katrain-admin-console`（分支 `feature/admin-console`）里做。
 - 任何写生产库、推送、部署的动作，**执行当下都要 Fan 点头**（本计划获批不算）。
-- 提交信息末尾加 `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`。
+- Codex 提交不使用 Claude 署名。
 - 带管道的检查命令先写 `set -o pipefail`，否则退出码是 `tail` 的，失败也显示成功（release runbook 2026-09-23 记过 `git clone … | tail` 把失败显示成了成功）。生产上的发布命令一律不接管道。
 - 本机 shell 是 zsh：不做词分割（`set -- $p` 拆不开「方法 路径」）；`$VAR:t…` 会被当成路径修饰符，要写成 `${VAR}:…`。
 - 执行者每次调用 Bash、每次 `ssh` 都是新 shell，变量留不到下一步。跨步骤要用的值（端口、PID、SHA、镜像 ID、时间戳）写进文件，或者在每条命令里写成字面量。
@@ -989,7 +991,18 @@ Fan 于 2026-09-24 确认三张截图与测量结果。正式/测试 Galaxy 教�
 
 ---
 
-### Task 6: 🛑 发布前清点各环境的管理员账号（需要 Fan 决策）
+### Task 5b: 公开 web 不再自动创建管理员（专用后台决策的安全补丁）
+
+**Files:** `katrain/web/server.py`、`katrain/web/core/config.py`、`tests/web_ui/test_admin_bootstrap.py`。
+
+- [x] 测试先红：`test_public_web_has_no_admin_bootstrap_configuration`、`test_public_web_never_bootstraps_admin_account` 均按预期失败。
+- [x] 删除公开 web 空库时创建 `users.admin` 的启动逻辑和 `KATRAIN_ADMIN_BOOTSTRAP_PASSWORD` 配置；后台专用账号以后由后台进程独立配置，不借用公开 `users` 表。
+- [x] 聚焦测试 21 passed；现有失败基线脚本同一组用例 `newfail=0`。完整 `tests/web_ui` 在收集阶段因当前本机环境缺 `fontTools` 而未跑到测试，不能据此宣称全量通过。
+- [x] 提交本安全补丁（不得把教程后台设计稿一同暂存/提交）。
+
+---
+
+### Task 6: 🛑 发布前清点各环境的管理员账号（后续步骤已由上方变更覆盖）
 
 **Files:** 无代码改动。Step 1 只读；之后每一条改库的命令，执行前都要 Fan 再点一次头。
 

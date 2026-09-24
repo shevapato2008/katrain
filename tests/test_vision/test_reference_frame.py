@@ -677,3 +677,35 @@ def test_the_worker_config_carries_the_reference_check_mode():
 
     assert VisionServiceConfig().to_worker_config()["reference_check"] == "shadow"
     assert VisionServiceConfig(reference_check="on").to_worker_config()["reference_check"] == "on"
+
+
+def test_the_promoter_does_not_push_a_cell_the_reference_is_vetoing():
+    """2026-09-24 现场:`(18,12)` 两局复现,refcheck 已经 `zncc=1.00 held=7/10` 连否,
+    紧接着 `ambiguous promotion: sustained sub-add stone at (18,12) conf=0.33` 把它推进了盘面。
+
+    两个机制的判据正好相反,而提升器不问否决:参考帧说「像素逐点没变 ⇒ 没有新东西落上去」,
+    提升器说「这个弱检测一直在 ⇒ 它是真的」。而「一直在」正是反光的特征(反光不会动),
+    于是提升器把反光最强的特征当成了它是真子的证据。
+
+    这不会堵死提升器存在的理由(低置信度真子唯一的通道,move_detector.py:183):
+    真子会改变像素,参考帧根本不会否决它 —— 下半段用同一格证明放行路径还在。
+    """
+    from unittest.mock import MagicMock
+
+    def run(vetoed: bool):
+        adapter = _with_reference("on", _board_frame(), _empty_board())
+        adapter._add_threshold = 0.50
+        adapter._expected_np = _empty_board()
+        mask = np.zeros((19, 19), dtype=bool)
+        mask[18][12] = vetoed
+        adapter._ref_disagree = mask
+        extractor = MagicMock()
+        extractor.cell_top.return_value = {(18, 12): (0.33, 1)}  # 低于阈值的白子候选
+        adapter._active_extractor = MagicMock(return_value=extractor)
+        adapter._promoter = MagicMock()
+        adapter._promoter.step.return_value = (18, 12, 1, 0.33)
+        adapter._promote_stuck_stone([], 1920, 1080, _empty_board(), None)
+        return adapter._promoter.step.call_args[0][0]
+
+    assert (18, 12) not in run(vetoed=True), "参考帧正在否决这一格,它不该成为提升候选"
+    assert (18, 12) in run(vetoed=False), "没有否决时,低置信度真子的通道必须还在"

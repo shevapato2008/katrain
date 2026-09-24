@@ -291,6 +291,7 @@ class InProcessAdapter:
         self._ref_sampler: CellSampler | None = None
         self._reference: ReferenceFrame | None = None
         self._ref_compare_failed = False  # 只吼一次的闩
+        self._ref_disagree = None  # 上一帧被参考帧否决的格子(逐格掩码)
         self._ref_stale = False  # 不再领先一手;等新参考照上来替换,期间照常按像素否决
         grid = (board_config.grid_size, board_config.grid_size)
         self._ref_hold = np.zeros(grid, dtype=int)  # veto frames spent per cell, over this reference's life
@@ -450,6 +451,7 @@ class InProcessAdapter:
         """
         reference = self._reference
         if reference is None or gray is None:
+            self._ref_disagree = None
             return board
         sampler = reference.sampler
         if gray.shape[:2] != (sampler.img_h, sampler.img_w):  # the next capture rebuilds the sampler
@@ -469,6 +471,7 @@ class InProcessAdapter:
             unchanged[row][col] = False  # a lit lamp changes the cell's look on its own
         disagree = unchanged & (board != reference.board) & ~self._ref_released
         self._ref_vetoing = bool(disagree.any())
+        self._ref_disagree = disagree
         if not self._ref_vetoing:
             return board
         # Counted over this reference's whole life, never reset on an agreeing frame: a detector that
@@ -708,6 +711,13 @@ class InProcessAdapter:
             and int(stable_board[cell[0]][cell[1]]) == EMPTY
             and (exp is None or int(exp[cell[0]][cell[1]]) == EMPTY)
             and not (masked and cell in masked)
+            # 参考帧正在否决这一格 ⇒ 那里的像素与拍参考时逐点相同 ⇒ **没有新东西落上去**。
+            # 「持续存在」正是反光的特征(它不会动),提升器把它当成了「是真子」的证据,于是
+            # 一个 0.33 的检测绕过否决进了盘面 —— 2026-09-24 实测 (18,12) 两局复现,
+            # refcheck 已经 `zncc=1.00 held=7/10` 连否,紧接着就是 ambiguous promotion。
+            # 这不会堵死提升器存在的理由(低置信度真子唯一的通道):真子会改变像素,
+            # 参考帧根本不会否决它。
+            and not (self._ref_disagree is not None and bool(self._ref_disagree[cell[0]][cell[1]]))
         }
         hit = self._promoter.step(candidates)
         if hit is None:

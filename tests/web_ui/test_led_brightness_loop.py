@@ -68,3 +68,40 @@ def test_a_glow_larger_than_any_lamp_is_not_the_lamp():
     # 2026-09-22 night, (7,18): score 645k over 21108 px, peak 55 -- the whole scene changed
     assert _run(0.5, 10 * LED_GLOW_TARGET, area=21108).set_calls == []
     assert _run(0.5, 10 * LED_GLOW_TARGET, area=1975).set_calls == [pytest.approx(0.25)]  # a full-brightness lamp
+
+
+# ── 目标值本身的闸(2026-09-24 上板实测后补) ───────────────────────────────────────
+#
+# 上面每一条用例都写成「相对 LED_GLOW_TARGET」—— 于是**目标定错时它们全部照绿**。
+# 09-24 就是这么过去的:目标 60000 让环把亮度精确地调到「读数 = 60000」,而 60000 恰恰是
+# 白子认不出来的读数。Fan 的第一手白子从 10:43:32 到 10:59:01 整整 16 分钟没进检测板,
+# `caught_up` 一直为假,编排器挂着 lag 暂停,整局卡住 —— 而这一族用例一条都没红。
+#
+# 所以这两条断言**不许引用 LED_GLOW_TARGET**,只认实测锚点的字面量。
+RECOGNISABLE_GLOW = 35_000.0    # 09-22 17:35 实测:这个读数下,压在亮灯上的白子仍能认出
+UNRECOGNISABLE_GLOW = 60_000.0  # 09-24 实测:环调到这个读数,白子 16 分钟没认出来(认出时 W0.45 擦线)
+FIELD_BARE_LAMP = 79_056.0      # 09-24 10:43:32 裸灯实测读数(满亮度)
+
+
+def test_the_target_is_not_above_a_glow_white_stones_are_known_to_survive():
+    """白子透光:灯比这个读数亮,它就不是一颗白子而是一团光。
+
+    环只能在**裸灯**上测(子压上去之后 led_glow 读的就不是灯了),所以每颗子只有一次
+    调整机会 —— 目标定高了不会在下一帧自我纠正,而是整局卡死。宁可偏暗。
+    """
+    assert LED_GLOW_TARGET <= RECOGNISABLE_GLOW
+    assert LED_GLOW_TARGET < UNRECOGNISABLE_GLOW
+
+
+def test_the_brightest_reading_seen_on_the_board_lands_in_one_step_at_a_survivable_glow():
+    """79056 是 09-24 那局裸灯的实测读数,一次读数就要压到白子活得下来的亮度。
+
+    断言落在**预测读数**上而不是 scale 上:scale 是手段,读数才是白子认不认得出的那个量。
+    glow ~ brightness²,所以新读数 = 旧读数 × scale²。
+    """
+    led = _run(1.0, FIELD_BARE_LAMP)
+    assert led.set_calls, "这个读数必须触发一次调整,不能落进死区"
+    predicted = FIELD_BARE_LAMP * led.guidance_scale**2
+    assert predicted <= RECOGNISABLE_GLOW
+    # 也不能暗到人看不见灯
+    assert led.guidance_scale > MIN_GUIDANCE_SCALE * 2

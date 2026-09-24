@@ -3657,9 +3657,19 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
 # bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
 # full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
 # Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
-# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
-# provisional, to be tuned from the "LED glow" log lines.
-LED_GLOW_TARGET = 60000.0
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not.
+#
+# 2026-09-24 上板实测把 60000 这个暂定值否掉了,并给锚点表添了中间的一个点。Fan 下第一手白子时
+# 裸灯读数 79056 ⇒ 环按设计把亮度压到 0.87,也就是把读数带到**正好等于目标 60000** —— 白子在这个
+# 读数下**认不出来**:从 10:43:32 到 10:59:01 整整 16 分钟没进检测板,`caught_up` 一直为假、
+# 编排器一直挂着 lag 暂停,最后勉强认出时 `W0.45` 也只是擦着阈值过。
+# ⇒ **60000 不是安全值,它是一个新的失败锚点**(35k 能认 / 60k 认不出 / 70k 认不出)。
+# 取 35000:唯一被实测证明能认出来的那个读数。79056 × (√(35000/79056))² = 34962,一次读数就到位
+# (步长下限 0.5 不会截断 0.665),而 0.665 远高于 MIN_GUIDANCE_SCALE=0.08,灯对人依然清楚可见。
+#
+# ⚠️ 这个环**只能在裸灯上测**(子压上去之后 led_glow 读的就不是灯了),所以每颗子只有一次机会调整;
+# 目标定高了不会在下一帧自我纠正,而是整局卡住。宁可偏暗。
+LED_GLOW_TARGET = 35000.0
 LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
 LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
 # A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);

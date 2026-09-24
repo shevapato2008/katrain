@@ -1,6 +1,7 @@
 """Server side of the ambient LED brightness loop (2026-09-22): one led_glow reading per lamp steers the guidance
 brightness toward LED_GLOW_TARGET by the square root of the ratio (the glow grows ~brightness^2)."""
 
+import json
 import logging
 from types import SimpleNamespace
 
@@ -115,6 +116,10 @@ def test_the_brightest_reading_seen_on_the_board_lands_in_one_step_at_a_survivab
 
     断言落在**预测读数**上而不是 scale 上:scale 是手段,读数才是白子认不认得出的那个量。
     glow ~ brightness²,所以新读数 = 旧读数 × scale²。
+
+    ⚠️ 已知未验证的前提:这里的「预测」用的是实现自己假设的平方律,现场**还没有**调整后的
+    复测读数做第二个锚点。真实指数若小于 2,实际读数比这里预测的更暗(闸偏保守);若大于 2,
+    这条闸会偏乐观。下次上板时补一条「调整后裸灯读数」的实测值,把 predicted 换成字面量。
     """
     led = _run(1.0, FIELD_BARE_LAMP)
     assert led.set_calls, "这个读数必须触发一次调整,不能落进死区"
@@ -155,11 +160,24 @@ def test_a_reading_inside_the_deadband_is_what_latches_it():
 
 
 def test_a_lamp_lost_in_specular_glare_brightens_and_unlatches():
+    # 期望值写**字面量**(0.6 × 1.25)而不是 import LED_GLARE_BRIGHTEN_STEP 再乘一遍 ——
+    # 那样写期望值和被测值同源,把常量改错也照绿,正是 LED_GLOW_TARGET 那个洞的翻版。
     for reason in ("low_signal", "no_blob"):
         app = _app(0.6, settled=True)
         _read(app, 0.0, ok=False, reason=reason)
-        assert app.state.led.guidance_scale == pytest.approx(0.6 * LED_GLARE_BRIGHTEN_STEP), reason
+        assert app.state.led.guidance_scale == pytest.approx(0.75), reason
         assert app.state.led_glow_settled is False, reason
+
+
+def test_a_glare_brighten_cannot_overshoot_past_what_white_stones_survive():
+    """反光调亮是在「灯根本看不见」时盲调的一步,一步都不许把读数推过白子认不出的那条线。
+
+    最坏情形:已经收敛在目标上限(读数 = RECOGNISABLE_GLOW)时撞上反光,再抬一步。
+    glow ~ brightness² ⇒ 抬 k 倍之后读数 = 读数 × k²。两个界都是现场锚点的字面量,
+    所以把 1.25 改成 1.4 这条会红 —— 上一条测试(字面量期望值)挡不住这个方向。
+    """
+    worst_case_glow = RECOGNISABLE_GLOW * LED_GLARE_BRIGHTEN_STEP**2
+    assert worst_case_glow < UNRECOGNISABLE_GLOW, f"一步反光调亮会把读数推到 {worst_case_glow:.0f}"
 
 
 def test_a_failure_that_is_not_glare_changes_nothing_and_keeps_the_latch():
@@ -177,8 +195,10 @@ def test_after_a_glare_brighten_the_next_clean_reading_pulls_it_back_down():
     _read(app, 0.0, ok=False, reason="low_signal")
     brightened = app.state.led.guidance_scale
     assert brightened > 0.6
-    # 下一盏灯不在反光上:读数按 glow ~ brightness² 偏亮,环该把它压回去。
-    _read(app, LED_GLOW_TARGET * (brightened / 0.6) ** 2)
+    # 下一盏灯不在反光上,读数明显偏亮 ⇒ 环该把亮度压回去。
+    # 这里**不**拿实现自己的平方律去推算「下一次读数应该是多少」:那样构造出来的输入和被测的
+    # 算法同源,平方律错了测试也照样自洽。只用「比目标亮得多」这一条与平方律无关的性质。
+    _read(app, LED_GLOW_TARGET * 3)
     assert app.state.led.guidance_scale < brightened
 
 
@@ -193,6 +213,25 @@ def test_the_learned_brightness_survives_a_restart(tmp_path):
     fresh = _app(1.0, hardware_vision_dir=str(tmp_path))  # 重启:LedService 又是 1.0
     _load_guidance_scale(fresh, logging.getLogger("t"))
     assert fresh.state.led.guidance_scale == pytest.approx(learned)
+
+
+def test_settling_without_a_scale_change_still_writes_the_latch(tmp_path):
+    """落盘条件里那半个 `or now_settled != settled` 专为这一格存在。
+
+    读数正中死区时 scale 一点不动,但「已经调好了」这件事必须活过重启 —— 否则每次开机都要
+    重新收敛一遍,而「重新收敛」的代价是让用户先卡一手(09-24 那次故障的成本正是这个)。
+    写回 `if changed:` 这一条就会红;顺带把落盘的 JSON 字段和取值一起钉死。
+    """
+    app = _app(0.6, hardware_vision_dir=str(tmp_path))
+    _read(app, LED_GLOW_TARGET)  # ratio = 1.0,正中死区
+    assert app.state.led.set_calls == []  # 亮度确实没动
+    saved = json.loads((tmp_path / "led" / "guidance.json").read_text(encoding="utf-8"))
+    assert saved == {"guidance_scale": pytest.approx(0.6), "settled": True}
+
+    fresh = _app(1.0, hardware_vision_dir=str(tmp_path))  # 重启
+    _load_guidance_scale(fresh, logging.getLogger("t"))
+    assert fresh.state.led_glow_settled is True  # 不必再收敛一遍
+    assert fresh.state.led.guidance_scale == pytest.approx(0.6)
 
 
 def test_a_corrupt_state_file_does_not_block_startup(tmp_path):

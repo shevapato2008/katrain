@@ -493,10 +493,15 @@ class InProcessAdapter:
             # board when it was taken), this is the exit: the real stone lands, the game moves on, and
             # the next capture replaces the reference.
             self._ref_released |= exhausted
+            # 放行不许静默(升到 warning):预算耗尽 = 参考帧说「这里没变」而我们仍然放它进盘面。
+            # 两种可能都要看得见 —— 参考帧矩阵被毒化(真有子),或一个我们挡不住的假阳性。
             er, ec = np.nonzero(exhausted)
-            logger.info(
-                "refcheck releases %s: the detector kept disagreeing",
-                ", ".join(f"({r},{c})" for r, c in zip(er.tolist(), ec.tolist())),
+            logger.warning(
+                "refcheck releases %s after the hold budget ran out: the detector kept disagreeing",
+                ", ".join(
+                    f"({r},{c}) board={board[r][c]} ref={reference.board[r][c]}"
+                    for r, c in zip(er.tolist(), ec.tolist())
+                ),
             )
             disagree &= ~exhausted
             self._ref_vetoing = bool(disagree.any())
@@ -586,6 +591,18 @@ class InProcessAdapter:
         cells carry over -- a refresh must not give a poisoned reference a new life (design §4.1)."""
         self._reference, kept = self._reference.refreshed(gray, REFERENCE_ZNCC, REFERENCE_ANCHOR_ZNCC)
         self._ref_taken_at = now
+        # 被**重新验证过**的格子(refreshed 里的 take:同时过了当前样本与 anchor 两道门槛)预算清零。
+        #
+        # Fan 2026-09-24 的推理:参考帧每分钟重验一次 ⇒ 证据是持续保鲜的 ⇒「压制 N 帧后放弃」
+        # 就没有道理。原先 REFERENCE_HOLD_SUPPRESS=10 帧(~4 秒)对**静态反光**是反着的:反光越是
+        # 一动不动、越是长时间存在,保护就越快到期 —— 而「持续不变」恰恰是判它为假的最强证据。
+        # 实测 (18,12) 的 held 一路爬到 7/10,再长一点就会被放行。
+        #
+        # ⚠️ 代价(明写,别让下一个人以为是纯赚):「参考帧矩阵被毒化」那一种 —— 拍参考那一刻某格
+        # 其实压着一颗子,而检测器与对局记录同时漏了它 —— 原先正是靠这个超时逃出去的,现在没有了。
+        # 取舍依据:09-24 实测反光多次、毒化 0 次。残余风险不静默,见下面 _release_warned 那条日志。
+        revalidated = ~kept
+        self._ref_hold[revalidated] = 0
         blind = ~self._reference.usable.reshape(kept.shape)  # neither frame could ever compare these
         rows, cols = np.nonzero(kept & ~blind)
         logger.info(

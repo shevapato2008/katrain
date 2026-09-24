@@ -410,7 +410,8 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     adapter._expected_np = board
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     first = adapter._reference
-    adapter._ref_hold[2][2] = 7
+    adapter._ref_hold[2][2] = 7  # 这一格刷新时会被重新验证
+    adapter._ref_hold[4][4] = 5  # 这一格变了(落了子),刷新验不过,只能保留旧样本
     adapter._ref_released[3][3] = True
     later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
 
@@ -423,7 +424,12 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
         adapter._maybe_capture_reference(board, board, later)
     assert adapter._reference is not first
     assert adapter._reference.similarity(later)[4][4] < REFERENCE_ZNCC  # the unrecognised stone was not absorbed
-    assert adapter._ref_hold[2][2] == 7 and adapter._ref_released[3][3]  # a refresh is not a new reference
+    # Fan 2026-09-24:参考帧每分钟重验一次 ⇒ 证据持续保鲜 ⇒ 压制预算不该按帧数到期。
+    # 被**重新验证过**的格子清零(它的主张刚刚又被证明了一次);**验不过只能沿用旧样本**的格子
+    # 保留预算 —— 那正是「参考帧可能被毒化」的那一格,它的逃生口必须留着。
+    assert adapter._ref_hold[2][2] == 0, "重验过的格子预算没清零:静态反光会把保护耗尽"
+    assert adapter._ref_hold[4][4] == 5, "没重验的格子不该清零 —— 毒化参考帧的逃生口"
+    assert adapter._ref_released[3][3]  # 已放行的格子不会因刷新而回收
     assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
 
     second = adapter._reference

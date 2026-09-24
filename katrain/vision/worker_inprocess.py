@@ -127,40 +127,45 @@ def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col
 CLIPPED_LEVEL = 250  # same "this pixel is blown out" level check_frame_exposure uses
 
 
-def reference_clipped_fraction(ref: np.ndarray, geometry, row: int, col: int) -> float:
-    """Fraction of the lamp's own ROI that was **already saturated before the lamp came on**.
+def saturated_in_both_fraction(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int) -> float:
+    """Fraction of the lamp's own ROI that is pinned at the top of the range in **both** frames.
 
-    This is the glare discriminator: specular reflection pins those pixels at white in *both* frames, so
-    lit-minus-dark is 0 and the lamp stays invisible however bright it gets.
+    This is the glare discriminator, and the conjunction is the whole point: specular reflection means
+    those pixels are already at white before the lamp lights *and still at white after*, so lit-minus-dark
+    is 0 and the lamp stays invisible however bright it gets. Either frame on its own is only a projection
+    of that claim, and each projection lets a different impostor through:
 
-    What it separates, which `reason` cannot (every one of these reads back as `low_signal`): a hand
-    resting over the lamp leaves the reference dark; a lamp that never lit leaves it at ambient; a stale
-    geometry lock points this ROI at ordinary board; **a stone already sitting on the lamp while the
-    stable board still says EMPTY** leaves it at stone, not white — that last one matters most, because
-    it is the state the 09-24 freeze was stuck in, and calling it glare would brighten straight into it.
+    - **Reference alone** admits "there was a highlight here, and now something covers it". `low_signal`
+      only says ``lit - ref < 15`` everywhere in the ROI, so ``ref=255, lit=0`` qualifies. On a lacquered
+      board under a ceiling light the points that throw highlights are the same points stones land on —
+      so a black stone placed on a highlight would read as glare and brighten, which is the positive
+      feedback into the 09-24 freeze this discriminator exists to prevent.
+    - **Lit frame alone** admits the camera's exposure drifting between the two frames. That window is
+      narrow (lit saturated forces ``ref >= 240``, so only a <=15-grey drift stays on the `low_signal`
+      path at all) but it is not empty, and brightening does not fix exposure drift either.
 
-    Reference, not lit frame: the two only disagree when the lit frame is saturated and the reference is
-    not — and that cannot be glare, because the difference would then be large and the lamp would have
-    been found. What it would be is the camera's exposure drifting between the two frames, which
-    brightening does not fix. (A lamp bright enough to clip its own pixels is not the case being ruled
-    out here: it is found, so `_measure_pending_glow` never asks this question about it.)
+    What it separates, which `reason` cannot (every one of these reads back as `low_signal`, because the
+    blue channel carries no lamp signal by construction): a hand over the lamp sits at mid-grey in both
+    frames; a lamp that never lit leaves both at ambient; a stale geometry lock points this ROI at
+    ordinary board. Only a real highlight is at white in both.
     """
     x0, y0, x1, y1, (rx, ry, radius) = _glow_roi(ref, geometry, row, col)
     # 每 4 个像素取一个 —— check_frame_exposure 判整帧过曝用的就是这个口径。判据问的是「有没有
     # 一片盖得住灯的高光」(阈值 2% 的 ROI,灯斑本身就有 450-2500px),降采样 16 倍仍然远大于 1 格,
     # 而全分辨率下这个探针比它旁边那个三通道测量还贵。
     step = 4
-    crop = ref[y0:y1:step, x0:x1:step]
-    if crop.size == 0:
+    dark_crop, lit_crop = ref[y0:y1:step, x0:x1:step], frame[y0:y1:step, x0:x1:step]
+    if dark_crop.size == 0 or dark_crop.shape != lit_crop.shape:
         return 0.0
-    keep = np.zeros(crop.shape[:2], np.uint8)
+    keep = np.zeros(dark_crop.shape[:2], np.uint8)
     cv2.circle(keep, (int(round(rx / step)), int(round(ry / step))), max(1, int(round(radius / step))), 1, -1)
     inside = keep.astype(bool)
     if not inside.any():
         return 0.0
     # max across BGR, not grey: a highlight that has pinned any one channel already destroys the
     # lit-minus-dark signal on that channel, and the lamp only ever shows on one channel (green/red).
-    return float((crop.max(axis=2)[inside] >= CLIPPED_LEVEL).mean())
+    both = (dark_crop.max(axis=2) >= CLIPPED_LEVEL) & (lit_crop.max(axis=2) >= CLIPPED_LEVEL)
+    return float(both[inside].mean())
 
 
 class _FrameTrace:
@@ -579,7 +584,7 @@ class InProcessAdapter:
             if stable is not None and int(stable[row][col]) != EMPTY:
                 continue
             result = measure_led_glow(ref, frame, geometry, row, col)
-            clipped = 0.0 if result.ok else reference_clipped_fraction(ref, geometry, row, col)
+            clipped = 0.0 if result.ok else saturated_in_both_fraction(ref, frame, geometry, row, col)
             readings.append((row, col, result, clipped))
         if not readings:
             return

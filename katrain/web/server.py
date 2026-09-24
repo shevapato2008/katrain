@@ -3685,6 +3685,8 @@ LED_GLOW_MAX_AREA = 2500
 # 没有这条,锁定之后**只有调亮一条出路**:天黑了、或者上次落盘的是个坏值,环永远回不来
 # (落盘的坏值尤其致命 —— 它活过每一次重启,而仓里没有任何接口/按钮/命令行能清掉那个文件)。
 LED_GLOW_RELATCH = (0.5, 2.0)
+# 它和死区 (0.8, 1.25) 之间的 [0.5,0.8) ∪ (1.25,2.0] 是**有意留的空档**:锁定之后落在这里的读数
+# 既不调整也不解锁,正是 Fan 那句「如非必要就不再变化」—— 不是漏了一段。
 
 # 反光判据:灯亮之前那一帧里,这盏灯自己的 ROI 有多大比例**已经**是死白的(worker 量,见
 # reference_clipped_fraction)。ROI 半径 1.5 格距(1080p 上 ≈75px ⇒ 面积 ≈17700px),而灯斑
@@ -3692,8 +3694,12 @@ LED_GLOW_RELATCH = (0.5, 2.0)
 # ⚠️ 暂定值 —— 现场还没有一次带反光的实测读数。事件里每次都带 clipped 出来,下次上板拿真数校准。
 # 误判的代价被下面那条「只在已锁定时抬,且抬完就解锁」夹死在一步之内,一步是过闸验证过安全的。
 LED_GLARE_CLIPPED_FRAC = 0.02
-# 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以走「小步 + 下一盏灯复测」而不是一次拉满:
-# 1.25 正好是死区上沿的倒数 —— 抬一步之后,一次干净读数就能判断够不够。
+# 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以只抬一小步。
+# ⚠️ 别照着「小步 + 下一盏灯复测」去理解它 —— **没有复测**:`_glow_pending` 在 worker 里一次消费干净
+# (`cells, self._glow_pending = self._glow_pending, set()`),那盏落在反光上的灯不会被再测一次;
+# 而「下一盏灯」如果干净,它的读数只回答「亮度对不对」,不回答「盖过反光了没有」。
+# 所以这一步是**一次性的盲抬**,抬完就解锁让干净读数把亮度收回目标 —— 不是一个逐步逼近的过程。
+# (下面 `glare and settled` 那条闸堵死的正是「连续调亮」,而那条路本来就走不通。)
 LED_GLARE_BRIGHTEN_STEP = 1.25
 # 但**光有步长上限不够**:调亮是在「灯根本看不见」时盲抬的一步,它必须按**收敛时那次读数**算,
 # 不能按目标值算。收敛态并不停在 35000 —— 死区是 ratio∈[0.8,1.25],读数可以停在 43750;
@@ -3789,7 +3795,10 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
     score = float(data.get("score") or 0.0)
     settled = bool(getattr(app.state, "led_glow_settled", False))
     usable = bool(data.get("ok")) and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA
-    glare = not data.get("ok") and float(data.get("clipped") or 0.0) >= LED_GLARE_CLIPPED_FRAC
+    # `score <= 0` 把 `ambiguous_blobs` 排除在反光之外 —— 它是唯一带非零 score 的失败,也就是
+    # **确实看见了光、只是分不清是哪一团**。那条路上 peak>=PEAK_MIN_ROI,「两帧都饱和」的不等式
+    # 不成立,判据在它上面失去意义。判在 score 上而不是 reason 字符串上:reason 在失败时是常量。
+    glare = not data.get("ok") and score <= 0 and float(data.get("clipped") or 0.0) >= LED_GLARE_CLIPPED_FRAC
     ratio = LED_GLOW_TARGET / score if score > 0 else 0.0
     after, now_settled, why = before, settled, "no-op"
 

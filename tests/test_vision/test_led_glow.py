@@ -16,7 +16,7 @@ from katrain.vision.worker_inprocess import (
     GLOW_SETTLE_FRAMES,
     InProcessAdapter,
     measure_led_glow,
-    reference_clipped_fraction,
+    saturated_in_both_fraction,
 )
 
 H = W = 1100
@@ -125,18 +125,22 @@ def _glare_reference(row, col, radius=40):
     return ref
 
 
-def test_the_glare_probe_measures_this_lamps_own_roi():
-    """判据量的是**这盏灯自己那个 ROI**里死白像素的比例。
+def test_the_glare_probe_needs_both_frames_pinned_at_white():
+    """判据是**合取**:单量任何一帧都只是这个物理主张的一个投影,各自放进一类冒充者。
 
-    (「量的是参考帧不是亮帧」这条不在这里验 —— 这个函数只收得到一帧,选哪一帧是调用点的事,
-    见下面那条 call-site 用例。)"""
-    assert reference_clipped_fraction(_glare_reference(5, 7), _geometry(), 5, 7) > 0.02
-    assert reference_clipped_fraction(DARK, _geometry(), 5, 7) == 0.0
-    # 手挡在灯上:参考帧那儿是手,不是死白 —— 这正是 reason 分不开、而这个数分得开的那一类
+    `low_signal` 只保证 ROI 内 `lit - ref < 15`,所以 `ref=255, lit=0` 完全合法 ——
+    只量参考帧,「这里本来有高光、现在被黑子盖住了」就会被判成反光去调亮,而漆面棋盘在顶灯下,
+    会出高光的点和子会落的点是同一批点。只量亮帧则放进相机在两帧之间的曝光漂移。
+    """
+    glare, dark = _glare_reference(5, 7), DARK
     hand = np.full((H, W, 3), 90, np.uint8)
-    assert reference_clipped_fraction(hand, _geometry(), 5, 7) == 0.0
+    assert saturated_in_both_fraction(glare, glare, _geometry(), 5, 7) > 0.02  # 真反光:两帧都白
+    assert saturated_in_both_fraction(glare, dark, _geometry(), 5, 7) == 0.0  # ★高光被子盖住
+    assert saturated_in_both_fraction(dark, glare, _geometry(), 5, 7) == 0.0  # 曝光漂移/灯自己打饱和
+    assert saturated_in_both_fraction(dark, dark, _geometry(), 5, 7) == 0.0  # 灯没亮
+    assert saturated_in_both_fraction(hand, hand, _geometry(), 5, 7) == 0.0  # 手挡住
     # 别处的反光不算这个点的
-    assert reference_clipped_fraction(_glare_reference(12, 3), _geometry(), 5, 7) == 0.0
+    assert saturated_in_both_fraction(_glare_reference(12, 3), _glare_reference(12, 3), _geometry(), 5, 7) == 0.0
 
 
 def test_a_located_lamp_outranks_a_failed_channel_that_happens_to_score_higher():
@@ -187,7 +191,8 @@ def test_a_lamp_hidden_by_glare_carries_the_evidence_on_the_event():
     adapter._last_raw = _glare_reference(5, 7)  # 灯亮之前这里就已经是一片死白
     adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[5, 7]]}))
     adapter._drain_commands()
-    adapter._measure_pending_glow(_lamp(5, 7, 120))  # 灯亮了,但反光已经把那些像素钉在 255
+    # 亮帧里高光**还在** —— 这正是反光的定义:灯加的光落在已经钉在 255 的像素上,什么也加不了
+    adapter._measure_pending_glow(np.maximum(_glare_reference(5, 7), _lamp(5, 7, 120)))
     [event] = _glow_events(adapter)
     assert not event["ok"], "反光下灯本来就测不到 —— 测得到就说明这个夹具没造出反光"
     assert event["clipped"] > 0.02
@@ -237,10 +242,18 @@ def test_the_real_producer_drives_the_real_consumer_through_the_event(caplog):
         return app.state.led.guidance_scale, app.state.led_glow_settled
 
     # 灯被一片真的镜面反光吃掉 -> 生产者算出的 clipped 必须真的让消费者调亮并解锁
-    scale, settled = brightness_after(one_event(_glare_reference(5, 7), _lamp(5, 7, 120)))
+    lit_under_glare = np.maximum(_glare_reference(5, 7), _lamp(5, 7, 120))  # 高光在两帧都在
+    scale, settled = brightness_after(one_event(_glare_reference(5, 7), lit_under_glare))
     assert scale > 0.6 and settled is False
 
-    # 手挡在灯上(参考帧那儿是手,不是死白)-> 同样测不到灯,但**不许**调亮
+    # 手挡在灯上(两帧都是中灰)-> 同样测不到灯,但**不许**调亮
     hand = np.full((H, W, 3), 90, np.uint8)
     scale, settled = brightness_after(one_event(hand, hand))
+    assert scale == 0.6 and settled is True
+
+    # ★这条是判据从「只量参考帧」改成合取的原因:参考帧里那点有高光,测量帧被黑子盖住了。
+    # 只量参考帧的版本会在这里调亮 —— 而这正是 09-24 那个「子已经在灯上、板还没跟上」的状态,
+    # 往里调亮就是正反馈。整条链(生产者 -> 事件 -> 消费者)都不许动。
+    covered = np.zeros((H, W, 3), np.uint8)
+    scale, settled = brightness_after(one_event(_glare_reference(5, 7), covered))
     assert scale == 0.6 and settled is True

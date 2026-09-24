@@ -107,9 +107,9 @@ export function usePhysicalBaipu(opts: PhysicalBaipuOptions): PhysicalBaipuState
   const renderLeds = useCallback(() => {
     const pts = blinkOnRef.current ? [...steadyRef.current, ...blinkRef.current] : steadyRef.current;
     const key = JSON.stringify(pts);
-    if (key === lastLedKeyRef.current) return;
+    if (key === lastLedKeyRef.current) return Promise.resolve();
     lastLedKeyRef.current = key;
-    (pts.length ? LedAPI.points(pts) : LedAPI.clear())
+    return (pts.length ? LedAPI.points(pts) : LedAPI.clear())
       .then((r) => setLedOk(r.connected))
       .catch(() => setLedOk(false));
   }, []);
@@ -122,7 +122,7 @@ export function usePhysicalBaipu(opts: PhysicalBaipuOptions): PhysicalBaipuState
       blinkRef.current = blink;
       blinkOnRef.current = true; // 新的一组闪烁点先亮出来,再交给定时器翻转
     }
-    renderLeds();
+    return renderLeds();
   }, [renderLeds]);
 
   useEffect(() => {
@@ -144,7 +144,7 @@ export function usePhysicalBaipu(opts: PhysicalBaipuOptions): PhysicalBaipuState
       case 'expectedBoard': await API.visionExpectedBoard(cmd.board); break;
       case 'armMoves': await API.visionMoveDetection(cmd.armed); break;
       case 'pause': await API.visionPause(cmd.paused); break;
-      case 'leds': setLeds(cmd.steady, cmd.blink); break;
+      case 'leds': await setLeds(cmd.steady, cmd.blink); break;
       case 'relightLater':
         window.clearTimeout(relightTimerRef.current);
         relightTimerRef.current = window.setTimeout(() => dispatchRef.current({ type: 'RELIGHT' }), cmd.ms);

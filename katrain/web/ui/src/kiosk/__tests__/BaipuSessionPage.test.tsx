@@ -209,6 +209,8 @@ describe('屏 17 摆谱 · 摄像头态(Fan 2026-09-23:不用每步按确认)', 
     expect(screen.getByTestId('baipu-pcard')).toHaveTextContent('摄像头认到就自动下一手');
     expect(screen.getByTestId('baipu-led-fold')).toHaveTextContent('摄像头在看');
     expect(phys.opts).toMatchObject({ enabled: true, k: 0, paused: false, next: { row: 3, col: 15, color: 1 } });
+    expect(document.querySelector('[data-stone="b"][data-at="Q16"]')).toBeInTheDocument();
+    expect(document.querySelector('.gob .pending-ring--b')).toBeInTheDocument();
   });
 
   it('摄像头认到 → 推进一手;撤回立刻生效、不弹框', async () => {
@@ -216,6 +218,8 @@ describe('屏 17 摆谱 · 摄像头态(Fan 2026-09-23:不用每步按确认)', 
     await screen.findByTestId('baipu-pcard');
     act(() => phys.opts!.onMatched());
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 2 / 2 手'));
+    expect(document.querySelector('[data-stone="w"][data-at="D4"]')).toBeInTheDocument();
+    expect(document.querySelector('.gob .pending-ring--w')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '撤回上一手' }));
     expect(screen.queryByTestId('baipu-undo-confirm')).toBeNull();
     await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 1 / 2 手'));

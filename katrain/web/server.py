@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import logging
 import os
 import time
@@ -632,6 +633,8 @@ async def _lifespan_board(app: FastAPI, log):
     vision_config = getattr(settings, "_vision_config", None)
     capture_config = getattr(settings, "_capture_config", None)
     hardware_vision_dir = getattr(settings, "_hardware_vision_dir", None)
+    # 引导亮度也落在这个目录下(`led/guidance.json`),所以 LED 那段要能读到它。
+    app.state.hardware_vision_dir = hardware_vision_dir
 
     # Initialise every optional camera-dependent surface before attempting to
     # acquire the device. A missing UVC device must leave the regular board
@@ -774,6 +777,9 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.led = led
         app.state.led_last_activity = time.monotonic()
         app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+        # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
+        # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
+        _load_guidance_scale(app, log)
         log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
@@ -3677,38 +3683,130 @@ LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these 
 LED_GLOW_MAX_AREA = 2500
 
 
+LED_GLARE_REASONS = ("low_signal", "no_blob")
+# 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以走「小步 + 下一盏灯复测」而不是一次拉满:
+# 1.25 正好是死区上沿的倒数 —— 抬一步之后,一次干净读数就能判断够不够。
+LED_GLARE_BRIGHTEN_STEP = 1.25
+
+
+def _guidance_state_path(app: FastAPI):
+    """引导亮度的落盘位置;没配 --hardware-vision-dir 就返回 None(不落盘,行为回到改动之前)。"""
+    root = getattr(app.state, "hardware_vision_dir", None)
+    return (Path(root).expanduser() / "led" / "guidance.json") if root else None
+
+
+def _load_guidance_scale(app: FastAPI, log) -> None:
+    """开机时把上次调好的引导亮度装回去。
+
+    **这一步是 2026-09-24 那次故障的正主。** `LedService.__init__` 把 `_guidance_scale` 置成 1.0,
+    而它从不落盘 ⇒ **每次重启引导灯都回到满亮度**。那天 10:22 重启之后,Fan 开局第一手 AI 落子,
+    灯以满亮度点亮、裸灯读数 79056,白子(透光)压上去就成了一团光,16 分钟没进检测板、整局卡死。
+    调亮度的环本身是好的,它只是每次重启都得从头再学一遍 —— 而「学」的代价是让用户先卡一手。
+    """
+    led = getattr(app.state, "led", None)
+    path = _guidance_state_path(app)
+    if led is None or path is None or not hasattr(led, "set_guidance_scale") or not path.exists():
+        return
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        scale = float(saved["guidance_scale"])
+        settled = bool(saved.get("settled", False))
+    except Exception as exc:  # 坏文件不该挡住开机:回落到默认亮度,像没有这个文件一样
+        log.warning("Ignoring unreadable LED guidance state at %s: %s", path, exc)
+        return
+    led.set_guidance_scale(scale)
+    app.state.led_glow_settled = settled
+    log.info("LED guidance brightness restored: %.2f (settled=%s) from %s", led.guidance_scale, settled, path)
+
+
+def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, log) -> None:
+    path = _guidance_state_path(app)
+    if path is None:
+        return
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # 先写临时文件再 os.replace:断电/进程被杀时,宁可读到上一次的值,也不能读到半截 JSON ——
+        # 半截 JSON 会走上面那条 except,悄悄回到满亮度,也就是把故障原样复现一遍。
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"guidance_scale": round(scale, 4), "settled": settled}), encoding="utf-8")
+        os.replace(tmp, path)
+    except Exception as exc:  # 落盘失败不该影响这一局:亮度已经在内存里生效了
+        log.warning("Could not persist LED guidance brightness to %s: %s", path, exc)
+
+
 def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    """一盏灯亮起时的一次读数 → 引导亮度(Fan 2026-09-24 定的四条规则)。
+
+    1. 收敛到目标后**锁定**,之后的正常读数不再动它(「如非必要就不再变化」)。
+    2. 亮度**落盘**,重启从它起步 —— 见 `_load_guidance_scale`。
+    3. 灯落在**镜面反光**上、相机读不出来(`low_signal`/`no_blob`)⇒ **调亮全局**。
+    4. 调亮的同时**解锁**,让后续干净读数把它收回来。
+
+    第 3 条为什么改全局而不是只对那一个点(Fan 的裁定):**已经调好的那个全局值,本身也只是
+    在未知条件下取的一次样** —— 系统没有记录第一次收敛时那盏灯底下有没有反光。把它当成可信基准、
+    把反光当例外,没有依据。每次读数地位平等,新读数就该改写全局。
+    第 4 条是第 3 条的必然推论:不解锁的话,一次反光就把全局调亮并**永久锁死**,之后所有位置的
+    白子都认不出来,而触发条件变成「上一手正好下在反光的地方」—— 比它要修的那个故障还难查。
+    """
     led = getattr(app.state, "led", None)
     if led is None or not hasattr(led, "set_guidance_scale"):
         return
     before = led.guidance_scale
-    score = float(data.get("score") or 0.0)
-    after = before
-    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
-        ratio = LED_GLOW_TARGET / score
-        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
-            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+    from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
 
+    score = float(data.get("score") or 0.0)
+    settled = bool(getattr(app.state, "led_glow_settled", False))
+    usable = bool(data.get("ok")) and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA
+    glare = not data.get("ok") and str(data.get("reason") or "") in LED_GLARE_REASONS
+    after, now_settled, why = before, settled, "no-op"
+
+    if glare:
+        # 规则 3+4:这盏灯落在镜面反光上,相机看不见它 ⇒ 调亮**全局**并**解锁**。
+        after = min(1.0, before * LED_GLARE_BRIGHTEN_STEP)
+        now_settled = False
+        why = "glare"
+    elif not usable:
+        why = "unusable"  # 手挡住了 / 灯没亮 / 两团光分不清:不是反光,什么都不做
+    elif settled:
+        why = "settled"  # 规则 1:调好了就别再动它
+    else:
+        ratio = LED_GLOW_TARGET / score
+        if LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            now_settled = True  # 落进死区 = 收敛完成,从此锁定
+            why = "converged"
+        else:
             # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
             # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
             # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
             # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
             step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
             after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
+            why = "converging"
     log.info(
-        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        "LED glow at (%s,%s): ok=%s reason=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f "
+        "(%s, target %.0f, settled %s -> %s)",
         data.get("row"),
         data.get("col"),
         data.get("ok"),
+        data.get("reason") or "-",
         score,
         data.get("peak"),
         data.get("area"),
         before,
         after,
+        why,
         LED_GLOW_TARGET,
+        settled,
+        now_settled,
     )
-    if abs(after - before) >= 0.02:
+    changed = abs(after - before) >= 0.02
+    if changed:
         led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
+    if changed or now_settled != settled:
+        app.state.led_glow_settled = now_settled
+        # 落盘的是**生效后**的值(set_guidance_scale 会把它夹进 [MIN,1]),不是我们算出来的那个 ——
+        # 存一个从没真正生效过的数字,下次开机就从它起步,等于把一个没验证过的亮度当成学习结果。
+        _save_guidance_scale(app, led.guidance_scale, now_settled, log)
 
 
 async def _vision_event_pump(app: FastAPI):

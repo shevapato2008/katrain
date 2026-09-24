@@ -538,6 +538,11 @@ class InProcessAdapter:
                         "score": round(float(result.score), 1),
                         "peak": round(float(result.peak), 1),
                         "area": int(result.area),
+                        # 失败的**理由**要带出去,不能只报一个 False:服务端要靠它把「这盏灯落在镜面反光上、
+                        # 相机根本看不见它」和「手挡住了 / 灯没亮 / 两团光分不清」区分开 —— 只有前者该调亮。
+                        # 反光为什么读成「没信号」:这个测量是亮帧减暗帧,而镜面反光让那个像素**两帧都已饱和**,
+                        # 加了灯光也不变 ⇒ delta≈0 ⇒ low_signal。
+                        "reason": str(getattr(result, "reason", "") or ""),
                     },
                 }
             )

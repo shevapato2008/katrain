@@ -7,7 +7,12 @@ from types import SimpleNamespace
 import pytest
 
 from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
-from katrain.web.server import LED_GLOW_TARGET, _adjust_led_brightness
+from katrain.web.server import (
+    LED_GLARE_BRIGHTEN_STEP,
+    LED_GLOW_TARGET,
+    _adjust_led_brightness,
+    _load_guidance_scale,
+)
 
 
 class _Led:
@@ -20,12 +25,24 @@ class _Led:
         self.guidance_scale = scale
 
 
-def _run(scale, score, ok=True, area=450):
-    led = _Led(scale)
-    app = SimpleNamespace(state=SimpleNamespace(led=led))
-    reading = {"row": 15, "col": 15, "ok": ok, "score": score, "area": area}
+def _app(scale=1.0, settled=False, hardware_vision_dir=None):
+    """一个跨多次读数保留状态的 app —— 锁定位和落盘都挂在 app.state 上,`_run` 那种
+    每次新建的写法看不见它们(旧用例正因如此对本文件新增的三条规则完全免疫)。"""
+    return SimpleNamespace(
+        state=SimpleNamespace(
+            led=_Led(scale), led_glow_settled=settled, hardware_vision_dir=hardware_vision_dir
+        )
+    )
+
+
+def _read(app, score, ok=True, area=450, reason="", row=15, col=15):
+    reading = {"row": row, "col": col, "ok": ok, "score": score, "area": area, "reason": reason}
     _adjust_led_brightness(app, reading, logging.getLogger("t"))
-    return led
+    return app.state.led
+
+
+def _run(scale, score, ok=True, area=450):
+    return _read(_app(scale), score, ok=ok, area=area)
 
 
 def test_a_glow_four_times_the_target_halves_the_brightness():
@@ -105,3 +122,89 @@ def test_the_brightest_reading_seen_on_the_board_lands_in_one_step_at_a_survivab
     assert predicted <= RECOGNISABLE_GLOW
     # 也不能暗到人看不见灯
     assert led.guidance_scale > MIN_GUIDANCE_SCALE * 2
+
+
+# ── Fan 2026-09-24 定的四条规则 ────────────────────────────────────────────────
+#
+# 现场:重启把引导亮度重置回满亮度 1.0(`_guidance_scale` 从不落盘),开局第一手 AI 落子的灯
+# 以满亮度点亮,裸灯读数 79056;白子透光,压上去就是一团光,16 分钟没进检测板、整局卡死。
+#
+#   1 收敛到目标后锁定,正常读数不再动它   2 亮度落盘,重启从它起步
+#   3 灯落在镜面反光上、相机读不出来 ⇒ 调亮全局   4 调亮同时解锁,让干净读数收回来
+#
+# 规则 3 为什么改全局而不是只对那一个点(Fan 的裁定):已经调好的那个全局值本身也只是在未知条件下
+# 取的一次样 —— 没人记录第一次收敛时那盏灯底下有没有反光,所以它没有当基准的资格。
+# 规则 4 是规则 3 的必然推论:不解锁则一次反光永久锁死高亮度,之后所有位置的白子都认不出来。
+
+
+def test_once_converged_a_normal_reading_no_longer_moves_the_brightness():
+    app = _app(0.6, settled=True)
+    _read(app, 4 * LED_GLOW_TARGET)  # 偏亮到本该调暗的程度
+    assert app.state.led.set_calls == []
+    _read(app, LED_GLOW_TARGET / 4)  # 偏暗到本该调亮的程度
+    assert app.state.led.set_calls == []
+    assert app.state.led_glow_settled is True
+
+
+def test_a_reading_inside_the_deadband_is_what_latches_it():
+    app = _app(0.6)
+    assert app.state.led_glow_settled is False
+    _read(app, LED_GLOW_TARGET)  # 正中目标 = 死区内
+    assert app.state.led_glow_settled is True
+    assert app.state.led.set_calls == []  # 落进死区本来就不该动
+
+
+def test_a_lamp_lost_in_specular_glare_brightens_and_unlatches():
+    for reason in ("low_signal", "no_blob"):
+        app = _app(0.6, settled=True)
+        _read(app, 0.0, ok=False, reason=reason)
+        assert app.state.led.guidance_scale == pytest.approx(0.6 * LED_GLARE_BRIGHTEN_STEP), reason
+        assert app.state.led_glow_settled is False, reason
+
+
+def test_a_failure_that_is_not_glare_changes_nothing_and_keeps_the_latch():
+    # 手挡住了 / 两团光分不清:不是「灯被反光吃掉了」,不该据此调亮。
+    for reason in ("ambiguous_blobs", "shape_mismatch", ""):
+        app = _app(0.6, settled=True)
+        _read(app, 0.0, ok=False, reason=reason)
+        assert app.state.led.set_calls == [], reason
+        assert app.state.led_glow_settled is True, reason
+
+
+def test_after_a_glare_brighten_the_next_clean_reading_pulls_it_back_down():
+    """规则 4 的要害:反光调亮之后必须能收回来,否则一次反光就把整盘白子毁掉。"""
+    app = _app(0.6, settled=True)
+    _read(app, 0.0, ok=False, reason="low_signal")
+    brightened = app.state.led.guidance_scale
+    assert brightened > 0.6
+    # 下一盏灯不在反光上:读数按 glow ~ brightness² 偏亮,环该把它压回去。
+    _read(app, LED_GLOW_TARGET * (brightened / 0.6) ** 2)
+    assert app.state.led.guidance_scale < brightened
+
+
+def test_the_learned_brightness_survives_a_restart(tmp_path):
+    """规则 2 —— 这一条直接对着 09-24 那次故障:重启回满亮度,用户就要先卡一手。"""
+    app = _app(1.0, hardware_vision_dir=str(tmp_path))
+    _read(app, 4 * LED_GLOW_TARGET)  # 学到一个更暗的值
+    learned = app.state.led.guidance_scale
+    assert learned < 1.0
+    assert (tmp_path / "led" / "guidance.json").exists()
+
+    fresh = _app(1.0, hardware_vision_dir=str(tmp_path))  # 重启:LedService 又是 1.0
+    _load_guidance_scale(fresh, logging.getLogger("t"))
+    assert fresh.state.led.guidance_scale == pytest.approx(learned)
+
+
+def test_a_corrupt_state_file_does_not_block_startup(tmp_path):
+    (tmp_path / "led").mkdir()
+    (tmp_path / "led" / "guidance.json").write_text("{not json", encoding="utf-8")
+    app = _app(1.0, hardware_vision_dir=str(tmp_path))
+    _load_guidance_scale(app, logging.getLogger("t"))
+    assert app.state.led.guidance_scale == 1.0  # 回落到默认,不抛
+
+
+def test_without_a_hardware_vision_dir_nothing_is_persisted_and_nothing_breaks():
+    app = _app(1.0)  # 没配 --hardware-vision-dir
+    _read(app, 4 * LED_GLOW_TARGET)
+    assert app.state.led.guidance_scale < 1.0  # 内存里照常生效
+    _load_guidance_scale(app, logging.getLogger("t"))  # 不抛

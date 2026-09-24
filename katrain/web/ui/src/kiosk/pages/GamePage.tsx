@@ -1334,6 +1334,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           boardSize={session.gameState?.board_size?.[0] ?? 19}
           playerToMove={session.gameState?.player_to_move ?? null}
           currentNodeId={session.gameState?.current_node_id ?? null}
+          platformPendingStone={engineMode && session.platformPendingMove ? {
+            row: boardSize - 1 - session.platformPendingMove.row,
+            col: session.platformPendingMove.col,
+            color: gameState.player_to_move === 'B' ? 1 : 2,
+          } : null}
           suppressBoardLost={escalationOpen || recalOpen}
         />
       )}

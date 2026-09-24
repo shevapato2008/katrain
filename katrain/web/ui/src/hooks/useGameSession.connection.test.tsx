@@ -76,6 +76,17 @@ describe('useGameSession · 断线与一次性错误分开记(N25)', () => {
     expect(result.current.connectionLost).toBeNull();
   });
 
+  it('tracks the platform tunnel wait and clears it on reply or rejection', async () => {
+    const { result } = await connected();
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'platform_move_pending', col: 5, row: 14 }) } as MessageEvent); });
+    expect(result.current.platformPendingMove).toEqual({ col: 5, row: 14 });
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'platform_move_confirmed', col: 5, row: 14, move_number: 1 }) } as MessageEvent); });
+    expect(result.current.platformPendingMove).toBeNull();
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'platform_move_pending', col: 6, row: 14 }) } as MessageEvent); });
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'platform_move_rejected', reason: 'engine_error' }) } as MessageEvent); });
+    expect(result.current.platformPendingMove).toBeNull();
+  });
+
   it('断线后卸载再回到同一局，重新 GET 状态并建立第二条 WS，没有认输或新建局', async () => {
     const first = await connected();
     act(() => { sockets[0].onclose?.({ code: 1006, reason: '', wasClean: false }); });

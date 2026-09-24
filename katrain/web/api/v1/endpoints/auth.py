@@ -126,6 +126,10 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
+        # Only access tokens are Bearer credentials (2026-09-24). A refresh token lives 90 days and is for
+        # /auth/refresh alone; before this check it also unlocked every endpoint, admin-only ones included.
+        if payload.get("type") != "access":
+            raise credentials_exception
         if strict_box_sso_enabled() and (box_sso is None or not box_sso.validates(payload.get("box_generation"))):
             raise credentials_exception
     except JWTError:

@@ -504,7 +504,7 @@ git show --stat HEAD | tail -4
 - Consumes：`create_access_token(data)`、`create_refresh_token(data)`（`katrain/web/core/auth.py`）；Task 1 Step 2 的 `newfail.sh` 和基线文件
 - Produces：`get_user_from_token(token, repo, box_sso=None)` 签名不变；`type` 不是 `"access"` 的令牌一律 401
 
-- [ ] **Step 1：写测试**（追加到 `tests/web_ui/test_auth_api.py` 末尾）
+- [x] **Step 1：写测试**（追加到 `tests/web_ui/test_auth_api.py` 末尾）
 
 ```python
 async def _me_with(app, token):
@@ -540,12 +540,12 @@ async def test_access_token_is_still_a_bearer_credential(app):
     assert resp.status_code == 200 and resp.json()["username"] == "at_user"
 ```
 
-- [ ] **Step 2：跑测试，确认失败**
+- [x] **Step 2：跑测试，确认失败**
 
 Run：`cd /Users/fan/Repositories/katrain-admin-console && CI=true uv run pytest tests/web_ui/test_auth_api.py -q -p no:cacheprovider -k "bearer_credential" 2>&1 | tail -6`
 Expected：`test_refresh_token_is_not_a_bearer_credential` FAIL（拿到了 200）；`test_access_token_is_still_a_bearer_credential` PASS。
 
-- [ ] **Step 3：改 `get_user_from_token`**。把
+- [x] **Step 3：改 `get_user_from_token`**。把
 ```python
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
@@ -564,17 +564,17 @@ Expected：`test_refresh_token_is_not_a_bearer_credential` FAIL（拿到了 200�
             raise credentials_exception
 ```
 
-- [ ] **Step 4：跑鉴权相关的测试文件，按名字和基线比**
+- [x] **Step 4：跑鉴权相关的测试文件，按名字和基线比**
 
 Run：`bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_auth_api.py tests/web_ui/test_board_auth.py tests/web_ui/test_auth_persistence.py tests/web_ui/test_guest_write_block.py; echo "newfail exit=$?"`
 Expected：`newfail exit=0`。
 
-- [ ] **Step 5：三处后端改动都完成了，跑 web_ui 全量，按名字和基线比**
+- [x] **Step 5：三处后端改动都完成了，跑 web_ui 全量，按名字和基线比**
 
 Run：`bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui --continue-on-collection-errors; echo "newfail exit=$?"; git status --short`
 Expected：`newfail exit=0`，即没有新增的失败，基线里本来就红的用例不算。`git status --short` 只列出本任务的两个文件（`katrain/config.json` 若被改动就执行 `git checkout -- katrain/config.json` 还原）。列出了新增失败时逐条看：是本切片造成的就修，不是的就在提交信息里写明。
 
-- [ ] **Step 6：提交**
+- [x] **Step 6：提交**
 
 ```bash
 set -o pipefail

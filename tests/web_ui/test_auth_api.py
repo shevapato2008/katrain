@@ -352,3 +352,36 @@ async def test_optional_dep_returns_none_without_credentials(app):
 
     assert response.status_code == 200
     assert response.json() == {"username": None}
+
+
+async def _me_with(app, token):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        return await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+
+def _make_user(app, username):
+    from passlib.context import CryptContext
+
+    try:
+        app.state.user_repo.create_user(username, CryptContext(schemes=["bcrypt"], deprecated="auto").hash("pw"))
+    except ValueError:
+        pass
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_is_not_a_bearer_credential(app):
+    """A refresh token lives 90 days and only /auth/refresh may accept it. As a Bearer it is 401."""
+    from katrain.web.core.auth import create_refresh_token
+
+    _make_user(app, "rt_user")
+    resp = await _me_with(app, create_refresh_token(data={"sub": "rt_user"}))
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_access_token_is_still_a_bearer_credential(app):
+    from katrain.web.core.auth import create_access_token
+
+    _make_user(app, "at_user")
+    resp = await _me_with(app, create_access_token(data={"sub": "at_user"}))
+    assert resp.status_code == 200 and resp.json()["username"] == "at_user"

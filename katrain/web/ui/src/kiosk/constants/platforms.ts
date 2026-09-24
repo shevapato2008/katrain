@@ -11,6 +11,11 @@ export type LoginFieldConfig = {
 export type PlatformMeta = {
   label: string;
   labelCn: string;
+  /** 短名 —— 拼进「登录{name}」这类句子里用的那个(R-Task8b)。稿子 07 页控条标题
+   * 用全称 `labelCn`,组标题/主按钮用短名:「登录星阵围棋」是错的,「登录星阵」才对。
+   * 只在 `labelCn` 本身已经够短(OGS/Fox 全称本来就短)时才和 `label`/`labelCn` 相同。 */
+  shortLabel: string;
+  shortLabelCn: string;
   color: string;
   login?: LoginFieldConfig;
   comingSoon?: boolean;
@@ -18,16 +23,16 @@ export type PlatformMeta = {
 
 export const PLATFORM_META: Record<string, PlatformMeta> = {
   ogs: {
-    label: 'OGS', labelCn: 'OGS', color: '#4a90d9',
+    label: 'OGS', labelCn: 'OGS', shortLabel: 'OGS', shortLabelCn: 'OGS', color: '#4a90d9',
     login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
   },
   fox: {
-    label: 'Fox Weiqi', labelCn: '野狐围棋', color: '#e67e22',
+    label: 'Fox Weiqi', labelCn: '野狐围棋', shortLabel: 'Fox Weiqi', shortLabelCn: '野狐', color: '#e67e22',
     login: { userLabel: 'Username', userLabelCn: '用户名', passLabel: 'Password', passLabelCn: '密码' },
     comingSoon: true,
   },
   golaxy: {
-    label: 'Golaxy', labelCn: '星阵围棋', color: '#2ecc71',
+    label: 'Golaxy', labelCn: '星阵围棋', shortLabel: 'Golaxy', shortLabelCn: '星阵', color: '#2ecc71',
     login: { userLabel: 'Phone Number', userLabelCn: '手机号', passLabel: 'Verification Code', passLabelCn: '验证码', userType: 'tel' },
   },
 };

@@ -28,6 +28,20 @@ logger = logging.getLogger(__name__)
 CAMERA_AUTO_EXPOSURE_OFF = CAMERA_AUTO_EXPOSURE_MANUAL
 
 
+# 漂移之后要不要**自动**用外框找回几何(不亮灯)。
+#
+# **默认关,等一条上板闸**:满盘下外框法的几何误差要 < 0.12 格(按 19×19 网格最大误差量,
+# 见 Task 8b)。在没量之前打开它,等于让一个没验过精度的矩阵去指挥识别 —— 症状会是
+# 「偶尔串位」,比直接降级更难查。翻成 True 要和上板结果写在同一次提交里
+# (见 track 的 board-checklist.md 第 1–2 项);翻之前还要先有「识别栅栏」(PRD §4 V1-c)。
+# 写成源码里的字面量而不是 env:闸只看得见源码。
+AUTO_RELOCATE_ON_DRIFT = False
+
+# 用户按的「对齐外框」只在这三态可用:ready 下会拿低精度外框锁换掉好锁,
+# required 下会绕过「沿用上次标定」。
+_RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
+
+
 class CalibrationBusy(RuntimeError):
     pass
 
@@ -80,7 +94,9 @@ class GeometryCalibrationService:
         on_suspend=None,
         on_resume=None,
         calibrator_factory=LedGeometryCalibrator,
-        drift_needed=None,
+        drift_needed=None,  # develop 275625ec 加的,原样保留
+        selector=None,
+        auto_relocate=AUTO_RELOCATE_ON_DRIFT,
     ):
         self.led = led
         self.capture = capture
@@ -113,6 +129,11 @@ class GeometryCalibrationService:
         self._detected_anchors = []
         self._drift_monitor = None
         self._drift_stop = threading.Event()
+        # 外框重定位(V1)。selector 懒建(_get_selector);_relocating 是「正在重定位」的互斥标志,
+        # 读写都在 self._lock 里,从占住到交付完成一直持有 —— start / confirm_existing / relocate 见到它一律拒绝。
+        self.selector = selector
+        self.auto_relocate = auto_relocate
+        self._relocating = False
         self._drift_thread = threading.Thread(target=self._drift_loop, daemon=True, name="geometry-drift")
         self._drift_thread.start()
         self._status = {
@@ -123,7 +144,18 @@ class GeometryCalibrationService:
             "trigger": None,
             "error": None,
             "metrics": {},
+            "relocate_error": None,  # 最近一次重定位为什么没成(字符串);metrics 是数值型,不放这里
+            # current_lock 已知对不上盘(降级过)。phase 会被之后的 start → cancel / failed 覆盖掉,
+            # 这一位不会:它只在 current_lock 被换掉时清零。confirm_existing 靠它拒绝把挪动前的锁沿用回来。
+            "lock_moved": False,
         }
+
+    def _get_selector(self):
+        if self.selector is None:
+            from katrain.vision.calibration_registry import build_default_selector
+
+            self.selector = build_default_selector()
+        return self.selector
 
     def start(self, *, trigger: str, empty_confirmed: bool) -> None:
         if self.led is None:
@@ -133,6 +165,8 @@ class GeometryCalibrationService:
         with self._lock:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
+            if self._relocating:
+                raise CalibrationBusy("geometry relocation in progress")
             self._cancel_event = threading.Event()
             self._publish_started = False
             self._drift_monitor = None
@@ -143,6 +177,7 @@ class GeometryCalibrationService:
                 trigger=trigger,
                 error=None,
                 metrics={},
+                relocate_error=None,
             )
             self._thread = threading.Thread(target=self._run, daemon=True, name="geometry-calibration")
             self._thread.start()
@@ -190,13 +225,25 @@ class GeometryCalibrationService:
         }
         return status
 
+    # 取消过的运行也能沿用:取消时服务端什么都没丢(current_lock 还在,on_resume 已把识别
+    # 恢复到旧几何),缺的只是把 phase 拉回 ready 的入口。**degraded 不在表里** ——
+    # 那一态是「这份几何已知是错的」,它的出路是重定位(relocate),不是确认沿用。
+    _REUSABLE_PHASES = frozenset({"required", "failed", "cancelled"})
+
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
-            if self._status["phase"] not in {"required", "failed"}:
-                raise ValueError("existing geometry can only be confirmed after restart or failed recalibration")
+            if self._relocating:
+                raise ValueError("relocation in progress")
+            if self._status["phase"] not in self._REUSABLE_PHASES:
+                raise ValueError(
+                    "existing geometry can only be confirmed after restart, a failed run, or a cancelled run"
+                )
             if self.current_lock is None:
                 raise ValueError("no existing geometry to confirm")
+            if self._status["lock_moved"]:
+                # degraded → 重新标定 → 取消/失败 会把 phase 落到可沿用的三态里,但锁还是挪动前那把。
+                raise ValueError("existing geometry no longer matches the moved board; relocate or recalibrate")
             if not self._is_ready(self.capture):
                 raise ValueError("camera is not ready")
             lock = self.current_lock
@@ -209,6 +256,7 @@ class GeometryCalibrationService:
                 trigger="operator_reuse",
                 error=None,
                 metrics={},
+                relocate_error=None,
             )
         self.on_success(lock)
         return self.status()
@@ -550,6 +598,8 @@ class GeometryCalibrationService:
                     last_valid=True,
                     error=None,
                     metrics=metrics,
+                    relocate_error=None,
+                    lock_moved=False,
                 )
             try:
                 self.on_success(result.lock)
@@ -568,6 +618,7 @@ class GeometryCalibrationService:
                     session_calibrated=False,
                     last_valid=False,
                     error=str(exc),
+                    lock_moved=False,
                 )
             try:
                 self.on_degraded()
@@ -612,6 +663,135 @@ class GeometryCalibrationService:
     def _init_drift_monitor(self, lock) -> None:
         self._drift_monitor = self._prepare_drift_monitor(lock)
 
+    def _relocate(self, scenario, *, trigger: str, allowed_phases) -> str | None:
+        """外框重定位一次:占住互斥 → 取帧 → 选择器 → relock → 交付 → 发布。成功回 None,失败回原因串。
+
+        **绝不亮灯**:`Scenario` 决定 allow_led,而且这里根本不把 `led` 交给 `CalibrationContext`(防御在两层)。
+        **不写盘**:磁盘上那份是 LED 13 点的 golden reference,外框法是本次开机的运行时修正。
+        **不挂起识别**(PRD §2.1 R3)。互斥从占住一直持有到**结果落定**(成功发布,或失败原因写进 status),
+        期间 start / confirm_existing / 另一次 relocate 都进不来 —— 否则两边会互相覆盖 current_lock、phase 与错误。
+        """
+        with self._lock:
+            if self._relocating or (self._thread is not None and self._thread.is_alive()):
+                raise CalibrationBusy("geometry calibration or relocation already running")
+            if self._status["phase"] not in allowed_phases:
+                raise ValueError("relocate is only available after drift, cancel or failure")
+            if self.current_lock is None:
+                raise ValueError("no existing geometry to relocate")
+            if not self._is_ready(self.capture):
+                # grab_fresh 在相机掉线/卡住时会超时退回**最后一帧旧图**(camera.py:611),而不是 None ——
+                # 不挡在这里,就会拿挪动之前的画面「对齐」出一把旧位置的锁,还报 ready。
+                raise ValueError("camera is not ready")
+            self._relocating = True
+            lock = self.current_lock
+        reason = None
+        try:
+            new_lock, reason = self._compute_relocation(lock, scenario)
+            if new_lock is not None:
+                reason = self._adopt_relocated_lock(new_lock, trigger=trigger)
+            return reason
+        finally:
+            with self._lock:
+                # 失败原因在**放开互斥之前**落定:放开之后别的请求可能已经开始下一轮,再写就盖到下一轮身上。
+                if reason is not None:
+                    self._status["relocate_error"] = reason
+                self._relocating = False
+
+    def _compute_relocation(self, lock, scenario):
+        from katrain.vision.calibration_strategy import CalibrationContext
+        from katrain.vision.relock import relock_with_homography
+
+        grab = getattr(self.capture, "grab_fresh", None)
+        if grab is None:
+            return None, "no_capture"
+        frames, seqs = [], set()
+        try:
+            for _ in range(3):
+                frame, seq, _ts = grab(settle_ms=0.0)  # grab_fresh 自己会把空闲的相机叫醒(develop 275625ec)
+                # 同一个 seq = 超时退回的同一帧旧图。重复的帧会让外框法的「帧间稳定度」读成 0 抖动、置信度 1.0。
+                if frame is not None and seq not in seqs:
+                    seqs.add(seq)
+                    frames.append(frame)
+        except Exception as exc:  # 相机掉线:干净的失败,不是 500
+            logger.warning("relocation could not read frames: %s", exc)
+            return None, "no_frame"
+        if not frames:
+            return None, "no_frame"
+        if len(frames) < 2:
+            # 三次 grab_fresh 只拿到一个 seq = 相机卡住(连着但不出新帧),那一帧是超时退回的旧图,
+            # 可能早于碰动。拿它对齐会把旧位置当新位置报 ready —— 健康的相机三次必是三帧新图。
+            return None, "camera_stalled"
+        height, width = frames[0].shape[:2]
+        ctx = CalibrationContext(
+            frames=frames, board=None, geometry=lock, led=None, capture=self.capture, out_size=int(lock.out_size)
+        )
+        # 选择器**不包 try**:OuterCornerStrategy 找不到盘回的是 ok=False,抛异常只可能是 bug ——
+        # 也包括测试里那条「led 不许交给策略」的断言,包住就把结构闸吞了。
+        out = self._get_selector().calibrate(scenario, ctx)
+        if not out.ok or out.M is None:
+            return None, out.reason or "relocate_failed"
+        try:
+            return (
+                relock_with_homography(lock, out.M, out.Minv, frame_size=(width, height), confidence=out.confidence),
+                None,
+            )
+        except ValueError as exc:  # orientation_ambiguous / moved_too_far / singular homography
+            return None, str(exc)
+
+    def _adopt_relocated_lock(self, lock, *, trigger: str) -> str | None:
+        """**先交付、后发布**:on_success 成功之前,status() 不许说 ready,current_lock / revision 不许换
+        (否则慢回调期间前端看到假 ready,回调失败后服务里还留着一把没交付的锁)。
+        交付失败 ⇒ 旧锁与 revision 原样留着,降级、让下游清掉几何 —— 与漂移降级同一条出路。"""
+        try:
+            monitor = self._prepare_drift_monitor(lock)  # 要取一帧:相机可能正好掉线(同文件已有这种用例)
+        except Exception as exc:
+            logger.warning("relocation could not re-arm drift monitoring: %s", exc)
+            return "drift_setup_failed"
+        try:
+            self.on_success(lock)
+        except Exception as exc:
+            logger.warning("relocated geometry could not be delivered: %s", exc)
+            with self._lock:
+                self._status.update(phase="degraded", error="board_moved", lock_moved=True)
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.warning("on_degraded failed after relocation delivery failure: %s", invalidate_exc)
+            return "delivery_failed"
+        with self._lock:
+            self.current_lock = lock
+            self._drift_monitor = monitor
+            self._geometry_revision += 1
+            self._status.update(
+                phase="ready",
+                session_calibrated=True,
+                last_valid=True,
+                trigger=trigger,
+                error=None,
+                relocate_error=None,
+                lock_moved=False,
+            )
+            # 替换,不是合并:旧 metrics(比如 LED 标定的 inlier_count/rms_residual)描述的是
+            # 已经不再使用的那把锁,留着会让界面把早已作废的「13/13 · RMS …」当成这把新锁的成绩单。
+            self._status["metrics"] = {"relocated": 1.0}
+        return None
+
+    def relocate(self, trigger: str = "manual") -> dict:
+        """用户按的「对齐外框」。**不要求空盘** —— 这颗键存在的理由正是盘上有子。
+
+        走 `MANUAL_FALLBACK`:策略表里 `outer_corner` 排第一,`led_fiducial` 排第二但本轮**不接** ——
+        `LedFiducialStrategy.is_applicable` 在 `ctx.led is None` 或 `ctx.board is None` 时就否决,
+        而 `_compute_relocation` 传的 `CalibrationContext` 正是 `led=None`、`board=None`
+        (前者是「LED 不为几何自动点亮」的硬规矩;后者这里压根没有识别出的盘面状态可传),
+        它自己判不适用,不是因为「要求空盘」。
+        """
+        from katrain.vision.calibration_strategy import Scenario
+
+        reason = self._relocate(Scenario.MANUAL_FALLBACK, trigger=trigger, allowed_phases=_RELOCATABLE_PHASES)
+        if reason is not None:
+            raise ValueError(reason)  # relocate_error 已在 _relocate 放开互斥之前写好
+        return self.status()
+
     def _drift_loop(self) -> None:
         while not self._drift_stop.wait(1.0):
             monitor = self._drift_monitor
@@ -628,26 +808,61 @@ class GeometryCalibrationService:
                 frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
                 if frame is None:
                     continue
-                self._apply_drift(monitor.update(frame))
+                self._apply_drift(monitor.update(frame), monitor=monitor)
             except Exception:
                 time.sleep(0.1)
 
-    def _apply_drift(self, drift) -> None:
+    def _apply_drift(self, drift, monitor=None) -> None:
         """On a ready→degraded transition, record it and invalidate downstream geometry.
 
         Without invalidation the vision worker keeps warping with the pre-drift matrix, so a
         bumped board yields confident-but-wrong detections (sub-cell shift → SyncStateMachine's
         confidence gate never fires) and wrong LED/voice guidance + wrong judging, with no
-        recovery signal on the tsumego surface. Recovery is a fresh calibration (degraded is
-        terminal for confirm_existing — see test_confirm_existing_cannot_override_degraded_state).
+        recovery signal on the tsumego surface. When ``auto_relocate`` is on this first tries a
+        silent outer-corner relocation (below); only when that is unavailable or fails does it
+        degrade. Recovery from a degraded state is a fresh calibration or the user-pressed
+        ``relocate()`` (degraded is terminal for confirm_existing — see
+        test_confirm_existing_cannot_override_degraded_state).
         """
         if not drift.degraded:
             return
         with self._lock:
             if self._status["phase"] != "ready":
                 return
+            # 漂移线程用的是它那一轮开头缓存的 monitor;这期间若已换了新锁(手动对齐外框),
+            # 旧 monitor 的结论作废。monitor=None(直接调用,如既有测试)时照旧处理。
+            if monitor is not None and monitor is not self._drift_monitor:
+                return
+        reason = None
+        # 先试着**自己找回来**(外框,不亮灯)。今天这里直接降级,而降级的出路是
+        # 13 点 LED 流程 —— 那要求空盘,也就是「这局别下了」。
+        # **这里不调 on_suspend**:挂起会让 recognition_ready 掉下来,PhysicalBoardGuard 就把对局屏
+        # 卸载换成标定台 —— 正是这条路要避免的。代价是找回来之前 worker 还按旧几何识别几秒;
+        # 翻开 AUTO_RELOCATE_ON_DRIFT 之前要先补「识别栅栏」(PRD §4 V1-c)。
+        if self.auto_relocate:
+            from katrain.vision.calibration_strategy import Scenario
+
+            try:
+                reason = self._relocate(
+                    Scenario.RUNTIME_RECALIBRATION, trigger="auto_relocate", allowed_phases=frozenset({"ready"})
+                )
+            except (CalibrationBusy, ValueError) as exc:
+                reason = str(exc)
+            except Exception as exc:
+                # 选择器/relock 里冒出来的不是「没找到盘」那种干净的失败(比如 cv2.error),
+                # 而是真的异常。不接住就会从这里漏到 _drift_loop 的 `except Exception: sleep(0.1)`,
+                # 服务停在 ready 上对一块已经歪了的盘继续按旧几何识别,还每秒静默重试。
+                logger.warning("auto relocation failed: %s", exc, exc_info=True)
+                reason = f"relocate_error:{type(exc).__name__}"
+            if reason is None or reason == "delivery_failed":  # 成功;或 _adopt 已经降级过了
+                return
+        with self._lock:
+            if self._status["phase"] != "ready":
+                return
             self._status["phase"] = "degraded"
             self._status["error"] = "board_moved"
+            self._status["relocate_error"] = reason
+            self._status["lock_moved"] = True
             self._status["metrics"].update(shift_cells=drift.shift_cells, drift_response=drift.response)
         # Outside the lock: on_degraded fans out to the vision worker (IPC).
         self.on_degraded()

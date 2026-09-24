@@ -104,3 +104,23 @@ def test_every_kiosk_string_is_really_translated(lang):
         f"{lang}.po 里这些条目带着 TODO 标记:{untranslated}\n"
         f"那是 `i18n.py` 拿英文原文顶上去的占位(i18n.py:76/78),不是译文。"
     )
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_login_facts_keys_are_translated(lang):
+    """`platformLoginFacts.ts` 里的 key 是**变量**传给 `t()` 的(`t(f.titleKey, f.titleZh)`),
+    上面那条通用闸的正则(只认两个单引号字面量)看不见这几条调用。
+
+    看不见 ⇒ 少翻一条不会红 ⇒ 韩文界面上那一段安静地显示中文。
+    所以这张表要单独点名。表变了这条会红,那是对的:提醒把新 key 也补进 .po。
+    """
+    src = (UI / "constants" / "platformLoginFacts.ts").read_text(encoding="utf-8")
+    keys = sorted(set(re.findall(r"Key:\s*'([^']+)'", src)))
+    assert len(keys) == 12, f"只扫到 {len(keys)} 个 key,正则和表对不上了(golaxy 3+3,ogs 4+4,whose/stored 两家共用 ⇒ 应为 12)"
+    po = polib.pofile(str(REPO / "katrain" / "i18n" / "locales" / lang / "LC_MESSAGES" / "katrain.po"))
+    have = {e.msgid: e for e in po}
+    for k in keys:
+        assert k in have, f"{lang}.po 缺 {k}"
+        e = have[k]
+        assert e.msgstr.strip(), f"{lang}.po 的 {k} 是空的"
+        assert "TODO" not in (e.comment or ""), f"{lang}.po 的 {k} 被英文顶上了(TODO)"

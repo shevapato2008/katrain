@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "实体棋盘落子识别流程",
-    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23",
+    "subtitle": "RK3562 · 静止帧识别、像素级参考帧否决、落子确认与棋谱回传 · 截至 2026-09-24",
     "output": "recognition-pipeline.html",
     "visual_preset": "blueprint",
     "animation": "none",
@@ -35,18 +35,18 @@
           "assign",
           "vote"
         ],
-        "note": "先去重复框（同一颗子被框两次），再去影子框（离交叉点 ≥ 0.35 格、且被一个离点更近、分数不低于它的框压住 ≥ 0.27）；之后分置信档、落到盘面。"
+        "note": "NMS与去重后丢弃侧光影子框；0.20维持档只给棋谱已有的子，再做视差修正、占用感知分配和两帧投票。"
       },
       {
         "id": "reference",
-        "label": "参照帧比对（09-23）",
+        "label": "参考帧 · 09-24",
         "focus": [
           "warp",
           "refstore",
           "refcheck",
           "game"
         ],
-        "note": "棋谱推进时拍参照、长考时每分钟逐格续期；比对只影响下游，不改识别历史。当前是影子模式。"
+        "note": "否认标签处理后的投票盘面与逐帧观测都须吻合棋谱，且无亮灯或待确认落子，才重拍；每60秒刷新可比格，变化格也吸收。"
       },
       {
         "id": "confirm",
@@ -55,11 +55,12 @@
           "refcheck",
           "movedet",
           "ambiguous",
+          "denial",
           "sync",
           "server",
           "game"
         ],
-        "note": "连续几帧一致才算落子；空点上卡住的弱检测弹确认卡；提交前再核一次子还在、轮到谁。"
+        "note": "参考帧否决不会写回识别历史；弱检测可弹确认卡，点「不是落子」会存当格像素；真落子改变像素即解除标签。"
       },
       {
         "id": "lamps",
@@ -68,12 +69,12 @@
           "game",
           "led"
         ],
-        "note": "AI 落子处亮灯；worker 量光斑，服务端据此调亮度。"
+        "note": "几何标定只用255亮度，不再试96档；对局中的AI指引灯则按实测光斑动态调亮。"
       }
     ],
     "repository": {
       "url": "https://github.com/shevapato2008/katrain",
-      "revision": "472667f888e3d472d529b0f83c5de0c195ff46c3"
+      "revision": "902dc7b679fc2f4f39f3d45de8281d1c302733d7"
     }
   },
   "components": [
@@ -93,8 +94,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 316,
-          "label": "_motion_is_stable"
+          "label": "motion gate"
         }
       ]
     },
@@ -102,7 +102,7 @@
       "id": "warp",
       "type": "backend",
       "label": "透视校正",
-      "sublabel": "几何锁 → 1056² 俯视图",
+      "sublabel": "几何锁 → 俯视图；标定亮度255",
       "pos": [
         330,
         120
@@ -114,7 +114,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 332,
+          "line": 408,
           "label": "_warp_frame"
         }
       ]
@@ -135,7 +135,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 742,
+          "line": 986,
           "label": "averager / enhance"
         }
       ]
@@ -156,7 +156,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 750,
+          "line": 994,
           "label": "detector.detect"
         },
         {
@@ -209,8 +209,8 @@
         },
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 755,
-          "label": "去重复框之后调用"
+          "line": 999,
+          "label": "before keep / sustain"
         }
       ]
     },
@@ -231,12 +231,12 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 761,
+          "line": 1005,
           "label": "keep / sustain"
         },
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 348,
+          "line": 424,
           "label": "_game_stone_sustain"
         }
       ]
@@ -258,13 +258,7 @@
       "sources": [
         {
           "path": "katrain/vision/board_state.py",
-          "line": 150,
-          "label": "apply_parallax"
-        },
-        {
-          "path": "katrain/vision/board_state.py",
-          "line": 175,
-          "label": "_passes_hysteresis"
+          "label": "occupancy-aware assignment"
         },
         {
           "path": "katrain/vision/parallax.py",
@@ -289,16 +283,17 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 810
+          "line": 1054,
+          "label": "2-frame vote"
         }
       ]
     },
     {
       "id": "refcheck",
       "type": "security",
-      "label": "参照帧比对",
-      "sublabel": "逐格 ZNCC ≥ 0.90 · 有限次否决",
-      "tag": "09-23 · 影子",
+      "label": "参考帧否决",
+      "sublabel": "ZNCC ≥ 0.90 · 凭空多子无帧数上限",
+      "tag": "09-24 · 生效",
       "pos": [
         600,
         330
@@ -310,7 +305,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 377,
+          "line": 534,
           "label": "_reference_check"
         }
       ]
@@ -318,9 +313,9 @@
     {
       "id": "refstore",
       "type": "database",
-      "label": "参照帧",
-      "sublabel": "推进时拍 · 每分钟逐格续期",
-      "tag": "09-23",
+      "label": "参考帧 · 照片+盘面",
+      "sublabel": "双重盘面吻合才重拍 · 60秒刷新",
+      "tag": "09-24",
       "pos": [
         320,
         330
@@ -332,21 +327,21 @@
       "sources": [
         {
           "path": "katrain/vision/reference_frame.py",
-          "line": 147,
+          "line": 164,
           "label": "ReferenceFrame"
         },
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 503,
-          "label": "_refresh_reference"
+          "line": 642,
+          "label": "_maybe_capture_reference"
         }
       ]
     },
     {
       "id": "ambiguous",
       "type": "security",
-      "label": "疑似落子判定",
-      "sublabel": "空点弱检测连续 12 帧 → 确认卡",
+      "label": "疑似落子卡",
+      "sublabel": "弱检测12帧 · 被否决格不提升",
       "pos": [
         1440,
         540
@@ -358,7 +353,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 589,
+          "line": 821,
           "label": "_promote_stuck_stone"
         },
         {
@@ -366,7 +361,8 @@
           "line": 476,
           "label": "AmbiguousPromoter"
         }
-      ]
+      ],
+      "tag": "09-24"
     },
     {
       "id": "movedet",
@@ -426,7 +422,7 @@
       "sources": [
         {
           "path": "katrain/web/server.py",
-          "line": 3815,
+          "line": 3993,
           "label": "_handle_confirmed_move"
         }
       ]
@@ -456,8 +452,8 @@
       "id": "led",
       "type": "external",
       "label": "指引灯",
-      "sublabel": "AI 落子亮灯 · 按光斑调亮度",
-      "tag": "09-22",
+      "sublabel": "标定单档255 · 对局按光斑调亮",
+      "tag": "09-24",
       "pos": [
         40,
         760
@@ -468,14 +464,46 @@
       ],
       "sources": [
         {
-          "path": "katrain/web/core/physical_play.py",
-          "line": 130,
-          "label": "LedPlanner.tick"
+          "path": "katrain/vision/led_geometry_calibrator.py",
+          "line": 330,
+          "label": "FLASH_LEVELS"
         },
         {
           "path": "katrain/web/server.py",
-          "line": 3659,
+          "line": 3775,
           "label": "_adjust_led_brightness"
+        }
+      ]
+    },
+    {
+      "id": "denial",
+      "type": "security",
+      "label": "不是落子 · 像素标签",
+      "sublabel": "像素相同按空 · 真变化即释放",
+      "tag": "09-24",
+      "pos": [
+        1160,
+        540
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/web/ui/src/kiosk/components/vision/VisionSyncOverlay.tsx",
+          "line": 128,
+          "label": "handleAmbiguousIgnore"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 473,
+          "label": "_deny_stone"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 498,
+          "label": "_live_denials"
         }
       ]
     }
@@ -498,7 +526,8 @@
         "refstore",
         "ambiguous",
         "movedet",
-        "sync"
+        "sync",
+        "denial"
       ]
     },
     {
@@ -605,6 +634,18 @@
       "from": "game",
       "to": "led",
       "label": "AI 落子"
+    },
+    {
+      "from": "ambiguous",
+      "to": "denial",
+      "variant": "dashed"
+    },
+    {
+      "from": "denial",
+      "to": "refcheck",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
     }
   ],
   "cards": [
@@ -612,37 +653,39 @@
       "dot": "cyan",
       "title": "看得准",
       "items": [
-        "视差修正：参数从几何锁推出，不用摆子标定（09-22）",
-        "占用感知分配：高置信度先占位，其余挪到最近空点",
-        "指引灯按实测光斑调亮度，夜里不再把白子照没（09-22）"
+        "视差参数随几何锁推导；标定锚点只试255亮度（09-24）",
+        "NMS、重复框与侧光影子框依次过滤，再做占用感知分配",
+        "对局指引灯按实测光斑调亮，避免白子被照透"
       ]
     },
     {
       "dot": "emerald",
       "title": "留得住",
       "items": [
-        "0.20 维持档只留棋谱里已有的子（09-22）",
-        "颜色不一致先保持 15 帧再改",
-        "缺子先等 7 秒，再提示盘面不一致"
+        "0.20维持档只给棋谱中已有的子",
+        "颜色不一致先保持15帧；缺子先等7秒再报盘面不一致",
+        "两帧投票压制单帧抖动；原始识别历史不被参考帧改写"
       ]
     },
     {
       "dot": "amber",
-      "title": "白天抗光（09-23，影子模式）",
+      "title": "参考帧 · 09-24 已生效",
       "items": [
-        "逐格和参照帧比结构，结构没变就不信检测器的改口",
-        "否决有上限：缺子 90 帧、多子或变色 10 帧",
-        "长考时每分钟逐格续期，没解释的变化不吸收",
-        "侧光影子框：去重复框之后单独判定，离交叉点 ≥ 0.35 格、被更近的框压住才去掉（09-23）"
+        "用平均与CLAHE之前的灰度图逐格做ZNCC；不可比的格子交还检测器",
+        "盘面双重吻合棋谱且无亮灯、暂停、待确认落子时才重拍；暂停不销毁旧参考",
+        "每60秒刷新所有可比像素，包括变化格；盘面地图仍保持原值",
+        "记录有子但读空最多守90帧，颜色判错最多10帧；凭空多子只在像素变化时放行",
+        "参考帧正在否决的格子不再被弱检测提升器绕过"
       ]
     },
     {
       "dot": "rose",
       "title": "提交前兜底",
       "items": [
-        "落子确认：峰值置信度 ≥ 0.70 走 3 帧，否则 5 帧",
-        "卡住的弱检测 12 帧后弹确认卡",
-        "提交前再看一次子还在、是不是轮到这一方"
+        "落子峰值≥0.70走3帧，否则5帧；提交前复核子仍在且轮到该方",
+        "弱检测持续12帧会弹疑似落子卡；「不是落子」保存那格当前像素",
+        "否认样本先把该格按空，再允许安全重拍参考帧；像素真变时标签立即失效",
+        "否认不走physical-adopt重置，不销毁参考帧；不可比像素不保存样本并记录警告"
       ]
     }
   ]

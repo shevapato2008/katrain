@@ -55,6 +55,10 @@ export interface GeometryStatus {
   metrics?: Record<string, number | null>;
   geometry_revision?: number;
   detected_anchors?: GeometryAnchor[];
+  /** 最近一次外框重定位为什么没成(`no_board_detected` / `orientation_ambiguous` / `moved_too_far` / `delivery_failed` …);成了或没试过为 null。 */
+  relocate_error?: string | null;
+  /** 当前这把锁已知对不上盘(降级过、之后还没换过锁)。为真时「沿用上次标定」服务端一定拒绝。 */
+  lock_moved?: boolean;
   capabilities: {
     camera_ready: boolean;
     led_ready: boolean;
@@ -94,4 +98,13 @@ export const GeometryAPI = {
   confirmExisting: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/confirm-existing`, { method: 'POST' })),
   cancel: async (): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/cancel`, { method: 'POST' })),
   layout: async (): Promise<GeometryLayout> => json(await fetch(`${API_BASE}/layout`)),
+  // 自己读 detail:共享的 json() 失败时只给状态码,而屏上要靠 detail 分辨「找不到外框」与其它失败。
+  relocate: async (): Promise<GeometryStatus> => {
+    const res = await fetch(`${API_BASE}/relocate`, { method: 'POST' });
+    if (!res.ok) {
+      const detail = await res.json().then((b) => (typeof b?.detail === 'string' ? b.detail : null)).catch(() => null);
+      throw new Error(`geometry relocate failed ${res.status}${detail ? `: ${detail}` : ''}`);
+    }
+    return res.json();
+  },
 };

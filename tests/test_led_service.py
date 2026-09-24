@@ -734,5 +734,5 @@ def test_changing_the_brightness_reshows_the_lit_guidance_and_nothing_after_a_cl
 def test_calibration_lamps_are_never_scaled():
     svc, sent = _capturing_service()
     svc.set_guidance_scale(0.25)
-    svc.set_rgb_points([{"row": 9, "col": 9, "rgb": (0, 96, 0)}])
-    assert sent[-1][1] == f"SETI {rc2idx(9, 9)} 0 96 0"
+    svc.set_rgb_points([{"row": 9, "col": 9, "rgb": (0, 255, 0)}])
+    assert sent[-1][1] == f"SETI {rc2idx(9, 9)} 0 255 0"

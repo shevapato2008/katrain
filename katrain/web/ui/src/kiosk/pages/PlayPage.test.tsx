@@ -249,7 +249,8 @@ describe('PlayPage', () => {
     fireEvent.click(fox);            // 禁用的,点了不该有任何去向
     fireEvent.click(golaxy);
     expect(mockNavigate.mock.calls).toEqual([
-      ['/kiosk/play/cross-platform'],
+      // 2026-09-23(Task 5):未连接改跳独立登录页,不再是连接页本身。
+      ['/kiosk/play/cross-platform/login/ogs'],
       ['/kiosk/play/cross-platform/engine/golaxy'],
     ]);
   });

@@ -62,8 +62,11 @@ const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfi
         <Button variant="contained" onClick={() => { const { x, y } = rcToXy(row, col, boardSize); onConfirm(x, y); }}>
           {unbacked ? `${t('vision:play_here_anyway', '就下在')} ${point}` : t('Confirm', '确认落子')}
         </Button>
+        {/* 「忽略」说的是「这次别管」,下次照样弹。用户真正在回答的是一个事实问题:
+            那一格到底有没有子。说成「不是落子」,这一按就变成一条可以拿去用的证据 ——
+            后端存下那一格此刻的像素,只要它还长成那样就不再被识别成子。 */}
         <Button onClick={onIgnore}>
-          {unbacked ? t('vision:offcenter_dismiss', '我挪一下') : t('Ignore', '忽略')}
+          {unbacked ? t('vision:offcenter_dismiss', '我挪一下') : t('vision:not_a_stone', '不是落子')}
         </Button>
       </DialogActions>
     </Dialog>

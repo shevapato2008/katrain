@@ -3981,7 +3981,7 @@ msgid "vision:cancel_calibration"
 msgstr "Скасувати калібрування"
 
 msgid "vision:reuse_calibration"
-msgstr "Використати минуле калібрування"
+msgstr "Взяти минуле"
 
 msgid "vision:camera_down"
 msgstr "Камеру не під'єднано · перейшли на сенсорний екран"
@@ -4052,10 +4052,10 @@ msgid "setup:my_side"
 msgstr "Мій колір"
 
 msgid "setup:take_black"
-msgstr "Чорні"
+msgstr "Грати чорними"
 
 msgid "setup:take_white"
-msgstr "Білі"
+msgstr "Грати білими"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -7062,3 +7062,169 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Двигун ШІ ще не готовий — спробуйте пізніше"
+
+msgid "vision:relocate"
+msgstr "Вирівняти рамку"
+
+msgid "vision:relocating"
+msgstr "Вирівнювання…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Не збіглося"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"На зображенні не видно зовнішньої рамки дошки — приберіть те, що закриває "
+"край, і спробуйте ще раз."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Спробуйте ще раз; якщо не виходить, звільніть дошку і відкалібруйте знову."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Дошка зсунулася, минуле калібрування більше не підходить — скористайтеся "
+"«Вирівняти рамку» (без підсвітки, працює навіть із каменями на дошці) або "
+"відкалібруйте знову"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Статус «LED» означає лише, що послідовний порт під'єднано, а не що горить "
+"кожна лампа; якщо під час підказки десь не загоряється, найімовірніше "
+"несправна саме та ділянка стрічки."
+
+msgid "platform:fact_whose"
+msgstr "Чий це акаунт"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Це власний акаунт Golaxy, а не приставки. Ще немає акаунта? Зареєструйтеся в"
+" застосунку Golaxy на телефоні — на приставці зареєструватися не можна."
+
+msgid "platform:fact_three_ways"
+msgstr "Три способи"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Сканування — жодного символу вводити не потрібно. Код із SMS — просто "
+"зачекайте на повідомлення. Пароль — найшвидший спосіб, але вводити його "
+"доведеться на сенсорному екрані."
+
+msgid "platform:fact_stored"
+msgstr "Що залишається на приставці"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Тут зберігається лише токен входу, виданий Golaxy, — пароль не зберігається."
+" Від'єднати можна будь-коли в Налаштуваннях."
+
+msgid "platform:fact_only_one"
+msgstr "На приставці лише так"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"На сайті OGS також працюють акаунти Google, Apple та інші — для цього "
+"потрібен браузер, тож це залишено для закордонної версії."
+
+msgid "platform:fact_third_party"
+msgstr "Зареєстровані через стороннього провайдера"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"У таких акаунтів немає пароля OGS — спочатку встановіть його на сайті OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Ваш акаунт на online-go.com. Реєстрація має відбуватися в браузері — на "
+"приставці це зробити не можна."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Тут зберігається лише сесія після входу — пароль не зберігається. Від'єднати"
+" можна будь-коли в Налаштуваннях."
+
+msgid "platform:login_tab_sms"
+msgstr "Код із SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Пароль"
+
+msgid "platform:login_field_phone"
+msgstr "Номер телефону"
+
+msgid "platform:login_field_code"
+msgstr "Код із SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Не під'єднано · увійдіть за кодом із SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Не під'єднано · увійдіть за акаунтом і паролем {name}"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Не під'єднано · увійдіть за акаунтом і паролем Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Не під'єднано · використовуйте акаунт online-go.com"
+
+msgid "platform:login_title"
+msgstr "Вхід у {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Ваш ранг також береться з цього облікового запису"
+
+msgid "platform:login_tabs"
+msgstr "Спосіб входу"
+
+msgid "platform:login_tab_scan"
+msgstr "Сканувати"
+
+msgid "platform:login_sub_scan"
+msgstr "Не підключено · відскануйте в застосунку Golaxy на телефоні"
+
+msgid "platform:scan_state_waiting"
+msgstr "Очікування сканування"
+
+msgid "platform:scan_state_scanned"
+msgstr "Відскановано, підтвердьте на телефоні"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Підтверджено, виконується вхід…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-код прострочено"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Скасовано на телефоні"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Не вдається під'єднатися до Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Перевірте мережу"
+
+msgid "platform:scan_retry"
+msgstr "Повторити"
+
+msgid "platform:scan_title"
+msgstr "Відкрийте застосунок Golaxy і відскануйте"
+
+msgid "platform:scan_body"
+msgstr ""
+"Після сканування підтвердьте на телефоні — пароль ніколи не проходить через "
+"цю приставку."
+
+msgid "platform:scan_qr_alt"
+msgstr "QR-код входу Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Новий код"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "натисніть, щоб отримати новий код"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Не вдалося підтвердити вхід"
+
+msgid "vision:not_a_stone"
+msgstr "Це не камінь"

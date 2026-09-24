@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
 import { useTranslation } from '../../hooks/useTranslation';
 import { type BaipuCaptureErrorReason,
@@ -81,8 +82,7 @@ const PCARD_CLASS: Record<Mood, string> = {
  * ⇒ 绿灯是**该放白子**,红灯是**该放黑子**,该拿走是**蓝灯**。
  * 照稿子写,一局 241 手里每颗黑棋都会让操作员去拿一颗刚该放下的子。
  * 这一屏的 track 自己早就写死了正确版本(`review-feedback-gstack.md` 建议 E,已采纳):
- * **屏上必须常驻一条图例,而且屏上高亮色必须和灯同色**。所以盘上那个候选圈也跟着分色
- * (`GoBoardSvg` 的 `ghostFor`)—— 稿子把黑棋 C7 的圈画成绿的,同一处错。
+ * 屏上下一手先画对应颜色的棋子,用反色环标出待摆点；实体盘仍以红/绿灯引导。
  *
  * ## 沉浸模式撤了
  *
@@ -652,9 +652,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             black={board.black}
             white={board.white}
             last={board.last}
-            ghost={ghost}
-            // 屏上那个圈必须和盘上那颗灯同色 —— 黑子红、白子绿。
-            ghostFor={nextColor ?? undefined}
+            pending={ghost[0] && nextColor ? { at: ghost[0], color: nextColor } : undefined}
             atari={atari}
             remove={removeMarks}
             hint={hintMarks}
@@ -855,30 +853,24 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
         />
       </div>
 
-      {/* 拍照遮罩:盖住**整个布局根**。第一职责是挡住第二次按下「确认落子」——
-          只盖盘的话右栏三颗键看着是活的、按下去没反应,那比一句偏了的提示更像假话。 */}
       {capturePending && (
-        <div className="cdlg" data-testid="baipu-capture-pending">
-          <div className="cdlg__box" role="alertdialog" aria-modal="true">
-            <h3>{t('baipu:capturing', '正在拍照，请勿伸手')}</h3>
-            <p>{t('baipu:capturing_hint', '手挡住了这一手就采不到，得重来。')}</p>
-          </div>
-        </div>
+        <Dialog open disableEscapeKeyDown data-testid="baipu-capture-pending">
+          <DialogTitle>{t('baipu:capturing', '正在拍照，请勿伸手')}</DialogTitle>
+          <DialogContent><Typography>{t('baipu:capturing_hint', '手挡住了这一手就采不到，得重来。')}</Typography></DialogContent>
+        </Dialog>
       )}
 
       {resumePrompt !== null && (
-        <div className="cdlg" data-testid="baipu-resume">
-          <div className="cdlg__box" role="dialog" aria-modal="true">
-            <h3>{t('baipu:resume_ask', '接着上次摆？')}</h3>
-            <p>{interpolate(
+        <Dialog open data-testid="baipu-resume">
+          <DialogTitle>{t('baipu:resume_ask', '接着上次摆？')}</DialogTitle>
+          <DialogContent><Typography>{interpolate(
               collect
                 ? t('baipu:resume_body', '上次摆到第 {n} 手。重新开始会覆盖已经采过的帧。')
                 : t('baipu:resume_body_placed', '上次摆到第 {n} 手。从头摆要先把盘上的子都拿下来。'),
               { n: resumePrompt },
-            )}</p>
-            <div className="cdlg__acts">
-              <button
-                type="button" className="ghost" data-testid="baipu-resume-restart"
+            )}</Typography></DialogContent>
+          <DialogActions sx={{ gap: 1 }}>
+              <Button variant="outlined" data-testid="baipu-resume-restart"
                 onClick={() => {
                   clearProgress(source, store);
                   setOverwriteExisting(true);
@@ -886,47 +878,41 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
                   initialCapturedRef.current = false;
                   setK(0); setResumePrompt(null);
                 }}
-              >{t('baipu:restart', '从头摆')}</button>
-              <button
-                type="button" className="main" data-testid="baipu-resume-continue"
+              >{t('baipu:restart', '从头摆')}</Button>
+              <Button variant="contained" data-testid="baipu-resume-continue"
                 onClick={() => { setK(resumePrompt); setOverwriteExisting(false); setResumePrompt(null); }}
-              >{t('baipu:resume', '接着摆')}</button>
-            </div>
-          </div>
-        </div>
+              >{t('baipu:resume', '接着摆')}</Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       {undoOpen && (
-        <div className="cdlg" data-testid="baipu-undo-confirm">
-          <div className="cdlg__box" role="dialog" aria-modal="true">
-            <h3>{t('baipu:undo_ask', '撤回上一手？')}</h3>
-            <p>{t('baipu:undo_body', '先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。')}</p>
-            <div className="cdlg__acts">
-              <button type="button" className="ghost" onClick={() => setUndoOpen(false)}>{t('cancel', '取消')}</button>
-              <button type="button" className="main" data-testid="baipu-undo-confirm-action" onClick={handleUndo}>
+        <Dialog open onClose={() => setUndoOpen(false)} data-testid="baipu-undo-confirm">
+          <DialogTitle>{t('baipu:undo_ask', '撤回上一手？')}</DialogTitle>
+          <DialogContent><Typography>{t('baipu:undo_body', '先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。')}</Typography></DialogContent>
+          <DialogActions sx={{ gap: 1 }}>
+              <Button variant="outlined" onClick={() => setUndoOpen(false)}>{t('cancel', '取消')}</Button>
+              <Button variant="contained" data-testid="baipu-undo-confirm-action" onClick={handleUndo}>
                 {t('baipu:undo_done', '已撤回')}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+          </DialogActions>
+        </Dialog>
       )}
 
       {/* 退出确认。**不是实现遗留,是这一屏已采纳的裁定**:「确认落子」一局按约 250 次,
           退出按一次,两颗不能同排;解法是移到角上(页控条)+ 二次确认,两半配套。 */}
       {exitOpen && (
-        <div className="cdlg" data-testid="baipu-exit-confirm">
-          <div className="cdlg__box" role="dialog" aria-modal="true">
-            <h3>{t('baipu:exit_ask', '退出摆谱？')}</h3>
-            <p>{t('baipu:exit_body', '进度已经存下了，回来还能接着摆。')}</p>
-            <div className="cdlg__acts">
-              <button type="button" className="ghost" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</button>
-              <button
-                type="button" className="main" data-testid="baipu-exit-confirm-action"
+        <Dialog open onClose={() => setExitOpen(false)} data-testid="baipu-exit-confirm">
+          <DialogTitle>{t('baipu:exit_ask', '退出摆谱？')}</DialogTitle>
+          <DialogContent><Typography>{t('baipu:exit_body', '进度已经存下了，回来还能接着摆。')}</Typography></DialogContent>
+          <DialogActions sx={{ gap: 1 }}>
+              <Button variant="outlined" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</Button>
+              <Button
+                variant="contained" color="error" data-testid="baipu-exit-confirm-action"
                 onClick={back}
-              >{t('baipu:exit', '退出')}</button>
-            </div>
-          </div>
-        </div>
+              >{t('baipu:exit', '退出')}</Button>
+          </DialogActions>
+        </Dialog>
       )}
     </div>
   );

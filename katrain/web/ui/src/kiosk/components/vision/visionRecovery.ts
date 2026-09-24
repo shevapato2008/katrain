@@ -1,6 +1,7 @@
 import type { VisionSyncEvent } from '../../hooks/useVisionSync';
 
 export type VisionPos = [number, number, number];
+export type PendingStone = { row: number; col: number; color: number };
 
 export type BlockingRecovery =
   | { kind: 'capture'; positions: Array<{ row: number; col: number; color: number }> }
@@ -20,7 +21,7 @@ export interface RecoveryState {
 }
 
 export type RecoveryAction =
-  | { kind: 'vision_event'; event: VisionSyncEvent; nowMs: number }
+  | { kind: 'vision_event'; event: VisionSyncEvent; nowMs: number; platformPendingStone?: PendingStone | null }
   | { kind: 'node_advanced' }
   | { kind: 'pending_deadline'; nowMs: number };
 
@@ -50,7 +51,7 @@ export function classifyAdjacentRelocation(
 }
 
 function isExactPendingMismatch(
-  pending: NonNullable<RecoveryState['pending']>,
+  pending: PendingStone,
   positions: VisionPos[],
   missing: VisionPos[],
 ): boolean {
@@ -110,6 +111,8 @@ export function reduceRecoveryState(state: RecoveryState, action: RecoveryAction
       color?: number;
       unbacked?: boolean;
     };
+    if (action.platformPendingStone?.row === row && action.platformPendingStone.col === col
+      && action.platformPendingStone.color === color) return state;
     if (state.blocking?.kind === 'capture') {
       return state.pending === null ? state : { ...state, pending: null };
     }
@@ -128,6 +131,10 @@ export function reduceRecoveryState(state: RecoveryState, action: RecoveryAction
   if (event.type === 'illegal_change') {
     const positions = (event.data.positions as VisionPos[] | undefined) ?? [];
     const missing = (event.data.missing as VisionPos[] | undefined) ?? [];
+
+    if (action.platformPendingStone && isExactPendingMismatch(action.platformPendingStone, positions, missing)) {
+      return state;
+    }
 
     if (
       state.pending

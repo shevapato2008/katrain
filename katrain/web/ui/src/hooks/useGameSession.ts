@@ -52,6 +52,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // gate satisfied) — EngineMoveErrorDialog also has a local `clearPhysicalEngineError` escape
     // hatch (retry ok:true / stale-token 409) since those two outcomes have no matching broadcast.
     const [physicalEngineError, setPhysicalEngineError] = useState<PhysicalEngineErrorState | null>(null);
+    // The remote engine may take much longer than local move confirmation. Until its
+    // reply arrives, the local game record deliberately stays at the old position.
+    const [platformPendingMove, setPlatformPendingMove] = useState<{ col: number; row: number } | null>(null);
     // Task 8's awaiting-removal timeout re-prompt (`_tick_awaiting_removal`'s reminder broadcast).
     // A fresh object on every occurrence (like physicalReminder) so a dialog can key an effect off
     // it to re-emphasize the waiting UI without needing a dedicated ack/clear round-trip.
@@ -172,6 +175,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     const data = await API.getState(sessionId, token);
                     if (disposed) return;
                     setGameState(data.state);
+                    setPlatformPendingMove(null);
 
                     /* token 必须带上 —— 服务端 `/ws/{session_id}` 是要鉴权的，而这里
                        在此之前一个凭据都不发（`/ws/lobby` 一直是带的）。详见
@@ -237,6 +241,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setPhysicalEngineError(null);
                         } else if (msg.type === 'physical_awaiting_removal_reminder') {
                             setAwaitingRemovalReminder(msg.data);
+                        } else if (msg.type === 'platform_move_pending') {
+                            setPlatformPendingMove({ col: msg.col, row: msg.row });
+                        } else if (msg.type === 'platform_move_confirmed' || msg.type === 'platform_move_rejected') {
+                            setPlatformPendingMove(null);
                         }
                     };
 
@@ -247,6 +255,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
                         clearQueuedSounds();
+                        setPlatformPendingMove(null);
                         if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
                             if (gameEndedRef.current) {
                                 /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
@@ -407,6 +416,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
+        platformPendingMove,
         acknowledgePaintedNode,
     };
 };

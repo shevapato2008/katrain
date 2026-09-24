@@ -44,6 +44,17 @@ const base: PhysicalBaipuOptions = {
 beforeEach(() => { calls.length = 0; vi.useRealTimers(); ledPoints.mockClear(); ledClear.mockClear(); });
 
 describe('usePhysicalBaipu', () => {
+  it('进入整盘校对前先等灭灯完成，留给识别层干净的参考帧', async () => {
+    let finishClear!: (value: { ok: boolean; connected: boolean }) => void;
+    ledClear.mockImplementationOnce(() => new Promise((resolve) => { finishClear = resolve; }));
+    renderHook(() => usePhysicalBaipu(base));
+    await settle();
+    expect(calls).toEqual(['monitor', 'arm']);
+    await act(async () => { finishClear({ ok: true, connected: true }); });
+    await settle();
+    expect(calls).toEqual(['monitor', 'arm', 'setup']);
+  });
+
   it('进场:先开监视模式,再撤臂、setup —— 一次都不许倒过来', async () => {
     renderHook(() => usePhysicalBaipu(base));
     await settle();

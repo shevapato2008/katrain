@@ -133,6 +133,16 @@ class VisionService:
             data = {"expected": expected.tolist()} if expected is not None else None
             self._worker.send_command(WorkerCommand(action=CommandType.RESET_SYNC, data=data))
 
+    def deny_stone(self, row: int, col: int) -> None:
+        """用户在疑似落子弹窗上按了「不是落子」。
+
+        存下那一格**此刻**的像素当作否认样本:只要它还长成那样,这一格就不再被当成子。
+        与旧的「忽略」(adopt='physical')相反 —— 那条路把假阳性收进基线当成现实,还顺手
+        销毁了参考帧;这条只记下用户说的那句「这儿没有子」,并且在像素变了的那一刻自动失效。
+        """
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.DENY_STONE, data={"row": row, "col": col}))
+
     def bind_session(self, session_id: str) -> None:
         """Bind vision to a game session.
 

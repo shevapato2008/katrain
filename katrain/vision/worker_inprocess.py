@@ -35,7 +35,7 @@ from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX,
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
-from katrain.vision.reference_frame import CellSampler, ReferenceFrame, build_sampler, to_gray
+from katrain.vision.reference_frame import CellSampler, ReferenceFrame, build_sampler, cell_zncc, sample_cell, to_gray
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -79,7 +79,10 @@ REFERENCE_HOLD_KEEP = 90  # frames, ~36 s at 2.3 fps
 # reference may be the wrong one -- captured with that stone already on the board and unnoticed), and
 # a colour disagreement, which board_state.py:316 already releases on its own after 15 raw frames and
 # must not be re-blocked for longer than that.
-REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps
+# ⚠️ 2026-09-24 起,这个上限**只管颜色判错那一路**。「参考帧说空、检测器说有子」(凭空多出一颗子)
+# 已按 Fan 的裁定改为**无上限** —— 现场实测 10 帧(~4.4 秒)会被静态反光烧穿,而放行是粘的,
+# 于是同一颗假白子在 (18,12) 上重播了 8 分 48 秒、一局之内复发三轮。详见 _reference_check。
+REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps -- colour disagreements only
 # While the game does not advance (a long think), light drifts and the reference ages out. Every this
 # many seconds the next frame that passes every capture guard re-samples, cell by cell, only what still
 # matches -- the current sample at REFERENCE_ZNCC and the sample from when the game last advanced at
@@ -90,11 +93,21 @@ REFERENCE_REFRESH_S = 60.0
 REFERENCE_ANCHOR_ZNCC = 0.45
 REFERENCE_MODES = ("off", "shadow", "on")
 
+# 「不是落子」:用户在疑似落子弹窗上按下否认时,把**那一格当时的像素**存下来。
+# 只要它还长成那样,这一格就不再被当成子 —— 判据跟参考帧同一个物理问题
+# (「这还是用户看过的那张画面吗」),所以用同一个阈值。
+#
+# 释放条件是**像素变了**,不是帧数到期:用户真把子放上去时相关性当场掉下来,标签自动失效。
+# 这一点很重要 —— 旧的「忽略」走 adopt='physical',把假阳性**收进基线**当成现实,
+# 而且顺手销毁了参考帧(RESET_SYNC → _invalidate_reference),等于在最需要否决的时刻自废武功。
+DENIAL_ZNCC = REFERENCE_ZNCC
 
-def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
-    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
-    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
-    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+
+def _glow_roi(frame: np.ndarray, geometry, row: int, col: int):
+    """The crop and ROI circle the lamp at (row, col) is looked for in.
+
+    Split out so the glare probe below measures **exactly the pixels the lamp was looked for in** —
+    a probe that picks its own window would answer a different question than the one that failed."""
     pts = np.asarray(geometry.points, dtype=float)
     sw, sh = getattr(geometry, "source_width", None), getattr(geometry, "source_height", None)
     sx = frame.shape[1] / sw if sw else 1.0
@@ -106,11 +119,65 @@ def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col
     radius = max(ROI_RADIUS_MIN_PX, ROI_CELLS * cell)
     x0, y0 = max(0, int(cx - radius) - 4), max(0, int(cy - radius) - 4)
     x1, y1 = min(frame.shape[1], int(cx + radius) + 5), min(frame.shape[0], int(cy + radius) + 5)
-    roi = (cx - x0, cy - y0, radius)
+    return x0, y0, x1, y1, (cx - x0, cy - y0, radius)
+
+
+def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
+    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
+    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
+    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+    x0, y0, x1, y1, roi = _glow_roi(frame, geometry, row, col)
     results = [
         detect_led_centroid(ref[y0:y1, x0:x1], frame[y0:y1, x0:x1], channel=channel, roi=roi) for channel in range(3)
     ]
-    return max(results, key=lambda result: result.score)
+    # `ok` before `score`: `score` is only comparable between **successes**. `ambiguous_blobs` is the one
+    # failure that carries a non-zero score (the losing blob's weight, not evidence that a lamp was found),
+    # so ranking on score alone let a failed channel outrank a channel that had actually located the lamp.
+    return max(results, key=lambda result: (result.ok, result.score))
+
+
+CLIPPED_LEVEL = 250  # same "this pixel is blown out" level check_frame_exposure uses
+
+
+def saturated_in_both_fraction(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int) -> float:
+    """Fraction of the lamp's own ROI that is pinned at the top of the range in **both** frames.
+
+    This is the glare discriminator, and the conjunction is the whole point: specular reflection means
+    those pixels are already at white before the lamp lights *and still at white after*, so lit-minus-dark
+    is 0 and the lamp stays invisible however bright it gets. Either frame on its own is only a projection
+    of that claim, and each projection lets a different impostor through:
+
+    - **Reference alone** admits "there was a highlight here, and now something covers it". `low_signal`
+      only says ``lit - ref < 15`` everywhere in the ROI, so ``ref=255, lit=0`` qualifies. On a lacquered
+      board under a ceiling light the points that throw highlights are the same points stones land on —
+      so a black stone placed on a highlight would read as glare and brighten, which is the positive
+      feedback into the 09-24 freeze this discriminator exists to prevent.
+    - **Lit frame alone** admits the camera's exposure drifting between the two frames. That window is
+      narrow (lit saturated forces ``ref >= 240``, so only a <=15-grey drift stays on the `low_signal`
+      path at all) but it is not empty, and brightening does not fix exposure drift either.
+
+    What it separates, which `reason` cannot (every one of these reads back as `low_signal`, because the
+    blue channel carries no lamp signal by construction): a hand over the lamp sits at mid-grey in both
+    frames; a lamp that never lit leaves both at ambient; a stale geometry lock points this ROI at
+    ordinary board. Only a real highlight is at white in both.
+    """
+    x0, y0, x1, y1, (rx, ry, radius) = _glow_roi(ref, geometry, row, col)
+    # 每 4 个像素取一个 —— check_frame_exposure 判整帧过曝用的就是这个口径。判据问的是「有没有
+    # 一片盖得住灯的高光」(阈值 2% 的 ROI,灯斑本身就有 450-2500px),降采样 16 倍仍然远大于 1 格,
+    # 而全分辨率下这个探针比它旁边那个三通道测量还贵。
+    step = 4
+    dark_crop, lit_crop = ref[y0:y1:step, x0:x1:step], frame[y0:y1:step, x0:x1:step]
+    if dark_crop.size == 0 or dark_crop.shape != lit_crop.shape:
+        return 0.0
+    keep = np.zeros(dark_crop.shape[:2], np.uint8)
+    cv2.circle(keep, (int(round(rx / step)), int(round(ry / step))), max(1, int(round(radius / step))), 1, -1)
+    inside = keep.astype(bool)
+    if not inside.any():
+        return 0.0
+    # max across BGR, not grey: a highlight that has pinned any one channel already destroys the
+    # lit-minus-dark signal on that channel, and the lamp only ever shows on one channel (green/red).
+    both = (dark_crop.max(axis=2) >= CLIPPED_LEVEL) & (lit_crop.max(axis=2) >= CLIPPED_LEVEL)
+    return float(both[inside].mean())
 
 
 class _FrameTrace:
@@ -225,7 +292,7 @@ class InProcessAdapter:
         # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
         self._last_raw: np.ndarray | None = None
         self._glow_ref: np.ndarray | None = None
-        # Reference-frame check: the last frame whose *raw* board matched the game record, kept as
+        # Reference-frame check: the last frame whose *raw* board matched the authoritative target, kept as
         # normalised per-cell patches in memory only -- never a file, one reference at a time.
         self._ref_mode = str(config.get("reference_check", "shadow"))
         if self._ref_mode not in REFERENCE_MODES:
@@ -235,12 +302,20 @@ class InProcessAdapter:
             self._ref_mode = "shadow"
         self._ref_sampler: CellSampler | None = None
         self._reference: ReferenceFrame | None = None
+        self._ref_compare_failed = False  # 只吼一次的闩
+        self._ref_disagree = None  # 上一帧被参考帧否决的格子(逐格掩码)
+        self._ref_stale = False  # 不再领先一手;等新参考照上来替换,期间照常按像素否决
         grid = (board_config.grid_size, board_config.grid_size)
         self._ref_hold = np.zeros(grid, dtype=int)  # veto frames spent per cell, over this reference's life
         self._ref_released = np.zeros(grid, dtype=bool)  # cells whose budget ran out: no longer vetoed
         self._ref_vetoing = False  # the last check disagreed somewhere (applied in "on", logged in shadow)
         self._ref_log_frame = -1
         self._ref_taken_at = 0.0  # monotonic time of the last capture or refresh
+        # 「不是落子」的用户标签:{(row, col): 归一化后的那一格样本}。与参考帧同一个采样器,
+        # 换了单应/换了帧尺寸就一起作废(样本对不上新的像素块)。
+        self._denied: dict[tuple[int, int], np.ndarray] = {}
+        self._denial_sampler: CellSampler | None = None
+        self._last_ref_gray: np.ndarray | None = None
         self._glow_pending: set[tuple[int, int]] = set()
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
@@ -280,6 +355,7 @@ class InProcessAdapter:
         self._motion_filter.reset()
         self._ref_sampler = None
         self._invalidate_reference("geometry")  # patches are tied to this warp
+        self._drop_denials("geometry")  # 否认样本也是按这个 warp 采的
         if self._parallax_auto:
             params = None
             if geometry is not None:
@@ -347,12 +423,12 @@ class InProcessAdapter:
 
     def _game_stone_sustain(self, weak: list, w: int, h: int) -> list:
         """The sustain-tier (below keep) detections allowed into board assignment: only those sitting within
-        SUSTAIN_RADIUS of a stone the GAME has already played (the expected board). Owner rule 2026-09-22:
-        the 0.20 tier exists so a played stone never reads as empty or as the other colour. The camera's
+        SUSTAIN_RADIUS of a stone the game or setup target already contains. Owner rule 2026-09-22:
+        the 0.20 tier exists so a placed stone never reads as empty or as the other colour. The camera's
         own last stable board is not "played": a shadow read as a stone once (E1 on the RK3562) must not
-        get the tier. No bound game -> no tier (tsumego / baipu monitor keep the pre-tier behaviour)."""
+        get the tier."""
         exp = self._expected_np
-        if not weak or exp is None or not self._bound:
+        if not weak or exp is None or not (self._bound or self._monitor):
             return []
         gs = exp.shape[0]
         points = self._active_extractor().detection_points(weak, img_w=w, img_h=h)
@@ -364,15 +440,96 @@ class InProcessAdapter:
         return kept
 
     def _invalidate_reference(self, reason: str) -> None:
+        """只在参考帧**没法再比**时才销毁(换了单应/换了帧尺寸/比对本身失败)。
+
+        记账类的理由(暂停、对局不再领先一手)一律不走这里 —— 见 Fan 2026-09-24 的原则:
+        照到新的参考帧才允许销毁旧的。空置不省空间(任何时刻只持有一份),只会让否决失效。
+        """
         if self._reference is not None:
             logger.info("refcheck reference dropped: %s", reason)
         self._reference = None
+        self._ref_stale = False
         self._reset_reference_budget()
 
     def _reset_reference_budget(self) -> None:
         self._ref_hold[:] = 0
         self._ref_released[:] = False
         self._ref_vetoing = False
+
+    def _sampler_for(self, gray: np.ndarray) -> CellSampler:
+        """The cell sampler for this frame size, built once per (geometry lock, frame size)."""
+        h, w = gray.shape[:2]
+        if self._ref_sampler is None or (self._ref_sampler.img_w, self._ref_sampler.img_h) != (w, h):
+            extractor = self._active_extractor()
+            self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
+        return self._ref_sampler
+
+    def _drop_denials(self, reason: str) -> None:
+        if self._denied:
+            logger.info("not-a-stone: dropping %d label(s) (%s)", len(self._denied), reason)
+        self._denied.clear()
+        self._denial_sampler = None
+
+    def _deny_stone(self, row: int, col: int) -> None:
+        """用户按了「不是落子」:把这一格**此刻**的样子存成否认样本。
+
+        存不下就直接说(这一格现在没法比对 —— 过曝、死黑或者压根没有结构),不要假装记住了:
+        「记住了但永远比不上」和「没记住」在用户那里看起来一样,而前者会让我们以为这条需求生效了。
+        """
+        gray = self._last_ref_gray
+        if gray is None:
+            logger.warning("not-a-stone (%d,%d): no frame to sample — the label was NOT stored", row, col)
+            return
+        sampler = self._sampler_for(gray)
+        if self._denial_sampler is not sampler:
+            self._denied.clear()  # patches from another warp/frame-size are not comparable
+            self._denial_sampler = sampler
+        patch = sample_cell(sampler, gray, row, col)
+        if patch is None:
+            logger.warning(
+                "not-a-stone (%d,%d): this cell cannot be compared right now (flat/blown/crushed) — "
+                "the label was NOT stored",
+                row, col,
+            )
+            return
+        self._denied[(row, col)] = patch
+        logger.info("not-a-stone (%d,%d) stored; %d cell(s) now denied", row, col, len(self._denied))
+
+    def _live_denials(self, gray: np.ndarray | None) -> list[tuple[int, int]]:
+        """本帧仍然站得住的否认标签,顺手丢掉已经失效的。**每帧只调一次**(要采样)。
+
+        标签在**像素变了**的那一刻失效 —— 用户真把子放到那一格上时相关性当场掉下来。
+        这比任何帧数上限都准:它问的正是用户当初在看的那个问题。
+        """
+        if not self._denied:
+            return []
+        sampler = self._denial_sampler
+        if gray is None or sampler is None or gray.shape[:2] != (sampler.img_h, sampler.img_w):
+            return list(self._denied)  # 这一帧没法比 —— 不比就不算证伪,标签继续有效
+        live = []
+        for cell in list(self._denied):
+            now = sample_cell(sampler, gray, cell[0], cell[1])
+            if now is not None and cell_zncc(self._denied[cell], now) < DENIAL_ZNCC:
+                del self._denied[cell]
+                logger.info("not-a-stone (%d,%d) released: the pixels changed", cell[0], cell[1])
+            else:
+                live.append(cell)
+        return live
+
+    def _mask_denied(self, board: np.ndarray, cells: list[tuple[int, int]]) -> np.ndarray:
+        """把 `cells` 里还占着子的格子打成 EMPTY,返回副本(没有要改的就返回原对象)。
+
+        **不写回 `_last_stable_board`**:那是识别自己的历史,把结论灌回去会让它通过自己
+        污染的状态自我印证 —— 同 `_reference_check` 那条边界。
+        """
+        hits = [(r, c) for r, c in cells if board[r][c] != EMPTY]
+        if not hits:
+            return board
+        effective = board.copy()
+        for row, col in hits:
+            effective[row][col] = EMPTY
+        logger.info("not-a-stone suppresses %s", ", ".join(f"({r},{c})" for r, c in hits))
+        return effective
 
     def _reference_check(self, board: np.ndarray, gray: np.ndarray | None) -> np.ndarray:
         """The board to hand downstream: cells that still look exactly as they did when the board last
@@ -387,22 +544,27 @@ class InProcessAdapter:
         """
         reference = self._reference
         if reference is None or gray is None:
+            self._ref_disagree = None
             return board
         sampler = reference.sampler
         if gray.shape[:2] != (sampler.img_h, sampler.img_w):  # the next capture rebuilds the sampler
             self._ref_sampler = None
-            self._invalidate_reference("frame size")
-            return board
+            return board  # 这一帧比不了 —— 但**不销毁**:下一次拍到新参考自会替换它(Fan 的原则)
         try:
             unchanged, sim = reference.unchanged(gray, REFERENCE_ZNCC)
         except Exception:  # a real bug here must be loud, and must never take recognition down with it
-            logger.warning("refcheck comparison failed; dropping the reference", exc_info=True)
-            self._invalidate_reference("comparison failed")
+            # 比对**失败**不等于旧参考作废。销毁它换不来空间(任何时刻只持有一份),只会让一次
+            # 偶发异常永久关掉否决 —— 而新参考要等「不暂停 + 无亮灯 + 盘面等于记录」才拍得成。
+            # 只跳过这一帧;真拍到新的那一刻它自然被替换。每份参考只吼一次,免得逐帧刷屏。
+            if not self._ref_compare_failed:
+                self._ref_compare_failed = True
+                logger.warning("refcheck comparison failed; skipping this frame, keeping the reference", exc_info=True)
             return board
         for row, col in self._lit_points:
             unchanged[row][col] = False  # a lit lamp changes the cell's look on its own
         disagree = unchanged & (board != reference.board) & ~self._ref_released
         self._ref_vetoing = bool(disagree.any())
+        self._ref_disagree = disagree
         if not self._ref_vetoing:
             return board
         # Counted over this reference's whole life, never reset on an agreeing frame: a detector that
@@ -414,8 +576,25 @@ class InProcessAdapter:
         # A colour disagreement gets the short one: board_state.py:316 releases a wrong colour after
         # 15 raw frames by design, and this must not quietly re-block that for half a minute.
         missing = (reference.board != EMPTY) & (board == EMPTY)
+        # Fan 2026-09-24 的裁定:**只要当前画面和参考帧比对没有变化,就持续否定这里有落子。**
+        # 压制方向(参考帧说空、检测器说有子)因此**没有帧数上限** —— 它的结束条件是像素本身变了
+        # (zncc 掉到 REFERENCE_ZNCC 以下,`unchanged` 为假),或者换了一份新参考帧。
+        #
+        # 09-24 现场:`(18,12)` 以 zncc=0.98 被否决满 10 帧后预算耗尽、放行、弹窗,而 `_ref_released`
+        # 是粘的 ⇒ 这一格在这份参考帧余生里不再被否决;偏偏新参考帧要等「盘面==记录」才建得成,
+        # 而那颗假子正好让盘面对不上 —— 死锁,同一颗假阳性无限重播。`(6,5)` 同样,它被确认成
+        # 「一手棋」时的峰值置信度只有 0.55(当天真子 0.63-0.84)。
+        #
+        # ⚠️ 已知代价(Fan 知情并拍板):参考帧的**矩阵**若在拍摄那刻就错了(某格其实压着一颗子,
+        # 而检测器与对局记录同时漏了它),那颗子将被永久否决且无自动恢复 —— 原先那 10 帧上限
+        # 正是留给这一种的逃生口。恢复手段改由人来给:重新标定,或将来的「不是落子」反向确认。
+        # 「凭空多出一颗子」= 参考帧说空、检测器说有 —— 这一种**没有上限**(Fan 的裁定)。
+        # 另外两种保留各自的预算:`missing`(记录有子而检测器看不见)给长预算;**颜色判错**给短预算
+        # —— 颜色不是"有没有落子",而 board_state.py:316 本来就会在 15 帧后释放一个错颜色,
+        # 参考帧不该把它永久反锁,否则一颗被认错颜色的子再也纠正不回来。
+        invented = (reference.board == EMPTY) & (board != EMPTY)
         limit = np.where(missing, REFERENCE_HOLD_KEEP, REFERENCE_HOLD_SUPPRESS)
-        exhausted = disagree & (self._ref_hold > limit)
+        exhausted = disagree & ~invented & (self._ref_hold > limit)
         if exhausted.any():
             # The detector has insisted on these cells for too long: it wins there, for the rest of
             # this reference's life. Only those cells -- one daylight glare often loses a stone AND
@@ -424,10 +603,15 @@ class InProcessAdapter:
             # board when it was taken), this is the exit: the real stone lands, the game moves on, and
             # the next capture replaces the reference.
             self._ref_released |= exhausted
+            # 放行不许静默(升到 warning):预算耗尽 = 参考帧说「这里没变」而我们仍然放它进盘面。
+            # 两种可能都要看得见 —— 参考帧矩阵被毒化(真有子),或一个我们挡不住的假阳性。
             er, ec = np.nonzero(exhausted)
-            logger.info(
-                "refcheck releases %s: the detector kept disagreeing",
-                ", ".join(f"({r},{c})" for r, c in zip(er.tolist(), ec.tolist())),
+            logger.warning(
+                "refcheck releases %s after the hold budget ran out: the detector kept disagreeing",
+                ", ".join(
+                    f"({r},{c}) board={board[r][c]} ref={reference.board[r][c]}"
+                    for r, c in zip(er.tolist(), ec.tolist())
+                ),
             )
             disagree &= ~exhausted
             self._ref_vetoing = bool(disagree.any())
@@ -438,17 +622,20 @@ class InProcessAdapter:
             self._ref_log_frame = self._frame_count
             shown = ", ".join(
                 f"({r},{c}) board={board[r][c]} ref={reference.board[r][c]} zncc={sim[r][c]:.2f} "
-                f"held={self._ref_hold[r][c]}/{limit[r][c]}"
+                f"held={self._ref_hold[r][c]}/"
+                f"{'inf' if invented[r][c] else (REFERENCE_HOLD_KEEP if missing[r][c] else REFERENCE_HOLD_SUPPRESS)}"
                 for r, c in list(zip(rows.tolist(), cols.tolist()))[:4]
             )
             logger.info(
                 "refcheck %s %d cell(s): %s%s",
-                "keeps" if self._ref_mode == "on" else "would keep",
+                "keeps" if self._ref_mode == "on" or (self._monitor and self._ref_mode == "shadow") else "would keep",
                 len(rows),
                 shown,
                 " ..." if len(rows) > 4 else "",
             )
-        if self._ref_mode != "on":
+        # Monitor mode has no low-confidence confirmation dialog. Apply the same reference veto
+        # there even when game sessions are still running the checker in shadow mode.
+        if self._ref_mode != "on" and not (self._monitor and self._ref_mode == "shadow"):
             return board  # shadow: the same object, so nothing downstream can diverge
         effective = board.copy()
         effective[disagree] = reference.board[disagree]
@@ -466,17 +653,27 @@ class InProcessAdapter:
 
         Never pass the reference-corrected board here: a corrected board would let a wrong veto
         authorise its own replacement reference. Even with all of this, board == game record is
-        agreement between two fallible matrices, not proof of the pixels -- REFERENCE_HOLD_SUPPRESS is
-        the last line.
+        agreement between two fallible matrices, not proof of the pixels. 压制方向的帧数上限原本是
+        这条风险的最后一道兜底,2026-09-24 已按 Fan 的裁定退役 —— 代价写在 _reference_check 里。
 
         Only ever called on a still frame (the loop reaches it inside its motion gate), so motion is
         not re-checked here.
+
+        `self._paused` blocks **taking** a new reference, and that is all it should do. Dropping the
+        reference the pause began with was the 2026-09-24 field failure: every move pauses the
+        orchestrator (lag while the board catches up), so the reference died 12 times in one game and
+        the veto was unavailable for almost all of it -- (18,12) was vetoed for 3 frames at zncc=1.00,
+        then the reference went and the same false white stone reached the screen as 12 popups.
+        Keeping it across a pause is safe because the veto is gated on the pixels, not on game state:
+        `disagree` requires `unchanged` at REFERENCE_ZNCC, so anything the player physically moves
+        while paused drops that cell's correlation and cannot be vetoed. REFERENCE_HOLD_* bounds
+        whatever is left.
         """
         expected = self._expected_np
         if (
             self._ref_mode == "off"
             or gray is None
-            or not self._bound
+            or not (self._bound or self._monitor)
             or self._paused
             or self._lit_points
             or expected is None
@@ -497,23 +694,30 @@ class InProcessAdapter:
             extractor = self._active_extractor()
             self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
         self._reference = ReferenceFrame(self._ref_sampler, gray, board)
+        self._ref_stale = False
+        self._ref_compare_failed = False
         self._ref_taken_at = now
         self._reset_reference_budget()
 
     def _refresh_reference(self, gray: np.ndarray, now: float) -> None:
-        """Same board, a minute on: re-sample what still matches, keep the rest. Hold counts and released
-        cells carry over -- a refresh must not give a poisoned reference a new life (design §4.1)."""
-        self._reference, kept = self._reference.refreshed(gray, REFERENCE_ZNCC, REFERENCE_ANCHOR_ZNCC)
+        """每分钟一次:把参考帧的照片刷成当前这一帧,**包括看起来变了的格**(Fan 2026-09-24 的裁定)。
+
+        地图(哪格有子)不动 —— 只有落子被确认之后的**重建**才换地图。刷新只让照片跟上现场。
+        """
+        self._reference, absorbed = self._reference.refreshed(gray, REFERENCE_ZNCC, REFERENCE_ANCHOR_ZNCC)
         self._ref_taken_at = now
-        blind = ~self._reference.usable.reshape(kept.shape)  # neither frame could ever compare these
-        rows, cols = np.nonzero(kept & ~blind)
+        # 照片刚跟当前这一帧对齐过,整份基准都是新鲜的 ⇒ 压制预算清零。
+        # (「凭空多出一颗子」那一路本来就没有上限了;这里主要影响颜色判错与丢子那两路。)
+        self._ref_hold[:] = 0
+        blind = ~self._reference.usable.reshape(absorbed.shape)  # neither frame could ever compare these
+        rows, cols = np.nonzero(absorbed & ~blind)
         logger.info(
-            "refcheck refreshed: kept %d changed cell(s) from the old reference%s%s (+%d that cannot be compared)",
+            "refcheck refreshed: absorbed %d changed cell(s) into the reference%s%s (+%d that cannot be compared)",
             len(rows),
             ": " if len(rows) else "",
             ", ".join(f"({r},{c})" for r, c in list(zip(rows.tolist(), cols.tolist()))[:6])
             + (" ..." if len(rows) > 6 else ""),
-            int((kept & blind).sum()),
+            int((absorbed & blind).sum()),
         )
 
     def _measure_pending_glow(self, frame: np.ndarray) -> None:
@@ -524,23 +728,53 @@ class InProcessAdapter:
         ref, geometry, stable = self._glow_ref, self._geometry, self._last_stable_board
         if ref is None or geometry is None or getattr(geometry, "points", None) is None or ref.shape != frame.shape:
             return
+        readings = []
         for row, col in sorted(cells):
             if stable is not None and int(stable[row][col]) != EMPTY:
                 continue
             result = measure_led_glow(ref, frame, geometry, row, col)
-            self._event_queue.put(
-                {
-                    "type": "led_glow",
-                    "data": {
-                        "row": int(row),
-                        "col": int(col),
-                        "ok": bool(result.ok),
-                        "score": round(float(result.score), 1),
-                        "peak": round(float(result.peak), 1),
-                        "area": int(result.area),
-                    },
-                }
+            clipped = 0.0 if result.ok else saturated_in_both_fraction(ref, frame, geometry, row, col)
+            readings.append((row, col, result, clipped))
+        if not readings:
+            return
+        # **一次观测只发一个读数。** 补多手时(lag 恢复:`to_place` 里有几手就点几盏)这一批灯全是在
+        # 同一帧、同一个亮度下量出来的 —— 它们是一次观测的 N 个样本,不是 N 次观测。原来逐个发出去,
+        # 服务端就把同一个偏差修正了 N 遍,每一遍还乘在上一遍改过的亮度上:实测 6 盏 4x 偏亮的读数把
+        # 亮度从 1.0 一路打到 0.08 地板(正确答案是 0.5),第 3 盏就已经暗到人看不见灯了。
+        # 挑法:有测到灯的就用**最亮的那个干净读数**;全都没测到,就用**最像反光的那个**(过曝比例最高)。
+        if any(result.ok for _r, _c, result, _clip in readings):
+            row, col, result, clipped = max((r for r in readings if r[2].ok), key=lambda r: r[2].score)
+        else:
+            row, col, result, clipped = max(readings, key=lambda r: r[3])
+        if len(readings) > 1:
+            logger.info(
+                "led_glow batch of %d, steering on (%s,%s): %s",
+                len(readings),
+                row,
+                col,
+                " ".join(
+                    f"({r},{c})={'ok' if x.ok else x.reason}:{x.score:.0f}/clip{clip:.3f}" for r, c, x, clip in readings
+                ),
             )
+        self._event_queue.put(
+            {
+                "type": "led_glow",
+                "data": {
+                    "row": int(row),
+                    "col": int(col),
+                    "ok": bool(result.ok),
+                    "score": round(float(result.score), 1),
+                    "peak": round(float(result.peak), 1),
+                    "area": int(result.area),
+                    "reason": str(getattr(result, "reason", "") or ""),  # 诊断用,**不**作判据 —— 见下
+                    # 反光判据。`reason` 当不了这个判据:白灯纯绿 (0,255,0)、黑灯纯红,BGR 的通道 0(蓝)
+                    # 按构造就没有灯信号,必然 peak<PEAK_MIN_ROI 返回 low_signal 且 score=0.0;三通道全失败时
+                    # score 全是 0.0,max 返回第一个 ⇒ **reason 恒为蓝通道的 low_signal**。于是反光、手挡住、
+                    # 串口掉线、几何锁过期、整帧过曝全读成同一个字符串。真正分得开的是这个数。
+                    "clipped": round(float(clipped), 4),
+                },
+            }
+        )
 
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
@@ -600,6 +834,13 @@ class InProcessAdapter:
             and int(stable_board[cell[0]][cell[1]]) == EMPTY
             and (exp is None or int(exp[cell[0]][cell[1]]) == EMPTY)
             and not (masked and cell in masked)
+            # 参考帧正在否决这一格 ⇒ 那里的像素与拍参考时逐点相同 ⇒ **没有新东西落上去**。
+            # 「持续存在」正是反光的特征(它不会动),提升器把它当成了「是真子」的证据,于是
+            # 一个 0.33 的检测绕过否决进了盘面 —— 2026-09-24 实测 (18,12) 两局复现,
+            # refcheck 已经 `zncc=1.00 held=7/10` 连否,紧接着就是 ambiguous promotion。
+            # 这不会堵死提升器存在的理由(低置信度真子唯一的通道):真子会改变像素,
+            # 参考帧根本不会否决它。
+            and not (self._ref_disagree is not None and bool(self._ref_disagree[cell[0]][cell[1]]))
         }
         hit = self._promoter.step(candidates)
         if hit is None:
@@ -737,7 +978,11 @@ class InProcessAdapter:
                         tr.mark("ae")
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
-                    ref_gray = to_gray(warped) if self._ref_mode != "off" and self._bound and not self._paused else None
+                    # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
+                    want_gray = (self._ref_mode != "off" or self._denied) and (self._bound or self._monitor) and not self._paused
+                    ref_gray = to_gray(warped) if want_gray else None
+                    if ref_gray is not None:
+                        self._last_ref_gray = ref_gray
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
                     if tr:
@@ -821,8 +1066,16 @@ class InProcessAdapter:
                     self._last_stable_board = stable_board
                     if tr:
                         tr.mark("assign")
-                    observed_board = self._reference_check(stable_board, ref_gray)
-                    self._maybe_capture_reference(stable_board, raw_observation, ref_gray)
+                    # 「不是落子」先于参考帧生效,而且**也喂给拍参考的那一步**。这是关键:
+                    # 拍新参考要求「读数 == 对局记录」,假阳性在场时这条永远不成立 ⇒ 参考帧再也
+                    # 更新不了(09-24 现场那个「放行之后就死循环」的形状)。用户否认之后把那一格
+                    # 按空处理,参考帧立刻就能重拍 —— 新参考把这团反光拍进照片、地图记它是空,
+                    # 之后「照片一样 + 地图说空」这条常设否决就接手了(凭空多出的子无帧数上限)。
+                    denied_cells = self._live_denials(ref_gray)
+                    denied_stable = self._mask_denied(stable_board, denied_cells)
+                    denied_observation = self._mask_denied(raw_observation, denied_cells)
+                    observed_board = self._reference_check(denied_stable, ref_gray)
+                    self._maybe_capture_reference(denied_stable, denied_observation, ref_gray)
                     if tr:
                         tr.mark("refchk")
                     self._observation_seq += 1
@@ -1070,6 +1323,7 @@ class InProcessAdapter:
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
                 self._invalidate_reference("bind")
+                self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()
@@ -1082,29 +1336,30 @@ class InProcessAdapter:
                 self._promoter.reset()
                 self._move_detector.reset_suspicion()  # a new session starts every cell at zero
                 self._invalidate_reference("unbind")
+                self._drop_denials("unbind")
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 if self._reference is not None and not np.array_equal(board, self._reference.board):
-                    # The reference stays valid only while the game moved FORWARD from the position it
-                    # shows: every stone it holds is still there in the same colour, and at most one
-                    # new stone appeared. Undo, navigation to a sibling, a new game and an undone
-                    # capture all take a stone away from that position, so they drop it. The
-                    # orchestrator re-sends the same expected board off game state
-                    # (physical_play_orchestrator.py:160), several times a second while the engine
-                    # streams: a re-send must keep the reference, which this rule does (kept, zero
-                    # added). Do NOT "simplify" it to `added != 1` -- that drops the reference on every
-                    # re-send and the feature would silently never hold anything. The equality check
-                    # above only skips the arithmetic.
+                    # Undo, sibling navigation and captures can move the game away from the
+                    # reference position. Mark it stale, but keep its image until a clean frame
+                    # replaces it: unchanged pixels still give valid evidence for each cell.
+                    # Repeated expected-board updates from the orchestrator must keep it too.
                     # Known and accepted: a setup edit that only adds one stone looks like a move
-                    # here. The capture guards and REFERENCE_HOLD_SUPPRESS bound that case.
+                    # here. The capture guards still constrain that case; the invented-stone hold
+                    # no longer has a frame budget.
                     ref_board = self._reference.board
                     kept = bool(np.all((ref_board == EMPTY) | (board == ref_board)))
                     added = int(((ref_board == EMPTY) & (board != EMPTY)).sum())
+                    # Keep the old image until a clean replacement is captured. This also covers
+                    # monitor-driven 摆谱, which may guide several moves without a dark frame.
                     if not kept or added > 1:
-                        self._invalidate_reference("expected board is no longer a move ahead")
+                        self._ref_stale = True
+                for cell in [c for c in self._denied if board[c[0]][c[1]] != EMPTY]:
+                    del self._denied[cell]
+                    logger.info("not-a-stone (%d,%d) released: the game record now has a stone there", *cell)
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
@@ -1125,6 +1380,9 @@ class InProcessAdapter:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
                 self._invalidate_reference("setup mode")
+                if self._monitor and not self._bound:
+                    # A clean setup frame is the monitor's reference before the next guidance lamp lights.
+                    self._expected_np = target
             elif cmd.action == CommandType.RESET_SYNC:
                 self._invalidate_reference("resync")
                 expected = cmd.data.get("expected") if cmd.data else None
@@ -1156,6 +1414,8 @@ class InProcessAdapter:
                 self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
+            elif cmd.action == CommandType.DENY_STONE:
+                self._deny_stone(int(cmd.data["row"]), int(cmd.data["col"]))
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:
@@ -1166,15 +1426,14 @@ class InProcessAdapter:
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False
+                    self._expected_np = None
+                    self._invalidate_reference("monitor stopped")
             elif cmd.action == CommandType.SET_PAUSED:
                 self._paused = cmd.data.get("paused", False)
-                if self._paused:
-                    self._invalidate_reference("paused")
             elif cmd.action == CommandType.SET_MOVE_ARMED:
                 self._move_armed = cmd.data.get("armed", False)
             elif cmd.action == CommandType.PAUSE_DETECTION:
                 self._paused = True
-                self._invalidate_reference("paused")
             elif cmd.action == CommandType.RESUME_DETECTION:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:

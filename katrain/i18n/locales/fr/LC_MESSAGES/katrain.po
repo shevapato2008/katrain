@@ -4040,10 +4040,10 @@ msgid "setup:my_side"
 msgstr "Ma couleur"
 
 msgid "setup:take_black"
-msgstr "Noir"
+msgstr "Prendre Noir"
 
 msgid "setup:take_white"
-msgstr "Blanc"
+msgstr "Prendre Blanc"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -7104,3 +7104,169 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Le moteur d'IA n'est pas encore prêt — veuillez réessayer plus tard"
+
+msgid "vision:relocate"
+msgstr "Aligner cadre"
+
+msgid "vision:relocating"
+msgstr "Alignement…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Non aligné"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Le cadre extérieur du goban est introuvable dans l'image — écartez ce qui "
+"masque le bord et réessayez."
+
+msgid "vision:relocate_failed"
+msgstr "Réessayez ; si ça persiste, videz le goban et recalibrez."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Le goban a bougé et le dernier calibrage ne correspond plus — utilisez « "
+"Aligner cadre » (sans LED, fonctionne avec des pierres sur le plateau) ou "
+"recalibrez"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"L'indicateur « LED » signale seulement que le port série est connecté, pas "
+"que chaque lampe s'allume ; si un point ne s'allume pas pendant le guidage, "
+"ce tronçon de la bande LED est probablement défectueux."
+
+msgid "platform:fact_whose"
+msgstr "Le compte de qui"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"C'est le compte propre à Golaxy, pas celui du boîtier. Pas encore de compte "
+"? Inscrivez-vous dans l'appli Golaxy sur votre téléphone — impossible de le "
+"faire sur le boîtier."
+
+msgid "platform:fact_three_ways"
+msgstr "Trois façons"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scanner — pas une seule lettre à taper. Code SMS — il suffit d'attendre un "
+"texto. Mot de passe — le plus rapide, mais à taper sur l'écran tactile."
+
+msgid "platform:fact_stored"
+msgstr "Ce qui reste sur le boîtier"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Seul le jeton de connexion émis par Golaxy est conservé ici, pas le mot de "
+"passe. Déconnectez-vous à tout moment dans les Réglages."
+
+msgid "platform:fact_only_one"
+msgstr "Sur le boîtier, seulement ainsi"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"Le site web d'OGS accepte aussi les comptes Google, Apple et autres — cette "
+"voie nécessite un navigateur, réservée à l'édition internationale."
+
+msgid "platform:fact_third_party"
+msgstr "Inscrit via un tiers"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Ces comptes n'ont pas de mot de passe OGS — configurez-en un d'abord sur le "
+"site web d'OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Votre compte sur online-go.com. L'inscription doit se faire dans un "
+"navigateur — impossible sur le boîtier."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Seule la session après connexion est conservée ici, pas le mot de passe. "
+"Déconnectez-vous à tout moment dans les Réglages."
+
+msgid "platform:login_tab_sms"
+msgstr "Code SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Mot de passe"
+
+msgid "platform:login_field_phone"
+msgstr "Numéro de téléphone"
+
+msgid "platform:login_field_code"
+msgstr "Code SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Non connecté · connexion par code SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Non connecté · connexion avec le compte et le mot de passe de {name}"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Non connecté · connexion avec le compte et le mot de passe Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Non connecté · utilisez votre compte online-go.com"
+
+msgid "platform:login_title"
+msgstr "Connexion à {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Votre rang provient aussi de ce compte"
+
+msgid "platform:login_tabs"
+msgstr "Méthode de connexion"
+
+msgid "platform:login_tab_scan"
+msgstr "Scanner"
+
+msgid "platform:login_sub_scan"
+msgstr "Non connecté · scannez avec l'appli Golaxy sur votre téléphone"
+
+msgid "platform:scan_state_waiting"
+msgstr "En attente du scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Scanné, confirmez sur votre téléphone"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmé, connexion en cours…"
+
+msgid "platform:scan_state_expired"
+msgstr "Le QR code a expiré"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Annulé sur votre téléphone"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Impossible de joindre Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Vérifiez le réseau"
+
+msgid "platform:scan_retry"
+msgstr "Réessayer"
+
+msgid "platform:scan_title"
+msgstr "Ouvrez l'appli Golaxy et scannez"
+
+msgid "platform:scan_body"
+msgstr ""
+"Confirmez sur votre téléphone après le scan — le mot de passe ne passe "
+"jamais par ce boîtier."
+
+msgid "platform:scan_qr_alt"
+msgstr "QR code de connexion Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Nouveau code"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "touchez ici pour un nouveau code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Échec de la confirmation de connexion"
+
+msgid "vision:not_a_stone"
+msgstr "Ce n'est pas une pierre"

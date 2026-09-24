@@ -21,10 +21,26 @@ const RING_C = 2 * Math.PI * RING_R;
  *
  * 值读不到时环里写「—」不写 0%(G8:0% 是一个事实断言,而我们并不知道)。
  */
-export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, disabled, onClick, ariaLabel }: {
+/**
+ * 外来品牌标记(今天只有屏 01 的跨平台卡用)。**不是图标** —— 图标走 `icon`,从 Phosphor 出、
+ * 随容器染色;标记是别人家的资产,保留原色、放在换了语气的衬里。两条不能混,
+ * 见 `../constants/platformMarks.ts` 和 `../assets/platform-marks/README.md`。
+ *
+ * `disc`:标记本身是个**圆形实心**图形(而不是自带方底的应用图标)。这两类的处理不同 ——
+ * 自带方底的满幅铺满、由衬切圆角;圆形的居中缩小 + 加一圈极细的环。写成一个可选布尔
+ * 而不是 `fit` + `rim` 两个字段,是因为「内嵌但不加环」和「满幅还加环」都不是有效组合,
+ * 拆成两个字段就造得出这两种不存在的状态。
+ */
+export interface CardMark {
+  src: string;
+  disc?: boolean;
+}
+
+export function KioskCard({ title, sub, icon, mark, ring, current, soon, todo, dot, disabled, onClick, ariaLabel }: {
   title: string;
   sub: string;
   icon?: IconName;
+  mark?: CardMark;
   ring?: number | null;      // undefined = 不是环卡;null = 是环卡但读不到值 ⇒ 写「—」
   current?: boolean;
   soon?: string;             // 文案由调用方给(「即将上线」/「未录制」),不许写「锁定」
@@ -51,7 +67,12 @@ export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, di
       disabled={Boolean(soon || todo || disabled)}
       onClick={onClick}
     >
-      <span className={`kiosk-card__tile${isRing ? ' is-ring' : ''}`}>
+      <span
+        className={
+          `kiosk-card__tile${isRing ? ' is-ring' : ''}`
+          + (mark ? ` is-brand${mark.disc ? ' is-disc' : ''}` : '')
+        }
+      >
         {isRing ? (
           <>
             <svg viewBox="0 0 40 40" aria-hidden="true">
@@ -67,6 +88,10 @@ export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, di
             </svg>
             <b>{pct == null ? '—' : `${pct}%`}</b>
           </>
+        ) : mark ? (
+          // `alt=""`:卡片的可及名(`aria-label`)已经把标题、副标、徽标都念了,
+          // 标记再念一遍就是重复。它是装饰,不是信息。
+          <img className="kiosk-card__mark" src={mark.src} alt="" />
         ) : icon && <Icon name={icon} />}
       </span>
       <span className="kiosk-card__t"><b>{title}</b><em>{sub}</em></span>

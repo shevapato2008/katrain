@@ -6789,3 +6789,144 @@ msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
 
 msgid "engine:warmup_unavailable"
 msgstr "AI 引擎暫未就緒，可稍後重試"
+
+msgid "vision:relocate"
+msgstr "對齊外框"
+
+msgid "vision:relocating"
+msgstr "正在對齊…"
+
+msgid "vision:relocate_failed_title"
+msgstr "沒對上"
+
+msgid "vision:relocate_no_board"
+msgstr "畫面裡找不到棋盤外框，移開擋住邊框的東西再試一次。"
+
+msgid "vision:relocate_failed"
+msgstr "再試一次；一直不行就清空棋盤重新標定。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr "棋盤挪動過，上次的標定對不上了 —— 用「對齊外框」（不亮燈，盤上有子也能對）或重新標定"
+
+msgid "vision:led_serial_note"
+msgstr "LED 那一格只說序列埠通了，不代表每顆燈都亮；引導時發現某處不亮，多半是燈條那一段壞了。"
+
+msgid "platform:fact_whose"
+msgstr "用誰的帳號"
+
+msgid "platform:fact_whose_golaxy"
+msgstr "星陣自己的帳號，不是智星盒的。沒有就在手機上的星陣 APP 註冊——盒上註冊不了。"
+
+msgid "platform:fact_three_ways"
+msgstr "三種都能用"
+
+msgid "platform:fact_three_ways_body"
+msgstr "掃碼一個字都不用打；驗證碼等一條簡訊；密碼最快，但要在觸屏上打。"
+
+msgid "platform:fact_stored"
+msgstr "盒上留下什麼"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "只留星陣發的登入權杖，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:fact_only_one"
+msgstr "盒上只做這一種"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGS 網頁上還能用 Google、Apple 等帳號；那條要跳瀏覽器，留給出海版。"
+
+msgid "platform:fact_third_party"
+msgstr "用第三方註冊的"
+
+msgid "platform:fact_third_party_body"
+msgstr "那種帳號沒有 OGS 密碼，得先去 OGS 網頁上設一個。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 的帳號。註冊要在瀏覽器裡做，盒上做不了。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "只留登入後的工作階段，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:login_tab_sms"
+msgstr "驗證碼"
+
+msgid "platform:login_tab_password"
+msgstr "密碼"
+
+msgid "platform:login_field_phone"
+msgstr "手機號碼"
+
+msgid "platform:login_field_code"
+msgstr "驗證碼"
+
+msgid "platform:login_sub_sms"
+msgstr "未連接 · 用手機驗證碼登入"
+
+msgid "platform:login_sub_password"
+msgstr "未連接 · 用{name}的帳號密碼登入"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "未連接 · 用星陣的帳號密碼登入"
+
+msgid "platform:login_sub_ogs"
+msgstr "未連接 · 用 online-go.com 的帳號"
+
+msgid "platform:login_title"
+msgstr "登入{name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "段位也是從這個帳號來的"
+
+msgid "platform:login_tabs"
+msgstr "登入方式"
+
+msgid "platform:login_tab_scan"
+msgstr "掃碼"
+
+msgid "platform:login_sub_scan"
+msgstr "未連接 · 用手機上的星陣 APP 掃一掃"
+
+msgid "platform:scan_state_waiting"
+msgstr "等待掃描"
+
+msgid "platform:scan_state_scanned"
+msgstr "已掃描，請在手機上確認"
+
+msgid "platform:scan_state_confirmed"
+msgstr "已確認，正在登入…"
+
+msgid "platform:scan_state_expired"
+msgstr "二維碼已失效"
+
+msgid "platform:scan_state_cancelled"
+msgstr "手機上取消了登入"
+
+msgid "platform:scan_unavailable_title"
+msgstr "連不上星陣"
+
+msgid "platform:scan_unavailable_body"
+msgstr "檢查網路"
+
+msgid "platform:scan_retry"
+msgstr "重試"
+
+msgid "platform:scan_title"
+msgstr "打開星陣 APP 掃一掃"
+
+msgid "platform:scan_body"
+msgstr "掃完在手機上點確認，密碼不經過這台盒子。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣登入二維碼"
+
+msgid "platform:scan_refresh"
+msgstr "換一張"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "點此換一張"
+
+msgid "platform:scan_confirm_failed"
+msgstr "確認登入失敗"
+
+msgid "vision:not_a_stone"
+msgstr "不是落子"

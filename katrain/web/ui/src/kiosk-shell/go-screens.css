@@ -60,13 +60,12 @@
 .gob .star { fill: var(--gb-line); }
 /* 最后一手的圈 */
 .gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.gob .pending-ring { fill: none; stroke-width: 7; }
+.gob .pending-ring--b { stroke: #fff; }
+.gob .pending-ring--w { stroke: #141414; }
 /* 候选点:半透明青玉圈,不画成棋子 */
 .gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
-/* 摆谱屏(屏 17)的候选点:**颜色必须和实体盘上那颗灯一致** —— 黑子亮红灯、白子亮绿灯
-   (`constants/ledColors.ts` 的 `LED_HEX`:black `#ff3b30` / white `#34c759`,
-   四处独立来源一致)。上面那条不带修饰的青玉圈留给**没有灯**的场合(做题屏的提示),
-   借用灯的语义会让人以为盘上也亮着一颗。
-   ⚠️ 稿子那一帧把 C7(黑棋)的圈画成了绿的 —— 那是稿子错了,不是这里跑偏,已回报。 */
+/* 可选的分色空点提示；摆谱下一手现在画棋子和反色环。 */
 .gob .ghost--b { fill: rgba(255, 59, 48, .32); stroke: rgba(255, 59, 48, .95); }
 .gob .ghost--w { fill: rgba(52, 199, 89, .32); stroke: rgba(52, 199, 89, .95); }
 
@@ -1388,10 +1387,81 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    **只给有模态的那一屏加**,不动共享的 `.kiosk-layout-b`。 */
 .kiosk-layout-b.plat-layout { position: relative; }
 
-/* 屏 07 登录段:错误落点 + 提交键。稿子只画到两行输入 —— 错误没有落点等于没报错,
-   而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
+/* 登录出错的落点(`PlatformLoginPage`)。错误没有落点等于没报错。 */
 .loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
-.loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* ── 屏 07b/08 登录独立成页 ───────────────────────────────────────────────
+   设计源 `go-kiosk.tmpl.html:663-699`,逐字抄,**只改了两处、都写在各自那一行边上**:
+     ① `.xplogin__main` 原来是 `justify-content: center`,改成滚动容器 `overflow-y: auto`,
+        居中改由 `.xpcol { margin: auto }` 接手 —— 见下面的说明。
+     ② `.xpqr`(二维码区)Task 6 搬完了,见下面「扫码登录」那一段。
+   全部选择器套一层 `[data-testid="platform-login-page"]` 作用域 —— 本 track 判例
+   (同一份样式表里的同名类会跨屏污染,`.xpwho b` / `.xpfacts p` 这种元素选择器尤其危险)。
+
+   **`.xplogin__main` 为什么必须能滚(承重,归真浏览器几何闸,不归四图)**:
+   `PlatformConnectPage.tsx` 那段软键盘避让是「给滚动区垫一段等于键盘高度的下内衬」——
+   但 `.xplogin` 是 `overflow: hidden` + 垂直居中,垫 padding 换不来任何可滚的余量。
+   `.xplogin__main` 换成 `overflow-y: auto` 之后,`.xpcol` 改用 `margin: auto` 而不是
+   父级的 `justify-content: center`:居中的 flex 容器一旦溢出会把顶部裁掉且滚不回去,
+   `margin: auto` 在有余量时一样居中,内容溢出时会让出滚动空间而不是裁切。 */
+[data-testid="platform-login-page"] .xplogin { flex: 1; min-height: 0; display: flex; padding: 0; overflow: hidden; }
+[data-testid="platform-login-page"] .xplogin__aside { width: 300px; flex: none; display: flex; flex-direction: column; justify-content: center;
+  gap: 16px; padding: 18px 22px; border-right: 1px solid var(--hair);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 62%); }
+[data-testid="platform-login-page"] .xpwho { display: flex; align-items: center; gap: 11px; }
+[data-testid="platform-login-page"] .xpwho .mark { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--panel); color: var(--accent); }
+[data-testid="platform-login-page"] .xpwho .mark svg { width: 21px; height: 21px; fill: currentColor; }
+[data-testid="platform-login-page"] .xpwho b { display: block; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+[data-testid="platform-login-page"] .xpwho span { font-size: 11.5px; color: var(--dim); letter-spacing: .03em; }
+[data-testid="platform-login-page"] .xpfacts { display: flex; flex-direction: column; gap: 13px; }
+[data-testid="platform-login-page"] .xpfacts > div { display: flex; flex-direction: column; gap: 3px; }
+[data-testid="platform-login-page"] .xpfacts b { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfacts p { font-size: 12.5px; line-height: 1.55; color: var(--text); }
+[data-testid="platform-login-page"] .xplogin__main { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; padding: 18px 24px; overflow-y: auto; }
+[data-testid="platform-login-page"] .xpcol { width: 520px; display: flex; flex-direction: column; gap: 14px; margin: auto; }
+[data-testid="platform-login-page"] .xpcol .igrow + .igrow { margin-top: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-seclabel { margin-bottom: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-optseg { height: 52px; }
+[data-testid="platform-login-page"] .xpfield { flex: 1; min-width: 0; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); font-size: 13.5px; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfield input { flex: 1; min-width: 0; border: 0; background: none; padding: 0;
+  font-family: var(--font-mono); font-size: 17px; font-weight: 500; letter-spacing: .04em; color: var(--text); }
+[data-testid="platform-login-page"] .xpfield input::placeholder { color: var(--dim); font-family: var(--font-sans);
+  font-weight: 400; letter-spacing: normal; }
+[data-testid="platform-login-page"] .xpfield i { margin-left: auto; flex: none; font-style: normal; font-size: 12px; color: var(--accent); }
+[data-testid="platform-login-page"] .xpcode { height: 56px; flex: none; }
+[data-testid="platform-login-page"] .xptabs { flex: none; }
+[data-testid="platform-login-page"] .xpgo { flex: 1; height: 56px; justify-content: center; font-size: 16px; }
+
+/* ── 扫码登录(Task 6,`GolaxyScanPanel`)── 设计源 `go-kiosk.tmpl.html:699-711`,逐字抄,
+   全部选择器套上这一屏的 testid 作用域(判例:同一份样式表里的同名类会跨屏污染)。
+   `.qrbox` 白底(`#EEF3F1`)是**功能不是装饰** —— 反色码很多扫码器不认,这是全稿
+   唯一一处浅底。`.qrbox--unavailable`/`.scan-unavailable` 是这一屏特有的第六种态
+   (设计源没画,取不到 scan_id 时用):同样的方框尺寸换成虚线边,不摆假码。 */
+[data-testid="platform-login-page"] .xpqr { display: flex; align-items: center; gap: 22px; }
+[data-testid="platform-login-page"] .qrbox { width: 188px; height: 188px; flex: none; padding: 10px;
+  border-radius: 12px; background: #EEF3F1; }
+[data-testid="platform-login-page"] .qrbox--unavailable { background: var(--panel);
+  border: 1px dashed var(--hair); box-sizing: border-box; }
+[data-testid="platform-login-page"] .qrimg { width: 100%; height: 100%; display: block; }
+[data-testid="platform-login-page"] .xpqr__side { flex: 1; min-width: 0; display: flex;
+  flex-direction: column; align-items: flex-start; gap: 10px; }
+[data-testid="platform-login-page"] .xpqr__side h4 { font-family: var(--font-serif); font-size: 16px; font-weight: 600; }
+[data-testid="platform-login-page"] .xpqr__side p { font-size: 12.5px; line-height: 1.6; color: var(--dim); }
+/* 状态药丸:五种状态换的是这一颗的字和灯色,不是把二维码换掉 */
+[data-testid="platform-login-page"] .xpstat { display: inline-flex; align-items: center; gap: 8px; height: 34px;
+  padding: 0 13px; flex: none; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 999px; background: var(--panel); font-size: 12.5px; color: var(--text); }
+[data-testid="platform-login-page"] .xpstat .led { width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* `.xpfield` 是外层 `<span>`(判例同屏 04 `.nameinput`:「真页面上它必须真能输入」),
+   里面一个真 `<input>` + 常驻的 `<i>点此输入</i>`。**2026-09-23(Task 8b 视觉关卡第⑤条)
+   改掉了「真输入框自己的 placeholder 就顶替 `<i>` 提示」那个假设**:placeholder 一输入
+   就消失,触屏上就再没有任何「这里能点」的信号了 —— 而设计源 `.xpfield i` 本来就是和值
+   同时常驻的第二个子元素,所以这里也让它跟输入值并存,不随输入消失。 */
 
 /* ── 屏 24 课程 · 书目与章节 ────────────────────────────────────────────────
    章行本身就是展开控件(稿子那三个行尾键「已看完 / 接着看 / 开始」不做 —— 盒上没有可信的
@@ -1971,3 +2041,66 @@ button.kiosk-row.figrow { flex: none; }
    收紧到 1.2(≈18px)把框让给字形的自然行高,不动字号、不动按钮盒高(触摸目标
    仍是 40/48 那几个数)。11 语种全量复核:此前绿的语种收紧后仍然绿。 */
 [data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { line-height: 1.2; }
+
+/* ── 外来平台的品牌标记 ────────────────────────────────────────────────
+   两个槽共用这一组:屏 01「跨平台对弈」的卡内 40 方衬(`.kiosk-card__tile`,
+   几何在 `tokens.css`)和屏 07a/07b/08 登录页左栏的 42 方衬(`.xpwho .mark`)。
+
+   **这不是把图标换个文件,是把衬的语气换掉。** `.kiosk-card__tile` 原本是为
+   Phosphor 线性图标设计的容器:`--panel` 底 + `--hair` 描边 + `color: var(--accent)`
+   染色 —— 这整套说的是「**我们画的图标**」。而这三张卡按下去意味着离开这台盒子、
+   去别人家下棋,所以衬要从「我们的图标底衬」变成「放外来物的凹槽」:底沉到最暗的
+   `--ink`,描边退回中性,取消染色。**几何(40/42、圆角、间距)一个字没动。**
+
+   为什么写在这儿而不是 `tokens.css`:那份是四棋类共享包、由 `MANIFEST.sha256`
+   钉死字节(真源在 smartbox-software),而品牌标记只有围棋 kiosk 有。
+   选择器一律带第二个类(`.is-brand`),特异性 0,2,0 > tokens 的 0,1,0 ——
+   **不靠加载顺序赢**(Vite 不保证 go-screens.css 与组件级 CSS 的相对顺序)。
+
+   `.is-soon` 的压暗(`card.css`:`opacity:.5; filter:grayscale(.3)`)**已经作用在整卡上**,
+   这里不再给标记单独加一层去色。野狐保留它的橙色,跟着整卡一起淡下去 ——
+   那条规则已经拍过板,不在这儿判第二遍。 */
+.kiosk-card__tile.is-brand,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand {
+  background: var(--ink);
+  border-color: var(--hair);
+  overflow: hidden;   /* 满幅标记由衬的圆角裁切 */
+}
+.kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand img {
+  /* 默认满幅:标记自带方形底(星阵的星座、野狐的应用图标),铺满衬、由衬切圆角。
+     星阵那张在官方文件里左边本来就裁掉一半 —— 满幅之后那道裁切读起来是
+     「一片裁到边的星空」,居中留白反而会像渲染坏了。 */
+  width: 100%; height: 100%; display: block; object-fit: contain;
+}
+/* 圆形实心标记(OGS 那颗棋子)。
+   **尺寸按墨量配,不按外框配**:Phosphor 是镂空线条,实心图形在同样外框下墨量约三倍,
+   并排会把视线抢走 —— 而跨平台这一排在屏 01 上是第三优先级(人机、人人都在它上面)。
+   内接圆的面积是外接方的 π/4,所以 62% 见方的圆 ≈ 22px 线性图标的墨量,和邻座持平。
+
+   那圈 1px 的浅色环是**功能不是装饰**:棋子黑的那半(#010101)和深色衬(#0F1416)
+   几乎同值,不加环的话屏上只剩一个白色半圆,读起来像月亮不像棋子。 */
+.kiosk-card__tile.is-brand.is-disc .kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand.is-disc img {
+  width: 62%; height: 62%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent);
+}
+
+/* ── 二维码作废:压暗 + 中间刷新图标,点码即换(Fan 2026-09-24 拍板) ──────
+   星阵自己网页上就是这个手势(过期码中间压一个刷新符号,点它重出码),用户已经会了。
+   压暗的是**码本身**不是整块:白底留着 —— 那个白底是功能不是装饰(反色码很多扫码器
+   不认),压暗白底会让「这块是二维码」这件事也一起变模糊。
+   `--dead` 而不是 `--expired`:失效和取消在这一屏上要做的动作完全一样,
+   区别只在旁边那行字说的原因。 */
+[data-testid="platform-login-page"] .qrbox--dead { position: relative; cursor: pointer; }
+[data-testid="platform-login-page"] .qrbox--dead .qrimg { opacity: .28; }
+[data-testid="platform-login-page"] .qrbox__refresh {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+[data-testid="platform-login-page"] .qrbox__refresh .kiosk-icon {
+  width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%;
+  /* 深色圆衬在浅色码上 —— 图标直接压在码的黑白方块上会糊成一团,认不出是个刷新符号。 */
+  background: var(--ink); color: var(--text);
+}
+[data-testid="platform-login-page"] .qrbox__refresh svg { width: 30px; height: 30px; fill: currentColor; }

@@ -144,6 +144,23 @@ def _usable(patches: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return std, (std >= MIN_PATCH_STD) & (blown <= MAX_SATURATED_FRACTION) & (crushed <= MAX_SATURATED_FRACTION)
 
 
+def sample_cell(sampler: CellSampler, gray: np.ndarray, row: int, col: int) -> np.ndarray | None:
+    """One cell's normalised patch, or None when this frame cannot compare it (flat / blown / crushed).
+
+    Same normalisation and same usability rule as a whole ReferenceFrame, so a patch taken here and a
+    patch taken there are directly comparable by `cell_zncc`. Returning None rather than a zero vector
+    is deliberate: "cannot be compared" must not silently become "correlates with nothing".
+    """
+    patches = sampler.sample(gray)[row * sampler.grid_size + col][None, :]
+    normalised, usable = _normalise(patches)
+    return normalised[0] if bool(usable[0]) else None
+
+
+def cell_zncc(a: np.ndarray, b: np.ndarray) -> float:
+    """ZNCC of two patches from `sample_cell`; both must come from the same sampler."""
+    return float(_zncc(a[None, :], b[None, :])[0])
+
+
 class ReferenceFrame:
     """One reference: the normalised cell patches of a frame plus the board it is known to show."""
 
@@ -162,18 +179,32 @@ class ReferenceFrame:
         zncc = _zncc(self.normalised, normalised)
         return np.where(usable, zncc, np.nan).astype(np.float32).reshape(self.sampler.grid_size, -1)
 
-    def refreshed(self, gray: np.ndarray, threshold: float, anchor_threshold: float) -> tuple["ReferenceFrame", np.ndarray]:
-        """This reference with the cells that still look the same re-sampled from `gray`, so slow light
-        drift during a long think does not age it out. A cell is re-sampled only if both frames can
-        compare it, it matches the current sample at `threshold` AND the anchor at `anchor_threshold`;
-        every other cell keeps its old sample -- a change nobody recognised (a stone that landed unseen)
-        is never absorbed. Returns (new reference, (grid, grid) mask of the cells kept from the old one).
+    def refreshed(
+        self, gray: np.ndarray, threshold: float, anchor_threshold: float
+    ) -> tuple["ReferenceFrame", np.ndarray]:
+        """This reference re-sampled from `gray`: **every cell both frames can compare**, changed or not.
+
+        Fan 2026-09-24 的裁定:参考帧就是「这次落子之前,棋盘像素级的样子」,所以刷新时**变了的格子
+        才更该重拍** —— 一团反光只有先进了参考帧照片,「照片一样 + 地图说空」这条证据才成立,
+        否决才生效(现场 (18,12) 的 zncc=1.00 正是这么来的)。原先跳过变化格,反光要一直等到
+        下一次参考帧**重建**才会被拦,中间那段窗口它畅通无阻。
+
+        触发否决的从来不是「照片不一样」,而是**照片一样 + 地图说空而检测器说有子**:
+        照片一样是许可证(这一格什么都没发生过),地图与检测器的分歧才是触发条件。
+
+        ⚠️ 代价:一颗**没被识别出来的真子**落在某格时,它也会被一并吸收进照片;而地图不刷新,
+        仍记那格为空 ⇒ 日后检测器一旦看见它,就会命中「照片一样 + 地图说空」而被否决。
+        原先那 10 帧上限是这一种的逃生口,同日已按裁定取消 ⇒ **这种情况下那颗子将无法自动恢复**,
+        只能靠重新标定或人工确认。取舍依据:反光当天多次发作(一颗重播 8 分 48 秒、一局三轮),
+        这一种 0 次。
+
+        `threshold` / `anchor_threshold` 保留在签名里,只用于统计有多少格是「变了才被吸收的」
+        (返回的第二个值),不再作为是否重拍的条件。
         """
         normalised, usable = _normalise(self.sampler.sample(gray))
-        take = (
-            usable
-            & self.usable
-            & self.anchor_usable
+        take = usable & self.usable
+        was_changed = take & ~(
+            self.anchor_usable
             & (_zncc(self.normalised, normalised) >= threshold)
             & (_zncc(self.anchor, normalised) >= anchor_threshold)
         )
@@ -182,7 +213,9 @@ class ReferenceFrame:
         new.anchor, new.anchor_usable = self.anchor, self.anchor_usable
         new.normalised = np.where(take[:, None], normalised, self.normalised)
         new.usable = self.usable.copy()
-        return new, (~take).reshape(self.sampler.grid_size, -1)
+        # 第二个返回值现在的含义变了:不再是「保留了旧样本的格」,而是「**变了、并且被吸收进去**的格」。
+        # 它是这次刷新真正改写了基准的那些格 —— 日志打它,才看得见参考帧到底吞下了什么。
+        return new, was_changed.reshape(self.sampler.grid_size, -1)
 
     def unchanged(self, gray: np.ndarray, threshold: float) -> tuple[np.ndarray, np.ndarray]:
         """(mask, similarity): mask is True where the cell is structurally the same as the reference.

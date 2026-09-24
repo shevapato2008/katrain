@@ -4073,10 +4073,10 @@ msgid "setup:my_side"
 msgstr "Benim rengim"
 
 msgid "setup:take_black"
-msgstr "Siyah"
+msgstr "Siyahı al"
 
 msgid "setup:take_white"
-msgstr "Beyaz"
+msgstr "Beyazı al"
 
 msgid "setup:no_camera_hint"
 msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"
@@ -7083,3 +7083,168 @@ msgstr ""
 msgid "engine:warmup_unavailable"
 msgstr ""
 "Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"
+
+msgid "vision:relocate"
+msgstr "Çerçeve hizala"
+
+msgid "vision:relocating"
+msgstr "Hizalanıyor…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Hizalanamadı"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Görüntüde tahtanın dış çerçevesi bulunamadı — kenarı kapatan şeyi kaldırıp "
+"tekrar deneyin."
+
+msgid "vision:relocate_failed"
+msgstr "Tekrar deneyin; hâlâ olmuyorsa tahtayı boşaltıp yeniden kalibre edin."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Tahta yerinden oynadı, son kalibrasyon artık uymuyor — «Çerçeve hizala»yı "
+"kullanın (ışık yakmaz, tahtada taş varken de çalışır) ya da yeniden kalibre "
+"edin"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"«LED» durumu yalnızca seri portun bağlı olduğunu gösterir, her lambanın "
+"yandığını değil; rehberlik sırasında bir nokta yanmazsa büyük olasılıkla "
+"şeridin o bölümü arızalıdır."
+
+msgid "platform:fact_whose"
+msgstr "Kimin hesabı"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Bu, kutunun değil Golaxy'nin kendi hesabıdır. Hesabınız yok mu? "
+"Telefonunuzdaki Golaxy uygulamasından kaydolun — kutu üzerinden kayıt "
+"olunamaz."
+
+msgid "platform:fact_three_ways"
+msgstr "Üç yol"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Tarama — tek harf bile yazmaya gerek yok. SMS kodu — bir mesaj beklemeniz "
+"yeterli. Parola — en hızlısı, ama dokunmatik ekrandan yazmanız gerekir."
+
+msgid "platform:fact_stored"
+msgstr "Kutuda ne kalır"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Burada yalnızca Golaxy'nin verdiği oturum jetonu kalır — parola saklanmaz. "
+"İstediğiniz zaman Ayarlar'dan bağlantıyı kesebilirsiniz."
+
+msgid "platform:fact_only_one"
+msgstr "Kutuda yalnızca bu yol"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS web sitesinde Google, Apple gibi hesaplar da kullanılabilir; bu yol "
+"tarayıcı gerektirdiğinden yurt dışı sürümüne bırakıldı."
+
+msgid "platform:fact_third_party"
+msgstr "Üçüncü taraftan kaydoldunuzsa"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Bu tür hesapların OGS parolası yoktur — önce OGS web sitesinden bir tane "
+"oluşturmanız gerekir."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"online-go.com hesabınız. Kayıt işlemi bir tarayıcıda yapılmalıdır — kutu "
+"üzerinden yapılamaz."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Burada yalnızca oturum açtıktan sonraki oturum kalır — parola saklanmaz. "
+"İstediğiniz zaman Ayarlar'dan bağlantıyı kesebilirsiniz."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS kodu"
+
+msgid "platform:login_tab_password"
+msgstr "Parola"
+
+msgid "platform:login_field_phone"
+msgstr "Telefon numarası"
+
+msgid "platform:login_field_code"
+msgstr "SMS kodu"
+
+msgid "platform:login_sub_sms"
+msgstr "Bağlı değil · SMS koduyla giriş yapın"
+
+msgid "platform:login_sub_password"
+msgstr "Bağlı değil · {name} hesabı ve parolasıyla giriş yapın"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Bağlı değil · Golaxy hesabı ve parolasıyla giriş yapın"
+
+msgid "platform:login_sub_ogs"
+msgstr "Bağlı değil · online-go.com hesabınızı kullanın"
+
+msgid "platform:login_title"
+msgstr "{name} girişi"
+
+msgid "platform:login_rank_from_account"
+msgstr "Seviyeniz de bu hesaptan alınır"
+
+msgid "platform:login_tabs"
+msgstr "Giriş yöntemi"
+
+msgid "platform:login_tab_scan"
+msgstr "Tara"
+
+msgid "platform:login_sub_scan"
+msgstr "Bağlı değil · telefonunuzdaki Golaxy uygulamasıyla tarayın"
+
+msgid "platform:scan_state_waiting"
+msgstr "Tarama bekleniyor"
+
+msgid "platform:scan_state_scanned"
+msgstr "Tarandı, telefonunuzdan onaylayın"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Onaylandı, giriş yapılıyor…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR kodun süresi doldu"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Telefonda iptal edildi"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Golaxy'ye ulaşılamıyor"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Ağı kontrol edin"
+
+msgid "platform:scan_retry"
+msgstr "Yeniden dene"
+
+msgid "platform:scan_title"
+msgstr "Golaxy uygulamasını açıp tarayın"
+
+msgid "platform:scan_body"
+msgstr ""
+"Taradıktan sonra telefonunuzdan onaylayın — şifreniz bu kutudan asla geçmez."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy giriş QR kodu"
+
+msgid "platform:scan_refresh"
+msgstr "Yeni kod"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "yeni kod için dokunun"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Giriş onaylanamadı"
+
+msgid "vision:not_a_stone"
+msgstr "Bu bir taş değil"

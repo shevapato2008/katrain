@@ -600,6 +600,11 @@ export const API = {
   // the ignored stone isn't re-detected.
   visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
     apiPost("/api/v1/vision/sync/reset", { adopt }),
+  // 「不是落子」:用户否认了疑似落子弹窗指的那一格。存下那一格此刻的像素,只要它还长成
+  // 那样就不再被识别成子;像素一变标签自动失效。与 visionResetSync('physical') 相反 ——
+  // 那条路是把假阳性收进基线当成现实。
+  visionDenyStone: (row: number, col: number): Promise<void> =>
+    apiPost("/api/v1/vision/deny-stone", { row, col }),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
   visionMonitor: (active: boolean): Promise<void> =>
@@ -723,4 +728,29 @@ export const API = {
     apiPost(`/api/v1/platforms/${platform}/automatch/start`, prefs, token),
   platformCancelAutomatch: (platform: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/cancel`, {}, token),
+
+  // Golaxy 扫码登录 (Task 6a/6b) — three thin client calls only, no component wiring here.
+  platformScanStart: (
+    platform: string,
+    token: string | null | undefined,
+  ): Promise<{ scan_id: string; payload: string; expires_at: number }> =>
+    apiPost(`/api/v1/platforms/${platform}/scan/start`, {}, token),
+  platformScanState: async (
+    platform: string,
+    scanId: string,
+    token: string | null | undefined,
+  ): Promise<{ state: string }> => {
+    const response = await fetch(
+      `/api/v1/platforms/${platform}/scan/state?scan_id=${encodeURIComponent(scanId)}`,
+      { headers: authHeaders(token) },
+    );
+    if (!response.ok) throw new Error(`Failed to poll scan state: ${response.status}`);
+    return response.json();
+  },
+  platformScanConfirm: (
+    platform: string,
+    scanId: string,
+    token: string | null | undefined,
+  ): Promise<{ connected: boolean; display_name: string }> =>
+    apiPost(`/api/v1/platforms/${platform}/scan/confirm`, { scan_id: scanId }, token),
 };

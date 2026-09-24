@@ -20,14 +20,13 @@ const CALIBRATION_RUNNING: readonly GeometryPhase[] = [
 /**
  * `/kiosk/baipu/session/:source` 的入口:先问这台机器摆谱拍不拍照,再决定要不要先标定。
  *
- * - **上线态(`collect=false`,盒子默认)**:不套 `PhysicalBoardGuard`。摆谱只用灯,灯的
- *   (行,列)→灯珠是公式 LUT,不需要摄像头。以前这条路由无条件套守卫 ⇒ 服务每次重启
- *   `session_calibrated=false`,不先标定摄像头就进不了摆谱,而上线版摆谱根本不用摄像头。
- *   **唯一的例外:标定线程正在跑。** 标定屏的返回键不取消标定(设置 → 开始标定 → 返回,服务端线程
+ * - **上线态(`collect=false`,盒子默认)**:摄像头识子需要本次开机确认几何；未就绪时先显示
+ *   与对弈共用的标定屏。没有采集服务(`disabled`)才走手动兜底。
+ *   标定屏的返回键不取消标定(设置 → 开始标定 → 返回,服务端线程
  *   接着跑),而摆谱屏一挂就点灯;标定每个锚点都是 clear → 拍熄灯帧 → 点亮 → 拍亮灯帧,`/led/point`
  *   先 CLEAR 再点、没有忙检查 ⇒ 两边互相冲掉对方的灯。以前是守卫顺带挡住的,摘掉守卫要把这一条留下。
- *   这时给标定屏(进度 + 「取消标定」),跑完或取消后 phase 离开这五态,直接挂摆谱屏。
- *   **读到过**的 required / failed / cancelled / disabled / ready / degraded 一律直接放行。
+ *   这时给标定屏(进度 + 「取消标定」),跑完后由共用守卫检查识别是否就绪。
+ *   **读到过**的 disabled / 标定且识别都就绪才放行；required / failed / cancelled / degraded 引导标定。
  *   ⚠️ 「读到过」是判据的一半:`loaded=false` 时 `status.phase` 是 `GeometryProvider` 的**初值**
  *   `required`,不是结论。刷新直接进这条 URL 时 `/mode` 可能先回 —— 只看 phase 就会先挂页面点灯、
  *   等迟到的 `flashing_corners` 再把它卸掉(卸载还要清一次灯),照样冲掉标定。所以没读到之前只给
@@ -85,7 +84,15 @@ export default function BaipuSessionRoute() {
       />
     );
   }
-  return <BaipuSessionPage collect={false} />;
+  return (
+    <PhysicalBoardGuard
+      requireRecognition
+      sub={t('baipu:guard_sub_camera', '摆谱识子要先让摄像头看清盘面')}
+      fallback="/kiosk/kifu"
+    >
+      <BaipuSessionPage collect={false} />
+    </PhysicalBoardGuard>
+  );
 }
 
 // 已知不处理的一小段窗口:服务端先把 phase 写成终态、再在 finally 里 led.clear,轮询恰好卡在两者之间时

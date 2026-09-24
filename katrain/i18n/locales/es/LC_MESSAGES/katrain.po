@@ -3827,7 +3827,7 @@ msgid "vision:cancel_calibration"
 msgstr "Cancelar calibración"
 
 msgid "vision:reuse_calibration"
-msgstr "Reutilizar la última calibración"
+msgstr "Usar la anterior"
 
 msgid "vision:camera_down"
 msgstr "Cámara no conectada · se ha pasado a la pantalla táctil"
@@ -3898,10 +3898,10 @@ msgid "setup:my_side"
 msgstr "Mi color"
 
 msgid "setup:take_black"
-msgstr "Negras"
+msgstr "Jugar con negras"
 
 msgid "setup:take_white"
-msgstr "Blancas"
+msgstr "Jugar con blancas"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6944,7 +6944,174 @@ msgid "kifu:wrong_size_reason"
 msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"
 
 msgid "engine:warmup_warming"
-msgstr "El motor de IA se está preparando — mientras tanto puedes usar la biblioteca de partidas, los cursos y otras funciones"
+msgstr ""
+"El motor de IA se está preparando — mientras tanto puedes usar la biblioteca"
+" de partidas, los cursos y otras funciones"
 
 msgid "engine:warmup_unavailable"
 msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"
+
+msgid "vision:relocate"
+msgstr "Alinear marco"
+
+msgid "vision:relocating"
+msgstr "Alineando…"
+
+msgid "vision:relocate_failed_title"
+msgstr "No coincide"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"No se encuentra el marco exterior del tablero en la imagen — aparta lo que "
+"tape el borde e inténtalo de nuevo."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Inténtalo de nuevo; si sigue sin funcionar, vacía el tablero y vuelve a "
+"calibrar."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"El tablero se movió y la última calibración ya no coincide — usa «Alinear "
+"marco» (sin luces, funciona con piedras en el tablero) o vuelve a calibrar"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"El estado «LED» solo indica que el puerto serie está conectado, no que cada "
+"lámpara encienda; si durante la guía algún punto no se enciende, "
+"probablemente ese tramo de la tira LED esté dañado."
+
+msgid "platform:fact_whose"
+msgstr "De quién es la cuenta"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Es la cuenta propia de Golaxy, no la de la caja. ¿Aún no tienes cuenta? "
+"Regístrate en la app de Golaxy en tu teléfono — no se puede registrar en la "
+"caja."
+
+msgid "platform:fact_three_ways"
+msgstr "Tres formas"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Escanear: no hay que escribir nada. Código SMS: espera un mensaje de texto. "
+"Contraseña: la más rápida, pero hay que escribirla en la pantalla táctil."
+
+msgid "platform:fact_stored"
+msgstr "Qué queda en la caja"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Solo se guarda el token de acceso que emite Golaxy, no la contraseña. "
+"Desconéctala cuando quieras desde Ajustes."
+
+msgid "platform:fact_only_one"
+msgstr "En la caja, solo así"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"En la web de OGS también funcionan cuentas de Google, Apple y otras — esa "
+"vía necesita un navegador, así que se deja para la edición internacional."
+
+msgid "platform:fact_third_party"
+msgstr "Registrado con un tercero"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Esas cuentas no tienen contraseña de OGS — primero hay que configurar una en"
+" la web de OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Tu cuenta en online-go.com. El registro debe hacerse en un navegador — no se"
+" puede hacer en la caja."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Solo se guarda la sesión tras iniciar sesión, no la contraseña. Desconéctala"
+" cuando quieras desde Ajustes."
+
+msgid "platform:login_tab_sms"
+msgstr "Código SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Contraseña"
+
+msgid "platform:login_field_phone"
+msgstr "Número de teléfono"
+
+msgid "platform:login_field_code"
+msgstr "Código SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Sin conexión · inicia sesión con un código SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Sin conexión · inicia sesión con la cuenta y contraseña de {name}"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Sin conexión · inicia sesión con tu cuenta y contraseña de Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Sin conexión · usa tu cuenta de online-go.com"
+
+msgid "platform:login_title"
+msgstr "Iniciar sesión en {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Tu rango también proviene de esta cuenta"
+
+msgid "platform:login_tabs"
+msgstr "Método de acceso"
+
+msgid "platform:login_tab_scan"
+msgstr "Escanear"
+
+msgid "platform:login_sub_scan"
+msgstr "No conectado · escanea con la app de Golaxy en tu teléfono"
+
+msgid "platform:scan_state_waiting"
+msgstr "Esperando escaneo"
+
+msgid "platform:scan_state_scanned"
+msgstr "Escaneado, confirma en tu teléfono"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmado, iniciando sesión…"
+
+msgid "platform:scan_state_expired"
+msgstr "El código QR ha caducado"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelado en tu teléfono"
+
+msgid "platform:scan_unavailable_title"
+msgstr "No se puede conectar con Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Comprueba la red"
+
+msgid "platform:scan_retry"
+msgstr "Reintentar"
+
+msgid "platform:scan_title"
+msgstr "Abre la app de Golaxy y escanea"
+
+msgid "platform:scan_body"
+msgstr "Confirma en tu teléfono después de escanear; la contraseña nunca pasa por esta caja."
+
+msgid "platform:scan_qr_alt"
+msgstr "Código QR de acceso a Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Nuevo código"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "toca aquí para un código nuevo"
+
+msgid "platform:scan_confirm_failed"
+msgstr "No se pudo confirmar el inicio de sesión"
+
+msgid "vision:not_a_stone"
+msgstr "No es una piedra"

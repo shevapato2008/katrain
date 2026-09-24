@@ -40,15 +40,35 @@ class FakeLed:
         return self._connected
 
 
-def _client(led_obj):
+def _client(led_obj, vision=None):
     app = FastAPI()
     app.include_router(led.router, prefix="/led")
     if led_obj is not None:
         app.state.led = led_obj
+    if vision is not None:
+        app.state.vision = vision
     return TestClient(app)
 
 
+class FakeVision:
+    def __init__(self):
+        self.lit = []
+
+    def set_lit_points(self, points):
+        self.lit.append(points)
+
+
 class TestLedEndpoints:
+    def test_guidance_points_and_clear_are_reported_to_vision(self):
+        vision = FakeVision()
+        c = _client(FakeLed(), vision)
+        assert c.post("/led/point", json={"row": 3, "col": 4, "color": "black"}).status_code == 200
+        assert c.post("/led/points", json={"points": [
+            {"row": 8, "col": 9, "color": "white"}, {"row": 6, "col": 7, "color": "remove"},
+        ]}).status_code == 200
+        assert c.post("/led/clear").status_code == 200
+        assert vision.lit == [[(3, 4)], [(8, 9), (6, 7)], []]
+
     def test_point(self):
         fake = FakeLed()
         c = _client(fake)

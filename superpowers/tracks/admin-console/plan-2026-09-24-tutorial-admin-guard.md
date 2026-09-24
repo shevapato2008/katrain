@@ -65,7 +65,7 @@
 - Produces：`tests/web_ui/test_guest_write_block.py` 里的 `_create_admin_and_login(app, username="tutorial-admin") -> (headers, user_id, unique_name)`，Task 2 会复用
 - Produces：`.superpowers/baseline/web_ui_failed_before.txt`（改动前 `tests/web_ui` 失败用例的**名字**，一行一个，已排序）和 `.superpowers/baseline/newfail.sh`（跑 pytest，只报基线里没有的失败）。后面每一次「有没有弄坏」都用它们
 
-- [ ] **Step 1：装 Python 依赖，确认基线目录被 git 忽略**（worktree 里是空的；只跑 `uv sync` 不会装 fastapi）
+- [x] **Step 1：装 Python 依赖，确认基线目录被 git 忽略**（worktree 里是空的；只跑 `uv sync` 不会装 fastapi）
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -75,7 +75,7 @@ git diff --quiet -- katrain/config.json && echo config-clean
 ```
 Expected：`uv sync` 以 `Installed` 或 `Audited` 结尾，没有报错；`git check-ignore` 打印 `.gitignore:208:.superpowers/	.superpowers/baseline/x.txt`；最后打印 `config-clean`。**没打印 `config-clean` 就停**：`katrain/config.json` 在跑测试之前就有未提交的改动，先弄清楚是谁的，否则后面「还原被测试改写的 config.json」会把它一起冲掉。
 
-- [ ] **Step 2：改任何代码之前，记录 web_ui 基线（只记失败用例的名字），写好「只报新增失败」的小脚本**
+- [x] **Step 2：改任何代码之前，记录 web_ui 基线（只记失败用例的名字），写好「只报新增失败」的小脚本**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -105,7 +105,7 @@ git status --short
 ```
 Expected：先打印 `pytest exit=0` 或 `1`（2–5 说明 pytest 本身没跑成，基线作废）；下一行是 pytest 的 summary（形如 `3 failed, 1234 passed, … in 95.1s`），**不是**报错或空行；`wc -l` 输出一个数（可以是 0）；`git status --short` 为空。`katrain/config.json` 如果出现在输出里（有的测试会改写这个已提交的文件），执行 `git checkout -- katrain/config.json` 还原。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
 
-- [ ] **Step 3：把 `test_guest_write_block.py` 里锁定旧行为的用例改成新的期望**
+- [x] **Step 3：把 `test_guest_write_block.py` 里锁定旧行为的用例改成新的期望**
 
 3a. 模块 docstring 第 8–9 行，把：
 ```python
@@ -204,7 +204,7 @@ async def test_tutorial_writer_admin_2xx(full_app, method, action, body, monkeyp
         assert [h.changed_by for h in history] == [admin_name]
 ```
 
-- [ ] **Step 4：改 `test_tutorial_db_api.py`**
+- [x] **Step 4：改 `test_tutorial_db_api.py`**
 
 4a. 在 `client_with_auth` 夹具里，把：
 ```python
@@ -241,7 +241,7 @@ def test_update_board_non_admin_forbidden(client_with_auth):
     assert resp.status_code == 403
 ```
 
-- [ ] **Step 5：跑测试，确认它们失败，而且失败原因是对的**
+- [x] **Step 5：跑测试，确认它们失败，而且失败原因是对的**
 
 Run：
 ```bash
@@ -256,7 +256,7 @@ Expected：FAIL。
 - `test_update_board_non_admin_forbidden` 失败，是因为拿到了 200；
 - `test_tutorial_writer_admin_2xx[*]` 和 `test_update_board_authenticated_success` 此刻**会通过**（旧代码本来就放行），这是正常的。
 
-- [ ] **Step 6：改 `tutorials.py`**
+- [x] **Step 6：改 `tutorials.py`**
 
 6a. 第 15–18 行，把：
 ```python
@@ -376,7 +376,7 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
             change_type="verify",
 ```
 
-- [ ] **Step 7：跑测试，按名字和基线比**
+- [x] **Step 7：跑测试，按名字和基线比**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -385,7 +385,7 @@ git status --short
 ```
 Expected：`newfail exit=0`。`test_tutorial_db_api.py` 里那 3 条 monkeypatch `ASSET_BASE` 的用例在基线里就是红的，不算新增。另外 `test_update_board_requires_auth` 在基线里也是红的（改之前匿名能写），这一步改完它会变绿（2026-09-24 实跑基线：这个文件红的正好是这 4 条）。`git status` 只列出本任务改动的三个文件（`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原）。
 
-- [ ] **Step 8：提交**
+- [x] **Step 8：提交**
 
 ```bash
 set -o pipefail

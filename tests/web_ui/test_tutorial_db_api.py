@@ -250,12 +250,14 @@ def client_with_auth():
         )
         session.add(fig)
 
-    # Create a test user
+    # Create a real admin (tutorial writes are admin-only since 2026-09-24) and a plain user.
     user = models_db.User(
         username="testadmin",
         hashed_password="fakehash",
+        is_admin=True,
     )
     session.add(user)
+    session.add(models_db.User(username="plainuser", hashed_password="fakehash"))
     session.commit()
     session.close()
 
@@ -323,3 +325,15 @@ def test_update_board_rejects_oob_coordinates(client_with_auth):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 422
+
+
+def test_update_board_non_admin_forbidden(client_with_auth):
+    """Tutorial writes are admin-only (2026-09-24): logged in but not admin => 403."""
+    client, _ = client_with_auth
+    plain_token = create_access_token(data={"sub": "plainuser"})
+    resp = client.put(
+        "/api/v1/tutorials/figures/1/board",
+        json={"board_payload": {"size": 19, "stones": {"B": [], "W": []}}},
+        headers={"Authorization": f"Bearer {plain_token}"},
+    )
+    assert resp.status_code == 403

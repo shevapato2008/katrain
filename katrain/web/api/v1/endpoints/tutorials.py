@@ -12,12 +12,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user_optional
-from katrain.web.core.box_sso import is_guest_user
+from katrain.web.api.v1.endpoints.auth import get_current_admin_user
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import User
 from katrain.web.core.storage import get_storage_backend, normalize_key
 from katrain.web.core.storage.base import MEDIA_CACHE_CONTROL
+from katrain.web.models import User as AuthUser
 from katrain.web.tutorials import db_queries
 from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
@@ -152,12 +151,11 @@ async def update_figure_board(
     figure_id: int,
     update: BoardPayloadUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    admin: AuthUser = Depends(get_current_admin_user),
 ):
     """Update the board_payload for a figure. Computes viewport server-side.
-    Uses optimistic locking via expected_updated_at to prevent silent overwrites."""
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
+    Uses optimistic locking via expected_updated_at to prevent silent overwrites.
+    Admin-only since 2026-09-24 (anonymous 401, non-admin/guest 403)."""
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -182,7 +180,7 @@ async def update_figure_board(
         db,
         figure.id,
         payload_dict,
-        changed_by=current_user.username if current_user else "anonymous",
+        changed_by=admin.username,
         change_type="edit",
     )
     db.commit()
@@ -197,10 +195,8 @@ async def generate_audio_for_figure(
     figure_id: int,
     request: NarrationUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    admin: AuthUser = Depends(get_current_admin_user),
 ):
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -214,11 +210,9 @@ async def update_figure_narration(
     figure_id: int,
     update: NarrationUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    admin: AuthUser = Depends(get_current_admin_user),
 ):
-    """Update the narration text and optional audio_asset for a figure."""
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
+    """Update the narration text and optional audio_asset for a figure. Admin-only."""
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -233,27 +227,25 @@ async def update_figure_narration(
 async def verify_figure(
     figure_id: int,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    admin: AuthUser = Depends(get_current_admin_user),
 ):
-    """Mark a figure as human-verified. The current board_payload becomes ground truth."""
+    """Mark a figure as human-verified. The current board_payload becomes ground truth. Admin-only."""
     import json as _json
 
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
     debug = _json.loads(_json.dumps(figure.recognition_debug or {}))
     debug["human_verified"] = True
     debug["verified_at"] = datetime.now(timezone.utc).isoformat()
-    debug["verified_by"] = current_user.username if current_user else "anonymous"
+    debug["verified_by"] = admin.username
     db_queries.update_figure_recognition_debug(db, figure, debug)
     if figure.board_payload:
         db_queries.record_payload_history(
             db,
             figure.id,
             figure.board_payload,
-            changed_by=current_user.username if current_user else "anonymous",
+            changed_by=admin.username,
             change_type="verify",
         )
         db.commit()

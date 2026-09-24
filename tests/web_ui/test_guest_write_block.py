@@ -5,8 +5,10 @@ Covers:
     route, while a real user still gets 2xx WITH that route's real
     prerequisites (owned game/task, live match, comment target, platform
     adapter) -- not one generic parametrization.
-  - The four optional-auth tutorial-authoring writers guest-only reject
-    (anonymous stays allowed).
+  - The four tutorial-authoring writers are ADMIN-ONLY since 2026-09-24:
+    anonymous 401, non-admin and guest 403 ("Admin privileges required").
+    They used to be guest-only reject with anonymous allowed (R3-F1); see
+    superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §4.
   - `/ws/lobby` rejects the guest before `add_user`.
   - The new `_require_multiplayer_participant` guard on `/api/resign` and
     `/api/timeout`, for both local-multiplayer AND platform-backed games.
@@ -150,6 +152,29 @@ def _seed_tutorial_figure(app) -> int:
         return figure.id
 
 
+async def _create_admin_and_login(app, username="tutorial-admin"):
+    """Same as `_create_user_and_login`, then flip is_admin (the test_billing_api idiom)."""
+    headers, user_id, unique_name = await _create_user_and_login(app, username)
+    with _db(app)() as db:
+        db.query(models_db.User).filter(models_db.User.id == user_id).update({"is_admin": True})
+        db.commit()
+    return headers, user_id, unique_name
+
+
+def _fake_tts(monkeypatch):
+    """generate-audio must not run the real TTS pipeline in a unit test -- only the auth boundary is under test."""
+
+    async def _fake_generate_figure_audio(db, figure, narration):
+        figure.narration = narration
+        figure.audio_asset = "fake-audio.mp3"
+        return figure
+
+    monkeypatch.setattr(
+        "katrain.web.api.v1.endpoints.tutorials.generate_figure_audio",
+        _fake_generate_figure_audio,
+    )
+
+
 def _mock_multiplayer_session(player_b_id, player_w_id, sgf="(;FF[4]SZ[19];B[pd])"):
     session = MagicMock()
     session.session_id = uuid.uuid4().hex
@@ -273,31 +298,53 @@ async def test_tutorial_writer_guest_403(full_app, guest_headers, method, action
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, headers=guest_headers, body=body)
     assert resp.status_code == 403
-    assert resp.json() == {"detail": "Guest is read-only"}
+    assert resp.json() == {"detail": "Admin privileges required"}
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
-async def test_tutorial_writer_anonymous_still_2xx(full_app, method, action, body, monkeypatch):
-    """Guest-only reject (R3-F1): anonymous (no token at all) must stay allowed."""
-    if action == "generate-audio":
-        # Don't exercise the real TTS pipeline in a unit test -- out of scope
-        # for the guest-mode auth boundary this task governs.
-        async def _fake_generate_figure_audio(db, figure, narration):
-            figure.narration = narration
-            figure.audio_asset = "fake-audio.mp3"
-            return figure
-
-        monkeypatch.setattr(
-            "katrain.web.api.v1.endpoints.tutorials.generate_figure_audio",
-            _fake_generate_figure_audio,
-        )
-
+async def test_tutorial_writer_anonymous_401(full_app, method, action, body, monkeypatch):
+    """Admin-only since 2026-09-24: no token at all is 401 (it used to be allowed, R3-F1)."""
+    _fake_tts(monkeypatch)
     figure_id = _seed_tutorial_figure(full_app)
     url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, body=body)
+    assert resp.status_code == 401, resp.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
+async def test_tutorial_writer_non_admin_403(full_app, method, action, body, monkeypatch):
+    _fake_tts(monkeypatch)
+    headers, _, _ = await _create_user_and_login(full_app, "tutorial-reader")
+    figure_id = _seed_tutorial_figure(full_app)
+    url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
+    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
+        resp = await _req(ac, method, url, headers=headers, body=body)
+    assert resp.status_code == 403
+    assert resp.json() == {"detail": "Admin privileges required"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
+async def test_tutorial_writer_admin_2xx(full_app, method, action, body, monkeypatch):
+    _fake_tts(monkeypatch)
+    headers, _, admin_name = await _create_admin_and_login(full_app)
+    figure_id = _seed_tutorial_figure(full_app)
+    url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
+    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
+        resp = await _req(ac, method, url, headers=headers, body=body)
     assert resp.status_code == 200, resp.text
+    if action == "board":
+        # The audit trail names the admin, never "anonymous".
+        with _db(full_app)() as db:
+            history = (
+                db.query(models_db.BoardPayloadHistory)
+                .filter(models_db.BoardPayloadHistory.figure_id == figure_id)
+                .all()
+            )
+        assert [h.changed_by for h in history] == [admin_name]
 
 
 # ---------------------------------------------------------------------------

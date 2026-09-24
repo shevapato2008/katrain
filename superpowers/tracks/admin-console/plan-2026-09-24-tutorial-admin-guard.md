@@ -983,7 +983,9 @@ git commit -m "test(tutorial): 只读右栏承重实测（1440×900，溢出/最
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 6：🛑 停，请 Fan 看这三张截图和测量结果，明确确认后才能进入 Task 6。**
+- [x] **Step 6：🛑 停，请 Fan 看这三张截图和测量结果，明确确认后才能进入 Task 6。**
+
+Fan 于 2026-09-24 确认三张截图与测量结果。正式/测试 Galaxy 教程页面向普通用户的成品展示问题由 Fan 另开 session 处理，本切片不扩展到该问题。Task 6 的远程只读清点仍需单独当场授权。
 
 ---
 

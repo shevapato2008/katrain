@@ -7267,3 +7267,6 @@ msgstr "touchez ici pour un nouveau code"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Échec de la confirmation de connexion"
+
+msgid "vision:not_a_stone"
+msgstr "Ce n'est pas une pierre"

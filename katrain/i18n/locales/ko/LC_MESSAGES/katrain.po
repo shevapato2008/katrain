@@ -6898,3 +6898,6 @@ msgstr "여기를 눌러 새 코드 받기"
 
 msgid "platform:scan_confirm_failed"
 msgstr "로그인 확인에 실패했습니다"
+
+msgid "vision:not_a_stone"
+msgstr "돌이 아닙니다"

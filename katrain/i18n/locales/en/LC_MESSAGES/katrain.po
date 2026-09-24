@@ -7209,3 +7209,6 @@ msgstr "tap for a new code"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Couldn't confirm sign-in"
+
+msgid "vision:not_a_stone"
+msgstr "Not a stone"

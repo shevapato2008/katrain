@@ -7245,3 +7245,6 @@ msgstr "yeni kod için dokunun"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Giriş onaylanamadı"
+
+msgid "vision:not_a_stone"
+msgstr "Bu bir taş değil"

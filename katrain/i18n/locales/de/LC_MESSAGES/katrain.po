@@ -7291,3 +7291,6 @@ msgstr "hier tippen für einen neuen Code"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Anmeldung konnte nicht bestätigt werden"
+
+msgid "vision:not_a_stone"
+msgstr "Kein Stein"

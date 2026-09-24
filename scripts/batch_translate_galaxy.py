@@ -66,6 +66,12 @@ GALAXY_TRANSLATIONS = {
         "fr": "Je vais la déplacer", "ru": "Я поправлю", "tr": "Düzelteceğim",
         "ua": "Я поправлю",
     },
+    "vision:not_a_stone": {
+        "en": "Not a stone", "cn": "不是落子", "tw": "不是落子", "jp": "石ではない",
+        "ko": "돌이 아닙니다", "de": "Kein Stein", "es": "No es una piedra",
+        "fr": "Ce n'est pas une pierre", "ru": "Это не камень", "tr": "Bu bir taş değil",
+        "ua": "Це не камінь",
+    },
     "review:start_analysis": {
         "en": "Start analysis", "cn": "开始分析", "tw": "開始分析", "jp": "解析を開始",
         "ko": "분석 시작", "de": "Analyse starten", "es": "Iniciar análisis",

@@ -597,13 +597,16 @@ class _ScriptedDetector:
 class _ScriptedCamera:
     is_connected = True
 
-    def __init__(self, frames, drop_reference_at=None):
+    def __init__(self, frames, drop_reference_at=None, on_read=None):
         self.frames = frames
         self.drop_reference_at = drop_reference_at
+        self.on_read = on_read
         self.worker = None
 
     def read_frame(self):
         self.frames -= 1
+        if self.on_read is not None:
+            self.on_read(self.worker, self.frames)
         if self.frames == self.drop_reference_at:
             # a pause / resync / re-lock landing mid-placement, which is what opens the window
             self.worker._invalidate_reference("test")
@@ -617,10 +620,10 @@ def _det(row, col, cls, conf=0.9):
     return Detection(x_center=x, y_center=y, class_id=cls, confidence=conf, bbox=(x - 20, y - 20, x + 20, y + 20))
 
 
-def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None):
+def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None, on_read=None):
     """Drive the real loop. `warped_frames` is one BGR frame per processed frame (the last repeats),
     `detection_script` one detection list per frame, `game` the expected board."""
-    camera = _ScriptedCamera(len(detection_script), drop_reference_at)
+    camera = _ScriptedCamera(len(detection_script), drop_reference_at, on_read)
     with mock_patch("katrain.vision.worker_inprocess.StoneDetector", _ScriptedDetector):
         worker = InProcessAdapter(
             {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode}, camera=camera
@@ -731,3 +734,98 @@ def test_the_promoter_does_not_push_a_cell_the_reference_is_vetoing():
 
     assert (18, 12) not in run(vetoed=True), "参考帧正在否决这一格,它不该成为提升候选"
     assert (18, 12) in run(vetoed=False), "没有否决时,低置信度真子的通道必须还在"
+
+
+# ---- 「不是落子」用户标签 ---------------------------------------------------------------
+
+
+def _deny_at(adapter, frame, row=9, col=9):
+    adapter._last_ref_gray = to_gray(frame)
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.DENY_STONE, data={"row": row, "col": col}))
+    adapter._drain_commands()
+
+
+def test_denial_masks_the_false_stone_without_rewriting_recognition_history():
+    adapter = _adapter("on")
+    frame = _board_frame()
+    _deny_at(adapter, frame)
+    raw = _empty_board()
+    raw[9][9] = WHITE
+    adapter._last_stable_board = raw
+
+    effective = adapter._mask_denied(raw, adapter._live_denials(to_gray(frame)))
+
+    assert effective[9][9] == EMPTY
+    assert raw[9][9] == WHITE and adapter._last_stable_board[9][9] == WHITE
+    assert (9, 9) in adapter._denied
+
+
+def test_a_real_stone_changes_pixels_and_releases_the_denial():
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+    assert adapter._live_denials(to_gray(_board_frame())) == [(9, 9)]
+
+    live = adapter._live_denials(to_gray(_board_frame([(9, 9, WHITE)])))
+    raw = _empty_board()
+    raw[9][9] = WHITE
+
+    assert live == [] and adapter._denied == {}
+    assert adapter._mask_denied(raw, live)[9][9] == WHITE
+
+
+def test_denial_unblocks_capturing_the_glare_as_empty_in_the_real_loop():
+    # The detector reports a white stone on an unchanged empty-board image. Until the user
+    # denies it, board != game record and no reference can be captured. The denial must mask
+    # both the voted board and the pre-vote observation before the capture guard runs.
+    def deny_after_three_frames(worker, frames_left):
+        if frames_left == 4:
+            assert worker._reference is None
+            worker._deny_stone(9, 9)
+            assert (9, 9) in worker._denied
+
+    game = _empty_board()
+    worker = _run_loop("on", [_board_frame()], [[_det(9, 9, 1)]] * 8, game, on_read=deny_after_three_frames)
+
+    assert worker._reference is not None and worker._reference.board[9][9] == EMPTY
+    assert worker._reference.similarity(worker._last_ref_gray)[9][9] > 0.99
+    assert worker._last_stable_board[9][9] == WHITE
+    assert worker.get_status().detected_board[9][9] == EMPTY
+
+
+@pytest.mark.parametrize("level", [0, 255])
+def test_uncomparable_cell_is_not_remembered_as_a_denial(level, caplog):
+    adapter = _adapter("on")
+    adapter._last_ref_gray = np.full((SIZE, SIZE), level, np.uint8)
+
+    with caplog.at_level("WARNING"):
+        adapter._deny_stone(9, 9)
+
+    assert adapter._denied == {}
+    assert "label was NOT stored" in caplog.text
+
+
+def test_game_record_releases_a_denial_when_it_has_a_stone():
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+    board = _empty_board()
+    board[9][9] = WHITE
+
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+    adapter._drain_commands()
+
+    assert adapter._denied == {}
+    assert adapter._mask_denied(board, adapter._live_denials(to_gray(_board_frame())))[9][9] == WHITE
+
+
+@pytest.mark.parametrize("action", ["bind", "unbind", "geometry"])
+def test_a_new_session_or_geometry_clears_denials(action):
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+
+    if action == "geometry":
+        adapter.set_geometry(SimpleNamespace(points=None))
+    else:
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.BIND if action == "bind" else CommandType.UNBIND))
+        adapter._drain_commands()
+
+    assert adapter._denied == {} and adapter._denial_sampler is None

@@ -7150,3 +7150,6 @@ msgstr "нажмите, чтобы получить новый код"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Не удалось подтвердить вход"
+
+msgid "vision:not_a_stone"
+msgstr "Это не камень"

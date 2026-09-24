@@ -6955,3 +6955,6 @@ msgstr "タップして新しいコードを取得"
 
 msgid "platform:scan_confirm_failed"
 msgstr "ログイン確認に失敗しました"
+
+msgid "vision:not_a_stone"
+msgstr "石ではない"

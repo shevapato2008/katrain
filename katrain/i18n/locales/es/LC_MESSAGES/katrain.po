@@ -7112,3 +7112,6 @@ msgstr "toca aquí para un código nuevo"
 
 msgid "platform:scan_confirm_failed"
 msgstr "No se pudo confirmar el inicio de sesión"
+
+msgid "vision:not_a_stone"
+msgstr "No es una piedra"

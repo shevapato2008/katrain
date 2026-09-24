@@ -6927,3 +6927,6 @@ msgstr "點此換一張"
 
 msgid "platform:scan_confirm_failed"
 msgstr "確認登入失敗"
+
+msgid "vision:not_a_stone"
+msgstr "不是落子"

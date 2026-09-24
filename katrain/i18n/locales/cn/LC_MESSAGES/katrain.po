@@ -6783,3 +6783,6 @@ msgstr "点此换一张"
 
 msgid "platform:scan_confirm_failed"
 msgstr "确认登录失败"
+
+msgid "vision:not_a_stone"
+msgstr "不是落子"

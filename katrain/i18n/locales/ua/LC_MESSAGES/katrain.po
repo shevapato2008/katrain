@@ -7225,3 +7225,6 @@ msgstr "натисніть, щоб отримати новий код"
 
 msgid "platform:scan_confirm_failed"
 msgstr "Не вдалося підтвердити вхід"
+
+msgid "vision:not_a_stone"
+msgstr "Це не камінь"

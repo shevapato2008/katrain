@@ -316,8 +316,18 @@ class LedGeometryCalibrator:
 
     # (通道, 颜色名) —— 几何标定的软件契约只允许绿色。
     COLOR_CHANNELS = ((1, "green"),)
-    # 先暗后亮:暗处 96 档 peak 94-198 已充裕且不削顶;只在 low_signal 时才拉满。
-    FLASH_LEVELS = (96, 255)
+    # **标定一律满亮度,一颗锚点只闪一次。** Fan 2026-09-24 的分法:标定要的是网格线准,
+    # 用满亮度;护白子(别把白棋照透)那套可调亮度只在开局之后生效,而它走的是
+    # `LedService.set_points`(乘 guidance_scale),标定走 `set_rgb_points`(不乘),两条路本就分开。
+    #
+    # 原先是 (96, 255):先试 96,只有 low_signal 才升 255。取消的依据是实测——
+    #   · 09-24 下午亮场景,13 颗锚点 6 颗在 96 档测不到,全靠 roi_fallback 捞;
+    #     而报警线 ROI_FALLBACK_WARN_MIN=7 让这一轮压线没报警,标定质量静静退化。
+    #   · 用户侧可见的症状是「13 个点从长亮变成亮 2 下」——那就是这条阶梯。
+    # 留下 96 的理由曾是「暗处拉满会削顶把质心拉偏」(87d848a7)。那句话当时**没有实测**:
+    # 质心是按 delta 加权的,削顶后的亮斑是平顶且对称,质心不动;真正会偏的是halo 不对称,
+    # 属于二阶效应。拿「一半锚点在白天测不到」去换一个没测过的二阶担心,不划算。
+    FLASH_LEVELS = (255,)
 
     @staticmethod
     def _rgb_for(channel: int, level: int) -> tuple[int, int, int]:
@@ -476,7 +486,10 @@ class LedGeometryCalibrator:
                     self.anchor_observer(row, col, point, color_name)
                     return result.centroid
                 if result.reason != "low_signal":
-                    break  # 只有信号弱才值得升亮度
+                    # 亮度阶梯现在只有一档(见 FLASH_LEVELS),这条 break 不再有下一档可跳过。
+                    # 保留是因为它是「什么情况才值得换一档重试」的判据本身:
+                    # ambiguous_blobs 之类的失败升亮度只会让噪声一起变亮。
+                    break
         if roi is not None and last_capture is not None:
             # ROI 全画幅先验可能被投毒(某个角测偏 ⇒ 单应算偏),把可被 RANSAC 吸收的
             # 离群锚点变成整条标定 hard-fail。带 ROI 的尝试全败后,退回全画幅用最近一次

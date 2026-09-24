@@ -600,6 +600,11 @@ export const API = {
   // the ignored stone isn't re-detected.
   visionResetSync: (adopt: 'digital' | 'physical' = 'digital'): Promise<void> =>
     apiPost("/api/v1/vision/sync/reset", { adopt }),
+  // 「不是落子」:用户否认了疑似落子弹窗指的那一格。存下那一格此刻的像素,只要它还长成
+  // 那样就不再被识别成子;像素一变标签自动失效。与 visionResetSync('physical') 相反 ——
+  // 那条路是把假阳性收进基线当成现实。
+  visionDenyStone: (row: number, col: number): Promise<void> =>
+    apiPost("/api/v1/vision/deny-stone", { row, col }),
   visionSetupMode: (targetBoard: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/setup-mode", { target_board: targetBoard }),
   visionMonitor: (active: boolean): Promise<void> =>

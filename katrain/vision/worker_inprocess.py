@@ -35,7 +35,7 @@ from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX,
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
-from katrain.vision.reference_frame import CellSampler, ReferenceFrame, build_sampler, to_gray
+from katrain.vision.reference_frame import CellSampler, ReferenceFrame, build_sampler, cell_zncc, sample_cell, to_gray
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -92,6 +92,15 @@ REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps -- colour disagreements 
 REFERENCE_REFRESH_S = 60.0
 REFERENCE_ANCHOR_ZNCC = 0.45
 REFERENCE_MODES = ("off", "shadow", "on")
+
+# 「不是落子」:用户在疑似落子弹窗上按下否认时,把**那一格当时的像素**存下来。
+# 只要它还长成那样,这一格就不再被当成子 —— 判据跟参考帧同一个物理问题
+# (「这还是用户看过的那张画面吗」),所以用同一个阈值。
+#
+# 释放条件是**像素变了**,不是帧数到期:用户真把子放上去时相关性当场掉下来,标签自动失效。
+# 这一点很重要 —— 旧的「忽略」走 adopt='physical',把假阳性**收进基线**当成现实,
+# 而且顺手销毁了参考帧(RESET_SYNC → _invalidate_reference),等于在最需要否决的时刻自废武功。
+DENIAL_ZNCC = REFERENCE_ZNCC
 
 
 def _glow_roi(frame: np.ndarray, geometry, row: int, col: int):
@@ -302,6 +311,11 @@ class InProcessAdapter:
         self._ref_vetoing = False  # the last check disagreed somewhere (applied in "on", logged in shadow)
         self._ref_log_frame = -1
         self._ref_taken_at = 0.0  # monotonic time of the last capture or refresh
+        # 「不是落子」的用户标签:{(row, col): 归一化后的那一格样本}。与参考帧同一个采样器,
+        # 换了单应/换了帧尺寸就一起作废(样本对不上新的像素块)。
+        self._denied: dict[tuple[int, int], np.ndarray] = {}
+        self._denial_sampler: CellSampler | None = None
+        self._last_ref_gray: np.ndarray | None = None
         self._glow_pending: set[tuple[int, int]] = set()
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
@@ -341,6 +355,7 @@ class InProcessAdapter:
         self._motion_filter.reset()
         self._ref_sampler = None
         self._invalidate_reference("geometry")  # patches are tied to this warp
+        self._drop_denials("geometry")  # 否认样本也是按这个 warp 采的
         if self._parallax_auto:
             params = None
             if geometry is not None:
@@ -440,6 +455,81 @@ class InProcessAdapter:
         self._ref_hold[:] = 0
         self._ref_released[:] = False
         self._ref_vetoing = False
+
+    def _sampler_for(self, gray: np.ndarray) -> CellSampler:
+        """The cell sampler for this frame size, built once per (geometry lock, frame size)."""
+        h, w = gray.shape[:2]
+        if self._ref_sampler is None or (self._ref_sampler.img_w, self._ref_sampler.img_h) != (w, h):
+            extractor = self._active_extractor()
+            self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
+        return self._ref_sampler
+
+    def _drop_denials(self, reason: str) -> None:
+        if self._denied:
+            logger.info("not-a-stone: dropping %d label(s) (%s)", len(self._denied), reason)
+        self._denied.clear()
+        self._denial_sampler = None
+
+    def _deny_stone(self, row: int, col: int) -> None:
+        """用户按了「不是落子」:把这一格**此刻**的样子存成否认样本。
+
+        存不下就直接说(这一格现在没法比对 —— 过曝、死黑或者压根没有结构),不要假装记住了:
+        「记住了但永远比不上」和「没记住」在用户那里看起来一样,而前者会让我们以为这条需求生效了。
+        """
+        gray = self._last_ref_gray
+        if gray is None:
+            logger.warning("not-a-stone (%d,%d): no frame to sample — the label was NOT stored", row, col)
+            return
+        sampler = self._sampler_for(gray)
+        if self._denial_sampler is not sampler:
+            self._denied.clear()  # patches from another warp/frame-size are not comparable
+            self._denial_sampler = sampler
+        patch = sample_cell(sampler, gray, row, col)
+        if patch is None:
+            logger.warning(
+                "not-a-stone (%d,%d): this cell cannot be compared right now (flat/blown/crushed) — "
+                "the label was NOT stored",
+                row, col,
+            )
+            return
+        self._denied[(row, col)] = patch
+        logger.info("not-a-stone (%d,%d) stored; %d cell(s) now denied", row, col, len(self._denied))
+
+    def _live_denials(self, gray: np.ndarray | None) -> list[tuple[int, int]]:
+        """本帧仍然站得住的否认标签,顺手丢掉已经失效的。**每帧只调一次**(要采样)。
+
+        标签在**像素变了**的那一刻失效 —— 用户真把子放到那一格上时相关性当场掉下来。
+        这比任何帧数上限都准:它问的正是用户当初在看的那个问题。
+        """
+        if not self._denied:
+            return []
+        sampler = self._denial_sampler
+        if gray is None or sampler is None or gray.shape[:2] != (sampler.img_h, sampler.img_w):
+            return list(self._denied)  # 这一帧没法比 —— 不比就不算证伪,标签继续有效
+        live = []
+        for cell in list(self._denied):
+            now = sample_cell(sampler, gray, cell[0], cell[1])
+            if now is not None and cell_zncc(self._denied[cell], now) < DENIAL_ZNCC:
+                del self._denied[cell]
+                logger.info("not-a-stone (%d,%d) released: the pixels changed", cell[0], cell[1])
+            else:
+                live.append(cell)
+        return live
+
+    def _mask_denied(self, board: np.ndarray, cells: list[tuple[int, int]]) -> np.ndarray:
+        """把 `cells` 里还占着子的格子打成 EMPTY,返回副本(没有要改的就返回原对象)。
+
+        **不写回 `_last_stable_board`**:那是识别自己的历史,把结论灌回去会让它通过自己
+        污染的状态自我印证 —— 同 `_reference_check` 那条边界。
+        """
+        hits = [(r, c) for r, c in cells if board[r][c] != EMPTY]
+        if not hits:
+            return board
+        effective = board.copy()
+        for row, col in hits:
+            effective[row][col] = EMPTY
+        logger.info("not-a-stone suppresses %s", ", ".join(f"({r},{c})" for r, c in hits))
+        return effective
 
     def _reference_check(self, board: np.ndarray, gray: np.ndarray | None) -> np.ndarray:
         """The board to hand downstream: cells that still look exactly as they did when the board last
@@ -886,7 +976,12 @@ class InProcessAdapter:
                         tr.mark("ae")
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
-                    ref_gray = to_gray(warped) if self._ref_mode != "off" and self._bound and not self._paused else None
+                    # 「不是落子」也吃这一帧:它是用户给的标签,不该因为 refcheck 被关掉就失灵。
+                    want_gray = (self._ref_mode != "off" or self._denied) and self._bound and not self._paused
+                    ref_gray = to_gray(warped) if want_gray else None
+                    if ref_gray is not None:
+                        # 按下「不是落子」时要采样的就是这一帧 —— 命令是异步到达的,那一刻没有帧在手。
+                        self._last_ref_gray = ref_gray
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
                     if tr:
@@ -970,8 +1065,16 @@ class InProcessAdapter:
                     self._last_stable_board = stable_board
                     if tr:
                         tr.mark("assign")
-                    observed_board = self._reference_check(stable_board, ref_gray)
-                    self._maybe_capture_reference(stable_board, raw_observation, ref_gray)
+                    # 「不是落子」先于参考帧生效,而且**也喂给拍参考的那一步**。这是关键:
+                    # 拍新参考要求「读数 == 对局记录」,假阳性在场时这条永远不成立 ⇒ 参考帧再也
+                    # 更新不了(09-24 现场那个「放行之后就死循环」的形状)。用户否认之后把那一格
+                    # 按空处理,参考帧立刻就能重拍 —— 新参考把这团反光拍进照片、地图记它是空,
+                    # 之后「照片一样 + 地图说空」这条常设否决就接手了(凭空多出的子无帧数上限)。
+                    denied_cells = self._live_denials(ref_gray)
+                    denied_stable = self._mask_denied(stable_board, denied_cells)
+                    denied_observation = self._mask_denied(raw_observation, denied_cells)
+                    observed_board = self._reference_check(denied_stable, ref_gray)
+                    self._maybe_capture_reference(denied_stable, denied_observation, ref_gray)
                     if tr:
                         tr.mark("refchk")
                     self._observation_seq += 1
@@ -1219,6 +1322,7 @@ class InProcessAdapter:
                 self._paused = False  # defensive reset against a previous session's leftover pause
                 self._sync.bind()
                 self._invalidate_reference("bind")
+                self._drop_denials("bind")
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()
@@ -1231,6 +1335,7 @@ class InProcessAdapter:
                 self._promoter.reset()
                 self._move_detector.reset_suspicion()  # a new session starts every cell at zero
                 self._invalidate_reference("unbind")
+                self._drop_denials("unbind")
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:
@@ -1263,6 +1368,11 @@ class InProcessAdapter:
                         # 正确解读(悔棋后人真拿走子 ⇒ 像素变 ⇒ 否决不了;没拿走 ⇒ 两者一致 ⇒
                         # 无分歧)。
                         self._ref_stale = True
+                # 对局记录说那一格现在有子了(用户后来真下在那儿,或者悔棋回到一个有子的局面)
+                # ⇒ 「这儿不是落子」这句话已经不再描述现实,丢掉它。留着会让真子被永远压成空。
+                for cell in [c for c in self._denied if board[c[0]][c[1]] != EMPTY]:
+                    del self._denied[cell]
+                    logger.info("not-a-stone (%d,%d) released: the game record now has a stone there", *cell)
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
@@ -1314,6 +1424,8 @@ class InProcessAdapter:
                 self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()  # declined ambiguous prompt resets sync — don't re-fire
+            elif cmd.action == CommandType.DENY_STONE:
+                self._deny_stone(int(cmd.data["row"]), int(cmd.data["col"]))
             elif cmd.action == CommandType.SET_VIEWER_ACTIVE:
                 self._viewer_active = cmd.data.get("active", False)
             elif cmd.action == CommandType.SET_GEOMETRY:

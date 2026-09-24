@@ -144,6 +144,23 @@ def _usable(patches: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return std, (std >= MIN_PATCH_STD) & (blown <= MAX_SATURATED_FRACTION) & (crushed <= MAX_SATURATED_FRACTION)
 
 
+def sample_cell(sampler: CellSampler, gray: np.ndarray, row: int, col: int) -> np.ndarray | None:
+    """One cell's normalised patch, or None when this frame cannot compare it (flat / blown / crushed).
+
+    Same normalisation and same usability rule as a whole ReferenceFrame, so a patch taken here and a
+    patch taken there are directly comparable by `cell_zncc`. Returning None rather than a zero vector
+    is deliberate: "cannot be compared" must not silently become "correlates with nothing".
+    """
+    patches = sampler.sample(gray)[row * sampler.grid_size + col][None, :]
+    normalised, usable = _normalise(patches)
+    return normalised[0] if bool(usable[0]) else None
+
+
+def cell_zncc(a: np.ndarray, b: np.ndarray) -> float:
+    """ZNCC of two patches from `sample_cell`; both must come from the same sampler."""
+    return float(_zncc(a[None, :], b[None, :])[0])
+
+
 class ReferenceFrame:
     """One reference: the normalised cell patches of a frame plus the board it is known to show."""
 

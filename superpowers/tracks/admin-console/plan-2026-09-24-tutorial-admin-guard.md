@@ -599,7 +599,7 @@ git show --stat HEAD | tail -4
 - Consumes：`useAuth()` 返回的 `user?: User | null`，其中 `User.is_admin?: boolean`（本任务新增声明）
 - Produces：`canEdit: boolean`，页面内部使用
 
-- [ ] **Step 1：装前端依赖；改前端之前按用例名字记录 vitest 基线，写好「只报新增失败」的 vitest 小脚本**
+- [x] **Step 1：装前端依赖；改前端之前按用例名字记录 vitest 基线，写好「只报新增失败」的 vitest 小脚本**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npm ci
@@ -642,7 +642,7 @@ bash .superpowers/baseline/vitestnewfail.sh --record .superpowers/baseline/vites
 ```
 Expected：`npm ci` 打印 `added N packages`，没有 `ERR!`；脚本打印 `# N tests, M failed`（M 可以不为 0，记下即可），然后 `record exit=0`。
 
-- [ ] **Step 2：写测试**。在 `TutorialFigurePage.test.tsx` 里：
+- [x] **Step 2：写测试**。在 `TutorialFigurePage.test.tsx` 里：
 
 2a. 把 `beforeEach` 里的
 ```tsx
@@ -714,12 +714,12 @@ const EDIT_BUTTONS = [/编辑讲解/, /确认审核/, /逻辑检查/, /^编辑$/
   });
 ```
 
-- [ ] **Step 3：跑测试，确认失败**
+- [x] **Step 3：跑测试，确认失败**
 
 Run：`cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npx vitest run src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx 2>&1 | tail -15`
 Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮还在；「管理员看得到编辑控件」和原有两条 PASS。
 
-- [ ] **Step 4：改 `AuthContext.tsx`**。在 `interface User` 里的 `avatar_url?: string;` 之后加：
+- [x] **Step 4：改 `AuthContext.tsx`**。在 `interface User` 里的 `avatar_url?: string;` 之后加：
 ```ts
     // Admin flag. `/auth/me` has always returned it (katrain/web/models.py User.is_admin);
     // the client never declared it before 2026-09-24. Only decides which editing controls
@@ -727,7 +727,7 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
     is_admin?: boolean;
 ```
 
-- [ ] **Step 5：改 `TutorialFigurePage.tsx`**
+- [x] **Step 5：改 `TutorialFigurePage.tsx`**
 
 5a. 第 39 行 `const { token } = useAuth();` 改成：
 ```tsx
@@ -780,7 +780,9 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
 }
 ```
 
-- [ ] **Step 6：跑测试、真正的类型检查和 lint**
+- [x] **Step 6：跑测试、真正的类型检查和 lint**
+
+执行结果：聚焦 vitest 5/5 通过，`tsc -b` 通过。lint 在 `AuthContext.tsx` 报 4 条已有错误；用 `git show HEAD:... | npx eslint --stdin --stdin-filename ...` 复现了相同 4 条，均非本次新增。未扩大范围修改共享鉴权代码。
 
 Run：
 ```bash
@@ -793,7 +795,9 @@ echo gates-ok
 ```
 Expected：vitest 全部 PASS；`tsc -b` 没有输出（注意别用 `tsc --noEmit`，那个一个文件都不检查）；eslint 没有输出；最后打印 `gates-ok`（`set -e` 下，前面任何一步失败都走不到这一行）。
 
-- [ ] **Step 7：前端全量单测按名字和基线比；两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 包也会用到）
+- [x] **Step 7：前端全量单测按名字和基线比；两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 包也会用到）
+
+执行结果：与 2368 条、0 失败的基线相比，改后共 2371 条；首次与两套构建并跑时原有讲解编辑测试瞬时失败 1 条，单文件复跑 5/5、全量复跑 2371/2371，最终新增失败 0。首次失败疑似运行时抖动，未复现，原因未证实。Galaxy 和 kiosk-2d 构建均通过。
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -810,7 +814,7 @@ echo builds-ok
 ```
 Expected：两个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`，最后打印 `builds-ok`。
 
-- [ ] **Step 8：提交**
+- [x] **Step 8：提交**
 
 ```bash
 set -o pipefail

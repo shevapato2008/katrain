@@ -40,6 +40,15 @@ const boot = async (page: Page, path: string, lang = 'cn') => {
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
     },
   }));
+  // 同一个理由钉 `/vision/status`:不钉就打到真后端,500–960ms 才回,左栏 LED 那格
+  // 在回来之前是「—」、回来之后变「未连接」—— 什么时候变取决于另一个进程。
+  // 值照 e2e 后端实测的原样(没有摄像头也没有灯),别的闸量到的字一个不变。
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: false,
+    },
+  }));
   await page.goto(path);
   // `state: 'attached'` 不是 `'visible'`(默认):画布塌成 0×0 时元素照旧在 DOM 里,
   // 但 Playwright 判它不可见 —— 默认值会把「量出来是 0」变成一条 30 秒超时。
@@ -469,6 +478,14 @@ test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', a
 
   // 铁律:**装得下的数据量下量出来的数字一概不算。** 上面两条量的都是「刚好装得下」,
   // 证不了「装不下的时候谁让步」。这里把值撑成 300 个字再量一次。
+  //
+  // ⚠️ 撑之前**先等三格落到最终值**。`boot` 只等到 `.kiosk-screen` 挂上,状态接口还在路上;
+  // 接口晚到时 LED 从「—」变「未连接」,值真变了 React 就整格重写,撑进去的 300 字被换回三个字
+  // ⇒ 量到 62/62、没有省略号(2026-09-24 实测 develop 上单跑 30–50% 挂,每次都是 LED 那格)。
+  // 钉住接口只让值确定,不让时机确定 —— 这一步才是。
+  await expect.poll(() => page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-status__v')].map((el) => el.textContent)))
+    .toEqual(['未连接', '需校准', '未连接']);
   const before = await box(page, '.kiosk-console');
   await page.evaluate(() => {
     document.querySelectorAll('.kiosk-status__v').forEach((el) => { el.textContent = '已连接'.repeat(100); });

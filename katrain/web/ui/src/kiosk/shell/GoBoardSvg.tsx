@@ -40,7 +40,7 @@ const STONE_R = U * 0.47;
  * 要不要把 oak 收进上游共享包是**四个产品一起的决定**,与本文件内部统一这件事不冲突。
  */
 export function GoBoardSvg({
-  size = 19, black = [], white = [], last, ghost = [], ghostFor, atari = [], remove = [], hint = [], muted = false, label,
+  size = 19, black = [], white = [], last, ghost = [], ghostFor, pending, atari = [], remove = [], hint = [], muted = false, label,
   numbers, letters, shapes, highlights = [], window: win,
 }: {
   size?: number;
@@ -50,13 +50,10 @@ export function GoBoardSvg({
   last?: string;
   /** 候选点(「下一手该落这儿」的灯位 / 题目提示):半透明圈,**不画成棋子**。 */
   ghost?: readonly string[];
-  /**
-   * 候选点画成哪一色。**摆谱屏(屏 17)必须传** —— 那一屏的圈说的是「这儿要放一颗什么子」,
-   * 而实体盘上的灯同时在那个点亮着,规范给这一屏定死了「**屏上高亮色必须和灯同色**」:
-   * 黑子亮红灯、白子亮绿灯(`constants/ledColors.ts` 的 `LED_HEX`,四处独立来源一致)。
-   * 不传时沿用原来那圈青玉色 —— 做题屏的「提示落这儿」没有灯,不该借用灯的语义。
-   */
+  /** 需要按棋色区分的空点提示；摆谱下一手改用 pending 棋子。 */
   ghostFor?: 'B' | 'W';
+  /** 摆谱下一手：先画真实颜色的棋子，再用对比色圈标出待摆点。 */
+  pending?: { at: string; color: 'B' | 'W' };
   /** 被叫吃的子:红方框,**不换子的颜色** —— 换颜色会和「这颗子是什么色」打架。 */
   atari?: readonly string[];
   /** 摆谱:该拿走的点(蓝灯)。圈的颜色就是那颗灯的颜色(`LED_HEX.remove`),画在子**之后**,压在子上也看得见。 */
@@ -163,6 +160,11 @@ export function GoBoardSvg({
       })}
       {black.map((c) => stone(c, true))}
       {white.map((c) => stone(c, false))}
+      {pending && stone(pending.at, pending.color === 'B')}
+      {pending && (() => {
+        const p = P(pending.at);
+        return <circle className={`pending-ring pending-ring--${pending.color.toLowerCase()}`} cx={p.x} cy={p.y} r={STONE_R * 0.55} />;
+      })()}
       {/* 最后一手:**圈在子上**,不是换颜色 */}
       {last && (() => { const p = P(last); return <circle className="mark" cx={p.x} cy={p.y} r={STONE_R * 0.55} />; })()}
       {atari.map((c) => {

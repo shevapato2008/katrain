@@ -292,7 +292,7 @@ class InProcessAdapter:
         # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
         self._last_raw: np.ndarray | None = None
         self._glow_ref: np.ndarray | None = None
-        # Reference-frame check: the last frame whose *raw* board matched the game record, kept as
+        # Reference-frame check: the last frame whose *raw* board matched the authoritative target, kept as
         # normalised per-cell patches in memory only -- never a file, one reference at a time.
         self._ref_mode = str(config.get("reference_check", "shadow"))
         if self._ref_mode not in REFERENCE_MODES:
@@ -423,12 +423,12 @@ class InProcessAdapter:
 
     def _game_stone_sustain(self, weak: list, w: int, h: int) -> list:
         """The sustain-tier (below keep) detections allowed into board assignment: only those sitting within
-        SUSTAIN_RADIUS of a stone the GAME has already played (the expected board). Owner rule 2026-09-22:
-        the 0.20 tier exists so a played stone never reads as empty or as the other colour. The camera's
+        SUSTAIN_RADIUS of a stone the game or setup target already contains. Owner rule 2026-09-22:
+        the 0.20 tier exists so a placed stone never reads as empty or as the other colour. The camera's
         own last stable board is not "played": a shadow read as a stone once (E1 on the RK3562) must not
-        get the tier. No bound game -> no tier (tsumego / baipu monitor keep the pre-tier behaviour)."""
+        get the tier."""
         exp = self._expected_np
-        if not weak or exp is None or not self._bound:
+        if not weak or exp is None or not (self._bound or self._monitor):
             return []
         gs = exp.shape[0]
         points = self._active_extractor().detection_points(weak, img_w=w, img_h=h)
@@ -628,12 +628,14 @@ class InProcessAdapter:
             )
             logger.info(
                 "refcheck %s %d cell(s): %s%s",
-                "keeps" if self._ref_mode == "on" else "would keep",
+                "keeps" if self._ref_mode == "on" or (self._monitor and self._ref_mode == "shadow") else "would keep",
                 len(rows),
                 shown,
                 " ..." if len(rows) > 4 else "",
             )
-        if self._ref_mode != "on":
+        # Monitor mode has no low-confidence confirmation dialog. Apply the same reference veto
+        # there even when game sessions are still running the checker in shadow mode.
+        if self._ref_mode != "on" and not (self._monitor and self._ref_mode == "shadow"):
             return board  # shadow: the same object, so nothing downstream can diverge
         effective = board.copy()
         effective[disagree] = reference.board[disagree]
@@ -671,7 +673,7 @@ class InProcessAdapter:
         if (
             self._ref_mode == "off"
             or gray is None
-            or not self._bound
+            or not (self._bound or self._monitor)
             or self._paused
             or self._lit_points
             or expected is None
@@ -976,11 +978,10 @@ class InProcessAdapter:
                         tr.mark("ae")
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
-                    # 「不是落子」也吃这一帧:它是用户给的标签,不该因为 refcheck 被关掉就失灵。
-                    want_gray = (self._ref_mode != "off" or self._denied) and self._bound and not self._paused
+                    # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
+                    want_gray = (self._ref_mode != "off" or self._denied) and (self._bound or self._monitor) and not self._paused
                     ref_gray = to_gray(warped) if want_gray else None
                     if ref_gray is not None:
-                        # 按下「不是落子」时要采样的就是这一帧 —— 命令是异步到达的,那一刻没有帧在手。
                         self._last_ref_gray = ref_gray
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
@@ -1342,34 +1343,20 @@ class InProcessAdapter:
                 board = np.array(cmd.data["board"], dtype=int)
                 unchanged = self._expected_np is not None and np.array_equal(board, self._expected_np)
                 if self._reference is not None and not np.array_equal(board, self._reference.board):
-                    # The reference stays valid only while the game moved FORWARD from the position it
-                    # shows: every stone it holds is still there in the same colour, and at most one
-                    # new stone appeared. Undo, navigation to a sibling, a new game and an undone
-                    # capture all take a stone away from that position, so they drop it. The
-                    # orchestrator re-sends the same expected board off game state
-                    # (physical_play_orchestrator.py:160), several times a second while the engine
-                    # streams: a re-send must keep the reference, which this rule does (kept, zero
-                    # added). Do NOT "simplify" it to `added != 1` -- that drops the reference on every
-                    # re-send and the feature would silently never hold anything. The equality check
-                    # above only skips the arithmetic.
+                    # Undo, sibling navigation and captures can move the game away from the
+                    # reference position. Mark it stale, but keep its image until a clean frame
+                    # replaces it: unchanged pixels still give valid evidence for each cell.
+                    # Repeated expected-board updates from the orchestrator must keep it too.
                     # Known and accepted: a setup edit that only adds one stone looks like a move
-                    # here. 捕获守卫仍然约束这种情形;压制方向的帧数上限已于 2026-09-24 退役。
+                    # here. The capture guards still constrain that case; the invented-stone hold
+                    # no longer has a frame budget.
                     ref_board = self._reference.board
                     kept = bool(np.all((ref_board == EMPTY) | (board == ref_board)))
                     added = int(((ref_board == EMPTY) & (board != EMPTY)).sum())
+                    # Keep the old image until a clean replacement is captured. This also covers
+                    # monitor-driven 摆谱, which may guide several moves without a dark frame.
                     if not kept or added > 1:
-                        # 只**标记**它不再是「领先一手」的那一份,**不销毁**。
-                        # Fan 2026-09-24 定的原则:照到新的参考帧才允许销毁旧的 —— 空置期间
-                        # 否决整个失效,而那正是 (18,12) 那颗假白子的逃逸路径(zncc=1.00 被连否
-                        # 3 帧,参考帧一丢就直冲 UI,弹了 12 次 illegal_change)。
-                        # 空置换不来任何空间:任何时刻都只持有一份,新的一照就把旧的替换掉。
-                        # 留着也不会误否决:否决要同时满足「像素没变」与「检测 != 参考」,而
-                        # 像素没变 ⇒ 物理状态与拍参考那刻相同 ⇒ 参考里那个读数就是这堆像素的
-                        # 正确解读(悔棋后人真拿走子 ⇒ 像素变 ⇒ 否决不了;没拿走 ⇒ 两者一致 ⇒
-                        # 无分歧)。
                         self._ref_stale = True
-                # 对局记录说那一格现在有子了(用户后来真下在那儿,或者悔棋回到一个有子的局面)
-                # ⇒ 「这儿不是落子」这句话已经不再描述现实,丢掉它。留着会让真子被永远压成空。
                 for cell in [c for c in self._denied if board[c[0]][c[1]] != EMPTY]:
                     del self._denied[cell]
                     logger.info("not-a-stone (%d,%d) released: the game record now has a stone there", *cell)
@@ -1393,6 +1380,9 @@ class InProcessAdapter:
                 target = np.array(cmd.data["target_board"], dtype=int)
                 self._sync.enter_setup_mode(target)
                 self._invalidate_reference("setup mode")
+                if self._monitor and not self._bound:
+                    # A clean setup frame is the monitor's reference before the next guidance lamp lights.
+                    self._expected_np = target
             elif cmd.action == CommandType.RESET_SYNC:
                 self._invalidate_reference("resync")
                 expected = cmd.data.get("expected") if cmd.data else None
@@ -1436,6 +1426,8 @@ class InProcessAdapter:
                 if not self._monitor and not self._bound:
                     self._sync = SyncStateMachine()  # Reset (mirror UNBIND)
                     self._move_armed = False
+                    self._expected_np = None
+                    self._invalidate_reference("monitor stopped")
             elif cmd.action == CommandType.SET_PAUSED:
                 self._paused = cmd.data.get("paused", False)
             elif cmd.action == CommandType.SET_MOVE_ARMED:

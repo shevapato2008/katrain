@@ -65,7 +65,7 @@ interface Vision {
 
 /**
  * `camera`:视觉服务就绪与否。`geometry`:几何这次开机确认过没有 —— 摄像头态要两个都真;
- * 17d 取「视觉在、几何没确认」那一种,正是稿子画的「棋盘还没标定」。
+ * 17d 取「没有摄像头」的手动兜底；有摄像头但几何未确认时先进入共用标定屏。
  */
 const boot = async (
   page: import('@playwright/test').Page,
@@ -245,8 +245,8 @@ test('四图:摆谱 · AI 支招 ←→ sample-go/shots/17c-baipu-hint.png', asy
 });
 
 test('四图:摆谱 · 摄像头用不了 ←→ sample-go/shots/17d-baipu-manual.png', async ({ page }) => {
-  // 视觉在、几何这次开机还没确认(盒子重启后的常态)⇒ 手动兜底,原因「棋盘还没标定」。
-  await boot(page, { camera: true, geometry: 'required' });
+  // 没部署摄像头 ⇒ 手动兜底；摄像头在但未标定已经改为先进入标定页。
+  await boot(page, { camera: false, geometry: 'disabled' });
   // 手动兜底:临时露出「确认落子」,前 12 手逐手按。
   for (let i = 0; i < 12; i += 1) {
     await page.getByRole('button', { name: '确认落子' }).click();
@@ -261,7 +261,7 @@ test('四图:摆谱 · 摄像头用不了 ←→ sample-go/shots/17d-baipu-manua
     slug: '17d-baipu-manual',
     referenceCaption: `参考:sample-go/shots/17d-baipu-manual.png · ${LAYOUT} · 摄像头用不了才临时露出确认键,写明原因`,
     implementationCaption:
-      '实现:视觉就绪、几何 required(本次开机没确认过)⇒ 手动兜底,原因「棋盘还没标定」+ 去「设置」标定 · '
+      '实现:没有摄像头 ⇒ 手动兜底,原因「没接摄像头」 · '
       + '前 12 手按「确认落子」· 试下灰着说「摄像头没在识别」· 恢复后这颗键自己收起',
   });
   console.log(`[fourup 17d-baipu-manual] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);

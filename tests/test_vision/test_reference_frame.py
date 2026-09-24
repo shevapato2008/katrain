@@ -413,6 +413,53 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
 
 
+def test_monitor_mode_can_capture_and_apply_the_same_reference_filter():
+    adapter = _adapter("shadow")
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    adapter._expected_np = board
+    gray = to_gray(_board_frame())
+    adapter._maybe_capture_reference(board, board, gray)
+    assert adapter._reference is not None
+    false_positive = board.copy()
+    false_positive[12][3] = WHITE
+    for _ in range(REFERENCE_HOLD_SUPPRESS + 2):
+        assert adapter._reference_check(false_positive, gray)[12][3] == EMPTY
+    assert not adapter._ref_released[12][3]
+
+
+def test_monitor_setup_supplies_the_reference_target_and_stop_drops_it():
+    adapter = _adapter("shadow")
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    board[4][4] = BLACK
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": board.tolist()}))
+    adapter._drain_commands()
+    assert np.array_equal(adapter._expected_np, board)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
+    assert adapter._reference is not None
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_MONITOR, data={"active": False}))
+    adapter._drain_commands()
+    assert adapter._reference is None and adapter._expected_np is None
+
+
+def test_monitor_keeps_a_clean_reference_through_multiple_forward_moves():
+    adapter = _with_reference("shadow", _board_frame(), _empty_board())
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    for row, col, color in ((4, 4, BLACK), (5, 5, WHITE), (6, 6, BLACK)):
+        board[row][col] = color
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+        adapter._drain_commands()
+        assert adapter._reference is not None
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}))
+    adapter._drain_commands()
+    assert adapter._reference is not None
+
+
 def test_the_same_expected_board_is_never_re_captured(monkeypatch):
     """v1 re-took the reference every 2 s while the board was unchanged, which fixated a poisoned one."""
     monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: 1000.0)

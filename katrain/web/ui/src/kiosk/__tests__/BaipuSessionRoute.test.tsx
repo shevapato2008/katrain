@@ -17,9 +17,6 @@ vi.mock('../pages/BaipuSessionPage', () => ({
     return <div data-testid="session" data-collect={String(collect)} />;
   },
 }));
-vi.mock('../components/vision/PhysicalBoardGuard', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="guard">{children}</div>,
-}));
 // 棋盘状态走**真的** `GeometryProvider`(初值 phase=required、loaded=false —— 和盒上刷新那一刻一样),
 // 只桩它背后的接口。直接给 `useGeometry` 一个值的话,「还没读到」这一态根本造不出来。
 vi.mock('../../api/geometryApi', () => ({
@@ -52,18 +49,34 @@ beforeEach(() => {
 });
 
 describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
-  it('上线态不套标定守卫(即使 geometry 是 required)—— 只用灯,灯的行列换算不需要摄像头', async () => {
+  it('本次已标定后直接进入摆谱', async () => {
     modeMock.mockResolvedValue({ collect: false });
+    vi.mocked(GeometryAPI.status).mockResolvedValue({
+      ...geo('ready'), session_calibrated: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: true, recognition_ready: true },
+    });
     renderRoute();
     expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'false');
-    expect(screen.queryByTestId('guard')).toBeNull();
-    expect(screen.queryByTestId('calib-running')).toBeNull();
+  });
+
+  it('未部署摄像头的盒子可进入手动摆谱', async () => {
+    modeMock.mockResolvedValue({ collect: false });
+    vi.mocked(GeometryAPI.status).mockResolvedValue(geo('disabled'));
+    renderRoute();
+    expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'false');
+  });
+
+  it('有摄像头但本次未标定时，先进入共用标定流程', async () => {
+    modeMock.mockResolvedValue({ collect: false });
+    renderRoute();
+    expect(await screen.findByTestId('calib-running')).toHaveTextContent('先标定棋盘');
+    expect(sessionRendered).not.toHaveBeenCalled();
   });
 
   // 设置里开始标定 → 按返回(返回不取消,服务端标定线程接着跑)→ 进摆谱。摆谱屏一挂就点灯,
   // 而标定每个锚点都是 clear → 拍熄灯帧 → 点亮 → 拍亮灯帧;`/led/point` 先 CLEAR 再点、没有忙检查
-  // ⇒ 两边互相冲掉对方的灯:摆谱指错、标定失败。采集态没这个问题 —— 守卫在标定进行中本来就不放行。
-  it('上线态但标定线程还在跑:先不挂摆谱屏,给标定进度;标定结束(这里是取消)才进摆谱', async () => {
+  // ⇒ 两边互相冲掉对方的灯:摆谱指错、标定失败。
+  it('标定线程还在跑时不点摆谱灯；取消后仍停在标定页', async () => {
     modeMock.mockResolvedValue({ collect: false });
     const next = deferred<GeometryStatus>();
     // 第一次问到「在跑」;之后 Provider 每 300ms 再问,那一次先挂着,由用例决定何时回「已取消」。
@@ -72,8 +85,8 @@ describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
     expect(await screen.findByTestId('calib-running')).toHaveTextContent('棋盘标定还在进行');
     expect(sessionRendered).not.toHaveBeenCalled();
     await act(async () => { next.resolve(geo('cancelled')); });
-    expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'false');
-    expect(screen.queryByTestId('calib-running')).toBeNull();
+    expect(await screen.findByTestId('calib-running')).toHaveTextContent('先标定棋盘');
+    expect(sessionRendered).not.toHaveBeenCalled();
   });
 
   // 刷新直接进这条 URL(或服务刚起)时 Provider 还没读到状态:phase 是**初值** required、loaded=false。
@@ -92,9 +105,13 @@ describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
 
   it('采集态照旧先过标定守卫 —— 拍照要几何锁', async () => {
     modeMock.mockResolvedValue({ collect: true });
+    vi.mocked(GeometryAPI.status).mockResolvedValue({
+      ...geo('ready'), session_calibrated: true,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: true },
+    });
     renderRoute();
     expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'true');
-    expect(screen.getByTestId('guard')).toBeInTheDocument();
+    expect(screen.queryByTestId('calib-running')).toBeNull();
   });
 
   // 只守「问的那几百毫秒里有出口」。问不回来会不会一直停在这儿,由 baipuApi.test.ts 的两条超时用例守

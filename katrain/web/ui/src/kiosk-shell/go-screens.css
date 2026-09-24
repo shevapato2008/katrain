@@ -60,13 +60,12 @@
 .gob .star { fill: var(--gb-line); }
 /* 最后一手的圈 */
 .gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.gob .pending-ring { fill: none; stroke-width: 7; }
+.gob .pending-ring--b { stroke: #fff; }
+.gob .pending-ring--w { stroke: #141414; }
 /* 候选点:半透明青玉圈,不画成棋子 */
 .gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
-/* 摆谱屏(屏 17)的候选点:**颜色必须和实体盘上那颗灯一致** —— 黑子亮红灯、白子亮绿灯
-   (`constants/ledColors.ts` 的 `LED_HEX`:black `#ff3b30` / white `#34c759`,
-   四处独立来源一致)。上面那条不带修饰的青玉圈留给**没有灯**的场合(做题屏的提示),
-   借用灯的语义会让人以为盘上也亮着一颗。
-   ⚠️ 稿子那一帧把 C7(黑棋)的圈画成了绿的 —— 那是稿子错了,不是这里跑偏,已回报。 */
+/* 可选的分色空点提示；摆谱下一手现在画棋子和反色环。 */
 .gob .ghost--b { fill: rgba(255, 59, 48, .32); stroke: rgba(255, 59, 48, .95); }
 .gob .ghost--w { fill: rgba(52, 199, 89, .32); stroke: rgba(52, 199, 89, .95); }
 

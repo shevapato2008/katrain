@@ -1,5 +1,7 @@
 # 管理后台（katrain-admin）设计：骨架 · cron 可视化 · 前置安全修复
 
+> **更新提示（2026-09-24）**：Fan 后续决定使用后台专用账号，教程管理先于 cron。本文关于 `users.is_admin` 共用身份、cron 先做和公开管理员继续可用的段落已被 [教程优先计划](./plan-2026-09-24-admin-tutorial-first.md)覆盖；网络隔离、目标视口和用户视觉确认关卡仍有效。
+
 - 日期：2026-09-24
 - 状态：待 Fan 审阅
 - 分支：`feature/admin-console`（worktree `~/Repositories/katrain-admin-console`，基于 develop `ddedbf9b`）

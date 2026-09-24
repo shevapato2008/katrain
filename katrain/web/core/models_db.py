@@ -19,6 +19,7 @@ from sqlalchemy.sql import func
 from katrain.web.core.db import Base
 import enum
 import uuid as uuid_module
+from datetime import datetime, timezone
 
 
 # ⚠️ **`none_as_null=True` 不是风格问题,是承重的。**
@@ -642,6 +643,22 @@ class BoardPayloadHistory(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     figure = relationship("TutorialFigure")
+
+
+class AdminAuditLog(Base):
+    """Admin identity and tutorial writes, independent of public users."""
+
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True)
+    actor_realm = Column(String(32), nullable=False)
+    actor_username = Column(String(128), nullable=False)
+    action = Column(String(64), nullable=False)
+    target_type = Column(String(32), nullable=True)
+    target_id = Column(Integer, nullable=True)
+    success = Column(Boolean, nullable=False, default=True)
+    detail = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
 class TrainingSample(Base):

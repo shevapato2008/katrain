@@ -1,6 +1,6 @@
 # Galaxy 中文字体子集
 
-本目录只供 Galaxy 前端导入；不要从 KaTrain 通用 UI、桌面 UI 或全局样式入口引用 `galaxy-fonts.css`。生成产物只使用下列固定的比例字体输入。
+本目录供 Galaxy 前端和独立 admin 入口按各自构建单独导入；不要从 KaTrain 通用 UI、桌面 UI、kiosk 或全局样式入口引用 `galaxy-fonts.css`。admin 仅复用字体静态资产，不导入 Galaxy 业务代码或身份状态。生成产物只使用下列固定的比例字体输入。
 
 ## 上游与许可
 

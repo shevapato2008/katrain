@@ -5,10 +5,9 @@ Covers:
     route, while a real user still gets 2xx WITH that route's real
     prerequisites (owned game/task, live match, comment target, platform
     adapter) -- not one generic parametrization.
-  - The four tutorial-authoring writers are ADMIN-ONLY since 2026-09-24:
-    anonymous 401, non-admin and guest 403 ("Admin privileges required").
-    They used to be guest-only reject with anonymous allowed (R3-F1); see
-    superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §4.
+  - The four public tutorial-authoring routes are retired: anonymous, guest,
+    ordinary users and legacy public admins all receive 404/405. Authoring belongs
+    to the separate admin application.
   - `/ws/lobby` rejects the guest before `add_user`.
   - The new `_require_multiplayer_participant` guard on `/api/resign` and
     `/api/timeout`, for both local-multiplayer AND platform-backed games.
@@ -161,20 +160,6 @@ async def _create_admin_and_login(app, username="tutorial-admin"):
     return headers, user_id, unique_name
 
 
-def _fake_tts(monkeypatch):
-    """generate-audio must not run the real TTS pipeline in a unit test -- only the auth boundary is under test."""
-
-    async def _fake_generate_figure_audio(db, figure, narration):
-        figure.narration = narration
-        figure.audio_asset = "fake-audio.mp3"
-        return figure
-
-    monkeypatch.setattr(
-        "katrain.web.api.v1.endpoints.tutorials.generate_figure_audio",
-        _fake_generate_figure_audio,
-    )
-
-
 def _mock_multiplayer_session(player_b_id, player_w_id, sgf="(;FF[4]SZ[19];B[pd])"):
     session = MagicMock()
     session.session_id = uuid.uuid4().hex
@@ -240,7 +225,6 @@ WRITE_ROUTES = [
     ("POST", "/api/v1/reports/999999/retry", None),
     ("POST", "/api/v1/billing/redeem", {"code": "NOPE"}),
     ("POST", "/api/v1/board/heartbeat", {"device_id": "dev-guest"}),
-    ("GET", "/api/v1/board/devices", None),
     ("POST", "/api/v1/live/translations/learn", {"name": "X", "name_type": "player", "translations": {"en": "X"}}),
     ("POST", "/api/v1/platforms/ogs/login", {"username": "u", "password": "p"}),
     ("DELETE", "/api/v1/platforms/ogs/logout", None),
@@ -292,59 +276,51 @@ async def test_guest_403_on_all_write_routes(full_app, guest_headers, method, ur
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
-async def test_tutorial_writer_guest_403(full_app, guest_headers, method, action, body):
+async def test_public_tutorial_writer_is_retired_for_guest(full_app, guest_headers, method, action, body):
     figure_id = _seed_tutorial_figure(full_app)
     url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, headers=guest_headers, body=body)
-    assert resp.status_code == 403
-    assert resp.json() == {"detail": "Admin privileges required"}
+    assert resp.status_code in (404, 405)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
-async def test_tutorial_writer_anonymous_401(full_app, method, action, body, monkeypatch):
-    """Admin-only since 2026-09-24: no token at all is 401 (it used to be allowed, R3-F1)."""
-    _fake_tts(monkeypatch)
+async def test_public_tutorial_writer_is_retired_for_anonymous(full_app, method, action, body):
     figure_id = _seed_tutorial_figure(full_app)
     url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, body=body)
-    assert resp.status_code == 401, resp.text
+    assert resp.status_code in (404, 405), resp.text
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
-async def test_tutorial_writer_non_admin_403(full_app, method, action, body, monkeypatch):
-    _fake_tts(monkeypatch)
+async def test_public_tutorial_writer_is_retired_for_non_admin(full_app, method, action, body):
     headers, _, _ = await _create_user_and_login(full_app, "tutorial-reader")
     figure_id = _seed_tutorial_figure(full_app)
     url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, headers=headers, body=body)
-    assert resp.status_code == 403
-    assert resp.json() == {"detail": "Admin privileges required"}
+    assert resp.status_code in (404, 405)
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
-async def test_tutorial_writer_admin_2xx(full_app, method, action, body, monkeypatch):
-    _fake_tts(monkeypatch)
-    headers, _, admin_name = await _create_admin_and_login(full_app)
+async def test_public_tutorial_writer_is_retired_for_legacy_admin(full_app, method, action, body):
+    headers, _, _ = await _create_admin_and_login(full_app)
     figure_id = _seed_tutorial_figure(full_app)
     url = f"/api/v1/tutorials/figures/{figure_id}/{action}"
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         resp = await _req(ac, method, url, headers=headers, body=body)
-    assert resp.status_code == 200, resp.text
-    if action == "board":
-        # The audit trail names the admin, never "anonymous".
-        with _db(full_app)() as db:
-            history = (
-                db.query(models_db.BoardPayloadHistory)
-                .filter(models_db.BoardPayloadHistory.figure_id == figure_id)
-                .all()
-            )
-        assert [h.changed_by for h in history] == [admin_name]
+    assert resp.status_code in (404, 405), resp.text
+    with _db(full_app)() as db:
+        figure = db.get(models_db.TutorialFigure, figure_id)
+        assert figure.board_payload is None
+        assert figure.narration is None
+        assert figure.audio_asset is None
+        assert not (figure.recognition_debug or {}).get("human_verified")
+        assert db.query(models_db.BoardPayloadHistory).filter_by(figure_id=figure_id).count() == 0
 
 
 # ---------------------------------------------------------------------------
@@ -533,7 +509,7 @@ async def test_real_user_can_redeem_code(full_app):
 @pytest.mark.asyncio
 async def test_real_user_can_heartbeat_but_not_list_devices(full_app):
     """Heartbeat is the box's own report path: any real user may still write it.
-    The device list carries every box's IP: admin-only since 2026-09-24."""
+    The public device-list route is retired."""
     headers, _, _ = await _create_user_and_login(full_app, "device-user")
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         beat = await ac.post(
@@ -543,11 +519,11 @@ async def test_real_user_can_heartbeat_but_not_list_devices(full_app):
         assert beat.json()["status"] == "ok"
 
         listed = await ac.get("/api/v1/board/devices", headers=headers)
-        assert listed.status_code == 403
+        assert listed.status_code == 404
 
 
 @pytest.mark.asyncio
-async def test_admin_can_list_devices(full_app):
+async def test_public_device_list_is_retired_for_legacy_admin(full_app):
     user_headers, _, _ = await _create_user_and_login(full_app, "device-user")
     admin_headers, _, _ = await _create_admin_and_login(full_app, "device-admin")
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
@@ -557,8 +533,7 @@ async def test_admin_can_list_devices(full_app):
         assert beat.status_code == 200
 
         listed = await ac.get("/api/v1/board/devices", headers=admin_headers)
-        assert listed.status_code == 200
-        assert any(d["device_id"] == "dev-real-1" for d in listed.json())
+        assert listed.status_code == 404
 
 
 # --- Platform mutations (10 routes) ---
@@ -746,7 +721,7 @@ async def test_guest_writes_leave_zero_rows_and_zero_sync(full_app, guest_header
             resp = await _req(
                 ac, method, f"/api/v1/tutorials/figures/{figure_id}/{action}", headers=guest_headers, body=body
             )
-            assert resp.status_code == 403
+            assert resp.status_code in (404, 405)
 
     SessionLocal = _db(full_app)
     with SessionLocal() as db:

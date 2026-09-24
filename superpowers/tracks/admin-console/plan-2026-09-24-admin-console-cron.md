@@ -1,4 +1,6 @@
-# 管理后台骨架 + cron 可视化（切片 1）Implementation Plan
+# 管理后台骨架 + cron 可视化（旧切片 1）Implementation Plan
+
+> **更新提示（2026-09-24）**：教程管理现为第一个完整模块，后台账号独立于公开 `users` 表。本计划中的任务顺序和鉴权实现不得直接执行；见 [教程优先计划](./plan-2026-09-24-admin-tutorial-first.md)。cron 的记录器、健康判定等局部设计可在教程切片完成后复用，每个 🛑 用户确认和发布授权仍保留。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

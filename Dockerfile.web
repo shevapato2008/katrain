@@ -29,8 +29,8 @@ RUN python3 i18n.py || true; \
     done
 
 # Build frontend during Docker build (not at runtime)
-RUN cd katrain/web/ui && npm install && npm run build
+RUN cd katrain/web/ui && npm install && npm run build && npm run build:admin
 
 ENV PYTHONPATH=/app
-EXPOSE 8001
+EXPOSE 8001 8010
 CMD ["python3", "-m", "katrain", "--ui", "web", "--host", "0.0.0.0", "--port", "8001"]

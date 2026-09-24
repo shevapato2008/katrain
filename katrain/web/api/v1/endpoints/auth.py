@@ -124,7 +124,7 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
-        if username is None:
+        if not isinstance(username, str) or _is_admin_username(username):
             raise credentials_exception
         # Only access tokens are Bearer credentials (2026-09-24). A refresh token lives 90 days and is for
         # /auth/refresh alone; before this check it also unlocked every endpoint, admin-only ones included.
@@ -209,8 +209,15 @@ async def require_writable_user(request: Request, token: Optional[str] = Depends
     return user
 
 
+def _is_admin_username(username: str) -> bool:
+    """The admin identity namespace is never a public or box-local user."""
+    return username.strip().lower().startswith("admin:")
+
+
 def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     """Get existing local user or create a shadow user for board-mode auth (design 5.3)."""
+    if _is_admin_username(username):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
     user_dict = repo.get_user_by_username(username)
     if user_dict:
         return user_dict
@@ -230,8 +237,8 @@ def _validate_guest_bootstrap_generation(generation: Any) -> int:
 
 
 def _reject_reserved_username(username: str) -> None:
-    """Nobody may register or log in directly as the reserved guest account."""
-    if (username or "").strip().lower() == GUEST_USERNAME:
+    """Public login/registration must not adopt guest or admin identities."""
+    if (username or "").strip().lower() == GUEST_USERNAME or _is_admin_username(username):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
 
 
@@ -486,7 +493,7 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
         payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type: str = payload.get("type")
         username: str = payload.get("sub")
-        if token_type != "refresh" or username is None:
+        if token_type != "refresh" or not isinstance(username, str) or _is_admin_username(username):
             raise credentials_exception
     except JWTError:
         raise credentials_exception

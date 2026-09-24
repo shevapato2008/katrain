@@ -50,6 +50,7 @@ katrain/web/static/pinyin-ime.js
 katrain/web/static/smartkeyboard.js
 katrain/web/static/smartkeyboard.css
 katrain/web/static-kiosk-2d/
+katrain/web/static-admin/
 katrain/web/static-full-baseline/
 node_modules/
 
@@ -225,3 +226,6 @@ rknn_build_split/
 
 # Playwright 每次 run 会整目录删除重建，不入库
 katrain/web/ui/test-results/
+
+# Local admin-console screenshots and browser smoke artifacts; not runtime inputs
+/output/

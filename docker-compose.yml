@@ -58,6 +58,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+    image: katrain-web:local
     container_name: katrain-web
     depends_on:
       minio:
@@ -72,6 +73,39 @@ services:
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - LOCAL_KATAGO_URL=http://host.docker.internal:8000
       # Media storage → MinIO (S3). Swap these for Aliyun OSS values in phase 2 (no code change).
+      - KATRAIN_STORAGE_BACKEND=${KATRAIN_STORAGE_BACKEND:-s3}
+      - KATRAIN_S3_ENDPOINT_URL=${KATRAIN_S3_ENDPOINT_URL:-http://minio:9000}
+      - KATRAIN_S3_BUCKET=${S3_BUCKET:-tutorial-assets}
+      - KATRAIN_S3_ACCESS_KEY=${MINIO_ROOT_USER:-katrain_minio_admin}
+      - KATRAIN_S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minio_secure_password_CHANGE_ME}
+      - KATRAIN_S3_PUBLIC_BASE_URL=${MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/tutorial-assets}
+      - KATRAIN_S3_USE_PRESIGNED=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Independent admin process; host port is reachable only through a local SSH tunnel.
+  katrain-admin:
+    image: katrain-web:local
+    container_name: katrain-admin
+    profiles: ["admin"]
+    command: ["python3", "-m", "katrain.web.admin"]
+    depends_on:
+      minio:
+        condition: service_healthy
+      katrain-web:
+        condition: service_started
+    volumes:
+      - ./data/tutorial_assets:/app/data/tutorial_assets
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8010:8010"
+    environment:
+      - KATRAIN_ADMIN_USERNAME=${KATRAIN_ADMIN_USERNAME:-}
+      - KATRAIN_ADMIN_PASSWORD_HASH=${KATRAIN_ADMIN_PASSWORD_HASH:-}
+      - KATRAIN_ADMIN_SESSION_SECRET=${KATRAIN_ADMIN_SESSION_SECRET:-}
+      - KATRAIN_ADMIN_ENV=${KATRAIN_ADMIN_ENV:-local}
+      - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
+      - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - KATRAIN_STORAGE_BACKEND=${KATRAIN_STORAGE_BACKEND:-s3}
       - KATRAIN_S3_ENDPOINT_URL=${KATRAIN_S3_ENDPOINT_URL:-http://minio:9000}
       - KATRAIN_S3_BUCKET=${S3_BUCKET:-tutorial-assets}

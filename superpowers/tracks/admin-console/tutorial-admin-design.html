@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KaTrain 管理后台 · 教程管理设计稿</title>
+  <link rel="stylesheet" href="../../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css" />
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; --bg:#1d211f; --panel:#252a27; --panel2:#202522; --line:#3b4540; --muted:#9ea9a3; --text:#e8eee9; --green:#618475; --green2:#314a3d; --wood:#deb66b; }
+    * { box-sizing:border-box }
+    body { margin:0; min-width:1080px; color:var(--text); background:var(--bg); font-size:14px }
+    button { font:inherit; cursor:pointer }
+    button:focus-visible, a:focus-visible, select:focus-visible, textarea:focus-visible { outline:2px solid #b0d1bb; outline-offset:2px }
+    .top { height:54px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding:0 20px; background:#222724 }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; letter-spacing:.02em }
+    .brand svg { width:27px; height:27px }
+    .brand small { margin-left:9px; padding-left:16px; border-left:1px solid #526058; color:#b7c4ba; font-size:13px; font-weight:500 }
+    .topright { display:flex; align-items:center; gap:18px; font-size:12px; color:var(--muted) }
+    .env { border:1px solid #637a67; background:#344b3a; padding:5px 10px; border-radius:999px; color:#e0efd8; font-weight:700; letter-spacing:.06em }
+    .avatar { width:25px; height:25px; border-radius:50%; background:#597267; color:#fff; display:grid; place-items:center; font-weight:700 }
+    .wrap { display:grid; grid-template-columns:180px minmax(0,1fr); height:calc(100vh - 54px); min-height:740px }
+    .side { background:#242925; border-right:1px solid var(--line); padding:23px 12px; display:flex; flex-direction:column }
+    .sidehead { padding:0 12px 15px; color:#8f9c93; letter-spacing:.12em; font-size:11px }
+    .nav { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:9px; color:#b6c0b9; text-decoration:none; font-size:14px; margin-bottom:3px }
+    .nav svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8 }
+    .nav.active { color:#e9f1e9; background:#30483a; font-weight:700 }
+    .nav.future { color:#69756e; cursor:default }
+    .sidefoot { margin-top:auto; border-top:1px solid var(--line); padding:17px 12px 0; color:#859188; font-size:12px; line-height:1.65 }
+    main { min-width:0; min-height:0; display:flex; flex-direction:column }
+    .heading { height:64px; min-height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-bottom:1px solid var(--line); background:#202522 }
+    .title { font-size:19px; font-weight:700; letter-spacing:.01em }
+    .crumb { color:#8f9d92; font-size:12px; margin-top:4px }
+    .headcontrols { display:flex; gap:8px; align-items:center }
+    .select { background:#2c342e; color:#e4ece5; border:1px solid #48584b; border-radius:7px; padding:8px 11px; min-width:116px }
+    .workspace { flex:1; min-height:0; display:grid; grid-template-columns:235px minmax(360px,1fr) 388px; gap:0; overflow:hidden }
+    .source { border-right:1px solid var(--line); background:#292e2a; min-width:0; min-height:0; display:flex; flex-direction:column }
+    .panehead { display:flex; align-items:center; justify-content:space-between; min-height:42px; padding:0 13px; color:#b8c3bb; font-size:12px; border-bottom:1px solid #3d4640 }
+    .panehead span:last-child { color:#8ea193 }
+    .book { overflow:auto; padding:14px 12px }
+    .bookpage { background:#fbfaf6; border-radius:5px; color:#111; width:100%; height:345px; overflow:hidden; box-shadow:0 7px 18px #0005; padding:22px 14px 15px }
+    .booktitle { font-family:serif; text-align:right; font-size:9px; margin-bottom:12px }
+    .printrow { display:grid; grid-template-columns:74px 1fr; gap:8px; margin-bottom:16px; align-items:start }
+    .printboard { aspect-ratio:1; background-color:#fff; background-image:linear-gradient(#888 1px,transparent 1px),linear-gradient(90deg,#888 1px,transparent 1px); background-size:8px 8px; border:1px solid #777; position:relative }
+    .printboard::after { content:"●"; position:absolute; bottom:3px; left:4px; font-size:10px }
+    .printtext { font-family:serif; font-size:7px; line-height:1.75; color:#222 }
+    .sourcecaption { color:#b3beb6; font-size:12px; line-height:1.75; padding:10px 2px }
+    .center { min-width:0; min-height:0; display:flex; flex-direction:column; background:#151916 }
+    .boardbar { min-height:42px; display:flex; align-items:center; justify-content:space-between; padding:0 14px; background:#202521; border-bottom:1px solid #344038; font-size:12px; color:#acb9ad }
+    .boardbar strong { color:#e6eee6; font-size:13px }
+    .boardstage { min-height:0; flex:1; display:flex; align-items:center; justify-content:center; padding:16px; overflow:hidden }
+    .board { position:relative; width:min(100%, 620px); aspect-ratio:1; background:var(--wood); border-radius:3px; box-shadow:0 3px 15px #0008; padding:32px }
+    .grid { position:absolute; inset:35px; background-image:linear-gradient(#846e46 1px,transparent 1px),linear-gradient(90deg,#846e46 1px,transparent 1px); background-size:calc(100% / 9) calc(100% / 9); border-right:1px solid #846e46; border-bottom:1px solid #846e46 }
+    .stone { position:absolute; width:27px; height:27px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700; box-shadow:0 1px 2px #0007 }
+    .stone.black { background:#1c1d1b; color:#fff; left:23%; top:76% }
+    .stone.white { background:#fafafa; color:#272727; border:1px solid #8c8c8c; left:31%; top:20% }
+    .star { position:absolute; width:6px; height:6px; border-radius:50%; background:#80673e }
+    .star.one { left:34%; top:34% }.star.two { left:74%; top:34% }.star.three { left:34%; top:74% }.star.four { left:74%; top:74% }
+    .editbar { min-height:58px; background:#242b25; border-top:1px solid #435244; display:none; align-items:center; gap:8px; padding:0 14px }
+    .editbar .hint { margin-left:auto; color:#a8b5aa; font-size:12px }
+    .tool { background:#303c32; border:1px solid #647866; color:#e7eee7; border-radius:6px; padding:7px 10px }
+    .tool.on { background:#4c7157; border-color:#89a88a }
+    .right { min-width:0; min-height:0; background:#262b27; border-left:1px solid #3c4740; display:flex; flex-direction:column }
+    .rightscroll { overflow:auto; flex:1; min-height:0; padding:16px 18px }
+    .figuretitle { display:flex; align-items:start; gap:11px }
+    .back { background:transparent; border:0; color:#dbe5da; font-size:23px; line-height:1; padding:3px }
+    h1 { margin:0; font-size:21px; font-weight:600; letter-spacing:.01em }
+    .sub { margin-top:4px; color:#98a69a; font-size:12px }
+    .viewtag { margin-left:auto; border:1px solid #728074; color:#b7c8b8; border-radius:12px; padding:3px 8px; font-size:11px }
+    .pager { display:flex; justify-content:space-between; align-items:center; margin:17px 0 13px; color:#cdd8cd; font-size:12px }
+    .pager button { border:0; background:transparent; color:#cedbd0; font-size:22px; padding:3px 8px }
+    .sourcebtn { width:100%; border:1px solid #557866; background:#304b3d; color:#e7f2e7; border-radius:7px; height:36px; font-weight:600 }
+    .section { border-top:1px solid #3a443c; margin-top:17px; padding-top:15px }
+    .label { font-size:12px; color:#a8b6a9; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between }
+    .moves { display:flex; align-items:center; justify-content:space-between; color:#cdd7cd; font-size:12px }
+    .range { width:100%; accent-color:#658b72; margin:13px 0 0 }
+    .copy { color:#d6ded5; font-size:13px; line-height:1.75; margin:0 }
+    .editcopy { width:100%; min-height:115px; resize:vertical; display:none; background:#171d19; color:#ecf1ec; border:1px solid #749078; border-radius:7px; padding:11px; line-height:1.6 }
+    .mini { color:#90a193; font-size:11px; margin-top:8px }
+    .media { margin-top:12px; width:100%; height:125px; background:#151a16; border:1px solid #39433b; border-radius:7px; display:flex; align-items:center; justify-content:center; color:#8ca18f; font-size:12px }
+    .media svg { width:34px; height:34px; display:block; margin:0 auto 7px; fill:#6c9074 }
+    .actions { border-top:1px solid #3e4a41; background:#262d28; padding:11px 14px; display:grid; grid-template-columns:1fr 1fr; gap:8px }
+    .action { border:1px solid #5a715f; background:transparent; color:#d3e2d3; padding:9px 5px; border-radius:7px; font-size:12px; font-weight:600 }
+    .action.primary { background:#3c6449; border-color:#749c7b; color:#fff }
+    .action.wide { grid-column:1 / -1 }
+    .action:disabled { opacity:.47; cursor:not-allowed }
+    .status { display:none; align-items:center; gap:8px; padding:7px 12px; border-radius:6px; margin-top:13px; background:#4a3c26; color:#f1ddab; font-size:12px }
+    body.editing .editbar, body.editing .editcopy, body.editing .status { display:flex }
+    body.editing .copy { display:none }
+    body.editing .editcopy { display:block }
+    body.editing .action.edit { display:none }
+    body:not(.editing) .action.save, body:not(.editing) .action.cancel { display:none }
+    .signinpage { display:none; min-height:calc(100vh - 54px); place-items:center; padding:30px; background:radial-gradient(circle at 50% 40%,#314136 0,#1d2520 38%,#191e1b 100%) }
+    .signincard { width:380px; background:#29312b; border:1px solid #4a5c4d; border-radius:12px; box-shadow:0 18px 60px #0006; padding:30px }
+    .signincard h1 { margin:0 0 8px; font-size:24px }
+    .signincard p { margin:0 0 25px; color:#aebcaf; line-height:1.6; font-size:13px }
+    .signincard label { display:block; font-size:12px; color:#c8d5c9; margin:16px 0 7px }
+    .signincard input { width:100%; height:42px; padding:0 12px; background:#1c241e; border:1px solid #667a68; border-radius:7px; color:#f2f5ef; font:inherit }
+    .signincard button { width:100%; height:42px; border:1px solid #8eaf92; border-radius:7px; background:#426c4c; color:#fff; font-weight:700; margin-top:23px }
+    .signinhelp { margin-top:19px; padding-top:15px; border-top:1px solid #47594a; color:#a0b1a3; font-size:12px; line-height:1.65 }
+    body.signin .wrap { display:none }
+    body.signin .signinpage { display:grid }
+    body.signin .topright span:not(.env) { display:none }
+    body.signin .topright .avatar { display:none }
+    body.signin .signincard .error { display:none }
+    body.signin.error .signincard .error { display:block; color:#f0bbbb; font-size:12px; margin:10px 0 0 }
+    @media (max-width:1250px) { .workspace { grid-template-columns:180px minmax(360px,1fr) 340px } .sourcecaption { font-size:11px } }
+    /* Align the independent admin site with the actual Galaxy theme, not a new dashboard palette. */
+    :root { font-family:"LXGW WenKai",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; --bg:#0f0f0f; --panel:#252525; --panel2:#252525; --line:rgba(255,255,255,.05); --muted:#b8b5b0; --text:#f5f3f0; --green:#4a6b5c; --green2:#2f4539; }
+    body { font-size:16px }
+    .top { height:52px; background:#252525; padding:0 16px }
+    .brand { gap:8px; font-weight:400; letter-spacing:0 }
+    .brand img { width:32px; height:32px; object-fit:contain }
+    .brand .brand-cn { font-family:"Galaxy Long Cang",serif; font-size:22px; line-height:1 }
+    .brand .brand-en { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:14px; font-weight:600; line-height:1; letter-spacing:.02em }
+    .brand small { margin-left:8px; padding-left:14px; border-left:1px solid var(--line); color:var(--muted); font-size:13px }
+    .env { border:0; background:#2f4539; color:#f5f3f0 }
+    .avatar { background:#4a6b5c }
+    .wrap { grid-template-columns:216px minmax(0,1fr); height:calc(100vh - 52px) }
+    .side { background:#252525; padding:16px 8px }
+    .sidehead { color:#b8b5b0; padding:0 16px 10px }
+    .nav { min-height:48px; padding:10px 16px; border-radius:8px; color:#b8b5b0 }
+    .nav.active { background:#2f4539; color:#f5f3f0 }
+    .nav.future { color:#77736f }
+    .sidefoot { color:#b8b5b0 }
+    .heading { background:#0f0f0f; border-bottom-color:var(--line) }
+    .title, h1 { font-weight:600 }
+    .crumb, .sub { color:#b8b5b0 }
+    .select { background:#252525; border-color:#4a4845; color:#f5f3f0; border-radius:8px }
+    .source,.right { background:#252525; border-color:var(--line) }
+    .rightscroll { padding:16px 20px }
+    .panehead,.boardbar { border-color:var(--line); color:#b8b5b0; background:#252525 }
+    .center { background:#0f0f0f }
+    .editbar,.actions { background:#252525; border-color:var(--line) }
+    .tool,.action { background:#252525; border-color:#4a6b5c; color:#f5f3f0; border-radius:8px }
+    .tool.on,.action.primary,.signincard button { background:#4a6b5c; border-color:#5d8270 }
+    .rightscroll .sourcebtn { background:#2f4539; border-color:#4a6b5c; color:#f5f3f0 }
+    .section { border-color:var(--line) }
+    .copy { font-size:16px; line-height:1.65; color:#f5f3f0 }
+    .label,.mini { color:#b8b5b0 }
+    .media { background:#151515; border-color:var(--line) }
+    .signinpage { min-height:calc(100vh - 52px); background:#0f0f0f }
+    .signincard { background:#252525; border-color:var(--line) }
+    .signincard input { background:#151515; border-color:#4a4845 }
+    .signincard p,.signinhelp,.signincard label { color:#b8b5b0 }
+    @media (max-width:1250px) { .wrap { grid-template-columns:216px minmax(0,1fr) } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><img src="../../../katrain/img/logo-white.png" alt="" /><span class="brand-cn">智星盒</span><span class="brand-en">StellaBox</span><small>管理后台</small></div>
+    <div class="topright"><span class="env">本机环境</span><span>后台专用账号</span><span class="avatar">F</span><span>admin:fan</span></div>
+  </header>
+  <section class="signinpage" aria-label="后台登录"><form class="signincard" onsubmit="event.preventDefault();location.search='?state=detail'"><h1>登录管理后台</h1><p>通过 SSH 隧道访问。此账号与公开 Galaxy 账号完全独立。</p><label for="username">后台用户名</label><input id="username" value="admin:fan" autocomplete="username"><label for="password">密码</label><input id="password" type="password" placeholder="输入后台专用密码" autocomplete="current-password"><div class="error" role="alert">用户名或密码不正确，请重试。</div><button>登录</button><div class="signinhelp">当前环境：本机　·　会话有效 8 小时<br>离开共用电脑时请主动退出。</div></form></section>
+  <div class="wrap">
+    <aside class="side" aria-label="管理导航"><div class="sidehead">内容与服务</div><a class="nav active" href="#"><svg viewBox="0 0 24 24"><path d="M3 5.5C7 4 10 4.5 12 6v14c-2-1.5-5-2-9-.5zM21 5.5c-4-1.5-7-1-9 .5v14c2-1.5 5-2 9-.5z"/></svg>教程管理</a><span class="nav future"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>定时任务 · 后续</span><div class="sidefoot">通过 SSH 隧道访问<br>管理操作会记录审计</div></aside>
+    <main id="main">
+      <div class="heading"><div><div class="title">教程管理</div><div class="crumb">围棋入门教程 / 第一章 基础概念 / 1. 外势和实地</div></div><div class="headcontrols"><select class="select" aria-label="选择教材"><option>围棋入门教程</option></select><select class="select" aria-label="选择章节"><option>第一章 基础概念</option></select></div></div>
+      <div class="workspace">
+        <section class="source" aria-label="原书页"><div class="panehead"><strong>原书页对照</strong><span>第 3 页</span></div><div class="book"><div class="bookpage"><div class="booktitle">一　外势和实地</div><div class="printrow"><div class="printboard"></div><div class="printtext">图1中的黑1我们称之为三三，是三线与三线的交叉点，也是实地线与实地线的交叉点。白2是四线与四线的交叉点。</div></div><div class="printrow"><div class="printboard"></div><div class="printtext">图2中，黑1点三三，则角上的主人就变为黑棋了。但是黑棋取得实地的同时，白棋扩展了外势。</div></div></div><div class="sourcecaption">图1中的黑1称为三三，是三线与三线的交叉点。对照原书内容检查棋图和讲解，确认后再审核。</div></div></section>
+        <section class="center" aria-label="2D 电子棋盘"><div class="boardbar"><strong>图 1 · 棋图预览</strong><span>当前第 2 / 2 手　·　棋图局部</span></div><div class="boardstage"><div class="board"><div class="grid"></div><i class="star one"></i><i class="star two"></i><i class="star three"></i><i class="star four"></i><span class="stone black">1</span><span class="stone white">2</span></div></div><div class="editbar"><button class="tool on">落子</button><button class="tool">标记</button><button class="tool">撤销</button><span class="hint">编辑草稿未保存</span></div></section>
+        <section class="right" aria-label="图详情与编辑"><div class="rightscroll"><div class="figuretitle"><button class="back" aria-label="返回图列表">←</button><div><h1>1. 外势和实地</h1><div class="sub">图 1 · 本节共 10 图</div></div><span class="viewtag">编辑工作台</span></div><div class="pager"><button aria-label="上一图" disabled>‹</button><span>图 1 / 10</span><button aria-label="下一图">›</button></div><button class="sourcebtn">▣　对照原书页</button><div class="section"><div class="label">手数</div><div class="moves"><span>当前 2 / 2</span><span>逐手查看棋图</span></div><input class="range" type="range" min="0" max="2" value="2" aria-label="棋图手数"></div><div class="section"><div class="label"><span>语音讲解</span><span>文字与语音分开保存</span></div><p class="copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点，就是第三条线和第三条线相交的地方。这两条线都是我们说的实地线。三三点的好处是比较容易做出眼形来活棋，不过它的不足之处在于朝着边上和中央发展的力量相对较弱。</p><textarea class="editcopy" aria-label="编辑语音讲解">在图 1 里，黑棋下在 1 位的这手棋叫做三三点，就是第三条线和第三条线相交的地方。这两条线都是我们说的实地线。三三点的好处是比较容易做出眼形来活棋，不过它的不足之处在于朝着边上和中央发展的力量相对较弱。</textarea><div class="status">●　未保存的棋图和讲解不会影响公开页面</div><div class="mini">讲解音频 · 01:18　　▶ 播放</div><div class="media"><div><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m12 7 23 13-23 13z"/></svg>配语音的视频预览</div></div></div><div class="section"><div class="label">审核状态</div><div class="mini">逻辑检查通过后，可确认此图已审核。</div></div></div><div class="actions"><button class="action edit" onclick="location.search='?state=editing'">编辑棋图</button><button class="action edit" onclick="location.search='?state=editing'">编辑讲解</button><button class="action save primary" onclick="location.search='?state=detail'">保存更改</button><button class="action cancel" onclick="location.search='?state=detail'">取消</button><button class="action">生成语音</button><button class="action">逻辑检查</button><button class="action wide" disabled>✓　确认审核</button></div></section>
+      </div>
+    </main>
+  </div>
+  <script>const state=new URLSearchParams(location.search).get('state'); if(state==='editing')document.body.classList.add('editing'); if(state==='signin'||state==='signin-error')document.body.classList.add('signin'); if(state==='signin-error')document.body.classList.add('error')</script>
+</body>
+</html>

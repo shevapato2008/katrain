@@ -5,6 +5,8 @@ description: Sync tutorial database tables and page assets from local Macbook to
 
 # Tutorial Data Sync (Local -> Remote)
 
+> 🛑 **停用旧数据库同步流程（管理后台启用前置条件）**：以下 Step 0–4 是历史参考，不得照做。旧 Step 3 会清空生产教程表，再用本机数据覆盖后台编辑；旧备份漏掉棋图历史，计数核对也不能发现同数量内容被覆盖。上线后以目标环境数据库为已有内容的权威；新增教材导入须另定按范围核差、冲突拒绝、完整可恢复备份与恢复演练的流程。任何远程连接、写库或部署仍须 Fan 对具体步骤当场批准。**本技能目前不提供可执行的数据库同步命令。**
+
 > **WARNING: This sync does TRUNCATE CASCADE on all tutorial tables.**
 > Any human-verified `board_payload` corrections on the server that are NOT in
 > your local database WILL BE PERMANENTLY LOST. **Always run Step 0 first.**
@@ -81,14 +83,7 @@ rsync -avz data/tutorial_assets/ home-ubuntu:~/Repositories/katrain/data/tutoria
 
 ### Step 3: Upload SQL and import on remote
 
-```bash
-scp tutorial_data.sql home-ubuntu:~/tutorial_data.sql
-
-# Truncate then import (foreign keys require cascade)
-ssh home-ubuntu "docker exec -i katrain-postgres psql -U katrain_user -d katrain_db \
-  -c 'TRUNCATE board_payload_history, training_samples, tutorial_figures, tutorial_sections, tutorial_chapters, tutorial_books CASCADE;' \
-  && docker exec -i katrain-postgres psql -U katrain_user -d katrain_db < ~/tutorial_data.sql"
-```
+🛑 已停用。不得上传后执行全表 `TRUNCATE`／导入；先制定不会覆盖目标环境后台编辑的逐项迁移与冲突处理方案，并取得每条真实写库命令的当场批准。
 
 ### Step 4: Verify counts match
 

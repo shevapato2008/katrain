@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 from katrain.web.core import models_db
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
 from katrain.web.core.db import get_db
+from katrain.web.core.storage.local import LocalStorageBackend
 
 
 @pytest.fixture
@@ -122,18 +123,30 @@ def test_get_figure(client):
     assert data["board_payload"]["stones"]["B"] == [[3, 3]]
 
 
-def test_update_board_requires_auth(client):
-    """Edit endpoint must require authentication."""
+def test_public_board_write_route_is_retired(client):
     resp = client.put(
         "/api/v1/tutorials/figures/1/board", json={"board_payload": {"size": 19, "stones": {"B": [], "W": []}}}
     )
-    assert resp.status_code == 401
+    assert resp.status_code in (404, 405)  # The root static mount may reject the method before path lookup.
 
 
-def test_update_board_rejects_invalid_payload(client):
-    """Malformed board_payload should be rejected by validation."""
+def test_retired_board_route_does_not_validate_payload(client):
     resp = client.put("/api/v1/tutorials/figures/1/board", json={"board_payload": {"bad": "data"}})
-    assert resp.status_code in (401, 422)
+    assert resp.status_code in (404, 405)
+
+
+def test_public_management_routes_are_absent_from_openapi(client):
+    paths = client.app.openapi()["paths"]
+    removed = [
+        "/api/v1/tutorials/figures/{figure_id}/board",
+        "/api/v1/tutorials/figures/{figure_id}/narration",
+        "/api/v1/tutorials/figures/{figure_id}/verify",
+        "/api/v1/tutorials/figures/{figure_id}/generate-audio",
+        "/api/v1/board/devices",
+        "/api/v1/billing/admin/grant",
+        "/api/v1/billing/admin/codes",
+    ]
+    assert not set(removed).intersection(paths)
 
 
 def test_path_traversal_rejected(client):
@@ -158,7 +171,7 @@ def test_video_asset_range_request(client, tmp_path, monkeypatch):
     video_file = asset_dir / "fig_1.mp4"
     video_file.write_bytes(b"x" * 1000)
 
-    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+    monkeypatch.setattr(tut_mod, "get_storage_backend", lambda: LocalStorageBackend(tmp_path))
 
     resp = client.get(
         "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
@@ -179,7 +192,7 @@ def test_video_asset_range_request_open_ended(client, tmp_path, monkeypatch):
     video_file = asset_dir / "fig_1.mp4"
     video_file.write_bytes(b"x" * 1000)
 
-    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+    monkeypatch.setattr(tut_mod, "get_storage_backend", lambda: LocalStorageBackend(tmp_path))
 
     resp = client.get(
         "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
@@ -199,7 +212,7 @@ def test_asset_without_range_has_accept_ranges(client, tmp_path, monkeypatch):
     video_file = asset_dir / "fig_1.mp4"
     video_file.write_bytes(b"x" * 100)
 
-    monkeypatch.setattr(tut_mod, "ASSET_BASE", tmp_path)
+    monkeypatch.setattr(tut_mod, "get_storage_backend", lambda: LocalStorageBackend(tmp_path))
 
     resp = client.get(
         "/api/v1/tutorials/assets/tutorial_assets/test/video/fig_1.mp4",
@@ -250,7 +263,7 @@ def client_with_auth():
         )
         session.add(fig)
 
-    # Create a real admin (tutorial writes are admin-only since 2026-09-24) and a plain user.
+    # Legacy public admin privileges must not restore a retired authoring route.
     user = models_db.User(
         username="testadmin",
         hashed_password="fakehash",
@@ -277,8 +290,9 @@ def client_with_auth():
     return TestClient(app), token
 
 
-def test_update_board_authenticated_success(client_with_auth):
+def test_legacy_admin_cannot_update_board(client_with_auth):
     client, token = client_with_auth
+    original = client.get("/api/v1/tutorials/figures/1").json()
     resp = client.put(
         "/api/v1/tutorials/figures/1/board",
         json={
@@ -290,45 +304,41 @@ def test_update_board_authenticated_success(client_with_auth):
         },
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["board_payload"]["stones"]["B"] == [[3, 3], [15, 15]]
-    assert "viewport" in data["board_payload"]
-    assert data["updated_at"] is not None
+    assert resp.status_code in (404, 405)
+    assert client.get("/api/v1/tutorials/figures/1").json() == original
 
 
-def test_update_board_rejects_invalid_size(client_with_auth):
+def test_retired_board_route_ignores_invalid_size(client_with_auth):
     client, token = client_with_auth
     resp = client.put(
         "/api/v1/tutorials/figures/1/board",
         json={"board_payload": {"size": 7, "stones": {"B": [], "W": []}}},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code in (404, 405)
 
 
-def test_update_board_rejects_bad_stone_key(client_with_auth):
+def test_retired_board_route_ignores_bad_stone_key(client_with_auth):
     client, token = client_with_auth
     resp = client.put(
         "/api/v1/tutorials/figures/1/board",
         json={"board_payload": {"size": 19, "stones": {"R": [[0, 0]]}}},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code in (404, 405)
 
 
-def test_update_board_rejects_oob_coordinates(client_with_auth):
+def test_retired_board_route_ignores_oob_coordinates(client_with_auth):
     client, token = client_with_auth
     resp = client.put(
         "/api/v1/tutorials/figures/1/board",
         json={"board_payload": {"size": 19, "stones": {"B": [[99, 99]]}}},
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert resp.status_code == 422
+    assert resp.status_code in (404, 405)
 
 
-def test_update_board_non_admin_forbidden(client_with_auth):
-    """Tutorial writes are admin-only (2026-09-24): logged in but not admin => 403."""
+def test_public_board_write_route_is_retired_for_non_admin(client_with_auth):
     client, _ = client_with_auth
     plain_token = create_access_token(data={"sub": "plainuser"})
     resp = client.put(
@@ -336,4 +346,4 @@ def test_update_board_non_admin_forbidden(client_with_auth):
         json={"board_payload": {"size": 19, "stones": {"B": [], "W": []}}},
         headers={"Authorization": f"Bearer {plain_token}"},
     )
-    assert resp.status_code == 403
+    assert resp.status_code in (404, 405)

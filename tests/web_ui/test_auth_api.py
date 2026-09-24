@@ -1,36 +1,35 @@
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from httpx import AsyncClient, ASGITransport
 from katrain.web.server import create_app
-import os
 
 
 @pytest.fixture
-def app():
-    # Use a test database
-    os.environ["KATRAIN_DATABASE_PATH"] = "test_auth_api.db"
-    # Ensure any existing test DB is removed
-    if os.path.exists("test_auth_api.db"):
-        os.remove("test_auth_api.db")
-
+def app(tmp_path):
     app = create_app(enable_engine=False)
 
     # Manually trigger the repo initialization for tests
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core import models_db
+    from katrain.web.core.db import get_db
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    test_engine = create_engine("sqlite:///test_auth_api.db", connect_args={"check_same_thread": False})
+    test_engine = create_engine(f"sqlite:///{tmp_path / 'auth.db'}", connect_args={"check_same_thread": False})
     models_db.Base.metadata.create_all(bind=test_engine)
     TestSessionLocal = sessionmaker(bind=test_engine)
     repo = SQLAlchemyUserRepository(TestSessionLocal)
     app.state.user_repo = repo
 
+    def override_db():
+        with TestSessionLocal() as db:
+            yield db
+
+    app.dependency_overrides[get_db] = override_db
+
     yield app
 
-    if os.path.exists("test_auth_api.db"):
-        os.remove("test_auth_api.db")
+    test_engine.dispose()
 
 
 @pytest.mark.asyncio
@@ -385,3 +384,55 @@ async def test_access_token_is_still_a_bearer_credential(app):
     _make_user(app, "at_user")
     resp = await _me_with(app, create_access_token(data={"sub": "at_user"}))
     assert resp.status_code == 200 and resp.json()["username"] == "at_user"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("username", ["admin:fan", " ADMIN:fan "])
+async def test_admin_namespace_cannot_register_public_account(app, username):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/api/v1/auth/register", json={"username": username, "password": "pw"})
+    assert response.status_code == 400
+    assert app.state.user_repo.get_user_by_username(username) is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("username", ["admin:fan", " ADMIN:fan "])
+async def test_admin_namespace_cannot_login_public_account(app, username):
+    _make_user(app, username)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/api/v1/auth/login", json={"username": username, "password": "pw"})
+    assert response.status_code == 400
+    assert "access_token" not in response.json()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("username", ["admin:fan", " ADMIN:fan "])
+async def test_admin_namespace_cannot_refresh_public_token(app, username):
+    from katrain.web.core.auth import create_refresh_token
+
+    _make_user(app, username)
+    token = create_refresh_token(data={"sub": username})
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/api/v1/auth/refresh", json={"refresh_token": token})
+    assert response.status_code == 401
+    assert "access_token" not in response.json()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("username", ["admin:fan", " ADMIN:fan "])
+async def test_admin_namespace_cannot_use_existing_public_access_token(app, username):
+    from katrain.web.core.auth import create_access_token
+
+    _make_user(app, username)
+    response = await _me_with(app, create_access_token(data={"sub": username}))
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize("username", ["admin:fan", " ADMIN:fan "])
+def test_admin_namespace_cannot_create_shadow_user(app, username):
+    from katrain.web.api.v1.endpoints.auth import _get_or_create_shadow_user
+
+    with pytest.raises(HTTPException) as exc:
+        _get_or_create_shadow_user(app.state.user_repo, username)
+    assert exc.value.status_code == 400
+    assert app.state.user_repo.get_user_by_username(username) is None

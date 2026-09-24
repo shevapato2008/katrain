@@ -426,9 +426,7 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
     # Board mode never spends locally (billing is proxied to the cloud, see
     # billing.py's module docstring) so this loop only runs in server mode.
-    app.state.report_settlement_task = asyncio.create_task(
-        _report_settlement_loop(session_factory)
-    )
+    app.state.report_settlement_task = asyncio.create_task(_report_settlement_loop(session_factory))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -2434,9 +2432,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
                 )
             if state.get("end_result"):
-                raise HTTPException(
-                    status_code=400, detail={"code": "game_over", "message": "Game is already over"}
-                )
+                raise HTTPException(status_code=400, detail={"code": "game_over", "message": "Game is already over"})
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
@@ -3683,9 +3679,21 @@ LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these 
 LED_GLOW_MAX_AREA = 2500
 
 
-LED_GLARE_REASONS = ("low_signal", "no_blob")
+# 收敛之后要偏到什么程度才重新开环(ratio = target/score 落在这个区间内就继续锁着)。
+# Fan 的规则 1 是「如非必要就不再变化」—— 这一对数就是「必要」的定义:读数偏到 2 倍以上才算必要。
+# 没有这条,锁定之后**只有调亮一条出路**:天黑了、或者上次落盘的是个坏值,环永远回不来
+# (落盘的坏值尤其致命 —— 它活过每一次重启,而仓里没有任何接口/按钮/命令行能清掉那个文件)。
+LED_GLOW_RELATCH = (0.5, 2.0)
+
+# 反光判据:灯亮之前那一帧里,这盏灯自己的 ROI 有多大比例**已经**是死白的(worker 量,见
+# reference_clipped_fraction)。ROI 半径 1.5 格距(1080p 上 ≈75px ⇒ 面积 ≈17700px),而灯斑
+# 450–2500px ⇒ 要盖住灯至少得占 ROI 的 2.5%。取 2%:够盖住灯,又远高于无反光时的 0。
+# ⚠️ 暂定值 —— 现场还没有一次带反光的实测读数。事件里每次都带 clipped 出来,下次上板拿真数校准。
+# 误判的代价被下面那条「只在已锁定时抬,且抬完就解锁」夹死在一步之内,一步是过闸验证过安全的。
+LED_GLARE_CLIPPED_FRAC = 0.02
 # 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以走「小步 + 下一盏灯复测」而不是一次拉满:
 # 1.25 正好是死区上沿的倒数 —— 抬一步之后,一次干净读数就能判断够不够。
+# 上限由现场锚点卡死:收敛在 35000 时抬一步 = 35000×1.25² = 54688 < 60000(白子认不出的那条线)。
 LED_GLARE_BRIGHTEN_STEP = 1.25
 
 
@@ -3757,20 +3765,26 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
     score = float(data.get("score") or 0.0)
     settled = bool(getattr(app.state, "led_glow_settled", False))
     usable = bool(data.get("ok")) and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA
-    glare = not data.get("ok") and str(data.get("reason") or "") in LED_GLARE_REASONS
+    glare = not data.get("ok") and float(data.get("clipped") or 0.0) >= LED_GLARE_CLIPPED_FRAC
+    ratio = LED_GLOW_TARGET / score if score > 0 else 0.0
     after, now_settled, why = before, settled, "no-op"
 
-    if glare:
+    if glare and settled:
         # 规则 3+4:这盏灯落在镜面反光上,相机看不见它 ⇒ 调亮**全局**并**解锁**。
+        # `and settled` 是承重的:抬完就解锁 ⇒ **一次收敛之后最多只抬一次**,棘轮在结构上不可能存在。
+        # 没有它:0.665 →1.25→ 0.831 →1.25→ 1.00,两次误判就回到 09-24 那个卡死 16 分钟的亮度并落盘,
+        # 而 led_glow 只在有新灯点亮时才产生(worker `lit - self._lit_points`)⇒ 白子认不出就没有下一个
+        # 读数 ⇒ 环再也下不来。此时 `before` 必然就是收敛值,所以一步的上限有现场锚点背书(见常量注释)。
         after = min(1.0, before * LED_GLARE_BRIGHTEN_STEP)
         now_settled = False
         why = "glare"
     elif not usable:
-        why = "unusable"  # 手挡住了 / 灯没亮 / 两团光分不清:不是反光,什么都不做
-    elif settled:
-        why = "settled"  # 规则 1:调好了就别再动它
+        # 手挡住了 / 灯没亮 / 串口掉线 / 两团光分不清:不是反光,什么都不做。
+        # 还在收敛途中撞上反光也走这里 —— 手上还没有一个「调好了的值」可以往上抬一步。
+        why = "glare-unsettled" if glare else "unusable"
+    elif settled and LED_GLOW_RELATCH[0] <= ratio <= LED_GLOW_RELATCH[1]:
+        why = "settled"  # 规则 1:调好了,小偏差就别再动它
     else:
-        ratio = LED_GLOW_TARGET / score
         if LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
             now_settled = True  # 落进死区 = 收敛完成,从此锁定
             why = "converged"
@@ -3781,14 +3795,16 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
             # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
             step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
             after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
-            why = "converging"
+            now_settled = False  # 偏到 RELATCH 之外 = 条件真的变了,重新开环
+            why = "reopened" if settled else "converging"
     log.info(
-        "LED glow at (%s,%s): ok=%s reason=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f "
-        "(%s, target %.0f, settled %s -> %s)",
+        "LED glow at (%s,%s): ok=%s reason=%s clipped=%.3f score=%.0f peak=%s area=%s "
+        "-> guidance brightness %.2f -> %.2f (%s, target %.0f, settled %s -> %s)",
         data.get("row"),
         data.get("col"),
         data.get("ok"),
         data.get("reason") or "-",
+        float(data.get("clipped") or 0.0),  # 反光判据的实测值:LED_GLARE_CLIPPED_FRAC 还是暂定的,靠它校准
         score,
         data.get("peak"),
         data.get("area"),
@@ -3961,9 +3977,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     def _rearm_detection() -> None:
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(
-                game_state["stones"], expected_node_id=game_state.get("current_node_id")
-            )
+            vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
 
     # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
     # leftover stone re-confirms and is refused again every consistency window, forever.

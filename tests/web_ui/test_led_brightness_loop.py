@@ -30,14 +30,24 @@ def _app(scale=1.0, settled=False, hardware_vision_dir=None):
     """一个跨多次读数保留状态的 app —— 锁定位和落盘都挂在 app.state 上,`_run` 那种
     每次新建的写法看不见它们(旧用例正因如此对本文件新增的三条规则完全免疫)。"""
     return SimpleNamespace(
-        state=SimpleNamespace(
-            led=_Led(scale), led_glow_settled=settled, hardware_vision_dir=hardware_vision_dir
-        )
+        state=SimpleNamespace(led=_Led(scale), led_glow_settled=settled, hardware_vision_dir=hardware_vision_dir)
     )
 
 
-def _read(app, score, ok=True, area=450, reason="", row=15, col=15):
-    reading = {"row": row, "col": col, "ok": ok, "score": score, "area": area, "reason": reason}
+GLARE = 0.30  # 参考帧里 30% 的 ROI 已经死白 = 一片盖住灯的镜面反光
+NO_GLARE = 0.0  # 手挡住 / 灯没亮 / 几何锁指错地方:参考帧在那儿是正常曝光
+
+
+def _read(app, score, ok=True, area=450, reason="", clipped=NO_GLARE, row=15, col=15):
+    reading = {
+        "row": row,
+        "col": col,
+        "ok": ok,
+        "score": score,
+        "area": area,
+        "reason": reason,
+        "clipped": clipped,
+    }
     _adjust_led_brightness(app, reading, logging.getLogger("t"))
     return app.state.led
 
@@ -96,9 +106,9 @@ def test_a_glow_larger_than_any_lamp_is_not_the_lamp():
 # `caught_up` 一直为假,编排器挂着 lag 暂停,整局卡住 —— 而这一族用例一条都没红。
 #
 # 所以这两条断言**不许引用 LED_GLOW_TARGET**,只认实测锚点的字面量。
-RECOGNISABLE_GLOW = 35_000.0    # 09-22 17:35 实测:这个读数下,压在亮灯上的白子仍能认出
+RECOGNISABLE_GLOW = 35_000.0  # 09-22 17:35 实测:这个读数下,压在亮灯上的白子仍能认出
 UNRECOGNISABLE_GLOW = 60_000.0  # 09-24 实测:环调到这个读数,白子 16 分钟没认出来(认出时 W0.45 擦线)
-FIELD_BARE_LAMP = 79_056.0      # 09-24 10:43:32 裸灯实测读数(满亮度)
+FIELD_BARE_LAMP = 79_056.0  # 09-24 10:43:32 裸灯实测读数(满亮度)
 
 
 def test_the_target_is_not_above_a_glow_white_stones_are_known_to_survive():
@@ -143,12 +153,26 @@ def test_the_brightest_reading_seen_on_the_board_lands_in_one_step_at_a_survivab
 
 
 def test_once_converged_a_normal_reading_no_longer_moves_the_brightness():
+    """规则 1「如非必要就不再变化」—— 这里是「非必要」那一半:偏差在 2 倍以内就别动它。"""
     app = _app(0.6, settled=True)
-    _read(app, 4 * LED_GLOW_TARGET)  # 偏亮到本该调暗的程度
+    _read(app, LED_GLOW_TARGET / 0.6)  # ratio 0.6:出了死区,本来会调暗
     assert app.state.led.set_calls == []
-    _read(app, LED_GLOW_TARGET / 4)  # 偏暗到本该调亮的程度
+    _read(app, LED_GLOW_TARGET / 1.8)  # ratio 1.8:出了死区,本来会调亮
     assert app.state.led.set_calls == []
     assert app.state.led_glow_settled is True
+
+
+def test_a_reading_off_by_more_than_twice_reopens_the_loop():
+    """规则 1 的另一半:偏到 2 倍以上就是「必要」。
+
+    没有这条,锁定之后**唯一的出路是调亮**(反光那条),于是:天黑了环回不来;更要命的是
+    上次落盘的要是个坏值,它活过每一次重启,而仓里没有任何接口/按钮/命令行能清掉那个文件 ——
+    盒子就永久性地对这个环失聪了。这条让坏值自己走出来。
+    """
+    app = _app(1.0, settled=True)  # 落盘回来的坏值:满亮度 + 已锁定
+    _read(app, FIELD_BARE_LAMP)  # 09-24 那次的裸灯读数,ratio 0.44
+    assert app.state.led.guidance_scale < 1.0, "偏了一倍多还锁着,就是 09-24 那个状态"
+    assert app.state.led_glow_settled is False  # 重新开环,让它收敛到对的值
 
 
 def test_a_reading_inside_the_deadband_is_what_latches_it():
@@ -162,11 +186,32 @@ def test_a_reading_inside_the_deadband_is_what_latches_it():
 def test_a_lamp_lost_in_specular_glare_brightens_and_unlatches():
     # 期望值写**字面量**(0.6 × 1.25)而不是 import LED_GLARE_BRIGHTEN_STEP 再乘一遍 ——
     # 那样写期望值和被测值同源,把常量改错也照绿,正是 LED_GLOW_TARGET 那个洞的翻版。
-    for reason in ("low_signal", "no_blob"):
-        app = _app(0.6, settled=True)
-        _read(app, 0.0, ok=False, reason=reason)
-        assert app.state.led.guidance_scale == pytest.approx(0.75), reason
-        assert app.state.led_glow_settled is False, reason
+    app = _app(0.6, settled=True)
+    _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
+    assert app.state.led.guidance_scale == pytest.approx(0.75)
+    assert app.state.led_glow_settled is False
+
+
+def test_glare_can_brighten_at_most_once_per_convergence():
+    """棘轮闸。调亮的同时解锁,而调亮又只在已锁定时发生 ⇒ 一次收敛之后最多抬一步。
+
+    去掉 `and settled`:0.665 →1.25→ 0.831 →1.25→ 1.00,两次误判就回到 09-24 那个卡死
+    16 分钟的亮度**并落盘**;而 led_glow 只在有新灯点亮时才产生,白子认不出就没有下一个读数,
+    环再也下不来 —— 唯一出口是 5 分钟熄灯 failsafe,正是这次要消灭的那个绕法。
+    """
+    app = _app(0.665, settled=True)
+    for _ in range(6):  # 连着六盏灯全被反光吃掉
+        _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
+    assert app.state.led.guidance_scale == pytest.approx(0.665 * 1.25)
+    assert app.state.led.set_calls == [pytest.approx(0.665 * 1.25)]  # 只抬了一次
+
+
+def test_glare_while_still_converging_does_nothing():
+    """还没调好就撞上反光:手上没有「已知安全的值」可以往上抬一步,只能等下一盏干净的灯。"""
+    app = _app(0.6, settled=False)
+    _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
+    assert app.state.led.set_calls == []
+    assert app.state.led_glow_settled is False
 
 
 def test_a_glare_brighten_cannot_overshoot_past_what_white_stones_survive():
@@ -181,18 +226,23 @@ def test_a_glare_brighten_cannot_overshoot_past_what_white_stones_survive():
 
 
 def test_a_failure_that_is_not_glare_changes_nothing_and_keeps_the_latch():
-    # 手挡住了 / 两团光分不清:不是「灯被反光吃掉了」,不该据此调亮。
-    for reason in ("ambiguous_blobs", "shape_mismatch", ""):
+    """判据必须落在 clipped 上,不能落在 reason 上。
+
+    这四种原因**在 reason 上是同一个字符串**:白灯纯绿 (0,255,0)、黑灯纯红,BGR 通道 0(蓝)
+    按构造没有灯信号 ⇒ 必然 low_signal 且 score=0.0;三通道全失败时 max 返回第一个 ⇒ reason
+    恒为蓝通道的 low_signal。原来那版用 reason 当判据,等于把下面每一种都当成反光去调亮。
+    """
+    for cause in ("手挡在灯上", "串口掉线灯根本没亮", "几何锁过期 ROI 指到别处", "两团光分不清"):
         app = _app(0.6, settled=True)
-        _read(app, 0.0, ok=False, reason=reason)
-        assert app.state.led.set_calls == [], reason
-        assert app.state.led_glow_settled is True, reason
+        _read(app, 0.0, ok=False, reason="low_signal", clipped=NO_GLARE)
+        assert app.state.led.set_calls == [], cause
+        assert app.state.led_glow_settled is True, cause
 
 
 def test_after_a_glare_brighten_the_next_clean_reading_pulls_it_back_down():
     """规则 4 的要害:反光调亮之后必须能收回来,否则一次反光就把整盘白子毁掉。"""
     app = _app(0.6, settled=True)
-    _read(app, 0.0, ok=False, reason="low_signal")
+    _read(app, 0.0, ok=False, reason="low_signal", clipped=GLARE)
     brightened = app.state.led.guidance_scale
     assert brightened > 0.6
     # 下一盏灯不在反光上,读数明显偏亮 ⇒ 环该把亮度压回去。

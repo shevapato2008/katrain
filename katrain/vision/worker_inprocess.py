@@ -91,10 +91,11 @@ REFERENCE_ANCHOR_ZNCC = 0.45
 REFERENCE_MODES = ("off", "shadow", "on")
 
 
-def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
-    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
-    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
-    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+def _glow_roi(frame: np.ndarray, geometry, row: int, col: int):
+    """The crop and ROI circle the lamp at (row, col) is looked for in.
+
+    Split out so the glare probe below measures **exactly the pixels the lamp was looked for in** —
+    a probe that picks its own window would answer a different question than the one that failed."""
     pts = np.asarray(geometry.points, dtype=float)
     sw, sh = getattr(geometry, "source_width", None), getattr(geometry, "source_height", None)
     sx = frame.shape[1] / sw if sw else 1.0
@@ -106,11 +107,50 @@ def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col
     radius = max(ROI_RADIUS_MIN_PX, ROI_CELLS * cell)
     x0, y0 = max(0, int(cx - radius) - 4), max(0, int(cy - radius) - 4)
     x1, y1 = min(frame.shape[1], int(cx + radius) + 5), min(frame.shape[0], int(cy + radius) + 5)
-    roi = (cx - x0, cy - y0, radius)
+    return x0, y0, x1, y1, (cx - x0, cy - y0, radius)
+
+
+def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
+    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
+    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
+    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+    x0, y0, x1, y1, roi = _glow_roi(frame, geometry, row, col)
     results = [
         detect_led_centroid(ref[y0:y1, x0:x1], frame[y0:y1, x0:x1], channel=channel, roi=roi) for channel in range(3)
     ]
-    return max(results, key=lambda result: result.score)
+    # `ok` before `score`: `score` is only comparable between **successes**. `ambiguous_blobs` is the one
+    # failure that carries a non-zero score (the losing blob's weight, not evidence that a lamp was found),
+    # so ranking on score alone let a failed channel outrank a channel that had actually located the lamp.
+    return max(results, key=lambda result: (result.ok, result.score))
+
+
+CLIPPED_LEVEL = 250  # same "this pixel is blown out" level check_frame_exposure uses
+
+
+def reference_clipped_fraction(ref: np.ndarray, geometry, row: int, col: int) -> float:
+    """Fraction of the lamp's own ROI that was **already saturated before the lamp came on**.
+
+    This is the glare discriminator, and it has to be measured on the dark reference, not the lit frame:
+    specular reflection means those pixels are pinned at white in *both* frames, so lit-minus-dark is 0
+    and the lamp is invisible no matter how bright it gets. Reading the lit frame instead would also
+    flag a lamp bright enough to clip its own pixels — the opposite case.
+
+    What it separates, which `reason` cannot (every one of these reads back as `low_signal`): a hand
+    resting over the lamp leaves the reference dark; a lamp that never lit leaves it at ambient; a stale
+    geometry lock points this ROI at ordinary board. Only a specular highlight is already at white here.
+    """
+    x0, y0, x1, y1, (rx, ry, radius) = _glow_roi(ref, geometry, row, col)
+    crop = ref[y0:y1, x0:x1]
+    if crop.size == 0:
+        return 0.0
+    keep = np.zeros(crop.shape[:2], np.uint8)
+    cv2.circle(keep, (int(round(rx)), int(round(ry))), max(1, int(round(radius))), 1, -1)
+    inside = keep.astype(bool)
+    if not inside.any():
+        return 0.0
+    # max across BGR, not grey: a highlight that has pinned any one channel already destroys the
+    # lit-minus-dark signal on that channel, and the lamp only ever shows on one channel (green/red).
+    return float((crop.max(axis=2)[inside] >= CLIPPED_LEVEL).mean())
 
 
 class _FrameTrace:
@@ -524,28 +564,53 @@ class InProcessAdapter:
         ref, geometry, stable = self._glow_ref, self._geometry, self._last_stable_board
         if ref is None or geometry is None or getattr(geometry, "points", None) is None or ref.shape != frame.shape:
             return
+        readings = []
         for row, col in sorted(cells):
             if stable is not None and int(stable[row][col]) != EMPTY:
                 continue
             result = measure_led_glow(ref, frame, geometry, row, col)
-            self._event_queue.put(
-                {
-                    "type": "led_glow",
-                    "data": {
-                        "row": int(row),
-                        "col": int(col),
-                        "ok": bool(result.ok),
-                        "score": round(float(result.score), 1),
-                        "peak": round(float(result.peak), 1),
-                        "area": int(result.area),
-                        # 失败的**理由**要带出去,不能只报一个 False:服务端要靠它把「这盏灯落在镜面反光上、
-                        # 相机根本看不见它」和「手挡住了 / 灯没亮 / 两团光分不清」区分开 —— 只有前者该调亮。
-                        # 反光为什么读成「没信号」:这个测量是亮帧减暗帧,而镜面反光让那个像素**两帧都已饱和**,
-                        # 加了灯光也不变 ⇒ delta≈0 ⇒ low_signal。
-                        "reason": str(getattr(result, "reason", "") or ""),
-                    },
-                }
+            clipped = 0.0 if result.ok else reference_clipped_fraction(ref, geometry, row, col)
+            readings.append((row, col, result, clipped))
+        if not readings:
+            return
+        # **一次观测只发一个读数。** 补多手时(lag 恢复:`to_place` 里有几手就点几盏)这一批灯全是在
+        # 同一帧、同一个亮度下量出来的 —— 它们是一次观测的 N 个样本,不是 N 次观测。原来逐个发出去,
+        # 服务端就把同一个偏差修正了 N 遍,每一遍还乘在上一遍改过的亮度上:实测 6 盏 4x 偏亮的读数把
+        # 亮度从 1.0 一路打到 0.08 地板(正确答案是 0.5),第 3 盏就已经暗到人看不见灯了。
+        # 挑法:有测到灯的就用**最亮的那个干净读数**;全都没测到,就用**最像反光的那个**(过曝比例最高)。
+        if any(result.ok for _r, _c, result, _clip in readings):
+            row, col, result, clipped = max((r for r in readings if r[2].ok), key=lambda r: r[2].score)
+        else:
+            row, col, result, clipped = max(readings, key=lambda r: r[3])
+        if len(readings) > 1:
+            logger.info(
+                "led_glow batch of %d, steering on (%s,%s): %s",
+                len(readings),
+                row,
+                col,
+                " ".join(
+                    f"({r},{c})={'ok' if x.ok else x.reason}:{x.score:.0f}/clip{clip:.3f}" for r, c, x, clip in readings
+                ),
             )
+        self._event_queue.put(
+            {
+                "type": "led_glow",
+                "data": {
+                    "row": int(row),
+                    "col": int(col),
+                    "ok": bool(result.ok),
+                    "score": round(float(result.score), 1),
+                    "peak": round(float(result.peak), 1),
+                    "area": int(result.area),
+                    "reason": str(getattr(result, "reason", "") or ""),  # 诊断用,**不**作判据 —— 见下
+                    # 反光判据。`reason` 当不了这个判据:白灯纯绿 (0,255,0)、黑灯纯红,BGR 的通道 0(蓝)
+                    # 按构造就没有灯信号,必然 peak<PEAK_MIN_ROI 返回 low_signal 且 score=0.0;三通道全失败时
+                    # score 全是 0.0,max 返回第一个 ⇒ **reason 恒为蓝通道的 low_signal**。于是反光、手挡住、
+                    # 串口掉线、几何锁过期、整帧过曝全读成同一个字符串。真正分得开的是这个数。
+                    "clipped": round(float(clipped), 4),
+                },
+            }
+        )
 
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""

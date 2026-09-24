@@ -3981,7 +3981,7 @@ msgid "vision:cancel_calibration"
 msgstr "Скасувати калібрування"
 
 msgid "vision:reuse_calibration"
-msgstr "Використати минуле калібрування"
+msgstr "Взяти минуле"
 
 msgid "vision:camera_down"
 msgstr "Камеру не під'єднано · перейшли на сенсорний екран"
@@ -7062,6 +7062,36 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Двигун ШІ ще не готовий — спробуйте пізніше"
+
+msgid "vision:relocate"
+msgstr "Вирівняти рамку"
+
+msgid "vision:relocating"
+msgstr "Вирівнювання…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Не збіглося"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"На зображенні не видно зовнішньої рамки дошки — приберіть те, що закриває "
+"край, і спробуйте ще раз."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Спробуйте ще раз; якщо не виходить, звільніть дошку і відкалібруйте знову."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Дошка зсунулася, минуле калібрування більше не підходить — скористайтеся "
+"«Вирівняти рамку» (без підсвітки, працює навіть із каменями на дошці) або "
+"відкалібруйте знову"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Статус «LED» означає лише, що послідовний порт під'єднано, а не що горить "
+"кожна лампа; якщо під час підказки десь не загоряється, найімовірніше "
+"несправна саме та ділянка стрічки."
 
 msgid "platform:fact_whose"
 msgstr "Чий це акаунт"

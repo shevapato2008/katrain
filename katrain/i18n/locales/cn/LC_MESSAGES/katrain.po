@@ -6646,6 +6646,27 @@ msgstr "AI 引擎准备中，可先使用棋谱、课程等功能"
 msgid "engine:warmup_unavailable"
 msgstr "AI 引擎暂未就绪，可稍后重试"
 
+msgid "vision:relocate"
+msgstr "对齐外框"
+
+msgid "vision:relocating"
+msgstr "正在对齐…"
+
+msgid "vision:relocate_failed_title"
+msgstr "没对上"
+
+msgid "vision:relocate_no_board"
+msgstr "画面里找不到棋盘外框，挪开挡住边框的东西再试一次。"
+
+msgid "vision:relocate_failed"
+msgstr "再试一次；一直不行就清空棋盘重新标定。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr "棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定"
+
+msgid "vision:led_serial_note"
+msgstr "LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。"
+
 msgid "platform:fact_whose"
 msgstr "用谁的账号"
 

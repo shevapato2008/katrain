@@ -7051,6 +7051,34 @@ msgstr ""
 msgid "engine:warmup_unavailable"
 msgstr "AI engine is not ready yet — please try again later"
 
+msgid "vision:relocate"
+msgstr "Align frame"
+
+msgid "vision:relocating"
+msgstr "Aligning…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Not aligned"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Can't find the board's outer frame in view — move away whatever is blocking "
+"the border and try again."
+
+msgid "vision:relocate_failed"
+msgstr "Try again; if it keeps failing, clear the board and recalibrate."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"The board has moved and the last calibration no longer matches — use “Align "
+"frame” (no lights, works with stones on the board) or recalibrate"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"The “LED” status only means the serial port is connected — not that every "
+"lamp lights up; if a spot doesn't light during guidance, that section of the"
+" strip is probably broken."
+
 msgid "platform:fact_whose"
 msgstr "Whose account"
 

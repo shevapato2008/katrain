@@ -3827,7 +3827,7 @@ msgid "vision:cancel_calibration"
 msgstr "Cancelar calibración"
 
 msgid "vision:reuse_calibration"
-msgstr "Reutilizar la última calibración"
+msgstr "Usar la anterior"
 
 msgid "vision:camera_down"
 msgstr "Cámara no conectada · se ha pasado a la pantalla táctil"
@@ -6950,6 +6950,36 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"
+
+msgid "vision:relocate"
+msgstr "Alinear marco"
+
+msgid "vision:relocating"
+msgstr "Alineando…"
+
+msgid "vision:relocate_failed_title"
+msgstr "No coincide"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"No se encuentra el marco exterior del tablero en la imagen — aparta lo que "
+"tape el borde e inténtalo de nuevo."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Inténtalo de nuevo; si sigue sin funcionar, vacía el tablero y vuelve a "
+"calibrar."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"El tablero se movió y la última calibración ya no coincide — usa «Alinear "
+"marco» (sin luces, funciona con piedras en el tablero) o vuelve a calibrar"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"El estado «LED» solo indica que el puerto serie está conectado, no que cada "
+"lámpara encienda; si durante la guía algún punto no se enciende, "
+"probablemente ese tramo de la tira LED esté dañado."
 
 msgid "platform:fact_whose"
 msgstr "De quién es la cuenta"

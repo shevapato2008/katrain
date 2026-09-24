@@ -23,6 +23,7 @@ interface GeometryContextValue {
   startCalibration: (trigger: 'auto' | 'manual') => Promise<void>;
   confirmExisting: () => Promise<void>;
   cancelCalibration: () => Promise<void>;
+  relocate: () => Promise<void>;
 }
 
 const GeometryContext = createContext<GeometryContextValue | null>(null);
@@ -59,6 +60,10 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
     setStatus(await GeometryAPI.confirmExisting());
   }, []);
 
+  const relocate = useCallback(async () => {
+    setStatus(await GeometryAPI.relocate());
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const poll = async () => {
@@ -74,7 +79,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration, relocate }}>
       {children}
     </GeometryContext.Provider>
   );

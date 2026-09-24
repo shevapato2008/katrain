@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { resolve } from 'node:path';
+import { parsePo } from './helpers/po';
 
 /**
  * 共享外壳的**承重闸**。量的是真浏览器算出来的布局结论,不是 CSS 里写了什么 ——
@@ -18,11 +20,11 @@ const CANVAS = { width: 1024, height: 600 };
 
 test.use({ viewport: CANVAS });
 
-const boot = async (page: Page, path: string) => {
-  await page.addInitScript(() => {
+const boot = async (page: Page, path: string, lang = 'cn') => {
+  await page.addInitScript((l) => {
     localStorage.setItem('token', 'kiosk-shell-geometry');
-    localStorage.setItem('katrain_language', 'cn');
-  });
+    localStorage.setItem('katrain_language', l);
+  }, lang);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
   }));
@@ -36,6 +38,15 @@ const boot = async (page: Page, path: string) => {
     json: {
       phase: 'disabled', session_calibrated: false, last_error: null,
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
+    },
+  }));
+  // 同一个理由钉 `/vision/status`:不钉就打到真后端,500–960ms 才回,左栏 LED 那格
+  // 在回来之前是「—」、回来之后变「未连接」—— 什么时候变取决于另一个进程。
+  // 值照 e2e 后端实测的原样(没有摄像头也没有灯),别的闸量到的字一个不变。
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: false,
     },
   }));
   await page.goto(path);
@@ -467,6 +478,14 @@ test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', a
 
   // 铁律:**装得下的数据量下量出来的数字一概不算。** 上面两条量的都是「刚好装得下」,
   // 证不了「装不下的时候谁让步」。这里把值撑成 300 个字再量一次。
+  //
+  // ⚠️ 撑之前**先等三格落到最终值**。`boot` 只等到 `.kiosk-screen` 挂上,状态接口还在路上;
+  // 接口晚到时 LED 从「—」变「未连接」,值真变了 React 就整格重写,撑进去的 300 字被换回三个字
+  // ⇒ 量到 62/62、没有省略号(2026-09-24 实测 develop 上单跑 30–50% 挂,每次都是 LED 那格)。
+  // 钉住接口只让值确定,不让时机确定 —— 这一步才是。
+  await expect.poll(() => page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-status__v')].map((el) => el.textContent)))
+    .toEqual(['未连接', '需校准', '未连接']);
   const before = await box(page, '.kiosk-console');
   await page.evaluate(() => {
     document.querySelectorAll('.kiosk-status__v').forEach((el) => { el.textContent = '已连接'.repeat(100); });
@@ -1702,13 +1721,13 @@ const CALIB_ANCHORS = [[0, 0], [0, 18], [18, 18], [18, 0], [3, 3], [3, 9]].map((
   row, col, x: 120 + col * 17, y: 110 + row * 15 + i, color: 'green',
 }));
 
-const bootCalib = async (page: Page, over: Record<string, unknown>) => {
+const bootCalib = async (page: Page, over: Record<string, unknown>, lang = 'cn') => {
   await page.route('**/api/v1/geometry/layout', (route) => route.fulfill({ status: 409, json: {} }));
   // ⚠️ **顺序是承重的**:`boot()` 自己也注册 `**/api/v1/geometry/status`(钉成
   // 「这台盒子没有摄像头」),而 Playwright 的路由是**后注册的先匹配**。
   // 先注册这条就会被 boot 那条盖掉 ⇒ 拿到 `disabled`、整屏换成一句「没配摄像头」、
   // 一行步骤都没有。必须 boot 之后再注册,然后重新加载。
-  await boot(page, '/kiosk/vision/setup');
+  await boot(page, '/kiosk/vision/setup', lang);
   await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
     json: {
       phase: 'required', session_calibrated: false, last_valid: false, error: null,
@@ -1774,3 +1793,67 @@ test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都
   await expect.poll(() => zone.evaluate((el) => el.scrollTop),
     { message: '中段自己滚不动 —— 诊断卡下面那几步就看不到了' }).toBeGreaterThan(0);
 });
+
+/* ── Task 8 —— §11 最满态承重,11 个语种各量一次 ──────────────────────
+ *
+ * 起初只量 cn/de/ru/ua:把译文收短只修了量到的那三家,es 的「沿用上次标定」同样被裁却没人看见
+ * (第 2 轮评审在真浏览器里量出来的)。三颗等宽键的余量取决于装哪种语言的字 ⇒ 11 种全量,约 25 秒。
+ *
+ * `boot()`/`bootCalib()` 只把 `katrain_language` 写进 localStorage —— i18n 真正的译文表
+ * 是 `SettingsProvider` 挂载时打一条 `GET /api/translations?lang=` 拉回来的(`src/i18n.ts`
+ * `loadTranslations`),这份 spec 跑在只起 vite 的 `playwright.visual.config.ts` 下,没有
+ * 后端可代理 —— 不摆一条路由,这条请求会失败、`i18n.translations` 留空,`t()` 永远回落到
+ * 硬编码的中文默认文案,**德文字符串永远不会真的上屏**,「德文最容易撑破」这条闸就是空转。
+ * 照 `tests/report-kiosk.spec.ts` 的先例:喂真 `.po`(不是 `.mo` —— 后者在 `.gitignore` 里,
+ * 新工作树没有,拿它当输入等于闸绿不绿看本机跑没跑过 `i18n.py`),形状照真端点
+ * `{lang, translations}`。
+ */
+const CALIB_LANG_PO: Record<string, Record<string, string>> = {};
+const poFor = (lang: string) => {
+  if (!CALIB_LANG_PO[lang]) {
+    CALIB_LANG_PO[lang] = parsePo(
+      resolve(process.cwd(), `../../i18n/locales/${lang}/LC_MESSAGES/katrain.po`),
+    );
+  }
+  return CALIB_LANG_PO[lang];
+};
+
+for (const lang of ['cn', 'de', 'ru', 'ua', 'en', 'es', 'fr', 'tr', 'jp', 'ko', 'tw'] as const) {
+  test(`§11 标定屏(${lang}):degraded + 对齐外框失败 + 三颗键,键不溢出、不被顶出去,中段自己滚`, async ({ page }) => {
+    // 必须在 `bootCalib` 之前注册:它内部的 `boot()` 头一件事就是 `page.goto`,
+    // 那一刻 `SettingsProvider` 挂载就会把 `/api/translations` 打出去。
+    await page.route('**/api/translations**', (route) => route.fulfill({
+      json: { lang, translations: poFor(lang) },
+    }));
+    await bootCalib(page, { phase: 'degraded', error: 'board_moved', last_valid: true }, lang);
+    // **在 bootCalib 之后注册**:Playwright 后注册的先匹配,早注册会被 boot 的兜底路由盖掉(见 bootCalib 的注释)
+    let relocateCalls = 0;
+    await page.route('**/api/v1/geometry/relocate', (r) => {
+      relocateCalls += 1;
+      return r.fulfill({ status: 400, json: { detail: 'no_board_detected' } });
+    });
+    const acts = page.locator('.calib-acts');
+    await expect(acts.locator('.kiosk-btn')).toHaveCount(3);
+    await page.getByTestId('calib-relocate').click();             // 按 testid 找:顺序与德文文字都不可靠
+    // degraded 态本来就有一张诊断卡 ⇒ 只等 testid 什么也证明不了;等的是「对齐失败」那一张
+    await page.waitForSelector('[data-testid="geometry-diagnostic-card"][data-kind="relocate"]');
+    expect(relocateCalls, '对齐外框没有真的打到 /geometry/relocate').toBe(1);
+
+    const m = await calibBoxes(page);
+    expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
+    expect(m.acts.bottom, '按钮被顶出右栏了').toBe(m.rail.bottom);
+    expect(m.acts.h, '三颗键折成两行了 —— 按钮区不再是固定尾').toBe(44);
+    expect(m.rows, '步骤行被压扁了').toEqual([52, 52, 52, 52]);
+    expect(m.overflow, '没造到会溢出 —— 下面的滚动断言是空的').toBeGreaterThan(0);
+    // 每颗键的字都装得下(`.calib-acts` 是等宽三列,约 146px;德文最容易撑破)
+    const clipped = await acts.locator('.kiosk-btn').evaluateAll((els) =>
+      els.filter((e) => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1).map((e) => e.textContent));
+    expect(clipped, '有键的字被裁了').toEqual([]);
+
+    const zone = page.locator('.calib-scroll .kiosk-side__scroll');
+    const bb = (await zone.boundingBox())!;
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.wheel(0, 200);
+    await expect.poll(() => zone.evaluate((el) => el.scrollTop), { message: '中段滚不动' }).toBeGreaterThan(0);
+  });
+}

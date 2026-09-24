@@ -3902,7 +3902,7 @@ msgid "vision:cancel_calibration"
 msgstr "Отменить калибровку"
 
 msgid "vision:reuse_calibration"
-msgstr "Использовать прошлую калибровку"
+msgstr "Взять прошлую"
 
 msgid "vision:camera_down"
 msgstr "Камера не подключена · переключено на сенсорный экран"
@@ -6986,6 +6986,37 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Движок ИИ ещё не готов — повторите попытку позже"
+
+msgid "vision:relocate"
+msgstr "Выровнять рамку"
+
+msgid "vision:relocating"
+msgstr "Выравнивание…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Не совпало"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"На изображении не видно внешней рамки доски — уберите то, что закрывает "
+"край, и попробуйте снова."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Попробуйте ещё раз; если не получается, освободите доску и откалибруйте "
+"заново."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Доска сдвинулась, прошлая калибровка больше не подходит — используйте "
+"«Выровнять рамку» (без подсветки, работает даже с камнями на доске) или "
+"откалибруйте заново"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Статус «LED» означает только то, что последовательный порт подключён, а не "
+"что горит каждая лампа; если во время подсказки где-то не загорается, скорее"
+" всего, неисправен этот участок ленты."
 
 msgid "platform:fact_whose"
 msgstr "Чей это аккаунт"

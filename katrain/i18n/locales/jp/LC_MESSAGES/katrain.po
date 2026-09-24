@@ -6815,6 +6815,29 @@ msgstr "AIエンジン準備中です。棋譜ライブラリや講座などの�
 msgid "engine:warmup_unavailable"
 msgstr "AIエンジンはまだ準備できていません。しばらくしてから再試行してください"
 
+msgid "vision:relocate"
+msgstr "外枠合わせ"
+
+msgid "vision:relocating"
+msgstr "外枠合わせ中…"
+
+msgid "vision:relocate_failed_title"
+msgstr "合わせ失敗"
+
+msgid "vision:relocate_no_board"
+msgstr "映像の中に碁盤の外枠が見つかりません。枠を隠しているものをどけてもう一度試してください。"
+
+msgid "vision:relocate_failed"
+msgstr "もう一度試してください。それでも駄目なら碁盤を空にして再校正してください。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"碁盤が動いたため、前回の校正が合わなくなりました —— 「外枠合わせ」（LEDは光らず、盤上に石があっても大丈夫）を使うか、再校正してください"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"「LED」の項目はシリアル接続ができているという意味で、すべてのランプが点灯するとは限りません。案内中にどこかが点灯しない場合、その区間のテープが故障している可能性が高いです。"
+
 msgid "platform:fact_whose"
 msgstr "どのアカウント"
 

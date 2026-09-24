@@ -996,7 +996,9 @@ Fan 于 2026-09-24 确认三张截图与测量结果。正式/测试 Galaxy 教�
 **Interfaces:**
 - Produces：每个环境至少一个**实测能登录**的 `is_admin = true` 账号，以及 Fan 对生产 `admin`（id=1）的处置。Task 7 的发布以它为前提：发布以后只有管理员能编辑教程。
 
-- [ ] **Step 1：只读查询三个环境**
+- [x] **Step 1：只读查询三个环境**
+
+2026-09-24 经 Fan 单独授权后只读核对：Mac 本机、home-ubuntu 测试机、ucloud-v100 生产库均仅返回 `1|admin|t`。生产 PostgreSQL 容器为 `katrain-ucloud-postgres-1`，目标库 `katrain_prod_20260725` 存在。尚未执行任何写库操作。
 
 ```bash
 # Mac 本机（做教程用的库，见 .claude/skills/tutorial-data-sync）

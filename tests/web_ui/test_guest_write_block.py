@@ -531,7 +531,9 @@ async def test_real_user_can_redeem_code(full_app):
 
 
 @pytest.mark.asyncio
-async def test_real_user_can_heartbeat_and_list_devices(full_app):
+async def test_real_user_can_heartbeat_but_not_list_devices(full_app):
+    """Heartbeat is the box's own report path: any real user may still write it.
+    The device list carries every box's IP: admin-only since 2026-09-24."""
     headers, _, _ = await _create_user_and_login(full_app, "device-user")
     async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
         beat = await ac.post(
@@ -541,6 +543,20 @@ async def test_real_user_can_heartbeat_and_list_devices(full_app):
         assert beat.json()["status"] == "ok"
 
         listed = await ac.get("/api/v1/board/devices", headers=headers)
+        assert listed.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_can_list_devices(full_app):
+    user_headers, _, _ = await _create_user_and_login(full_app, "device-user")
+    admin_headers, _, _ = await _create_admin_and_login(full_app, "device-admin")
+    async with AsyncClient(transport=ASGITransport(app=full_app), base_url="http://test") as ac:
+        beat = await ac.post(
+            "/api/v1/board/heartbeat", headers=user_headers, json={"device_id": "dev-real-1", "queue_depth": 0}
+        )
+        assert beat.status_code == 200
+
+        listed = await ac.get("/api/v1/board/devices", headers=admin_headers)
         assert listed.status_code == 200
         assert any(d["device_id"] == "dev-real-1" for d in listed.json())
 

@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
+from katrain.web.api.v1.endpoints.auth import get_current_admin_user, get_current_user, require_writable_user
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import DeviceHeartbeatDB
 from katrain.web.models import User
@@ -83,10 +83,11 @@ async def device_heartbeat(
 
 @router.get("/devices")
 async def list_devices(
-    current_user: User = Depends(require_writable_user),
+    current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db),
 ):
-    """List all registered board devices (admin monitoring)."""
+    """List all registered board devices (admin monitoring). Admin-only since 2026-09-24:
+    each row carries the box's IP address."""
     devices = db.query(DeviceHeartbeatDB).order_by(DeviceHeartbeatDB.last_seen.desc()).all()
 
     return [

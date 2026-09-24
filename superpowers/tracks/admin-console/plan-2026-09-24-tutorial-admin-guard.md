@@ -408,7 +408,7 @@ Expected：`--stat` 里正好是这三个文件。
 **Interfaces:**
 - Consumes：Task 1 的 `_create_admin_and_login(app, username)`；Task 1 Step 2 的 `newfail.sh` 和基线文件
 
-- [ ] **Step 1：拆分用例**。把整个 `test_real_user_can_heartbeat_and_list_devices`（带着它的 `@pytest.mark.asyncio`）替换成：
+- [x] **Step 1：拆分用例**。把整个 `test_real_user_can_heartbeat_and_list_devices`（带着它的 `@pytest.mark.asyncio`）替换成：
 ```python
 @pytest.mark.asyncio
 async def test_real_user_can_heartbeat_but_not_list_devices(full_app):
@@ -441,12 +441,12 @@ async def test_admin_can_list_devices(full_app):
         assert any(d["device_id"] == "dev-real-1" for d in listed.json())
 ```
 
-- [ ] **Step 2：跑测试，确认失败**
+- [x] **Step 2：跑测试，确认失败**
 
 Run：`CI=true uv run pytest tests/web_ui/test_guest_write_block.py -q -p no:cacheprovider -k "devices" 2>&1 | tail -6`
 Expected：`test_real_user_can_heartbeat_but_not_list_devices` 失败，原因是列表返回了 200 而不是 403；`test_admin_can_list_devices` 通过。
 
-- [ ] **Step 3：改 `board.py`**。第 17 行
+- [x] **Step 3：改 `board.py`**。第 17 行
 ```python
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 ```
@@ -474,12 +474,12 @@ async def list_devices(
     each row carries the box's IP address."""
 ```
 
-- [ ] **Step 4：跑整个文件，按名字和基线比**
+- [x] **Step 4：跑整个文件，按名字和基线比**
 
 Run：`cd /Users/fan/Repositories/katrain-admin-console && bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_guest_write_block.py; echo "newfail exit=$?"`
 Expected：`newfail exit=0`。其中 `test_guest_403_on_all_write_routes[GET:/api/v1/board/devices]` 仍然是 403，只是现在由管理员闸拦下。
 
-- [ ] **Step 5：提交**
+- [x] **Step 5：提交**
 
 ```bash
 set -o pipefail

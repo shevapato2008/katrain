@@ -292,6 +292,17 @@ def test_a_corrupt_state_file_does_not_block_startup(tmp_path):
     assert app.state.led.guidance_scale == 1.0  # 回落到默认,不抛
 
 
+def test_a_state_file_holding_nan_does_not_silently_pin_the_lamp_at_its_dimmest(tmp_path):
+    """`json.loads` 默认收 NaN,而 set_guidance_scale 的 min/max 夹取对 NaN 返回**下界** ——
+    一个坏文件会把引导灯静默钉在 0.08(人几乎看不见灯),日志里一句异常都没有。"""
+    (tmp_path / "led").mkdir()
+    (tmp_path / "led" / "guidance.json").write_text('{"guidance_scale": NaN, "settled": true}', encoding="utf-8")
+    app = _app(1.0, hardware_vision_dir=str(tmp_path))
+    _load_guidance_scale(app, logging.getLogger("t"))
+    assert app.state.led.guidance_scale == 1.0  # 回落到默认,不是回落到最暗
+    assert app.state.led_glow_settled is False
+
+
 def test_without_a_hardware_vision_dir_nothing_is_persisted_and_nothing_breaks():
     app = _app(1.0)  # 没配 --hardware-vision-dir
     _read(app, 4 * LED_GLOW_TARGET)

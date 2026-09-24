@@ -202,3 +202,45 @@ def test_a_lamp_bright_enough_to_clip_its_own_pixels_is_not_called_glare():
     adapter._measure_pending_glow(_lamp(5, 7, 255, sigma=20.0))  # 一大团打饱和的灯光
     [event] = _glow_events(adapter)
     assert event["clipped"] == 0.0
+
+
+def test_the_real_producer_drives_the_real_consumer_through_the_event(caplog):
+    """把接缝焊上:真跑 `_measure_pending_glow` 造出事件 dict,**原样**喂给 `_adjust_led_brightness`。
+
+    其余用例两边各自用自造夹具 —— 服务端那边手打 `clipped=0.30`,worker 这边只看自己发出的 dict。
+    于是两边中间那条缝没有任何闸:生产者改个键名、或者不再算这个数,两边的用例都照绿,而板上
+    反光处理整条失效。09-24 之前 `reason` 就是这么过去的(消费者与生产者之间没有一条 import 边)。
+    """
+    import logging as _logging
+
+    from katrain.web.server import _adjust_led_brightness
+
+    def one_event(reference, lit_frame):
+        adapter = _adapter()
+        adapter._last_raw = reference
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[5, 7]]}))
+        adapter._drain_commands()
+        adapter._measure_pending_glow(lit_frame)
+        [event] = _glow_events(adapter)
+        return event
+
+    def brightness_after(event, scale=0.6, settled=True):
+        app = SimpleNamespace(
+            state=SimpleNamespace(
+                led=SimpleNamespace(guidance_scale=scale, set_guidance_scale=lambda v: None),
+                led_glow_settled=settled,
+                hardware_vision_dir=None,
+            )
+        )
+        app.state.led.set_guidance_scale = lambda v: setattr(app.state.led, "guidance_scale", v)
+        _adjust_led_brightness(app, event, _logging.getLogger("seam"))
+        return app.state.led.guidance_scale, app.state.led_glow_settled
+
+    # 灯被一片真的镜面反光吃掉 -> 生产者算出的 clipped 必须真的让消费者调亮并解锁
+    scale, settled = brightness_after(one_event(_glare_reference(5, 7), _lamp(5, 7, 120)))
+    assert scale > 0.6 and settled is False
+
+    # 手挡在灯上(参考帧那儿是手,不是死白)-> 同样测不到灯,但**不许**调亮
+    hand = np.full((H, W, 3), 90, np.uint8)
+    scale, settled = brightness_after(one_event(hand, hand))
+    assert scale == 0.6 and settled is True

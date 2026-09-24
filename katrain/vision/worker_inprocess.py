@@ -130,21 +130,31 @@ CLIPPED_LEVEL = 250  # same "this pixel is blown out" level check_frame_exposure
 def reference_clipped_fraction(ref: np.ndarray, geometry, row: int, col: int) -> float:
     """Fraction of the lamp's own ROI that was **already saturated before the lamp came on**.
 
-    This is the glare discriminator, and it has to be measured on the dark reference, not the lit frame:
-    specular reflection means those pixels are pinned at white in *both* frames, so lit-minus-dark is 0
-    and the lamp is invisible no matter how bright it gets. Reading the lit frame instead would also
-    flag a lamp bright enough to clip its own pixels — the opposite case.
+    This is the glare discriminator: specular reflection pins those pixels at white in *both* frames, so
+    lit-minus-dark is 0 and the lamp stays invisible however bright it gets.
 
     What it separates, which `reason` cannot (every one of these reads back as `low_signal`): a hand
     resting over the lamp leaves the reference dark; a lamp that never lit leaves it at ambient; a stale
-    geometry lock points this ROI at ordinary board. Only a specular highlight is already at white here.
+    geometry lock points this ROI at ordinary board; **a stone already sitting on the lamp while the
+    stable board still says EMPTY** leaves it at stone, not white — that last one matters most, because
+    it is the state the 09-24 freeze was stuck in, and calling it glare would brighten straight into it.
+
+    Reference, not lit frame: the two only disagree when the lit frame is saturated and the reference is
+    not — and that cannot be glare, because the difference would then be large and the lamp would have
+    been found. What it would be is the camera's exposure drifting between the two frames, which
+    brightening does not fix. (A lamp bright enough to clip its own pixels is not the case being ruled
+    out here: it is found, so `_measure_pending_glow` never asks this question about it.)
     """
     x0, y0, x1, y1, (rx, ry, radius) = _glow_roi(ref, geometry, row, col)
-    crop = ref[y0:y1, x0:x1]
+    # 每 4 个像素取一个 —— check_frame_exposure 判整帧过曝用的就是这个口径。判据问的是「有没有
+    # 一片盖得住灯的高光」(阈值 2% 的 ROI,灯斑本身就有 450-2500px),降采样 16 倍仍然远大于 1 格,
+    # 而全分辨率下这个探针比它旁边那个三通道测量还贵。
+    step = 4
+    crop = ref[y0:y1:step, x0:x1:step]
     if crop.size == 0:
         return 0.0
     keep = np.zeros(crop.shape[:2], np.uint8)
-    cv2.circle(keep, (int(round(rx)), int(round(ry))), max(1, int(round(radius))), 1, -1)
+    cv2.circle(keep, (int(round(rx / step)), int(round(ry / step))), max(1, int(round(radius / step))), 1, -1)
     inside = keep.astype(bool)
     if not inside.any():
         return 0.0

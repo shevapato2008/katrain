@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import logging
+import math
 import os
 import time
 from pathlib import Path
@@ -3718,6 +3719,10 @@ def _load_guidance_scale(app: FastAPI, log) -> None:
     try:
         saved = json.loads(path.read_text(encoding="utf-8"))
         scale = float(saved["guidance_scale"])
+        # json.loads 默认收 NaN/Infinity,而 set_guidance_scale 的 min/max 夹取对 NaN 返回下界 ——
+        # 一个坏文件会静默把引导灯钉在最低亮度,人几乎看不见灯,而日志里一句异常都没有。
+        if not math.isfinite(scale):
+            raise ValueError(f"guidance_scale is not a finite number: {scale!r}")
         settled = bool(saved.get("settled", False))
     except Exception as exc:  # 坏文件不该挡住开机:回落到默认亮度,像没有这个文件一样
         log.warning("Ignoring unreadable LED guidance state at %s: %s", path, exc)
@@ -3733,8 +3738,12 @@ def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, log) -> None
         return
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        # 先写临时文件再 os.replace:断电/进程被杀时,宁可读到上一次的值,也不能读到半截 JSON ——
-        # 半截 JSON 会走上面那条 except,悄悄回到满亮度,也就是把故障原样复现一遍。
+        # 先写临时文件再 os.replace:**进程被杀**时宁可读到上一次的值,也不要读到半截 JSON。
+        # ⚠️ 这挡不住断电 —— 没有 fsync,ext4 上可以 rename 已生效而数据未落盘,重启读到 0 字节。
+        # 不加 fsync 是有意的:`_adjust_led_brightness` 跑在事件泵那条 asyncio 任务上,同步 fsync
+        # 会卡住事件循环,而板上 UI 本来就只有 6-15fps。代价小得不值这一下:这个文件丢了只是让
+        # 开局第一盏灯从满亮度起步,而测量发生在**裸灯上、玩家伸手之前**,`set_guidance_scale` 当场
+        # 就把那盏灯按新亮度重发 —— 修正落在同一颗子上。落盘是省掉那一瞬的优化,不是正确性的前提。
         tmp = path.with_suffix(".json.tmp")
         tmp.write_text(json.dumps({"guidance_scale": round(scale, 4), "settled": settled}), encoding="utf-8")
         os.replace(tmp, path)

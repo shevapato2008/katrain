@@ -848,7 +848,7 @@ git show --stat HEAD | tail -5
 - R4（管理员）：`actions.height > 0`，`|scroll.bottom − actions.top| ≤ 1`
 - 「最空」那一态（没有讲解、没有原书文字）同样要满足 R1 和 R2：塌陷类的问题只有在内容最少时才看得出来
 
-- [ ] **Step 1：写测量用例**
+- [x] **Step 1：写测量用例**
 
 ```ts
 // katrain/web/ui/tests/tutorial-rail-readonly.measure.spec.ts
@@ -945,7 +945,7 @@ test('管理员对照', async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2：起 vite 开发服务器，跑测量**
+- [x] **Step 2：起 vite 开发服务器，跑测量**
 
 端口和 PID 写进文件：执行者每次调用 Bash 都是新 shell，变量留不到 Step 4。直接起 `node_modules/.bin/vite`，记下的 PID 才是 vite 自己，不是 npm 的外壳。
 ```bash
@@ -959,11 +959,13 @@ MEASURE_BASE=http://127.0.0.1:$PORT npx playwright test --config=playwright.vite
 ```
 Expected：3 passed，并打印出三行 JSON 数字。
 
-- [ ] **Step 3：处理测量结果**
+- [x] **Step 3：处理测量结果**
   - 全部通过：删掉 spec（`rm tests/tutorial-rail-readonly.measure.spec.ts`），把三行 JSON 和 R1–R4 逐条的判定写进 `superpowers/tracks/admin-console/slice0/measurements.md`。这里的像素值只做记录，判定看的是关系式。
   - 有一条**量出了错误数值**：先修布局，重跑直到通过。然后按 vertical-slice 的规定，**保留**这个 spec，改名为 `tests/tutorial-rail-readonly.spec.ts` 作为几何闸，和修复放在同一个提交里。
 
-- [ ] **Step 4：停掉 Step 2 起的 vite**。只杀记下的那个 PID，而且先核对它确实是 vite（端口上可能已经是别的会话的服务）：
+- [x] **Step 4：停掉 Step 2 起的 vite**。只杀记下的那个 PID，而且先核对它确实是 vite（端口上可能已经是别的会话的服务）：
+
+本机沙箱不允许监听端口，改为获批的前台 Vite 会话；测量后只向该会话发送 Ctrl-C，并确认 5183 端口空闲。
 ```bash
 V=/private/tmp/claude-501/admin-guard-vite
 ps -o command= -p "$(cat $V/pid)" | grep -q vite && kill "$(cat $V/pid)"
@@ -971,7 +973,7 @@ lsof -iTCP:"$(cat $V/port)" -sTCP:LISTEN || echo "port free"
 ```
 Expected：打印 `port free`。
 
-- [ ] **Step 5：提交证据**
+- [x] **Step 5：提交证据**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console

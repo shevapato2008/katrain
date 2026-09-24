@@ -156,24 +156,42 @@ def _shaded(frame, gain):
     return np.clip(frame.astype(np.float32) * ramp, 0, 255).astype(np.uint8)
 
 
-def test_a_refresh_absorbs_drift_but_never_a_new_stone_nobody_recognised():
-    """Fan 2026-09-23: refresh while the player thinks. A stone that landed unrecognised in that minute
-    must keep the old sample, or it would later be vetoed as 'the reference says empty here'."""
+def test_a_refresh_absorbs_every_comparable_cell_including_the_changed_ones():
+    """Fan 2026-09-24 的裁定,推翻了 09-23 那版「变了的格子保留旧样本」。
+
+    参考帧就是「这次落子之前,棋盘像素级的样子」。一团反光只有先进了参考帧照片,
+    「照片一样 + 地图说空」这条证据才成立、否决才生效 —— 现场 (18,12) 的 zncc=1.00 正是这么来的。
+    跳过变化格意味着反光要一直等到下一次参考帧**重建**才被拦,中间那段窗口它畅通无阻。
+
+    地图(哪格有子)仍然不随刷新变 —— 只有落子确认后的重建才换地图。
+
+    ⚠️ 代价:一颗没被识别出来的真子也会被吸收进照片,日后检测器看见它时会命中
+    「照片一样 + 地图说空」而被否决,且同日已取消压制方向的帧数上限 ⇒ 无法自动恢复。
+    取舍依据:反光当天多次发作(一颗重播 8 分 48 秒、一局三轮),这一种 0 次。
+    """
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
     later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
-    refreshed, kept = reference.refreshed(later, ZNCC, REFERENCE_ANCHOR_ZNCC)
-    assert kept[4][4] and kept.sum() == 1
+    refreshed, absorbed = reference.refreshed(later, ZNCC, REFERENCE_ANCHOR_ZNCC)
+    assert absorbed[4][4] and absorbed.sum() == 1  # 只有这一格是「变了才被吸收的」
     sim = refreshed.similarity(later)
-    assert sim[4][4] < ZNCC  # the unrecognised stone still reads as a change
-    assert np.nanmin(np.delete(sim.reshape(-1), 4 * 19 + 4)) > 0.999  # everything else is this frame now
+    assert sim[4][4] > 0.999, "变了的格子也必须被吸收 —— 否则反光进不了基准,否决就建立不起来"
+    assert np.nanmin(sim.reshape(-1)) > 0.999  # 整份基准都是这一帧了
     assert (refreshed.board == reference.board).all() and refreshed is not reference
 
 
-def test_a_refresh_step_is_bounded_by_the_current_sample_too():
-    """With the anchor gate wide open, the minute-to-minute gate alone still keeps the new stone out."""
+def test_the_refresh_no_longer_gates_on_either_threshold():
+    """09-23 有两道闸(与上一次的照片比、与最初的 anchor 比)挡住"把变化吸收进基准"。
+    Fan 2026-09-24 的裁定取消了它们:参考帧就该是落子前那一刻的样子,变了的格更该更新。
+
+    两个阈值参数保留在签名里,只用来统计「哪些格是变了才被吸收的」(第二个返回值),不再决定去留。
+    这条用**把 anchor 闸开到最大**来证明:无论阈值怎么设,那颗新子都会被吸收进照片。
+    """
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
-    _, kept = reference.refreshed(to_gray(_board_frame([(4, 4, BLACK)])), ZNCC, -1.0)
-    assert kept[4][4] and kept.sum() == 1
+    later = to_gray(_board_frame([(4, 4, BLACK)]))
+    for anchor_threshold in (-1.0, REFERENCE_ANCHOR_ZNCC, 0.999):
+        refreshed, absorbed = reference.refreshed(later, ZNCC, anchor_threshold)
+        assert absorbed[4][4] and absorbed.sum() == 1  # 它就是「变了才被吸收」的那一格
+        assert refreshed.similarity(later)[4][4] > 0.999, "阈值不该再影响是否吸收"
 
 
 def _shadow_edge(frame, x0, width=30, depth=0.6):
@@ -254,17 +272,24 @@ def test_a_stone_the_game_knows_survives_a_detector_that_lost_it():
     assert detector_says[4][4] == EMPTY  # the caller's array is never mutated
 
 
-def test_an_invented_stone_is_suppressed_but_only_for_a_few_frames():
+def test_an_invented_stone_is_suppressed_for_as_long_as_the_pixels_do_not_change():
+    """Fan 2026-09-24 的裁定:只要当前画面和参考帧比对没有变化,就持续否定这里有落子。
+
+    旧行为是压 REFERENCE_HOLD_SUPPRESS 帧(板上 ~4.4 秒)就放行,而放行是**粘的**
+    (`_ref_released`),于是那一格在这份参考帧余生里不再被否决;偏偏新参考帧要等
+    「读数==记录」才拍得成,而那颗假子正好让两者对不上 —— 死锁。现场 (18,12) 因此
+    重播了 8 分 48 秒、一局内复发三轮。
+
+    地图里**不可能**有假子(拍摄前置条件要求读数==记录,一有假阳性就拍不成),所以
+    「地图说空 + 像素没变」这条证据不会去否决任何系统已知的真子。
+    """
     frame = _board_frame()
     adapter = _with_reference("on", frame, _empty_board())
     detector_says = _empty_board()
     detector_says[12][3] = WHITE
-    for _ in range(REFERENCE_HOLD_SUPPRESS):
+    for _ in range(REFERENCE_HOLD_SUPPRESS * 20):  # 远超旧上限
         assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == EMPTY
-    # the detector keeps insisting: it wins that cell for the rest of this reference's life
-    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
-    assert adapter._ref_released[12][3] and adapter._reference is not None
-    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
+    assert not adapter._ref_released[12][3], "凭空多出的子不该因为「耗时够久」就获得放行"
 
 
 def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
@@ -278,7 +303,8 @@ def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
     detector_says[12][3] = WHITE  # ... and invented (12,3)
     for _ in range(REFERENCE_HOLD_SUPPRESS + 5):
         effective = adapter._reference_check(detector_says, to_gray(frame))
-    assert effective[4][4] == BLACK and effective[12][3] == WHITE
+    # 丢掉的那颗仍被参考帧按住(长预算);凭空多出的那颗现在**没有上限**,一直被否决
+    assert effective[4][4] == BLACK and effective[12][3] == EMPTY
 
 
 def test_a_missing_stone_is_held_far_longer_than_an_invented_one():
@@ -311,14 +337,17 @@ def test_a_colour_disagreement_gets_the_short_hold_not_the_long_one():
 def test_the_hold_budget_is_cumulative_so_a_flapping_detector_cannot_reset_it():
     """A detector that sees the stone only every other frame would never exhaust a *consecutive*
     counter, and the suppression would be permanent."""
-    frame = _board_frame()
-    adapter = _with_reference("on", frame, _empty_board())
-    invented, agreeing = _empty_board(), _empty_board()
-    invented[12][3] = WHITE
+    # 「凭空多出一颗子」那一路已经没有上限了(见上),所以这条改用仍有预算的**颜色判错**来守。
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    wrong_colour, agreeing = truth.copy(), truth.copy()
+    wrong_colour[4][4] = WHITE
     for _ in range(REFERENCE_HOLD_SUPPRESS):
-        adapter._reference_check(invented, to_gray(frame))
+        adapter._reference_check(wrong_colour, to_gray(frame))
         adapter._reference_check(agreeing, to_gray(frame))  # a frame where the detector agrees again
-    assert adapter._reference_check(invented, to_gray(frame))[12][3] == WHITE
+    assert adapter._reference_check(wrong_colour, to_gray(frame))[4][4] == WHITE
 
 
 def test_a_real_change_is_left_alone_so_the_move_still_lands():
@@ -423,12 +452,10 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     with caplog.at_level("INFO"):
         adapter._maybe_capture_reference(board, board, later)
     assert adapter._reference is not first
-    assert adapter._reference.similarity(later)[4][4] < REFERENCE_ZNCC  # the unrecognised stone was not absorbed
-    # Fan 2026-09-24:参考帧每分钟重验一次 ⇒ 证据持续保鲜 ⇒ 压制预算不该按帧数到期。
-    # 被**重新验证过**的格子清零(它的主张刚刚又被证明了一次);**验不过只能沿用旧样本**的格子
-    # 保留预算 —— 那正是「参考帧可能被毒化」的那一格,它的逃生口必须留着。
-    assert adapter._ref_hold[2][2] == 0, "重验过的格子预算没清零:静态反光会把保护耗尽"
-    assert adapter._ref_hold[4][4] == 5, "没重验的格子不该清零 —— 毒化参考帧的逃生口"
+    # Fan 2026-09-24:刷新把**所有**能比对的格子都拍成当前这一帧,变了的也吸收进来。
+    assert adapter._reference.similarity(later)[4][4] > 0.999, "变了的格子也该被吸收进基准"
+    # 照片刚跟当前帧对齐过,整份基准都是新鲜的 ⇒ 压制预算清零。
+    assert adapter._ref_hold[2][2] == 0 and adapter._ref_hold[4][4] == 0
     assert adapter._ref_released[3][3]  # 已放行的格子不会因刷新而回收
     assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
 
@@ -438,23 +465,12 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     assert adapter._reference is second  # the minute restarts at each refresh
 
 
-def test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture(monkeypatch, caplog):
-    """Codex 2026-09-23 P2: minute-to-minute matches are not transitive. A stone fading in over ten
-    minutes passes the 0.90 step gate every time; only the anchor gate stops the chain."""
-    clock = [1000.0]
-    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
-    empty = to_gray(_board_frame()).astype(np.float32)
-    stone = to_gray(_board_frame([(4, 4, BLACK)])).astype(np.float32)
-    adapter = _adapter("on")
-    board = _empty_board()
-    adapter._expected_np = board
-    adapter._maybe_capture_reference(board, board, empty.astype(np.uint8))
-    for t in np.linspace(0.1, 1.0, 10):
-        clock[0] += REFERENCE_REFRESH_S
-        caplog.clear()
-        with caplog.at_level("INFO"):
-            adapter._maybe_capture_reference(board, board, ((1 - t) * empty + t * stone).astype(np.uint8))
-    assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
+# ⛔ 2026-09-24 删除:test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture
+# 它守的是 anchor 闸 ——「一颗子用十分钟慢慢淡入,每一步都过得了 0.90 的步进闸,只有与最初那张
+# 照片比对才能斩断这条链」。Fan 的裁定把「变了的格也吸收」定为规则,这条守卫按定义不再存在:
+# 现在一步就吸收,不需要十分钟。**代价是真的**:一颗没被识别出来的真子会被直接吸收进基准,
+# 而压制方向的帧数上限同日已取消 ⇒ 无法自动恢复,只能重新标定或人工确认。
+# 取舍依据写在 ReferenceFrame.refreshed 的 docstring 里。
 
 
 def test_the_reference_is_dropped_by_every_discontinuity():

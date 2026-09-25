@@ -22,6 +22,34 @@ describe('cron presentation', () => {
     expect(screen.queryByText(/无法连接数据库/)).not.toBeInTheDocument();
   });
 
+  it('shows concise icon-labeled status counts that follow a new snapshot', () => {
+    const healthy = testView('healthy');
+    const { rerender } = render(<CronPage view={healthy} onRefresh={vi.fn()} />);
+    const overview = screen.getByRole('group', { name: '任务概况' });
+    expect(within(overview).getByText('9 正常')).toBeInTheDocument();
+    expect(within(overview).getByText('9 正常').closest('.cron-summary-chip')?.querySelector('svg')).toBeInTheDocument();
+
+    const failed = testView('failed');
+    rerender(<CronPage view={failed} onRefresh={vi.fn()} />);
+    expect(within(overview).getByText('1 失败')).toBeInTheDocument();
+    expect(within(overview).getByText('1 报错')).toBeInTheDocument();
+    expect(within(overview).getByText('7 正常')).toBeInTheDocument();
+    expect(within(overview).queryByText('9 正常')).not.toBeInTheDocument();
+  });
+
+  it('explains a selected task before its technical run history', async () => {
+    const user = userEvent.setup();
+    render(<CronPage view={testView('failed')} onRefresh={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /数据清理/ }));
+    const drawer = screen.getByRole('complementary', { name: '任务运行历史' });
+    expect(within(drawer).getByText(/定期清理过期对局/)).toBeInTheDocument();
+    expect(within(drawer).getByText('最近一次运行失败')).toBeInTheDocument();
+    expect(within(drawer).getByText('每 1 天执行')).toBeInTheDocument();
+    expect(within(drawer).getByText('清理任务连接数据库失败')).toBeInTheDocument();
+    expect(within(drawer).getByText('运行历史')).toBeInTheDocument();
+    expect(within(drawer).getByText(/最多显示 200 条/)).toBeInTheDocument();
+  });
+
   it('shows unhealthy jobs first while preserving source order within each group', () => {
     const view = testView('healthy');
     const base = view.jobs[0];
@@ -52,7 +80,7 @@ describe('cron presentation', () => {
     const onRefresh = vi.fn();
     render(<CronPage view={testView('api-error')} onRefresh={onRefresh} />);
     expect(screen.getByRole('alert')).toHaveTextContent('接口请求失败');
-    expect(screen.getByText('进程状态待确认')).toBeInTheDocument();
+    expect(screen.getByText('状态待确认')).toBeInTheDocument();
     expect(screen.queryByText('运行正常')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '刷新状态' }));
     expect(onRefresh).toHaveBeenCalledOnce();
@@ -81,9 +109,10 @@ describe('cron presentation', () => {
     view.jobs[1].health.state = 'overdue';
     view.queues!.live_analysis.oldest_pending_at = '2026-09-24T16:54:00+08:00';
     render(<CronPage view={view} onRefresh={vi.fn()} />);
-    expect(screen.getByText(/心跳 30 秒前 · 进程启动于 12:00/)).toBeInTheDocument();
+    expect(screen.getByText(/心跳 30 秒前 · 12:00 启动/)).toBeInTheDocument();
     expect(screen.getByText(/最早等待 6 分钟/)).toBeInTheDocument();
-    expect(screen.getByText('8 正常 · 1 该跑没跑')).toBeInTheDocument();
+    expect(screen.getByText('8 正常')).toBeInTheDocument();
+    expect(screen.getByText('1 逾期')).toBeInTheDocument();
     expect(screen.queryByText(/九项任务/)).not.toBeInTheDocument();
   });
 

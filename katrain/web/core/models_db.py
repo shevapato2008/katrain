@@ -240,6 +240,27 @@ class AiLadderActiveGame(Base):
     )
 
 
+class AiLadderTerritoryRequest(Base):
+    """A durable single-flight claim and successful private territory result."""
+
+    __tablename__ = "ai_ladder_territory_requests"
+
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(32), nullable=False, index=True)
+    user_id = Column(Integer, nullable=False)
+    request_id = Column(String(64), nullable=False)
+    sgf_digest = Column(String(64), nullable=False)
+    claim_token = Column(String(32), nullable=False)
+    state = Column(String(16), nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    result = Column(LadderJSON, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("game_id", "request_id", name="uq_ai_ladder_territory_request"),
+        CheckConstraint("state IN ('pending', 'success')", name="ck_ai_ladder_territory_state"),
+    )
+
+
 class AiLadderGameLedger(Base):
     """Append-only, globally idempotent decision for every settlement attempt."""
 

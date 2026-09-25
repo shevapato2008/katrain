@@ -7,6 +7,7 @@ import type {
   AiLadderStartPreferences,
   AiLadderStartResponse,
 } from './types';
+import { authHeaders as localAuthHeaders } from '../../api';
 
 export class AiLadderApiError extends Error {
   readonly status: number;
@@ -66,6 +67,34 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
   if (response.ok) return response.json() as Promise<T>;
   throw await createApiError(response);
 };
+
+export interface AiLadderTerritoryQuota { remaining: number; in_flight: boolean }
+export interface AiLadderTerritoryResult {
+  remaining: number;
+  move_count: number;
+  ownership: number[];
+  black_area: number;
+  white_area: number;
+  stale?: boolean;
+}
+
+export const getAiLadderTerritoryQuota = async (
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<AiLadderTerritoryQuota> => parseResponse(await fetch(
+  `/api/ai-ladder/territory?session_id=${encodeURIComponent(sessionId)}`,
+  { headers: localAuthHeaders(), credentials: 'same-origin', signal },
+));
+
+export const requestAiLadderTerritory = async (
+  sessionId: string,
+  requestId: string,
+): Promise<AiLadderTerritoryResult> => parseResponse(await fetch('/api/ai-ladder/territory', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', ...localAuthHeaders() },
+  credentials: 'same-origin',
+  body: JSON.stringify({ session_id: sessionId, request_id: requestId }),
+}));
 
 const parseGameLifecycleResponse = async (
   response: Response,

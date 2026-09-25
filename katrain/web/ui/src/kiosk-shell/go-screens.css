@@ -275,6 +275,20 @@
 .gstatus[data-tone="bad"] b { color: var(--bad); }
 .gstatus .kiosk-btn--pill { margin-left: auto; flex: none; }
 
+/* Ranked game territory uses the same rail slot and action cell as the live game. */
+.ranked-territory-content { padding: 12px 13px; font-family: var(--font-sans); }
+.ranked-territory-content h2 { margin: 0 0 7px; font-family: var(--font-serif); font-size: 19px; font-weight: 600; }
+.ranked-territory-content p { margin: 0; color: var(--dim); font-size: 13px; line-height: 1.5; }
+.ranked-territory-content .ranked-territory-note { font-size: 11px; }
+.ranked-territory-areas { display: flex; gap: 9px; margin: 13px 0 9px; }
+.ranked-territory-areas > span { flex: 1; min-height: 42px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--hair); border-radius: 8px; font-size: 12px; }
+.ranked-territory-areas i { width: 12px; height: 12px; flex: none; border-radius: 50%; border: 1px solid #eee; }
+.ranked-territory-areas i.black { background: #222; }
+.ranked-territory-areas i.white { background: #eee; }
+.ranked-territory-areas strong { margin-left: auto; font-family: var(--font-mono); font-size: 15px; white-space: nowrap; }
+.ranked-territory-badge { margin-left: 3px; padding: 1px 5px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 55%, #143825); color: #fff; font: 11px var(--font-mono); }
+.kiosk-actions button:has(.ranked-territory-badge) { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
 @keyframes game-win-trophy {
   0% { transform: scale(.7) rotate(-12deg); opacity: .3; }
   30% { transform: scale(1.25) rotate(8deg); opacity: 1; }

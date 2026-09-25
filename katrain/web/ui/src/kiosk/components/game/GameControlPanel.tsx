@@ -67,6 +67,15 @@ interface Props {
   counting?: boolean;
   /** 右栏状态条(F4:设计稿位置是「开关行之上」,不是压在玩家卡上方)。GamePage 传 `null` 时不占地方。 */
   statusSlot?: React.ReactNode;
+  territory?: {
+    remaining: number | null;
+    phase: 'idle' | 'loading' | 'result' | 'error';
+    blackArea?: number;
+    whiteArea?: number;
+    disabled: boolean;
+    retrySameRequest: boolean;
+    onRequest: () => void;
+  };
 }
 
 /**
@@ -290,7 +299,7 @@ const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
-  onTimeout, counting = false, statusSlot = null,
+  onTimeout, counting = false, statusSlot = null, territory,
 }: Props) => {
   const { t, lang } = useTranslation();
   const { play: playSound, stop: stopSound } = useSound();
@@ -477,6 +486,12 @@ const GameControlPanel = ({
   // 稿子对「一排点不动的键」的原话:「要画就得先加那一屏,不是在这一屏塞一排点不动的键」。
   // ⇒ 终局时它们整组不渲染,位置让给真正能用的着法导航。
   const playActions: KioskAction[] = isGameOver ? [] : [
+    ...(rankedGame && territory ? [{
+      key: 'ranked-territory', icon: 'grid-nine' as const,
+      label: <span>领地 <span className="ranked-territory-badge">{territory.remaining ?? '—'}</span></span>,
+      onClick: territory.onRequest, disabled: territory.disabled,
+      reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
+    }] : []),
     {
       key: 'count', icon: 'squares-four', label: t('Score', '数子'),
       onClick: () => onAction('count'), disabled: !canCount,
@@ -548,7 +563,7 @@ const GameControlPanel = ({
           在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
           `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
           (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
-      {showMoves && (
+      {showMoves && !(rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0)) && (
         <KioskFold
           fold="moves"
           grow
@@ -564,6 +579,39 @@ const GameControlPanel = ({
           ) : moveRows.map((r) => (
             <MoveCellRow key={r.n} row={r} now={nowIndex} nowRef={nowRef} passLabel={t('kifu:pass', '虚手')} />
           ))}
+        </KioskFold>
+      )}
+
+      {rankedGame && territory && (territory.phase !== 'idle' || territory.remaining === 0) && (
+        <KioskFold
+          fold="ranked-territory" grow testId="ranked-territory-panel"
+          title="领地判断"
+          value={territory.phase === 'loading' ? '云端处理中'
+            : territory.phase === 'error' ? '未完成'
+            : territory.phase === 'result' ? '当前局面' : '次数已用完'}
+        >
+          <div className="ranked-territory-content" aria-live="polite">
+            {territory.phase === 'loading' ? <>
+              <h2>正在请求云端判断…</h2>
+              <p>按当前局面计算。请稍候，本次请求不会结束对局。</p>
+            </> : territory.phase === 'result' ? <>
+              <h2>领地判断结果</h2>
+              <p>棋盘已标出黑棋和白棋的预计归属区域。</p>
+              <div className="ranked-territory-areas">
+                <span><i className="black" />黑方区域<strong>约 {territory.blackArea}</strong></span>
+                <span><i className="white" />白方区域<strong>约 {territory.whiteArea}</strong></span>
+              </div>
+              <p className="ranked-territory-note">云端 AI 的当前局面判断，仅供参考；继续落子后请重新请求。正式胜负以终局数子为准。</p>
+            </> : territory.phase === 'error' ? <>
+              <h2>云端暂时无法判断</h2>
+              <p>{territory.retrySameRequest
+                ? '请求未返回结果。重试会沿用同一次请求，不会重复扣除机会；请查看剩余次数。对局仍可继续。'
+                : '领地额度暂时无法查询。可以再按“领地”尝试，对局仍可继续。'}</p>
+            </> : <>
+              <h2>本局 3 次机会已用完</h2>
+              <p>可以继续下棋或在满足条件后数子。此处的领地结果不会决定正式胜负。</p>
+            </>}
+          </div>
         </KioskFold>
       )}
 
@@ -602,7 +650,9 @@ const GameControlPanel = ({
             数子键到时候自己会亮,而三个分析键不会。反过来排的话,游客整局都不知道
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
-          {hardwareFault
+          {rankedGame && territory && !hardwareFault && !physicalStatus
+            ? `领地判断：本局剩余 ${territory.remaining ?? '—'} 次`
+            : hardwareFault
             ?? physicalStatus
             ?? (engineMode
               ? (isGameOver ? '' : t('game:golaxy_judge_hint', '数子只查看当前形势，不结束对局'))

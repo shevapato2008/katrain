@@ -35,6 +35,23 @@ const mockGameState: GameState = {
 } as GameState;
 
 describe('GameControlPanel', () => {
+  test('ranked territory uses the shared action icon and shows quota and result without analysis scores', () => {
+    const onRequest = vi.fn();
+    const { rerender } = render(<GameControlPanel gameState={{ ...mockGameState, game_type: 'ai_ladder_ranked' }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{ coords: true }} onToggleAnalysis={() => {}}
+      isRanked territory={{ remaining: 3, phase: 'loading', disabled: true, retrySameRequest: false, onRequest }} />);
+    expect(screen.getByRole('button', { name: /领地 3/ })).toBeDisabled();
+    expect(screen.getByText('正在请求云端判断…')).toBeInTheDocument();
+    expect(screen.queryByText(/胜率/)).toBeNull();
+    rerender(<GameControlPanel gameState={{ ...mockGameState, game_type: 'ai_ladder_ranked' }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{ coords: true }} onToggleAnalysis={() => {}}
+      isRanked territory={{ remaining: 2, phase: 'result', blackArea: 78, whiteArea: 66, disabled: false, retrySameRequest: false, onRequest }} />);
+    fireEvent.click(screen.getByRole('button', { name: /领地 2/ }));
+    expect(onRequest).toHaveBeenCalledOnce();
+    expect(screen.getByText('约 78')).toBeInTheDocument();
+    expect(screen.getByText('约 66')).toBeInTheDocument();
+    expect(screen.getByText('领地判断：本局剩余 2 次')).toBeInTheDocument();
+  });
   // The 3D board was removed from the kiosk on 2026-07-13 (freed ~321MB Mali GPU contending
   // with KataGo's OpenCL). Guard against reintroducing the toggle; core controls must remain.
   test('renders core controls and NO 3D toggle', () => {

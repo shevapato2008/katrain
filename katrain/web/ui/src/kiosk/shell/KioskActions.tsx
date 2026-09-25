@@ -1,9 +1,10 @@
+import type { ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
 
 export interface KioskAction {
   key: string;
   icon: IconName;
-  label: string;
+  label: ReactNode;
   onClick: () => void;
   /**
    * 开关键(领地 / 图表)。给了值就渲染 `aria-pressed`,**按下去留在按下的状态**;

@@ -314,6 +314,21 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_ai_ladder_territory(self, game_id: str) -> Dict:
+        resp = await self._request("GET", f"/api/v1/ai-ladder/games/{game_id}/territory")
+        resp.raise_for_status()
+        return resp.json()
+
+    async def request_ai_ladder_territory(
+        self, game_id: str, reservation_key: str, sgf_content: str, request_id: str
+    ) -> Dict:
+        resp = await self._request(
+            "POST", f"/api/v1/ai-ladder/games/{game_id}/territory",
+            json={"reservation_key": reservation_key, "sgf_content": sgf_content, "request_id": request_id},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Growth (box asks the cloud; falls back to its own cache) ──
 
     async def get_growth_summary(self, days: int) -> Dict:

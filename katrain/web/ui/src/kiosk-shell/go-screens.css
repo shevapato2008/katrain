@@ -630,6 +630,77 @@
 .qgrid button.now { border-color: var(--accent); background: var(--panel); }
 .qgrid button.now b { color: var(--accent); }
 
+/* 屏 13 的已确认双栏版：516 木盘 + 460 右栏，20 题在 7 英寸屏内完整可点。 */
+.tsumego-browser__board { position: relative; }
+.tsumego-browser__board-message {
+  position: absolute; inset: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: var(--text); background: rgba(15, 20, 22, .74); font-size: 14px; text-align: center;
+}
+.tsumego-browser__board-message button {
+  min-width: 80px; min-height: 44px; border: 1px solid var(--accent); border-radius: 9px;
+  color: var(--text); background: var(--panel); cursor: pointer;
+}
+.tsumego-browser__rail {
+  min-width: 0; height: 516px; display: grid;
+  grid-template-rows: 44px 58px 20px 220px 46px 30px 50px; row-gap: 8px;
+}
+.tsumego-browser__rail .kiosk-pagebar { min-width: 0; }
+.tsumego-browser__rail .kiosk-pagebar__title {
+  min-width: 0; display: flex; flex-direction: column; justify-content: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25;
+}
+.tsumego-browser__rail .kiosk-pagebar__sub { margin: 2px 0 0; font-size: 11px; }
+.tsumego-browser__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tsumego-browser__stat {
+  min-width: 0; padding: 5px 10px; border: 1px solid var(--hair); border-radius: 10px;
+  background: var(--raise); display: flex; flex-direction: column; justify-content: center;
+}
+.tsumego-browser__stat strong { color: var(--accent); font-family: var(--font-serif); font-size: 22px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.tsumego-browser__stat small { color: var(--dim); font-family: var(--font-sans); font-size: 11px; }
+.tsumego-browser__stat > span { margin-top: 3px; color: var(--dim); font-size: 11px; white-space: nowrap; }
+.tsumego-browser__section { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.tsumego-browser__section::after { content: ''; height: 1px; flex: 1; background: var(--hair); }
+.tsumego-browser__section b { font-weight: 600; white-space: nowrap; }
+.tsumego-browser__section em { font-family: var(--font-serif); font-size: 11px; color: var(--dim); }
+.qgrid.tsumego-browser__grid { grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 49px; height: 220px; }
+.qgrid.tsumego-browser__grid button { height: 49px; gap: 1px; }
+.qgrid.tsumego-browser__grid button.selected {
+  border-color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(88, 181, 122, .18);
+}
+.qgrid.tsumego-browser__grid button.selected b,
+.qgrid.tsumego-browser__grid button.selected em { color: #86d9a3; }
+.tsumego-browser__alternatives { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tsumego-browser__alternatives button {
+  min-width: 0; height: 46px; padding: 0 10px; display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--panel); color: var(--text);
+  cursor: pointer; text-align: left;
+}
+.tsumego-browser__alternatives button:disabled { opacity: .5; cursor: default; }
+.tsumego-browser__alt-icon {
+  width: 27px; height: 27px; flex: none; display: grid; place-items: center;
+  border-radius: 8px; background: #28352e; color: var(--accent); font-weight: 700;
+}
+.tsumego-browser__alt-icon--wrong { background: #352b27; color: var(--warn); }
+.tsumego-browser__alternatives button > span:nth-child(2) { min-width: 0; flex: 1; }
+.tsumego-browser__alternatives b,
+.tsumego-browser__alternatives small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tsumego-browser__alternatives b { font-size: 12px; }
+.tsumego-browser__alternatives small { color: var(--dim); font-size: 10px; }
+.tsumego-browser__alternatives i { color: var(--dim); font-size: 16px; font-style: normal; }
+.tsumego-browser__selection { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 11px; white-space: nowrap; }
+.tsumego-browser__selection b { color: var(--text); font-weight: 600; }
+.tsumego-browser__selection-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--accent); }
+.tsumego-browser__selection-hint { margin-left: auto; color: var(--accent); }
+.tsumego-browser__enter {
+  width: 100%; height: 50px; padding: 0 17px; display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid #6eca8d; border-radius: 11px; background: #69c488; color: #102018;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+}
+.tsumego-browser__enter small { font-size: 12px; opacity: .7; }
+.tsumego-browser__enter span { font-size: 22px; font-weight: 400; }
+.tsumego-browser button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ── 屏 14 做题屏(L2 布局 A)────────────────────────────────────────────
  * 逐字取自稿子 `go-kiosk.tmpl.html` 的 `.panel` / `.qtext` / `.railsec` / `.dots`
  * (`:151-152`、`:240-241`、`:132-134`、`:180-183`)。

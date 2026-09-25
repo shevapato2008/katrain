@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
+import type { ProblemDetail } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
+import { sgfToCoords } from '../../utils/sgfParser';
 import {
   CATEGORY_META,
   UNIT_SIZE,
@@ -19,23 +21,29 @@ import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { GoBoardSvg } from '../shell/GoBoardSvg';
+import { GO_COLS, colsFor, rowsFor } from '../shell/goBoard';
+
+const previewCoords = (stones: string[], size: number): string[] => stones.flatMap((stone) => {
+  const point = sgfToCoords(stone, size);
+  return point ? [`${GO_COLS[point[0]]}${point[1] + 1}`] : [];
+});
 
 /**
- * 屏 13 · 题目列表 `/kiosk/tsumego/:level/:category/:unit` —— **L2 布局 B**。
- * 稿子 `data-screen="problems"`,参考图 `shots/13-problems.png`。
+ * 屏 13 · 题目列表 `/kiosk/tsumego/:level/:category/:unit` —— **L2 布局 A**。
+ * 1024×600 已确认设计稿在 `superpowers/tracks/kiosk-ui-redesign/artifacts/13-problems-split-preview.html`。
  *
  * ⚠️ **原来的稿子少画了这一层**(2026-08-21 才补上):单元卡本来直接跳到做题屏,
  * 而真前端里中间隔着这一屏 —— 先看见这 20 道题各是什么状态,再挑一道进去。
  * 少一层的后果不是少一屏,是**「做到第几题了」这件事无处安放**。
  *
- * 三块:数据条 3 格 → 这 20 道题(`.qgrid`) → 换一批(`.kiosk-rows`)。
+ * 左侧是真实题目的初始棋形；右侧是进度、20 题、换一批和进入所选题。
  *
- * ── 一次接口都不取(常路)────────────────────────────────────────────────
+ * ── 题号常路从缓存取，选中题的棋形按需取 ───────────────────────────────
  * 屏 12 为了 prev/next 契约已经把**整类题号按顺序**写进 `sessionStorage` 了,
- * 这一层要的东西(本单元那 20 个题号、整类的错题数)全在里面 ⇒ 直接读,不再请求。
+ * 本单元题号和整类错题数直接从中读取，不重复请求整类题目。
  * 只有**深链**进来(没经过屏 12)才自己取一次 `?limit=1000` 并回填那条顺序表。
- * 旧实现取的是 `?offset&limit=20` 的**整题**(带 `initialBlack/initialWhite` 画缩略棋盘),
- * 这一版的格子里只有题号和状态,**不需要棋形** —— 630 道题的类目上这是一次实打实的省。
+ * 只对当前选中的题请求详情，并在本页缓存；切题时旧请求会中止，避免旧棋形盖住新选择。
  *
  * ── 「N 次」是怎么算出来的:**`attempts` 数的是失败的那几次** ─────────────────
  * `useTsumegoProblem` 里 `setAttempts(prev => prev + 1)` 只在**走错**和**重摆**时发生
@@ -46,7 +54,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
  * 数还是那个数,标签把它讲成了另一件事。稿子上那三格 `1 次 / 1 次 / 3 次` 是按前一种意思画的。
  * 没做过的写「—」,**不写「0 次」**:0 次是一个次数,「没做过」不是。
  *
- * ── 和稿子的三处出入(都往「少写小字」那边)────────────────────────────────
+ * ── 旧版无盘题目列表的文案取舍（错题页仍沿用）────────────────────────────
  * 1. 两条组标题右端的 `.secval` 去掉了(稿子上是「点一格直接进那一道」/「同一副骨架,
  *    只换题从哪儿来」)。`KioskSecLabel` 自己写着那一格**是数据不是旁注**,
  *    而这两句一句是操作说明、一句是在讲界面构造;Fan 2026-08-22:「不要写那么多解释文字」。
@@ -56,8 +64,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
  *    scope 在这两行之间会跳,不点名的话「现在有 N 道」会被读成整级的数。
  *
  * ── 错题页(T1,2026-09-14)`set="wrong"` ─────────────────────────────────
- * 路由 `/kiosk/tsumego/:level/:category/wrong`。稿子这一屏「换一批」那组的原注是
- * 「同一副骨架，只换题从哪儿来」⇒ 不另起一屏,同一个组件换题源:
+ * 路由 `/kiosk/tsumego/:level/:category/wrong`。错题可能超过 20 道，继续沿用可滚动的无盘列表:
  *   · 格子 = 这一类里「试过、还没做对」的全部题(`isWrongEntry`),格上写**整类真题号**;
  *   · 数据条三格换成「现在有几道 / 平均尝试次数 / 这一类已做对」—— 「本单元已做对」恒 0、
  *     「平均用时」对没做对的题恒「—」,两格在这里没话可说;
@@ -81,13 +88,17 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 
   const [allIds, setAllIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
+  const [previewCache, setPreviewCache] = useState<Record<string, ProblemDetail>>({});
+  const [previewError, setPreviewError] = useState<{ id: string; message: string } | null>(null);
+  const [previewRetry, setPreviewRetry] = useState(0);
 
   const unitNumber = Math.max(1, Number.parseInt(unit || '1', 10) || 1);
   const offset = (unitNumber - 1) * UNIT_SIZE;
 
   const load = useCallback((lvl: string, cat: string, signal: AbortSignal) => {
     setError(null);
-    // 屏 12 刚写过这条顺序表 —— 常路到此为止,一次接口都不取。
+    // 屏 12 刚写过这条顺序表 —— 题号常路到此为止，不重复取整类列表。
     const cached = readSequence(lvl, cat);
     if (cached && cached.length > 0) {
       setAllIds(cached);
@@ -107,6 +118,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   useEffect(() => {
     if (!level || !category) return;
     const controller = new AbortController();
+    // 读屏 12 写下的题号缓存是同步快路；保留它可避免列表闪回加载态。
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load(level, category, controller.signal);
     return () => controller.abort();
   }, [level, category, load]);
@@ -130,7 +143,32 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   // 0 道而做题记录没读到 ⇒ 这个 0 是编的:错题页不说「没有」、屏 13 那一行不写「0 道」也不灰。见文件头。
   const wrongUnknown = serverLoadFailed && wrongIds.length === 0;
   const listIds = isWrongSet ? wrongIds : unitIds;
+  const defaultProblemId = unitIds.find((id) => !progress[id]?.completed) ?? unitIds[0] ?? null;
+  const previewId = !isWrongSet && selectedProblemId && unitIds.includes(selectedProblemId)
+    ? selectedProblemId
+    : !isWrongSet ? defaultProblemId : null;
+  const preview = previewId ? previewCache[previewId] : null;
+  const activePreviewError = previewError?.id === previewId ? previewError.message : null;
   const judged = t('Judged on placement', '落子即判');
+
+  useEffect(() => {
+    if (!previewId || previewCache[previewId]) return;
+    const controller = new AbortController();
+    fetch(`/api/v1/tsumego/problems/${previewId}`, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(res.status === 404 ? 'Problem not found' : `HTTP ${res.status}`);
+        return res.json() as Promise<ProblemDetail>;
+      })
+      .then((problem) => {
+        if (!controller.signal.aborted && problem.id === previewId) {
+          setPreviewCache((current) => ({ ...current, [previewId]: problem }));
+        }
+      })
+      .catch((err: Error) => {
+        if (!controller.signal.aborted) setPreviewError({ id: previewId, message: err.message });
+      });
+    return () => controller.abort();
+  }, [previewId, previewCache, previewRetry]);
 
   const pagebar = (
     <KioskPagebar
@@ -254,6 +292,109 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
     if (level && category) writeWrongSequence(level, category, wrongIds);
     navigate(`/kiosk/tsumego/problem/${id}?set=wrong`, { state: backToState(location) });
   };
+
+  if (!isWrongSet) {
+    const selectedIndex = unitIds.indexOf(previewId ?? '');
+    const selectedNumber = offset + selectedIndex + 1;
+    const selectedNumberText = String(selectedNumber).padStart(2, '0');
+    const boardSize = preview?.boardSize || 19;
+    const selectedTries = previewId ? triesOf(previewId) : 0;
+    const selectedState = previewId && progress[previewId]?.completed
+      ? interpolate(t('tsumego:tries_n', '{n} 次'), { n: selectedTries })
+      : previewId === nowId ? t('Next up', '下一道') : t('Not attempted', '还没做过');
+
+    return (
+      <div className="kiosk-layout-a tsumego-browser">
+        <div className="kiosk-board tsumego-browser__board" data-testid="problem-preview-board">
+          <div className="kiosk-board__ruler kiosk-board__ruler--top">
+            {colsFor(boardSize).map((c) => <span key={`t${c}`}>{c}</span>)}
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--left">
+            {rowsFor(boardSize).map((r) => <span key={`l${r}`}>{r}</span>)}
+          </div>
+          <div className="kiosk-board__play">
+            <GoBoardSvg
+              size={boardSize}
+              black={preview ? previewCoords(preview.initialBlack, boardSize) : []}
+              white={preview ? previewCoords(preview.initialWhite, boardSize) : []}
+              label={interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumber })}
+            />
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--right">
+            {rowsFor(boardSize).map((r) => <span key={`r${r}`}>{r}</span>)}
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--bottom">
+            {colsFor(boardSize).map((c) => <span key={`b${c}`}>{c}</span>)}
+          </div>
+          {!preview && (
+            <div className="tsumego-browser__board-message" role="status">
+              {activePreviewError ? (
+                <>
+                  <span>{loadErrorCopy(t, activePreviewError).title}</span>
+                  <button type="button" onClick={() => { setPreviewError(null); setPreviewRetry((n) => n + 1); }}>
+                    {t('Retry', '重试')}
+                  </button>
+                </>
+              ) : <span>{t('Loading problem set…', '正在读题库…')}</span>}
+            </div>
+          )}
+        </div>
+
+        <div className="tsumego-browser__rail">
+          {pagebar}
+          <div className="tsumego-browser__stats">
+            <div className="tsumego-browser__stat"><strong>{solved}<small> / {unitIds.length}</small></strong><span>{t('Solved in this unit', '本单元已做对')}</span></div>
+            <div className="tsumego-browser__stat"><strong>{avgTries == null ? '—' : avgTries.toFixed(1)}</strong><span>{t('Average tries', '平均尝试次数')}</span></div>
+            <div className="tsumego-browser__stat"><strong>{avgSeconds == null ? '—' : avgSeconds < 60 ? <>{avgSeconds}<small> {t('sec', '秒')}</small></> : <>{Math.floor(avgSeconds / 60)}<small> {t('min', '分')} </small>{avgSeconds % 60}<small> {t('sec', '秒')}</small></>}</strong><span>{t('Average time', '平均用时')}</span></div>
+          </div>
+          <div className="tsumego-browser__section"><b>{interpolate(t('tsumego:these_n_problems', '这 {n} 道题'), { n: unitIds.length })}</b><em>Problems</em></div>
+          <div className="qgrid tsumego-browser__grid" data-testid="problems-grid">
+            {unitIds.map((id, i) => {
+              const done = !!progress[id]?.completed;
+              const isNow = !done && id === nowId;
+              const tries = triesOf(id);
+              const n = offset + i + 1;
+              const state = done ? t('Solved', '做对了') : isNow ? t('Next up', '下一道') : t('Not attempted', '还没做过');
+              return (
+                <button
+                  type="button"
+                  key={id}
+                  className={`${done ? 'ok' : isNow ? 'now' : ''}${id === previewId ? ' selected' : ''}`}
+                  aria-pressed={id === previewId}
+                  aria-current={isNow ? 'step' : undefined}
+                  aria-label={`${interpolate(t('tsumego:problem_no', '第 {n} 题'), { n })}，${state}${tries > 0 ? `，${interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries })}` : ''}`}
+                  onClick={() => { setPreviewError(null); setSelectedProblemId(id); }}
+                >
+                  <b>{n}</b><em>{tries > 0 ? interpolate(t('tsumego:tries_n', '{n} 次'), { n: tries }) : isNow ? t('You are here', '在这儿') : '—'}</em>
+                </button>
+              );
+            })}
+          </div>
+          {!isAll ? (
+            <div className="tsumego-browser__alternatives">
+              <button type="button" onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}>
+                <span className="tsumego-browser__alt-icon">全</span><span><b>{levelName}全部</b><small>{t('Mixed training', '综合训练')}</small></span><i aria-hidden="true">›</i>
+              </button>
+              <button type="button" disabled={wrongIds.length === 0 && !wrongUnknown} onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}>
+                <span className="tsumego-browser__alt-icon tsumego-browser__alt-icon--wrong">错</span><span><b>{t('Only the ones I got wrong', '只做错过的')}</b><small>{wrongUnknown ? t('tsumego:progressUnread', '做题记录没读到') : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongIds.length })}</small></span><i aria-hidden="true">›</i>
+              </button>
+            </div>
+          ) : <div />}
+          <div className="tsumego-browser__selection" data-testid="problem-selection">
+            <span className="tsumego-browser__selection-dot" />
+            <b>{interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText })}</b>
+            <span>{selectedState}</span>
+            <span className="tsumego-browser__selection-hint">{t('tsumego:boardPreview', '左侧为棋形预览')}</span>
+          </div>
+          <button type="button" className="tsumego-browser__enter" data-testid="problem-enter" onClick={() => previewId && openProblem(previewId)}>
+            <small>{interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: selectedNumberText })}</small>
+            <b>{t('tsumego:enterProblem', '进入做题屏')}</b>
+            <span aria-hidden="true">↗</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="kiosk-layout-b">

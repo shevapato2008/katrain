@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python/FastAPI、KataGo HTTP、SQLAlchemy/PostgreSQL/SQLite、React/TypeScript/Vitest、Docker Compose、systemd。
 
+**当前状态（2026-09-25 16:35 CST）：** SGF、私有云端数子、待结算文案已开发并发布到 home、UCloud 和 RK3562；设备的围棋账号与结算地址已指向 UCloud。尚待用户在设备上重新登录并完成一盘**新局**，核对正式库实际落账。领地判断 HTML 已按现有星阵对弈图标调整，其余视觉修改和前后端开发仍等用户确认。
+
 ---
 
 ## Chunk 1: 部署与数据契约核查
@@ -113,11 +115,13 @@
 | 2026-09-25 | home 更新 | `/home/fan/Repositories/katrain` fast-forward 到 `fdf7fa39`；备份 `katrain_db-20260925-pre-develop.dump` 190064110 字节并验证；web、cron 重建，`/api/v1/health` 200。 |
 | 2026-09-25 | UCloud 更新 | 将 develop 合入专用 release，发布提交 `dfbea181`；先备份 `prod-20260925-pre-develop.dump` 189194374 字节，修复管理后台构建缺失 Logo 后生成不可变镜像 `sha256:d1cc3589…`。生产 web 健康，`KATRAIN_PREVIEW_MODE=0`；cron 源码无差异，原容器健康；Postgres、MinIO、KataGo 未重建。容量预检的 38.5 GB 是整机迁移门槛，本次仅替换 web，构建后仍有约 12 GB 空间。 |
 | 2026-09-25 | 数据库 | home `katrain_db` 与 UCloud `katrain_prod_20260725` 的 `ai_ladder_profiles`、`ai_ladder_pending_games`、`ai_ladder_active_games`、`ai_ladder_game_ledger`、`user_games`、`sync_queue` 列名及类型逐项一致；本次未迁移任何历史成绩。 |
-| 2026-09-25 | SGF 修复 | ranked 终局导出前按冻结座位和规则写入 `PB/PW/RE/RU/SZ/KM`；真实 box→cloud 测试先复现缺字段 422，修复后有效载荷 200、伪造名仍 422；`test_ai_ladder_api.py` 254 条通过。待三端发布。 |
-| 2026-09-25 | 待结算文案 | 已结束未送达时按钮和二次确认改为“放弃未送达成绩”，明确记负和真实棋谱无法补交；96 条聚焦 UI 测试及 TypeScript 构建通过。待三端发布。 |
+| 2026-09-25 | SGF 修复 | ranked 终局导出前按冻结座位和规则写入 `PB/PW/RE/RU/SZ/KM`；真实 box→cloud 测试先复现缺字段 422，修复后有效载荷 200、伪造名仍 422；最终 287 条聚焦 API 测试通过。已发布三端。 |
+| 2026-09-25 | 待结算文案 | 已结束未送达时按钮和二次确认改为“放弃未送达成绩”，明确记负和真实棋谱无法补交；最终 97 条聚焦 UI 测试及 TypeScript 构建通过。已发布三端。 |
 | 2026-09-25 | RK 备份 | 设备 KaTrain 服务保持停止；`/mnt/data/weiqi/backups/weiqi-web-20260925-pre-prod.db` 通过 SQLite integrity_check。旧队列 14 条（含永久 422），尚未隔离或切换。 |
 | 2026-09-25 | 其他棋类只读检查 | RK 实际配置的 `lobby.sailorvoyage.top`、`ranked.sailorvoyage.top` 都指测试环境；国象经 setup-wizard ranked bridge，中国象棋默认使用同一 ranked origin，五子棋服务显式配置测试域名；`smartbox-software` 未修改。 |
 | 2026-09-25 | 领地判断设计 | `territory-preview.html` 已含对弈中、请求中、结果、失败、三次用尽状态；在 1024×600 浏览器生成默认和结果截图。前后端仍待用户确认设计稿。 |
 | 2026-09-25 | 裁判口径 | 用户确认云端 AI 中国规则判定，满 100 手可主动结束；不再等待算法选择。 |
 | 2026-09-25 | 图标对齐 | 自由对弈及跨平台星阵对弈共用 `grid-nine` 领地、`squares-four` 数子、`hand-pointing` 停一手、`flag` 认输；HTML 预览已内联相同 SVG，并重新截取 1024×600 图。设计其余调整待用户说明。 |
-| 2026-09-25 | 私有数子裁判 | 已接入冻结预约校验、中国规则 19 路云端 KataGo 500 visits 估分；主动数子满 100 实际手，双停可提前裁判，失败保留重试，终局前不写共享分析。287 条 API 测试、97 条聚焦 UI 测试及本机 Vite 构建通过；正式 KataGo 500 visits 实测 1.15 秒。Kivy 真窗口测试受本机窗口环境限制未能收集。待三端发布与新局实测。 |
+| 2026-09-25 | 私有数子裁判 | 已接入冻结预约校验、中国规则 19 路云端 KataGo 500 visits 估分；主动数子满 100 实际手，双停可提前裁判，失败保留重试，终局前不写共享分析。287 条 API 测试、97 条聚焦 UI 测试及本机 Vite 构建通过；正式 KataGo 500 visits 实测 1.15 秒。Kivy 真窗口测试受本机窗口环境限制未能收集。已发布三端，待真实新局验收。 |
+| 2026-09-25 | 最终发布 | 修复提交 `0a533a3eea6365aef3b2d8784fcc6ddb57b54134` 已推送 `origin/develop`。home fast-forward 至该提交并重建 web，健康 200。UCloud release 合并提交 `99c03cc9` 包含该提交；新镜像 `sha256:f60862fd…` 已发布，正式/本机健康 200，受保护数子接口未登录返回 401；保留旧 release `dfbea181` 与镜像用于回滚。发布核查 21 条测试通过，Postgres、MinIO、KataGo、cron 未重启。 |
+| 2026-09-25 | RK 切换 | 设备原安装和 SQLite 已备份；从 `95999cb7` 安装至完整修复提交，73 个变更 Python 文件语法检查通过；严格 Box SSO 的 2D kiosk 构建验证通过，设备实际 `index.html` 与本地 SHA-256 一致。旧测试 outbox 14 条在备份后清空，本地预约/云端占位为 0。通过 systemd 专用 `go-prod-identity.env` 同时覆盖围棋与账号 API 为 `https://modelstella.com`，原始 `identity.env` 保留以通过装机校验。wizard、KaTrain、KataGo 均 active，设备健康 200、正式站可达 200。其他三棋的 `SMARTBOX_RANKED_ORIGIN` 仍为测试域名。 |

@@ -98,7 +98,7 @@ services:
       - ./data/tutorial_assets:/app/data/tutorial_assets
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8010:8010"
+      - "127.0.0.1:${KATRAIN_ADMIN_HOST_PORT:-8010}:8010"
     environment:
       - KATRAIN_ADMIN_USERNAME=${KATRAIN_ADMIN_USERNAME:-}
       - KATRAIN_ADMIN_PASSWORD_HASH=${KATRAIN_ADMIN_PASSWORD_HASH:-}

@@ -13,7 +13,7 @@ def test_admin_service_is_loopback_only_and_has_private_credentials():
     web = compose["services"]["katrain-web"]
     admin = compose["services"]["katrain-admin"]
     assert admin["profiles"] == ["admin"]
-    assert admin["ports"] == ["127.0.0.1:8010:8010"]
+    assert admin["ports"] == ["127.0.0.1:${KATRAIN_ADMIN_HOST_PORT:-8010}:8010"]
     assert admin["image"] == web["image"]
     assert admin["command"] == ["python3", "-m", "katrain.web.admin"]
     admin_env = "\n".join(admin["environment"])

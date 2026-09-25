@@ -1,5 +1,9 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
+## 2026-09-25 教程页字号跟进（本地，未推送/部署）
+
+- Fan 对照测试后台截图要求教程管理页与定时任务页字号一致。本地仅调整已登录教程页的顶部/侧栏和三栏文字层级，保留楷体、主题、登录页字号、cron 页与业务行为；右侧讲解从 26px 收至 18px，原书说明从 24px 收至 17px。`ui-ux-pro-max` 的后台排版一致性建议用于核对现有层级，未另起主题。`AdminApp.test.tsx` **12 passed**、`build:admin`、单文件 ESLint、`git diff --check` 通过；本机 1440×900 查看/编辑真实浏览器预览在忽略目录 `output/playwright/admin-runtime-dark-*-kaiti-1440x900.png`，无明显遮挡。该样式仅本地提交，未 push 或部署；测试机 `127.0.0.1:8013` 当前仍显示旧字号。
+
 ## 2026-09-25 测试 cron 部署验收（最新）
 
 - Fan 针对依赖修复 `2529a153` 单独确认第二次推送和测试 cron 重建。推送前 `origin/develop=35100955` 是本地 HEAD 的祖先，聚焦 Python **28 passed**；已执行一次 `git push origin HEAD:develop`，`origin/develop=2529a153`，测试机 `develop` 只快进到同一 SHA，远端已跟踪工作树干净。`origin/feature/admin-console` 未推送；用户既有 `.playwright-cli` 工作树状态保持原样。

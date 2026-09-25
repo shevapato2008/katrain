@@ -780,6 +780,61 @@ async def test_box_ranked_count_retries_cloud_failure_without_writing_score(box_
 
 
 @pytest.mark.asyncio
+async def test_box_ranked_territory_proxies_private_result_without_changing_game(box_and_cloud):
+    box, _, remote = box_and_cloud
+    remote.get_ai_ladder_territory = AsyncMock(return_value={"remaining": 3, "in_flight": False})
+    remote.request_ai_ladder_territory = AsyncMock(return_value={
+        "remaining": 2, "move_count": 1, "ownership": [0.0] * 361,
+        "black_area": 0, "white_area": 0,
+    })
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await start_ranked(box, ac)
+        session = box.state._test_created_sessions[0]
+        anonymous = await ac.get("/api/ai-ladder/territory", params={"session_id": session.session_id})
+        assert anonymous.status_code == 401
+        status = await ac.get("/api/ai-ladder/territory", headers=box.state._test_headers,
+                              params={"session_id": session.session_id})
+        assert status.status_code == 200, status.text
+        assert status.json() == {"remaining": 3, "in_flight": False}
+        response = await ac.post("/api/ai-ladder/territory", headers=box.state._test_headers,
+                                 json={"session_id": session.session_id, "request_id": "request-1"})
+        assert response.status_code == 200, response.text
+        assert response.json()["remaining"] == 2
+        assert response.json()["stale"] is False
+        assert session.katrain.game.current_node.end_state is None
+        assert session.katrain._state["end_result"] is None
+        assert remote.request_ai_ladder_territory.await_args.args[:2] == (
+            started.json()["game_id"], session.ai_ladder_reservation_key,
+        )
+
+
+@pytest.mark.asyncio
+async def test_box_ranked_territory_discards_result_after_position_change(box_and_cloud):
+    box, _, remote = box_and_cloud
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def delayed(*args):
+        entered.set()
+        await release.wait()
+        return {"remaining": 2, "move_count": 1, "ownership": [0.0] * 361,
+                "black_area": 0, "white_area": 0}
+
+    remote.request_ai_ladder_territory = AsyncMock(side_effect=delayed)
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        await start_ranked(box, ac)
+        session = box.state._test_created_sessions[0]
+        pending = asyncio.create_task(ac.post("/api/ai-ladder/territory", headers=box.state._test_headers,
+                                              json={"session_id": session.session_id, "request_id": "request-2"}))
+        await entered.wait()
+        session.katrain.game.current_node = SimpleNamespace(end_state=None, score=None)
+        release.set()
+        response = await pending
+        assert response.status_code == 200, response.text
+        assert response.json()["stale"] is True
+        assert "ownership" not in response.json()
+
+
+@pytest.mark.asyncio
 async def test_box_ranked_manual_count_requires_100_played_moves(box_and_cloud):
     box, cloud, remote = box_and_cloud
     remote.count_ai_ladder_game = AsyncMock(return_value={"score": 3.5, "result": "B+3.5"})
@@ -4861,6 +4916,15 @@ class _CloudOverAsgi:
     async def get_ai_ladder_game_status(self, game_id):
         return await self._call("GET", f"/api/v1/ai-ladder/games/{game_id}/status")
 
+    async def get_ai_ladder_territory(self, game_id):
+        return await self._call("GET", f"/api/v1/ai-ladder/games/{game_id}/territory")
+
+    async def request_ai_ladder_territory(self, game_id, reservation_key, sgf_content, request_id):
+        return await self._call(
+            "POST", f"/api/v1/ai-ladder/games/{game_id}/territory",
+            json={"reservation_key": reservation_key, "sgf_content": sgf_content, "request_id": request_id},
+        )
+
     async def end_ai_ladder_game(self, game_id):
         return await self._call("POST", f"/api/v1/ai-ladder/games/{game_id}/end", json={"reason": "user_resigned"})
 
@@ -4877,6 +4941,32 @@ def box_and_cloud(tmp_path, monkeypatch, api_app):
     box.state.sync_enqueue_fn = MagicMock(return_value=True)
     monkeypatch.setattr(server.settings, "DEVICE_ID", "box-17")
     return box, cloud, remote
+
+
+@pytest.mark.asyncio
+async def test_box_ranked_territory_reaches_cloud_and_deducts_once(box_and_cloud):
+    box, cloud, remote = box_and_cloud
+
+    async def analyze(payload):
+        assert payload["includeOwnership"] is True
+        return {"ownership": [0.8] * 361, "rootInfo": {"scoreLead": 12.5, "winrate": 0.95}}
+
+    cloud.state.router = SimpleNamespace(local_client=SimpleNamespace(analyze=analyze))
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        await start_ranked(box, ac)
+        session = box.state._test_created_sessions[0]
+        body = {"session_id": session.session_id, "request_id": "same-request"}
+        first = await ac.post("/api/ai-ladder/territory", headers=box.state._test_headers, json=body)
+        assert first.status_code == 200, first.text
+        assert first.json()["remaining"] == 2
+        assert first.json()["black_area"] == 361
+        assert "score" not in first.text and "winrate" not in first.text
+        again = await ac.post("/api/ai-ladder/territory", headers=box.state._test_headers, json=body)
+        assert again.status_code == 200, again.text
+        assert again.json()["remaining"] == 2
+        status = await ac.get("/api/ai-ladder/territory", headers=box.state._test_headers,
+                              params={"session_id": session.session_id})
+        assert status.json() == {"remaining": 2, "in_flight": False}
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+import asyncio
 import logging
 import math
 import secrets
@@ -147,6 +148,11 @@ class AiLadderEndRequest(BaseModel):
 class AiLadderCountRequest(AiLadderReservationKeyRequest):
     sgf_content: str = Field(min_length=1, max_length=100000)
     trigger: Literal["manual", "double_pass"]
+
+
+class AiLadderTerritoryRequest(AiLadderReservationKeyRequest):
+    sgf_content: str = Field(min_length=1, max_length=100000)
+    request_id: str = Field(min_length=1, max_length=64)
 
 
 def _count_moves_from_sgf(sgf_content: str, trigger: str) -> list[list[str]]:
@@ -884,6 +890,82 @@ async def count_ranked_game(
         request.app, user_id=current_user.id, game_id=game_id,
         reservation_key=body.reservation_key, sgf_content=body.sgf_content, trigger=body.trigger,
     )
+
+
+@router.get("/games/{game_id}/territory")
+async def ranked_territory_status(
+    game_id: str, request: Request, current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        return request.app.state.ai_ladder_repo.get_territory_status(user_id=current_user.id, game_id=game_id)
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=404, detail="Active ranked game not found") from exc
+    except AiLadderLifecycleConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/games/{game_id}/territory")
+async def ranked_territory(
+    game_id: str, body: AiLadderTerritoryRequest, request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    return await analyze_ranked_territory(
+        request.app, user_id=current_user.id, game_id=game_id,
+        reservation_key=body.reservation_key, sgf_content=body.sgf_content, request_id=body.request_id,
+    )
+
+
+async def analyze_ranked_territory(app, *, user_id: int, game_id: str, reservation_key: str,
+                                   sgf_content: str, request_id: str) -> dict:
+    """Return only point ownership for the current ranked position."""
+    moves = _count_moves_from_sgf(sgf_content, "territory")
+    repo = app.state.ai_ladder_repo
+    try:
+        claim = repo.claim_territory(
+            user_id=user_id, game_id=game_id, reservation_key=reservation_key,
+            request_id=request_id, sgf_content=sgf_content,
+        )
+    except InvalidReservationKey as exc:
+        raise HTTPException(status_code=403, detail="Invalid reservation credential") from exc
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=404, detail="Active ranked game not found") from exc
+    except AiLadderLifecycleConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if claim["state"] == "replay":
+        return {"remaining": claim["remaining"], **claim["result"]}
+    token = claim["claim_token"]
+    try:
+        router_instance = getattr(app.state, "router", None)
+        client = getattr(router_instance, "local_client", None)
+        if client is None:
+            raise RuntimeError("ranked territory engine unavailable")
+        payload = {"rules": "chinese", "komi": 7.5, "boardXSize": 19, "boardYSize": 19,
+                   "moves": moves, "analyzeTurns": [len(moves)], "maxVisits": 200,
+                   "includeOwnership": True, "includePolicy": False}
+        analysis = await asyncio.wait_for(client.analyze(payload), timeout=30)
+        ownership = analysis.get("ownership") or analysis.get("rootInfo", {}).get("ownership")
+        if not isinstance(ownership, list) or len(ownership) != 361 or any(
+            isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+            or not -1 <= value <= 1 for value in ownership
+        ):
+            raise ValueError("invalid territory ownership")
+        result = {"move_count": len(moves), "ownership": ownership,
+                  "black_area": sum(value > 0.5 for value in ownership),
+                  "white_area": sum(value < -0.5 for value in ownership)}
+        if not repo.complete_territory(
+            user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token, result=result,
+        ):
+            raise RuntimeError("territory request expired")
+        return {"remaining": repo.get_territory_status(user_id=user_id, game_id=game_id)["remaining"], **result}
+    except asyncio.CancelledError:
+        repo.fail_territory(user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token)
+        raise
+    except Exception as exc:
+        repo.fail_territory(user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token)
+        logging.getLogger("katrain_web").warning("Private ranked territory failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
 
 
 async def adjudicate_ranked_position(app, *, user_id: int, game_id: str, reservation_key: str,

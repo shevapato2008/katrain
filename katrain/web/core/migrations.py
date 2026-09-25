@@ -25,6 +25,7 @@ AI_LADDER_TABLES = {
     "ai_ladder_game_ledger",
     "ai_ladder_pending_games",
     "ai_ladder_active_games",
+    "ai_ladder_territory_requests",
 }
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 # 象棋升降级的四张表已随模块搬去 lobby-platform(ranked_api/xiangqi/),这里不再有对应

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智星盒 · 死活题目列表 · 双栏预览</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <style>
+    :root {
+      --ink: #0f1416;
+      --panel: #18211f;
+      --raise: #1d2725;
+      --hair: #2b3a35;
+      --text: #eef3f1;
+      --dim: #93a49d;
+      --accent: #58b57a;
+      --accent-soft: rgba(88, 181, 122, .14);
+      --board-ink: #46331b;
+      font-family: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #0b1011; }
+    button { font: inherit; touch-action: manipulation; cursor: pointer; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .stage { position: absolute; left: 50%; top: 50%; width: 1024px; height: 600px; transform: translate(-50%, -50%) scale(var(--scale, 1)); transform-origin: center; }
+    .screen { width: 1024px; height: 600px; background: var(--ink); color: var(--text); overflow: hidden; box-shadow: 0 22px 80px rgba(0,0,0,.35); }
+    .topbar { height: 56px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--hair); background: #18211f; }
+    .brand-mark { width: 32px; height: 32px; margin-right: 10px; flex: none; }
+    .brand-zh { font-family: "SmartBox Brand", "SmartBox Kai", serif; font-size: 22px; letter-spacing: .12em; line-height: 1; }
+    .brand-en { color: var(--dim); margin-left: 6px; font: italic 13px "SmartBox Serif", Georgia, serif; }
+    .top-rule { width: 1px; height: 20px; background: var(--hair); margin: 0 12px; }
+    .game-name { color: var(--accent); font-family: "SmartBox Serif", "SmartBox Kai", serif; font-size: 16px; letter-spacing: .12em; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; }
+    .avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--ink); font-weight: 700; font-size: 12px; }
+    .visitor { color: var(--dim); }
+    .clock { margin-left: 6px; font: 500 14px "SmartBox Mono", ui-monospace, monospace; letter-spacing: .06em; }
+    main { height: 544px; padding: 14px 16px; display: grid; grid-template-columns: 516px 460px; gap: 16px; }
+    .board-frame { width: 516px; height: 516px; display: grid; grid-template-columns: 28px 460px 28px; grid-template-rows: 28px 460px 28px; border-radius: 8px; overflow: hidden; background: linear-gradient(150deg, rgba(118,80,44,.94), rgba(56,36,20,.96) 75%), url('../../../../katrain/web/ui/src/kiosk/assets/board/darkwood_512.jpg') center / 34% repeat; box-shadow: 0 0 0 1px rgba(218,164,100,.17) inset; }
+    .board-play { grid-area: 2 / 2; position: relative; width: 460px; height: 460px; background: linear-gradient(130deg, rgba(240,206,144,.16), rgba(180,126,58,.04)), url('board.png') center / cover, #dfb976; }
+    .board-play svg { width: 460px; height: 460px; display: block; }
+    .ruler { display: grid; align-items: center; justify-items: center; color: #cbae80; font-size: 11px; font-weight: 600; user-select: none; font-variant-numeric: tabular-nums; }
+    .ruler.top, .ruler.bottom { grid-template-columns: repeat(19, 1fr); }
+    .ruler.top { grid-area: 1 / 2; }
+    .ruler.bottom { grid-area: 3 / 2; }
+    .ruler.left, .ruler.right { grid-template-rows: repeat(19, 1fr); }
+    .ruler.left { grid-area: 2 / 1; }
+    .ruler.right { grid-area: 2 / 3; }
+    .rail { height: 516px; display: grid; grid-template-rows: 44px 58px 20px 220px 46px 30px 50px; row-gap: 8px; min-width: 0; }
+    .pagebar { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .back { min-width: 88px; height: 44px; padding: 0 12px; display: inline-flex; gap: 7px; align-items: center; justify-content: center; border: 1px solid var(--hair); border-radius: 10px; color: var(--text); background: var(--raise); font-size: 14px; }
+    .back svg { width: 16px; height: 16px; }
+    .page-title { min-width: 0; flex: 1; }
+    h1 { margin: 0; font: 600 16px "SmartBox Serif", "SmartBox Kai", serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .page-sub { margin-top: 2px; font-size: 12px; color: var(--dim); white-space: nowrap; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat { padding: 6px 11px 5px; background: var(--raise); border: 1px solid var(--hair); border-radius: 10px; min-width: 0; }
+    .stat-value { color: var(--accent); font: 600 22px/1.05 "SmartBox Serif", "SmartBox Kai", serif; font-variant-numeric: tabular-nums; }
+    .stat-value small { color: var(--dim); font-size: 12px; font-family: "SmartBox Sans", "SmartBox Kai", sans-serif; }
+    .stat-label { margin-top: 1px; color: var(--dim); font-size: 11px; white-space: nowrap; }
+    .section-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .section-head::after { content: ""; height: 1px; background: var(--hair); flex: 1; }
+    .section-head strong { font-size: 13px; letter-spacing: .04em; font-weight: 600; }
+    .section-head em { color: var(--dim); font: italic 12px "SmartBox Serif", Georgia, serif; }
+    .problem-grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 49px); gap: 8px; }
+    .problem { height: 49px; min-width: 0; border: 1px solid var(--hair); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px; color: var(--text); background: var(--raise); transition: border-color .15s, background .15s, box-shadow .15s; }
+    .problem b { font: 650 16px/1 "SmartBox Sans", "SmartBox Kai", sans-serif; font-variant-numeric: tabular-nums; }
+    .problem span { color: var(--dim); font-size: 11px; line-height: 1.2; }
+    .problem.done { border-color: rgba(88,181,122,.48); }
+    .problem.done b { color: var(--accent); }
+    .problem.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(88,181,122,.18); }
+    .problem.selected b, .problem.selected span { color: #86d9a3; }
+    .problem:active, .alt:active, .back:active, .cta:active { transform: translateY(1px); }
+    .alt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .alt { min-width: 0; height: 46px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 10px; background: var(--panel); color: var(--text); display: flex; align-items: center; gap: 8px; text-align: left; }
+    .alt-icon { width: 27px; height: 27px; flex: none; border-radius: 8px; background: #28352e; color: var(--accent); display: grid; place-items: center; font-size: 14px; font-weight: 700; }
+    .alt-icon.wrong { background: #352b27; color: #e0a24a; }
+    .alt-copy { min-width: 0; flex: 1; }
+    .alt-copy strong { display: block; font-size: 12px; line-height: 1.25; font-weight: 600; white-space: nowrap; }
+    .alt-copy small { display: block; color: var(--dim); font-size: 10px; white-space: nowrap; }
+    .alt-arrow { color: var(--dim); font-size: 16px; }
+    .selection { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--dim); font-size: 12px; }
+    .selection .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+    .selection strong { color: var(--text); font-weight: 600; }
+    .selection .hint { margin-left: auto; color: var(--accent); }
+    .cta { width: 100%; height: 50px; padding: 0 17px; border: 1px solid #6eca8d; border-radius: 11px; color: #102018; background: #69c488; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 16px; box-shadow: 0 6px 18px rgba(63,163,97,.18); }
+    .cta .cta-no { opacity: .65; font-size: 13px; font-weight: 600; }
+    .cta .cta-arrow { font-size: 22px; font-weight: 400; line-height: 1; }
+    .screen-note { position: absolute; right: 21px; bottom: 19px; padding: 9px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 12px; box-shadow: 0 9px 30px rgba(0,0,0,.35); opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity .18s, transform .18s; }
+    .screen-note.show { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage">
+    <div class="screen">
+      <header class="topbar">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#e4eeeb" stroke-width=".65" opacity=".84"><circle cx="16" cy="16" r="11"/><path d="M16 3v26M3 16h26M7 7l18 18M25 7 7 25M11 4l10 24M21 4 11 28M4 11l24 10M4 21 28 11"/></g><circle cx="16" cy="16" r="2" fill="#eef3f1"/><circle cx="16" cy="3" r=".9" fill="#eef3f1"/></svg>
+        <span class="brand-zh">智星盒</span><span class="brand-en">StellaBox</span><span class="top-rule"></span><span class="game-name">围棋</span>
+        <div class="topbar-right"><span class="avatar">访</span><span class="visitor">访客</span><span class="clock">16:40</span></div>
+      </header>
+      <main>
+        <section class="board-frame" aria-label="当前选中题目的棋盘预览">
+          <div class="ruler top" id="ruler-top"></div><div class="ruler bottom" id="ruler-bottom"></div><div class="ruler left" id="ruler-left"></div><div class="ruler right" id="ruler-right"></div>
+          <div class="board-play" id="board-play"></div>
+        </section>
+        <aside class="rail" aria-label="题目选择">
+          <div class="pagebar">
+            <button class="back" type="button" id="back"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 4-6 6 6 6M4 10h13"/></svg>单元</button>
+            <div class="page-title"><h1>15 级 · 吃子 · 第 1 单元</h1><div class="page-sub">第 1–20 题 · 落子即判</div></div>
+          </div>
+          <div class="stats" aria-label="本单元进度"><div class="stat"><div class="stat-value">3<small> / 20</small></div><div class="stat-label">本单元已做对</div></div><div class="stat"><div class="stat-value">1.7</div><div class="stat-label">平均尝试次数</div></div><div class="stat"><div class="stat-value">22<small> 秒</small></div><div class="stat-label">平均用时</div></div></div>
+          <div class="section-head"><strong>这 20 道题</strong><em>Problems</em></div>
+          <div class="problem-grid" id="problem-grid" role="group" aria-label="选择预览题目"></div>
+          <div class="alt-row"><button type="button" class="alt" data-alt="综合训练"><span class="alt-icon">全</span><span class="alt-copy"><strong>15 级全部</strong><small>综合训练</small></span><span class="alt-arrow">›</span></button><button type="button" class="alt" data-alt="只做错过的"><span class="alt-icon wrong">错</span><span class="alt-copy"><strong>只做错过的</strong><small>这一类 · 1 道</small></span><span class="alt-arrow">›</span></button></div>
+          <div class="selection" aria-live="polite"><span class="dot"></span><strong id="selection-no">第 04 题</strong><span id="selection-state">下一道</span><span class="hint">左侧为棋形预览</span></div>
+          <button type="button" class="cta" id="enter"><span class="cta-no" id="cta-no">第 04 题</span><span>进入做题屏</span><span class="cta-arrow" aria-hidden="true">↗</span></button>
+        </aside>
+      </main>
+      <div class="screen-note" id="screen-note" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+  <script>
+    const columns = 'ABCDEFGHJKLMNOPQRST'.split('');
+    const topRuler = document.getElementById('ruler-top');
+    const bottomRuler = document.getElementById('ruler-bottom');
+    const leftRuler = document.getElementById('ruler-left');
+    const rightRuler = document.getElementById('ruler-right');
+    for (const letter of columns) {
+      topRuler.insertAdjacentHTML('beforeend', `<span>${letter}</span>`);
+      bottomRuler.insertAdjacentHTML('beforeend', `<span>${letter}</span>`);
+    }
+    for (let n = 19; n >= 1; n--) {
+      leftRuler.insertAdjacentHTML('beforeend', `<span>${n}</span>`);
+      rightRuler.insertAdjacentHTML('beforeend', `<span>${n}</span>`);
+    }
+
+    // 棋形用于设计交互演示；正式页面应读取所选题目的真实初始局面。
+    const shapes = [
+      { b: [[2,15],[2,16],[3,14],[4,15],[5,15],[6,16],[5,17]], w: [[3,15],[3,16],[4,16],[4,17],[6,15]] },
+      { b: [[1,14],[2,14],[3,15],[4,16],[2,17],[5,14],[6,15]], w: [[2,15],[3,14],[4,14],[4,15],[5,16]] },
+      { b: [[2,13],[3,13],[4,14],[5,15],[4,17],[6,17],[7,16]], w: [[3,14],[3,15],[4,15],[4,16],[5,16],[6,16]] },
+      { b: [[1,15],[2,15],[2,16],[3,13],[4,13],[5,15],[6,15],[4,17]], w: [[1,16],[2,17],[3,16],[4,14],[4,15],[5,16]] },
+      { b: [[2,14],[3,14],[3,17],[4,16],[5,14],[6,15],[7,16]], w: [[2,15],[3,15],[4,15],[4,17],[5,16],[6,16]] }
+    ];
+    const board = document.getElementById('board-play');
+    const grid = document.getElementById('problem-grid');
+    const selectionNo = document.getElementById('selection-no');
+    const selectionState = document.getElementById('selection-state');
+    const ctaNo = document.getElementById('cta-no');
+    const note = document.getElementById('screen-note');
+    let selected = 4;
+    let noteTimer;
+    const num = n => String(n).padStart(2, '0');
+    function showNote(message) {
+      note.textContent = message;
+      note.classList.add('show');
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(() => note.classList.remove('show'), 2000);
+    }
+    function drawBoard(n) {
+      const shape = shapes[(n - 1) % shapes.length];
+      const dx = Math.floor((n - 1) / shapes.length);
+      const yShift = (n % 3) - 1;
+      const p = i => 12 + i * (436 / 18);
+      const lines = Array.from({length:19}, (_, i) => `<path d="M${p(i)} 12V448M12 ${p(i)}H448"/>`).join('');
+      const stars = [3,9,15].flatMap(row => [3,9,15].map(col => `<circle cx="${p(col)}" cy="${p(row)}" r="3.2"/>`)).join('');
+      const stone = (color, xy) => {
+        const x = p(xy[0] + dx), y = p(xy[1] + yShift);
+        const fill = color === 'b' ? 'url(#black)' : 'url(#white)';
+        const stroke = color === 'b' ? '#0c0d0d' : '#9f9481';
+        return `<circle cx="${x}" cy="${y}" r="11.5" fill="${fill}" stroke="${stroke}" stroke-width="1.2" filter="url(#shadow)"/>`;
+      };
+      board.innerHTML = `<svg viewBox="0 0 460 460" role="img" aria-label="第 ${n} 题的棋形预览"><defs><radialGradient id="black" cx="34%" cy="28%"><stop stop-color="#585b5a"/><stop offset=".35" stop-color="#242627"/><stop offset="1" stop-color="#090b0c"/></radialGradient><radialGradient id="white" cx="33%" cy="25%"><stop stop-color="#fffefa"/><stop offset=".65" stop-color="#eeeae0"/><stop offset="1" stop-color="#c2b9aa"/></radialGradient><filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="1.2" dy="2" stdDeviation="1.5" flood-color="#402613" flood-opacity=".42"/></filter></defs><g stroke="#46331b" stroke-opacity=".84" stroke-width="1.25">${lines}</g><g fill="#46331b">${stars}</g>${shape.b.map(xy=>stone('b',xy)).join('')}${shape.w.map(xy=>stone('w',xy)).join('')}</svg>`;
+    }
+    function selectProblem(n, focus = false) {
+      selected = n;
+      for (const button of grid.children) {
+        const active = Number(button.dataset.n) === n;
+        button.classList.toggle('selected', active);
+        button.setAttribute('aria-pressed', String(active));
+        if (active && focus) button.focus();
+      }
+      selectionNo.textContent = `第 ${num(n)} 题`;
+      selectionState.textContent = n <= 3 ? `${[1,1,3][n-1]} 次做对` : n === 4 ? '下一道' : '还没做过';
+      ctaNo.textContent = `第 ${num(n)} 题`;
+      drawBoard(n);
+    }
+    for (let n = 1; n <= 20; n++) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `problem${n <= 3 ? ' done' : ''}`;
+      button.dataset.n = String(n);
+      button.innerHTML = `<b>${n}</b><span>${n <= 3 ? [1,1,3][n-1] + ' 次' : n === 4 ? '在这儿' : '—'}</span>`;
+      button.setAttribute('aria-label', `第 ${n} 题，${n <= 3 ? '做对了' : n === 4 ? '下一道' : '还没做过'}`);
+      button.addEventListener('click', () => selectProblem(n));
+      button.addEventListener('keydown', event => {
+        const delta = {ArrowRight:1, ArrowLeft:-1, ArrowDown:5, ArrowUp:-5}[event.key];
+        if (!delta) return;
+        event.preventDefault();
+        selectProblem(Math.min(20, Math.max(1, n + delta)), true);
+      });
+      grid.appendChild(button);
+    }
+    selectProblem(4);
+    document.getElementById('enter').addEventListener('click', () => showNote(`进入第 ${num(selected)} 题`));
+    document.getElementById('back').addEventListener('click', () => showNote('返回单元列表'));
+    document.querySelectorAll('[data-alt]').forEach(button => button.addEventListener('click', () => showNote(button.dataset.alt)));
+    function scaleStage() {
+      document.getElementById('stage').style.setProperty('--scale', Math.min(1, innerWidth / 1024, innerHeight / 600));
+    }
+    addEventListener('resize', scaleStage);
+    scaleStage();
+  </script>
+</body>
+</html>

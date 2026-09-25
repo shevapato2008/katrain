@@ -1524,6 +1524,7 @@ def test_rank_state_and_ledger_are_protected_from_schema_drift_rebuilds():
         "ai_ladder_game_ledger",
         "ai_ladder_pending_games",
         "ai_ladder_active_games",
+        "ai_ladder_territory_requests",
     }
     assert migrations.AI_LADDER_TABLES < migrations.PROTECTED_TABLES
     assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES

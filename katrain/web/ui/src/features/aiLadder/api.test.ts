@@ -5,12 +5,30 @@ import {
   getAiLadderGameStatus,
   getAiLadderSettlementReceipt,
   getAiLadderStatus,
+  getAiLadderTerritoryQuota,
+  requestAiLadderTerritory,
   startAiLadderGame,
 } from './api';
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('ai ladder API', () => {
+  it('uses local session territory endpoints and preserves the retry ID', async () => {
+    vi.stubGlobal('localStorage', { getItem: (key: string) => key === 'token' ? 'local-token' : null });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ remaining: 3, in_flight: false }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ remaining: 2, move_count: 4, ownership: Array(361).fill(0), black_area: 20, white_area: 18 }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(getAiLadderTerritoryQuota('s/1')).resolves.toEqual({ remaining: 3, in_flight: false });
+    await expect(requestAiLadderTerritory('s/1', 'same-id')).resolves.toMatchObject({ remaining: 2, move_count: 4 });
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/ai-ladder/territory?session_id=s%2F1', expect.objectContaining({
+      credentials: 'same-origin', headers: { Authorization: 'Bearer local-token' },
+    }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/ai-ladder/territory', expect.objectContaining({
+      method: 'POST', body: JSON.stringify({ session_id: 's/1', request_id: 'same-id' }),
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer local-token' },
+    }));
+  });
   it.each([
     { state: 'active', game_id: 'game-1' },
     { state: 'pending_settlement', game_id: 'game-1' },

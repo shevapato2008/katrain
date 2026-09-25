@@ -30,6 +30,7 @@ import { requestFailureKind } from '../../utils/requestFailure';
 import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { useRankedTerritory } from '../../features/aiLadder/useRankedTerritory';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
 import { countErrorMessage } from '../utils/countErrors';
@@ -265,6 +266,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
   const enginePositionRef = useRef(enginePositionKey);
   enginePositionRef.current = enginePositionKey;
+  const rankedTerritory = useRankedTerritory(
+    sessionId,
+    !engineMode && !!session.gameState && isRankedGameType(session.gameState.game_type) && !endResultOf(session.gameState),
+    session.gameState?.current_node_id,
+    session.gameState?.current_node_index ?? 0,
+  );
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
@@ -1117,7 +1124,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onMove={handleBoardMove}
               analysisToggles={boardAnalysisToggles}
               playerColor={humanColor}
-              engineOverlay={engineOverlay}
+              engineOverlay={isRanked ? rankedTerritory.overlay : engineOverlay}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
@@ -1164,6 +1171,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             analysisRequiresLogin={gameState.analysis_delivered === false}
             isGameOver={isGameOver}
             isRanked={isRanked}
+            territory={isRanked && !isGameOver ? {
+              remaining: rankedTerritory.remaining,
+              phase: rankedTerritory.phase,
+              blackArea: rankedTerritory.result?.black_area,
+              whiteArea: rankedTerritory.result?.white_area,
+              disabled: rankedTerritory.disabled,
+              retrySameRequest: rankedTerritory.retrySameRequest,
+              onRequest: () => { void rankedTerritory.request(); },
+            } : undefined}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}

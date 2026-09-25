@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import time
+import httpx
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, List, Optional, Union, Dict
@@ -14,11 +15,14 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
-from katrain.web.api.v1.endpoints.ai_ladder import adjudicate_ranked_position, mark_ai_ladder_remote_terminal
+from katrain.web.api.v1.endpoints.ai_ladder import (
+    adjudicate_ranked_position, analyze_ranked_territory, mark_ai_ladder_remote_terminal,
+)
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.game_end_rules import is_awaiting_count
@@ -118,6 +122,11 @@ def _count_result(score):
     if score >= 0:
         return f"B+{abs(score):.1f}", "B"
     return f"W+{abs(score):.1f}", "W"
+
+
+class RankedTerritoryRequest(BaseModel):
+    session_id: str
+    request_id: str = Field(min_length=1, max_length=64)
 
 
 def _new_terminal(session, before):
@@ -2457,6 +2466,87 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         await _finish_ended_game(session, app, user, end)
 
     manager.on_game_ended = _on_game_ended_off_request
+
+    def _ranked_territory_session(session_id: str, current_user):
+        session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "territory")
+        if not is_ai_ladder_ranked_session(session):
+            raise HTTPException(status_code=403, detail="Territory is only available in a ranked game")
+        snapshot = guard_ai_ladder_ranked_owner(session, current_user, "territory")
+        guard_ai_ladder_ranked_not_ended(session, "territory")
+        return session, snapshot
+
+    @app.get("/api/ai-ladder/territory")
+    async def ranked_territory_status(session_id: str, current_user: User = Depends(get_current_user_optional)):
+        session, snapshot = _ranked_territory_session(session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                return await remote.get_ai_ladder_territory(snapshot.game_id)
+            if not getattr(app.state, "ai_ladder_authoritative", False):
+                raise RuntimeError("ranked authority unavailable")
+            return app.state.ai_ladder_repo.get_territory_status(user_id=current_user.id, game_id=snapshot.game_id)
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail="Ranked territory unavailable") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory status failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+    @app.post("/api/ai-ladder/territory")
+    async def ranked_territory_request(
+        body: RankedTerritoryRequest, current_user: User = Depends(get_current_user_optional)
+    ):
+        session, snapshot = _ranked_territory_session(body.session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_not_ended(session, "territory")
+            game = session.katrain.game
+            node = game.current_node
+            sgf_content = session.katrain.get_sgf()
+            reservation_key = getattr(session, "ai_ladder_reservation_key", None)
+            if not isinstance(reservation_key, str) or not reservation_key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                result = await remote.request_ai_ladder_territory(
+                    snapshot.game_id, reservation_key, sgf_content, body.request_id
+                )
+            else:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                result = await analyze_ranked_territory(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=reservation_key, sgf_content=sgf_content, request_id=body.request_id,
+                )
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in {403, 409, 422, 429}:
+                try:
+                    detail = exc.response.json().get("detail", "Ranked territory unavailable")
+                except ValueError:
+                    detail = "Ranked territory unavailable"
+                raise HTTPException(status_code=exc.response.status_code, detail=detail) from exc
+            logging.getLogger("katrain_web").warning("Ranked territory cloud rejected: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory request failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+        if not isinstance(result, dict) or not isinstance(result.get("remaining"), int):
+            raise HTTPException(status_code=502, detail="Invalid ranked territory response")
+        with session.lock:
+            if (session.katrain.game is not game or game.current_node is not node
+                    or session.katrain.get_sgf() != sgf_content
+                    or getattr(session, "ai_ladder_remote_ended", False)
+                    or getattr(node, "end_state", None)
+                    or getattr(session, "_recorded", False)):
+                return {"remaining": result["remaining"], "stale": True}
+        return {**result, "stale": False}
 
     @app.post("/api/count/request")
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):

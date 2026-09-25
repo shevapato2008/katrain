@@ -1,6 +1,6 @@
 # 教程管理后台访问（部署前草案）
 
-状态：仅本地代码与测试；尚未推送、部署，也未创建或修改任何真实后台账号/业务库。
+状态：后台代码已以 `252bffaa` 合入并推送 `develop`，但测试/生产服务尚未部署，也未创建真实后台专用账号或写入教程业务库。测试机旧公开 `admin` 的撤权及口令重置是此前单独获批的安全操作，不是后台专用账号上线。
 
 - 管理后台是独立站点和进程，Compose 的 `admin` profile 才会启动它，宿主机只发布 `127.0.0.1:8010`。它不在公开 Galaxy 地址注册或登录。部署获批后，由授权人员通过 SSH 隧道访问本机 `http://127.0.0.1:8010/`；每次远程连接仍需当场批准。
 - 首版唯一后台用户名为 `admin:fan`。部署环境只给 `katrain-admin` 容器注入 `KATRAIN_ADMIN_USERNAME`、bcrypt `KATRAIN_ADMIN_PASSWORD_HASH`（cost ≥ 12）、随机且至少 32 字符的 `KATRAIN_ADMIN_SESSION_SECRET`、`KATRAIN_ADMIN_ENV`（`local`/`test`/`prod`）。公开 web 不持有后台口令哈希或签名密钥；后台不查询公开 `users` 表。不要把明文密码、哈希或签名密钥写进仓库、日志或聊天。

@@ -10,17 +10,21 @@ const figure = {
   recognition_debug: { human_verified: false }, narration: '旧讲解', audio_asset: null, video_asset: null,
   order: 1, updated_at: '2026-09-24T08:00:00Z',
 };
+const otherChapterFigure = { ...figure, id: 8, section_id: 7, figure_label: '第二章图', narration: '第二章讲解' };
+const otherBookFigure = { ...figure, id: 12, section_id: 11, figure_label: '第二册图', narration: '第二册讲解' };
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
 describe('tutorial admin real workbench', () => {
   const fetchMock = vi.fn<typeof fetch>();
   let conflict = false;
+  let sessionExpired = false;
   let sectionFigures: Array<Omit<typeof figure, 'board_payload'> & { board_payload: typeof figure.board_payload | null }>;
   let latestFigure: typeof sectionFigures[number] = figure;
 
   beforeEach(() => {
     localStorage.clear();
     conflict = false;
+    sessionExpired = false;
     sectionFigures = [figure];
     latestFigure = figure;
     fetchMock.mockReset();
@@ -28,13 +32,18 @@ describe('tutorial admin real workbench', () => {
       const path = String(input);
       if (path === '/api/admin/auth/login') return json({ access_token: 'admin-token', token_type: 'bearer' });
       if (path === '/api/admin/auth/me') return json({ username: 'admin:fan', env: 'test' });
-      if (path === '/api/v1/tutorials/categories') return json([{ slug: '入门', title: '入门', book_count: 1 }]);
-      if (path === '/api/v1/tutorials/categories/%E5%85%A5%E9%97%A8/books') return json([{ id: 1, category: '入门', title: '实书', slug: 'book', chapter_count: 1 }]);
-      if (path === '/api/v1/tutorials/books/1') return json({ id: 1, category: '入门', title: '实书', slug: 'book', chapter_count: 1, chapters: [{ id: 2, book_id: 1, title: '第一章', chapter_number: '1', order: 1 }] });
+      if (path === '/api/v1/tutorials/categories') return json([{ slug: '入门', title: '入门', book_count: 2 }]);
+      if (path === '/api/v1/tutorials/categories/%E5%85%A5%E9%97%A8/books') return json([{ id: 1, category: '入门', title: '实书', slug: 'book', chapter_count: 2 }, { id: 9, category: '入门', title: '第二册', slug: 'book-2', chapter_count: 1 }]);
+      if (path === '/api/v1/tutorials/books/1') return json({ id: 1, category: '入门', title: '实书', slug: 'book', chapter_count: 2, chapters: [{ id: 2, book_id: 1, title: '第一章', chapter_number: '1', order: 1 }, { id: 6, book_id: 1, title: '第二章', chapter_number: '2', order: 2 }] });
+      if (path === '/api/v1/tutorials/books/9') return json({ id: 9, category: '入门', title: '第二册', slug: 'book-2', chapter_count: 1, chapters: [{ id: 10, book_id: 9, title: '第二册第一章', chapter_number: '1', order: 1 }] });
       if (path === '/api/v1/tutorials/chapters/2/sections') return json([{ id: 3, chapter_id: 2, title: '第一节', section_number: '1', order: 1, figure_count: 1 }]);
+      if (path === '/api/v1/tutorials/chapters/6/sections') return json([{ id: 7, chapter_id: 6, title: '第二章第一节', section_number: '1', order: 1, figure_count: 1 }]);
+      if (path === '/api/v1/tutorials/chapters/10/sections') return json([{ id: 11, chapter_id: 10, title: '第二册第一节', section_number: '1', order: 1, figure_count: 1 }]);
       if (path === '/api/v1/tutorials/sections/3') return json({ id: 3, chapter_id: 2, title: '第一节', section_number: '1', order: 1, figure_count: sectionFigures.length, figures: sectionFigures });
+      if (path === '/api/v1/tutorials/sections/7') return json({ id: 7, chapter_id: 6, title: '第二章第一节', section_number: '1', order: 1, figure_count: 1, figures: [otherChapterFigure] });
+      if (path === '/api/v1/tutorials/sections/11') return json({ id: 11, chapter_id: 10, title: '第二册第一节', section_number: '1', order: 1, figure_count: 1, figures: [otherBookFigure] });
       if (path === '/api/v1/tutorials/figures/4') return json(latestFigure);
-      if (path === '/api/admin/tutorials/figures/4/narration') return conflict ? json({ detail: 'Conflict' }, 409) : json({ ...figure, narration: '新讲解', updated_at: '2026-09-24T08:00:01Z' });
+      if (path === '/api/admin/tutorials/figures/4/narration') return sessionExpired ? json({ detail: 'Unauthorized' }, 401) : conflict ? json({ detail: 'Conflict' }, 409) : json({ ...figure, narration: '新讲解', updated_at: '2026-09-24T08:00:01Z' });
       if (path === '/api/admin/tutorials/figures/4/board') return conflict ? json({ detail: 'Conflict' }, 409) : json({ ...figure, board_payload: { size: 19, stones: { B: [], W: [] } }, updated_at: '2026-09-24T08:00:01Z' });
       throw new Error(`Unexpected request ${path}`);
     });
@@ -147,6 +156,55 @@ describe('tutorial admin real workbench', () => {
     await user.type(screen.getByLabelText('密码'), 'test-password');
     await user.click(screen.getByRole('button', { name: '登录' }));
     expect(await screen.findByText('当前小节没有棋图。')).toBeInTheDocument();
+  });
+
+  it('discards an unsaved figure draft when switching figures', async () => {
+    sectionFigures = [figure, { ...figure, id: 5, figure_label: '图 2', narration: '第二图讲解' }];
+    const user = await signIn();
+    await user.click(screen.getByRole('button', { name: '编辑讲解' }));
+    await user.clear(screen.getByRole('textbox', { name: '编辑语音讲解' }));
+    await user.type(screen.getByRole('textbox', { name: '编辑语音讲解' }), '未保存草稿');
+    await user.click(screen.getByRole('button', { name: '下一图' }));
+    expect(screen.getByText('第二图讲解')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: '编辑语音讲解' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '上一图' }));
+    expect(screen.getByText('旧讲解')).toBeInTheDocument();
+    expect(screen.queryByText('未保存草稿')).not.toBeInTheDocument();
+  });
+
+  it('discards an unsaved draft when switching chapters', async () => {
+    const user = await signIn();
+    await user.click(screen.getByRole('button', { name: '编辑讲解' }));
+    await user.clear(screen.getByRole('textbox', { name: '编辑语音讲解' }));
+    await user.type(screen.getByRole('textbox', { name: '编辑语音讲解' }), '未保存草稿');
+    await user.selectOptions(screen.getByRole('combobox', { name: '选择章节' }), '6');
+    expect(await screen.findByText('第二章讲解')).toBeInTheDocument();
+    expect(screen.queryByText('未保存草稿')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: '选择章节' }), '2');
+    expect(await screen.findByText('旧讲解')).toBeInTheDocument();
+  });
+
+  it('discards an unsaved draft when switching books', async () => {
+    const user = await signIn();
+    await user.click(screen.getByRole('button', { name: '编辑讲解' }));
+    await user.clear(screen.getByRole('textbox', { name: '编辑语音讲解' }));
+    await user.type(screen.getByRole('textbox', { name: '编辑语音讲解' }), '未保存草稿');
+    await user.selectOptions(screen.getByRole('combobox', { name: '选择教材' }), '9');
+    expect(await screen.findByText('第二册讲解')).toBeInTheDocument();
+    expect(screen.queryByText('未保存草稿')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: '选择教材' }), '1');
+    expect(await screen.findByText('旧讲解')).toBeInTheDocument();
+  });
+
+  it('returns to sign-in and discards the token when a write receives 401', async () => {
+    const user = await signIn();
+    sessionExpired = true;
+    await user.click(screen.getByRole('button', { name: '编辑讲解' }));
+    await user.clear(screen.getByRole('textbox', { name: '编辑语音讲解' }));
+    await user.type(screen.getByRole('textbox', { name: '编辑语音讲解' }), '待保存讲解');
+    await user.click(screen.getByRole('button', { name: '保存更改' }));
+    expect(await screen.findByText('后台会话已失效，请重新登录。')).toBeInTheDocument();
+    expect(localStorage.getItem('katrain_admin_session')).toBeNull();
   });
 
   it('labels the review step as a manual acknowledgment, not a completed logic check', async () => {

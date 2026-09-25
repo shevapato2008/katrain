@@ -1,0 +1,20 @@
+.admin-performance-fixture[data-theme="dark"] {
+  --admin-bg:#111316; --admin-bar:#1c2024; --admin-panel:#252a2f; --admin-panel2:#20252a;
+  --admin-line:#414951; --admin-text:#f6f3ef; --admin-muted:#c7c2bb; --admin-subtle:#aaa8a5;
+  --admin-accent:#d89367; --admin-on-accent:#231711; --admin-active:#4a342d; --admin-active-text:#ffe8d7;
+  --admin-link:#efb698; --admin-chip:#393335; color-scheme:dark;
+}
+.admin-performance-fixture[data-theme="light"] {
+  --admin-bg:#e9eef5; --admin-bar:#f8fafc; --admin-panel:#fff; --admin-panel2:#f5f8fc;
+  --admin-line:#cbd5e3; --admin-text:#15243b; --admin-muted:#586982; --admin-subtle:#6a788a;
+  --admin-accent:#315f94; --admin-on-accent:#fff; --admin-active:#d9e8fa; --admin-active-text:#183e6d;
+  --admin-link:#285d99; --admin-chip:#e7eef8; color-scheme:light;
+}
+.admin-performance-fixture[data-theme="dark"] .admin-brand img { filter:none; }
+.admin-performance-fixture[data-theme="light"] .admin-brand img { filter:invert(1); }
+.admin-performance-fixture .admin-nav { font-size:20px; }
+.admin-performance-fixture .admin-sidefoot { font-size:16px; }
+.performance-fixture-signout { color:var(--admin-link); }
+.performance-fixture-tweaks { position:fixed; right:15px; bottom:14px; z-index:10; display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-bar); box-shadow:0 8px 25px #0004; }
+.performance-fixture-tweaks span { padding:0 6px; color:var(--admin-subtle); font-size:13px; }
+.performance-fixture-tweaks button { min-height:34px; padding:0 10px; border:1px solid var(--admin-line); border-radius:5px; background:var(--admin-panel); color:var(--admin-text); font-size:14px; }

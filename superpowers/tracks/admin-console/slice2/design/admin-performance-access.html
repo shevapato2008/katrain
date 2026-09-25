@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 性能监控设计稿</title>
+  <style>
+    @font-face { font-family: LongCang; src: url('../../../../../katrain/web/ui/src/galaxy/assets/fonts/longcang-brand.woff2') format('woff2'); font-display: swap; }
+    :root { font-family: "Kaiti SC", "STKaiti", "KaiTi", "LXGW WenKai", serif; }
+    body[data-theme="dark"] {
+      color-scheme: dark; --bg:#111316; --bar:#1c2024; --panel:#252a2f; --panel2:#20252a;
+      --line:#414951; --text:#f6f3ef; --muted:#c7c2bb; --subtle:#aaa8a5;
+      --accent:#d89367; --active:#4a342d; --active-text:#ffe8d7;
+      --hint:#a5bdd9; --hint-bg:#263849; --focus:#f0ac82;
+    }
+    body[data-theme="light"] {
+      color-scheme: light; --bg:#e9eef5; --bar:#f8fafc; --panel:#fff; --panel2:#f5f8fc;
+      --line:#cbd5e3; --text:#15243b; --muted:#586982; --subtle:#6a788a;
+      --accent:#315f94; --active:#d9e8fa; --active-text:#183e6d;
+      --hint:#285d91; --hint-bg:#e5effb; --focus:#2765a7;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { background:var(--bg); color:var(--text); font-size:17px; line-height:1.45; }
+    button { font:inherit; cursor:pointer; }
+    button:focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
+    .icon { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+    .top { height:80px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 24px; background:var(--bar); border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:12px; white-space:nowrap; }
+    .brand img { width:48px; height:48px; object-fit:contain; }
+    body[data-theme="light"] .brand img { filter:invert(1); }
+    .brand-cn { font:31px/1 LongCang, serif; }
+    .brand-en { font:600 20px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .brand-admin { margin-left:8px; padding-left:16px; border-left:1px solid var(--line); color:var(--muted); font-size:18px; }
+    .topright { display:flex; align-items:center; gap:18px; color:var(--muted); white-space:nowrap; }
+    .env { padding:4px 12px; border:1px solid var(--line); border-radius:99px; background:var(--panel); color:var(--text); }
+    .signout { padding:8px 0; border:0; background:none; color:var(--accent); }
+    .layout { display:grid; grid-template-columns:280px minmax(0,1fr); min-height:calc(100vh - 80px); }
+    .side { display:flex; flex-direction:column; padding:22px 12px; border-right:1px solid var(--line); background:var(--bar); }
+    .side-label { padding:0 15px 13px; color:var(--subtle); font-size:16px; letter-spacing:.08em; }
+    .nav { display:flex; align-items:center; gap:14px; min-height:68px; padding:10px 15px; border-radius:8px; color:var(--muted); text-decoration:none; font-size:20px; }
+    .nav .icon { width:28px; height:28px; }
+    .nav.active { background:var(--active); color:var(--active-text); }
+    .sidefoot { margin-top:auto; padding:16px 12px 0; border-top:1px solid var(--line); color:var(--muted); font-size:16px; line-height:1.5; }
+    main { min-width:0; }
+    .heading { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:96px; padding:16px 24px; border-bottom:1px solid var(--line); background:var(--bar); }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:31px; line-height:1.2; }
+    .heading p { margin-top:4px; color:var(--muted); }
+    .heading-right { display:flex; align-items:center; gap:9px; color:var(--muted); font-size:16px; }
+    .heading-right .icon { width:18px; height:18px; }
+    .content { padding:22px 24px 32px; }
+    .demo-note { margin-bottom:14px; color:var(--muted); font-size:15px; }
+    .status { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:112px; padding:22px 25px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+    .status-leading { display:flex; align-items:center; gap:17px; min-width:0; }
+    .status-mark { display:grid; place-items:center; width:49px; height:49px; flex:none; border-radius:10px; background:var(--hint-bg); color:var(--hint); }
+    .status-mark .icon { width:26px; height:26px; }
+    .eyebrow { color:var(--subtle); font-size:15px; letter-spacing:.08em; }
+    .status h2 { margin-top:3px; font-size:25px; font-weight:600; }
+    .status p { margin-top:4px; color:var(--muted); font-size:16px; }
+    .status-pill { display:inline-flex; align-items:center; gap:7px; padding:7px 11px; border-radius:7px; background:var(--hint-bg); color:var(--hint); font-size:16px; white-space:nowrap; }
+    .status-pill .icon { width:17px; height:17px; }
+    .body-grid { display:grid; grid-template-columns:minmax(0,1fr) 315px; gap:14px; margin-top:14px; align-items:stretch; }
+    .monitor { display:flex; flex-direction:column; min-height:470px; border:1px solid var(--line); border-radius:10px; background:var(--panel); overflow:hidden; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:17px 20px; border-bottom:1px solid var(--line); }
+    .panel-head h2 { font-size:21px; font-weight:600; }
+    .panel-head span { color:var(--muted); font-size:15px; }
+    .monitor-body { display:grid; place-items:center; flex:1; padding:32px; background:repeating-linear-gradient(0deg,transparent 0 47px,var(--line) 48px),repeating-linear-gradient(90deg,transparent 0 71px,var(--line) 72px); background-color:var(--panel2); }
+    .empty { width:min(460px,100%); padding:27px 30px; border:1px solid var(--line); border-radius:10px; background:var(--panel); text-align:left; }
+    .empty .icon { width:28px; height:28px; color:var(--hint); }
+    .empty h3 { margin-top:14px; font-size:23px; }
+    .empty p { margin-top:8px; color:var(--muted); line-height:1.6; }
+    .empty .button { margin-top:20px; }
+    .button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:43px; padding:0 16px; border:1px solid var(--line); border-radius:7px; background:var(--panel2); color:var(--text); text-decoration:none; }
+    .button.primary { border-color:var(--accent); background:var(--accent); color:var(--bg); font-weight:700; }
+    .button[disabled] { opacity:.6; cursor:not-allowed; }
+    .button .icon { width:18px; height:18px; }
+    .aside { display:flex; flex-direction:column; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+    .aside h2 { padding:17px 20px; border-bottom:1px solid var(--line); font-size:21px; }
+    .aside-body { padding:17px 20px; }
+    .fact { margin-bottom:22px; }
+    .fact:last-child { margin-bottom:0; }
+    .fact dt { color:var(--subtle); font-size:15px; }
+    .fact dd { margin:5px 0 0; color:var(--text); font-size:18px; overflow-wrap:anywhere; }
+    .fact dd.muted { color:var(--muted); }
+    .aside-foot { margin-top:auto; padding:17px 20px; border-top:1px solid var(--line); color:var(--muted); font-size:15px; line-height:1.55; }
+    .aside-foot .icon { width:17px; height:17px; vertical-align:-3px; color:var(--hint); }
+    .connected-only { display:none; }
+    body[data-state="connected"] .unconnected-only { display:none; }
+    body[data-state="connected"] .connected-only { display:block; }
+    .verified { width:min(530px,100%); padding:28px 32px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+    .verified .source { display:flex; align-items:center; gap:13px; }
+    .verified .source .icon { width:28px; height:28px; color:var(--hint); }
+    .verified h3 { font-size:23px; }
+    .verified p { margin-top:16px; color:var(--muted); line-height:1.6; }
+    .verified .button { margin-top:21px; }
+    .verified small { display:block; margin-top:15px; color:var(--subtle); font-size:14px; }
+    .tweaks { position:fixed; right:15px; bottom:14px; z-index:10; display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--line); border-radius:9px; background:var(--bar); box-shadow:0 8px 25px #0004; }
+    .tweaks span { padding:0 6px; color:var(--subtle); font-size:13px; }
+    .tweaks button { min-height:34px; padding:0 10px; border:1px solid var(--line); border-radius:5px; background:var(--panel); color:var(--text); font-size:14px; }
+    .tweaks button[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
+    body[data-capture="true"] .tweaks { display:none; }
+    @media (max-width:1050px) { .layout { grid-template-columns:215px minmax(0,1fr); }.body-grid { grid-template-columns:1fr; }.aside { min-height:240px; }.aside-body { display:flex; gap:24px; }.fact { flex:1; } }
+    @media (max-width:700px) { .top { height:auto; min-height:68px; padding:12px 16px; }.brand-cn { font-size:27px; }.brand-en { display:none; }.brand-admin { font-size:15px; }.topright { gap:10px; font-size:14px; }.topright .env { display:none; }.layout { display:block; }.side { padding:8px 12px; border-right:0; border-bottom:1px solid var(--line); }.side-label,.sidefoot { display:none; }.nav { display:inline-flex; min-height:44px; font-size:16px; }.side { flex-direction:row; flex-wrap:wrap; }.heading { flex-wrap:wrap; }.content { padding:15px; }.status { align-items:flex-start; }.status-pill { display:none; }.body-grid { grid-template-columns:1fr; }.monitor { min-height:430px; }.aside-body { display:block; } }
+  </style>
+</head>
+<body data-theme="dark" data-state="unconnected">
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute"><defs>
+    <symbol id="pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-7 5 14 3-7h5"/></symbol>
+    <symbol id="book" viewBox="0 0 24 24"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1m0-15v15"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="external" viewBox="0 0 24 24"><path d="M13 5h6v6m0-6-9 9"/><path d="M19 14v5H5V5h5"/></symbol>
+    <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
+    <symbol id="link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.2 1.2m2.2 5.9a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.2-1.2"/></symbol>
+  </defs></svg>
+  <header class="top">
+    <div class="brand"><img src="../../../../../katrain/img/logo-white.png" alt=""><span class="brand-cn">智星盒</span><span class="brand-en">StellaBox</span><span class="brand-admin">管理后台</span></div>
+    <div class="topright"><span class="env">测试环境</span><span>admin:fan</span><button class="signout" type="button" aria-label="退出登录（设计稿中不可操作）">退出</button></div>
+  </header>
+  <div class="layout">
+    <nav class="side" aria-label="后台模块">
+      <span class="side-label">内容与服务</span>
+      <span class="nav"><svg class="icon"><use href="#book"/></svg>教程管理</span>
+      <span class="nav"><svg class="icon"><use href="#clock"/></svg>定时任务</span>
+      <span class="nav active" aria-current="page"><svg class="icon"><use href="#pulse"/></svg>性能监控</span>
+      <div class="sidefoot">当前环境：测试环境<br>只读页面，不修改配置。</div>
+    </nav>
+    <main>
+      <div class="heading"><div><h1>性能监控</h1><p>查看当前环境的主机与容器运行状态</p></div><div class="heading-right"><svg class="icon"><use href="#info"/></svg><span>监控服务独立于管理后台</span></div></div>
+      <div class="content">
+        <p class="demo-note">设计稿 · 两种状态仅供视觉比较，不连接真实监控服务</p>
+        <section class="status" aria-labelledby="status-title">
+          <div class="status-leading"><div class="status-mark"><svg class="icon"><use href="#pulse"/></svg></div><div><div class="eyebrow">监控来源</div><h2 id="status-title" class="unconnected-only">尚未接入</h2><h2 class="connected-only">Netdata 面板已配置</h2><p class="unconnected-only">尚未验证当前环境是否部署监控服务</p><p class="connected-only">设计示例 · 此处不代表真实服务在线</p></div></div>
+          <span class="status-pill unconnected-only"><svg class="icon"><use href="#info"/></svg>状态未知</span><span class="status-pill connected-only"><svg class="icon"><use href="#link"/></svg>仅示意配置</span>
+        </section>
+        <div class="body-grid">
+          <section class="monitor" aria-labelledby="monitor-title">
+            <div class="panel-head"><h2 id="monitor-title">监控面板</h2><span>主机 · 容器 · 存储</span></div>
+            <div class="monitor-body">
+              <div class="empty unconnected-only"><svg class="icon"><use href="#info"/></svg><h3>暂无性能数据</h3><p>目前没有可确认的监控端点。接入并核实服务后，才会开放当前环境的监控入口。</p><button class="button" type="button" disabled>打开监控面板</button></div>
+              <div class="verified connected-only"><div class="source"><svg class="icon"><use href="#pulse"/></svg><h3>在独立面板查看实时指标</h3></div><p>主机 CPU、内存、磁盘和容器曲线由监控服务显示；后台不复制其登录态，也不展示未经采集验证的数字。</p><button class="button primary" type="button" disabled><svg class="icon"><use href="#external"/></svg>打开 Netdata 面板</button><small>设计示例：按钮在真实地址和访问控制验证后才启用</small></div>
+            </div>
+          </section>
+          <aside class="aside" aria-label="访问与安全信息">
+            <h2>访问方式</h2>
+            <dl class="aside-body">
+              <div class="fact"><dt>当前环境</dt><dd>测试环境</dd></div>
+              <div class="fact"><dt>监控服务</dt><dd class="muted unconnected-only">尚未配置</dd><dd class="connected-only">Netdata（示例）</dd></div>
+              <div class="fact"><dt>本机入口</dt><dd class="muted unconnected-only">待确认</dd><dd class="connected-only">127.0.0.1:19999（示例）</dd></div>
+              <div class="fact"><dt>最近验证</dt><dd class="muted unconnected-only">尚无验证记录</dd><dd class="connected-only">尚未实际验证</dd></div>
+            </dl>
+            <div class="aside-foot"><svg class="icon"><use href="#info"/></svg> 监控端口只允许经 SSH 隧道访问；不向监控页面传递后台登录令牌。</div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="tweaks" aria-label="设计稿预览选项"><span>预览</span><button id="state-button" type="button">已配置示意</button><button id="theme-button" type="button">白天版本</button></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const body = document.body;
+    const stateButton = document.getElementById('state-button');
+    const themeButton = document.getElementById('theme-button');
+    const setState = (value) => {
+      body.dataset.state = value === 'connected' ? 'connected' : 'unconnected';
+      stateButton.textContent = body.dataset.state === 'connected' ? '未接入状态' : '已配置示意';
+      stateButton.setAttribute('aria-pressed', String(body.dataset.state === 'connected'));
+    };
+    const setTheme = (value) => {
+      body.dataset.theme = value === 'light' ? 'light' : 'dark';
+      themeButton.textContent = body.dataset.theme === 'light' ? '夜间版本' : '白天版本';
+      themeButton.setAttribute('aria-pressed', String(body.dataset.theme === 'light'));
+    };
+    setState(params.get('state'));
+    setTheme(params.get('theme'));
+    body.dataset.capture = params.get('capture') === 'true' ? 'true' : 'false';
+    stateButton.addEventListener('click', () => setState(body.dataset.state === 'connected' ? 'unconnected' : 'connected'));
+    themeButton.addEventListener('click', () => setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
+  </script>
+</body>
+</html>

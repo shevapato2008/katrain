@@ -1,8 +1,16 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
-## 2026-09-25 教程页字号跟进（本地，未推送/部署）
+## 2026-09-25 性能监控入口（本地设计/Fixture，🛑 待 Fan 确认）
 
-- Fan 对照测试后台截图要求教程管理页与定时任务页字号一致。本地仅调整已登录教程页的顶部/侧栏和三栏文字层级，保留楷体、主题、登录页字号、cron 页与业务行为；右侧讲解从 26px 收至 18px，原书说明从 24px 收至 17px。`ui-ux-pro-max` 的后台排版一致性建议用于核对现有层级，未另起主题。`AdminApp.test.tsx` **12 passed**、`build:admin`、单文件 ESLint、`git diff --check` 通过；本机 1440×900 查看/编辑真实浏览器预览在忽略目录 `output/playwright/admin-runtime-dark-*-kaiti-1440x900.png`，无明显遮挡。该样式仅本地提交，未 push 或部署；测试机 `127.0.0.1:8013` 当前仍显示旧字号。
+- 按 spec §10 的建议顺序，在 cron 后开始性能监控模块。已完成 `slice2/design/admin-performance-access.html` 单文件设计稿，沿用已批准的 B 石墨铜夜间、C 雾白蓝白天与楷体，经 `ui-ux-pro-max` 核对；独立 GPT-6 Astra 先要求修正后台壳层尺寸，修后批准进入本地 Fixture。设计/架构取舍见 [记录](./slice2/design/design-notes.md) 与 [计划](./plan-2026-09-25-admin-performance-access.md)。
+- React Fixture 使用独立 `admin-performance-fixture.html` 入口，只展示“尚未接入”与明确标记的“已配置示意”；无假指标、可点击监控链接或令牌，正式 `admin.html` 未改。两态各自的参考/真实运行/并排/叠加四图已入 `slice2/design/`；独立 Astra 查看八图，裁定本地视觉 **APPROVE**，轻微壳层字位差异不阻断。Chromium 1440×900 控制台 0 error、0 warning。
+- 聚焦前端 **15 passed**（性能 3 项＋既有后台 12 项），`build:admin`（含 `tsc -b`）、性能文件 ESLint、`git diff --check` 通过；确认 Fixture 入口与示意文案均未进入正式后台构建。
+- 🛑 Fan 尚未确认四图或访问旅程。当前首选是后台提供独立监控面板入口，经已有 SSH 隧道访问，**不是**旧 spec 中的同页 iframe；这只是设计提案，未冻结契约。真实目标环境是否已有 Netdata/Grafana 尚未核实，未连接远端、未写库、未部署。Fan 若要求同页嵌入，先调整设计与鉴权方案。后续每次 SSH、push、部署分别重新授权。
+
+## 2026-09-25 教程页字号跟进（已推送 develop，未部署）
+
+- Fan 对照测试后台截图要求教程管理页与定时任务页字号一致。本地仅调整已登录教程页的顶部/侧栏和三栏文字层级，保留楷体、主题、登录页字号、cron 页与业务行为；右侧讲解从 26px 收至 18px，原书说明从 24px 收至 17px。`ui-ux-pro-max` 的后台排版一致性建议用于核对现有层级，未另起主题。`AdminApp.test.tsx` **12 passed**、`build:admin`、单文件 ESLint、`git diff --check` 通过；本机 1440×900 查看/编辑真实浏览器预览在忽略目录 `output/playwright/admin-runtime-dark-*-kaiti-1440x900.png`，无明显遮挡。
+- Fan 授权一次推送后，先无冲突合并 `origin/develop=c6d8408c`（kiosk 更新），合并结果为 `e9dc7a85`；聚焦 **12 passed**、`build:admin`、`git diff --check` 通过，已执行一次 `git push origin HEAD:develop`，远端回执 `c6d8408c..e9dc7a85 HEAD -> develop`。`origin/feature/admin-console` 未同步，测试/生产均未部署；测试机 `127.0.0.1:8013` 仍显示旧字号。性能监控新模块工作在这次推送之后，不包含于 `e9dc7a85`。
 
 ## 2026-09-25 测试 cron 部署验收（最新）
 

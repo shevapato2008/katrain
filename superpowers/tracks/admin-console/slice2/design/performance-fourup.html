@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>性能监控 · 同视口视觉对比</title>
+  <style>
+    * { box-sizing:border-box; }
+    html,body { margin:0; background:#101316; }
+    #frame { position:relative; }
+    #frame.side { display:flex; width:2880px; height:900px; }
+    #frame.overlay { width:1440px; height:900px; }
+    img { display:block; width:1440px; height:900px; object-fit:contain; }
+    .overlay img { position:absolute; inset:0; }
+    .overlay img:last-child { opacity:.5; }
+  </style>
+</head>
+<body>
+  <div id="frame"><img id="reference" alt="HTML 参考图"><img id="fixture" alt="React Fixture 运行图"></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const pair = params.get('pair') === 'connected-light' ? 'connected-light' : 'unconnected-dark';
+    const mode = params.get('mode') === 'overlay' ? 'overlay' : 'side';
+    document.getElementById('frame').className = mode;
+    document.getElementById('reference').src = `performance-reference-${pair}-1440x900.png`;
+    document.getElementById('fixture').src = `performance-fixture-${pair}-1440x900.png`;
+  </script>
+</body>
+</html>

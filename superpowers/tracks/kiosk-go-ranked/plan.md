@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python/FastAPI、KataGo HTTP、SQLAlchemy/PostgreSQL/SQLite、React/TypeScript/Vitest、Docker Compose、systemd。
 
-**当前状态（2026-09-25）：** SGF、私有云端数子、待结算文案已发布三端；设备围棋账号与结算地址指向 UCloud。领地判断设计已获确认，前后端实现已进 `develop`，home/UCloud 已发布。RK3562 目前 SSH/HTTP 无响应，待恢复连接后安装；仍需用户重新登录完成一盘**新局**，核对正式库落账。
+**当前状态（2026-09-25）：** SGF、私有云端数子、待结算文案已发布三端；设备围棋账号与结算地址指向 UCloud。领地判断设计已获确认，前后端实现已进 `develop`，home/UCloud 已发布到 `c5727635` 基线。用户确认 RK3562 暂时离线，待恢复连接后安装；仍需用户重新登录完成一盘**新局**，核对正式库落账。
 
 ---
 
@@ -107,7 +107,8 @@
 - [x] 云端持久化每局成功次数和请求 ID：同一请求 ID、同一 SGF 重试返回既有结果，不再扣次；引擎失败不扣次；并发请求最多一个在途；成功至多 3 次。引擎请求使用有限 visits 和超时，过期在途记录可恢复。
 - [x] 盒端增加仅对当前升降级会话可用的领地查询代理：捕获预约与 SGF 局面，解锁等待云端，返回时复核原局面；旧结果不可覆盖新一手棋，也不能写入共享分析或终局裁判结果。
 - [x] 按确认的 HTML 稿在 1024×600 对弈页加入 `grid-nine` 入口、剩余次数、请求中/领地覆盖/失败/用尽状态；局面变化清除覆盖层。Fixture 仅用于测试和预览，不进入生产构建。
-- [ ] 用聚焦测试覆盖配额、同 ID 重试、并发、过期恢复、权限/冻结规则、失败不扣次、移动后的过期结果；做一张 1024×600 真页面截图与预览对照。再发布云端及 RK，核对正式端部署健康和设备入口；真实新局结算验收仍需用户实际对弈。
+- [x] 用聚焦测试覆盖配额、同 ID 重试、并发、过期恢复、权限/冻结规则、失败不扣次、移动后的过期结果；做一张 1024×600 真页面截图与预览对照，发布云端并核对正式端健康。
+- [ ] RK 恢复联网后安装盒端包，核对设备入口；用户实际完成一盘新局后核对正式库结算回执与账本。
 
 ## 实施记录
 
@@ -130,4 +131,5 @@
 | 2026-09-25 | RK 切换 | 设备原安装和 SQLite 已备份；从 `95999cb7` 安装至完整修复提交，73 个变更 Python 文件语法检查通过；严格 Box SSO 的 2D kiosk 构建验证通过，设备实际 `index.html` 与本地 SHA-256 一致。旧测试 outbox 14 条在备份后清空，本地预约/云端占位为 0。通过 systemd 专用 `go-prod-identity.env` 同时覆盖围棋与账号 API 为 `https://modelstella.com`，原始 `identity.env` 保留以通过装机校验。wizard、KaTrain、KataGo 均 active，设备健康 200、正式站可达 200。其他三棋的 `SMARTBOX_RANKED_ORIGIN` 仍为测试域名。 |
 | 2026-09-25 | 领地判断开发 | 已获用户确认的 1024×600 稿采用星阵现有 18px `grid-nine` 图标。云端新增只返回 361 点归属的私有 KataGo 请求和持久三次配额，盒端代理在局面变化后丢弃旧结果；前端显示额度/加载/结果/失败/用尽。独立审查发现并修复坐标上下颠倒、额度轮询卡住及 token 登录缺鉴权头。合并最新 `develop` 后 405 条 ranked/API 测试、62 条前端聚焦测试、TypeScript 和构建通过；1024×600 真实 React 预览无右栏溢出。 |
 | 2026-09-25 | 领地判断云端发布 | `origin/develop` 为 `12a7e302`，home 更新到该提交，web 健康 200、领地未登录 401、测试库出现 `ai_ladder_territory_requests`。UCloud 专用 release `26bb4582` 包含该 develop，生产 web 镜像 `sha256:0a95bc48…`、cron `sha256:dbfb5984…` 均 healthy；正式库新表存在，外网 `/api/v1/health` 200、领地未登录 401。两库发布前备份经 `pg_restore -l` 验证；正式 KataGo 单次 20 visits 试算返回 361 点 ownership。Postgres/MinIO/KataGo 未重启，旧 release 与镜像保留。 |
-| 2026-09-25 | RK 待安装 | 严格 Box SSO 的 2D kiosk 构建通过，安装包 `/tmp/katrain-rk-territory-12a7e302.tar.gz` 已备好。设备 `10.0.0.3` 的 SSH 和 HTTP 均在约 5 秒后重置，`192.168.0.111` 不通；同网段其他 `10.0.0.x` SSH 同样重置，当前 Mac 路由经 `utun6`。尚未改动 RK，本局真实验收待恢复访问。 |
+| 2026-09-25 | RK 待安装 | 严格 Box SSO 的 2D kiosk 构建通过，最新安装包 `/tmp/katrain-rk-territory-c5727635.tar.gz` 已备好，SHA-256 `f1700a789f9f72f732af808936989f2f62451150aa800d41ed59dcc391d4615f`。设备 `10.0.0.3` 的 SSH 和 HTTP 均在约 5 秒后重置，`192.168.0.111` 不通；同网段其他 `10.0.0.x` SSH 同样重置，当前 Mac 路由经 `utun6`。尚未改动 RK，本局真实验收待恢复访问。 |
+| 2026-09-25 | 最新 develop 发布 | 追加合入 `origin/develop` 的题目页及管理后台改动，形成 `c5727635`，严格 Box SSO 的 2D kiosk 构建通过。home fast-forward 到该提交并重建 Web，健康 200、领地未登录 401。UCloud 专用 release `d4009def` 合入该提交，Web 镜像 `sha256:a119f960…` 已切换且 healthy，公网健康 200、领地未登录 401；cron 代码和镜像未变，Postgres/MinIO/KataGo 未重启。旧 release、镜像和部署前环境文件保留。用户确认 RK 暂时离线，盒端安装及真实新局验收待恢复联网。 |

@@ -18,6 +18,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
+from katrain.core.sgf_parser import SGF
 from katrain.web.core import models_db
 from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
@@ -111,6 +112,7 @@ class FakeKaTrain:
         self.game = SimpleNamespace(
             end_result=None,
             terminal=None,
+            root=SGF.parse_sgf("(;FF[4]GM[1]SZ[19]RU[chinese]KM[7.5])"),
             current_node=SimpleNamespace(end_state=None, player="B", score=3.5),
         )
         self.players_info = {
@@ -1647,6 +1649,7 @@ async def test_ranked_resign_supports_real_game_read_only_end_result(api_app, cl
     class ReadOnlyEndResultGame:
         def __init__(self):
             self.current_node = SimpleNamespace(end_state=None, player="B", score=3.5)
+            self.root = SGF.parse_sgf("(;FF[4]GM[1]SZ[19]RU[chinese]KM[7.5])")
 
         @property
         def end_result(self):
@@ -4651,6 +4654,68 @@ def box_and_cloud(tmp_path, monkeypatch, api_app):
     box.state.sync_enqueue_fn = MagicMock(return_value=True)
     monkeypatch.setattr(server.settings, "DEVICE_ID", "box-17")
     return box, cloud, remote
+
+
+@pytest.mark.asyncio
+async def test_ranked_settlement_sgf_root_matches_frozen_record_and_cloud_rejects_forged_names(box_and_cloud):
+    box, cloud, _ = box_and_cloud
+    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as box_ac:
+        started = await box_ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        assert started.status_code == 201, started.text
+        session = box.state._test_created_sessions[0]
+        snapshot = session.ai_ladder_snapshot
+        frozen = cloud.state.ai_ladder_repo.get_game_lifecycle(
+            user_id=cloud.state._test_user_id, game_id=started.json()["game_id"]
+        ).rules_snapshot
+
+        # A real game root can have no player names even though both seats are named.
+        root = SGF.parse_sgf("(;FF[4]GM[1]SZ[19]RU[chinese]KM[7.5];B[pd])")
+        assert root.get_property("PB") is None and root.get_property("PW") is None
+        session.katrain.game.root = root
+
+        def export_sgf():
+            # The real end-state commit writes RE to the root before recording.
+            root.set_property("RE", session.katrain._state["end_result"])
+            return root.sgf()
+
+        session.katrain.get_sgf = export_sgf
+        resigned = await box_ac.post(
+            "/api/resign", headers=box.state._test_headers, json={"session_id": session.session_id}
+        )
+        assert resigned.status_code == 200, resigned.text
+
+    payload = box.state.sync_enqueue_fn.call_args.kwargs["payload"]
+    record = payload["game_record"]
+    submitted_root = SGF.parse_sgf(record["sgf_content"])
+    assert record["player_black"] == submitted_root.get_property("PB") == "ladder-user"
+    assert record["player_white"] == submitted_root.get_property("PW") == snapshot.opponent.rank_name
+    assert record["result"] == submitted_root.get_property("RE") == "W+R"
+    assert record["board_size"] == frozen["board_size"] == int(submitted_root.get_property("SZ"))
+    assert record["rules"] == frozen["rules"] == submitted_root.get_property("RU")
+    assert record["komi"] == frozen["komi"] == float(submitted_root.get_property("KM"))
+
+    missing_names = SGF.parse_sgf(record["sgf_content"])
+    missing_names.clear_property("PB")
+    missing_names.clear_property("PW")
+    forged_name = SGF.parse_sgf(record["sgf_content"])
+    forged_name.set_property("PB", "forged-user")
+    async with AsyncClient(transport=ASGITransport(app=cloud), base_url="http://cloud") as cloud_ac:
+        for bad_sgf in (missing_names.sgf(), forged_name.sgf()):
+            rejected = await cloud_ac.post(
+                "/api/v1/ai-ladder/settlements",
+                headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+                json={**payload, "game_record": {**record, "sgf_content": bad_sgf}},
+            )
+            assert rejected.status_code == 422, rejected.text
+        accepted = await cloud_ac.post(
+            "/api/v1/ai-ladder/settlements",
+            headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+            json=payload,
+        )
+    assert accepted.status_code == 200, accepted.text
 
 
 @pytest.mark.asyncio

@@ -279,3 +279,11 @@ html, body, #root { margin:0; min-height:100%; }
   .admin-workspace { grid-template-columns:220px minmax(320px,1fr) 370px; }
   .admin-headcontrols select { min-width:110px; }
 }
+
+/* Compact typography only while inspecting the dense cron monitor. */
+.admin-app-cron { font-size:20px; }
+.admin-app-cron .admin-brand-cn { font-size:31px; }
+.admin-app-cron .admin-brand-en { font-size:20px; }
+.admin-app-cron .admin-brand-admin { font-size:18px; }
+.admin-app-cron .admin-topright { font-size:17px; }
+.admin-app-cron .admin-sidehead,.admin-app-cron .admin-sidefoot { font-size:16px; }

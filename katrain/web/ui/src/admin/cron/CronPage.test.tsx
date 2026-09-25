@@ -37,6 +37,16 @@ describe('cron presentation', () => {
     expect(within(overview).queryByText('9 正常')).not.toBeInTheDocument();
   });
 
+  it('names every task with its owning module in the task column', () => {
+    render(<CronPage view={testView('healthy')} onRefresh={vi.fn()} />);
+    const rows = within(screen.getByRole('region', { name: '定时任务列表' })).getAllByRole('button');
+    expect(rows.map((row) => row.querySelector('.cron-job-name')?.textContent)).toEqual([
+      '直播 - 落子轮询', '直播 - 分析', '复盘 - 分析',
+      '直播 - 赛事预告', '直播 - 赛事列表', '直播 - Pandanet 对局',
+      '直播 - 棋手译名', '教程 - 备份', '系统 - 数据清理',
+    ]);
+  });
+
   it('explains a selected task before its technical run history', async () => {
     const user = userEvent.setup();
     render(<CronPage view={testView('failed')} onRefresh={vi.fn()} />);

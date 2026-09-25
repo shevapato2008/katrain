@@ -157,3 +157,57 @@
   .cron-process { grid-template-columns:1fr; }
   .cron-process > .cron-overview-card { min-height:0; }
 }
+
+/* About 70% of the previous type scale, with a 16px floor for dense labels. */
+.cron-page { font-size:21px; }
+.cron-heading { min-height:96px; padding:16px 24px; }
+.cron-heading h1 { font-size:31px; }
+.cron-sub,.cron-heading-actions { font-size:17px; }
+.cron-refresh { min-height:44px; }
+.cron-content { padding:20px 24px 28px; }
+.cron-notice,.cron-feedback { font-size:18px; }
+.cron-process > .cron-overview-card { min-height:128px; padding:16px 18px; }
+.cron-eyebrow { font-size:16px; }
+.cron-process-strong { font-size:23px; }
+.cron-process-strong svg { width:25px; height:25px; }
+.cron-process-small { font-size:16px; }
+.cron-summary-chip { min-height:32px; padding:4px 8px; font-size:17px; }
+.cron-summary-chip svg { width:18px; height:18px; }
+.cron-sample-time { font-size:23px; }
+.cron-sample-hint { font-size:16px; }
+.cron-sample-hint svg { width:18px; height:18px; }
+.cron-queue { min-height:72px; padding:12px 18px; }
+.cron-queue strong { font-size:20px; }
+.cron-queue span { font-size:17px; }
+.cron-queue b { font-size:28px; }
+.cron-table-heading h2 { font-size:24px; }
+.cron-table-heading small { font-size:17px; }
+.cron-columns,.cron-job { width:max(100%, 1035px); grid-template-columns:minmax(220px,1.25fr) 125px 100px 72px 80px 120px minmax(190px,1fr) 22px; gap:10px; padding:0 18px; }
+.cron-columns { height:44px; font-size:16px; }
+.cron-page .cron-job { min-height:64px; font-size:17px; }
+.cron-job-name { font-size:20px; }
+.cron-job-code { font-size:16px; }
+.cron-status { font-size:17px; padding:5px 8px; }
+.cron-arrow { font-size:21px; }
+.cron-empty { font-size:21px; }
+.cron-empty h2 { font-size:27px; }
+.cron-empty button { min-height:44px; }
+.cron-loading h2 { font-size:26px; }
+.cron-loading p { font-size:18px; }
+.cron-history { width:min(680px,100vw); }
+.cron-history-head { padding:18px 22px 15px; }
+.cron-history-head h2 { font-size:27px; }
+.cron-history-head code,.cron-detail-kicker { font-size:16px; }
+.cron-history-head button { font-size:24px; }
+.cron-history-scroll { padding:18px 22px; }
+.cron-detail-purpose { font-size:18px; }
+.cron-detail-label { font-size:16px; }
+.cron-detail-reason { font-size:17px; }
+.cron-detail-reason svg { width:21px; height:21px; }
+.cron-detail-facts > div { min-height:70px; padding:10px 12px; }
+.cron-detail-facts small { font-size:16px; }
+.cron-detail-facts strong { font-size:18px; }
+.cron-detail-error { font-size:16px; }
+.cron-detail-runs h3 { font-size:21px; }
+.cron-detail-runs-caption,.cron-run time,.cron-run-info,.cron-history-foot { font-size:16px; }
+.cron-run-error { font-size:16px; }

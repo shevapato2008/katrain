@@ -2,7 +2,7 @@
 
 ## 2026-09-25 测试机部署预检（最新）
 
-- Fan 回复“好，部署吧”，本轮仅按测试机部署理解；未获生产部署授权。本地 `feature/admin-console` 已合并当时的 `origin/develop=81e02c7e`，无冲突，保留用户原有 `.playwright-cli` 删除与未跟踪快照。合并后根目录聚焦 Python **25 passed**、web 聚焦 Python **353 passed**、前端 **149 passed**；Galaxy、后台、kiosk 2D 三套构建及 kiosk 隔离验证、管理前端 ESLint、差异空白检查通过。
+- Fan 回复“好，部署吧”，本轮仅按测试机部署理解；未获生产部署授权。本地 `feature/admin-console` 已合并当时的 `origin/develop=81e02c7e`，无冲突，保留用户原有 `.playwright-cli` 删除与未跟踪快照。合并后根目录聚焦 Python **25 passed**、web 聚焦 Python **353 passed**、前端 **149 passed**；Galaxy、后台、kiosk 2D 三套构建及 kiosk 隔离验证、管理前端 ESLint、差异空白检查通过。预检期间 `origin/develop` 又前进到 `0a533a3e`；推送前须重新合并并复测，不能基于旧祖先强推。
 - 测试机 `home-ubuntu` 只读预检：工作树在 `develop=81e02c7e`，只有原有未跟踪文件；`katrain-web`、`katrain-cron` 在运行。`127.0.0.1:8010` 被已运行的 `katago-calib` 占用，不能直接启动后台；8012 空闲。测试机 `.env` 没有 `KATRAIN_ADMIN_USERNAME`、`KATRAIN_ADMIN_PASSWORD_HASH`、`KATRAIN_ADMIN_SESSION_SECRET`、`KATRAIN_ADMIN_ENV`；未打印任何密钥。数据库已有 `admin_audit_log`，尚无 `cron_job_status` 和 `cron_job_runs`。磁盘约 64 GB 可用（占用率 93%）。没有改服务、配置、数据库或远端文件。
 - 独立 GPT-6 Astra 建议保留校准服务、给后台选空闲回环端口。已在本地把 Compose 的后台宿主机端口改为可配置、默认 8010；测试机拟设 `KATRAIN_ADMIN_HOST_PORT=8012`，本机测试隧道仍用 8010→测试机 8012。`tests/test_admin_compose.py` 先红后绿 **2 passed**，本机 Compose 解析只输出 `127.0.0.1:8012:8010`。上述改动尚未推送或部署。
 - 🛑 下一步必须明确核准本次 `git push origin HEAD:develop`；部署时创建后台专用凭据并使 web 初始化两张新 cron 表也需按此前“每次 push／真实库写入单独点头”的约束确认。测试机部署许可不自动扩展到生产、停止 `katago-calib` 或覆盖未跟踪文件。

@@ -1832,14 +1832,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             from katrain.core.lang import rank_key
 
-            sgf_content = session.katrain.get_sgf()
+            game_type = getattr(session, "game_type", "free")
+            sgf_content = session.katrain.get_sgf() if game_type != "ai_ladder_ranked" else None
             state = session.katrain.get_state()
             players_info = session.katrain.players_info
 
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            game_type = getattr(session, "game_type", "free")
             # Local two-player names are optional. Filling the logged-in user into both human
             # seats would turn an unnamed game into a misleading same-name game.
             if current_user and game_type != "pvp_local":
@@ -1971,6 +1971,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
                     user_id=current_user.id, game_id=snapshot.game_id
                 )
+                ai_color = "W" if snapshot.user_color == "B" else "B"
+                seat_names = {snapshot.user_color: current_user.username, ai_color: snapshot.opponent.rank_name}
+                data["player_black"] = seat_names["B"]
+                data["player_white"] = seat_names["W"]
+                frozen_rules = getattr(lifecycle, "rules_snapshot", None)
+                if frozen_rules is not None:
+                    data["board_size"] = frozen_rules["board_size"]
+                    data["rules"] = frozen_rules["rules"]
+                    data["komi"] = frozen_rules["komi"]
+                root = session.katrain.game.root
+                for property_name, value in (
+                    ("PB", data["player_black"]),
+                    ("PW", data["player_white"]),
+                    ("RE", data["result"]),
+                    ("RU", data["rules"]),
+                    ("SZ", data["board_size"]),
+                    ("KM", data["komi"]),
+                ):
+                    root.set_property(property_name, value)
+                data["sgf_content"] = session.katrain.get_sgf()
                 if getattr(app.state, "remote_client", None) is not None:
                     data["origin_device_id"] = settings.DEVICE_ID
                 if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):

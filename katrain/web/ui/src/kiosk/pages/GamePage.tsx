@@ -143,6 +143,11 @@ const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCar
       <EmojiEvents data-testid="result-trophy" className={celebrating ? 'game-win-trophy' : undefined}
         sx={{ color: 'primary.main', fontSize: 32 }} />
       <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
+      {gameState.game_type === 'ai_ladder_ranked' && /^[BW]\+\d/.test(endResultOf(gameState) ?? '') && (
+        <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+          {t('game:ranked_ai_adjudication', '未完成棋盘由云端 AI 按中国规则估分判定')}
+        </Typography>
+      )}
       {/* 未识别的平台终局哨兵仍以无胜负 `Void` 收口；已知的停一手和认输会走各自语义。 */}
       {endResultOf(gameState) === 'Void' && gameState.platform_engine_color && (
         <Typography

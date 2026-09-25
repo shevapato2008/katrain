@@ -292,6 +292,23 @@ def test_two_passes_end_the_game_even_before_a_score_is_known(monkeypatch):
     assert ai.generate_ai_move(w.game, "test:instant", {}) is None
 
 
+def test_ranked_two_pass_stays_awaiting_private_adjudication():
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w.game_type = "ai_ladder_ranked"
+    w.suppress_auto_eval = True
+    w._do_play(None, guard=True)
+    w._do_play(None, guard=True)
+    state = w.get_state()
+    assert state["awaiting_count"] is True
+    assert w.game.current_node.end_state is None
+    assert w.game.terminal.result == "终局"
+    assert w.game.current_node.analysis_exists is False
+    w._commit_end_state("W+2.5", node=w.game.current_node, fill_pending=True)
+    assert w.get_state()["awaiting_count"] is False
+    assert w.game.current_node.end_state == "W+2.5"
+
+
 def test_moves_without_the_guard_neither_record_nor_freeze_a_two_pass_end():
     """评审 r1 m9:研究会话与跨平台网关(`_local_play`、`_on_opponent_move`)不带 guard。
     OGS 双停后进点目阶段还能恢复对局,恢复后的落子必须照常落进本地棋盘 —— 双停不记终局事实、也不冻结。"""

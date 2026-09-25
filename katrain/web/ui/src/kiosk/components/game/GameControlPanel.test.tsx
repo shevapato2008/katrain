@@ -300,6 +300,12 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
   });
 
+  test('升降级手动数子数的是实际 100 手，不把根节点算作一手', () => {
+    panel({ game_type: 'ai_ladder_ranked', count_min_moves: 100,
+      history: Array(100).fill(mockGameState.history[0]) });
+    expect(screen.getByText('数子').closest('button')).toBeDisabled();
+  });
+
   test('双 pass 后后端在等数子(awaiting_count)⇒ 手数不够也亮,右端不再说门槛', () => {
     panel({
       // end_result 照后端真实形状写(F1):双 pass 后一定非空,判据是 awaiting_count 不是它。

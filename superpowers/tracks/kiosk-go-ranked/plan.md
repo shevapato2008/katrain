@@ -46,7 +46,7 @@
 
 **Files:** `katrain/web/interface.py`、`katrain/web/server.py`、`katrain/web/api/v1/endpoints/ai_ladder.py`、`katrain/web/core/remote_client.py`；`tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`、`tests/web_ui/test_ai_ladder_api.py`（若现有文件名不同，选最接近的既有 API 用例）。
 
-- [ ] 等用户确认正式裁判采用 KataGo 估计还是精确中国规则数子；选择前不实施裁判算法。若选择估计，UCloud 增加只接受当前预约、同一来源设备和合法终局触发的专用裁判 API：主动数子须达到手数门槛；双 pass 则由服务端核对最后两手及待裁判状态，允许低于手数门槛。它用服务端 KataGo 路由分析上传局面，只返回目差/结果，不返回候选着、胜率、领地。盒端远端客户端调用它；网络/引擎失败返回可重试错误，不静默退回本机 1 visit 引擎。先实测 RK→正式 API 延迟与超时预算。
+- [ ] 用户已确认云端 AI 按中国规则判定、满 100 手可主动结束。UCloud 增加只接受当前预约、合法终局触发的专用裁判 API：主动数子须达到手数门槛；双 pass 则由服务端核对最后两手及待裁判状态，允许低于手数门槛。它用服务端 KataGo 分析上传局面，只返回目差/结果，不返回候选着、胜率、领地。盒端远端客户端调用它；网络/引擎失败返回可重试错误，不静默退回本机 1 visit 引擎。先实测 RK→正式 API 延迟与超时预算。
 - [ ] 先写失败测试：ranked 101+ 手无缓存分数时仅数子动作可发云端裁判；主动数子未达到门槛、普通局中分析、换局/换手、并发终局仍被挡。双 pass 低于门槛时也走同一私有裁判并恰好结算一次；云端失败保留待裁判状态，不写“无结论”棋谱/账本，随后能重试。运行 `pytest -q tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py` 确认预期失败。
 - [ ] 增加延迟裁判测试：计算在途、超时、局面变化后，HTTP `get_state` 和 WebSocket `game_update` 均不包含 score、winrate、候选着、ownership；只有成功原子终局后才出现最终结果。裁判计算使用引擎的私有回调/局面快照，不能在提交前写共享 `GameNode.analysis`。
 - [ ] 实现数子与双 pass 的共同私有裁判入口：先捕获局、手、规则、预约，解锁等待云端返回，再用 `_commit_end_state` 校验同一局面后一次提交；失败保留终局前/待裁判状态及可重试入口。测试红后实施最小代码，不放宽其他 ranked 分析闸。
@@ -118,3 +118,6 @@
 | 2026-09-25 | RK 备份 | 设备 KaTrain 服务保持停止；`/mnt/data/weiqi/backups/weiqi-web-20260925-pre-prod.db` 通过 SQLite integrity_check。旧队列 14 条（含永久 422），尚未隔离或切换。 |
 | 2026-09-25 | 其他棋类只读检查 | RK 实际配置的 `lobby.sailorvoyage.top`、`ranked.sailorvoyage.top` 都指测试环境；国象经 setup-wizard ranked bridge，中国象棋默认使用同一 ranked origin，五子棋服务显式配置测试域名；`smartbox-software` 未修改。 |
 | 2026-09-25 | 领地判断设计 | `territory-preview.html` 已含对弈中、请求中、结果、失败、三次用尽状态；在 1024×600 浏览器生成默认和结果截图。前后端仍待用户确认设计稿。 |
+| 2026-09-25 | 裁判口径 | 用户确认云端 AI 中国规则判定，满 100 手可主动结束；不再等待算法选择。 |
+| 2026-09-25 | 图标对齐 | 自由对弈及跨平台星阵对弈共用 `grid-nine` 领地、`squares-four` 数子、`hand-pointing` 停一手、`flag` 认输；HTML 预览已内联相同 SVG，并重新截取 1024×600 图。设计其余调整待用户说明。 |
+| 2026-09-25 | 私有数子裁判 | 已接入冻结预约校验、中国规则 19 路云端 KataGo 500 visits 估分；主动数子满 100 实际手，双停可提前裁判，失败保留重试，终局前不写共享分析。287 条 API 测试、97 条聚焦 UI 测试及本机 Vite 构建通过；正式 KataGo 500 visits 实测 1.15 秒。Kivy 真窗口测试受本机窗口环境限制未能收集。待三端发布与新局实测。 |

@@ -18,7 +18,7 @@ from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
-from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
+from katrain.web.api.v1.endpoints.ai_ladder import adjudicate_ranked_position, mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.game_end_rules import is_awaiting_count
@@ -2328,6 +2328,56 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return result
 
+    async def _complete_ranked_count(session, app, current_user):
+        """Ask the cloud privately, then commit only if this exact board position still exists."""
+        with session.lock:
+            game = session.katrain.game
+            node = game.current_node
+            awaiting = is_awaiting_count(session.katrain)
+            trigger = "double_pass" if awaiting else "manual"
+            snapshot = getattr(session, "ai_ladder_snapshot", None)
+            key = getattr(session, "ai_ladder_reservation_key", None)
+            if snapshot is None or not isinstance(key, str) or not key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+            sgf_content = session.katrain.get_sgf()
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is None:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                decision = await adjudicate_ranked_position(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=key, sgf_content=sgf_content, trigger=trigger,
+                )
+            else:
+                decision = await remote.count_ai_ladder_game(snapshot.game_id, key, sgf_content, trigger)
+            score = decision["score"]
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+                raise ValueError("invalid cloud score")
+            result, _ = _count_result(score)
+            if decision.get("result") != result:
+                raise ValueError("inconsistent cloud result")
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked count unavailable: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked adjudicator unavailable; retry counting") from exc
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
+            if session.katrain.game is not game:
+                raise EndgameConflict("position_changed")
+            before = _terminal_of(session)
+            session.katrain._commit_end_state(result, node=node, fill_pending=awaiting)
+            session.game_ended = True
+            end = _new_terminal(session, before)
+            state = session.katrain.get_state()
+            session.last_state = state
+        session.katrain.update_state()
+        if end is not None:
+            await _finish_ended_game(session, app, current_user, end)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "result": result}
+
     async def _score_two_pass_end(session, end):
         """双方各停一手结束、还没有胜负的局:补一次分析,按数子的格式写在**终局那一手**上。
         返回补上后的 `GameEnd`;没补(不是双停 / 不许分析 / 补不出分 / 被别人抢先)返回 None。
@@ -2369,6 +2419,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if session.player_b_id is not None or session.player_w_id is not None:
             return
         if getattr(session, "mode", "play") == "research":
+            return
+        if getattr(session, "game_type", None) == "ai_ladder_ranked" and is_awaiting_count(session.katrain):
             return
         lock = getattr(session, "end_game_lock", None)
         if not isinstance(lock, asyncio.Lock):
@@ -2418,16 +2470,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
         # the manual-count move threshold and the placeholder end_result is not a final result.
         if not state.get("awaiting_count"):
-            count_min_moves = state.get("count_min_moves")
+            ranked_count = getattr(session, "game_type", None) == "ai_ladder_ranked"
+            count_min_moves = 100 if ranked_count else state.get("count_min_moves")
             if count_min_moves is None:
                 count_min_moves = session.katrain.config("game/count_min_moves", 100)
-            if len(state.get("history", [])) < count_min_moves:
+            move_count = len(state.get("history", [])) - (1 if ranked_count else 0)
+            if move_count < count_min_moves:
                 raise HTTPException(
                     status_code=400,
                     detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
                 )
             if state.get("end_result"):
                 raise HTTPException(status_code=400, detail={"code": "game_over", "message": "Game is already over"})
+
+        if getattr(session, "game_type", None) == "ai_ladder_ranked":
+            return await _complete_ranked_count(session, app, current_user)
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 

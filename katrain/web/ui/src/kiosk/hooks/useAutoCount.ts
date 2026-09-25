@@ -16,6 +16,7 @@ export const AUTO_COUNT_BACKOFF_MS: readonly number[] = [1000, 2000, 3000, 4000,
 export function autoCountEligible(gs: GameState | null | undefined, engineMode: boolean): boolean {
   if (!gs || engineMode) return false;
   if (gs.game_type === 'pvp_local') return true;
+  if (gs.game_type === 'ai_ladder_ranked') return true;
   if ((gs.game_type ?? 'free') !== 'free') return false;
   return gs.players_info.B.player_type === 'player:ai' || gs.players_info.W.player_type === 'player:ai';
 }

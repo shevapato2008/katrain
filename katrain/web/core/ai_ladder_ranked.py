@@ -201,6 +201,20 @@ class AiLadderRankedRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
+    def get_active_for_count(self, *, user_id: int, game_id: str, reservation_key: str) -> AiLadderBlockingGame:
+        """Authorize a private adjudication without changing the lifecycle."""
+        session = self.session_factory()
+        try:
+            row = session.query(models_db.AiLadderActiveGame).filter_by(user_id=user_id, game_id=game_id).one_or_none()
+            if row is None or row.state != "active":
+                raise AiLadderLifecycleNotFound("active ranked game not found")
+            supplied = self._hash_reservation_key(reservation_key)
+            if not hmac.compare_digest(row.reservation_key_hash, supplied):
+                raise InvalidReservationKey("invalid reservation credential")
+            return self._blocking_from_row(row)
+        finally:
+            session.close()
+
     def reserve_game(
         self,
         *,

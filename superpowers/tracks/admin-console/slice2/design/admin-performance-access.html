@@ -89,13 +89,18 @@
     .connected-only { display:none; }
     body[data-state="connected"] .unconnected-only { display:none; }
     body[data-state="connected"] .connected-only { display:block; }
-    .verified { width:min(530px,100%); padding:28px 32px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
-    .verified .source { display:flex; align-items:center; gap:13px; }
-    .verified .source .icon { width:28px; height:28px; color:var(--hint); }
-    .verified h3 { font-size:23px; }
-    .verified p { margin-top:16px; color:var(--muted); line-height:1.6; }
-    .verified .button { margin-top:21px; }
-    .verified small { display:block; margin-top:15px; color:var(--subtle); font-size:14px; }
+    .embedded { width:100%; height:100%; min-height:420px; display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px; background:var(--bg); overflow:hidden; }
+    .embedded-top { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:49px; padding:0 17px; border-bottom:1px solid var(--line); background:var(--bar); }
+    .embedded-brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:600; }
+    .embedded-brand .icon { width:21px; height:21px; color:var(--accent); }
+    .embedded-range { color:var(--muted); font-size:14px; }
+    .embedded-canvas { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; flex:1; padding:12px; }
+    .embedded-panel { display:flex; flex-direction:column; min-height:145px; border:1px solid var(--line); border-radius:5px; background:var(--panel); }
+    .embedded-panel strong { padding:10px 12px; border-bottom:1px solid var(--line); font-size:16px; font-weight:500; }
+    .embedded-panel span { display:grid; place-items:center; flex:1; color:var(--subtle); font-size:15px; }
+    .embedded-caption { padding:7px 12px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; text-align:center; }
+    body[data-state="unconnected"] .embedded.connected-only { display:none; }
+    body[data-state="connected"] .embedded.connected-only { display:flex; }
     .tweaks { position:fixed; right:15px; bottom:14px; z-index:10; display:flex; align-items:center; gap:8px; padding:7px; border:1px solid var(--line); border-radius:9px; background:var(--bar); box-shadow:0 8px 25px #0004; }
     .tweaks span { padding:0 6px; color:var(--subtle); font-size:13px; }
     .tweaks button { min-height:34px; padding:0 10px; border:1px solid var(--line); border-radius:5px; background:var(--panel); color:var(--text); font-size:14px; }
@@ -127,30 +132,34 @@
       <div class="sidefoot">当前环境：测试环境<br>只读页面，不修改配置。</div>
     </nav>
     <main>
-      <div class="heading"><div><h1>性能监控</h1><p>查看当前环境的主机与容器运行状态</p></div><div class="heading-right"><svg class="icon"><use href="#info"/></svg><span>监控服务独立于管理后台</span></div></div>
+      <div class="heading"><div><h1>性能监控</h1><p>在后台内查看主机与容器运行状态</p></div><div class="heading-right"><svg class="icon"><use href="#info"/></svg><span>Grafana 嵌入看板</span></div></div>
       <div class="content">
         <p class="demo-note">设计稿 · 两种状态仅供视觉比较，不连接真实监控服务</p>
         <section class="status" aria-labelledby="status-title">
-          <div class="status-leading"><div class="status-mark"><svg class="icon"><use href="#pulse"/></svg></div><div><div class="eyebrow">监控来源</div><h2 id="status-title" class="unconnected-only">尚未接入</h2><h2 class="connected-only">Netdata 面板已配置</h2><p class="unconnected-only">尚未验证当前环境是否部署监控服务</p><p class="connected-only">设计示例 · 此处不代表真实服务在线</p></div></div>
-          <span class="status-pill unconnected-only"><svg class="icon"><use href="#info"/></svg>状态未知</span><span class="status-pill connected-only"><svg class="icon"><use href="#link"/></svg>仅示意配置</span>
+          <div class="status-leading"><div class="status-mark"><svg class="icon"><use href="#pulse"/></svg></div><div><div class="eyebrow">Grafana 看板</div><h2 id="status-title" class="unconnected-only">尚未接入</h2><h2 class="connected-only">嵌入布局预览</h2><p class="unconnected-only">尚未验证当前环境是否部署 Grafana 服务</p><p class="connected-only">设计示例 · 不是实时画面，也不代表服务在线</p></div></div>
+          <span class="status-pill unconnected-only"><svg class="icon"><use href="#info"/></svg>状态未知</span><span class="status-pill connected-only"><svg class="icon"><use href="#link"/></svg>仅设计示意</span>
         </section>
         <div class="body-grid">
           <section class="monitor" aria-labelledby="monitor-title">
-            <div class="panel-head"><h2 id="monitor-title">监控面板</h2><span>主机 · 容器 · 存储</span></div>
+            <div class="panel-head"><h2 id="monitor-title">内嵌监控看板</h2><span>主机 · 容器 · 存储</span></div>
             <div class="monitor-body">
-              <div class="empty unconnected-only"><svg class="icon"><use href="#info"/></svg><h3>暂无性能数据</h3><p>目前没有可确认的监控端点。接入并核实服务后，才会开放当前环境的监控入口。</p><button class="button" type="button" disabled>打开监控面板</button></div>
-              <div class="verified connected-only"><div class="source"><svg class="icon"><use href="#pulse"/></svg><h3>在独立面板查看实时指标</h3></div><p>主机 CPU、内存、磁盘和容器曲线由监控服务显示；后台不复制其登录态，也不展示未经采集验证的数字。</p><button class="button primary" type="button" disabled><svg class="icon"><use href="#external"/></svg>打开 Netdata 面板</button><small>设计示例：按钮在真实地址和访问控制验证后才启用</small></div>
+              <div class="empty unconnected-only"><svg class="icon"><use href="#info"/></svg><h3>暂无性能数据</h3><p>目前没有可确认的 Grafana 端点。完成服务与访问控制核实后，实时看板会直接显示在此处。</p></div>
+              <div class="embedded connected-only" aria-label="Grafana 嵌入布局设计示意；无实时数据">
+                <div class="embedded-top"><div class="embedded-brand"><svg class="icon"><use href="#pulse"/></svg>Grafana <span>／ 主机概览</span></div><span class="embedded-range">时间范围与刷新控件由 Grafana 提供</span></div>
+                <div class="embedded-canvas"><div class="embedded-panel"><strong>CPU</strong><span>暂无实时数据 · 设计占位</span></div><div class="embedded-panel"><strong>内存</strong><span>暂无实时数据 · 设计占位</span></div><div class="embedded-panel"><strong>磁盘</strong><span>暂无实时数据 · 设计占位</span></div><div class="embedded-panel"><strong>容器</strong><span>暂无实时数据 · 设计占位</span></div></div>
+                <div class="embedded-caption">本图仅展示 Grafana 在后台内的位置，不是实际 Grafana 页面</div>
+              </div>
             </div>
           </section>
           <aside class="aside" aria-label="访问与安全信息">
-            <h2>访问方式</h2>
+            <h2>接入信息</h2>
             <dl class="aside-body">
               <div class="fact"><dt>当前环境</dt><dd>测试环境</dd></div>
-              <div class="fact"><dt>监控服务</dt><dd class="muted unconnected-only">尚未配置</dd><dd class="connected-only">Netdata（示例）</dd></div>
-              <div class="fact"><dt>本机入口</dt><dd class="muted unconnected-only">待确认</dd><dd class="connected-only">127.0.0.1:19999（示例）</dd></div>
+              <div class="fact"><dt>监控服务</dt><dd class="muted unconnected-only">尚未核实</dd><dd class="connected-only">Grafana（设计示意）</dd></div>
+              <div class="fact"><dt>嵌入地址</dt><dd class="muted unconnected-only">待确认</dd><dd class="connected-only">待服务核实后配置</dd></div>
               <div class="fact"><dt>最近验证</dt><dd class="muted unconnected-only">尚无验证记录</dd><dd class="connected-only">尚未实际验证</dd></div>
             </dl>
-            <div class="aside-foot"><svg class="icon"><use href="#info"/></svg> 监控端口只允许经 SSH 隧道访问；不向监控页面传递后台登录令牌。</div>
+            <div class="aside-foot"><svg class="icon"><use href="#info"/></svg> 实际嵌入需先核实 Grafana 鉴权与浏览器策略；后台令牌不会传给 Grafana。</div>
           </aside>
         </div>
       </div>

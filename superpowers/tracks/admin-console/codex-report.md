@@ -1,6 +1,11 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
-## 2026-09-25 性能监控入口（本地设计/Fixture，🛑 待 Fan 确认）
+## 2026-09-25 性能监控方向修正（新版 HTML 设计，🛑 待 Fan 确认）
+
+- Fan 指出性能监控原 spec §10 与此前沟通是**内嵌 Grafana**。上一版“独立面板入口”没有得到 Fan 确认，不能当作选定方案；其本地 Fixture 和四图已废弃，仅作历史。现已把 [HTML 设计稿](./slice2/design/admin-performance-access.html) 改为后台内嵌 Grafana 布局，保留夜间/白天 B/C 楷体、未接入诚实空态；内嵌示意仅有无数据占位，不冒充实际 Grafana 或服务在线。新版 1440×900 三张设计图见 [设计记录](./slice2/design/design-notes.md)，Chromium 控制台 0 error、0 warning；独立 GPT-6 Astra 裁定设计方向 **APPROVE**，无必改项，但不替代 Fan 确认。
+- 🛑 先请 Fan 确认新版 HTML 设计，再按 [修订计划](./plan-2026-09-25-admin-performance-access.md) 修改隔离 React Fixture、制作新版四图；四图再由 Fan 确认，之后才核实测试环境 Grafana、冻结契约或写后端。真实嵌入必须核实 Grafana 自身鉴权、iframe 策略与后台 CSP，不传后台 Bearer，不开放无保护端口。没有进行远程连接、真实写入或部署。
+
+## 2026-09-25 旧性能监控入口提案（历史；已废弃）
 
 - 按 spec §10 的建议顺序，在 cron 后开始性能监控模块。已完成 `slice2/design/admin-performance-access.html` 单文件设计稿，沿用已批准的 B 石墨铜夜间、C 雾白蓝白天与楷体，经 `ui-ux-pro-max` 核对；独立 GPT-6 Astra 先要求修正后台壳层尺寸，修后批准进入本地 Fixture。设计/架构取舍见 [记录](./slice2/design/design-notes.md) 与 [计划](./plan-2026-09-25-admin-performance-access.md)。
 - React Fixture 使用独立 `admin-performance-fixture.html` 入口，只展示“尚未接入”与明确标记的“已配置示意”；无假指标、可点击监控链接或令牌，正式 `admin.html` 未改。两态各自的参考/真实运行/并排/叠加四图已入 `slice2/design/`；独立 Astra 查看八图，裁定本地视觉 **APPROVE**，轻微壳层字位差异不阻断。Chromium 1440×900 控制台 0 error、0 warning。

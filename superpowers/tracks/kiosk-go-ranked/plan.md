@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python/FastAPI、KataGo HTTP、SQLAlchemy/PostgreSQL/SQLite、React/TypeScript/Vitest、Docker Compose、systemd。
 
-**当前状态（2026-09-25）：** SGF、私有云端数子、待结算文案已开发并发布到 home、UCloud 和 RK3562；设备的围棋账号与结算地址已指向 UCloud。尚待用户在设备上重新登录并完成一盘**新局**，核对正式库实际落账。领地判断 HTML 已按现有星阵对弈图标调整，用户已确认该设计并要求继续开发。
+**当前状态（2026-09-25）：** SGF、私有云端数子、待结算文案已发布三端；设备围棋账号与结算地址指向 UCloud。领地判断设计已获确认，前后端实现已进 `develop`，home/UCloud 已发布。RK3562 目前 SSH/HTTP 无响应，待恢复连接后安装；仍需用户重新登录完成一盘**新局**，核对正式库落账。
 
 ---
 
@@ -18,20 +18,20 @@
 
 **Files/hosts:** `home-ubuntu:/home/fan/Repositories/katrain`, `docker-compose.yml`, `docker-compose.override.yml`。
 
-- [ ] 记录当前 Git HEAD、容器镜像 ID、健康状态；确认无 tracked 修改且 untracked 文件不会被覆盖。
-- [ ] 备份 `katrain_db`，核对备份能读取；记录磁盘余量。
-- [ ] `git fetch origin develop` 后 `git merge --ff-only origin/develop`；确认 HEAD 包含 `fdf7fa39` 或更新的 `origin/develop`。
-- [ ] 按 home 当前 Compose 构建并仅重建需要更新的 web/cron；保留测试环境的 `docker-compose.override.yml`，检查健康和 `/health`。
+- [x] 记录当前 Git HEAD、容器镜像 ID、健康状态；确认无 tracked 修改且 untracked 文件不会被覆盖。
+- [x] 备份 `katrain_db`，核对备份能读取；记录磁盘余量。
+- [x] `git fetch origin develop` 后 `git merge --ff-only origin/develop`；确认 HEAD 包含 `fdf7fa39` 或更新的 `origin/develop`。
+- [x] 按 home 当前 Compose 构建并仅重建需要更新的 web/cron；保留测试环境的 `docker-compose.override.yml`，检查健康和 `/health`。
 
 ### Task 2: 更新 UCloud 正式发布到同一 develop 基线
 
 **Files/hosts:** `release/ucloud-20260805`, `ucloud-v100:/opt/katrain/current`, `/etc/katrain/ucloud.env`（绝不输出密钥）。
 
-- [ ] 核对 `/opt/katrain/current` 对应提交、release 分支独有文件、已有镜像与回滚目录。测量构建/发布峰值，若 16 GB 可用空间不足先停止生产构建。
-- [ ] 备份正式 PostgreSQL 并确认备份有效；核查自动启动的 schema 迁移差异与两端六张表、约束、索引。
-- [ ] 在独立工作树将最新 `origin/develop` 合入 UCloud release 分支，解决冲突，保留 `deploy/ucloud` 文件；跑发布相关聚焦测试和 Compose 配置检查。
-- [ ] 以新不可变镜像和 release 目录更新 web/cron，保持 Postgres/MinIO/数据卷不变；上线前核对旧镜像兼容自动迁移后的 schema，不能兼容时准备数据库恢复与写入隔离；健康检查失败按已验证路径回滚。
-- [ ] 记录实际合并提交、镜像 ID、服务健康和 schema 对照结果。
+- [x] 核对 `/opt/katrain/current` 对应提交、release 分支独有文件、已有镜像与回滚目录。测量构建/发布峰值，若 16 GB 可用空间不足先停止生产构建。
+- [x] 备份正式 PostgreSQL 并确认备份有效；核查自动启动的 schema 迁移差异与两端六张表、约束、索引。
+- [x] 在独立工作树将最新 `origin/develop` 合入 UCloud release 分支，解决冲突，保留 `deploy/ucloud` 文件；跑发布相关聚焦测试和 Compose 配置检查。
+- [x] 以新不可变镜像和 release 目录更新 web/cron，保持 Postgres/MinIO/数据卷不变；上线前核对旧镜像兼容自动迁移后的 schema，不能兼容时准备数据库恢复与写入隔离；健康检查失败按已验证路径回滚。
+- [x] 记录实际合并提交、镜像 ID、服务健康和 schema 对照结果。
 
 ## Chunk 2: 三个故障的最小修复
 
@@ -39,29 +39,29 @@
 
 **Files:** `katrain/web/server.py`（`_record_ai_game_locked`）；`tests/web_ui/test_ladder_settlement_sync.py` 或现有 ranked 端到端测试。
 
-- [ ] 先补真实 ranked 结算测试：SGF 根缺 `PB/PW` 时当前实现应复现 422；测试须检查最终提交的 `PB/PW/RE/RU/SZ/KM` 与结构字段、冻结规则一致，并保留云端原有严格校验。
-- [ ] 运行 `pytest -q tests/web_ui/test_ladder_settlement_sync.py -k 'sgf or settlement'`，确认新增用例因缺字段失败。
-- [ ] 在构造 `data` 前从冻结的 ranked snapshot/座位名写 SGF 根属性，再生成 SGF；不可通过替换 SGF 字符串或放宽云端验证修复。
-- [ ] 跑上述测试与 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'record or settlement'`，确认缺字段不再 422、伪造名字仍被拒。
+- [x] 先补真实 ranked 结算测试：SGF 根缺 `PB/PW` 时当前实现应复现 422；测试须检查最终提交的 `PB/PW/RE/RU/SZ/KM` 与结构字段、冻结规则一致，并保留云端原有严格校验。
+- [x] 运行 `pytest -q tests/web_ui/test_ladder_settlement_sync.py -k 'sgf or settlement'`，确认新增用例因缺字段失败。
+- [x] 在构造 `data` 前从冻结的 ranked snapshot/座位名写 SGF 根属性，再生成 SGF；不可通过替换 SGF 字符串或放宽云端验证修复。
+- [x] 跑上述测试与 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'record or settlement'`，确认缺字段不再 422、伪造名字仍被拒。
 
 ### Task 4: 数子终局的私有裁判计算
 
 **Files:** `katrain/web/interface.py`、`katrain/web/server.py`、`katrain/web/api/v1/endpoints/ai_ladder.py`、`katrain/web/core/remote_client.py`；`tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`、`tests/web_ui/test_ai_ladder_api.py`（若现有文件名不同，选最接近的既有 API 用例）。
 
-- [ ] 用户已确认云端 AI 按中国规则判定、满 100 手可主动结束。UCloud 增加只接受当前预约、合法终局触发的专用裁判 API：主动数子须达到手数门槛；双 pass 则由服务端核对最后两手及待裁判状态，允许低于手数门槛。它用服务端 KataGo 分析上传局面，只返回目差/结果，不返回候选着、胜率、领地。盒端远端客户端调用它；网络/引擎失败返回可重试错误，不静默退回本机 1 visit 引擎。先实测 RK→正式 API 延迟与超时预算。
-- [ ] 先写失败测试：ranked 101+ 手无缓存分数时仅数子动作可发云端裁判；主动数子未达到门槛、普通局中分析、换局/换手、并发终局仍被挡。双 pass 低于门槛时也走同一私有裁判并恰好结算一次；云端失败保留待裁判状态，不写“无结论”棋谱/账本，随后能重试。运行 `pytest -q tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py` 确认预期失败。
-- [ ] 增加延迟裁判测试：计算在途、超时、局面变化后，HTTP `get_state` 和 WebSocket `game_update` 均不包含 score、winrate、候选着、ownership；只有成功原子终局后才出现最终结果。裁判计算使用引擎的私有回调/局面快照，不能在提交前写共享 `GameNode.analysis`。
-- [ ] 实现数子与双 pass 的共同私有裁判入口：先捕获局、手、规则、预约，解锁等待云端返回，再用 `_commit_end_state` 校验同一局面后一次提交；失败保留终局前/待裁判状态及可重试入口。测试红后实施最小代码，不放宽其他 ranked 分析闸。
-- [ ] 跑上述聚焦测试和 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'settlement or replay'`，确认唯一结算、失败不记账、局中无泄露。KataGo 估计的裁判性质需在前端终局文案中如实说明；若用户选精确数子，替换本任务的算法和断言后再实现。
+- [x] 用户已确认云端 AI 按中国规则判定、满 100 手可主动结束。UCloud 增加只接受当前预约、合法终局触发的专用裁判 API：主动数子须达到手数门槛；双 pass 则由服务端核对最后两手及待裁判状态，允许低于手数门槛。它用服务端 KataGo 分析上传局面，只返回目差/结果，不返回候选着、胜率、领地。盒端远端客户端调用它；网络/引擎失败返回可重试错误，不静默退回本机 1 visit 引擎。先实测 RK→正式 API 延迟与超时预算。
+- [x] 先写失败测试：ranked 101+ 手无缓存分数时仅数子动作可发云端裁判；主动数子未达到门槛、普通局中分析、换局/换手、并发终局仍被挡。双 pass 低于门槛时也走同一私有裁判并恰好结算一次；云端失败保留待裁判状态，不写“无结论”棋谱/账本，随后能重试。运行 `pytest -q tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py` 确认预期失败。
+- [x] 增加延迟裁判测试：计算在途、超时、局面变化后，HTTP `get_state` 和 WebSocket `game_update` 均不包含 score、winrate、候选着、ownership；只有成功原子终局后才出现最终结果。裁判计算使用引擎的私有回调/局面快照，不能在提交前写共享 `GameNode.analysis`。
+- [x] 实现数子与双 pass 的共同私有裁判入口：先捕获局、手、规则、预约，解锁等待云端返回，再用 `_commit_end_state` 校验同一局面后一次提交；失败保留终局前/待裁判状态及可重试入口。测试红后实施最小代码，不放宽其他 ranked 分析闸。
+- [x] 跑上述聚焦测试和 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'settlement or replay'`，确认唯一结算、失败不记账、局中无泄露。KataGo 估计的裁判性质需在前端终局文案中如实说明；若用户选精确数子，替换本任务的算法和断言后再实现。
 
 ### Task 5: 已结束但待结算的出口语义
 
 **Files:** `katrain/web/ui/src/features/aiLadder/blockingCopy.ts`、`katrain/web/ui/src/kiosk/components/aiLadder/KioskAiLadderBlockingPanel.tsx`、相关 `.test.ts(x)`；必要时 `katrain/web/api/v1/endpoints/ai_ladder.py`。
 
-- [ ] 先写失败测试，复现已结束 `pending_settlement` 仍显示“认输”，确认可重试/永久 422/已结算三态各有诚实反馈；运行 `cd katrain/web/ui && npm test -- --run src/features/aiLadder/blockingCopy.test.ts src/kiosk/pages/AiSetupPage.test.tsx`，确认预期失败。
-- [ ] 维持一个价钱和唯一云端账本：正常状态先重试真实成绩；选择放弃时明确写“放弃未送达成绩，按一场负局了结”，二次确认说明云端可能以合成负局覆盖真实棋谱。沿用 `/end` 的唯一账本墓碑语义（技术字段 `remote_resign`），但 UI 不把已结束棋局说成再次认输。永久 422 时给出修复/放弃的实际出口。
-- [ ] 先补 API/仓库并发测试：重试与放弃竞争，再重放旧 payload，只有一个该 game_id 的终局和一次计分；确认先成功结算时放弃返回既有收据，先放弃时重试被吸收，不产生第二局。
-- [ ] 跑上述 UI 测试和 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'pending_settlement or remote_resign or replay'`，在 1024×600 真页面核对按钮文案、错误和触控。
+- [x] 先写失败测试，复现已结束 `pending_settlement` 仍显示“认输”，确认可重试/永久 422/已结算三态各有诚实反馈；运行 `cd katrain/web/ui && npm test -- --run src/features/aiLadder/blockingCopy.test.ts src/kiosk/pages/AiSetupPage.test.tsx`，确认预期失败。
+- [x] 维持一个价钱和唯一云端账本：正常状态先重试真实成绩；选择放弃时明确写“放弃未送达成绩，按一场负局了结”，二次确认说明云端可能以合成负局覆盖真实棋谱。沿用 `/end` 的唯一账本墓碑语义（技术字段 `remote_resign`），但 UI 不把已结束棋局说成再次认输。永久 422 时给出修复/放弃的实际出口。
+- [x] 先补 API/仓库并发测试：重试与放弃竞争，再重放旧 payload，只有一个该 game_id 的终局和一次计分；确认先成功结算时放弃返回既有收据，先放弃时重试被吸收，不产生第二局。
+- [x] 跑上述 UI 测试和 `pytest -q tests/web_ui/test_ai_ladder_ranked.py -k 'pending_settlement or remote_resign or replay'`，在 1024×600 真页面核对按钮文案、错误和触控。
 
 ## Chunk 3: 切换正式环境与验证
 
@@ -69,10 +69,10 @@
 
 **Files/hosts:** home `develop` 发布源、UCloud `release/ucloud-20260805` 发布源、RK `/opt/smartbox` 的 KaTrain 安装与 systemd 环境。
 
-- [ ] Task 3–5 聚焦测试通过后记录修复提交；将修复合入 `develop`，确认 home fast-forward 到该提交并重建 web/cron，核对运行镜像包含该提交。
-- [ ] 再将包含修复的 `develop` 合入 UCloud release，构建不可变 web 镜像，按 Task 2 的备份/兼容/健康/回滚门槛发布；核对正式运行版本包含同一修复提交。
-- [ ] 在设备上备份原安装包和配置，安装同一修复版 KaTrain；暂不启动向正式地址的 worker，直到 Task 7 旧状态隔离完成。
-- [ ] 按 home、UCloud、RK 三端记录 Git 提交/包版本、服务健康和两个关键 API 的合同测试结果，再进行 Task 7 的新局验收。
+- [x] Task 3–5 聚焦测试通过后记录修复提交；将修复合入 `develop`，确认 home fast-forward 到该提交并重建 web/cron，核对运行镜像包含该提交。
+- [x] 再将包含修复的 `develop` 合入 UCloud release，构建不可变 web 镜像，按 Task 2 的备份/兼容/健康/回滚门槛发布；核对正式运行版本包含同一修复提交。
+- [x] 在设备上备份原安装包和配置，安装同一修复版 KaTrain；暂不启动向正式地址的 worker，直到 Task 7 旧状态隔离完成。
+- [x] 按 home、UCloud、RK 三端记录 Git 提交/包版本、服务健康和两个关键 API 的合同测试结果，再进行 Task 7 的新局验收。
 
 ### Task 7: RK 身份与升降级权威同址切换
 
@@ -88,8 +88,8 @@
 
 **Files:** `smartbox-software/{chess,xiangqi,gomoku,setup-wizard,provisioning}/...`。
 
-- [ ] 分别追踪国象、中国象棋、五子棋的盒端目标地址、身份服务、结算 outbox、云端权威库和部署配置；注明代码默认值与实际设备环境的区别。
-- [ ] 只读查询可用的运行配置和关键请求日志，输出每种棋的目标环境、潜在混用和证据；不提交 smartbox 代码改动。
+- [x] 分别追踪国象、中国象棋、五子棋的盒端目标地址、身份服务、结算 outbox、云端权威库和部署配置；注明代码默认值与实际设备环境的区别。
+- [x] 只读查询可用的运行配置和关键请求日志，输出每种棋的目标环境、潜在混用和证据；不提交 smartbox 代码改动。
 
 ## Chunk 4: 领地判断
 
@@ -97,16 +97,16 @@
 
 **Files:** `superpowers/tracks/kiosk-go-ranked/territory-preview.html`。
 
-- [ ] 先用 `ui-ux-pro-max` 读取现有 RK 设计约束和 7 英寸触控原则，再用 `claude-design` 结合现有游戏页结构做独立 HTML 预览：入口、请求中、领地结果、每局 3 次余量、用尽/失败状态。
-- [ ] 用 `ui-ux-pro-max` 再核对触控尺寸、层级、字体和对比度；在 1024×600 真实浏览器截图检查。
-- [ ] 交付 HTML 和预览图，等待用户明确确认。确认前不做领地判断前后端代码。
+- [x] 先用 `ui-ux-pro-max` 读取现有 RK 设计约束和 7 英寸触控原则，再用 `claude-design` 结合现有游戏页结构做独立 HTML 预览：入口、请求中、领地结果、每局 3 次余量、用尽/失败状态。
+- [x] 用 `ui-ux-pro-max` 再核对触控尺寸、层级、字体和对比度；在 1024×600 真实浏览器截图检查。
+- [x] 交付 HTML 和预览图，等待用户明确确认。确认前不做领地判断前后端代码。
 
 ### Task 10: 领地判断实现（设计已批准）
 
-- [ ] 云端增加当前预约专用接口：`GET /api/v1/ai-ladder/games/{game_id}/territory` 查询余量；`POST` 接收预约密钥、SGF、请求 ID。只接受当前登录用户的 active 19 路中国规则棋局，严格解析 SGF。KataGo 在私有调用中返回 361 点归属，不返回胜率、选点或正式胜负。
-- [ ] 云端持久化每局成功次数和请求 ID：同一请求 ID、同一 SGF 重试返回既有结果，不再扣次；引擎失败不扣次；并发请求最多一个在途；成功至多 3 次。引擎请求使用有限 visits 和超时，过期在途记录可恢复。
-- [ ] 盒端增加仅对当前升降级会话可用的领地查询代理：捕获预约与 SGF 局面，解锁等待云端，返回时复核原局面；旧结果不可覆盖新一手棋，也不能写入共享分析或终局裁判结果。
-- [ ] 按确认的 HTML 稿在 1024×600 对弈页加入 `grid-nine` 入口、剩余次数、请求中/领地覆盖/失败/用尽状态；局面变化清除覆盖层。Fixture 仅用于测试和预览，不进入生产构建。
+- [x] 云端增加当前预约专用接口：`GET /api/v1/ai-ladder/games/{game_id}/territory` 查询余量；`POST` 接收预约密钥、SGF、请求 ID。只接受当前登录用户的 active 19 路中国规则棋局，严格解析 SGF。KataGo 在私有调用中返回 361 点归属，不返回胜率、选点或正式胜负。
+- [x] 云端持久化每局成功次数和请求 ID：同一请求 ID、同一 SGF 重试返回既有结果，不再扣次；引擎失败不扣次；并发请求最多一个在途；成功至多 3 次。引擎请求使用有限 visits 和超时，过期在途记录可恢复。
+- [x] 盒端增加仅对当前升降级会话可用的领地查询代理：捕获预约与 SGF 局面，解锁等待云端，返回时复核原局面；旧结果不可覆盖新一手棋，也不能写入共享分析或终局裁判结果。
+- [x] 按确认的 HTML 稿在 1024×600 对弈页加入 `grid-nine` 入口、剩余次数、请求中/领地覆盖/失败/用尽状态；局面变化清除覆盖层。Fixture 仅用于测试和预览，不进入生产构建。
 - [ ] 用聚焦测试覆盖配额、同 ID 重试、并发、过期恢复、权限/冻结规则、失败不扣次、移动后的过期结果；做一张 1024×600 真页面截图与预览对照。再发布云端及 RK，核对正式端部署健康和设备入口；真实新局结算验收仍需用户实际对弈。
 
 ## 实施记录
@@ -128,3 +128,6 @@
 | 2026-09-25 | 私有数子裁判 | 已接入冻结预约校验、中国规则 19 路云端 KataGo 500 visits 估分；主动数子满 100 实际手，双停可提前裁判，失败保留重试，终局前不写共享分析。287 条 API 测试、97 条聚焦 UI 测试及本机 Vite 构建通过；正式 KataGo 500 visits 实测 1.15 秒。Kivy 真窗口测试受本机窗口环境限制未能收集。已发布三端，待真实新局验收。 |
 | 2026-09-25 | 最终发布 | 修复提交 `0a533a3eea6365aef3b2d8784fcc6ddb57b54134` 已推送 `origin/develop`。home fast-forward 至该提交并重建 web，健康 200。UCloud release 合并提交 `99c03cc9` 包含该提交；新镜像 `sha256:f60862fd…` 已发布，正式/本机健康 200，受保护数子接口未登录返回 401；保留旧 release `dfbea181` 与镜像用于回滚。发布核查 21 条测试通过，Postgres、MinIO、KataGo、cron 未重启。 |
 | 2026-09-25 | RK 切换 | 设备原安装和 SQLite 已备份；从 `95999cb7` 安装至完整修复提交，73 个变更 Python 文件语法检查通过；严格 Box SSO 的 2D kiosk 构建验证通过，设备实际 `index.html` 与本地 SHA-256 一致。旧测试 outbox 14 条在备份后清空，本地预约/云端占位为 0。通过 systemd 专用 `go-prod-identity.env` 同时覆盖围棋与账号 API 为 `https://modelstella.com`，原始 `identity.env` 保留以通过装机校验。wizard、KaTrain、KataGo 均 active，设备健康 200、正式站可达 200。其他三棋的 `SMARTBOX_RANKED_ORIGIN` 仍为测试域名。 |
+| 2026-09-25 | 领地判断开发 | 已获用户确认的 1024×600 稿采用星阵现有 18px `grid-nine` 图标。云端新增只返回 361 点归属的私有 KataGo 请求和持久三次配额，盒端代理在局面变化后丢弃旧结果；前端显示额度/加载/结果/失败/用尽。独立审查发现并修复坐标上下颠倒、额度轮询卡住及 token 登录缺鉴权头。合并最新 `develop` 后 405 条 ranked/API 测试、62 条前端聚焦测试、TypeScript 和构建通过；1024×600 真实 React 预览无右栏溢出。 |
+| 2026-09-25 | 领地判断云端发布 | `origin/develop` 为 `12a7e302`，home 更新到该提交，web 健康 200、领地未登录 401、测试库出现 `ai_ladder_territory_requests`。UCloud 专用 release `26bb4582` 包含该 develop，生产 web 镜像 `sha256:0a95bc48…`、cron `sha256:dbfb5984…` 均 healthy；正式库新表存在，外网 `/api/v1/health` 200、领地未登录 401。两库发布前备份经 `pg_restore -l` 验证；正式 KataGo 单次 20 visits 试算返回 361 点 ownership。Postgres/MinIO/KataGo 未重启，旧 release 与镜像保留。 |
+| 2026-09-25 | RK 待安装 | 严格 Box SSO 的 2D kiosk 构建通过，安装包 `/tmp/katrain-rk-territory-12a7e302.tar.gz` 已备好。设备 `10.0.0.3` 的 SSH 和 HTTP 均在约 5 秒后重置，`192.168.0.111` 不通；同网段其他 `10.0.0.x` SSH 同样重置，当前 Mac 路由经 `utun6`。尚未改动 RK，本局真实验收待恢复访问。 |

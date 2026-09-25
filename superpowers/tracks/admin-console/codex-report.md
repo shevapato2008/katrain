@@ -1,6 +1,13 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
-## 2026-09-25 性能监控方向修正（新版 HTML 设计，🛑 待 Fan 确认）
+## 2026-09-26 本地进度：最终设计对照与性能监控 Fixture
+
+- Fan 要求把已实现的教程、cron 设计稿同步到最终页面。新增可打开的 [教程最终 HTML](./tutorial-admin-design-final.html) 与 [cron 最终 HTML](./slice1/design/admin-cron-final.html)，直接复用生产 CSS；1440×900 详情/编辑、列表/抽屉截图见各自设计记录。独立 GPT-6 Astra max 复核后均裁定 APPROVE。既有旧稿只作历史。
+- 性能监控设计内容字号已缩至与教程/cron 相称；Fan 睡前明确授权独立 GPT-6 Astra max 代做视觉决策。它批准新版内嵌 Grafana HTML 与 [新版 React Fixture 四图](./slice2/design/design-notes.md)。旧 Netdata 外跳方案已废弃；新版 Fixture 不在正式后台构建，不连服务、不含假指标或 iframe。聚焦前端 **3 passed**，`build:admin` 通过，本地 Chromium 三态预览正常。
+- 🛑 真实 Grafana 嵌入**未完成**：需要 Fan 当场授权测试机只读 SSH，以核实 Grafana 是否存在、鉴权、看板地址、iframe/CSP；远程连接、写库、push、部署均未在本次进行。Fan 明早可对视觉稿提出修改。
+- Fan 另提出紧急的 Mac 采集 → 测试机 2×3090 YOLO11 训练/版本 → Mac 拉取部署与全链路视觉诊断模块。已只读核对现有 `katrain/vision`、摆谱采集/自动标注/训练脚本；将在性能监控外部授权停点后顺序推进该模块的本地设计与实现，不假定远程训练服务已存在。
+
+## 2026-09-25 性能监控方向修正（历史：当时仅新版 HTML 设计）
 
 - Fan 指出性能监控原 spec §10 与此前沟通是**内嵌 Grafana**。上一版“独立面板入口”没有得到 Fan 确认，不能当作选定方案；其本地 Fixture 和四图已废弃，仅作历史。现已把 [HTML 设计稿](./slice2/design/admin-performance-access.html) 改为后台内嵌 Grafana 布局，保留夜间/白天 B/C 楷体、未接入诚实空态；内嵌示意仅有无数据占位，不冒充实际 Grafana 或服务在线。新版 1440×900 三张设计图见 [设计记录](./slice2/design/design-notes.md)，Chromium 控制台 0 error、0 warning；独立 GPT-6 Astra 裁定设计方向 **APPROVE**，无必改项，但不替代 Fan 确认。
 - 🛑 先请 Fan 确认新版 HTML 设计，再按 [修订计划](./plan-2026-09-25-admin-performance-access.md) 修改隔离 React Fixture、制作新版四图；四图再由 Fan 确认，之后才核实测试环境 Grafana、冻结契约或写后端。真实嵌入必须核实 Grafana 自身鉴权、iframe 策略与后台 CSP，不传后台 Bearer，不开放无保护端口。没有进行远程连接、真实写入或部署。

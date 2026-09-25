@@ -1,6 +1,18 @@
 # 性能监控：首个用户旅程设计记录
 
-日期：2026-09-25。目标视口：1440×900。当前阶段：**新版内嵌 Grafana HTML 设计稿，待 Fan 确认**。旧独立入口 React Fixture 已废弃，尚未改为新设计；未接入真实监控服务，也未实现正式后台页面。
+日期：2026-09-26。目标视口：1440×900。当前阶段：**新版内嵌 Grafana HTML 与隔离 React Fixture 四图已由独立 GPT-6 Astra max 代理代审通过**；Fan 明早仍可要求返工。未接入真实监控服务，也未实现正式后台页面。
+
+## 2026-09-26 新版 Fixture 与四图
+
+Fan 睡前明确委托独立 GPT-6 Astra max 代理替他处理视觉决策。本地 Fixture 已由旧 Netdata 外跳提案改为后台内嵌 Grafana 设计示意，入口仍独立于正式 `admin.html`；未接入态无 iframe、无假指标，嵌入示意态四个卡片均标注“暂无实时数据”，不向 Grafana 传令牌。
+
+| 状态 | HTML 参考 | React Fixture | 并排 | 叠加 | 增强差异 |
+|---|---|---|---|---|---|
+| 夜间未接入 | [参考](./performance-grafana-design-unconnected-dark-1440x900.png) | [运行](./performance-grafana-fixture-unconnected-dark-1440x900.png) | [并排](./performance-grafana-side-unconnected-dark.png) | [叠加](./performance-grafana-overlay-unconnected-dark.png) | [差异](./performance-grafana-diff-unconnected-dark.png) |
+| 夜间嵌入示意 | [参考](./performance-grafana-design-embedded-dark-1440x900.png) | [运行](./performance-grafana-fixture-embedded-dark-1440x900.png) | [并排](./performance-grafana-side-embedded-dark.png) | [叠加](./performance-grafana-overlay-embedded-dark.png) | [差异](./performance-grafana-diff-embedded-dark.png) |
+| 白天嵌入示意 | [参考](./performance-grafana-design-embedded-light-1440x900.png) | [运行](./performance-grafana-fixture-embedded-light-1440x900.png) | [并排](./performance-grafana-side-embedded-light.png) | — | — |
+
+[可交互四图查看器](./performance-grafana-fourup.html) 支持 `pair=unconnected-dark|embedded-dark|embedded-light` 与 `mode=side|overlay|diff`。独立代理裁定 **APPROVE（仅本地 Fixture 视觉）**：构图、紧凑字号、深浅主题与状态语义均通过；共享导航的轻微偏移及提示文案差异不阻断。聚焦前端 3/3 通过、`build:admin` 通过，浏览器只有 React DevTools INFO。真实 Grafana 接入尚须 Fan 当场授权只读 SSH 核实服务/鉴权/嵌入策略；本次未远程连接、写库、push 或部署。
 
 ## 2026-09-25 方向修正：回到内嵌 Grafana
 
@@ -10,8 +22,9 @@ Fan 指出原 spec §10 写“嵌入 Grafana / Netdata”，并记得此前承�
 - [夜间内嵌设计图](./performance-grafana-design-embedded-dark-1440x900.png)
 - [白天内嵌设计图](./performance-grafana-design-embedded-light-1440x900.png)
 
-三张均为真实 Chromium 1440×900 截图；控制台 0 error、0 warning。此时**尚无新版 React Fixture 四图**，旧四图不可用于新版视觉确认。
+三张均为真实 Chromium 1440×900 截图；控制台 0 error、0 warning。旧四图不可用于新版视觉确认。
 独立 GPT-6 Astra 查看这三张新图，裁定 **APPROVE（仅设计方向）**：页面明确将 Grafana 放在后台内容区，未接入与示意状态清楚，无虚构指标；B/C 配色、楷体和后台壳层几何一致。无必改项。它明确指出 HTML 只是标注的布局占位，不是真实 iframe，也不代替 Fan 确认。
+Fan 随后要求字号向已实现的教程和 cron 靠拢。本稿已按当前 `AdminApp.css`、`CronPage.css` 缩小监控内容字号（保留共用页眉/侧栏大小），三张图已重拍；这是同一布局的排版修订，不是新功能或真实 Grafana 截图。
 
 ## 范围与判断
 
@@ -33,5 +46,5 @@ Fan 指出原 spec §10 写“嵌入 Grafana / Netdata”，并记得此前承�
 
 ## 下一关
 
-1. 🛑 Fan 先复核新版三张 HTML 设计图，确认内嵌 Grafana 的布局，再更新隔离 React Fixture。
-2. 新版 Fixture 完成后另做同视口四图，Fan 再确认。**此前不冻结契约、不写监控后端。** 后续接真实服务还需核实目标环境的 Grafana 端点与鉴权，并分别取得 SSH、部署、每次 push 的授权；测试机先于生产。
+1. 设计与四图视觉停点按 Fan 睡前明确授权交给独立 GPT-6 Astra max 代理，均已通过；Fan 明早可以在本地网页复核并要求返工。
+2. 🛑 真实 Grafana 接入前仍需 Fan 当场授权测试机只读 SSH，核实端点、服务与鉴权；每次 push、部署和真实库写入也分别授权。没有目标环境事实前不冻结嵌入契约、不写监控后端，不把 Fixture 当成真实监控验收。

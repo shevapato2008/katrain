@@ -13,7 +13,7 @@
 ## 边界与授权
 
 - 原“独立面板入口”设计与 Fixture 是未获 Fan 确认的提案。Fan 指出原 spec §10 和此前承诺为**内嵌 Grafana**后，该版本已废弃；旧四图只保留历史记录，不能作为新方案的视觉通过证据。
-- 现行本地 HTML 设计稿与预览见 [slice2/design](./slice2/design/design-notes.md)。🛑 Fan 确认**新版 HTML 设计**后才能改隔离 React Fixture；🛑 新版四图确认后才能冻结真实契约或写后端。
+- 现行本地 HTML 设计稿与预览见 [slice2/design](./slice2/design/design-notes.md)。Fan 于 2026-09-26 睡前明确授权独立 GPT-6 Astra max 代理替他做视觉决策；该代理先前批准新版 HTML 设计，故可推进本地隔离 Fixture。新版四图仍需独立代理复核并留给 Fan 明早验收。此授权不涉及远程连接、写库、push 或部署。
 - 每次 SSH、真实库写入、push、部署仍须 Fan 当场分别授权。测试机先于生产；本计划和设计裁定都不代表这些授权。
 - 保留现有工作树 `.playwright-cli` 文件状态，不暂存、不清理。Fixture 文件必须与生产构建隔离，在真实集成后删除。
 
@@ -22,20 +22,20 @@
 - [x] 从仓库主题与 spec 确定 Monitor 构图；用 `claude-design` 将本地 [HTML](./slice2/design/admin-performance-access.html) 改为后台内嵌 Grafana 的设计示意，再用 `ui-ux-pro-max` 核对主题、字号、状态与对比度。
 - [x] 在 1440×900 Chromium 中查看夜间未接入、夜间内嵌示意、白天内嵌示意三态；不使用真实服务或假指标。控制台 0 error、0 warning。
 - [x] 独立 GPT-6 Astra 查看新版三张 1440×900 设计图，裁定 **APPROVE（仅设计方向）**，无必改项。
-- [ ] 🛑 Fan 确认新版设计稿后，再改 React Fixture。代理裁定不替代 Fan 确认。
+- [x] 🛑 Fan 于 2026-09-26 明确将睡前视觉决策委托独立 GPT-6 Astra max；先前设计方向 APPROVE，允许本地 React Fixture。Fan 明早仍可要求修改。
 
 ## Task 2：本地隔离 Fixture 前端（新版设计确认后）
 
 **Files:** `katrain/web/ui/admin-performance-fixture.html`、`src/admin/performance/PerformancePage.tsx`、`PerformancePage.css`、`PerformanceFixture.tsx`、`fixture.tsx`、`PerformancePage.test.tsx`。正式 `admin.html`、`AdminApp.tsx`、`vite.admin.config.ts` 暂不接入此模块。
 
-- [ ] 把旧独立入口 Fixture 改为后台内嵌 Grafana 区域的纯展示预览；未接入态无 iframe/假数据，内嵌示意态标明不是实际 Grafana，不能传令牌。
-- [ ] 更新聚焦组件测试与本地 Vite 1440×900 预览，核对夜间未接入、夜间/白天内嵌示意；`build:admin` 不打包 Fixture 入口。
+- [x] 把旧独立入口 Fixture 改为后台内嵌 Grafana 区域的纯展示预览；未接入态无 iframe/假数据，内嵌示意态标明不是实际 Grafana，不能传令牌。
+- [x] 更新聚焦组件测试与本地 Vite 1440×900 预览，核对夜间未接入、夜间/白天内嵌示意；`build:admin` 不打包 Fixture 入口。
 
 ## Task 3：同视口视觉对比与确认
 
-- [ ] 为新版未接入与内嵌示意状态各保留参考图、真实 Fixture 截图、并排图、叠加图；旧外跳方案四图不能复用。
-- [ ] 独立 GPT-6 Astra 查看新版四图并记录裁定；Fan 在本地网页亲自复核。
-- [ ] 🛑 在 Fan 明确确认之前，不进入 Task 4 的契约/后端；不能把 Fixture 或独立代理裁定算作真实监控验收。
+- [x] 为新版未接入与内嵌示意状态各保留参考图、真实 Fixture 截图、并排图、叠加/差异图；旧外跳方案四图不能复用。
+- [x] 独立 GPT-6 Astra max 查看新版四图并裁定 APPROVE；Fan 明早仍可在本地网页亲自复核。
+- [x] 🛑 四图由独立 GPT-6 Astra max 代理按 Fan 本轮委托做视觉裁定；这不算真实监控验收。Task 4 的测试机 SSH、真实数据写入与部署仍分别等待 Fan 当场批准。
 
 ## Task 4：真实监控接入（本轮暂不执行）
 

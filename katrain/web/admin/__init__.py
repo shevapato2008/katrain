@@ -1,0 +1,1 @@
+"""Dedicated KaTrain admin application."""

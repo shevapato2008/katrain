@@ -78,10 +78,32 @@ const sectionResponse = {
   ],
 };
 
+const renderPage = () =>
+  render(
+    <MemoryRouter initialEntries={['/tutorials/sections/1']}>
+      <Routes>
+        <Route path="/tutorials/sections/:sectionId" element={<TutorialFigurePage />} />
+      </Routes>
+    </MemoryRouter>
+  );
+
+const sectionWithBoard = {
+  ...sectionResponse,
+  figures: [
+    {
+      ...sectionResponse.figures[0],
+      board_payload: { size: 19, stones: { B: [[3, 3]], W: [] } },
+      recognition_debug: { human_verified: false },
+    },
+  ],
+};
+
+const EDIT_BUTTONS = [/编辑讲解/, /确认审核/, /逻辑检查/, /^编辑$/, /初始化空棋盘/];
+
 describe('TutorialFigurePage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    (useAuth as Mock).mockReturnValue({ token: 'fake-token' });
+    (useAuth as Mock).mockReturnValue({ token: 'fake-token', user: { is_admin: true } });
     (TutorialAPI.getSection as Mock).mockResolvedValue(sectionResponse);
     (TutorialAPI.saveNarration as Mock).mockResolvedValue({
       ...sectionResponse.figures[0],
@@ -144,5 +166,36 @@ describe('TutorialFigurePage', () => {
     expect(TutorialAPI.generateFigureAudio).not.toHaveBeenCalled();
     expect(await screen.findByText('只更新文字')).toBeInTheDocument();
     expect(screen.getByTestId('audio-player')).toHaveTextContent('/assets/tutorial_assets/test-buju/audio/fig_7-old.mp3');
+  });
+
+  it('管理员看得到编辑控件', async () => {
+    (TutorialAPI.getSection as Mock).mockResolvedValue(sectionWithBoard);
+    renderPage();
+    await screen.findByText('旧讲解');
+    for (const name of [/编辑讲解/, /确认审核/, /逻辑检查/, /^编辑$/]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    expect(screen.getByTestId('recognition-debug')).toBeInTheDocument();
+  });
+
+  it('非管理员只读：看得到讲解和音频，看不到任何编辑控件', async () => {
+    (useAuth as Mock).mockReturnValue({ token: 'fake-token', user: { is_admin: false } });
+    (TutorialAPI.getSection as Mock).mockResolvedValue(sectionWithBoard);
+    renderPage();
+    expect(await screen.findByText('旧讲解')).toBeInTheDocument();
+    expect(screen.getByTestId('audio-player')).toHaveTextContent('/assets/tutorial_assets/test-buju/audio/fig_7-old.mp3');
+    for (const name of EDIT_BUTTONS) {
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    }
+    expect(screen.queryByTestId('recognition-debug')).toBeNull();
+  });
+
+  it('未登录与非管理员一样只读（棋盘为空时也不出现「初始化空棋盘」）', async () => {
+    (useAuth as Mock).mockReturnValue({ token: null, user: null });
+    renderPage();
+    expect(await screen.findByText('旧讲解')).toBeInTheDocument();
+    for (const name of EDIT_BUTTONS) {
+      expect(screen.queryByRole('button', { name })).toBeNull();
+    }
   });
 });

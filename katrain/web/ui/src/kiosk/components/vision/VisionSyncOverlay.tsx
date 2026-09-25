@@ -20,6 +20,7 @@ import { useVoice, type VoiceName } from '../../hooks/useVoice';
 import {
   initialRecoveryState,
   reduceRecoveryState,
+  type PendingStone,
   type RecoveryState,
 } from './visionRecovery';
 
@@ -34,6 +35,9 @@ interface VisionSyncOverlayProps {
   boardSize: number;
   playerToMove: string | null;
   currentNodeId: number | null;
+  /** Human stone already sent to a remote platform; its local game record has
+   * not advanced yet, so the same-cell camera diff is expected until the reply. */
+  platformPendingStone?: PendingStone | null;
   /** Board-loss precedence (Task B1.4, wired from GamePage.tsx): true while a
    * higher-priority board-loss surface (the escalation dialog or the recalibration
    * modal) is already up, so this generic "board detection abnormal" dialog never
@@ -73,7 +77,7 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, suppressBoardLost = false }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
 
@@ -166,7 +170,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
 
     const nowMs = Date.now();
     setRecovery((state) => newEvents.reduce(
-      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs }),
+      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs, platformPendingStone }),
       state,
     ));
 
@@ -213,7 +217,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     }
 
     lastProcessedSeqRef.current = Math.max(...newEvents.map((event) => event.seq));
-  }, [syncEvents]);
+  }, [syncEvents, platformPendingStone]);
 
   useEffect(() => {
     if (!recovery.pending) return;

@@ -30,6 +30,7 @@ import { requestFailureKind } from '../../utils/requestFailure';
 import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
+import { useRankedTerritory } from '../../features/aiLadder/useRankedTerritory';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
 import { countErrorMessage } from '../utils/countErrors';
@@ -143,6 +144,11 @@ const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCar
       <EmojiEvents data-testid="result-trophy" className={celebrating ? 'game-win-trophy' : undefined}
         sx={{ color: 'primary.main', fontSize: 32 }} />
       <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
+      {gameState.game_type === 'ai_ladder_ranked' && /^[BW]\+\d/.test(endResultOf(gameState) ?? '') && (
+        <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+          {t('game:ranked_ai_adjudication', '未完成棋盘由云端 AI 按中国规则估分判定')}
+        </Typography>
+      )}
       {/* 未识别的平台终局哨兵仍以无胜负 `Void` 收口；已知的停一手和认输会走各自语义。 */}
       {endResultOf(gameState) === 'Void' && gameState.platform_engine_color && (
         <Typography
@@ -260,6 +266,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
   const enginePositionRef = useRef(enginePositionKey);
   enginePositionRef.current = enginePositionKey;
+  const rankedTerritory = useRankedTerritory(
+    sessionId,
+    !engineMode && !!session.gameState && isRankedGameType(session.gameState.game_type) && !endResultOf(session.gameState),
+    session.gameState?.current_node_id,
+    session.gameState?.current_node_index ?? 0,
+  );
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
@@ -1112,7 +1124,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onMove={handleBoardMove}
               analysisToggles={boardAnalysisToggles}
               playerColor={humanColor}
-              engineOverlay={engineOverlay}
+              engineOverlay={isRanked ? rankedTerritory.overlay : engineOverlay}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
@@ -1159,6 +1171,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             analysisRequiresLogin={gameState.analysis_delivered === false}
             isGameOver={isGameOver}
             isRanked={isRanked}
+            territory={isRanked && !isGameOver ? {
+              remaining: rankedTerritory.remaining,
+              phase: rankedTerritory.phase,
+              blackArea: rankedTerritory.result?.black_area,
+              whiteArea: rankedTerritory.result?.white_area,
+              disabled: rankedTerritory.disabled,
+              retrySameRequest: rankedTerritory.retrySameRequest,
+              onRequest: () => { void rankedTerritory.request(); },
+            } : undefined}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}
@@ -1334,6 +1355,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           boardSize={session.gameState?.board_size?.[0] ?? 19}
           playerToMove={session.gameState?.player_to_move ?? null}
           currentNodeId={session.gameState?.current_node_id ?? null}
+          platformPendingStone={engineMode && session.platformPendingMove ? {
+            row: boardSize - 1 - session.platformPendingMove.row,
+            col: session.platformPendingMove.col,
+            color: gameState.player_to_move === 'B' ? 1 : 2,
+          } : null}
           suppressBoardLost={escalationOpen || recalOpen}
         />
       )}

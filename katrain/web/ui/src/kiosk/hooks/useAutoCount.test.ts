@@ -91,7 +91,7 @@ describe('autoCountEligible', () => {
     ['人机自由对弈', gs('free', 'player:human', 'player:ai'), false, true],
     ['大厅对局(后端 game_type 也是 free)', gs('free', 'human', 'human'), false, false],
     ['星阵人机', gs('free', 'human', 'human'), true, false],
-    ['升降级', gs('ai_ladder_ranked', 'player:human', 'player:ai'), false, false],
+    ['升降级', gs('ai_ladder_ranked', 'player:human', 'player:ai'), false, true],
   ] as const)('%s', (_name, state, engineMode, expected) => {
     expect(autoCountEligible(state, engineMode)).toBe(expected);
   });

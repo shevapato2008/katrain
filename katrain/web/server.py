@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import time
+import httpx
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, List, Optional, Union, Dict
@@ -14,11 +15,14 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
-from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
+from katrain.web.api.v1.endpoints.ai_ladder import (
+    adjudicate_ranked_position, analyze_ranked_territory, mark_ai_ladder_remote_terminal,
+)
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.game_end_rules import is_awaiting_count
@@ -118,6 +122,11 @@ def _count_result(score):
     if score >= 0:
         return f"B+{abs(score):.1f}", "B"
     return f"W+{abs(score):.1f}", "W"
+
+
+class RankedTerritoryRequest(BaseModel):
+    session_id: str
+    request_id: str = Field(min_length=1, max_length=64)
 
 
 def _new_terminal(session, before):
@@ -256,7 +265,7 @@ async def _lifespan_server(app: FastAPI, log):
     # 谁都读得到，凭它能自签任意用户的 token。
     assert_secret_key_is_safe(settings.KATRAIN_MODE, settings.SECRET_KEY)
 
-    from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
+    from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
     from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
@@ -280,32 +289,6 @@ async def _lifespan_server(app: FastAPI, log):
     user_game_repo = UserGameRepository(session_factory)
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
-
-    # 首个管理员账号只在显式注入口令时创建。
-    # 曾经这里硬编码创建一个用户名和口令都固定为同一个公开已知词的账号，配合
-    # "按用户名无条件提权"等于把管理接口敞开。两者一起拆掉。
-    if not repo.list_users():
-        pwd = settings.ADMIN_BOOTSTRAP_PASSWORD
-        if pwd:
-            try:
-                created = repo.create_user("admin", get_password_hash(pwd))
-                from katrain.web.core import models_db
-
-                _s = session_factory()
-                try:
-                    row = _s.query(models_db.User).filter(models_db.User.id == created["id"]).one()
-                    row.is_admin = True
-                    _s.commit()
-                finally:
-                    _s.close()
-                log.info("已按 ADMIN_BOOTSTRAP_PASSWORD 创建初始管理员")
-            except ValueError:
-                pass
-        else:
-            log.warning(
-                "数据库为空且未设置 KATRAIN_ADMIN_BOOTSTRAP_PASSWORD —— 未创建任何账号。"
-                "设置该环境变量后重启即可创建初始管理员。"
-            )
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:
@@ -1858,14 +1841,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             from katrain.core.lang import rank_key
 
-            sgf_content = session.katrain.get_sgf()
+            game_type = getattr(session, "game_type", "free")
+            sgf_content = session.katrain.get_sgf() if game_type != "ai_ladder_ranked" else None
             state = session.katrain.get_state()
             players_info = session.katrain.players_info
 
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            game_type = getattr(session, "game_type", "free")
             # Local two-player names are optional. Filling the logged-in user into both human
             # seats would turn an unnamed game into a misleading same-name game.
             if current_user and game_type != "pvp_local":
@@ -1997,6 +1980,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
                     user_id=current_user.id, game_id=snapshot.game_id
                 )
+                ai_color = "W" if snapshot.user_color == "B" else "B"
+                seat_names = {snapshot.user_color: current_user.username, ai_color: snapshot.opponent.rank_name}
+                data["player_black"] = seat_names["B"]
+                data["player_white"] = seat_names["W"]
+                frozen_rules = getattr(lifecycle, "rules_snapshot", None)
+                if frozen_rules is not None:
+                    data["board_size"] = frozen_rules["board_size"]
+                    data["rules"] = frozen_rules["rules"]
+                    data["komi"] = frozen_rules["komi"]
+                root = session.katrain.game.root
+                for property_name, value in (
+                    ("PB", data["player_black"]),
+                    ("PW", data["player_white"]),
+                    ("RE", data["result"]),
+                    ("RU", data["rules"]),
+                    ("SZ", data["board_size"]),
+                    ("KM", data["komi"]),
+                ):
+                    root.set_property(property_name, value)
+                data["sgf_content"] = session.katrain.get_sgf()
                 if getattr(app.state, "remote_client", None) is not None:
                     data["origin_device_id"] = settings.DEVICE_ID
                 if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
@@ -2334,6 +2337,56 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return result
 
+    async def _complete_ranked_count(session, app, current_user):
+        """Ask the cloud privately, then commit only if this exact board position still exists."""
+        with session.lock:
+            game = session.katrain.game
+            node = game.current_node
+            awaiting = is_awaiting_count(session.katrain)
+            trigger = "double_pass" if awaiting else "manual"
+            snapshot = getattr(session, "ai_ladder_snapshot", None)
+            key = getattr(session, "ai_ladder_reservation_key", None)
+            if snapshot is None or not isinstance(key, str) or not key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+            sgf_content = session.katrain.get_sgf()
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is None:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                decision = await adjudicate_ranked_position(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=key, sgf_content=sgf_content, trigger=trigger,
+                )
+            else:
+                decision = await remote.count_ai_ladder_game(snapshot.game_id, key, sgf_content, trigger)
+            score = decision["score"]
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+                raise ValueError("invalid cloud score")
+            result, _ = _count_result(score)
+            if decision.get("result") != result:
+                raise ValueError("inconsistent cloud result")
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked count unavailable: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked adjudicator unavailable; retry counting") from exc
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
+            if session.katrain.game is not game:
+                raise EndgameConflict("position_changed")
+            before = _terminal_of(session)
+            session.katrain._commit_end_state(result, node=node, fill_pending=awaiting)
+            session.game_ended = True
+            end = _new_terminal(session, before)
+            state = session.katrain.get_state()
+            session.last_state = state
+        session.katrain.update_state()
+        if end is not None:
+            await _finish_ended_game(session, app, current_user, end)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "result": result}
+
     async def _score_two_pass_end(session, end):
         """双方各停一手结束、还没有胜负的局:补一次分析,按数子的格式写在**终局那一手**上。
         返回补上后的 `GameEnd`;没补(不是双停 / 不许分析 / 补不出分 / 被别人抢先)返回 None。
@@ -2376,6 +2429,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
         if getattr(session, "mode", "play") == "research":
             return
+        if getattr(session, "game_type", None) == "ai_ladder_ranked" and is_awaiting_count(session.katrain):
+            return
         lock = getattr(session, "end_game_lock", None)
         if not isinstance(lock, asyncio.Lock):
             lock = asyncio.Lock()
@@ -2412,6 +2467,87 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     manager.on_game_ended = _on_game_ended_off_request
 
+    def _ranked_territory_session(session_id: str, current_user):
+        session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "territory")
+        if not is_ai_ladder_ranked_session(session):
+            raise HTTPException(status_code=403, detail="Territory is only available in a ranked game")
+        snapshot = guard_ai_ladder_ranked_owner(session, current_user, "territory")
+        guard_ai_ladder_ranked_not_ended(session, "territory")
+        return session, snapshot
+
+    @app.get("/api/ai-ladder/territory")
+    async def ranked_territory_status(session_id: str, current_user: User = Depends(get_current_user_optional)):
+        session, snapshot = _ranked_territory_session(session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                return await remote.get_ai_ladder_territory(snapshot.game_id)
+            if not getattr(app.state, "ai_ladder_authoritative", False):
+                raise RuntimeError("ranked authority unavailable")
+            return app.state.ai_ladder_repo.get_territory_status(user_id=current_user.id, game_id=snapshot.game_id)
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail="Ranked territory unavailable") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory status failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+    @app.post("/api/ai-ladder/territory")
+    async def ranked_territory_request(
+        body: RankedTerritoryRequest, current_user: User = Depends(get_current_user_optional)
+    ):
+        session, snapshot = _ranked_territory_session(body.session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_not_ended(session, "territory")
+            game = session.katrain.game
+            node = game.current_node
+            sgf_content = session.katrain.get_sgf()
+            reservation_key = getattr(session, "ai_ladder_reservation_key", None)
+            if not isinstance(reservation_key, str) or not reservation_key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                result = await remote.request_ai_ladder_territory(
+                    snapshot.game_id, reservation_key, sgf_content, body.request_id
+                )
+            else:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                result = await analyze_ranked_territory(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=reservation_key, sgf_content=sgf_content, request_id=body.request_id,
+                )
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in {403, 409, 422, 429}:
+                try:
+                    detail = exc.response.json().get("detail", "Ranked territory unavailable")
+                except ValueError:
+                    detail = "Ranked territory unavailable"
+                raise HTTPException(status_code=exc.response.status_code, detail=detail) from exc
+            logging.getLogger("katrain_web").warning("Ranked territory cloud rejected: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory request failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+        if not isinstance(result, dict) or not isinstance(result.get("remaining"), int):
+            raise HTTPException(status_code=502, detail="Invalid ranked territory response")
+        with session.lock:
+            if (session.katrain.game is not game or game.current_node is not node
+                    or session.katrain.get_sgf() != sgf_content
+                    or getattr(session, "ai_ladder_remote_ended", False)
+                    or getattr(node, "end_state", None)
+                    or getattr(session, "_recorded", False)):
+                return {"remaining": result["remaining"], "stale": True}
+        return {**result, "stale": False}
+
     @app.post("/api/count/request")
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
@@ -2424,16 +2560,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
         # the manual-count move threshold and the placeholder end_result is not a final result.
         if not state.get("awaiting_count"):
-            count_min_moves = state.get("count_min_moves")
+            ranked_count = getattr(session, "game_type", None) == "ai_ladder_ranked"
+            count_min_moves = 100 if ranked_count else state.get("count_min_moves")
             if count_min_moves is None:
                 count_min_moves = session.katrain.config("game/count_min_moves", 100)
-            if len(state.get("history", [])) < count_min_moves:
+            move_count = len(state.get("history", [])) - (1 if ranked_count else 0)
+            if move_count < count_min_moves:
                 raise HTTPException(
                     status_code=400,
                     detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
                 )
             if state.get("end_result"):
                 raise HTTPException(status_code=400, detail={"code": "game_over", "message": "Game is already over"})
+
+        if getattr(session, "game_type", None) == "ai_ladder_ranked":
+            return await _complete_ranked_count(session, app, current_user)
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 

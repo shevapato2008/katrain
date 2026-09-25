@@ -102,7 +102,14 @@ def _classify_position(board_payload, global_col, global_row):
     return base_type, move_number, shape, letter
 
 
-def export_figure_training_samples(db: Session, figure: TutorialFigure) -> int:
+def export_figure_training_samples(
+    db: Session,
+    figure: TutorialFigure,
+    *,
+    commit: bool = True,
+    asset_base: Path = ASSET_BASE,
+    book_slug: str | None = None,
+) -> int:
     """Export patches for a verified figure to training_samples table.
 
     Uses OpenCV grid detection to crop precise patches from the crop image.
@@ -131,14 +138,15 @@ def export_figure_training_samples(db: Session, figure: TutorialFigure) -> int:
         return 0
 
     # Derive book slug from page_image_path
-    book_slug = ""
-    if figure.page_image_path:
-        parts = Path(figure.page_image_path).parts
-        if len(parts) >= 2:
-            book_slug = parts[1]
+    if book_slug is None:
+        book_slug = ""
+        if figure.page_image_path:
+            parts = Path(figure.page_image_path).parts
+            if len(parts) >= 2:
+                book_slug = parts[1]
 
     # Load crop image and detect grid
-    crop_path = ASSET_BASE / "tutorial_assets" / book_slug / "debug" / figure.figure_label / "crop.png"
+    crop_path = asset_base / "tutorial_assets" / book_slug / "debug" / figure.figure_label / "crop.png"
     if not crop_path.exists():
         log.warning("Figure %d: crop not found at %s", figure.id, crop_path)
         return 0
@@ -184,7 +192,7 @@ def export_figure_training_samples(db: Session, figure: TutorialFigure) -> int:
 
         # Classify from ground truth
         base_type, move_number, shape, letter = _classify_position(payload, global_col, global_row)
-        relative_path = str(patch_path.relative_to(ASSET_BASE))
+        relative_path = str(patch_path.relative_to(asset_base))
 
         sample = TrainingSample(
             figure_id=figure.id,
@@ -205,7 +213,8 @@ def export_figure_training_samples(db: Session, figure: TutorialFigure) -> int:
 
     if samples:
         db.add_all(samples)
-        db.commit()
+        if commit:
+            db.commit()
 
     log.info("Figure %d: exported %d training samples", figure.id, len(samples))
     return len(samples)

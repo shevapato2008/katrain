@@ -1,29 +1,20 @@
-"""Tutorial module API endpoints (V2 — database-backed).
+"""Read-only tutorial API endpoints (V2 — database-backed).
 
-Replaces the old JSON-file-based endpoints with DB queries.
+Authoring routes live in the separate admin application.
 """
 
-import logging
 import mimetypes
-from datetime import datetime, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user_optional
-from katrain.web.core.box_sso import is_guest_user
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import User
 from katrain.web.core.storage import get_storage_backend, normalize_key
 from katrain.web.core.storage.base import MEDIA_CACHE_CONTROL
 from katrain.web.tutorials import db_queries
-from katrain.web.tutorials.services import generate_figure_audio
 from katrain.web.tutorials.models import (
-    BoardPayloadUpdate,
-    NarrationUpdate,
-    NarrationUpdateRequest,
     TutorialBookDetailOut,
     TutorialBookOut,
     TutorialCategoryOut,
@@ -32,9 +23,7 @@ from katrain.web.tutorials.models import (
     TutorialSectionDetailOut,
     TutorialSectionOut,
 )
-from katrain.web.tutorials.viewport import compute_viewport
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Asset paths are resolved via the storage backend (katrain.web.core.storage),
@@ -144,129 +133,6 @@ async def get_figure(figure_id: int, db: Session = Depends(get_db)):
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
-    return TutorialFigureOut.model_validate(figure)
-
-
-@router.put("/figures/{figure_id}/board", response_model=TutorialFigureOut)
-async def update_figure_board(
-    figure_id: int,
-    update: BoardPayloadUpdate,
-    db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
-):
-    """Update the board_payload for a figure. Computes viewport server-side.
-    Uses optimistic locking via expected_updated_at to prevent silent overwrites."""
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
-    figure = db_queries.get_figure(db, figure_id)
-    if figure is None:
-        raise HTTPException(status_code=404, detail="Figure not found")
-    # Optimistic locking — compare as datetime objects to avoid Z vs +00:00 format mismatch
-    if update.expected_updated_at and figure.updated_at:
-        try:
-            expected_dt = datetime.fromisoformat(update.expected_updated_at.replace("Z", "+00:00"))
-            actual_dt = figure.updated_at
-            if expected_dt.tzinfo is None:
-                expected_dt = expected_dt.replace(tzinfo=timezone.utc)
-            if actual_dt.tzinfo is None:
-                actual_dt = actual_dt.replace(tzinfo=timezone.utc)
-            if actual_dt != expected_dt:
-                raise HTTPException(status_code=409, detail="Board was modified by another session. Reload and retry.")
-        except (ValueError, AttributeError):
-            raise HTTPException(status_code=409, detail="Board was modified by another session. Reload and retry.")
-    payload_dict = update.board_payload.model_dump()
-    viewport = compute_viewport(payload_dict)
-    payload_dict["viewport"] = viewport
-    figure = db_queries.update_figure_board(db, figure, payload_dict)
-    db_queries.record_payload_history(
-        db,
-        figure.id,
-        payload_dict,
-        changed_by=current_user.username if current_user else "anonymous",
-        change_type="edit",
-    )
-    db.commit()
-    return TutorialFigureOut.model_validate(figure)
-
-
-# ── Narration ────────────────────────────────────────────────────────────────
-
-
-@router.post("/figures/{figure_id}/generate-audio", response_model=TutorialFigureOut)
-async def generate_audio_for_figure(
-    figure_id: int,
-    request: NarrationUpdateRequest,
-    db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
-):
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
-    figure = db_queries.get_figure(db, figure_id)
-    if figure is None:
-        raise HTTPException(status_code=404, detail="Figure not found")
-
-    updated_figure = await generate_figure_audio(db, figure, request.narration)
-    return TutorialFigureOut.model_validate(updated_figure)
-
-
-@router.put("/figures/{figure_id}/narration", response_model=TutorialFigureOut)
-async def update_figure_narration(
-    figure_id: int,
-    update: NarrationUpdate,
-    db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
-):
-    """Update the narration text and optional audio_asset for a figure."""
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
-    figure = db_queries.get_figure(db, figure_id)
-    if figure is None:
-        raise HTTPException(status_code=404, detail="Figure not found")
-    figure = db_queries.update_figure_narration(db, figure, update.narration, update.audio_asset)
-    return TutorialFigureOut.model_validate(figure)
-
-
-# ── Verify ────────────────────────────────────────────────────────────────────
-
-
-@router.put("/figures/{figure_id}/verify", response_model=TutorialFigureOut)
-async def verify_figure(
-    figure_id: int,
-    db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
-):
-    """Mark a figure as human-verified. The current board_payload becomes ground truth."""
-    import json as _json
-
-    if is_guest_user(current_user):
-        raise HTTPException(status_code=403, detail="Guest is read-only")
-    figure = db_queries.get_figure(db, figure_id)
-    if figure is None:
-        raise HTTPException(status_code=404, detail="Figure not found")
-    debug = _json.loads(_json.dumps(figure.recognition_debug or {}))
-    debug["human_verified"] = True
-    debug["verified_at"] = datetime.now(timezone.utc).isoformat()
-    debug["verified_by"] = current_user.username if current_user else "anonymous"
-    db_queries.update_figure_recognition_debug(db, figure, debug)
-    if figure.board_payload:
-        db_queries.record_payload_history(
-            db,
-            figure.id,
-            figure.board_payload,
-            changed_by=current_user.username if current_user else "anonymous",
-            change_type="verify",
-        )
-        db.commit()
-
-    # Auto-export training samples from the verified figure
-    try:
-        from katrain.web.tutorials.training_export import export_figure_training_samples
-
-        count = export_figure_training_samples(db, figure)
-        logging.getLogger("katrain_web").info("Exported %d training samples for figure %d", count, figure.id)
-    except Exception as e:
-        logging.getLogger("katrain_web").warning("Training export failed for figure %d: %s", figure.id, e)
-
     return TutorialFigureOut.model_validate(figure)
 
 

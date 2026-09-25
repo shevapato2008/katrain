@@ -3,7 +3,7 @@
 Hierarchy: Category → Book → Chapter → Section → Figure
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
@@ -72,6 +72,12 @@ class TutorialFigureOut(BaseModel):
     video_size_bytes: Optional[int] = None
     order: int
     updated_at: Optional[datetime] = None
+
+    @field_validator("updated_at")
+    @classmethod
+    def utc_version(cls, value: Optional[datetime]) -> Optional[datetime]:
+        # SQLite strips timezone metadata; tutorial versions are always UTC.
+        return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
 
 
 class TutorialSectionDetailOut(TutorialSectionOut):

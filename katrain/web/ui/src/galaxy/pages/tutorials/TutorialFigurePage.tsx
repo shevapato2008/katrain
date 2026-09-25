@@ -36,7 +36,7 @@ import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +51,8 @@ export default function TutorialFigurePage() {
   const [compareOpen, setCompareOpen] = useState(true);
   const isWide = useMediaQuery('(min-width:900px)');
   const showCompare = isWide && compareOpen;
+  // Backend write routes enforce admin access; hide their controls for read-only users.
+  const canEdit = user?.is_admin === true;
 
   const currentFigure = section?.figures[currentFigureIndex] ?? null;
 
@@ -465,18 +467,20 @@ export default function TutorialFigurePage() {
           <Box sx={SECTION}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
               <Typography variant="caption" color="text.secondary">语音讲解</Typography>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<EditIcon />}
-                onClick={() => setIsEditingNarration(v => !v)}
-                aria-label={isEditingNarration ? '收起编辑' : '编辑讲解'}
-              >
-                {isEditingNarration ? '收起编辑' : '编辑讲解'}
-              </Button>
+              {canEdit && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<EditIcon />}
+                  onClick={() => setIsEditingNarration(v => !v)}
+                  aria-label={isEditingNarration ? '收起编辑' : '编辑讲解'}
+                >
+                  {isEditingNarration ? '收起编辑' : '编辑讲解'}
+                </Button>
+              )}
             </Box>
 
-            {isEditingNarration ? (
+            {canEdit && isEditingNarration ? (
               <Box>
                 <TextField
                   label="讲解文本"
@@ -502,7 +506,7 @@ export default function TutorialFigurePage() {
               </Typography>
             ) : (
               <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
-                暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。
+                {canEdit ? '暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。' : '暂无讲解文本。'}
               </Typography>
             )}
 
@@ -528,14 +532,14 @@ export default function TutorialFigurePage() {
             )}
           </Box>
 
-          {currentFigure?.recognition_debug && (
+          {canEdit && currentFigure?.recognition_debug && (
             <Box sx={{ p: 2 }}>
               <RecognitionDebugPanel debug={currentFigure.recognition_debug} />
             </Box>
           )}
         </>
       )}
-      actions={(
+      actions={canEdit ? (
         <Box sx={{ py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
           {!hasBoard ? (
             <Button fullWidth variant="contained" onClick={initEmptyBoard}>初始化空棋盘</Button>
@@ -564,7 +568,7 @@ export default function TutorialFigurePage() {
             </Box>
           )}
         </Box>
-      )}
+      ) : null}
     />
   );
 }

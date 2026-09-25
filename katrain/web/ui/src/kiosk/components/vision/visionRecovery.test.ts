@@ -87,6 +87,44 @@ describe('reduceRecoveryState', () => {
     expect(next.blocking).toEqual({ kind: 'mismatch', positions: [[4, 5, 2]], missing: [] });
   });
 
+  it('keeps the submitted stone quiet while the platform reply is pending', () => {
+    const platformPendingStone = { row: 4, col: 5, color: 2 };
+    const expired = reduceRecoveryState(
+      transition(initialRecoveryState, 'move_pending', platformPendingStone, 1_000),
+      { kind: 'pending_deadline', nowMs: 5_000 },
+    );
+    const mismatch = reduceRecoveryState(expired, {
+      kind: 'vision_event',
+      event: event('illegal_change', { positions: [[4, 5, 2]], missing: [] }),
+      nowMs: 20_000,
+      platformPendingStone,
+    });
+    const suspected = reduceRecoveryState(mismatch, {
+      kind: 'vision_event',
+      event: event('ambiguous_stone', { row: 4, col: 5, color: 2 }),
+      nowMs: 20_000,
+      platformPendingStone,
+    });
+    expect(mismatch.blocking).toBeNull();
+    expect(suspected.blocking).toBeNull();
+
+    const otherCell = reduceRecoveryState(suspected, {
+      kind: 'vision_event',
+      event: event('illegal_change', { positions: [[4, 6, 2]], missing: [] }),
+      nowMs: 20_000,
+      platformPendingStone,
+    });
+    expect(otherCell.blocking).toEqual({ kind: 'mismatch', positions: [[4, 6, 2]], missing: [] });
+
+    const wrongColor = reduceRecoveryState(suspected, {
+      kind: 'vision_event',
+      event: event('illegal_change', { positions: [[4, 5, 1]], missing: [] }),
+      nowMs: 20_000,
+      platformPendingStone,
+    });
+    expect(wrongColor.blocking).toEqual({ kind: 'mismatch', positions: [[4, 5, 1]], missing: [] });
+  });
+
   it.each(['node_advanced', 'ambiguous_stone', 'capture_pending', 'board_lost', 'synced'] as const)(
     '%s clears a pending candidate',
     (kind) => {

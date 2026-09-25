@@ -22,6 +22,8 @@ import ast
 import pathlib
 import sys
 
+from packaging.requirements import Requirement
+
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 CRON_ROOT = REPO_ROOT / "katrain" / "cron"
 
@@ -94,3 +96,11 @@ def test_允许清单跟_requirements_cron_对得上():
         f"清单里有而需求里没有：{set(IMAGE_THIRD_PARTY.values()) - declared}；"
         f"需求里有而清单里没有：{declared - set(IMAGE_THIRD_PARTY.values())}"
     )
+
+
+def test_cron_sqlalchemy_keeps_psycopg2_as_default_postgresql_driver():
+    """The cron image installs psycopg2, not SQLAlchemy 2.1's psycopg default."""
+    lines = (REPO_ROOT / "requirements-cron.txt").read_text().splitlines()
+    sqlalchemy = next(Requirement(line) for line in lines if line.startswith("sqlalchemy"))
+    assert "2.0.0" in sqlalchemy.specifier
+    assert "2.1.0" not in sqlalchemy.specifier

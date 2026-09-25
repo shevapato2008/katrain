@@ -1,11 +1,8 @@
-"""Phase 2: billing REST API — auth boundaries, redeem flow, admin grant.
+"""Billing REST API — auth boundaries, redeem flow, retired public admin routes.
 
 Uses an isolated SQLite DB via a get_db dependency override so the endpoints and
 the auth repo share the same database.
 """
-
-import os
-import uuid
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -15,19 +12,15 @@ from sqlalchemy.orm import sessionmaker
 from katrain.web.core.config import settings
 from katrain.web.core.db import Base, get_db
 
-settings.DATABASE_URL = "sqlite:///./test_billing_api.db"
-
 
 @pytest.fixture
-def app():
-    settings.KATRAIN_MODE = "server"
-    if os.path.exists("./test_billing_api.db"):
-        os.remove("./test_billing_api.db")
+def app(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "KATRAIN_MODE", "server")
 
     from katrain.web.core.auth import SQLAlchemyUserRepository
     from katrain.web.server import create_app
 
-    test_engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+    test_engine = create_engine(f"sqlite:///{tmp_path / 'billing.db'}", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=test_engine)
     TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
@@ -46,8 +39,7 @@ def app():
 
     yield app
 
-    if os.path.exists("./test_billing_api.db"):
-        os.remove("./test_billing_api.db")
+    test_engine.dispose()
 
 
 async def _make_user(app, username, password="pw", is_admin=False, credits=0):
@@ -91,35 +83,43 @@ async def test_balance_requires_auth(app):
 
 
 @pytest.mark.asyncio
-async def test_non_admin_cannot_grant_or_make_codes(app):
+async def test_public_grant_and_codes_routes_are_retired_for_non_admin(app):
     await _make_user(app, "bob", is_admin=False)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         h = await _login(ac, "bob")
         r = await ac.post("/api/v1/billing/admin/grant", json={"username": "bob", "amount": 100}, headers=h)
-        assert r.status_code == 403
+        assert r.status_code in (404, 405)
         r = await ac.post("/api/v1/billing/admin/codes", json={"count": 1, "credits": 100}, headers=h)
-        assert r.status_code == 403
+        assert r.status_code in (404, 405)
 
 
 @pytest.mark.asyncio
-async def test_admin_grant_increases_balance(app):
+async def test_legacy_admin_cannot_grant_or_make_codes(app):
+    from katrain.web.core import models_db
+
     await _make_user(app, "boss", is_admin=True)
     await _make_user(app, "carol", credits=0)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         h = await _login(ac, "boss")
         r = await ac.post("/api/v1/billing/admin/grant", json={"username": "carol", "amount": 250}, headers=h)
-        assert r.status_code == 200 and r.json()["credits"] == 250
+        assert r.status_code in (404, 405)
+        r = await ac.post("/api/v1/billing/admin/codes", json={"count": 1, "credits": 300}, headers=h)
+        assert r.status_code in (404, 405)
+    with app.state._TestSessionLocal() as db:
+        assert db.query(models_db.User).filter_by(username="carol").one().credits == 0
+        assert db.query(models_db.RedeemCode).count() == 0
 
 
 @pytest.mark.asyncio
 async def test_redeem_flow(app):
-    await _make_user(app, "boss", is_admin=True)
-    await _make_user(app, "dave", credits=0)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        ah = await _login(ac, "boss")
-        r = await ac.post("/api/v1/billing/admin/codes", json={"count": 1, "credits": 300}, headers=ah)
-        code = r.json()["codes"][0]
+    from katrain.web.core import models_db
 
+    await _make_user(app, "dave", credits=0)
+    code = "EXISTING-CODE"
+    with app.state._TestSessionLocal() as db:
+        db.add(models_db.RedeemCode(code=code, credits=300))
+        db.commit()
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         dh = await _login(ac, "dave")
         r = await ac.post("/api/v1/billing/redeem", json={"code": code}, headers=dh)
         assert r.status_code == 200 and r.json()["credits"] == 300

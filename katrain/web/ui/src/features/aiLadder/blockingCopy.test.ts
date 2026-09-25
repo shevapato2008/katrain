@@ -235,6 +235,15 @@ describe('位置与代价是正交两轴', () => {
 });
 
 describe('displaceCopy.body —— 不可撤销的那一按之前说的话', () => {
+  it('已结束而未送达时不再称为认输，明确说明放弃真实成绩的代价', () => {
+    const copy = displaceCopy(game({ state: 'pending_settlement' }));
+    expect(copy.button).toBe('放弃未送达成绩，在这里开新局');
+    expect(copy.title).toBe('放弃这局未送达的成绩？');
+    expect(copy.confirm).toBe('确认放弃成绩');
+    expect(copy.cost).toContain('真实成绩');
+    expect(copy.body).toContain('按一场负局了结');
+    expect(copy.body).not.toContain('认输');
+  });
   it('unknown:不指认一台机器,但那条会被顶掉的风险一个字不能少', () => {
     expect(displaceCopy(game({ ownership: 'unknown' })).body).toBe(
       '本机接不回来这一局，也看不到它的进度。在这里开新局需要先认输它，它将计为本局负并计入升降级。'
@@ -263,8 +272,8 @@ describe('displaceCopy.body —— 不可撤销的那一按之前说的话', () 
 
   it.each(ALL_OWNERSHIPS)('%s:成绩在送的那一格三个取值同一句', (ownership) => {
     expect(displaceCopy(game({ ownership, state: 'pending_settlement' })).body).toBe(
-      '那一局已经下完了，成绩还没送到云端。认输会以一场负替换它真实的结果，并计入升降级。'
-      + '若想保住那一局的成绩，请先用「立即重试」把它送上去。此操作不可撤销。',
+      '那一局已经下完了，但成绩还没送到云端。放弃后会按一场负局了结并计入升降级，真实棋谱和结果将无法再作为本局成绩补交。'
+      + '若成绩仍可重试，请先送达成绩；若云端拒收，请联系维护人员修复。此操作不可撤销。',
     );
   });
 });

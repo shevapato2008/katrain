@@ -1292,19 +1292,34 @@ class InProcessAdapter:
         )
 
     def _publish_status(self, observed_board) -> None:
+        # `self._camera` is duck-typed across two incompatible shapes here:
+        #   - CameraManager (vision/camera.py:184-188): `is_connected` is a @property
+        #     returning a plain bool. This is what we get whenever no camera is
+        #     injected (camera=None -> worker_inprocess.py:161), e.g. desktop runs and
+        #     every test that doesn't inject a fake.
+        #   - CameraHub (web/core/camera_hub.py:63): `is_connected` is a METHOD. This
+        #     is what service.py:45 injects for the physical-board path.
+        # Reading `self._camera.is_connected` unconditionally as an attribute is always
+        # truthy against CameraHub (a bound method object); calling it unconditionally
+        # raises TypeError against CameraManager (`bool` is not callable). CameraHub
+        # itself already handles reading ITS inner camera this way
+        # (camera_hub.py:64, `getattr(self._camera, "is_connected", False)` — treated
+        # as a property, never called) — mirror that tolerance here.
+        c = self._camera.is_connected
+        camera_connected = bool(c() if callable(c) else c)
         self._status = WorkerStatus(
-            camera_status="connected" if self._camera.is_connected else "disconnected",
+            camera_status="connected" if camera_connected else "disconnected",
             pose_lock_status=(
                 "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
             ),
             sync_state=self._sync.state.value,
             detected_board=observed_board.tolist() if observed_board is not None else None,
             last_motion_at=self._last_motion_at,
-            camera_ready=bool(self._camera.is_connected),
+            camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
             recognition_ready=bool(
-                self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
+                camera_connected and (self._geometry is not None or not self._require_geometry)
             ),
             observation_seq=self._observation_seq,
         )

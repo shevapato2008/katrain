@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 
 /**
  * 屏 02 · 对局中(§11 **布局 A**)—— 真浏览器 1024×600 实测。
@@ -371,6 +372,35 @@ test('升降级局:胜率块和「图表」键**一个都不渲染**,不是灰�
   // 少了一块之后动作区照旧贴底,右栏照旧不滚
   expect(g.actionsBottom).toBe(g.railBottom);
   expect(g.railOverflow).toBeLessThanOrEqual(0);
+});
+
+test('升降级领地:1024×600 显示额度、结果和棋盘覆盖', async ({ page }, testInfo) => {
+  await stub(page, 'ai_ladder_ranked');
+  await page.route('**/assets/img/**', (route) => {
+    const name = new URL(route.request().url()).pathname.split('/').pop();
+    if (!name || !['board.png', 'B_stone.png', 'W_stone.png', 'inner.png', 'topmove.png'].includes(name)) {
+      return route.abort();
+    }
+    return route.fulfill({ path: fileURLToPath(new URL(`../../../img/${name}`, import.meta.url)) });
+  });
+  await page.route('**/api/ai-ladder/territory**', (route) => route.fulfill({ json:
+    route.request().method() === 'GET'
+      ? { remaining: 3, in_flight: false }
+      : { remaining: 2, move_count: 24, ownership: Array(361).fill(0).map((_, i) => {
+        const x = i % 19; const y = Math.floor(i / 19);
+        return (x < 7 && y < 8) || (x > 10 && y > 10) ? 0.8
+          : (x > 14 && y < 5) || (x < 4 && y > 13) ? -0.8 : 0;
+      }), black_area: 78, white_area: 66 },
+  }));
+  await page.goto('/kiosk/play/ai/game/g-02');
+  await expect(page.getByRole('button', { name: /领地 3/ })).toBeVisible();
+  await page.getByRole('button', { name: /领地 3/ }).click();
+  await expect(page.getByText('领地判断结果')).toBeVisible();
+  await expect(page.getByText('领地判断：本局剩余 2 次')).toBeVisible();
+  if (await page.locator('.MuiAlert-action button').count()) await page.locator('.MuiAlert-action button').click();
+  await page.screenshot({ path: testInfo.outputPath('ranked-territory-1024x600.png') });
+  const overflow = await page.locator('.kiosk-rail').evaluate((rail) => rail.scrollHeight - rail.clientHeight);
+  expect(overflow).toBeLessThanOrEqual(0);
 });
 
 // ── 屏 10 · 星阵人机 —— **同一个 `GamePage`**,`engineMode` 只换右栏 ─────────────────

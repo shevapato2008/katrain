@@ -5,9 +5,9 @@
 三处读到的是同一个判定，而不是三份各写各的条件。
 """
 
-#: 盒上模式里「双方各停一手之后该自动数子」的对局类型。升降级（`ai_ladder_ranked`）与
-#: 两种反作弊局（`rated` / `ranked`）不在里面：它们的终局今天怎么落账，本轮不动。
-AWAITING_COUNT_GAME_TYPES = frozenset({"free", "pvp_local"})
+#: 盒上模式里「双方各停一手之后该自动数子」的对局类型。升降级双停等待私有云端裁判；
+#: 另两种反作弊局（`rated` / `ranked`）保留原行为。
+AWAITING_COUNT_GAME_TYPES = frozenset({"free", "pvp_local", "ai_ladder_ranked"})
 
 
 def scaled_count_min_moves(base: int, board_size: int) -> int:
@@ -25,8 +25,8 @@ def is_awaiting_count(iface) -> bool:
     """这一局是不是停在「双方各停一手、还没数子」。
 
     四条同时成立才为真：
-      1. 盒上模式（`suppress_auto_eval`）—— galaxy 走不到；
-      2. 对局类型是自由对弈或本地对局；
+      1. 盒上模式（`suppress_auto_eval`），或云端承载的升降级对局；
+      2. 对局类型是自由对弈、本地对局或升降级对弈；
       3. 当前节点和父节点都是 pass；
       4. 当前节点没被认输 / 超时 / 数子写过 `end_state`。
 
@@ -35,7 +35,7 @@ def is_awaiting_count(iface) -> bool:
     （`server.py` `_complete_count` 在 score 为 None 时 400），所以分析一回来 manual_score
     就不再为空 —— 把它当条件，数子能成功的那一刻这里恰好翻成假，自动数子会被「已终局」拒掉。
     """
-    if not getattr(iface, "suppress_auto_eval", False):
+    if not getattr(iface, "suppress_auto_eval", False) and getattr(iface, "game_type", None) != "ai_ladder_ranked":
         return False
     if getattr(iface, "game_type", "free") not in AWAITING_COUNT_GAME_TYPES:
         return False
@@ -43,8 +43,8 @@ def is_awaiting_count(iface) -> bool:
     if game is None:
         return False
     node = game.current_node
-    parent = node.parent
-    if parent is None or not node.is_pass or not parent.is_pass:
+    parent = getattr(node, "parent", None)
+    if parent is None or not getattr(node, "is_pass", False) or not getattr(parent, "is_pass", False):
         return False
     return not node.end_state
 

@@ -26,6 +26,13 @@ const forbiddenFromKiosk = [
   },
 ]
 
+const forbiddenFromPublic = [
+  {
+    group: ['**/admin/**', '*/admin/*', './admin/*', '../admin/*', '../../admin/*', '../../../admin/*'],
+    message: 'public UI must not import the standalone admin bundle',
+  },
+]
+
 const forbiddenFromServer = [
   {
     group: ['**/kiosk/**', '*/kiosk/*', '../kiosk/*', '../../kiosk/*', '../../../kiosk/*'],
@@ -59,6 +66,21 @@ const forbiddenFromShared = [
   },
 ]
 
+const forbiddenFromAdmin = [
+  {
+    group: ['**/kiosk/**', '**/kiosk'],
+    message: 'admin UI must not import kiosk code',
+  },
+  {
+    group: ['**/galaxy/**', '**/galaxy'],
+    message: 'admin UI must not import galaxy code',
+  },
+  {
+    group: ['../pages/**', '../../pages/**', '../../../pages/**', '@/pages/**'],
+    message: 'admin UI must not import public pages',
+  },
+]
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -75,15 +97,22 @@ export default defineConfig([
     },
   },
   {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/admin/**', '**/*.test.{ts,tsx}', '**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbiddenFromPublic }],
+    },
+  },
+  {
     files: ['src/kiosk/**/*.{ts,tsx}'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: forbiddenFromKiosk }],
+      'no-restricted-imports': ['error', { patterns: [...forbiddenFromKiosk, ...forbiddenFromPublic] }],
     },
   },
   {
     files: ['src/galaxy/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}', 'src/ZenModeApp.tsx'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: forbiddenFromServer }],
+      'no-restricted-imports': ['error', { patterns: [...forbiddenFromServer, ...forbiddenFromPublic] }],
     },
   },
   {
@@ -104,7 +133,14 @@ export default defineConfig([
     // 时,必须能 import 过去 —— 那是判据本身,不是违规。
     ignores: ['src/components/Board3D/**', '**/*.test.{ts,tsx}', '**/__tests__/**'],
     rules: {
-      'no-restricted-imports': ['error', { patterns: forbiddenFromShared }],
+      'no-restricted-imports': ['error', { patterns: [...forbiddenFromShared, ...forbiddenFromPublic] }],
+    },
+  },
+  {
+    files: ['src/admin/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}', '**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbiddenFromAdmin }],
     },
   },
 ])

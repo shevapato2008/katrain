@@ -42,6 +42,19 @@ describe('VisionSyncOverlay recovery presentation', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('does not re-prompt for the stone already submitted to a waiting platform', async () => {
+    const mismatch = event(1, 'illegal_change', { positions: [[4, 5, 1]], missing: [] });
+    const { rerender } = render(
+      <VisionSyncOverlay {...props} syncEvents={[mismatch]}
+        platformPendingStone={{ row: 4, col: 5, color: 1 }} />,
+    );
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }]}
+      platformPendingStone={null} />);
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
   it('shows an off-centre prompt as the only dialog and does not adopt it when dismissed', async () => {
     render(
       <VisionSyncOverlay

@@ -299,8 +299,8 @@ const GameControlPanel = ({
   // 数子闸照抄 galaxy(`RightSidebarPanel`):后端 `/api/count/request` 在 count_min_moves
   // 之前一律拒,所以键灰着 —— 而**灰而不说原因**是这份稿子在别处专门骂过的事,
   // 理由写在开关排右端那句 `.ghint` 上。
-  const countMin = gameState.count_min_moves ?? 100;
-  const moves = gameState.history?.length ?? 0;
+  const countMin = gameState.game_type === 'ai_ladder_ranked' ? 100 : gameState.count_min_moves ?? 100;
+  const moves = Math.max(0, (gameState.history?.length ?? 0) - (gameState.game_type === 'ai_ladder_ranked' ? 1 : 0));
   // N 取服务端下发的 `count_min_moves`(S2a 起按路数缩放:19 路 100 / 13 路 47 / 9 路 22);
   // `?? 100` 只兜「老服务端不带这个字段」,不是前端自己的门槛。
   // 双 pass 之后后端在等数子(`awaiting_count`),`/api/count/request` 跳过手数门槛 ⇒ 键跟着亮。

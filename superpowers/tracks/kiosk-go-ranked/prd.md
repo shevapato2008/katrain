@@ -13,15 +13,22 @@
 
 目前 `go.sailorvoyage.top` 经阿里云网关到 `home-ubuntu:8001` 测试服务。UCloud 正式库 `katrain_prod_20260725` 与 home 测试库 `katrain_db` 都有 `ai_ladder_profiles`、`ai_ladder_pending_games`、`ai_ladder_active_games`、`ai_ladder_game_ledger`、`user_games`、`sync_queue` 六张表，列结构相同。home 上该账号已有 7 条升降级账本，UCloud 为 0。用户已决定**不迁移历史成绩，也不迁移今天这盘**，切换后只让新局进入正式库。
 
+## 同步路径与故障位置
+
+1. 盒端向当前 `KATRAIN_REMOTE_URL` 调 `POST /api/v1/ai-ladder/games/reserve`，云端在 `ai_ladder_active_games` 留一个 `reserved` 占位并按云端 `ai_ladder_profiles` 选对手；盒端在本机 SQLite `ai_ladder_pending_games` 保存同一 `game_id`、冻结对手与预约凭证。
+2. 盒端建局后调 `POST /api/v1/ai-ladder/games/{game_id}/activate`，云端占位转为 `active`。终局后盒端把真实棋谱和结果先写入本机 `user_games` 与本机升降级账本，再调 `pending-settlement`，云端转为 `pending_settlement`；本机 `sync_queue` 以 `ladder-settlement:{game_id}` 唯一键排队。
+3. 同步 worker 用登录用户的 token 向该 URL 调 `POST /api/v1/ai-ladder/settlements`。云端验证预约凭证、冻结规则、结构化成绩与 SGF 根节点，再在同一事务中写正式 `user_games`、`ai_ladder_game_ledger`，更新 `ai_ladder_profiles`，删除 `ai_ladder_active_games` 占位。成功回执使本机队列变为 `completed`，并采纳云端段位档案。云端 `sync_queue` **不参与这条即时收件路径**。
+4. 本盘卡在第 3 步的验证阶段：SGF 缺 `PB/PW`，因此 HTTP 422，云端事务没有写棋谱、账本或段位，也没有删除待结算占位。本机队列把 422 记为永久失败；只点重试不能改变旧 payload。正式环境切换前须隔离该测试队列，不能将它重放到 UCloud。
+
 ## 目标与验收
 
 1. home 测试部署包含最新 `develop` 提交；UCloud 的发布分支保留专用部署文件并包含同一最新 `develop` 提交。两端服务健康，数据库可支持预约、数子裁判结果、棋谱和账本的原子结算。
 2. RK3562 新建升降级棋局的身份认证、预约、待结算和结算都指向 UCloud 正式环境。通过一次新的测试对局的服务端收据和正式库对应行验证。旧测试库的历史和本盘不搬迁；切换必须避免旧 outbox 向正式库重放和旧测试预约挡住正式新局。
-3. 用户主动数子时，服务端在已达到门槛、确认同一局面且未终局的前提下取得云端裁判分数，形成明确胜负并进入同一结算流程。分析不得在终局前泄露；计算失败要保留未结束状态和可理解的错误。双 pass 的自动收尾必须遵循同一裁判原则；失败时不得以“无结论”偷落账。KataGo 目差估计能否用于正式段位裁判，已向用户单独确认，回答前不实施该判定。
+3. 用户已确认：按中国规则由云端 AI 判定，允许满 100 手后主动数子结束。服务端须确认同一局面，私下取得云端裁判分数，形成明确胜负并进入同一结算流程；计算结果是未完全收官局面的 AI 判断，终局文案须如实说明。分析不得在终局前泄露；计算失败要保留未结束状态和可理解的错误。双 pass 的自动收尾遵循同一裁判原则；失败时不得以“无结论”偷落账。
 4. 新升降级结果的 SGF 根节点包含与结构字段完全一致的 `PB`、`PW`、`RE`、`RU`、`SZ`、`KM`；云端仍严验数据，不能放松校验来掩盖盒端缺字段。
 5. `pending_settlement` 不再呈现为“再认输”。已结束但送达失败时先展示真实终局和可行的重试；保留显式的“放弃未送达成绩，按负局了结”逃生口，写入的是云端该 game_id 的**唯一**负局墓碑，真实棋谱可能被合成弃权记录替代，必须在二次确认中说清楚。它不代表在棋盘上再次认输。已结算局不出现阻挡新局的动作。
 6. 只读审查 `smartbox-software` 中国际象棋、中国象棋、五子棋的升降级云端地址、身份地址、结果发送与失败状态，报告是否有相同测试/正式环境混用问题；不改该仓代码。
-7. 领地判断：先给一份 1024×600 的独立 HTML 预览，显示对弈页入口、请求中、结果和每局余下次数（最多 3 次），由用户确认。确认前不实施此功能的前后端。
+7. 领地判断：先给一份 1024×600 的独立 HTML 预览，显示对弈页入口、请求中、结果和每局余下次数（最多 3 次），由用户确认。领地、数子、停一手使用与自由对弈及跨平台星阵对弈相同的 `grid-nine`、`squares-four`、`hand-pointing` 图标。用户表示设计需要调整，详情待说明；确认前不实施此功能的前后端。
 
 ## 范围和约束
 
@@ -29,6 +36,16 @@
 - UCloud 的发布结构来自 `release/ucloud-20260805`，不能将纯 `develop` 目录直接覆盖生产发布；保留 Compose、密钥和数据卷。生产库操作先备份、核对迁移差异并保留回滚锚点。
 - 当前测试局及测试段位不进正式库；正式库从既有账号的初始定级开始。
 - 其他棋类仅调查和报告。领地判断设计稿确认是开发该功能的硬门槛。
+
+## 其他棋类只读核查
+
+| 棋类 | RK3562 当前实际目标 | 结算代码路径 | 结论 |
+|---|---|---|---|
+| 国际象棋 | `SMARTBOX_RANKED_ORIGIN=https://ranked.sailorvoyage.top`；大厅为 `https://lobby.sailorvoyage.top` | `setup-wizard/app/services/lobby_bridge.py` 向 ranked 的 `/api/v1/ranked/chess/games/{id}/settle` 提交 | 升降级仍走测试环境；与围棋有同类目标环境问题，非本次代码修改范围。 |
+| 中国象棋 | `XIANGQI_RANKED_CLOUD_BASE_URL` 默认跟随上述 `SMARTBOX_RANKED_ORIGIN` | `xiangqi/api/xiangqi_api/ranked_sync.py` 维护本机结算 outbox，经 setup-wizard ranked proxy 发往 ranked 服务 | 默认同样走测试环境；未发现它调用围棋 `/settlements` 的证据。 |
+| 五子棋 | `GOMOKU_RANKED_CLOUD_URL=https://ranked.sailorvoyage.top` | `gomoku/api/gomoku_api/ranked_cloud.py` 向 `/api/v1/ranked/games/{id}/settle` 提交 | 同样走测试环境；与围棋共用盒子登录身份，但升降级账本不在 KaTrain 数据库。 |
+
+以上是配置与代码路由核查，不代表已经复现这三类棋各自的对局结算故障。`smartbox-software` 代码未修改。
 
 ## 待实测确认
 

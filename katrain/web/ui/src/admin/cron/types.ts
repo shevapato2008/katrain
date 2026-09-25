@@ -1,0 +1,35 @@
+export type CronHealth = 'ok' | 'running' | 'errors' | 'failed' | 'offline' | 'stuck' | 'overdue' | 'disabled' | 'pending';
+export type CronJob = {
+  name: string;
+  kind: 'interval' | 'loop';
+  interval_seconds: number | null;
+  enabled: boolean;
+  health: { state: CronHealth; reason: string };
+  process_started_at: string | null;
+  heartbeat_at: string | null;
+  last_started_at: string | null;
+  last_finished_at: string | null;
+  last_success_at: string | null;
+  last_status: 'running' | 'success' | 'errors' | 'failed' | null;
+  last_duration_ms: number | null;
+  last_error: string | null;
+  consecutive_failures: number;
+  loop_iteration_at: string | null;
+  loop_stats: { in_flight: number; capacity: number; errors_total: number; last_error_at: string | null } | null;
+};
+export type CronRun = { id: number; started_at: string; finished_at: string | null; status: 'running' | 'success' | 'errors' | 'failed'; duration_ms: number | null; error_count: number; error: string | null };
+export type CronQueue = { by_status: Record<string, number>; oldest_pending_at: string | null };
+export type CronJobsResponse = { observed_at: string; jobs: CronJob[] };
+export type CronRunsResponse = { runs: CronRun[]; next_before_id: number | null };
+export type CronQueuesResponse = { observed_at: string; live_analysis: CronQueue; report_tasks: CronQueue };
+export type CronView = {
+  state: 'healthy' | 'failed' | 'offline' | 'api-error' | 'no-table' | 'empty' | 'loading' | 'history' | 'signin';
+  observed_at: string | null;
+  jobs: CronJob[];
+  runs: Record<string, CronRun[]>;
+  queues: { live_analysis: CronQueue; report_tasks: CronQueue } | null;
+  error?: string;
+  historyLoading?: boolean;
+  historyError?: string;
+  selectedJob?: string;
+};

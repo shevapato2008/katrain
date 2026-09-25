@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 定时任务 v3 设计稿</title>
+  <style>
+    @import url('../../../../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css');
+    @font-face { font-family:LongCang; src:url('../../../../../katrain/web/ui/src/galaxy/assets/fonts/longcang-brand.woff2') format('woff2'); font-display:swap; }
+    :root { --font:"Kaiti SC","STKaiti","KaiTi","LXGW WenKai",serif; }
+    body[data-theme="dark"] { color-scheme:dark; --bg:#111316; --bar:#1c2024; --panel:#252a2f; --line:#414951; --text:#f6f3ef; --muted:#c7c2bb; --subtle:#aeb3ba; --active:#4a342d; --active-text:#ffe8d7; --accent:#d89367; --healthy:#a5bdd9; --healthy-bg:#263849; --danger:#eaa09a; --danger-bg:#4b2a2b; --warning:#f5c98a; --warning-bg:#49321c; --waiting:#c7c2bb; --waiting-bg:#373b40; }
+    body[data-theme="light"] { color-scheme:light; --bg:#e9eef5; --bar:#f8fafc; --panel:#fff; --line:#cbd5e3; --text:#15243b; --muted:#586982; --subtle:#65758a; --active:#d9e8fa; --active-text:#183e6d; --accent:#315f94; --healthy:#285d91; --healthy-bg:#e5effb; --danger:#a73e42; --danger-bg:#fce8e8; --warning:#795016; --warning-bg:#fff1d5; --waiting:#586982; --waiting-bg:#e8edf3; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { min-width:1100px; background:var(--bg); color:var(--text); font:26px/1.4 var(--font); }
+    button { font:inherit; cursor:pointer; }
+    button:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+    .ico { width:28px; height:28px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+    .top { height:80px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; background:var(--bar); border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:12px; white-space:nowrap; }
+    .brand img { width:48px; height:48px; object-fit:contain; }
+    body[data-theme="light"] .brand img { filter:invert(1); }
+    .brand-cn { font:44px/1 LongCang,serif; }
+    .brand-en { font:600 28px/1 -apple-system,BlinkMacSystemFont,sans-serif; }
+    .brand-admin { margin-left:8px; padding-left:16px; border-left:1px solid var(--line); color:var(--muted); }
+    .topright { display:flex; align-items:center; gap:20px; font-size:23px; }
+    .env { border:1px solid var(--line); background:var(--panel); border-radius:99px; padding:4px 12px; }
+    .layout { display:grid; grid-template-columns:280px minmax(0,1fr); min-height:calc(100vh - 80px); }
+    .side { display:flex; flex-direction:column; padding:22px 12px; border-right:1px solid var(--line); background:var(--bar); }
+    .side-label { padding:0 16px 14px; color:var(--subtle); font-size:22px; letter-spacing:.08em; }
+    .nav { display:flex; align-items:center; gap:14px; min-height:68px; padding:12px 16px; border-radius:8px; color:var(--muted); }
+    .nav.active { background:var(--active); color:var(--active-text); }
+    .sidefoot { margin-top:auto; padding:17px 12px 0; border-top:1px solid var(--line); color:var(--muted); font-size:22px; line-height:1.5; }
+    main { min-width:0; }
+    .heading { min-height:122px; display:flex; align-items:center; justify-content:space-between; gap:24px; padding:20px 28px; border-bottom:1px solid var(--line); background:var(--bar); }
+    h1,h2,h3,p { margin:0; }
+    .heading h1 { font-size:44px; line-height:1.2; }
+    .heading p { color:var(--muted); font-size:24px; }
+    .heading-right { display:flex; align-items:center; gap:14px; color:var(--muted); font-size:22px; white-space:nowrap; }
+    .heading-right button { min-height:54px; padding:0 18px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--text); }
+    .content { padding:22px 24px 32px; }
+    .demo-note { margin-bottom:14px; color:var(--muted); font-size:18px; }
+    .overview { display:grid; grid-template-columns:minmax(300px,1fr) minmax(600px,2.25fr) minmax(270px,.88fr); gap:14px; }
+    .overview-card { min-width:0; min-height:162px; padding:19px 22px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+    .eyebrow { color:var(--subtle); font-size:20px; letter-spacing:.06em; }
+    .headline { display:flex; align-items:center; gap:11px; margin-top:8px; font-size:32px; font-weight:700; white-space:nowrap; }
+    .headline .ico { color:var(--healthy); width:32px; height:32px; }
+    .detail { margin-top:6px; color:var(--muted); font-size:21px; }
+    .chips { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:13px; }
+    .chip { display:inline-flex; align-items:center; gap:7px; min-height:40px; padding:4px 11px; border-radius:7px; font-size:23px; font-weight:700; white-space:nowrap; }
+    .chip .ico { width:22px; height:22px; }
+    .chip.ok { color:var(--healthy); background:var(--healthy-bg); }
+    .chip.failed { color:var(--danger); background:var(--danger-bg); }
+    .chip.warn { color:var(--warning); background:var(--warning-bg); }
+    .chip.pending { color:var(--waiting); background:var(--waiting-bg); }
+    .sample-time { margin-top:8px; font-size:32px; font-weight:700; white-space:nowrap; }
+    .sample-hint { display:flex; align-items:center; gap:7px; margin-top:9px; color:var(--muted); font-size:21px; }
+    .sample-hint .ico { width:22px; height:22px; color:var(--accent); }
+    .queues { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+    .queue { display:flex; align-items:center; justify-content:space-between; min-height:100px; padding:16px 22px; border:1px solid var(--line); border-radius:9px; background:var(--panel); }
+    .queue strong { display:block; font-size:27px; }.queue small { color:var(--muted); font-size:21px; }.queue b { font:700 38px Georgia,serif; }
+    .table { margin-top:20px; border:1px solid var(--line); border-radius:9px; background:var(--panel); overflow:hidden; }
+    .table-head { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); }
+    .table-head h2 { font-size:32px; }.table-head small { color:var(--muted); font-size:22px; }
+    .table-scroll { max-height:720px; overflow:auto; }
+    .columns,.job { width:max(100%,1550px); display:grid; grid-template-columns:minmax(220px,1.25fr) 160px 160px 130px 130px 180px minmax(300px,1fr) 32px; align-items:center; gap:16px; padding:0 22px; }
+    .columns { position:sticky; top:0; height:54px; z-index:1; background:var(--bar); border-bottom:1px solid var(--line); color:var(--subtle); font-size:21px; }
+    .job { width:max(100%,1550px); min-height:80px; text-align:left; color:var(--text); background:var(--panel); border:0; border-bottom:1px solid var(--line); font-size:24px; }
+    .job:hover { background:var(--bar); }
+    .job b { display:block; font-size:27px; }.job code { display:block; color:var(--subtle); font:19px/1.2 ui-monospace,monospace; }
+    .job .state { font-size:22px; font-weight:700; }.job .state.failed { color:var(--danger); }.job .state.warn { color:var(--warning); }.job .state.pending { color:var(--waiting); }
+    .job .state.ok { color:var(--healthy); }.job .ellipsis { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .backdrop { display:none; position:fixed; inset:80px 0 0; z-index:3; background:#05070a99; }
+    .drawer { display:none; position:fixed; top:80px; right:0; bottom:0; z-index:4; width:min(760px,100vw); flex-direction:column; background:var(--panel); border-left:1px solid var(--line); box-shadow:-18px 0 40px #0005; }
+    body[data-drawer="open"] .backdrop { display:block; }.drawer.open,body[data-drawer="open"] .drawer { display:flex; }
+    .drawer-head { display:flex; justify-content:space-between; gap:18px; padding:22px 26px 18px; border-bottom:1px solid var(--line); }
+    .drawer-head h2 { font-size:38px; line-height:1.2; }.drawer-head code { color:var(--subtle); font:19px ui-monospace,monospace; }
+    .drawer-head button { align-self:start; border:0; background:none; color:var(--muted); font-size:32px; line-height:1; }
+    .drawer-scroll { overflow:auto; padding:22px 26px; flex:1; }
+    .purpose { margin:0 0 23px; color:var(--text); font-size:24px; line-height:1.55; }
+    .section-label { margin-bottom:10px; color:var(--subtle); font-size:20px; letter-spacing:.06em; }
+    .reason { display:flex; align-items:flex-start; gap:12px; padding:13px 15px; border-radius:8px; background:var(--danger-bg); color:var(--danger); font-size:23px; line-height:1.45; }
+    .reason .ico { margin-top:2px; }
+    .facts { display:grid; grid-template-columns:1fr 1fr; margin:24px 0; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .fact { min-height:91px; padding:12px 15px; border-bottom:1px solid var(--line); }.fact:nth-child(odd) { border-right:1px solid var(--line); }.fact:nth-last-child(-n+2) { border-bottom:0; }
+    .fact small { display:block; color:var(--subtle); font-size:18px; }.fact strong { display:block; margin-top:5px; font-size:24px; font-weight:600; }
+    .error { padding:11px 13px; border-radius:7px; background:var(--danger-bg); color:var(--danger); font:21px/1.45 ui-monospace,monospace; overflow-wrap:anywhere; }
+    .history { margin-top:27px; border-top:1px solid var(--line); padding-top:21px; }.history h3 { font-size:29px; }
+    .run { display:grid; grid-template-columns:1fr auto; gap:8px 12px; padding:13px 0; border-bottom:1px solid var(--line); font-size:21px; }.run small { color:var(--muted); font-size:18px; }
+    .drawer-foot { padding:14px 26px; border-top:1px solid var(--line); color:var(--muted); font-size:19px; }
+    /* v3 refinement: compact type while retaining a readable 16px minimum. */
+    body { font-size:18px; }
+    .brand-cn { font-size:31px; }.brand-en { font-size:20px; }.brand-admin { font-size:18px; }
+    .topright { font-size:17px; }.side-label,.sidefoot { font-size:16px; }
+    .heading { min-height:96px; padding:16px 24px; }.heading h1 { font-size:31px; }.heading p,.heading-right { font-size:17px; }
+    .heading-right button { min-height:44px; }.demo-note { font-size:16px; }
+    .overview-card { min-height:128px; padding:16px 18px; }.eyebrow { font-size:16px; }
+    .headline,.sample-time { font-size:23px; }.headline .ico { width:25px; height:25px; }
+    .detail,.sample-hint { font-size:16px; }.chip { min-height:32px; padding:4px 8px; font-size:17px; }.chip .ico,.sample-hint .ico { width:18px; height:18px; }
+    .queue { min-height:72px; padding:12px 18px; }.queue strong { font-size:20px; }.queue small { font-size:17px; }.queue b { font-size:28px; }
+    .table-head h2 { font-size:24px; }.table-head small { font-size:17px; }
+    .columns,.job { width:max(100%,1035px); grid-template-columns:minmax(220px,1.25fr) 125px 100px 72px 80px 120px minmax(190px,1fr) 22px; gap:10px; padding:0 18px; }
+    .columns { height:44px; font-size:16px; }.job { min-height:64px; font-size:17px; }
+    .job b { font-size:20px; }.job code { font-size:16px; }.job .state { font-size:17px; }
+    .drawer { width:min(680px,100vw); }.drawer-head { padding:18px 22px 15px; }.drawer-head h2 { font-size:27px; }.drawer-head code,.section-label { font-size:16px; }
+    .drawer-head button { font-size:24px; }.drawer-scroll { padding:18px 22px; }.purpose { font-size:18px; }.reason { font-size:17px; }.reason .ico { width:21px; height:21px; }
+    .fact { min-height:70px; padding:10px 12px; }.fact small { font-size:16px; }.fact strong { font-size:18px; }
+    .error { font-size:16px; }.history h3 { font-size:21px; }.run,.run small,.drawer-foot { font-size:16px; }
+    @media(max-width:1550px) { .overview { grid-template-columns:1fr 1.6fr; }.overview-card:last-child { grid-column:1/-1; min-height:95px; }.heading { flex-wrap:wrap; } }
+  </style>
+</head>
+<body data-theme="dark" data-drawer="closed">
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute"><defs>
+    <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="fail" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></symbol>
+    <symbol id="warn" viewBox="0 0 24 24"><path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5m0 3h.01"/></symbol>
+    <symbol id="wait" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="pulse" viewBox="0 0 24 24"><path d="M3 12h4l2-5 4 10 2-5h6"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  </defs></svg>
+  <header class="top"><div class="brand"><img src="../../../../../katrain/img/logo-white.png" alt=""><span class="brand-cn">智星盒</span><span class="brand-en">StellaBox</span><span class="brand-admin">管理后台</span></div><div class="topright"><span class="env">本机环境</span><span>admin:fan</span><span>退出</span></div></header>
+  <div class="layout"><aside class="side"><div class="side-label">内容与服务</div><div class="nav">▣　教程管理</div><div class="nav active"><svg class="ico"><use href="#clock"/></svg>定时任务</div><div class="sidefoot">当前环境：本机环境<br>此页面只读，不会运行或暂停任务。</div></aside>
+    <main><div class="heading"><div><h1>定时任务</h1><p>观察 cron 进程、任务和分析队列</p></div><div class="heading-right"><span>采样于 14:40:46 · 每 15 秒刷新</span><button type="button">刷新状态</button></div></div>
+      <div class="content"><p class="demo-note">设计示例数据 · 此 HTML 不连接真实任务</p>
+        <div class="overview">
+          <div class="overview-card"><div class="eyebrow">CRON 进程</div><div class="headline"><svg class="ico"><use href="#pulse"/></svg>进程在线</div><div class="detail">心跳 1 秒前 · 11:52 启动</div></div>
+          <div class="overview-card"><div class="eyebrow">任务概况 · 9 项</div><div class="chips"><span class="chip failed"><svg class="ico"><use href="#fail"/></svg>1 失败</span><span class="chip warn"><svg class="ico"><use href="#warn"/></svg>1 报错</span><span class="chip warn"><svg class="ico"><use href="#clock"/></svg>2 逾期</span><span class="chip pending"><svg class="ico"><use href="#wait"/></svg>3 待首跑</span><span class="chip ok"><svg class="ico"><use href="#check"/></svg>2 正常</span></div></div>
+          <div class="overview-card"><div class="eyebrow">最近采样</div><div class="sample-time">14:40:46</div><div class="sample-hint"><svg class="ico"><use href="#clock"/></svg>15 秒自动刷新</div></div>
+        </div>
+        <div class="queues"><div class="queue"><div><strong>直播分析队列</strong><small>待处理 0 · 暂无等待</small></div><b>0</b></div><div class="queue"><div><strong>复盘队列</strong><small>待处理 0 · 暂无等待</small></div><b>0</b></div></div>
+        <section class="table"><div class="table-head"><h2>任务状态</h2><small>共 9 项 · 按异常优先显示</small></div><div class="table-scroll"><div class="columns"><span>任务</span><span>状态</span><span>上次运行</span><span>耗时</span><span>连续失败</span><span>类型</span><span>最近错误</span><span></span></div><button class="job" id="open-drawer"><span><b>系统 - 数据清理</b><code>cleanup</code></span><span class="state failed">失败</span><span>11:52:41</span><span>1 ms</span><span>1</span><span>间隔 · 1 天</span><span class="ellipsis">RuntimeError: 数据库连接超时</span><span>›</span></button><button class="job"><span><b>直播 - 赛事列表</b><code>fetch_list</code></span><span class="state warn">有报错</span><span>11:52:41</span><span>1 ms</span><span>1</span><span>间隔 · 30 分</span><span class="ellipsis">上游超时</span><span>›</span></button><button class="job"><span><b>直播 - 赛事预告</b><code>fetch_upcoming</code></span><span class="state warn">该跑没跑</span><span>11:52:41</span><span>1 ms</span><span>0</span><span>间隔 · 15 分</span><span>—</span><span>›</span></button><button class="job"><span><b>直播 - 落子轮询</b><code>poll_moves</code></span><span class="state warn">该跑没跑</span><span>11:52:41</span><span>1 ms</span><span>0</span><span>间隔 · 3 秒</span><span>—</span><span>›</span></button><button class="job"><span><b>直播 - 分析</b><code>analyze</code></span><span class="state ok">正常</span><span>—</span><span>循环中</span><span>0</span><span>常驻循环</span><span>—</span><span>›</span></button></div></section>
+      </div></main></div>
+  <div class="backdrop" id="backdrop"></div><aside class="drawer" aria-label="任务详情"><div class="drawer-head"><div><div class="eyebrow">任务详情　<span class="chip failed"><svg class="ico"><use href="#fail"/></svg>失败</span></div><h2>系统 - 数据清理</h2><code>cleanup</code></div><button type="button" id="close-drawer" aria-label="关闭任务详情">×</button></div><div class="drawer-scroll"><p class="purpose">定期清理过期对局、孤立分析结果、已过期赛事预告，以及超过保留期的 cron 运行记录。</p><div class="section-label">当前状态</div><div class="reason"><svg class="ico"><use href="#fail"/></svg><span>最近一次运行抛出异常；连续 1 次失败。</span></div><div class="facts"><div class="fact"><small>运行方式</small><strong>每 1 天执行</strong></div><div class="fact"><small>上次运行</small><strong>09/25 11:52:41</strong></div><div class="fact"><small>上次成功</small><strong>暂无记录</strong></div><div class="fact"><small>本次耗时</small><strong>1 ms</strong></div></div><div class="section-label">最近错误</div><div class="error">RuntimeError: 本机合成：数据库连接超时</div><div class="history"><h3>运行历史</h3><div class="run"><span>09/25 11:52:41<br><small>1 ms · 1 条错误</small></span><span class="chip failed"><svg class="ico"><use href="#fail"/></svg>失败</span></div></div></div><div class="drawer-foot">最近记录来自 cron 记录器；设计示例不代表目标环境状态。</div></aside>
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.body.dataset.theme = params.get('theme') === 'light' ? 'light' : 'dark';
+    const setDrawer = (open) => { document.body.dataset.drawer = open ? 'open' : 'closed'; };
+    document.getElementById('open-drawer').addEventListener('click', () => setDrawer(true));
+    document.getElementById('close-drawer').addEventListener('click', () => setDrawer(false));
+    document.getElementById('backdrop').addEventListener('click', () => setDrawer(false));
+    setDrawer(params.get('drawer') === '1');
+  </script>
+</body>
+</html>

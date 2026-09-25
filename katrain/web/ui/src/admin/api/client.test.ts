@@ -31,4 +31,18 @@ describe('admin API contract', () => {
     await expect(api.saveNarration(12, { narration: '讲解', expected_updated_at: null })).rejects.toMatchObject({ status: 409 });
     await expect(api.me()).rejects.toMatchObject({ status: 401, name: 'Error' });
   });
+
+  it('reads cron jobs, queues, and bounded history with the admin bearer', async () => {
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ jobs: [], runs: [] }), { status: 200 }));
+    const api = createAdminApi(fetchMock, () => 'admin-session');
+    await api.cronJobs();
+    await api.cronQueues();
+    await api.cronRuns('fetch/upcoming', 200);
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/admin/cron/jobs',
+      '/api/admin/cron/queues',
+      '/api/admin/cron/jobs/fetch%2Fupcoming/runs?limit=200',
+    ]);
+    expect(fetchMock.mock.calls.every(([, init]) => new Headers(init?.headers).get('Authorization') === 'Bearer admin-session')).toBe(true);
+  });
 });

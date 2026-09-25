@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from katrain.cron import config
@@ -27,6 +28,9 @@ class AnalyzeJob(BaseJob):
         super().__init__()
         self._running = True
         self._katago = KataGoClient()
+        self.last_iteration_at: datetime | None = None
+        self._in_flight_count = 0
+        self._window = self.window_size
 
     async def run(self) -> None:
         self._running = True
@@ -47,6 +51,8 @@ class AnalyzeJob(BaseJob):
         await self._fill_window(in_flight, priorities)
 
         while self._running:
+            self.last_iteration_at = datetime.now(timezone.utc)
+            self._in_flight_count = len(in_flight)
             if not in_flight:
                 await asyncio.sleep(5)
                 await self._fill_window(in_flight, priorities)
@@ -73,9 +79,13 @@ class AnalyzeJob(BaseJob):
             await self._maybe_preempt(in_flight, priorities)
 
             # Refill
-            slots = self._effective_window_size() - len(in_flight)
+            self._window = self._effective_window_size()
+            slots = self._window - len(in_flight)
             if slots > 0:
                 await self._fill_slots(in_flight, priorities, slots)
+
+    def heartbeat_stats(self) -> dict:
+        return {"in_flight": self._in_flight_count, "capacity": self._window}
 
     # ── Window management ────────────────────────────────────
 

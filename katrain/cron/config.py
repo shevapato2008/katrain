@@ -107,6 +107,8 @@ POLL_MOVES_INTERVAL = int(os.getenv("CRON_POLL_MOVES_INTERVAL", "3"))
 TRANSLATE_INTERVAL = int(os.getenv("CRON_TRANSLATE_INTERVAL", "120"))
 FETCH_UPCOMING_INTERVAL = int(os.getenv("CRON_FETCH_UPCOMING_INTERVAL", "7200"))  # 2 hours
 CLEANUP_INTERVAL = int(os.getenv("CRON_CLEANUP_INTERVAL", "86400"))  # 24 hours
+HEARTBEAT_INTERVAL = int(os.getenv("CRON_HEARTBEAT_INTERVAL", "30"))
+RUNS_RETENTION_DAYS = int(os.getenv("CRON_RUNS_RETENTION_DAYS", "14"))
 
 # Report analysis (migrated from katrain-web)
 REPORT_ANALYZE_ENABLED = os.getenv("CRON_REPORT_ANALYZE_ENABLED", "true").lower() == "true"

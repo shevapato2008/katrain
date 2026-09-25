@@ -1,5 +1,13 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
+## 2026-09-25 测试机部署进度（最新；下一次 push 待批准）
+
+- Fan 针对本次测试部署明确确认：重新合并 `develop`、**一次** `git push origin HEAD:develop`、创建测试后台专用凭据、备份测试库并允许 web 建两张 cron 表、重启测试 web/cron/admin；未授权生产操作或第二次推送。本地合并 `origin/develop=7573f0e7` 后验证：根目录聚焦 **95 passed**、web-ui 聚焦 **362 passed**、管理前端 **185 passed**，Galaxy/后台/kiosk 构建及 kiosk 边界通过。唯一初始红测是本机忽略的中文 `.mo` 缺失，编译本机 `.mo` 后通过，未修改源 `.po`。已将 `35100955` 一次推到 `origin/develop`；`origin/feature/admin-console` 未更新。
+- 测试机数据库先备份为 `/home/fan/Repositories/katrain/data/admin-backups/katrain-db-pre-admin-6Sd4K5cp.dump`，约 190 MB、权限 600，`pg_restore -l` 校验通过。`develop` 快进到 `35100955`。专用随机密码仅存 Mac Keychain（service `katrain-admin-test`、account `admin:fan`），测试机 `.env` 原样备份至 `data/admin-backups/.env.pre-admin-d40f6f805999` 后添加 bcrypt cost 12 哈希、随机 session secret、`KATRAIN_ADMIN_ENV=test`、`KATRAIN_ADMIN_HOST_PORT=8012`，`.env` 与备份均为 600；没有打印密码、哈希或 secret。
+- 新 `katrain-web` 与 `katrain-admin` 在测试机启动：web `/api/v1/health` 200，公开 web `/api/admin/health` 404；独立后台只绑定 `127.0.0.1:8012`，`/api/admin/health` 200 且 `env=test`。Keychain 密码与容器内哈希只做布尔核对，匹配；没有调用会写审计表的登录 API。web 已创建 `cron_job_status`、`cron_job_runs` 两表。`katago-calib` 保持在 `127.0.0.1:8010`、未停或重建；PostgreSQL/MinIO 未重建。
+- 新 `katrain-cron` 镜像启动失败：`requirements-cron.txt` 的 `sqlalchemy>=2.0` 装到 2.1.0，其裸 `postgresql://` 默认驱动需 `psycopg`，镜像只装 `psycopg2-binary`，报 `ModuleNotFoundError: psycopg`。本地先加红测，再将 cron SQLAlchemy 约束改为 `>=2.0,<2.1`，聚焦 **28 passed**。因本次仅批准**一次 push**，此修复未推送/部署。测试机已将保留的 `katrain-katrain-cron:pre-7c6e5ca5`（SQLAlchemy 2.0.52）恢复为运行镜像，原新版镜像留作 `failed-35100955`；旧 cron 连续运行 5 分钟且 `poll_moves` 成功。旧 cron 不写新状态表，现 `cron_job_status` 为 0 行；因此 **cron 真实数据验收尚未完成**，不可视为整个切片部署完成。
+- 下一步 🛑：只对本地依赖修复提交重新取得**第二次** `git push origin HEAD:develop` 明确许可；获准后测试机快进、重建并启动新 cron，验证九条真实任务状态/心跳/运行历史与后台读取。每条后续真实写库、生产连接/部署、父仓推送均另请批准。不要清理用户原有 `.playwright-cli` 工作树状态。
+
 ## 2026-09-25 测试机部署预检（最新）
 
 - Fan 回复“好，部署吧”，本轮仅按测试机部署理解；未获生产部署授权。本地 `feature/admin-console` 已合并当时的 `origin/develop=81e02c7e`，无冲突，保留用户原有 `.playwright-cli` 删除与未跟踪快照。合并后根目录聚焦 Python **25 passed**、web 聚焦 Python **353 passed**、前端 **149 passed**；Galaxy、后台、kiosk 2D 三套构建及 kiosk 隔离验证、管理前端 ESLint、差异空白检查通过。预检期间 `origin/develop` 又前进到 `0a533a3e`；推送前须重新合并并复测，不能基于旧祖先强推。

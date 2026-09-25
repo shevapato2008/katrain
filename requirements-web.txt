@@ -39,6 +39,9 @@ alembic>=1.13.0
 # TTS for tutorial narration audio generation
 edge-tts>=6.1.0
 
+# Admin tutorial verification exports training patches when media is local.
+opencv-python-headless>=4.8.0
+
 # S3-compatible object storage for tutorial media (MinIO / Aliyun OSS)
 boto3>=1.34.0
 

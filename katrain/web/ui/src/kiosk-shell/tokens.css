@@ -699,7 +699,10 @@
 .kiosk-seg__btn[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
 
 /* 选项分段:开局设置那类「从 N 项里选一项」的组。一屏里所有选择组必须用同一种
-   控件,不许难度用列表、执棋方用宫格、时间用 2×2 —— 那是一屏三套选择手势。 */
+   控件,不许难度用列表、执棋方用宫格、时间用 2×2 —— 那是一屏三套选择手势。
+   例外(2026-09-23 裁定):常驻的第二套选择控件仍然禁止;点开即用、选完即关、
+   且不遮挡棋盘的临时跳转器不在此列 —— 见屏 09 `AiLevelSheet`(39 档,轨每档约
+   8px 跨不到远处)。 */
 .kiosk-optseg {
   display: flex; width: 100%; height: var(--optseg-h);
   padding: var(--optseg-pad); gap: var(--optseg-gap);
@@ -713,6 +716,14 @@
   font-family: var(--font-serif); font-weight: 600; font-size: 15px;
 }
 .kiosk-optseg button[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
+/* `src/index.css`(Vite 脚手架遗留)原来有一条 `button:focus, button:focus-visible {
+   outline: 4px auto -webkit-focus-ring-color }`,把浏览器默认的亮蓝色圈盖回来
+   (Task 8b 视觉关卡第④条实测)。**根因已经在 `src/index.css` 改掉**(那条规则的
+   `:focus` 那一半删了,只留 `:focus-visible`——鼠标/触屏点击落的是裸 `:focus`,
+   不该有描边;键盘 Tab 落 `:focus-visible`,要有)。这条覆盖因此也跟着全树剩下的
+   十几条 `:focus-visible` 覆盖统一,不用再单独压 `:focus`。 */
+.kiosk-optseg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
+  border-radius: var(--optseg-item-radius); }
 /* 分段格里塞不下副标题,但说明不能整个丢掉 —— 挪到组下面一行,写**当前选中项** */
 .kiosk-opthint {
   height: var(--opthint-h); margin: 7px 0 0;

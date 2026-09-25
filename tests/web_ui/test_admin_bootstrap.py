@@ -1,4 +1,5 @@
 """server 模式不得创建公开已知口令的管理员账号。"""
+
 import inspect
 
 from katrain.web import server
@@ -19,13 +20,13 @@ def test_admin_flag_is_not_granted_by_username():
     )
 
 
-def test_bootstrap_password_field_defaults_to_empty():
-    """断的是**字段默认值**，不是当前进程的装配结果。
-
-    `settings.ADMIN_BOOTSTRAP_PASSWORD` 来自 `os.getenv(...)`，开发机上设了
-    `KATRAIN_ADMIN_BOOTSTRAP_PASSWORD` 就会让断言变红 —— 那是环境差异，
-    不是被测行为出了问题。要守的是「不配就不建账号」这条默认语义。
-    """
+def test_public_web_has_no_admin_bootstrap_configuration():
+    """后台专用账号不得通过公开 web 的配置创建。"""
     from katrain.web.core.config import Settings
 
-    assert Settings.model_fields["ADMIN_BOOTSTRAP_PASSWORD"].default == ""
+    assert "ADMIN_BOOTSTRAP_PASSWORD" not in Settings.model_fields
+
+
+def test_public_web_never_bootstraps_admin_account():
+    """空库启动也不能在公开 users 表中自动创建管理员。"""
+    assert "ADMIN_BOOTSTRAP_PASSWORD" not in inspect.getsource(server._lifespan_server)

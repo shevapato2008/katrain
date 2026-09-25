@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import uuid
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -200,6 +201,120 @@ class AiLadderRankedRepository:
 
     def __init__(self, session_factory):
         self.session_factory = session_factory
+
+    @staticmethod
+    def _territory_game(session, *, user_id: int, game_id: str, reservation_key: Optional[str] = None):
+        row = (
+            session.query(models_db.AiLadderActiveGame)
+            .filter_by(user_id=user_id, game_id=game_id, state="active")
+            .with_for_update()
+            .one_or_none()
+        )
+        if row is None:
+            raise AiLadderLifecycleNotFound("active ranked game not found")
+        if reservation_key is not None and not hmac.compare_digest(
+            row.reservation_key_hash, AiLadderRankedRepository._hash_reservation_key(reservation_key)
+        ):
+            raise InvalidReservationKey("invalid reservation credential")
+        if any(row.rules_snapshot.get(k) != v for k, v in
+               (("board_size", 19), ("rules", "chinese"), ("komi", 7.5), ("handicap", 0))):
+            raise AiLadderLifecycleConflict("ranked board conditions changed")
+        return row
+
+    def get_territory_status(self, user_id: int, game_id: str) -> dict:
+        with self.session_factory() as session:
+            self._territory_game(session, user_id=user_id, game_id=game_id)
+            rows = session.query(models_db.AiLadderTerritoryRequest).filter_by(game_id=game_id, user_id=user_id).all()
+            now = datetime.now(timezone.utc)
+            return {
+                "remaining": max(0, 3 - sum(row.state == "success" for row in rows)),
+                "in_flight": any(row.state == "pending" and self._territory_fresh(row, now) for row in rows),
+            }
+
+    @staticmethod
+    def _territory_fresh(row, now: datetime) -> bool:
+        started = row.started_at
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=timezone.utc)
+        return now - started < timedelta(seconds=90)
+
+    def claim_territory(self, *, user_id: int, game_id: str, reservation_key: str,
+                        request_id: str, sgf_content: str) -> dict:
+        digest = hashlib.sha256(sgf_content.encode("utf-8")).hexdigest()
+        with self.session_factory() as session:
+            self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
+            self._territory_game(session, user_id=user_id, game_id=game_id, reservation_key=reservation_key)
+            rows = session.query(models_db.AiLadderTerritoryRequest).filter_by(game_id=game_id, user_id=user_id).with_for_update().all()
+            now = datetime.now(timezone.utc)
+            for row in rows:
+                if row.state == "pending" and not self._territory_fresh(row, now):
+                    session.delete(row)
+            session.flush()
+            rows = [row for row in rows if row.state == "success" or self._territory_fresh(row, now)]
+            existing = next((row for row in rows if row.request_id == request_id), None)
+            if existing is not None:
+                if existing.sgf_digest != digest:
+                    raise AiLadderLifecycleConflict("request_id belongs to another position")
+                if existing.state == "success":
+                    return {"state": "replay", "remaining": 3 - sum(row.state == "success" for row in rows),
+                            "result": existing.result}
+                raise AiLadderLifecycleConflict("territory request in flight")
+            if any(row.state == "pending" for row in rows):
+                raise AiLadderLifecycleConflict("territory request in flight")
+            remaining = 3 - sum(row.state == "success" for row in rows)
+            if remaining <= 0:
+                raise AiLadderLifecycleConflict("territory quota exhausted")
+            token = uuid.uuid4().hex
+            session.add(models_db.AiLadderTerritoryRequest(
+                game_id=game_id, user_id=user_id, request_id=request_id, sgf_digest=digest,
+                claim_token=token, state="pending", started_at=now,
+            ))
+            session.commit()
+            return {"state": "claimed", "claim_token": token, "remaining": remaining}
+
+    def complete_territory(self, *, user_id: int, game_id: str, request_id: str,
+                           claim_token: str, result: dict) -> bool:
+        with self.session_factory() as session:
+            self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
+            try:
+                self._territory_game(session, user_id=user_id, game_id=game_id)
+            except AiLadderLifecycleNotFound:
+                return False
+            row = session.query(models_db.AiLadderTerritoryRequest).filter_by(
+                game_id=game_id, user_id=user_id, request_id=request_id, claim_token=claim_token, state="pending"
+            ).with_for_update().one_or_none()
+            if row is None or not self._territory_fresh(row, datetime.now(timezone.utc)):
+                return False
+            row.state = "success"
+            row.result = result
+            session.commit()
+            return True
+
+    def fail_territory(self, *, user_id: int, game_id: str, request_id: str, claim_token: str) -> None:
+        with self.session_factory() as session:
+            self._begin_write_transaction(session)
+            row = session.query(models_db.AiLadderTerritoryRequest).filter_by(
+                game_id=game_id, user_id=user_id, request_id=request_id, claim_token=claim_token, state="pending"
+            ).with_for_update().one_or_none()
+            if row is not None:
+                session.delete(row)
+                session.commit()
+
+    def get_active_for_count(self, *, user_id: int, game_id: str, reservation_key: str) -> AiLadderBlockingGame:
+        """Authorize a private adjudication without changing the lifecycle."""
+        session = self.session_factory()
+        try:
+            row = session.query(models_db.AiLadderActiveGame).filter_by(user_id=user_id, game_id=game_id).one_or_none()
+            if row is None or row.state != "active":
+                raise AiLadderLifecycleNotFound("active ranked game not found")
+            supplied = self._hash_reservation_key(reservation_key)
+            if not hmac.compare_digest(row.reservation_key_hash, supplied):
+                raise InvalidReservationKey("invalid reservation credential")
+            return self._blocking_from_row(row)
+        finally:
+            session.close()
 
     def reserve_game(
         self,

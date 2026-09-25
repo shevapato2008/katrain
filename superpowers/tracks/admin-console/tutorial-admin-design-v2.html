@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KaTrain 管理后台 · 专属主题设计稿</title>
+  <style>
+    @import url('../../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css');
+    @font-face { font-family: JetBrains; src: url('../../../katrain/web/ui/src/kiosk-shell/fonts/jetbrains-mono-latin-variable.woff2') format('woff2'); font-display: swap; }
+    @font-face { font-family: LongCang; src: url('../../../katrain/web/ui/src/galaxy/assets/fonts/longcang-brand.woff2') format('woff2'); font-display: swap; }
+    :root {
+      color-scheme: dark;
+      --ui-font:"Kaiti SC", "STKaiti", "KaiTi", "LXGW WenKai", serif;
+      --bg:#0b1220; --bar:#101b2d; --panel:#162238; --panel2:#121d30; --well:#090f1b;
+      --line:#2d3b52; --text:#f3f6fb; --muted:#aebbd0; --subtle:#8294af;
+      --accent:#e4a74f; --on-accent:#142035; --active:#213e61; --active-text:#e8f2ff;
+      --link:#a9c9ff; --chip:#283c57; --focus:#8cbdff; --warn-bg:#41331f; --warn:#f5ca89;
+    }
+    body[data-theme="graphite"] {
+      --bg:#111316; --bar:#1c2024; --panel:#252a2f; --panel2:#20252a; --well:#0e1012;
+      --line:#414951; --text:#f6f3ef; --muted:#c7c2bb; --subtle:#9c9a96;
+      --accent:#d89367; --on-accent:#231711; --active:#4a342d; --active-text:#ffe8d7;
+      --link:#efb698; --chip:#393335; --focus:#f0ac82; --warn-bg:#49321c; --warn:#f5c98a;
+    }
+    body[data-theme="mist"] {
+      color-scheme: light;
+      --bg:#e9eef5; --bar:#f8fafc; --panel:#fff; --panel2:#f5f8fc; --well:#dfe6f0;
+      --line:#cbd5e3; --text:#15243b; --muted:#586982; --subtle:#74859b;
+      --accent:#315f94; --on-accent:#fff; --active:#d9e8fa; --active-text:#183e6d;
+      --link:#285d99; --chip:#e7eef8; --focus:#2765a7; --warn-bg:#fff1d5; --warn:#795016;
+    }
+    body[data-font="wenkai"] { --ui-font:"LXGW WenKai", "Kaiti SC", serif; }
+    body[data-font="songti"] { --ui-font:"Songti SC", "Noto Serif CJK SC", "SimSun", serif; }
+    body[data-font="kaiti"] { --ui-font:"Kaiti SC", "STKaiti", "KaiTi", "LXGW WenKai", serif; }
+    body[data-font="fangsong"] { --ui-font:"STFangsong", "FangSong", "Songti SC", serif; }
+    * { box-sizing:border-box }
+    html, body { margin:0; height:100% }
+    body { min-width:1120px; background:var(--bg); color:var(--text); font:16px/1.5 var(--ui-font) }
+    button, select, input, textarea { font:inherit }
+    button { cursor:pointer }
+    button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--focus); outline-offset:2px }
+    .top { height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; background:var(--bar); border-bottom:1px solid var(--line) }
+    .brand { display:flex; align-items:center; gap:11px; min-width:0 }
+    .brand img { width:28px; height:28px; object-fit:contain }
+    body[data-theme="mist"] .brand img { filter:invert(1) }
+    .brand-name { display:flex; align-items:baseline; gap:7px; white-space:nowrap }
+    .brand-cn { font-family:LongCang, serif; font-size:22px; line-height:1 }
+    .brand-en { font-size:12px; font-weight:600; letter-spacing:.045em }
+    .brand-divider { height:23px; border-left:1px solid var(--line); margin:0 5px }
+    .brand-console { font-size:12px; font-weight:600; letter-spacing:.13em; color:var(--muted) }
+    .top-meta { display:flex; align-items:center; gap:16px; color:var(--muted); font-size:12px }
+    .env { display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:5px; padding:5px 9px; background:var(--chip); color:var(--text); font-weight:600 }
+    .env::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--accent) }
+    .top-user { border-left:1px solid var(--line); padding-left:16px; font-family:JetBrains, monospace; font-size:11px; color:var(--text) }
+    .shell { height:calc(100vh - 58px); min-height:720px; display:grid; grid-template-columns:194px minmax(0,1fr) }
+    .sidebar { display:flex; flex-direction:column; padding:22px 10px 17px; background:var(--bar); border-right:1px solid var(--line) }
+    .side-label { padding:0 13px 12px; color:var(--subtle); font:10px/1.5 JetBrains, monospace; letter-spacing:.15em }
+    .nav { display:flex; align-items:center; gap:11px; min-height:43px; padding:0 13px; border-radius:6px; color:var(--muted); font-size:13px; font-weight:600; text-decoration:none }
+    .nav svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8 }
+    .nav.active { color:var(--active-text); background:var(--active) }
+    .nav.future { color:var(--subtle) }
+    .side-note { margin-top:auto; border-top:1px solid var(--line); padding:15px 12px 0; color:var(--subtle); font-size:11px; line-height:1.75 }
+    main { display:flex; flex-direction:column; min-width:0; min-height:0 }
+    .heading { height:69px; min-height:69px; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:0 20px; border-bottom:1px solid var(--line) }
+    .eyebrow { color:var(--accent); font:10px/1.4 JetBrains, monospace; letter-spacing:.16em; margin-bottom:3px }
+    .title { font-size:20px; font-weight:600; letter-spacing:-.02em; line-height:1.15 }
+    .breadcrumb { color:var(--muted); font-size:11px; margin-top:3px }
+    .selectors { display:flex; gap:7px }
+    select { height:34px; max-width:166px; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:0 10px; font-size:12px }
+    .workspace { flex:1; min-height:0; display:grid; grid-template-columns:246px minmax(370px,1fr) 390px; overflow:hidden }
+    .source, .inspector { display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--panel) }
+    .source { border-right:1px solid var(--line) }
+    .pane-head { height:43px; min-height:43px; display:flex; align-items:center; justify-content:space-between; padding:0 15px; border-bottom:1px solid var(--line); color:var(--muted); font-size:11px }
+    .pane-head strong { color:var(--text); font-weight:600; font-size:12px }
+    .folio { font-family:JetBrains, monospace; font-size:10px; color:var(--subtle) }
+    .source-scroll { overflow:auto; padding:15px 13px }
+    .paper { height:350px; padding:20px 14px; overflow:hidden; background:#fffdfa; color:#171717; border:1px solid #e2d8c9; box-shadow:0 9px 24px #0003 }
+    .paper-title { text-align:right; font:10px/1.3 "Songti SC", "SimSun", serif; margin-bottom:14px }
+    .paper-row { display:grid; grid-template-columns:78px 1fr; gap:8px; margin-bottom:15px }
+    .paper-grid { height:78px; border:1px solid #777; background-color:#fff; background-image:linear-gradient(#aaa 1px,transparent 1px),linear-gradient(90deg,#aaa 1px,transparent 1px); background-size:8px 8px; position:relative }
+    .paper-grid::after { content:"●"; position:absolute; left:2px; bottom:2px; font-size:11px }
+    .paper-copy { font:8px/1.65 "Songti SC", "SimSun", serif }
+    .source-caption { color:var(--muted); font-size:12px; line-height:1.7; margin:12px 2px }
+    .canvas { display:flex; flex-direction:column; min-width:0; min-height:0; background:var(--well) }
+    .board-head { height:43px; min-height:43px; padding:0 15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); font-size:11px; color:var(--muted) }
+    .board-head strong { font-size:12px; font-weight:600; color:var(--text) }
+    .board-head span { font-family:JetBrains, monospace; font-size:10px }
+    .board-stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:15px; overflow:hidden }
+    .board { width:min(100%, 566px, calc(100vh - 211px)); aspect-ratio:1; position:relative; background:#dfb96f; border-radius:2px; box-shadow:0 10px 32px #0007; padding:35px }
+    .board-grid { position:absolute; inset:35px; border-right:1px solid #94794b; border-bottom:1px solid #94794b; background-image:linear-gradient(#94794b 1px,transparent 1px),linear-gradient(90deg,#94794b 1px,transparent 1px); background-size:calc(100% / 9) calc(100% / 9) }
+    .star { position:absolute; width:6px; height:6px; border-radius:50%; background:#886f42 }
+    .s1 { left:34%; top:34% }.s2 { left:74%; top:34% }.s3 { left:34%; top:74% }.s4 { left:74%; top:74% }
+    .stone { position:absolute; display:grid; place-items:center; width:27px; height:27px; border-radius:50%; font:600 13px Georgia, serif; box-shadow:0 2px 3px #0006 }
+    .stone.black { left:23%; top:76%; background:#18191b; color:#fff }
+    .stone.white { left:31%; top:20%; background:#fdfdfd; color:#20242b; border:1px solid #999 }
+    .editbar { display:none; align-items:center; gap:7px; min-height:54px; padding:0 14px; background:var(--panel2); border-top:1px solid var(--line) }
+    .tool { background:transparent; color:var(--text); border:1px solid var(--line); border-radius:5px; padding:6px 10px; font-size:12px }
+    .tool.selected { background:var(--active); color:var(--active-text) }
+    .edit-hint { margin-left:auto; color:var(--warn); font-size:11px }
+    .inspector { border-left:1px solid var(--line) }
+    .inspect-scroll { flex:1; min-height:0; overflow:auto; padding:17px 18px }
+    .figure-title { display:flex; align-items:flex-start; gap:10px }
+    .back { padding:0 3px; border:0; background:transparent; color:var(--muted); font-size:22px; line-height:1 }
+    .figure-title h1 { margin:0; font-size:20px; line-height:1.25; font-weight:600; letter-spacing:-.02em }
+    .figure-sub { margin-top:3px; color:var(--muted); font-size:11px }
+    .status-tag { margin-left:auto; white-space:nowrap; border:1px solid var(--line); border-radius:5px; color:var(--accent); padding:3px 7px; font-size:10px; font-weight:600 }
+    .pager { display:flex; align-items:center; justify-content:space-between; margin:19px 0 13px; color:var(--muted); font:11px JetBrains, monospace }
+    .pager button { border:0; background:transparent; color:var(--text); font-size:19px; padding:0 7px }
+    .source-button { width:100%; height:36px; border:1px solid var(--line); border-radius:5px; color:var(--link); background:var(--chip); font-weight:600; font-size:12px }
+    .section { margin-top:17px; padding-top:16px; border-top:1px solid var(--line) }
+    .section-label { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; color:var(--muted); font-size:11px }
+    .section-label strong { color:var(--text); font-size:12px; font-weight:600 }
+    .move-row { display:flex; justify-content:space-between; color:var(--muted); font-size:11px }
+    .move-row b { color:var(--text); font-family:JetBrains, monospace }
+    input[type="range"] { width:100%; accent-color:var(--accent); margin:13px 0 0 }
+    .narration { margin:0; color:var(--text); font-size:14px; line-height:1.7 }
+    .edit-narration { display:none; width:100%; min-height:143px; padding:10px; color:var(--text); background:var(--well); border:1px solid var(--focus); border-radius:5px; resize:vertical; font-size:14px; line-height:1.65 }
+    .audio { color:var(--muted); font-size:11px; margin-top:10px }
+    .audio button { padding:0; border:0; color:var(--link); background:transparent }
+    .video { display:grid; place-items:center; height:122px; margin-top:12px; background:var(--well); border:1px solid var(--line); border-radius:5px; color:var(--muted); font-size:11px }
+    .play { width:32px; height:32px; display:grid; place-items:center; margin:0 auto 7px; border:1px solid var(--line); border-radius:50%; color:var(--link); font-size:14px }
+    .draft { display:none; margin-top:12px; padding:7px 9px; color:var(--warn); background:var(--warn-bg); border-radius:4px; font-size:11px }
+    .actions { display:grid; grid-template-columns:1fr 1fr; gap:7px; padding:11px 14px; border-top:1px solid var(--line); background:var(--panel2) }
+    .action { min-height:33px; border:1px solid var(--line); border-radius:5px; color:var(--text); background:var(--panel); font-weight:600; font-size:11px }
+    .action.primary { border-color:var(--accent); background:var(--accent); color:var(--on-accent) }
+    .action.wide { grid-column:1/-1 }
+    .action:disabled { opacity:.48; cursor:not-allowed }
+    .action.save, .action.cancel { display:none }
+    body[data-state="editing"] .editbar { display:flex }
+    body[data-state="editing"] .narration, body[data-state="editing"] .action.edit { display:none }
+    body[data-state="editing"] .edit-narration, body[data-state="editing"] .draft, body[data-state="editing"] .action.save, body[data-state="editing"] .action.cancel { display:block }
+    .signin { display:none; min-height:calc(100vh - 58px); align-items:center; justify-content:center; background:var(--bg); padding:25px }
+    .signin-card { width:400px; padding:30px; background:var(--panel); border:1px solid var(--line); box-shadow:0 20px 70px #0005 }
+    .signin-card .eyebrow { margin-bottom:13px }
+    .signin-card h1 { margin:0 0 7px; font-size:24px; line-height:1.25 }
+    .signin-card p { margin:0 0 22px; color:var(--muted); font-size:13px; line-height:1.6 }
+    .signin-card label { display:block; margin:15px 0 6px; color:var(--text); font-size:12px; font-weight:600 }
+    .signin-card input { width:100%; height:42px; padding:0 11px; border:1px solid var(--line); border-radius:5px; background:var(--well); color:var(--text) }
+    .signin-card button { width:100%; height:42px; margin-top:22px; border:0; border-radius:5px; color:var(--on-accent); background:var(--accent); font-weight:600 }
+    .signin-help { border-top:1px solid var(--line); padding-top:14px; margin-top:20px; color:var(--muted); font-size:11px; line-height:1.7 }
+    body[data-state="signin"] .shell { display:none }
+    body[data-state="signin"] .signin { display:flex }
+    body[data-state="signin"] .top-meta { display:none }
+    .font-lab { display:none; min-height:calc(100vh - 58px); padding:34px min(6vw,100px); background:var(--bg) }
+    body[data-state="fonts"] .shell { display:none }
+    body[data-state="fonts"] .font-lab { display:block }
+    body[data-state="fonts"] .top-meta { display:none }
+    .font-lab h1 { margin:0 0 5px; font-size:26px; font-weight:600 }
+    .font-lab > p { margin:0 0 20px; color:var(--muted); font-size:14px }
+    .font-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px }
+    .font-card { min-height:275px; padding:22px 25px; background:var(--panel); border:1px solid var(--line) }
+    .font-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:17px; color:var(--accent); font:11px/1.4 JetBrains, monospace; letter-spacing:.07em }
+    .font-card-head button { border:1px solid var(--line); background:var(--chip); color:var(--text); border-radius:4px; padding:5px 9px; font:12px var(--ui-font) }
+    .font-card h2 { margin:0 0 7px; font-size:23px; font-weight:600; line-height:1.25 }
+    .font-card .sample-nav { margin:0 0 11px; color:var(--muted); font-size:13px }
+    .font-card .sample-copy { max-width:52ch; margin:0; font-size:16px; line-height:1.75 }
+    .font-card .sample-action { display:inline-block; margin-top:14px; padding:5px 15px; border-radius:4px; color:var(--on-accent); background:var(--accent); font-size:13px; font-weight:600 }
+    .font-card.wenkai { font-family:"LXGW WenKai", "Kaiti SC", serif }
+    .font-card.songti { font-family:"Songti SC", "Noto Serif CJK SC", "SimSun", serif }
+    .font-card.kaiti { font-family:"Kaiti SC", "STKaiti", "KaiTi", "LXGW WenKai", serif }
+    .font-card.fangsong { font-family:"STFangsong", "FangSong", "Songti SC", serif }
+    .prototype-controls { position:fixed; z-index:10; left:50%; bottom:14px; transform:translateX(-50%); display:flex; align-items:center; gap:5px; padding:5px; border:1px solid #5a667a; border-radius:7px; background:#111927; color:#dbe5f3; box-shadow:0 7px 24px #0008; font:12px var(--ui-font) }
+    .prototype-controls span { padding:0 8px; color:#9db0c8 }
+    .prototype-controls button { border:0; border-radius:4px; background:transparent; color:#dbe5f3; padding:5px 9px; font:inherit }
+    .prototype-controls button[aria-pressed="true"] { background:#315b88; color:#fff }
+    .prototype-controls i { height:17px; border-left:1px solid #47546a; margin:0 4px }
+    body[data-capture="true"] .prototype-controls { display:none }
+    @media (max-width:1280px) { .shell { grid-template-columns:174px minmax(0,1fr) } .workspace { grid-template-columns:205px minmax(340px,1fr) 350px } .board { width:min(100%, 520px, calc(100vh - 211px)) } .font-lab { padding:30px } }
+  </style>
+</head>
+<body data-theme="graphite" data-font="kaiti" data-state="detail">
+  <header class="top">
+    <div class="brand"><img src="../../../katrain/img/logo-white.png" alt="" /><div class="brand-name"><span class="brand-cn">智星盒</span><span class="brand-en">StellaBox</span></div><span class="brand-divider"></span><span class="brand-console">管理控制台</span></div>
+    <div class="top-meta"><span class="env">本机环境</span><span>后台专用账号</span><span class="top-user">admin:fan</span></div>
+  </header>
+  <div class="signin"><form class="signin-card" onsubmit="event.preventDefault();setState('detail')"><div class="eyebrow">KATRAIN / SECURE ACCESS</div><h1>登录管理后台</h1><p>后台账号与公开 Galaxy 账号独立。请通过 SSH 隧道访问。</p><label for="user">后台用户名</label><input id="user" value="admin:fan" autocomplete="username" /><label for="password">密码</label><input id="password" type="password" placeholder="输入后台专用密码" autocomplete="current-password" /><button>登录</button><div class="signin-help">当前环境：本机　·　会话有效 8 小时<br />离开共用电脑时请主动退出。</div></form></div>
+  <div class="shell">
+    <aside class="sidebar" aria-label="管理导航"><div class="side-label">WORKSPACE / 工作区</div><a class="nav active" href="#"><svg viewBox="0 0 24 24"><path d="M3 5.5C7 4 10 4.5 12 6v14c-2-1.5-5-2-9-.5zM21 5.5c-4-1.5-7-1-9 .5v14c2-1.5 5-2 9-.5z"/></svg>教程管理</a><span class="nav future"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>定时任务 · 后续</span><div class="side-note">通过 SSH 隧道访问<br />管理操作均记录审计</div></aside>
+    <main>
+      <div class="heading"><div><div class="eyebrow">CONTENT / TUTORIALS</div><div class="title">教程管理</div><div class="breadcrumb">围棋入门教程 / 第一章 基础概念 / 1. 外势和实地</div></div><div class="selectors"><select aria-label="选择教材"><option>围棋入门教程</option></select><select aria-label="选择章节"><option>第一章 基础概念</option></select></div></div>
+      <div class="workspace">
+        <section class="source" aria-label="原书页"><div class="pane-head"><strong>原书页对照</strong><span class="folio">PAGE 03</span></div><div class="source-scroll"><div class="paper"><div class="paper-title">一　外势和实地</div><div class="paper-row"><div class="paper-grid"></div><div class="paper-copy">图1中的黑1我们称之为三三，是三线与三线的交叉点，也是实地线与实地线的交叉点。白2是四线与四线的交叉点。</div></div><div class="paper-row"><div class="paper-grid"></div><div class="paper-copy">图2中，黑1点三三，则角上的主人就变为黑棋了。但是黑棋取得实地的同时，白棋扩展了外势。</div></div></div><p class="source-caption">图1中的黑1称为三三，是三线与三线的交叉点。对照原书内容检查棋图和讲解，确认后再审核。</p></div></section>
+        <section class="canvas" aria-label="2D 电子棋盘"><div class="board-head"><strong>图 1 · 棋图预览</strong><span>MOVE 02 / 02</span></div><div class="board-stage"><div class="board"><div class="board-grid"></div><i class="star s1"></i><i class="star s2"></i><i class="star s3"></i><i class="star s4"></i><span class="stone black">1</span><span class="stone white">2</span></div></div><div class="editbar"><button class="tool selected">落子</button><button class="tool">标记</button><button class="tool">撤销</button><span class="edit-hint">● 编辑草稿未保存</span></div></section>
+        <section class="inspector" aria-label="图详情与编辑"><div class="inspect-scroll"><div class="figure-title"><button class="back" aria-label="返回图列表">←</button><div><h1>1. 外势和实地</h1><div class="figure-sub">图 1 · 本节共 10 图</div></div><span class="status-tag">编辑工作台</span></div><div class="pager"><button aria-label="上一图" disabled>‹</button><span>FIGURE 01 / 10</span><button aria-label="下一图">›</button></div><button class="source-button">▣　对照原书页</button><div class="section"><div class="section-label"><strong>手数</strong><span>逐手查看棋图</span></div><div class="move-row"><span>当前 <b>02 / 02</b></span><span>棋图局部</span></div><input type="range" min="0" max="2" value="2" aria-label="棋图手数" /></div><div class="section"><div class="section-label"><strong>语音讲解</strong><span>文字与语音分开保存</span></div><p class="narration">在图 1 里，黑棋下在 1 位的这手棋叫做三三点，就是第三条线和第三条线相交的地方。这两条线都是我们说的实地线。三三点的好处是比较容易做出眼形来活棋，不过它的不足之处在于朝着边上和中央发展的力量相对较弱。</p><textarea class="edit-narration" aria-label="编辑语音讲解">在图 1 里，黑棋下在 1 位的这手棋叫做三三点，就是第三条线和第三条线相交的地方。这两条线都是我们说的实地线。三三点的好处是比较容易做出眼形来活棋，不过它的不足之处在于朝着边上和中央发展的力量相对较弱。</textarea><div class="draft">未保存的棋图和讲解不会影响公开页面</div><div class="audio">讲解音频 · 01:18　<button>▶ 播放</button></div><div class="video"><div><span class="play">▶</span>配语音的视频预览</div></div></div><div class="section"><div class="section-label"><strong>审核状态</strong></div><div class="audio">逻辑检查通过后，可确认此图已审核。</div></div></div><div class="actions"><button class="action edit" onclick="setState('editing')">编辑棋图</button><button class="action edit" onclick="setState('editing')">编辑讲解</button><button class="action save primary" onclick="setState('detail')">保存更改</button><button class="action cancel" onclick="setState('detail')">取消</button><button class="action">生成语音</button><button class="action">逻辑检查</button><button class="action wide" disabled>✓　确认审核</button></div></section>
+      </div>
+    </main>
+  </div>
+  <section class="font-lab" aria-label="字体对比"><h1>为管理后台选一款字</h1><p>同一段教程内容，比较标题、导航、正文和操作按钮。配色可以切换夜间 B / 白天 C。</p><div class="font-grid">
+    <article class="font-card wenkai"><div class="font-card-head"><span>01 / 霞鹜文楷</span><button onclick="setFont('wenkai');setState('detail')">放到整页看</button></div><h2>教程管理 · 外势和实地</h2><p class="sample-nav">围棋入门教程　/　第一章 基础概念　/　图 1</p><p class="sample-copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。对照原书内容检查棋图和讲解，确认后再审核。</p><span class="sample-action">保存更改</span></article>
+    <article class="font-card songti"><div class="font-card-head"><span>02 / 宋体</span><button onclick="setFont('songti');setState('detail')">放到整页看</button></div><h2>教程管理 · 外势和实地</h2><p class="sample-nav">围棋入门教程　/　第一章 基础概念　/　图 1</p><p class="sample-copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。对照原书内容检查棋图和讲解，确认后再审核。</p><span class="sample-action">保存更改</span></article>
+    <article class="font-card kaiti"><div class="font-card-head"><span>03 / 楷体</span><button onclick="setFont('kaiti');setState('detail')">放到整页看</button></div><h2>教程管理 · 外势和实地</h2><p class="sample-nav">围棋入门教程　/　第一章 基础概念　/　图 1</p><p class="sample-copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。对照原书内容检查棋图和讲解，确认后再审核。</p><span class="sample-action">保存更改</span></article>
+    <article class="font-card fangsong"><div class="font-card-head"><span>04 / 仿宋</span><button onclick="setFont('fangsong');setState('detail')">放到整页看</button></div><h2>教程管理 · 外势和实地</h2><p class="sample-nav">围棋入门教程　/　第一章 基础概念　/　图 1</p><p class="sample-copy">在图 1 里，黑棋下在 1 位的这手棋叫做三三点。对照原书内容检查棋图和讲解，确认后再审核。</p><span class="sample-action">保存更改</span></article>
+  </div></section>
+  <div class="prototype-controls" aria-label="设计稿切换"><span>配色</span><button data-choice="graphite">B 夜间</button><button data-choice="mist">C 白天</button><i></i><span>字体</span><button data-font-choice="wenkai">文楷</button><button data-font-choice="songti">宋体</button><button data-font-choice="kaiti">楷体</button><button data-font-choice="fangsong">仿宋</button><i></i><button data-state-choice="fonts">字体对比</button><button data-state-choice="signin">登录</button><button data-state-choice="detail">详情</button><button data-state-choice="editing">编辑</button></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const choices = ['graphite', 'mist'];
+    const fonts = ['wenkai', 'songti', 'kaiti', 'fangsong'];
+    const states = ['fonts', 'signin', 'detail', 'editing'];
+    const theme = params.get('theme');
+    const font = params.get('font');
+    const state = params.get('state');
+    document.body.dataset.theme = choices.includes(theme) ? theme : 'graphite';
+    document.body.dataset.font = fonts.includes(font) ? font : 'kaiti';
+    document.body.dataset.state = states.includes(state) ? state : 'detail';
+    document.body.dataset.capture = params.get('capture') === '1' ? 'true' : 'false';
+    function updateButtons() {
+      document.querySelectorAll('[data-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.choice === document.body.dataset.theme)));
+      document.querySelectorAll('[data-font-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.fontChoice === document.body.dataset.font)));
+      document.querySelectorAll('[data-state-choice]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.stateChoice === document.body.dataset.state)));
+    }
+    function setTheme(next) { document.body.dataset.theme = next; params.set('theme', next); history.replaceState(null, '', '?' + params); updateButtons(); }
+    function setFont(next) { document.body.dataset.font = next; params.set('font', next); history.replaceState(null, '', '?' + params); updateButtons(); }
+    function setState(next) { document.body.dataset.state = next; params.set('state', next); history.replaceState(null, '', '?' + params); updateButtons(); }
+    document.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => setTheme(button.dataset.choice)));
+    document.querySelectorAll('[data-font-choice]').forEach(button => button.addEventListener('click', () => setFont(button.dataset.fontChoice)));
+    document.querySelectorAll('[data-state-choice]').forEach(button => button.addEventListener('click', () => setState(button.dataset.stateChoice)));
+    updateButtons();
+  </script>
+</body>
+</html>

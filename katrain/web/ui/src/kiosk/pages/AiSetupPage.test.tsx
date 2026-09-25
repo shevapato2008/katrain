@@ -420,7 +420,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     expect(screen.getByTestId('kiosk-ladder-sync-line')).toHaveTextContent('重试 2/5');
 
     const retryButton = screen.getByRole('button', { name: '立即重试' });
-    const resignButton = screen.getByRole('button', { name: '认输那一局，在这里开新局' });
+    const resignButton = screen.getByRole('button', { name: '放弃未送达成绩，在这里开新局' });
     // 「先给出」不是修辞:DOM 顺序决定了触屏上先看到哪一个。
     expect(retryButton.compareDocumentPosition(resignButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
@@ -446,8 +446,9 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     expect(screen.getByTestId('kiosk-ladder-sync-line'))
       .toHaveTextContent('云端拒收了这一局的成绩，再试也是同一个答复。');
     expect(document.body.textContent).not.toMatch(/HTTP\s*4\d\d/);
-    // 而价钱仍然是同一个:这一格有棋盘,认输就是记一负。
-    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+    // 已结束的棋只可选择放弃未送达成绩，后果明确为记一负。
+    expect(screen.getByText('放弃会丢失真实成绩，按一场负局计入升降级')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '放弃未送达成绩，在这里开新局' })).toBeEnabled();
   });
 
   it('本机还接得回来的那一局，给的是「继续对局」并走升降级的对局路由', async () => {
@@ -464,7 +465,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
   it.each([
     ['reserved', '让掉它，在这里开新局'],
     ['active', '认输那一局，在这里开新局'],
-    ['pending_settlement', '认输那一局，在这里开新局'],
+    ['pending_settlement', '放弃未送达成绩，在这里开新局'],
   ] as const)('屏的那一半：%s 这一格按钮按得下，而且真的发出去', async (state, label) => {
     // 这条和后端那条 `test_the_end_gate_is_open_in_every_state_a_blocking_game_can_be_in`
     // 合起来才是一条断言:**屏和闸必须给同一个答案。** 分开写是因为它们住在两个语言里,
@@ -486,7 +487,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     const button = screen.getByRole('button', { name: label });
     expect(button).toBeEnabled();
     await user.click(button);
-    await user.click(screen.getByRole('button', { name: state === 'reserved' ? '确认让掉' : '确认认输' }));
+    await user.click(screen.getByRole('button', { name: state === 'reserved' ? '确认让掉' : state === 'pending_settlement' ? '确认放弃成绩' : '确认认输' }));
     await waitFor(() => expect(endRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
   });
 
@@ -510,11 +511,11 @@ describe('AiSetupPage — 升降级挡局面板', () => {
 
     // 两条出路同时在,而且重试排在前面。
     expect(screen.getByRole('button', { name: '立即重试' })).toBeEnabled();
-    const resign = screen.getByRole('button', { name: '认输那一局，在这里开新局' });
+    const resign = screen.getByRole('button', { name: '放弃未送达成绩，在这里开新局' });
     expect(resign).toBeEnabled();
 
     await user.click(resign);
-    await user.click(screen.getByRole('button', { name: '确认认输' }));
+    await user.click(screen.getByRole('button', { name: '确认放弃成绩' }));
     await waitFor(() => expect(endRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
   });
 

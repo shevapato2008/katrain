@@ -49,7 +49,13 @@ button {
 button:hover {
   border-color: #646cff;
 }
-button:focus,
+/* 只压 `:focus-visible`,不压裸 `:focus`(Task 8b 第二轮实测):Chromium 对 <button>
+ * 的启发式是鼠标/触屏点击只落 `:focus` 不落 `:focus-visible` —— 这条规则原来两个都写,
+ * 于是鼠标/触屏点任何按钮都会留下这圈离色板的蓝色 UA 默认描边(`4px auto
+ * -webkit-focus-ring-color`),而且 specificity 比它高的那十几条 `:focus-visible`
+ * 专项覆盖(kiosk-shell 里到处都是)全部因为「根本没匹配上产生描边的规则」而失效。
+ * 只留 `:focus-visible`:键盘 Tab 命中、有焦点圈(可达性保住);鼠标/触屏点击不命中、
+ * 没有圈(和设计稿一致),那十几条覆盖也就真的开始生效了。 */
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }

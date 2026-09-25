@@ -5916,6 +5916,15 @@ msgstr "Displayed Elo {v}"
 msgid "platform:ref_rank"
 msgstr "about {r}"
 
+msgid "platform:level_sheet"
+msgstr "All strength levels"
+
+msgid "platform:close"
+msgstr "Close"
+
+msgid "platform:plate_aria"
+msgstr "Current opponent {name} {level}, {rung}; tap to see all"
+
 msgid "platform:rank_is_theirs"
 msgstr "The rank belongs to {name}"
 
@@ -6847,3 +6856,359 @@ msgstr "Games not counted in the win rate: "
 
 msgid "growth:unknown_seat_b"
 msgstr " — face-to-face games and games where your color wasn't recorded."
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Colour"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} human-vs-AI is fixed at 19x19 · Chinese rules; the screen and the "
+"real board share the same tunnel"
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Calibration is using the lights too · replay starts as soon as it finishes "
+"or is cancelled"
+
+msgid "baipu:calib_running_title"
+msgstr "Board calibration is still running"
+
+msgid "baipu:cam_connecting"
+msgstr "Connecting to the camera"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "The board is not calibrated yet"
+
+msgid "baipu:cam_geo_drift"
+msgstr "The board calibration is no longer valid"
+
+msgid "baipu:cam_none"
+msgstr "No camera connected"
+
+msgid "baipu:capture_hint_camera"
+msgstr "The ones lit blue — once they are all off, it moves on by itself"
+
+msgid "baipu:checking_board"
+msgstr "Checking the board status"
+
+msgid "baipu:done_hint_auto"
+msgstr "{n} moves in all · progress cleared; tap top-left to go back"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Collecting training data needs the camera to see the board clearly first"
+
+msgid "baipu:hint_failed"
+msgstr "No result — close it and press again"
+
+msgid "baipu:hint_loading"
+msgstr "The AI is thinking about this move…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"AI hints on, recognition paused — white lights are the AI's candidate "
+"points; close the hints to carry on"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"AI hints on — white lights are the AI's candidate points; close the hints to"
+" carry on"
+
+msgid "baipu:hint_row"
+msgstr "Win rate {w}% · score {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI hints · where the white lights blink"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"While trying moves the camera isn't watching, so the AI can't know the "
+"position on the board"
+
+msgid "baipu:hint_value"
+msgstr "Press again to close"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"The light is on — put the {color} stone on the lit intersection; once the "
+"camera sees it, the next move comes up by itself"
+
+msgid "baipu:led_title"
+msgstr "Lights · colour key"
+
+msgid "baipu:led_value_camera"
+msgstr "Camera watching"
+
+msgid "baipu:led_value_manual"
+msgstr "Confirm by hand"
+
+msgid "baipu:led_value_try"
+msgstr "Trying moves · recognition paused"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — place the stone, then press “Confirm the stone”"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; calibration is in “Settings”"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Move {i} of {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Take off the stones you tried and put back any you moved — once it matches, "
+"the replay carries on by itself"
+
+msgid "baipu:restore_title"
+msgstr "Set the board back to move {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Last time you reached move {n}. To start over, first clear all stones off "
+"the board."
+
+msgid "baipu:setup_clear_title"
+msgstr "First clear all stones off the board"
+
+msgid "baipu:setup_continue"
+msgstr "Board set — continue"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Take off stones under blue lights, place stones at red and green lights — it"
+" starts by itself once it matches"
+
+msgid "baipu:setup_entry_title"
+msgstr "First set the board up as at move {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "The camera isn't recognizing"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Place anything and explore on the board. Press “Try it” again to go back to "
+"the record — the lights will guide you to set the board back"
+
+msgid "baipu:trying_title"
+msgstr "Trying moves · camera recognition paused"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Take off the stones under blue lights and put captured stones back at the "
+"red and green lights — it carries on once it matches"
+
+msgid "baipu:undo_title"
+msgstr "Back to move {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Can't take back while trying moves"
+
+msgid "baipu:verify_hint"
+msgstr "Extra stones are lit blue — take them off to continue"
+
+msgid "baipu:verify_title"
+msgstr "Checking the board"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Pick up the stone under the blue light ({w}) and put it on {c} — it carries "
+"on once it matches"
+
+msgid "baipu:wrong_size"
+msgstr "This is a {n}×{n} record — it can't be replayed"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"The physical board and its lights are 19×19 — any other size would put every"
+" stone in the wrong place."
+
+msgid "baipu:wrong_title"
+msgstr "Wrong spot · it goes on {c}"
+
+msgid "kifu:detail_offline"
+msgstr "This game needs a network connection to open"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"The record library is in the cloud, and this box can't reach it right now."
+
+msgid "kifu:list_offline"
+msgstr "Searching the record library needs a network connection"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"This box can't reach the cloud right now. Records you've replayed and "
+"imported SGFs aren't affected."
+
+msgid "kifu:wrong_size_reason"
+msgstr "This is a {n}×{n} record — the physical board only takes 19×19"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"AI engine is warming up — you can use Game Records, Courses and other "
+"features for now"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI engine is not ready yet — please try again later"
+
+msgid "vision:relocate"
+msgstr "Align frame"
+
+msgid "vision:relocating"
+msgstr "Aligning…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Not aligned"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Can't find the board's outer frame in view — move away whatever is blocking "
+"the border and try again."
+
+msgid "vision:relocate_failed"
+msgstr "Try again; if it keeps failing, clear the board and recalibrate."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"The board has moved and the last calibration no longer matches — use “Align "
+"frame” (no lights, works with stones on the board) or recalibrate"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"The “LED” status only means the serial port is connected — not that every "
+"lamp lights up; if a spot doesn't light during guidance, that section of the"
+" strip is probably broken."
+
+msgid "platform:fact_whose"
+msgstr "Whose account"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Golaxy's own account, not the box's. No account yet? Register in the Golaxy "
+"app on your phone — you can't sign up on the box."
+
+msgid "platform:fact_three_ways"
+msgstr "Three ways in"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scan — no typing at all. SMS code — wait for a text. Password — fastest, but"
+" you type it on the touchscreen."
+
+msgid "platform:fact_stored"
+msgstr "What stays on the box"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Only the login token Golaxy issues stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:fact_only_one"
+msgstr "Only this way on the box"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS's website also supports Google, Apple, and other accounts — that route "
+"needs a browser, so it's saved for the overseas edition."
+
+msgid "platform:fact_third_party"
+msgstr "Signed up via a third party?"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Those accounts have no OGS password — set one on the OGS website first."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Your account on online-go.com. Sign-up has to happen in a browser — it can't"
+" be done on the box."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Only the session after signing in stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS code"
+
+msgid "platform:login_tab_password"
+msgstr "Password"
+
+msgid "platform:login_field_phone"
+msgstr "Phone number"
+
+msgid "platform:login_field_code"
+msgstr "SMS code"
+
+msgid "platform:login_sub_sms"
+msgstr "Not connected · sign in with an SMS code"
+
+msgid "platform:login_sub_password"
+msgstr "Not connected · sign in with {name}'s account and password"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Not connected · sign in with your Golaxy account and password"
+
+msgid "platform:login_sub_ogs"
+msgstr "Not connected · use your online-go.com account"
+
+msgid "platform:login_title"
+msgstr "Sign in to {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Your rank also comes from this account"
+
+msgid "platform:login_tabs"
+msgstr "Sign-in method"
+
+msgid "platform:login_tab_scan"
+msgstr "Scan"
+
+msgid "platform:login_sub_scan"
+msgstr "Not connected · scan with the Golaxy app on your phone"
+
+msgid "platform:scan_state_waiting"
+msgstr "Waiting for scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Scanned — confirm on your phone"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmed, signing in…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR code expired"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelled on your phone"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Can't reach Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Check the network"
+
+msgid "platform:scan_retry"
+msgstr "Retry"
+
+msgid "platform:scan_title"
+msgstr "Open the Golaxy app and scan"
+
+msgid "platform:scan_body"
+msgstr ""
+"Confirm on your phone after scanning — your password never touches this box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy sign-in QR code"
+
+msgid "platform:scan_refresh"
+msgstr "New code"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "tap for a new code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Couldn't confirm sign-in"
+
+msgid "vision:not_a_stone"
+msgstr "Not a stone"

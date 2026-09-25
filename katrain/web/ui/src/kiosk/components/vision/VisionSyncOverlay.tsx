@@ -20,6 +20,7 @@ import { useVoice, type VoiceName } from '../../hooks/useVoice';
 import {
   initialRecoveryState,
   reduceRecoveryState,
+  type PendingStone,
   type RecoveryState,
 } from './visionRecovery';
 
@@ -34,6 +35,9 @@ interface VisionSyncOverlayProps {
   boardSize: number;
   playerToMove: string | null;
   currentNodeId: number | null;
+  /** Human stone already sent to a remote platform; its local game record has
+   * not advanced yet, so the same-cell camera diff is expected until the reply. */
+  platformPendingStone?: PendingStone | null;
   /** Board-loss precedence (Task B1.4, wired from GamePage.tsx): true while a
    * higher-priority board-loss surface (the escalation dialog or the recalibration
    * modal) is already up, so this generic "board detection abnormal" dialog never
@@ -73,7 +77,7 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, suppressBoardLost = false }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
 
@@ -126,18 +130,17 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
   }, [sessionId]);
 
   const handleAmbiguousIgnore = useCallback(() => {
-    // Ignore = accept the current physical board as the baseline (adopt='physical'),
-    // keeping the ignored stone in the detector baseline so it doesn't re-fire. (The
-    // trust-digital recovery path would re-push the digital board and re-detect it.)
+    // 「不是落子」= 用户作证那一格没有子。把那一格此刻的像素存成否认样本,只要它还长成
+    // 那样就不再被识别成子;像素一变(用户真把子放上去)标签当场失效。
     //
-    // EXCEPT when the stone is merely off-centre: there the button says "I'll move it",
-    // and freezing the crooked position into the baseline is the exact wrong thing —
-    // once the user nudges the stone onto the line it would read as a stone being
-    // REMOVED from where the baseline thinks it is. Just close the card; the detector
-    // is already watching, and the corrected stone confirms itself a few frames later
-    // (measured on the box: the 131st move resolved on its own 20s after the prompt).
+    // 这取代了原来的 adopt='physical'。那条路是把**假阳性收进基线当成现实**,而且
+    // RESET_SYNC 会顺手销毁参考帧 —— 等于用户每按一次「忽略」,就把唯一能按像素否决
+    // 反光的那套证据毁掉一次,下一颗假阳性畅通无阻。
+    //
+    // 摆偏那一档(unbacked)不否认:那儿**确实有子**,只是没放正,按钮说的是「我挪一下」。
+    // 把它记成「这儿没有子」会在用户挪正之后反过来压住那颗真子。
     if (recovery.blocking?.kind === 'stone' && !recovery.blocking.unbacked) {
-      API.visionResetSync('physical').catch(() => undefined);
+      API.visionDenyStone(recovery.blocking.row, recovery.blocking.col).catch(() => undefined);
     }
     setRecovery((state) => ({ ...state, blocking: null }));
   }, [recovery.blocking]);
@@ -167,7 +170,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
 
     const nowMs = Date.now();
     setRecovery((state) => newEvents.reduce(
-      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs }),
+      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs, platformPendingStone }),
       state,
     ));
 
@@ -214,7 +217,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     }
 
     lastProcessedSeqRef.current = Math.max(...newEvents.map((event) => event.seq));
-  }, [syncEvents]);
+  }, [syncEvents, platformPendingStone]);
 
   useEffect(() => {
     if (!recovery.pending) return;

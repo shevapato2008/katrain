@@ -968,85 +968,32 @@ test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
- * 屏 07 跨平台 · 连接:**软键盘不许把正在输入的那一格压在底下**
+ * 屏 07 跨平台 · 连接:**软键盘不许把正在输入的那一格压在底下** —— 2026-09-24 退役
  *
- * 这一屏的登录段排在第三段。真浏览器量出来:滚动区 clientH 460 / scrollH 610 ⇒
- * **maxScroll 只有 150**;而触屏键盘高 188、上缘落在 y=412 —— 两个输入框滚到底时
- * 都在 412 以下。键盘自己那句 `scrollIntoView({block:'center'})` 需要 scrollTop≈294,
- * 比 maxScroll 还大,**救不回来**:人看不见自己打的验证码。
+ * 这条闸原来守的是屏 07 页内那段登录表单(验证码/密码两格)。2026-09-23 Task 5
+ * 把登录整段撤到独立的 `PlatformLoginPage`(`72e4e94c`),`platform-login-section`/
+ * `platform-login-pass` 这两个 testid 从此不存在——**它要守的对象已经不在这屏上了**,
+ * 不是「功能坏了」。退役理由三件事(同 `.kiosk-side__scroll` 那条溢出闸退役时的判例):
  *
- * 修法是聚焦时给滚动区垫一段等于键盘高度的下内衬(`PlatformConnectPage` 里那个 effect),
- * **不动版式** —— 所以四图仍逐像素可比,而这一条只能在这儿量。
+ * ① **对象已经不存在。** `PlatformConnectPage.tsx` 现在**没有任何 `<input>`**
+ *    (2026-09-24 复审时 `grep 'input\|textarea'` 核实为空);它配套的
+ *    `useKeyboardInset('.kiosk-layout-b .kiosk-side__scroll')` 调用也已经删掉——
+ *    那次调用早就是死代码(`inZone` 只认 `<input>`,zone 里一个都没有,永远不会真的
+ *    触发),骨架提交删表单时漏删的。
+ * ② **它今天守的行为已经搬去了新家。** 同样的「聚焦字段时软键盘不许压住它」这件事,
+ *    现在由 `PlatformLoginPage` + `useKeyboardInset` 负责,闸在
+ *    `kiosk-geometry-platform.spec.ts` 里(`登录页:聚焦最下面那个字段时…`,
+ *    含 CPU 降速变体),同一套「等键盘真的滑上来 + 等输入框位置不再变」的判据。
+ * ③ **留着会造一个假堵点。** 这条测试今天跑会在 `waitForSelector('[data-testid=
+ *    "platform-login-section"]')` 上超时 30s(2026-09-24 实测),而它超时的原因不是
+ *    键盘避让坏了,是选择器指向的东西不存在——会误导下一个看见红测试的人去查错方向。
  *
- * ⚠️ 判据是**键盘上缘**,不是某个写死的 y:键盘带中文候选条时会长到 246,
- * 写死 412 的话候选条一出来这条闸就变成假绿。
- *
- * **变异记录**(2026-08-24):把 `PlatformConnectPage` 里那个 `paddingBottom` 的赋值删掉
- * ⇒ 这条当场红在**断言本身**:验证码那格底边 **525** > 键盘上缘 **412**(压掉 113px)。
- * (第一版把「内衬写进去了」当成前置等待,变异红在了那句 `waitForFunction` 上 ——
- * 那是红在被测机制自己身上,断言其实没跑过。改成等「输入框位置不再变」,修没修都成立。)
+ * 保留这段头注 + 变异记录(不删,只删可执行代码)作为「这条闸曾经守过什么、现在归谁守」
+ * 的痕迹——同一形状的坑(骨架提交删了 UI、漏删配套的闸)以后再出现时能被搜到。
+ * 原变异记录:2026-08-24 把 `paddingBottom` 的赋值删掉 ⇒ 当场红在断言本身
+ * (验证码那格底边 525 > 键盘上缘 412);等价的红/绿两态现在归
+ * `kiosk-geometry-platform.spec.ts` 的四段实测(见 `task-5-report.md`)。
  * ────────────────────────────────────────────────────────────────────────── */
-test('跨平台连接:聚焦验证码那一格时,它整个在软键盘上缘之上', async ({ page }) => {
-  await page.route('**/api/v1/platforms/status', (route) => route.fulfill({
-    json: {
-      platforms: [
-        { platform: 'ogs', connected: true, saved_username: 'me', supports_live_play: true,
-          supports_automatch: true, supports_rooms: false, supports_seek_graph: true, supports_engine_play: false },
-        { platform: 'golaxy', connected: false, supports_live_play: true,
-          supports_automatch: false, supports_rooms: true, supports_seek_graph: false, supports_engine_play: true },
-        { platform: 'fox', connected: false, supports_live_play: false,
-          supports_automatch: false, supports_rooms: true, supports_seek_graph: false, supports_engine_play: false },
-      ],
-    },
-  }));
-  await boot(page, '/kiosk/play/cross-platform');
-  await page.waitForSelector('[data-testid="platform-login-section"]');
-  // 键盘是 index.html 在 load 之后异步塞进来的三个脚本 —— 不等它,量到的是「没有键盘」。
-  await page.waitForSelector('.skbd', { state: 'attached' });
-
-  // 前置:这一屏确实滚不到底就够不着 —— 造不出这个前置,下面那条断言是空的。
-  const before = await page.evaluate(() => {
-    const zone = document.querySelector('.kiosk-side__scroll') as HTMLElement;
-    return { maxScroll: zone.scrollHeight - zone.clientHeight };
-  });
-  expect(before.maxScroll, '这一屏根本不溢出 —— 那这条闸没有被测对象').toBeGreaterThan(0);
-
-  await page.locator('[data-testid="platform-login-pass"]').click();
-  // ⚠️ 等的是**它真的滑上来了**,不是 `skbd-open` 这个类。类一加就为真,而 transform
-  // 还在过渡 —— 那一刻量到的 `keyboardTop` 是 599(键盘还在屏幕外),
-  // 「输入框在键盘上方」于是恒成立:**断言落在两种语义恰好同值的那一侧**,假绿。
-  await page.waitForFunction(() => {
-    const k = document.querySelector('.skbd') as HTMLElement | null;
-    if (!k || !k.offsetHeight) return false;
-    return k.getBoundingClientRect().top <= window.innerHeight - k.offsetHeight + 2;
-  });
-  // 等布局稳下来再量。⚠️ **等的不能是「内衬写进去了」** —— 那是被测的那个机制本身,
-  // 拿它当前置的话,去掉内衬的变异会红在这句等待上而不是红在下面那条断言上,
-  // 红分支就没被真正跑过。这里等的是**输入框的位置不再变**,修没修都成立。
-  await page.waitForFunction(() => {
-    const w = window as unknown as { __lastBottom?: number };
-    const el = document.querySelector('[data-testid="platform-login-pass"]') as HTMLElement;
-    const now = Math.round(el.getBoundingClientRect().bottom);
-    const settled = w.__lastBottom === now;
-    w.__lastBottom = now;
-    return settled;
-  }, undefined, { polling: 120 });
-
-  const m = await page.evaluate(() => {
-    const input = document.querySelector('[data-testid="platform-login-pass"]') as HTMLElement;
-    const kbd = document.querySelector('.skbd') as HTMLElement;
-    return {
-      inputBottom: Math.round(input.getBoundingClientRect().bottom),
-      keyboardTop: Math.round(kbd.getBoundingClientRect().top),
-      keyboardH: Math.round(kbd.offsetHeight),
-    };
-  });
-  console.log('[kbd-inset] inputBottom=%d keyboardTop=%d keyboardH=%d',
-    m.inputBottom, m.keyboardTop, m.keyboardH);
-  expect(m.keyboardH, '键盘没弹出来 —— 那这条闸量的不是被键盘挡住这件事').toBeGreaterThan(0);
-  expect(m.inputBottom, '验证码那一格被软键盘压住了 —— 人看不见自己打的字')
-    .toBeLessThanOrEqual(m.keyboardTop);
-});
 
 /* ─────────────────────────────────────────────────────────────────────────
  * 屏 24 课程 · 书目与章节:布局 B 整栏滚,而**摊开的那几节挂在一个新的包装 div 里**
@@ -1207,6 +1154,13 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
     },
   }));
+  // 没接摄像头 ⇒ 非采集机走**手动兜底**(稿 17d:确认 / 撤回 / 试下 / AI支招 四格)。钉死 —— 不钉就随 :8001 在不在而变。
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: true,
+    },
+  }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: BAIPU_STEPS(241) }));
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
@@ -1271,14 +1225,16 @@ const railOf = (page: Page) => page.evaluate(() => {
   };
 });
 
-test('摆谱:241 手四态轮一遍,「确认落子」始终贴右栏底、盘恒 516', async ({ page }) => {
+// 2026-09-23 摆谱改摄像头自动推进:非采集机平时没有确认键,摄像头用不了才临时露出(手动兜底,四格)。
+// 四格是这一屏**格子最多**的一态(摄像头态三格;卡住时露出「摆好了，继续」也是四格),量这一态就覆盖了格数那一维。
+test('摆谱:241 手手动兜底四格,动作区始终贴右栏底、盘恒 516', async ({ page }) => {
   await bootBaipu(page);
 
   const guiding = await railOf(page);
   expect(guiding.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
   expect(guiding.boardW, '盘不是 516 宽').toBe(516);
   expect(guiding.boardH, '盘不是 516 高').toBe(516);
-  expect(guiding.actsCount, '动作区不是三格 —— 稿子那颗「虚手」不做').toBe(3);
+  expect(guiding.actsCount, '手动兜底不是四格(确认 / 撤回 / 试下 / AI支招)').toBe(4);
   expect(guiding.movesOverflow, '241 手没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
   expect(guiding.railOverflow, '右栏自己被顶破了 —— 溢出该由着法那一块自己吃掉').toBeLessThanOrEqual(0);
   expect(guiding.actsBottom, '动作区没贴右栏底').toBe(guiding.railBottom);

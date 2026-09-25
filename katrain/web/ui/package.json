@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:admin": "vite --config vite.admin.config.ts",
     "build": "tsc -b && vite build",
+    "build:admin": "tsc -b && vite build --config vite.admin.config.ts",
     "build:kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true vite build && npm run verify:kiosk-2d",
     "build:smartbox-kiosk-2d": "tsc -b && VITE_KIOSK_2D_ONLY=true VITE_BOX_SSO_STRICT=true vite build && VITE_BOX_SSO_STRICT=true npm run verify:kiosk-2d && node scripts/write-smartbox-build-manifest.mjs",
     "verify:kiosk-2d": "scripts/verify-kiosk.sh",
@@ -30,6 +32,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "lucide-react": "^0.562.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.30.3",

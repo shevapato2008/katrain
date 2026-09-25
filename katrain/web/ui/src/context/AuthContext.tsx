@@ -14,6 +14,8 @@ interface User {
     rank: string;
     credits: number;
     avatar_url?: string;
+    // Only controls editing UI. The backend write routes enforce admin access.
+    is_admin?: boolean;
 }
 
 interface AuthContextType {

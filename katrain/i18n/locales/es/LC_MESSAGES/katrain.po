@@ -3827,7 +3827,7 @@ msgid "vision:cancel_calibration"
 msgstr "Cancelar calibración"
 
 msgid "vision:reuse_calibration"
-msgstr "Reutilizar la última calibración"
+msgstr "Usar la anterior"
 
 msgid "vision:camera_down"
 msgstr "Cámara no conectada · se ha pasado a la pantalla táctil"
@@ -5805,6 +5805,15 @@ msgstr "Elo mostrado {v}"
 msgid "platform:ref_rank"
 msgstr "equivale a {r}"
 
+msgid "platform:level_sheet"
+msgstr "Todos los niveles de fuerza"
+
+msgid "platform:close"
+msgstr "Cerrar"
+
+msgid "platform:plate_aria"
+msgstr "Oponente actual {name} {level}, {rung}; toca para ver todos"
+
 msgid "platform:rank_is_theirs"
 msgstr "El rango es de {name}"
 
@@ -6741,3 +6750,368 @@ msgstr "Partidas fuera del porcentaje: "
 
 msgid "growth:unknown_seat_b"
 msgstr " — partidas cara a cara y partidas sin tu color registrado."
+
+msgid "setup:handicap_side"
+msgstr "Hándicap · Mi color"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} humano contra IA está fijado en 19x19 · reglas chinas; la pantalla y "
+"el tablero físico comparten el mismo canal"
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"La calibración también usa las luces · al terminar o cancelarla empieza la "
+"reproducción"
+
+msgid "baipu:calib_running_title"
+msgstr "La calibración del tablero sigue en curso"
+
+msgid "baipu:cam_connecting"
+msgstr "Conectando con la cámara"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "El tablero aún no está calibrado"
+
+msgid "baipu:cam_geo_drift"
+msgstr "La calibración del tablero ya no es válida"
+
+msgid "baipu:cam_none"
+msgstr "No hay cámara conectada"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Las que brillan en azul: cuando las retires todas, pasa sola a la siguiente "
+"jugada"
+
+msgid "baipu:checking_board"
+msgstr "Comprobando el estado del tablero"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"{n} jugadas en total · progreso borrado; pulsa arriba a la izquierda para "
+"volver"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Para recoger datos de entrenamiento, la cámara tiene que ver bien el tablero"
+" primero"
+
+msgid "baipu:hint_failed"
+msgstr "No se obtuvo resultado: ciérralo y vuelve a pulsar"
+
+msgid "baipu:hint_loading"
+msgstr "La IA está calculando esta jugada…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Sugerencias de la IA activas, reconocimiento en pausa: las luces blancas son"
+" las jugadas candidatas; ciérralas para seguir"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Sugerencias de la IA activas: las luces blancas son las jugadas candidatas; "
+"ciérralas para seguir"
+
+msgid "baipu:hint_row"
+msgstr "Victoria {w}% · puntos {s}"
+
+msgid "baipu:hint_title"
+msgstr "Sugerencias de la IA · donde parpadean las luces blancas"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Mientras pruebas, la cámara no mira el tablero y la IA no sabe qué posición "
+"hay"
+
+msgid "baipu:hint_value"
+msgstr "Pulsa otra vez para cerrar"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"La luz está encendida: pon la piedra {color} en la intersección iluminada; "
+"cuando la cámara la vea, pasa sola a la siguiente"
+
+msgid "baipu:led_title"
+msgstr "Luces · leyenda de colores"
+
+msgid "baipu:led_value_camera"
+msgstr "La cámara está mirando"
+
+msgid "baipu:led_value_manual"
+msgstr "Confirmación manual"
+
+msgid "baipu:led_value_try"
+msgstr "Probando · reconocimiento en pausa"
+
+msgid "baipu:manual_hint"
+msgstr "{why}: coloca la piedra y pulsa «Confirmar la piedra»"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; la calibración está en «Configuración»"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Jugada {i} de {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Retira las piedras de prueba y devuelve las que moviste; cuando coincida, "
+"sigue sola"
+
+msgid "baipu:restore_title"
+msgstr "Vuelve a dejar el tablero en la jugada {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"La última vez llegaste a la jugada {n}. Para empezar de nuevo, retira antes "
+"todas las piedras del tablero."
+
+msgid "baipu:setup_clear_title"
+msgstr "Primero retira todas las piedras del tablero"
+
+msgid "baipu:setup_continue"
+msgstr "Ya está, continuar"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Retira las piedras con luz azul y coloca piedras donde hay luz roja o verde;"
+" cuando coincida, empieza sola"
+
+msgid "baipu:setup_entry_title"
+msgstr "Primero prepara el tablero como en la jugada {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "La cámara no está reconociendo"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Coloca libremente y analiza en el tablero. Pulsa «Probar» otra vez para "
+"volver a la partida: las luces te guiarán para recolocar el tablero"
+
+msgid "baipu:trying_title"
+msgstr "Probando · reconocimiento de la cámara en pausa"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Retira las piedras con luz azul y devuelve las capturadas donde hay luz roja"
+" o verde; cuando coincida, sigue sola"
+
+msgid "baipu:undo_title"
+msgstr "Vuelta a la jugada {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "No se puede deshacer mientras pruebas"
+
+msgid "baipu:verify_hint"
+msgstr "Las piedras que sobran brillan en azul: retíralas para seguir"
+
+msgid "baipu:verify_title"
+msgstr "Comprobando el tablero"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Coge la piedra con luz azul ({w}) y ponla en {c}; cuando coincida, sigue "
+"sola"
+
+msgid "baipu:wrong_size"
+msgstr "Es una partida de {n}×{n}: no se puede reproducir"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"El tablero físico y sus luces son de 19×19: con otro tamaño cada piedra "
+"quedaría fuera de sitio."
+
+msgid "baipu:wrong_title"
+msgstr "Mal colocada · va en {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Esta partida necesita conexión a internet para abrirse"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"La biblioteca de partidas está en la nube y este equipo no puede conectarse "
+"ahora."
+
+msgid "kifu:list_offline"
+msgstr "Buscar en la biblioteca de partidas requiere conexión a internet"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Este equipo no puede conectarse a la nube ahora. Las partidas reproducidas y"
+" los SGF importados no se ven afectados."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"El motor de IA se está preparando — mientras tanto puedes usar la biblioteca"
+" de partidas, los cursos y otras funciones"
+
+msgid "engine:warmup_unavailable"
+msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"
+
+msgid "vision:relocate"
+msgstr "Alinear marco"
+
+msgid "vision:relocating"
+msgstr "Alineando…"
+
+msgid "vision:relocate_failed_title"
+msgstr "No coincide"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"No se encuentra el marco exterior del tablero en la imagen — aparta lo que "
+"tape el borde e inténtalo de nuevo."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Inténtalo de nuevo; si sigue sin funcionar, vacía el tablero y vuelve a "
+"calibrar."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"El tablero se movió y la última calibración ya no coincide — usa «Alinear "
+"marco» (sin luces, funciona con piedras en el tablero) o vuelve a calibrar"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"El estado «LED» solo indica que el puerto serie está conectado, no que cada "
+"lámpara encienda; si durante la guía algún punto no se enciende, "
+"probablemente ese tramo de la tira LED esté dañado."
+
+msgid "platform:fact_whose"
+msgstr "De quién es la cuenta"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Es la cuenta propia de Golaxy, no la de la caja. ¿Aún no tienes cuenta? "
+"Regístrate en la app de Golaxy en tu teléfono — no se puede registrar en la "
+"caja."
+
+msgid "platform:fact_three_ways"
+msgstr "Tres formas"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Escanear: no hay que escribir nada. Código SMS: espera un mensaje de texto. "
+"Contraseña: la más rápida, pero hay que escribirla en la pantalla táctil."
+
+msgid "platform:fact_stored"
+msgstr "Qué queda en la caja"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Solo se guarda el token de acceso que emite Golaxy, no la contraseña. "
+"Desconéctala cuando quieras desde Ajustes."
+
+msgid "platform:fact_only_one"
+msgstr "En la caja, solo así"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"En la web de OGS también funcionan cuentas de Google, Apple y otras — esa "
+"vía necesita un navegador, así que se deja para la edición internacional."
+
+msgid "platform:fact_third_party"
+msgstr "Registrado con un tercero"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Esas cuentas no tienen contraseña de OGS — primero hay que configurar una en"
+" la web de OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Tu cuenta en online-go.com. El registro debe hacerse en un navegador — no se"
+" puede hacer en la caja."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Solo se guarda la sesión tras iniciar sesión, no la contraseña. Desconéctala"
+" cuando quieras desde Ajustes."
+
+msgid "platform:login_tab_sms"
+msgstr "Código SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Contraseña"
+
+msgid "platform:login_field_phone"
+msgstr "Número de teléfono"
+
+msgid "platform:login_field_code"
+msgstr "Código SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Sin conexión · inicia sesión con un código SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Sin conexión · inicia sesión con la cuenta y contraseña de {name}"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Sin conexión · inicia sesión con tu cuenta y contraseña de Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Sin conexión · usa tu cuenta de online-go.com"
+
+msgid "platform:login_title"
+msgstr "Iniciar sesión en {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Tu rango también proviene de esta cuenta"
+
+msgid "platform:login_tabs"
+msgstr "Método de acceso"
+
+msgid "platform:login_tab_scan"
+msgstr "Escanear"
+
+msgid "platform:login_sub_scan"
+msgstr "No conectado · escanea con la app de Golaxy en tu teléfono"
+
+msgid "platform:scan_state_waiting"
+msgstr "Esperando escaneo"
+
+msgid "platform:scan_state_scanned"
+msgstr "Escaneado, confirma en tu teléfono"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmado, iniciando sesión…"
+
+msgid "platform:scan_state_expired"
+msgstr "El código QR ha caducado"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelado en tu teléfono"
+
+msgid "platform:scan_unavailable_title"
+msgstr "No se puede conectar con Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Comprueba la red"
+
+msgid "platform:scan_retry"
+msgstr "Reintentar"
+
+msgid "platform:scan_title"
+msgstr "Abre la app de Golaxy y escanea"
+
+msgid "platform:scan_body"
+msgstr "Confirma en tu teléfono después de escanear; la contraseña nunca pasa por esta caja."
+
+msgid "platform:scan_qr_alt"
+msgstr "Código QR de acceso a Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Nuevo código"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "toca aquí para un código nuevo"
+
+msgid "platform:scan_confirm_failed"
+msgstr "No se pudo confirmar el inicio de sesión"
+
+msgid "vision:not_a_stone"
+msgstr "No es una piedra"

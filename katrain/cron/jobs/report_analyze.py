@@ -49,6 +49,7 @@ class ReportAnalyzerJob(BaseJob):
         self._workers: set[asyncio.Task] = set()
         self.max_concurrent_tasks = max(1, config.REPORT_CONCURRENCY)
         self.poll_interval = config.REPORT_POLL_INTERVAL
+        self.last_iteration_at: datetime | None = None
 
     async def run(self) -> None:
         self._running = True
@@ -64,6 +65,7 @@ class ReportAnalyzerJob(BaseJob):
         stale_check_counter = 0
 
         while self._running:
+            self.last_iteration_at = datetime.now(timezone.utc)
             try:
                 self._prune_finished_workers()
                 stale_check_counter += 1
@@ -85,6 +87,9 @@ class ReportAnalyzerJob(BaseJob):
 
     def stop(self):
         self._running = False
+
+    def heartbeat_stats(self) -> dict:
+        return {"in_flight": len(self._workers), "capacity": self.max_concurrent_tasks}
 
     # ── Task management ──
 

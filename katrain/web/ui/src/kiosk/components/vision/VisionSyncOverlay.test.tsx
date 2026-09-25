@@ -7,6 +7,7 @@ import VisionSyncOverlay from './VisionSyncOverlay';
 const mocks = vi.hoisted(() => ({
   playMove: vi.fn().mockResolvedValue(undefined),
   visionResetSync: vi.fn().mockResolvedValue(undefined),
+  visionDenyStone: vi.fn().mockResolvedValue(undefined),
   translate: vi.fn((_key: string, fallback?: string) => fallback ?? ''),
   voiceSpeak: vi.fn(),
   voiceStop: vi.fn(),
@@ -41,6 +42,19 @@ describe('VisionSyncOverlay recovery presentation', () => {
   });
   afterEach(() => vi.useRealTimers());
 
+  it('does not re-prompt for the stone already submitted to a waiting platform', async () => {
+    const mismatch = event(1, 'illegal_change', { positions: [[4, 5, 1]], missing: [] });
+    const { rerender } = render(
+      <VisionSyncOverlay {...props} syncEvents={[mismatch]}
+        platformPendingStone={{ row: 4, col: 5, color: 1 }} />,
+    );
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }]}
+      platformPendingStone={null} />);
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
   it('shows an off-centre prompt as the only dialog and does not adopt it when dismissed', async () => {
     render(
       <VisionSyncOverlay
@@ -58,11 +72,14 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(dialogCount()).toBe(1);
 
     fireEvent.click(screen.getByRole('button', { name: '我挪一下' }));
+    // 摆偏的那一颗**确实是子**,只是没放正。把它记成「这儿没有子」会在用户挪正之后
+    // 反过来压住那颗真子 —— 所以这一档不许发否认。
+    expect(mocks.visionDenyStone).not.toHaveBeenCalled();
     expect(mocks.visionResetSync).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole('button', { name: '我挪一下' })).toBeNull());
   });
 
-  it('keeps the low-confidence wording and adopts the physical baseline when ignored', async () => {
+  it('低置信度那一档说「不是落子」,而且按下去发的是否认、不是「把现状收进基线」', async () => {
     render(
       <VisionSyncOverlay
         {...props}
@@ -71,8 +88,11 @@ describe('VisionSyncOverlay recovery presentation', () => {
     );
 
     expect(await screen.findByText(/检测到疑似落子/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '忽略' }));
-    expect(mocks.visionResetSync).toHaveBeenCalledWith('physical');
+    fireEvent.click(screen.getByRole('button', { name: '不是落子' }));
+    expect(mocks.visionDenyStone).toHaveBeenCalledWith(3, 3);
+    // adopt='physical' 会把假阳性收进基线当成现实,而且 RESET_SYNC 顺手销毁参考帧 ——
+    // 用户每按一次就把唯一能按像素否决反光的证据毁掉一次。这条路必须不再被走。
+    expect(mocks.visionResetSync).not.toHaveBeenCalled();
   });
 
   it('announces an off-centre stone once across unchanged and unrelated rerenders', async () => {

@@ -60,13 +60,14 @@ import ReportsPage from './pages/ReportsPage';
 import ReportDetailPage from './pages/ReportDetailPage';
 import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformConnectPage from './pages/PlatformConnectPage';
+import PlatformLoginPage from './pages/PlatformLoginPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
 import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
 import TutorialSectionPage from './pages/TutorialSectionPage';
 
-const KioskRoutes = () => {
+export const KioskRoutes = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
   // The shared zero-persistence guest account has literal username "guest";
@@ -126,6 +127,7 @@ const KioskRoutes = () => {
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
+          <Route path="play/cross-platform/login/:platform" element={<PlatformLoginPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}

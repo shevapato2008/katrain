@@ -3996,7 +3996,7 @@ msgid "vision:cancel_calibration"
 msgstr "Kalibrierung abbrechen"
 
 msgid "vision:reuse_calibration"
-msgstr "Letzte Kalibrierung weiterverwenden"
+msgstr "Letzte übernehmen"
 
 msgid "vision:camera_down"
 msgstr "Kamera nicht verbunden · auf Touch umgestellt"
@@ -5979,6 +5979,15 @@ msgstr "Angezeigtes Elo {v}"
 msgid "platform:ref_rank"
 msgstr "etwa {r}"
 
+msgid "platform:level_sheet"
+msgstr "Alle Stärkestufen"
+
+msgid "platform:close"
+msgstr "Schließen"
+
+msgid "platform:plate_aria"
+msgstr "Aktueller Gegner {name} {level}, {rung}; antippen für alle"
+
 msgid "platform:rank_is_theirs"
 msgstr "Der Rang gehört zu {name}"
 
@@ -6920,3 +6929,368 @@ msgstr "Nicht in der Siegquote gezählt: "
 msgid "growth:unknown_seat_b"
 msgstr ""
 " — Partien von Angesicht zu Angesicht und Partien ohne erfasste Farbe."
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Die Kalibrierung nutzt ebenfalls die Lichter · danach oder nach Abbruch geht"
+" es direkt zum Nachstellen"
+
+msgid "baipu:calib_running_title"
+msgstr "Die Brettkalibrierung läuft noch"
+
+msgid "baipu:cam_connecting"
+msgstr "Kamera wird verbunden"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Das Brett ist noch nicht kalibriert"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Die Brettkalibrierung ist nicht mehr gültig"
+
+msgid "baipu:cam_none"
+msgstr "Keine Kamera angeschlossen"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Die blau leuchtenden — sind alle abgenommen, geht es von selbst weiter"
+
+msgid "baipu:checking_board"
+msgstr "Brettstatus wird geprüft"
+
+msgid "baipu:done_hint_auto"
+msgstr "Insgesamt {n} Züge · Fortschritt gelöscht; oben links geht es zurück"
+
+msgid "baipu:guard_sub_collect"
+msgstr "Für Trainingsdaten muss die Kamera das Brett zuerst klar sehen"
+
+msgid "baipu:hint_failed"
+msgstr "Keine Antwort — schließen und noch einmal drücken"
+
+msgid "baipu:hint_loading"
+msgstr "Die KI rechnet diesen Zug…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"KI-Tipps an, Erkennung pausiert — weiße Lichter sind die Kandidaten der KI; "
+"Tipps schließen, dann geht es weiter"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"KI-Tipps an — weiße Lichter sind die Kandidaten der KI; Tipps schließen, "
+"dann geht es weiter"
+
+msgid "baipu:hint_row"
+msgstr "Siegchance {w}% · Punkte {s}"
+
+msgid "baipu:hint_title"
+msgstr "KI-Tipps · wo die weißen Lichter blinken"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Beim Probieren schaut die Kamera nicht aufs Brett — die KI kennt die "
+"Stellung darauf nicht"
+
+msgid "baipu:hint_value"
+msgstr "Nochmal drücken zum Schließen"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Das Licht ist an — lege den {color}en Stein auf den leuchtenden "
+"Schnittpunkt; erkennt die Kamera ihn, geht es von selbst weiter"
+
+msgid "baipu:led_title"
+msgstr "Lichter · Farblegende"
+
+msgid "baipu:led_value_camera"
+msgstr "Kamera schaut zu"
+
+msgid "baipu:led_value_manual"
+msgstr "Von Hand bestätigen"
+
+msgid "baipu:led_value_try"
+msgstr "Probieren · Erkennung pausiert"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — Stein setzen, dann „Stein bestätigen“ drücken"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; kalibrieren unter „Einstellungen“"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Zug {i} von {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Probiersteine abnehmen, verschobene zurücklegen — sobald es passt, geht es "
+"von selbst weiter"
+
+msgid "baipu:restore_title"
+msgstr "Brett auf Zug {n} zurückstellen"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Zuletzt warst du bei Zug {n}. Zum Neuanfang erst alle Steine vom Brett "
+"nehmen."
+
+msgid "baipu:setup_clear_title"
+msgstr "Zuerst alle Steine vom Brett nehmen"
+
+msgid "baipu:setup_continue"
+msgstr "Liegt richtig, weiter"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Steine unter blauem Licht abnehmen, bei rotem und grünem Licht setzen — "
+"passt es, geht es von selbst los"
+
+msgid "baipu:setup_entry_title"
+msgstr "Zuerst das Brett wie nach Zug {n} aufbauen"
+
+msgid "baipu:try_off_reason"
+msgstr "Die Kamera erkennt gerade nicht"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Setze frei und probiere auf dem Brett. Nochmal „Probieren“ drücken führt "
+"zurück zum Kifu — die Lichter helfen beim Zurückstellen"
+
+msgid "baipu:trying_title"
+msgstr "Probieren · Kameraerkennung pausiert"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Steine unter blauem Licht abnehmen, gefangene Steine bei rotem und grünem "
+"Licht zurücklegen — passt es, geht es weiter"
+
+msgid "baipu:undo_title"
+msgstr "Zurück zu Zug {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Beim Probieren nicht möglich"
+
+msgid "baipu:verify_hint"
+msgstr "Überzählige Steine leuchten blau — abnehmen, dann geht es weiter"
+
+msgid "baipu:verify_title"
+msgstr "Brett wird abgeglichen"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Den Stein unter dem blauen Licht ({w}) aufnehmen und auf {c} legen — passt "
+"es, geht es weiter"
+
+msgid "baipu:wrong_size"
+msgstr "Das ist ein {n}×{n}-Kifu — nachstellen geht nicht"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Echtes Brett und Lichter sind 19×19 — bei anderer Größe läge jeder Stein "
+"falsch."
+
+msgid "baipu:wrong_title"
+msgstr "Falsch gesetzt · gehört auf {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Für diese Partie ist eine Internetverbindung nötig"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"Die Kifu-Bibliothek liegt in der Cloud, und dieses Gerät erreicht sie gerade"
+" nicht."
+
+msgid "kifu:list_offline"
+msgstr "Die Kifu-Suche braucht eine Internetverbindung"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Dieses Gerät erreicht die Cloud gerade nicht. Nachgestellte Kifus und "
+"importierte SGFs sind nicht betroffen."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Das ist ein {n}×{n}-Kifu — das echte Brett kann nur 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Vorgabe · Meine Farbe"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} Mensch-gegen-KI ist fest auf 19x19 · chinesische Regeln; Bildschirm "
+"und echtes Brett teilen sich denselben Kanal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Die KI-Engine wird vorbereitet — Partiesammlung, Kurse und andere Funktionen"
+" sind schon verfügbar"
+
+msgid "engine:warmup_unavailable"
+msgstr "Die KI-Engine ist noch nicht bereit — bitte später erneut versuchen"
+
+msgid "vision:relocate"
+msgstr "Rahmen ausrichten"
+
+msgid "vision:relocating"
+msgstr "Richte aus…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Nicht ausgerichtet"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Der äußere Rahmen des Bretts ist im Bild nicht zu finden — entfernen Sie, "
+"was den Rand verdeckt, und versuchen Sie es erneut."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Noch einmal versuchen; klappt es weiterhin nicht, das Brett leeren und neu "
+"kalibrieren."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Das Brett wurde verschoben, die letzte Kalibrierung passt nicht mehr — "
+"nutzen Sie „Rahmen ausrichten“ (keine LEDs, funktioniert mit Steinen auf dem"
+" Brett) oder kalibrieren Sie neu"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Der Status „LED“ zeigt nur, dass die serielle Verbindung steht — nicht, dass"
+" jede Lampe leuchtet; leuchtet während der Führung eine Stelle nicht, ist "
+"meist dieser Abschnitt des LED-Streifens defekt."
+
+msgid "platform:fact_whose"
+msgstr "Wessen Konto"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Das eigene Konto von Golaxy, nicht das der Box. Noch kein Konto? "
+"Registrieren Sie sich in der Golaxy-App auf Ihrem Handy — auf der Box geht "
+"das nicht."
+
+msgid "platform:fact_three_ways"
+msgstr "Drei Wege"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scannen — keine einzige Eingabe nötig. SMS-Code — auf eine Textnachricht "
+"warten. Passwort — am schnellsten, muss aber auf dem Touchscreen eingetippt "
+"werden."
+
+msgid "platform:fact_stored"
+msgstr "Was auf der Box bleibt"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Hier bleibt nur das von Golaxy ausgestellte Login-Token — kein Passwort. "
+"Trennen Sie die Verbindung jederzeit in den Einstellungen."
+
+msgid "platform:fact_only_one"
+msgstr "Auf der Box nur so"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"Auf der OGS-Website funktionieren auch Google-, Apple- und andere Konten — "
+"dieser Weg braucht einen Browser und bleibt der internationalen Version "
+"vorbehalten."
+
+msgid "platform:fact_third_party"
+msgstr "Über Drittanbieter registriert"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Solche Konten haben kein OGS-Passwort — legen Sie zuerst eines auf der OGS-"
+"Website fest."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Ihr Konto auf online-go.com. Die Registrierung muss im Browser erfolgen — "
+"auf der Box geht das nicht."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Hier bleibt nur die Sitzung nach der Anmeldung — kein Passwort. Trennen Sie "
+"die Verbindung jederzeit in den Einstellungen."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS-Code"
+
+msgid "platform:login_tab_password"
+msgstr "Passwort"
+
+msgid "platform:login_field_phone"
+msgstr "Telefonnummer"
+
+msgid "platform:login_field_code"
+msgstr "SMS-Code"
+
+msgid "platform:login_sub_sms"
+msgstr "Nicht verbunden · Anmeldung per SMS-Code"
+
+msgid "platform:login_sub_password"
+msgstr "Nicht verbunden · Anmeldung mit {name}-Konto und Passwort"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Nicht verbunden · Anmeldung mit Golaxy-Konto und Passwort"
+
+msgid "platform:login_sub_ogs"
+msgstr "Nicht verbunden · mit dem online-go.com-Konto"
+
+msgid "platform:login_title"
+msgstr "Bei {name} anmelden"
+
+msgid "platform:login_rank_from_account"
+msgstr "Ihr Rang stammt ebenfalls aus diesem Konto"
+
+msgid "platform:login_tabs"
+msgstr "Anmeldemethode"
+
+msgid "platform:login_tab_scan"
+msgstr "Scannen"
+
+msgid "platform:login_sub_scan"
+msgstr "Nicht verbunden · mit der Golaxy-App auf dem Handy scannen"
+
+msgid "platform:scan_state_waiting"
+msgstr "Warten auf Scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Gescannt — auf dem Handy bestätigen"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Bestätigt, wird angemeldet…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-Code abgelaufen"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Auf dem Handy abgebrochen"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Golaxy nicht erreichbar"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Netzwerk prüfen"
+
+msgid "platform:scan_retry"
+msgstr "Erneut versuchen"
+
+msgid "platform:scan_title"
+msgstr "Golaxy-App öffnen und scannen"
+
+msgid "platform:scan_body"
+msgstr ""
+"Nach dem Scannen auf dem Handy bestätigen — das Passwort läuft nie über "
+"diese Box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy-Anmelde-QR-Code"
+
+msgid "platform:scan_refresh"
+msgstr "Neuer Code"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "hier tippen für einen neuen Code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Anmeldung konnte nicht bestätigt werden"
+
+msgid "vision:not_a_stone"
+msgstr "Kein Stein"

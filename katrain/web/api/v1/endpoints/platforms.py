@@ -17,6 +17,33 @@ logger = logging.getLogger("katrain_web")
 router = APIRouter()
 
 
+def require_platform_owner(platform: str, request: Request, user: User = Depends(get_current_user)) -> User:
+    """Gate every ACTION / platform-data endpoint: the caller must be the
+    user who currently owns this platform's connection.
+
+    The box has one adapter per platform shared by whoever is using it —
+    without this, any authenticated user could read or act through whoever
+    else's session happens to be connected (see task-4.5-brief.md).
+
+    Only enforced against a REAL `PlatformManager` — a deliberate escape
+    hatch for the many pre-existing endpoint tests that inject a bare
+    `FakeManager`/`MagicMock` unrelated to ownership (schema validation,
+    "not connected" branches, etc.); those are left unaffected. `MagicMock`
+    auto-creates `owner_of` as another Mock on attribute access, so a plain
+    `getattr(mgr, "owner_of", None)` check can't tell "doesn't implement
+    ownership" from "real one, ask it" — hence the explicit isinstance check.
+    Every real deployment uses the real class, so production is covered.
+    """
+    from katrain.web.platforms.manager import PlatformManager
+
+    mgr = request.app.state.platform_manager
+    if not isinstance(mgr, PlatformManager):
+        return user
+    if mgr.owner_of(platform) != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="这台盒子上现在连的不是你的账号")
+    return user
+
+
 # --- Request/Response models ---
 
 
@@ -28,6 +55,10 @@ class PlatformLoginRequest(BaseModel):
 
 class SmsRequest(BaseModel):
     phone: str
+
+
+class ScanConfirmRequest(BaseModel):
+    scan_id: str
 
 
 _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
@@ -198,7 +229,15 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
 async def platform_login(
     platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(require_writable_user)
 ):
-    """Login to a Go platform. Tries saved JWT first, then password."""
+    """Login to a Go platform. Tries saved JWT first, then password.
+
+    Login-type endpoint: the caller has no owner yet, so this does NOT go
+    through `require_platform_owner` — but a DIFFERENT user already
+    connected on this box must still be refused (409), which
+    `PlatformManager.connect_platform` enforces before it ever touches the
+    adapter (see manager.py).
+    """
+    from katrain.web.platforms.manager import PlatformBusyError
     from katrain.web.platforms.models import PlatformCredentials
 
     pm = request.app.state.platform_manager
@@ -206,21 +245,30 @@ async def platform_login(
     if adapter is None:
         raise HTTPException(status_code=404, detail=f"Unknown platform: {platform}")
 
-    # Try saved credentials (JWT token) first to avoid OGS rate-limiting
-    saved = pm._credential_store.load_credentials(user.id, platform)
-    if saved and saved.auth_data.get("user_jwt"):
-        saved.auth_data["password"] = req.password  # Keep password as fallback
-        success = await pm.connect_platform(platform, saved, user.id)
-        if success:
-            return {"status": "connected", "platform": platform, "username": saved.username}
+    try:
+        # Try saved credentials (JWT token) first to avoid OGS rate-limiting
+        saved = pm._credential_store.load_credentials(user.id, platform)
+        if saved and saved.auth_data.get("user_jwt"):
+            saved.auth_data["password"] = req.password  # Keep password as fallback
+            success = await pm.connect_platform(platform, saved, user.id)
+            if success:
+                return {"status": "connected", "platform": platform, "username": saved.username}
 
-    # Fresh login: SMS code (Golaxy) or password (OGS/Fox/KGS).
-    if req.sms_code:
-        auth_data = {"sms_code": req.sms_code}
-    else:
-        auth_data = {"password": req.password}
-    credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
-    success = await pm.connect_platform(platform, credentials, user.id)
+        # Fresh login: SMS code (Golaxy) or password (OGS/Fox/KGS).
+        if req.sms_code:
+            auth_data = {"sms_code": req.sms_code}
+        else:
+            auth_data = {"password": req.password}
+        credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
+        success = await pm.connect_platform(platform, credentials, user.id)
+    except PlatformBusyError as exc:
+        # `/{platform}/login` 是通用端点(OGS/野狐/KGS 都走这条),这条提示原来
+        # 写死了「星阵」—— 换个平台登录会显示错平台名。用抛出方记的 `exc.platform`
+        # (不是外层路径参数,两者理论上同值,但错误信息该忠于真正触发它的那个)。
+        raise HTTPException(
+            status_code=409,
+            detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
+        )
     if not success:
         raise HTTPException(status_code=401, detail="Login failed")
 
@@ -229,18 +277,32 @@ async def platform_login(
 
 @router.delete("/{platform}/logout")
 async def platform_logout(platform: str, request: Request, user: User = Depends(require_writable_user)):
-    """Logout from a platform and delete saved credentials."""
+    """Logout from a platform and delete saved credentials.
+
+    Ownership is enforced by `PlatformManager.disconnect_platform` itself
+    (raises `PlatformOwnershipError` -> 403 here), not via
+    `require_platform_owner`: disconnecting a platform nobody currently owns
+    is a harmless no-op (idempotent "already logged out"), which the
+    dependency's stricter "must equal caller" check would wrongly reject.
+    """
+    from katrain.web.platforms.manager import PlatformOwnershipError
+
     pm = request.app.state.platform_manager
-    await pm.disconnect_platform(platform)
+    try:
+        await pm.disconnect_platform(platform, user.id)
+    except PlatformOwnershipError:
+        raise HTTPException(status_code=403, detail="这台盒子上现在连的不是你的账号")
     pm._credential_store.delete_credentials(user.id, platform)
     return {"status": "disconnected", "platform": platform}
 
 
 @router.get("/status")
 async def platform_status(request: Request, user: User = Depends(get_current_user)):
-    """List all platforms and their connection/credential status."""
+    """List all platforms and their connection/credential status, AS SEEN BY
+    THIS CALLER — "connected" means "connected as you", not "connected as
+    whoever else is currently using this shared box"."""
     pm = request.app.state.platform_manager
-    platforms = pm.list_platforms()
+    platforms = pm.list_platforms(user.id)
     saved = {p["platform"]: p["username"] for p in pm._credential_store.list_platforms(user.id)}
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
@@ -266,6 +328,235 @@ async def request_sms(platform: str, req: SmsRequest, request: Request, user: Us
     return {"status": "sent"}
 
 
+# --- Scan-code login (Golaxy 星阵: QR code from the mobile app) ---
+
+
+def _scan_store(app):
+    """Per-app in-memory `ScanSessionStore` — lazily created and stashed on
+    `app.state`, same shape as `platform_manager`/`session_manager`, but
+    doesn't need wiring in server.py because it's optional startup state
+    (a fresh store is just "no scan session in flight yet")."""
+    from katrain.web.platforms.golaxy.scan_login import ScanSessionStore
+
+    store = getattr(app.state, "golaxy_scan_sessions", None)
+    if store is None:
+        store = ScanSessionStore()
+        app.state.golaxy_scan_sessions = store
+    return store
+
+
+def _golaxy_scan_http_client(app):
+    """F6 (task-6a review, low-but-real on-device cost): `scan/state` is
+    polled every second (protocol step ③) for as long as the login QR screen
+    is open. `GolaxyScanLogin()` with no client injected opens and closes a
+    fresh `httpx.AsyncClient` per call (see `scan_login.py`'s `_get` —
+    intentional there, for the "don't `async with` someone else's client"
+    rule), which on RK3562 means one full TLS handshake to api.19x19.com per
+    second for as long as that screen is open. Reusing one long-lived client
+    across polls avoids that; lazily created and stashed on `app.state` for
+    the same reason `_scan_store` is (no `server.py` wiring needed — a fresh
+    client on first use is a fine default)."""
+    import httpx
+
+    client = getattr(app.state, "golaxy_scan_http_client", None)
+    if client is None:
+        client = httpx.AsyncClient(timeout=10.0)
+        app.state.golaxy_scan_http_client = client
+    return client
+
+
+@router.post("/{platform}/scan/start")
+async def scan_start(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Start a Golaxy scan-code login. Does NOT go through `require_platform_owner`
+    (R-28, task-6a-brief.md): the platform isn't connected yet at this point,
+    so "who owns it" doesn't apply — that gate answers a different question.
+
+    Pins `initiating_user_id` on the resulting `ScanSession` NOW, at the moment
+    of the request that actually authenticated the caller — `poll`/`confirm`
+    check against this, not against "whoever the request happens to be from"
+    (uuid itself carries no identity; the box can be handed to someone else
+    mid-scan).
+    """
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanRateLimited
+
+    if platform != "golaxy":
+        raise HTTPException(status_code=400, detail=f"{platform} 不支持扫码登录")
+    store = _scan_store(request.app)
+    try:
+        # F5 (task-6a review): check the per-user cap BEFORE the outbound
+        # Golaxy call below — a rate-limited caller must not pay for a
+        # request whose result is just going to be discarded.
+        store.check_capacity(user.id)
+    except ScanRateLimited:
+        raise HTTPException(status_code=429, detail="扫码请求太频繁,请稍后再试")
+    try:
+        start = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).start()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"连不上星阵: {exc}")
+    try:
+        session = store.create(golaxy_uuid=start.uuid, initiating_user_id=user.id, platform=platform)
+    except ScanRateLimited:
+        raise HTTPException(status_code=429, detail="扫码请求太频繁,请稍后再试")
+    return {"scan_id": session.scan_id, "payload": start.payload, "expires_at": session.expires_at}
+
+
+@router.get("/{platform}/scan/state")
+async def scan_state(platform: str, scan_id: str, request: Request, user: User = Depends(get_current_user)):
+    """Poll a scan session's state. 403s if the caller isn't who started it
+    (R-28) — the box may have been handed to a different logged-in user
+    between `start` and now.
+
+    Once `session.state` reaches a `TERMINAL_STATES` member, this stops
+    calling Golaxy and just returns the cached value. Two reasons, the second
+    is the one that actually matters: (1) the client polls every second per
+    protocol step ③ — asking again after a terminal state is pure waste, one
+    idle box hitting the third party once a second forever; (2) Golaxy very
+    likely invalidates the uuid once it's been confirmed, so a poll AFTER
+    confirmation can flip an already-CONFIRMED session back to EXPIRED — the
+    user tapped confirm on their phone and the kiosk screen would flash "二维码
+    已失效" right back at them. Terminal states are irreversible on OUR side
+    regardless of what a further Golaxy poll might report.
+    """
+    from katrain.web.platforms.golaxy.scan_login import TERMINAL_STATES, GolaxyScanLogin, ScanState
+
+    session = _scan_store(request.app).get(scan_id)
+    if session is None or session.platform != platform:
+        # F4 (task-6a review, team-lead ruling ③ confirmed 404): a `scan_id`
+        # from a DIFFERENT platform's path (or an unknown platform) must look
+        # exactly like "doesn't exist". 404 leaks the least — it never
+        # confirms or denies that a session with this id exists for SOME
+        # platform, just not this one. For a caller who legitimately holds
+        # this session and merely got the platform segment wrong in the URL,
+        # this is a client bug, not an attack — the distinguishing detail
+        # (mismatched vs. truly absent) belongs in the server LOG, never in
+        # the response body.
+        if session is not None:
+            logger.debug(
+                "scan/state: scan_id %s belongs to platform %s, requested via %s",
+                scan_id,
+                session.platform,
+                platform,
+            )
+        raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
+    if session.initiating_user_id != user.id:
+        raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
+    if session.expired:
+        _scan_store(request.app).discard(scan_id)
+        return {"state": ScanState.EXPIRED.value}
+    if session.state not in TERMINAL_STATES:
+        try:
+            session.state = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).poll(
+                session.golaxy_uuid
+            )
+        except Exception:
+            raise HTTPException(status_code=502, detail="连不上星阵")
+    return {"state": session.state.value}
+
+
+@router.post("/{platform}/scan/confirm")
+async def scan_confirm(
+    platform: str, req: ScanConfirmRequest, request: Request, user: User = Depends(get_current_user)
+):
+    """Exchange a CONFIRMED scan session for a real Golaxy connection.
+
+    Ownership check (R-28) mirrors `scan_state` above — 403 before anything
+    else happens, so an unauthorized caller can never reach the token
+    exchange below, let alone get credentials saved under their own user_id.
+
+    Idempotent (R-30): the confirm button's request WILL be retried on any
+    network hiccup, and Golaxy's scan-code token is one-shot — exchanging it
+    twice either fails outright or mutates shared adapter state. `consumed`
+    is checked and the cached `result` returned before ever touching the
+    network a second time. `store.lock` serializes this so two near-
+    simultaneous retries can't both pass the `consumed` check before either
+    sets it.
+
+    F3 (task-6a review): `expired` is checked BEFORE `consumed` — a
+    successfully-consumed session's cached `{"connected": True}` must not be
+    replayable forever. R-30's idempotency window is meant to cover a
+    network-retry timescale, not the session's full `DEFAULT_SCAN_TTL_SECONDS`
+    lifetime; by then the platform may have since been disconnected or handed to
+    someone else, and a stale "已连接" would leave the kiosk screen out of
+    sync with reality (every subsequent platform call would then 400/403 with
+    no visible cause). Checking `consumed` first would let TTL never fire for
+    a session that ever succeeded.
+
+    Uses `username=""` (R-29, task-6a-brief.md): `/scan/username` only gives
+    the display nickname, not the `0086-{phone}` login principal that
+    `/items/{username}` (道具 badges) needs — and there's no verified response
+    field with that principal on this path. Guessing `0086-{昵称}` would make
+    item-count lookups silently hit the wrong (or a nonexistent) account, so
+    this deliberately leaves it blank; `PlatformCredentials.username == ""`
+    makes `GolaxyRestClient.set_username` a no-op (see adapter.py), which is
+    exactly what makes `fetch_item_counts()` degrade honestly instead.
+    """
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
+    from katrain.web.platforms.manager import PlatformBusyError
+    from katrain.web.platforms.models import PlatformCredentials
+
+    store = _scan_store(request.app)
+    session = store.get(req.scan_id)
+    if session is None or session.platform != platform:
+        # F4 (task-6a review, team-lead ruling ③ confirmed 404): same
+        # reasoning as `scan_state` above — a mismatched/unknown platform
+        # path must look like "doesn't exist" in the RESPONSE (404 leaks the
+        # least), while the distinguishing detail goes to the log; this ALSO
+        # keeps an unrelated platform's `connect_platform` (bare `ValueError`
+        # on an unregistered name, or a real network call on a
+        # registered-but-wrong one, e.g. OGS) from ever being reached.
+        if session is not None:
+            logger.debug(
+                "scan/confirm: scan_id %s belongs to platform %s, requested via %s",
+                req.scan_id,
+                session.platform,
+                platform,
+            )
+        raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
+    if session.initiating_user_id != user.id:
+        raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
+
+    async with store.lock:
+        if session.expired:
+            store.discard(req.scan_id)
+            raise HTTPException(status_code=410, detail="扫码会话已过期")
+        if session.consumed:
+            return session.result
+        if session.state != ScanState.CONFIRMED:
+            raise HTTPException(status_code=409, detail="还没在手机上确认")
+
+        display_name = ""
+        try:
+            display_name = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
+                session.golaxy_uuid
+            )
+        except Exception:
+            logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
+
+        pm = request.app.state.platform_manager
+        credentials = PlatformCredentials(platform=platform, username="", auth_data={"scan_uuid": session.golaxy_uuid})
+        try:
+            success = await pm.connect_platform(platform, credentials, user.id)
+        except PlatformBusyError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
+            )
+        except ValueError:
+            # F4 backstop (task-6a review): `connect_platform` raises a bare
+            # `ValueError` for an unregistered platform name. The
+            # `session.platform != platform` check above should make this
+            # unreachable in practice, but a session created before that
+            # check existed, or any future gap in it, must still surface as
+            # an ordinary 400 — not an unhandled 500.
+            raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
+        if not success:
+            raise HTTPException(status_code=401, detail="扫码登录失败")
+
+        session.result = {"connected": True, "display_name": display_name}
+        session.consumed = True
+    return session.result
+
+
 # --- Engine play (human-vs-AI) ---
 
 
@@ -278,6 +569,7 @@ async def start_engine(
     EngineStartRequest)."""
     from katrain.web.core.ranked_session_guard import temporary_analysis_lease
 
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -319,6 +611,7 @@ async def engine_analysis(
     here and surface as 5xx, same as other routes."""
     from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game, temporary_analysis_lease
 
+    require_platform_owner(platform, request, user)
     guard_user_has_no_pending_ranked_game(request.app, user, "platform analysis")
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -362,7 +655,7 @@ async def engine_levels(platform: str, request: Request, user: User = Depends(ge
 
 
 @router.get("/{platform}/engine/items")
-async def engine_items(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def engine_items(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """Remaining metered-道具 counts (领地/支招/变化图) for the connected
     engine-play account — powers the analysis-button badges. Account-level, not
     per-game. Each count is an int, or `null` when the platform didn't report
@@ -389,7 +682,7 @@ async def platform_users(
     q: Optional[str] = None,
     room: Optional[str] = None,
     request: Request = None,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_platform_owner),
 ):
     """List online users on a platform.
 
@@ -422,7 +715,7 @@ async def platform_users(
 
 
 @router.get("/{platform}/rooms")
-async def platform_rooms(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def platform_rooms(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """List rooms/channels on a platform (Fox, KGS)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -435,7 +728,7 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(g
 
 
 @router.get("/{platform}/challenges")
-async def platform_challenges(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def platform_challenges(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """List open challenges on a platform (OGS seek graph)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -453,6 +746,7 @@ async def send_challenge(
     platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Send a challenge to a user on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -466,6 +760,7 @@ async def accept_challenge(
     platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Accept an incoming challenge."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -480,6 +775,7 @@ async def decline_challenge(
     platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Decline an incoming challenge."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -496,6 +792,7 @@ async def start_automatch(
     platform: str, req: AutomatchRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Start automatch on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -509,6 +806,7 @@ async def start_automatch(
 @router.post("/{platform}/automatch/cancel")
 async def cancel_automatch(platform: str, request: Request, user: User = Depends(require_writable_user)):
     """Cancel automatch on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:

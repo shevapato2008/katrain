@@ -55,6 +55,37 @@ SUSTAIN_RADIUS = 0.6
 # several seconds of it is a real wrong-colour placement.
 COLOR_FLIP_RELEASE_FRAMES = 15
 
+# Shadow boxes (RK3562 daylight game, 2026-09-23): side light makes the model box a stone together with its
+# shadow a second time, centred 0.56-0.75 cells off the stone. dedup_detections leaves it alone (it only merges
+# boxes whose centres are within half a box side), and it then became a phantom on the neighbouring point
+# (H5: 16 prompts in one game). drop_shadow_boxes removes a stone box that overlaps a box sitting closer to an
+# intersection (by >= SHADOW_OVERLAP_MIN of the smaller box, similar size) AND sits between intersections
+# itself. Overlap alone cannot tell a shadow from a touching neighbour: two real white stones pushed together
+# overlapped by 0.38 in kifu_24171 -- one sat 0.02-0.14 cells off its point, the other (r16c6) 0.25-0.30 off.
+# That second box is where dropping a real stone starts (threshold 0.25 drops it, 0.30 does not), so the margin
+# below SHADOW_MIN_OFFSET is about 0.05. Measured without parallax correction: real boxes on 209 labelled
+# images sit <= 0.38 cells from their point at p99.9; every shadow box in the daylight game sat >= 0.45.
+# See superpowers/tracks/vision-optimizations/shadow-dedup/design.md.
+SHADOW_OVERLAP_MIN = 0.27
+SHADOW_MAX_SIDE_RATIO = 2.0
+SHADOW_MIN_OFFSET = 0.35
+
+
+def _overlap_of_smaller(a: tuple, b: tuple) -> float:
+    """Intersection area of two (x1, y1, x2, y2) boxes over the smaller box's area; 0.0 when either has none."""
+    area_a = (a[2] - a[0]) * (a[3] - a[1])
+    area_b = (b[2] - b[0]) * (b[3] - b[1])
+    smaller = area_a if area_a < area_b else area_b
+    if not smaller > 0:
+        return 0.0
+    w = min(a[2], b[2]) - max(a[0], b[0])
+    if not w > 0:
+        return 0.0
+    h = min(a[3], b[3]) - max(a[1], b[1])
+    if not h > 0:
+        return 0.0
+    return w * h / smaller
+
 
 def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
     """Empty cell nearest the continuous position (fy=row, fx=col), searching a
@@ -168,6 +199,54 @@ class BoardStateExtractor:
             fx_raw, fy_raw, fx, fy, _ = self._positions(det, img_w, img_h)
             pts.append((fy_raw, fx_raw, fy, fx, det.class_id, det.confidence))
         return pts
+
+    def drop_shadow_boxes(self, detections: list[Detection], img_w: int, img_h: int) -> list[Detection]:
+        """Remove stone boxes that are a stone's shadow boxed a second time; every other detection passes
+        through unchanged and in its original order (LED boxes, boxes without area and boxes whose centre is
+        not finite are never touched).
+
+        A stone box is dropped when it sits at least SHADOW_MIN_OFFSET cells from its nearest intersection
+        (parallax-corrected) AND overlaps, by at least SHADOW_OVERLAP_MIN of the smaller box, another stone box
+        that is similar in size (larger mean side <= SHADOW_MAX_SIDE_RATIO x smaller), sits closer to an
+        intersection, and scored at least as high. The last condition keeps the step from ever deleting the
+        higher-scoring box of a pair: when a real stone is itself pushed off its point toward its shadow, or a
+        shadow outscores its stone (never seen: 0 of 36), both boxes stay, exactly as before this step existed.
+        Decided over the whole input at once, so the result does not depend on input order.
+
+        Cost: one position per stone box, then a scan for the few boxes that sit between points -- 0.2 ms on
+        a Mac for a 117-box frame; 1.2 ms if every box sits between points (geometry off by half a cell)."""
+        stones = [
+            i
+            for i, d in enumerate(detections)
+            if d.class_id in STONE_CLASS_IDS
+            and math.isfinite(d.x_center)
+            and math.isfinite(d.y_center)
+            and d.bbox[2] - d.bbox[0] > 0
+            and d.bbox[3] - d.bbox[1] > 0
+        ]
+        offset: dict[int, float] = {}
+        side: dict[int, float] = {}
+        for i in stones:
+            d = detections[i]
+            _, _, fx, fy, _ = self._positions(d, img_w, img_h)
+            offset[i] = math.hypot(fy - round(fy), fx - round(fx))
+            side[i] = (d.bbox[2] - d.bbox[0] + d.bbox[3] - d.bbox[1]) / 2.0
+        shadows = set()
+        for i in stones:
+            if offset[i] < SHADOW_MIN_OFFSET:
+                continue
+            box, conf = detections[i].bbox, detections[i].confidence
+            for j in stones:
+                if j == i or offset[j] >= offset[i] or detections[j].confidence < conf:
+                    continue
+                other = detections[j].bbox
+                if other[0] >= box[2] or box[0] >= other[2] or other[1] >= box[3] or box[1] >= other[3]:
+                    continue  # no intersection: skip the ratio and the division
+                smaller, larger = (side[i], side[j]) if side[i] < side[j] else (side[j], side[i])
+                if larger <= SHADOW_MAX_SIDE_RATIO * smaller and _overlap_of_smaller(box, other) >= SHADOW_OVERLAP_MIN:
+                    shadows.add(i)
+                    break
+        return [d for i, d in enumerate(detections) if i not in shadows]
 
     def detections_to_board(
         self,

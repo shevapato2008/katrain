@@ -5749,6 +5749,15 @@ msgstr "表示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "目安 {r}"
 
+msgid "platform:level_sheet"
+msgstr "すべての棋力レベル"
+
+msgid "platform:close"
+msgstr "閉じる"
+
+msgid "platform:plate_aria"
+msgstr "現在の対戦相手 {name} {level}、{rung}；タップして全て見る"
+
 msgid "platform:rank_is_theirs"
 msgstr "段級位は {name} 側のものです"
 
@@ -6643,3 +6652,309 @@ msgstr "勝率に入れていない対局が "
 
 msgid "growth:unknown_seat_b"
 msgstr " 局あります：対面の対局と、黒白が記録されていない対局です。"
+
+msgid "baipu:calib_running_sub"
+msgstr "校正もライトを使用中 · 終了またはキャンセル後にそのまま棋譜並べに入ります"
+
+msgid "baipu:calib_running_title"
+msgstr "盤の校正がまだ進行中です"
+
+msgid "baipu:cam_connecting"
+msgstr "カメラに接続中"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "盤がまだ校正されていません"
+
+msgid "baipu:cam_geo_drift"
+msgstr "盤の校正が無効になりました"
+
+msgid "baipu:cam_none"
+msgstr "カメラが接続されていません"
+
+msgid "baipu:capture_hint_camera"
+msgstr "青く光っている石です —— すべて取り除くと自動で次の手へ進みます"
+
+msgid "baipu:checking_board"
+msgstr "盤の状態を確認中"
+
+msgid "baipu:done_hint_auto"
+msgstr "全 {n} 手 · 進行状況は消去済み。左上で戻れます"
+
+msgid "baipu:guard_sub_collect"
+msgstr "学習データを集めるには、まずカメラが盤面をはっきり見られる必要があります"
+
+msgid "baipu:hint_failed"
+msgstr "計算できませんでした —— 閉じてからもう一度押してください"
+
+msgid "baipu:hint_loading"
+msgstr "AI がこの局面を計算中…"
+
+msgid "baipu:hint_on_hint"
+msgstr "AI ヒント表示中、認識は一時停止 —— 白い光は AI の候補点です。ヒントを閉じると続けられます"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr "AI ヒント表示中 —— 白い光は AI の候補点です。ヒントを閉じると続けられます"
+
+msgid "baipu:hint_row"
+msgstr "勝率 {w}% · 目差 {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI のヒント · 白く点滅している点"
+
+msgid "baipu:hint_try_reason"
+msgstr "試し打ち中はカメラが盤を見ていないので、AI は盤上の局面が分かりません"
+
+msgid "baipu:hint_value"
+msgstr "もう一度押すと閉じます"
+
+msgid "baipu:led_on_camera"
+msgstr "点灯しました —— {color}の石を光っている交点に置いてください。カメラが認識すると自動で次の手へ進みます"
+
+msgid "baipu:led_title"
+msgstr "ライト · 色の見方"
+
+msgid "baipu:led_value_camera"
+msgstr "カメラ監視中"
+
+msgid "baipu:led_value_manual"
+msgstr "手動で確定"
+
+msgid "baipu:led_value_try"
+msgstr "試し打ち中 · 認識一時停止"
+
+msgid "baipu:manual_hint"
+msgstr "{why} —— 石を置いたら「着手を確定」を押してください"
+
+msgid "baipu:manual_hint_calib"
+msgstr "；校正は「設定」にあります"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "第 {i} / {n} 手"
+
+msgid "baipu:restore_hint"
+msgstr "試し打ちした石を取り、動かした石を戻してください —— 一致すると自動で続きます"
+
+msgid "baipu:restore_title"
+msgstr "盤面を第 {n} 手の局面に戻してください"
+
+msgid "baipu:resume_body_placed"
+msgstr "前回は第 {n} 手まで並べました。最初から並べるには、先に盤上の石をすべて取り除いてください。"
+
+msgid "baipu:setup_clear_title"
+msgstr "まず盤上の石をすべて取り除いてください"
+
+msgid "baipu:setup_continue"
+msgstr "並べ終えた、続ける"
+
+msgid "baipu:setup_entry_hint"
+msgstr "青い光の石を取り、赤・緑の光の点に石を置いてください —— 一致すると自動で始まります"
+
+msgid "baipu:setup_entry_title"
+msgstr "まず盤面を第 {n} 手の局面にしてください"
+
+msgid "baipu:try_off_reason"
+msgstr "カメラが認識していません"
+
+msgid "baipu:trying_hint"
+msgstr "盤上で自由に並べて検討できます。もう一度「試し打ち」を押すと棋譜に戻り、ライトが盤面の戻し方を案内します"
+
+msgid "baipu:trying_title"
+msgstr "試し打ち中 · カメラ認識を一時停止"
+
+msgid "baipu:undo_hint_camera"
+msgstr "青い光の石を取り、アゲハマを赤・緑の光の点に戻してください —— 一致すると自動で続きます"
+
+msgid "baipu:undo_title"
+msgstr "第 {n} 手まで戻しました"
+
+msgid "baipu:undo_try_reason"
+msgstr "試し打ち中は戻せません"
+
+msgid "baipu:verify_hint"
+msgstr "余分な石は青く光ります —— 取り除くと続きます"
+
+msgid "baipu:verify_title"
+msgstr "盤面を照合中"
+
+msgid "baipu:wrong_hint"
+msgstr "青く光っている石（{w}）を取って {c} に置いてください —— 一致すると自動で続きます"
+
+msgid "baipu:wrong_size"
+msgstr "これは {n} 路の棋譜なので並べられません"
+
+msgid "baipu:wrong_size_hint"
+msgstr "実物の盤とライトは 19 路です —— 他の路数ではすべての石がずれてしまいます。"
+
+msgid "baipu:wrong_title"
+msgstr "置き間違い · 正しくは {c}"
+
+msgid "kifu:detail_offline"
+msgstr "この対局を読むにはネット接続が必要です"
+
+msgid "kifu:detail_offline_hint"
+msgstr "棋譜ライブラリはクラウドにあり、この端末は今接続できません。"
+
+msgid "kifu:list_offline"
+msgstr "棋譜ライブラリの検索にはネット接続が必要です"
+
+msgid "kifu:list_offline_hint"
+msgstr "この端末は今クラウドに接続できません。並べた棋譜と読み込んだ SGF は影響を受けません。"
+
+msgid "kifu:wrong_size_reason"
+msgstr "これは {n} 路の棋譜です —— 実物の盤は 19 路のみ並べられます"
+
+msgid "setup:handicap_side"
+msgstr "置石 · 自分の手番"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name} の人間対AIは19路固定 · 中国ルール、画面と実物の碁盤は同じ経路を使います"
+
+msgid "engine:warmup_warming"
+msgstr "AIエンジン準備中です。棋譜ライブラリや講座などの機能は先にご利用いただけます"
+
+msgid "engine:warmup_unavailable"
+msgstr "AIエンジンはまだ準備できていません。しばらくしてから再試行してください"
+
+msgid "vision:relocate"
+msgstr "外枠合わせ"
+
+msgid "vision:relocating"
+msgstr "外枠合わせ中…"
+
+msgid "vision:relocate_failed_title"
+msgstr "合わせ失敗"
+
+msgid "vision:relocate_no_board"
+msgstr "映像の中に碁盤の外枠が見つかりません。枠を隠しているものをどけてもう一度試してください。"
+
+msgid "vision:relocate_failed"
+msgstr "もう一度試してください。それでも駄目なら碁盤を空にして再校正してください。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"碁盤が動いたため、前回の校正が合わなくなりました —— 「外枠合わせ」（LEDは光らず、盤上に石があっても大丈夫）を使うか、再校正してください"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"「LED」の項目はシリアル接続ができているという意味で、すべてのランプが点灯するとは限りません。案内中にどこかが点灯しない場合、その区間のテープが故障している可能性が高いです。"
+
+msgid "platform:fact_whose"
+msgstr "どのアカウント"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"星陣（Golaxy）自身のアカウントで、盒のアカウントではありません。持っていなければスマホの星陣アプリで登録してください——盒では登録できません。"
+
+msgid "platform:fact_three_ways"
+msgstr "3通りの方法"
+
+msgid "platform:fact_three_ways_body"
+msgstr "スキャンなら一文字も入力不要。認証コードはSMSを待つだけ。パスワードが一番速いですが、タッチスクリーンで入力する必要があります。"
+
+msgid "platform:fact_stored"
+msgstr "盒に残るもの"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "残るのは星陣が発行したログイントークンのみで、パスワードは残りません。切断したい時はいつでも設定から。"
+
+msgid "platform:fact_only_one"
+msgstr "盒ではこの方法のみ"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGSのウェブサイトではGoogleやAppleなどのアカウントも使えますが、その経路はブラウザが必要なので海外版に持ち越します。"
+
+msgid "platform:fact_third_party"
+msgstr "第三者経由で登録した場合"
+
+msgid "platform:fact_third_party_body"
+msgstr "その種類のアカウントにはOGSパスワードがありません。まずOGSのウェブサイトで設定してください。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com のアカウントです。登録はブラウザで行う必要があり、盒ではできません。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "残るのはログイン後のセッションのみで、パスワードは残りません。切断したい時はいつでも設定から。"
+
+msgid "platform:login_tab_sms"
+msgstr "認証コード"
+
+msgid "platform:login_tab_password"
+msgstr "パスワード"
+
+msgid "platform:login_field_phone"
+msgstr "電話番号"
+
+msgid "platform:login_field_code"
+msgstr "認証コード"
+
+msgid "platform:login_sub_sms"
+msgstr "未接続 · SMS認証コードでログイン"
+
+msgid "platform:login_sub_password"
+msgstr "未接続 · {name}のアカウントとパスワードでログイン"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "未接続 · Golaxyのアカウントとパスワードでログイン"
+
+msgid "platform:login_sub_ogs"
+msgstr "未接続 · online-go.comのアカウントを使用"
+
+msgid "platform:login_title"
+msgstr "{name}にログイン"
+
+msgid "platform:login_rank_from_account"
+msgstr "段位もこのアカウントから取得されます"
+
+msgid "platform:login_tabs"
+msgstr "ログイン方法"
+
+msgid "platform:login_tab_scan"
+msgstr "スキャン"
+
+msgid "platform:login_sub_scan"
+msgstr "未接続 · スマホの星陣アプリでスキャン"
+
+msgid "platform:scan_state_waiting"
+msgstr "スキャン待ち"
+
+msgid "platform:scan_state_scanned"
+msgstr "スキャン済み、スマホで確認してください"
+
+msgid "platform:scan_state_confirmed"
+msgstr "確認済み、ログイン中…"
+
+msgid "platform:scan_state_expired"
+msgstr "QRコードの有効期限が切れました"
+
+msgid "platform:scan_state_cancelled"
+msgstr "スマホ側でキャンセルされました"
+
+msgid "platform:scan_unavailable_title"
+msgstr "星陣に接続できません"
+
+msgid "platform:scan_unavailable_body"
+msgstr "ネットワークを確認してください"
+
+msgid "platform:scan_retry"
+msgstr "再試行"
+
+msgid "platform:scan_title"
+msgstr "星陣アプリを開いてスキャン"
+
+msgid "platform:scan_body"
+msgstr "スキャン後、スマホ側で確認してください。パスワードはこの端末を経由しません。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣ログインQRコード"
+
+msgid "platform:scan_refresh"
+msgstr "コードを更新"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "タップして新しいコードを取得"
+
+msgid "platform:scan_confirm_failed"
+msgstr "ログイン確認に失敗しました"
+
+msgid "vision:not_a_stone"
+msgstr "石ではない"

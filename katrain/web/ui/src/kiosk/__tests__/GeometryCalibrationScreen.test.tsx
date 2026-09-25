@@ -21,11 +21,14 @@ import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationS
 const startCalibration = vi.fn();
 const cancelCalibration = vi.fn();
 const confirmExisting = vi.fn();
+const relocate = vi.fn();
 let status: GeometryStatus;
 let loaded = true;
 
 vi.mock('../context/GeometryContext', () => ({
-  useGeometry: () => ({ status, loaded, startCalibration, cancelCalibration, confirmExisting, refresh: vi.fn() }),
+  useGeometry: () => ({
+    status, loaded, startCalibration, cancelCalibration, confirmExisting, relocate, refresh: vi.fn(),
+  }),
 }));
 
 vi.mock('../../api/geometryApi', async (importOriginal) => {
@@ -75,10 +78,10 @@ describe('屏 26 棋盘标定', () => {
   // ── 四步,不是五步 ─────────────────────────────────────────────────────────
 
   /**
-   * 🔴 稿子画五步,第 2 步「采集熄灯参考帧」对应 `dark_reference` ——
+   * 🔴 稿子原来画五步(2026-09-24 已照实现改成四步),第 2 步「采集熄灯参考帧」对应 `dark_reference` ——
    * **全仓没有任何地方写入这个 phase**(只在两处「哪些算进行中」的常量集合里当摆设)。
    * 那件事确实在做,但是**每个锚点各一次、13+ 次**,不是一个有头有尾的阶段。
-   * 画成一行只能在两种假话里挑一种,所以删掉、机制写进第 2 步副行。
+   * 画成一行只能在两种假话里挑一种,所以删掉、机制写进旁注。
    */
   it('四步不是五步,而且没有「采集熄灯参考帧」这一行', () => {
     renderScreen();
@@ -174,6 +177,13 @@ describe('屏 26 棋盘标定', () => {
     expect(cells()[2]).toContain('未连接');
   });
 
+  it('LED 那一格只说串口通了,不说「就绪」', () => {
+    // 照该文件写法:改模块级 status(beforeEach 里 led_ready 已是 true),再无参 renderScreen();`cells()` 取三格文字
+    renderScreen();
+    expect(cells().some((c) => c.includes('串口已连接'))).toBe(true);
+    expect(cells().some((c) => c.includes('就绪'))).toBe(false);
+  });
+
   // ── 标定质量:不许把「不知道」画成「满分」 ─────────────────────────────────
 
   /**
@@ -223,6 +233,79 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     fireEvent.click(within(acts()).getByRole('button', { name: '沿用上次标定' }));
     await waitFor(() => expect(confirmExisting).toHaveBeenCalled());
+  });
+
+  it('取消之后「沿用上次标定」可以按', () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    renderScreen();
+    expect(within(acts()).getByRole('button', { name: '沿用上次标定' })).toBeEnabled();
+  });
+
+  it('漂移失效时按不了,而且屏上说得出为什么', () => {
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen();
+    expect(within(acts()).getByRole('button', { name: '沿用上次标定' })).toBeDisabled();
+    expect(screen.getByText(/棋盘挪动过/)).toBeInTheDocument();
+  });
+
+  it('degraded 时出现「对齐外框」,点它调 relocate', async () => {
+    relocate.mockResolvedValue(undefined);
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: /对齐外框/ }));
+    await waitFor(() => expect(relocate).toHaveBeenCalledTimes(1));
+  });
+
+  it('ready 时不出现「对齐外框」—— 没坏就不给修的键', () => {
+    status = {
+      ...status, phase: 'ready', session_calibrated: true, last_valid: true,
+      capabilities: { ...status.capabilities, geometry_ready: true },
+    };
+    renderScreen();
+    expect(screen.queryByRole('button', { name: /对齐外框/ })).toBeNull();
+  });
+
+  // degraded 与 failed 各一条:这两态的诊断卡原本就被占着,失败原因最容易被它盖掉
+  it.each(['degraded', 'failed'] as const)('%s 下对齐外框失败,屏上给原因,不被原来那张诊断卡盖掉', async (phase) => {
+    relocate.mockRejectedValue(new Error('geometry relocate failed 400: no_board_detected'));
+    status = {
+      ...status, phase, last_valid: true,
+      error: phase === 'failed' ? 'anchor_not_found:3,15' : 'board_moved',
+    };
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: /对齐外框/ }));
+    expect(await screen.findByText(/找不到棋盘外框/)).toBeInTheDocument();
+  });
+
+  /**
+   * 🔴 Fix round 1:`actionError`(「沿用上次标定」失败留下的)只在 `start()` / `reuseExisting()`
+   * 里清,`handleRelocate` 没碰它 —— 沿用失败之后再按「对齐外框」并成功,诊断链条会落到
+   * 那条陈旧的 `actionError` 上,「健康状态不给诊断」这句话就不成立了。
+   */
+  it('沿用失败留下的诊断卡,对齐外框成功之后要跟着清掉', async () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    confirmExisting.mockRejectedValue(new Error('沿用失败'));
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: '沿用上次标定' }));
+    expect(await screen.findByText('沿用失败')).toBeInTheDocument();
+
+    relocate.mockResolvedValue(undefined);
+    fireEvent.click(screen.getByTestId('calib-relocate'));
+    await waitFor(() => expect(screen.queryByText('沿用失败')).toBeNull());
+  });
+
+  /** 反方向(第 2 轮):对齐失败的卡排在诊断链最前,之后按「重新开始标定」失败时新错误不许被它盖住。 */
+  it('对齐外框失败之后再按重新开始标定并失败,屏上说的是这一次的错', async () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    relocate.mockRejectedValue(new Error('geometry relocate failed 400: no_board_detected'));
+    renderScreen();
+    fireEvent.click(screen.getByTestId('calib-relocate'));
+    expect(await screen.findByText(/找不到棋盘外框/)).toBeInTheDocument();
+
+    startCalibration.mockRejectedValue(new Error('启动被拒'));
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    expect(await screen.findByText('启动被拒')).toBeInTheDocument();
+    expect(screen.queryByText(/找不到棋盘外框/)).toBeNull();
   });
 
   /**

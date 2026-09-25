@@ -12,13 +12,12 @@ remote fetch if available, else need_online.
 
 import time
 from collections import defaultdict
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_admin_user, get_current_user, require_writable_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.core import billing
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
@@ -43,16 +42,6 @@ def _need_online():
 
 class RedeemRequest(BaseModel):
     code: str
-
-
-class AdminGrantRequest(BaseModel):
-    username: str
-    amount: int
-
-
-class AdminCodesRequest(BaseModel):
-    count: int = 1
-    credits: int
 
 
 # --- naive per-user redeem rate limiter (best-effort, in-process) -------------
@@ -142,34 +131,3 @@ async def redeem(
             detail={"code": "invalid_code", "message": "Invalid or unusable code"},
         )
     return {"credits": new_balance}
-
-
-@router.post("/admin/grant")
-async def admin_grant(
-    body: AdminGrantRequest,
-    admin: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
-):
-    if _is_board():
-        _need_online()
-    from katrain.web.core import models_db
-
-    target = db.query(models_db.User).filter(models_db.User.username == body.username).one_or_none()
-    if target is None:
-        raise HTTPException(status_code=404, detail="user not found")
-    # ref_id makes repeated identical admin clicks idempotent within a second window.
-    ref_id = f"admin_grant:{admin.id}:{target.id}:{body.amount}:{int(time.time())}"
-    new_balance = billing.grant(db, target.id, body.amount, reason="admin_grant", ref_id=ref_id)
-    return {"username": body.username, "credits": new_balance}
-
-
-@router.post("/admin/codes")
-async def admin_codes(
-    body: AdminCodesRequest,
-    admin: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
-):
-    if _is_board():
-        _need_online()
-    codes = billing.generate_redeem_codes(db, count=body.count, credits=body.credits)
-    return {"codes": codes, "credits_each": body.credits}

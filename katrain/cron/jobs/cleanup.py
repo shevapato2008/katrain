@@ -1,14 +1,14 @@
 """CleanupJob: periodic cleanup of old matches, analysis data, and expired upcoming events."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import and_, text
 
 from katrain.cron import config
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.db import SessionLocal
-from katrain.cron.models import LiveMatchDB, LiveAnalysisDB, UpcomingMatchDB
+from katrain.cron.models import CronJobRunDB, LiveMatchDB, LiveAnalysisDB, UpcomingMatchDB
 
 logger = logging.getLogger("katrain_cron.cleanup")
 
@@ -32,6 +32,7 @@ class CleanupJob(BaseJob):
                 "matches_deleted": 0,
                 "analysis_deleted": 0,
                 "upcoming_deleted": 0,
+                "runs_deleted": 0,
             }
 
             # 1. Delete old finished matches
@@ -90,12 +91,27 @@ class CleanupJob(BaseJob):
 
             db.commit()
 
+            # The web process may not have created this new table yet. Keep its
+            # retention transaction separate from the established cleanup work.
+            try:
+                with SessionLocal() as runs_db:
+                    runs_cutoff = datetime.now(timezone.utc) - timedelta(days=config.RUNS_RETENTION_DAYS)
+                    stats["runs_deleted"] = (
+                        runs_db.query(CronJobRunDB)
+                        .filter(CronJobRunDB.started_at < runs_cutoff)
+                        .delete(synchronize_session=False)
+                    )
+                    runs_db.commit()
+            except Exception:
+                self.logger.exception("Cron run history cleanup failed")
+
             if any(v > 0 for v in stats.values()):
                 self.logger.info(
-                    "CleanupJob completed: matches=%d, analysis=%d, upcoming=%d",
+                    "CleanupJob completed: matches=%d, analysis=%d, upcoming=%d, cron_runs=%d",
                     stats["matches_deleted"],
                     stats["analysis_deleted"],
                     stats["upcoming_deleted"],
+                    stats["runs_deleted"],
                 )
             else:
                 self.logger.debug("CleanupJob: nothing to clean")

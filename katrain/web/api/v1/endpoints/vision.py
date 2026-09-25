@@ -32,6 +32,11 @@ class SetupModeRequest(BaseModel):
     target_board: list[list[int]]  # (board_size x board_size) matrix
 
 
+class DenyStoneRequest(BaseModel):
+    row: int
+    col: int
+
+
 class ResetSyncRequest(BaseModel):
     # "digital" = trust-digital recovery (kiosk 重置识别 / escalation restored): re-baseline
     # to the game, clear the stuck removal/pause. "physical" = accept the camera board as-is
@@ -260,6 +265,19 @@ async def reset_sync(request: Request, body: ResetSyncRequest | None = None):
         orchestrator.resync()
     else:
         vision.reset_sync()
+    return {"ok": True}
+
+
+@router.post("/deny-stone")
+async def deny_stone(request: Request, body: DenyStoneRequest):
+    """「不是落子」:用户否认了疑似落子弹窗指的那一格。
+
+    存下那一格此刻的像素;只要它还长成那样,这一格就不再被识别成子,像素一变标签自动失效。
+    这取代了旧的 `sync/reset adopt='physical'` —— 那条路把假阳性**收进基线**当成现实,
+    还顺手销毁了参考帧,等于在最需要否决的时候自废武功。
+    """
+    vision = _get_vision(request)
+    vision.deny_stone(body.row, body.col)
     return {"ok": True}
 
 

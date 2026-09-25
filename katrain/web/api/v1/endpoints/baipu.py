@@ -14,6 +14,12 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from katrain.web.kivy_compat import ensure_kivy
+
+# Baipu replays SGF through core.game, which still imports Kivy-backed i18n.
+# The web process has no Kivy; install the existing headless compatibility shim
+# before importing the replay code, as web.interface does for other routes.
+ensure_kivy()
 from katrain.core.baipu import build_steps_from_sgf
 
 router = APIRouter()

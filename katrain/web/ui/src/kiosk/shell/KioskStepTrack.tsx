@@ -43,11 +43,16 @@ interface KioskStepTrackProps {
   incLabel: string;
   /** 轨下面那行说明。 */
   hint?: React.ReactNode;
+  /**
+   * 要不要画读数那一行（`value` / `meta`）。默认画。
+   * 屏 09 把读数搬进了「对手名牌」，那里再画一遍就是同一件事说两遍。
+   */
+  readout?: boolean;
   testId?: string;
 }
 
 export function KioskStepTrack({
-  label, en, secval, count, index, onChange, value, meta, decLabel, incLabel, hint, testId,
+  label, en, secval, count, index, onChange, value, meta, decLabel, incLabel, hint, readout, testId,
 }: KioskStepTrackProps) {
   const clamped = Math.min(Math.max(index, 0), Math.max(count - 1, 0));
   return (
@@ -76,10 +81,12 @@ export function KioskStepTrack({
           ＋
         </button>
       </div>
-      <p className="catmeta">
-        <b>{value}</b>
-        {meta ? <span>{meta}</span> : null}
-      </p>
+      {readout !== false && (
+        <p className="catmeta">
+          <b>{value}</b>
+          {meta ? <span>{meta}</span> : null}
+        </p>
+      )}
       {hint ? <p className="kiosk-opthint">{hint}</p> : null}
     </>
   );

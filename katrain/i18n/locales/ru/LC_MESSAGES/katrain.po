@@ -3902,7 +3902,7 @@ msgid "vision:cancel_calibration"
 msgstr "Отменить калибровку"
 
 msgid "vision:reuse_calibration"
-msgstr "Использовать прошлую калибровку"
+msgstr "Взять прошлую"
 
 msgid "vision:camera_down"
 msgstr "Камера не подключена · переключено на сенсорный экран"
@@ -5858,6 +5858,15 @@ msgstr "Показанный Elo {v}"
 msgid "platform:ref_rank"
 msgstr "примерно {r}"
 
+msgid "platform:level_sheet"
+msgstr "Все уровни силы"
+
+msgid "platform:close"
+msgstr "Закрыть"
+
+msgid "platform:plate_aria"
+msgstr "Текущий соперник {name} {level}, {rung}; нажмите, чтобы увидеть всех"
+
 msgid "platform:rank_is_theirs"
 msgstr "Ранг принадлежит {name}"
 
@@ -6782,3 +6791,365 @@ msgstr "Партий не учтено в проценте побед: "
 
 msgid "growth:unknown_seat_b"
 msgstr " — очные партии и партии без записанного цвета."
+
+msgid "setup:handicap_side"
+msgstr "Фора · Мой цвет"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} человек против ИИ зафиксировано на 19x19 · китайские правила; экран и"
+" реальная доска используют один канал"
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Калибровка тоже использует огоньки · после завершения или отмены сразу "
+"начнётся раскладка"
+
+msgid "baipu:calib_running_title"
+msgstr "Калибровка доски ещё идёт"
+
+msgid "baipu:cam_connecting"
+msgstr "Подключение к камере"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Доска ещё не откалибрована"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Калибровка доски больше не действует"
+
+msgid "baipu:cam_none"
+msgstr "Камера не подключена"
+
+msgid "baipu:capture_hint_camera"
+msgstr "Те, что горят синим — когда снимете все, следующий ход начнётся сам"
+
+msgid "baipu:checking_board"
+msgstr "Проверка состояния доски"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"Всего {n} ходов · прогресс очищен; нажмите вверху слева, чтобы вернуться"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Чтобы собирать обучающие данные, камера сначала должна чётко видеть доску"
+
+msgid "baipu:hint_failed"
+msgstr "Не удалось посчитать — сверните и нажмите ещё раз"
+
+msgid "baipu:hint_loading"
+msgstr "ИИ считает этот ход…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Подсказки ИИ включены, распознавание на паузе — белые огоньки — кандидаты "
+"ИИ; сверните подсказки, чтобы продолжить"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Подсказки ИИ включены — белые огоньки — кандидаты ИИ; сверните подсказки, "
+"чтобы продолжить"
+
+msgid "baipu:hint_row"
+msgstr "Шанс победы {w}% · очки {s}"
+
+msgid "baipu:hint_title"
+msgstr "Подсказки ИИ · где мигают белые огоньки"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Во время пробы камера не смотрит на доску — ИИ не знает, какая там позиция"
+
+msgid "baipu:hint_value"
+msgstr "Нажмите ещё раз, чтобы свернуть"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Огонёк горит — поставьте {color} камень на подсвеченное пересечение; как "
+"только камера его увидит, начнётся следующий ход"
+
+msgid "baipu:led_title"
+msgstr "Огоньки · значение цветов"
+
+msgid "baipu:led_value_camera"
+msgstr "Камера следит"
+
+msgid "baipu:led_value_manual"
+msgstr "Подтверждение вручную"
+
+msgid "baipu:led_value_try"
+msgstr "Проба · распознавание на паузе"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — поставьте камень и нажмите «Подтвердить камень»"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; калибровка — в «Настройках»"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Ход {i} из {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Снимите пробные камни и верните сдвинутые — когда совпадёт, раскладка "
+"продолжится сама"
+
+msgid "baipu:restore_title"
+msgstr "Верните доску к ходу {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"В прошлый раз вы дошли до хода {n}. Чтобы начать заново, сначала снимите все"
+" камни с доски."
+
+msgid "baipu:setup_clear_title"
+msgstr "Сначала снимите все камни с доски"
+
+msgid "baipu:setup_continue"
+msgstr "Готово, дальше"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Снимите камни под синими огоньками, поставьте на красные и зелёные — когда "
+"совпадёт, начнётся само"
+
+msgid "baipu:setup_entry_title"
+msgstr "Сначала расставьте доску как после хода {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "Камера сейчас не распознаёт"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Ставьте что угодно и разбирайте на доске. Нажмите «Попробовать» ещё раз, "
+"чтобы вернуться к кифу, — огоньки помогут вернуть позицию"
+
+msgid "baipu:trying_title"
+msgstr "Проба · распознавание камерой на паузе"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Снимите камни под синими огоньками и верните снятые на красные и зелёные — "
+"когда совпадёт, продолжится само"
+
+msgid "baipu:undo_title"
+msgstr "Возврат к ходу {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Во время пробы вернуть нельзя"
+
+msgid "baipu:verify_hint"
+msgstr "Лишние камни подсвечены синим — снимите их, чтобы продолжить"
+
+msgid "baipu:verify_title"
+msgstr "Сверяем доску"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Возьмите камень под синим огоньком ({w}) и поставьте на {c} — когда "
+"совпадёт, продолжится само"
+
+msgid "baipu:wrong_size"
+msgstr "Это кифу на доске {n}×{n} — разложить его нельзя"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Настоящая доска и огоньки — 19×19: при другом размере каждый камень встанет "
+"не туда."
+
+msgid "baipu:wrong_title"
+msgstr "Не туда · нужно на {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Чтобы открыть эту партию, нужен интернет"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"Библиотека кифу в облаке, а это устройство сейчас не может к ней "
+"подключиться."
+
+msgid "kifu:list_offline"
+msgstr "Для поиска по библиотеке кифу нужен интернет"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Это устройство сейчас не может подключиться к облаку. Разложенные кифу и "
+"импортированные SGF это не затрагивает."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Это кифу {n}×{n} — на настоящей доске можно разложить только 19×19"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Движок ИИ готовится — пока можно пользоваться библиотекой партий, курсами и "
+"другими функциями"
+
+msgid "engine:warmup_unavailable"
+msgstr "Движок ИИ ещё не готов — повторите попытку позже"
+
+msgid "vision:relocate"
+msgstr "Выровнять рамку"
+
+msgid "vision:relocating"
+msgstr "Выравнивание…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Не совпало"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"На изображении не видно внешней рамки доски — уберите то, что закрывает "
+"край, и попробуйте снова."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Попробуйте ещё раз; если не получается, освободите доску и откалибруйте "
+"заново."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Доска сдвинулась, прошлая калибровка больше не подходит — используйте "
+"«Выровнять рамку» (без подсветки, работает даже с камнями на доске) или "
+"откалибруйте заново"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Статус «LED» означает только то, что последовательный порт подключён, а не "
+"что горит каждая лампа; если во время подсказки где-то не загорается, скорее"
+" всего, неисправен этот участок ленты."
+
+msgid "platform:fact_whose"
+msgstr "Чей это аккаунт"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Это собственный аккаунт Golaxy, а не аккаунт приставки. Ещё нет аккаунта? "
+"Зарегистрируйтесь в приложении Golaxy на телефоне — на приставке "
+"зарегистрироваться нельзя."
+
+msgid "platform:fact_three_ways"
+msgstr "Три способа"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Сканирование — вообще ничего не нужно вводить. Код из SMS — просто дождитесь"
+" сообщения. Пароль — самый быстрый способ, но вводить его придётся на "
+"сенсорном экране."
+
+msgid "platform:fact_stored"
+msgstr "Что остаётся на приставке"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Здесь сохраняется только токен входа, выданный Golaxy, — пароль не хранится."
+" Отключить можно в любой момент в настройках."
+
+msgid "platform:fact_only_one"
+msgstr "На приставке — только так"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"На сайте OGS также работают аккаунты Google, Apple и другие — для этого "
+"нужен браузер, так что это оставлено для зарубежной версии."
+
+msgid "platform:fact_third_party"
+msgstr "Регистрация через сторонний сервис"
+
+msgid "platform:fact_third_party_body"
+msgstr "У таких аккаунтов нет пароля OGS — сначала задайте его на сайте OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Ваш аккаунт на online-go.com. Регистрация должна проходить в браузере — на "
+"приставке это сделать нельзя."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Здесь сохраняется только сессия после входа — пароль не хранится. Отключить "
+"можно в любой момент в настройках."
+
+msgid "platform:login_tab_sms"
+msgstr "Код из SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Пароль"
+
+msgid "platform:login_field_phone"
+msgstr "Номер телефона"
+
+msgid "platform:login_field_code"
+msgstr "Код из SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Не подключено · вход по коду из SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Не подключено · вход по аккаунту и паролю {name}"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Не подключено · вход по аккаунту и паролю Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Не подключено · используйте аккаунт online-go.com"
+
+msgid "platform:login_title"
+msgstr "Вход в {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Ваш ранг также берётся из этого аккаунта"
+
+msgid "platform:login_tabs"
+msgstr "Способ входа"
+
+msgid "platform:login_tab_scan"
+msgstr "Сканировать"
+
+msgid "platform:login_sub_scan"
+msgstr "Не подключено · отсканируйте в приложении Golaxy на телефоне"
+
+msgid "platform:scan_state_waiting"
+msgstr "Ожидание сканирования"
+
+msgid "platform:scan_state_scanned"
+msgstr "Отсканировано, подтвердите на телефоне"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Подтверждено, выполняется вход…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-код истёк"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Отменено на телефоне"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Не удаётся подключиться к Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Проверьте сеть"
+
+msgid "platform:scan_retry"
+msgstr "Повторить"
+
+msgid "platform:scan_title"
+msgstr "Откройте приложение Golaxy и отсканируйте"
+
+msgid "platform:scan_body"
+msgstr ""
+"После сканирования подтвердите на телефоне — пароль никогда не проходит "
+"через эту приставку."
+
+msgid "platform:scan_qr_alt"
+msgstr "QR-код входа в Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Новый код"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "нажмите, чтобы получить новый код"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Не удалось подтвердить вход"
+
+msgid "vision:not_a_stone"
+msgstr "Это не камень"

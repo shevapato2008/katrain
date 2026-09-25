@@ -1,8 +1,11 @@
 import argparse
 import asyncio
+import json
 import logging
+import math
 import os
 import time
+import httpx
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, List, Optional, Union, Dict
@@ -12,11 +15,14 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
-from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
+from katrain.web.api.v1.endpoints.ai_ladder import (
+    adjudicate_ranked_position, analyze_ranked_territory, mark_ai_ladder_remote_terminal,
+)
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.game_end_rules import is_awaiting_count
@@ -116,6 +122,11 @@ def _count_result(score):
     if score >= 0:
         return f"B+{abs(score):.1f}", "B"
     return f"W+{abs(score):.1f}", "W"
+
+
+class RankedTerritoryRequest(BaseModel):
+    session_id: str
+    request_id: str = Field(min_length=1, max_length=64)
 
 
 def _new_terminal(session, before):
@@ -643,6 +654,8 @@ async def _lifespan_board(app: FastAPI, log):
     vision_config = getattr(settings, "_vision_config", None)
     capture_config = getattr(settings, "_capture_config", None)
     hardware_vision_dir = getattr(settings, "_hardware_vision_dir", None)
+    # 引导亮度也落在这个目录下(`led/guidance.json`),所以 LED 那段要能读到它。
+    app.state.hardware_vision_dir = hardware_vision_dir
 
     # Initialise every optional camera-dependent surface before attempting to
     # acquire the device. A missing UVC device must leave the regular board
@@ -785,6 +798,9 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.led = led
         app.state.led_last_activity = time.monotonic()
         app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+        # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
+        # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
+        _load_guidance_scale(app, log)
         log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
@@ -1864,14 +1880,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             from katrain.core.lang import rank_key
 
-            sgf_content = session.katrain.get_sgf()
+            game_type = getattr(session, "game_type", "free")
+            sgf_content = session.katrain.get_sgf() if game_type != "ai_ladder_ranked" else None
             state = session.katrain.get_state()
             players_info = session.katrain.players_info
 
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            game_type = getattr(session, "game_type", "free")
             # Local two-player names are optional. Filling the logged-in user into both human
             # seats would turn an unnamed game into a misleading same-name game.
             if current_user and game_type != "pvp_local":
@@ -2003,6 +2019,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
                     user_id=current_user.id, game_id=snapshot.game_id
                 )
+                ai_color = "W" if snapshot.user_color == "B" else "B"
+                seat_names = {snapshot.user_color: current_user.username, ai_color: snapshot.opponent.rank_name}
+                data["player_black"] = seat_names["B"]
+                data["player_white"] = seat_names["W"]
+                frozen_rules = getattr(lifecycle, "rules_snapshot", None)
+                if frozen_rules is not None:
+                    data["board_size"] = frozen_rules["board_size"]
+                    data["rules"] = frozen_rules["rules"]
+                    data["komi"] = frozen_rules["komi"]
+                root = session.katrain.game.root
+                for property_name, value in (
+                    ("PB", data["player_black"]),
+                    ("PW", data["player_white"]),
+                    ("RE", data["result"]),
+                    ("RU", data["rules"]),
+                    ("SZ", data["board_size"]),
+                    ("KM", data["komi"]),
+                ):
+                    root.set_property(property_name, value)
+                data["sgf_content"] = session.katrain.get_sgf()
                 if getattr(app.state, "remote_client", None) is not None:
                     data["origin_device_id"] = settings.DEVICE_ID
                 if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
@@ -2340,6 +2376,56 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return result
 
+    async def _complete_ranked_count(session, app, current_user):
+        """Ask the cloud privately, then commit only if this exact board position still exists."""
+        with session.lock:
+            game = session.katrain.game
+            node = game.current_node
+            awaiting = is_awaiting_count(session.katrain)
+            trigger = "double_pass" if awaiting else "manual"
+            snapshot = getattr(session, "ai_ladder_snapshot", None)
+            key = getattr(session, "ai_ladder_reservation_key", None)
+            if snapshot is None or not isinstance(key, str) or not key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+            sgf_content = session.katrain.get_sgf()
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is None:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                decision = await adjudicate_ranked_position(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=key, sgf_content=sgf_content, trigger=trigger,
+                )
+            else:
+                decision = await remote.count_ai_ladder_game(snapshot.game_id, key, sgf_content, trigger)
+            score = decision["score"]
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+                raise ValueError("invalid cloud score")
+            result, _ = _count_result(score)
+            if decision.get("result") != result:
+                raise ValueError("inconsistent cloud result")
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked count unavailable: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked adjudicator unavailable; retry counting") from exc
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
+            if session.katrain.game is not game:
+                raise EndgameConflict("position_changed")
+            before = _terminal_of(session)
+            session.katrain._commit_end_state(result, node=node, fill_pending=awaiting)
+            session.game_ended = True
+            end = _new_terminal(session, before)
+            state = session.katrain.get_state()
+            session.last_state = state
+        session.katrain.update_state()
+        if end is not None:
+            await _finish_ended_game(session, app, current_user, end)
+            state = session.katrain.get_state()
+            session.last_state = state
+        return {"session_id": session.session_id, "state": state, "result": result}
+
     async def _score_two_pass_end(session, end):
         """双方各停一手结束、还没有胜负的局:补一次分析,按数子的格式写在**终局那一手**上。
         返回补上后的 `GameEnd`;没补(不是双停 / 不许分析 / 补不出分 / 被别人抢先)返回 None。
@@ -2382,6 +2468,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return
         if getattr(session, "mode", "play") == "research":
             return
+        if getattr(session, "game_type", None) == "ai_ladder_ranked" and is_awaiting_count(session.katrain):
+            return
         lock = getattr(session, "end_game_lock", None)
         if not isinstance(lock, asyncio.Lock):
             lock = asyncio.Lock()
@@ -2418,6 +2506,87 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     manager.on_game_ended = _on_game_ended_off_request
 
+    def _ranked_territory_session(session_id: str, current_user):
+        session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "territory")
+        if not is_ai_ladder_ranked_session(session):
+            raise HTTPException(status_code=403, detail="Territory is only available in a ranked game")
+        snapshot = guard_ai_ladder_ranked_owner(session, current_user, "territory")
+        guard_ai_ladder_ranked_not_ended(session, "territory")
+        return session, snapshot
+
+    @app.get("/api/ai-ladder/territory")
+    async def ranked_territory_status(session_id: str, current_user: User = Depends(get_current_user_optional)):
+        session, snapshot = _ranked_territory_session(session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                return await remote.get_ai_ladder_territory(snapshot.game_id)
+            if not getattr(app.state, "ai_ladder_authoritative", False):
+                raise RuntimeError("ranked authority unavailable")
+            return app.state.ai_ladder_repo.get_territory_status(user_id=current_user.id, game_id=snapshot.game_id)
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail="Ranked territory unavailable") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory status failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+    @app.post("/api/ai-ladder/territory")
+    async def ranked_territory_request(
+        body: RankedTerritoryRequest, current_user: User = Depends(get_current_user_optional)
+    ):
+        session, snapshot = _ranked_territory_session(body.session_id, current_user)
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
+        with session.lock:
+            guard_ai_ladder_ranked_not_ended(session, "territory")
+            game = session.katrain.game
+            node = game.current_node
+            sgf_content = session.katrain.get_sgf()
+            reservation_key = getattr(session, "ai_ladder_reservation_key", None)
+            if not isinstance(reservation_key, str) or not reservation_key:
+                raise HTTPException(status_code=409, detail="Ranked reservation is unavailable")
+        remote = getattr(app.state, "remote_client", None)
+        try:
+            if remote is not None:
+                result = await remote.request_ai_ladder_territory(
+                    snapshot.game_id, reservation_key, sgf_content, body.request_id
+                )
+            else:
+                if not getattr(app.state, "ai_ladder_authoritative", False):
+                    raise RuntimeError("ranked authority unavailable")
+                result = await analyze_ranked_territory(
+                    app, user_id=current_user.id, game_id=snapshot.game_id,
+                    reservation_key=reservation_key, sgf_content=sgf_content, request_id=body.request_id,
+                )
+        except HTTPException:
+            raise
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in {403, 409, 422, 429}:
+                try:
+                    detail = exc.response.json().get("detail", "Ranked territory unavailable")
+                except ValueError:
+                    detail = "Ranked territory unavailable"
+                raise HTTPException(status_code=exc.response.status_code, detail=detail) from exc
+            logging.getLogger("katrain_web").warning("Ranked territory cloud rejected: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+        except Exception as exc:
+            logging.getLogger("katrain_web").warning("Ranked territory request failed: %s", exc)
+            raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+        if not isinstance(result, dict) or not isinstance(result.get("remaining"), int):
+            raise HTTPException(status_code=502, detail="Invalid ranked territory response")
+        with session.lock:
+            if (session.katrain.game is not game or game.current_node is not node
+                    or session.katrain.get_sgf() != sgf_content
+                    or getattr(session, "ai_ladder_remote_ended", False)
+                    or getattr(node, "end_state", None)
+                    or getattr(session, "_recorded", False)):
+                return {"remaining": result["remaining"], "stale": True}
+        return {**result, "stale": False}
+
     @app.post("/api/count/request")
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
@@ -2430,18 +2599,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
         # the manual-count move threshold and the placeholder end_result is not a final result.
         if not state.get("awaiting_count"):
-            count_min_moves = state.get("count_min_moves")
+            ranked_count = getattr(session, "game_type", None) == "ai_ladder_ranked"
+            count_min_moves = 100 if ranked_count else state.get("count_min_moves")
             if count_min_moves is None:
                 count_min_moves = session.katrain.config("game/count_min_moves", 100)
-            if len(state.get("history", [])) < count_min_moves:
+            move_count = len(state.get("history", [])) - (1 if ranked_count else 0)
+            if move_count < count_min_moves:
                 raise HTTPException(
                     status_code=400,
                     detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
                 )
             if state.get("end_result"):
-                raise HTTPException(
-                    status_code=400, detail={"code": "game_over", "message": "Game is already over"}
-                )
+                raise HTTPException(status_code=400, detail={"code": "game_over", "message": "Game is already over"})
+
+        if getattr(session, "game_type", None) == "ai_ladder_ranked":
+            return await _complete_ranked_count(session, app, current_user)
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
@@ -3668,9 +3840,19 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
 # bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
 # full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
 # Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
-# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
-# provisional, to be tuned from the "LED glow" log lines.
-LED_GLOW_TARGET = 60000.0
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not.
+#
+# 2026-09-24 上板实测把 60000 这个暂定值否掉了,并给锚点表添了中间的一个点。Fan 下第一手白子时
+# 裸灯读数 79056 ⇒ 环按设计把亮度压到 0.87,也就是把读数带到**正好等于目标 60000** —— 白子在这个
+# 读数下**认不出来**:从 10:43:32 到 10:59:01 整整 16 分钟没进检测板,`caught_up` 一直为假、
+# 编排器一直挂着 lag 暂停,最后勉强认出时 `W0.45` 也只是擦着阈值过。
+# ⇒ **60000 不是安全值,它是一个新的失败锚点**(35k 能认 / 60k 认不出 / 70k 认不出)。
+# 取 35000:唯一被实测证明能认出来的那个读数。79056 × (√(35000/79056))² = 34962,一次读数就到位
+# (步长下限 0.5 不会截断 0.665),而 0.665 远高于 MIN_GUIDANCE_SCALE=0.08,灯对人依然清楚可见。
+#
+# ⚠️ 这个环**只能在裸灯上测**(子压上去之后 led_glow 读的就不是灯了),所以每颗子只有一次机会调整;
+# 目标定高了不会在下一帧自我纠正,而是整局卡住。宁可偏暗。
+LED_GLOW_TARGET = 35000.0
 LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
 LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
 # A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);
@@ -3678,38 +3860,192 @@ LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these 
 LED_GLOW_MAX_AREA = 2500
 
 
+# 收敛之后要偏到什么程度才重新开环(ratio = target/score 落在这个区间内就继续锁着)。
+# Fan 的规则 1 是「如非必要就不再变化」—— 这一对数就是「必要」的定义:读数偏到 2 倍以上才算必要。
+# 没有这条,锁定之后**只有调亮一条出路**:天黑了、或者上次落盘的是个坏值,环永远回不来
+# (落盘的坏值尤其致命 —— 它活过每一次重启,而仓里没有任何接口/按钮/命令行能清掉那个文件)。
+LED_GLOW_RELATCH = (0.5, 2.0)
+# 它和死区 (0.8, 1.25) 之间的 [0.5,0.8) ∪ (1.25,2.0] 是**有意留的空档**:锁定之后落在这里的读数
+# 既不调整也不解锁,正是 Fan 那句「如非必要就不再变化」—— 不是漏了一段。
+
+# 反光判据:灯亮之前那一帧里,这盏灯自己的 ROI 有多大比例**已经**是死白的(worker 量,见
+# reference_clipped_fraction)。ROI 半径 1.5 格距(1080p 上 ≈75px ⇒ 面积 ≈17700px),而灯斑
+# 450–2500px ⇒ 要盖住灯至少得占 ROI 的 2.5%。取 2%:够盖住灯,又远高于无反光时的 0。
+# ⚠️ 暂定值 —— 现场还没有一次带反光的实测读数。事件里每次都带 clipped 出来,下次上板拿真数校准。
+# 误判的代价被下面那条「只在已锁定时抬,且抬完就解锁」夹死在一步之内,一步是过闸验证过安全的。
+LED_GLARE_CLIPPED_FRAC = 0.02
+# 因反光调亮时一次抬多少。镜面反光要盖过多少完全未知,所以只抬一小步。
+# ⚠️ 别照着「小步 + 下一盏灯复测」去理解它 —— **没有复测**:`_glow_pending` 在 worker 里一次消费干净
+# (`cells, self._glow_pending = self._glow_pending, set()`),那盏落在反光上的灯不会被再测一次;
+# 而「下一盏灯」如果干净,它的读数只回答「亮度对不对」,不回答「盖过反光了没有」。
+# 所以这一步是**一次性的盲抬**,抬完就解锁让干净读数把亮度收回目标 —— 不是一个逐步逼近的过程。
+# (下面 `glare and settled` 那条闸堵死的正是「连续调亮」,而那条路本来就走不通。)
+LED_GLARE_BRIGHTEN_STEP = 1.25
+# 但**光有步长上限不够**:调亮是在「灯根本看不见」时盲抬的一步,它必须按**收敛时那次读数**算,
+# 不能按目标值算。收敛态并不停在 35000 —— 死区是 ratio∈[0.8,1.25],读数可以停在 43750;
+# 从那里抬 1.25 步就是 43750×1.25²=68359,**越过 60000 那条白子认不出的实测线**(仿真里复现了)。
+# 所以真正的闸是这个读数天花板:抬完之后的预测读数不许超过它。取 50000 —— 落在 35000(实测能认)
+# 与 60000(实测认不出)之间并留出余量;真实边界在这两个锚点之间的什么位置,现场还没测过。
+LED_GLARE_MAX_GLOW = 50000.0
+
+
+def _guidance_state_path(app: FastAPI):
+    """引导亮度的落盘位置;没配 --hardware-vision-dir 就返回 None(不落盘,行为回到改动之前)。"""
+    root = getattr(app.state, "hardware_vision_dir", None)
+    return (Path(root).expanduser() / "led" / "guidance.json") if root else None
+
+
+def _load_guidance_scale(app: FastAPI, log) -> None:
+    """开机时把上次调好的引导亮度装回去。
+
+    **这一步是 2026-09-24 那次故障的正主。** `LedService.__init__` 把 `_guidance_scale` 置成 1.0,
+    而它从不落盘 ⇒ **每次重启引导灯都回到满亮度**。那天 10:22 重启之后,Fan 开局第一手 AI 落子,
+    灯以满亮度点亮、裸灯读数 79056,白子(透光)压上去就成了一团光,16 分钟没进检测板、整局卡死。
+    调亮度的环本身是好的,它只是每次重启都得从头再学一遍 —— 而「学」的代价是让用户先卡一手。
+    """
+    led = getattr(app.state, "led", None)
+    path = _guidance_state_path(app)
+    if led is None or path is None or not hasattr(led, "set_guidance_scale") or not path.exists():
+        return
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        scale = float(saved["guidance_scale"])
+        # json.loads 默认收 NaN/Infinity,而 set_guidance_scale 的 min/max 夹取对 NaN 返回下界 ——
+        # 一个坏文件会静默把引导灯钉在最低亮度,人几乎看不见灯,而日志里一句异常都没有。
+        if not math.isfinite(scale):
+            raise ValueError(f"guidance_scale is not a finite number: {scale!r}")
+        settled = bool(saved.get("settled", False))
+        settled_score = float(saved.get("settled_score", 0.0) or 0.0)
+        if not math.isfinite(settled_score) or settled_score < 0:
+            settled_score = 0.0  # 缺/坏就当没有:反光那一步退回只受 STEP 约束,不会更危险
+
+    except Exception as exc:  # 坏文件不该挡住开机:回落到默认亮度,像没有这个文件一样
+        log.warning("Ignoring unreadable LED guidance state at %s: %s", path, exc)
+        return
+    led.set_guidance_scale(scale)
+    app.state.led_glow_settled = settled
+    app.state.led_glow_settled_score = settled_score
+    log.info("LED guidance brightness restored: %.2f (settled=%s) from %s", led.guidance_scale, settled, path)
+
+
+def _save_guidance_scale(app: FastAPI, scale: float, settled: bool, settled_score: float, log) -> None:
+    path = _guidance_state_path(app)
+    if path is None:
+        return
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # 先写临时文件再 os.replace:**进程被杀**时宁可读到上一次的值,也不要读到半截 JSON。
+        # ⚠️ 这挡不住断电 —— 没有 fsync,ext4 上可以 rename 已生效而数据未落盘,重启读到 0 字节。
+        # 不加 fsync 是有意的:`_adjust_led_brightness` 跑在事件泵那条 asyncio 任务上,同步 fsync
+        # 会卡住事件循环,而板上 UI 本来就只有 6-15fps。代价小得不值这一下:这个文件丢了只是让
+        # 开局第一盏灯从满亮度起步,而测量发生在**裸灯上、玩家伸手之前**,`set_guidance_scale` 当场
+        # 就把那盏灯按新亮度重发 —— 修正落在同一颗子上。落盘是省掉那一瞬的优化,不是正确性的前提。
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(
+            json.dumps(
+                {"guidance_scale": round(scale, 4), "settled": settled, "settled_score": round(settled_score, 1)}
+            ),
+            encoding="utf-8",
+        )
+        os.replace(tmp, path)
+    except Exception as exc:  # 落盘失败不该影响这一局:亮度已经在内存里生效了
+        log.warning("Could not persist LED guidance brightness to %s: %s", path, exc)
+
+
 def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    """一盏灯亮起时的一次读数 → 引导亮度(Fan 2026-09-24 定的四条规则)。
+
+    1. 收敛到目标后**锁定**,之后的正常读数不再动它(「如非必要就不再变化」)。
+    2. 亮度**落盘**,重启从它起步 —— 见 `_load_guidance_scale`。
+    3. 灯落在**镜面反光**上、相机读不出来(`low_signal`/`no_blob`)⇒ **调亮全局**。
+    4. 调亮的同时**解锁**,让后续干净读数把它收回来。
+
+    第 3 条为什么改全局而不是只对那一个点(Fan 的裁定):**已经调好的那个全局值,本身也只是
+    在未知条件下取的一次样** —— 系统没有记录第一次收敛时那盏灯底下有没有反光。把它当成可信基准、
+    把反光当例外,没有依据。每次读数地位平等,新读数就该改写全局。
+    第 4 条是第 3 条的必然推论:不解锁的话,一次反光就把全局调亮并**永久锁死**,之后所有位置的
+    白子都认不出来,而触发条件变成「上一手正好下在反光的地方」—— 比它要修的那个故障还难查。
+    """
     led = getattr(app.state, "led", None)
     if led is None or not hasattr(led, "set_guidance_scale"):
         return
     before = led.guidance_scale
-    score = float(data.get("score") or 0.0)
-    after = before
-    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
-        ratio = LED_GLOW_TARGET / score
-        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
-            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+    from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
 
+    score = float(data.get("score") or 0.0)
+    settled = bool(getattr(app.state, "led_glow_settled", False))
+    usable = bool(data.get("ok")) and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA
+    # `score <= 0` 把 `ambiguous_blobs` 排除在反光之外 —— 它是唯一带非零 score 的失败,也就是
+    # **确实看见了光、只是分不清是哪一团**。那条路上 peak>=PEAK_MIN_ROI,「两帧都饱和」的不等式
+    # 不成立,判据在它上面失去意义。判在 score 上而不是 reason 字符串上:reason 在失败时是常量。
+    glare = not data.get("ok") and score <= 0 and float(data.get("clipped") or 0.0) >= LED_GLARE_CLIPPED_FRAC
+    ratio = LED_GLOW_TARGET / score if score > 0 else 0.0
+    after, now_settled, why = before, settled, "no-op"
+
+    if glare and settled:
+        # 规则 3+4:这盏灯落在镜面反光上,相机看不见它 ⇒ 调亮**全局**并**解锁**。
+        # `and settled` 是承重的:抬完就解锁 ⇒ **一次收敛之后最多只抬一次**,棘轮在结构上不可能存在。
+        # 没有它:0.665 →1.25→ 0.831 →1.25→ 1.00,两次误判就回到 09-24 那个卡死 16 分钟的亮度并落盘,
+        # 而 led_glow 只在有新灯点亮时才产生(worker `lit - self._lit_points`)⇒ 白子认不出就没有下一个
+        # 读数 ⇒ 环再也下不来。此时 `before` 必然就是收敛值。
+        # 步长按**收敛时那次实测读数**封顶,不按目标值:死区允许收敛在 43750,从那里抬满 1.25 步
+        # 会到 68359,越过 60000 那条线。glow ~ brightness² ⇒ 读数抬到天花板对应的亮度比是开平方。
+        settled_score = float(getattr(app.state, "led_glow_settled_score", 0.0) or 0.0)
+        headroom = (LED_GLARE_MAX_GLOW / settled_score) ** 0.5 if settled_score > 0 else LED_GLARE_BRIGHTEN_STEP
+        after = min(1.0, before * min(LED_GLARE_BRIGHTEN_STEP, max(1.0, headroom)))
+        now_settled = False
+        why = "glare"
+    elif not usable:
+        # 手挡住了 / 灯没亮 / 串口掉线 / 两团光分不清:不是反光,什么都不做。
+        # 还在收敛途中撞上反光也走这里 —— 手上还没有一个「调好了的值」可以往上抬一步。
+        why = "glare-unsettled" if glare else "unusable"
+    elif settled and LED_GLOW_RELATCH[0] <= ratio <= LED_GLOW_RELATCH[1]:
+        why = "settled"  # 规则 1:调好了,小偏差就别再动它
+    else:
+        if LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            now_settled = True  # 落进死区 = 收敛完成,从此锁定
+            why = "converged"
+        else:
             # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
             # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
             # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
             # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
             step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
             after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
+            now_settled = False  # 偏到 RELATCH 之外 = 条件真的变了,重新开环
+            why = "reopened" if settled else "converging"
     log.info(
-        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        "LED glow at (%s,%s): ok=%s reason=%s clipped=%.3f score=%.0f peak=%s area=%s "
+        "-> guidance brightness %.2f -> %.2f (%s, target %.0f, settled %s -> %s)",
         data.get("row"),
         data.get("col"),
         data.get("ok"),
+        data.get("reason") or "-",
+        float(data.get("clipped") or 0.0),  # 反光判据的实测值:LED_GLARE_CLIPPED_FRAC 还是暂定的,靠它校准
         score,
         data.get("peak"),
         data.get("area"),
         before,
         after,
+        why,
         LED_GLOW_TARGET,
+        settled,
+        now_settled,
     )
-    if abs(after - before) >= 0.02:
+    changed = abs(after - before) >= 0.02
+    if changed:
         led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
+    if changed or now_settled != settled:
+        app.state.led_glow_settled = now_settled
+        # 收敛时那次读数要记下来:下次撞上反光,盲抬那一步的上限得按它算,不能按目标值算
+        # (死区允许收敛在 43750,按目标值算会抬过 60000 那条线)。
+        if now_settled:
+            app.state.led_glow_settled_score = score
+        # 落盘的是**生效后**的值(set_guidance_scale 会把它夹进 [MIN,1]),不是我们算出来的那个 ——
+        # 存一个从没真正生效过的数字,下次开机就从它起步,等于把一个没验证过的亮度当成学习结果。
+        _save_guidance_scale(
+            app, led.guidance_scale, now_settled, float(getattr(app.state, "led_glow_settled_score", 0.0) or 0.0), log
+        )
 
 
 async def _vision_event_pump(app: FastAPI):
@@ -3864,9 +4200,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     def _rearm_detection() -> None:
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(
-                game_state["stones"], expected_node_id=game_state.get("current_node_id")
-            )
+            vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
 
     # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
     # leftover stone re-confirms and is refused again every consistency window, forever.

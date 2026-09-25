@@ -181,8 +181,9 @@ def test_calibrator_retries_only_green_when_green_signal_is_missing():
 
     assert result.ok is True
     attempts = [rgb for coord, rgb in led.attempts if coord == (3, 15)]
-    # 这颗绿色完全缺失时仍只能试 96→255 两档绿色；单点缺失由标定容缺吸收。
-    assert attempts == [(0, 96, 0), (0, 255, 0)]
+    # 绿色完全缺失也不会换成别的颜色重试(软件契约只允许绿),而亮度只有满亮度一档
+    # ⇒ 这颗锚点总共只闪一次。单点缺失由标定容缺(MIN_LOCATED_ANCHORS)吸收。
+    assert attempts == [(0, 255, 0)]
     assert all(red == 0 and green > 0 and blue == 0 for _coord, (red, green, blue) in led.attempts)
 
 
@@ -241,9 +242,11 @@ def test_calibrator_reports_each_detected_anchor():
         assert point == pytest.approx(_synthetic_camera_points()[(row, col)], abs=1.0)
 
 
-def test_locate_anchor_retries_at_full_brightness_when_signal_is_weak():
-    """白天 96 档折算 peak≈7-28、闸是 20(spec §2.2)。弱信号必须换满亮度再试一次,
-    而不是直接判 anchor_not_found。"""
+def test_a_daylight_anchor_is_located_because_the_flash_is_always_full_brightness():
+    """白天的实测数(spec §2.2):96 档折算 peak≈7-28,闸是 20 ⇒ 半数锚点测不到;255 档过闸。
+
+    夹具就照这个数造:96 档只抬 8 个灰阶,255 档抬 40。它同时是**取消暗档的变异靶** ——
+    把 96 加回 FLASH_LEVELS,下面那条「每一次闪灯都是 255」会红。"""
     led = FakeLed()
     points = _synthetic_camera_points()
 
@@ -252,7 +255,6 @@ def test_locate_anchor_retries_at_full_brightness_when_signal_is_weak():
             frame = np.full((900, 1000, 3), 150, np.uint8)
             if self.led.current is not None:
                 x, y = self.camera_points[self.led.current]
-                # 96 档在这个场景下只抬 8 个灰阶(低于 peak>=20 的闸);255 档抬 40。
                 lift = 40 if max(self.led.rgb) == 255 else 8
                 cv2.circle(frame, (round(x), round(y)), 8, (0, 150 + lift, 0), -1)
             return frame
@@ -261,20 +263,23 @@ def test_locate_anchor_retries_at_full_brightness_when_signal_is_weak():
     result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
 
     assert result.ok is True
-    levels = [a.get("level") for a in result.attempts if a.get("ok")]
-    assert levels and all(level == 255 for level in levels)
-    assert any(a["reason"] == "low_signal" and a["level"] == 96 for a in result.attempts)
+    assert {attempt["level"] for attempt in result.attempts} == {255}
+    assert not [attempt for attempt in result.attempts if attempt.get("reason") == "low_signal"]
 
 
-def test_dark_room_still_succeeds_at_the_dim_level_only():
-    """暗处 96 档就够(peak 94-198),不许无谓地把灯拉满 —— 削顶会把质心拉偏。"""
+def test_calibration_flashes_each_anchor_once_at_full_brightness():
+    """Fan 2026-09-24 的裁定:标定用固定满亮度,可调亮度只在开局之后。
+
+    用户侧可见的那一半是**一颗锚点只闪一次** —— 「13 个点亮 2 下」正是旧的 96→255 阶梯。"""
     led = FakeLed()
     capture = FakeCapture(led, _synthetic_camera_points())
 
     result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
 
     assert result.ok is True
-    assert all(a["level"] == 96 for a in result.attempts if a.get("ok"))
+    assert {attempt["level"] for attempt in result.attempts} == {255}
+    assert [rgb for _coord, rgb in led.attempts] == [(0, 255, 0)] * len(CALIBRATION_ANCHORS)
+    assert [coord for coord, _rgb in led.attempts] == list(CALIBRATION_ANCHORS)
 
 
 def test_check_frame_exposure_rejects_blown_out_frame():

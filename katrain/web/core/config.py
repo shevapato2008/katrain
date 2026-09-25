@@ -74,8 +74,7 @@ class Settings(BaseModel):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
-    # 空库首次启动时创建管理员账号用的口令。**默认空 = 不创建任何账号**。
-    # 从环境注入（KATRAIN_ADMIN_BOOTSTRAP_PASSWORD），用完即应清掉。
+    # An empty database gets an admin only when an operator provides a temporary password.
     ADMIN_BOOTSTRAP_PASSWORD: str = ""
 
     DEFAULT_LANG: str = "cn"

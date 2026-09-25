@@ -29,6 +29,7 @@ class CommandType(Enum):
     PAUSE_DETECTION = "pause_detection"
     RESUME_DETECTION = "resume_detection"
     SET_LIT_POINTS = "set_lit_points"
+    DENY_STONE = "deny_stone"  # 用户在弹窗上按了「不是落子」
     SHUTDOWN = "shutdown"
 
 

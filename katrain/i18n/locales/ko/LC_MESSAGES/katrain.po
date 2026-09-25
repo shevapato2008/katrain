@@ -5679,6 +5679,15 @@ msgstr "표시 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "{r} 수준"
 
+msgid "platform:level_sheet"
+msgstr "전체 기력 단계"
+
+msgid "platform:close"
+msgstr "닫기"
+
+msgid "platform:plate_aria"
+msgstr "현재 상대 {name} {level}, {rung}; 눌러서 전체 보기"
+
 msgid "platform:rank_is_theirs"
 msgstr "기력은 {name} 쪽 것입니다"
 
@@ -6581,3 +6590,314 @@ msgstr "승률에 넣지 않은 대국 "
 
 msgid "growth:unknown_seat_b"
 msgstr "국: 대면 대국과 흑백이 기록되지 않은 대국입니다."
+
+msgid "baipu:calib_running_sub"
+msgstr "보정도 불빛을 쓰고 있습니다 · 끝나거나 취소되면 바로 기보 놓기로 들어갑니다"
+
+msgid "baipu:calib_running_title"
+msgstr "바둑판 보정이 아직 진행 중입니다"
+
+msgid "baipu:cam_connecting"
+msgstr "카메라에 연결하는 중"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "바둑판이 아직 보정되지 않았습니다"
+
+msgid "baipu:cam_geo_drift"
+msgstr "바둑판 보정이 더 이상 유효하지 않습니다"
+
+msgid "baipu:cam_none"
+msgstr "카메라가 연결되지 않았습니다"
+
+msgid "baipu:capture_hint_camera"
+msgstr "파랗게 켜진 돌입니다 — 모두 들어내면 자동으로 다음 수로 넘어갑니다"
+
+msgid "baipu:checking_board"
+msgstr "바둑판 상태를 확인하는 중"
+
+msgid "baipu:done_hint_auto"
+msgstr "모두 {n}수 · 진행 기록을 지웠습니다. 왼쪽 위를 눌러 돌아가세요"
+
+msgid "baipu:guard_sub_collect"
+msgstr "학습 데이터를 모으려면 먼저 카메라가 판을 또렷이 볼 수 있어야 합니다"
+
+msgid "baipu:hint_failed"
+msgstr "계산하지 못했습니다 — 접은 뒤 다시 눌러 보세요"
+
+msgid "baipu:hint_loading"
+msgstr "AI가 이 수를 계산하는 중…"
+
+msgid "baipu:hint_on_hint"
+msgstr "AI 조언 중, 인식 일시 정지 — 흰 불은 AI의 후보 수입니다. 조언을 접으면 이어서 놓습니다"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr "AI 조언 중 — 흰 불은 AI의 후보 수입니다. 조언을 접으면 이어서 놓습니다"
+
+msgid "baipu:hint_row"
+msgstr "승률 {w}% · 집 차이 {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI 조언 · 흰 불이 깜박이는 곳"
+
+msgid "baipu:hint_try_reason"
+msgstr "시험 두기 중에는 카메라가 판을 보지 않아 AI가 판 위 국면을 알 수 없습니다"
+
+msgid "baipu:hint_value"
+msgstr "한 번 더 누르면 접힙니다"
+
+msgid "baipu:led_on_camera"
+msgstr "불이 켜졌습니다 — {color} 돌을 켜진 교차점에 놓으세요. 카메라가 알아보면 자동으로 다음 수로 넘어갑니다"
+
+msgid "baipu:led_title"
+msgstr "불빛 · 색 안내"
+
+msgid "baipu:led_value_camera"
+msgstr "카메라가 보는 중"
+
+msgid "baipu:led_value_manual"
+msgstr "직접 확인"
+
+msgid "baipu:led_value_try"
+msgstr "시험 두기 중 · 인식 일시 정지"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — 돌을 놓은 뒤 '착수 확인'을 누르세요"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; 보정은 '설정'에 있습니다"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "{i} / {n}수"
+
+msgid "baipu:restore_hint"
+msgstr "시험으로 둔 돌은 들어내고 옮긴 돌은 되돌리세요 — 맞으면 자동으로 이어서 놓습니다"
+
+msgid "baipu:restore_title"
+msgstr "판을 {n}수 국면으로 되돌리세요"
+
+msgid "baipu:resume_body_placed"
+msgstr "지난번에는 {n}수까지 놓았습니다. 처음부터 놓으려면 먼저 판 위의 돌을 모두 들어내세요."
+
+msgid "baipu:setup_clear_title"
+msgstr "먼저 판 위의 돌을 모두 들어내세요"
+
+msgid "baipu:setup_continue"
+msgstr "다 놓았어요, 계속"
+
+msgid "baipu:setup_entry_hint"
+msgstr "파란 불의 돌은 들어내고 빨간·초록 불 자리에 돌을 놓으세요 — 맞으면 자동으로 시작합니다"
+
+msgid "baipu:setup_entry_title"
+msgstr "먼저 판을 {n}수 국면으로 맞추세요"
+
+msgid "baipu:try_off_reason"
+msgstr "카메라가 인식하고 있지 않습니다"
+
+msgid "baipu:trying_hint"
+msgstr "판 위에 자유롭게 놓고 연구하세요. '시험 두기'를 다시 누르면 기보로 돌아가고, 불빛이 판을 되돌리도록 안내합니다"
+
+msgid "baipu:trying_title"
+msgstr "시험 두기 중 · 카메라 인식 일시 정지"
+
+msgid "baipu:undo_hint_camera"
+msgstr "파란 불의 돌은 들어내고, 따낸 돌은 빨간·초록 불 자리에 되돌리세요 — 맞으면 자동으로 이어집니다"
+
+msgid "baipu:undo_title"
+msgstr "{n}수로 되돌렸습니다"
+
+msgid "baipu:undo_try_reason"
+msgstr "시험 두기 중에는 되돌릴 수 없습니다"
+
+msgid "baipu:verify_hint"
+msgstr "남는 돌에 파란 불이 켜집니다 — 들어내면 이어집니다"
+
+msgid "baipu:verify_title"
+msgstr "판을 맞춰 보는 중"
+
+msgid "baipu:wrong_hint"
+msgstr "파란 불의 돌({w})을 집어 {c}에 놓으세요 — 맞으면 자동으로 이어집니다"
+
+msgid "baipu:wrong_size"
+msgstr "{n}줄 기보라서 놓을 수 없습니다"
+
+msgid "baipu:wrong_size_hint"
+msgstr "실물 바둑판과 불빛은 19줄입니다 — 다른 크기는 모든 돌이 어긋납니다."
+
+msgid "baipu:wrong_title"
+msgstr "잘못 놓았습니다 · {c}에 놓아야 합니다"
+
+msgid "kifu:detail_offline"
+msgstr "이 대국을 읽으려면 인터넷 연결이 필요합니다"
+
+msgid "kifu:detail_offline_hint"
+msgstr "기보 라이브러리는 클라우드에 있는데, 이 기기는 지금 연결할 수 없습니다."
+
+msgid "kifu:list_offline"
+msgstr "기보 라이브러리를 검색하려면 인터넷 연결이 필요합니다"
+
+msgid "kifu:list_offline_hint"
+msgstr "이 기기는 지금 클라우드에 연결할 수 없습니다. 놓아 본 기보와 가져온 SGF는 영향을 받지 않습니다."
+
+msgid "kifu:wrong_size_reason"
+msgstr "{n}줄 기보입니다 — 실물 바둑판은 19줄만 놓을 수 있습니다"
+
+msgid "setup:handicap_side"
+msgstr "접바둑 · 내 돌"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name} 인간 대 AI는 19줄 고정 · 중국 룰, 화면과 실물 바둑판은 같은 경로를 씁니다"
+
+msgid "engine:warmup_warming"
+msgstr "AI 엔진 준비 중입니다. 기보 라이브러리, 강좌 등 다른 기능은 먼저 사용하실 수 있습니다"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "vision:relocate"
+msgstr "테두리 정렬"
+
+msgid "vision:relocating"
+msgstr "정렬 중…"
+
+msgid "vision:relocate_failed_title"
+msgstr "정렬 실패"
+
+msgid "vision:relocate_no_board"
+msgstr "화면에서 바둑판 테두리를 찾을 수 없습니다. 테두리를 가리는 물건을 치우고 다시 시도하세요."
+
+msgid "vision:relocate_failed"
+msgstr "다시 시도하세요. 계속 안 되면 판을 비우고 다시 보정하세요."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"바둑판이 옮겨져서 지난번 보정이 맞지 않습니다 —— 「테두리 정렬」(LED가 켜지지 않고 판 위에 돌이 있어도 가능)을 쓰거나 다시 "
+"보정하세요"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"'LED' 항목은 시리얼 연결만을 뜻하며, 모든 램프가 켜진다는 뜻은 아닙니다. 안내 중 어딘가 켜지지 않으면 그 구간의 LED 스트립이"
+" 고장났을 가능성이 큽니다."
+
+msgid "platform:fact_whose"
+msgstr "누구의 계정"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"스마트박스가 아닌 골락시 자체 계정입니다. 계정이 없다면 휴대폰의 골락시 앱에서 가입하세요 — 박스에서는 가입할 수 없습니다."
+
+msgid "platform:fact_three_ways"
+msgstr "세 가지 방법"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"스캔은 한 글자도 입력할 필요가 없습니다. 인증 코드는 문자 메시지를 기다리면 됩니다. 비밀번호가 가장 빠르지만 터치스크린으로 입력해야 "
+"합니다."
+
+msgid "platform:fact_stored"
+msgstr "박스에 남는 것"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "골락시가 발급한 로그인 토큰만 남고 비밀번호는 저장되지 않습니다. 연결 해제는 언제든 설정에서 할 수 있습니다."
+
+msgid "platform:fact_only_one"
+msgstr "박스에서는 이 방법뿐"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS 웹사이트에서는 Google, Apple 등의 계정도 사용할 수 있지만, 그 경로는 브라우저가 필요해서 해외판으로 남겨둡니다."
+
+msgid "platform:fact_third_party"
+msgstr "제3자로 가입한 경우"
+
+msgid "platform:fact_third_party_body"
+msgstr "그런 계정에는 OGS 비밀번호가 없습니다. 먼저 OGS 웹사이트에서 설정해야 합니다."
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 계정입니다. 가입은 브라우저에서 해야 하며 박스에서는 할 수 없습니다."
+
+msgid "platform:fact_stored_ogs"
+msgstr "로그인 후 세션만 남고 비밀번호는 저장되지 않습니다. 연결 해제는 언제든 설정에서 할 수 있습니다."
+
+msgid "platform:login_tab_sms"
+msgstr "인증번호"
+
+msgid "platform:login_tab_password"
+msgstr "비밀번호"
+
+msgid "platform:login_field_phone"
+msgstr "전화번호"
+
+msgid "platform:login_field_code"
+msgstr "인증번호"
+
+msgid "platform:login_sub_sms"
+msgstr "연결 안 됨 · 문자 인증번호로 로그인"
+
+msgid "platform:login_sub_password"
+msgstr "연결 안 됨 · {name} 계정과 비밀번호로 로그인"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "연결 안 됨 · Golaxy 계정과 비밀번호로 로그인"
+
+msgid "platform:login_sub_ogs"
+msgstr "연결 안 됨 · online-go.com 계정 사용"
+
+msgid "platform:login_title"
+msgstr "{name} 로그인"
+
+msgid "platform:login_rank_from_account"
+msgstr "단수도 이 계정에서 가져옵니다"
+
+msgid "platform:login_tabs"
+msgstr "로그인 방식"
+
+msgid "platform:login_tab_scan"
+msgstr "QR 로그인"
+
+msgid "platform:login_sub_scan"
+msgstr "미연결 · 휴대폰의 골락시 앱으로 스캔하세요"
+
+msgid "platform:scan_state_waiting"
+msgstr "스캔 대기 중"
+
+msgid "platform:scan_state_scanned"
+msgstr "스캔됨, 휴대폰에서 확인해 주세요"
+
+msgid "platform:scan_state_confirmed"
+msgstr "확인됨, 로그인 중…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR 코드가 만료되었습니다"
+
+msgid "platform:scan_state_cancelled"
+msgstr "휴대폰에서 취소되었습니다"
+
+msgid "platform:scan_unavailable_title"
+msgstr "골락시에 연결할 수 없습니다"
+
+msgid "platform:scan_unavailable_body"
+msgstr "네트워크를 확인하세요"
+
+msgid "platform:scan_retry"
+msgstr "다시 시도"
+
+msgid "platform:scan_title"
+msgstr "골락시 앱을 열고 스캔하세요"
+
+msgid "platform:scan_body"
+msgstr "스캔 후 휴대폰에서 확인하세요. 비밀번호는 이 기기를 거치지 않습니다."
+
+msgid "platform:scan_qr_alt"
+msgstr "골락시 로그인 QR 코드"
+
+msgid "platform:scan_refresh"
+msgstr "새 코드"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "여기를 눌러 새 코드 받기"
+
+msgid "platform:scan_confirm_failed"
+msgstr "로그인 확인에 실패했습니다"
+
+msgid "vision:not_a_stone"
+msgstr "돌이 아닙니다"

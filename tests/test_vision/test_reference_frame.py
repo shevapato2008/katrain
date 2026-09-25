@@ -156,24 +156,42 @@ def _shaded(frame, gain):
     return np.clip(frame.astype(np.float32) * ramp, 0, 255).astype(np.uint8)
 
 
-def test_a_refresh_absorbs_drift_but_never_a_new_stone_nobody_recognised():
-    """Fan 2026-09-23: refresh while the player thinks. A stone that landed unrecognised in that minute
-    must keep the old sample, or it would later be vetoed as 'the reference says empty here'."""
+def test_a_refresh_absorbs_every_comparable_cell_including_the_changed_ones():
+    """Fan 2026-09-24 的裁定,推翻了 09-23 那版「变了的格子保留旧样本」。
+
+    参考帧就是「这次落子之前,棋盘像素级的样子」。一团反光只有先进了参考帧照片,
+    「照片一样 + 地图说空」这条证据才成立、否决才生效 —— 现场 (18,12) 的 zncc=1.00 正是这么来的。
+    跳过变化格意味着反光要一直等到下一次参考帧**重建**才被拦,中间那段窗口它畅通无阻。
+
+    地图(哪格有子)仍然不随刷新变 —— 只有落子确认后的重建才换地图。
+
+    ⚠️ 代价:一颗没被识别出来的真子也会被吸收进照片,日后检测器看见它时会命中
+    「照片一样 + 地图说空」而被否决,且同日已取消压制方向的帧数上限 ⇒ 无法自动恢复。
+    取舍依据:反光当天多次发作(一颗重播 8 分 48 秒、一局三轮),这一种 0 次。
+    """
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
     later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
-    refreshed, kept = reference.refreshed(later, ZNCC, REFERENCE_ANCHOR_ZNCC)
-    assert kept[4][4] and kept.sum() == 1
+    refreshed, absorbed = reference.refreshed(later, ZNCC, REFERENCE_ANCHOR_ZNCC)
+    assert absorbed[4][4] and absorbed.sum() == 1  # 只有这一格是「变了才被吸收的」
     sim = refreshed.similarity(later)
-    assert sim[4][4] < ZNCC  # the unrecognised stone still reads as a change
-    assert np.nanmin(np.delete(sim.reshape(-1), 4 * 19 + 4)) > 0.999  # everything else is this frame now
+    assert sim[4][4] > 0.999, "变了的格子也必须被吸收 —— 否则反光进不了基准,否决就建立不起来"
+    assert np.nanmin(sim.reshape(-1)) > 0.999  # 整份基准都是这一帧了
     assert (refreshed.board == reference.board).all() and refreshed is not reference
 
 
-def test_a_refresh_step_is_bounded_by_the_current_sample_too():
-    """With the anchor gate wide open, the minute-to-minute gate alone still keeps the new stone out."""
+def test_the_refresh_no_longer_gates_on_either_threshold():
+    """09-23 有两道闸(与上一次的照片比、与最初的 anchor 比)挡住"把变化吸收进基准"。
+    Fan 2026-09-24 的裁定取消了它们:参考帧就该是落子前那一刻的样子,变了的格更该更新。
+
+    两个阈值参数保留在签名里,只用来统计「哪些格是变了才被吸收的」(第二个返回值),不再决定去留。
+    这条用**把 anchor 闸开到最大**来证明:无论阈值怎么设,那颗新子都会被吸收进照片。
+    """
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
-    _, kept = reference.refreshed(to_gray(_board_frame([(4, 4, BLACK)])), ZNCC, -1.0)
-    assert kept[4][4] and kept.sum() == 1
+    later = to_gray(_board_frame([(4, 4, BLACK)]))
+    for anchor_threshold in (-1.0, REFERENCE_ANCHOR_ZNCC, 0.999):
+        refreshed, absorbed = reference.refreshed(later, ZNCC, anchor_threshold)
+        assert absorbed[4][4] and absorbed.sum() == 1  # 它就是「变了才被吸收」的那一格
+        assert refreshed.similarity(later)[4][4] > 0.999, "阈值不该再影响是否吸收"
 
 
 def _shadow_edge(frame, x0, width=30, depth=0.6):
@@ -254,17 +272,24 @@ def test_a_stone_the_game_knows_survives_a_detector_that_lost_it():
     assert detector_says[4][4] == EMPTY  # the caller's array is never mutated
 
 
-def test_an_invented_stone_is_suppressed_but_only_for_a_few_frames():
+def test_an_invented_stone_is_suppressed_for_as_long_as_the_pixels_do_not_change():
+    """Fan 2026-09-24 的裁定:只要当前画面和参考帧比对没有变化,就持续否定这里有落子。
+
+    旧行为是压 REFERENCE_HOLD_SUPPRESS 帧(板上 ~4.4 秒)就放行,而放行是**粘的**
+    (`_ref_released`),于是那一格在这份参考帧余生里不再被否决;偏偏新参考帧要等
+    「读数==记录」才拍得成,而那颗假子正好让两者对不上 —— 死锁。现场 (18,12) 因此
+    重播了 8 分 48 秒、一局内复发三轮。
+
+    地图里**不可能**有假子(拍摄前置条件要求读数==记录,一有假阳性就拍不成),所以
+    「地图说空 + 像素没变」这条证据不会去否决任何系统已知的真子。
+    """
     frame = _board_frame()
     adapter = _with_reference("on", frame, _empty_board())
     detector_says = _empty_board()
     detector_says[12][3] = WHITE
-    for _ in range(REFERENCE_HOLD_SUPPRESS):
+    for _ in range(REFERENCE_HOLD_SUPPRESS * 20):  # 远超旧上限
         assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == EMPTY
-    # the detector keeps insisting: it wins that cell for the rest of this reference's life
-    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
-    assert adapter._ref_released[12][3] and adapter._reference is not None
-    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
+    assert not adapter._ref_released[12][3], "凭空多出的子不该因为「耗时够久」就获得放行"
 
 
 def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
@@ -278,7 +303,8 @@ def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
     detector_says[12][3] = WHITE  # ... and invented (12,3)
     for _ in range(REFERENCE_HOLD_SUPPRESS + 5):
         effective = adapter._reference_check(detector_says, to_gray(frame))
-    assert effective[4][4] == BLACK and effective[12][3] == WHITE
+    # 丢掉的那颗仍被参考帧按住(长预算);凭空多出的那颗现在**没有上限**,一直被否决
+    assert effective[4][4] == BLACK and effective[12][3] == EMPTY
 
 
 def test_a_missing_stone_is_held_far_longer_than_an_invented_one():
@@ -311,14 +337,17 @@ def test_a_colour_disagreement_gets_the_short_hold_not_the_long_one():
 def test_the_hold_budget_is_cumulative_so_a_flapping_detector_cannot_reset_it():
     """A detector that sees the stone only every other frame would never exhaust a *consecutive*
     counter, and the suppression would be permanent."""
-    frame = _board_frame()
-    adapter = _with_reference("on", frame, _empty_board())
-    invented, agreeing = _empty_board(), _empty_board()
-    invented[12][3] = WHITE
+    # 「凭空多出一颗子」那一路已经没有上限了(见上),所以这条改用仍有预算的**颜色判错**来守。
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    wrong_colour, agreeing = truth.copy(), truth.copy()
+    wrong_colour[4][4] = WHITE
     for _ in range(REFERENCE_HOLD_SUPPRESS):
-        adapter._reference_check(invented, to_gray(frame))
+        adapter._reference_check(wrong_colour, to_gray(frame))
         adapter._reference_check(agreeing, to_gray(frame))  # a frame where the detector agrees again
-    assert adapter._reference_check(invented, to_gray(frame))[12][3] == WHITE
+    assert adapter._reference_check(wrong_colour, to_gray(frame))[4][4] == WHITE
 
 
 def test_a_real_change_is_left_alone_so_the_move_still_lands():
@@ -384,6 +413,53 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
 
 
+def test_monitor_mode_can_capture_and_apply_the_same_reference_filter():
+    adapter = _adapter("shadow")
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    adapter._expected_np = board
+    gray = to_gray(_board_frame())
+    adapter._maybe_capture_reference(board, board, gray)
+    assert adapter._reference is not None
+    false_positive = board.copy()
+    false_positive[12][3] = WHITE
+    for _ in range(REFERENCE_HOLD_SUPPRESS + 2):
+        assert adapter._reference_check(false_positive, gray)[12][3] == EMPTY
+    assert not adapter._ref_released[12][3]
+
+
+def test_monitor_setup_supplies_the_reference_target_and_stop_drops_it():
+    adapter = _adapter("shadow")
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    board[4][4] = BLACK
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": board.tolist()}))
+    adapter._drain_commands()
+    assert np.array_equal(adapter._expected_np, board)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
+    assert adapter._reference is not None
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_MONITOR, data={"active": False}))
+    adapter._drain_commands()
+    assert adapter._reference is None and adapter._expected_np is None
+
+
+def test_monitor_keeps_a_clean_reference_through_multiple_forward_moves():
+    adapter = _with_reference("shadow", _board_frame(), _empty_board())
+    adapter._bound = False
+    adapter._monitor = True
+    board = _empty_board()
+    for row, col, color in ((4, 4, BLACK), (5, 5, WHITE), (6, 6, BLACK)):
+        board[row][col] = color
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+        adapter._drain_commands()
+        assert adapter._reference is not None
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}))
+    adapter._drain_commands()
+    assert adapter._reference is not None
+
+
 def test_the_same_expected_board_is_never_re_captured(monkeypatch):
     """v1 re-took the reference every 2 s while the board was unchanged, which fixated a poisoned one."""
     monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: 1000.0)
@@ -410,7 +486,8 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     adapter._expected_np = board
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     first = adapter._reference
-    adapter._ref_hold[2][2] = 7
+    adapter._ref_hold[2][2] = 7  # 这一格刷新时会被重新验证
+    adapter._ref_hold[4][4] = 5  # 这一格变了(落了子),刷新验不过,只能保留旧样本
     adapter._ref_released[3][3] = True
     later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
 
@@ -422,8 +499,11 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     with caplog.at_level("INFO"):
         adapter._maybe_capture_reference(board, board, later)
     assert adapter._reference is not first
-    assert adapter._reference.similarity(later)[4][4] < REFERENCE_ZNCC  # the unrecognised stone was not absorbed
-    assert adapter._ref_hold[2][2] == 7 and adapter._ref_released[3][3]  # a refresh is not a new reference
+    # Fan 2026-09-24:刷新把**所有**能比对的格子都拍成当前这一帧,变了的也吸收进来。
+    assert adapter._reference.similarity(later)[4][4] > 0.999, "变了的格子也该被吸收进基准"
+    # 照片刚跟当前帧对齐过,整份基准都是新鲜的 ⇒ 压制预算清零。
+    assert adapter._ref_hold[2][2] == 0 and adapter._ref_hold[4][4] == 0
+    assert adapter._ref_released[3][3]  # 已放行的格子不会因刷新而回收
     assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
 
     second = adapter._reference
@@ -432,23 +512,12 @@ def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch
     assert adapter._reference is second  # the minute restarts at each refresh
 
 
-def test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture(monkeypatch, caplog):
-    """Codex 2026-09-23 P2: minute-to-minute matches are not transitive. A stone fading in over ten
-    minutes passes the 0.90 step gate every time; only the anchor gate stops the chain."""
-    clock = [1000.0]
-    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
-    empty = to_gray(_board_frame()).astype(np.float32)
-    stone = to_gray(_board_frame([(4, 4, BLACK)])).astype(np.float32)
-    adapter = _adapter("on")
-    board = _empty_board()
-    adapter._expected_np = board
-    adapter._maybe_capture_reference(board, board, empty.astype(np.uint8))
-    for t in np.linspace(0.1, 1.0, 10):
-        clock[0] += REFERENCE_REFRESH_S
-        caplog.clear()
-        with caplog.at_level("INFO"):
-            adapter._maybe_capture_reference(board, board, ((1 - t) * empty + t * stone).astype(np.uint8))
-    assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
+# ⛔ 2026-09-24 删除:test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture
+# 它守的是 anchor 闸 ——「一颗子用十分钟慢慢淡入,每一步都过得了 0.90 的步进闸,只有与最初那张
+# 照片比对才能斩断这条链」。Fan 的裁定把「变了的格也吸收」定为规则,这条守卫按定义不再存在:
+# 现在一步就吸收,不需要十分钟。**代价是真的**:一颗没被识别出来的真子会被直接吸收进基准,
+# 而压制方向的帧数上限同日已取消 ⇒ 无法自动恢复,只能重新标定或人工确认。
+# 取舍依据写在 ReferenceFrame.refreshed 的 docstring 里。
 
 
 def test_the_reference_is_dropped_by_every_discontinuity():
@@ -457,7 +526,6 @@ def test_the_reference_is_dropped_by_every_discontinuity():
         WorkerCommand(action=CommandType.BIND),
         WorkerCommand(action=CommandType.RESET_SYNC),
         WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": _empty_board().tolist()}),
-        WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
     ):
         adapter = _with_reference("on", _board_frame(), _empty_board())
         adapter._cmd_queue.put(command)
@@ -469,7 +537,36 @@ def test_the_reference_is_dropped_by_every_discontinuity():
     assert adapter._reference is None and adapter._ref_sampler is None
 
 
-def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
+def test_a_pause_does_not_drop_the_reference():
+    """2026-09-24 现场故障:每落一手编排器都会暂停(等盘面跟上),于是参考帧一局被销毁 12 次,
+    否决在绝大部分时间里根本不可用 —— (18,12) 那颗假白子被 zncc=1.00 连否 3 帧,参考帧一丢
+    它就直冲 UI,弹了 12 次 illegal_change。
+
+    暂停期间**不建**新参考仍然保留(那半边该保守),但**不许销毁**已有的:否决是按像素闸的
+    (`disagree` 要求 `unchanged` 到 REFERENCE_ZNCC),人在暂停时真动了子,那一格相关度就掉下来、
+    否决不了;剩下的由 REFERENCE_HOLD_* 的预算上限兜住。
+    """
+    for command in (
+        WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
+        WorkerCommand(action=CommandType.PAUSE_DETECTION),
+    ):
+        adapter = _with_reference("on", _board_frame(), _empty_board())
+        adapter._cmd_queue.put(command)
+        adapter._drain_commands()
+        assert adapter._paused is True, command.action
+        assert adapter._reference is not None, f"{command.action} 把参考帧丢了 —— 否决随之失效"
+
+
+def test_a_pause_still_blocks_taking_a_new_reference():
+    """保守的那半边不许一起放开:暂停期间画面里可能正在被人动,不能把那个状态冻成新基准。"""
+    adapter = _with_reference("on", _board_frame(), _empty_board())
+    adapter._reference = None
+    adapter._paused = True
+    adapter._maybe_capture_reference(_empty_board(), _empty_board(), _board_frame())
+    assert adapter._reference is None
+
+
+def test_an_undo_or_a_jump_marks_the_reference_stale_but_never_empties_the_slot():
     ref_board = _empty_board()
     ref_board[4][4] = BLACK
     one_more = ref_board.copy()
@@ -484,7 +581,10 @@ def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
         adapter = _with_reference("on", _board_frame([(4, 4, BLACK)]), ref_board)
         adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
         adapter._drain_commands()
-        assert (adapter._reference is not None) is kept
+        # Fan 2026-09-24 的原则:照到新的参考帧才允许销毁旧的。空置换不来空间(任何时刻只持有
+        # 一份),只会让否决整个失效 —— (18,12) 那颗假白子就是从这个空窗逃出去的。
+        assert adapter._reference is not None, "记账理由不许把槽位清空"
+        assert adapter._ref_stale is not kept
 
 
 def test_one_passing_veto_does_not_freeze_the_reference_for_good():
@@ -544,13 +644,16 @@ class _ScriptedDetector:
 class _ScriptedCamera:
     is_connected = True
 
-    def __init__(self, frames, drop_reference_at=None):
+    def __init__(self, frames, drop_reference_at=None, on_read=None):
         self.frames = frames
         self.drop_reference_at = drop_reference_at
+        self.on_read = on_read
         self.worker = None
 
     def read_frame(self):
         self.frames -= 1
+        if self.on_read is not None:
+            self.on_read(self.worker, self.frames)
         if self.frames == self.drop_reference_at:
             # a pause / resync / re-lock landing mid-placement, which is what opens the window
             self.worker._invalidate_reference("test")
@@ -564,10 +667,10 @@ def _det(row, col, cls, conf=0.9):
     return Detection(x_center=x, y_center=y, class_id=cls, confidence=conf, bbox=(x - 20, y - 20, x + 20, y + 20))
 
 
-def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None):
+def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None, on_read=None):
     """Drive the real loop. `warped_frames` is one BGR frame per processed frame (the last repeats),
     `detection_script` one detection list per frame, `game` the expected board."""
-    camera = _ScriptedCamera(len(detection_script), drop_reference_at)
+    camera = _ScriptedCamera(len(detection_script), drop_reference_at, on_read)
     with mock_patch("katrain.vision.worker_inprocess.StoneDetector", _ScriptedDetector):
         worker = InProcessAdapter(
             {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode}, camera=camera
@@ -646,3 +749,130 @@ def test_the_worker_config_carries_the_reference_check_mode():
 
     assert VisionServiceConfig().to_worker_config()["reference_check"] == "shadow"
     assert VisionServiceConfig(reference_check="on").to_worker_config()["reference_check"] == "on"
+
+
+def test_the_promoter_does_not_push_a_cell_the_reference_is_vetoing():
+    """2026-09-24 现场:`(18,12)` 两局复现,refcheck 已经 `zncc=1.00 held=7/10` 连否,
+    紧接着 `ambiguous promotion: sustained sub-add stone at (18,12) conf=0.33` 把它推进了盘面。
+
+    两个机制的判据正好相反,而提升器不问否决:参考帧说「像素逐点没变 ⇒ 没有新东西落上去」,
+    提升器说「这个弱检测一直在 ⇒ 它是真的」。而「一直在」正是反光的特征(反光不会动),
+    于是提升器把反光最强的特征当成了它是真子的证据。
+
+    这不会堵死提升器存在的理由(低置信度真子唯一的通道,move_detector.py:183):
+    真子会改变像素,参考帧根本不会否决它 —— 下半段用同一格证明放行路径还在。
+    """
+    from unittest.mock import MagicMock
+
+    def run(vetoed: bool):
+        adapter = _with_reference("on", _board_frame(), _empty_board())
+        adapter._add_threshold = 0.50
+        adapter._expected_np = _empty_board()
+        mask = np.zeros((19, 19), dtype=bool)
+        mask[18][12] = vetoed
+        adapter._ref_disagree = mask
+        extractor = MagicMock()
+        extractor.cell_top.return_value = {(18, 12): (0.33, 1)}  # 低于阈值的白子候选
+        adapter._active_extractor = MagicMock(return_value=extractor)
+        adapter._promoter = MagicMock()
+        adapter._promoter.step.return_value = (18, 12, 1, 0.33)
+        adapter._promote_stuck_stone([], 1920, 1080, _empty_board(), None)
+        return adapter._promoter.step.call_args[0][0]
+
+    assert (18, 12) not in run(vetoed=True), "参考帧正在否决这一格,它不该成为提升候选"
+    assert (18, 12) in run(vetoed=False), "没有否决时,低置信度真子的通道必须还在"
+
+
+# ---- 「不是落子」用户标签 ---------------------------------------------------------------
+
+
+def _deny_at(adapter, frame, row=9, col=9):
+    adapter._last_ref_gray = to_gray(frame)
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.DENY_STONE, data={"row": row, "col": col}))
+    adapter._drain_commands()
+
+
+def test_denial_masks_the_false_stone_without_rewriting_recognition_history():
+    adapter = _adapter("on")
+    frame = _board_frame()
+    _deny_at(adapter, frame)
+    raw = _empty_board()
+    raw[9][9] = WHITE
+    adapter._last_stable_board = raw
+
+    effective = adapter._mask_denied(raw, adapter._live_denials(to_gray(frame)))
+
+    assert effective[9][9] == EMPTY
+    assert raw[9][9] == WHITE and adapter._last_stable_board[9][9] == WHITE
+    assert (9, 9) in adapter._denied
+
+
+def test_a_real_stone_changes_pixels_and_releases_the_denial():
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+    assert adapter._live_denials(to_gray(_board_frame())) == [(9, 9)]
+
+    live = adapter._live_denials(to_gray(_board_frame([(9, 9, WHITE)])))
+    raw = _empty_board()
+    raw[9][9] = WHITE
+
+    assert live == [] and adapter._denied == {}
+    assert adapter._mask_denied(raw, live)[9][9] == WHITE
+
+
+def test_denial_unblocks_capturing_the_glare_as_empty_in_the_real_loop():
+    # The detector reports a white stone on an unchanged empty-board image. Until the user
+    # denies it, board != game record and no reference can be captured. The denial must mask
+    # both the voted board and the pre-vote observation before the capture guard runs.
+    def deny_after_three_frames(worker, frames_left):
+        if frames_left == 4:
+            assert worker._reference is None
+            worker._deny_stone(9, 9)
+            assert (9, 9) in worker._denied
+
+    game = _empty_board()
+    worker = _run_loop("on", [_board_frame()], [[_det(9, 9, 1)]] * 8, game, on_read=deny_after_three_frames)
+
+    assert worker._reference is not None and worker._reference.board[9][9] == EMPTY
+    assert worker._reference.similarity(worker._last_ref_gray)[9][9] > 0.99
+    assert worker._last_stable_board[9][9] == WHITE
+    assert worker.get_status().detected_board[9][9] == EMPTY
+
+
+@pytest.mark.parametrize("level", [0, 255])
+def test_uncomparable_cell_is_not_remembered_as_a_denial(level, caplog):
+    adapter = _adapter("on")
+    adapter._last_ref_gray = np.full((SIZE, SIZE), level, np.uint8)
+
+    with caplog.at_level("WARNING"):
+        adapter._deny_stone(9, 9)
+
+    assert adapter._denied == {}
+    assert "label was NOT stored" in caplog.text
+
+
+def test_game_record_releases_a_denial_when_it_has_a_stone():
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+    board = _empty_board()
+    board[9][9] = WHITE
+
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+    adapter._drain_commands()
+
+    assert adapter._denied == {}
+    assert adapter._mask_denied(board, adapter._live_denials(to_gray(_board_frame())))[9][9] == WHITE
+
+
+@pytest.mark.parametrize("action", ["bind", "unbind", "geometry"])
+def test_a_new_session_or_geometry_clears_denials(action):
+    adapter = _adapter("on")
+    _deny_at(adapter, _board_frame())
+
+    if action == "geometry":
+        adapter.set_geometry(SimpleNamespace(points=None))
+    else:
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.BIND if action == "bind" else CommandType.UNBIND))
+        adapter._drain_commands()
+
+    assert adapter._denied == {} and adapter._denial_sampler is None

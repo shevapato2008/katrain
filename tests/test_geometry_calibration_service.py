@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from katrain.vision.led_geometry_calibrator import CalibrationResult, check_frame_exposure
+from katrain.web.core import geometry_calibration_service as calibration_module
 from katrain.web.core.geometry_calibration_service import (
     CAMERA_AUTO_EXPOSURE_OFF,
     CAMERA_AUTO_EXPOSURE_ON,
@@ -16,6 +17,7 @@ from katrain.web.core.geometry_calibration_service import (
     GeometryCalibrationService,
 )
 from tests.test_geometry_lock import _synth
+from tests.test_relock import BUMP, DST, IMG_QUAD, _lock, _outer_M
 
 
 class FakeLed:
@@ -899,6 +901,14 @@ def test_cancel_before_store_pointer_swap_keeps_old_generation_and_restores_expo
     assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, old_lock.baseline)
     assert (tmp_path / "hardware-vision" / "generations" / "new").is_dir()
+
+    # V2:取消之后「沿用上次标定」能用,而且沿用的是旧锁(不是被取消那次的新锁)
+    status = service.confirm_existing()
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert service.current_lock is old_lock
+    assert promoted == [old_lock]
+
     service.stop()
 
 
@@ -1686,3 +1696,426 @@ def test_drift_loop_idles_while_nobody_needs_the_camera(tmp_path):
         assert capture.grab_calls > calls_before
     finally:
         service.stop()
+
+
+class _FakeSelector:
+    """只回一个给定的单应,或者失败。**不接受 led** —— 传进来就炸,这是结构闸的一半。"""
+
+    def __init__(self, M=None, reason="no_board_detected", confidence=0.8):
+        self.M, self.reason, self.confidence, self.calls = M, reason, confidence, []
+
+    def calibrate(self, scenario, ctx):
+        from katrain.vision.calibration_strategy import CalibrationOutcome
+
+        assert ctx.led is None, "重定位路径绝不允许把 led 交给策略(硬规矩:LED 不为几何自动点亮)"
+        self.calls.append(scenario)
+        if self.M is None:
+            return CalibrationOutcome(ok=False, strategy="outer_corner", reason=self.reason)
+        return CalibrationOutcome(
+            ok=True, M=self.M, Minv=np.linalg.inv(self.M), confidence=self.confidence, strategy="outer_corner"
+        )
+
+
+class _Calls:
+    def __init__(self):
+        self.success, self.degraded, self.suspend, self.persist = [], [], [], []
+
+
+def _relocating_service(*, selector, auto_relocate=True, phase="ready", capture=None):
+    calls = _Calls()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture or FreshFakeCapture(),
+        # 用 persist_state 而不是 save_path:这样「写没写盘」能直接数(不写盘是本条路的约束)
+        persist_state=lambda lock, strategy, before_publish: calls.persist.append(lock),
+        initial_lock=_lock(IMG_QUAD),
+        on_success=calls.success.append,
+        on_degraded=lambda: calls.degraded.append(True),
+        on_suspend=lambda: calls.suspend.append(True),
+        selector=selector,
+        auto_relocate=auto_relocate,
+    )
+    service._status["phase"] = phase
+    return service, calls
+
+
+def test_drift_auto_relocates_instead_of_degrading():
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP), confidence=0.77))
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    status = service.status()
+    assert status["phase"] == "ready"  # 不进标定台
+    assert len(calls.success) == 1  # 新几何经 on_success 推给识别 worker(R1)
+    assert np.allclose(calls.success[0].corners, IMG_QUAD + BUMP, atol=0.5)
+    assert calls.degraded == []
+    assert calls.suspend == []  # PRD §2.1 R3:挂起会让守卫把对局屏换成标定台
+    assert calls.persist == []  # 不写盘:磁盘上那份是 LED golden reference
+    assert status["metrics"].get("relocated") == 1.0  # metrics 是 Record<string, number|null>,不放布尔
+    assert status["relocate_error"] is None
+    assert status["confidence"] == pytest.approx(0.77)  # 报的是这次外框法的置信度,不是旧锁的
+    service.stop()
+
+
+def test_drift_degrades_when_relocation_fails():
+    service, calls = _relocating_service(selector=_FakeSelector(M=None, reason="no_board_detected"))
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    status = service.status()
+    assert status["phase"] == "degraded"  # 终态与今天相同
+    assert status["error"] == "board_moved"
+    assert status["relocate_error"] == "no_board_detected"  # 原因放独立字段,不塞进数值型 metrics
+    assert calls.degraded == [True]
+    service.stop()
+
+
+def test_auto_relocate_is_off_by_default(tmp_path):
+    """**反向闸。** 默认关,等上板精度闸(< 0.12 格)。这条一旦变红说明有人把默认打开了。"""
+    assert calibration_module.AUTO_RELOCATE_ON_DRIFT is False
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service = GeometryCalibrationService(  # 不传 auto_relocate:用默认
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        selector=selector,
+    )
+    service._status["phase"] = "ready"
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    assert service.status()["phase"] == "degraded"
+    assert selector.calls == []  # 根本没去试
+    service.stop()
+
+
+@pytest.mark.parametrize("phase", ["degraded", "cancelled", "failed"])
+def test_manual_relocate_works_on_a_crowded_board(phase):
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, calls = _relocating_service(selector=selector, auto_relocate=False, phase=phase)
+
+    out = service.relocate(trigger="manual")  # **不要求空盘**
+
+    assert out["phase"] == "ready"
+    assert selector.calls[-1].name == "MANUAL_FALLBACK"
+    assert len(calls.success) == 1 and calls.suspend == [] and calls.persist == []
+    service.stop()
+
+
+@pytest.mark.parametrize("phase", ["ready", "required"])
+def test_manual_relocate_refuses_outside_its_three_phases(phase):
+    """ready 下会拿低精度外框锁换掉好锁;required 下会绕过「沿用上次标定」。都不许。"""
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, calls = _relocating_service(selector=selector, phase=phase)
+
+    with pytest.raises(ValueError, match="only available after drift, cancel or failure"):
+        service.relocate(trigger="manual")
+    assert selector.calls == [] and calls.success == []
+    service.stop()
+
+
+def test_manual_relocate_reports_why_it_failed():
+    service, _calls = _relocating_service(selector=_FakeSelector(M=None, reason="no_board_detected"), phase="degraded")
+
+    with pytest.raises(ValueError, match="no_board_detected"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "no_board_detected"
+    service.stop()
+
+
+def test_manual_relocate_refuses_an_ambiguous_orientation():
+    """盘转了约 45°:relock 分不清朝向 ⇒ 当失败,不猜(PRD §2.1 R2)。"""
+    import cv2
+
+    square = np.array([[100, 100], [900, 100], [900, 900], [100, 900]], np.float32)
+    c, th = np.array([500.0, 500.0]), np.deg2rad(45)
+    R = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
+    turned = ((square - c) @ R.T + c).astype(np.float32)
+    service, calls = _relocating_service(
+        selector=_FakeSelector(M=cv2.getPerspectiveTransform(turned, DST)), phase="degraded"
+    )
+    service.current_lock = _lock(square)
+
+    with pytest.raises(ValueError, match="orientation_ambiguous"):
+        service.relocate(trigger="manual")
+    assert calls.success == []
+    service.stop()
+
+
+def test_manual_relocate_refuses_while_a_calibration_runs():
+    service, _calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+    release = threading.Event()
+    service._thread = threading.Thread(target=release.wait, daemon=True)  # 造「正在标定」:只看线程活没活
+    service._thread.start()
+    try:
+        with pytest.raises(CalibrationBusy):
+            service.relocate(trigger="manual")
+    finally:
+        release.set()
+        service._thread.join(timeout=2)
+    service.stop()
+
+
+class _BlockingSelector(_FakeSelector):
+    """外框检测「正在跑」:进来就停住,等测试放行。用来在**真的** relocate 窗口里戳别的入口。"""
+
+    def __init__(self, M):
+        super().__init__(M=M)
+        self.entered, self.release = threading.Event(), threading.Event()
+
+    def calibrate(self, scenario, ctx):
+        self.entered.set()
+        self.release.wait(timeout=5)
+        return super().calibrate(scenario, ctx)
+
+
+def test_start_reuse_and_a_second_relocate_are_refused_while_a_real_relocation_runs():
+    """互斥要覆盖**整个**窗口 —— 在线程里真跑一次 relocate,卡在外框检测里,再去按别的键。
+    (只把 `_relocating` 手动设成 True 的测试证明不了「从占住到结果落定」。)"""
+    selector = _BlockingSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, _calls = _relocating_service(selector=selector, phase="failed")
+    worker = threading.Thread(target=service.relocate, kwargs={"trigger": "manual"}, daemon=True)
+    worker.start()
+    assert selector.entered.wait(timeout=2)
+    try:
+        with pytest.raises(CalibrationBusy):
+            service.start(trigger="manual", empty_confirmed=True)
+        # confirm_existing 走 ValueError:/confirm-existing 只把 ValueError 映射成 409(geometry.py:146)
+        with pytest.raises(ValueError, match="relocation in progress"):
+            service.confirm_existing()
+        with pytest.raises(CalibrationBusy):
+            service.relocate(trigger="manual")
+    finally:
+        selector.release.set()
+        worker.join(timeout=5)
+    assert service.status()["phase"] == "ready"
+    service.stop()
+
+
+def test_ready_is_not_published_before_the_new_lock_is_delivered():
+    """先交付、后发布:on_success 还没回来时,status() 不许说 ready,current_lock / revision 不许换。"""
+    service, _calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+    old_lock, old_revision = service.current_lock, service.status()["geometry_revision"]
+    entered, release = threading.Event(), threading.Event()
+
+    def slow_delivery(_lock):
+        entered.set()
+        release.wait(timeout=5)
+
+    service.on_success = slow_delivery
+    worker = threading.Thread(target=service.relocate, kwargs={"trigger": "manual"}, daemon=True)
+    worker.start()
+    assert entered.wait(timeout=2)
+    try:
+        status = service.status()
+        assert status["phase"] == "degraded"
+        assert status["geometry_revision"] == old_revision
+        assert service.current_lock is old_lock
+        # 互斥覆盖的是**交付那一半**,不只是外框检测那一半:on_success 还卡着的时候,
+        # start / confirm_existing 也必须被当前这轮重定位挡住。
+        with pytest.raises(CalibrationBusy):
+            service.start(trigger="manual", empty_confirmed=True)
+        with pytest.raises(ValueError, match="relocation in progress"):
+            service.confirm_existing()
+    finally:
+        release.set()
+        worker.join(timeout=5)
+    assert service.status()["phase"] == "ready"
+    assert service.current_lock is not old_lock
+    service.stop()
+
+
+class _CameraDropsOnFourthGrab(FreshFakeCapture):
+    """前三次取帧正常(给外框检测),第四次(重建漂移基准)掉线。"""
+
+    def grab_fresh(self, settle_ms=0.0):
+        if self.grab_calls >= 3:
+            self.grab_calls += 1
+            raise RuntimeError("camera dropped")
+        return super().grab_fresh(settle_ms=settle_ms)
+
+
+def test_a_camera_that_drops_while_rearming_drift_is_a_clean_failure():
+    """重建漂移基准时相机掉线:干净的失败(400 + 原因),不是 500,也不发布新锁。"""
+    service, calls = _relocating_service(
+        selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded", capture=_CameraDropsOnFourthGrab()
+    )
+    with pytest.raises(ValueError, match="drift_setup_failed"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "drift_setup_failed"
+    assert calls.success == []
+    service.stop()
+
+
+class _StalledCamera(FreshFakeCapture):
+    """卡住的相机:grab_fresh 超时后退回同一帧旧图(同一个 seq),而不是 None —— camera.py 的真实行为。"""
+
+    def grab_fresh(self, settle_ms=0.0):
+        self.grab_calls += 1
+        return np.zeros((32, 32, 3), np.uint8), 7, 1.0
+
+
+def test_manual_relocate_refuses_when_the_camera_is_not_ready():
+    """掉线时 grab_fresh 退回的是挪动之前的旧图:拿它对齐会把旧位置当成新位置,还报 ready。"""
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, calls = _relocating_service(selector=selector, phase="degraded", capture=FreshFakeCapture(connected=False))
+    with pytest.raises(ValueError, match="camera is not ready"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert selector.calls == [] and calls.success == []
+    service.stop()
+
+
+def test_relocation_refuses_a_stalled_camera_instead_of_aligning_to_its_stale_frame():
+    """连着但卡住的相机:三次 grab_fresh 都是同一个 seq。去重之后只剩那一帧旧图(可能早于碰动)——
+    拿它对齐会把旧位置报成 ready。健康的相机三次必是三帧新图 ⇒ 少于两帧就拒绝,选择器都不许调。"""
+    seen = []
+
+    class _CountingSelector(_FakeSelector):
+        def calibrate(self, scenario, ctx):
+            seen.append(len(ctx.frames))
+            return super().calibrate(scenario, ctx)
+
+    service, calls = _relocating_service(
+        selector=_CountingSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded", capture=_StalledCamera()
+    )
+    with pytest.raises(ValueError, match="camera_stalled"):
+        service.relocate(trigger="manual")
+    assert seen == []
+    assert calls.success == []
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "camera_stalled"
+    service.stop()
+
+
+def test_a_stale_drift_result_does_not_undo_a_fresh_relocation():
+    """漂移线程拿着它那一轮开头缓存的旧 monitor;这期间手动对齐已换了新锁 ⇒ 旧结论作废,不许把新锁降级。"""
+    service, calls = _relocating_service(
+        selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), auto_relocate=False, phase="degraded"
+    )
+    stale_monitor = object()
+    service.relocate(trigger="manual")
+
+    service._apply_drift(FakeDrift(degraded=True), monitor=stale_monitor)
+
+    assert service.status()["phase"] == "ready"
+    assert calls.degraded == []
+    service.stop()
+
+
+def test_a_relocation_that_cannot_be_delivered_does_not_claim_ready():
+    """新锁交不到识别 worker(on_success 抛错):不许停在 ready —— 降级,并说清原因。"""
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+
+    def boom(_lock):
+        raise RuntimeError("worker gone")
+
+    old_lock, old_revision = service.current_lock, service.status()["geometry_revision"]
+    service.on_success = boom
+    with pytest.raises(ValueError, match="delivery_failed"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "delivery_failed"
+    assert service.current_lock is old_lock  # 没交付的锁不许留在服务里
+    assert service.status()["geometry_revision"] == old_revision
+    assert calls.degraded == [True]
+    service.stop()
+
+
+class _RaisingSelector:
+    """外框检测本身炸了(比如 cv2.error):不是「没找到盘」那种干净的 ok=False。"""
+
+    def calibrate(self, scenario, ctx):
+        raise RuntimeError("boom")
+
+
+def test_auto_relocate_survives_a_non_calibration_exception():
+    """选择器抛出的不是 CalibrationOutcome(ok=False),而是货真价实的异常(cv2.error 等):
+    这条路今天只接 (CalibrationBusy, ValueError),别的异常会从 _apply_drift 漏到 _drift_loop
+    的 `except Exception: sleep(0.1)`,服务停在 ready 上、每秒静默重试、对一块已经歪了的盘
+    继续按旧几何识别。必须落到 degraded,并把异常类型记进 relocate_error。"""
+    service, calls = _relocating_service(selector=_RaisingSelector())
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    status = service.status()
+    assert status["phase"] == "degraded"
+    assert calls.degraded == [True]
+    assert status["relocate_error"] == "relocate_error:RuntimeError"
+    service.stop()
+
+
+def test_relocation_replaces_stale_led_run_metrics():
+    """LED 标定留下的 inlier_count/rms_residual 描述的是旧锁;重定位后继续挂着会让界面把
+    早已作废的「13/13 · RMS …」当成这把新锁的成绩单。metrics 必须是替换,不是合并。"""
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+    service._status["metrics"] = {"inlier_count": 13, "rms_residual": 0.4}
+
+    service.relocate(trigger="manual")
+
+    assert service.status()["metrics"] == {"relocated": 1.0}
+    service.stop()
+
+
+def test_a_relocation_delivery_failure_survives_a_raising_on_degraded():
+    """on_degraded 本身再炸一次(和 _run 里 LegacyPublishRollbackError 分支同一个套路):
+    不许把「delivery_failed」这个真原因吞掉,也不许让 on_degraded 的异常逃成 500。"""
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+
+    def boom_delivery(_lock):
+        raise RuntimeError("worker gone")
+
+    def boom_degraded():
+        raise RuntimeError("degraded callback exploded")
+
+    service.on_success = boom_delivery
+    service.on_degraded = boom_degraded
+    with pytest.raises(ValueError, match="delivery_failed"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "delivery_failed"
+    service.stop()
+
+
+def test_start_clears_a_stale_relocate_error(tmp_path):
+    """一次失败的 relocate 写过 relocate_error 之后又跑了一次正常标定:陈旧的原因不该继续
+    挂在 status 里,让界面把这次成功的标定误读成还带着上一轮的重定位失败原因。"""
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=_synth()), **kwargs),
+    )
+    service._status["relocate_error"] = "no_board_detected"
+
+    service.start(trigger="manual", empty_confirmed=True)
+
+    assert service.status()["relocate_error"] is None
+    service.wait(timeout=2)
+    service.stop()
+
+
+def test_confirm_existing_refuses_a_moved_lock_after_recalibration_is_cancelled(tmp_path):
+    """degraded → 重新标定 → 取消 把 phase 落到 cancelled(可沿用),但 current_lock 仍是挪动前那把。
+    沿用它 = 绕过 test_confirm_existing_cannot_override_degraded_state 守的那条。"""
+    promoted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        on_success=promoted.append,
+        on_degraded=lambda: None,
+    )
+    service._status["phase"] = "ready"
+    service._apply_drift(FakeDrift(degraded=True))
+    assert service.status()["lock_moved"] is True
+    service._status["phase"] = "cancelled"  # start() 不清 lock_moved;取消只改 phase
+
+    with pytest.raises(ValueError, match="no longer matches the moved board"):
+        service.confirm_existing()
+    assert promoted == []
+    service.stop()

@@ -1,11 +1,14 @@
-"""APScheduler wrapper that registers and runs all cron jobs."""
+"""APScheduler wrapper that registers and records all cron jobs."""
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from katrain.cron import config
+from katrain.cron.db import SessionLocal
+from katrain.cron.run_recorder import RunRecorder, install_error_capture
 
 logger = logging.getLogger("katrain_cron.scheduler")
 
@@ -17,7 +20,10 @@ class CronScheduler:
         self._scheduler = AsyncIOScheduler()
         self._analyze_task: asyncio.Task | None = None
         self._report_analyze_task: asyncio.Task | None = None
+        self._heartbeat_task: asyncio.Task | None = None
         self._shutdown_event = asyncio.Event()
+        self._recorder = RunRecorder(SessionLocal)
+        self._loop_jobs: dict = {}
 
     async def start(self):
         """Register jobs, start scheduler, and run until shutdown."""
@@ -41,36 +47,45 @@ class CronScheduler:
             (TutorialBackupJob, config.TUTORIAL_BACKUP_INTERVAL, config.TUTORIAL_BACKUP_ENABLED),
         ]
 
-        # Start scheduler first (jobs will be added and run immediately)
+        install_error_capture()
+        registry = [(job_cls.name, "interval", interval, enabled) for job_cls, interval, enabled in interval_jobs]
+        registry.extend(
+            [
+                ("analyze", "loop", None, config.ANALYZE_ENABLED),
+                ("report_analyze", "loop", None, config.REPORT_ANALYZE_ENABLED),
+            ]
+        )
+        registered = self._recorder.register(registry)
+        for _ in range(12):
+            if registered or self._shutdown_event.is_set():
+                break
+            logger.warning("cron status tables are unavailable; retrying registration in 5s")
+            try:
+                await asyncio.wait_for(self._shutdown_event.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                pass
+            if self._shutdown_event.is_set():
+                return
+            registered = self._recorder.ensure_registered()
+
+        if self._shutdown_event.is_set():
+            return
+
         self._scheduler.start()
         logger.info("Scheduler started")
 
-        # Register and immediately run each job once, then schedule for intervals
+        # The immediate first run also goes through APScheduler's max_instances limit.
         for job_cls, interval, enabled in interval_jobs:
             if not enabled:
                 logger.info("Job %s is disabled, skipping", job_cls.name)
                 continue
-            job = job_cls()
-
-            # Run immediately on startup (non-blocking)
-            logger.info("Running %s immediately on startup", job.name)
-            asyncio.create_task(self._run_job_once(job))
-
-            # Schedule for regular intervals
-            self._scheduler.add_job(
-                job.run,
-                "interval",
-                seconds=interval,
-                id=job.name,
-                name=job.name,
-                max_instances=1,
-                misfire_grace_time=interval,
-            )
-            logger.info("Registered job %s (interval=%ds)", job.name, interval)
+            self._schedule(job_cls(), interval)
+            logger.info("Registered job %s (interval=%ds)", job_cls.name, interval)
 
         # AnalyzeJob runs as a persistent async loop, not via APScheduler interval
         if config.ANALYZE_ENABLED:
             analyze_job = AnalyzeJob()
+            self._loop_jobs["analyze"] = analyze_job
             self._analyze_task = asyncio.create_task(self._run_analyze_loop(analyze_job))
             logger.info("AnalyzeJob persistent loop started")
         else:
@@ -81,43 +96,60 @@ class CronScheduler:
             from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
 
             report_job = ReportAnalyzerJob()
+            self._loop_jobs["report_analyze"] = report_job
             self._report_analyze_task = asyncio.create_task(self._run_analyze_loop(report_job))
             logger.info("ReportAnalyzerJob persistent loop started (concurrency=%d)", config.REPORT_CONCURRENCY)
         else:
             logger.info("ReportAnalyzerJob is disabled, skipping")
 
-        # Block until shutdown signal
+        self._heartbeat_task = asyncio.create_task(
+            self._recorder.heartbeat_forever(self._loop_jobs, config.HEARTBEAT_INTERVAL, self._shutdown_event)
+        )
+
         await self._shutdown_event.wait()
 
-    async def _run_job_once(self, job):
-        """Run a job once, logging any errors without crashing."""
-        try:
-            await job.run()
-        except Exception:
-            logger.exception("Job %s failed on startup", job.name)
+    def _schedule(self, job, interval: int) -> None:
+        self._scheduler.add_job(
+            self._recorder.run,
+            "interval",
+            args=[job],
+            seconds=interval,
+            id=job.name,
+            name=job.name,
+            max_instances=1,
+            misfire_grace_time=interval,
+            next_run_time=datetime.now(timezone.utc),
+        )
 
     async def _run_analyze_loop(self, job):
-        """Run AnalyzeJob.run() continuously, restarting on unexpected errors."""
-        while not self._shutdown_event.is_set():
-            try:
-                await job.run()
-            except asyncio.CancelledError:
-                logger.info("AnalyzeJob cancelled")
-                break
-            except Exception:
-                logger.exception("AnalyzeJob crashed, restarting in 10s")
-                await asyncio.sleep(10)
+        """Run a persistent loop, recording unexpected exits before restart."""
+        token = self._recorder.enter_loop(job.name)
+        try:
+            while not self._shutdown_event.is_set():
+                self._recorder.loop_started(job.name)
+                try:
+                    await job.run()
+                except asyncio.CancelledError:
+                    logger.info("%s cancelled", job.name)
+                    break
+                except Exception as exc:
+                    logger.exception("%s crashed, restarting in 10s", job.name)
+                    self._recorder.record_loop_crash(job.name, exc)
+                    await asyncio.sleep(10)
+        finally:
+            self._recorder.exit_loop(token)
 
     async def shutdown(self):
-        """Graceful shutdown: stop scheduler, cancel analyze loop."""
+        """Graceful shutdown: stop scheduler, loops and heartbeat."""
         logger.info("Shutting down scheduler")
-        self._scheduler.shutdown(wait=False)
-        for task in [self._analyze_task, self._report_analyze_task]:
+        self._shutdown_event.set()
+        if self._scheduler.running:
+            self._scheduler.shutdown(wait=False)
+        for task in [self._analyze_task, self._report_analyze_task, self._heartbeat_task]:
             if task and not task.done():
                 task.cancel()
                 try:
                     await task
                 except asyncio.CancelledError:
                     pass
-        self._shutdown_event.set()
         logger.info("Scheduler shut down")

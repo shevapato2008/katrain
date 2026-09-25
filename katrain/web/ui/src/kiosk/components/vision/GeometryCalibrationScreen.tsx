@@ -30,9 +30,9 @@ import {
  * 差的只是壳上那四个字。**不能让两条路共用同一句「← 设置」**:guard 是从做题/摆谱里被拦下的,
  * 写「设置」是对来路撒谎,按下去还会把人扔进设置页。
  *
- * ## 稿子在这一屏有一处硬不成立:第 2 步
+ * ## 稿子原来在这一屏有一处硬不成立:第 2 步(2026-09-24 稿子已照这里改成四步)
  *
- * 稿子画五步,其中第 2 步「采集熄灯参考帧 / 先拍一张全灭的，作对照」对应 `dark_reference`,
+ * 稿子原来画五步,其中第 2 步「采集熄灯参考帧 / 先拍一张全灭的，作对照」对应 `dark_reference`,
  * 而**全仓没有任何地方写入这个 phase** —— 它只活在两处「哪些 phase 算进行中」的常量集合里
  * (`geometry_calibration_service.py:20`、`endpoints/geometry.py:27`)。
  *
@@ -40,7 +40,7 @@ import {
  * 对**每一个**锚点都先 `led.clear()` 拍一张熄灯帧、再点亮拍一张,然后做差分 —— 13+ 次、
  * 与亮灯帧交替,没有独立的开始和结束。⇒ 画成一行,要么和第 3 步同一瞬间从「未开始」跳到
  * 「完成」、要么一直挂着「完成」,**两种都在对顺序撒谎**。删掉这一行,把机制写进
- * 「定位棋盘四角」的副行。省下的 60px(52 + 8)正好给失败时的诊断卡。
+ * 步骤下面的旁注。省下的 60px(52 + 8)正好给失败时的诊断卡。
  *
  * 真正会被报出来的只有三个:`flashing_corners`(第 1–4 个锚点)、`verifying`(第 5–13 个)、
  * `building_baseline`。`waiting_empty` 只在服务启动线程那一瞬设一次,一个轮询周期内就被盖掉 ——
@@ -67,7 +67,7 @@ const ACTIVE_PHASES = new Set(['waiting_empty', 'dark_reference', 'flashing_corn
 const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
 const gtpPoint = (row: number, col: number) => `${GTP_LETTERS[col] ?? '?'}${19 - row}`;
 
-interface Diagnostic { title: string; body: string; action: string; detail?: string }
+interface Diagnostic { title: string; body: string; action: string; detail?: string; kind?: 'relocate' }
 
 /**
  * 「失败时给**诊断**不给『重试』」是稿子写在屏上的承诺。兑现它的方式是失败那一刻出现的是
@@ -130,7 +130,7 @@ export interface GeometryCalibrationScreenProps {
 export function GeometryCalibrationScreen({
   backLabel, onBack, title, sub, requireRecognition = false,
 }: GeometryCalibrationScreenProps) {
-  const { status, loaded, startCalibration, confirmExisting, cancelCalibration } = useGeometry();
+  const { status, loaded, startCalibration, confirmExisting, cancelCalibration, relocate } = useGeometry();
   const { t } = useTranslation();
 
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
@@ -140,6 +140,8 @@ export function GeometryCalibrationScreen({
   const [actionError, setActionError] = useState<string | null>(null);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [manualView, setManualView] = useState<'raw' | 'warped' | null>(null);
+  const [relocating, setRelocating] = useState(false);
+  const [relocateError, setRelocateError] = useState<string | null>(null);
 
   const phase = status.phase;
   const active = ACTIVE_PHASES.has(phase);
@@ -191,6 +193,8 @@ export function GeometryCalibrationScreen({
   const start = async () => {
     setStarting(true);
     setActionError(null);
+    // 上一次「对齐外框」的失败卡排在诊断链最前:不清掉,这一次按键若失败(phase 不变),新错误会被旧卡盖住。
+    setRelocateError(null);
     try {
       // `trigger` 区分「第一次自动标定」和「操作员按下重来」。两者走的是**同一条** LED 流程
       // (后端 `service.start` → `LedGeometryCalibrator.calibrate`),差别只在这条记录上 ——
@@ -213,6 +217,7 @@ export function GeometryCalibrationScreen({
   const reuseExisting = async () => {
     setStarting(true);
     setActionError(null);
+    setRelocateError(null);
     try {
       await confirmExisting();
     } catch (error) {
@@ -221,6 +226,26 @@ export function GeometryCalibrationScreen({
       setStarting(false);
     }
   };
+
+  const handleRelocate = async () => {
+    setRelocating(true);
+    setRelocateError(null);
+    setActionError(null);
+    try {
+      await relocate();
+    } catch (err) {
+      // 失败要说话。最常见的一种是外框被人挡住 / 画面太暗,说得出来用户才知道怎么办。
+      setRelocateError(
+        err instanceof Error && /no_board_detected/.test(err.message)
+          ? t('vision:relocate_no_board', '画面里找不到棋盘外框，挪开挡住边框的东西再试一次。')
+          : t('vision:relocate_failed', '再试一次；一直不行就清空棋盘重新标定。'),
+      );
+    } finally {
+      setRelocating(false);
+    }
+  };
+
+  useEffect(() => { setRelocateError(null); }, [phase]);
 
   // ── 四步的状态 ─────────────────────────────────────────────────────────────
   //
@@ -332,27 +357,36 @@ export function GeometryCalibrationScreen({
   const cells: StatusCell[] = loaded ? [
     { label: '摄像头', value: cameraReady ? '已连接' : '未连接', tone: cameraReady ? 'good' : 'bad' },
     calibValue(),
-    { label: 'LED', value: ledReady ? '就绪' : '未连接', tone: ledReady ? 'good' : 'bad' },
+    // 复用设置屏那个 key:同一件事只有一种说法,也不用新增译文。「未连接」照这一行原来的写法。
+    { label: 'LED', value: ledReady ? t('settings:led_serial_connected', '串口已连接') : '未连接',
+      tone: ledReady ? 'good' : 'bad' },
   ] : [
     { label: '摄像头', value: '—' }, { label: '标定', value: '—' }, { label: 'LED', value: '—' },
   ];
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
-  const canStart = cameraReady && ledReady && !starting && !active;
-  const canReuse = (phase === 'required' || phase === 'failed') && status.last_valid && cameraReady && !starting && !active;
+  const canStart = cameraReady && ledReady && !starting && !relocating && !active;
+  // `lock_moved`:degraded 之后重新标定又取消/失败,phase 会落回可沿用的三态,但锁还是挪动前那把。
+  const canReuse = (phase === 'required' || phase === 'failed' || phase === 'cancelled')
+    && status.last_valid && !status.lock_moved && cameraReady && !starting && !relocating && !active;
   const reuseBlockedWhy = active ? '标定进行中'
     : !cameraReady ? '摄像头未连接，无法核对网格'
       : phase === 'ready' ? '这一局已经在用这次标定'
-        : null;
+        // 「按不了」永远要有话说:degraded 是唯一剩下的按不了的情形。新文案走 t(),译文在 Task 7b 收口。
+        : phase === 'degraded' || status.lock_moved ? t('vision:reuse_blocked_moved', '棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定')
+          : null;
 
   const primaryLabel = phase === 'ready' && !confirmingManual ? '重新标定棋盘'
     : confirmingManual ? '已清空，确认重新标定'
       : '重新开始标定';
 
-  const diagnostic: Diagnostic | null = failed ? buildDiagnostic(status.error)
-    : phase === 'degraded' ? buildDiagnostic('board_moved')
-      : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
-        : null;
+  // 刚按的「对齐外框」没成,排在最前;原来那条链接在它后面,一字不改。
+  const diagnostic: Diagnostic | null = relocateError
+    ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
+    : failed ? buildDiagnostic(status.error)
+      : phase === 'degraded' ? buildDiagnostic('board_moved')
+        : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
+          : null;
 
   const preview: ReactNode = view === 'raw' ? (
     <GeometryVideoPanel
@@ -431,10 +465,10 @@ export function GeometryCalibrationScreen({
 
           <KioskScrollZone grow className="calib-scroll">
             {diagnostic && (
-              <div className="empty calib-diag" data-testid="geometry-diagnostic-card">
+              <div className="empty calib-diag" data-testid="geometry-diagnostic-card" data-kind={diagnostic.kind ?? 'status'}>
                 <h4>{diagnostic.title}</h4>
                 <p>{diagnostic.body}</p>
-                <p><b>{diagnostic.action}</b></p>
+                {diagnostic.action && <p><b>{diagnostic.action}</b></p>}
                 {diagnostic.detail && <p className="calib-diag__raw">{diagnostic.detail}</p>}
               </div>
             )}
@@ -474,6 +508,7 @@ export function GeometryCalibrationScreen({
               {/* 稿子把「采集熄灯参考帧」画成独立一步,而它其实是**每个点各做一次**的动作。
                   删掉那一步不等于可以不说这件事 —— 挪到这儿,它解释的正是「为什么没有那一步」。 */}
               <br />每个定位点都<b>先熄灯拍一张、亮灯再拍一张</b>，两张相减才找得出灯在哪。
+              <br />{t('vision:led_serial_note', 'LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。')}
               {reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}
@@ -489,14 +524,17 @@ export function GeometryCalibrationScreen({
                * 运行中**整行只有一颗**「取消标定」。
                *
                * 稿子这里做不到 —— 它只画了一个静止帧,在任何状态下都是那两颗键,而运行中那两颗
-               * **一颗都不成立**:「沿用上次标定」要 `phase ∈ {required,failed}`(否则服务端
+               * **一颗都不成立**:「沿用上次标定」要 `phase ∈ {required,failed,cancelled}`(否则服务端
                * `ValueError`),「重新开始标定」会撞 `CalibrationBusy` → 409。照画就是两颗按不动的键。
                *
                * 不能丢:13 个锚点、每个都要 clear→拍→点亮→拍,是分钟级的。中途发现盘上还有子
                * 却退不出去,人只能干等它失败 —— **一个没有退出路径的分钟级流程,在 7 寸触摸屏上就是卡死。**
                *
                * 走危险色不走绿:绿色在这一屏的其它每个状态下都是「开始 / 重来」,同一个位置同一个
-               * 颜色换成「取消」,条件反射按下去就毁掉一次运行。不配确认弹层 —— 取消是廉价且可逆的。
+               * 颜色换成「取消」,条件反射按下去就毁掉一次运行。
+               * 不配确认弹层 —— 取消是廉价且可逆的:取消之后「沿用上次标定」仍然可以按
+               * (2026-09-20 起,`_REUSABLE_PHASES` 含 cancelled)。**这句话在那之前是不成立的**,
+               * 当时取消会让本次开机的标定一起作废;登记不做确认层的那条裁定,依据的正是这个前提。
                */
               <button
                 type="button"
@@ -507,6 +545,22 @@ export function GeometryCalibrationScreen({
               </button>
             ) : (
               <>
+                {/* 盘被碰动之后的出口。**不亮灯、不要求空盘** —— 13 点流程要清盘,
+                    而这颗键存在的理由正是盘上有子(对局进行到一半)。
+                    只在真的需要时出现:ready 态不给「修」的键。 */}
+                {(phase === 'degraded' || phase === 'cancelled' || failed) && status.last_valid && (
+                  <button
+                    type="button"
+                    className="kiosk-btn kiosk-btn--secondary"
+                    data-testid="calib-relocate"
+                    disabled={!cameraReady || relocating || starting}
+                    onClick={() => void handleRelocate()}
+                  >
+                    {relocating
+                      ? t('vision:relocating', '正在对齐…')
+                      : t('vision:relocate', '对齐外框')}
+                  </button>
+                )}
                 {/* `last_valid` 为假 = **从来没成功标定过** ⇒ 这颗键不渲染,主行动满宽。
                     「没有上一次可沿用」屏上已经有三处在说(状态格「未标定」、四步全「未开始」、
                     主键满宽),再摆一颗永远按不亮、还要配一行解释的键是往加的方向走。 */}

@@ -60,18 +60,21 @@
 .gob .star { fill: var(--gb-line); }
 /* 最后一手的圈 */
 .gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.gob .pending-ring { fill: none; stroke-width: 7; }
+.gob .pending-ring--b { stroke: #fff; }
+.gob .pending-ring--w { stroke: #141414; }
 /* 候选点:半透明青玉圈,不画成棋子 */
 .gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
-/* 摆谱屏(屏 17)的候选点:**颜色必须和实体盘上那颗灯一致** —— 黑子亮红灯、白子亮绿灯
-   (`constants/ledColors.ts` 的 `LED_HEX`:black `#ff3b30` / white `#34c759`,
-   四处独立来源一致)。上面那条不带修饰的青玉圈留给**没有灯**的场合(做题屏的提示),
-   借用灯的语义会让人以为盘上也亮着一颗。
-   ⚠️ 稿子那一帧把 C7(黑棋)的圈画成了绿的 —— 那是稿子错了,不是这里跑偏,已回报。 */
+/* 可选的分色空点提示；摆谱下一手现在画棋子和反色环。 */
 .gob .ghost--b { fill: rgba(255, 59, 48, .32); stroke: rgba(255, 59, 48, .95); }
 .gob .ghost--w { fill: rgba(52, 199, 89, .32); stroke: rgba(52, 199, 89, .95); }
 
 /* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
 .gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* 摆谱:蓝圈 = 该拿走(蓝灯 #2f6fff),白圈 = AI 支招候选(白灯)。浅木盘上发虚,加一圈暗晕(与稿子同值) */
+.gob .remove { fill: rgba(47, 111, 255, .55); stroke: #2f6fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .hint { fill: rgba(255, 255, 255, .70); stroke: #fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .remove, .gob .hint { filter: drop-shadow(0 0 4px rgba(20, 10, 0, .55)); }
 /* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
    颜色**不许从 galaxy 那块 `SGFBoard` 搬**:`#d32f2f` / `#1565c0` 是 Material 调色板,
    和这套外壳的 token 不是一家。也**不许复用 `--accent`**(这块盘上它已经是「最后一手」
@@ -271,6 +274,20 @@
 .gstatus[data-tone="bad"] { border-color: var(--bad); }
 .gstatus[data-tone="bad"] b { color: var(--bad); }
 .gstatus .kiosk-btn--pill { margin-left: auto; flex: none; }
+
+/* Ranked game territory uses the same rail slot and action cell as the live game. */
+.ranked-territory-content { padding: 12px 13px; font-family: var(--font-sans); }
+.ranked-territory-content h2 { margin: 0 0 7px; font-family: var(--font-serif); font-size: 19px; font-weight: 600; }
+.ranked-territory-content p { margin: 0; color: var(--dim); font-size: 13px; line-height: 1.5; }
+.ranked-territory-content .ranked-territory-note { font-size: 11px; }
+.ranked-territory-areas { display: flex; gap: 9px; margin: 13px 0 9px; }
+.ranked-territory-areas > span { flex: 1; min-height: 42px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--hair); border-radius: 8px; font-size: 12px; }
+.ranked-territory-areas i { width: 12px; height: 12px; flex: none; border-radius: 50%; border: 1px solid #eee; }
+.ranked-territory-areas i.black { background: #222; }
+.ranked-territory-areas i.white { background: #eee; }
+.ranked-territory-areas strong { margin-left: auto; font-family: var(--font-mono); font-size: 15px; white-space: nowrap; }
+.ranked-territory-badge { margin-left: 3px; padding: 1px 5px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 55%, #143825); color: #fff; font: 11px var(--font-mono); }
+.kiosk-actions button:has(.ranked-territory-badge) { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
 
 @keyframes game-win-trophy {
   0% { transform: scale(.7) rotate(-12deg); opacity: .3; }
@@ -1384,10 +1401,81 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    **只给有模态的那一屏加**,不动共享的 `.kiosk-layout-b`。 */
 .kiosk-layout-b.plat-layout { position: relative; }
 
-/* 屏 07 登录段:错误落点 + 提交键。稿子只画到两行输入 —— 错误没有落点等于没报错,
-   而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
+/* 登录出错的落点(`PlatformLoginPage`)。错误没有落点等于没报错。 */
 .loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
-.loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* ── 屏 07b/08 登录独立成页 ───────────────────────────────────────────────
+   设计源 `go-kiosk.tmpl.html:663-699`,逐字抄,**只改了两处、都写在各自那一行边上**:
+     ① `.xplogin__main` 原来是 `justify-content: center`,改成滚动容器 `overflow-y: auto`,
+        居中改由 `.xpcol { margin: auto }` 接手 —— 见下面的说明。
+     ② `.xpqr`(二维码区)Task 6 搬完了,见下面「扫码登录」那一段。
+   全部选择器套一层 `[data-testid="platform-login-page"]` 作用域 —— 本 track 判例
+   (同一份样式表里的同名类会跨屏污染,`.xpwho b` / `.xpfacts p` 这种元素选择器尤其危险)。
+
+   **`.xplogin__main` 为什么必须能滚(承重,归真浏览器几何闸,不归四图)**:
+   `PlatformConnectPage.tsx` 那段软键盘避让是「给滚动区垫一段等于键盘高度的下内衬」——
+   但 `.xplogin` 是 `overflow: hidden` + 垂直居中,垫 padding 换不来任何可滚的余量。
+   `.xplogin__main` 换成 `overflow-y: auto` 之后,`.xpcol` 改用 `margin: auto` 而不是
+   父级的 `justify-content: center`:居中的 flex 容器一旦溢出会把顶部裁掉且滚不回去,
+   `margin: auto` 在有余量时一样居中,内容溢出时会让出滚动空间而不是裁切。 */
+[data-testid="platform-login-page"] .xplogin { flex: 1; min-height: 0; display: flex; padding: 0; overflow: hidden; }
+[data-testid="platform-login-page"] .xplogin__aside { width: 300px; flex: none; display: flex; flex-direction: column; justify-content: center;
+  gap: 16px; padding: 18px 22px; border-right: 1px solid var(--hair);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 62%); }
+[data-testid="platform-login-page"] .xpwho { display: flex; align-items: center; gap: 11px; }
+[data-testid="platform-login-page"] .xpwho .mark { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--panel); color: var(--accent); }
+[data-testid="platform-login-page"] .xpwho .mark svg { width: 21px; height: 21px; fill: currentColor; }
+[data-testid="platform-login-page"] .xpwho b { display: block; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+[data-testid="platform-login-page"] .xpwho span { font-size: 11.5px; color: var(--dim); letter-spacing: .03em; }
+[data-testid="platform-login-page"] .xpfacts { display: flex; flex-direction: column; gap: 13px; }
+[data-testid="platform-login-page"] .xpfacts > div { display: flex; flex-direction: column; gap: 3px; }
+[data-testid="platform-login-page"] .xpfacts b { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfacts p { font-size: 12.5px; line-height: 1.55; color: var(--text); }
+[data-testid="platform-login-page"] .xplogin__main { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; padding: 18px 24px; overflow-y: auto; }
+[data-testid="platform-login-page"] .xpcol { width: 520px; display: flex; flex-direction: column; gap: 14px; margin: auto; }
+[data-testid="platform-login-page"] .xpcol .igrow + .igrow { margin-top: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-seclabel { margin-bottom: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-optseg { height: 52px; }
+[data-testid="platform-login-page"] .xpfield { flex: 1; min-width: 0; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); font-size: 13.5px; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfield input { flex: 1; min-width: 0; border: 0; background: none; padding: 0;
+  font-family: var(--font-mono); font-size: 17px; font-weight: 500; letter-spacing: .04em; color: var(--text); }
+[data-testid="platform-login-page"] .xpfield input::placeholder { color: var(--dim); font-family: var(--font-sans);
+  font-weight: 400; letter-spacing: normal; }
+[data-testid="platform-login-page"] .xpfield i { margin-left: auto; flex: none; font-style: normal; font-size: 12px; color: var(--accent); }
+[data-testid="platform-login-page"] .xpcode { height: 56px; flex: none; }
+[data-testid="platform-login-page"] .xptabs { flex: none; }
+[data-testid="platform-login-page"] .xpgo { flex: 1; height: 56px; justify-content: center; font-size: 16px; }
+
+/* ── 扫码登录(Task 6,`GolaxyScanPanel`)── 设计源 `go-kiosk.tmpl.html:699-711`,逐字抄,
+   全部选择器套上这一屏的 testid 作用域(判例:同一份样式表里的同名类会跨屏污染)。
+   `.qrbox` 白底(`#EEF3F1`)是**功能不是装饰** —— 反色码很多扫码器不认,这是全稿
+   唯一一处浅底。`.qrbox--unavailable`/`.scan-unavailable` 是这一屏特有的第六种态
+   (设计源没画,取不到 scan_id 时用):同样的方框尺寸换成虚线边,不摆假码。 */
+[data-testid="platform-login-page"] .xpqr { display: flex; align-items: center; gap: 22px; }
+[data-testid="platform-login-page"] .qrbox { width: 188px; height: 188px; flex: none; padding: 10px;
+  border-radius: 12px; background: #EEF3F1; }
+[data-testid="platform-login-page"] .qrbox--unavailable { background: var(--panel);
+  border: 1px dashed var(--hair); box-sizing: border-box; }
+[data-testid="platform-login-page"] .qrimg { width: 100%; height: 100%; display: block; }
+[data-testid="platform-login-page"] .xpqr__side { flex: 1; min-width: 0; display: flex;
+  flex-direction: column; align-items: flex-start; gap: 10px; }
+[data-testid="platform-login-page"] .xpqr__side h4 { font-family: var(--font-serif); font-size: 16px; font-weight: 600; }
+[data-testid="platform-login-page"] .xpqr__side p { font-size: 12.5px; line-height: 1.6; color: var(--dim); }
+/* 状态药丸:五种状态换的是这一颗的字和灯色,不是把二维码换掉 */
+[data-testid="platform-login-page"] .xpstat { display: inline-flex; align-items: center; gap: 8px; height: 34px;
+  padding: 0 13px; flex: none; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 999px; background: var(--panel); font-size: 12.5px; color: var(--text); }
+[data-testid="platform-login-page"] .xpstat .led { width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--accent); box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* `.xpfield` 是外层 `<span>`(判例同屏 04 `.nameinput`:「真页面上它必须真能输入」),
+   里面一个真 `<input>` + 常驻的 `<i>点此输入</i>`。**2026-09-23(Task 8b 视觉关卡第⑤条)
+   改掉了「真输入框自己的 placeholder 就顶替 `<i>` 提示」那个假设**:placeholder 一输入
+   就消失,触屏上就再没有任何「这里能点」的信号了 —— 而设计源 `.xpfield i` 本来就是和值
+   同时常驻的第二个子元素,所以这里也让它跟输入值并存,不随输入消失。 */
 
 /* ── 屏 24 课程 · 书目与章节 ────────────────────────────────────────────────
    章行本身就是展开控件(稿子那三个行尾键「已看完 / 接着看 / 开始」不做 —— 盒上没有可信的
@@ -1468,6 +1556,9 @@ button.kiosk-row.figrow { flex: none; }
 .lrow { display: flex; align-items: center; gap: 9px; font-size: 12px; }
 .lrow b { font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
 .lrow i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+/* 只有「名 + 数」两列的行(屏 17 AI 支招候选)数贴右,稿子 `.lrow i{margin-left:auto}`。
+   不写成全局:采集机那几行是「名 + 灯点 + 数」,灯点已经 `margin-left:auto`,两个 auto 会把灯点挤到中间。 */
+.lrow b + i { margin-left: auto; }
 /* 图例那一列的色点 —— 和 `LED_HEX` 同源,别在这儿另写一遍十六进制以外的东西。
    **`margin-left:auto` 挂在色点上而不是挂在 `<i>` 上**:挂错的话色点会贴着左边那句读数,
    屏上读成「已采集 13 帧 ●」—— 那颗点看起来在给帧数分类,而它其实是右边那句图例的样本。
@@ -1486,6 +1577,8 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+/* 摄像头用不了、临时露出「确认落子」时,灯折叠头右端的「手动确认」用警告色(稿 17d)。 */
+.baipu-layout .kiosk-fold__head b.warn, .baipu-layout .lrow .warn { color: var(--warn); }
 
 /* ── 屏 18 直播 · 观战 ──────────────────────────────────────────────────────
    状态标(直播中 / 已结束)在页控条右端。它**不占流内高度** —— 这一屏右栏六块正好
@@ -1840,3 +1933,188 @@ button.kiosk-row.figrow { flex: none; }
 /* 升降级那段对手说明在这三屏里收一档行距:它是一段读数,不是正文。
    (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
 .kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }
+
+/* 屏 09 对手名牌 —— 逐字照搬设计源 sample-go/go-kiosk.tmpl.html:638-646
+   (2026-09-23 修复轮 2:上一版是计划里手写的近似,八处和设计稿不一样,已核实改错)。
+   <button> 给了背景就必须给 color,否则 h4 继承浏览器默认黑。
+   `.rung` 用等宽体 + `tabular-nums`:连按 ± 时数字换位不等宽会抖,设计稿注释专门点过这条。 */
+.aiplate { display: flex; align-items: center; gap: 11px; height: 56px; padding: 0 10px 0 12px; flex: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 12px;
+  background: var(--raise); color: var(--text); cursor: pointer; text-align: left; width: 100%; }
+.aiplate > div { flex: 1; min-width: 0; }
+.aiplate h4 { font-family: var(--font-serif); font-size: 15px; font-weight: 600; color: var(--text); margin: 0; }
+.aiplate p { margin-top: 2px; margin-bottom: 0; font-size: 11.5px; color: var(--dim); }
+.aiplate .rung { flex: none; display: flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; }
+.aiplate .rung svg { width: 14px; height: 14px; }
+/* 名牌与轨的间距挂在这条上,不是名牌自己的 margin-bottom —— 名牌是共享件,
+   间距是屏 09 这一处布局的事。 */
+.aiplate + .catpick { margin-top: 8px; }
+
+/* 屏 09 名牌点开的 39 档全表 —— 只盖右栏,不盖盘。`position:relative` 只在这一屏的
+   `.kiosk-rail` 上开:那个类本身(tokens.css:616)不带 position。
+   ⚠️ 2026-09-23 更正:这条规则**不是**为了防止挪动别屏的滚动条 thumb ——
+   `.kiosk-side`(tokens.css:510)自己早就是 `position: relative`,是比 `.kiosk-rail`
+   更近的定位祖先,`scrollSync.ts:38` 读的 `offsetTop` 基准由它决定,`.kiosk-rail` 加不加
+   `position` 对任何「形态 1」(`.kiosk-side` 自滚,本仓绝大多数屏)的 thumb 位置都没有影响 ——
+   变异实测过(把这条改成裸 `.kiosk-rail{position:relative}`,跑屏 02/03/04 四图,
+   三屏拇指位置无变化)。留在这里的正当理由只是:**这条规则只服务这一屏**,
+   收窄作用域本来就是默认做法,不需要更特殊的理由。 */
+[data-testid="platform-engine-setup-page"] .kiosk-rail { position: relative; }
+
+/* 屏 09 收紧留白,复刻设计源 sample-go/go-kiosk.tmpl.html:627-629 的三条屏专属覆盖 ——
+   几何闸量出右栏 459 溢出视口 400(Task 4 2026-09-23)。**只收留白,不收命中区**:
+   分段仍 48、± 仍 44×44、名牌仍 56,全部 ≥44。
+
+   ⚠️ 第三条不能照抄设计稿的字面量 `margin-top:16px`。设计源那份原型的滚动容器没有
+   `gap`,它写 16 得到的就是屏上的 16;这里的 `.kiosk-side__scroll` 带
+   `gap: var(--l1-section-gap)` = 8(tokens.css:517),会叠加成 16+8=24。要的是屏上
+   真的 16,所以这里写 8(8 + 已有的 8 gap = 16),不是把字面量原样搬过来。 */
+[data-testid="platform-engine-setup-page"] .inputgrp { padding: 16px; }
+[data-testid="platform-engine-setup-page"] .inputgrp .kiosk-optseg { height: 48px; }
+[data-testid="platform-engine-setup-page"] .setgrp + .setgrp { margin-top: 8px; }
+
+/* 修复轮 4(2026-09-23)—— `.kiosk-opthint` 定高一行(`tokens.css:720-722`,
+   `height`/`line-height` 同一个 token)+ `overflow: visible`,长语种(德文量过:
+   `clientHeight=16` 但内容要 `scrollHeight=32`)折成两行时,第二行不是被裁掉,
+   是画到盒子外面、压在下面的留白上 —— `kiosk-geometry-platform.spec.ts` 的内容闸
+   已经把断言换成了量高度(`scrollHeight <= clientHeight`)而不是量宽度,这条 CSS
+   是配它的产品修法:放开定高,让第二行真正占用布局空间,而不是覆盖到邻居身上。
+
+   ⚠️ 只在这一屏开:`.kiosk-opthint` 是屏 02/03/04 共用的,那几屏本来就整栏滚,
+   多一行只是多滚一点,不构成这一屏「一屏放得下」这个承诺要守的风险 ——
+   本轮只处理这一屏,其余屏「定高 + overflow:visible」这个组合仍然是潜在的
+   重叠源,是已知未处理项,不是这次顺手就治好了。 */
+[data-testid="platform-engine-setup-page"] .kiosk-opthint { height: auto; min-height: var(--opthint-h); }
+
+.aisheet {
+  position: absolute; inset: 44px 0 48px; z-index: 20;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px; border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--hair);
+}
+.aisheet__head { display: flex; align-items: center; justify-content: space-between; }
+.aisheet__body { flex: 1; min-height: 0; overflow-y: auto; }
+.aisheet__row > button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 44px; padding: 0 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--text); text-align: left; cursor: pointer;
+}
+.aisheet__row > button[aria-current="true"] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.aisheet__row .idx { width: 26px; color: var(--dim); font-size: 12px; }
+.aisheet__row .nm  { flex: 1; font-size: 14px; }
+.aisheet__row .el  { color: var(--dim); font-size: 12px; white-space: nowrap; }
+
+/* 屏 09 段三「让子 · 我执」并排。逐字照搬设计源 sample-go/go-kiosk.tmpl.html:648-654
+   (2026-09-23 修复轮 2:上一版写成了 `display:grid` + 竖排 `.tcol{flex-direction:column}`,
+   标签在控件上面占两行 72px —— 和设计稿的横排一行 44px 不是同一个结构,已核实改错)。
+   标签贴着自己那一列的控件(8),列与列之间 26 —— 到配对物的距离必须小于到干扰物的
+   距离,否则「我执」会被读成「让子」的第二行。 */
+/* `.twocol`/`.tcol` 加页级前缀:这两个名字太通用,这份样式表被全部 kiosk 屏共用
+   (`KioskApp.tsx` 一次性载入)——不加前缀就是给下一个想要「两列一行」的屏埋雷
+   (`.gside` 那次两屏各写各的、后一条只覆盖它自己写了的属性、漏掉的那个属性
+   穿过去撑破另一屏,是同一个形状)。今天只有屏 09 用这两个类(2026-09-23 核过)。 */
+[data-testid="platform-engine-setup-page"] .twocol { display: flex; align-items: center; gap: 26px; flex: none; }
+[data-testid="platform-engine-setup-page"] .twocol .tcol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+/* 30px 是照「让子」「我执」这两个**两字中文**标签定的宽度,不是给任意标签留的通用值——
+   日文「自分の手番」(5 字)在这个宽度下会折行,把这一行从 44px 撑成 56px
+   (`kiosk-geometry-platform.spec.ts` 里标成 `test.fail()` 的那 1px 超盒就是这么来的)。
+   德文「Meine Farbe」(11 字)大概率也折,只是还没把总高顶过 400 预算,没人量过。
+   真正的修法是把这一行改成 i18n 友好的布局(标签换行不挤占控件宽度,或去掉固定宽度
+   改 `min-width`),不是给某个语种单独加宽这一个数字。 */
+[data-testid="platform-engine-setup-page"] .twocol .iglab { width: 30px; flex: none; font-size: 12.5px; color: var(--dim); }
+[data-testid="platform-engine-setup-page"] .twocol .catpick,
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg { flex: 1; min-width: 0; }
+
+/* 屏 09 修复轮 5(Task 4.6,2026-09-23)—— 「我执」三个选项挤成两行字。
+   设计源两列各 `flex: 1`(go-kiosk.tmpl.html:652),这一屏因为多一个选项
+   (让子只有一个控件,我执有三个)要偏 —— **这条偏离是本屏专属,不回改设计源**。
+   真浏览器实测(`platform-engine-setup-page` 作用域):等宽时每列 212px,
+   三个按钮分到 (212−6 容器 padding−6 两条 3px gap)/3 ≈ 66.7px,减掉继承自
+   `index.css:38` 的 Vite 模板 `button{padding:0.6em 1.2em}`(在这里等于
+   `9px 18px`,两侧 36px)后只剩约 30px 给图标+间距+文字 —— 中文「猜先」两个字
+   都会被挤到折成两行(截图验过,不是靠推断)。
+   比例 34:66 —— 让子只有一个步进轨(−/点/+ 三个热区),我执要塞三段文字按钮,
+   量出这个比例后中/德两语种「我执」三段都不折行(见 `kiosk-geometry-platform.spec.ts`
+   「屏 09「我执」分段按钮不折行」)。 */
+[data-testid="platform-engine-setup-page"] .twocol .tcol:nth-child(1) { flex: 0.52; }
+[data-testid="platform-engine-setup-page"] .twocol .tcol:nth-child(2) { flex: 1; }
+/* 同一处修复:继承来的 Vite 模板按钮 padding 对三段一行的分段控件太宽,
+   把图标+两字挤没了空间 —— 缩到够放下图标(18)+ gap(7)+ 两字(30)+ 呼吸空间的量,
+   不是字面截断,是把误继承的默认值收回正常范围。只在这一屏的「我执」段生效。 */
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { padding: 0 6px; }
+
+/* Task 4.7(2026-09-23)—— jp/ko 三个「我执」按钮(含没有动词可删的 nigiri)
+   统一超盒 3px(量出 scrollHeight=43 > clientHeight=40,见 task-4.7-report.md)。
+   根因不是译文长度:`index.css:3` 的 `:root { line-height: 1.5 }` 一路继承到这颗
+   按钮(`.kiosk-optseg button` 自己没设 line-height),15px 字号算出 22.5px 单行框——
+   这个框对拉丁/中文字形够用,但 CJK 回退字体自身的 ascent+descent 比 22.5px 还高,
+   单行框被撑穿,多出来的 3px 不是折行,是同一行字形本身画到框外。
+   收紧到 1.2(≈18px)把框让给字形的自然行高,不动字号、不动按钮盒高(触摸目标
+   仍是 40/48 那几个数)。11 语种全量复核:此前绿的语种收紧后仍然绿。 */
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { line-height: 1.2; }
+
+/* ── 外来平台的品牌标记 ────────────────────────────────────────────────
+   两个槽共用这一组:屏 01「跨平台对弈」的卡内 40 方衬(`.kiosk-card__tile`,
+   几何在 `tokens.css`)和屏 07a/07b/08 登录页左栏的 42 方衬(`.xpwho .mark`)。
+
+   **这不是把图标换个文件,是把衬的语气换掉。** `.kiosk-card__tile` 原本是为
+   Phosphor 线性图标设计的容器:`--panel` 底 + `--hair` 描边 + `color: var(--accent)`
+   染色 —— 这整套说的是「**我们画的图标**」。而这三张卡按下去意味着离开这台盒子、
+   去别人家下棋,所以衬要从「我们的图标底衬」变成「放外来物的凹槽」:底沉到最暗的
+   `--ink`,描边退回中性,取消染色。**几何(40/42、圆角、间距)一个字没动。**
+
+   为什么写在这儿而不是 `tokens.css`:那份是四棋类共享包、由 `MANIFEST.sha256`
+   钉死字节(真源在 smartbox-software),而品牌标记只有围棋 kiosk 有。
+   选择器一律带第二个类(`.is-brand`),特异性 0,2,0 > tokens 的 0,1,0 ——
+   **不靠加载顺序赢**(Vite 不保证 go-screens.css 与组件级 CSS 的相对顺序)。
+
+   `.is-soon` 的压暗(`card.css`:`opacity:.5; filter:grayscale(.3)`)**已经作用在整卡上**,
+   这里不再给标记单独加一层去色。野狐保留它的橙色,跟着整卡一起淡下去 ——
+   那条规则已经拍过板,不在这儿判第二遍。 */
+.kiosk-card__tile.is-brand,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand {
+  background: var(--ink);
+  border-color: var(--hair);
+  overflow: hidden;   /* 满幅标记由衬的圆角裁切 */
+}
+.kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand img {
+  /* 默认满幅:标记自带方形底(星阵的星座、野狐的应用图标),铺满衬、由衬切圆角。
+     星阵那张在官方文件里左边本来就裁掉一半 —— 满幅之后那道裁切读起来是
+     「一片裁到边的星空」,居中留白反而会像渲染坏了。 */
+  width: 100%; height: 100%; display: block; object-fit: contain;
+}
+/* 圆形实心标记(OGS 那颗棋子)。
+   **尺寸按墨量配,不按外框配**:Phosphor 是镂空线条,实心图形在同样外框下墨量约三倍,
+   并排会把视线抢走 —— 而跨平台这一排在屏 01 上是第三优先级(人机、人人都在它上面)。
+   内接圆的面积是外接方的 π/4,所以 62% 见方的圆 ≈ 22px 线性图标的墨量,和邻座持平。
+
+   那圈 1px 的浅色环是**功能不是装饰**:棋子黑的那半(#010101)和深色衬(#0F1416)
+   几乎同值,不加环的话屏上只剩一个白色半圆,读起来像月亮不像棋子。 */
+.kiosk-card__tile.is-brand.is-disc .kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand.is-disc img {
+  width: 62%; height: 62%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent);
+}
+
+/* ── 二维码作废:压暗 + 中间刷新图标,点码即换(Fan 2026-09-24 拍板) ──────
+   星阵自己网页上就是这个手势(过期码中间压一个刷新符号,点它重出码),用户已经会了。
+   压暗的是**码本身**不是整块:白底留着 —— 那个白底是功能不是装饰(反色码很多扫码器
+   不认),压暗白底会让「这块是二维码」这件事也一起变模糊。
+   `--dead` 而不是 `--expired`:失效和取消在这一屏上要做的动作完全一样,
+   区别只在旁边那行字说的原因。 */
+[data-testid="platform-login-page"] .qrbox--dead { position: relative; cursor: pointer; }
+[data-testid="platform-login-page"] .qrbox--dead .qrimg { opacity: .28; }
+[data-testid="platform-login-page"] .qrbox__refresh {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+[data-testid="platform-login-page"] .qrbox__refresh .kiosk-icon {
+  width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%;
+  /* 深色圆衬在浅色码上 —— 图标直接压在码的黑白方块上会糊成一团,认不出是个刷新符号。 */
+  background: var(--ink); color: var(--text);
+}
+[data-testid="platform-login-page"] .qrbox__refresh svg { width: 30px; height: 30px; fill: currentColor; }

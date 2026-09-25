@@ -5724,6 +5724,15 @@ msgstr "展示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "對標{r}"
 
+msgid "platform:level_sheet"
+msgstr "全部棋力檔"
+
+msgid "platform:close"
+msgstr "收合"
+
+msgid "platform:plate_aria"
+msgstr "目前對手 {name} {level}，{rung}；點開看全部"
+
 msgid "platform:rank_is_theirs"
 msgstr "段位是 {name} 那邊的"
 
@@ -6618,3 +6627,306 @@ msgstr "有 "
 
 msgid "growth:unknown_seat_b"
 msgstr " 局沒算進勝率：面對面的局，以及沒記下你執黑還是執白的局。"
+
+msgid "baipu:calib_running_sub"
+msgstr "標定也在用燈 · 跑完或取消後直接進擺譜"
+
+msgid "baipu:calib_running_title"
+msgstr "棋盤標定還在進行"
+
+msgid "baipu:cam_connecting"
+msgstr "正在連接攝影機"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "棋盤還沒標定"
+
+msgid "baipu:cam_geo_drift"
+msgstr "棋盤標定已失效"
+
+msgid "baipu:cam_none"
+msgstr "沒接攝影機"
+
+msgid "baipu:capture_hint_camera"
+msgstr "亮藍燈的那幾顆 —— 拿乾淨了自動下一手"
+
+msgid "baipu:checking_board"
+msgstr "正在檢查棋盤狀態"
+
+msgid "baipu:done_hint_auto"
+msgstr "一共 {n} 手 · 進度已清掉，按左上角返回"
+
+msgid "baipu:guard_sub_collect"
+msgstr "採集訓練資料要先讓攝影機看清盤面"
+
+msgid "baipu:hint_failed"
+msgstr "沒算出來 —— 收起後再按一次試試"
+
+msgid "baipu:hint_loading"
+msgstr "AI 正在算這一手…"
+
+msgid "baipu:hint_on_hint"
+msgstr "AI 支招中，辨識暫停 —— 白燈是 AI 的候選點，收起支招後接著擺"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr "AI 支招中 —— 白燈是 AI 的候選點，收起支招後接著擺"
+
+msgid "baipu:hint_row"
+msgstr "勝率 {w}% · 目差 {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI 支招 · 白燈閃爍處"
+
+msgid "baipu:hint_try_reason"
+msgstr "試下中攝影機不看盤，AI 不知道盤上是什麼局面"
+
+msgid "baipu:hint_value"
+msgstr "再按一次收起"
+
+msgid "baipu:led_on_camera"
+msgstr "燈已點亮 —— 把{color}子放在亮著的那個交叉點，攝影機認到就自動下一手"
+
+msgid "baipu:led_title"
+msgstr "燈 · 顏色對照"
+
+msgid "baipu:led_value_camera"
+msgstr "攝影機在看"
+
+msgid "baipu:led_value_manual"
+msgstr "手動確認"
+
+msgid "baipu:led_value_try"
+msgstr "試下中 · 暫停辨識"
+
+msgid "baipu:manual_hint"
+msgstr "{why} —— 擺好後按「確認落子」"
+
+msgid "baipu:manual_hint_calib"
+msgstr "；標定在「設定」裡"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "第 {i} / {n} 手"
+
+msgid "baipu:restore_hint"
+msgstr "試下的子拿走、挪動的放回 —— 對上了自動接著擺"
+
+msgid "baipu:restore_title"
+msgstr "把盤面擺回第 {n} 手"
+
+msgid "baipu:resume_body_placed"
+msgstr "上次擺到第 {n} 手。從頭擺要先把盤上的子都拿下來。"
+
+msgid "baipu:setup_clear_title"
+msgstr "先把盤上的子都拿下來"
+
+msgid "baipu:setup_continue"
+msgstr "擺好了，繼續"
+
+msgid "baipu:setup_entry_hint"
+msgstr "藍燈的子拿走、紅綠燈處放上 —— 對上了自動開始"
+
+msgid "baipu:setup_entry_title"
+msgstr "先把盤面擺成第 {n} 手"
+
+msgid "baipu:try_off_reason"
+msgstr "攝影機沒在辨識"
+
+msgid "baipu:trying_hint"
+msgstr "盤上隨便擺、推演。再按「試下」回到譜上，燈會帶你把盤面擺回去"
+
+msgid "baipu:trying_title"
+msgstr "試下中 · 攝影機暫停辨識"
+
+msgid "baipu:undo_hint_camera"
+msgstr "藍燈的子拿走，被提的子放回紅綠燈處 —— 對上了自動繼續"
+
+msgid "baipu:undo_title"
+msgstr "撤回到第 {n} 手"
+
+msgid "baipu:undo_try_reason"
+msgstr "試下中不能撤回"
+
+msgid "baipu:verify_hint"
+msgstr "多出來的子亮藍燈 —— 拿走就繼續"
+
+msgid "baipu:verify_title"
+msgstr "正在對一下盤面"
+
+msgid "baipu:wrong_hint"
+msgstr "把藍燈那顆({w})拿起來，放到 {c} —— 對上了自動繼續"
+
+msgid "baipu:wrong_size"
+msgstr "這是 {n} 路的譜，擺不了"
+
+msgid "baipu:wrong_size_hint"
+msgstr "實體盤和燈都是 19 路的 —— 別的路數擺上去每一顆都會錯位。"
+
+msgid "baipu:wrong_title"
+msgstr "放錯了 · 應該在 {c}"
+
+msgid "kifu:detail_offline"
+msgstr "這一局要連網才能讀"
+
+msgid "kifu:detail_offline_hint"
+msgstr "棋譜庫在雲端，這台盒子現在連不上。"
+
+msgid "kifu:list_offline"
+msgstr "棋譜庫要連網才能搜"
+
+msgid "kifu:list_offline_hint"
+msgstr "這台盒子現在連不上雲端。擺過的譜和匯入的 SGF 不受影響。"
+
+msgid "kifu:wrong_size_reason"
+msgstr "這是 {n} 路的譜 —— 實體盤只擺得了 19 路"
+
+msgid "setup:handicap_side"
+msgstr "讓子 · 我執"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name}人機固定 19 路 · 中國規則，螢幕和實體盤走同一條隧道"
+
+msgid "engine:warmup_warming"
+msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 引擎暫未就緒，可稍後重試"
+
+msgid "vision:relocate"
+msgstr "對齊外框"
+
+msgid "vision:relocating"
+msgstr "正在對齊…"
+
+msgid "vision:relocate_failed_title"
+msgstr "沒對上"
+
+msgid "vision:relocate_no_board"
+msgstr "畫面裡找不到棋盤外框，移開擋住邊框的東西再試一次。"
+
+msgid "vision:relocate_failed"
+msgstr "再試一次；一直不行就清空棋盤重新標定。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr "棋盤挪動過，上次的標定對不上了 —— 用「對齊外框」（不亮燈，盤上有子也能對）或重新標定"
+
+msgid "vision:led_serial_note"
+msgstr "LED 那一格只說序列埠通了，不代表每顆燈都亮；引導時發現某處不亮，多半是燈條那一段壞了。"
+
+msgid "platform:fact_whose"
+msgstr "用誰的帳號"
+
+msgid "platform:fact_whose_golaxy"
+msgstr "星陣自己的帳號，不是智星盒的。沒有就在手機上的星陣 APP 註冊——盒上註冊不了。"
+
+msgid "platform:fact_three_ways"
+msgstr "三種都能用"
+
+msgid "platform:fact_three_ways_body"
+msgstr "掃碼一個字都不用打；驗證碼等一條簡訊；密碼最快，但要在觸屏上打。"
+
+msgid "platform:fact_stored"
+msgstr "盒上留下什麼"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "只留星陣發的登入權杖，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:fact_only_one"
+msgstr "盒上只做這一種"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGS 網頁上還能用 Google、Apple 等帳號；那條要跳瀏覽器，留給出海版。"
+
+msgid "platform:fact_third_party"
+msgstr "用第三方註冊的"
+
+msgid "platform:fact_third_party_body"
+msgstr "那種帳號沒有 OGS 密碼，得先去 OGS 網頁上設一個。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 的帳號。註冊要在瀏覽器裡做，盒上做不了。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "只留登入後的工作階段，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:login_tab_sms"
+msgstr "驗證碼"
+
+msgid "platform:login_tab_password"
+msgstr "密碼"
+
+msgid "platform:login_field_phone"
+msgstr "手機號碼"
+
+msgid "platform:login_field_code"
+msgstr "驗證碼"
+
+msgid "platform:login_sub_sms"
+msgstr "未連接 · 用手機驗證碼登入"
+
+msgid "platform:login_sub_password"
+msgstr "未連接 · 用{name}的帳號密碼登入"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "未連接 · 用星陣的帳號密碼登入"
+
+msgid "platform:login_sub_ogs"
+msgstr "未連接 · 用 online-go.com 的帳號"
+
+msgid "platform:login_title"
+msgstr "登入{name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "段位也是從這個帳號來的"
+
+msgid "platform:login_tabs"
+msgstr "登入方式"
+
+msgid "platform:login_tab_scan"
+msgstr "掃碼"
+
+msgid "platform:login_sub_scan"
+msgstr "未連接 · 用手機上的星陣 APP 掃一掃"
+
+msgid "platform:scan_state_waiting"
+msgstr "等待掃描"
+
+msgid "platform:scan_state_scanned"
+msgstr "已掃描，請在手機上確認"
+
+msgid "platform:scan_state_confirmed"
+msgstr "已確認，正在登入…"
+
+msgid "platform:scan_state_expired"
+msgstr "二維碼已失效"
+
+msgid "platform:scan_state_cancelled"
+msgstr "手機上取消了登入"
+
+msgid "platform:scan_unavailable_title"
+msgstr "連不上星陣"
+
+msgid "platform:scan_unavailable_body"
+msgstr "檢查網路"
+
+msgid "platform:scan_retry"
+msgstr "重試"
+
+msgid "platform:scan_title"
+msgstr "打開星陣 APP 掃一掃"
+
+msgid "platform:scan_body"
+msgstr "掃完在手機上點確認，密碼不經過這台盒子。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣登入二維碼"
+
+msgid "platform:scan_refresh"
+msgstr "換一張"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "點此換一張"
+
+msgid "platform:scan_confirm_failed"
+msgstr "確認登入失敗"
+
+msgid "vision:not_a_stone"
+msgstr "不是落子"

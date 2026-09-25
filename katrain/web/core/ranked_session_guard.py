@@ -6,6 +6,7 @@ from threading import RLock
 from types import SimpleNamespace
 
 from fastapi import HTTPException
+from katrain.web.core.game_end_rules import is_awaiting_count
 
 RANKED_SAFE_UI_TOGGLES = frozenset({"coords", "coordinates", "numbers", "move_numbers", "zen_mode"})
 
@@ -249,6 +250,10 @@ def guard_ai_ladder_ranked_human_action(session, current_user, action: str) -> N
         return
 
     snapshot = guard_ai_ladder_ranked_owner(session, current_user, action)
+
+    if action == "request-count" and is_awaiting_count(runtime):
+        # A double pass has a pending terminal marker, but no adjudicated result yet.
+        return
 
     guard_ai_ladder_ranked_not_ended(session, action)
     state = runtime.get_state() if runtime is not None else {}

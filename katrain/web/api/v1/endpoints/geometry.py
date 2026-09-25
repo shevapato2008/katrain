@@ -147,6 +147,25 @@ async def geometry_confirm_existing(request: Request):
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
+@router.post("/relocate")
+async def geometry_relocate(request: Request):
+    """外框重定位(不亮灯,盘上有子也能跑)。漂移或取消之后的人工出口。"""
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="geometry calibration not enabled")
+    from katrain.web.core.geometry_calibration_service import CalibrationBusy  # 与 /calibrate 同一种写法
+
+    try:
+        # 三帧取图 + 三次外框检测是 OpenCV 重活:放进线程,别卡住事件循环(同文件 /lock 也这么做,:276)。
+        # RK3562 上同步跑会把状态轮询和别的 API 一起冻住。
+        return await asyncio.to_thread(calibration.relocate, trigger="manual")
+    except CalibrationBusy as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        # 找不到外框 / 朝向分不清 / 挪得太远 / 此刻不在可用的三态 —— 是这次请求做不到,不是服务坏了。
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/stream")
 async def geometry_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)
@@ -204,6 +223,11 @@ async def geometry_layout(request: Request):
         "warped_margin_cells": float(DEFAULT_MARGIN_CELLS),
         "corners": corners,
         "points": lock.points.astype(float).tolist(),
+        # 这把锁是不是外框重定位出来的。上板精度闸拿 corners 当 LED 13 点的金标准 ——
+        # 重定位过的锁就是被测的外框法自己,拿它当参照等于自己比自己。
+        "relocated_by": (getattr(lock, "diag", None) or {}).get("relocated_by"),
+        # corners/points 所在的分辨率(旧锁为 null)。与上面的 frame(本次取的帧)不一定相同。
+        "source": {"width": getattr(lock, "source_width", None), "height": getattr(lock, "source_height", None)},
     }
 
 

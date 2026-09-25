@@ -19,6 +19,7 @@ from sqlalchemy.sql import func
 from katrain.web.core.db import Base
 import enum
 import uuid as uuid_module
+from datetime import datetime, timezone
 
 
 # ⚠️ **`none_as_null=True` 不是风格问题,是承重的。**
@@ -236,6 +237,27 @@ class AiLadderActiveGame(Base):
         CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_active_game_type"),
         CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_active_rung"),
         CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_active_route"),
+    )
+
+
+class AiLadderTerritoryRequest(Base):
+    """A durable single-flight claim and successful private territory result."""
+
+    __tablename__ = "ai_ladder_territory_requests"
+
+    id = Column(Integer, primary_key=True)
+    game_id = Column(String(32), nullable=False, index=True)
+    user_id = Column(Integer, nullable=False)
+    request_id = Column(String(64), nullable=False)
+    sgf_digest = Column(String(64), nullable=False)
+    claim_token = Column(String(32), nullable=False)
+    state = Column(String(16), nullable=False)
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    result = Column(LadderJSON, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("game_id", "request_id", name="uq_ai_ladder_territory_request"),
+        CheckConstraint("state IN ('pending', 'success')", name="ck_ai_ladder_territory_state"),
     )
 
 
@@ -642,6 +664,22 @@ class BoardPayloadHistory(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     figure = relationship("TutorialFigure")
+
+
+class AdminAuditLog(Base):
+    """Admin identity and tutorial writes, independent of public users."""
+
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True)
+    actor_realm = Column(String(32), nullable=False)
+    actor_username = Column(String(128), nullable=False)
+    action = Column(String(64), nullable=False)
+    target_type = Column(String(32), nullable=True)
+    target_id = Column(Integer, nullable=True)
+    success = Column(Boolean, nullable=False, default=True)
+    detail = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
 class TrainingSample(Base):
@@ -1053,3 +1091,43 @@ class QuotaBucket(Base):
         UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
         Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
     )
+
+
+class CronJobStatus(Base):
+    """Latest cron job state; the web process owns this shared schema."""
+
+    __tablename__ = "cron_job_status"
+
+    job_name = Column(String(64), primary_key=True)
+    kind = Column(String(16), nullable=False)
+    interval_seconds = Column(Integer, nullable=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    process_started_at = Column(DateTime(timezone=True), nullable=True)
+    heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    last_started_at = Column(DateTime(timezone=True), nullable=True)
+    last_finished_at = Column(DateTime(timezone=True), nullable=True)
+    last_success_at = Column(DateTime(timezone=True), nullable=True)
+    last_status = Column(String(16), nullable=True)
+    last_duration_ms = Column(Integer, nullable=True)
+    last_error = Column(Text, nullable=True)
+    consecutive_failures = Column(Integer, nullable=False, default=0)
+    loop_iteration_at = Column(DateTime(timezone=True), nullable=True)
+    loop_stats = Column(JSON, nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class CronJobRun(Base):
+    """Run history written by cron and read by the admin process."""
+
+    __tablename__ = "cron_job_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(16), nullable=False)
+    duration_ms = Column(Integer, nullable=True)
+    error_count = Column(Integer, nullable=False, default=0)
+    error = Column(Text, nullable=True)
+
+    __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)

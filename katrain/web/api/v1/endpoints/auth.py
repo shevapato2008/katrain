@@ -124,7 +124,11 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
-        if username is None:
+        if not isinstance(username, str) or _is_admin_username(username):
+            raise credentials_exception
+        # Only access tokens are Bearer credentials (2026-09-24). A refresh token lives 90 days and is for
+        # /auth/refresh alone; before this check it also unlocked every endpoint, admin-only ones included.
+        if payload.get("type") != "access":
             raise credentials_exception
         if strict_box_sso_enabled() and (box_sso is None or not box_sso.validates(payload.get("box_generation"))):
             raise credentials_exception
@@ -205,8 +209,15 @@ async def require_writable_user(request: Request, token: Optional[str] = Depends
     return user
 
 
+def _is_admin_username(username: str) -> bool:
+    """The admin identity namespace is never a public or box-local user."""
+    return username.strip().lower().startswith("admin:")
+
+
 def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     """Get existing local user or create a shadow user for board-mode auth (design 5.3)."""
+    if _is_admin_username(username):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
     user_dict = repo.get_user_by_username(username)
     if user_dict:
         return user_dict
@@ -226,8 +237,8 @@ def _validate_guest_bootstrap_generation(generation: Any) -> int:
 
 
 def _reject_reserved_username(username: str) -> None:
-    """Nobody may register or log in directly as the reserved guest account."""
-    if (username or "").strip().lower() == GUEST_USERNAME:
+    """Public login/registration must not adopt guest or admin identities."""
+    if (username or "").strip().lower() == GUEST_USERNAME or _is_admin_username(username):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
 
 
@@ -289,6 +300,29 @@ def _guest_row_has_data(repo: Any, user_id: int) -> bool:
         session.close()
 
 
+async def _activate_and_release_previous_user(request: Request, state: Any, generation: int, new_user_id: int) -> None:
+    """Wraps `state.activate(...)`, releasing the PREVIOUS box user's platform
+    connections if this bootstrap is handing the box to someone else.
+
+    `state.activate` itself already tears down the previous generation's
+    WebSockets when a generation is replaced WITHOUT a prior `box-sso/clear`
+    (`BoxSSOState.activate`'s "Box generation replaced" branch) -- but until
+    this function existed, that branch never released `_platform_user_ids`.
+    The result: the next box user would hit `PlatformBusyError` (HTTP 409,
+    "去设置里断开后再登录") for a platform connection they have NO way to
+    reach, because `/status` correctly reports it as not theirs and the
+    disconnect button only renders when it IS theirs -- a dead end until the
+    service restarts. See `box_sso_clear`'s matching release, which only
+    covers the "clear was called first" path.
+    """
+    prior_user_id = state.active_user_id
+    await state.activate(generation, user_id=new_user_id)
+    if prior_user_id is not None and prior_user_id != new_user_id:
+        platform_manager = getattr(request.app.state, "platform_manager", None)
+        if platform_manager is not None:
+            await platform_manager.release_user(prior_user_id)
+
+
 def _require_bridge(request: Request) -> Any:
     if not strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -331,7 +365,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
-    await state.activate(body.generation)
+    await _activate_and_release_previous_user(request, state, body.generation, shadow_user["id"])
     local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
 
@@ -339,11 +373,20 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
 @router.post("/box-sso/clear")
 async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
     state = _require_bridge(request)
+    # Capture BEFORE clear() wipes it -- clear() resets active_user_id to None
+    # as part of tearing the generation down.
+    released_user_id = state.active_user_id
     if not await state.clear(body.generation):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stale generation")
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None:
         remote_client.clear_tokens()
+    # Release this user's platform connections (see auth/logout's non-strict
+    # counterpart) so the next box user doesn't hit a 409 trying to log into
+    # a platform the PREVIOUS box user was using.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None and released_user_id is not None:
+        await platform_manager.release_user(released_user_id)
     return {"ok": True}
 
 
@@ -370,7 +413,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None and hasattr(remote_client, "clear_tokens"):
         remote_client.clear_tokens()
-    await state.activate(generation)
+    await _activate_and_release_previous_user(request, state, generation, shadow_user["id"])
     return {
         "access_token": create_access_token(
             data={"sub": shadow_user["username"]}, box_generation=generation
@@ -450,7 +493,7 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
         payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type: str = payload.get("type")
         username: str = payload.get("sub")
-        if token_type != "refresh" or username is None:
+        if token_type != "refresh" or not isinstance(username, str) or _is_admin_username(username):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -540,6 +583,16 @@ async def logout(request: Request, response: Response, current_user: User = Depe
     from katrain.web.session import SessionManager, LobbyManager
 
     _clear_loopback_sso_cookie(request, response)
+
+    # Release any platform (星阵/OGS/...) connections this user holds on the
+    # shared box's ONE global adapter-per-platform, without deleting their
+    # saved credentials -- see PlatformManager.release_user. Otherwise the
+    # next person to log into this box hits a 409 "someone else is connected"
+    # trying to log into a platform THIS user was using, with nothing on
+    # screen explaining why.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None:
+        await platform_manager.release_user(current_user.id)
 
     # Board mode: clear remote tokens + delete credential file (design 5.4)
     remote_client = getattr(request.app.state, "remote_client", None)

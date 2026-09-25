@@ -35,6 +35,23 @@ const mockGameState: GameState = {
 } as GameState;
 
 describe('GameControlPanel', () => {
+  test('ranked territory uses the shared action icon and shows quota and result without analysis scores', () => {
+    const onRequest = vi.fn();
+    const { rerender } = render(<GameControlPanel gameState={{ ...mockGameState, game_type: 'ai_ladder_ranked' }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{ coords: true }} onToggleAnalysis={() => {}}
+      isRanked territory={{ remaining: 3, phase: 'loading', disabled: true, retrySameRequest: false, onRequest }} />);
+    expect(screen.getByRole('button', { name: /领地 3/ })).toBeDisabled();
+    expect(screen.getByText('正在请求云端判断…')).toBeInTheDocument();
+    expect(screen.queryByText(/胜率/)).toBeNull();
+    rerender(<GameControlPanel gameState={{ ...mockGameState, game_type: 'ai_ladder_ranked' }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{ coords: true }} onToggleAnalysis={() => {}}
+      isRanked territory={{ remaining: 2, phase: 'result', blackArea: 78, whiteArea: 66, disabled: false, retrySameRequest: false, onRequest }} />);
+    fireEvent.click(screen.getByRole('button', { name: /领地 2/ }));
+    expect(onRequest).toHaveBeenCalledOnce();
+    expect(screen.getByText('约 78')).toBeInTheDocument();
+    expect(screen.getByText('约 66')).toBeInTheDocument();
+    expect(screen.getByText('领地判断：本局剩余 2 次')).toBeInTheDocument();
+  });
   // The 3D board was removed from the kiosk on 2026-07-13 (freed ~321MB Mali GPU contending
   // with KataGo's OpenCL). Guard against reintroducing the toggle; core controls must remain.
   test('renders core controls and NO 3D toggle', () => {
@@ -298,6 +315,12 @@ describe('GameControlPanel', () => {
     panel({ game_type: 'pvp_local', count_min_moves: 22, history: hist([['E5', 'B']]) }, { analysisRequiresLogin: true });
     expect(screen.queryByText('领地 / 支招 / 图表 登录后可用')).toBeNull();
     expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
+  });
+
+  test('升降级手动数子数的是实际 100 手，不把根节点算作一手', () => {
+    panel({ game_type: 'ai_ladder_ranked', count_min_moves: 100,
+      history: Array(100).fill(mockGameState.history[0]) });
+    expect(screen.getByText('数子').closest('button')).toBeDisabled();
   });
 
   test('双 pass 后后端在等数子(awaiting_count)⇒ 手数不够也亮,右端不再说门槛', () => {

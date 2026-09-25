@@ -97,8 +97,8 @@ const KioskAiLadderBlockingPanel = ({
                段位名是被挡住那一局的对手,摆成最大的字会被读成「我正要开的这局」。 */}
         <section className="kiosk-section" data-testid="kiosk-ladder-blocking-header">
           <div className="kiosk-seclabel">
-            <h2>未完成对局</h2>
-            <em>Unfinished</em>
+            <h2>{game.state === 'pending_settlement' ? '成绩未送达' : '未完成对局'}</h2>
+            <em>{game.state === 'pending_settlement' ? 'Undelivered' : 'Unfinished'}</em>
             <span className="rule" />
             <b className="secval" data-testid="kiosk-ladder-ownership">{ownershipLabel(game)}</b>
           </div>

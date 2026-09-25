@@ -207,8 +207,18 @@ export const displaceCopy = (game: AiLadderBlockingGame): AiLadderDisplaceCopy =
       ),
     };
   }
+  if (game.state === 'pending_settlement') {
+    return {
+      color: 'warning',
+      button: i18n.t('ladder:displace_undelivered_button', '放弃未送达成绩，在这里开新局'),
+      cost: i18n.t('ladder:displace_undelivered_cost', '放弃会丢失真实成绩，按一场负局计入升降级'),
+      title: i18n.t('ladder:displace_undelivered_title', '放弃这局未送达的成绩？'),
+      confirm: i18n.t('ladder:displace_undelivered_confirm', '确认放弃成绩'),
+      body: displaceBody(game),
+    };
+  }
   return {
-    color: game.state === 'pending_settlement' ? 'warning' : 'error',
+    color: 'error',
     button: i18n.t('ladder:displace_resign_button', '认输那一局，在这里开新局'),
     cost: game.state === 'active' && !heldHere(game)
       ? i18n.t('ladder:displace_resign_cost_remote', '那一局会记为本局负；它若其实已下完，真实结果会被顶掉')
@@ -243,9 +253,9 @@ const heldHere = (game: AiLadderBlockingGame): boolean => Boolean(game.session_i
 const displaceBody = (game: AiLadderBlockingGame): string => {
   if (game.state === 'pending_settlement') {
     return i18n.t(
-      'ladder:displace_resign_body_undelivered',
-      '那一局已经下完了，成绩还没送到云端。认输会以一场负替换它真实的结果，并计入升降级。'
-      + '若想保住那一局的成绩，请先用「立即重试」把它送上去。此操作不可撤销。',
+      'ladder:displace_undelivered_body',
+      '那一局已经下完了，但成绩还没送到云端。放弃后会按一场负局了结并计入升降级，真实棋谱和结果将无法再作为本局成绩补交。'
+      + '若成绩仍可重试，请先送达成绩；若云端拒收，请联系维护人员修复。此操作不可撤销。',
     );
   }
   if (heldHere(game)) {

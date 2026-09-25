@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+import asyncio
 import logging
 import math
 import secrets
@@ -12,6 +13,7 @@ from typing import Literal, Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
+from katrain.core.sgf_parser import ParseError, SGF
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.core import models_db
@@ -141,6 +143,51 @@ class AiLadderEndRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     reason: Literal["user_resigned"]
+
+
+class AiLadderCountRequest(AiLadderReservationKeyRequest):
+    sgf_content: str = Field(min_length=1, max_length=100000)
+    trigger: Literal["manual", "double_pass"]
+
+
+class AiLadderTerritoryRequest(AiLadderReservationKeyRequest):
+    sgf_content: str = Field(min_length=1, max_length=100000)
+    request_id: str = Field(min_length=1, max_length=64)
+
+
+def _count_moves_from_sgf(sgf_content: str, trigger: str) -> list[list[str]]:
+    """Accept one ordinary 19x19 mainline under the frozen ranked rules."""
+    try:
+        if not (sgf_content.startswith("(") and sgf_content.endswith(")")):
+            raise ValueError("not a complete SGF")
+        root = SGF.parse_sgf(sgf_content)
+        if (str(root.get_property("SZ")) != "19" or str(root.get_property("RU", "")).lower() not in {"chinese", "cn"}
+                or float(root.get_property("KM")) != 7.5 or int(root.get_property("HA", 0)) != 0
+                or root.get_list_property("AB", []) or root.get_list_property("AW", [])
+                or root.get_list_property("AE", [])):
+            raise ValueError("ranked board conditions differ from reservation")
+        moves = []
+        node = root
+        expected = "B"
+        while node.children:
+            if len(node.children) != 1:
+                raise ValueError("SGF variations are not allowed")
+            node = node.children[0]
+            if node.placements or node.clear_placements or node.move is None or node.move.player != expected:
+                raise ValueError("SGF mainline is invalid")
+            if node.move.coords is not None and any(not 0 <= value < 19 for value in node.move.coords):
+                raise ValueError("SGF move is outside the board")
+            moves.append([expected, node.move.gtp()])
+            expected = "W" if expected == "B" else "B"
+            if len(moves) > 1000:
+                raise ValueError("SGF is too long")
+        if trigger == "manual" and len(moves) < 100:
+            raise ValueError("manual counting requires 100 moves")
+        if trigger == "double_pass" and (len(moves) < 2 or moves[-1][1] != "pass" or moves[-2][1] != "pass"):
+            raise ValueError("double pass is required")
+        return moves
+    except (ParseError, TypeError, ValueError, IndexError, AttributeError) as exc:
+        raise HTTPException(status_code=422, detail="Invalid ranked counting position") from exc
 
 
 def _require_authority(request: Request) -> None:
@@ -829,6 +876,129 @@ async def get_ranked_game_status(
         "state": "pending_settlement" if lifecycle.state == "pending_settlement" else "active",
         "game_id": lifecycle.game_id,
     }
+
+
+@router.post("/games/{game_id}/count")
+async def count_ranked_game(
+    game_id: str,
+    body: AiLadderCountRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    return await adjudicate_ranked_position(
+        request.app, user_id=current_user.id, game_id=game_id,
+        reservation_key=body.reservation_key, sgf_content=body.sgf_content, trigger=body.trigger,
+    )
+
+
+@router.get("/games/{game_id}/territory")
+async def ranked_territory_status(
+    game_id: str, request: Request, current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    try:
+        return request.app.state.ai_ladder_repo.get_territory_status(user_id=current_user.id, game_id=game_id)
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=404, detail="Active ranked game not found") from exc
+    except AiLadderLifecycleConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post("/games/{game_id}/territory")
+async def ranked_territory(
+    game_id: str, body: AiLadderTerritoryRequest, request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    _require_authority(request)
+    return await analyze_ranked_territory(
+        request.app, user_id=current_user.id, game_id=game_id,
+        reservation_key=body.reservation_key, sgf_content=body.sgf_content, request_id=body.request_id,
+    )
+
+
+async def analyze_ranked_territory(app, *, user_id: int, game_id: str, reservation_key: str,
+                                   sgf_content: str, request_id: str) -> dict:
+    """Return only point ownership for the current ranked position."""
+    moves = _count_moves_from_sgf(sgf_content, "territory")
+    repo = app.state.ai_ladder_repo
+    try:
+        claim = repo.claim_territory(
+            user_id=user_id, game_id=game_id, reservation_key=reservation_key,
+            request_id=request_id, sgf_content=sgf_content,
+        )
+    except InvalidReservationKey as exc:
+        raise HTTPException(status_code=403, detail="Invalid reservation credential") from exc
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=404, detail="Active ranked game not found") from exc
+    except AiLadderLifecycleConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if claim["state"] == "replay":
+        return {"remaining": claim["remaining"], **claim["result"]}
+    token = claim["claim_token"]
+    try:
+        router_instance = getattr(app.state, "router", None)
+        client = getattr(router_instance, "local_client", None)
+        if client is None:
+            raise RuntimeError("ranked territory engine unavailable")
+        payload = {"rules": "chinese", "komi": 7.5, "boardXSize": 19, "boardYSize": 19,
+                   "moves": moves, "analyzeTurns": [len(moves)], "maxVisits": 200,
+                   "includeOwnership": True, "includePolicy": False}
+        analysis = await asyncio.wait_for(client.analyze(payload), timeout=30)
+        ownership = analysis.get("ownership") or analysis.get("rootInfo", {}).get("ownership")
+        if not isinstance(ownership, list) or len(ownership) != 361 or any(
+            isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+            or not -1 <= value <= 1 for value in ownership
+        ):
+            raise ValueError("invalid territory ownership")
+        result = {"move_count": len(moves), "ownership": ownership,
+                  "black_area": sum(value > 0.5 for value in ownership),
+                  "white_area": sum(value < -0.5 for value in ownership)}
+        if not repo.complete_territory(
+            user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token, result=result,
+        ):
+            raise RuntimeError("territory request expired")
+        return {"remaining": repo.get_territory_status(user_id=user_id, game_id=game_id)["remaining"], **result}
+    except asyncio.CancelledError:
+        repo.fail_territory(user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token)
+        raise
+    except Exception as exc:
+        repo.fail_territory(user_id=user_id, game_id=game_id, request_id=request_id, claim_token=token)
+        logging.getLogger("katrain_web").warning("Private ranked territory failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Ranked territory unavailable; retry") from exc
+
+
+async def adjudicate_ranked_position(app, *, user_id: int, game_id: str, reservation_key: str,
+                                     sgf_content: str, trigger: str) -> dict:
+    """Private KataGo result shared by cloud HTTP and cloud-hosted ranked sessions."""
+    try:
+        game = app.state.ai_ladder_repo.get_active_for_count(
+            user_id=user_id, game_id=game_id, reservation_key=reservation_key
+        )
+    except InvalidReservationKey as exc:
+        raise HTTPException(status_code=403, detail="Invalid reservation credential") from exc
+    except AiLadderLifecycleNotFound as exc:
+        raise HTTPException(status_code=409, detail="Ranked game is not active") from exc
+    if any(game.rules_snapshot.get(k) != v for k, v in
+           (("board_size", 19), ("rules", "chinese"), ("komi", 7.5), ("handicap", 0))):
+        raise HTTPException(status_code=409, detail="Ranked board conditions changed")
+    moves = _count_moves_from_sgf(sgf_content, trigger)
+    router_instance = getattr(app.state, "router", None)
+    client = getattr(router_instance, "local_client", None)
+    if client is None:
+        raise HTTPException(status_code=503, detail="Ranked adjudicator unavailable")
+    payload = {"rules": "chinese", "komi": 7.5, "boardXSize": 19, "boardYSize": 19,
+               "moves": moves, "analyzeTurns": [len(moves)], "maxVisits": 500,
+               "includeOwnership": False, "includePolicy": False}
+    try:
+        analysis = await client.analyze(payload)
+        score = analysis["rootInfo"]["scoreLead"]
+        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+            raise ValueError("non-finite score")
+    except Exception as exc:
+        logging.getLogger("katrain_web").warning("Private ranked count failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Ranked adjudicator unavailable; retry counting") from exc
+    return {"score": score, "result": f"{'B' if score >= 0 else 'W'}+{abs(score):.1f}"}
 
 
 @router.post("/games/{game_id}/end")

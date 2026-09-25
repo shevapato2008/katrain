@@ -4,6 +4,7 @@ WORKDIR /src/ui
 COPY katrain/web/ui/package.json katrain/web/ui/package-lock.json ./
 RUN npm ci
 COPY katrain/web/ui/ ./
+COPY katrain/img/logo-white.png /img/logo-white.png
 RUN npm run build && npm run build:admin
 
 FROM python:3.11-slim-bookworm@sha256:b18992999dbe963a45a8a4da40ac2b1975be1a776d939d098c647482bcad5cba AS python-builder

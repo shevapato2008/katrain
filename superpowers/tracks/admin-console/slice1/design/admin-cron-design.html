@@ -13,7 +13,7 @@
       color-scheme:dark;
       --bg:#111316; --bar:#1c2024; --panel:#252a2f; --panel2:#20252a; --well:#0e1012;
       --line:#414951; --text:#f6f3ef; --muted:#c7c2bb; --subtle:#9c9a96;
-      --accent:#d89367; --active:#4a342d; --active-text:#ffe8d7; --chip:#393335;
+      --accent:#d89367; --on-accent:#231711; --active:#4a342d; --active-text:#ffe8d7; --chip:#393335;
       --good:#b6d7c4; --good-bg:#22362d; --warn:#f5c98a; --warn-bg:#49321c;
       --bad:#ffbeb9; --bad-bg:#4b2a2b; --focus:#f0ac82;
     }
@@ -21,7 +21,7 @@
       color-scheme:light;
       --bg:#e9eef5; --bar:#f8fafc; --panel:#fff; --panel2:#f5f8fc; --well:#dfe6f0;
       --line:#cbd5e3; --text:#15243b; --muted:#586982; --subtle:#586982;
-      --accent:#315f94; --active:#d9e8fa; --active-text:#183e6d; --chip:#e7eef8;
+      --accent:#315f94; --on-accent:#fff; --active:#d9e8fa; --active-text:#183e6d; --chip:#e7eef8;
       --good:#285d55; --good-bg:#e3f2ea; --warn:#795016; --warn-bg:#fff1d5;
       --bad:#9b3339; --bad-bg:#fce8e8; --focus:#2765a7;
     }
@@ -111,13 +111,14 @@
     .run-info { color:var(--muted); font-size:12px; margin-top:6px; }
     .run-error { margin:10px 0 0; color:var(--bad); background:var(--bad-bg); padding:9px 11px; border-radius:5px; font:12px/1.55 ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; }
     .history-foot { padding:12px 21px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
-    .signin { display:none; min-height:calc(100vh - 52px); place-items:center; padding:25px; }
-    .signin-card { width:390px; padding:30px; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
-    .signin-card h1 { margin-bottom:7px; }
-    .signin-card p { color:var(--muted); font-size:13px; line-height:1.6; }
-    .signin-card label { display:block; margin:16px 0 6px; font-size:12px; }
-    .signin-card input { width:100%; height:42px; padding:0 11px; color:var(--text); background:var(--well); border:1px solid var(--line); border-radius:6px; font:inherit; }
-    .signin-card button { width:100%; height:42px; margin-top:22px; border:0; border-radius:6px; color:var(--active-text); background:var(--active); font-weight:700; }
+    .signin { display:none; min-height:calc(100vh - 52px); place-items:center; padding:24px; }
+    .signin-card { width:min(760px,100%); padding:40px; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+    .signin-card h1 { margin-bottom:12px; font-size:48px; }
+    .signin-card p { margin:0 0 20px; color:var(--muted); font-size:26px; line-height:1.45; }
+    .signin-card label { display:block; margin:14px 0 6px; font-size:24px; }
+    .signin-card input { width:100%; height:68px; padding:0 20px; color:var(--text); background:var(--well); border:1px solid var(--line); border-radius:7px; font:32px var(--font); }
+    .signin-card button { width:100%; height:68px; margin-top:20px; border:0; border-radius:7px; color:var(--on-accent); background:var(--accent); font-size:32px; font-weight:700; }
+    .signin-card p:last-child { margin:20px 0 0; padding-top:15px; border-top:1px solid var(--line); font-size:24px; line-height:1.5; }
     body[data-state="signin"] .shell,body[data-state="signin"] .topright { display:none; }
     body[data-state="signin"] .signin { display:grid; }
     body[data-state="loading"] .process,body[data-state="loading"] .queues,body[data-state="loading"] .table-panel { display:none; }
@@ -128,6 +129,55 @@
     .skeleton { height:28px; margin:14px 0; border-radius:5px; background:var(--well); }
     .skeleton:nth-of-type(2) { width:82%; }.skeleton:nth-of-type(3) { width:91%; }.skeleton:nth-of-type(4) { width:72%; }
     @media (max-width:1250px) { .columns,.job { grid-template-columns:minmax(140px,1fr) 82px 94px 90px 76px 70px minmax(120px,.8fr) 20px; gap:7px; padding:0 12px; } .content { padding-left:15px; padding-right:15px; } }
+    /* Large-type revision for the approved admin palette. */
+    body { font-size:30px; }
+    .top { height:80px; padding:0 24px; }
+    .brand img { width:48px; height:48px; }
+    .brand-cn { font-size:44px; }
+    .brand-en { font-size:28px; }
+    .brand-admin { font-size:26px; }
+    .topright { font-size:24px; }
+    .shell { grid-template-columns:280px minmax(0,1fr); height:calc(100vh - 80px); }
+    .side-label { font-size:22px; }
+    .nav { min-height:68px; }
+    .nav svg { width:28px; height:28px; }
+    .sidefoot { font-size:22px; }
+    .heading { min-height:122px; padding:20px 28px; }
+    .heading h1 { font-size:44px; }
+    .sub,.heading-actions { font-size:24px; }
+    .refresh { min-height:54px; padding:0 20px; }
+    .content { padding:24px 28px 32px; }
+    .notice { font-size:26px; }
+    .process > div { padding:20px 24px; }
+    .process { grid-template-columns:1fr 2.2fr .85fr; }
+    .eyebrow { font-size:22px; }
+    .process-strong { font-size:34px; }
+    .process-small { font-size:24px; }
+    .dot { width:14px; height:14px; }
+    .queues { gap:16px; margin-top:16px; }
+    .queue { min-height:100px; padding:16px 24px; }
+    .queue strong { font-size:28px; }
+    .queue span { font-size:24px; }
+    .queue b { font-size:40px; }
+    .table-panel { margin-top:22px; }
+    .table-heading { padding:18px 22px; }
+    .table-heading h2 { font-size:34px; }
+    .table-heading small { font-size:24px; }
+    .table-wrap { max-height:700px; min-height:320px; }
+    .columns,.job { width:max(100%,1550px); grid-template-columns:minmax(220px,1.25fr) 160px 160px 130px 130px 180px minmax(300px,1fr) 32px; gap:16px; padding:0 22px; }
+    .columns { height:58px; font-size:22px; }
+    .job { min-height:82px; font-size:24px; }
+    .job-name { font-size:28px; }
+    .job-code { font-size:20px; }
+    .status { font-size:24px; padding:7px 11px; }
+    .arrow { font-size:30px; }
+    .history-backdrop { top:80px; }
+    .history { top:80px; width:min(680px,100vw); }
+    .history-head h2 { font-size:40px; }
+    .history-head p,.run time,.run-info,.history-foot { font-size:24px; }
+    .run-error { font-size:22px; }
+    .signin { min-height:calc(100vh - 80px); }
+    @media (max-width:1100px) { .heading { flex-wrap:wrap; } .process { grid-template-columns:1fr; } .process > div { border-right:0; border-bottom:1px solid var(--line); } .process > div:last-child { border-bottom:0; } }
   </style>
 </head>
 <body data-theme="dark" data-state="healthy">

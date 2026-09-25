@@ -233,3 +233,49 @@ html, body, #root { margin:0; min-height:100%; }
   .admin-brand img { filter:invert(1); }
   .admin-bookpage, .admin-pageimage { box-shadow:0 8px 22px #15243b25; }
 }
+
+/* Large-type admin view: keep the controls readable without magnifying the board or book scan. */
+.admin-app { font-size:28px; }
+.admin-top { height:80px; padding:0 24px; }
+.admin-brand { gap:12px; }
+.admin-brand img { width:48px; height:48px; }
+.admin-brand-cn { font-size:44px; }
+.admin-brand-en { font-size:28px; }
+.admin-brand-admin { font-size:26px; }
+.admin-topright { gap:20px; font-size:24px; }
+.admin-topright button { padding:9px; }
+.admin-wrap { grid-template-columns:280px minmax(0,1fr); height:calc(100vh - 80px); }
+.admin-side { padding:22px 12px; }
+.admin-sidehead { font-size:22px; padding:0 16px 14px; }
+.admin-nav { min-height:68px; gap:14px; padding:12px 16px; }
+.admin-nav svg { width:28px; height:28px; }
+.admin-sidefoot { font-size:22px; }
+.admin-heading { height:96px; min-height:96px; padding:0 24px; }
+.admin-title { font-size:36px; }
+.admin-crumb { font-size:24px; }
+.admin-headcontrols select { min-width:150px; min-height:54px; font-size:24px; }
+.admin-workspace { grid-template-columns:260px minmax(360px,1fr) 440px; }
+.admin-panehead,.admin-boardbar { min-height:58px; font-size:24px; }
+.admin-boardbar strong { font-size:26px; }
+.admin-sourcecaption { font-size:24px; }
+.admin-editbar { min-height:76px; }
+.admin-tool,.admin-action { font-size:24px; padding:10px 14px; }
+.admin-edit-hint,.admin-sub,.admin-pager,.admin-label,.admin-moves,.admin-media { font-size:24px; }
+.admin-figuretitle h1 { font-size:38px; }
+.admin-viewtag,.admin-mini,.admin-feedback { font-size:22px; }
+.admin-sourcebtn { height:54px; font-size:24px; }
+.admin-copy { font-size:26px; }
+.admin-signin-page,.admin-unavailable { min-height:calc(100vh - 80px); padding:24px; }
+.admin-signin-card { width:min(760px,100%); padding:40px; }
+.admin-signin-card h1 { margin-bottom:12px; font-size:48px; line-height:1.2; }
+.admin-signin-card p { margin-bottom:20px; font-size:26px; line-height:1.45; }
+.admin-signin-card label { margin:14px 0 6px; font-size:24px; }
+.admin-signin-card input,.admin-signin-card button { height:68px; font-size:32px; }
+.admin-signin-card input { padding:0 20px; }
+.admin-signin-card button { margin-top:20px; }
+.admin-signin-card .admin-form-error { font-size:24px; }
+.admin-signin-help { margin-top:20px; padding-top:15px; font-size:24px; line-height:1.5; }
+@media (max-width:1500px) {
+  .admin-workspace { grid-template-columns:220px minmax(320px,1fr) 370px; }
+  .admin-headcontrols select { min-width:110px; }
+}

@@ -6,13 +6,13 @@ import { kioskMeJson } from './helpers/kioskIdentity';
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
 
-const SHOTS = resolve(process.cwd(),
-  '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots');
+const REFERENCE = resolve(process.cwd(),
+  '../../../superpowers/tracks/kiosk-ui-redesign/artifacts/13-problems-split-preview.png');
 const OUT = resolve(process.cwd(),
-  '../../../superpowers/tracks/kiosk-go-shell-align/visual/13-problems/1024x600');
+  '../../../superpowers/tracks/kiosk-ui-redesign/visual/13-problems/1024x600');
 
 /**
- * 屏 13 题目列表。**原稿少画的那一层**(2026-08-21 补的),计划书里没有对应的 Task。
+ * 屏 13 双栏题目列表，对照用户已确认的 1024×600 HTML 设计稿。
  *
  * 稿子那一格画的是「做了 3 道、第 4 道是下一道」的中途态,所以这里**得造进度** ——
  * 造的是 `tsumego_progress:u<id>`(真存储,真格式),不是往组件里塞假 props。
@@ -21,7 +21,7 @@ const OUT = resolve(process.cwd(),
  */
 const IDS = Array.from({ length: 45 }, (_, i) => ({ id: `p${i}` }));
 
-test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page }) => {
+test('四图:双栏题目列表 ←→ 用户确认的 7 英寸设计稿', async ({ page }) => {
   await freezeClock(page);
   await page.addInitScript(() => {
     localStorage.setItem('token', 'fourup');
@@ -49,24 +49,29 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: IDS });
     }
+    if (path.startsWith('/api/v1/tsumego/problems/')) {
+      const id = path.split('/').at(-1);
+      return route.fulfill({ json: {
+        id, level: '15k', category: 'capturing', hint: '黑先', boardSize: 19,
+        initialBlack: ['co', 'bp', 'eo', 'fp'], initialWhite: ['cp', 'ep'], sgfContent: '',
+      } });
+    }
     if (path === '/api/v1/tsumego/progress') return route.fulfill({ json: {} });
     return route.fulfill({ json: {} });
   });
   await page.goto('/kiosk/tsumego/15k/capturing/1');
   await page.waitForSelector('.qgrid button:nth-child(20)');
+  await page.waitForSelector('[data-testid="problem-preview-board"] [data-stone="b"]');
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({
     page,
-    referencePng: resolve(SHOTS, '13-problems.png'),
+    referencePng: REFERENCE,
+    localReference: true,
     outDir: OUT,
     slug: '13-problems',
-    referenceCaption:
-      '参考:sample-go/shots/13-problems.png · 布局 B(无棋盘 ⇒ 页控条通栏 x16)· 稿子这一层 2026-08-21 才补上,原稿从单元卡直接跳做题屏',
-    implementationCaption:
-      '实现:/kiosk/tsumego/15k/capturing/1 @1024×600 · 时钟冻 16:40 · 题号 45 个是 fixture,进度造进 tsumego_progress:u1(真存储真格式,钥匙分人)· '
-      + '三处按 Fan「别写那么多小字」改了:两条组标题右端的说明去掉、数据条标签去掉「· 当前单元」、错题那行点名「这一类」 · '
-      + '「只做错过的」已接通(T1):行尾是「开始」,进错题页 · 「整级」那行改成「这一级的全部题，按分类排好」(N8:不是混排)',
+    referenceCaption: '参考:已确认的 7 英寸 HTML 设计稿 · 516 棋盘 + 460 右栏 · 第 4 题预览',
+    implementationCaption: '实现:真实题目接口的初始棋形 · 20 题 5×4 · 底部进入所选题 · 题目 fixture 与设计稿示意棋形不同',
   });
   console.log(`[fourup 13-problems] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

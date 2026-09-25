@@ -280,10 +280,35 @@ html, body, #root { margin:0; min-height:100%; }
   .admin-headcontrols select { min-width:110px; }
 }
 
-/* Compact typography only while inspecting the dense cron monitor. */
-.admin-app-cron { font-size:20px; }
-.admin-app-cron .admin-brand-cn { font-size:31px; }
-.admin-app-cron .admin-brand-en { font-size:20px; }
-.admin-app-cron .admin-brand-admin { font-size:18px; }
-.admin-app-cron .admin-topright { font-size:17px; }
-.admin-app-cron .admin-sidehead,.admin-app-cron .admin-sidefoot { font-size:16px; }
+/* Both signed-in pages share the same compact shell typography. */
+.admin-app-cron,.admin-app-tutorial { font-size:20px; }
+:is(.admin-app-cron,.admin-app-tutorial) .admin-brand-cn { font-size:31px; }
+:is(.admin-app-cron,.admin-app-tutorial) .admin-brand-en { font-size:20px; }
+:is(.admin-app-cron,.admin-app-tutorial) .admin-brand-admin { font-size:18px; }
+:is(.admin-app-cron,.admin-app-tutorial) .admin-topright { font-size:17px; }
+:is(.admin-app-cron,.admin-app-tutorial) .admin-sidehead,
+:is(.admin-app-cron,.admin-app-tutorial) .admin-sidefoot { font-size:16px; }
+
+/* Match the tutorial workbench to the cron page's type hierarchy. */
+.admin-app-tutorial .admin-title { font-size:31px; }
+.admin-app-tutorial .admin-crumb { font-size:17px; }
+.admin-app-tutorial .admin-headcontrols select { font-size:17px; }
+.admin-app-tutorial .admin-panehead,
+.admin-app-tutorial .admin-boardbar { font-size:17px; }
+.admin-app-tutorial .admin-boardbar strong { font-size:18px; }
+.admin-app-tutorial .admin-sourcecaption { font-size:17px; }
+.admin-app-tutorial .admin-tool,
+.admin-app-tutorial .admin-action { font-size:17px; }
+.admin-app-tutorial .admin-edit-hint,
+.admin-app-tutorial .admin-sub,
+.admin-app-tutorial .admin-pager,
+.admin-app-tutorial .admin-label,
+.admin-app-tutorial .admin-moves,
+.admin-app-tutorial .admin-media { font-size:17px; }
+.admin-app-tutorial .admin-figuretitle h1 { font-size:27px; }
+.admin-app-tutorial .admin-viewtag,
+.admin-app-tutorial .admin-mini,
+.admin-app-tutorial .admin-feedback { font-size:16px; }
+.admin-app-tutorial .admin-sourcebtn { font-size:17px; }
+.admin-app-tutorial .admin-copy,
+.admin-app-tutorial .admin-editcopy { font-size:18px; }

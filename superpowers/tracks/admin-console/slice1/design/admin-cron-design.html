@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 定时任务设计稿</title>
+  <style>
+    @import url('../../../../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css');
+    @font-face { font-family: LongCang; src: url('../../../../../katrain/web/ui/src/galaxy/assets/fonts/longcang-brand.woff2') format('woff2'); font-display:swap; }
+    :root { --font:"Kaiti SC","STKaiti","KaiTi","LXGW WenKai",serif; }
+    body[data-theme="dark"] {
+      color-scheme:dark;
+      --bg:#111316; --bar:#1c2024; --panel:#252a2f; --panel2:#20252a; --well:#0e1012;
+      --line:#414951; --text:#f6f3ef; --muted:#c7c2bb; --subtle:#9c9a96;
+      --accent:#d89367; --active:#4a342d; --active-text:#ffe8d7; --chip:#393335;
+      --good:#b6d7c4; --good-bg:#22362d; --warn:#f5c98a; --warn-bg:#49321c;
+      --bad:#ffbeb9; --bad-bg:#4b2a2b; --focus:#f0ac82;
+    }
+    body[data-theme="light"] {
+      color-scheme:light;
+      --bg:#e9eef5; --bar:#f8fafc; --panel:#fff; --panel2:#f5f8fc; --well:#dfe6f0;
+      --line:#cbd5e3; --text:#15243b; --muted:#586982; --subtle:#586982;
+      --accent:#315f94; --active:#d9e8fa; --active-text:#183e6d; --chip:#e7eef8;
+      --good:#285d55; --good-bg:#e3f2ea; --warn:#795016; --warn-bg:#fff1d5;
+      --bad:#9b3339; --bad-bg:#fce8e8; --focus:#2765a7;
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; min-height:100%; }
+    body { min-width:1100px; background:var(--bg); color:var(--text); font:15px/1.45 var(--font); }
+    button { font:inherit; cursor:pointer; }
+    button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+    .top { height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 17px; background:var(--bar); border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:9px; white-space:nowrap; }
+    .brand img { width:31px; height:31px; object-fit:contain; }
+    body[data-theme="light"] .brand img { filter:invert(1); }
+    .brand-cn { font:23px/1 LongCang,serif; }
+    .brand-en { font:600 13px/1 -apple-system,BlinkMacSystemFont,sans-serif; letter-spacing:.02em; }
+    .brand-admin { margin-left:9px; padding-left:14px; border-left:1px solid var(--line); color:var(--muted); font-size:13px; }
+    .topright { display:flex; align-items:center; gap:17px; color:var(--muted); font-size:12px; }
+    .env { border-radius:99px; background:var(--chip); padding:5px 11px; color:var(--text); border:1px solid var(--line); }
+    .plain { border:0; background:none; color:var(--accent); padding:7px 4px; }
+    .shell { display:grid; grid-template-columns:216px minmax(0,1fr); height:calc(100vh - 52px); min-height:700px; }
+    .side { display:flex; flex-direction:column; padding:16px 8px; background:var(--bar); border-right:1px solid var(--line); }
+    .side-label { padding:0 16px 10px; color:var(--subtle); font-size:11px; letter-spacing:.12em; }
+    .nav { display:flex; align-items:center; gap:11px; min-height:48px; padding:10px 16px; border-radius:8px; color:var(--muted); }
+    .nav svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.8; }
+    .nav.active { background:var(--active); color:var(--active-text); font-weight:700; }
+    .sidefoot { margin-top:auto; border-top:1px solid var(--line); padding:17px 12px 0; color:var(--muted); font-size:12px; line-height:1.65; }
+    main { min-width:0; min-height:0; overflow:auto; display:flex; flex-direction:column; }
+    .heading { display:flex; align-items:center; justify-content:space-between; gap:18px; min-height:81px; padding:13px 22px; border-bottom:1px solid var(--line); background:var(--bar); }
+    h1 { margin:0; font-size:22px; line-height:1.2; font-weight:600; }
+    .sub { margin-top:5px; color:var(--muted); font-size:12px; }
+    .heading-actions { display:flex; align-items:center; gap:12px; color:var(--muted); font-size:12px; }
+    .refresh { min-height:36px; border:1px solid var(--line); border-radius:7px; padding:0 15px; color:var(--text); background:var(--panel); }
+    .content { padding:20px 22px 25px; flex:1; min-width:0; }
+    .process { display:grid; grid-template-columns:1.4fr 1fr 1fr; border:1px solid var(--line); background:var(--panel); border-radius:10px; overflow:hidden; }
+    .process > div { padding:15px 20px; border-right:1px solid var(--line); min-width:0; }
+    .process > div:last-child { border-right:0; }
+    .eyebrow { color:var(--subtle); font-size:11px; letter-spacing:.08em; }
+    .process-strong { display:flex; align-items:center; gap:8px; margin-top:5px; font-size:17px; font-weight:600; }
+    .process-small { margin-top:2px; color:var(--muted); font-size:12px; }
+    .dot { display:inline-block; flex:none; width:8px; height:8px; border-radius:50%; background:var(--good); }
+    .queues { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+    .queue { display:flex; justify-content:space-between; align-items:center; min-height:64px; padding:10px 17px; background:var(--panel); border:1px solid var(--line); border-radius:9px; }
+    .queue strong { display:block; font-size:14px; }
+    .queue span { color:var(--muted); font-size:12px; }
+    .queue b { font:600 20px/1 Georgia,serif; color:var(--text); }
+    .table-panel { margin-top:17px; border:1px solid var(--line); border-radius:9px; background:var(--panel); overflow:hidden; }
+    .table-heading { display:flex; align-items:center; justify-content:space-between; padding:13px 17px; border-bottom:1px solid var(--line); }
+    .table-heading h2 { margin:0; font-size:17px; font-weight:600; }
+    .table-heading small { color:var(--muted); font-size:12px; }
+    .table-wrap { max-height:calc(100vh - 363px); min-height:245px; overflow:auto; }
+    .columns,.job { display:grid; grid-template-columns:minmax(160px,1.25fr) 92px 110px 108px 90px 90px minmax(155px,1fr) 26px; align-items:center; gap:12px; padding:0 17px; }
+    .columns { position:sticky; top:0; z-index:1; height:36px; background:var(--panel2); color:var(--subtle); font-size:11px; border-bottom:1px solid var(--line); }
+    .job { width:100%; min-height:50px; text-align:left; border:0; border-bottom:1px solid var(--line); color:var(--text); background:var(--panel); font-size:12px; }
+    .job:last-child { border-bottom:0; }
+    .job:hover { background:var(--panel2); }
+    .job-name { font-size:14px; font-weight:600; }
+    .job-code { display:block; margin-top:1px; color:var(--subtle); font:10px/1.2 ui-monospace,SFMono-Regular,monospace; }
+    .muted { color:var(--muted); }
+    .error-summary { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .status { display:inline-block; padding:4px 8px; border-radius:5px; white-space:nowrap; font-size:12px; font-weight:700; }
+    .status.ok,.status.running { color:var(--good); background:var(--good-bg); }
+    .status.errors,.status.overdue,.status.pending { color:var(--warn); background:var(--warn-bg); }
+    .status.failed,.status.offline,.status.stuck { color:var(--bad); background:var(--bad-bg); }
+    .status.disabled { color:var(--muted); background:var(--chip); }
+    .arrow { color:var(--subtle); font:18px/1 sans-serif; }
+    .notice { display:none; align-items:center; justify-content:space-between; gap:20px; margin-bottom:14px; padding:11px 15px; border:1px solid var(--line); border-radius:8px; background:var(--warn-bg); color:var(--warn); font-size:13px; }
+    .notice strong { font-weight:700; }
+    body[data-origin="api-error"] .notice, body[data-origin="offline"] .notice { display:flex; }
+    .empty { display:none; min-height:370px; padding:70px 20px; text-align:center; background:var(--panel); border:1px solid var(--line); border-radius:9px; margin-top:17px; }
+    .empty h2 { margin:0 0 10px; font-size:19px; }
+    .empty p { margin:0 auto 20px; max-width:530px; color:var(--muted); line-height:1.7; }
+    .empty button { min-height:36px; border:1px solid var(--line); border-radius:6px; padding:0 16px; color:var(--text); background:var(--panel2); }
+    body[data-state="no-table"] .process, body[data-state="no-table"] .queues, body[data-state="no-table"] .table-panel,
+    body[data-state="empty"] .process, body[data-state="empty"] .queues, body[data-state="empty"] .table-panel { display:none; }
+    body[data-state="no-table"] .empty.no-table, body[data-state="empty"] .empty.no-jobs { display:block; }
+    .history-backdrop { display:none; position:fixed; inset:52px 0 0; background:#05070a88; z-index:3; }
+    .history { display:none; position:fixed; right:0; top:52px; bottom:0; z-index:4; width:460px; background:var(--panel); border-left:1px solid var(--line); box-shadow:-18px 0 40px #0004; flex-direction:column; }
+    body[data-state="history"] .history-backdrop { display:block; }
+    body[data-state="history"] .history { display:flex; }
+    .history-head { display:flex; align-items:start; justify-content:space-between; padding:20px 21px 16px; border-bottom:1px solid var(--line); }
+    .history-head h2 { margin:0; font-size:20px; font-weight:600; }
+    .history-head p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+    .history-head button { background:none; border:0; color:var(--muted); font:25px/1 sans-serif; }
+    .history-list { overflow:auto; padding:0 21px 20px; flex:1; }
+    .run { padding:15px 0; border-bottom:1px solid var(--line); }
+    .run-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .run time { color:var(--muted); font-size:12px; }
+    .run-info { color:var(--muted); font-size:12px; margin-top:6px; }
+    .run-error { margin:10px 0 0; color:var(--bad); background:var(--bad-bg); padding:9px 11px; border-radius:5px; font:12px/1.55 ui-monospace,SFMono-Regular,monospace; overflow-wrap:anywhere; }
+    .history-foot { padding:12px 21px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+    .signin { display:none; min-height:calc(100vh - 52px); place-items:center; padding:25px; }
+    .signin-card { width:390px; padding:30px; background:var(--panel); border:1px solid var(--line); border-radius:10px; }
+    .signin-card h1 { margin-bottom:7px; }
+    .signin-card p { color:var(--muted); font-size:13px; line-height:1.6; }
+    .signin-card label { display:block; margin:16px 0 6px; font-size:12px; }
+    .signin-card input { width:100%; height:42px; padding:0 11px; color:var(--text); background:var(--well); border:1px solid var(--line); border-radius:6px; font:inherit; }
+    .signin-card button { width:100%; height:42px; margin-top:22px; border:0; border-radius:6px; color:var(--active-text); background:var(--active); font-weight:700; }
+    body[data-state="signin"] .shell,body[data-state="signin"] .topright { display:none; }
+    body[data-state="signin"] .signin { display:grid; }
+    body[data-state="loading"] .process,body[data-state="loading"] .queues,body[data-state="loading"] .table-panel { display:none; }
+    body[data-state="loading"] .loading-shell { display:block; }
+    .loading-shell { display:none; margin-top:4px; padding:22px; min-height:450px; border:1px solid var(--line); border-radius:9px; background:var(--panel); }
+    .loading-shell h2 { margin:0 0 7px; font-size:18px; }
+    .loading-shell p { margin:0 0 23px; color:var(--muted); font-size:13px; }
+    .skeleton { height:28px; margin:14px 0; border-radius:5px; background:var(--well); }
+    .skeleton:nth-of-type(2) { width:82%; }.skeleton:nth-of-type(3) { width:91%; }.skeleton:nth-of-type(4) { width:72%; }
+    @media (max-width:1250px) { .columns,.job { grid-template-columns:minmax(140px,1fr) 82px 94px 90px 76px 70px minmax(120px,.8fr) 20px; gap:7px; padding:0 12px; } .content { padding-left:15px; padding-right:15px; } }
+  </style>
+</head>
+<body data-theme="dark" data-state="healthy">
+  <header class="top">
+    <div class="brand"><img src="../../../../../katrain/img/logo-white.png" alt=""><span class="brand-cn">智星盒</span><span class="brand-en">StellaBox</span><span class="brand-admin">管理后台</span></div>
+    <div class="topright"><span class="env">本机环境</span><span>admin:fan</span><button class="plain" type="button">退出</button></div>
+  </header>
+  <div class="shell">
+    <aside class="side">
+      <div class="side-label">内容与服务</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M3 5h8l2 2h8v13H3zM6 11h12M6 15h9"/></svg>教程管理</div>
+      <div class="nav active"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>定时任务</div>
+      <div class="sidefoot">当前环境：本机环境<br>此页面只读，不会运行或暂停任务。</div>
+    </aside>
+    <main>
+      <div class="heading">
+        <div><h1>定时任务</h1><div class="sub">观察 cron 进程、九项任务和两条分析队列 · 设计稿示例数据</div></div>
+        <div class="heading-actions"><span id="observed">采样于 16:32:08 · 每 15 秒刷新</span><button class="refresh" type="button">刷新状态</button></div>
+      </div>
+      <div class="content">
+        <div class="notice" id="notice"><strong>数据暂不可用</strong><span>上次成功读取于 16:31:53 · 当前显示的是旧数据</span></div>
+        <div class="process">
+          <div><div class="eyebrow">CRON 进程</div><div class="process-strong"><span class="dot"></span><span id="process-state">运行正常</span></div><div class="process-small" id="process-detail">心跳 8 秒前 · 进程启动于 14:06</div></div>
+          <div><div class="eyebrow">任务概况</div><div class="process-strong" id="job-total">9 正常</div><div class="process-small">点击任务查看运行历史与完整错误</div></div>
+          <div><div class="eyebrow">最近采样</div><div class="process-strong">16:32:08</div><div class="process-small">若 120 秒无心跳，所有任务标为失联</div></div>
+        </div>
+        <div class="queues">
+          <div class="queue"><div><strong>直播分析队列</strong><span>待处理 3 · 最早等待 2 分钟</span></div><b>3</b></div>
+          <div class="queue"><div><strong>复盘队列</strong><span>待处理 1 · 最早等待 38 秒</span></div><b>1</b></div>
+        </div>
+        <div class="loading-shell" role="status"><h2>正在读取任务状态…</h2><p>首次采样尚未完成，进程和任务健康状态暂时未知。</p><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+        <section class="table-panel" aria-label="定时任务列表">
+          <div class="table-heading"><h2>任务状态</h2><small>共 9 项 · 按异常优先显示</small></div>
+          <div class="table-wrap">
+            <div class="columns"><span>任务</span><span>状态</span><span>上次运行</span><span>耗时</span><span>连续失败</span><span>类型</span><span>最近错误</span><span></span></div>
+            <div id="jobs"></div>
+          </div>
+        </section>
+        <div class="empty no-table"><h2>状态表尚未建立</h2><p>katrain-web 新版本可能还没启动。此页面不能判断 cron 是否正常；请先确认服务版本与建表状态。</p><button type="button">重新检查</button></div>
+        <div class="empty no-jobs"><h2>cron 进程还没上报任务</h2><p>新版本 cron 可能尚未启动，或暂时无法连接数据库。这里不会把空列表当作“全部正常”。</p><button type="button">重新检查</button></div>
+      </div>
+    </main>
+  </div>
+  <div class="history-backdrop"></div>
+  <aside class="history" aria-label="任务运行历史">
+    <div class="history-head"><div><h2>落子轮询 · 运行历史</h2><p>poll_moves · 最近 200 条 · 最多保留 14 天</p></div><button type="button" aria-label="关闭运行历史" id="close-history">×</button></div>
+    <div class="history-list" id="runs"></div>
+    <div class="history-foot">向下滚动加载较早记录 · 状态和错误均来自 cron 记录器</div>
+  </aside>
+  <section class="signin"><form class="signin-card"><h1>登录管理后台</h1><p>通过 SSH 隧道访问的后台专用账号，与公开 Galaxy 账号独立。</p><label>后台用户名</label><input autocomplete="username" placeholder="输入后台用户名"><label>密码</label><input type="password" autocomplete="current-password" placeholder="输入密码"><button type="button">登录</button><p>仅供授权管理员使用；无公开注册入口。</p></form></section>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const state = params.get('state') || 'healthy';
+    document.body.dataset.state = state;
+    document.body.dataset.theme = params.get('theme') === 'light' ? 'light' : 'dark';
+    const jobs = [
+      ['poll_moves','落子轮询','正常','16:32:05','480 ms','0','间隔 · 3 秒','15:43 落子轮询请求失败'],
+      ['analyze','直播分析','正常','16:31:48','循环中','0','常驻循环','13:12 分析循环意外退出'],
+      ['report_analyze','复盘分析','正常','16:31:39','循环中','0','常驻循环','12:51 复盘分析循环意外退出'],
+      ['fetch_upcoming','赛事预告','正常','16:15:00','1.2 秒','0','间隔 · 15 分','—'],
+      ['fetch_list','赛事列表','正常','16:00:00','2.6 秒','0','间隔 · 30 分','—'],
+      ['poll_pandanet','Pandanet 对局','正常','16:30:00','820 ms','0','间隔 · 5 分','—'],
+      ['translate','棋手译名','正常','15:00:00','3.8 秒','0','间隔 · 1 小时','—'],
+      ['tutorial_backup','教程备份','正常','04:00:00','12.4 秒','0','间隔 · 1 天','—'],
+      ['cleanup','数据清理','正常','03:00:00','4.1 秒','0','间隔 · 1 天','—'],
+    ];
+    const originState = state === 'history' ? (params.get('from') || 'healthy') : state;
+    document.body.dataset.origin = originState;
+    const selectedJob = jobs.find((job) => job[0] === params.get('job')) || jobs[3];
+    const isLoop = ['analyze','report_analyze'].includes(selectedJob[0]);
+    const isShortInterval = selectedJob[0] === 'poll_moves';
+    const historyCount = isLoop ? 2 : isShortInterval ? 3 : ['cleanup','tutorial_backup'].includes(selectedJob[0]) ? 14 : 200;
+    const historyStepMinutes = { poll_moves:60, analyze:1440, report_analyze:1440, fetch_upcoming:15, fetch_list:30, poll_pandanet:5, translate:60, cleanup:1440, tutorial_backup:1440 }[selectedJob[0]];
+    document.querySelector('.history-head h2').textContent = selectedJob[1] + ' · 运行历史';
+    document.querySelector('.history-head p').textContent = selectedJob[0] + ' · 最近 ' + historyCount + ' 条 · 最多保留 14 天';
+    const variant = jobs.map((job) => [...job]);
+    if (originState === 'failed') {
+      variant[8][2] = '失败'; variant[8][5] = '1'; variant[8][7] = '清理任务连接数据库失败';
+      variant[4][2] = '有报错'; variant[4][5] = '1'; variant[4][7] = '赛事列表接口响应超时';
+      variant.sort((a,b) => ({'失败':0,'有报错':1}[a[2]] ?? 2) - ({'失败':0,'有报错':1}[b[2]] ?? 2));
+      document.querySelector('#job-total').textContent = '7 正常 · 1 失败 · 1 有报错';
+    }
+    if (originState === 'offline') {
+      variant.forEach((job) => { job[2] = '失联'; });
+      variant[0][3] = '16:29:51'; variant[1][3] = '16:29:35'; variant[2][3] = '16:29:30'; variant[5][3] = '16:25:00';
+      document.querySelector('#process-state').textContent = '进程失联';
+      document.querySelector('#process-detail').textContent = '最后心跳 2 分 14 秒前 · 不沿用旧的“正常”状态';
+      document.querySelector('#job-total').textContent = '9 失联';
+      document.querySelector('#notice strong').textContent = 'cron 进程失联';
+      document.querySelector('#notice span').textContent = '最后心跳已超过 120 秒，正在保留最后采样的运行时间供排查。';
+      document.querySelector('.dot').style.background = 'var(--bad)';
+    }
+    if (originState === 'api-error') {
+      document.querySelector('#notice strong').textContent = '接口请求失败（503）';
+      document.querySelector('#observed').textContent = '数据停在 16:31:53 · 正在重试';
+      document.querySelector('.process > div:last-child .process-strong').textContent = '16:31:53';
+      variant[0][3] = '16:31:50';
+    }
+    if (originState === 'loading') document.querySelector('#observed').textContent = '首次读取中 · 每 15 秒刷新';
+    document.querySelector('#close-history').addEventListener('click', () => { location.search = '?theme='+document.body.dataset.theme+'&state='+encodeURIComponent(originState); });
+    const labelClass = { '正常':'ok','运行中':'running','有报错':'errors','失败':'failed','失联':'offline','卡住':'stuck','该跑没跑':'overdue','已停用':'disabled','等待首次运行':'pending' };
+    const jobRoot = document.querySelector('#jobs');
+    for (const job of variant) {
+      const row = document.createElement('button'); row.className = 'job'; row.type = 'button';
+      const name = document.createElement('span'); name.innerHTML = '<span class="job-name"></span><span class="job-code"></span>';
+      name.querySelector('.job-name').textContent = job[1]; name.querySelector('.job-code').textContent = job[0];
+      row.append(name);
+      const status = document.createElement('span'); status.className = 'status ' + (labelClass[job[2]] || 'pending'); status.textContent = job[2]; row.append(status);
+      for (const value of [job[3],job[4],job[5],job[6],job[7]]) {
+        const cell = document.createElement('span'); cell.className = value === '—' ? 'muted' : value === job[7] ? 'error-summary' : '';
+        cell.textContent = value; row.append(cell);
+      }
+      const arrow = document.createElement('span'); arrow.className = 'arrow'; arrow.textContent = '›'; row.append(arrow);
+      row.addEventListener('click', () => { location.search = '?theme='+document.body.dataset.theme+'&state=history&from='+encodeURIComponent(originState)+'&job='+encodeURIComponent(job[0]); });
+      jobRoot.append(row);
+    }
+    const runs = document.querySelector('#runs');
+    const selectedLastRun = variant.find((job) => job[0] === selectedJob[0])?.[3] ?? selectedJob[3];
+    for (let index=0; index<historyCount; index++) {
+      const item = document.createElement('div'); item.className='run';
+      const failed = isLoop || isShortInterval || (selectedJob[0] === 'cleanup' && originState === 'failed' && index === 0);
+      const errors = !failed && selectedJob[0] === 'fetch_list' && originState === 'failed' && index === 0;
+      item.innerHTML = '<div class="run-head"><time></time><span class="status"></span></div><div class="run-info"></div><div class="run-error" hidden></div>';
+      const sampleStart = { poll_moves:'15:43:02', analyze:'13:12:00', report_analyze:'12:51:00' }[selectedJob[0]] || selectedLastRun;
+      const started = new Date('2026-09-24T'+sampleStart+'+08:00');
+      started.setMinutes(started.getMinutes()-index*historyStepMinutes);
+      item.querySelector('time').textContent = started.toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+      const status = item.querySelector('.status'); status.className = 'status '+(failed?'failed':errors?'errors':'ok'); status.textContent=failed?'失败':errors?'有报错':'成功';
+      const duration = isLoop ? '3 分 18 秒' : index === 0 ? (isShortInterval ? '510 ms' : selectedJob[4]) : (400+index*13)+' ms';
+      item.querySelector('.run-info').textContent = ((failed || errors)?'1 条 ERROR · ':'') + duration;
+      const error = item.querySelector('.run-error'); error.hidden=!(failed || errors);
+      error.textContent = isLoop ? '分析循环意外退出；进程已尝试重新启动。' : selectedJob[0] === 'cleanup' ? '清理任务连接数据库失败，本次运行未完成。' : selectedJob[0] === 'fetch_list' ? '赛事列表接口响应超时；本次运行含 ERROR。' : selectedJob[0] === 'fetch_upcoming' ? '赛事预告接口响应超时；本次运行含 ERROR。' : selectedJob[0] === 'poll_moves' ? '落子轮询请求失败；短间隔成功运行不写入历史。' : selectedJob[0] === 'report_analyze' ? '复盘分析循环意外退出。' : selectedJob[1]+' 上游请求超时；本次运行含 ERROR。';
+      runs.append(item);
+    }
+  </script>
+</body>
+</html>

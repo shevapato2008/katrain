@@ -1070,3 +1070,43 @@ class QuotaBucket(Base):
         UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
         Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
     )
+
+
+class CronJobStatus(Base):
+    """Latest cron job state; the web process owns this shared schema."""
+
+    __tablename__ = "cron_job_status"
+
+    job_name = Column(String(64), primary_key=True)
+    kind = Column(String(16), nullable=False)
+    interval_seconds = Column(Integer, nullable=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    process_started_at = Column(DateTime(timezone=True), nullable=True)
+    heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    last_started_at = Column(DateTime(timezone=True), nullable=True)
+    last_finished_at = Column(DateTime(timezone=True), nullable=True)
+    last_success_at = Column(DateTime(timezone=True), nullable=True)
+    last_status = Column(String(16), nullable=True)
+    last_duration_ms = Column(Integer, nullable=True)
+    last_error = Column(Text, nullable=True)
+    consecutive_failures = Column(Integer, nullable=False, default=0)
+    loop_iteration_at = Column(DateTime(timezone=True), nullable=True)
+    loop_stats = Column(JSON, nullable=True)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class CronJobRun(Base):
+    """Run history written by cron and read by the admin process."""
+
+    __tablename__ = "cron_job_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(16), nullable=False)
+    duration_ms = Column(Integer, nullable=True)
+    error_count = Column(Integer, nullable=False, default=0)
+    error = Column(Text, nullable=True)
+
+    __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)

@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from katrain.web.admin.routers.auth import router as auth_router
+from katrain.web.admin.routers.cron import router as cron_router
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
 from katrain.web.admin.settings import check_startup
 from katrain.web.api.v1.endpoints.tutorials import router as tutorial_read_router
@@ -63,6 +64,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None) -> Fa
         return {"status": "ok", "env": config.env}
 
     app.include_router(auth_router)
+    app.include_router(cron_router, prefix="/api/admin/cron", tags=["admin-cron"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db

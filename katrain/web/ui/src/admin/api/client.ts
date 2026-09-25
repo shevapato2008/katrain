@@ -1,4 +1,5 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
+import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
 export interface TutorialBook { id: number; category: string; title: string; slug: string; chapter_count: number }
@@ -72,6 +73,9 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     login: (username: string, password: string) => request<{ access_token: string; token_type: string }>('/api/admin/auth/login', { method: 'POST', body: body({ username, password }) }),
     me: () => adminRequest<{ username: string; env: string }>('/auth/me'),
     logout: () => adminRequest<void>('/auth/logout', { method: 'POST' }),
+    cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
+    cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
+    cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
     categories: () => publicRead<TutorialCategory[]>('/categories'),
     books: (category: string) => publicRead<TutorialBook[]>(`/categories/${encodeURIComponent(category)}/books`),
     book: (id: number) => publicRead<TutorialBookDetail>(`/books/${id}`),

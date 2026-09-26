@@ -13,8 +13,8 @@
 ## 文件与责任
 
 - `superpowers/tracks/admin-console/slice3/design/admin-vision-capture.html` 与本目录截图/记录：静态设计基准，已独立视觉通过。
-- `katrain/web/ui/admin-vision-fixture.html`、`src/admin/vision/fixture.tsx`、`VisionFixture.tsx`、`VisionCapturePage.tsx`、`VisionCapturePage.css`：隔离的双主题/多状态可视 Fixture；真实集成后删除 Fixture 入口、样例数据和控制器，保留纯页面。
-- `src/admin/vision/VisionCapturePage.test.tsx`：加载、未连接、可采集、错误与禁用操作的聚焦前端测试。
+- `katrain/web/ui/admin-vision-fixture.html`、`src/admin/vision/fixture.tsx`、`VisionFixture.tsx`、旧 `VisionCapturePage.tsx/test`：已在正式集成后删除。保留共享 `VisionCapturePage.css`；真实页面为 `VisionLivePage.tsx`，控制器为 `VisionDashboard.tsx`，类型在 `types.ts`。
+- `src/admin/vision/VisionDashboard.test.tsx`、`src/admin/AdminApp.vision.test.tsx`、`api/client.test.ts`：真实状态、同帧预览、上下文取消、操作确认、复核失败重拍与授权的聚焦测试。
 - `katrain/web/core/device_lease.py`、`camera_hub.py`、`led_service.py`、`katrain/web/server.py`：按设备标识共享的同机进程间相机/LED 租约，start 失败时不留锁，stop 释放；kiosk/admin 复用，kiosk 对专门的占用异常做现有降级而非整体启动失败。
 - `katrain/web/admin/vision_runtime.py`：本机相机、几何、SGF 与采集目录生命周期及真实状态；不借用整个 kiosk lifespan。
 - `katrain/web/admin/vision_sgf.py`：有界原始 SGF 输入、19×19 宽高校验及不可变逐手真值；持久化仍由采集事务负责。
@@ -65,12 +65,13 @@
 - [x] **Step 1:** 先在 `tests/web_ui/test_admin_vision_dataset.py` 写无 LED `stones2` 的类目顺序固定为 `black=0, white=1`，LED 四类沿用 `katrain/vision/classes.py`；标签 ID、冻结 manifest 的类目和 `data.yaml` 必须完全一致。`70b4b823` 实现显式 schema 选择，不调用硬编码四类的 `write_data_yaml`。
 - [x] **Step 1a:** 对受控目录中的原图、SGF、几何和逐帧 manifest 做完整性及 SHA-256 检查；用现有 `baipu_autolabel.frame_boxes` 生成可视叠图，`stones2` 的 `led_point=null` 只产生棋子类。LED 四类用 `detect_led_centroid` 验证真实亮点。拒绝空集、缺帧、不可读图、非有限/非归一化标注、无效类别、任一 split 为空和按文件名或随机切分连续帧；聚焦 RED→GREEN，独立规格和质量 APPROVE。
 - [x] **Step 2:** `70b4b823` 在临时同卷目录生成图像、标签、`data.yaml` 和版本 manifest，记录固定 ID、生成时间、实际参数、类目、标定来源、代码/生成器版本与全部产物逐文件 SHA-256；全部验证通过后原子发布为只读目录。失败/取消保留既有状态，重复请求幂等。`15aa2b64` 根据 Ultralytics 官方路径解析去掉 cwd 相关 `path`，确保版本可搬移；数据集＋采集＋SGF **81 passed**。`b8c1cf9f` 增加受保护复核/冻结路由；冻结在生命周期锁内同步执行，此阶段未实现大任务取消 UI。
-- [ ] **Step 3:** 前端改为真实状态、同帧预览、逐手确认与复核/冻结。真实 API 错误与令牌失效沿用后台处理。删除 Fixture 入口及纯示意数据，在正式 `AdminApp` 导航接入；运行 `npx vitest run src/admin/vision/VisionCapturePage.test.tsx src/admin/admin-entry.config.test.ts`、`npm run build:admin` 与 1440×900 本地预览。
+- [x] **Step 3:** `13dcc74b` 前端接入真实状态、同帧预览、逐手确认/样本重拍/冻结；401 与 Abort/代际处理、模式/设备/几何准备闸，读谱上下文改变取消、缺 LED 复核失败有真实错误重拍出口。删除全部旧 Fixture/纯展示页与测试，保留共享 CSS，正式导航接入。四态 1440×900 [v2 四图](./slice3/design/vision-v2-fourup.html) 独立 Astra max APPROVE，行为 SPEC/QUALITY APPROVE。`npx vitest run src/admin/vision/VisionDashboard.test.tsx src/admin/AdminApp.vision.test.tsx src/admin/api/client.test.ts src/admin/admin-entry.config.test.ts src/admin/AdminApp.test.tsx`：实现者 **39 passed**；scoped ESLint、`build:admin`、diffcheck 通过。浏览器临时响应仅用于视觉，不冒称硬件验收。
 - [ ] **Step 4:** 完成可用的本机相机+棋盘手动走查；若硬件不可用，只报告 fake 验证及未验收项，不能宣称切片已完成。
 
 ### Task 6: 测试机上传（外部授权关卡）
 
 - [ ] **Step 1:** 在 `vision_transfer.py` 建立只允许指定测试机/目录的本地上传配置与手动确认流程，写 fake 传输测试覆盖容量不足、中断/断点恢复、取消、大小上限、逐文件 SHA-256 回执不一致及幂等；此步不得连接远端。只有远端回执逐文件全部等于冻结 manifest 才能标“已上传”，取消/中断的暂存目录不可视为完整版本。
   - 当前最小实现由独立 Astra max 决策：仅本地清单校验＋可注入协议，暂不写 SSH 适配器或真实路由；见契约的上传核心段。文件 `katrain/web/admin/vision_transfer.py`，聚焦测试 `tests/web_ui/test_admin_vision_transfer.py`，复用已有实际冻结 fixture，不复制生成器。先 RED（缺模块/行为），再实现默认禁用的 `prepare/transfer`；运行 `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/web_ui/test_admin_vision_transfer.py tests/web_ui/test_admin_vision_dataset.py` 应 GREEN；独立复核后精确文件提交。真实目录仍为 None，不能把这个协议核心当作真实上传功能完成。
+  - 纯核心已提交 `82228c04`，RED→GREEN 后上述组合 **41 passed**，独立规格/质量 APPROVE；全量清单/逐文件 SHA-256、容量、断点、取消与未校验远端状态覆盖。真实 SSH 适配器/路由未写，因此 Step 1 整体仍不勾完成。
 - [ ] **Step 2:** 🛑 Fan 当场授权单次只读 SSH 后才核实测试机目标空间、账户与部署能力；另经当场授权才运行实际上传/写远端，并核对全部 SHA-256 后原子发布。不得复用过去 SSH 或部署的批准；未授权保持“待上传”。
 - [ ] **Step 3:** 真实测试机验收和 Fan 视觉验收后才记完成；push/部署另请当场批准。无授权时更新 `codex-report.md` 并顺序做下一切片的本地 HTML/Fixture，不越权。

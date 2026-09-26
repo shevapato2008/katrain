@@ -5,8 +5,11 @@
 - 持续开发许可不扩大外部权限：本轮没有 SSH、真实摄像头/LED 操作、目标库写入、数据上传、GPU 训练、push 或部署。性能 Grafana 仍待真实服务核实；视觉采集的真实硬件与最终用户验收未完成。
 - Mac 采集后端已完成本地连接/标定/SGF 导入/采集/会话恢复/样本叠框/冻结接口。纯 SGF `c8969af0`；原子事务 `d65fa3f3`＋CRLF/独立会话 ID 修复 `5e4a3f15`；空盘标定 `429cdaaa`＋稳定棋子误判修复 `2ae78606`；不可变数据集 `70b4b823`＋可搬移 YAML `15aa2b64`；接口集成 `b8c1cf9f`。各阶段独立规格/质量均 APPROVE，保留硬件未验收边界。
 - 接口质量复核重现“采集已成功但相机断开后重试 409”。根代理先跑红测，再修复为校验已有活动会话/文件和确认后只读幂等返回；新帧与显式重拍仍受实时相机/模式/几何限制。提交 `19b43509`，独立质量复核 APPROVE。根代理数据/采集接口聚焦 **146 passed**，计划要求的相机/LED/旧采集/几何邻近组合 **182 passed**；Black、`git diff --check` 通过。仅既有 passlib `crypt` 弃用警告。
-- [v2 操作 HTML](./slice3/design/admin-vision-capture-v2.html) 按 `claude-design` 的 Operate/Inspect 构图与 `ui-ux-pro-max` 标签/确认/错误/焦点原则补齐真实操作路径。独立 Astra max 修正空态图像、确认禁用闸、stale 新标定出口、下一手进度和 900px 主按钮裁切后 APPROVE。正式前端接入进行中，v1 Fixture 尚待删除；v2 React 四图尚未完成，不能将初版展示性 Fixture 当成实际功能验收。
-- 当前继续 Task 5 Step 3：真实前端与 API 集成。Task 5 Step 4 的本机真实硬件、Task 6 的目标机上传、训练/模型版本、模型部署/七阶段诊断仍未完成。所有新提交均仅本地，尚未推送；用户原有 `.playwright-cli` 删除及快照保持原样。
+- [v2 操作 HTML](./slice3/design/admin-vision-capture-v2.html) 按 `claude-design` 的 Operate/Inspect 构图与 `ui-ux-pro-max` 标签/确认/错误/焦点原则补齐实际操作路径。[正式 React 四态四图](./slice3/design/vision-v2-fourup.html) 独立 Astra max APPROVE；样本检查初次截到加载态，仅补弹窗实际出现/图片解码后复核。截图使用临时浏览器 API/camera 响应，生产不含这些数据，不代表真实硬件验收。
+- 正式采集前端已提交 `13dcc74b`：真实接口与同帧预览、导谱/恢复/逐手确认/样本重拍/冻结，模式/设备/几何准备闸，401/Abort/代际取消、最多2Hz且不重叠。独立审核发现读谱过程中刷新导致旧读取跨上下文导入、缺 LED 检查失败没有重拍入口，两项均 RED→GREEN 修复，规格/质量最终 APPROVE。原 v1 Fixture 全部删除，共享 CSS 留用；根代理重新运行5文件聚焦 **39 passed**，实现者 scoped ESLint0、build:admin 通过。未知真硬件状态仍诚实呈现。
+- 上传纯协议 `82228c04` 已本地完成：只验证真实冻结清单/文件并通过可注入传输验证逐文件回执、容量、断点/取消/未校验状态，组合 **41 passed**，独立规格/质量 APPROVE。默认关闭、目标根目录 None，**没有 SSH 适配器或真实上传路由**，不能算上传功能完成。
+- 采集停在 Task 5 Step 4（真实本机硬件）与 Task 6（外部上传）。顺序进入 [训练与模型计划](./plan-2026-09-26-admin-vision-training.md)：独立 Astra 选 admin 协调独立进程组，默认禁用、单运行/单预留GPU，不建通用队列/DDP；最终解析本地权重验哈希且禁止下载回退，取消确认退出才释放运行占用，成功须核对 best.pt/schema/哈希/全部实际参数并原子发布。计划三个 chunk Approved，[训练 HTML](./slice4/design/admin-vision-training.html) 按 claude-design→ui-ux-pro-max 修 CTA/版本首屏与关键16–17px字号后独立 APPROVE。下一步执行隔离 Fixture，四图尚未完成；未写本旅程后端。
+- 性能真实 Grafana、测试机真实训练/模型版本、Mac 模型部署/七阶段诊断仍未完成。所有新提交均仅本地，尚未推送；用户原有 `.playwright-cli` 删除及快照保持原样。本轮无新增全仓测试/变异体系，沿用比例化聚焦验证；无 SSH、写库、真设备、训练或部署。
 
 ## 2026-09-26 视觉实验室首段记录（历史阶段性状态）
 

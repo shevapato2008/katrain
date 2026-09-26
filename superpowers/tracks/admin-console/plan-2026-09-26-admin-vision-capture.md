@@ -71,5 +71,6 @@
 ### Task 6: 测试机上传（外部授权关卡）
 
 - [ ] **Step 1:** 在 `vision_transfer.py` 建立只允许指定测试机/目录的本地上传配置与手动确认流程，写 fake 传输测试覆盖容量不足、中断/断点恢复、取消、大小上限、逐文件 SHA-256 回执不一致及幂等；此步不得连接远端。只有远端回执逐文件全部等于冻结 manifest 才能标“已上传”，取消/中断的暂存目录不可视为完整版本。
+  - 当前最小实现由独立 Astra max 决策：仅本地清单校验＋可注入协议，暂不写 SSH 适配器或真实路由；见契约的上传核心段。文件 `katrain/web/admin/vision_transfer.py`，聚焦测试 `tests/web_ui/test_admin_vision_transfer.py`，复用已有实际冻结 fixture，不复制生成器。先 RED（缺模块/行为），再实现默认禁用的 `prepare/transfer`；运行 `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/web_ui/test_admin_vision_transfer.py tests/web_ui/test_admin_vision_dataset.py` 应 GREEN；独立复核后精确文件提交。真实目录仍为 None，不能把这个协议核心当作真实上传功能完成。
 - [ ] **Step 2:** 🛑 Fan 当场授权单次只读 SSH 后才核实测试机目标空间、账户与部署能力；另经当场授权才运行实际上传/写远端，并核对全部 SHA-256 后原子发布。不得复用过去 SSH 或部署的批准；未授权保持“待上传”。
 - [ ] **Step 3:** 真实测试机验收和 Fan 视觉验收后才记完成；push/部署另请当场批准。无授权时更新 `codex-report.md` 并顺序做下一切片的本地 HTML/Fixture，不越权。

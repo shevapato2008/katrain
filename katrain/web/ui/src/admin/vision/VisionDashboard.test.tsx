@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminApiError, createAdminApi } from '../api/client';
@@ -6,7 +6,7 @@ import VisionDashboard from './VisionDashboard';
 import type { VisionSession, VisionStatus } from './types';
 
 const status = (): VisionStatus => ({
-  enabled: true, local_only: true, observed_at: '2026-09-26T03:00:00Z', mode: null,
+  enabled: true, local_only: true, observed_at: '2026-09-26T03:00:00Z', mode: null, fiducial_mode: 'off',
   camera: { state: 'disconnected', device_id: null, source: 'runtime', updated_at: null },
   led: { state: 'disabled', source: 'runtime', updated_at: null },
   geometry: { state: 'required', revision: null, confidence: null, source: null, updated_at: null },
@@ -103,6 +103,62 @@ describe('live vision journey', () => {
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     expect(await screen.findByText('棋谱库暂不可用')).toBeInTheDocument();
     expect(screen.queryByText('没有匹配的棋谱，换个关键词试试。')).not.toBeInTheDocument();
+  });
+
+  it('guides a capturing move through blue removal LEDs before the frame is taken', async () => {
+    const { api, saved, setStatus } = mockApi(); const user = userEvent.setup();
+    saved.mode = 'led4'; saved.state = 'captured'; saved.frames = [{ ...savedFrame(-1), mode: 'led4' }, { ...savedFrame(0), mode: 'led4' }]; saved.next_step = 2;
+    saved.steps[2] = { ...saved.steps[2], removed: [{ row: 0, col: 2 }] };
+    saved.camera_device_id = 0;
+    setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, led: { ...status().led, state: 'connected' }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' }, sgf: { ...status().sgf, state: 'loaded', game_id: 'game-1', total_steps: 3, next_step: 2 }, dataset: { ...status().dataset, state: 'draft', count: 2 } });
+    api.visionRemovalGuide = vi.fn(async () => ({ game_id: 'game-1', move_index: 2, points: [{ row: 0, col: 2 }] }));
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    await user.click(await screen.findByLabelText(/已按灯位落下 D18，还没提子/));
+    await user.click(screen.getByRole('button', { name: '已落子 · 点亮提子位置' }));
+    await waitFor(() => expect(api.visionRemovalGuide).toHaveBeenCalledWith('game-1', 2, expect.any(AbortSignal)));
+    expect(await screen.findByText('提走 1 子：C19')).toBeInTheDocument();
+    expect(api.visionCapture).not.toHaveBeenCalled();
+    const shoot = screen.getByRole('button', { name: '已提子 · 拍照' });
+    expect(shoot).toBeDisabled();
+    await user.click(screen.getByLabelText('已取走蓝灯位置的棋子，棋面与 SGF 一致'));
+    await user.click(shoot);
+    await waitFor(() => expect(api.visionCapture).toHaveBeenCalledWith({ game_id: 'game-1', move_index: 2, operator_confirmed: true, overwrite_existing: false }, expect.any(AbortSignal)));
+  });
+
+  it('undoes only after the operator promises to restore the board, and ends a session for good', async () => {
+    const { api, saved, setStatus } = mockApi(); const user = userEvent.setup();
+    saved.state = 'captured'; saved.frames = [savedFrame(-1), savedFrame(0)]; saved.next_step = 2; saved.camera_device_id = 0;
+    setStatus({ ...status(), mode: 'stones2', camera: { ...status().camera, state: 'connected', device_id: 0 }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' }, sgf: { ...status().sgf, state: 'loaded', game_id: 'game-1', total_steps: 3, next_step: 2 }, dataset: { ...status().dataset, state: 'draft', count: 2 } });
+    api.visionUndo = vi.fn(async () => { saved.frames = [savedFrame(-1)]; saved.next_step = 0; return { session: saved, led_restored: false }; });
+    api.visionEnd = vi.fn(async () => { saved.ended_at = '2026-09-27T01:00:00Z'; return { session: saved, led_restored: false }; });
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    await user.click(await screen.findByRole('button', { name: '撤回上一帧' }));
+    const confirm = screen.getByRole('button', { name: '撤回' });
+    expect(confirm).toBeDisabled();
+    await user.click(screen.getByLabelText('我会把棋盘恢复到上一帧的棋面。'));
+    await user.click(confirm);
+    await waitFor(() => expect(api.visionUndo).toHaveBeenCalledWith('game-1', 'saved-0', expect.any(AbortSignal)));
+    await user.click(await screen.findByRole('button', { name: '结束本局' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '结束本局' }));
+    await waitFor(() => expect(api.visionEnd).toHaveBeenCalledWith('game-1', expect.any(AbortSignal)));
+    expect(await screen.findByText('本局采集完成')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /拍照|拍摄初始帧/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '撤回上一帧' })).not.toBeInTheDocument();
+  });
+
+  it('runs the LED test and the fiducial choice only in LED mode, through explicit actions', async () => {
+    const { api, setStatus } = mockApi(); const user = userEvent.setup();
+    setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, led: { ...status().led, state: 'connected' }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' } });
+    api.visionLedTest = vi.fn(async () => ({ points: [], guidance_restored: null }));
+    api.visionFiducial = vi.fn(async () => ({ ...status(), fiducial_mode: 'every-move' as const }));
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    await user.click(await screen.findByRole('button', { name: '测试点亮' }));
+    expect(api.visionLedTest).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '开始测试' }));
+    await waitFor(() => expect(api.visionLedTest).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText('基准点校正')).toHaveValue('off');
+    await user.selectOptions(screen.getByLabelText('基准点校正'), 'every-move');
+    await waitFor(() => expect(api.visionFiducial).toHaveBeenCalledWith('every-move', expect.any(AbortSignal)));
   });
 
   it('honestly disables nonlocal vision without listing or opening devices', async () => {

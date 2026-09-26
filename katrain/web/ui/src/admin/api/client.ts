@@ -1,6 +1,6 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
-import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail } from '../vision/types';
+import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail, VisionFiducialMode } from '../vision/types';
 import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
@@ -99,6 +99,11 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     visionResumeSession: (id: string, signal?: AbortSignal) => vision<VisionStatus>(`/sessions/${encodeURIComponent(id)}/resume`, signal, undefined, true),
     visionVerifyGeometry: (game_id: string, frame_id: string, overlay_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/verify-geometry', signal, { game_id, frame_id, overlay_confirmed }, true),
     visionPreview: (signal?: AbortSignal) => vision<VisionPreview>('/preview', signal),
+    visionRemovalGuide: (game_id: string, move_index: number, signal?: AbortSignal) => vision<{ game_id: string; move_index: number; points: { row: number; col: number }[] }>('/removal-guide', signal, { game_id, move_index }, true),
+    visionUndo: (id: string, frame_id: string, signal?: AbortSignal) => vision<{ session: VisionSession; led_restored: boolean }>(`/sessions/${encodeURIComponent(id)}/undo`, signal, { frame_id, operator_confirmed: true }, true),
+    visionEnd: (id: string, signal?: AbortSignal) => vision<{ session: VisionSession; led_restored: boolean }>(`/sessions/${encodeURIComponent(id)}/end`, signal, { operator_confirmed: true }, true),
+    visionLedTest: (signal?: AbortSignal) => vision<{ points: { row: number; col: number }[]; guidance_restored: boolean | null }>('/led-test', signal, { operator_confirmed: true }, true),
+    visionFiducial: (mode: VisionFiducialMode, signal?: AbortSignal) => vision<VisionStatus>('/fiducial', signal, { mode }, true),
     visionReviewSample: (id: string, frame: string, signal?: AbortSignal) => vision<VisionSampleReview>(`/sessions/${encodeURIComponent(id)}/frames/${encodeURIComponent(frame)}/review`, signal),
     visionFreezeSession: (id: string, parameters: VisionFreezeParameters = {}, signal?: AbortSignal) => vision<VisionFrozen>(`/sessions/${encodeURIComponent(id)}/freeze`, signal, parameters, true),
     trainingStatus: (signal?: AbortSignal) => training<TrainingStatus>('/status', signal),

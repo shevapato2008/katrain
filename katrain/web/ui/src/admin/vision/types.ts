@@ -1,10 +1,11 @@
 export type VisionMode = 'stones2' | 'led4';
+export type VisionFiducialMode = 'off' | 'every-move';
 export type ObservedState = { source: string | null; updated_at: string | null; error?: string | null };
 export type VisionGeometry = ObservedState & {
   state: 'required' | 'ready' | 'stale'; revision: string | null; confidence: number | null;
 };
 export type VisionStatus = {
-  enabled: boolean; local_only: true; observed_at: string; mode: VisionMode | null;
+  enabled: boolean; local_only: true; observed_at: string; mode: VisionMode | null; fiducial_mode: VisionFiducialMode;
   camera: ObservedState & { state: 'unknown' | 'disconnected' | 'connecting' | 'connected' | 'occupied' | 'error'; device_id: number | null };
   led: ObservedState & { state: 'unknown' | 'disabled' | 'disconnected' | 'connected' | 'occupied' | 'error' };
   geometry: VisionGeometry;
@@ -26,6 +27,7 @@ export type VisionFrame = {
   geometry_revision: string; geometry_source: string; captured_at: string; camera_seq: number;
   led_point: { row: number; col: number; color: 'black' | 'white' } | null;
   idempotent?: boolean;
+  geometry_correction?: { status: 'corrected' | 'stale' | 'frozen'; M: number[][]; [key: string]: unknown };
   capture_condition?: Record<string, unknown> & { camera_device_id?: number };
 };
 export type VisionSession = {
@@ -33,10 +35,11 @@ export type VisionSession = {
   frames: VisionFrame[]; next_step: number | null; original_sgf?: string; sgf_sha256?: string;
   geometry_revision: string;
   camera_device_id?: number;
+  ended_at?: string | null; fiducial_mode?: VisionFiducialMode;
 };
 export type VisionSessionSummary = {
   game_id: string; state: 'draft' | 'captured' | 'error'; mode?: VisionMode;
-  count?: number; total_steps?: number; next_step?: number | null; geometry_revision?: string; error?: string;
+  count?: number; total_steps?: number; next_step?: number | null; geometry_revision?: string; ended_at?: string | null; error?: string;
 };
 export type VisionSessionList = { sessions: VisionSessionSummary[]; limit: number; truncated: boolean };
 export type VisionDevices = { candidates: { device_id: number; label: string; probed: false }[] };

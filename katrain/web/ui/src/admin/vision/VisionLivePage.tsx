@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw, Search } from 'lucide-react';
+import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw, Search, Undo2 } from 'lucide-react';
 import VisionDialog from './VisionDialog';
-import type { KifuAlbumList, KifuAlbumSummary, VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
+import type { KifuAlbumList, KifuAlbumSummary, VisionFiducialMode, VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
 import './VisionCapturePage.css';
 import './lab.css';
 
@@ -17,7 +17,8 @@ type Props = {
   onCloseReview: () => void; onFreeze: () => void;
   labelPreview: { overlay: VisionSampleReview | null; error: string | null } | null; onLabel: () => void;
   kifu: { query: string; list: KifuAlbumList | null; error: string; loading: boolean };
-  onSearchKifu: (query: string) => void; onImportKifu: (id: number, expectedStatus: VisionStatus, expectedContext: number) => void;
+  onSearchKifu: (query: string) => void; removalLit: string;
+  onRemovalGuide: (index: number) => void; onUndo: (frame: string) => void; onEnd: () => void; onLedTest: () => void; onFiducial: (mode: VisionFiducialMode) => void; onImportKifu: (id: number, expectedStatus: VisionStatus, expectedContext: number) => void;
 };
 const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? '指示灯 · 四类' : mode === 'stones2' ? '无灯 · 双类' : '模式未选择';
 const coordinate = (step: VisionStep) => step.col !== null && step.row !== null ? `${'ABCDEFGHJKLMNOPQRST'[step.col]}${19 - step.row}` : '';
@@ -52,6 +53,8 @@ export default function VisionLivePage(props: Props) {
   const [query, setQuery] = useState('');
   const [albumId, setAlbumId] = useState<number | null>(null);
   const [view, setView] = useState<'raw' | 'warp' | 'label'>('raw');
+  const [confirm, setConfirm] = useState<null | 'undo' | 'end' | 'led'>(null);
+  const [confirmChecked, setConfirmChecked] = useState(false);
   const [resumeId, setResumeId] = useState('');
   const [retakeConfirmed, setRetakeConfirmed] = useState('');
   const [retakeBoardConfirmed, setRetakeBoardConfirmed] = useState('');
@@ -107,7 +110,7 @@ export default function VisionLivePage(props: Props) {
 
   const stepState = (n: 1 | 2 | 3 | 4) => {
     const hasSession = !!session && !chooseNew;
-    const done = [connected, ready && !geometryChanged, hasSession, hasSession && next === null][n - 1];
+    const done = [connected, ready && !geometryChanged, hasSession, hasSession && (next === null || !!session?.ended_at)][n - 1];
     const reachable = [true, connected, connected, !!session][n - 1];
     return done ? 'done' : reachable ? 'current' : 'locked';
   };
@@ -116,6 +119,13 @@ export default function VisionLivePage(props: Props) {
   const nextStepInfo = next !== null && next !== undefined && next >= 0 ? steps.find((item) => item.move_index === next) : undefined;
   const initial = next === -1;
   const led = status?.mode === 'led4';
+  const ended = !!session?.ended_at;
+  const complete = next === null || ended;
+  const removed = nextStepInfo?.removed ?? [];
+  const removedText = removed.map((point) => `${'ABCDEFGHJKLMNOPQRST'[point.col]}${19 - point.row}`).join('、');
+  const removalPhase = led && !!removed.length && props.removalLit === `${session?.game_id}/${next}`;
+  const placed = next === null || next === undefined ? steps.length : Math.max(0, next);
+  const openConfirm = (kind: 'undo' | 'end' | 'led') => { setConfirm(kind); setConfirmChecked(false); };
   const label = props.labelPreview;
   const tab = (id: typeof view, text: string, extra?: ReactNode) => <button type="button" role="tab" className="lab-tab" aria-selected={view === id} onClick={() => setView(id)}>{text}{extra}</button>;
   const viewer = () => {
@@ -140,7 +150,7 @@ export default function VisionLivePage(props: Props) {
         </section>
         <aside className="lab-panel cp-steps" aria-label="采集步骤">
           <section className={`lab-step ${stepState(1)}`}>{stepHead(1, '连接设备', connected ? <span className="lab-chip ok">已连接</span> : undefined)}<div className="lab-step-body">
-            {connected ? <div className="lab-row"><span className="lab-note cp-grow">Camera {status.camera.device_id} · {modeLabel(status.mode)}<br />设备已占用，断开时释放</span><button className="lab-btn small" type="button" disabled={locked} onClick={props.onDisconnect}>断开连接</button></div> : <>
+            {connected ? <div className="lab-row"><span className="lab-note cp-grow">Camera {status.camera.device_id} · {modeLabel(status.mode)}<br />设备已占用，断开时释放</span>{led && <button className="lab-btn small" type="button" disabled={locked} onClick={() => openConfirm('led')}>测试点亮</button>}<button className="lab-btn small" type="button" disabled={locked} onClick={props.onDisconnect}>断开连接</button></div> : <>
               <label className="lab-field">摄像头<select value={device} disabled={locked || !devices.length} onChange={(event) => setDevice(Number(event.target.value))}>{devices.length ? devices.map((item) => <option key={item.device_id} value={item.device_id}>{item.label} · 待尝试</option>) : <option value={0}>尚未读取设备候选</option>}</select></label>
               <div className="lab-seg" role="group" aria-label="采集模式"><button type="button" aria-pressed={mode === 'led4'} disabled={locked} onClick={() => setMode('led4')}>指示灯 · 四类</button><button type="button" aria-pressed={mode === 'stones2'} disabled={locked} onClick={() => setMode('stones2')}>无灯 · 双类</button></div>
               <p className="lab-note">{mode === 'led4' ? '类目 black / white / led_red / led_green；使用本机配置的指示灯串口。' : '类目 black / white；不点灯，不伪造 LED 类。'}设备候选不等于可用；占用时不会抢占。</p>
@@ -156,6 +166,8 @@ export default function VisionLivePage(props: Props) {
               <button className="lab-btn" type="button" disabled={locked || !connected || sessionMismatch || !grid || !preview || geometryConfirmed !== preview.frame_id} onClick={() => { if (preview) props.onVerify(preview.frame_id); setGeometryConfirmed(''); }}>确认保存的标定</button>
               <p className="lab-note">视角已变化？清空棋盘后新建标定，再导入新棋谱会话；不覆盖原会话。</p>
             </> : <p className="lab-note">{!connected ? '连接后清空棋盘再标定。' : ready ? `标定通过 · ${status?.geometry.source ?? '已保存几何'}` : `清空棋盘后开始；${status?.mode === 'led4' ? '标定时指示灯全部熄灭。' : '需要看到完整四角。'}`}</p>}
+            {led && ready && <label className="lab-field">基准点校正<select value={status?.fiducial_mode ?? 'off'} disabled={locked || session?.state === 'captured'} onChange={(event) => props.onFiducial(event.target.value as VisionFiducialMode)}><option value="off">关闭（只用开局标定）</option><option value="every-move">每手校正（拍照前点亮空位基准点）</option></select></label>}
+            {led && ready && <p className="lab-note">{session?.state === 'captured' ? '本会话的校正方式已固定。' : '每手校正会在每次拍照前短暂点亮一圈空位基准灯，只在你点拍照时发生。'}</p>}
             {connected && !(ready && session && !chooseNew) && <label className="lab-check"><input type="checkbox" checked={emptyConfirmed === geometryKey} disabled={locked} onChange={(event) => setEmptyConfirmed(event.target.checked ? geometryKey : '')} />{ready ? '棋盘已清空，需要重新标定' : '棋盘已清空，可开始标定'}</label>}
             {connected && !(ready && session && !chooseNew) && <button className={`lab-btn ${ready ? 'small ghost' : ''}`} type="button" disabled={locked || emptyConfirmed !== geometryKey} onClick={() => { setEmptyConfirmed(''); setBoardConfirmed(''); if (session?.frames.length) { setNeedsNewSession(session.game_id); setChooseNew(true); setFile(null); } props.onCalibrate(); }}>{ready || status?.geometry.state === 'stale' ? '重新空盘标定' : '开始空盘标定'}</button>}
             {status?.geometry.error && <p className="cp-error" role="alert">{status.geometry.error}</p>}
@@ -192,14 +204,18 @@ export default function VisionLivePage(props: Props) {
           </div></section>
           <section className={`lab-step ${stepState(4)}`}>{stepHead(4, '逐手摆谱采集')}<div className="lab-step-body">
             {geometryChanged || session?.game_id === needsNewSession ? <p className="lab-note">视角已重新标定，请导入新会话。</p> : !session ? <p className="lab-note">先连接、标定并选定棋谱。</p> : <>
-              <div className="cp-next">{next === null ? <><span className="cp-stone done" /><strong>本局采集完成</strong><span>共 {frames.length} 帧 · 可在下方检查并冻结</span></> : initial ? <><span className="cp-stone empty" /><strong>拍摄初始帧</strong><span>清空棋盘，保存真实负样本；随后按 SGF 摆谱</span></> : <><span className={`cp-stone ${nextStepInfo?.color ?? ''}`} /><strong>{stepLabel(next ?? -1, steps)}</strong><span>{led ? `${nextStepInfo?.color === 'W' ? '绿灯' : '红灯'}指示 ${nextStepInfo ? coordinate(nextStepInfo) : ''} · 按灯位摆放` : `按 SGF 摆放 ${nextStepInfo ? coordinate(nextStepInfo) : ''}`}{nextStepInfo?.removed.length ? ` · 同时提走 ${nextStepInfo.removed.length} 子` : ''}</span></>}</div>
-              {led && next !== null && !initial && <div className="cp-led-line"><span className={`cp-led ${nextStepInfo?.color === 'W' ? 'green' : 'red'}`} />{nextStepInfo?.color === 'W' ? '绿灯 = 下一手白棋' : '红灯 = 下一手黑棋'}</div>}
-              <div className="cp-progress" aria-label="采集进度"><i style={{ width: `${steps.length ? Math.round(((next === null ? steps.length : Math.max(0, next ?? 0)) / steps.length) * 100) : 0}%` }} /></div>
-              <div className="lab-note">已摆 {next === null ? steps.length : Math.max(0, next ?? 0)} / {steps.length} 手 · 已采 {frames.length} 帧 · 会话 {session.game_id.slice(0, 12)}</div>
-              {next !== null && <>
-                <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />{initial ? (led ? '棋盘已清空，只有指示灯亮着' : '棋盘已清空') : led ? '已按灯位摆好，棋面与 SGF 一致' : '已按 SGF 摆好，棋面一致'}</label>
-                <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || next === undefined || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onCapture(next); setBoardConfirmed(''); }}>{busy === '采集当前手' ? '正在抓取新鲜相机帧…' : initial ? '拍摄初始帧' : '已摆好 · 拍照并进入下一手'}</button>
-              </>}
+              <div className="cp-next">{complete ? <><span className="cp-stone done" /><strong>本局采集完成</strong><span>共 {frames.length} 帧{ended ? ' · 已手动结束' : ''} · 可在下方检查并冻结</span></> : initial ? <><span className="cp-stone empty" /><strong>拍摄初始帧</strong><span>{led ? '空盘 + 第 1 手指示灯' : '清空棋盘，保存真实负样本'}；随后按 SGF 摆谱</span></> : removalPhase ? <><span className="cp-stone remove" /><strong>提走 {removed.length} 子：{removedText}</strong><span>第 {(next ?? 0) + 1} 手提子 · 蓝灯位置取走棋子后拍照</span></> : <><span className={`cp-stone ${nextStepInfo?.color ?? ''}`} /><strong>{stepLabel(next ?? -1, steps)}</strong><span>{led ? `${nextStepInfo?.color === 'W' ? '绿灯' : '红灯'}指示 ${nextStepInfo ? coordinate(nextStepInfo) : ''} · 按灯位摆放` : `按 SGF 摆放 ${nextStepInfo ? coordinate(nextStepInfo) : ''}`}{removed.length ? (led ? ' · 落子后需提子' : ` · 同时提走 ${removedText}`) : ''}</span></>}</div>
+              {led && !complete && !initial && <div className="cp-led-line">{removalPhase ? <><span className="cp-led blue" />蓝灯：需提走的子</> : <><span className={`cp-led ${nextStepInfo?.color === 'W' ? 'green' : 'red'}`} />{nextStepInfo?.color === 'W' ? '绿灯 = 下一手白棋' : '红灯 = 下一手黑棋'}</>}{status?.fiducial_mode === 'every-move' ? ' · 每手基准点校正' : ''}</div>}
+              <div className="cp-progress" aria-label="采集进度"><i style={{ width: `${steps.length ? Math.round((placed / steps.length) * 100) : 0}%` }} /></div>
+              <div className="lab-note">已摆 {placed} / {steps.length} 手 · 已采 {frames.length} 帧 · 会话 {session.game_id.slice(0, 12)}</div>
+              {!complete && (led && removed.length && !removalPhase && !initial ? <>
+                <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />已按灯位落下 {nextStepInfo ? coordinate(nextStepInfo) : ''}，还没提子</label>
+                <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onRemovalGuide(next); setBoardConfirmed(''); }}>{busy === '点亮提子位置' ? '正在点亮蓝灯…' : '已落子 · 点亮提子位置'}</button>
+              </> : <>
+                <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />{initial ? (led ? '棋盘已清空，只有指示灯亮着' : '棋盘已清空') : removalPhase ? '已取走蓝灯位置的棋子，棋面与 SGF 一致' : led ? '已按灯位摆好，棋面与 SGF 一致' : removed.length ? '已落子并提走棋子，棋面与 SGF 一致' : '已按 SGF 摆好，棋面一致'}</label>
+                <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || next === undefined || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onCapture(next); setBoardConfirmed(''); }}>{busy === '采集当前手' ? (led ? '等待指示灯稳定后抓帧…' : '正在抓取新鲜相机帧…') : initial ? '拍摄初始帧' : removalPhase ? '已提子 · 拍照' : '已摆好 · 拍照并进入下一手'}</button>
+              </>)}
+              {!ended && frames.length > 0 && <div className="lab-row"><button className="lab-btn small ghost" type="button" disabled={locked || frames.length < 2} onClick={() => openConfirm('undo')}><Undo2 aria-hidden="true" />撤回上一帧</button><button className="lab-btn small ghost" type="button" disabled={locked} onClick={() => openConfirm('end')}>结束本局</button></div>}
             </>}
           </div></section>
         </aside>
@@ -213,6 +229,13 @@ export default function VisionLivePage(props: Props) {
       </div></section>
       <p className="lab-foot">相机与训练帧仅在本机；离开页面不会断开设备，请手动断开。冻结为同步操作，请等待校验完成。</p>
     </div>
+    {confirm && <VisionDialog title={confirm === 'undo' ? '撤回上一帧' : confirm === 'end' ? '结束本局采集' : '测试点亮指示灯'} onClose={() => setConfirm(null)}>
+      <div className="vision-review-body">
+        <p>{confirm === 'undo' ? `撤回最近一帧（${frames.length ? stepLabel(frames[frames.length - 1].applied_move_index, steps) : ''}），回到它之前的棋面。已写入的图片留在会话目录，清单不再引用它。` : confirm === 'end' ? `已采 ${frames.length} 帧。结束后不能继续追加或撤回，可检查并冻结。` : '依次点亮四个角和天元各 1 秒，用来确认串口与灯位映射。测试期间不拍照，结束后恢复当前引导灯。'}</p>
+        {confirm === 'undo' && <label className="vision-check"><input type="checkbox" checked={confirmChecked} onChange={(event) => setConfirmChecked(event.target.checked)} />我会把棋盘恢复到上一帧的棋面。</label>}
+      </div>
+      <div className="vision-review-foot"><span /><button className="vision-button" type="button" disabled={locked || (confirm === 'undo' && !confirmChecked)} onClick={() => { const kind = confirm; setConfirm(null); if (kind === 'undo') { const last = frames.at(-1); if (last) props.onUndo(last.frame_id); } else if (kind === 'end') props.onEnd(); else props.onLedTest(); }}>{confirm === 'undo' ? '撤回' : confirm === 'end' ? '结束本局' : '开始测试'}</button></div>
+    </VisionDialog>}
     {inspected && <VisionDialog title={`样本检查 · ${stepLabel(inspected.applied_move_index, steps)}`} onClose={props.onCloseReview}>
       <div className="vision-review-body">
         {review ? <><img className="vision-review-image" src={jpeg(review.overlay_jpeg_base64)} alt="真实样本标注叠框" /><div className="vision-review-meta"><span>{review.class_names.map((name, id) => `${name} ${review.boxes.filter((box) => box.class_id === id).length}`).join(' · ')}</span><span>几何 {review.geometry_revision.slice(0, 12)}</span></div></> : <><p role="alert">{reviewFailure?.message}</p><p className="vision-status-note">检查未通过，未生成可用标注叠图。核对真实棋面后可重拍；若源文件损坏，服务会拒绝重拍，请新建会话，不绕过校验。</p></>}

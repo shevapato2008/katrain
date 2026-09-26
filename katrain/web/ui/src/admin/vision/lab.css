@@ -102,3 +102,5 @@
 .cp-sample strong { font-size:13.5px; font-weight:600; }
 .cp-sample span { font-size:12px; color:var(--admin-muted); }
 .cp-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.cp-led.blue { background:#4f7fe0; }
+.cp-stone.remove { background:#6c8fd6; }

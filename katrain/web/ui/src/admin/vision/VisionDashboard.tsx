@@ -17,6 +17,7 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
   const labelRequest = useRef<AbortController | null>(null);
   const [kifu, setKifu] = useState<{ query: string; list: KifuAlbumList | null; error: string; loading: boolean }>({ query: '', list: null, error: '', loading: false });
   const kifuRequest = useRef<AbortController | null>(null);
+  const [removalLit, setRemovalLit] = useState('');
   const [busy, setBusy] = useState('读取状态');
   const [error, setError] = useState('');
   const [previewError, setPreviewError] = useState('');
@@ -171,7 +172,21 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
 
   return <VisionLivePage
     labelPreview={labelPreview} onLabel={onLabel}
-    kifu={kifu} onSearchKifu={onSearchKifu}
+    kifu={kifu} onSearchKifu={onSearchKifu} removalLit={removalLit}
+    onRemovalGuide={(index) => {
+      if (!gameId) return;
+      void perform('点亮提子位置', (signal) => api.visionRemovalGuide(gameId, index, signal), () => setRemovalLit(`${gameId}/${index}`), false);
+    }}
+    onUndo={(frame) => {
+      if (!gameId) return;
+      void perform('撤回上一帧', (signal) => api.visionUndo(gameId, frame, signal), (result) => { setFrozen(null); setRemovalLit(''); setMessage(result.led_restored ? '已撤回；指示灯已恢复到上一帧的引导位置。' : '已撤回。按上一帧的棋面恢复棋盘。'); });
+    }}
+    onEnd={() => {
+      if (!gameId) return;
+      void perform('结束本局', (signal) => api.visionEnd(gameId, signal), () => { setRemovalLit(''); setMessage('本局采集已结束。可检查样本并冻结数据集。'); });
+    }}
+    onLedTest={() => { void perform('测试点亮', (signal) => api.visionLedTest(signal), () => setMessage('测试点亮完成：四角与天元各亮 1 秒。灯位不对请检查串口与映射。'), false); }}
+    onFiducial={(mode) => { void perform('设置基准点校正', (signal) => api.visionFiducial(mode, signal)); }}
     onImportKifu={(id, expectedStatus, expectedContext) => {
       if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
       void perform('导入棋谱', async (signal) => { const album = await api.kifuAlbum(id, signal); return api.visionImportSgf(album.sgf_content, signal); }, () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });

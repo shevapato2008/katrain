@@ -37,6 +37,13 @@
 - [x] 独立 GPT-6 Astra max 查看新版四图并裁定 APPROVE；Fan 明早仍可在本地网页亲自复核。
 - [x] 🛑 四图由独立 GPT-6 Astra max 代理按 Fan 本轮委托做视觉裁定；这不算真实监控验收。Task 4 的测试机 SSH、真实数据写入与部署仍分别等待 Fan 当场批准。
 
+## Task 3b：正式接入后台（2026-09-27，无远程）
+
+- [x] 按 Fan 已确认的可点击原型（v2）接进正式后台侧栏；Fixture 入口与文件已删除。
+- [x] 配置来源：后台进程环境变量 `KATRAIN_ADMIN_GRAFANA_DASHBOARDS`（`[{"title","url"}]` JSON，≤12 个、同一 http(s) 来源、URL 不得带账号或 token/key/auth 类查询参数）。无配置 → 「尚未接入」；配置有误 → 「配置无效」并显示原因、不嵌入。`GET /api/admin/performance`（需后台登录）。
+- [x] CSP 仅在配置有效时追加 `frame-src <该来源>`；iframe `sandbox` 不含 top-navigation，`referrerPolicy=no-referrer`；页面不探测 Grafana，状态写「已配置 · 未探测在线」。
+- [x] 四图 `lab-v3/performance-fourup/`（未接入/已配置夜昼/配置无效，1440×900）；承重实测：看板区高度 = max(470, 100vh−425)，1440×900 下页面不滚动（scrollHeight 820 = clientHeight 820），看板框与设计稿同位 [305,360,1093,835]，Grafana 内容在 iframe 内自滚。
+
 ## Task 4：真实监控接入（本轮暂不执行）
 
 - [ ] 取得 Fan 的新版四图确认与单次 SSH 授权后，只读核实测试环境是否有 Grafana、数据源/看板、绑定地址、现有鉴权及 iframe/代理策略；不得凭设计稿假定已安装服务。

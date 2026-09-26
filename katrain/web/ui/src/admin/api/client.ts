@@ -31,6 +31,8 @@ export interface VerifyResult {
   training_export: { status: 'exported' | 'skipped' | 'failed'; count: number; reason?: string };
 }
 
+export interface GrafanaDashboard { id: string; title: string; url: string }
+export interface PerformanceConfig { state: 'unconfigured' | 'invalid' | 'configured'; error: string | null; origin: string | null; dashboards: GrafanaDashboard[]; env: string }
 export class AdminApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -85,6 +87,7 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
     cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
     cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
+    performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),
     kifuAlbum: (id: number, signal?: AbortSignal) => adminRequest<KifuAlbumDetail>(`/kifu/albums/${Math.trunc(id)}`, { signal, cache: 'no-store' }),
     visionStatus: (signal?: AbortSignal) => vision<VisionStatus>('/status', signal),

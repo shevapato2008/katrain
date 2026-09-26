@@ -5,7 +5,7 @@ import AdminApp from './AdminApp';
 
 afterEach(() => { localStorage.clear(); vi.unstubAllGlobals(); });
 describe('admin vision entry', () => {
-  it('uses the real protected controller without adding the performance fixture navigation', async () => {
+  it('uses the real protected controllers for the lab pages', async () => {
     localStorage.setItem('katrain_admin_session', 'admin-token');
     const fetcher = vi.fn<typeof fetch>(async (input) => {
       const path = String(input);
@@ -17,7 +17,7 @@ describe('admin vision entry', () => {
     render(<AdminApp />);
     await userEvent.click(await screen.findByRole('button', { name: '视觉实验室' }));
     await screen.findByText(/此服务未启用本机视觉控制/);
-    expect(screen.queryByRole('button', { name: '性能监控' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '性能监控' })).toBeInTheDocument();
     await waitFor(() => expect(fetcher.mock.calls.some(([path, init]) => String(path) === '/api/admin/vision/status' && new Headers(init?.headers).get('Authorization') === 'Bearer admin-token')).toBe(true));
     expect(fetcher.mock.calls.some(([path]) => String(path).endsWith('/vision/connect'))).toBe(false);
     await userEvent.click(screen.getByRole('button', { name: '2训练与模型' }));

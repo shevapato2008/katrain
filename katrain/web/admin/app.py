@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -14,6 +14,8 @@ from katrain.web.admin.routers.kifu import router as kifu_router
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
 from katrain.web.admin.routers.vision import router as vision_router
 from katrain.web.admin.routers.vision_training import router as vision_training_router
+from katrain.web.admin.performance import load_grafana
+from katrain.web.admin.session import get_current_admin
 from katrain.web.admin.settings import check_startup
 from katrain.web.admin.vision_runtime import AdminVisionRuntime
 from katrain.web.admin.vision_training_config import create_training_service
@@ -67,7 +69,11 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.state.session_factory = session_factory
     app.state.vision_runtime = vision_runtime
     app.state.vision_training = vision_training
+    grafana = load_grafana()
+    app.state.grafana = grafana
     content_security_policy = _media_csp()
+    if grafana["origin"]:
+        content_security_policy += f"; frame-src {grafana['origin']}"
 
     @app.middleware("http")
     async def security_headers(request, call_next):
@@ -80,6 +86,10 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
         if request.url.path.startswith("/api/admin/vision-training/"):
             response.headers["Cache-Control"] = "no-store"
         return response
+
+    @app.get("/api/admin/performance", dependencies=[Depends(get_current_admin)])
+    async def performance():
+        return {**grafana, "env": config.env}
 
     @app.get("/api/admin/health")
     async def health():

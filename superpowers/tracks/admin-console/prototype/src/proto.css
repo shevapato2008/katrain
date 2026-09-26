@@ -191,3 +191,27 @@ details.tr-adv summary{cursor:pointer;font-size:14.5px;color:var(--admin-muted)}
 .proto .opts button[aria-pressed="true"]{border-color:#d89367;color:#ffd9bf;background:#3d2c24}
 .proto p{margin:0;font-size:12.5px;color:#a9a39b}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Hover feedback: every clickable surface lights up before it is pressed ---------- */
+.admin-app[data-theme="dark"]{--admin-hover:#34302e;--admin-hover-line:#8a6a58;--admin-accent-hover:#e8a97f}
+.admin-app[data-theme="light"]{--admin-hover:#e2ebf7;--admin-hover-line:#7e9cc4;--admin-accent-hover:#244d7c}
+.admin-app :is(button,select,summary,a,.tab,.admin-nav,.kifu,.sample,.cron-job,label.check){transition:background-color .12s,border-color .12s,color .12s}
+.admin-side .admin-nav:not(.active):hover{background:var(--admin-hover);color:var(--admin-text)}
+.admin-side .admin-nav.active:hover{filter:brightness(1.08)}
+.p-subnav button:not([aria-current="page"]):hover{background:var(--admin-hover);color:var(--admin-text)}
+.admin-topright button:hover{color:var(--admin-accent-hover);text-decoration:underline;text-underline-offset:4px}
+.admin-app :is(.btn,.admin-action,.admin-tool,.cron-refresh,.admin-sourcebtn):not(:disabled):hover{background:var(--admin-hover);border-color:var(--admin-hover-line);color:var(--admin-text)}
+.admin-app :is(.btn.primary,.admin-action.primary,.admin-tool.on):not(:disabled):hover{background:var(--admin-accent-hover);border-color:var(--admin-accent-hover);color:var(--admin-on-accent)}
+.admin-app :is(.admin-pager button,.admin-back,.cron-history-head button):not(:disabled):hover{background:var(--admin-hover);border-radius:6px;color:var(--admin-accent)}
+.admin-app .tab:hover{background:var(--admin-hover);color:var(--admin-text)}
+.admin-app .tab[aria-selected="true"]:hover{background:var(--admin-hover)}
+.admin-app .seg button:not(:disabled):not([aria-pressed="true"]):hover{background:var(--admin-hover);color:var(--admin-text)}
+.admin-app .seg button[aria-pressed="true"]:not(:disabled):hover{background:var(--admin-accent-hover)}
+.admin-app :is(select,input:not([type="checkbox"]):not([type="range"])):not(:disabled):hover{border-color:var(--admin-hover-line)}
+.admin-app .kifu:not(:disabled):not([aria-pressed="true"]):hover,.admin-app .sample:hover{background:var(--admin-hover);border-color:var(--admin-hover-line)}
+.admin-app .cron-job:hover{background:var(--admin-hover)}
+.admin-app label.check:hover{color:var(--admin-text)}
+.admin-app .dg-batch summary:hover,.admin-app details.tr-adv summary:hover{color:var(--admin-accent)}
+.admin-app .admin-range{cursor:pointer}
+.proto > button:hover{background:#2c2622;border-style:solid}
+.proto .opts button:not([aria-pressed="true"]):hover{border-color:#d89367;background:#302a26}

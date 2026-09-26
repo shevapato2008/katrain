@@ -8,6 +8,7 @@ from __future__ import annotations
 import errno
 import fcntl
 import hashlib
+import sys
 from pathlib import Path
 
 
@@ -22,6 +23,10 @@ class DeviceLease:
     @classmethod
     def acquire(cls, kind: str, device_id: int | str) -> "DeviceLease":
         identity = str(device_id)
+        # Match CameraManager._device_to_capture_arg on Linux: high integer
+        # indices are opened as /dev/videoN, so both spellings need one lease.
+        if kind == "camera" and sys.platform == "linux" and isinstance(device_id, int) and device_id > 9:
+            identity = f"/dev/video{device_id}"
         if identity.startswith("/"):
             identity = str(Path(identity).resolve())
         digest = hashlib.sha256(f"{kind}\0{identity}".encode("utf-8")).hexdigest()

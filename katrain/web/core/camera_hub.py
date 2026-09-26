@@ -58,8 +58,17 @@ class CameraHub:
                     raise RuntimeError(f"Failed to open camera {self.config.device_id}")
                 self._started = True
             except BaseException:
-                self._device_lease.release()
-                self._device_lease = None
+                # open() may have acquired the device before failing. Keep the
+                # lease through cleanup so a peer cannot open it concurrently.
+                try:
+                    if self._camera is not None:
+                        try:
+                            self._camera.close()
+                        except Exception:
+                            pass
+                finally:
+                    self._device_lease.release()
+                    self._device_lease = None
                 raise
 
     def stop(self) -> None:

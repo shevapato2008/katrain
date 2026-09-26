@@ -201,12 +201,17 @@ class LedService:
         except Exception:
             pass
         self._stop.set()
+        self._connected = False
         try:
             self._queue.put_nowait(_SENTINEL)
         except queue.Full:
             pass
         if self._thread:
             self._thread.join(timeout=3)
+            if self._thread.is_alive():
+                # A blocked open still owns the device. The worker closes any
+                # late result and releases its lease before it exits.
+                return
         self._close_serial()
         self._thread = None
 
@@ -303,27 +308,30 @@ class LedService:
 
     # -- worker ------------------------------------------------------------ #
     def _worker(self) -> None:
-        while not self._stop.is_set():
-            try:
-                item = self._queue.get(timeout=0.2)
-            except queue.Empty:
+        try:
+            while not self._stop.is_set():
+                try:
+                    item = self._queue.get(timeout=0.2)
+                except queue.Empty:
+                    if self._serial is None:
+                        self._maybe_reconnect()
+                    continue
+                if item is _SENTINEL:
+                    break
                 if self._serial is None:
                     self._maybe_reconnect()
-                continue
-            if item is _SENTINEL:
-                break
-            if self._serial is None:
-                self._maybe_reconnect()
-            if self._serial is None:
-                self._finish(item, ok=False, shown_at=None, errors=["not connected"])
-                continue
-            try:
-                self._run_batch(item)
-            except Exception as e:
-                log.warning("LED serial error: %s", e)
-                self._connected = False
-                self._close_serial()
-                self._finish(item, ok=False, shown_at=None, errors=[str(e)])
+                if self._serial is None:
+                    self._finish(item, ok=False, shown_at=None, errors=["not connected"])
+                    continue
+                try:
+                    self._run_batch(item)
+                except Exception as e:
+                    log.warning("LED serial error: %s", e)
+                    self._connected = False
+                    self._close_serial()
+                    self._finish(item, ok=False, shown_at=None, errors=[str(e)])
+        finally:
+            self._close_serial()
 
     def _run_batch(self, batch: _Batch) -> None:
         errors: List[str] = []
@@ -437,6 +445,9 @@ class LedService:
         try:
             self._serial = self._serial_factory()
             self._connected = False
+            if self._stop.is_set():
+                self._close_serial()
+                return
 
             # A USB-open can reset the ESP32. Wait for its boot banner (or a
             # bounded timeout), then discard boot chatter before BRIGHT.
@@ -453,6 +464,9 @@ class LedService:
                 if self._clock() >= deadline:
                     break
                 if line.startswith("OK"):
+                    if self._stop.is_set():
+                        self._close_serial()
+                        return
                     self._connected = True
                     log.info("LED serial opened on %s", self.config.serial_port)
                     return
@@ -475,7 +489,7 @@ class LedService:
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
-        if self._serial_unavailable or self._reconnect_blocked:
+        if self._stop.is_set() or self._serial_unavailable or self._reconnect_blocked:
             return  # Missing pyserial is permanent; a lease conflict requires explicit stop/start.
         now = self._clock()
         if now - self._last_reconnect < self._reconnect_interval:

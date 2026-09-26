@@ -335,6 +335,51 @@ def test_led_reconnect_conflict_requires_explicit_stop_start_after_peer_releases
         first.stop()
 
 
+def test_led_stop_keeps_lease_until_blocked_reconnect_finishes(monkeypatch):
+    port = f"led-{uuid.uuid4().hex}"
+    reconnect_entered = threading.Event()
+    reconnect_resume = threading.Event()
+    fake = FakeSerial()
+    calls = []
+
+    def factory():
+        calls.append(True)
+        if len(calls) == 1:
+            raise OSError("serial unplugged")
+        reconnect_entered.set()
+        assert reconnect_resume.wait(timeout=5)
+        return fake
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    worker = first._thread
+    original_join = worker.join
+    try:
+        assert reconnect_entered.wait(timeout=2)
+        monkeypatch.setattr(first, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        first.stop()
+
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        assert first.is_connected() is False
+
+        reconnect_resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert fake.closed is True
+        assert fake.written == []
+        assert first.is_connected() is False
+        peer.start()
+        assert peer.is_connected() is True
+    finally:
+        reconnect_resume.set()
+        original_join(timeout=2)
+        peer.stop()
+        first.stop()
+
+
 def test_led_worker_start_failure_releases_port(monkeypatch):
     port = f"led-{uuid.uuid4().hex}"
     first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)

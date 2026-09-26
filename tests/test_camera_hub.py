@@ -158,6 +158,46 @@ def test_camera_open_exception_releases_device_for_retry():
     second.stop()
 
 
+def test_partial_camera_open_is_closed_before_lease_is_released():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    original_close = broken.close
+
+    def fail_after_open():
+        broken.is_connected = True
+        raise OSError("failed after opening")
+
+    def close_while_owned():
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        original_close()
+
+    broken.open = fail_after_open
+    broken.close = close_while_owned
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(OSError, match="failed after opening"):
+        first.start()
+    assert broken.close_calls == 1
+    assert broken.is_connected is False
+    peer.start()
+    peer.stop()
+
+
+def test_linux_high_camera_index_and_device_path_share_a_lease(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")
+    device = 10000 + int(uuid.uuid4().hex[:6], 16)
+    first = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    peer = CameraHub(CameraHubConfig(device_id=f"/dev/video{device}"), camera=FakeCamera())
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+    finally:
+        peer.stop()
+        first.stop()
+
+
 def test_camera_device_lease_blocks_another_process():
     device = f"camera-{uuid.uuid4().hex}"
     first = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())

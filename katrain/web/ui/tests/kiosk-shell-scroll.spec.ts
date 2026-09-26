@@ -800,18 +800,8 @@ test('在线大厅:匹配中那个弹层的定位原点是布局根,不是带内
   expect(m.box.bottom, '弹窗盒下缘在中间区外面').toBeLessThanOrEqual(m.content.bottom);
 });
 
-/* ─────────────────────────────────────────────────────────────────────────
- * 屏 09 跨平台 · 人机开局:布局 A,右栏整栏滚,「开始对局」钉栏底
- *
- * 骨架和屏 02/04 是同一副,但**不能挂进上面那条 `SETUP_SCREENS` 循环** ——
- * 这一屏的内容要先从平台把 39 档棋力拉回来(`/platforms/:p/engine/levels`),
- * 那条循环的 `boot` 不喂它,拉不到就只剩一条错误提示,右栏根本不溢出 ⇒
- * 整组断言会以「没造出溢出」的姿态变红,或者更糟:量的是另一屏。
- * 「判据能转,结论不能转」——这里把判据搬过来,自己造自己的输入。
- *
- * 造输入:39 档全份。这一屏的右栏内容天然远超 460,不需要额外撑。
- * ────────────────────────────────────────────────────────────────────────── */
-test('跨平台人机开局:设置装不下时右栏自己滚,而「开始对局」怎么滚都还在', async ({ page }) => {
+/* 屏 09 已压成三组:39 档在点开名牌后的面板里,默认右栏应一屏装下。 */
+test('跨平台人机开局:39 档加载后右栏无需滚动,开始对局贴底', async ({ page }) => {
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
       enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
@@ -827,54 +817,50 @@ test('跨平台人机开局:设置装不下时右栏自己滚,而「开始对局
     },
   }));
   await boot(page, '/kiosk/play/cross-platform/engine/golaxy');
-  await page.waitForSelector('[data-testid="setup-summary-line"]');
+  await expect(page.getByTestId('setup-opponent-plate')).toBeVisible();
 
   const railW = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了').toBe(460);
 
-  // 前置:棋力档真拉回来了。拉不到时这一屏只剩一条错误提示,右栏根本不溢出 ——
-  // 下面整组会以「没造出溢出」的姿态红,而红的原因是 fixture 不是版式。
-  await expect(page.locator('[data-testid="setup-opponent"] .catmeta')).toContainText('/ 39 档');
+  await expect(page.getByTestId('setup-opponent')).toContainText('下发 39 档');
 
   const overflow = await overflowOf(page);
-  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+  expect(overflow, `三组设置溢出了 ${overflow}px`).toBeLessThanOrEqual(0);
 
   const ctaBefore = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
 
-  // **真滚轮**,不是 `scrollTop = n`。
+  // 真滚轮不应移动已经装得下的设置。
   const zone = page.locator('.kiosk-side__scroll');
   const zb = (await zone.boundingBox())!;
   await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
-  for (let i = 0; i < 24; i += 1) await page.mouse.wheel(0, 400);
+  for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, 400);
 
   const m = await page.evaluate(() => {
     const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
     const rail = document.querySelector('.kiosk-rail') as HTMLElement;
     const cta = document.querySelector('.kiosk-primary-action') as HTMLElement;
-    const last = document.querySelector('[data-testid="setup-summary-line"]') as HTMLElement;
+    const last = document.querySelector('[data-testid="setup-handicap-side"]') as HTMLElement;
     return {
       scrollTop: Math.round(el.scrollTop),
-      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
       railOverflow: rail.scrollHeight - rail.clientHeight,
       ctaBottom: Math.round(cta.getBoundingClientRect().bottom),
       ctaHeight: Math.round(cta.getBoundingClientRect().height),
       railBottom: Math.round(rail.getBoundingClientRect().bottom),
-      lastBottom: Math.round(last.parentElement!.getBoundingClientRect().bottom),
+      lastBottom: Math.round(last.getBoundingClientRect().bottom),
       zoneBottom: Math.round(el.getBoundingClientRect().bottom),
       horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
 
-  expect(m.scrollTop, '拨了二十四下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
-  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.lastBottom, '滚到底了,「这一局会是」还在视野外 —— 那一段就是到不了的')
+  expect(m.scrollTop, '三组设置装得下却滚动了').toBe(0);
+  expect(m.lastBottom, '最后一组「让子 · 我执」在视野外')
     .toBeLessThanOrEqual(m.zoneBottom);
-  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);
+  expect(m.railOverflow, '右栏自己被顶破了').toBeLessThanOrEqual(0);
   expect(m.ctaHeight, '「开始对局」被上面几组挤扁了').toBe(48);
   expect(m.ctaBottom, '「开始对局」没贴着右栏底').toBe(m.railBottom);
-  expect(m.ctaBottom, '滚过之后主行动键动了 —— 它在滚动区外面').toBe(ctaBefore);
+  expect(m.ctaBottom, '拨滚轮后主行动键动了').toBe(ctaBefore);
   expect(m.horizontal, '页面横向溢出了').toBe(0);
 });
 
@@ -1241,38 +1227,28 @@ test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', asy
   expect(m.actsCount, '失败态动作区格数变了 —— 格子一变位置就跳').toBe(3);
 });
 
-/**
- * 拍照遮罩盖的是**整个布局根**,不只是盘 —— 它的第一职责是挡住第二次按下「确认落子」。
- * 判据照抄屏 06 那条(`:776`):`.cdlg{inset:0}` 找的是最近的**定位祖先**,
- * 布局根不定位的话它会一路找到带 14px 上下内边距的 `.kiosk-content`,
- * 于是 top 差 14、高多 28,底边被画布裁掉。
- */
-test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三颗键', async ({ page }) => {
+/** 拍照提示现在是页面级 Dialog；它应挡住动作区，并让确认键失效。 */
+test('摆谱:拍照弹窗覆盖动作区,确认键不能重复按', async ({ page }) => {
   await bootBaipu(page, { capture: 'hang', collect: true });
   await page.getByRole('button', { name: '确认落子' }).click();
-  await page.waitForSelector('[data-testid="baipu-capture-pending"]');
+  await expect(page.getByRole('dialog', { name: '正在拍照，请勿伸手' })).toBeVisible();
+  // Modal 会把背景从可访问树隐藏；直接定位底层按钮检查 disabled。
+  await expect(page.getByTestId('baipu-actions').locator('button').filter({ hasText: '确认落子' })).toBeDisabled();
 
   const m = await page.evaluate(() => {
     const dlg = document.querySelector('[data-testid="baipu-capture-pending"]') as HTMLElement;
-    const root = document.querySelector('.kiosk-layout-a.baipu-layout') as HTMLElement;
     const acts = document.querySelector('[data-testid="baipu-actions"]') as HTMLElement;
     const d = dlg.getBoundingClientRect();
-    const r = root.getBoundingClientRect();
     const a = acts.getBoundingClientRect();
+    const hit = document.elementFromPoint(a.left + a.width / 2, a.top + a.height / 2);
     return {
-      dlg: { top: Math.round(d.top), left: Math.round(d.left), h: Math.round(d.height), w: Math.round(d.width) },
-      root: { top: Math.round(r.top), left: Math.round(r.left), h: Math.round(r.height), w: Math.round(r.width) },
-      // 遮罩的矩形要把动作区整个包住 —— 不然那三颗键就是「看着能按、按下去没反应」
       covers: d.top <= a.top && d.bottom >= a.bottom && d.left <= a.left && d.right >= a.right,
-      zIndex: getComputedStyle(dlg).zIndex,
+      intercepts: !!hit && dlg.contains(hit),
     };
   });
 
-  expect(m.dlg.top, `遮罩顶边 ${m.dlg.top} 对不上布局根 ${m.root.top}`).toBe(m.root.top);
-  expect(m.dlg.left).toBe(m.root.left);
-  expect(m.dlg.h, `遮罩高 ${m.dlg.h} 对不上布局根 ${m.root.h}`).toBe(m.root.h);
-  expect(m.dlg.w).toBe(m.root.w);
-  expect(m.covers, '遮罩没盖住那三颗键 —— 拍照时还能按下第二次「确认落子」').toBe(true);
+  expect(m.covers, '弹窗没有覆盖动作区').toBe(true);
+  expect(m.intercepts, '动作区还能接收点击').toBe(true);
 });
 
 /* ══ 屏 19 复盘:多了一条 54 的带子之后,列表还得**拨得动** ═══════════════════

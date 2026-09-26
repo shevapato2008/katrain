@@ -10,6 +10,7 @@
 - 上传纯协议 `82228c04` 已本地完成：只验证真实冻结清单/文件并通过可注入传输验证逐文件回执、容量、断点/取消/未校验状态，组合 **41 passed**，独立规格/质量 APPROVE。默认关闭、目标根目录 None，**没有 SSH 适配器或真实上传路由**，不能算上传功能完成。
 - 采集停在 Task 5 Step 4（真实本机硬件）与 Task 6（外部上传）。顺序进入 [训练与模型计划](./plan-2026-09-26-admin-vision-training.md)：独立 Astra 选 admin 协调独立进程组，默认禁用、单运行/单预留GPU，不建通用队列/DDP；最终解析本地权重验哈希且禁止下载回退，取消确认退出才释放运行占用，成功须核对 best.pt/schema/哈希/全部实际参数并原子发布。计划三个 chunk Approved，[训练 HTML](./slice4/design/admin-vision-training.html) 按 claude-design→ui-ux-pro-max 修 CTA/版本首屏与关键16–17px字号后独立 APPROVE。
 - 训练隔离 Fixture `f771a792` 已本地提交；[四態同尺寸四图](./slice4/design/training-fourup.html) 独立 Astra 实际查看后 **APPROVE**，另一独立Astra SPEC+QUALITY APPROVE。根代理重新运行页面/入口 **16 passed**，局部ESLint/build:admin通过、Chromium0error。示例只在控制器，正式入口不引入，无真实训练/下载。[契约](./slice4/vision-training-contract.md) 四图后已冻结，现开始默认禁用的可注入训练核心；尚无正式训练接口/真实GPU验收。worker仅独立进程内兼容已核实Ultralytics8.4.34，不影响ASGI配置；test-only MVP 通过另经授权隧道独立登录，不在Mac暗中SSH/RPC。
+- 训练核心与独立worker/process已通过本地实施和两名Astra各自SPEC+QUALITY复核：默认禁用、固定root flock、UUID幂等、单卡/单运行、取消与restart保守busy、全部实际参数及模型SHA/schema只读原子发布。评审发现GPU初始化映射、日志归档满后最新错误丢失、取消/终态保存失败无法重试，四项均精确RED→GREEN修复。根代理聚焦组合 **95 passed**，未使用真实Popen/GPU/网络。正式API/config已本地编写，正接前端；真实服务/训练/模型下载仍未验收。
 - 性能真实 Grafana、测试机真实训练/模型版本、Mac 模型部署/七阶段诊断仍未完成。所有新提交均仅本地，尚未推送；用户原有 `.playwright-cli` 删除及快照保持原样。本轮无新增全仓测试/变异体系，沿用比例化聚焦验证；无 SSH、写库、真设备、训练或部署。
 
 ## 2026-09-26 视觉实验室首段记录（历史阶段性状态）

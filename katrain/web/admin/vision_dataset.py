@@ -122,6 +122,63 @@ def _write(path: Path, data: bytes) -> None:
         raise OSError("Dataset asset write verification failed")
 
 
+def validate_frozen_dataset(directory: Path, manifest: dict) -> None:
+    """Validate persisted output, including both splits and exact image/label pairing."""
+    class_names = list(CLASS_ORDERS[manifest["mode"]])
+    if manifest["class_names"] != class_names or manifest["schema_version"] != SCHEMA_VERSION:
+        raise VisionDatasetError(503, "Frozen dataset class/schema mismatch")
+    actual = {path.relative_to(directory).as_posix() for path in directory.rglob("*") if path.is_file()}
+    if any(path.is_symlink() for path in directory.rglob("*")) or actual != set(manifest["assets"]) | {"manifest.json"}:
+        raise VisionDatasetError(503, "Frozen dataset has missing or unexpected assets")
+    for name, digest in manifest["assets"].items():
+        if _sha((directory / name).read_bytes()) != digest:
+            raise VisionDatasetError(503, "Frozen dataset asset hash mismatch")
+    config = yaml.safe_load((directory / "data.yaml").read_bytes())
+    if config != {
+        "train": "images/train",
+        "val": "images/val",
+        "nc": len(class_names),
+        "names": class_names,
+    }:
+        raise VisionDatasetError(503, "Frozen dataset YAML differs from its mode")
+    samples = manifest["samples"]
+    if not samples or {sample["split"] for sample in samples} != {"train", "val"}:
+        raise VisionDatasetError(422, "Both dataset splits must be nonempty")
+    if [sample["applied_move_index"] for sample in samples] != sorted(
+        {sample["applied_move_index"] for sample in samples}
+    ):
+        raise VisionDatasetError(422, "Dataset samples must follow SGF temporal order")
+    seen_val = False
+    pairs = set()
+    for sample in samples:
+        seen_val = seen_val or sample["split"] == "val"
+        if seen_val and sample["split"] != "val":
+            raise VisionDatasetError(422, "Dataset split violates SGF temporal order")
+        stem = Path(sample["image"]).stem
+        if (
+            sample["image"] != f"images/{sample['split']}/{stem}.png"
+            or sample["label"] != f"labels/{sample['split']}/{stem}.txt"
+        ):
+            raise VisionDatasetError(503, "Dataset image/label pairing is invalid")
+        pairs.update((sample["image"], sample["label"]))
+        if cv2.imread(str(directory / sample["image"])) is None:
+            raise VisionDatasetError(503, "Frozen dataset image is unreadable")
+        for line in (directory / sample["label"]).read_text().splitlines():
+            parts = line.split()
+            if len(parts) != 5:
+                raise VisionDatasetError(422, "Frozen label must have five fields")
+            try:
+                cid = int(parts[0])
+                cx, cy, w, h = map(float, parts[1:])
+                box = baipu_autolabel.Box(cid, cx, cy, w, h)
+                _normalized_boxes([box], 1, 1, len(class_names))
+            except ValueError as exc:
+                raise VisionDatasetError(422, "Frozen label has invalid numeric values") from exc
+    output_pairs = {name for name in actual if name.startswith(("images/", "labels/"))}
+    if output_pairs != pairs or len(pairs) != 2 * len(samples):
+        raise VisionDatasetError(503, "Frozen dataset has orphan or duplicate image/label files")
+
+
 class VisionDatasetBuilder:
     def __init__(self, coordinator: VisionCaptureCoordinator, *, output_root: Path | str | None = None):
         self.coordinator = coordinator
@@ -237,62 +294,7 @@ class VisionDatasetBuilder:
             }
 
     def _validate(self, directory: Path, manifest: dict) -> None:
-        """Validate persisted output, including both splits and exact image/label pairing."""
-        class_names = list(CLASS_ORDERS[manifest["mode"]])
-        if manifest["class_names"] != class_names or manifest["schema_version"] != SCHEMA_VERSION:
-            raise VisionDatasetError(503, "Frozen dataset class/schema mismatch")
-        actual = {path.relative_to(directory).as_posix() for path in directory.rglob("*") if path.is_file()}
-        if any(path.is_symlink() for path in directory.rglob("*")) or actual != set(manifest["assets"]) | {
-            "manifest.json"
-        }:
-            raise VisionDatasetError(503, "Frozen dataset has missing or unexpected assets")
-        for name, digest in manifest["assets"].items():
-            if _sha((directory / name).read_bytes()) != digest:
-                raise VisionDatasetError(503, "Frozen dataset asset hash mismatch")
-        config = yaml.safe_load((directory / "data.yaml").read_bytes())
-        if config != {
-            "train": "images/train",
-            "val": "images/val",
-            "nc": len(class_names),
-            "names": class_names,
-        }:
-            raise VisionDatasetError(503, "Frozen dataset YAML differs from its mode")
-        samples = manifest["samples"]
-        if not samples or {sample["split"] for sample in samples} != {"train", "val"}:
-            raise VisionDatasetError(422, "Both dataset splits must be nonempty")
-        if [sample["applied_move_index"] for sample in samples] != sorted(
-            {sample["applied_move_index"] for sample in samples}
-        ):
-            raise VisionDatasetError(422, "Dataset samples must follow SGF temporal order")
-        seen_val = False
-        pairs = set()
-        for sample in samples:
-            seen_val = seen_val or sample["split"] == "val"
-            if seen_val and sample["split"] != "val":
-                raise VisionDatasetError(422, "Dataset split violates SGF temporal order")
-            stem = Path(sample["image"]).stem
-            if (
-                sample["image"] != f"images/{sample['split']}/{stem}.png"
-                or sample["label"] != f"labels/{sample['split']}/{stem}.txt"
-            ):
-                raise VisionDatasetError(503, "Dataset image/label pairing is invalid")
-            pairs.update((sample["image"], sample["label"]))
-            if cv2.imread(str(directory / sample["image"])) is None:
-                raise VisionDatasetError(503, "Frozen dataset image is unreadable")
-            for line in (directory / sample["label"]).read_text().splitlines():
-                parts = line.split()
-                if len(parts) != 5:
-                    raise VisionDatasetError(422, "Frozen label must have five fields")
-                try:
-                    cid = int(parts[0])
-                    cx, cy, w, h = map(float, parts[1:])
-                    box = baipu_autolabel.Box(cid, cx, cy, w, h)
-                    _normalized_boxes([box], 1, 1, len(class_names))
-                except ValueError as exc:
-                    raise VisionDatasetError(422, "Frozen label has invalid numeric values") from exc
-        output_pairs = {name for name in actual if name.startswith(("images/", "labels/"))}
-        if output_pairs != pairs or len(pairs) != 2 * len(samples):
-            raise VisionDatasetError(503, "Frozen dataset has orphan or duplicate image/label files")
+        validate_frozen_dataset(directory, manifest)
 
     def freeze(
         self,

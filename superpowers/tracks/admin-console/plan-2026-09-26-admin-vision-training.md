@@ -19,6 +19,7 @@
 - `slice4/vision-training-contract.md`：运行状态/权限/字段/日志预算与外部启用条件，四图通过后冻结。
 - `katrain/web/admin/vision_training.py`：单运行协调、UUID 目录、状态持久化及取消；不混入相机 runtime。
 - `katrain/web/admin/vision_training_worker.py`：独立 worker，allowlist 输入、真实 epoch/metrics/日志及产物校验。
+- `katrain/web/admin/vision_training_process.py`：私有进程句柄/同锁poll与取消、有界归档与最新日志尾部；`vision_training_config.py` 读取服务端固定配置，不查询GPU或隐式启动。
 - `katrain/vision/tools/train_model.py`：最小可选 `project`/固定输出适配；保持既有 CLI 默认兼容。不沿用 autobatch/MPS，也不信完成打印。
 - `katrain/web/admin/routers/vision_training.py`、`app.py`、`settings.py`：受保护、默认禁用的真实接口；无 GET 隐式启动。
 - `src/admin/vision/training/TrainingDashboard.tsx`、`api/client.ts`、`VisionDashboard.tsx`：真实整合、同 run 响应代际与 Fixture 删除。
@@ -44,12 +45,12 @@
 ### Task 3: 固定训练输入与生命周期
 
 - [x] **Step 1:** 四图 APPROVE 后冻结 [训练契约](./slice4/vision-training-contract.md)：默认禁用、test专用、固定输入/参数/预算、单运行生命周期/取消、best.pt与完整manifest发布；不授权外部操作。
-- [ ] **Step 2:** 先写 fake worker 测试：默认禁用、未授权拒绝、不可信 ID/路径/参数拒绝、冻结 manifest/hash/schema 校验、实际解析后的可信本地权重缺失/哈希不匹配立即拒绝（禁止下载回退）、单 GPU allowlist、重复请求幂等、并发第二 run busy、启动失败保留状态。现有 `resolve_model` 会优先同名 `models/` 文件，必须验证最终真实文件，不能只验证请求路径。
-- [ ] **Step 3:** `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/web_ui/test_admin_vision_training.py` 先 RED；最小实现受控 roots 与可注入 worker 后 GREEN。无实际进程/网络/GPU 操作。
-- [ ] **Step 4:** 增加同 run 指标与日志、取消/退出/重启 interrupted、失败保留旧模型、成功 best.pt/schema/hash/manifest 原子发布红测；不把 exit=0 或 stdout “complete”单独当成功。manifest 必须核对实际 imgsz/权重/类目/增强/seed/GPU/batch/代码版本/数据集哈希/best.pt 哈希，不只检查文件存在。取消只有确认本 run 进程组退出才能 `cancelled` 并释放运行占用；“已发取消但未退出”仍 busy。重启后旧进程退出状态未核实时不允许新 run，写对应 fake 测试。
-- [ ] **Step 5:** 补独立 worker 与 `train_model.py` 固定 project/name、显式 batch/device、最终解析后的可信本地模型输入适配；在启动前校验该文件的实际哈希，缺失/不匹配拒绝且无隐式下载。测试启动 argv 无 shell，取消只针对本 run 进程组并确认退出才释放。不能影响 KataGo；本地仅 fake 子进程测试，不启动真实训练。
+- [x] **Step 2:** fake核心门禁/冻结schema、哈希、最终登记权重/参数、UUID幂等及busy红测；权重为实际绝对登记文件，不调用legacy同名优先/下载回退。
+- [x] **Step 3:** RED→GREEN受控root及单运行协调器，固定root flock拒绝第二实例；无实际进程/网络/GPU。
+- [x] **Step 4:** 同run指标/有界日志、确认组退出取消、restart未知busy、best/schema/full actual参数与哈希原子模型发布。Astra复现取消/终态写盘失败后无法重试，两项候选副本 RED→GREEN 后最终SPEC+QUALITY APPROVE。
+- [x] **Step 5:** 独立worker/Popen adapter及CLI可选project实现；原CLI默认兼容。无shell，私有handle同锁poll/signal，已reap leader不发终止信号，组ESRCH＋日志drain才确认退出。仅fake边界测试，未启动真实训练。
   - 已由独立 Astra 裁定的实际最小兼容边界：仅已核实 Ultralytics8.4.34 的 worker 内导入前设置受控 `YOLO_CONFIG_DIR`、OFFLINE/AUTOINSTALL；`amp=False/plots=False`（避免AMP检查额外下载）、跳过无图 dataset 字体下载入口、禁用外部 integration callbacks，保留默认回调。固定本地 YAML 拒绝 URL/download 脚本。真实版本不符停用待核对；不改ASGI/用户全局配置，不宣传系统级网络隔离，实际amp/plots写manifest；显存增加待真实Batch验证。
-- [ ] **Step 6:** 聚焦训练/原有 CLI 回归转 GREEN；独立规格/质量复核高风险进程与完整性边界，精确提交。不能宣称测试机训练完成。
+- [x] **Step 6:** 根代理训练核心/数据集/传输/worker/process/CLI组合 **95 passed**，Black/diffcheck通过；worker独立SPEC+QUALITY APPROVE（GPU初始化前锁定、归档满后最新错误两项RED→GREEN）。提交本地核心与worker，不代表测试机训练完成。
 
 ### Task 4: 正式接口和前端
 

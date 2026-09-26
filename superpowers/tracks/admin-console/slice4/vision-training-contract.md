@@ -34,6 +34,7 @@ HTML 与四态 Fixture 同尺寸四图已由独立 GPT-6 Astra max APPROVE；另
 - 完成须成功退出 + 可读 best.pt + 实际 schema + SHA-256 + 训练 manifest 全部实际参数一致，原子发布不可变模型目录；failed/cancelled 保留旧模型，不用 last.pt 或打印文本冒充完成。
 - 本机源码核对 Ultralytics **8.4.34**：AMP 检查会加载其他模型、dataset 检查可能下载字体、integration callbacks 含外部平台。独立 Astra 已批准仅 worker 内最小兼容处理：导入前设置 `YOLO_CONFIG_DIR` 到受控 run、`YOLO_OFFLINE=true`、`YOLO_AUTOINSTALL=false`；显式 `amp=False/plots=False`；仅禁用外部 `add_integration_callbacks`，保留默认训练回调；无图模式跳过 dataset `check_font`。不改 ASGI 或用户全局配置，不引入字体 registry。最终本地权重验哈希；固定生成的 YAML 必须拒绝 URL、download 脚本等字段。
 - 这些兼容符号限定已核实版本；真实机器版本不同则禁用等待核对。OFFLINE 不是系统级网络隔离保证，不能笼统声称绝无外部网络。关闭 AMP 增加显存需求，Batch 须在真实机器授权验证；实际 amp/plots/workers 等参数纳入 manifest。
+- 已实施的额外边界：固定root flock排除第二协调器；GPU ID在导入训练库/torch前锁到`CUDA_VISIBLE_DEVICES`，要求仅一张可见卡，物理/容器映射仍须授权实机核实。8MiB归档满后继续drain并保留最新16KiB尾部；首次取消/终态持久化失败仍可重试，不伪造完成或释放占用。
 
 ## Fixture 删除与验收
 

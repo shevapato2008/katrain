@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-from katrain.web.admin.vision_dataset import VisionDatasetError, _json
+from katrain.web.admin.vision_dataset import VisionDatasetError, _json, validate_frozen_dataset
 
 MAX_BYTES = 2 * 1024**3
 MAX_FILE_BYTES = 64 * 1024**2
@@ -93,6 +93,51 @@ def _safe_name(name):
     )
 
 
+def prepare_frozen_dataset(root, dataset_id, *, max_bytes=MAX_BYTES):
+    if not isinstance(dataset_id, str) or not DATASET_ID.fullmatch(dataset_id):
+        raise VisionTransferError(422, "Invalid frozen dataset ID")
+    directory = Path(root) / dataset_id
+    try:
+        path = directory / "manifest.json"
+        if directory.is_symlink() or not directory.is_dir() or path.is_symlink():
+            raise ValueError("Invalid frozen directory")
+        if not path.is_file() or not 0 < path.stat().st_size <= MAX_MANIFEST_BYTES:
+            raise ValueError("Invalid frozen manifest")
+        raw = path.read_bytes()
+        manifest = json.loads(raw)
+        if (
+            manifest["id"] != dataset_id
+            or dataset_id != "dataset-" + hashlib.sha256(_json(manifest["identity"])).hexdigest()
+        ):
+            raise ValueError("Frozen identity mismatch")
+        assets = manifest["assets"]
+        if not isinstance(assets, dict) or not 0 < len(assets) < MAX_FILES or "manifest.json" in assets:
+            raise ValueError("Invalid frozen assets")
+        entries, total = [], 0
+        for name in sorted([*assets, "manifest.json"]):
+            if not _safe_name(name):
+                raise ValueError("Unsafe frozen asset path")
+            source = directory / name
+            if any(parent.is_symlink() for parent in source.parents if parent != directory.parent):
+                raise ValueError("Symlink in frozen asset path")
+            if source.is_symlink() or not source.is_file():
+                raise ValueError("Missing frozen asset")
+            size = source.stat().st_size
+            total += size
+            if size > MAX_FILE_BYTES or total > max_bytes:
+                raise VisionTransferError(413, "Frozen transfer exceeds its size limit")
+            digest = _digest(source)
+            if name != "manifest.json" and digest != assets[name]:
+                raise ValueError("Frozen asset hash changed")
+            entries.append(FileReceipt(name, size, digest))
+        validate_frozen_dataset(directory, manifest)
+        return TransferPlan(dataset_id, directory, hashlib.sha256(raw).hexdigest(), tuple(entries), total)
+    except VisionTransferError:
+        raise
+    except (OSError, ValueError, TypeError, KeyError, VisionDatasetError) as exc:
+        raise VisionTransferError(503, "Frozen transfer source validation failed") from exc
+
+
 class VisionDatasetTransfer:
     def __init__(self, builder, *, config=None, transport=None, max_bytes=MAX_BYTES):
         self.builder = builder
@@ -103,49 +148,8 @@ class VisionDatasetTransfer:
         self.max_bytes = max_bytes
 
     def prepare(self, dataset_id):
-        if not isinstance(dataset_id, str) or not DATASET_ID.fullmatch(dataset_id):
-            raise VisionTransferError(422, "Invalid frozen dataset ID")
         with self.builder.coordinator.lock:
-            directory = self.builder.output_root / dataset_id
-            try:
-                path = directory / "manifest.json"
-                if directory.is_symlink() or not directory.is_dir() or path.is_symlink():
-                    raise ValueError("Invalid frozen directory")
-                if not path.is_file() or not 0 < path.stat().st_size <= MAX_MANIFEST_BYTES:
-                    raise ValueError("Invalid frozen manifest")
-                raw = path.read_bytes()
-                manifest = json.loads(raw)
-                if (
-                    manifest["id"] != dataset_id
-                    or dataset_id != "dataset-" + hashlib.sha256(_json(manifest["identity"])).hexdigest()
-                ):
-                    raise ValueError("Frozen identity mismatch")
-                assets = manifest["assets"]
-                if not isinstance(assets, dict) or not 0 < len(assets) < MAX_FILES or "manifest.json" in assets:
-                    raise ValueError("Invalid frozen assets")
-                entries, total = [], 0
-                for name in sorted([*assets, "manifest.json"]):
-                    if not _safe_name(name):
-                        raise ValueError("Unsafe frozen asset path")
-                    source = directory / name
-                    if any(parent.is_symlink() for parent in source.parents if parent != directory.parent):
-                        raise ValueError("Symlink in frozen asset path")
-                    if source.is_symlink() or not source.is_file():
-                        raise ValueError("Missing frozen asset")
-                    size = source.stat().st_size
-                    total += size
-                    if size > MAX_FILE_BYTES or total > self.max_bytes:
-                        raise VisionTransferError(413, "Frozen transfer exceeds its size limit")
-                    digest = _digest(source)
-                    if name != "manifest.json" and digest != assets[name]:
-                        raise ValueError("Frozen asset hash changed")
-                    entries.append(FileReceipt(name, size, digest))
-                self.builder._validate(directory, manifest)
-                return TransferPlan(dataset_id, directory, hashlib.sha256(raw).hexdigest(), tuple(entries), total)
-            except VisionTransferError:
-                raise
-            except (OSError, ValueError, TypeError, KeyError, VisionDatasetError) as exc:
-                raise VisionTransferError(503, "Frozen transfer source validation failed") from exc
+            return prepare_frozen_dataset(self.builder.output_root, dataset_id, max_bytes=self.max_bytes)
 
     def _require_enabled(self, confirmed):
         config, root = self.config, self.config.remote_root

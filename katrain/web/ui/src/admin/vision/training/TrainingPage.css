@@ -37,4 +37,4 @@
 .training-history { display:flex;align-items:center;gap:8px;color:var(--admin-muted);font-size:16px;min-width:0; }.training-history select { width:150px;max-width:100%;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);font:inherit;padding:4px 7px; }
 .training-dialog p { overflow-wrap:anywhere; }.training-observation { display:block;font-size:13px;margin-top:3px; }
 @media(max-width:900px) { .training-grid { grid-template-columns:1fr; }.training-location { display:none; }.training-models { overflow:auto; } }
-.training-nowrap { white-space:nowrap; }
+.training-advanced .training-summary { font-size:14px;letter-spacing:-.01em; }

@@ -26,6 +26,7 @@ from katrain.web.admin.vision_sgf import PreparedVisionSgf, prepare_vision_sgf
 SCHEMA_VERSION = 1
 CLASS_ORDERS = {"stones2": ("black", "white"), "led4": tuple(CLASS_NAMES)}
 FIDUCIAL_MODES = ("off", "every-move")
+QA_STATUSES = ("operator_confirmed", "camera_matched")
 CORRECTION_STATUSES = ("corrected", "stale", "frozen")
 
 
@@ -267,7 +268,13 @@ class VisionCaptureCoordinator:
                     or frame["mode"] != manifest["mode"]
                     or frame["geometry_revision"] != manifest["geometry_revision"]
                     or frame["geometry_source"] != manifest["geometry_source"]
-                    or frame["qa_status"] != "operator_confirmed"
+                    or frame["qa_status"] not in QA_STATUSES
+                    or (
+                        frame["qa_status"] == "camera_matched"
+                        and (
+                            frame.get("capture_trigger") != "camera" or not isinstance(frame.get("auto_evidence"), dict)
+                        )
+                    )
                     or frame["board_through_index"] != expected
                     or frame["next_guided_move_index"] != sgf.next_placement_index(expected)
                     or frame["captured_at_source"] != "runtime_observed_at"
@@ -393,6 +400,9 @@ class VisionCaptureCoordinator:
         capture_condition: dict | None = None,
         settle_ms: float = 150.0,
         fiducial_mode: str = "off",
+        trigger: str = "operator",
+        verify=None,
+        extra_fields: dict | None = None,
     ) -> dict:
         with self.lock:
             directory = self._session_dir(game_id)
@@ -400,7 +410,11 @@ class VisionCaptureCoordinator:
                 raise VisionCaptureError(422, "Unsupported capture mode")
             if fiducial_mode not in FIDUCIAL_MODES or (fiducial_mode != "off" and mode != "led4"):
                 raise VisionCaptureError(422, "Fiducial correction needs LED mode")
-            if operator_confirmed is not True:
+            if trigger == "camera":
+                # The camera stands in for the confirmation click; its own evidence is re-checked on the saved frame.
+                if verify is None or overwrite_existing or move_index == -1:
+                    raise VisionCaptureError(409, "Camera capture needs a verifier and a new placement step")
+            elif trigger != "operator" or operator_confirmed is not True:
                 raise VisionCaptureError(409, "Operator placement confirmation is required")
             if type(move_index) is not int or type(overwrite_existing) is not bool:
                 raise VisionCaptureError(422, "Invalid capture step or overwrite flag")
@@ -493,6 +507,7 @@ class VisionCaptureCoordinator:
                         correction = None
                         image_path = stage / "frame.jpg"
                         adapter.capture_to(image_path, settle_ms=settle_ms)
+                    evidence = verify(image_path) if verify is not None else None
                     frame_id = str(uuid4())
                     file_name = f"frame-{frame_id}.jpg"
                     new_image = stage / file_name
@@ -512,8 +527,15 @@ class VisionCaptureCoordinator:
                         "geometry_revision": geometry_revision,
                         "geometry_source": geometry_source,
                         "capture_condition": conditions,
-                        "qa_status": "operator_confirmed",
+                        "qa_status": "camera_matched" if trigger == "camera" else "operator_confirmed",
+                        "capture_trigger": trigger,
                     }
+                    if evidence is not None:
+                        entry["auto_evidence"] = json.loads(_json(evidence))
+                    for key, value in (extra_fields or {}).items():
+                        if key in entry:
+                            raise VisionCaptureError(422, "Extra capture fields may not replace provenance")
+                        entry[key] = json.loads(_json(value))
                     if fiducial_mode != "off":
                         entry["geometry_correction"] = json.loads(_json(correction))
                     updated = (

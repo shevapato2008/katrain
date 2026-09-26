@@ -61,6 +61,9 @@ def _jpeg(frame) -> str:
 
 LED_TEST_POINTS = ((0, 0), (0, 18), (18, 18), (18, 0), (9, 9))
 LED_TEST_SECONDS = 1.0
+AUTO_MIN_FRAMES = 5
+AUTO_MIN_SECONDS = 1.0
+AUTO_STALL_SECONDS = 8.0
 
 
 class AdminVisionRuntime:
@@ -93,6 +96,8 @@ class AdminVisionRuntime:
         self._fiducial_preference = "off"
         self._model_registry = None
         self._model_loader = None  # None -> real ultralytics loader; tests inject a fake
+        self._clock = time.monotonic
+        self._auto = None  # stability window for the one position auto-advance is watching
 
     def _coordinator(self):
         from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
@@ -223,6 +228,7 @@ class AdminVisionRuntime:
             return self.status()
 
     def _release_devices(self):
+        self._auto = None
         errors = []
         for name in ("led", "camera"):
             device = getattr(self, name)
@@ -483,36 +489,65 @@ class AdminVisionRuntime:
                 )
                 if existing is not None:
                     return {**existing, "idempotent": True}
-            self._check_session_camera(session)
-            if self.geometry is None or self._geometry_stale:
-                raise VisionError(409, "Current geometry must be calibrated or explicitly verified")
-            if session["state"] == "captured" and self.geometry_revision != session["geometry_revision"]:
-                raise VisionError(409, "New calibration requires a new capture session")
-            from katrain.web.admin.vision_capture_txn import VisionCaptureError
-
-            conditions = {**(capture_condition or {}), "camera_device_id": self.device_id}
-            try:
-                result = self._coordinator().capture(
-                    sgf=self._session_sgf(session),
-                    game_id=game_id,
-                    mode=self.mode,
-                    geometry=self.geometry,
-                    geometry_revision=self.geometry_revision,
-                    geometry_source=self.geometry_source,
-                    camera=self.camera,
-                    led=self.led,
-                    move_index=move_index,
-                    operator_confirmed=operator_confirmed,
-                    overwrite_existing=overwrite_existing,
-                    capture_condition=conditions,
-                    fiducial_mode=self._fiducial_mode(session),
-                )
-            except VisionCaptureError as exc:
-                raise VisionError(exc.status_code, str(exc)) from exc
-            if not result["idempotent"]:
-                self._frozen = None
-                self._updated_at = _now()
+            stalled = bool(self._auto and self._auto["key"] == (game_id, move_index) and self._auto["stalled"])
+            result = self._capture_locked(
+                session,
+                game_id,
+                move_index,
+                operator_confirmed=operator_confirmed,
+                overwrite_existing=overwrite_existing,
+                capture_condition=capture_condition,
+                extra_fields={"auto_stalled": True} if stalled and not overwrite_existing else None,
+            )
+            self._auto = None
             return result
+
+    def _capture_locked(
+        self,
+        session,
+        game_id,
+        move_index,
+        *,
+        operator_confirmed=False,
+        overwrite_existing=False,
+        capture_condition=None,
+        trigger="operator",
+        verify=None,
+        extra_fields=None,
+    ):
+        self._check_session_camera(session)
+        if self.geometry is None or self._geometry_stale:
+            raise VisionError(409, "Current geometry must be calibrated or explicitly verified")
+        if session["state"] == "captured" and self.geometry_revision != session["geometry_revision"]:
+            raise VisionError(409, "New calibration requires a new capture session")
+        from katrain.web.admin.vision_capture_txn import VisionCaptureError
+
+        conditions = {**(capture_condition or {}), "camera_device_id": self.device_id}
+        try:
+            result = self._coordinator().capture(
+                sgf=self._session_sgf(session),
+                game_id=game_id,
+                mode=self.mode,
+                geometry=self.geometry,
+                geometry_revision=self.geometry_revision,
+                geometry_source=self.geometry_source,
+                camera=self.camera,
+                led=self.led,
+                move_index=move_index,
+                operator_confirmed=operator_confirmed,
+                overwrite_existing=overwrite_existing,
+                capture_condition=conditions,
+                fiducial_mode=self._fiducial_mode(session),
+                trigger=trigger,
+                verify=verify,
+                extra_fields=extra_fields,
+            )
+        except VisionCaptureError as exc:
+            raise VisionError(exc.status_code, str(exc)) from exc
+        if not result["idempotent"]:
+            self._frozen = None
+            self._updated_at = _now()
+        return result
 
     def _session_fiducial(self, session) -> str | None:
         """A session's mode is fixed by its first frame; None means it is still open to choose."""
@@ -564,6 +599,7 @@ class AdminVisionRuntime:
     def activate_model(self, model_id: str, confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._auto = None
             if confirmed is not True:
                 raise VisionError(409, "Confirm activating this model")
             result = self._model_call("activate", model_id)
@@ -573,11 +609,124 @@ class AdminVisionRuntime:
     def rollback_model(self, confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._auto = None
             if confirmed is not True:
                 raise VisionError(409, "Confirm rolling back to the previous model")
             result = self._model_call("rollback")
             self._updated_at = _now()
             return result
+
+    def _recognize(self, frame, matrix=None):
+        from katrain.web.admin.vision_recognition import recognize_board
+
+        registry = self._models()
+        if registry.loaded is None:
+            raise VisionError(409, "Activate a verified model before camera recognition")
+        return recognize_board(frame, self.geometry, registry.loaded, matrix)
+
+    def auto_check(self, game_id: str, move_index: int) -> dict:
+        """Recognize one fresh frame against the SGF position; capture only after a stable exact match."""
+        self.require_enabled()
+        with self._lock:
+            import numpy as np
+
+            from katrain.web.admin.vision_recognition import board_diff, board_string, expected_board
+
+            if game_id != self._active_id:
+                raise VisionError(409, "Resume the requested capture session first")
+            session = self.get_session(game_id)
+            if session.get("ended_at") or session["next_step"] != move_index:
+                raise VisionError(409, "Auto-advance only watches the move waiting to be captured")
+            if self._fiducial_mode(session) != "off":
+                raise VisionError(409, "Auto-advance cannot run with per-frame fiducial correction")
+            self._check_session_camera(session)
+            if self.geometry is None or self._geometry_stale:
+                raise VisionError(409, "Current geometry must be calibrated or explicitly verified")
+            registry = self._models()
+            if registry.loaded is None or registry.loaded_info is None:
+                raise VisionError(409, "Activate a verified model before auto-advance")
+            try:
+                frame, seq, _ = self.camera.grab_fresh(settle_ms=0.0)
+                if frame is None:
+                    raise ValueError("No frame")
+                observed = np.asarray(self._recognize(frame), dtype=int)
+            except VisionError:
+                raise
+            except Exception as exc:
+                self._auto = None
+                raise VisionError(503, "Camera recognition failed") from exc
+            expected = expected_board(session["steps"], move_index)
+            missing, extra = board_diff(observed, expected)
+            now = self._clock()
+            key = (game_id, move_index)
+            state = self._auto if self._auto and self._auto["key"] == key else None
+            if state is None:
+                state = {"key": key, "board": None, "times": [], "mismatch": None, "since": None, "stalled": False}
+            text = board_string(observed)
+            if missing or extra:
+                signature = (tuple(map(str, missing)), tuple(map(str, extra)))
+                if state["mismatch"] != signature:
+                    state["mismatch"], state["since"] = signature, now
+                state["board"], state["times"] = None, []
+                state["stalled"] = state["stalled"] or now - state["since"] >= AUTO_STALL_SECONDS
+            else:
+                if state["board"] != text:
+                    state["board"], state["times"] = text, []
+                state["times"].append(now)
+                state["mismatch"] = state["since"] = None
+            self._auto = state
+            frames, elapsed = len(state["times"]), (state["times"][-1] - state["times"][0]) if state["times"] else 0.0
+            result = {
+                "state": (
+                    "stalled"
+                    if state["stalled"] and (missing or extra)
+                    else "mismatch" if missing or extra else "matching"
+                ),
+                "move_index": move_index,
+                "missing": missing,
+                "extra": extra,
+                "stable_frames": frames,
+                "stable_ms": int(elapsed * 1000),
+                "required_frames": AUTO_MIN_FRAMES,
+                "required_ms": int(AUTO_MIN_SECONDS * 1000),
+                "camera_seq": seq,
+            }
+            if missing or extra or frames < AUTO_MIN_FRAMES or elapsed < AUTO_MIN_SECONDS:
+                return result
+            info = registry.loaded_info
+            evidence = {
+                "model_id": info["id"],
+                "model_sha256": info["weights_sha256"],
+                "confidence_threshold": getattr(registry.loaded, "confidence_threshold", None),
+                "expected_index": move_index,
+                "board_hash": session["steps"][move_index]["board_hash"],
+                "stable_frames": frames,
+                "stable_ms": int(elapsed * 1000),
+            }
+
+            def verify(image_path):
+                import cv2
+
+                from katrain.web.admin.vision_capture_txn import VisionCaptureError
+
+                saved = cv2.imread(str(image_path))
+                if saved is None:
+                    raise VisionCaptureError(503, "Saved frame is unreadable")
+                seen = np.asarray(self._recognize(saved), dtype=int)
+                lost, stray = board_diff(seen, expected)
+                if lost or stray:
+                    raise VisionCaptureError(409, "The saved frame no longer matches the SGF position; not published")
+                return {
+                    **evidence,
+                    "observed_board": board_string(seen),
+                    "missing": [],
+                    "extra": [],
+                    "verified_saved_frame": True,
+                }
+
+            self._auto = None
+            frame_result = self._capture_locked(session, game_id, move_index, trigger="camera", verify=verify)
+            return {**result, "state": "captured", "frame": frame_result}
 
     def _require_led(self):
         if self.mode != "led4" or self.led is None or not self.led.is_connected():
@@ -625,6 +774,7 @@ class AdminVisionRuntime:
     def undo_last(self, game_id: str, frame_id: str, operator_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._auto = None
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm the board is restored before undoing")
             if game_id != self._active_id:
@@ -642,6 +792,7 @@ class AdminVisionRuntime:
     def end_session(self, game_id: str, operator_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._auto = None
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm ending this capture session")
             if game_id != self._active_id:
@@ -662,6 +813,7 @@ class AdminVisionRuntime:
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm the LED test")
             self._require_led()
+            self._auto = None
             lit = []
             try:
                 for row, col in LED_TEST_POINTS:

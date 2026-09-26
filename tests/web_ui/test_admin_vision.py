@@ -93,6 +93,7 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("GET", "models", None),
         ("POST", "models/activate", {"model_id": "model-" + "0" * 64, "confirmed": True}),
         ("POST", "models/rollback", {"confirmed": True}),
+        ("POST", "auto-check", {"game_id": "example", "move_index": 0}),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):
@@ -1136,3 +1137,164 @@ def test_dataset_labels_use_the_frame_corrected_homography(led_client, monkeypat
     )
     client.get(f"{PATH}/sessions/{game_id}/frames/{frame['frame_id']}/review", headers=headers())
     assert np.allclose(seen[-1], shifted)
+
+
+def expected_board(*stones):
+    board = np.zeros((19, 19), dtype=int)
+    for row, col, value in stones:
+        board[row, col] = value
+    return board
+
+
+@pytest.fixture
+def auto_client(capture_client, tmp_path):
+    from tests.web_ui.test_admin_vision_models import Loader, trust, write_model
+
+    runtime = capture_client.app.state.vision_runtime
+    root = runtime.out_dir / "models"
+    root.mkdir(parents=True, exist_ok=True)
+    model = write_model(root, "run-auto")
+    trust(root, model)
+    runtime._model_loader = Loader()
+    clock = {"now": 100.0}
+    runtime._clock = lambda: clock["now"]
+    seen = {"board": expected_board()}
+    runtime._recognize = lambda frame: seen["board"].copy()
+    return capture_client, runtime, clock, seen, model[0]
+
+
+def auto(client, game_id, index):
+    return post(client, "auto-check", game_id=game_id, move_index=index)
+
+
+def test_auto_check_needs_a_loaded_model_and_never_takes_the_initial_frame(auto_client):
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    assert auto(client, game_id, 0).status_code == 409  # no active model yet
+    assert post(client, "models/activate", model_id=model_id, confirmed=True).status_code == 200
+    assert auto(client, game_id, -1).status_code == 422
+    assert auto(client, game_id, 2).status_code == 409  # not the move waiting to be captured
+
+
+def test_auto_capture_fires_only_after_a_stable_exact_match_and_records_evidence(auto_client, tmp_path):
+    import json
+
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    take(client, game_id)
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    seen["board"] = expected_board((1, 1, 1), (5, 5, 2))  # a stray stone: never fires
+    for _ in range(8):
+        result = auto(client, game_id, 0).json()
+        clock["now"] += 0.3
+    assert result["state"] == "mismatch" and result["extra"] == [{"row": 5, "col": 5}]
+    seen["board"] = expected_board((1, 1, 1))
+    states = []
+    for _ in range(4):
+        states.append(auto(client, game_id, 0).json())
+        clock["now"] += 0.3
+    assert [state["state"] for state in states] == ["matching"] * 4
+    assert states[-1]["stable_frames"] == 4
+    captured = auto(client, game_id, 0).json()
+    assert captured["state"] == "captured", captured
+    frame = captured["frame"]
+    assert frame["qa_status"] == "camera_matched" and frame["capture_trigger"] == "camera"
+    evidence = frame["auto_evidence"]
+    assert evidence["model_id"] == model_id and len(evidence["model_sha256"]) == 64
+    assert evidence["missing"] == [] and evidence["extra"] == []
+    assert evidence["stable_frames"] >= 5 and evidence["stable_ms"] >= 1000
+    assert evidence["verified_saved_frame"] is True and len(evidence["observed_board"]) == 361
+    session = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert session["next_step"] == 2
+    fresh = TestClient(make_app(tmp_path))
+    fresh.app.state.vision_runtime.out_dir = runtime.out_dir
+    assert (
+        fresh.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()["frames"][1]["qa_status"] == "camera_matched"
+    )
+
+
+def test_a_board_that_changes_inside_the_window_restarts_it(auto_client):
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    take(client, game_id)
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    seen["board"] = expected_board((1, 1, 1))
+    for _ in range(4):
+        auto(client, game_id, 0)
+        clock["now"] += 0.3
+    seen["board"] = expected_board()  # a hand hides the stone for one frame
+    assert auto(client, game_id, 0).json()["state"] == "mismatch"
+    seen["board"] = expected_board((1, 1, 1))
+    clock["now"] += 0.3
+    assert auto(client, game_id, 0).json()["stable_frames"] == 1
+
+
+def test_the_saved_frame_itself_must_match_or_nothing_is_published(auto_client):
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    take(client, game_id)
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    calls = {"n": 0}
+
+    def recognize(frame):
+        calls["n"] += 1
+        return expected_board((1, 1, 1)) if calls["n"] <= 5 else expected_board()
+
+    runtime._recognize = recognize
+    for _ in range(4):
+        auto(client, game_id, 0)
+        clock["now"] += 0.3
+    failed = auto(client, game_id, 0)
+    assert failed.status_code == 409
+    assert client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()["next_step"] == 0
+
+
+def test_a_persistent_mismatch_stalls_and_the_manual_frame_says_so(auto_client):
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    take(client, game_id)
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    seen["board"] = expected_board((1, 1, 2))  # wrong colour, stable
+    assert auto(client, game_id, 0).json()["state"] == "mismatch"
+    clock["now"] += 8.5
+    stalled = auto(client, game_id, 0).json()
+    assert stalled["state"] == "stalled" and stalled["missing"] == [{"row": 1, "col": 1}]
+    manual = take(client, game_id, 0).json()
+    assert manual["qa_status"] == "operator_confirmed" and manual["auto_stalled"] is True
+
+
+def test_freeze_counts_frames_by_how_they_were_captured(auto_client):
+    import json
+
+    client, runtime, clock, seen, model_id = auto_client
+    game_id = import_game(client)
+    take(client, game_id)
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    seen["board"] = expected_board((1, 1, 1))
+    for _ in range(5):
+        result = auto(client, game_id, 0)
+        clock["now"] += 0.3
+    assert result.json()["state"] == "captured"
+    assert take(client, game_id, 2).status_code == 200
+    frozen = post(client, f"sessions/{game_id}/freeze")
+    assert frozen.status_code == 200, frozen.text
+    assert frozen.json()["capture_counts"] == {"camera_matched": 1, "operator_confirmed": 2}
+
+
+def test_auto_check_refuses_fiducial_sessions(led_client):
+    from tests.web_ui.test_admin_vision_models import Loader, trust, write_model
+
+    client, _ = led_client
+    runtime = client.app.state.vision_runtime
+    root = runtime.out_dir / "models"
+    root.mkdir(parents=True, exist_ok=True)
+    model = write_model(root, "run-led", mode="led4")
+    trust(root, model)
+    runtime._model_loader = Loader()
+    post(client, "models/activate", model_id=model[0], confirmed=True)
+    post(client, "fiducial", mode="every-move")
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    take(client, game_id)
+    refused = post(client, "auto-check", game_id=game_id, move_index=0)
+    assert refused.status_code == 409 and "fiducial" in refused.json()["detail"].lower()

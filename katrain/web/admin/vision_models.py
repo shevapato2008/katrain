@@ -49,6 +49,7 @@ class VisionModelRegistry:
         self.lock = threading.RLock()
         self.loaded_id: str | None = None
         self.loaded = None
+        self.loaded_info: dict | None = None
         self.load_error: str | None = None
 
     # -- trust and state files ---------------------------------------------------------------
@@ -157,16 +158,16 @@ class VisionModelRegistry:
         if list(getattr(loaded, "names", [])) != list(info["class_names"]) or getattr(loaded, "imgsz", None) != imgsz:
             self.load_error = "Loaded model classes or input size differ from its manifest"
             raise VisionModelError(409, self.load_error)
-        return loaded
+        return loaded, info
 
     def activate(self, model_id: str) -> dict:
         with self.lock:
-            loaded = self._load(model_id)
+            loaded, info = self._load(model_id)
             state = self._state()
             if state["current"] != model_id:
                 state = {"current": model_id, "previous": state["current"]}
                 self._save_state(state)
-            self.loaded_id, self.loaded, self.load_error = model_id, loaded, None
+            self.loaded_id, self.loaded, self.loaded_info, self.load_error = model_id, loaded, info, None
             return self.list()
 
     def rollback(self) -> dict:
@@ -174,7 +175,7 @@ class VisionModelRegistry:
             state = self._state()
             if not state["previous"]:
                 raise VisionModelError(409, "There is no previous model to roll back to")
-            loaded = self._load(state["previous"])
+            loaded, info = self._load(state["previous"])
             self._save_state({"current": state["previous"], "previous": state["current"]})
-            self.loaded_id, self.loaded, self.load_error = state["previous"], loaded, None
+            self.loaded_id, self.loaded, self.loaded_info, self.load_error = state["previous"], loaded, info, None
             return self.list()

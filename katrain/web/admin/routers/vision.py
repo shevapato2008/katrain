@@ -65,6 +65,12 @@ class FiducialIn(BaseModel):
     mode: Literal["off", "every-move"]
 
 
+class AutoCheckIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    game_id: GameId
+    move_index: Annotated[int, Field(strict=True, ge=0)]
+
+
 class ActivateModelIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     model_id: Annotated[str, Field(strict=True, pattern=r"^model-[0-9a-f]{64}$")]
@@ -296,3 +302,9 @@ def activate_model(body: ActivateModelIn, request: Request):
 @router.post("/models/rollback")
 def rollback_model(body: ConfirmedIn, request: Request):
     return _call(request, "rollback_model", body.confirmed)
+
+
+@router.post("/auto-check")
+def auto_check(body: AutoCheckIn, request: Request, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return _call(request, "auto_check", body.game_id, body.move_index)

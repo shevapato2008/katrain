@@ -373,6 +373,8 @@ class VisionDatasetBuilder:
                                 "image": image,
                                 "label": label,
                                 "led_evidence": evidence,
+                                "qa_status": frame["qa_status"],
+                                "capture_trigger": frame.get("capture_trigger", "operator"),
                             }
                         )
                     class_names = list(CLASS_ORDERS[source["mode"]])
@@ -407,6 +409,10 @@ class VisionDatasetBuilder:
                         },
                         "source_assets": source_assets,
                         "samples": samples,
+                        "capture_counts": {
+                            status: sum(sample["qa_status"] == status for sample in samples)
+                            for status in sorted({sample["qa_status"] for sample in samples})
+                        },
                         "assets": {
                             path.relative_to(stage).as_posix(): _sha(path.read_bytes())
                             for path in sorted(stage.rglob("*"))

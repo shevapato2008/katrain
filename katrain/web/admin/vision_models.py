@@ -39,6 +39,8 @@ def load_ultralytics(best_path: Path, info: dict):
     detector = StoneDetector(str(best_path), backend="ultralytics", imgsz=int(info["parameters"]["imgsz"]))
     names = detector.backend_impl._model.names
     detector.names = [names[index] for index in sorted(names)] if isinstance(names, dict) else list(names)
+    # What the backend will actually run at, not the value we asked for.
+    detector.imgsz_actual = int(getattr(detector.backend_impl, "_imgsz", detector.imgsz))
     return detector
 
 
@@ -155,7 +157,7 @@ class VisionModelRegistry:
             self.load_error = f"Model load failed: {type(exc).__name__}"
             raise VisionModelError(409, self.load_error) from exc
         imgsz = info["parameters"].get("imgsz")
-        if list(getattr(loaded, "names", [])) != list(info["class_names"]) or getattr(loaded, "imgsz", None) != imgsz:
+        if list(getattr(loaded, "names", [])) != list(info["class_names"]) or getattr(loaded, "imgsz_actual", getattr(loaded, "imgsz", None)) != imgsz:
             self.load_error = "Loaded model classes or input size differ from its manifest"
             raise VisionModelError(409, self.load_error)
         return loaded, info

@@ -9,3 +9,6 @@
 - 功能核对：16项页面/正式构建入口测试通过，局部 ESLint、build:admin 通过；浏览器控制台0 error/0 warning。正式 admin import 图未引入 Fixture。
 
 独立 GPT-6 Astra max 实际查看四态全部参考/Fixture/并排/叠加后裁定 **APPROVE**，无视觉阻塞。可冻结本地契约并进入后端；不得据这些示例声称真实训练验收，外部授权仍独立。
+# 正式接口接入后的代表性核对
+
+`training-runtime-disabled-dark-1440x900.png` 为1440×900本机8015真实API/React画面：训练开关关闭、临时空业务库，没有mock接口或样例运行。Chromium0error/0warning。独立GPT-6 Astra max对该空态裁定APPROVE；正式接入只增加真实运行历史与操作状态，不重复拍此前已批准的四态。真实GPU、测试机上传、模型下载和用户设备验收仍未完成。

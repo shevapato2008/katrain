@@ -54,9 +54,9 @@
 
 ### Task 4: 正式接口和前端
 
-- [ ] **Step 1:** 路由鉴权/禁用/轮询/有界错误/令牌失效红测，再接默认禁用训练服务；只有test环境＋显式开关＋经核实配置才能启用，Mac local始终disabled/unknown，无暗中SSH/RPC。操作者经独立授权隧道和不同origin/端口登录测试机后台。读操作不打开 GPU，隧道授权不等于训练授权。
-- [ ] **Step 2:** 前端 fetch 同 run 真实数据，serialized poll ≤每2秒，旧 run 响应不覆盖新选中项。指标 null 显示“尚无验证指标”，不能填 0。启动/取消带明确确认与 disabled 原因。
-- [ ] **Step 3:** 删除本模块 Fixture 入口、示例数据和控制器，保留纯页面；运行聚焦 Vitest、`npm run build:admin`、scoped ESLint、1440×900 未启用真实空态。数据/运行记录不进入公共 Galaxy 数据库。
+- [x] **Step 1:** 真实八条路由、默认禁用配置/strict参数/独立Bearer/no-store/去内部路径；test＋Linux＋明确loopback＋开关＋服务端已核实JSON/本地权重哈希/8.4.34才启用。entry opt-in loopback，无SSH/RPC或GET启动；关闭保存未知不kill。根代理API/config/entry/auth＋邻近vision **144 passed**，独立Astra本批52测试与SPEC+QUALITY APPROVE。本地提交 `7b4a0818`；外部仍未启用。
+- [x] **Step 2:** `2efca8e2` 正式前端接八条真实接口，串行≤2秒轮询，活动运行观察与历史选择分开、指标不串run、旧代际/Abort/401保护、UUID意图重试和明确创建/取消确认。独立评审三处观察/目录顺序问题均精确RED→GREEN；SPEC+QUALITY最终APPROVE。
+- [x] **Step 3:** 删除训练Fixture HTML/controller/entry与样例，保留纯页；六文件聚焦 **41 passed**，scoped ESLint0、build:admin通过，根代理复跑原38项与修复controller9项均GREEN。真实本机8015/API默认禁用的1440×900 [空态截图](./slice4/design/training-runtime-disabled-dark-1440x900.png) 无模拟业务数据、Chromium0errors/warnings，独立Astra视觉APPROVE。临时SQLite仅预览账号审计，不写目标环境库；真实GPU/设备验收仍未完成。
 
 ## Chunk 3: 测试机真实启用与验收
 

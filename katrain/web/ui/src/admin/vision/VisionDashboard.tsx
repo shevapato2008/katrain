@@ -236,7 +236,7 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     onFiducial={(mode) => { void perform('设置基准点校正', (signal) => api.visionFiducial(mode, signal)); }}
     onImportKifu={(id, expectedStatus, expectedContext) => { pauseAuto();
       if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
-      void perform('导入棋谱', async (signal) => { const album = await api.kifuAlbum(id, signal); return api.visionImportSgf(album.sgf_content, signal); }, () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
+      void perform('导入棋谱', (signal) => api.visionImportKifu(id, signal), () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
     }}
     status={status} devices={devices} sessions={sessions} session={session} preview={preview}
     review={review} reviewFailure={reviewFailure} frozen={frozen} busy={busy} error={error} previewError={previewError} message={message} authorized={authorized} contextVersion={contextVersion}

@@ -37,10 +37,11 @@ export type VisionSession = {
   geometry_revision: string;
   camera_device_id?: number;
   ended_at?: string | null; fiducial_mode?: VisionFiducialMode;
+  source?: { kind: 'kifu_album'; album_id: number; title: string } | null;
 };
 export type VisionSessionSummary = {
   game_id: string; state: 'draft' | 'captured' | 'error'; mode?: VisionMode;
-  count?: number; total_steps?: number; next_step?: number | null; geometry_revision?: string; ended_at?: string | null; error?: string;
+  count?: number; total_steps?: number; next_step?: number | null; geometry_revision?: string; ended_at?: string | null; source_title?: string | null; error?: string;
 };
 export type VisionSessionList = { sessions: VisionSessionSummary[]; limit: number; truncated: boolean };
 export type VisionDevices = { candidates: { device_id: number; label: string; probed: false }[] };

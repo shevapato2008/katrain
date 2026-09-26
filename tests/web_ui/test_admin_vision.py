@@ -1363,3 +1363,43 @@ def test_preview_reports_where_the_lit_guidance_leds_are(led_client):
     runtime._last_preview = None
     lit = client.get(f"{PATH}/preview", headers=headers()).json()["led_points"]
     assert [(p["row"], p["col"], p["color"]) for p in lit] == [(0, 0, "remove")]
+
+
+def test_kifu_import_records_the_server_read_title_on_the_session(capture_client, tmp_path):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    from katrain.web.core.models_db import Base, KifuAlbum
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(bind=engine)
+    factory = sessionmaker(bind=engine)
+    with factory() as db:
+        db.add(
+            KifuAlbum(
+                player_black="柯洁",
+                player_white="申真谞",
+                event="应氏杯决赛",
+                round_name="第 1 局",
+                board_size=19,
+                move_count=3,
+                handicap=0,
+                sgf_content="(;SZ[19];B[bb];W[];W[cc])",
+                source_path="t/1.sgf",
+                search_text="x",
+            )
+        )
+        db.commit()
+    client = capture_client
+    client.app.state.session_factory = factory
+    assert post(client, "sgf/kifu", album_id=999).status_code == 404
+    imported = post(client, "sgf/kifu", album_id=1)
+    assert imported.status_code == 200, imported.text
+    game_id = imported.json()["game_id"]
+    assert imported.json()["source"] == {"kind": "kifu_album", "album_id": 1, "title": "应氏杯决赛 第 1 局"}
+    take(client, game_id)
+    session = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert session["source"]["title"] == "应氏杯决赛 第 1 局"
+    listed = client.get(f"{PATH}/sessions", headers=headers()).json()["sessions"]
+    assert [item["source_title"] for item in listed if item["game_id"] == game_id] == ["应氏杯决赛 第 1 局"]

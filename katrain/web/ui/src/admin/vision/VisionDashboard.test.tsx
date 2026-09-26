@@ -31,6 +31,7 @@ function mockApi() {
   const album = { id: 7, player_black: '柯洁', player_white: '申真谞', black_rank: '九段', white_rank: '九段', event: '应氏杯决赛', round_name: '第 1 局', result: 'B+R', date_played: '2025-11-02', move_count: 211 };
   api.kifuSearch = vi.fn(async (q: string) => ({ items: q && !'柯洁 应氏杯'.includes(q) ? [] : [album], total: q && !'柯洁 应氏杯'.includes(q) ? 0 : 1, page: 1, page_size: 30 }));
   api.kifuAlbum = vi.fn(async () => ({ ...album, sgf_content: '(;SZ[19];B[ca])' }));
+  api.visionImportKifu = vi.fn(async () => { current.sgf = { ...current.sgf, state: 'loaded', game_id: saved.game_id, total_steps: 3, next_step: -1 }; saved.source = { kind: 'kifu_album', album_id: 7, title: '应氏杯决赛 第 1 局' }; return { game_id: saved.game_id, sgf_sha256: 'sgf', mode: saved.mode, total_steps: 3, next_step: -1, steps: saved.steps }; });
   api.visionPreview = vi.fn(async () => ({ frame_id: 'preview-1', camera_seq: 8, captured_at: 'now', captured_at_source: 'runtime', camera_monotonic_ts: 10, geometry_revision: current.geometry.revision, raw_jpeg_base64: 'raw', warped_jpeg_base64: 'warp', geometry_overlay_jpeg_base64: 'grid' }));
   api.visionConnect = vi.fn(async () => { current = { ...current, mode: 'stones2', camera: { ...current.camera, state: 'connected', device_id: 0 } }; return current; });
   api.visionCalibrate = vi.fn(async () => { current.geometry = { ...current.geometry, state: 'ready', revision: 'geometry-1', source: 'opencv_empty_board' }; return current.geometry; });
@@ -91,9 +92,10 @@ describe('live vision journey', () => {
     await user.click(await screen.findByRole('option', { name: /应氏杯决赛 第 1 局/ }));
     expect(pick).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /开始采集 · 应氏杯决赛 第 1 局 · 211 手/ }));
-    await waitFor(() => expect(api.visionImportSgf).toHaveBeenCalledWith('(;SZ[19];B[ca])', expect.any(AbortSignal)));
-    expect(api.kifuAlbum).toHaveBeenCalledWith(7, expect.any(AbortSignal));
+    await waitFor(() => expect(api.visionImportKifu).toHaveBeenCalledWith(7, expect.any(AbortSignal)));
+    expect(api.visionImportSgf).not.toHaveBeenCalled();
     await screen.findByRole('button', { name: '拍摄初始帧' });
+    expect(screen.getAllByText('应氏杯决赛 第 1 局').length).toBeGreaterThan(0);
   });
 
   it('says the kifu library is unavailable instead of showing an empty result', async () => {

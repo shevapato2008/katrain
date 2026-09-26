@@ -30,7 +30,7 @@ class VisionSessionStore:
             raise VisionCaptureError(503, "Draft directory must not be a symlink")
         return drafts / f"{game_id}.json"
 
-    def create(self, sgf, *, mode, geometry_revision, geometry_source, camera_device_id):
+    def create(self, sgf, *, mode, geometry_revision, geometry_source, camera_device_id, source=None):
         game_id = str(uuid4())
         draft = {
             "schema_version": 1,
@@ -43,6 +43,8 @@ class VisionSessionStore:
             "camera_device_id": camera_device_id,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
+        if source is not None:
+            draft["source"] = source
         path = self._draft_path(game_id)
         pending = None
         try:
@@ -131,6 +133,7 @@ class VisionSessionStore:
                         "next_step": session["next_step"],
                         "geometry_revision": session["geometry_revision"],
                         "ended_at": session.get("ended_at"),
+                        "source_title": (session.get("source") or {}).get("title"),
                         "error": None,
                     }
                 )

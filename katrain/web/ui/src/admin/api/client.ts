@@ -93,6 +93,7 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     visionDisconnect: (signal?: AbortSignal) => vision<VisionStatus>('/disconnect', signal, undefined, true),
     visionCalibrate: (empty_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/calibrate', signal, { empty_confirmed }, true),
     visionImportSgf: (sgf: string, signal?: AbortSignal) => vision<VisionImport>('/sgf', signal, { sgf }, true),
+    visionImportKifu: (album_id: number, signal?: AbortSignal) => vision<VisionImport>('/sgf/kifu', signal, { album_id }, true),
     visionCapture: (input: VisionCaptureInput, signal?: AbortSignal) => vision<VisionFrame>('/capture', signal, input, true),
     visionSessions: (signal?: AbortSignal) => vision<VisionSessionList>('/sessions', signal),
     visionSession: (id: string, signal?: AbortSignal) => vision<VisionSession>(`/sessions/${encodeURIComponent(id)}`, signal),

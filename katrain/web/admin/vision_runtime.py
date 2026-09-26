@@ -341,7 +341,7 @@ class AdminVisionRuntime:
             self._updated_at = _now()
             return self.status()["geometry"]
 
-    def import_sgf(self, original_sgf: str) -> dict:
+    def import_sgf(self, original_sgf: str, source: dict | None = None) -> dict:
         self.require_enabled()
         with self._lock:
             self._require_no_diagnostics()
@@ -365,6 +365,7 @@ class AdminVisionRuntime:
                     geometry_revision=self.geometry_revision,
                     geometry_source=self.geometry_source,
                     camera_device_id=self.device_id,
+                    source=source,
                 )
             except VisionSgfError as exc:
                 raise VisionError(422, str(exc)) from exc
@@ -381,6 +382,7 @@ class AdminVisionRuntime:
                 "next_step": -1,
                 "steps": [asdict(step) for step in sgf.steps],
                 "mode": session["mode"],
+                "source": session.get("source"),
             }
 
     def get_session(self, game_id: str) -> dict:
@@ -555,6 +557,7 @@ class AdminVisionRuntime:
                 trigger=trigger,
                 verify=verify,
                 extra_fields=extra_fields,
+                source=session.get("source"),
             )
         except VisionCaptureError as exc:
             raise VisionError(exc.status_code, str(exc)) from exc

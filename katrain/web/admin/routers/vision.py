@@ -4,8 +4,10 @@ from datetime import datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict, Field
 
+from katrain.web.admin.routers.tutorials import get_admin_db
 from katrain.web.admin.session import get_current_admin
 from katrain.web.admin.vision_runtime import VisionError
 
@@ -42,6 +44,11 @@ class VerifyGeometryIn(BaseModel):
     game_id: Annotated[str, Field(strict=True, min_length=1, max_length=128)]
     frame_id: Annotated[str, Field(strict=True, min_length=1, max_length=128)]
     overlay_confirmed: Annotated[bool, Field(strict=True)] = False
+
+
+class KifuImportIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    album_id: Annotated[int, Field(strict=True, ge=1)]
 
 
 GameId = Annotated[str, Field(strict=True, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")]
@@ -96,6 +103,7 @@ class FreezeIn(BaseModel):
 
 
 class SgfOut(BaseModel):
+    model_config = ConfigDict(extra="allow")
     game_id: str
     sgf_sha256: str
     total_steps: int
@@ -333,3 +341,19 @@ def diagnostics_start(body: ConfirmedIn, request: Request):
 @router.post("/diagnostics/stop")
 def diagnostics_stop(request: Request):
     return _call(request, "diagnostics_stop")
+
+
+@router.post("/sgf/kifu", response_model=SgfOut)
+def import_kifu(body: KifuImportIn, request: Request, db: Session = Depends(get_admin_db)):
+    """Start a session from a kifu-library record; the server reads both the SGF and its title."""
+    from katrain.web.core.models_db import KifuAlbum
+
+    album = db.query(KifuAlbum).filter(KifuAlbum.id == body.album_id).first()
+    if album is None:
+        raise HTTPException(404, detail="Kifu album not found", headers={"Cache-Control": "no-store"})
+    title = (
+        " ".join(part for part in (album.event, album.round_name) if part)
+        or f"{album.player_black} 对 {album.player_white}"
+    )
+    source = {"kind": "kifu_album", "album_id": album.id, "title": title[:200]}
+    return _call(request, "import_sgf", album.sgf_content, source)

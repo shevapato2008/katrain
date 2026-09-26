@@ -34,6 +34,18 @@ RESERVED_FRAME_FIELDS = frozenset(
 CORRECTION_STATUSES = ("corrected", "stale", "frozen")
 
 
+def valid_source(source) -> bool:
+    """Where a session's SGF came from, as recorded by the server (never a browser-typed label)."""
+    return (
+        isinstance(source, dict)
+        and set(source) == {"kind", "album_id", "title"}
+        and source["kind"] == "kifu_album"
+        and type(source["album_id"]) is int
+        and isinstance(source["title"], str)
+        and 0 < len(source["title"]) <= 200
+    )
+
+
 def _valid_correction(correction) -> bool:
     import numpy as np
 
@@ -323,6 +335,8 @@ class VisionCaptureCoordinator:
                 expected = next_index
             if manifest["next_step"] != expected or manifest["total_steps"] != len(sgf.steps):
                 raise ValueError("Invalid manifest progress")
+            if "source" in manifest and not valid_source(manifest["source"]):
+                raise ValueError("Invalid session source")
             if manifest.get("fiducial_mode", "off") not in FIDUCIAL_MODES:
                 raise ValueError("Invalid fiducial mode")
             if any(
@@ -407,6 +421,7 @@ class VisionCaptureCoordinator:
         trigger: str = "operator",
         verify=None,
         extra_fields: dict | None = None,
+        source: dict | None = None,
     ) -> dict:
         with self.lock:
             directory = self._session_dir(game_id)
@@ -584,6 +599,7 @@ class VisionCaptureCoordinator:
                             "total_steps": len(sgf.steps),
                             "total_moves": len(sgf.placement_indices),
                             "fiducial_mode": fiducial_mode,
+                            **({"source": source} if source is not None and valid_source(source) else {}),
                         }
                     )
                     updated_frames = list(frames)

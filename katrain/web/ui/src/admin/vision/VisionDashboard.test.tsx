@@ -133,6 +133,8 @@ describe('live vision journey', () => {
     api.visionEnd = vi.fn(async () => { saved.ended_at = '2026-09-27T01:00:00Z'; return { session: saved, led_restored: false }; });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await user.click(await screen.findByRole('button', { name: '撤回上一帧' }));
+    expect(screen.getByRole('button', { name: '断开连接' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: '选择新棋谱' })).not.toBeInTheDocument();
     const confirm = screen.getByRole('button', { name: '撤回' });
     expect(confirm).toBeDisabled();
     await user.click(screen.getByLabelText('我会把棋盘恢复到上一帧的棋面。'));
@@ -144,6 +146,8 @@ describe('live vision journey', () => {
     expect(await screen.findByText('本局采集完成')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /拍照|拍摄初始帧/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '撤回上一帧' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '断开连接' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '选择新棋谱' })).toBeEnabled();
   });
 
   it('runs the LED test and the fiducial choice only in LED mode, through explicit actions', async () => {

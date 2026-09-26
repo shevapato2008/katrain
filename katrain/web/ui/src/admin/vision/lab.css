@@ -16,7 +16,7 @@
 .lab-btn:disabled { opacity:.45; cursor:not-allowed; }
 .lab-btn.primary { background:var(--admin-accent); border-color:var(--admin-accent); color:var(--admin-on-accent); }
 .lab-btn.ghost { background:transparent; }
-.lab-btn.small { min-height:32px; font-size:14px; padding:3px 9px; }
+.lab-page .lab-btn.small { min-height:32px; font-size:14px; padding:3px 9px; }
 .lab-btn.full { width:100%; white-space:normal; }
 .lab-btn svg { width:17px; height:17px; }
 .lab-field { display:grid; gap:5px; min-width:0; font-size:14px; color:var(--admin-muted); }
@@ -59,8 +59,8 @@
 .lab-step-head .lab-chip { margin-left:auto; }
 .lab-step-body { display:grid; gap:9px; }
 .lab-row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
-.lab-seg { display:inline-flex; justify-self:start; border:1px solid var(--admin-line); border-radius:7px; overflow:hidden; }
-.lab-seg button { border:0; border-right:1px solid var(--admin-line); background:var(--admin-panel2); color:var(--admin-muted); font-size:14.5px; padding:6px 11px; }
+.lab-seg { display:inline-flex; border:1px solid var(--admin-line); border-radius:7px; overflow:hidden; }
+.lab-page .lab-seg button { border:0; border-right:1px solid var(--admin-line); background:var(--admin-panel2); color:var(--admin-muted); font-size:14.5px; padding:6px 11px; }
 .lab-seg button:last-child { border-right:0; }
 .lab-seg button[aria-pressed="true"] { background:var(--admin-accent); color:var(--admin-on-accent); }
 .lab-seg button:disabled { opacity:.55; cursor:not-allowed; }

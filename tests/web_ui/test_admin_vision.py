@@ -712,6 +712,25 @@ def test_corrupt_published_session_never_falls_back_to_draft(capture_client):
     assert snapshot(client.app.state.vision_runtime.out_dir) == before
 
 
+def test_capture_retry_after_disconnect_returns_saved_frame_without_acquisition(capture_client, hardware):
+    client = capture_client
+    game_id = import_game(client)
+    initial = take(client, game_id).json()
+    runtime = client.app.state.vision_runtime
+    before = snapshot(runtime.out_dir)
+    assert post(client, "disconnect").status_code == 200
+    reads = hardware[-1].reads
+
+    repeated = take(client, game_id)
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json() == {**initial, "idempotent": True}
+    assert hardware[-1].reads == reads
+    assert snapshot(runtime.out_dir) == before
+    assert take(client, game_id, operator_confirmed=False).status_code == 409
+    assert take(client, game_id, overwrite_existing=True).status_code == 409
+    assert take(client, game_id, 0).status_code == 409
+
+
 def test_published_resume_stays_stale_until_recent_same_frame_overlay_confirmation(capture_client, tmp_path):
     client = capture_client
     game_id = import_game(client)
@@ -744,7 +763,8 @@ def test_published_resume_stays_stale_until_recent_same_frame_overlay_confirmati
     assert take(fresh, game_id, 0).status_code == 200
     # New view calibration does not silently rewrite this published session's geometry.
     assert post(fresh, "calibrate", empty_confirmed=True).status_code == 200
-    assert take(fresh, game_id, 0).status_code == 409
+    assert take(fresh, game_id, 0).json()["idempotent"] is True
+    assert take(fresh, game_id, 0, overwrite_existing=True).status_code == 409
 
 
 @pytest.mark.parametrize("device_id,mode", [(1, "stones2"), (0, "led4")])

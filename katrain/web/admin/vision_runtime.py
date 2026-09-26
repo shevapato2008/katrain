@@ -463,6 +463,16 @@ class AdminVisionRuntime:
             if game_id != self._active_id:
                 raise VisionError(409, "Resume the requested capture session first")
             session = self.get_session(game_id)
+            if operator_confirmed is not True:
+                raise VisionError(409, "Operator placement confirmation is required")
+            # A lost success response can be replayed after disconnect. The
+            # verified manifest is authoritative; no new acquisition occurs.
+            if not overwrite_existing:
+                existing = next(
+                    (frame for frame in session["frames"] if frame["applied_move_index"] == move_index), None
+                )
+                if existing is not None:
+                    return {**existing, "idempotent": True}
             self._check_session_camera(session)
             if self.geometry is None or self._geometry_stale:
                 raise VisionError(409, "Current geometry must be calibrated or explicitly verified")

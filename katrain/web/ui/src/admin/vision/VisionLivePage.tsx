@@ -124,7 +124,7 @@ export default function VisionLivePage(props: Props) {
   const removed = nextStepInfo?.removed ?? [];
   const removedText = removed.map((point) => `${'ABCDEFGHJKLMNOPQRST'[point.col]}${19 - point.row}`).join('、');
   const removalPhase = led && !!removed.length && props.removalLit === `${session?.game_id}/${next}`;
-  const placed = next === null || next === undefined ? steps.length : Math.max(0, next);
+  const placed = next === null || next === undefined ? steps.length : Math.max(0, next) + (removalPhase ? 1 : 0);
   const openConfirm = (kind: 'undo' | 'end' | 'led') => { setConfirm(kind); setConfirmChecked(false); };
   const label = props.labelPreview;
   const tab = (id: typeof view, text: string, extra?: ReactNode) => <button type="button" role="tab" className="lab-tab" aria-selected={view === id} onClick={() => setView(id)}>{text}{extra}</button>;
@@ -165,9 +165,9 @@ export default function VisionLivePage(props: Props) {
               <label className="lab-check"><input type="checkbox" disabled={locked || !connected || sessionMismatch || !grid || !preview?.geometry_overlay_jpeg_base64 || preview.geometry_revision !== status.geometry.revision} checked={!!preview && geometryConfirmed === preview.frame_id} onChange={(event) => { setGeometryConfirmed(event.target.checked ? preview?.frame_id ?? '' : ''); props.onPausePreview(event.target.checked); }} />已检查当前网格，视角与原标定一致</label>
               <button className="lab-btn" type="button" disabled={locked || !connected || sessionMismatch || !grid || !preview || geometryConfirmed !== preview.frame_id} onClick={() => { if (preview) props.onVerify(preview.frame_id); setGeometryConfirmed(''); }}>确认保存的标定</button>
               <p className="lab-note">视角已变化？清空棋盘后新建标定，再导入新棋谱会话；不覆盖原会话。</p>
-            </> : <p className="lab-note">{!connected ? '连接后清空棋盘再标定。' : ready ? `标定通过 · ${status?.geometry.source ?? '已保存几何'}` : `清空棋盘后开始；${status?.mode === 'led4' ? '标定时指示灯全部熄灭。' : '需要看到完整四角。'}`}</p>}
-            {led && ready && <label className="lab-field">基准点校正<select value={status?.fiducial_mode ?? 'off'} disabled={locked || session?.state === 'captured'} onChange={(event) => props.onFiducial(event.target.value as VisionFiducialMode)}><option value="off">关闭（只用开局标定）</option><option value="every-move">每手校正（拍照前点亮空位基准点）</option></select></label>}
-            {led && ready && <p className="lab-note">{session?.state === 'captured' ? '本会话的校正方式已固定。' : '每手校正会在每次拍照前短暂点亮一圈空位基准灯，只在你点拍照时发生。'}</p>}
+            </> : <p className="lab-note">{!connected ? '连接后清空棋盘再标定。' : ready ? `标定通过 · ${status?.geometry.source ?? '已保存几何'}${led && session?.state === 'captured' ? ` · ${status?.fiducial_mode === 'every-move' ? '每手校正' : '不校正'}` : ''}` : `清空棋盘后开始；${status?.mode === 'led4' ? '标定时指示灯全部熄灭。' : '需要看到完整四角。'}`}</p>}
+            {led && ready && session?.state !== 'captured' && <label className="lab-field">基准点校正<select value={status?.fiducial_mode ?? 'off'} disabled={locked} onChange={(event) => props.onFiducial(event.target.value as VisionFiducialMode)}><option value="off">关闭（只用开局标定）</option><option value="every-move">每手校正（拍照前点亮空位基准点）</option></select></label>}
+            {led && ready && session?.state !== 'captured' && <p className="lab-note">每手校正会在每次拍照前短暂点亮一圈空位基准灯，只在你点拍照时发生。</p>}
             {connected && !(ready && session && !chooseNew) && <label className="lab-check"><input type="checkbox" checked={emptyConfirmed === geometryKey} disabled={locked} onChange={(event) => setEmptyConfirmed(event.target.checked ? geometryKey : '')} />{ready ? '棋盘已清空，需要重新标定' : '棋盘已清空，可开始标定'}</label>}
             {connected && !(ready && session && !chooseNew) && <button className={`lab-btn ${ready ? 'small ghost' : ''}`} type="button" disabled={locked || emptyConfirmed !== geometryKey} onClick={() => { setEmptyConfirmed(''); setBoardConfirmed(''); if (session?.frames.length) { setNeedsNewSession(session.game_id); setChooseNew(true); setFile(null); } props.onCalibrate(); }}>{ready || status?.geometry.state === 'stale' ? '重新空盘标定' : '开始空盘标定'}</button>}
             {status?.geometry.error && <p className="cp-error" role="alert">{status.geometry.error}</p>}

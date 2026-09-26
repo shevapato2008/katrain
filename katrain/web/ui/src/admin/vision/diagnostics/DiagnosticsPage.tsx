@@ -20,7 +20,6 @@ const stones = (board: string | null) => board ? [...board].filter((value) => va
 const cells = (indices: number[]) => indices.length ? indices.slice(0, 8).map(cell).join('、') + (indices.length > 8 ? ` 等 ${indices.length} 格` : '') : '无';
 const differ = (a: string | null, b: string | null) => a && b ? [...a].map((value, index) => (value !== b[index] ? index : -1)).filter((index) => index >= 0) : [];
 const jpeg = (base64: string) => `data:image/jpeg;base64,${base64}`;
-const BOX_COLORS = ['#5cc3ad', '#7fa9dc', '#ff8a80', '#7fe29a'];
 
 function BoardView({ board, marks, color, label }: { board: string; marks: number[]; color: string; label: string }) {
   const at = (index: number) => [30 + (index % 19) * 30, 30 + Math.floor(index / 19) * 30];
@@ -104,9 +103,10 @@ export default function DiagnosticsPage(props: Props) {
     }
     const image = current?.image ? snapshot.images[current.image] : null;
     if (!image || !current) return <div className="lab-empty"><Info aria-hidden="true" /><span>本阶段不可用</span><small>{current?.unavailable}</small></div>;
-    return <div className="dg-figure" style={{ aspectRatio: `${image.width} / ${image.height}` }}>
+    // Image and overlay share one box and the same contain-fit, so boxes stay on their pixels and nothing is cropped.
+    return <div className="dg-figure">
       <img src={jpeg(image.jpeg_base64)} alt={info.title} />
-      {current.boxes && <svg className="dg-boxes" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">{current.boxes.map((box, index) => <rect key={index} x={box.x1 * 1000} y={box.y1 * 1000} width={(box.x2 - box.x1) * 1000} height={(box.y2 - box.y1) * 1000} fill="none" stroke={box.tier === 'sustain' ? '#f1c07c' : box.tier === 'below' ? '#9c9a96' : BOX_COLORS[box.class_id] ?? '#fff'} strokeWidth="3" vectorEffect="non-scaling-stroke" />)}</svg>}
+      {current.boxes && <svg className="dg-boxes" viewBox={`0 0 ${image.width} ${image.height}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">{current.boxes.map((box, index) => <rect key={index} className={`dg-box ${box.tier === 'sustain' ? 'sustain' : box.tier === 'below' ? 'below' : `c${box.class_id}`}`} x={box.x1 * image.width} y={box.y1 * image.height} width={(box.x2 - box.x1) * image.width} height={(box.y2 - box.y1) * image.height} />)}</svg>}
       {!current.boxes && current.unavailable && <span className="lab-tag dg-warn">{current.unavailable}</span>}
     </div>;
   };
@@ -126,7 +126,7 @@ export default function DiagnosticsPage(props: Props) {
           <button className="lab-btn" type="button" disabled>从测试机拉取 · 待授权</button>
         </div>
         <div className="dg-run-row">
-          <div className="dg-meta">{loaded ? <><span>manifest <strong>{loaded.manifest_sha256?.slice(0, 12)}</strong></span><span>imgsz <strong>{loaded.parameters?.imgsz ?? '—'}</strong></span><span>类目 <strong>{loaded.class_names?.map((name, index) => `${name} ${index}`).join(' · ')}</strong></span><span>viewer · 不绑定对局</span></> : models?.current ? <span>当前版本 <strong>未加载</strong> · 点「激活」核对并加载</span> : <span>模型 manifest / 实际 imgsz / 类目：<strong>{models?.models.length ? '未加载' : '本机没有登记模型'}</strong></span>}{running && <span className="dg-lock" id="dg-lock"><Lock aria-hidden="true" />诊断未停止 · 换模前请先停止</span>}</div>
+          <div className="dg-meta">{loaded ? <><span>manifest <strong>{loaded.manifest_sha256?.slice(0, 12)}</strong></span><span>实际 imgsz <strong>{loaded.parameters?.imgsz ?? '—'}</strong></span><span>类目 <strong>{loaded.class_names?.map((name, index) => `${name} ${index}`).join(' · ')}</strong></span><span>viewer · 不绑定对局</span></> : models?.current ? <span>当前版本 <strong>未加载</strong> · 点「激活」核对并加载</span> : <span>模型 manifest / 实际 imgsz / 类目：<strong>{models?.models.length ? '未加载' : '本机没有登记模型'}</strong></span>}{running && <span className="dg-lock" id="dg-lock"><Lock aria-hidden="true" />诊断未停止 · 换模前请先停止</span>}</div>
           <button className="lab-btn primary" type="button" disabled={locked || running || !deviceReady || !loaded} onClick={() => { setConfirm('start'); setChecked(false); }}><Play aria-hidden="true" />{!deviceReady ? '开始诊断 · 设备未就绪' : !loaded ? '开始诊断 · 未加载模型' : '开始诊断'}</button>
           <button className="lab-btn" type="button" disabled={locked || !running} onClick={props.onStop}><Square aria-hidden="true" />停止诊断</button>
         </div>

@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, type createAdminApi } from '../api/client';
 import VisionLivePage from './VisionLivePage';
+import TrainingDashboard from './training/TrainingDashboard';
 import type { VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
 
-export default function VisionDashboard({ api, onUnauthorized }: { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void }) {
+type Props = { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void };
+export default function VisionDashboard(props: Props) {
+  const [training, setTraining] = useState(false);
+  return training ? <TrainingDashboard {...props} onCapture={() => setTraining(false)} /> : <VisionCaptureDashboard {...props} onTraining={() => setTraining(true)} />;
+}
+function VisionCaptureDashboard({ api, onUnauthorized, onTraining }: Props & { onTraining: () => void }) {
   const [status, setStatus] = useState<VisionStatus | null>(null);
   const [devices, setDevices] = useState<VisionDevices['candidates']>([]);
   const [sessions, setSessions] = useState<VisionSessionList | null>(null);
@@ -134,6 +140,7 @@ export default function VisionDashboard({ api, onUnauthorized }: { api: ReturnTy
   }
 
   return <VisionLivePage
+    onTraining={onTraining}
     status={status} devices={devices} sessions={sessions} session={session} preview={preview}
     review={review} reviewFailure={reviewFailure} frozen={frozen} busy={busy} error={error} previewError={previewError} message={message} authorized={authorized} contextVersion={contextVersion}
     onRefresh={() => { void perform('读取状态', async () => undefined); }}

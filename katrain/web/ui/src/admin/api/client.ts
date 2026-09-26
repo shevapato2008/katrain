@@ -1,6 +1,7 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
 import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen } from '../vision/types';
+import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
 export interface TutorialBook { id: number; category: string; title: string; slug: string; chapter_count: number }
@@ -74,6 +75,9 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
   const vision = <T>(path: string, signal?: AbortSignal, value?: unknown, post = false) => adminRequest<T>(`/vision${path}`, {
     signal, cache: 'no-store', ...(post ? { method: 'POST' } : {}), ...(value !== undefined ? { body: body(value) } : {}),
   });
+  const training = <T>(path: string, signal?: AbortSignal, value?: unknown) => adminRequest<T>(`/vision-training${path}`, {
+    signal, cache: 'no-store', ...(value !== undefined ? { method: 'POST', body: body(value) } : {}),
+  });
   return {
     login: (username: string, password: string) => request<{ access_token: string; token_type: string }>('/api/admin/auth/login', { method: 'POST', body: body({ username, password }) }),
     me: () => adminRequest<{ username: string; env: string }>('/auth/me'),
@@ -95,6 +99,14 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     visionPreview: (signal?: AbortSignal) => vision<VisionPreview>('/preview', signal),
     visionReviewSample: (id: string, frame: string, signal?: AbortSignal) => vision<VisionSampleReview>(`/sessions/${encodeURIComponent(id)}/frames/${encodeURIComponent(frame)}/review`, signal),
     visionFreezeSession: (id: string, parameters: VisionFreezeParameters = {}, signal?: AbortSignal) => vision<VisionFrozen>(`/sessions/${encodeURIComponent(id)}/freeze`, signal, parameters, true),
+    trainingStatus: (signal?: AbortSignal) => training<TrainingStatus>('/status', signal),
+    trainingDatasets: (signal?: AbortSignal) => training<TrainingDataset[]>('/datasets', signal),
+    trainingPresets: (signal?: AbortSignal) => training<TrainingPresets>('/presets', signal),
+    trainingRuns: (signal?: AbortSignal) => training<TrainingRun[]>('/runs', signal),
+    trainingRun: (id: string, signal?: AbortSignal) => training<TrainingRun>(`/runs/${encodeURIComponent(id)}`, signal),
+    trainingModels: (signal?: AbortSignal) => training<TrainingModel[]>('/models', signal),
+    trainingStart: (input: TrainingStartInput, signal?: AbortSignal) => training<TrainingRun>('/runs', signal, input),
+    trainingCancel: (id: string, confirmed: boolean, signal?: AbortSignal) => training<TrainingRun>(`/runs/${encodeURIComponent(id)}/cancel`, signal, { confirmed }),
     categories: () => publicRead<TutorialCategory[]>('/categories'),
     books: (category: string) => publicRead<TutorialBook[]>(`/categories/${encodeURIComponent(category)}/books`),
     book: (id: number) => publicRead<TutorialBookDetail>(`/books/${id}`),

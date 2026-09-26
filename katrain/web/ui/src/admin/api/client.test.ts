@@ -77,4 +77,31 @@ describe('admin API contract', () => {
     fetchMock.mockImplementation(async () => { controller.abort(); throw new DOMException('Aborted', 'AbortError'); });
     await expect(createAdminApi(fetchMock).visionStatus(controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
   });
+
+  it('uses the separate protected training routes with explicit confirmation and cancellable reads', async () => {
+    fetchMock.mockImplementation(async () => new Response('{}', { status: 200 }));
+    const api = createAdminApi(fetchMock, () => 'training-session');
+    const signal = new AbortController().signal;
+    await api.trainingStatus(signal);
+    await api.trainingDatasets(signal);
+    await api.trainingPresets(signal);
+    await api.trainingRuns(signal);
+    await api.trainingRun('run/id', signal);
+    await api.trainingModels(signal);
+    const input = { request_id: 'request-uuid', dataset_id: 'dataset-id', dataset_manifest_sha256: 'hash', weights_id: 'registered', augmentation: 'stones-standard' as const, gpu_id: '0', epochs: 2, batch: 4, imgsz: 640, seed: 0, confirmed: true as const };
+    await api.trainingStart(input, signal);
+    await api.trainingCancel('run/id', true, signal);
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/admin/vision-training/status', '/api/admin/vision-training/datasets', '/api/admin/vision-training/presets',
+      '/api/admin/vision-training/runs', '/api/admin/vision-training/runs/run%2Fid', '/api/admin/vision-training/models',
+      '/api/admin/vision-training/runs', '/api/admin/vision-training/runs/run%2Fid/cancel',
+    ]);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer training-session');
+      expect(init?.signal).toBe(signal);
+      expect(init?.cache).toBe('no-store');
+    }
+    expect(JSON.parse(fetchMock.mock.calls[6][1]?.body as string)).toEqual(input);
+    expect(JSON.parse(fetchMock.mock.calls[7][1]?.body as string)).toEqual({ confirmed: true });
+  });
 });

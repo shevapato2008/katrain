@@ -20,5 +20,12 @@ describe('admin vision entry', () => {
     expect(screen.queryByRole('button', { name: '性能监控' })).not.toBeInTheDocument();
     await waitFor(() => expect(fetcher.mock.calls.some(([path, init]) => String(path) === '/api/admin/vision/status' && new Headers(init?.headers).get('Authorization') === 'Bearer admin-token')).toBe(true));
     expect(fetcher.mock.calls.some(([path]) => String(path).endsWith('/vision/connect'))).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: '2训练与模型' }));
+    await screen.findByRole('button', { name: '刷新训练状态' });
+    await waitFor(() => expect(fetcher.mock.calls.some(([path, init]) => String(path) === '/api/admin/vision-training/status' && new Headers(init?.headers).get('Authorization') === 'Bearer admin-token')).toBe(true));
+    expect(screen.getByRole('button', { name: '创建运行 · 未启用' })).toBeDisabled();
+    expect(fetcher.mock.calls.some(([path]) => String(path).endsWith('/vision-training/datasets'))).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: '1采集与数据集' }));
+    await screen.findByRole('button', { name: '连接摄像头' });
   });
 });

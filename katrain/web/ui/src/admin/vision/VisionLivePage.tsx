@@ -14,6 +14,7 @@ type Props = {
   onVerify: (frame: string) => void; onPausePreview: (paused: boolean) => void;
   onCapture: (index: number, retake?: boolean) => void; onReview: (frame: string) => void;
   onCloseReview: () => void; onFreeze: () => void;
+  onTraining?: () => void;
 };
 const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? 'LED 四类' : mode === 'stones2' ? '无灯双类' : '模式未选择';
 const coordinate = (step: VisionStep) => step.col !== null && step.row !== null ? `${'ABCDEFGHJKLMNOPQRST'[step.col]}${19 - step.row}` : '';
@@ -94,7 +95,7 @@ export default function VisionLivePage(props: Props) {
       {status && !status.enabled && <p className="vision-nonlocal"><Info aria-hidden="true" />此服务未启用本机视觉控制；不会远程打开 Mac 摄像头。</p>}
       {(error || fileError) && <div className="vision-feedback" role="alert">{error || fileError}<button type="button" className="vision-retry" onClick={props.onRefresh} disabled={!!busy}><RefreshCw aria-hidden="true" />重试读取状态</button></div>}
       {message && <p className="vision-feedback" role="status">{message}</p>}
-      <nav className="vision-steps" aria-label="视觉实验室流程"><span className="vision-step active"><b>1</b>采集与数据集</span><span className="vision-separator" /><span className="vision-step"><b>2</b>训练与模型</span><span className="vision-separator" /><span className="vision-step"><b>3</b>本机部署与诊断</span></nav>
+      <nav className="vision-steps" aria-label="视觉实验室流程"><span className="vision-step active"><b>1</b>采集与数据集</span><span className="vision-separator" />{props.onTraining ? <button className="vision-step" style={{ border: 0, padding: 0, background: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer' }} type="button" disabled={!!busy} onClick={props.onTraining}><b>2</b>训练与模型</button> : <span className="vision-step"><b>2</b>训练与模型</span>}<span className="vision-separator" /><span className="vision-step"><b>3</b>本机部署与诊断</span></nav>
       <div className="vision-grid">
         <section className="vision-preview" aria-label="采集预览"><div className="vision-panel-head"><h2>采集预览</h2><span>同一帧 · 原图 / 校正图</span></div>
           <div className="vision-streams">

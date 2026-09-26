@@ -115,7 +115,7 @@ def test_stones2_freeze_temporal_order_labels_hashes_and_readonly_idempotency(se
     assert manifest["generator"]["code_sha256"]
     config = yaml.safe_load((directory / "data.yaml").read_bytes())
     assert config["names"] == ["black", "white"] and config["nc"] == 2
-    assert Path(config["path"]) == directory
+    assert "path" not in config  # Ultralytics resolves relative splits from the YAML directory.
     assert (directory / manifest["samples"][0]["label"]).read_bytes() == b""
     assert [line.split()[0] for line in (directory / manifest["samples"][2]["label"]).read_text().splitlines()] == [
         "0",
@@ -315,3 +315,15 @@ def test_cancel_during_build_cleans_stage_and_preserves_source(session, monkeypa
         builder(session).freeze(session[1]["game_id"], cancel_event=cancelled)
     assert snapshot(session[0].root) == before
     assert not list(session[2].iterdir())
+
+
+def test_dataset_artifact_hashes_are_independent_of_output_directory(session):
+    from katrain.web.admin.vision_dataset import VisionDatasetBuilder
+
+    populate(session)
+    first = builder(session).freeze(session[1]["game_id"])
+    second = VisionDatasetBuilder(session[0], output_root=session[2].parent / "another-output").freeze(
+        session[1]["game_id"]
+    )
+    assert first["id"] == second["id"]
+    assert first["assets"] == second["assets"]

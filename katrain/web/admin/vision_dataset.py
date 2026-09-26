@@ -236,7 +236,7 @@ class VisionDatasetBuilder:
                 "overlay_png": encoded.tobytes(),
             }
 
-    def _validate(self, directory: Path, manifest: dict, final: Path) -> None:
+    def _validate(self, directory: Path, manifest: dict) -> None:
         """Validate persisted output, including both splits and exact image/label pairing."""
         class_names = list(CLASS_ORDERS[manifest["mode"]])
         if manifest["class_names"] != class_names or manifest["schema_version"] != SCHEMA_VERSION:
@@ -251,7 +251,6 @@ class VisionDatasetBuilder:
                 raise VisionDatasetError(503, "Frozen dataset asset hash mismatch")
         config = yaml.safe_load((directory / "data.yaml").read_bytes())
         if config != {
-            "path": str(final),
             "train": "images/train",
             "val": "images/val",
             "nc": len(class_names),
@@ -324,7 +323,7 @@ class VisionDatasetBuilder:
                     manifest = json.loads(manifest_bytes)
                     if manifest["id"] != version_id or manifest["identity"] != identity:
                         raise VisionDatasetError(503, "Frozen dataset identity mismatch")
-                    self._validate(final, manifest, final)
+                    self._validate(final, manifest)
                     return {**manifest, "path": str(final), "manifest_sha256": _sha(manifest_bytes), "idempotent": True}
                 self.output_root.mkdir(parents=True, exist_ok=True)
                 with tempfile.TemporaryDirectory(prefix=".dataset-", dir=self.output_root) as temporary:
@@ -372,8 +371,9 @@ class VisionDatasetBuilder:
                             }
                         )
                     class_names = list(CLASS_ORDERS[source["mode"]])
+                    # Omitting path lets Ultralytics use the YAML parent as the
+                    # root, so transferring this frozen version changes no bytes.
                     config = {
-                        "path": str(final),
                         "train": "images/train",
                         "val": "images/val",
                         "nc": len(class_names),
@@ -410,7 +410,7 @@ class VisionDatasetBuilder:
                     }
                     manifest_bytes = _json(manifest)
                     _write(stage / "manifest.json", manifest_bytes)
-                    self._validate(stage, manifest, final)
+                    self._validate(stage, manifest)
                     for path in stage.rglob("*"):
                         path.chmod(0o555 if path.is_dir() else 0o444)
                     stage.chmod(0o555)

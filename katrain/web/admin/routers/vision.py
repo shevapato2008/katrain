@@ -308,3 +308,25 @@ def rollback_model(body: ConfirmedIn, request: Request):
 def auto_check(body: AutoCheckIn, request: Request, response: Response):
     response.headers["Cache-Control"] = "no-store"
     return _call(request, "auto_check", body.game_id, body.move_index)
+
+
+@router.get("/diagnostics/status")
+def diagnostics_status(request: Request, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return _call(request, "diagnostics_status")
+
+
+@router.get("/diagnostics/snapshot")
+def diagnostics_snapshot(request: Request, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return _call(request, "diagnostics_snapshot")
+
+
+@router.post("/diagnostics/start")
+def diagnostics_start(body: ConfirmedIn, request: Request):
+    return _call(request, "diagnostics_start", body.confirmed)
+
+
+@router.post("/diagnostics/stop")
+def diagnostics_stop(request: Request):
+    return _call(request, "diagnostics_stop")

@@ -260,6 +260,7 @@ class InProcessAdapter:
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
             confidence_threshold=self._sustain_threshold,
+            imgsz=int(config.get("imgsz", 960)),
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the

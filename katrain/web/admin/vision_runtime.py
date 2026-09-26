@@ -98,6 +98,9 @@ class AdminVisionRuntime:
         self._model_loader = None  # None -> real ultralytics loader; tests inject a fake
         self._clock = time.monotonic
         self._auto = None  # stability window for the one position auto-advance is watching
+        self._diagnostics = None
+        self._diagnostic_adapter_factory = None  # None -> real InProcessAdapter; tests inject a fake
+        self._diagnostics_clock = time.monotonic
 
     def _coordinator(self):
         from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
@@ -251,10 +254,14 @@ class AdminVisionRuntime:
 
     def disconnect(self) -> dict:
         self.require_enabled()
+        with self._lock:
+            self._require_no_diagnostics()
         return self.shutdown()
 
     def shutdown(self) -> dict:
         with self._lock:
+            if self._diagnostics is not None and self._diagnostics.adapter is not None:
+                self._diagnostics.stop()
             errors = self._release_devices()
             self.device_id = None
             self._camera_state = "error" if "camera" in errors else "disconnected"
@@ -267,6 +274,7 @@ class AdminVisionRuntime:
     def calibrate(self, empty_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             try:
                 if not empty_confirmed:
                     raise VisionError(409, "Confirm the board is empty before calibrating")
@@ -334,6 +342,7 @@ class AdminVisionRuntime:
     def import_sgf(self, original_sgf: str) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if (
                 self.geometry is None
                 or self._geometry_stale
@@ -399,6 +408,7 @@ class AdminVisionRuntime:
     def resume_session(self, game_id: str) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             session = self.get_session(game_id)
             if session["state"] == "captured":
                 from katrain.vision.geometry_lock import load_geometry_lock
@@ -443,6 +453,7 @@ class AdminVisionRuntime:
     def verify_geometry(self, game_id: str, frame_id: str, overlay_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if not overlay_confirmed or game_id != self._active_id:
                 raise VisionError(409, "Confirm the saved geometry overlay for the active session")
             session = self.get_session(game_id)
@@ -476,6 +487,7 @@ class AdminVisionRuntime:
     ) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if game_id != self._active_id:
                 raise VisionError(409, "Resume the requested capture session first")
             session = self.get_session(game_id)
@@ -562,6 +574,7 @@ class AdminVisionRuntime:
     def set_fiducial(self, mode: str) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if mode not in ("off", "every-move"):
                 raise VisionError(422, "Unknown fiducial mode")
             if self.mode != "led4":
@@ -599,6 +612,7 @@ class AdminVisionRuntime:
     def activate_model(self, model_id: str, confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             self._auto = None
             if confirmed is not True:
                 raise VisionError(409, "Confirm activating this model")
@@ -609,6 +623,7 @@ class AdminVisionRuntime:
     def rollback_model(self, confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             self._auto = None
             if confirmed is not True:
                 raise VisionError(409, "Confirm rolling back to the previous model")
@@ -628,6 +643,7 @@ class AdminVisionRuntime:
         """Recognize one fresh frame against the SGF position; capture only after a stable exact match."""
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             import numpy as np
 
             from katrain.web.admin.vision_recognition import board_diff, board_string, expected_board
@@ -728,6 +744,67 @@ class AdminVisionRuntime:
             frame_result = self._capture_locked(session, game_id, move_index, trigger="camera", verify=verify)
             return {**result, "state": "captured", "frame": frame_result}
 
+    def _diag(self):
+        from katrain.web.admin.vision_diagnostics import VisionDiagnostics
+
+        if self._diagnostics is None:
+            self._diagnostics = VisionDiagnostics(
+                adapter_factory=self._diagnostic_adapter_factory, clock=self._diagnostics_clock
+            )
+        return self._diagnostics
+
+    def _require_no_diagnostics(self):
+        if self._diagnostics is not None and self._diagnostics.blocking:
+            raise VisionError(409, "Stop diagnostics and confirm the worker exited first")
+
+    def diagnostics_status(self) -> dict:
+        self.require_enabled()
+        with self._lock:
+            return self._diag().status()
+
+    def diagnostics_snapshot(self) -> dict:
+        self.require_enabled()
+        from katrain.web.admin.vision_diagnostics import DiagnosticsError
+
+        with self._lock:
+            try:
+                return self._diag().snapshot()
+            except DiagnosticsError as exc:
+                raise VisionError(exc.status_code, str(exc)) from exc
+
+    def diagnostics_start(self, confirmed: bool) -> dict:
+        self.require_enabled()
+        from katrain.web.admin.vision_diagnostics import DiagnosticsError
+
+        with self._lock:
+            if confirmed is not True:
+                raise VisionError(409, "Confirm starting the read-only diagnostics viewer")
+            if self.camera is None or not self.camera.is_connected():
+                raise VisionError(409, "Connect the camera on the capture page first")
+            if self.geometry is None or self._geometry_stale:
+                raise VisionError(409, "Calibrate or verify the geometry on the capture page first")
+            registry = self._models()
+            if registry.loaded is None or registry.loaded_info is None:
+                raise VisionError(409, "Activate a verified model first")
+            self._auto = None
+            try:
+                return self._diag().start(
+                    camera=self.camera,
+                    geometry=self.geometry,
+                    geometry_revision=self.geometry_revision,
+                    model_info=registry.loaded_info,
+                    model_path=registry.root / registry.loaded_id / "best.pt",
+                )
+            except DiagnosticsError as exc:
+                raise VisionError(exc.status_code, str(exc)) from exc
+            except Exception as exc:
+                raise VisionError(503, "Diagnostics viewer failed to start") from exc
+
+    def diagnostics_stop(self) -> dict:
+        self.require_enabled()
+        with self._lock:
+            return self._diag().stop()
+
     def _require_led(self):
         if self.mode != "led4" or self.led is None or not self.led.is_connected():
             raise VisionError(409, "Connected LED mode is required")
@@ -810,6 +887,7 @@ class AdminVisionRuntime:
         """Walk the four corners and tengen so the operator can check port and orientation."""
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm the LED test")
             self._require_led()

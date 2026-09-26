@@ -94,6 +94,10 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("POST", "models/activate", {"model_id": "model-" + "0" * 64, "confirmed": True}),
         ("POST", "models/rollback", {"confirmed": True}),
         ("POST", "auto-check", {"game_id": "example", "move_index": 0}),
+        ("GET", "diagnostics/status", None),
+        ("GET", "diagnostics/snapshot", None),
+        ("POST", "diagnostics/start", {"confirmed": True}),
+        ("POST", "diagnostics/stop", None),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):

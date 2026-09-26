@@ -563,17 +563,16 @@ class CameraManager:
             exposure_readback = None
         auto_valid = auto_readback is not None and bool(np.isfinite(auto_readback))
         exposure_valid = exposure_readback is not None and bool(np.isfinite(exposure_readback))
-        auto_ok = (
-            auto_write_ok
-            and auto_valid
-            and (
-                "auto_exposure" not in pending
-                or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
-            )
+        auto_ok = auto_write_ok and auto_valid and (
+            "auto_exposure" not in pending
+            or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
         )
         exposure_ok = exposure_write_ok and (
             "exposure" not in pending
-            or (exposure_valid and _exposure_readback_matches(pending["exposure"], exposure_readback))
+            or (
+                exposure_valid
+                and _exposure_readback_matches(pending["exposure"], exposure_readback)
+            )
         )
         manual_without_exposure = (
             pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL and "exposure" not in pending

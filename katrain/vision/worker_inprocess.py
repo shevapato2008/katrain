@@ -495,8 +495,7 @@ class InProcessAdapter:
             logger.warning(
                 "not-a-stone (%d,%d): this cell cannot be compared right now (flat/blown/crushed) — "
                 "the label was NOT stored",
-                row,
-                col,
+                row, col,
             )
             return
         self._denied[(row, col)] = patch
@@ -1004,11 +1003,7 @@ class InProcessAdapter:
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
                     # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
-                    want_gray = (
-                        (self._ref_mode != "off" or self._denied)
-                        and (self._bound or self._monitor)
-                        and not self._paused
-                    )
+                    want_gray = (self._ref_mode != "off" or self._denied) and (self._bound or self._monitor) and not self._paused
                     ref_gray = to_gray(warped) if want_gray else None
                     if ref_gray is not None:
                         self._last_ref_gray = ref_gray
@@ -1389,7 +1384,9 @@ class InProcessAdapter:
             camera_ready=bool(camera_connected),
             geometry_ready=self._geometry is not None or not self._require_geometry,
             model_ready=True,
-            recognition_ready=bool(camera_connected and (self._geometry is not None or not self._require_geometry)),
+            recognition_ready=bool(
+                camera_connected and (self._geometry is not None or not self._require_geometry)
+            ),
             observation_seq=self._observation_seq,
         )
 

@@ -34,25 +34,26 @@
 
 ### Task 2: 隔离前端 Fixture
 
-- [ ] **Step 1:** 写 `TrainingPage.test.tsx` 的 unknown 无指标/运行/设备、示例 running 同 run 进度、failed 有实际错误出口、completed 才出现版本行为测试。
-- [ ] **Step 2:** `npx vitest run src/admin/vision/training/TrainingPage.test.tsx` 先 RED，再实现纯页面和隔离 Fixture 到 GREEN；训练/下载按钮不执行真实业务。
-- [ ] **Step 3:** 5174 本地真实渲染同视口参考/实现/并排/叠加或差异，并记录构图、间距、层级、字色、图标、文案/状态。独立 Astra max 代 Fan 睡前确认；未 APPROVE 不写本旅程后端。
-- [ ] **Step 4:** `npx vitest run src/admin/admin-entry.config.test.ts` 与 `npm run build:admin` GREEN，确认正式只构建 admin.html。精确提交 Fixture、设计、记录与进度。
+- [x] **Step 1:** unknown/running/failed/completed 页面与创建/取消确认测试；示例文案只在 designOnly 下出现。
+- [x] **Step 2:** 页面和隔离 Fixture RED→GREEN，无真实训练/下载；控制器独立于正式入口。
+- [x] **Step 3:** 5174真实 Chromium 四态1440×900，参考/实现/并排/叠加/差异见 [四图入口](./slice4/design/training-fourup.html)。独立 Astra max **APPROVE**，差异限免责声明/状态图标。
+- [x] **Step 4:** 根代理与独立审核16测试通过，局部ESLint/build:admin通过、浏览器0error；正式只构建admin.html。代码本地提交 `f771a792`，独立SPEC+QUALITY APPROVE。
 
 ## Chunk 2: 本地真实契约与可注入执行
 
 ### Task 3: 固定训练输入与生命周期
 
-- [ ] **Step 1:** 四图 APPROVE 后冻结契约：`GET status/datasets/runs/models`、显式 `POST runs` 与 `POST runs/<id>/cancel`；disabled/unknown/busy/queued/running/cancelling/cancelled/failed/interrupted/completed 分明，有限日志 tail 与来源时间，完成产物只读。
+- [x] **Step 1:** 四图 APPROVE 后冻结 [训练契约](./slice4/vision-training-contract.md)：默认禁用、test专用、固定输入/参数/预算、单运行生命周期/取消、best.pt与完整manifest发布；不授权外部操作。
 - [ ] **Step 2:** 先写 fake worker 测试：默认禁用、未授权拒绝、不可信 ID/路径/参数拒绝、冻结 manifest/hash/schema 校验、实际解析后的可信本地权重缺失/哈希不匹配立即拒绝（禁止下载回退）、单 GPU allowlist、重复请求幂等、并发第二 run busy、启动失败保留状态。现有 `resolve_model` 会优先同名 `models/` 文件，必须验证最终真实文件，不能只验证请求路径。
 - [ ] **Step 3:** `/opt/miniconda3/envs/py311_katago/bin/python -m pytest -q tests/web_ui/test_admin_vision_training.py` 先 RED；最小实现受控 roots 与可注入 worker 后 GREEN。无实际进程/网络/GPU 操作。
 - [ ] **Step 4:** 增加同 run 指标与日志、取消/退出/重启 interrupted、失败保留旧模型、成功 best.pt/schema/hash/manifest 原子发布红测；不把 exit=0 或 stdout “complete”单独当成功。manifest 必须核对实际 imgsz/权重/类目/增强/seed/GPU/batch/代码版本/数据集哈希/best.pt 哈希，不只检查文件存在。取消只有确认本 run 进程组退出才能 `cancelled` 并释放运行占用；“已发取消但未退出”仍 busy。重启后旧进程退出状态未核实时不允许新 run，写对应 fake 测试。
 - [ ] **Step 5:** 补独立 worker 与 `train_model.py` 固定 project/name、显式 batch/device、最终解析后的可信本地模型输入适配；在启动前校验该文件的实际哈希，缺失/不匹配拒绝且无隐式下载。测试启动 argv 无 shell，取消只针对本 run 进程组并确认退出才释放。不能影响 KataGo；本地仅 fake 子进程测试，不启动真实训练。
+  - 已由独立 Astra 裁定的实际最小兼容边界：仅已核实 Ultralytics8.4.34 的 worker 内导入前设置受控 `YOLO_CONFIG_DIR`、OFFLINE/AUTOINSTALL；`amp=False/plots=False`（避免AMP检查额外下载）、跳过无图 dataset 字体下载入口、禁用外部 integration callbacks，保留默认回调。固定本地 YAML 拒绝 URL/download 脚本。真实版本不符停用待核对；不改ASGI/用户全局配置，不宣传系统级网络隔离，实际amp/plots写manifest；显存增加待真实Batch验证。
 - [ ] **Step 6:** 聚焦训练/原有 CLI 回归转 GREEN；独立规格/质量复核高风险进程与完整性边界，精确提交。不能宣称测试机训练完成。
 
 ### Task 4: 正式接口和前端
 
-- [ ] **Step 1:** 路由鉴权/禁用/轮询/有界错误/令牌失效红测，再接默认禁用训练服务；没有经核实配置返回 disabled/unknown，读操作不打开 GPU。
+- [ ] **Step 1:** 路由鉴权/禁用/轮询/有界错误/令牌失效红测，再接默认禁用训练服务；只有test环境＋显式开关＋经核实配置才能启用，Mac local始终disabled/unknown，无暗中SSH/RPC。操作者经独立授权隧道和不同origin/端口登录测试机后台。读操作不打开 GPU，隧道授权不等于训练授权。
 - [ ] **Step 2:** 前端 fetch 同 run 真实数据，serialized poll ≤每2秒，旧 run 响应不覆盖新选中项。指标 null 显示“尚无验证指标”，不能填 0。启动/取消带明确确认与 disabled 原因。
 - [ ] **Step 3:** 删除本模块 Fixture 入口、示例数据和控制器，保留纯页面；运行聚焦 Vitest、`npm run build:admin`、scoped ESLint、1440×900 未启用真实空态。数据/运行记录不进入公共 Galaxy 数据库。
 

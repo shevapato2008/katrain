@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><title>训练与模型 · 四图核对</title>
+<style>body{margin:24px;background:#111519;color:#eee;font:17px 'Kaiti SC','KaiTi',serif}h1{font-size:26px}h2{font-size:22px}a{color:#dfa178}img{display:block;max-width:100%;margin:12px 0;border:1px solid #47505a}summary{cursor:pointer;padding:12px}section{margin:32px 0}p{line-height:1.6}</style>
+<h1>训练与模型 · 1440×900 四图核对</h1>
+<p>左侧参考 HTML，右侧真实 React Fixture。这里只是设计演示，没有真实服务器、GPU、日志或指标。视觉批准不授权远程或训练。</p>
+<div id="states"></div>
+<script>
+const labels={'unknown-dark':'未核实 · 夜间','running-dark':'运行示意 · 夜间','failed-dark':'失败示意 · 夜间','completed-light':'完成示意 · 白天'};
+for(const [state,label] of Object.entries(labels)){
+  const section=document.createElement('section');
+  section.innerHTML=`<h2>${label}</h2><p><a href="training-design-${state}-1440x900.png">设计参考</a> · <a href="training-fixture-${state}-1440x900.png">运行截图</a> · <a href="training-side-${state}.png">并排原图</a></p><img src="training-side-${state}.png" alt="${label} 参考与运行并排"><details><summary>叠加与差异</summary><img src="training-overlay-${state}.png" alt="${label} 50%叠加"><img src="training-diff-${state}.png" alt="${label} 像素差异"></details>`;
+  document.querySelector('#states').append(section);
+}
+</script></html>

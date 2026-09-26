@@ -26,7 +26,7 @@ from katrain.web.admin.vision_sgf import PreparedVisionSgf, prepare_vision_sgf
 SCHEMA_VERSION = 1
 CLASS_ORDERS = {"stones2": ("black", "white"), "led4": tuple(CLASS_NAMES)}
 EMPTY_BOARD_HASH = hashlib.sha1(b"[]").hexdigest()[:16]
-_GAME_ID = re.compile(r"sgf-[0-9a-f]{64}")
+_GAME_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
 
 
 class VisionCaptureError(RuntimeError):
@@ -212,8 +212,10 @@ class VisionCaptureCoordinator:
             ):
                 raise ValueError("Invalid manifest identity/schema")
             sgf_path = self._asset(directory, manifest["sgf_path"], manifest["sgf_sha256"])
-            sgf = prepare_vision_sgf(sgf_path.read_text(encoding="utf-8"))
-            if sgf.game_id != manifest["game_id"] or sgf.sgf_sha256 != manifest["sgf_sha256"]:
+            # Preserve exact hashed bytes, including CRLF. The capture-session
+            # identity is independent of the immutable source SGF identity.
+            sgf = prepare_vision_sgf(sgf_path.read_bytes().decode("utf-8"))
+            if sgf.sgf_sha256 != manifest["sgf_sha256"]:
                 raise ValueError("SGF identity mismatch")
             geometry_path = self._asset(directory, manifest["geometry_path"], manifest["geometry_sha256"])
             self._asset(directory, manifest["geometry_sidecar_path"], manifest["geometry_sidecar_sha256"])
@@ -318,8 +320,6 @@ class VisionCaptureCoordinator:
             try:
                 if not isinstance(sgf, PreparedVisionSgf) or prepare_vision_sgf(sgf.original_sgf) != sgf:
                     raise ValueError("Prepared SGF truth was changed")
-                if sgf.game_id != game_id:
-                    raise ValueError("SGF game identity mismatch")
                 if move_index != -1 and move_index not in sgf.placement_indices:
                     raise ValueError("Only initial or physical placement steps can be captured")
                 if not math.isfinite(settle_ms) or not 0 <= settle_ms <= 1000:

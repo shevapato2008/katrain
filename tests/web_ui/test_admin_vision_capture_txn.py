@@ -400,3 +400,33 @@ def test_even_a_frame_id_collision_cannot_overwrite_referenced_image(context, mo
         capture(context, overwrite_existing=True)
     assert error.value.status_code == 507
     assert snapshot(context[2]) == before
+
+
+def test_crlf_sgf_recovers_exact_bytes_and_accepts_next_capture(context):
+    from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
+
+    sgf = prepare_vision_sgf("(;SZ[19]\r\n;B[aa]\r\n;W[bb])\r\n")
+    coordinator, original, directory = context
+    kwargs = {**original, "sgf": sgf, "game_id": sgf.game_id}
+    coordinator.capture(**kwargs, move_index=-1)
+    restarted = VisionCaptureCoordinator(directory.parent)
+    manifest = restarted.load_session(sgf.game_id)
+    assert (directory.parent / sgf.game_id / manifest["sgf_path"]).read_bytes() == sgf.original_sgf.encode("utf-8")
+    assert restarted.capture(**kwargs, move_index=0)["idempotent"] is False
+
+
+def test_same_sgf_can_be_collected_in_independent_sessions(context):
+    coordinator, original, directory = context
+    first_id, second_id = "capture-first", "capture-second"
+    coordinator.capture(**{**original, "game_id": first_id}, move_index=-1)
+    coordinator.capture(
+        **{**original, "game_id": second_id, "mode": "led4", "led": Led(), "geometry_revision": "geo-2"},
+        move_index=-1,
+    )
+    first, second = coordinator.load_session(first_id), coordinator.load_session(second_id)
+    assert first["sgf_sha256"] == second["sgf_sha256"] == original["sgf"].sgf_sha256
+    assert first["mode"] == "stones2" and second["mode"] == "led4"
+    assert first["geometry_revision"] != second["geometry_revision"]
+    assert (directory.parent / first_id / "game.sgf").read_bytes() == (
+        directory.parent / second_id / "game.sgf"
+    ).read_bytes()

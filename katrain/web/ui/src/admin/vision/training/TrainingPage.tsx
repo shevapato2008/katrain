@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Activity, CircleCheck, CircleHelp, CircleX, Clock3, RefreshCw } from 'lucide-react';
+import { Info, Activity, CircleCheck, CircleHelp, CircleX, Clock3, RefreshCw } from 'lucide-react';
 import type { TrainingDataset, TrainingModel, TrainingParameters, TrainingPresets, TrainingRun, TrainingStartInput, TrainingStatus } from './types';
+import '../lab.css';
 import './TrainingPage.css';
 
 export type TrainingSelection = { dataset_id: string; weights_id: string; augmentation: string; gpu_id: string };
@@ -37,9 +38,10 @@ export default function TrainingPage(props: TrainingProps) {
   const metric = (value: number | null) => value === null ? '—' : value.toFixed(2);
   const progressLabel = !run ? '' : completed ? '训练结束' : running ? 'Epoch ' + run.epoch + ' / ' + run.total_epochs : failed ? '在 Epoch ' + run.epoch + ' 失败' : run.state === 'starting' ? '正在启动独立运行' : run.state === 'cancelling' ? '正在取消 · 等待本运行进程组退出' : run.state === 'interrupted' ? '运行中断 · 进程组退出尚未核实' : '已取消运行';
   return <main className="training-page" data-state={state}>
-    <div className="training-heading"><div><h1>视觉实验室</h1><p>测试机 · 训练运行与模型版本</p></div><div className="training-location"><Icon aria-hidden="true" />{error ? '上次状态 · 当前未核实' : enabled ? '训练状态 · 当前后台服务' : '训练能力未启用'}<button className="training-button" type="button" aria-label="刷新训练状态" disabled={!!busy || !props.authorized} onClick={props.onRefresh}><RefreshCw aria-hidden="true" /></button></div></div>
+    <div className="training-heading"><div><h1>训练与模型</h1><p>测试机 · 单卡训练运行与模型版本</p></div><div className="training-location"><Icon aria-hidden="true" />{error ? '上次状态 · 当前未核实' : enabled ? '训练状态 · 当前后台服务' : '训练能力未启用'}<button className="training-button" type="button" aria-label="刷新训练状态" disabled={!!busy || !props.authorized} onClick={props.onRefresh}><RefreshCw aria-hidden="true" /></button></div></div>
     <div className="training-content">
-      {(status?.reason || !enabled) && <p className="training-demo">{status?.reason ?? '仅测试机 test 环境、显式启用并核实资源后可训练；Mac local 始终禁用，不会暗中连接远端。'}</p>}
+      {!enabled && <div className="lab-banner info"><Info aria-hidden="true" /><span>仅测试机 test 环境、显式启用并核实 GPU 预留后可训练；Mac 本机始终禁用，本页不会暗中连接远端。{status?.reason && <><br />服务说明：<code>{status.reason}</code></>}</span></div>}
+      {enabled && status?.reason && <div className="lab-banner bad" role="alert"><Info aria-hidden="true" /><span>训练服务报告：<code>{status.reason}</code></span></div>}
       {error && <div className="training-feedback" role="alert"><span>{error}</span><button type="button" className="training-button" disabled={!!busy || !props.authorized} onClick={props.onRefresh}>重试读取</button></div>}
       {message && <p className="training-feedback" role="status">{message}</p>}
       <div className="training-grid">

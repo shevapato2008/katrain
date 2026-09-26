@@ -279,6 +279,8 @@ class VisionCaptureCoordinator:
                 expected = next_index
             if manifest["next_step"] != expected or manifest["total_steps"] != len(sgf.steps):
                 raise ValueError("Invalid manifest progress")
+            if "ended_at" in manifest and datetime.fromisoformat(manifest["ended_at"]).utcoffset() is None:
+                raise ValueError("Invalid session end time")
             return manifest
         except Exception as exc:
             raise VisionCaptureError(503, "Capture session manifest is corrupt or incomplete") from exc
@@ -289,6 +291,50 @@ class VisionCaptureCoordinator:
             if manifest is None:
                 raise VisionCaptureError(404, "Capture session does not exist")
             return manifest
+
+    def _publish_manifest(self, directory: Path, manifest: dict) -> None:
+        pending = directory / ".manifest.pending"
+        pending.unlink(missing_ok=True)
+        try:
+            _write_bytes(pending, _json(manifest))
+            os.replace(pending, directory / "manifest.json")
+        except OSError as exc:
+            pending.unlink(missing_ok=True)
+            raise VisionCaptureError(507, "Capture manifest update failed") from exc
+
+    def undo_last(self, game_id: str, frame_id: str) -> dict:
+        """Stop referencing the newest frame. Its image stays on disk; earlier frames are untouched."""
+        with self.lock:
+            directory = self._session_dir(game_id)
+            manifest = self._read_session(directory)
+            if manifest is None:
+                raise VisionCaptureError(404, "Capture session does not exist")
+            if manifest.get("ended_at"):
+                raise VisionCaptureError(409, "Session was ended; frames can no longer change")
+            frames = manifest["frames"]
+            if len(frames) < 2:
+                raise VisionCaptureError(409, "The initial frame cannot be undone")
+            if frames[-1]["frame_id"] != frame_id:
+                raise VisionCaptureError(409, "Only the latest frame can be undone")
+            sgf = prepare_vision_sgf(
+                self._asset(directory, manifest["sgf_path"], manifest["sgf_sha256"]).read_bytes().decode("utf-8")
+            )
+            updated = {**manifest, "frames": frames[:-1]}
+            updated["next_step"] = sgf.next_placement_index(updated["frames"][-1]["applied_move_index"])
+            self._publish_manifest(directory, updated)
+            return updated
+
+    def end(self, game_id: str) -> dict:
+        with self.lock:
+            directory = self._session_dir(game_id)
+            manifest = self._read_session(directory)
+            if manifest is None:
+                raise VisionCaptureError(409, "Capture at least the initial frame before ending")
+            if manifest.get("ended_at"):
+                return manifest
+            updated = {**manifest, "ended_at": datetime.now(timezone.utc).isoformat()}
+            self._publish_manifest(directory, updated)
+            return updated
 
     def capture(
         self,
@@ -341,6 +387,8 @@ class VisionCaptureCoordinator:
                     or manifest["geometry_sidecar_sha256"] != _sha(sidecar_bytes)
                 ):
                     raise VisionCaptureError(409, "Session SGF, mode or geometry changed")
+            if manifest is not None and manifest.get("ended_at"):
+                raise VisionCaptureError(409, "Session was ended; import a new session to capture more")
             frames = manifest["frames"] if manifest else []
             existing = next((i for i, frame in enumerate(frames) if frame["applied_move_index"] == move_index), None)
             if existing is not None and not overwrite_existing:

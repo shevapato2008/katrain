@@ -44,6 +44,27 @@ class VerifyGeometryIn(BaseModel):
     overlay_confirmed: Annotated[bool, Field(strict=True)] = False
 
 
+GameId = Annotated[str, Field(strict=True, min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")]
+Confirmed = Annotated[bool, Field(strict=True)]
+
+
+class RemovalGuideIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    game_id: GameId
+    move_index: Annotated[int, Field(strict=True, ge=0)]
+
+
+class UndoIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    frame_id: Annotated[str, Field(strict=True, min_length=1, max_length=128)]
+    operator_confirmed: Confirmed = False
+
+
+class ConfirmIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    operator_confirmed: Confirmed = False
+
+
 class FreezeIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     val_fraction: Annotated[float, Field(strict=True, gt=0, lt=1)] = 0.2
@@ -217,3 +238,23 @@ def review_sample(game_id: str, frame_id: str, request: Request, response: Respo
 @router.post("/sessions/{game_id}/freeze")
 def freeze(body: FreezeIn, game_id: str, request: Request):
     return _call(request, "freeze_dataset", game_id, **body.model_dump())
+
+
+@router.post("/removal-guide")
+def removal_guide(body: RemovalGuideIn, request: Request):
+    return _call(request, "guide_removal", body.game_id, body.move_index)
+
+
+@router.post("/sessions/{game_id}/undo")
+def undo_last(body: UndoIn, game_id: str, request: Request):
+    return _call(request, "undo_last", game_id, body.frame_id, body.operator_confirmed)
+
+
+@router.post("/sessions/{game_id}/end")
+def end_session(body: ConfirmIn, game_id: str, request: Request):
+    return _call(request, "end_session", game_id, body.operator_confirmed)
+
+
+@router.post("/led-test")
+def led_test(body: ConfirmIn, request: Request):
+    return _call(request, "led_test", body.operator_confirmed)

@@ -85,6 +85,10 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("POST", "verify-geometry", {"game_id": "example", "frame_id": "example", "overlay_confirmed": True}),
         ("GET", "sessions/example/frames/example/review", None),
         ("POST", "sessions/example/freeze", {}),
+        ("POST", "removal-guide", {"game_id": "example", "move_index": 1}),
+        ("POST", "sessions/example/undo", {"frame_id": "example", "operator_confirmed": True}),
+        ("POST", "sessions/example/end", {"operator_confirmed": True}),
+        ("POST", "led-test", {"operator_confirmed": True}),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):
@@ -129,6 +133,10 @@ def test_disabled_configuration_fails_closed(configured, monkeypatch, tmp_path, 
         ("POST", "verify-geometry", {"game_id": "example", "frame_id": "example", "overlay_confirmed": True}),
         ("GET", "sessions/example/frames/example/review", None),
         ("POST", "sessions/example/freeze", {}),
+        ("POST", "removal-guide", {"game_id": "example", "move_index": 1}),
+        ("POST", "sessions/example/undo", {"frame_id": "example", "operator_confirmed": True}),
+        ("POST", "sessions/example/end", {"operator_confirmed": True}),
+        ("POST", "led-test", {"operator_confirmed": True}),
     ]:
         assert client.request(method, f"{PATH}/{route}", json=body, headers=headers(env)).status_code == 403
 
@@ -910,3 +918,154 @@ def test_corrupt_unpublished_draft_is_reported_and_cannot_activate(capture_clien
     assert post(client, f"sessions/{game_id}/resume").status_code == 503
     listed = client.get(f"{PATH}/sessions", headers=headers()).json()["sessions"]
     assert listed[0]["state"] == "error"
+
+
+class Led:
+    def __init__(self):
+        self.started = False
+        self.stops = 0
+        self.calls = []
+
+    def start(self):
+        self.started = True
+
+    def stop(self):
+        self.started = False
+        self.stops += 1
+
+    def is_connected(self):
+        return self.started
+
+    def _ack(self, name, points=None):
+        self.calls.append((name, points))
+        return {"ok": True, "connected": True, "shown_at": time.monotonic(), "errors": []}
+
+    def set_points(self, points, strict=False):
+        return self._ack("points", [dict(point) for point in points])
+
+    def set_rgb_points(self, points, strict=False):
+        return self._ack("rgb", [dict(point) for point in points])
+
+    def clear(self, strict=False):
+        return self._ack("clear")
+
+
+REMOVAL_SGF = "(;SZ[19];B[ba];W[aa];B[ab];W[cc])"
+
+
+@pytest.fixture
+def led_client(hardware, calibration, monkeypatch, tmp_path):
+    from katrain.web.admin import vision_runtime
+
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LED_PORT", "/dev/cu.test")
+    led = Led()
+    monkeypatch.setattr(vision_runtime, "create_led", lambda port: led)
+    client = TestClient(make_app(tmp_path))
+    runtime = client.app.state.vision_runtime
+    runtime.out_dir = tmp_path / "vision"
+    runtime._sleep = lambda seconds: None
+    assert post(client, "connect", device_id=0, mode="led4").status_code == 200
+    camera = hardware[-1]
+    camera.frame = np.full((210, 210, 3), 100, np.uint8)
+
+    def grab(after_ts=None, settle_ms=0):
+        camera.reads += 1
+        return camera.frame, camera.reads, max(time.monotonic(), (after_ts or 0) + settle_ms / 1000 + 0.01)
+
+    camera.grab_fresh = grab
+    geometry = calibration[0]
+    geometry.xs = geometry.ys = np.arange(10, 200, 10, dtype=np.float32)
+    geometry.points = np.stack(np.meshgrid(geometry.xs, geometry.ys), axis=-1)
+    geometry.corners = np.array([[0, 0], [209, 0], [209, 209], [0, 209]], np.float32)
+    geometry.out_size = geometry.source_width = geometry.source_height = 210
+    assert post(client, "calibrate", empty_confirmed=True).status_code == 200
+    return client, led
+
+
+def test_removal_guide_lights_blue_only_for_the_pending_capturing_move(led_client):
+    client, led = led_client
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    assert take(client, game_id).status_code == 200
+    assert post(client, "removal-guide", game_id=game_id, move_index=2).status_code == 409  # not the next move yet
+    assert take(client, game_id, 0).status_code == 200
+    assert take(client, game_id, 1).status_code == 200
+    assert post(client, "removal-guide", game_id=game_id, move_index=0).status_code == 409
+    led.calls.clear()
+    guided = post(client, "removal-guide", game_id=game_id, move_index=2)
+    assert guided.status_code == 200, guided.text
+    assert guided.json()["points"] == [{"row": 0, "col": 0}]
+    assert led.calls == [("points", [{"row": 0, "col": 0, "color": "remove"}])]
+    captured = take(client, game_id, 2)
+    assert captured.status_code == 200, captured.text
+    assert captured.json()["led_point"] == {"row": 2, "col": 2, "color": "white"}
+    assert post(client, "removal-guide", game_id=game_id, move_index=3).status_code == 409  # W[cc] captures nothing
+
+
+def test_removal_guide_needs_led_mode(capture_client):
+    game_id = post(capture_client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    assert post(capture_client, "removal-guide", game_id=game_id, move_index=2).status_code == 409
+
+
+def test_undo_drops_only_the_last_frame_and_keeps_its_image(capture_client):
+    client = capture_client
+    game_id = import_game(client)
+    initial = take(client, game_id).json()
+    assert (
+        post(client, f"sessions/{game_id}/undo", frame_id=initial["frame_id"], operator_confirmed=True).status_code
+        == 409
+    )
+    first = take(client, game_id, 0).json()
+    assert (
+        post(client, f"sessions/{game_id}/undo", frame_id=initial["frame_id"], operator_confirmed=True).status_code
+        == 409
+    )
+    assert (
+        post(client, f"sessions/{game_id}/undo", frame_id=first["frame_id"], operator_confirmed=False).status_code
+        == 409
+    )
+    undone = post(client, f"sessions/{game_id}/undo", frame_id=first["frame_id"], operator_confirmed=True)
+    assert undone.status_code == 200, undone.text
+    session = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert [frame["frame_id"] for frame in session["frames"]] == [initial["frame_id"]]
+    assert session["next_step"] == 0
+    assert client.get(f"{PATH}/status", headers=headers()).json()["dataset"]["count"] == 1
+    runtime = client.app.state.vision_runtime
+    assert (runtime.out_dir / game_id / first["file"]).is_file()
+    again = take(client, game_id, 0)
+    assert again.status_code == 200 and again.json()["frame_id"] != first["frame_id"]
+
+
+def test_ended_session_stays_readable_but_accepts_no_more_frames(capture_client, tmp_path):
+    client = capture_client
+    game_id = import_game(client)
+    take(client, game_id)
+    last = take(client, game_id, 0).json()
+    assert post(client, f"sessions/{game_id}/end", operator_confirmed=False).status_code == 409
+    ended = post(client, f"sessions/{game_id}/end", operator_confirmed=True)
+    assert ended.status_code == 200, ended.text
+    session = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert session["ended_at"]
+    assert take(client, game_id, 2).status_code == 409
+    assert (
+        post(client, f"sessions/{game_id}/undo", frame_id=last["frame_id"], operator_confirmed=True).status_code == 409
+    )
+    fresh = TestClient(make_app(tmp_path))
+    fresh.app.state.vision_runtime.out_dir = client.app.state.vision_runtime.out_dir
+    assert fresh.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()["ended_at"] == session["ended_at"]
+
+
+def test_led_test_walks_corners_and_restores_guidance(led_client):
+    client, led = led_client
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    assert take(client, game_id).status_code == 200
+    assert post(client, "led-test", operator_confirmed=False).status_code == 409
+    led.calls.clear()
+    tested = post(client, "led-test", operator_confirmed=True)
+    assert tested.status_code == 200, tested.text
+    lit = [points[0] for name, points in led.calls if name == "points"]
+    assert [(point["row"], point["col"]) for point in lit[:5]] == [(0, 0), (0, 18), (18, 18), (18, 0), (9, 9)]
+    assert lit[-1] == {"row": 0, "col": 1, "color": "black"}  # next-move guidance comes back
+
+
+def test_led_test_needs_led_mode(capture_client):
+    assert post(capture_client, "led-test", operator_confirmed=True).status_code == 409

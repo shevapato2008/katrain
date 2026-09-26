@@ -59,6 +59,10 @@ def _jpeg(frame) -> str:
     return base64.b64encode(encoded).decode("ascii")
 
 
+LED_TEST_POINTS = ((0, 0), (0, 18), (18, 18), (18, 0), (9, 9))
+LED_TEST_SECONDS = 1.0
+
+
 class AdminVisionRuntime:
     def __init__(self, config: AdminConfig, *, bind_host: str | None = None):
         # An unverified factory launch must never silently enable local hardware.
@@ -84,6 +88,7 @@ class AdminVisionRuntime:
         self._geometry_stale = False
         self._verification_preview = None
         self._frozen = None
+        self._sleep = time.sleep
 
     def _coordinator(self):
         from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
@@ -502,6 +507,103 @@ class AdminVisionRuntime:
                 self._frozen = None
                 self._updated_at = _now()
             return result
+
+    def _require_led(self):
+        if self.mode != "led4" or self.led is None or not self.led.is_connected():
+            raise VisionError(409, "Connected LED mode is required")
+
+    def _led_ok(self, result) -> bool:
+        return bool(result.get("ok")) and not result.get("errors")
+
+    def _restore_guidance(self) -> bool:
+        """Relight what the newest saved frame asked the operator to place next."""
+        if self.mode != "led4" or self.led is None or not self.led.is_connected() or self._active_id is None:
+            return False
+        session = self.get_session(self._active_id)
+        point = session["frames"][-1]["led_point"] if session["frames"] else None
+        try:
+            if session.get("ended_at") or point is None:
+                return self._led_ok(self.led.clear(strict=True))
+            return self._led_ok(self.led.set_points([point], strict=True))
+        except Exception:
+            log.exception("Admin vision LED guidance restore failed")
+            return False
+
+    def guide_removal(self, game_id: str, move_index: int) -> dict:
+        """Light the stones the pending move captures in blue so the operator removes exactly those."""
+        self.require_enabled()
+        with self._lock:
+            if game_id != self._active_id:
+                raise VisionError(409, "Resume the requested capture session first")
+            self._require_led()
+            session = self.get_session(game_id)
+            if session.get("ended_at") or session["next_step"] != move_index or move_index < 0:
+                raise VisionError(409, "Removal guidance is only for the move waiting to be captured")
+            removed = session["steps"][move_index]["removed"]
+            if not removed:
+                raise VisionError(409, "This move captures no stones")
+            points = [{"row": point["row"], "col": point["col"]} for point in removed]
+            try:
+                shown = self.led.set_points([{**point, "color": "remove"} for point in points], strict=True)
+            except Exception as exc:
+                raise VisionError(503, "LED removal guidance failed") from exc
+            if not self._led_ok(shown):
+                raise VisionError(503, "LED removal guidance failed")
+            return {"game_id": game_id, "move_index": move_index, "points": points}
+
+    def undo_last(self, game_id: str, frame_id: str, operator_confirmed: bool) -> dict:
+        self.require_enabled()
+        with self._lock:
+            if operator_confirmed is not True:
+                raise VisionError(409, "Confirm the board is restored before undoing")
+            if game_id != self._active_id:
+                raise VisionError(409, "Resume the requested capture session first")
+            from katrain.web.admin.vision_capture_txn import VisionCaptureError
+
+            try:
+                self._coordinator().undo_last(game_id, frame_id)
+            except VisionCaptureError as exc:
+                raise VisionError(exc.status_code, str(exc)) from exc
+            self._frozen = None
+            self._updated_at = _now()
+            return {"session": self.get_session(game_id), "led_restored": self._restore_guidance()}
+
+    def end_session(self, game_id: str, operator_confirmed: bool) -> dict:
+        self.require_enabled()
+        with self._lock:
+            if operator_confirmed is not True:
+                raise VisionError(409, "Confirm ending this capture session")
+            if game_id != self._active_id:
+                raise VisionError(409, "Resume the requested capture session first")
+            from katrain.web.admin.vision_capture_txn import VisionCaptureError
+
+            try:
+                self._coordinator().end(game_id)
+            except VisionCaptureError as exc:
+                raise VisionError(exc.status_code, str(exc)) from exc
+            self._updated_at = _now()
+            return {"session": self.get_session(game_id), "led_restored": self._restore_guidance()}
+
+    def led_test(self, operator_confirmed: bool) -> dict:
+        """Walk the four corners and tengen so the operator can check port and orientation."""
+        self.require_enabled()
+        with self._lock:
+            if operator_confirmed is not True:
+                raise VisionError(409, "Confirm the LED test")
+            self._require_led()
+            lit = []
+            try:
+                for row, col in LED_TEST_POINTS:
+                    if not self._led_ok(self.led.set_points([{"row": row, "col": col, "color": "hint"}], strict=True)):
+                        raise RuntimeError("LED test command failed")
+                    lit.append({"row": row, "col": col})
+                    self._sleep(LED_TEST_SECONDS)
+                if not self._led_ok(self.led.clear(strict=True)):
+                    raise RuntimeError("LED clear failed")
+            except Exception as exc:
+                self._restore_guidance()
+                raise VisionError(503, "LED test failed") from exc
+            return {"points": lit, "guidance_restored": self._restore_guidance() if self._active_id else None}
 
     def review_sample(self, game_id: str, frame_id: str) -> dict:
         self.require_enabled()

@@ -130,6 +130,7 @@ class VisionSessionStore:
                         "total_steps": session["total_steps"],
                         "next_step": session["next_step"],
                         "geometry_revision": session["geometry_revision"],
+                        "ended_at": session.get("ended_at"),
                         "error": None,
                     }
                 )

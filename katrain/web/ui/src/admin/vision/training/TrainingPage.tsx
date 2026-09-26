@@ -11,7 +11,7 @@ export type TrainingProps = {
   canCreate: boolean; canCancel: boolean; retryCreate: boolean; authorized: boolean;
   onSelectionChange: (value: TrainingSelection) => void; onParametersChange: (value: TrainingParameters) => void;
   onCreate: () => void; onCancel: () => void; onDismiss: () => void; onConfirm: () => void; onRefresh: () => void;
-  onRunChange: (id: string) => void; onCapture: () => void;
+  onRunChange: (id: string) => void;
 };
 const labels = { unknown: '服务未核实', idle: '尚无活动运行', busy: '资源占用未核实', starting: '启动中', running: '运行中', cancelling: '正在取消', interrupted: '中断 · 退出待核实', failed: '失败', completed: '完成', cancelled: '已取消' };
 export default function TrainingPage(props: TrainingProps) {
@@ -42,7 +42,6 @@ export default function TrainingPage(props: TrainingProps) {
       {(status?.reason || !enabled) && <p className="training-demo">{status?.reason ?? '仅测试机 test 环境、显式启用并核实资源后可训练；Mac local 始终禁用，不会暗中连接远端。'}</p>}
       {error && <div className="training-feedback" role="alert"><span>{error}</span><button type="button" className="training-button" disabled={!!busy || !props.authorized} onClick={props.onRefresh}>重试读取</button></div>}
       {message && <p className="training-feedback" role="status">{message}</p>}
-      <nav className="training-steps" aria-label="视觉实验室流程"><button type="button" disabled={!!busy} onClick={props.onCapture}><b>1</b>采集与数据集</button><i className="training-step-line" /><span className="active"><b>2</b>训练与模型</span><i className="training-step-line" /><span><b>3</b>本机部署与诊断</span></nav>
       <div className="training-grid">
         <section className="training-panel"><div className="training-panel-head"><h2>创建训练运行</h2><small>固定参数 · 单卡</small></div>
           <form className="training-form" onSubmit={(event) => { event.preventDefault(); if (props.canCreate) props.onCreate(); }}>

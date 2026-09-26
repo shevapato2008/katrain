@@ -50,9 +50,9 @@ describe('live vision journey', () => {
   it('does not open devices automatically and gates calibration and initial capture by explicit confirmation', async () => {
     const { api } = mockApi(); const user = userEvent.setup();
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
-    await screen.findByRole('button', { name: '连接摄像头' });
+    await screen.findByRole('button', { name: /^连接摄像头/ });
     expect(api.visionConnect).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: '连接摄像头' }));
+    await user.click(screen.getByRole('button', { name: /^连接摄像头/ }));
     const calibrate = await screen.findByRole('button', { name: '开始空盘标定' });
     expect(calibrate).toBeDisabled();
     await user.click(screen.getByLabelText('棋盘已清空，可开始标定'));
@@ -60,16 +60,15 @@ describe('live vision journey', () => {
     await waitFor(() => expect(api.visionCalibrate).toHaveBeenCalledWith(true, expect.any(AbortSignal)));
     const file = new File(['(;SZ[19];B[ca])'], 'game.sgf', { type: 'text/plain' });
     await user.upload(screen.getByLabelText('SGF 文件'), file);
-    await user.click(screen.getByRole('button', { name: '导入新会话' }));
-    await screen.findByText('下一帧：初始空盘');
-    const capture = screen.getByRole('button', { name: '确认并采集' });
+    await user.click(screen.getByRole('button', { name: /开始采集 · game.sgf/ }));
+    const capture = await screen.findByRole('button', { name: '拍摄初始帧' });
     expect(capture).toBeDisabled();
-    await user.click(screen.getByLabelText('已摆放并核对当前棋面'));
+    await user.click(screen.getByLabelText('棋盘已清空'));
     await user.click(capture);
     await waitFor(() => expect(api.visionCapture).toHaveBeenCalledWith({ game_id: 'game-1', move_index: -1, operator_confirmed: true, overwrite_existing: false }, expect.any(AbortSignal)));
-    await screen.findByText('下一手：第 1 手 · 黑棋 C19');
-    expect(screen.getByRole('button', { name: '确认并采集' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /上传测试环境/ })).toBeDisabled();
+    await screen.findByText('第 1 手 · 黑棋 C19');
+    expect(screen.getByRole('button', { name: '已摆好 · 拍照并进入下一手' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /上传测试机/ })).toBeDisabled();
   });
 
   it('honestly disables nonlocal vision without listing or opening devices', async () => {
@@ -78,7 +77,7 @@ describe('live vision journey', () => {
     await screen.findByText(/此服务未启用本机视觉控制/);
     expect(api.visionDevices).not.toHaveBeenCalled();
     expect(api.visionConnect).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '连接摄像头' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^连接摄像头/ })).toBeDisabled();
   });
 
   it('stops preview requests and clears imagery on 401', async () => {
@@ -100,7 +99,7 @@ describe('live vision journey', () => {
     await waitFor(() => expect(api.visionPreview).toHaveBeenCalledOnce());
     const signal = vi.mocked(api.visionPreview).mock.calls[0][0];
     fireEvent.click(screen.getByRole('button', { name: '断开连接' }));
-    await screen.findByRole('button', { name: '连接摄像头' });
+    await screen.findByRole('button', { name: /^连接摄像头/ });
     await act(async () => { complete({ frame_id: 'old', captured_at: 'old', captured_at_source: 'runtime', camera_seq: 1, camera_monotonic_ts: 1, geometry_revision: null, raw_jpeg_base64: 'old', warped_jpeg_base64: null, geometry_overlay_jpeg_base64: null }); });
     expect(signal?.aborted).toBe(true);
     expect(screen.queryByRole('img', { name: '原始相机画面' })).not.toBeInTheDocument();
@@ -114,7 +113,7 @@ describe('live vision journey', () => {
     api.visionPreview = vi.fn(async () => { setStatus(status()); throw new AdminApiError(503, 'Camera frame unavailable'); });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await waitFor(() => expect(api.visionStatus).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole('button', { name: '连接摄像头' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^连接摄像头/ })).toBeEnabled();
     expect(screen.getByRole('button', { name: '刷新本机状态' })).toBeEnabled();
     expect(screen.queryByText('本机摄像头已连接')).not.toBeInTheDocument();
   });
@@ -131,10 +130,10 @@ describe('live vision journey', () => {
     api.visionVerifyGeometry = vi.fn(async () => { current.geometry = { ...current.geometry, state: 'ready' }; setStatus(current); return current.geometry; });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await user.click(await screen.findByRole('button', { name: '恢复会话' }));
-    await user.selectOptions(screen.getByLabelText('保存的会话'), 'game-1');
+    await user.click(screen.getByRole('option', { name: /会话 game-1/ }));
     await user.click(screen.getByRole('button', { name: '恢复所选会话' }));
-    await screen.findByText('下一手：第 3 手 · 白棋 D18');
-    expect(screen.getByRole('button', { name: '确认并采集' })).toBeDisabled();
+    await screen.findByText('第 3 手 · 白棋 D18');
+    expect(screen.getByRole('button', { name: '已摆好 · 拍照并进入下一手' })).toBeDisabled();
     const confirm = screen.getByRole('button', { name: '确认保存的标定' });
     expect(confirm).toBeDisabled();
     await waitFor(() => expect(screen.getByLabelText('已检查当前网格，视角与原标定一致')).toBeEnabled());
@@ -144,7 +143,7 @@ describe('live vision journey', () => {
     await user.click(screen.getByLabelText('已检查当前网格，视角与原标定一致'));
     await user.click(confirm);
     await waitFor(() => expect(api.visionVerifyGeometry).toHaveBeenCalledWith('game-1', 'preview-1', true, expect.any(AbortSignal)));
-    expect(screen.getByRole('button', { name: '确认并采集' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '已摆好 · 拍照并进入下一手' })).toBeDisabled();
   });
 
   it('reviews real labels, requires both retake confirmations, and freezes only an actual returned version', async () => {
@@ -159,7 +158,10 @@ describe('live vision journey', () => {
       return { id: 'dataset-real', manifest_sha256: 'frozen-sha', idempotent: false, mode: 'stones2', class_names: ['black', 'white'], samples: [{ frame_id: 'saved--1', split: 'train' }, { frame_id: 'retaken-0', split: 'val' }], parameters: { val_fraction: .2 } };
     });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
-    await user.click(await screen.findByRole('button', { name: /第 1 手 · 黑棋 C19.*查看标签/ }));
+    await user.click(await screen.findByRole('tab', { name: /标注预览/ }));
+    expect(await screen.findByRole('img', { name: '最新样本标注叠框' })).toHaveAttribute('src', 'data:image/jpeg;base64,overlay');
+    expect(api.visionReviewSample).toHaveBeenLastCalledWith('game-1', 'saved-2', expect.any(AbortSignal));
+    await user.click(screen.getByRole('button', { name: /第 1 手 · 黑棋 C19.*查看标签/ }));
     await screen.findByRole('dialog', { name: /样本检查/ });
     expect(screen.getByRole('img', { name: '真实样本标注叠框' })).toHaveAttribute('src', 'data:image/jpeg;base64,overlay');
     expect(screen.getByText('black 1 · white 0')).toBeInTheDocument();
@@ -172,15 +174,15 @@ describe('live vision journey', () => {
     await waitFor(() => expect(api.visionCapture).toHaveBeenCalledWith({ game_id: 'game-1', move_index: 0, operator_confirmed: true, overwrite_existing: true }, expect.any(AbortSignal)));
     await screen.findByText('样本已重拍；后续样本保留。');
     expect(screen.getByRole('button', { name: /第 3 手 · 白棋 D18.*查看标签/ })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '冻结版本' }));
+    await user.click(screen.getByRole('button', { name: '冻结数据集版本' }));
     await screen.findByText(/只读版本 dataset-real 已冻结；尚未上传/);
     expect(api.visionFreezeSession).toHaveBeenCalledWith('game-1', {}, expect.any(AbortSignal));
-    expect(screen.getByRole('button', { name: /上传测试环境/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /上传测试机/ })).toBeDisabled();
     saved.game_id = 'game-new'; saved.frames = []; saved.state = 'draft'; saved.next_step = -1;
     current.sgf = { ...current.sgf, game_id: 'game-new', next_step: -1 };
     current.dataset = { ...current.dataset, state: 'none', id: null, count: 0 }; setStatus(current);
     await user.click(screen.getByRole('button', { name: '刷新本机状态' }));
-    await screen.findByText('下一帧：初始空盘');
+    await screen.findByRole('button', { name: '拍摄初始帧' });
     expect(screen.queryByText(/版本 dataset-real/)).not.toBeInTheDocument();
   });
 
@@ -196,6 +198,7 @@ describe('live vision journey', () => {
     expect(api.visionPreview).toHaveBeenCalledOnce();
     await act(async () => { complete({ frame_id: 'same-frame', captured_at: 'now', captured_at_source: 'runtime', camera_seq: 9, camera_monotonic_ts: 10, geometry_revision: null, raw_jpeg_base64: 'raw', warped_jpeg_base64: 'warp', geometry_overlay_jpeg_base64: null }); });
     expect(screen.getByRole('img', { name: '原始相机画面' })).toHaveAttribute('src', 'data:image/jpeg;base64,raw');
+    fireEvent.click(screen.getByRole('tab', { name: 'warped 校正' }));
     expect(screen.getByRole('img', { name: '标定后的画面' })).toHaveAttribute('src', 'data:image/jpeg;base64,warp');
     await act(async () => { await vi.advanceTimersByTimeAsync(499); });
     expect(api.visionPreview).toHaveBeenCalledOnce();
@@ -208,8 +211,8 @@ describe('live vision journey', () => {
     setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' }, sgf: { ...status().sgf, state: 'loaded', game_id: 'game-1', total_steps: 3, next_step: -1 } });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await screen.findByText(/当前设备或模式与原会话不同/);
-    expect(screen.getByLabelText('已摆放并核对当前棋面')).toBeDisabled();
-    expect(screen.getByRole('button', { name: '确认并采集' })).toBeDisabled();
+    expect(screen.getByLabelText('棋盘已清空，只有指示灯亮着')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '拍摄初始帧' })).toBeDisabled();
   });
 
   it('keeps the two-Hz preview budget across manual refreshes, not just within a polling loop', async () => {
@@ -236,7 +239,7 @@ describe('live vision journey', () => {
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await screen.findByRole('button', { name: '断开连接' });
     await user.upload(screen.getByLabelText('SGF 文件'), new File(['(;SZ[19];B[aa])'], 'game.sgf'));
-    await user.click(screen.getByRole('button', { name: '导入新会话' }));
+    await user.click(screen.getByRole('button', { name: /开始采集 · game.sgf/ }));
     await user.click(screen.getByRole('button', { name: '刷新本机状态' }));
     await act(async () => { const reader = readers[0]; Object.defineProperty(reader, 'result', { value: '(;SZ[19];B[aa])' }); reader.onload?.(new ProgressEvent('load') as ProgressEvent<FileReader>); });
     expect(abort).toHaveBeenCalled();

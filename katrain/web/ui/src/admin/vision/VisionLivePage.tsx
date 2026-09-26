@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { Activity, Camera, Info, RefreshCw } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw } from 'lucide-react';
 import VisionDialog from './VisionDialog';
 import type { VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
 import './VisionCapturePage.css';
+import './lab.css';
 
 type Props = {
   status: VisionStatus | null; devices: VisionDevices['candidates']; sessions: VisionSessionList | null;
@@ -14,9 +15,9 @@ type Props = {
   onVerify: (frame: string) => void; onPausePreview: (paused: boolean) => void;
   onCapture: (index: number, retake?: boolean) => void; onReview: (frame: string) => void;
   onCloseReview: () => void; onFreeze: () => void;
-  onTraining?: () => void;
+  labelPreview: { overlay: VisionSampleReview | null; error: string | null } | null; onLabel: () => void;
 };
-const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? 'LED 四类' : mode === 'stones2' ? '无灯双类' : '模式未选择';
+const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? '指示灯 · 四类' : mode === 'stones2' ? '无灯 · 双类' : '模式未选择';
 const coordinate = (step: VisionStep) => step.col !== null && step.row !== null ? `${'ABCDEFGHJKLMNOPQRST'[step.col]}${19 - step.row}` : '';
 const stepLabel = (index: number, steps: VisionStep[]) => {
   if (index === -1) return '初始空盘';
@@ -34,7 +35,7 @@ const readFile = (file: File, reader: FileReader) => new Promise<string>((resolv
 export default function VisionLivePage(props: Props) {
   const { status, devices, sessions, session, preview, review, reviewFailure, frozen, busy, error, previewError, message, authorized } = props;
   const [device, setDevice] = useState(0);
-  const [mode, setMode] = useState<VisionMode>('stones2');
+  const [mode, setMode] = useState<VisionMode>('led4');
   const [emptyConfirmed, setEmptyConfirmed] = useState('');
   const [boardConfirmed, setBoardConfirmed] = useState('');
   const [geometryConfirmed, setGeometryConfirmed] = useState('');
@@ -43,7 +44,8 @@ export default function VisionLivePage(props: Props) {
   const [fileError, setFileError] = useState('');
   const [readingFile, setReadingFile] = useState(false);
   const [chooseNew, setChooseNew] = useState(false);
-  const [resumeOpen, setResumeOpen] = useState(false);
+  const [source, setSource] = useState<'sgf' | 'resume'>('sgf');
+  const [view, setView] = useState<'raw' | 'warp' | 'label'>('raw');
   const [resumeId, setResumeId] = useState('');
   const [retakeConfirmed, setRetakeConfirmed] = useState('');
   const [retakeBoardConfirmed, setRetakeBoardConfirmed] = useState('');
@@ -76,6 +78,10 @@ export default function VisionLivePage(props: Props) {
     const reader = fileReader.current; fileReader.current = null; reader?.abort();
   }, [fileContext]);
 
+  const latestFrame = frames.at(-1)?.frame_id;
+  const onLabel = props.onLabel;
+  useEffect(() => { if (view === 'label' && latestFrame) onLabel(); }, [view, latestFrame, onLabel]);
+
   async function importFile() {
     if (!file || locked || !ready || !status) return;
     setReadingFile(true); setFileError('');
@@ -89,66 +95,107 @@ export default function VisionLivePage(props: Props) {
     finally { setReadingFile(false); }
   }
 
-  return <main className="vision-capture-page vision-live-page" data-camera={cameraState}>
-    <div className="vision-heading"><div><h1>视觉实验室</h1><p>Mac 本机 · 摆谱采集与数据集</p></div><div className="vision-location"><Camera aria-hidden="true" />{cameraText}<button className="vision-button" type="button" disabled={!!busy || !authorized} onClick={props.onRefresh} aria-label="刷新本机状态"><RefreshCw aria-hidden="true" /></button></div></div>
-    <div className="vision-content">
-      {status && !status.enabled && <p className="vision-nonlocal"><Info aria-hidden="true" />此服务未启用本机视觉控制；不会远程打开 Mac 摄像头。</p>}
-      {(error || fileError) && <div className="vision-feedback" role="alert">{error || fileError}<button type="button" className="vision-retry" onClick={props.onRefresh} disabled={!!busy}><RefreshCw aria-hidden="true" />重试读取状态</button></div>}
-      {message && <p className="vision-feedback" role="status">{message}</p>}
-      <nav className="vision-steps" aria-label="视觉实验室流程"><span className="vision-step active"><b>1</b>采集与数据集</span><span className="vision-separator" />{props.onTraining ? <button className="vision-step" style={{ border: 0, padding: 0, background: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer' }} type="button" disabled={!!busy} onClick={props.onTraining}><b>2</b>训练与模型</button> : <span className="vision-step"><b>2</b>训练与模型</span>}<span className="vision-separator" /><span className="vision-step"><b>3</b>本机部署与诊断</span></nav>
-      <div className="vision-grid">
-        <section className="vision-preview" aria-label="采集预览"><div className="vision-panel-head"><h2>采集预览</h2><span>同一帧 · 原图 / 校正图</span></div>
-          <div className="vision-streams">
-            <div className="vision-stream"><div className="vision-stream-label"><strong>原始相机画面</strong><span>{preview ? `帧 ${preview.camera_seq}` : '等待实际画面'}</span></div><div className="vision-stream-frame">{raw ? <img src={raw} alt="原始相机画面" /> : <div className="vision-stream-empty"><Camera aria-hidden="true" /><span>{connected ? '等待新鲜相机帧' : '尚未连接本机摄像头'}</span><small>仅在 Mac 后台显式连接</small></div>}</div><div className="vision-stream-footer">不加视觉变形 · 不上传预览</div></div>
-            <div className="vision-stream"><div className="vision-stream-label"><strong>warped 画面</strong><span>共享帧与标定版本</span></div><div className="vision-stream-frame">{warp ? <img src={warp} alt="标定后的画面" /> : <div className="vision-stream-empty"><Activity aria-hidden="true" /><span>{status?.geometry.state === 'required' ? '等待空盘标定' : '等待同帧校正画面'}</span><small>未标定时不生成校正画面</small></div>}</div><div className="vision-stream-footer">{preview?.geometry_revision ? `几何 ${preview.geometry_revision.slice(0, 12)}` : '无已验证几何'} · 同一帧检查</div></div>
-          </div><div className="vision-preview-toolbar"><label className="vision-check"><input type="checkbox" checked={grid} onChange={(event) => { setGrid(event.target.checked); if (!event.target.checked) { setGeometryConfirmed(''); props.onPausePreview(false); } }} />显示标定网格</label><span>预览最多 2 帧/秒 · 非训练视频</span></div>
-          {previewError && <p className="vision-preview-error" role="alert">{previewError}</p>}
-          <div className="vision-preview-foot">采集前摆好当前棋面并明确确认；SGF 是落子与提子的真值。</div>
+  const stepState = (n: 1 | 2 | 3 | 4) => {
+    const hasSession = !!session && !chooseNew;
+    const done = [connected, ready && !geometryChanged, hasSession, hasSession && next === null][n - 1];
+    const reachable = [true, connected, connected, !!session][n - 1];
+    return done ? 'done' : reachable ? 'current' : 'locked';
+  };
+  const stepHead = (n: 1 | 2 | 3 | 4, title: string, chip?: ReactNode) => <div className="lab-step-head"><b>{stepState(n) === 'done' ? <Check aria-hidden="true" /> : n}</b>{title}{chip}</div>;
+  const headline = !status ? ['正在读取本机状态', ''] : !connected ? [cameraText, cameraState === 'occupied' || cameraState === 'error' ? 'warn' : ''] : status.geometry.state === 'stale' ? ['恢复的标定待复核', 'warn'] : !ready ? ['已连接 · 待标定', 'ok'] : [`Camera ${status.camera.device_id}${status.mode === 'led4' ? ' · 指示灯' : ''} · 标定通过`, 'ok'];
+  const nextStepInfo = next !== null && next !== undefined && next >= 0 ? steps.find((item) => item.move_index === next) : undefined;
+  const initial = next === -1;
+  const led = status?.mode === 'led4';
+  const label = props.labelPreview;
+  const tab = (id: typeof view, text: string, extra?: ReactNode) => <button type="button" role="tab" className="lab-tab" aria-selected={view === id} onClick={() => setView(id)}>{text}{extra}</button>;
+  const viewer = () => {
+    if (view === 'raw') return raw ? <><img src={raw} alt="原始相机画面" /><span className="lab-tag">原始相机画面 · 相机帧 #{preview?.camera_seq}</span></> : <div className="lab-empty"><Camera aria-hidden="true" /><span>{connected ? '等待新鲜相机帧' : '尚未连接本机摄像头'}</span><small>{connected ? '预览最多 2 帧/秒' : '在右侧第 1 步显式连接；本页不会自动打开设备'}</small></div>;
+    if (view === 'warp') return warp ? <><img src={warp} alt="标定后的画面" /><span className="lab-tag">warped 校正 · 几何 {preview?.geometry_revision?.slice(0, 12)} · 同一相机帧</span></> : <div className="lab-empty"><Activity aria-hidden="true" /><span>{!connected ? '尚未连接本机摄像头' : status?.geometry.state === 'required' ? '等待空盘标定' : '等待同帧校正画面'}</span><small>未标定时不生成校正画面</small></div>;
+    if (label?.overlay) return <><img src={jpeg(label.overlay.overlay_jpeg_base64)} alt="最新样本标注叠框" /><span className="lab-tag">最新样本 · {stepLabel(label.overlay.applied_move_index, steps)} · 按 SGF 真值自动标注</span><span className="lab-legend">{label.overlay.class_names.map((name, id) => <span key={name}>{name} {label.overlay?.boxes.filter((box) => box.class_id === id).length}</span>)}</span></>;
+    return <div className="lab-empty"><Layers aria-hidden="true" /><span>{label?.error ?? (frames.length ? '正在读取最新样本叠框' : '尚无样本')}</span><small>{frames.length ? '标签来自 SGF 棋面真值' : '拍摄第一帧后显示自动标注叠框'}</small></div>;
+  };
+
+  return <main className="lab-page vision-live-page" data-camera={cameraState}>
+    <div className="lab-heading"><div><h1>采集与数据集</h1><p>Mac 本机 · 指示灯摆谱，采集 YOLO 训练帧</p></div><div className={`lab-status ${headline[1]}`}>{headline[1] === 'ok' && ready ? <CircleCheck aria-hidden="true" /> : <Camera aria-hidden="true" />}{busy ? `${busy}…` : headline[0]}<button className="lab-btn small ghost" type="button" disabled={!!busy || !authorized} onClick={props.onRefresh} aria-label="刷新本机状态"><RefreshCw aria-hidden="true" /></button></div></div>
+    <div className="lab-content">
+      {status && !status.enabled && <div className="lab-banner info"><Info aria-hidden="true" /><span>此服务未启用本机视觉控制；不会远程打开 Mac 摄像头。</span></div>}
+      {(error || fileError) && <div className="lab-banner bad" role="alert"><Info aria-hidden="true" /><span>{error || fileError}</span><button type="button" className="lab-btn small" onClick={props.onRefresh} disabled={!!busy}><RefreshCw aria-hidden="true" />重试读取状态</button></div>}
+      {message && <div className="lab-banner ok" role="status"><Check aria-hidden="true" /><span>{message}</span></div>}
+      <div className="cp-grid">
+        <section className="lab-panel cp-preview" aria-label="采集预览">
+          <div className="lab-tabs" role="tablist" aria-label="预览画面">{tab('raw', '原始画面')}{tab('warp', 'warped 校正')}{tab('label', '标注预览', frames.length ? <span className="lab-chip">{frames.length}</span> : null)}</div>
+          <div className="lab-viewer cp-viewer">{viewer()}</div>
+          {previewError && <p className="cp-preview-error" role="alert">{previewError}</p>}
+          <div className="cp-toolbar"><label className="lab-check"><input type="checkbox" checked={grid} onChange={(event) => { setGrid(event.target.checked); if (!event.target.checked) { setGeometryConfirmed(''); props.onPausePreview(false); } }} />显示标定网格</label><span className="cp-spacer" /><span>预览最多 2 帧/秒 · 非训练视频</span></div>
         </section>
-        <aside className="vision-controls" aria-label="采集步骤"><div className="vision-panel-head"><h2>采集步骤</h2><span>{busy ? `${busy}…` : '按顺序完成'}</span></div><div className="vision-controls-body">
-          <section className="vision-control-group"><div className="vision-control-label"><b>1</b>连接本机摄像头</div>
-            {connected ? <div className="vision-connected-row"><span>Camera {status.camera.device_id} · {modeLabel(status.mode)}</span><button className="vision-button" type="button" disabled={locked} onClick={props.onDisconnect}>断开连接</button></div> : <>
-              <div className="vision-row"><label className="vision-field">摄像头<select value={device} disabled={locked || !devices.length} onChange={(event) => setDevice(Number(event.target.value))}>{devices.length ? devices.map((item) => <option key={item.device_id} value={item.device_id}>{item.label} · 待尝试</option>) : <option value={0}>尚未读取设备候选</option>}</select></label><label className="vision-field">采集模式<select value={mode} disabled={locked} onChange={(event) => setMode(event.target.value as VisionMode)}><option value="stones2">无灯 · 双类棋子</option><option value="led4">LED · 四类</option></select></label></div>
-              <p className="vision-status-note">设备候选不等于可用；占用时不会抢占。</p><button className="vision-button" type="button" disabled={locked || !devices.length} onClick={() => props.onConnect(device, mode)}>连接摄像头</button>
+        <aside className="lab-panel cp-steps" aria-label="采集步骤">
+          <section className={`lab-step ${stepState(1)}`}>{stepHead(1, '连接设备', connected ? <span className="lab-chip ok">已连接</span> : undefined)}<div className="lab-step-body">
+            {connected ? <div className="lab-row"><span className="lab-note cp-grow">Camera {status.camera.device_id} · {modeLabel(status.mode)}<br />设备已占用，断开时释放</span><button className="lab-btn small" type="button" disabled={locked} onClick={props.onDisconnect}>断开连接</button></div> : <>
+              <label className="lab-field">摄像头<select value={device} disabled={locked || !devices.length} onChange={(event) => setDevice(Number(event.target.value))}>{devices.length ? devices.map((item) => <option key={item.device_id} value={item.device_id}>{item.label} · 待尝试</option>) : <option value={0}>尚未读取设备候选</option>}</select></label>
+              <div className="lab-seg" role="group" aria-label="采集模式"><button type="button" aria-pressed={mode === 'led4'} disabled={locked} onClick={() => setMode('led4')}>指示灯 · 四类</button><button type="button" aria-pressed={mode === 'stones2'} disabled={locked} onClick={() => setMode('stones2')}>无灯 · 双类</button></div>
+              <p className="lab-note">{mode === 'led4' ? '类目 black / white / led_red / led_green；使用本机配置的指示灯串口。' : '类目 black / white；不点灯，不伪造 LED 类。'}设备候选不等于可用；占用时不会抢占。</p>
+              <button className="lab-btn" type="button" disabled={locked || !devices.length} onClick={() => props.onConnect(device, mode)}>{mode === 'led4' ? '连接摄像头与指示灯' : '连接摄像头'}</button>
             </>}
-            {status?.camera.error && <p className="vision-control-error" role="alert">{status.camera.error}</p>}
-            {status?.led.error && <p className="vision-control-error" role="alert">LED：{status.led.error}</p>}
-          </section>
-          <section className="vision-control-group"><div className="vision-control-label"><b>2</b>空盘标定</div>
+            {status?.camera.error && <p className="cp-error" role="alert">{status.camera.error}</p>}
+            {status?.led.error && <p className="cp-error" role="alert">指示灯：{status.led.error}</p>}
+          </div></section>
+          <section className={`lab-step ${stepState(2)}`}>{stepHead(2, '空盘标定', ready && !geometryChanged ? <span className="lab-chip ok">{status?.geometry.revision?.slice(0, 8)}</span> : status?.geometry.state === 'stale' ? <span className="lab-chip warn">待复核</span> : undefined)}<div className="lab-step-body">
             {status?.geometry.state === 'stale' ? <>
-              <p>恢复的几何待复核；重连不代表视角未变。</p>
-              <label className="vision-check"><input type="checkbox" disabled={locked || !connected || sessionMismatch || !grid || !preview?.geometry_overlay_jpeg_base64 || preview.geometry_revision !== status.geometry.revision} checked={!!preview && geometryConfirmed === preview.frame_id} onChange={(event) => { setGeometryConfirmed(event.target.checked ? preview?.frame_id ?? '' : ''); props.onPausePreview(event.target.checked); }} />已检查当前网格，视角与原标定一致</label>
-              <button className="vision-button" type="button" disabled={locked || !connected || sessionMismatch || !grid || !preview || geometryConfirmed !== preview.frame_id} onClick={() => { if (preview) props.onVerify(preview.frame_id); setGeometryConfirmed(''); }}>确认保存的标定</button>
-              <p className="vision-status-note">视角已变化？清空棋盘后新建标定，再导入新 SGF 会话；不覆盖原会话。</p>
-            </> : <p className="vision-status-note">{!connected ? '连接后清空棋子再标定。' : ready ? `标定通过 · ${status?.geometry.source ?? '已保存几何'}` : '等待空盘标定'}</p>}
-            <label className="vision-check"><input type="checkbox" checked={emptyConfirmed === geometryKey} disabled={locked || !connected} onChange={(event) => setEmptyConfirmed(event.target.checked ? geometryKey : '')} />{ready ? '棋盘已清空，需要重新标定' : '棋盘已清空，可开始标定'}</label>
-            <button className="vision-button" type="button" disabled={locked || !connected || emptyConfirmed !== geometryKey} onClick={() => { setEmptyConfirmed(''); setBoardConfirmed(''); if (session?.frames.length) { setNeedsNewSession(session.game_id); setChooseNew(true); setFile(null); } props.onCalibrate(); }}>{ready || status?.geometry.state === 'stale' ? '重新空盘标定' : '开始空盘标定'}</button>
-            {status?.geometry.error && <p className="vision-control-error" role="alert">{status.geometry.error}</p>}
-          </section>
-          <section className="vision-control-group"><div className="vision-control-label"><b>3</b>导入或恢复棋谱</div>
-            {(!session || chooseNew) && <label className="vision-field">SGF 文件<input type="file" accept=".sgf" disabled={locked} onChange={(event) => {
-              const selected = event.target.files?.[0] ?? null;
-              setFile(selected && selected.size <= 2 * 1024 * 1024 ? selected : null);
-              setFileError(selected && selected.size > 2 * 1024 * 1024 ? 'SGF 文件不能超过 2 MiB。' : '');
-            }} /></label>}
-            <div className="vision-row vision-session-actions">{session && !chooseNew ? <button className="vision-button" type="button" disabled={locked} onClick={() => { setChooseNew(true); setFile(null); }}>选择新棋谱</button> : <button className="vision-button" type="button" disabled={locked || !file || !ready} onClick={() => { void importFile(); }}>导入新会话</button>}<button className="vision-button" type="button" disabled={locked || !sessions} onClick={() => setResumeOpen(true)}>恢复会话</button></div>
-            {session && <div className="vision-session-line">{session.game_id.slice(0, 12)} · {frames.length} 张样本 · {steps.length} 个 SGF 步骤{skippedPasses > 0 && `（${skippedPasses} 次停着不采帧）`}</div>}
-            {sessionMismatch && <p className="vision-control-error" role="alert">当前设备或模式与原会话不同；请断开后选择 {savedCamera === undefined ? '原摄像头' : `Camera ${savedCamera}`} · {modeLabel(session?.mode)}，或标定并导入新会话。</p>}
-          </section>
-          <section className="vision-control-group"><div className="vision-control-label"><b>4</b>逐手采集</div>
-            <strong className="vision-next">{geometryChanged || session?.game_id === needsNewSession ? '视角已重新标定，请导入新会话' : !session ? '先连接、标定并导入棋谱' : next === -1 ? '下一帧：初始空盘' : next === null ? '棋谱采集已完成' : `下一手：${stepLabel(next ?? -1, steps)}`}</strong>
-            <p>{next === -1 ? '清空棋盘，保存真实负样本；随后按 SGF 摆谱。' : '先按 SGF 摆好棋面；如有提子，也须移除。'}</p>
-            <label className="vision-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady || !session || next === null} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />已摆放并核对当前棋面</label>
-            <button className="vision-button primary" type="button" disabled={locked || !captureReady || !session || next === null || next === undefined || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onCapture(next); setBoardConfirmed(''); }}>确认并采集</button>
-          </section>
-        </div></aside>
+              <p className="lab-note">恢复的几何待复核；在原始画面上检查网格是否贴合。重连不代表视角未变。</p>
+              <label className="lab-check"><input type="checkbox" disabled={locked || !connected || sessionMismatch || !grid || !preview?.geometry_overlay_jpeg_base64 || preview.geometry_revision !== status.geometry.revision} checked={!!preview && geometryConfirmed === preview.frame_id} onChange={(event) => { setGeometryConfirmed(event.target.checked ? preview?.frame_id ?? '' : ''); props.onPausePreview(event.target.checked); }} />已检查当前网格，视角与原标定一致</label>
+              <button className="lab-btn" type="button" disabled={locked || !connected || sessionMismatch || !grid || !preview || geometryConfirmed !== preview.frame_id} onClick={() => { if (preview) props.onVerify(preview.frame_id); setGeometryConfirmed(''); }}>确认保存的标定</button>
+              <p className="lab-note">视角已变化？清空棋盘后新建标定，再导入新棋谱会话；不覆盖原会话。</p>
+            </> : <p className="lab-note">{!connected ? '连接后清空棋盘再标定。' : ready ? `标定通过 · ${status?.geometry.source ?? '已保存几何'}` : `清空棋盘后开始；${status?.mode === 'led4' ? '标定时指示灯全部熄灭。' : '需要看到完整四角。'}`}</p>}
+            {connected && !(ready && session && !chooseNew) && <label className="lab-check"><input type="checkbox" checked={emptyConfirmed === geometryKey} disabled={locked} onChange={(event) => setEmptyConfirmed(event.target.checked ? geometryKey : '')} />{ready ? '棋盘已清空，需要重新标定' : '棋盘已清空，可开始标定'}</label>}
+            {connected && !(ready && session && !chooseNew) && <button className={`lab-btn ${ready ? 'small ghost' : ''}`} type="button" disabled={locked || emptyConfirmed !== geometryKey} onClick={() => { setEmptyConfirmed(''); setBoardConfirmed(''); if (session?.frames.length) { setNeedsNewSession(session.game_id); setChooseNew(true); setFile(null); } props.onCalibrate(); }}>{ready || status?.geometry.state === 'stale' ? '重新空盘标定' : '开始空盘标定'}</button>}
+            {status?.geometry.error && <p className="cp-error" role="alert">{status.geometry.error}</p>}
+          </div></section>
+          <section className={`lab-step ${stepState(3)}`}>{stepHead(3, '选择棋谱', session && !chooseNew ? <span className="lab-chip ok">{session.game_id.slice(0, 8)}</span> : undefined)}<div className="lab-step-body">
+            {session && !chooseNew ? <>
+              <p className="lab-note">{frames.length} 张样本 · {steps.length} 个 SGF 步骤{skippedPasses > 0 && `（${skippedPasses} 次停着不采帧）`} · 模式与几何在本会话内固定。</p>
+              <button className="lab-btn small ghost" type="button" disabled={locked} onClick={() => { setChooseNew(true); setFile(null); }}>选择新棋谱</button>
+            </> : <>
+              <div className="lab-seg" role="group" aria-label="棋谱来源"><button type="button" aria-pressed={source === 'sgf'} onClick={() => setSource('sgf')}>导入 SGF</button><button type="button" aria-pressed={source === 'resume'} onClick={() => setSource('resume')}>恢复会话</button></div>
+              {source === 'sgf' ? <>
+                <label className="lab-field">SGF 文件<input type="file" accept=".sgf" disabled={locked} onChange={(event) => {
+                  const selected = event.target.files?.[0] ?? null;
+                  setFile(selected && selected.size <= 2 * 1024 * 1024 ? selected : null);
+                  setFileError(selected && selected.size > 2 * 1024 * 1024 ? 'SGF 文件不能超过 2 MiB。' : '');
+                }} /></label>
+                <p className="lab-note">只接受 19×19 棋谱；导入时回放校验落子与提子。</p>
+                <button className="lab-btn primary full" type="button" disabled={locked || !file || !ready} onClick={() => { void importFile(); }}>{file ? `开始采集 · ${file.name}` : '先选择一份 SGF'}</button>
+              </> : <>
+                {sessions?.sessions.length ? <div className="cp-kifu-list" role="listbox" aria-label="保存的会话">{sessions.sessions.map((item) => <button key={item.game_id} type="button" role="option" className="cp-kifu" aria-selected={resumeId === item.game_id} disabled={locked || item.state === 'error'} onClick={() => setResumeId(item.game_id)}><strong>会话 {item.game_id.slice(0, 12)}</strong><span>{item.state === 'error' ? `错误：${item.error}` : `${modeLabel(item.mode)} · 已采 ${item.count ?? 0} 张 · ${item.total_steps ?? 0} 步`}</span></button>)}</div> : <p className="lab-note">{sessions ? '本机没有保存的采集会话。' : '尚未读取会话列表。'}</p>}
+                {sessions?.truncated && <p className="lab-note">仅显示前 {sessions.limit} 个会话。</p>}
+                <p className="lab-note">恢复不会自动切换设备或模式；恢复后必须复核标定。</p>
+                <button className="lab-btn primary full" type="button" disabled={locked || !resumeId} onClick={() => { props.onResume(resumeId); setBoardConfirmed(''); setChooseNew(false); }}>恢复所选会话</button>
+              </>}
+            </>}
+            {sessionMismatch && <p className="cp-error" role="alert">当前设备或模式与原会话不同；请断开后选择 {savedCamera === undefined ? '原摄像头' : `Camera ${savedCamera}`} · {modeLabel(session?.mode)}，或标定并导入新会话。</p>}
+          </div></section>
+          <section className={`lab-step ${stepState(4)}`}>{stepHead(4, '逐手摆谱采集')}<div className="lab-step-body">
+            {geometryChanged || session?.game_id === needsNewSession ? <p className="lab-note">视角已重新标定，请导入新会话。</p> : !session ? <p className="lab-note">先连接、标定并选定棋谱。</p> : <>
+              <div className="cp-next">{next === null ? <><span className="cp-stone done" /><strong>本局采集完成</strong><span>共 {frames.length} 帧 · 可在下方检查并冻结</span></> : initial ? <><span className="cp-stone empty" /><strong>拍摄初始帧</strong><span>清空棋盘，保存真实负样本；随后按 SGF 摆谱</span></> : <><span className={`cp-stone ${nextStepInfo?.color ?? ''}`} /><strong>{stepLabel(next ?? -1, steps)}</strong><span>{led ? `${nextStepInfo?.color === 'W' ? '绿灯' : '红灯'}指示 ${nextStepInfo ? coordinate(nextStepInfo) : ''} · 按灯位摆放` : `按 SGF 摆放 ${nextStepInfo ? coordinate(nextStepInfo) : ''}`}{nextStepInfo?.removed.length ? ` · 同时提走 ${nextStepInfo.removed.length} 子` : ''}</span></>}</div>
+              {led && next !== null && !initial && <div className="cp-led-line"><span className={`cp-led ${nextStepInfo?.color === 'W' ? 'green' : 'red'}`} />{nextStepInfo?.color === 'W' ? '绿灯 = 下一手白棋' : '红灯 = 下一手黑棋'}</div>}
+              <div className="cp-progress" aria-label="采集进度"><i style={{ width: `${steps.length ? Math.round(((next === null ? steps.length : Math.max(0, next ?? 0)) / steps.length) * 100) : 0}%` }} /></div>
+              <div className="lab-note">已摆 {next === null ? steps.length : Math.max(0, next ?? 0)} / {steps.length} 手 · 已采 {frames.length} 帧 · 会话 {session.game_id.slice(0, 12)}</div>
+              {next !== null && <>
+                <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />{initial ? (led ? '棋盘已清空，只有指示灯亮着' : '棋盘已清空') : led ? '已按灯位摆好，棋面与 SGF 一致' : '已按 SGF 摆好，棋面一致'}</label>
+                <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || next === undefined || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onCapture(next); setBoardConfirmed(''); }}>{busy === '采集当前手' ? '正在抓取新鲜相机帧…' : initial ? '拍摄初始帧' : '已摆好 · 拍照并进入下一手'}</button>
+              </>}
+            </>}
+          </div></section>
+        </aside>
       </div>
-      <section className="vision-dataset" aria-label="数据集草稿"><div className="vision-panel-head"><h2>数据集草稿</h2><span>检查叠框 → 冻结版本 → 待上传</span></div><div className="vision-dataset-body"><div className="vision-dataset-copy"><strong>{frames.length ? `${frames.length} 张样本 · ${modeLabel(session?.mode)} · ${frozenId ? '已冻结' : '尚未冻结'}` : '还没有采集样本'}</strong><p>训练/验证按 SGF 时间段划分；冻结版本只读，失败保留原文件。</p>{frozenId && <div className="vision-session-line">版本 {frozenId}{frozen && <> · 清单 SHA256 {frozen.manifest_sha256.slice(0, 16)}</>}</div>}</div><div className="vision-dataset-actions"><button className="vision-button" type="button" disabled={locked || !frames.length} onClick={() => { const last = frames.at(-1); if (last) props.onReview(last.frame_id); }}>检查样本</button><button className="vision-button" type="button" disabled={locked || frames.length < 2} onClick={props.onFreeze}>{busy === '冻结数据集' ? '正在冻结…' : '冻结版本'}</button><button className="vision-button" type="button" disabled>上传测试环境 · 待授权</button></div>
-        {!!frames.length && <div className="vision-samples" aria-label="已采集样本">{frames.map((frame) => <button key={frame.frame_id} className="vision-sample" type="button" disabled={locked} onClick={() => props.onReview(frame.frame_id)}>{stepLabel(frame.applied_move_index, steps)}<small>{frame.frame_id.slice(0, 10)} · 查看标签</small></button>)}</div>}
+      <section className="lab-panel cp-dataset" aria-label="数据集草稿"><div className="lab-panel-head"><h2>数据集草稿</h2><small>检查叠框 → 冻结版本 → 上传测试机</small></div><div className="cp-dataset-body">
+        {frames.length ? <>
+          <div className="cp-meta"><span>会话 <strong>{session?.game_id.slice(0, 12)}</strong></span><span>模式 <strong>{modeLabel(session?.mode)}</strong></span><span>几何 <strong>{session?.geometry_revision.slice(0, 8)}</strong></span><span>已采 <strong>{frames.length}</strong> 帧</span><span>训练 / 验证按 SGF 时间段划分，不随机拆连续帧</span></div>
+          <div className="cp-samples" aria-label="已采集样本">{frames.slice().reverse().map((frame) => <button key={frame.frame_id} className="cp-sample" type="button" disabled={locked} onClick={() => props.onReview(frame.frame_id)}><strong>{stepLabel(frame.applied_move_index, steps)}</strong><span>帧 #{frame.camera_seq} · 查看标签</span></button>)}</div>
+        </> : <p className="lab-note">还没有采集样本。开始会话后，每拍一帧都会按 SGF 真值自动生成标注。</p>}
+        <div className="cp-actions"><button className="lab-btn primary" type="button" disabled={locked || frames.length < 2} onClick={props.onFreeze}>{busy === '冻结数据集' ? '正在冻结…' : '冻结数据集版本'}</button><button className="lab-btn" type="button" disabled>上传测试机 · 待授权</button><span className="lab-note">{frozenId ? `版本 ${frozenId}${frozen ? ` · 清单 SHA256 ${frozen.manifest_sha256.slice(0, 16)}` : ''} · 只读，待上传` : frames.length ? '冻结会校验每张图、标签、类目和文件 SHA-256，冻结后只读；失败保留原文件。' : ''}</span></div>
       </div></section>
-      <p className="vision-local-note">相机与训练帧仅在本机；离开页面不会断开设备，请手动断开。冻结为同步操作，请等待校验完成。</p>
+      <p className="lab-foot">相机与训练帧仅在本机；离开页面不会断开设备，请手动断开。冻结为同步操作，请等待校验完成。</p>
     </div>
-    {resumeOpen && <VisionDialog title="恢复采集会话" onClose={() => setResumeOpen(false)}><div className="vision-review-body">{sessions?.sessions.length ? <label className="vision-field">保存的会话<select value={resumeId} onChange={(event) => setResumeId(event.target.value)}><option value="">选择会话</option>{sessions.sessions.map((item) => <option key={item.game_id} value={item.game_id} disabled={item.state === 'error'}>{item.game_id.slice(0, 12)} · {item.count ?? 0} 张 · {item.state === 'error' ? `错误：${item.error}` : modeLabel(item.mode)}</option>)}</select></label> : <p>本机没有保存的采集会话。</p>}<p className="vision-status-note">恢复不会自动切换设备或模式；已保存几何须对照当前网格重新确认。</p>{sessions?.truncated && <p>仅显示前 {sessions.limit} 个会话。</p>}</div><div className="vision-review-foot"><span>原会话的几何与样本保持不变。</span><button className="vision-button" type="button" disabled={locked || !resumeId} onClick={() => { props.onResume(resumeId); setResumeOpen(false); setBoardConfirmed(''); }}>恢复所选会话</button></div></VisionDialog>}
     {inspected && <VisionDialog title={`样本检查 · ${stepLabel(inspected.applied_move_index, steps)}`} onClose={props.onCloseReview}>
       <div className="vision-review-body">
         {review ? <><img className="vision-review-image" src={jpeg(review.overlay_jpeg_base64)} alt="真实样本标注叠框" /><div className="vision-review-meta"><span>{review.class_names.map((name, id) => `${name} ${review.boxes.filter((box) => box.class_id === id).length}`).join(' · ')}</span><span>几何 {review.geometry_revision.slice(0, 12)}</span></div></> : <><p role="alert">{reviewFailure?.message}</p><p className="vision-status-note">检查未通过，未生成可用标注叠图。核对真实棋面后可重拍；若源文件损坏，服务会拒绝重拍，请新建会话，不绕过校验。</p></>}

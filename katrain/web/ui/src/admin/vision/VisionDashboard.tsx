@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, type createAdminApi } from '../api/client';
 import VisionLivePage from './VisionLivePage';
-import TrainingDashboard from './training/TrainingDashboard';
 import type { VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
 
 type Props = { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void };
-export default function VisionDashboard(props: Props) {
-  const [training, setTraining] = useState(false);
-  return training ? <TrainingDashboard {...props} onCapture={() => setTraining(false)} /> : <VisionCaptureDashboard {...props} onTraining={() => setTraining(true)} />;
-}
-function VisionCaptureDashboard({ api, onUnauthorized, onTraining }: Props & { onTraining: () => void }) {
+export default function VisionDashboard({ api, onUnauthorized }: Props) {
   const [status, setStatus] = useState<VisionStatus | null>(null);
   const [devices, setDevices] = useState<VisionDevices['candidates']>([]);
   const [sessions, setSessions] = useState<VisionSessionList | null>(null);
@@ -18,6 +13,8 @@ function VisionCaptureDashboard({ api, onUnauthorized, onTraining }: Props & { o
   const [review, setReview] = useState<VisionSampleReview | null>(null);
   const [reviewFailure, setReviewFailure] = useState<VisionReviewFailure | null>(null);
   const [frozen, setFrozen] = useState<VisionFrozen | null>(null);
+  const [labelPreview, setLabelPreview] = useState<{ overlay: VisionSampleReview | null; error: string | null } | null>(null);
+  const labelRequest = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState('读取状态');
   const [error, setError] = useState('');
   const [previewError, setPreviewError] = useState('');
@@ -139,8 +136,25 @@ function VisionCaptureDashboard({ api, onUnauthorized, onTraining }: Props & { o
     }
   }
 
+  const latestFrame = session?.frames.at(-1)?.frame_id;
+  const onLabel = useCallback(() => {
+    labelRequest.current?.abort();
+    setLabelPreview(null);
+    if (!gameId || !latestFrame || !authorized) return;
+    const controller = new AbortController(); labelRequest.current = controller;
+    api.visionReviewSample(gameId, latestFrame, controller.signal).then(
+      (overlay) => { if (!controller.signal.aborted && active.current) setLabelPreview({ overlay, error: null }); },
+      (cause: unknown) => {
+        if (controller.signal.aborted || !active.current) return;
+        if (cause instanceof AdminApiError && cause.status === 401) { fail(cause); return; }
+        setLabelPreview({ overlay: null, error: cause instanceof Error ? `最新样本检查未通过：${cause.message}` : '最新样本检查未通过。' });
+      },
+    );
+  }, [api, gameId, latestFrame, authorized, fail]);
+  useEffect(() => () => labelRequest.current?.abort(), []);
+
   return <VisionLivePage
-    onTraining={onTraining}
+    labelPreview={labelPreview} onLabel={onLabel}
     status={status} devices={devices} sessions={sessions} session={session} preview={preview}
     review={review} reviewFailure={reviewFailure} frozen={frozen} busy={busy} error={error} previewError={previewError} message={message} authorized={authorized} contextVersion={contextVersion}
     onRefresh={() => { void perform('读取状态', async () => undefined); }}

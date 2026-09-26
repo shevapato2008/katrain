@@ -33,7 +33,7 @@ describe('real training dashboard', () => {
   it('reads only capability status while disabled, without invented GPU, run or metrics', async () => {
     const { api, setStatus } = mockApi();
     setStatus({ enabled: false, state: 'unknown', reason: 'Mac local training disabled', observed_at: 'now', active_run_id: null, gpu_ids: [] });
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await screen.findByText('Mac local training disabled');
     expect(api.trainingDatasets).not.toHaveBeenCalled();
     expect(api.trainingStart).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe('real training dashboard', () => {
 
   it('starts only explicitly confirmed allowlist input, with one UUID and no automatic training', async () => {
     const { api } = mockApi(); const user = userEvent.setup();
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     const create = await screen.findByRole('button', { name: '创建新运行' });
     await waitFor(() => expect(create).toBeEnabled());
     expect(api.trainingStart).not.toHaveBeenCalled();
@@ -63,7 +63,7 @@ describe('real training dashboard', () => {
 
   it('keeps same-run observations and never treats cancellation intent as an exited process', async () => {
     const { api } = mockApi(true); const user = userEvent.setup();
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await screen.findByText('Epoch 12 / 100');
     expect(screen.getAllByText('—')).toHaveLength(3);
     expect(screen.getByLabelText('运行日志')).toHaveTextContent('epoch 12 from this run');
@@ -79,7 +79,7 @@ describe('real training dashboard', () => {
   it('preserves request UUID on an uncertain create failure rather than creating a second run', async () => {
     const { api } = mockApi(); const user = userEvent.setup();
     api.trainingStart = vi.fn().mockRejectedValueOnce(new AdminApiError(0, 'response lost')).mockResolvedValueOnce(run());
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await waitFor(() => expect(screen.getByRole('button', { name: '创建新运行' })).toBeEnabled());
     await user.click(screen.getByRole('button', { name: '创建新运行' }));
     await user.click(screen.getByRole('button', { name: '确认操作' }));
@@ -93,7 +93,7 @@ describe('real training dashboard', () => {
   it('stops polling and aborts all reads on unauthorized or unmount', async () => {
     const { api } = mockApi(); const unauthorized = vi.fn();
     api.trainingStatus = vi.fn(async () => { throw new AdminApiError(401, 'expired'); });
-    render(<TrainingDashboard api={api} onUnauthorized={unauthorized} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={unauthorized} />);
     await waitFor(() => expect(unauthorized).toHaveBeenCalledOnce());
     expect(vi.mocked(api.trainingStatus).mock.calls[0][0]?.aborted).toBe(true);
     expect(api.trainingDatasets).not.toHaveBeenCalled();
@@ -113,7 +113,7 @@ describe('real training dashboard', () => {
       }
       return run();
     });
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await act(async () => {});
     await act(async () => { fireEvent.change(screen.getByRole('combobox', { name: '运行历史' }), { target: { value: history.id } }); });
     finished = true;
@@ -137,7 +137,7 @@ describe('real training dashboard', () => {
       return { ...run(), state: 'completed', model_id: model.id, epoch: 100 };
     });
     api.trainingModels = vi.fn(async () => published ? [model] : []);
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await waitFor(() => expect(screen.getByRole('table', { name: '模型版本' })).toHaveTextContent('model-dddddddddddddddd'));
     expect(api.trainingRun).toHaveBeenCalledOnce();
     expect(screen.getByRole('button', { name: '创建新运行' })).toBeEnabled();
@@ -147,7 +147,7 @@ describe('real training dashboard', () => {
     vi.useFakeTimers();
     const { api } = mockApi(true);
     api.trainingRun = vi.fn(async () => { throw new AdminApiError(503, 'worker observation unavailable'); });
-    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await act(async () => {});
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
     expect(api.trainingRun).toHaveBeenCalledTimes(4);
@@ -171,7 +171,7 @@ describe('real training dashboard', () => {
       if (++activeCalls === 2) return new Promise<TrainingRun>((resolve) => { complete = resolve; });
       return run();
     });
-    const view = render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} onCapture={vi.fn()} />);
+    const view = render(<TrainingDashboard api={api} onUnauthorized={vi.fn()} />);
     await act(async () => {});
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(api.trainingRun).toHaveBeenCalledTimes(2);

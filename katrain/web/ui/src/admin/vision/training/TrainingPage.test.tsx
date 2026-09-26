@@ -10,7 +10,7 @@ const props = (): TrainingProps => ({
   datasets: [], presets: null, runs: [], run: null, models: [], parameters,
   selection: { dataset_id: '', weights_id: '', augmentation: '', gpu_id: '' }, pendingAction: null,
   busy: '', error: '', message: '', canCreate: false, canCancel: false, retryCreate: false, authorized: true,
-  onSelectionChange: vi.fn(), onParametersChange: vi.fn(), onCreate: vi.fn(), onCancel: vi.fn(), onDismiss: vi.fn(), onConfirm: vi.fn(), onRefresh: vi.fn(), onRunChange: vi.fn(), onCapture: vi.fn(),
+  onSelectionChange: vi.fn(), onParametersChange: vi.fn(), onCreate: vi.fn(), onCancel: vi.fn(), onDismiss: vi.fn(), onConfirm: vi.fn(), onRefresh: vi.fn(), onRunChange: vi.fn(),
 });
 describe('real training presentation', () => {
   it('does not invent a device, run, metric or model when disabled', () => {

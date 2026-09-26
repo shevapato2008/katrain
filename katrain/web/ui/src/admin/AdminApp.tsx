@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen, Camera, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import SGFBoard, { type SGFPayload } from '../components/tutorials/SGFBoard';
 import galaxyLogo from '../../../../img/logo-white.png';
 import { AdminApiError, createAdminApi, tutorialAssetUrl, type TutorialBook, type TutorialBookDetail, type TutorialFigure, type TutorialSection, type TutorialSectionDetail } from './api/client';
 import CronDashboard from './cron/CronDashboard';
 import VisionDashboard from './vision/VisionDashboard';
+import TrainingDashboard from './vision/training/TrainingDashboard';
+import AdminSidebar from './AdminSidebar';
+import { isLabPage, type AdminPage } from './adminPages';
 import './AdminApp.css';
 
 const TOKEN_KEY = 'katrain_admin_session';
@@ -23,7 +26,10 @@ const boardEdited = (draft: Draft) =>
 export default function AdminApp() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
-  const [page, setPage] = useState<'tutorial' | 'cron' | 'vision'>('tutorial');
+  const [page, setPage] = useState<AdminPage>('tutorial');
+  const [labOpen, setLabOpen] = useState(false);
+  const openPage = (next: AdminPage) => { setPage(next); if (isLabPage(next)) setLabOpen(true); };
+  const toggleLab = () => { if (labOpen) setLabOpen(false); else openPage(isLabPage(page) ? page : 'capture'); };
   const [adminName, setAdminName] = useState('');
   const [environment, setEnvironment] = useState('后台环境');
   const [username, setUsername] = useState('');
@@ -269,7 +275,7 @@ export default function AdminApp() {
   if (checkingSession) return <div className="admin-app">{header}<div className="admin-load-state" role="status">正在检查后台会话…</div></div>;
   if (!signedIn) return <div className="admin-app">{header}<section className="admin-signin-page" aria-label="后台登录"><form className="admin-signin-card" onSubmit={signIn}><h1>登录管理后台</h1><p>通过 SSH 隧道访问的后台专用账号，与公开 Galaxy 账号独立。</p><label htmlFor="admin-username">后台用户名</label><input id="admin-username" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" placeholder="输入后台用户名" required /><label htmlFor="admin-password">密码</label><input id="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder="输入密码" required />{loginError && <p className="admin-form-error" role="alert">{loginError}</p>}<button type="submit" disabled={busy}>{busy ? '正在登录…' : '登录'}</button><div className="admin-signin-help">仅供授权管理员使用；无公开注册入口。</div></form></section></div>;
 
-  return <div className={`admin-app ${page === 'tutorial' ? 'admin-app-tutorial' : 'admin-app-cron'}`}>{header}<div className="admin-wrap"><aside className="admin-side" aria-label="管理导航"><div className="admin-sidehead">内容与服务</div><button type="button" className={`admin-nav ${page === 'tutorial' ? 'active' : ''}`} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: 0, fontFamily: 'inherit', background: page === 'tutorial' ? 'var(--admin-active)' : 'transparent' }} onClick={() => setPage('tutorial')}><BookOpen aria-hidden="true" />教程管理</button><button type="button" className={`admin-nav ${page === 'cron' ? 'active' : ''}`} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: 0, fontFamily: 'inherit', background: page === 'cron' ? 'var(--admin-active)' : 'transparent' }} onClick={() => setPage('cron')}><Clock3 aria-hidden="true" />定时任务</button><button type="button" className={`admin-nav ${page === 'vision' ? 'active' : ''}`} style={{ width: '100%', textAlign: 'left', cursor: 'pointer', border: 0, fontFamily: 'inherit', background: page === 'vision' ? 'var(--admin-active)' : 'transparent' }} onClick={() => setPage('vision')}><Camera aria-hidden="true" />视觉实验室</button><div className="admin-sidefoot">当前环境：{environmentLabel}<br />{page === 'cron' ? '此页面只读，不会运行或暂停任务。' : page === 'vision' ? '相机与训练帧只在 Mac 本机采集。' : '修改会写入该环境的教程数据'}</div></aside>{page === 'cron' ? <CronDashboard api={api} onUnauthorized={() => reportFailure(new AdminApiError(401, '后台会话已失效'))} /> : page === 'vision' ? <VisionDashboard api={api} onUnauthorized={() => reportFailure(new AdminApiError(401, '后台会话已失效'))} /> : <main className="admin-main">
+  return <div className={`admin-app ${page === 'tutorial' ? 'admin-app-tutorial' : 'admin-app-cron'}`}>{header}<div className="admin-wrap"><AdminSidebar page={page} labOpen={labOpen} environmentLabel={environmentLabel} onPage={openPage} onToggleLab={toggleLab} />{page === 'cron' ? <CronDashboard api={api} onUnauthorized={() => reportFailure(new AdminApiError(401, '后台会话已失效'))} /> : page === 'capture' ? <VisionDashboard api={api} onUnauthorized={() => reportFailure(new AdminApiError(401, '后台会话已失效'))} /> : page === 'training' ? <TrainingDashboard api={api} onUnauthorized={() => reportFailure(new AdminApiError(401, '后台会话已失效'))} /> : <main className="admin-main">
     <div className="admin-heading"><div><div className="admin-title">教程管理</div><div className="admin-crumb">{book?.title ?? '教材'} / {chapter?.title ?? '章节'} / {section?.title ?? '小节'} / {figure?.figure_label ?? '图'}</div></div><div className="admin-headcontrols"><select aria-label="选择教材" value={bookId ?? ''} onChange={(event) => { setBookId(Number(event.target.value)); setChapterId(null); setSectionId(null); resetFigureState(); }}>{books?.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select><select aria-label="选择章节" value={chapterId ?? ''} onChange={(event) => { setChapterId(Number(event.target.value)); setSectionId(null); resetFigureState(); }}>{bookDetail?.chapters.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select><select aria-label="选择小节" value={sectionId ?? ''} onChange={(event) => { setSectionId(Number(event.target.value)); resetFigureState(); }}>{sections?.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></div></div>
     {!figure && (loading || error || (books && books.length === 0) || (sections && sections.length === 0) || (sectionDetail && sectionDetail.figures.length === 0)) && <div className="admin-load-state" role={error ? 'alert' : 'status'}>{error || (loading ? '正在读取教程数据…' : books?.length === 0 ? '当前环境没有教程教材。' : sections?.length === 0 ? '当前章节没有小节。' : '当前小节没有棋图。')}{error && <button onClick={() => { setError(''); setRetry((value) => value + 1); }}>重试</button>}</div>}
     {figure && <div className="admin-workspace">

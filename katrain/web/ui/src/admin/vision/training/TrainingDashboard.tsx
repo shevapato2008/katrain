@@ -3,7 +3,7 @@ import { AdminApiError, type createAdminApi } from '../../api/client';
 import TrainingPage, { type TrainingPending, type TrainingSelection } from './TrainingPage';
 import type { TrainingDataset, TrainingModel, TrainingParameters, TrainingPresets, TrainingRun, TrainingStartInput, TrainingStatus } from './types';
 
-export default function TrainingDashboard({ api, onUnauthorized, onCapture }: { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void; onCapture: () => void }) {
+export default function TrainingDashboard({ api, onUnauthorized }: { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void }) {
   const [status, setStatus] = useState<TrainingStatus | null>(null);
   const [datasets, setDatasets] = useState<TrainingDataset[]>([]);
   const [presets, setPresets] = useState<TrainingPresets | null>(null);
@@ -182,6 +182,5 @@ export default function TrainingDashboard({ api, onUnauthorized, onCapture }: { 
     onParametersChange={(value) => { const changedIntent = retryInput.current !== null; retryInput.current = null; setParameters(value); if (changedIntent) void perform('核实当前占用', (signal, version) => load(signal, version, true)); }} onCreate={createIntent}
     onCancel={() => { if (canCancel && run) setPendingAction({ kind: 'cancel', run_id: run.id }); }} onConfirm={confirm} onDismiss={() => setPendingAction(null)}
     onRefresh={() => { void perform('读取训练状态', (signal, version) => load(signal, version, true)); }}
-    onRunChange={(id) => { selectedId.current = id; setRun(null); void perform('读取运行', (signal, version) => load(signal, version, false, id)); }}
-    onCapture={onCapture} />;
+    onRunChange={(id) => { selectedId.current = id; setRun(null); void perform('读取运行', (signal, version) => load(signal, version, false, id)); }} />;
 }

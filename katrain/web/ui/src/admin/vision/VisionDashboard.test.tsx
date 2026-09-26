@@ -218,6 +218,17 @@ describe('live vision journey', () => {
     expect(screen.getByRole('button', { name: '继续' })).toBeInTheDocument();
   });
 
+  it('marks the lit guidance LED on the raw preview and can hide it', async () => {
+    const { api, setStatus } = mockApi(); const user = userEvent.setup();
+    setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, led: { ...status().led, state: 'connected' }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' } });
+    api.visionPreview = vi.fn(async () => ({ frame_id: 'p', camera_seq: 8, captured_at: 'now', captured_at_source: 'runtime', camera_monotonic_ts: 10, geometry_revision: 'geometry-1', raw_jpeg_base64: 'raw', warped_jpeg_base64: 'warp', geometry_overlay_jpeg_base64: 'grid', led_points: [{ row: 0, col: 2, color: 'white', x: 0.3, y: 0.2 }], frame_width: 1920, frame_height: 1080 }));
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    expect(await screen.findByRole('img', { name: '指示灯位置' })).toBeInTheDocument();
+    expect(screen.getByText('绿灯 C19')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('显示指示灯位置'));
+    expect(screen.queryByRole('img', { name: '指示灯位置' })).not.toBeInTheDocument();
+  });
+
   it('honestly disables nonlocal vision without listing or opening devices', async () => {
     const { api, setStatus } = mockApi(); setStatus({ ...status(), enabled: false });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);

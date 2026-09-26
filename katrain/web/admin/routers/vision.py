@@ -183,6 +183,9 @@ class PreviewOut(BaseModel):
     raw_jpeg_base64: str
     warped_jpeg_base64: str | None
     geometry_overlay_jpeg_base64: str | None
+    led_points: list[dict] = []
+    frame_width: int | None = None
+    frame_height: int | None = None
 
 
 def _call(request: Request, operation: str, *args, **kwargs):

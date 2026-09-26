@@ -48,6 +48,7 @@ export default function VisionLivePage(props: Props) {
   const [boardConfirmed, setBoardConfirmed] = useState('');
   const [geometryConfirmed, setGeometryConfirmed] = useState('');
   const [grid, setGrid] = useState(true);
+  const [ledOverlay, setLedOverlay] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
   const [readingFile, setReadingFile] = useState(false);
@@ -137,7 +138,7 @@ export default function VisionLivePage(props: Props) {
   const label = props.labelPreview;
   const tab = (id: typeof view, text: string, extra?: ReactNode) => <button type="button" role="tab" className="lab-tab" aria-selected={view === id} onClick={() => setView(id)}>{text}{extra}</button>;
   const viewer = () => {
-    if (view === 'raw') return raw ? <><img src={raw} alt="原始相机画面" /><span className="lab-tag">原始相机画面 · 相机帧 #{preview?.camera_seq}</span></> : <div className="lab-empty"><Camera aria-hidden="true" /><span>{connected ? '等待新鲜相机帧' : '尚未连接本机摄像头'}</span><small>{connected ? '预览最多 2 帧/秒' : '在右侧第 1 步显式连接；本页不会自动打开设备'}</small></div>;
+    if (view === 'raw') return raw ? <><div className="cp-figure"><img src={raw} alt="原始相机画面" />{led && ledOverlay && preview?.frame_width && preview.frame_height && !!preview.led_points?.length && <svg className="cp-leds" viewBox={`0 0 ${preview.frame_width} ${preview.frame_height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="指示灯位置">{preview.led_points.map((point) => <circle key={`${point.row}-${point.col}`} className={`cp-led-mark ${point.color}`} cx={point.x * preview.frame_width!} cy={point.y * preview.frame_height!} r={preview.frame_width! / 70} />)}</svg>}</div><span className="lab-tag">原始相机画面 · 相机帧 #{preview?.camera_seq}</span>{led && ledOverlay && !!preview?.led_points?.length && <span className="lab-legend"><span>{preview.led_points.map((point) => `${point.color === 'remove' ? '蓝灯' : point.color === 'white' ? '绿灯' : '红灯'} ${'ABCDEFGHJKLMNOPQRST'[point.col]}${19 - point.row}`).join(' · ')}</span></span>}</> : <div className="lab-empty"><Camera aria-hidden="true" /><span>{connected ? '等待新鲜相机帧' : '尚未连接本机摄像头'}</span><small>{connected ? '预览最多 2 帧/秒' : '在右侧第 1 步显式连接；本页不会自动打开设备'}</small></div>;
     if (view === 'warp') return warp ? <><img src={warp} alt="标定后的画面" /><span className="lab-tag">warped 校正 · 几何 {preview?.geometry_revision?.slice(0, 12)} · 同一相机帧</span></> : <div className="lab-empty"><Activity aria-hidden="true" /><span>{!connected ? '尚未连接本机摄像头' : status?.geometry.state === 'required' ? '等待空盘标定' : '等待同帧校正画面'}</span><small>未标定时不生成校正画面</small></div>;
     if (label?.overlay) return <><img src={jpeg(label.overlay.overlay_jpeg_base64)} alt="最新样本标注叠框" /><span className="lab-tag">最新样本 · {stepLabel(label.overlay.applied_move_index, steps)} · 按 SGF 真值自动标注</span><span className="lab-legend">{label.overlay.class_names.map((name, id) => <span key={name}>{name} {label.overlay?.boxes.filter((box) => box.class_id === id).length}</span>)}</span></>;
     return <div className="lab-empty"><Layers aria-hidden="true" /><span>{label?.error ?? (frames.length ? '正在读取最新样本叠框' : '尚无样本')}</span><small>{frames.length ? '标签来自 SGF 棋面真值' : '拍摄第一帧后显示自动标注叠框'}</small></div>;
@@ -154,7 +155,7 @@ export default function VisionLivePage(props: Props) {
           <div className="lab-tabs" role="tablist" aria-label="预览画面">{tab('raw', '原始画面')}{tab('warp', 'warped 校正')}{tab('label', '标注预览', frames.length ? <span className="lab-chip">{frames.length}</span> : null)}</div>
           <div className="lab-viewer cp-viewer">{viewer()}</div>
           {previewError && <p className="cp-preview-error" role="alert">{previewError}</p>}
-          <div className="cp-toolbar"><label className="lab-check"><input type="checkbox" checked={grid} onChange={(event) => { setGrid(event.target.checked); if (!event.target.checked) { setGeometryConfirmed(''); props.onPausePreview(false); } }} />显示标定网格</label><span className="cp-spacer" /><span>预览最多 2 帧/秒 · 非训练视频</span></div>
+          <div className="cp-toolbar"><label className="lab-check"><input type="checkbox" checked={grid} onChange={(event) => { setGrid(event.target.checked); if (!event.target.checked) { setGeometryConfirmed(''); props.onPausePreview(false); } }} />显示标定网格</label>{led && <label className="lab-check"><input type="checkbox" checked={ledOverlay} onChange={(event) => setLedOverlay(event.target.checked)} />显示指示灯位置</label>}<span className="cp-spacer" /><span>预览最多 2 帧/秒 · 非训练视频</span></div>
         </section>
         <aside className="lab-panel cp-steps" aria-label="采集步骤">
           <section className={`lab-step ${stepState(1)}`}>{stepHead(1, '连接设备', connected ? <span className="lab-chip ok">已连接</span> : undefined)}<div className="lab-step-body">

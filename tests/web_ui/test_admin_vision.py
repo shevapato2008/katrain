@@ -1345,3 +1345,21 @@ def test_a_failed_fiducial_solve_falls_back_to_the_last_good_frame(led_client):
     path.write_text(json.dumps(manifest))
     second = take(client, game_id, 0).json()["geometry_correction"]
     assert second["status"] == "stale" and second["source"] == "last_good" and second["M"] == good
+
+
+def test_preview_reports_where_the_lit_guidance_leds_are(led_client):
+    client, _ = led_client
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    take(client, game_id)
+    runtime = client.app.state.vision_runtime
+    runtime._last_preview = None
+    preview = client.get(f"{PATH}/preview", headers=headers()).json()
+    assert [(p["row"], p["col"], p["color"]) for p in preview["led_points"]] == [(0, 1, "black")]
+    point = preview["led_points"][0]
+    assert 0 <= point["x"] <= 1 and 0 <= point["y"] <= 1 and preview["frame_width"] == 210
+    take(client, game_id, 0)
+    take(client, game_id, 1)
+    post(client, "removal-guide", game_id=game_id, move_index=2)
+    runtime._last_preview = None
+    lit = client.get(f"{PATH}/preview", headers=headers()).json()["led_points"]
+    assert [(p["row"], p["col"], p["color"]) for p in lit] == [(0, 0, "remove")]

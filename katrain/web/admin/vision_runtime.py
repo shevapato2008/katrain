@@ -98,6 +98,7 @@ class AdminVisionRuntime:
         self._model_loader = None  # None -> real ultralytics loader; tests inject a fake
         self._clock = time.monotonic
         self._auto = None  # stability window for the one position auto-advance is watching
+        self._led_guidance = []  # what the board LEDs are showing right now, as last commanded
         self._diagnostics = None
         self._diagnostic_adapter_factory = None  # None -> real InProcessAdapter; tests inject a fake
         self._diagnostics_clock = time.monotonic
@@ -232,6 +233,7 @@ class AdminVisionRuntime:
 
     def _release_devices(self):
         self._auto = None
+        self._led_guidance = []
         errors = []
         for name in ("led", "camera"):
             device = getattr(self, name)
@@ -559,6 +561,8 @@ class AdminVisionRuntime:
         if not result["idempotent"]:
             self._frozen = None
             self._updated_at = _now()
+            if self.mode == "led4":
+                self._led_guidance = [dict(result["led_point"])] if result.get("led_point") else []
         return result
 
     def _session_fiducial(self, session) -> str | None:
@@ -829,7 +833,9 @@ class AdminVisionRuntime:
         point = session["frames"][-1]["led_point"] if session["frames"] else None
         try:
             if session.get("ended_at") or point is None:
+                self._led_guidance = []
                 return self._led_ok(self.led.clear(strict=True))
+            self._led_guidance = [dict(point)]
             return self._led_ok(self.led.set_points([point], strict=True))
         except Exception:
             log.exception("Admin vision LED guidance restore failed")
@@ -856,6 +862,7 @@ class AdminVisionRuntime:
                 raise VisionError(503, "LED removal guidance failed") from exc
             if not self._led_ok(shown):
                 raise VisionError(503, "LED removal guidance failed")
+            self._led_guidance = [{**point, "color": "remove"} for point in points]
             return {"game_id": game_id, "move_index": move_index, "points": points}
 
     def undo_last(self, game_id: str, frame_id: str, operator_confirmed: bool) -> dict:
@@ -974,6 +981,7 @@ class AdminVisionRuntime:
                 observed_at = _now()
                 warped = None
                 overlay = None
+                led_points = []
                 if self.geometry is not None:
                     from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
 
@@ -998,6 +1006,18 @@ class AdminVisionRuntime:
                             raise ValueError("Invalid overlay projection")
                         for grid in (points, points.transpose(1, 0, 2)):
                             cv2.polylines(overlay, [line.astype(np.int32) for line in grid], False, (0, 220, 255), 1)
+                        if self.mode == "led4":
+                            height, width = frame.shape[:2]
+                            led_points = [
+                                {
+                                    "row": point["row"],
+                                    "col": point["col"],
+                                    "color": point.get("color", "black"),
+                                    "x": float(points[point["row"], point["col"], 0] / width),
+                                    "y": float(points[point["row"], point["col"], 1] / height),
+                                }
+                                for point in self._led_guidance
+                            ]
                 frame_id = str(uuid4())
                 result = {
                     "frame_id": frame_id,
@@ -1009,6 +1029,9 @@ class AdminVisionRuntime:
                     "raw_jpeg_base64": _jpeg(frame),
                     "warped_jpeg_base64": _jpeg(warped) if warped is not None else None,
                     "geometry_overlay_jpeg_base64": _jpeg(overlay) if overlay is not None else None,
+                    "led_points": led_points,
+                    "frame_width": int(frame.shape[1]),
+                    "frame_height": int(frame.shape[0]),
                 }
                 self._verification_preview = (
                     {

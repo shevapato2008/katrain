@@ -48,6 +48,7 @@ export type VisionPreview = {
   frame_id: string; captured_at: string; captured_at_source: string; camera_seq: number;
   camera_monotonic_ts: number; geometry_revision: string | null;
   raw_jpeg_base64: string; warped_jpeg_base64: string | null; geometry_overlay_jpeg_base64: string | null;
+  led_points?: { row: number; col: number; color: string; x: number; y: number }[]; frame_width?: number | null; frame_height?: number | null;
 };
 export type VisionCaptureInput = {
   game_id: string; move_index: number; operator_confirmed: boolean; overwrite_existing: boolean;

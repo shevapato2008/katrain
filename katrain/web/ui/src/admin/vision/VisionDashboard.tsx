@@ -61,7 +61,8 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     ]) : [null, null, null, null];
     if (!active.current || signal.aborted || version !== generation.current) return;
     statusSnapshot.current = next;
-    setStatus(next); setDevices(available?.candidates ?? []); setSessions(saved); setSession(selected); setModels(registry);
+    setStatus(next); setDevices(available?.candidates ?? []); setSessions(saved); setSession(selected);
+    setModels(registry && Array.isArray(registry.models) ? registry : null);
     setReview(null); setReviewFailure(null);
     setFrozen((previous) => next.dataset.state === 'frozen' && previous?.id === next.dataset.id ? previous : null);
   }, [api]);
@@ -201,7 +202,10 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     const controller = new AbortController(); kifuRequest.current = controller;
     setKifu((previous) => ({ ...previous, query, loading: true, error: '' }));
     api.kifuSearch(query, controller.signal).then(
-      (list) => { if (!controller.signal.aborted && active.current) setKifu({ query, list, error: '', loading: false }); },
+      (list) => {
+        if (controller.signal.aborted || !active.current) return;
+        setKifu(Array.isArray(list?.items) ? { query, list, error: '', loading: false } : { query, list: null, error: '棋谱库返回了无法识别的数据', loading: false });
+      },
       (cause: unknown) => {
         if (controller.signal.aborted || !active.current) return;
         if (cause instanceof AdminApiError && cause.status === 401) { fail(cause); return; }

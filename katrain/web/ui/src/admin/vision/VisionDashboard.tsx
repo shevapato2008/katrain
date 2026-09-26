@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, type createAdminApi } from '../api/client';
 import VisionLivePage from './VisionLivePage';
-import type { VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
+import type { KifuAlbumList, VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
 
 type Props = { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void };
 export default function VisionDashboard({ api, onUnauthorized }: Props) {
@@ -15,6 +15,8 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
   const [frozen, setFrozen] = useState<VisionFrozen | null>(null);
   const [labelPreview, setLabelPreview] = useState<{ overlay: VisionSampleReview | null; error: string | null } | null>(null);
   const labelRequest = useRef<AbortController | null>(null);
+  const [kifu, setKifu] = useState<{ query: string; list: KifuAlbumList | null; error: string; loading: boolean }>({ query: '', list: null, error: '', loading: false });
+  const kifuRequest = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState('读取状态');
   const [error, setError] = useState('');
   const [previewError, setPreviewError] = useState('');
@@ -151,10 +153,29 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
       },
     );
   }, [api, gameId, latestFrame, authorized, fail]);
-  useEffect(() => () => labelRequest.current?.abort(), []);
+  useEffect(() => () => { labelRequest.current?.abort(); kifuRequest.current?.abort(); }, []);
+  const onSearchKifu = useCallback((query: string) => {
+    kifuRequest.current?.abort();
+    if (!authorized) return;
+    const controller = new AbortController(); kifuRequest.current = controller;
+    setKifu((previous) => ({ ...previous, query, loading: true, error: '' }));
+    api.kifuSearch(query, controller.signal).then(
+      (list) => { if (!controller.signal.aborted && active.current) setKifu({ query, list, error: '', loading: false }); },
+      (cause: unknown) => {
+        if (controller.signal.aborted || !active.current) return;
+        if (cause instanceof AdminApiError && cause.status === 401) { fail(cause); return; }
+        setKifu({ query, list: null, loading: false, error: cause instanceof Error ? cause.message : '棋谱库暂不可用。' });
+      },
+    );
+  }, [api, authorized, fail]);
 
   return <VisionLivePage
     labelPreview={labelPreview} onLabel={onLabel}
+    kifu={kifu} onSearchKifu={onSearchKifu}
+    onImportKifu={(id, expectedStatus, expectedContext) => {
+      if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
+      void perform('导入棋谱', async (signal) => { const album = await api.kifuAlbum(id, signal); return api.visionImportSgf(album.sgf_content, signal); }, () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
+    }}
     status={status} devices={devices} sessions={sessions} session={session} preview={preview}
     review={review} reviewFailure={reviewFailure} frozen={frozen} busy={busy} error={error} previewError={previewError} message={message} authorized={authorized} contextVersion={contextVersion}
     onRefresh={() => { void perform('读取状态', async () => undefined); }}
@@ -163,7 +184,7 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     onCalibrate={() => { void perform('空盘标定', (signal) => api.visionCalibrate(true, signal), () => setMessage('标定已保存；更换视角后须导入新会话，原会话几何不会被改写。')); }}
     onImport={(text, expectedStatus, expectedContext) => {
       if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
-      void perform('导入棋谱', (signal) => api.visionImportSgf(text, signal), () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先采集初始空盘。'); });
+      void perform('导入棋谱', (signal) => api.visionImportSgf(text, signal), () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
     }}
     onResume={(id) => { void perform('恢复会话', (signal) => api.visionResumeSession(id, signal), () => { setFrozen(null); setReview(null); setMessage('会话已恢复。保存的标定须用当前网格复核。'); }); }}
     onPausePreview={setPreviewPaused}

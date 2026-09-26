@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw } from 'lucide-react';
+import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw, Search } from 'lucide-react';
 import VisionDialog from './VisionDialog';
-import type { VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
+import type { KifuAlbumList, KifuAlbumSummary, VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
 import './VisionCapturePage.css';
 import './lab.css';
 
@@ -16,6 +16,8 @@ type Props = {
   onCapture: (index: number, retake?: boolean) => void; onReview: (frame: string) => void;
   onCloseReview: () => void; onFreeze: () => void;
   labelPreview: { overlay: VisionSampleReview | null; error: string | null } | null; onLabel: () => void;
+  kifu: { query: string; list: KifuAlbumList | null; error: string; loading: boolean };
+  onSearchKifu: (query: string) => void; onImportKifu: (id: number, expectedStatus: VisionStatus, expectedContext: number) => void;
 };
 const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? '指示灯 · 四类' : mode === 'stones2' ? '无灯 · 双类' : '模式未选择';
 const coordinate = (step: VisionStep) => step.col !== null && step.row !== null ? `${'ABCDEFGHJKLMNOPQRST'[step.col]}${19 - step.row}` : '';
@@ -24,6 +26,8 @@ const stepLabel = (index: number, steps: VisionStep[]) => {
   const step = steps.find((item) => item.move_index === index);
   return step ? `第 ${index + 1} 手 · ${step.color === 'B' ? '黑棋' : '白棋'} ${coordinate(step)}${step.kind === 'setup' ? '（摆子）' : ''}` : `第 ${index + 1} 手`;
 };
+const rank = (value: string | null) => value ? ` ${value}` : '';
+const kifuTitle = (album: KifuAlbumSummary) => [album.event, album.round_name].filter(Boolean).join(' ') || `${album.player_black} 对 ${album.player_white}`;
 const jpeg = (base64?: string | null) => base64 ? `data:image/jpeg;base64,${base64}` : undefined;
 const readFile = (file: File, reader: FileReader) => new Promise<string>((resolve, reject) => {
   reader.onload = () => resolve(String(reader.result));
@@ -44,7 +48,9 @@ export default function VisionLivePage(props: Props) {
   const [fileError, setFileError] = useState('');
   const [readingFile, setReadingFile] = useState(false);
   const [chooseNew, setChooseNew] = useState(false);
-  const [source, setSource] = useState<'sgf' | 'resume'>('sgf');
+  const [source, setSource] = useState<'search' | 'sgf' | 'resume'>('search');
+  const [query, setQuery] = useState('');
+  const [albumId, setAlbumId] = useState<number | null>(null);
   const [view, setView] = useState<'raw' | 'warp' | 'label'>('raw');
   const [resumeId, setResumeId] = useState('');
   const [retakeConfirmed, setRetakeConfirmed] = useState('');
@@ -79,6 +85,10 @@ export default function VisionLivePage(props: Props) {
   }, [fileContext]);
 
   const latestFrame = frames.at(-1)?.frame_id;
+  const selectedAlbum = props.kifu.list?.items.find((item) => item.id === albumId);
+  const onSearchKifu = props.onSearchKifu;
+  const kifuLoaded = props.kifu.list !== null || props.kifu.loading || !!props.kifu.error;
+  useEffect(() => { if (source === 'search' && enabled && connected && !kifuLoaded) onSearchKifu(''); }, [source, enabled, connected, kifuLoaded, onSearchKifu]);
   const onLabel = props.onLabel;
   useEffect(() => { if (view === 'label' && latestFrame) onLabel(); }, [view, latestFrame, onLabel]);
 
@@ -155,8 +165,15 @@ export default function VisionLivePage(props: Props) {
               <p className="lab-note">{frames.length} 张样本 · {steps.length} 个 SGF 步骤{skippedPasses > 0 && `（${skippedPasses} 次停着不采帧）`} · 模式与几何在本会话内固定。</p>
               <button className="lab-btn small ghost" type="button" disabled={locked} onClick={() => { setChooseNew(true); setFile(null); }}>选择新棋谱</button>
             </> : <>
-              <div className="lab-seg" role="group" aria-label="棋谱来源"><button type="button" aria-pressed={source === 'sgf'} onClick={() => setSource('sgf')}>导入 SGF</button><button type="button" aria-pressed={source === 'resume'} onClick={() => setSource('resume')}>恢复会话</button></div>
-              {source === 'sgf' ? <>
+              <div className="lab-seg" role="group" aria-label="棋谱来源"><button type="button" aria-pressed={source === 'search'} onClick={() => setSource('search')}>搜索棋谱库</button><button type="button" aria-pressed={source === 'sgf'} onClick={() => setSource('sgf')}>导入 SGF</button><button type="button" aria-pressed={source === 'resume'} onClick={() => setSource('resume')}>恢复会话</button></div>
+              {source === 'search' ? <>
+                <form className="lab-row" onSubmit={(event) => { event.preventDefault(); setAlbumId(null); props.onSearchKifu(query); }}><label className="lab-field cp-grow">搜索棋谱库<input value={query} maxLength={100} placeholder="棋手、赛事、年份" disabled={!enabled || !connected} onChange={(event) => setQuery(event.target.value)} /></label><button className="lab-btn" type="submit" disabled={!enabled || !connected || props.kifu.loading}><Search aria-hidden="true" />搜索</button></form>
+                {props.kifu.error ? <div className="lab-banner bad" role="alert"><Info aria-hidden="true" /><span><strong>棋谱库暂不可用</strong><br />{props.kifu.error}。可改用「导入 SGF」。</span></div>
+                  : props.kifu.list?.items.length ? <div className="cp-kifu-list" role="listbox" aria-label="棋谱搜索结果">{props.kifu.list.items.map((album) => <button key={album.id} type="button" role="option" className="cp-kifu" aria-selected={albumId === album.id} disabled={locked} onClick={() => setAlbumId(album.id)}><strong>{kifuTitle(album)}</strong><span>黑 {album.player_black}{rank(album.black_rank)} · 白 {album.player_white}{rank(album.white_rank)}</span><span>{[album.date_played, `${album.move_count} 手`, album.result].filter(Boolean).join(' · ')}</span></button>)}</div>
+                  : <p className="lab-note">{props.kifu.loading ? '正在搜索棋谱库…' : !connected ? '连接并标定后可搜索棋谱库。' : props.kifu.list ? '没有匹配的棋谱，换个关键词试试。' : ''}</p>}
+                {props.kifu.list && !props.kifu.error && <p className="lab-note">{props.kifu.query ? `「${props.kifu.query}」` : '最新'}共 {props.kifu.list.total} 局{props.kifu.list.total > props.kifu.list.items.length ? `，显示前 ${props.kifu.list.items.length} 局` : ''} · 只列 19 路棋谱</p>}
+                <button className="lab-btn primary full" type="button" disabled={locked || !ready || !selectedAlbum} onClick={() => { if (selectedAlbum && status) { props.onImportKifu(selectedAlbum.id, status, props.contextVersion); setChooseNew(false); } }}>{selectedAlbum ? `开始采集 · ${kifuTitle(selectedAlbum)} · ${selectedAlbum.move_count} 手` : '先选择一局棋谱'}</button>
+              </> : source === 'sgf' ? <>
                 <label className="lab-field">SGF 文件<input type="file" accept=".sgf" disabled={locked} onChange={(event) => {
                   const selected = event.target.files?.[0] ?? null;
                   setFile(selected && selected.size <= 2 * 1024 * 1024 ? selected : null);

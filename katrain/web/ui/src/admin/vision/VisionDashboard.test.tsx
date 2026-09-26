@@ -28,6 +28,9 @@ function mockApi() {
   api.visionDevices = vi.fn(async () => ({ candidates: [{ device_id: 0, label: 'Camera 0', probed: false as const }] }));
   api.visionSessions = vi.fn(async () => ({ sessions: [], limit: 50, truncated: false }));
   api.visionSession = vi.fn(async () => structuredClone(saved));
+  const album = { id: 7, player_black: '柯洁', player_white: '申真谞', black_rank: '九段', white_rank: '九段', event: '应氏杯决赛', round_name: '第 1 局', result: 'B+R', date_played: '2025-11-02', move_count: 211 };
+  api.kifuSearch = vi.fn(async (q: string) => ({ items: q && !'柯洁 应氏杯'.includes(q) ? [] : [album], total: q && !'柯洁 应氏杯'.includes(q) ? 0 : 1, page: 1, page_size: 30 }));
+  api.kifuAlbum = vi.fn(async () => ({ ...album, sgf_content: '(;SZ[19];B[ca])' }));
   api.visionPreview = vi.fn(async () => ({ frame_id: 'preview-1', camera_seq: 8, captured_at: 'now', captured_at_source: 'runtime', camera_monotonic_ts: 10, geometry_revision: current.geometry.revision, raw_jpeg_base64: 'raw', warped_jpeg_base64: 'warp', geometry_overlay_jpeg_base64: 'grid' }));
   api.visionConnect = vi.fn(async () => { current = { ...current, mode: 'stones2', camera: { ...current.camera, state: 'connected', device_id: 0 } }; return current; });
   api.visionCalibrate = vi.fn(async () => { current.geometry = { ...current.geometry, state: 'ready', revision: 'geometry-1', source: 'opencv_empty_board' }; return current.geometry; });
@@ -59,6 +62,7 @@ describe('live vision journey', () => {
     await user.click(calibrate);
     await waitFor(() => expect(api.visionCalibrate).toHaveBeenCalledWith(true, expect.any(AbortSignal)));
     const file = new File(['(;SZ[19];B[ca])'], 'game.sgf', { type: 'text/plain' });
+    await user.click(screen.getByRole('button', { name: '导入 SGF' }));
     await user.upload(screen.getByLabelText('SGF 文件'), file);
     await user.click(screen.getByRole('button', { name: /开始采集 · game.sgf/ }));
     const capture = await screen.findByRole('button', { name: '拍摄初始帧' });
@@ -69,6 +73,36 @@ describe('live vision journey', () => {
     await screen.findByText('第 1 手 · 黑棋 C19');
     expect(screen.getByRole('button', { name: '已摆好 · 拍照并进入下一手' })).toBeDisabled();
     expect(screen.getByRole('button', { name: /上传测试机/ })).toBeDisabled();
+  });
+
+  it('searches the kifu library and imports the chosen record as a new capture session', async () => {
+    const { api, setStatus } = mockApi(); const user = userEvent.setup();
+    setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' } });
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    const pick = await screen.findByRole('option', { name: /应氏杯决赛 第 1 局/ });
+    expect(api.kifuSearch).toHaveBeenCalledWith('', expect.any(AbortSignal));
+    expect(screen.getByRole('button', { name: '先选择一局棋谱' })).toBeDisabled();
+    await user.type(screen.getByLabelText('搜索棋谱库'), '李世石');
+    await user.click(screen.getByRole('button', { name: '搜索' }));
+    await screen.findByText('没有匹配的棋谱，换个关键词试试。');
+    await user.clear(screen.getByLabelText('搜索棋谱库'));
+    await user.type(screen.getByLabelText('搜索棋谱库'), '柯洁');
+    await user.click(screen.getByRole('button', { name: '搜索' }));
+    await user.click(await screen.findByRole('option', { name: /应氏杯决赛 第 1 局/ }));
+    expect(pick).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /开始采集 · 应氏杯决赛 第 1 局 · 211 手/ }));
+    await waitFor(() => expect(api.visionImportSgf).toHaveBeenCalledWith('(;SZ[19];B[ca])', expect.any(AbortSignal)));
+    expect(api.kifuAlbum).toHaveBeenCalledWith(7, expect.any(AbortSignal));
+    await screen.findByRole('button', { name: '拍摄初始帧' });
+  });
+
+  it('says the kifu library is unavailable instead of showing an empty result', async () => {
+    const { api, setStatus } = mockApi();
+    setStatus({ ...status(), mode: 'led4', camera: { ...status().camera, state: 'connected', device_id: 0 }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' } });
+    api.kifuSearch = vi.fn(async () => { throw new AdminApiError(503, 'database unavailable'); });
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    expect(await screen.findByText('棋谱库暂不可用')).toBeInTheDocument();
+    expect(screen.queryByText('没有匹配的棋谱，换个关键词试试。')).not.toBeInTheDocument();
   });
 
   it('honestly disables nonlocal vision without listing or opening devices', async () => {
@@ -238,6 +272,7 @@ describe('live vision journey', () => {
     const abort = vi.spyOn(FileReader.prototype, 'abort').mockImplementation(function (this: FileReader) { this.onabort?.(new ProgressEvent('abort') as ProgressEvent<FileReader>); });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
     await screen.findByRole('button', { name: '断开连接' });
+    await user.click(screen.getByRole('button', { name: '导入 SGF' }));
     await user.upload(screen.getByLabelText('SGF 文件'), new File(['(;SZ[19];B[aa])'], 'game.sgf'));
     await user.click(screen.getByRole('button', { name: /开始采集 · game.sgf/ }));
     await user.click(screen.getByRole('button', { name: '刷新本机状态' }));

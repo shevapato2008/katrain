@@ -61,3 +61,9 @@ export type VisionFrozen = {
   samples: { frame_id: string; split: 'train' | 'val'; [key: string]: unknown }[];
   parameters: VisionFreezeParameters; [key: string]: unknown;
 };
+export type KifuAlbumSummary = {
+  id: number; player_black: string; player_white: string; black_rank: string | null; white_rank: string | null;
+  event: string | null; result: string | null; date_played: string | null; round_name: string | null; move_count: number;
+};
+export type KifuAlbumList = { items: KifuAlbumSummary[]; total: number; page: number; page_size: number };
+export type KifuAlbumDetail = KifuAlbumSummary & { sgf_content: string };

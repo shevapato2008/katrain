@@ -1,6 +1,6 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
-import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen } from '../vision/types';
+import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail } from '../vision/types';
 import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
@@ -85,6 +85,8 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
     cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
     cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
+    kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),
+    kifuAlbum: (id: number, signal?: AbortSignal) => adminRequest<KifuAlbumDetail>(`/kifu/albums/${Math.trunc(id)}`, { signal, cache: 'no-store' }),
     visionStatus: (signal?: AbortSignal) => vision<VisionStatus>('/status', signal),
     visionDevices: (signal?: AbortSignal) => vision<VisionDevices>('/devices', signal),
     visionConnect: (device_id: number, mode: VisionMode, signal?: AbortSignal) => vision<VisionStatus>('/connect', signal, { device_id, mode }, true),

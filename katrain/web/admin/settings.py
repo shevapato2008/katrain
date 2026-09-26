@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from katrain.web.core.config import INSECURE_DEFAULT_SECRET_KEY
 
-
 ADMIN_ENVS = frozenset({"local", "test", "prod"})
 ADMIN_USERNAME = "admin:fan"
 _BCRYPT = re.compile(r"^\$2[aby]\$(\d\d)\$[./A-Za-z0-9]{53}$")
@@ -18,6 +17,10 @@ class AdminConfig:
     password_hash: str
     session_secret: str
     env: str
+
+
+def local_vision_requested() -> bool:
+    return os.getenv("KATRAIN_ADMIN_ENV") == "local" and os.getenv("KATRAIN_ADMIN_VISION_LOCAL") == "1"
 
 
 def check_startup() -> AdminConfig:

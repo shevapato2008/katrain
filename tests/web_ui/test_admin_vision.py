@@ -1,0 +1,349 @@
+"""Local admin vision boundaries, exercised without opening real hardware."""
+
+import base64
+import time
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+
+import numpy as np
+import pytest
+from fastapi.testclient import TestClient
+from jose import jwt
+
+SECRET = "vision-admin-secret-" * 3
+PASSWORD_HASH = "$2b$12$" + "a" * 53
+PATH = "/api/admin/vision"
+
+
+class Camera:
+    def __init__(self, device_id):
+        self.device_id = device_id
+        self.started = False
+        self.stops = 0
+        self.reads = 0
+        self.frame = np.full((1080, 1920, 3), 90, dtype=np.uint8)
+
+    def start(self):
+        self.started = True
+
+    def stop(self):
+        self.started = False
+        self.stops += 1
+        self.frame = None
+
+    def is_connected(self):
+        return self.started
+
+    def grab_fresh(self, after_ts=None, settle_ms=0):
+        self.reads += 1
+        return self.frame, self.reads, time.monotonic()
+
+
+@pytest.fixture
+def configured(monkeypatch):
+    monkeypatch.setenv("KATRAIN_MODE", "server")
+    monkeypatch.setenv("KATRAIN_ADMIN_USERNAME", "admin:fan")
+    monkeypatch.setenv("KATRAIN_ADMIN_PASSWORD_HASH", PASSWORD_HASH)
+    monkeypatch.setenv("KATRAIN_ADMIN_SESSION_SECRET", SECRET)
+    monkeypatch.setenv("KATRAIN_ADMIN_ENV", "local")
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LOCAL", "1")
+    monkeypatch.delenv("KATRAIN_ADMIN_VISION_LED_PORT", raising=False)
+
+
+def headers(env="local", **claims):
+    payload = {
+        "sub": "admin:fan",
+        "type": "admin_session",
+        "aud": "katrain-admin",
+        "env": env,
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+    }
+    payload.update(claims)
+    return {"Authorization": "Bearer " + jwt.encode(payload, SECRET, algorithm="HS256")}
+
+
+def make_app(tmp_path, bind_host="127.0.0.1"):
+    from katrain.web.admin.app import create_admin_app
+
+    return create_admin_app(session_factory=object(), static_dir=tmp_path, bind_host=bind_host)
+
+
+@pytest.mark.parametrize(
+    "method,route,body",
+    [
+        ("GET", "status", None),
+        ("GET", "devices", None),
+        ("GET", "preview", None),
+        ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
+        ("POST", "disconnect", None),
+    ],
+)
+def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):
+    client = TestClient(make_app(tmp_path))
+    for auth in ({}, headers(type="access"), headers(exp=datetime.now(timezone.utc) - timedelta(seconds=1))):
+        assert client.request(method, f"{PATH}/{route}", json=body, headers=auth).status_code == 401
+
+
+@pytest.mark.parametrize(
+    "env,switch,bind",
+    [
+        ("test", "1", "127.0.0.1"),
+        ("prod", "1", "127.0.0.1"),
+        ("local", "0", "127.0.0.1"),
+        ("local", None, "127.0.0.1"),
+        ("local", "1", "0.0.0.0"),
+        ("local", "1", None),
+    ],
+)
+def test_disabled_configuration_fails_closed(configured, monkeypatch, tmp_path, env, switch, bind):
+    monkeypatch.setenv("KATRAIN_ADMIN_ENV", env)
+    if switch is None:
+        monkeypatch.delenv("KATRAIN_ADMIN_VISION_LOCAL")
+    else:
+        monkeypatch.setenv("KATRAIN_ADMIN_VISION_LOCAL", switch)
+    client = TestClient(make_app(tmp_path, bind))
+    status = client.get(f"{PATH}/status", headers=headers(env)).json()
+    assert status["enabled"] is False
+    assert status["local_only"] is True
+    assert status["camera"]["state"] == "unknown"
+    for method, route, body in [
+        ("GET", "devices", None),
+        ("GET", "preview", None),
+        ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
+        ("POST", "disconnect", None),
+    ]:
+        assert client.request(method, f"{PATH}/{route}", json=body, headers=headers(env)).status_code == 403
+
+
+@pytest.fixture
+def hardware(configured, monkeypatch):
+    from katrain.web.admin import vision_runtime
+
+    cameras = []
+
+    def create_camera(device_id):
+        camera = Camera(device_id)
+        cameras.append(camera)
+        return camera
+
+    monkeypatch.setattr(vision_runtime, "create_camera", create_camera)
+    return cameras
+
+
+def test_creation_status_devices_and_unconnected_preview_never_open_hardware(hardware, tmp_path):
+    with TestClient(make_app(tmp_path)) as client:
+        status = client.get(f"{PATH}/status", headers=headers()).json()
+        assert status["enabled"] is True
+        assert status["camera"]["state"] == "unknown"
+        assert status["geometry"]["state"] == "required"
+        assert status["sgf"]["state"] == status["dataset"]["state"] == "none"
+        assert status["observed_at"]
+        candidates = client.get(f"{PATH}/devices", headers=headers()).json()["candidates"]
+        assert [item["device_id"] for item in candidates] == list(range(9))
+        assert all(item["probed"] is False for item in candidates)
+        assert client.get(f"{PATH}/preview", headers=headers()).status_code == 409
+        assert hardware == []
+
+
+def test_explicit_connect_disconnect_and_shutdown_release_hardware(hardware, tmp_path):
+    with TestClient(make_app(tmp_path)) as client:
+        connected = client.post(f"{PATH}/connect", json={"device_id": 2, "mode": "stones2"}, headers=headers())
+        assert connected.status_code == 200
+        assert connected.json()["camera"]["state"] == "connected"
+        assert connected.json()["led"]["state"] == "disabled"
+        assert hardware[0].device_id == 2
+        assert (
+            client.post(f"{PATH}/connect", json={"device_id": 3, "mode": "stones2"}, headers=headers()).status_code
+            == 409
+        )
+        for _ in range(2):
+            assert client.post(f"{PATH}/disconnect", headers=headers()).json()["camera"]["state"] == "disconnected"
+        assert hardware[0].stops == 1
+        client.post(f"{PATH}/connect", json={"device_id": 2, "mode": "stones2"}, headers=headers())
+    assert hardware[1].stops == 1
+    assert client.app.state.vision_runtime.camera is None
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"device_id": -1, "mode": "stones2"},
+        {"device_id": 9, "mode": "stones2"},
+        {"device_id": True, "mode": "stones2"},
+        {"device_id": "0", "mode": "stones2"},
+        {"device_id": 0, "mode": "unknown"},
+        {"device_id": 0, "mode": "stones2", "output_path": "/tmp/x"},
+    ],
+)
+def test_connect_rejects_invalid_device_mode_and_paths(hardware, tmp_path, body):
+    assert TestClient(make_app(tmp_path)).post(f"{PATH}/connect", json=body, headers=headers()).status_code == 422
+    assert hardware == []
+
+
+def test_led_mode_without_config_refuses_before_camera_open(hardware, tmp_path):
+    assert (
+        TestClient(make_app(tmp_path))
+        .post(f"{PATH}/connect", json={"device_id": 0, "mode": "led4"}, headers=headers())
+        .status_code
+        == 503
+    )
+    assert hardware == []
+
+
+@pytest.mark.parametrize("busy", [True, False])
+def test_failed_open_reports_occupied_or_error_and_cleans_up(configured, monkeypatch, tmp_path, busy):
+    from katrain.web.admin import vision_runtime
+    from katrain.web.core.device_lease import DeviceBusy
+
+    camera = Camera(0)
+
+    def fail():
+        raise DeviceBusy("busy") if busy else RuntimeError("open failed")
+
+    camera.start = fail
+    monkeypatch.setattr(vision_runtime, "create_camera", lambda _: camera)
+    client = TestClient(make_app(tmp_path))
+    result = client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    assert result.status_code == (409 if busy else 503)
+    assert client.get(f"{PATH}/status", headers=headers()).json()["camera"]["state"] == (
+        "occupied" if busy else "error"
+    )
+    assert camera.stops == 1
+
+
+def test_preview_acquires_once_bounds_jpeg_and_does_not_cache(hardware, tmp_path):
+    cv2 = pytest.importorskip("cv2")
+    with TestClient(make_app(tmp_path)) as client:
+        client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+        result = client.get(f"{PATH}/preview", headers=headers())
+        assert result.status_code == 200
+        assert result.headers["cache-control"] == "no-store"
+        data = result.json()
+        assert data["frame_id"] and data["captured_at"]
+        assert data["captured_at_source"] == "runtime_observed_at"
+        assert data["camera_seq"] == 1 and data["camera_monotonic_ts"] > 0
+        assert data["geometry_revision"] is None and data["warped_jpeg_base64"] is None
+        image = cv2.imdecode(np.frombuffer(base64.b64decode(data["raw_jpeg_base64"]), np.uint8), cv2.IMREAD_COLOR)
+        assert max(image.shape[:2]) <= 960
+        assert hardware[0].reads == 1
+        assert client.get(f"{PATH}/preview", headers=headers()).status_code == 429
+        assert hardware[0].reads == 1
+
+
+def test_unavailable_frame_is_a_real_error(hardware, tmp_path):
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    hardware[0].frame = None
+    assert client.get(f"{PATH}/preview", headers=headers()).status_code == 503
+
+
+def test_timed_out_old_preview_frame_is_rejected(hardware, tmp_path):
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    hardware[0].grab_fresh = lambda after_ts=None, settle_ms=0: (hardware[0].frame, 1, after_ts)
+    assert client.get(f"{PATH}/preview", headers=headers()).status_code == 503
+
+
+def test_preview_warps_the_same_acquired_frame(hardware, tmp_path):
+    cv2 = pytest.importorskip("cv2")
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    runtime = client.app.state.vision_runtime
+    runtime.geometry = SimpleNamespace(
+        M=np.eye(3), source_width=1920, source_height=1080, out_size=1200, confidence=0.9
+    )
+    runtime.geometry_revision = "geometry-1"
+    result = client.get(f"{PATH}/preview", headers=headers()).json()
+    assert result["geometry_revision"] == "geometry-1"
+    warped = cv2.imdecode(np.frombuffer(base64.b64decode(result["warped_jpeg_base64"]), np.uint8), cv2.IMREAD_COLOR)
+    assert warped.shape[:2] == (960, 960)
+    # Original 1200-pixel warp extends below the 1080-high camera frame; resizing must keep that margin.
+    assert warped[-1].mean() < 5
+    assert warped[0].mean() > 80
+    assert hardware[0].reads == 1
+
+
+def test_preview_errors_are_also_no_store(hardware, tmp_path):
+    client = TestClient(make_app(tmp_path))
+    result = client.get(f"{PATH}/preview", headers=headers())
+    assert result.status_code == 409
+    assert result.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.parametrize("outcome", ["connected", "busy", "failed"])
+def test_led_connect_outcome_releases_both_devices(hardware, monkeypatch, tmp_path, outcome):
+    from katrain.web.admin import vision_runtime
+    from katrain.web.core.device_lease import DeviceBusy
+
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LED_PORT", "/dev/cu.test")
+    led = Camera("/dev/cu.test")
+    if outcome == "busy":
+
+        def fail():
+            raise DeviceBusy("LED owned by kiosk")
+
+        led.start = fail
+    elif outcome == "failed":
+        led.is_connected = lambda: False
+    monkeypatch.setattr(vision_runtime, "create_led", lambda port: led)
+    with TestClient(make_app(tmp_path)) as client:
+        result = client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "led4"}, headers=headers())
+        assert result.status_code == {"connected": 200, "busy": 409, "failed": 503}[outcome]
+        state = client.get(f"{PATH}/status", headers=headers()).json()
+        assert state["led"]["state"] == {"connected": "connected", "busy": "occupied", "failed": "error"}[outcome]
+    assert led.stops == 1
+    assert hardware[0].stops == 1
+
+
+def test_disconnect_releases_real_camera_hub_lease(configured, monkeypatch, tmp_path):
+    from katrain.web.admin import vision_runtime
+    from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+    from katrain.web.core.device_lease import DeviceBusy, DeviceLease
+
+    monkeypatch.setattr("katrain.web.core.device_lease.Path.home", lambda: tmp_path)
+    camera = Camera(0)
+    camera.open = lambda: setattr(camera, "started", True) or True
+    camera.close = camera.stop
+
+    # CameraManager exposes a property while CameraHub exposes a method.
+    class CameraAdapter:
+        def open(self):
+            return camera.open()
+
+        def close(self):
+            camera.close()
+
+        @property
+        def is_connected(self):
+            return camera.started
+
+    monkeypatch.setattr(
+        vision_runtime, "create_camera", lambda device_id: CameraHub(CameraHubConfig(device_id), camera=CameraAdapter())
+    )
+    with TestClient(make_app(tmp_path)) as client:
+        assert (
+            client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers()).status_code
+            == 200
+        )
+        with pytest.raises(DeviceBusy):
+            DeviceLease.acquire("camera", 0)
+        assert client.post(f"{PATH}/disconnect", headers=headers()).status_code == 200
+        lease = DeviceLease.acquire("camera", 0)
+        lease.release()
+
+
+@pytest.mark.parametrize(
+    "env,switch,expected",
+    [("local", "1", "127.0.0.1"), ("local", "0", "0.0.0.0"), ("test", "1", "0.0.0.0"), ("prod", "1", "0.0.0.0")],
+)
+def test_cli_passes_actual_bind_host(configured, monkeypatch, env, switch, expected):
+    from katrain.web.admin import __main__ as cli
+
+    monkeypatch.setenv("KATRAIN_ADMIN_ENV", env)
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LOCAL", switch)
+    calls = []
+    app = object()
+    monkeypatch.setattr(cli, "create_admin_app", lambda **kwargs: calls.append(kwargs) or app)
+    monkeypatch.setattr(cli.uvicorn, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    cli.main()
+    assert calls == [{"bind_host": expected}, ((app,), {"host": expected, "port": 8010})]

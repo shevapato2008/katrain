@@ -232,3 +232,4 @@ katrain/web/ui/test-results/
 
 # Disposable browser CLI snapshots; reviewed design evidence lives under superpowers/tracks/
 /.playwright-cli/
+/superpowers/tracks/admin-console/prototype/index.html

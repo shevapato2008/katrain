@@ -27,6 +27,7 @@ function BoardView({ board, marks, color, label }: { board: string; marks: numbe
   return <svg className="dg-board" viewBox="0 0 600 600" role="img" aria-label={label}>
     <rect width="600" height="600" fill="#d8c49b" />
     {Array.from({ length: 19 }, (_, i) => <g key={i}><line x1={30} x2={570} y1={30 + i * 30} y2={30 + i * 30} stroke="#5a4a32" strokeWidth="1" /><line y1={30} y2={570} x1={30 + i * 30} x2={30 + i * 30} stroke="#5a4a32" strokeWidth="1" /></g>)}
+    {[3, 9, 15].flatMap((r) => [3, 9, 15].map((c) => <circle key={`h${r}${c}`} cx={30 + c * 30} cy={30 + r * 30} r={3} fill="#5a4a32" />))}
     {[...board].map((value, index) => {
       if (value === '0') return null;
       const [x, y] = at(index);
@@ -95,7 +96,9 @@ export default function DiagnosticsPage(props: Props) {
   const viewer = () => {
     if (!running || !snapshot) return <div className="lab-empty">{deviceReady ? <Camera aria-hidden="true" /> : <CircleHelp aria-hidden="true" />}<span>{!running ? (deviceReady ? '等待显式开始诊断' : '尚无已核实快照') : '正在等待第一个处理批次'}</span><small>{info.title}</small></div>;
     if (current?.board) {
-      const marks = info.id === 'projection' ? differ(boards.projection, boards.assigned) : info.id === 'assigned' ? differ(boards.projection, boards.assigned) : differ(boards.assigned, boards.published);
+      // Mark where this stage disagrees with its neighbour: a stone it has there, or (published) a stone it lost.
+      const own = (board: string | null, other: string | null) => differ(board, other).filter((index) => board?.[index] !== '0');
+      const marks = info.id === 'projection' ? own(boards.projection, boards.assigned) : info.id === 'assigned' ? own(boards.assigned, boards.projection) : differ(boards.assigned, boards.published);
       const color = info.id === 'projection' ? '#d14b3f' : info.id === 'assigned' ? '#2f9c86' : '#e39a3a';
       return <div className="dg-square"><BoardView board={current.board} marks={marks} color={color} label={info.title} /></div>;
     }
@@ -115,7 +118,7 @@ export default function DiagnosticsPage(props: Props) {
       {capture && !capture.enabled && <div className="lab-banner info"><Info aria-hidden="true" /><span>此服务未启用本机视觉控制；不会远程打开 Mac 摄像头或加载模型。</span></div>}
       <section className="lab-panel dg-controls" aria-label="本机模型与诊断控制">
         <div className="dg-model-row">
-          <div className="dg-version"><small>当前本机版本</small><strong>{models ? short(models.current) : '尚未读取'}</strong>{models?.current && <small>{models.loaded_id === models.current ? '已加载' : '未加载 · 激活以加载'}</small>}</div>
+          <div className="dg-version"><small>当前本机版本</small><strong>{models ? short(models.current) : '尚未读取'}</strong></div>
           <div className="dg-version"><small>前一版本 · 保留</small><strong>{models ? short(models.previous) : '尚未读取'}</strong></div>
           <label className="dg-registered">登记模型<select value={choice} disabled={locked || running || !valid.length} onChange={(event) => setSelected(event.target.value)} aria-describedby="dg-lock">{valid.length ? valid.map((item) => <option key={item.id} value={item.id}>{short(item.id)} · {item.mode === 'led4' ? '四类' : '双类'} · imgsz {item.parameters?.imgsz ?? '—'}</option>) : <option value="">尚无已核实的本机模型</option>}</select></label>
           <button className="lab-btn" type="button" disabled={locked || running || !choice} onClick={() => { setConfirm('activate'); setChecked(false); }} aria-describedby="dg-lock">激活</button>
@@ -123,7 +126,7 @@ export default function DiagnosticsPage(props: Props) {
           <button className="lab-btn" type="button" disabled>从测试机拉取 · 待授权</button>
         </div>
         <div className="dg-run-row">
-          <div className="dg-meta">{loaded ? <><span>manifest <strong>{loaded.manifest_sha256?.slice(0, 12)}</strong></span><span>imgsz <strong>{loaded.parameters?.imgsz ?? '—'}</strong></span><span>类目 <strong>{loaded.class_names?.map((name, index) => `${name} ${index}`).join(' · ')}</strong></span><span>viewer · 不绑定对局</span></> : <span>模型 manifest / 实际 imgsz / 类目：<strong>{models?.models.length ? '未加载' : '本机没有登记模型'}</strong></span>}{running && <span className="dg-lock" id="dg-lock"><Lock aria-hidden="true" />诊断未停止 · 换模前请先停止</span>}</div>
+          <div className="dg-meta">{loaded ? <><span>manifest <strong>{loaded.manifest_sha256?.slice(0, 12)}</strong></span><span>imgsz <strong>{loaded.parameters?.imgsz ?? '—'}</strong></span><span>类目 <strong>{loaded.class_names?.map((name, index) => `${name} ${index}`).join(' · ')}</strong></span><span>viewer · 不绑定对局</span></> : models?.current ? <span>当前版本 <strong>未加载</strong> · 点「激活」核对并加载</span> : <span>模型 manifest / 实际 imgsz / 类目：<strong>{models?.models.length ? '未加载' : '本机没有登记模型'}</strong></span>}{running && <span className="dg-lock" id="dg-lock"><Lock aria-hidden="true" />诊断未停止 · 换模前请先停止</span>}</div>
           <button className="lab-btn primary" type="button" disabled={locked || running || !deviceReady || !loaded} onClick={() => { setConfirm('start'); setChecked(false); }}><Play aria-hidden="true" />{!deviceReady ? '开始诊断 · 设备未就绪' : !loaded ? '开始诊断 · 未加载模型' : '开始诊断'}</button>
           <button className="lab-btn" type="button" disabled={locked || !running} onClick={props.onStop}><Square aria-hidden="true" />停止诊断</button>
         </div>
@@ -137,7 +140,7 @@ export default function DiagnosticsPage(props: Props) {
         <div className="dg-stage">
           <div className="lab-viewer dg-viewer">{viewer()}{running && snapshot && <><span className="lab-tag">0{stage + 1} · {info.title}</span>{info.id === 'filtered' && <span className="lab-legend"><span style={{ color: '#5cc3ad' }}>keep</span><span style={{ color: '#f1c07c' }}>sustain</span></span>}</>}</div>
           <aside className="dg-side">
-            <div className={`dg-batch ${stale ? 'stale' : ''}`} aria-label="共享处理批次">{running && snapshot ? <div><strong>同一处理批次 · {snapshot.batch_id}</strong><p>相机帧 #{snapshot.camera_seq ?? '—'} · 几何 {snapshot.geometry_revision?.slice(0, 8)} · 模型 {short(snapshot.model_id)} · {new Date(snapshot.observed_at).toLocaleTimeString()}</p></div> : <div><strong>{deviceReady ? '尚无诊断批次' : '没有可核实的处理批次'}</strong><p>{deviceReady ? '确认后显式开始；七个阶段来自同一次真实识别。' : '设备、几何与模型未核实；不展示画面。'}</p></div>}
+            <div className={`dg-batch ${stale ? 'stale' : ''}`} aria-label="共享处理批次">{running && snapshot ? <div><strong>同一处理批次 · {snapshot.batch_id}</strong><p>相机帧 #{snapshot.camera_seq ?? '—'} · 几何 {snapshot.geometry_revision?.slice(0, 8)} · 模型 {short(snapshot.model_id)} · 观察 {new Date(snapshot.observed_at).toLocaleTimeString('zh-CN', { hour12: false })}</p></div> : <div><strong>{deviceReady ? '尚无诊断批次' : '没有可核实的处理批次'}</strong><p>{deviceReady ? '确认后显式开始；七个阶段来自同一次真实识别。' : '设备、几何与模型未核实；不展示画面。'}</p></div>}
               <details><summary>批次来源与边界</summary><div className="dg-pop">原图与纯 warp 锚定本轮帧，第 3、4 阶段用平均 + CLAHE 的实际输入。模型、几何与帧身份同轮保存，不再次推理。<br /><strong>资源上限</strong>：底图 ≤3、长边 ≤960、每张 JPEG ≤1 MiB、每阶段 ≤4096 框、总响应 ≤8 MiB；超限报不可用，不裁剪冒充完整。</div></details></div>
             <div><div className="dg-kicker">阶段 {stage + 1} / 7 · {info.tag}</div><h3>{info.title}</h3></div>
             <dl><div><dt>这是什么</dt><dd>{info.what}</dd></div>{facts().map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}<div><dt>注意</dt><dd>{info.note}</dd></div></dl>

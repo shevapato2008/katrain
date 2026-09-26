@@ -28,6 +28,7 @@ export type VisionFrame = {
   led_point: { row: number; col: number; color: 'black' | 'white' } | null;
   idempotent?: boolean;
   geometry_correction?: { status: 'corrected' | 'stale' | 'frozen'; M: number[][]; [key: string]: unknown };
+  qa_status?: 'operator_confirmed' | 'camera_matched'; capture_trigger?: 'operator' | 'camera'; auto_stalled?: boolean;
   capture_condition?: Record<string, unknown> & { camera_device_id?: number };
 };
 export type VisionSession = {
@@ -70,3 +71,13 @@ export type KifuAlbumSummary = {
 };
 export type KifuAlbumList = { items: KifuAlbumSummary[]; total: number; page: number; page_size: number };
 export type KifuAlbumDetail = KifuAlbumSummary & { sgf_content: string };
+export type VisionPoint = { row: number; col: number };
+export type VisionAutoCheck = {
+  state: 'matching' | 'mismatch' | 'stalled' | 'captured'; move_index: number; missing: VisionPoint[]; extra: VisionPoint[];
+  stable_frames: number; stable_ms: number; required_frames: number; required_ms: number; camera_seq: number; frame?: VisionFrame;
+};
+export type VisionModel = {
+  id: string; valid: boolean; error: string | null; run_id?: string; dataset_id?: string | null; mode?: VisionMode;
+  class_names?: string[]; weights_sha256?: string; weights_bytes?: number; manifest_sha256?: string; parameters?: { imgsz?: number; [key: string]: unknown };
+};
+export type VisionModels = { models: VisionModel[]; current: string | null; previous: string | null; loaded_id: string | null; load_error: string | null };

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminApiError, type createAdminApi } from '../api/client';
 import VisionLivePage from './VisionLivePage';
-import type { KifuAlbumList, VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
+import type { KifuAlbumList, VisionAutoCheck, VisionModels, VisionDevices, VisionFrozen, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus } from './types';
 
 type Props = { api: ReturnType<typeof createAdminApi>; onUnauthorized: () => void };
 export default function VisionDashboard({ api, onUnauthorized }: Props) {
@@ -18,6 +18,12 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
   const [kifu, setKifu] = useState<{ query: string; list: KifuAlbumList | null; error: string; loading: boolean }>({ query: '', list: null, error: '', loading: false });
   const kifuRequest = useRef<AbortController | null>(null);
   const [removalLit, setRemovalLit] = useState('');
+  const [models, setModels] = useState<VisionModels | null>(null);
+  const [advance, setAdvance] = useState<'manual' | 'camera'>('manual');
+  const [autoRunning, setAutoRunning] = useState(false);
+  const [autoResult, setAutoResult] = useState<VisionAutoCheck | null>(null);
+  const [autoError, setAutoError] = useState('');
+  const autoRequest = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState('读取状态');
   const [error, setError] = useState('');
   const [previewError, setPreviewError] = useState('');
@@ -48,13 +54,14 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
 
   const refresh = useCallback(async (signal: AbortSignal, version: number) => {
     const next = await api.visionStatus(signal);
-    const [available, saved, selected] = next.enabled ? await Promise.all([
+    const [available, saved, selected, registry] = next.enabled ? await Promise.all([
       api.visionDevices(signal), api.visionSessions(signal),
       next.sgf.game_id ? api.visionSession(next.sgf.game_id, signal) : Promise.resolve(null),
-    ]) : [null, null, null];
+      api.visionModels(signal).catch((cause: unknown) => { if (cause instanceof AdminApiError && cause.status === 401) throw cause; return null; }),
+    ]) : [null, null, null, null];
     if (!active.current || signal.aborted || version !== generation.current) return;
     statusSnapshot.current = next;
-    setStatus(next); setDevices(available?.candidates ?? []); setSessions(saved); setSession(selected);
+    setStatus(next); setDevices(available?.candidates ?? []); setSessions(saved); setSession(selected); setModels(registry);
     setReview(null); setReviewFailure(null);
     setFrozen((previous) => next.dataset.state === 'frozen' && previous?.id === next.dataset.id ? previous : null);
   }, [api]);
@@ -113,6 +120,39 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     else void poll();
     return () => { stopped = true; window.clearTimeout(timer); previewRequest.current?.abort(); };
   }, [api, connected, cameraId, mode, revision, gameId, nextStep, sampleCount, busy, authorized, previewPaused, fail, refresh]);
+
+  const autoActive = advance === 'camera' && autoRunning && authorized && !busy && connected && !!gameId && typeof nextStep === 'number' && nextStep >= 0;
+  useEffect(() => {
+    if (!autoActive || !gameId || typeof nextStep !== 'number') return;
+    let stopped = false;
+    let timer: number | undefined;
+    const tick = async () => {
+      const controller = new AbortController(); autoRequest.current = controller;
+      try {
+        const result = await api.visionAutoCheck(gameId, nextStep, controller.signal);
+        if (stopped || controller.signal.aborted || !active.current) return;
+        setAutoResult(result); setAutoError('');
+        if (result.state === 'captured') {
+          setMessage(`摄像头确认棋面一致，已自动拍照并推进。`);
+          setRemovalLit(''); setContextVersion(++operationContext.current);
+          const refreshController = new AbortController(); actionRequest.current = refreshController;
+          const version = ++generation.current;
+          await refresh(refreshController.signal, version).catch((cause: unknown) => { if (!refreshController.signal.aborted) fail(cause); });
+          return;
+        }
+      } catch (cause) {
+        if (stopped || controller.signal.aborted || !active.current) return;
+        if (cause instanceof AdminApiError && cause.status === 401) { fail(cause); return; }
+        setAutoRunning(false); setAutoResult(null);
+        setAutoError(cause instanceof Error ? cause.message : '自动推进已暂停。');
+        return;
+      }
+      if (!stopped) timer = window.setTimeout(() => { void tick(); }, 400);
+    };
+    void tick();
+    return () => { stopped = true; window.clearTimeout(timer); autoRequest.current?.abort(); };
+  }, [api, autoActive, gameId, nextStep, refresh, fail]);
+  const pauseAuto = () => { setAutoRunning(false); setAutoResult(null); autoRequest.current?.abort(); };
 
   async function perform<T>(label: string, operation: (signal: AbortSignal) => Promise<T>, accept?: (result: T) => void, reload = true) {
     if (!active.current || pending.current || !authorized) return;
@@ -173,21 +213,24 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
   return <VisionLivePage
     labelPreview={labelPreview} onLabel={onLabel}
     kifu={kifu} onSearchKifu={onSearchKifu} removalLit={removalLit}
+    models={models} advance={advance} autoRunning={autoRunning} autoResult={autoResult} autoError={autoError}
+    onAdvance={(mode) => { setAdvance(mode); setAutoError(''); setAutoResult(null); setAutoRunning(mode === 'camera'); }}
+    onAutoRunning={(running) => { if (running) { setAutoError(''); setAutoRunning(true); } else pauseAuto(); }}
     onRemovalGuide={(index) => {
       if (!gameId) return;
       void perform('点亮提子位置', (signal) => api.visionRemovalGuide(gameId, index, signal), () => setRemovalLit(`${gameId}/${index}`), false);
     }}
-    onUndo={(frame) => {
+    onUndo={(frame) => { pauseAuto();
       if (!gameId) return;
       void perform('撤回上一帧', (signal) => api.visionUndo(gameId, frame, signal), (result) => { setFrozen(null); setRemovalLit(''); setMessage(result.led_restored ? '已撤回；指示灯已恢复到上一帧的引导位置。' : '已撤回。按上一帧的棋面恢复棋盘。'); });
     }}
-    onEnd={() => {
+    onEnd={() => { pauseAuto();
       if (!gameId) return;
       void perform('结束本局', (signal) => api.visionEnd(gameId, signal), () => { setRemovalLit(''); setMessage('本局采集已结束。可检查样本并冻结数据集。'); });
     }}
-    onLedTest={() => { void perform('测试点亮', (signal) => api.visionLedTest(signal), () => setMessage('测试点亮完成：四角与天元各亮 1 秒。灯位不对请检查串口与映射。'), false); }}
+    onLedTest={() => { pauseAuto(); void perform('测试点亮', (signal) => api.visionLedTest(signal), () => setMessage('测试点亮完成：四角与天元各亮 1 秒。灯位不对请检查串口与映射。'), false); }}
     onFiducial={(mode) => { void perform('设置基准点校正', (signal) => api.visionFiducial(mode, signal)); }}
-    onImportKifu={(id, expectedStatus, expectedContext) => {
+    onImportKifu={(id, expectedStatus, expectedContext) => { pauseAuto();
       if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
       void perform('导入棋谱', async (signal) => { const album = await api.kifuAlbum(id, signal); return api.visionImportSgf(album.sgf_content, signal); }, () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
     }}
@@ -195,13 +238,13 @@ export default function VisionDashboard({ api, onUnauthorized }: Props) {
     review={review} reviewFailure={reviewFailure} frozen={frozen} busy={busy} error={error} previewError={previewError} message={message} authorized={authorized} contextVersion={contextVersion}
     onRefresh={() => { void perform('读取状态', async () => undefined); }}
     onConnect={(id, selectedMode) => { void perform('连接摄像头', (signal) => api.visionConnect(id, selectedMode, signal)); }}
-    onDisconnect={() => { void perform('断开连接', (signal) => api.visionDisconnect(signal)); }}
-    onCalibrate={() => { void perform('空盘标定', (signal) => api.visionCalibrate(true, signal), () => setMessage('标定已保存；更换视角后须导入新会话，原会话几何不会被改写。')); }}
-    onImport={(text, expectedStatus, expectedContext) => {
+    onDisconnect={() => { pauseAuto(); void perform('断开连接', (signal) => api.visionDisconnect(signal)); }}
+    onCalibrate={() => { pauseAuto(); void perform('空盘标定', (signal) => api.visionCalibrate(true, signal), () => setMessage('标定已保存；更换视角后须导入新会话，原会话几何不会被改写。')); }}
+    onImport={(text, expectedStatus, expectedContext) => { pauseAuto();
       if (statusSnapshot.current !== expectedStatus || operationContext.current !== expectedContext) return;
       void perform('导入棋谱', (signal) => api.visionImportSgf(text, signal), () => { setFrozen(null); setReview(null); setMessage('新会话已保存。先拍摄初始帧。'); });
     }}
-    onResume={(id) => { void perform('恢复会话', (signal) => api.visionResumeSession(id, signal), () => { setFrozen(null); setReview(null); setMessage('会话已恢复。保存的标定须用当前网格复核。'); }); }}
+    onResume={(id) => { pauseAuto(); void perform('恢复会话', (signal) => api.visionResumeSession(id, signal), () => { setFrozen(null); setReview(null); setMessage('会话已恢复。保存的标定须用当前网格复核。'); }); }}
     onPausePreview={setPreviewPaused}
     onVerify={(frame) => {
       if (!gameId || !preview || preview.frame_id !== frame) return;

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Activity, Camera, Check, CircleCheck, Info, Layers, RefreshCw, Search, Undo2 } from 'lucide-react';
 import VisionDialog from './VisionDialog';
-import type { KifuAlbumList, KifuAlbumSummary, VisionFiducialMode, VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
+import type { KifuAlbumList, KifuAlbumSummary, VisionAutoCheck, VisionFiducialMode, VisionModels, VisionDevices, VisionFrozen, VisionMode, VisionPreview, VisionReviewFailure, VisionSampleReview, VisionSession, VisionSessionList, VisionStatus, VisionStep } from './types';
 import './VisionCapturePage.css';
 import './lab.css';
 
@@ -18,7 +18,9 @@ type Props = {
   labelPreview: { overlay: VisionSampleReview | null; error: string | null } | null; onLabel: () => void;
   kifu: { query: string; list: KifuAlbumList | null; error: string; loading: boolean };
   onSearchKifu: (query: string) => void; removalLit: string;
-  onRemovalGuide: (index: number) => void; onUndo: (frame: string) => void; onEnd: () => void; onLedTest: () => void; onFiducial: (mode: VisionFiducialMode) => void; onImportKifu: (id: number, expectedStatus: VisionStatus, expectedContext: number) => void;
+  onRemovalGuide: (index: number) => void; onUndo: (frame: string) => void; onEnd: () => void; onLedTest: () => void; onFiducial: (mode: VisionFiducialMode) => void;
+  models: VisionModels | null; advance: 'manual' | 'camera'; autoRunning: boolean; autoResult: VisionAutoCheck | null; autoError: string;
+  onAdvance: (mode: 'manual' | 'camera') => void; onAutoRunning: (running: boolean) => void; onImportKifu: (id: number, expectedStatus: VisionStatus, expectedContext: number) => void;
 };
 const modeLabel = (mode?: VisionMode | null) => mode === 'led4' ? '指示灯 · 四类' : mode === 'stones2' ? '无灯 · 双类' : '模式未选择';
 const coordinate = (step: VisionStep) => step.col !== null && step.row !== null ? `${'ABCDEFGHJKLMNOPQRST'[step.col]}${19 - step.row}` : '';
@@ -29,6 +31,7 @@ const stepLabel = (index: number, steps: VisionStep[]) => {
 };
 const rank = (value: string | null) => value ? ` ${value}` : '';
 const kifuTitle = (album: KifuAlbumSummary) => [album.event, album.round_name].filter(Boolean).join(' ') || `${album.player_black} 对 ${album.player_white}`;
+const point = (item: { row: number; col: number }) => `${'ABCDEFGHJKLMNOPQRST'[item.col]}${19 - item.row}`;
 const jpeg = (base64?: string | null) => base64 ? `data:image/jpeg;base64,${base64}` : undefined;
 const readFile = (file: File, reader: FileReader) => new Promise<string>((resolve, reject) => {
   reader.onload = () => resolve(String(reader.result));
@@ -126,6 +129,11 @@ export default function VisionLivePage(props: Props) {
   const removalPhase = led && !!removed.length && props.removalLit === `${session?.game_id}/${next}`;
   const placed = next === null || next === undefined ? steps.length : Math.max(0, next) + (removalPhase ? 1 : 0);
   const openConfirm = (kind: 'undo' | 'end' | 'led') => { setConfirm(kind); setConfirmChecked(false); };
+  const loadedModel = props.models?.models.find((item) => item.id === props.models?.loaded_id);
+  const autoReason = status?.fiducial_mode === 'every-move' ? '每手基准点校正开启时不能自动推进：那等于系统自动为几何闪灯。' : !loadedModel ? '需要先在「本机部署与诊断」激活一个已登记的识别模型。' : loadedModel.mode && loadedModel.mode !== session?.mode ? '当前模型的类目与本会话模式不同。' : '';
+  const cameraMode = props.advance === 'camera' && !initial;
+  const auto = props.autoResult;
+  const stalled = auto?.state === 'stalled';
   const label = props.labelPreview;
   const tab = (id: typeof view, text: string, extra?: ReactNode) => <button type="button" role="tab" className="lab-tab" aria-selected={view === id} onClick={() => setView(id)}>{text}{extra}</button>;
   const viewer = () => {
@@ -208,10 +216,14 @@ export default function VisionLivePage(props: Props) {
               {led && !complete && !initial && <div className="cp-led-line">{removalPhase ? <><span className="cp-led blue" />蓝灯：需提走的子</> : <><span className={`cp-led ${nextStepInfo?.color === 'W' ? 'green' : 'red'}`} />{nextStepInfo?.color === 'W' ? '绿灯 = 下一手白棋' : '红灯 = 下一手黑棋'}</>}{status?.fiducial_mode === 'every-move' ? ' · 每手基准点校正' : ''}</div>}
               <div className="cp-progress" aria-label="采集进度"><i style={{ width: `${steps.length ? Math.round((placed / steps.length) * 100) : 0}%` }} /></div>
               <div className="lab-note">已摆 {placed} / {steps.length} 手 · 已采 {frames.length} 帧 · 会话 {session.game_id.slice(0, 12)}</div>
+              {!complete && !initial && <div className="lab-seg" role="group" aria-label="推进方式"><button type="button" aria-pressed={props.advance === 'manual'} disabled={locked} onClick={() => props.onAdvance('manual')}>手动确认</button><button type="button" aria-pressed={props.advance === 'camera'} disabled={locked || !!autoReason} title={autoReason || undefined} onClick={() => props.onAdvance('camera')}>摄像头自动推进</button></div>}
+              {!complete && !initial && autoReason && props.advance === 'manual' && <p className="lab-note">{autoReason}</p>}
+              {!complete && cameraMode && <div className={`lab-banner ${stalled ? '' : 'info'}`} role="status"><Camera aria-hidden="true" /><span>{!props.autoRunning ? '自动推进已暂停。' : !auto ? '正在用当前模型识别棋面…' : auto.state === 'matching' ? `棋面一致 · 稳定 ${auto.stable_frames}/${auto.required_frames} 帧 · ${(auto.stable_ms / 1000).toFixed(1)}/${(auto.required_ms / 1000).toFixed(1)} 秒` : `${stalled ? '一直不一致，可人工确认。' : '等待棋面一致。'}${auto.missing.length ? `缺/错：${auto.missing.map(point).join('、')}。` : ''}${auto.extra.length ? `多出：${auto.extra.map(point).join('、')}。` : ''}`}<br /><small>模型 {loadedModel?.id.slice(6, 18)} · 完全一致且稳定 1 秒才拍，拍后再核对一次</small></span><button type="button" className="lab-btn small" disabled={locked} onClick={() => props.onAutoRunning(!props.autoRunning)}>{props.autoRunning ? '暂停' : '继续'}</button></div>}
+              {!complete && props.autoError && <p className="cp-error" role="alert">自动推进已暂停：{props.autoError}</p>}
               {!complete && (led && removed.length && !removalPhase && !initial ? <>
                 <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />已按灯位落下 {nextStepInfo ? coordinate(nextStepInfo) : ''}，还没提子</label>
                 <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onRemovalGuide(next); setBoardConfirmed(''); }}>{busy === '点亮提子位置' ? '正在点亮蓝灯…' : '已落子 · 点亮提子位置'}</button>
-              </> : <>
+              </> : (!cameraMode || stalled || !props.autoRunning) && <>
                 <label className="lab-check"><input type="checkbox" checked={boardConfirmed === boardKey} disabled={locked || !captureReady} onChange={(event) => setBoardConfirmed(event.target.checked ? boardKey : '')} />{initial ? (led ? '棋盘已清空，只有指示灯亮着' : '棋盘已清空') : removalPhase ? '已取走蓝灯位置的棋子，棋面与 SGF 一致' : led ? '已按灯位摆好，棋面与 SGF 一致' : removed.length ? '已落子并提走棋子，棋面与 SGF 一致' : '已按 SGF 摆好，棋面一致'}</label>
                 <button className="lab-btn primary full" type="button" disabled={locked || !captureReady || next === undefined || boardConfirmed !== boardKey} onClick={() => { if (next !== null && next !== undefined) props.onCapture(next); setBoardConfirmed(''); }}>{busy === '采集当前手' ? (led ? '等待指示灯稳定后抓帧…' : '正在抓取新鲜相机帧…') : initial ? '拍摄初始帧' : removalPhase ? '已提子 · 拍照' : '已摆好 · 拍照并进入下一手'}</button>
               </>)}

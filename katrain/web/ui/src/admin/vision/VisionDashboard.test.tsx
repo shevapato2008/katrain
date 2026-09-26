@@ -165,6 +165,59 @@ describe('live vision journey', () => {
     await waitFor(() => expect(api.visionFiducial).toHaveBeenCalledWith('every-move', expect.any(AbortSignal)));
   });
 
+  it('offers camera auto-advance only with an active model, polls it, and refreshes after an auto capture', async () => {
+    const { api, saved, setStatus } = mockApi(); const user = userEvent.setup();
+    saved.state = 'captured'; saved.frames = [savedFrame(-1)]; saved.next_step = 0; saved.camera_device_id = 0;
+    const current = { ...status(), mode: 'stones2' as const, camera: { ...status().camera, state: 'connected' as const, device_id: 0 }, geometry: { ...status().geometry, state: 'ready' as const, revision: 'geometry-1' }, sgf: { ...status().sgf, state: 'loaded' as const, game_id: 'game-1', total_steps: 3, next_step: 0 }, dataset: { ...status().dataset, state: 'draft' as const, count: 1 } };
+    setStatus(current);
+    const model = { id: 'model-' + 'a'.repeat(64), valid: true, error: null, mode: 'stones2' as const };
+    api.visionModels = vi.fn(async () => ({ models: [model], current: null, previous: null, loaded_id: null, load_error: null }));
+    const checks = [
+      { state: 'mismatch' as const, missing: [{ row: 1, col: 1 }], extra: [], stable_frames: 0, stable_ms: 0 },
+      { state: 'matching' as const, missing: [], extra: [], stable_frames: 3, stable_ms: 600 },
+      { state: 'captured' as const, missing: [], extra: [], stable_frames: 5, stable_ms: 1200, frame: { ...savedFrame(0), qa_status: 'camera_matched' as const } },
+    ];
+    api.visionAutoCheck = vi.fn(async () => {
+      const next = checks.shift()!;
+      if (next.state === 'captured') { saved.frames.push(savedFrame(0)); saved.next_step = 2; setStatus({ ...current, sgf: { ...current.sgf, next_step: 2 }, dataset: { ...current.dataset, count: 2 } }); }
+      return { ...next, move_index: 0, required_frames: 5, required_ms: 1000, camera_seq: 9 };
+    });
+    const view = render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    const camera = await screen.findByRole('button', { name: '摄像头自动推进' });
+    expect(camera).toBeDisabled();
+    expect(screen.getByText(/需要先在「本机部署与诊断」激活/)).toBeInTheDocument();
+    view.unmount();
+    api.visionModels = vi.fn(async () => ({ models: [model], current: model.id, previous: null, loaded_id: model.id, load_error: null }));
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    await user.click(await screen.findByRole('button', { name: '摄像头自动推进' }));
+    expect(await screen.findByText(/缺\/错：B18/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '已摆好 · 拍照并进入下一手' })).not.toBeInTheDocument();
+    expect(await screen.findByText(/棋面一致 · 稳定 3\/5 帧/, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(await screen.findByText('摄像头确认棋面一致，已自动拍照并推进。', {}, { timeout: 3000 })).toBeInTheDocument();
+    await screen.findByText('第 3 手 · 白棋 D18');
+    expect(api.visionCapture).not.toHaveBeenCalled();
+  });
+
+  it('shows the manual fallback when auto-advance stalls and pauses on a server refusal', async () => {
+    const { api, saved, setStatus } = mockApi(); const user = userEvent.setup();
+    saved.state = 'captured'; saved.frames = [savedFrame(-1)]; saved.next_step = 0; saved.camera_device_id = 0;
+    setStatus({ ...status(), mode: 'stones2', camera: { ...status().camera, state: 'connected', device_id: 0 }, geometry: { ...status().geometry, state: 'ready', revision: 'geometry-1' }, sgf: { ...status().sgf, state: 'loaded', game_id: 'game-1', total_steps: 3, next_step: 0 }, dataset: { ...status().dataset, state: 'draft', count: 1 } });
+    const model = { id: 'model-' + 'b'.repeat(64), valid: true, error: null, mode: 'stones2' as const };
+    api.visionModels = vi.fn(async () => ({ models: [model], current: model.id, previous: null, loaded_id: model.id, load_error: null }));
+    let refuse = false;
+    api.visionAutoCheck = vi.fn(async () => {
+      if (refuse) throw new AdminApiError(409, 'Activate a verified model before auto-advance');
+      return { state: 'stalled' as const, move_index: 0, missing: [{ row: 1, col: 1 }], extra: [{ row: 5, col: 5 }], stable_frames: 0, stable_ms: 0, required_frames: 5, required_ms: 1000, camera_seq: 3 };
+    });
+    render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);
+    await user.click(await screen.findByRole('button', { name: '摄像头自动推进' }));
+    expect(await screen.findByText(/一直不一致，可人工确认/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '已摆好 · 拍照并进入下一手' })).toBeInTheDocument();
+    refuse = true;
+    expect(await screen.findByText(/自动推进已暂停：Activate a verified model/, {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '继续' })).toBeInTheDocument();
+  });
+
   it('honestly disables nonlocal vision without listing or opening devices', async () => {
     const { api, setStatus } = mockApi(); setStatus({ ...status(), enabled: false });
     render(<VisionDashboard api={api} onUnauthorized={vi.fn()} />);

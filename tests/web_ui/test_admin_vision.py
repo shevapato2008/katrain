@@ -77,6 +77,14 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
         ("POST", "disconnect", None),
         ("POST", "calibrate", {"empty_confirmed": True}),
+        ("POST", "sgf", {"sgf": "(;SZ[19];B[aa])"}),
+        ("POST", "capture", {"game_id": "example", "move_index": -1, "operator_confirmed": True}),
+        ("GET", "sessions", None),
+        ("GET", "sessions/example", None),
+        ("POST", "sessions/example/resume", None),
+        ("POST", "verify-geometry", {"game_id": "example", "frame_id": "example", "overlay_confirmed": True}),
+        ("GET", "sessions/example/frames/example/review", None),
+        ("POST", "sessions/example/freeze", {}),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):
@@ -113,6 +121,14 @@ def test_disabled_configuration_fails_closed(configured, monkeypatch, tmp_path, 
         ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
         ("POST", "disconnect", None),
         ("POST", "calibrate", {"empty_confirmed": True}),
+        ("POST", "sgf", {"sgf": "(;SZ[19];B[aa])"}),
+        ("POST", "capture", {"game_id": "example", "move_index": -1, "operator_confirmed": True}),
+        ("GET", "sessions", None),
+        ("GET", "sessions/example", None),
+        ("POST", "sessions/example/resume", None),
+        ("POST", "verify-geometry", {"game_id": "example", "frame_id": "example", "overlay_confirmed": True}),
+        ("GET", "sessions/example/frames/example/review", None),
+        ("POST", "sessions/example/freeze", {}),
     ]:
         assert client.request(method, f"{PATH}/{route}", json=body, headers=headers(env)).status_code == 403
 
@@ -547,3 +563,330 @@ def test_real_calibration_rejects_stationary_stones(hardware, tmp_path, stone_co
         if stone_color is not None:
             assert client.app.state.vision_runtime.geometry is None
             assert "empty" in response.json()["detail"].lower()
+
+
+def post(client, route, **body):
+    return client.post(f"{PATH}/{route}", json=body, headers=headers())
+
+
+def snapshot(directory):
+    return {
+        path.relative_to(directory).as_posix(): path.read_bytes() for path in directory.rglob("*") if path.is_file()
+    }
+
+
+@pytest.fixture
+def capture_client(hardware, calibration, tmp_path):
+    client = TestClient(make_app(tmp_path))
+    runtime = client.app.state.vision_runtime
+    runtime.out_dir = tmp_path / "vision"
+    assert post(client, "connect", device_id=0, mode="stones2").status_code == 200
+    camera = hardware[-1]
+    camera.frame = np.full((210, 210, 3), 100, np.uint8)
+
+    def grab(after_ts=None, settle_ms=0):
+        camera.reads += 1
+        return camera.frame, camera.reads, max(time.monotonic(), (after_ts or 0) + settle_ms / 1000 + 0.01)
+
+    camera.grab_fresh = grab
+    geometry = calibration[0]
+    geometry.xs = geometry.ys = np.arange(10, 200, 10, dtype=np.float32)
+    geometry.points = np.stack(np.meshgrid(geometry.xs, geometry.ys), axis=-1)
+    geometry.corners = np.array([[0, 0], [209, 0], [209, 209], [0, 209]], np.float32)
+    geometry.out_size = geometry.source_width = geometry.source_height = 210
+    assert post(client, "calibrate", empty_confirmed=True).status_code == 200
+    return client
+
+
+def import_game(client):
+    response = post(client, "sgf", sgf="(;SZ[19];B[bb];W[];W[cc])\r\n")
+    assert response.status_code == 200, response.text
+    return response.json()["game_id"]
+
+
+def take(client, game_id, index=-1, **changes):
+    return post(client, "capture", **{"game_id": game_id, "move_index": index, "operator_confirmed": True, **changes})
+
+
+def test_import_sgf_persists_exact_crlf_and_allocates_independent_sessions(capture_client):
+    import hashlib
+    import json
+
+    client = capture_client
+    original = "(;SZ[19]C[棋谱\r\n来源];B[bb];W[];W[cc])\r\n"
+    first = post(client, "sgf", sgf=original)
+    second = post(client, "sgf", sgf=original)
+    assert first.status_code == second.status_code == 200
+    assert first.json()["game_id"] != second.json()["game_id"]
+    assert first.json()["sgf_sha256"] == second.json()["sgf_sha256"] == hashlib.sha256(original.encode()).hexdigest()
+    assert first.json()["total_steps"] == 3
+    assert first.json()["steps"][1]["kind"] == "pass"
+    runtime = client.app.state.vision_runtime
+    draft_path = runtime.out_dir / "drafts" / f"{second.json()['game_id']}.json"
+    draft = json.loads(draft_path.read_bytes())
+    assert draft["original_sgf"] == original
+    assert not (runtime.out_dir / second.json()["game_id"]).exists()
+    status = client.get(f"{PATH}/status", headers=headers()).json()
+    assert status["sgf"]["game_id"] == second.json()["game_id"]
+    assert status["sgf"]["next_step"] == -1
+    assert status["dataset"]["state"] == "draft" and status["dataset"]["count"] == 0
+
+
+def test_draft_write_failure_preserves_old_active_and_disk(capture_client, monkeypatch):
+    from katrain.web.admin import vision_sessions
+
+    client = capture_client
+    game_id = import_game(client)
+    runtime = client.app.state.vision_runtime
+    before = snapshot(runtime.out_dir)
+
+    def fail(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(vision_sessions.os, "replace", fail)
+    result = post(client, "sgf", sgf="(;SZ[19];B[dd])")
+    assert result.status_code == 507
+    assert snapshot(runtime.out_dir) == before
+    assert client.get(f"{PATH}/status", headers=headers()).json()["sgf"]["game_id"] == game_id
+
+
+def test_read_only_session_get_and_draft_resume_survive_restart(capture_client, hardware, tmp_path):
+    client = capture_client
+    game_id = import_game(client)
+    fresh = TestClient(make_app(tmp_path))
+    fresh.app.state.vision_runtime.out_dir = client.app.state.vision_runtime.out_dir
+    session = fresh.get(f"{PATH}/sessions/{game_id}", headers=headers())
+    assert session.status_code == 200 and session.json()["frames"] == []
+    assert session.json()["steps"][0]["row"] == 1 and session.json()["steps"][0]["col"] == 1
+    assert session.json()["next_step"] == -1
+    assert fresh.get(f"{PATH}/status", headers=headers()).json()["sgf"]["state"] == "none"
+    listed = fresh.get(f"{PATH}/sessions", headers=headers()).json()["sessions"]
+    assert [item["game_id"] for item in listed] == [game_id]
+    assert post(fresh, f"sessions/{game_id}/resume").status_code == 200
+    assert fresh.get(f"{PATH}/status", headers=headers()).json()["geometry"]["state"] == "required"
+    assert take(fresh, game_id).status_code == 409
+    assert len(hardware) == 1  # no reads or resume open devices
+    assert post(fresh, "connect", device_id=0, mode="stones2").status_code == 200
+    assert post(fresh, "calibrate", empty_confirmed=True).status_code == 200
+    assert take(fresh, game_id).status_code == 503  # fake camera cannot satisfy capture settle barrier
+
+
+def test_capture_follows_pass_order_retake_and_server_camera_provenance(capture_client):
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id, 0).status_code == 409
+    assert take(client, game_id, operator_confirmed=False).status_code == 409
+    initial = take(client, game_id, capture_condition={"camera_device_id": 8, "room": "desk"})
+    assert initial.status_code == 200, initial.text
+    assert initial.json()["capture_condition"]["camera_device_id"] == 0
+    assert initial.json()["led_point"] is None
+    assert take(client, game_id, 0).status_code == 200
+    assert take(client, game_id, 1).status_code == 422  # SGF pass is not a placement frame
+    assert take(client, game_id, 2).status_code == 200
+    before = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert before["next_step"] is None
+    assert before["steps"][2]["kind"] == "move" and before["steps"][2]["color"] == "W"
+    repeated = take(client, game_id, 0)
+    assert repeated.status_code == 200 and repeated.json()["idempotent"] is True
+    retaken = take(client, game_id, 0, overwrite_existing=True)
+    assert retaken.status_code == 200 and retaken.json()["idempotent"] is False
+    after = client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()
+    assert after["frames"][0] == before["frames"][0]
+    assert after["frames"][2] == before["frames"][2]
+    assert after["frames"][1]["frame_id"] != before["frames"][1]["frame_id"]
+    state = client.get(f"{PATH}/status", headers=headers()).json()
+    assert state["dataset"]["count"] == 3 and state["sgf"]["next_step"] is None
+
+
+def test_corrupt_published_session_never_falls_back_to_draft(capture_client):
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    directory = client.app.state.vision_runtime.out_dir / game_id
+    (directory / "manifest.json").write_bytes(b"broken")
+    before = snapshot(client.app.state.vision_runtime.out_dir)
+    assert client.get(f"{PATH}/sessions/{game_id}", headers=headers()).status_code == 503
+    assert post(client, f"sessions/{game_id}/resume").status_code == 503
+    assert take(client, game_id, 0).status_code == 503
+    assert client.get(f"{PATH}/status", headers=headers()).status_code == 503
+    assert snapshot(client.app.state.vision_runtime.out_dir) == before
+
+
+def test_published_resume_stays_stale_until_recent_same_frame_overlay_confirmation(capture_client, tmp_path):
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    fresh = TestClient(make_app(tmp_path))
+    runtime = fresh.app.state.vision_runtime
+    runtime.out_dir = client.app.state.vision_runtime.out_dir
+    assert post(fresh, f"sessions/{game_id}/resume").status_code == 200
+    assert fresh.get(f"{PATH}/status", headers=headers()).json()["geometry"]["state"] == "stale"
+    assert post(fresh, "connect", device_id=0, mode="stones2").status_code == 200
+    assert fresh.get(f"{PATH}/status", headers=headers()).json()["geometry"]["state"] == "stale"
+    assert take(fresh, game_id, 0).status_code == 409
+    assert (
+        post(fresh, "verify-geometry", game_id=game_id, frame_id="invented", overlay_confirmed=True).status_code == 409
+    )
+    preview = fresh.get(f"{PATH}/preview", headers=headers()).json()
+    assert preview["geometry_overlay_jpeg_base64"]
+    assert preview["geometry_revision"]
+    rejected = post(fresh, "verify-geometry", game_id=game_id, frame_id=preview["frame_id"], overlay_confirmed=False)
+    assert rejected.status_code == 409
+    verified = post(fresh, "verify-geometry", game_id=game_id, frame_id=preview["frame_id"], overlay_confirmed=True)
+    assert verified.status_code == 200 and verified.json()["state"] == "ready"
+    camera = runtime.camera
+
+    def grab(after_ts=None, settle_ms=0):
+        camera.reads += 1
+        return camera.frame, camera.reads, max(time.monotonic(), (after_ts or 0) + settle_ms / 1000 + 0.01)
+
+    camera.grab_fresh = grab
+    assert take(fresh, game_id, 0).status_code == 200
+    # New view calibration does not silently rewrite this published session's geometry.
+    assert post(fresh, "calibrate", empty_confirmed=True).status_code == 200
+    assert take(fresh, game_id, 0).status_code == 409
+
+
+@pytest.mark.parametrize("device_id,mode", [(1, "stones2"), (0, "led4")])
+def test_resumed_geometry_rejects_camera_or_mode_mismatch(capture_client, hardware, monkeypatch, device_id, mode):
+    from katrain.web.admin import vision_runtime
+
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    assert post(client, "disconnect").status_code == 200
+    monkeypatch.setattr(vision_runtime, "create_led", lambda port: Camera(port))
+    client.app.state.vision_runtime.led_port = "/dev/fake"
+    assert post(client, "connect", device_id=device_id, mode=mode).status_code == 200
+    assert post(client, f"sessions/{game_id}/resume").status_code == 200
+    preview = client.get(f"{PATH}/preview", headers=headers()).json()
+    assert (
+        post(
+            client, "verify-geometry", game_id=game_id, frame_id=preview["frame_id"], overlay_confirmed=True
+        ).status_code
+        == 409
+    )
+    assert take(client, game_id, 0).status_code == 409
+
+
+def test_import_invalid_or_without_ready_geometry_does_not_write(configured, tmp_path):
+    client = TestClient(make_app(tmp_path))
+    client.app.state.vision_runtime.out_dir = tmp_path / "vision"
+    assert post(client, "sgf", sgf="(;SZ[19];B[aa])").status_code == 409
+    assert not client.app.state.vision_runtime.out_dir.exists()
+
+
+def test_capture_disk_failure_preserves_published_progress(capture_client, monkeypatch):
+    from katrain.web.admin import vision_capture_txn
+
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    before = snapshot(client.app.state.vision_runtime.out_dir)
+    monkeypatch.setattr(vision_capture_txn, "_write_image", lambda *args: (_ for _ in ()).throw(OSError("full")))
+    assert take(client, game_id, 0).status_code == 507
+    assert snapshot(client.app.state.vision_runtime.out_dir) == before
+    assert client.get(f"{PATH}/status", headers=headers()).json()["sgf"]["next_step"] == 0
+
+
+def test_recent_geometry_preview_is_bound_to_latest_frame_and_expires(capture_client):
+    from katrain.web.admin.vision_runtime import GEOMETRY_VERIFY_TTL
+
+    client = capture_client
+    game_id = import_game(client)
+    assert take(client, game_id).status_code == 200
+    assert post(client, f"sessions/{game_id}/resume").status_code == 200
+    first = client.get(f"{PATH}/preview", headers=headers()).json()
+    runtime = client.app.state.vision_runtime
+    runtime._last_preview = None
+    second = client.get(f"{PATH}/preview", headers=headers()).json()
+    assert first["frame_id"] != second["frame_id"]
+    assert (
+        post(client, "verify-geometry", game_id=game_id, frame_id=first["frame_id"], overlay_confirmed=True).status_code
+        == 409
+    )
+    runtime._verification_preview["observed_monotonic"] -= GEOMETRY_VERIFY_TTL + 1
+    assert (
+        post(
+            client, "verify-geometry", game_id=game_id, frame_id=second["frame_id"], overlay_confirmed=True
+        ).status_code
+        == 409
+    )
+    assert runtime._geometry_stale is True
+
+
+def test_review_freeze_routes_return_actual_artifacts_and_status_invalidates_after_retake(capture_client):
+    import hashlib
+    from pathlib import Path as FilePath
+
+    cv2 = pytest.importorskip("cv2")
+    client = capture_client
+    game_id = import_game(client)
+    initial = take(client, game_id).json()
+    sample = client.get(f"{PATH}/sessions/{game_id}/frames/{initial['frame_id']}/review", headers=headers())
+    assert sample.status_code == 200, sample.text
+    assert sample.headers["cache-control"] == "no-store"
+    data = sample.json()
+    overlay = cv2.imdecode(np.frombuffer(base64.b64decode(data["overlay_jpeg_base64"]), np.uint8), cv2.IMREAD_COLOR)
+    assert overlay is not None and max(overlay.shape[:2]) <= 960
+    assert data["source_sha256"] == initial["sha256"] and data["boxes"] == []
+    assert post(client, f"sessions/{game_id}/freeze").status_code == 422  # both splits need frames
+    assert take(client, game_id, 0).status_code == 200
+    frozen = post(client, f"sessions/{game_id}/freeze")
+    assert frozen.status_code == 200, frozen.text
+    version = frozen.json()
+    assert version["id"].startswith("dataset-")
+    assert (
+        version["manifest_sha256"]
+        == hashlib.sha256((FilePath(version["path"]) / "manifest.json").read_bytes()).hexdigest()
+    )
+    status = client.get(f"{PATH}/status", headers=headers()).json()
+    assert status["dataset"]["state"] == "frozen" and status["dataset"]["id"] == version["id"]
+    repeated = post(client, f"sessions/{game_id}/freeze")
+    assert repeated.json()["idempotent"] is True
+    assert take(client, game_id, 0).json()["idempotent"] is True
+    assert client.get(f"{PATH}/status", headers=headers()).json()["dataset"]["state"] == "frozen"
+    assert take(client, game_id, 0, overwrite_existing=True).status_code == 200
+    assert client.get(f"{PATH}/status", headers=headers()).json()["dataset"]["state"] == "draft"
+    new_id = import_game(client)
+    assert new_id != game_id
+    assert client.get(f"{PATH}/status", headers=headers()).json()["dataset"]["id"] == new_id
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"val_fraction": 0},
+        {"val_fraction": 1},
+        {"val_fraction": True},
+        {"stone_frac": "1.05"},
+        {"margin_cells": -1},
+        {"output_root": "/tmp/x"},
+    ],
+)
+def test_freeze_route_rejects_invalid_parameters_before_work(capture_client, body):
+    client = capture_client
+    game_id = import_game(client)
+    assert client.post(f"{PATH}/sessions/{game_id}/freeze", json=body, headers=headers()).status_code == 422
+    assert not (client.app.state.vision_runtime.out_dir / "datasets").exists()
+
+
+@pytest.mark.parametrize("original", ["(;SZ[19:13];B[bb])", "broken", "(;SZ[19];B[zz])"])
+def test_invalid_sgf_route_preserves_current_active_session(capture_client, original):
+    client = capture_client
+    game_id = import_game(client)
+    before = snapshot(client.app.state.vision_runtime.out_dir)
+    assert post(client, "sgf", sgf=original).status_code == 422
+    assert snapshot(client.app.state.vision_runtime.out_dir) == before
+    assert client.get(f"{PATH}/status", headers=headers()).json()["sgf"]["game_id"] == game_id
+
+
+def test_corrupt_unpublished_draft_is_reported_and_cannot_activate(capture_client):
+    client = capture_client
+    game_id = import_game(client)
+    path = client.app.state.vision_runtime.out_dir / "drafts" / f"{game_id}.json"
+    path.write_bytes(b"broken")
+    assert client.get(f"{PATH}/sessions/{game_id}", headers=headers()).status_code == 503
+    assert post(client, f"sessions/{game_id}/resume").status_code == 503
+    listed = client.get(f"{PATH}/sessions", headers=headers()).json()["sessions"]
+    assert listed[0]["state"] == "error"

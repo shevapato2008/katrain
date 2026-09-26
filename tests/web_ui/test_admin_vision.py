@@ -295,6 +295,37 @@ def test_led_connect_outcome_releases_both_devices(hardware, monkeypatch, tmp_pa
     assert hardware[0].stops == 1
 
 
+def test_led_status_records_observed_transition_time(hardware, monkeypatch, tmp_path):
+    from katrain.web.admin import vision_runtime
+
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LED_PORT", "/dev/cu.test")
+    led = Camera("/dev/cu.test")
+    monkeypatch.setattr(vision_runtime, "create_led", lambda port: led)
+    observed_at = datetime(2026, 9, 26, tzinfo=timezone.utc)
+    monkeypatch.setattr(vision_runtime, "_now", lambda: observed_at)
+    with TestClient(make_app(tmp_path)) as client:
+        connected = client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "led4"}, headers=headers()).json()
+        initial_update = connected["led"]["updated_at"]
+        assert connected["led"]["state"] == "connected"
+
+        led.started = False
+        observed_at += timedelta(seconds=1)
+        disconnected = client.get(f"{PATH}/status", headers=headers()).json()
+        assert disconnected["led"]["state"] == "disconnected"
+        assert disconnected["led"]["updated_at"] == disconnected["observed_at"]
+        assert disconnected["led"]["updated_at"] != initial_update
+
+        observed_at += timedelta(seconds=1)
+        unchanged = client.get(f"{PATH}/status", headers=headers()).json()
+        assert unchanged["led"]["updated_at"] == disconnected["led"]["updated_at"]
+
+        led.started = True
+        observed_at += timedelta(seconds=1)
+        reconnected = client.get(f"{PATH}/status", headers=headers()).json()
+        assert reconnected["led"]["state"] == "connected"
+        assert reconnected["led"]["updated_at"] == reconnected["observed_at"]
+
+
 def test_disconnect_releases_real_camera_hub_lease(configured, monkeypatch, tmp_path):
     from katrain.web.admin import vision_runtime
     from katrain.web.core.camera_hub import CameraHub, CameraHubConfig

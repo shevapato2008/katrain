@@ -92,6 +92,9 @@ class AdminVisionRuntime:
             led_state = self._led_state
             if self.led is not None:
                 led_state = "connected" if self.led.is_connected() else "disconnected"
+                if led_state != self._led_state:
+                    self._led_state = led_state
+                    self._updated_at = observed_at
             provenance = {"source": "admin_runtime", "updated_at": self._updated_at}
             return {
                 "enabled": self.enabled,

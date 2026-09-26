@@ -1,4 +1,8 @@
 import numpy as np
+import pytest
+import subprocess
+import sys
+import uuid
 
 from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 
@@ -92,3 +96,84 @@ def test_camera_hub_controls_are_inert_before_start():
     assert hub.initial_exposure is None
     assert hub.current_auto_exposure is None
     assert hub.current_exposure is None
+
+
+def test_same_camera_device_is_busy_until_owner_stops():
+    device = f"camera-{uuid.uuid4().hex}"
+    first_camera, second_camera = FakeCamera(), FakeCamera()
+    first = CameraHub(CameraHubConfig(device_id=device), camera=first_camera)
+    second = CameraHub(CameraHubConfig(device_id=device), camera=second_camera)
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            second.start()
+        assert second_camera.open_calls == 0
+    finally:
+        first.stop()
+    second.start()
+    try:
+        assert second_camera.open_calls == 1
+    finally:
+        second.stop()
+
+
+def test_different_camera_devices_do_not_block_each_other():
+    device = uuid.uuid4().hex
+    first = CameraHub(CameraHubConfig(device_id=f"{device}-1"), camera=FakeCamera())
+    second = CameraHub(CameraHubConfig(device_id=f"{device}-2"), camera=FakeCamera())
+    first.start()
+    try:
+        second.start()
+        assert second.is_started
+    finally:
+        second.stop()
+        first.stop()
+
+
+def test_camera_open_failure_releases_device_for_retry():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+    broken.open = lambda: False
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(RuntimeError, match="Failed to open camera"):
+        first.start()
+    second = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    second.start()
+    second.stop()
+
+
+def test_camera_open_exception_releases_device_for_retry():
+    device = f"camera-{uuid.uuid4().hex}"
+    broken = FakeCamera()
+
+    def fail_open():
+        raise OSError("camera unplugged")
+
+    broken.open = fail_open
+    first = CameraHub(CameraHubConfig(device_id=device), camera=broken)
+    with pytest.raises(OSError, match="camera unplugged"):
+        first.start()
+    second = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    second.start()
+    second.stop()
+
+
+def test_camera_device_lease_blocks_another_process():
+    device = f"camera-{uuid.uuid4().hex}"
+    first = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+    script = """import sys
+from katrain.web.core.device_lease import DeviceBusy, DeviceLease
+try:
+    lease = DeviceLease.acquire('camera', sys.argv[1])
+except DeviceBusy:
+    sys.exit(0)
+else:
+    lease.release()
+    sys.exit(1)
+"""
+    first.start()
+    try:
+        result = subprocess.run([sys.executable, "-c", script, device], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0, result.stderr
+    finally:
+        first.stop()

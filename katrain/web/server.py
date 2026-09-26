@@ -636,6 +636,8 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.physical_play_config = None
 
     # One physical camera owner shared by capture, calibration, and recognition.
+    from katrain.web.core.device_lease import DeviceBusy
+
     camera_hub = None
     hardware_vision_state = None
     if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
@@ -697,6 +699,9 @@ async def _lifespan_board(app: FastAPI, log):
         camera_hub = CameraHub(hub_config)
         try:
             camera_hub.start()
+        except DeviceBusy as exc:
+            log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
+            camera_hub = None
         except RuntimeError as exc:
             # CameraHub uses this error only when CameraManager cannot open the
             # configured device. Preserve every other RuntimeError as a startup
@@ -755,14 +760,19 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.led_service import LedService
 
         led = LedService(led_config)
-        led.start()
-        app.state.led = led
-        app.state.led_last_activity = time.monotonic()
-        app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
-        # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
-        # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
-        _load_guidance_scale(app, log)
-        log.info("LED service started (port=%s)", led_config.serial_port)
+        try:
+            led.start()
+        except DeviceBusy as exc:
+            log.warning("LED occupied; continuing without LED guidance: %s", exc)
+            app.state.led = None
+        else:
+            app.state.led = led
+            app.state.led_last_activity = time.monotonic()
+            app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+            # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
+            # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
+            _load_guidance_scale(app, log)
+            log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
 

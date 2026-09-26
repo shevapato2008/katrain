@@ -125,6 +125,7 @@ class LedService:
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._serial = None
+        self._device_lease = None
         self._connected = False
         self._last_reconnect = 0.0
         self._last_errors: List[str] = []
@@ -175,12 +176,22 @@ class LedService:
         )
 
     def start(self) -> None:
+        if self._thread is not None and self._thread.is_alive():
+            return
         self._stop.clear()
         self._open_serial()
         self._thread = threading.Thread(target=self._worker, name="led-serial", daemon=True)
-        self._thread.start()
+        try:
+            self._thread.start()
+        except BaseException:
+            self._thread = None
+            self._close_serial()
+            raise
 
     def stop(self) -> None:
+        if self._thread is None:
+            self._close_serial()
+            return
         # Blackout via the WORKER (strict) so all serial I/O stays on one thread,
         # then tear down. No post-join serial access → no main/worker race.
         try:
@@ -195,6 +206,7 @@ class LedService:
         if self._thread:
             self._thread.join(timeout=3)
         self._close_serial()
+        self._thread = None
 
     def is_connected(self) -> bool:
         return self._connected
@@ -414,6 +426,12 @@ class LedService:
             self._serial.timeout = previous_timeout
 
     def _open_serial(self) -> None:
+        if self._device_lease is None:
+            # Imported here so standalone LED users can load this leaf module
+            # without importing the web application package.
+            from katrain.web.core.device_lease import DeviceLease
+
+            self._device_lease = DeviceLease.acquire("led", self.config.serial_port)
         try:
             self._serial = self._serial_factory()
             self._connected = False
@@ -461,7 +479,15 @@ class LedService:
         if now - self._last_reconnect < self._reconnect_interval:
             return
         self._last_reconnect = now
-        self._open_serial()
+        try:
+            self._open_serial()
+        except RuntimeError as exc:
+            from katrain.web.core.device_lease import DeviceBusy
+
+            if not isinstance(exc, DeviceBusy):
+                raise
+            self._last_errors = [str(exc)]
+            log.warning("LED serial unavailable: %s", exc)
 
     def _close_serial(self) -> None:
         if self._serial is not None:
@@ -471,3 +497,6 @@ class LedService:
                 pass
         self._serial = None
         self._connected = False
+        if self._device_lease is not None:
+            self._device_lease.release()
+            self._device_lease = None

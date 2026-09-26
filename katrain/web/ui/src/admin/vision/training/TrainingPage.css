@@ -3,13 +3,13 @@
 .training-heading h1 { font-size:30px;line-height:1.2;margin:0; }.training-heading p { font-size:14px;color:var(--admin-muted);margin:3px 0 0; }
 .training-location { font-size:16px;color:var(--admin-muted);display:flex;align-items:center;gap:8px; }.training-location svg { width:20px;height:20px; }
 .training-content { padding:14px 24px 26px; }.training-demo { margin:0 0 8px;font-size:13px;color:var(--admin-muted); }
-.training-grid { display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;margin-top:12px;align-items:start; }
+.training-grid { display:grid;grid-template-columns:330px minmax(0,1fr);gap:12px;margin-top:12px;align-items:start; }
 .training-panel { background:var(--admin-panel);border:1px solid var(--admin-line);border-radius:9px;overflow:hidden;min-width:0; }
 .training-panel-head { padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--admin-line); }.training-panel-head h2 { margin:0;font-size:20px; }.training-panel-head small { font-size:14px;color:var(--admin-muted); }
-.training-form { padding:14px 16px; }.training-field { display:grid;gap:6px;margin-bottom:12px;font-size:16px;color:var(--admin-muted); }
-.training-field select,.training-field input { width:100%;min-width:0;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);padding:8px 10px;font-size:16px;height:40px; }
+.training-form { padding:12px 16px; }.training-field { display:grid;gap:5px;margin-bottom:10px;font-size:14px;color:var(--admin-muted); }
+.training-page .training-field select,.training-page .training-field input { width:100%;min-width:0;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);padding:5px 9px;font-size:15px;height:38px; }
 .training-form-row { display:grid;grid-template-columns:1fr 1fr;gap:10px; }.training-form-row .training-field { min-width:0; }
-.training-help { margin:6px 0 12px;font-size:16px;line-height:1.6;color:var(--admin-muted); }.training-schema { font-size:16px;border-top:1px solid var(--admin-line);padding-top:12px;color:var(--admin-muted);margin:12px 0; }
+.training-help { margin:6px 0 10px;font-size:13.5px;line-height:1.55;color:var(--admin-muted); }.training-schema { font-size:14px;border-top:1px solid var(--admin-line);padding-top:12px;color:var(--admin-muted);margin:12px 0; }
 .training-button { font:inherit;font-size:17px;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);padding:8px 12px;min-height:40px;cursor:pointer; }
 .training-button.primary { background:var(--admin-accent);color:var(--admin-on-accent);border-color:var(--admin-accent); }.training-button:disabled { opacity:.45;cursor:not-allowed; }.training-button.full { width:100%; }
 .training-page :is(button,select,input,summary):focus-visible { outline:2px solid var(--admin-focus,var(--admin-accent));outline-offset:3px; }
@@ -28,9 +28,9 @@
 .training-run-body .training-help { margin-bottom:8px; }.training-run-actions { display:flex;justify-content:flex-end;gap:8px;padding-top:8px; }
 .training-models { margin-top:14px; }.training-model-table { width:100%;border-collapse:collapse;font-size:16px; }.training-model-table th,.training-model-table td { text-align:left;border-bottom:1px solid var(--admin-line);padding:9px 16px;vertical-align:middle; }
 .training-model-table th { background:var(--admin-panel2);font-weight:400;font-size:16px;color:var(--admin-muted); }.training-model-table td small { display:block;color:var(--admin-muted);font-size:14px;margin-top:3px; }.training-model-table tr:last-child td { border:0; }
-.training-model-empty { padding:20px 16px;color:var(--admin-muted);font-size:16px; }.training-foot { margin:12px 0 0;color:var(--admin-muted);font-size:16px; }
+.training-model-empty { padding:18px 16px;color:var(--admin-muted);font-size:15px; }.training-foot { margin:12px 0 0;color:var(--admin-muted);font-size:13.5px; }
 .training-dialog { width:min(480px,calc(100vw - 40px));padding:22px;border:1px solid var(--admin-line);border-radius:9px;background:var(--admin-panel);color:var(--admin-text);font:inherit; }.training-dialog::backdrop { background:#0009; }.training-dialog h2 { margin:0 0 12px;font-size:23px; }.training-dialog p { font-size:15px;line-height:1.65; }.training-dialog-actions { display:flex;justify-content:flex-end;gap:8px; }
-.training-advanced { margin:10px 0 14px;border-top:1px solid var(--admin-line);padding-top:12px; }.training-advanced summary { cursor:pointer;font-size:16px;color:var(--admin-muted);line-height:1.6; }.training-advanced[open] summary { margin-bottom:12px; }
+.training-advanced { margin:10px 0 14px;border-top:1px solid var(--admin-line);padding-top:12px; }.training-advanced summary { cursor:pointer;font-size:14.5px;color:var(--admin-muted);line-height:1.6; }.training-advanced[open] summary { margin-bottom:12px; }
 @media(max-width:1200px) { .training-grid { grid-template-columns:290px minmax(0,1fr); }.training-metrics { gap:8px; }.training-panel-head { flex-wrap:wrap; } }
 @media(max-width:900px) { .training-grid { grid-template-columns:1fr; }.training-location { display:none; }
 .training-feedback { margin:0 0 10px;padding:10px 12px;border:1px solid var(--admin-line);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px; }

@@ -16,8 +16,8 @@
 .dg-figure { position:relative; width:100%; height:100%; }
 .dg-figure img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; }
 .dg-boxes { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-.dg-page { --dg-box-0:#5cc3ad; --dg-box-1:#7fa9dc; --dg-box-2:#ff8a80; --dg-box-3:#7fe29a; --dg-box-sustain:#f1c07c; --dg-box-below:#9c9a96; }
-@media (prefers-color-scheme:light) { .dg-page { --dg-box-0:#2f9c86; --dg-box-1:#3f6fb0; --dg-box-2:#c9453b; --dg-box-3:#2f8f4b; --dg-box-sustain:#b7791f; --dg-box-below:#74859b; } }
+/* Boxes sit on the camera image, which does not change with the page theme: one fixed set in both themes. */
+.dg-page { --dg-box-0:#2f9c86; --dg-box-1:#4f86c6; --dg-box-2:#d14b3f; --dg-box-3:#3f9a4f; --dg-box-sustain:#d9962b; --dg-box-below:#8a8a8a; }
 .dg-box { fill:none; stroke-width:2; vector-effect:non-scaling-stroke; }
 .dg-box.c0 { stroke:var(--dg-box-0); } .dg-box.c1 { stroke:var(--dg-box-1); } .dg-box.c2 { stroke:var(--dg-box-2); } .dg-box.c3 { stroke:var(--dg-box-3); }
 .dg-box.sustain { stroke:var(--dg-box-sustain); } .dg-box.below { stroke:var(--dg-box-below); }

@@ -12,8 +12,10 @@ from katrain.web.admin.routers.auth import router as auth_router
 from katrain.web.admin.routers.cron import router as cron_router
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
 from katrain.web.admin.routers.vision import router as vision_router
+from katrain.web.admin.routers.vision_training import router as vision_training_router
 from katrain.web.admin.settings import check_startup
 from katrain.web.admin.vision_runtime import AdminVisionRuntime
+from katrain.web.admin.vision_training_config import create_training_service
 from katrain.web.api.v1.endpoints.tutorials import router as tutorial_read_router
 from katrain.web.core.config import settings as web_settings
 from katrain.web.core.db import get_db
@@ -49,6 +51,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
 
         session_factory = SessionLocal
     vision_runtime = AdminVisionRuntime(config, bind_host=bind_host)
+    vision_training = create_training_service(config.env, bind_host)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -56,11 +59,13 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
             yield
         finally:
             vision_runtime.shutdown()
+            vision_training.close()
 
     app = FastAPI(title="katrain-admin", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.admin_config = config
     app.state.session_factory = session_factory
     app.state.vision_runtime = vision_runtime
+    app.state.vision_training = vision_training
     content_security_policy = _media_csp()
 
     @app.middleware("http")
@@ -71,6 +76,8 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
         response.headers["Referrer-Policy"] = "no-referrer"
         if request.url.path == "/api/admin/vision/preview":
             response.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/admin/vision-training/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
 
     @app.get("/api/admin/health")
@@ -80,6 +87,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(auth_router)
     app.include_router(cron_router, prefix="/api/admin/cron", tags=["admin-cron"])
     app.include_router(vision_router, prefix="/api/admin/vision", tags=["admin-vision"])
+    app.include_router(vision_training_router, prefix="/api/admin/vision-training", tags=["admin-vision-training"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db

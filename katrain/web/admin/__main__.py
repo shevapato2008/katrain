@@ -3,11 +3,11 @@
 import uvicorn
 
 from katrain.web.admin.app import create_admin_app
-from katrain.web.admin.settings import local_vision_requested
+from katrain.web.admin.settings import local_vision_requested, test_training_requested
 
 
 def main() -> None:
-    host = "127.0.0.1" if local_vision_requested() else "0.0.0.0"
+    host = "127.0.0.1" if local_vision_requested() or test_training_requested() else "0.0.0.0"
     app = create_admin_app(bind_host=host)
     uvicorn.run(app, host=host, port=8010)
 

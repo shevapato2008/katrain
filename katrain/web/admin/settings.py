@@ -23,6 +23,10 @@ def local_vision_requested() -> bool:
     return os.getenv("KATRAIN_ADMIN_ENV") == "local" and os.getenv("KATRAIN_ADMIN_VISION_LOCAL") == "1"
 
 
+def test_training_requested() -> bool:
+    return os.getenv("KATRAIN_ADMIN_ENV") == "test" and os.getenv("KATRAIN_ADMIN_VISION_TRAINING") == "1"
+
+
 def check_startup() -> AdminConfig:
     """Reject missing or unsafe admin credentials before the app accepts requests."""
     if os.getenv("KATRAIN_MODE", "server") != "server":

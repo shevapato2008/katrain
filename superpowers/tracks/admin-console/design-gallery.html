@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,">
+<title>智星盒管理后台 · 设计稿导航</title>
+<style>
+:root{--bg:#111316;--bar:#1c2024;--panel:#252a2f;--panel2:#20252a;--well:#0e1012;--line:#414951;--text:#f6f3ef;--muted:#c7c2bb;--subtle:#aaa8a5;--accent:#d89367;--on-accent:#231711;--active:#4a342d;--active-text:#ffe8d7;--link:#efb698;--ok:#9fcf9a;--warn:#f5c98a;--warn-bg:#49321c;--hist:#8f8a84;color-scheme:dark}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#e9eef5;--bar:#f8fafc;--panel:#fff;--panel2:#f5f8fc;--well:#dfe6f0;--line:#cbd5e3;--text:#15243b;--muted:#586982;--subtle:#74859b;--accent:#315f94;--on-accent:#fff;--active:#d9e8fa;--active-text:#183e6d;--link:#285d99;--ok:#2f6b3a;--warn:#795016;--warn-bg:#fff1d5;--hist:#7b8594;color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9eef5;--bar:#f8fafc;--panel:#fff;--panel2:#f5f8fc;--well:#dfe6f0;--line:#cbd5e3;--text:#15243b;--muted:#586982;--subtle:#74859b;--accent:#315f94;--on-accent:#fff;--active:#d9e8fa;--active-text:#183e6d;--link:#285d99;--ok:#2f6b3a;--warn:#795016;--warn-bg:#fff1d5;--hist:#7b8594;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;height:100vh;display:grid;grid-template-columns:300px minmax(0,1fr);background:var(--bg);color:var(--text);font:16px/1.5 "Kaiti SC","STKaiti","KaiTi","LXGW WenKai",serif}
+a{color:var(--link)}
+aside{border-right:1px solid var(--line);background:var(--bar);overflow:auto;display:flex;flex-direction:column}
+.brand{padding:18px 20px 12px;border-bottom:1px solid var(--line)}
+.brand h1{margin:0;font-size:22px}.brand p{margin:4px 0 0;font-size:13px;color:var(--muted)}
+.group{padding:12px 12px 4px}.group>h2{margin:0 8px 6px;font-size:13px;font-weight:400;color:var(--subtle);letter-spacing:.08em}
+.mod{margin-bottom:6px;border-radius:8px}
+.mod>button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:17px}
+.mod>button:hover{background:var(--panel2)}
+.mod.current>button{background:var(--active);color:var(--active-text)}
+.chip{margin-left:auto;font-size:12px;padding:1px 7px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.chip.final,.chip.approved{color:var(--ok)}.chip.draft{color:var(--warn)}.chip.hist{color:var(--hist)}
+.states{list-style:none;margin:2px 0 4px;padding:0 0 0 18px}
+.states button{all:unset;box-sizing:border-box;display:block;width:100%;padding:3px 10px;border-left:2px solid var(--line);font-size:15px;color:var(--muted);cursor:pointer}
+.states button:hover{color:var(--text)}.states button[aria-current="true"]{color:var(--text);border-left-color:var(--accent)}
+.side-foot{margin-top:auto;padding:12px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.side-foot kbd{font-family:inherit;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:12px}
+main{display:flex;flex-direction:column;min-width:0;overflow:auto}
+.head{padding:14px 24px;border-bottom:1px solid var(--line);background:var(--bar);display:flex;gap:16px;align-items:flex-start;justify-content:space-between}
+.head h2{margin:0;font-size:26px;display:flex;align-items:center;gap:10px}.head h2 .chip{margin-left:0;font-size:13px}
+.head p{margin:4px 0 0;font-size:14px;color:var(--muted);max-width:880px}
+.links{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;flex:none;max-width:420px}
+.btn{font:inherit;font-size:15px;min-height:34px;padding:4px 11px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}.btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.toolbar{display:flex;align-items:center;gap:10px;padding:10px 24px;flex-wrap:wrap}
+.toolbar .label{font-size:14px;color:var(--muted)}
+.seg{display:inline-flex;gap:0}.seg .btn{border-radius:0}.seg .btn:first-child{border-radius:6px 0 0 6px}.seg .btn:last-child{border-radius:0 6px 6px 0}.seg .btn+.btn{border-left:0}
+.state-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.spacer{flex:1}
+.facts{margin:0 24px 10px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:14px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:3px 14px}
+.facts dt{color:var(--subtle)}.facts dd{margin:0;color:var(--text)}
+.facts dd.gate{color:var(--warn)}
+.stage-wrap{padding:0 24px 12px}
+.frame{position:relative;width:100%;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--well)}
+.frame iframe,.frame img{position:absolute;left:0;top:0;width:1440px;height:900px;border:0;transform-origin:0 0;display:block}
+.frame img{object-fit:contain}
+.caption{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);margin-top:6px}
+.caption code{font-size:12px}
+.pager{display:flex;justify-content:space-between;gap:12px;padding:0 24px 16px}
+.pager .btn{max-width:48%;overflow:hidden;text-overflow:ellipsis}
+.history{margin:4px 24px 24px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.history summary{cursor:pointer;padding:10px 14px;font-size:16px}
+.history table{width:100%;border-collapse:collapse;font-size:14px}
+.history th,.history td{text-align:left;padding:6px 14px;border-top:1px solid var(--line);vertical-align:top}
+.history th{color:var(--subtle);font-weight:400}
+:is(button,a,summary):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<aside aria-label="设计稿模块">
+  <div class="brand"><h1>设计稿导航</h1><p>智星盒 StellaBox 管理后台 · Codex 设计稿汇总（截至 2026-09-26）</p></div>
+  <nav id="nav"></nav>
+  <div class="side-foot"><kbd>←</kbd> <kbd>→</kbd> 切换状态 · <kbd>[</kbd> <kbd>]</kbd> 切换模块 · <kbd>S</kbd> 截图/实时<br>地址栏 <code>#模块/状态</code> 可直接引用。</div>
+</aside>
+<main>
+  <header class="head">
+    <div><h2 id="title"></h2><p id="summary"></p></div>
+    <div class="links" id="links"></div>
+  </header>
+  <div class="toolbar">
+    <span class="label">状态</span><div class="state-tabs" id="tabs"></div>
+    <span class="spacer"></span>
+    <span class="label">显示</span>
+    <div class="seg" role="group" aria-label="显示方式"><button class="btn" id="mode-live">实时 HTML</button><button class="btn" id="mode-shot">入库截图</button></div>
+    <button class="btn" id="theme-btn" title="只切换本导航页；被嵌入的教程/定时任务稿跟随系统深浅">导航页主题</button>
+  </div>
+  <dl class="facts" id="facts"></dl>
+  <div class="stage-wrap">
+    <div class="frame" id="frame"></div>
+    <div class="caption"><span id="cap-left"></span><span id="cap-right"></span></div>
+  </div>
+  <div class="pager"><button class="btn" id="prev"></button><button class="btn" id="next"></button></div>
+  <details class="history"><summary>历史稿（仅供追溯，不再作为验收或设计依据）</summary><table><thead><tr><th>文件</th><th>说明</th></tr></thead><tbody id="history"></tbody></table></details>
+</main>
+<script>
+// 仅引用仓库中已提交的设计稿与截图；本页不连接任何服务，不含业务数据。
+const S1='slice1/design/',S2='slice2/design/',S3='slice3/design/',S4='slice4/design/',S5='slice5/design/';
+const modules=[
+ {id:'tutorial',group:'已实现模块',title:'教程管理',chip:['final','最终参考稿'],
+  summary:'教材/章/节/图选择、原书页、2D 电子棋盘与逐手滑条、棋图编辑与讲解、语音入口与人工审核。本稿直接复用生产 AdminApp.css，跟随系统深浅。',
+  facts:[['设计','最终对照稿 · 独立 Astra APPROVE（详情 / 编辑）'],['实现','真实 API 与正式前端已集成，Fixture 已删除；已部署测试机'],['待办','真实 Edge TTS、目标媒体存储、Fan 端到端验收、生产发布；公众成品页由另一 session 负责']],
+  html:'tutorial-admin-design-final.html',notes:'tutorial-design-notes.md',
+  states:[{id:'detail',label:'详情',q:'capture=true',png:'tutorial-admin-design-final-detail-1440x900.png'},{id:'editing',label:'编辑',q:'state=editing&capture=true',png:'tutorial-admin-design-final-editing-1440x900.png'}]},
+ {id:'cron',group:'已实现模块',title:'定时任务',chip:['final','最终参考稿'],
+  summary:'9 项真实任务、cron 心跳与健康判定、运行历史/完整错误、两条分析队列，15 秒刷新；只读，不做立即运行/暂停。任务名统一「模块 - 功能」。',
+  facts:[['设计','最终对照稿 · 独立 Astra APPROVE（列表 / 抽屉）'],['实现','已集成，测试机验证过真实 9 项状态、心跳与队列'],['待办','最终字号版未重新部署测试机；生产发布与 Fan 最终复核']],
+  html:S1+'admin-cron-final.html',notes:S1+'design-notes.md',
+  states:[{id:'list',label:'任务列表',q:'capture=true',png:S1+'admin-cron-final-list-1440x900.png'},{id:'drawer',label:'详情抽屉',q:'drawer=1&capture=true',png:S1+'admin-cron-final-drawer-1440x900.png'}]},
+ {id:'performance',group:'待接入',title:'性能监控',chip:['approved','设计已批准'],
+  summary:'后台内嵌 Grafana（不是外跳链接）。未接入态不显示 iframe 或数据；内嵌示意态只有明确标注的无数据占位。',
+  facts:[['设计','内嵌 Grafana HTML + 隔离 Fixture 四图 · 独立 Astra APPROVE'],['实现','正式后台尚无监控功能；旧 Netdata/外跳方案已废弃'],['关卡','需 Fan 授权一次只读 SSH，核实 home-ubuntu 的 Grafana、数据源、鉴权与 iframe/CSP 策略']],
+  html:S2+'admin-performance-access.html',notes:S2+'design-notes.md',fourup:S2+'performance-grafana-fourup.html',
+  states:[{id:'unconnected-dark',label:'未接入 · 夜',q:'state=unconnected&theme=dark&capture=true',png:S2+'performance-grafana-design-unconnected-dark-1440x900.png'},{id:'embedded-dark',label:'内嵌示意 · 夜',q:'state=connected&theme=dark&capture=true',png:S2+'performance-grafana-design-embedded-dark-1440x900.png'},{id:'embedded-light',label:'内嵌示意 · 昼',q:'state=connected&theme=light&capture=true',png:S2+'performance-grafana-design-embedded-light-1440x900.png'}]},
+ {id:'capture',group:'视觉实验室',title:'A · 采集与数据集',chip:['approved','已批准 · 已集成'],
+  summary:'Mac 摄像头连接、同帧原图/warp、空盘标定、SGF 导入逐手采集、会话恢复、样本叠框复核与不可变数据集冻结。',
+  facts:[['设计','v2 操作稿 + 正式 React 四态四图 · 独立 Astra APPROVE'],['实现','本地前后端已集成，v1 Fixture 已删除'],['关卡','真实相机/棋盘/LED 走查（Task5 Step4）；上传测试机未实现，需授权']],
+  html:S3+'admin-vision-capture-v2.html',notes:S3+'design-notes.md',fourup:S3+'vision-v2-fourup.html',
+  states:[{id:'unconnected-dark',label:'未连接 · 夜',q:'state=unconnected&theme=dark&capture=true',png:S3+'vision-v2-design-unconnected-dark-1440x900.png'},{id:'ready-dark',label:'可采集 · 夜',q:'state=ready&theme=dark&capture=true',png:S3+'vision-v2-design-ready-dark-1440x900.png'},{id:'stale-dark',label:'恢复待复核 · 夜',q:'state=stale&theme=dark&capture=true',png:S3+'vision-v2-design-stale-dark-1440x900.png'},{id:'review-light',label:'样本复核 · 昼',q:'state=ready&theme=light&dialog=review&capture=true',png:S3+'vision-v2-design-review-light-1440x900.png'}]},
+ {id:'training',group:'视觉实验室',title:'B · 训练与模型',chip:['approved','已批准 · 已集成'],
+  summary:'冻结数据集创建训练运行，单卡、一次一个 run；进度/日志/指标与只读模型版本。未观测指标显示「—」不填 0。',
+  facts:[['设计','HTML + Fixture 四图 · 独立 Astra APPROVE；真实空态截图另获 APPROVE'],['实现','本地正式前后端已集成（API 前缀 /api/admin/vision-training），Fixture 已删除'],['关卡','GPU 映射/预留核实、上传数据、部署训练服务、真实训练与取消验收，均需授权']],
+  html:S4+'admin-vision-training.html',notes:S4+'design-notes.md',fourup:S4+'training-fourup.html',runtime:S4+'training-runtime-disabled-dark-1440x900.png',
+  states:[{id:'unknown-dark',label:'未读取 · 夜',q:'state=unknown&theme=dark&capture=true',png:S4+'training-design-unknown-dark-1440x900.png'},{id:'running-dark',label:'训练中 · 夜',q:'state=running&theme=dark&capture=true',png:S4+'training-design-running-dark-1440x900.png'},{id:'failed-dark',label:'失败 · 夜',q:'state=failed&theme=dark&capture=true',png:S4+'training-design-failed-dark-1440x900.png'},{id:'completed-light',label:'完成 · 昼',q:'state=completed&theme=light&capture=true',png:S4+'training-design-completed-light-1440x900.png'}]},
+ {id:'diagnostics',group:'视觉实验室',title:'C · 本机部署与诊断',chip:['draft','草稿 · 待视觉批准'],
+  summary:'本机可信模型激活/回滚，观察真实识别链同一处理批次的七阶段：原图、纯 warp、NMS 后框、业务筛选框、原始定位投影（诊断派生）、纠偏后棋盘、最终发布棋盘。',
+  facts:[['设计','Task1 HTML 草稿；独立视觉批准尚未完成（当前断点）'],['实现','React Fixture、契约、observer、模型管理/API 均未开始'],['关卡','视觉门通过前不写后端；真实模型拉取/加载/设备验收需授权']],
+  html:S5+'admin-vision-diagnostics.html',notes:S5+'design-notes.md',
+  states:[{id:'unconnected-dark',label:'未连接 · 夜',q:'state=unconnected-dark&capture=true',png:S5+'diagnostics-design-unconnected-dark-1440x900.png'},{id:'ready-dark',label:'就绪 · 夜',q:'state=ready-dark&capture=true',png:S5+'diagnostics-design-ready-dark-1440x900.png'},{id:'running-dark',label:'诊断中 · 夜',q:'state=running-dark&capture=true',png:S5+'diagnostics-design-running-dark-1440x900.png'},{id:'stale-light',label:'快照陈旧 · 昼',q:'state=stale-light&capture=true',png:S5+'diagnostics-design-stale-light-1440x900.png'}]}
+];
+const historyItems=[
+ ['tutorial-admin-design.html','教程初稿：Galaxy 绿色主题、52px 顶栏/216px 侧栏'],
+ ['tutorial-admin-design-v2.html','教程 v2：B 石墨铜 / C 雾白蓝与楷体的选择过程'],
+ ['tutorial-visual-review.md','教程旧四图记录（tutorial-fourup-*.png）'],
+ [S1+'admin-cron-design.html','定时任务早期设计稿（?theme=light&state=failed 等 8 态）'],
+ [S1+'admin-cron-v3.html','定时任务 v3：精简顶部状态 + 任务用途说明'],
+ [S2+'performance-fourup.html','性能监控旧「独立入口/外跳」方案四图，已废弃'],
+ [S3+'admin-vision-capture.html','采集 v1 静态展示稿'],
+ [S3+'vision-capture-fourup.html','采集 v1 Fixture 四图（Fixture 已删除）']
+];
+const $=id=>document.getElementById(id);
+let mi=0,si=0,mode='live';
+const flat=modules.flatMap((m,a)=>m.states.map((s,b)=>[a,b]));
+function nav(){
+ const groups=[...new Set(modules.map(m=>m.group))];
+ $('nav').innerHTML=groups.map(g=>'<div class="group"><h2>'+g+'</h2>'+modules.map((m,a)=>m.group!==g?'':'<div class="mod'+(a===mi?' current':'')+'"><button data-m="'+a+'">'+m.title+'<span class="chip '+m.chip[0]+'">'+m.chip[1]+'</span></button><ul class="states">'+m.states.map((s,b)=>'<li><button data-m="'+a+'" data-s="'+b+'" aria-current="'+(a===mi&&b===si)+'">'+s.label+'</button></li>').join('')+'</ul></div>').join('')+'</div>').join('');
+ $('nav').querySelectorAll('button').forEach(b=>b.onclick=()=>go(+b.dataset.m,+(b.dataset.s||0)));
+}
+function fit(){
+ const f=$('frame'),w=f.clientWidth,scale=w/1440;f.style.height=Math.round(900*scale)+'px';
+ const el=f.firstElementChild;if(el)el.style.transform='scale('+scale+')';
+ $('cap-right').textContent='1440×900 原尺寸 · 缩放 '+Math.round(scale*100)+'%';
+}
+function render(){
+ const m=modules[mi],s=m.states[si],url=m.html+'?'+s.q;
+ $('title').innerHTML=m.title+'<span class="chip '+m.chip[0]+'">'+m.chip[1]+'</span>';
+ $('summary').textContent=m.summary;
+ $('facts').innerHTML=m.facts.map(([k,v])=>'<dt>'+k+'</dt><dd'+(k==='关卡'?' class="gate"':'')+'>'+v+'</dd>').join('');
+ $('links').innerHTML='<a class="btn" target="_blank" href="'+url+'">新标签打开此状态</a><a class="btn" target="_blank" href="'+m.notes+'">设计记录</a>'+(m.fourup?'<a class="btn" target="_blank" href="'+m.fourup+'">四图对照</a>':'')+(m.runtime?'<a class="btn" target="_blank" href="'+m.runtime+'">真实空态截图</a>':'');
+ $('tabs').innerHTML=m.states.map((x,b)=>'<button class="btn" data-s="'+b+'" aria-pressed="'+(b===si)+'">'+x.label+'</button>').join('');
+ $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>go(mi,+b.dataset.s));
+ $('mode-live').setAttribute('aria-pressed',mode==='live');$('mode-shot').setAttribute('aria-pressed',mode==='shot');
+ $('frame').innerHTML=mode==='live'?'<iframe title="'+m.title+' · '+s.label+'（实时 HTML 设计稿）" src="'+url+'"></iframe>':'<img alt="'+m.title+' · '+s.label+'（入库截图）" src="'+s.png+'">';
+ $('cap-left').innerHTML=mode==='live'?'实时 HTML：<code>'+url+'</code>':'入库截图：<code>'+s.png+'</code>';
+ const k=flat.findIndex(([a,b])=>a===mi&&b===si),p=flat[(k-1+flat.length)%flat.length],n=flat[(k+1)%flat.length];
+ const name=([a,b])=>modules[a].title+' · '+modules[a].states[b].label;
+ $('prev').textContent='← '+name(p);$('prev').onclick=()=>go(...p);
+ $('next').textContent=name(n)+' →';$('next').onclick=()=>go(...n);
+ history.replaceState(null,'','#'+m.id+'/'+s.id);document.title=m.title+' · '+s.label+' · 设计稿导航';
+ nav();fit();
+}
+function go(a,b){mi=a;si=b;render();}
+function fromHash(){const [mid,sid]=location.hash.slice(1).split('/');const a=modules.findIndex(m=>m.id===mid);if(a<0)return;const b=Math.max(0,modules[a].states.findIndex(s=>s.id===sid));mi=a;si=b;}
+$('mode-live').onclick=()=>{mode='live';render();};$('mode-shot').onclick=()=>{mode='shot';render();};
+$('theme-btn').onclick=()=>{const r=document.documentElement,dark=matchMedia('(prefers-color-scheme: dark)').matches,cur=r.dataset.theme||(dark?'dark':'light');r.dataset.theme=cur==='dark'?'light':'dark';};
+document.addEventListener('keydown',e=>{if(e.target.closest('input,select,textarea')||e.metaKey||e.ctrlKey||e.altKey)return;const k=flat.findIndex(([a,b])=>a===mi&&b===si);
+ if(e.key==='ArrowRight')go(...flat[(k+1)%flat.length]);else if(e.key==='ArrowLeft')go(...flat[(k-1+flat.length)%flat.length]);
+ else if(e.key===']')go((mi+1)%modules.length,0);else if(e.key==='[')go((mi-1+modules.length)%modules.length,0);
+ else if(e.key==='s'||e.key==='S'){mode=mode==='live'?'shot':'live';render();}});
+$('history').innerHTML=historyItems.map(([f,d])=>'<tr><td><a target="_blank" href="'+f+'">'+f+'</a></td><td>'+d+'</td></tr>').join('');
+new ResizeObserver(fit).observe($('frame'));
+window.addEventListener('hashchange',()=>{fromHash();render();});
+fromHash();render();
+</script>
+</body>
+</html>

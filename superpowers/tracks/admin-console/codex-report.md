@@ -2,6 +2,7 @@
 
 ## 2026-09-26 Claude 接手快照（覆盖下文历史状态）
 
+- [设计稿导航](./design-gallery.html)：汇总六个模块现行设计稿（实时 HTML / 入库截图切换、`#模块/状态` 可引用、四图与设计记录入口），历史稿折叠在页底；在仓库根目录 `python3 -m http.server 8765 --bind 127.0.0.1` 后打开 `http://127.0.0.1:8765/superpowers/tracks/admin-console/design-gallery.html`。
 - Fan 要求停止此轮功能推进，写完整接手 prompt，并明确授权把现有成果 commit & push 到 `feature/admin-console`。详细需求、文件、待办、权限及下一步见 [Claude 接手 prompt](./claude-handoff-prompt.md)。此次授权不包含合并 develop、父仓 submodule、远程、部署或真实训练。
 - 功能基线 `a831389e`；C 计划已独立批准，`slice5/design/admin-vision-diagnostics.html` 和四态1440×900图作为**未经最终独立视觉批准的设计草稿**随交接提交。React Fixture/契约/C后端均未开始；接手先完成Task1视觉门，不能把设计示例当真实诊断。
 - 本次新鲜验证：后端训练/采集/数据集/传输9文件 **215 passed**，前端8文件 **55 passed**，`build:admin`成功；命令见接手prompt。仅既有passlib/Node环境警告。仍未碰真实相机/LED、上传、GPU、模型、目标数据库或部署。

@@ -239,6 +239,15 @@ class AdminVisionRuntime:
                     raise VisionError(422, "Calibration confidence is too low")
                 if not geometry.empty_self_check_ok:
                     raise VisionError(422, "Board empty self-check failed")
+                # A baseline built from this burst can absorb stationary stones.
+                # Independently check absolute colors before accepting that baseline.
+                import cv2
+                from katrain.vision.tools.auto_label import label_board_image
+
+                for frame in frames:
+                    rectified = cv2.warpPerspective(frame, geometry.M, (geometry.out_size, geometry.out_size))
+                    if label_board_image(rectified):
+                        raise VisionError(422, "Board is not empty; remove all stones before calibration")
                 if not self.camera.is_connected():
                     raise VisionError(409, "Camera connection lost during calibration")
             except Exception as exc:

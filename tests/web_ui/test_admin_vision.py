@@ -527,3 +527,23 @@ def test_led_calibration_clears_led_and_records_actual_opencv_source(
         assert client.get(f"{PATH}/status", headers=headers()).json()["led"]["state"] == "connected"
     else:
         assert hardware[0].reads == 0 and calibration[1] == []
+
+
+@pytest.mark.parametrize("stone_color", [None, (10, 10, 10), (245, 245, 245)])
+def test_real_calibration_rejects_stationary_stones(hardware, tmp_path, stone_color):
+    cv2 = pytest.importorskip("cv2")
+    image = np.full((1400, 1800, 3), 40, np.uint8)
+    image[200:1201, 400:1401] = (100, 165, 205)
+    for index in range(19):
+        cv2.line(image, (450, 250 + index * 50), (1350, 250 + index * 50), (30, 40, 50), 2)
+        cv2.line(image, (450 + index * 50, 250), (450 + index * 50, 1150), (30, 40, 50), 2)
+    if stone_color is not None:
+        cv2.circle(image, (900, 700), 21, stone_color, -1)
+    with TestClient(make_app(tmp_path)) as client:
+        client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+        hardware[0].frame = image
+        response = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+        assert response.status_code == (200 if stone_color is None else 422)
+        if stone_color is not None:
+            assert client.app.state.vision_runtime.geometry is None
+            assert "empty" in response.json()["detail"].lower()

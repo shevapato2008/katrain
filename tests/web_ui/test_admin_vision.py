@@ -89,6 +89,10 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("POST", "sessions/example/undo", {"frame_id": "example", "operator_confirmed": True}),
         ("POST", "sessions/example/end", {"operator_confirmed": True}),
         ("POST", "led-test", {"operator_confirmed": True}),
+        ("POST", "fiducial", {"mode": "off"}),
+        ("GET", "models", None),
+        ("POST", "models/activate", {"model_id": "model-" + "0" * 64, "confirmed": True}),
+        ("POST", "models/rollback", {"confirmed": True}),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):

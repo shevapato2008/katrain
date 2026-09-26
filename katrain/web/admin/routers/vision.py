@@ -65,6 +65,17 @@ class FiducialIn(BaseModel):
     mode: Literal["off", "every-move"]
 
 
+class ActivateModelIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model_id: Annotated[str, Field(strict=True, pattern=r"^model-[0-9a-f]{64}$")]
+    confirmed: Confirmed = False
+
+
+class ConfirmedIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmed: Confirmed = False
+
+
 class ConfirmIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     operator_confirmed: Confirmed = False
@@ -269,3 +280,19 @@ def led_test(body: ConfirmIn, request: Request):
 @router.post("/fiducial", response_model=VisionStatus)
 def fiducial(body: FiducialIn, request: Request):
     return _call(request, "set_fiducial", body.mode)
+
+
+@router.get("/models")
+def models(request: Request, response: Response):
+    response.headers["Cache-Control"] = "no-store"
+    return _call(request, "list_models")
+
+
+@router.post("/models/activate")
+def activate_model(body: ActivateModelIn, request: Request):
+    return _call(request, "activate_model", body.model_id, body.confirmed)
+
+
+@router.post("/models/rollback")
+def rollback_model(body: ConfirmedIn, request: Request):
+    return _call(request, "rollback_model", body.confirmed)

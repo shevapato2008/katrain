@@ -91,6 +91,8 @@ class AdminVisionRuntime:
         self._sleep = time.sleep
         # LEDs never flash for geometry unless the operator opts in (product rule).
         self._fiducial_preference = "off"
+        self._model_registry = None
+        self._model_loader = None  # None -> real ultralytics loader; tests inject a fake
 
     def _coordinator(self):
         from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
@@ -536,6 +538,46 @@ class AdminVisionRuntime:
             self._fiducial_preference = mode
             self._updated_at = _now()
             return self.status()
+
+    def _models(self):
+        from katrain.web.admin.vision_models import VisionModelRegistry, load_ultralytics
+
+        root = self.out_dir / "models"
+        if self._model_registry is None or self._model_registry.root != root.expanduser().resolve():
+            root.mkdir(parents=True, exist_ok=True)
+            self._model_registry = VisionModelRegistry(root, loader=self._model_loader or load_ultralytics)
+        return self._model_registry
+
+    def _model_call(self, operation, *args):
+        from katrain.web.admin.vision_models import VisionModelError
+
+        try:
+            return getattr(self._models(), operation)(*args)
+        except VisionModelError as exc:
+            raise VisionError(exc.status_code, str(exc)) from exc
+
+    def list_models(self) -> dict:
+        self.require_enabled()
+        with self._lock:
+            return self._model_call("list")
+
+    def activate_model(self, model_id: str, confirmed: bool) -> dict:
+        self.require_enabled()
+        with self._lock:
+            if confirmed is not True:
+                raise VisionError(409, "Confirm activating this model")
+            result = self._model_call("activate", model_id)
+            self._updated_at = _now()
+            return result
+
+    def rollback_model(self, confirmed: bool) -> dict:
+        self.require_enabled()
+        with self._lock:
+            if confirmed is not True:
+                raise VisionError(409, "Confirm rolling back to the previous model")
+            result = self._model_call("rollback")
+            self._updated_at = _now()
+            return result
 
     def _require_led(self):
         if self.mode != "led4" or self.led is None or not self.led.is_connected():

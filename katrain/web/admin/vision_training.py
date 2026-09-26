@@ -16,6 +16,7 @@ from pathlib import Path
 from threading import RLock
 
 from katrain.web.admin.vision_dataset import _json
+from katrain.web.admin.vision_model_artifact import read_model_artifact
 from katrain.web.admin.vision_transfer import VisionTransferError, _digest, prepare_frozen_dataset
 
 CODE_VERSION = "admin-vision-training-1"
@@ -462,21 +463,11 @@ class VisionTrainingCoordinator:
             return copy.deepcopy(run)
 
     def _artifact_info(self, directory, spec):
-        if (
-            not _safe_path(directory)
-            or not directory.is_dir()
-            or {p.name for p in directory.iterdir()} != {"best.pt", "schema.json", "manifest.json"}
-        ):
-            raise ValueError("Invalid model output file set")
-        best, schema_path, manifest_path = (directory / name for name in ("best.pt", "schema.json", "manifest.json"))
-        for path, maximum in ((best, MAX_MODEL_BYTES), (schema_path, 64 * 1024), (manifest_path, 64 * 1024)):
-            if not _safe_path(path) or not path.is_file() or not 0 < path.stat().st_size <= maximum:
-                raise ValueError("Invalid model artifact")
-        raw = manifest_path.read_bytes()
-        manifest = json.loads(raw)
-        schema = json.loads(schema_path.read_bytes())
+        # Self-consistency is shared with the local registry; this side adds the frozen-spec comparison.
+        artifact = read_model_artifact(directory)
+        manifest, digest = artifact["manifest"], artifact["manifest_sha256"]
         expected_schema = {"schema_version": 1, "mode": spec["mode"], "class_names": spec["class_names"]}
-        if _json(schema) != _json(expected_schema):
+        if _json(artifact["schema"]) != _json(expected_schema):
             raise ValueError("Model schema differs from frozen input")
         for key in (
             "run_id",
@@ -491,15 +482,6 @@ class VisionTrainingCoordinator:
         ):
             if _json(manifest[key]) != _json(spec[key]):
                 raise ValueError("Actual worker provenance differs from planned input")
-        if (
-            type(manifest["schema_version"]) is not int
-            or manifest["schema_version"] != 1
-            or manifest["ultralytics_version"] != "8.4.34"
-            or manifest["checkpoint_readable"] is not True
-            or manifest["best_pt_sha256"] != _digest(best)
-            or manifest["schema_sha256"] != _digest(schema_path)
-        ):
-            raise ValueError("Checkpoint attestation or hashes failed")
         actual = manifest["train_arguments"]
         augmentation = manifest["augmentation_actual"]
         if not isinstance(actual, dict) or not isinstance(augmentation, dict) or not augmentation:
@@ -512,8 +494,7 @@ class VisionTrainingCoordinator:
 
             if any(_json(augmentation.get(key)) != _json(value) for key, value in LED_SAFE_AUG.items()):
                 raise ValueError("Actual LED augmentation differs")
-        digest = hashlib.sha256(raw).hexdigest()
-        model_id = "model-" + hashlib.sha256(_json({"run_id": spec["run_id"], "manifest_sha256": digest})).hexdigest()
+        model_id = artifact["id"]
         return {
             "id": model_id,
             "run_id": spec["run_id"],
@@ -522,7 +503,7 @@ class VisionTrainingCoordinator:
             "mode": spec["mode"],
             "class_names": spec["class_names"],
             "weights_sha256": manifest["best_pt_sha256"],
-            "weights_bytes": best.stat().st_size,
+            "weights_bytes": artifact["weights_bytes"],
             "manifest_sha256": digest,
             "parameters": spec["parameters"],
         }

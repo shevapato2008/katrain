@@ -238,7 +238,10 @@ class VisionDatasetBuilder:
         if raw is None:
             raise VisionDatasetError(503, "Source image is unreadable")
         height, width = raw.shape[:2]
-        matrix = adjust_M_for_resolution(geometry.M, (geometry.source_width, geometry.source_height), (width, height))
+        # Fiducial sessions re-solve the homography for each frame; label in that frame's own space.
+        correction = frame.get("geometry_correction")
+        base = np.asarray(correction["M"], dtype=np.float64) if correction else geometry.M
+        matrix = adjust_M_for_resolution(base, (geometry.source_width, geometry.source_height), (width, height))
         warped = warp_with_margin(raw, matrix, geometry.out_size, parameters["margin_cells"])
         pad = margin_px_for(geometry.out_size, parameters["margin_cells"])
         xs, ys = geometry.xs + pad, geometry.ys + pad

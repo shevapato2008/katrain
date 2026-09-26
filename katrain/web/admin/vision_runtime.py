@@ -89,6 +89,8 @@ class AdminVisionRuntime:
         self._verification_preview = None
         self._frozen = None
         self._sleep = time.sleep
+        # LEDs never flash for geometry unless the operator opts in (product rule).
+        self._fiducial_preference = "off"
 
     def _coordinator(self):
         from katrain.web.admin.vision_capture_txn import VisionCaptureCoordinator
@@ -139,6 +141,7 @@ class AdminVisionRuntime:
                 "local_only": True,
                 "observed_at": observed_at,
                 "mode": self.mode,
+                "fiducial_mode": self._fiducial_mode(session),
                 "camera": {
                     **provenance,
                     "state": self._camera_state,
@@ -500,6 +503,7 @@ class AdminVisionRuntime:
                     operator_confirmed=operator_confirmed,
                     overwrite_existing=overwrite_existing,
                     capture_condition=conditions,
+                    fiducial_mode=self._fiducial_mode(session),
                 )
             except VisionCaptureError as exc:
                 raise VisionError(exc.status_code, str(exc)) from exc
@@ -507,6 +511,31 @@ class AdminVisionRuntime:
                 self._frozen = None
                 self._updated_at = _now()
             return result
+
+    def _session_fiducial(self, session) -> str | None:
+        """A session's mode is fixed by its first frame; None means it is still open to choose."""
+        return session.get("fiducial_mode", "off") if session and session["state"] == "captured" else None
+
+    def _fiducial_mode(self, session=None) -> str:
+        fixed = self._session_fiducial(session)
+        if fixed is not None:
+            return fixed
+        return self._fiducial_preference if self.mode == "led4" else "off"
+
+    def set_fiducial(self, mode: str) -> dict:
+        self.require_enabled()
+        with self._lock:
+            if mode not in ("off", "every-move"):
+                raise VisionError(422, "Unknown fiducial mode")
+            if self.mode != "led4":
+                raise VisionError(409, "Fiducial correction needs LED mode")
+            session = self.get_session(self._active_id) if self._active_id else None
+            fixed = self._session_fiducial(session)
+            if fixed is not None and fixed != mode:
+                raise VisionError(409, "Fiducial mode is fixed once a session has frames")
+            self._fiducial_preference = mode
+            self._updated_at = _now()
+            return self.status()
 
     def _require_led(self):
         if self.mode != "led4" or self.led is None or not self.led.is_connected():

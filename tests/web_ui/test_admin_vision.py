@@ -1069,3 +1069,66 @@ def test_led_test_walks_corners_and_restores_guidance(led_client):
 
 def test_led_test_needs_led_mode(capture_client):
     assert post(capture_client, "led-test", operator_confirmed=True).status_code == 409
+
+
+def test_fiducial_mode_is_fixed_per_session_and_recorded_per_frame(led_client):
+    import json
+
+    client, led = led_client
+    # Geometry LEDs never flash unless the operator opts in.
+    assert client.get(f"{PATH}/status", headers=headers()).json()["fiducial_mode"] == "off"
+    assert post(client, "fiducial", mode="every-move").status_code == 200
+    assert client.get(f"{PATH}/status", headers=headers()).json()["fiducial_mode"] == "every-move"
+    assert post(client, "fiducial", mode="sometimes").status_code == 422
+    assert post(client, "fiducial", mode="every-move").status_code == 200
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    led.calls.clear()
+    initial = take(client, game_id)
+    assert initial.status_code == 200, initial.text
+    correction = initial.json()["geometry_correction"]
+    assert correction["status"] in ("corrected", "stale", "frozen")
+    assert len(correction["M"]) == 3 and all(len(row) == 3 for row in correction["M"])
+    kinds = [name for name, _ in led.calls]
+    assert "rgb" in kinds and kinds.index("rgb") < len(kinds) - 1 - kinds[::-1].index("points")
+    manifest = json.loads((client.app.state.vision_runtime.out_dir / game_id / "manifest.json").read_bytes())
+    assert manifest["fiducial_mode"] == "every-move"
+    assert post(client, "fiducial", mode="off").status_code == 409  # fixed once the session has frames
+    assert take(client, game_id, 0).json()["geometry_correction"]["status"] in ("corrected", "stale", "frozen")
+
+
+def test_fiducial_needs_led_mode_and_stone_sessions_stay_uncorrected(capture_client):
+    client = capture_client
+    assert client.get(f"{PATH}/status", headers=headers()).json()["fiducial_mode"] == "off"
+    assert post(client, "fiducial", mode="every-move").status_code == 409
+    game_id = import_game(client)
+    assert "geometry_correction" not in take(client, game_id).json()
+
+
+def test_dataset_labels_use_the_frame_corrected_homography(led_client, monkeypatch):
+    import json
+
+    from katrain.web.admin import vision_dataset
+
+    client, _ = led_client
+    assert post(client, "fiducial", mode="every-move").status_code == 200
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    take(client, game_id)
+    frame = take(client, game_id, 0).json()
+    path = client.app.state.vision_runtime.out_dir / game_id / "manifest.json"
+    manifest = json.loads(path.read_bytes())
+    shifted = [[1.0, 0.0, 5.0], [0.0, 1.0, -3.0], [0.0, 0.0, 1.0]]
+    manifest["frames"][1]["geometry_correction"] = {
+        **manifest["frames"][1]["geometry_correction"],
+        "status": "corrected",
+        "M": shifted,
+    }
+    path.write_text(json.dumps(manifest))
+    seen = []
+    original = vision_dataset.warp_with_margin
+    monkeypatch.setattr(
+        vision_dataset,
+        "warp_with_margin",
+        lambda image, M, *args: seen.append(np.asarray(M)) or original(image, M, *args),
+    )
+    client.get(f"{PATH}/sessions/{game_id}/frames/{frame['frame_id']}/review", headers=headers())
+    assert np.allclose(seen[-1], shifted)

@@ -60,6 +60,11 @@ class UndoIn(BaseModel):
     operator_confirmed: Confirmed = False
 
 
+class FiducialIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    mode: Literal["off", "every-move"]
+
+
 class ConfirmIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     operator_confirmed: Confirmed = False
@@ -133,6 +138,7 @@ class VisionStatus(BaseModel):
     local_only: Literal[True]
     observed_at: datetime
     mode: Literal["stones2", "led4"] | None
+    fiducial_mode: Literal["off", "every-move"]
     camera: CameraState
     led: LedState
     geometry: GeometryState
@@ -258,3 +264,8 @@ def end_session(body: ConfirmIn, game_id: str, request: Request):
 @router.post("/led-test")
 def led_test(body: ConfirmIn, request: Request):
     return _call(request, "led_test", body.operator_confirmed)
+
+
+@router.post("/fiducial", response_model=VisionStatus)
+def fiducial(body: FiducialIn, request: Request):
+    return _call(request, "set_fiducial", body.mode)

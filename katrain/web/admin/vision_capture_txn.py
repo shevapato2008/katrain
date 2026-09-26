@@ -25,6 +25,19 @@ from katrain.web.admin.vision_sgf import PreparedVisionSgf, prepare_vision_sgf
 
 SCHEMA_VERSION = 1
 CLASS_ORDERS = {"stones2": ("black", "white"), "led4": tuple(CLASS_NAMES)}
+FIDUCIAL_MODES = ("off", "every-move")
+CORRECTION_STATUSES = ("corrected", "stale", "frozen")
+
+
+def _valid_correction(correction) -> bool:
+    import numpy as np
+
+    if not isinstance(correction, dict) or correction.get("status") not in CORRECTION_STATUSES:
+        return False
+    matrix = np.asarray(correction.get("M"), dtype=float)
+    return matrix.shape == (3, 3) and bool(np.isfinite(matrix).all())
+
+
 EMPTY_BOARD_HASH = hashlib.sha1(b"[]").hexdigest()[:16]
 _GAME_ID = re.compile(r"[A-Za-z0-9_-]{1,128}")
 
@@ -140,6 +153,23 @@ class _FreshCapture:
             raise VisionCaptureError(507, "Capture image write failed") from exc
         return str(path), seq, ts
 
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        """Fiducial dark/lit frames: same freshness rule as the saved frame, never written."""
+        barrier = max(self.barrier, self.led_barrier, after_ts if isinstance(after_ts, (int, float)) else 0)
+        try:
+            frame, seq, ts = self.camera.grab_fresh(after_ts=barrier, settle_ms=settle_ms)
+            if (
+                frame is None
+                or type(seq) is not int
+                or seq <= self.sequence_floor
+                or not math.isfinite(ts)
+                or ts <= barrier
+            ):
+                raise ValueError("Camera returned a stale frame")
+        except Exception as exc:
+            raise VisionCaptureError(503, "Fresh camera frame unavailable") from exc
+        return frame, seq, ts
+
 
 class _GuidedLed:
     """Legacy final-frame capture drops clear()'s timestamp; retain its barrier."""
@@ -165,6 +195,9 @@ class _GuidedLed:
 
     def clear(self, *, strict=False):
         return self._command(self.led.clear, strict=strict)
+
+    def set_rgb_points(self, points, *, strict=False):
+        return self._command(self.led.set_rgb_points, points, strict=strict)
 
 
 class VisionCaptureCoordinator:
@@ -279,6 +312,13 @@ class VisionCaptureCoordinator:
                 expected = next_index
             if manifest["next_step"] != expected or manifest["total_steps"] != len(sgf.steps):
                 raise ValueError("Invalid manifest progress")
+            if manifest.get("fiducial_mode", "off") not in FIDUCIAL_MODES:
+                raise ValueError("Invalid fiducial mode")
+            if any(
+                "geometry_correction" in frame and not _valid_correction(frame["geometry_correction"])
+                for frame in manifest["frames"]
+            ):
+                raise ValueError("Invalid per-frame geometry correction")
             if "ended_at" in manifest and datetime.fromisoformat(manifest["ended_at"]).utcoffset() is None:
                 raise ValueError("Invalid session end time")
             return manifest
@@ -352,11 +392,14 @@ class VisionCaptureCoordinator:
         led=None,
         capture_condition: dict | None = None,
         settle_ms: float = 150.0,
+        fiducial_mode: str = "off",
     ) -> dict:
         with self.lock:
             directory = self._session_dir(game_id)
             if mode not in CLASS_ORDERS:
                 raise VisionCaptureError(422, "Unsupported capture mode")
+            if fiducial_mode not in FIDUCIAL_MODES or (fiducial_mode != "off" and mode != "led4"):
+                raise VisionCaptureError(422, "Fiducial correction needs LED mode")
             if operator_confirmed is not True:
                 raise VisionCaptureError(409, "Operator placement confirmation is required")
             if type(move_index) is not int or type(overwrite_existing) is not bool:
@@ -387,6 +430,8 @@ class VisionCaptureCoordinator:
                     or manifest["geometry_sidecar_sha256"] != _sha(sidecar_bytes)
                 ):
                     raise VisionCaptureError(409, "Session SGF, mode or geometry changed")
+                if manifest.get("fiducial_mode", "off") != fiducial_mode:
+                    raise VisionCaptureError(409, "Session fiducial mode changed")
             if manifest is not None and manifest.get("ended_at"):
                 raise VisionCaptureError(409, "Session was ended; import a new session to capture more")
             frames = manifest["frames"] if manifest else []
@@ -434,14 +479,18 @@ class VisionCaptureCoordinator:
                                 sgf=sgf.original_sgf,
                                 capture_condition=conditions,
                                 settle_ms=settle_ms,
-                                fiducial_mode="off",
+                                fiducial_mode=fiducial_mode,
                             )
                         except LedUnavailable as exc:
                             raise VisionCaptureError(503, "LED guidance failed") from exc
                         legacy = json.loads((stage / "manifest.json").read_bytes())["frames"][0]
                         image_path = stage / legacy["file"]
                         led_point, frame_kind = legacy["led_point"], legacy["frame_kind"]
+                        correction = legacy.get("geometry_correction")
+                        if fiducial_mode != "off" and not _valid_correction(correction):
+                            raise VisionCaptureError(503, "Fiducial correction produced no usable homography")
                     else:
+                        correction = None
                         image_path = stage / "frame.jpg"
                         adapter.capture_to(image_path, settle_ms=settle_ms)
                     frame_id = str(uuid4())
@@ -465,6 +514,8 @@ class VisionCaptureCoordinator:
                         "capture_condition": conditions,
                         "qa_status": "operator_confirmed",
                     }
+                    if fiducial_mode != "off":
+                        entry["geometry_correction"] = json.loads(_json(correction))
                     updated = (
                         dict(manifest)
                         if manifest
@@ -485,6 +536,7 @@ class VisionCaptureCoordinator:
                             "geometry_source": geometry_source,
                             "total_steps": len(sgf.steps),
                             "total_moves": len(sgf.placement_indices),
+                            "fiducial_mode": fiducial_mode,
                         }
                     )
                     updated_frames = list(frames)

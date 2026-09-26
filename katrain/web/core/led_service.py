@@ -132,6 +132,7 @@ class LedService:
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
+        self._reconnect_blocked = False
         # Guidance brightness (MIN_GUIDANCE_SCALE..1): multiplies every set_points colour. Steered by the
         # ambient-light loop (server `_adjust_led_brightness`, fed by the vision worker's led_glow
         # readings) — at night full brightness shines through a white stone and it is no longer
@@ -179,6 +180,7 @@ class LedService:
         if self._thread is not None and self._thread.is_alive():
             return
         self._stop.clear()
+        self._reconnect_blocked = False
         self._open_serial()
         self._thread = threading.Thread(target=self._worker, name="led-serial", daemon=True)
         try:
@@ -473,19 +475,18 @@ class LedService:
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
-        if self._serial_unavailable:
-            return  # pyserial missing — never recoverable by retrying
+        if self._serial_unavailable or self._reconnect_blocked:
+            return  # Missing pyserial is permanent; a lease conflict requires explicit stop/start.
         now = self._clock()
         if now - self._last_reconnect < self._reconnect_interval:
             return
         self._last_reconnect = now
+        from katrain.web.core.device_lease import DeviceBusy
+
         try:
             self._open_serial()
-        except RuntimeError as exc:
-            from katrain.web.core.device_lease import DeviceBusy
-
-            if not isinstance(exc, DeviceBusy):
-                raise
+        except DeviceBusy as exc:
+            self._reconnect_blocked = True
             self._last_errors = [str(exc)]
             log.warning("LED serial unavailable: %s", exc)
 

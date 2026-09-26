@@ -1,4 +1,7 @@
-"""Nonblocking, process-wide ownership of a local camera or serial device."""
+"""Nonblocking ownership of a local camera or serial device.
+
+Processes must run as the same Unix user with the same HOME to share these leases.
+"""
 
 from __future__ import annotations
 

@@ -299,6 +299,42 @@ def test_failed_led_open_releases_port_for_another_service():
         first.stop()
 
 
+def test_led_reconnect_conflict_requires_explicit_stop_start_after_peer_releases():
+    port = f"led-{uuid.uuid4().hex}"
+    clock = FakeClock()
+    clock.t = 0.0
+    state = {"available": False, "open_calls": 0}
+
+    def factory():
+        state["open_calls"] += 1
+        if not state["available"]:
+            raise OSError("serial unplugged")
+        return FakeSerial()
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory, clock=clock)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    peer.start()
+    try:
+        state["available"] = True
+        clock.advance(10)
+        assert first.clear(strict=True)["ok"] is False  # Worker reconnect encounters the peer's lease.
+        peer.stop()
+        clock.advance(10)
+
+        assert first.clear(strict=True)["ok"] is False
+        assert first.is_connected() is False
+        assert state["open_calls"] == 1
+
+        first.stop()
+        first.start()
+        assert first.clear(strict=True)["ok"] is True
+        assert state["open_calls"] == 2
+    finally:
+        peer.stop()
+        first.stop()
+
+
 def test_led_worker_start_failure_releases_port(monkeypatch):
     port = f"led-{uuid.uuid4().hex}"
     first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)

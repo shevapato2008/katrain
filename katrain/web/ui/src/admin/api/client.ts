@@ -1,5 +1,6 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
+import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen } from '../vision/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
 export interface TutorialBook { id: number; category: string; title: string; slug: string; chapter_count: number }
@@ -52,7 +53,8 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     let response: Response;
     try {
       response = await fetcher(url, { ...init, headers });
-    } catch {
+    } catch (cause) {
+      if (init.signal?.aborted || (cause instanceof DOMException && cause.name === 'AbortError')) throw cause;
       throw new AdminApiError(0, '网络连接失败，请重试。');
     }
     if (!response.ok) {
@@ -69,6 +71,9 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
   const publicRead = <T>(path: string) => request<T>(`/api/v1/tutorials${path}`);
   const adminRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/admin${path}`, init, true);
   const body = (value: unknown) => JSON.stringify(value);
+  const vision = <T>(path: string, signal?: AbortSignal, value?: unknown, post = false) => adminRequest<T>(`/vision${path}`, {
+    signal, cache: 'no-store', ...(post ? { method: 'POST' } : {}), ...(value !== undefined ? { body: body(value) } : {}),
+  });
   return {
     login: (username: string, password: string) => request<{ access_token: string; token_type: string }>('/api/admin/auth/login', { method: 'POST', body: body({ username, password }) }),
     me: () => adminRequest<{ username: string; env: string }>('/auth/me'),
@@ -76,6 +81,20 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
     cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
     cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
+    visionStatus: (signal?: AbortSignal) => vision<VisionStatus>('/status', signal),
+    visionDevices: (signal?: AbortSignal) => vision<VisionDevices>('/devices', signal),
+    visionConnect: (device_id: number, mode: VisionMode, signal?: AbortSignal) => vision<VisionStatus>('/connect', signal, { device_id, mode }, true),
+    visionDisconnect: (signal?: AbortSignal) => vision<VisionStatus>('/disconnect', signal, undefined, true),
+    visionCalibrate: (empty_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/calibrate', signal, { empty_confirmed }, true),
+    visionImportSgf: (sgf: string, signal?: AbortSignal) => vision<VisionImport>('/sgf', signal, { sgf }, true),
+    visionCapture: (input: VisionCaptureInput, signal?: AbortSignal) => vision<VisionFrame>('/capture', signal, input, true),
+    visionSessions: (signal?: AbortSignal) => vision<VisionSessionList>('/sessions', signal),
+    visionSession: (id: string, signal?: AbortSignal) => vision<VisionSession>(`/sessions/${encodeURIComponent(id)}`, signal),
+    visionResumeSession: (id: string, signal?: AbortSignal) => vision<VisionStatus>(`/sessions/${encodeURIComponent(id)}/resume`, signal, undefined, true),
+    visionVerifyGeometry: (game_id: string, frame_id: string, overlay_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/verify-geometry', signal, { game_id, frame_id, overlay_confirmed }, true),
+    visionPreview: (signal?: AbortSignal) => vision<VisionPreview>('/preview', signal),
+    visionReviewSample: (id: string, frame: string, signal?: AbortSignal) => vision<VisionSampleReview>(`/sessions/${encodeURIComponent(id)}/frames/${encodeURIComponent(frame)}/review`, signal),
+    visionFreezeSession: (id: string, parameters: VisionFreezeParameters = {}, signal?: AbortSignal) => vision<VisionFrozen>(`/sessions/${encodeURIComponent(id)}/freeze`, signal, parameters, true),
     categories: () => publicRead<TutorialCategory[]>('/categories'),
     books: (category: string) => publicRead<TutorialBook[]>(`/categories/${encodeURIComponent(category)}/books`),
     book: (id: number) => publicRead<TutorialBookDetail>(`/books/${id}`),

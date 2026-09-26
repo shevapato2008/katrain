@@ -45,4 +45,36 @@ describe('admin API contract', () => {
     ]);
     expect(fetchMock.mock.calls.every(([, init]) => new Headers(init?.headers).get('Authorization') === 'Bearer admin-session')).toBe(true);
   });
+
+  it('uses protected vision routes, exact confirmation bodies, and cancellable no-store reads', async () => {
+    fetchMock.mockImplementation(async () => new Response('{}', { status: 200 }));
+    const api = createAdminApi(fetchMock, () => 'admin-session');
+    const signal = new AbortController().signal;
+    await api.visionStatus(signal);
+    await api.visionPreview(signal);
+    await api.visionResumeSession('session/id', signal);
+    await api.visionVerifyGeometry('session/id', 'frame-1', true, signal);
+    await api.visionCapture({ game_id: 'session/id', move_index: -1, operator_confirmed: true, overwrite_existing: false }, signal);
+    await api.visionReviewSample('session/id', 'frame/id', signal);
+    await api.visionFreezeSession('session/id', {}, signal);
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      '/api/admin/vision/status', '/api/admin/vision/preview',
+      '/api/admin/vision/sessions/session%2Fid/resume', '/api/admin/vision/verify-geometry',
+      '/api/admin/vision/capture', '/api/admin/vision/sessions/session%2Fid/frames/frame%2Fid/review',
+      '/api/admin/vision/sessions/session%2Fid/freeze',
+    ]);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer admin-session');
+      expect(init?.signal).toBe(signal);
+      expect(init?.cache).toBe('no-store');
+    }
+    expect(JSON.parse(fetchMock.mock.calls[3][1]?.body as string)).toEqual({ game_id: 'session/id', frame_id: 'frame-1', overlay_confirmed: true });
+    expect(JSON.parse(fetchMock.mock.calls[4][1]?.body as string)).toEqual({ game_id: 'session/id', move_index: -1, operator_confirmed: true, overwrite_existing: false });
+  });
+
+  it('preserves cancellation rather than presenting it as a network failure', async () => {
+    const controller = new AbortController();
+    fetchMock.mockImplementation(async () => { controller.abort(); throw new DOMException('Aborted', 'AbortError'); });
+    await expect(createAdminApi(fetchMock).visionStatus(controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+  });
 });

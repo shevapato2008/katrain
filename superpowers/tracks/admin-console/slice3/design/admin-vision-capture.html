@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>智星盒管理后台 · 视觉实验室采集设计稿</title>
+  <style>
+    @import url('../../../../../katrain/web/ui/src/admin/AdminApp.css');
+    html,body { margin:0; min-height:100%; }
+    body.admin-app { height:100vh; }
+    body[data-theme="light"] { --admin-bg:#e9eef5;--admin-bar:#f8fafc;--admin-panel:#fff;--admin-panel2:#f5f8fc;--admin-well:#dfe6f0;--admin-line:#cbd5e3;--admin-text:#15243b;--admin-muted:#586982;--admin-subtle:#74859b;--admin-accent:#315f94;--admin-on-accent:#fff;--admin-active:#d9e8fa;--admin-active-text:#183e6d;--admin-link:#285d99;--admin-chip:#e7eef8;--admin-focus:#2765a7;color-scheme:light; }
+    body[data-theme="light"] .admin-brand img { filter:invert(1); }
+    .admin-brand-cn { font-family:'Galaxy Long Cang',serif; }
+    .admin-nav { font-size:20px; }
+    .lab-icon { width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none; }
+    .lab-main { min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--admin-bg);overflow:auto;font-size:16px; }
+    .lab-heading { min-height:96px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--admin-bar);border-bottom:1px solid var(--admin-line); }
+    .lab-heading h1 { margin:0;font-size:31px;line-height:1.2; }
+    .lab-heading p { margin:4px 0 0;color:var(--admin-muted);font-size:16px; }
+    .lab-location { display:flex;align-items:center;gap:8px;color:var(--admin-muted);font-size:14px; }
+    .lab-content { padding:20px 24px 28px; }
+    .lab-demo { margin:0 0 14px;color:var(--admin-muted);font-size:13px; }
+    .lab-steps { display:flex;gap:12px;padding:13px 17px;background:var(--admin-panel);border:1px solid var(--admin-line);border-radius:8px; }
+    .lab-step { display:flex;align-items:center;gap:9px;min-width:0;color:var(--admin-subtle);font-size:15px; }
+    .lab-step b { width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--admin-line);border-radius:50%;font:700 12px/1 ui-monospace,SFMono-Regular,monospace; }
+    .lab-step.active { color:var(--admin-text);font-weight:700; }
+    .lab-step.active b { background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-on-accent); }
+    .lab-separator { flex:1;min-width:12px;height:1px;align-self:center;background:var(--admin-line); }
+    .lab-grid { display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;margin-top:14px; }
+    .lab-preview,.lab-controls,.lab-dataset { border:1px solid var(--admin-line);border-radius:9px;background:var(--admin-panel);overflow:hidden; }
+    .lab-panel-head { display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:58px;padding:0 17px;border-bottom:1px solid var(--admin-line); }
+    .lab-panel-head h2 { margin:0;font-size:19px; }
+    .lab-panel-head span { color:var(--admin-muted);font-size:13px; }
+    .lab-streams { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px; }
+    .lab-stream { min-width:0; }
+    .lab-stream-label { display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;color:var(--admin-muted);font-size:13px; }
+    .lab-stream-frame { height:230px;display:grid;place-items:center;background:#101316;border:1px solid var(--admin-line);border-radius:6px;overflow:hidden; }
+    .lab-stream-empty { display:grid;gap:10px;justify-items:center;color:#b7bdc4;text-align:center;font-size:15px; }
+    .lab-stream-empty .lab-icon { width:32px;height:32px;color:#a5bdd9; }
+    .lab-stream-empty small { color:#87929d;font-size:12px; }
+    .lab-stream-board { width:min(87%,250px);height:auto;max-height:95%;transform:perspective(450px) rotateX(10deg); }
+    .lab-stream.warped .lab-stream-board { transform:none; }
+    .lab-stream-footer { margin-top:7px;color:var(--admin-subtle);font-size:12px; }
+    .lab-preview-foot { padding:12px 17px;border-top:1px solid var(--admin-line);color:var(--admin-muted);font-size:13px; }
+    .lab-controls-body { padding:12px 17px; }
+    .lab-control-group { padding-bottom:8px;margin-bottom:8px;border-bottom:1px solid var(--admin-line); }
+    .lab-control-group:last-child { margin:0;padding:0;border:0; }
+    .lab-control-label { display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:700;font-size:15px; }
+    .lab-control-label b { display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--admin-chip);font:700 12px/1 ui-monospace,SFMono-Regular,monospace; }
+    body[data-state="unconnected"] .lab-control-group:first-child .lab-control-label b,body[data-state="ready"] .lab-control-group:last-child .lab-control-label b { background:var(--admin-accent);color:var(--admin-on-accent); }
+    .lab-control-group p { display:none;margin:0 0 10px;color:var(--admin-muted);font-size:13px;line-height:1.5; }
+    body[data-state="unconnected"] .lab-control-group:first-child p,body[data-state="ready"] .lab-control-group:last-child p { display:block; }
+    .lab-control-group:nth-child(2) .lab-button,body[data-state="unconnected"] .lab-control-group:last-child .lab-button { display:none; }
+    .lab-calibration-state { margin-top:8px; }
+    .lab-control-box { padding:10px 11px;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);font-size:14px; }
+    .lab-control-box.muted { color:var(--admin-muted); }
+    .lab-button { display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 13px;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);font-size:14px; }
+    .lab-button:disabled { opacity:.55;cursor:not-allowed; }
+    .lab-button.primary { background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-on-accent);font-weight:700; }
+    .lab-button:focus-visible { outline:2px solid var(--admin-focus);outline-offset:2px; }
+    .lab-dataset { margin-top:14px; }
+    .lab-dataset-body { display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 17px; }
+    .lab-dataset-copy strong { display:block;font-size:16px; }
+    .lab-dataset-copy strong.lab-ready-only { display:none; }
+    body[data-state="ready"] .lab-dataset-copy strong.lab-ready-only { display:block; }
+    .lab-dataset-copy p { margin:5px 0 0;color:var(--admin-muted);font-size:13px; }
+    .lab-dataset-actions { display:flex;gap:8px; }
+    .lab-ready-only { display:none; }
+    body[data-state="ready"] .lab-ready-only { display:initial; }
+    body[data-state="ready"] .lab-stream-board.lab-ready-only { display:block; }
+    body[data-state="ready"] .lab-empty-only { display:none; }
+    .lab-tweaks { position:fixed;right:14px;bottom:13px;z-index:10;display:flex;gap:8px;padding:7px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-bar);box-shadow:0 8px 24px #0005; }
+    .lab-tweaks button { padding:5px 10px;border:1px solid var(--admin-line);border-radius:6px;color:var(--admin-text);background:var(--admin-panel);font-size:14px; }
+    body[data-capture="true"] .lab-tweaks { display:none; }
+    @media (max-width:1200px) { .lab-grid { grid-template-columns:1fr; }.lab-controls-body { display:grid;grid-template-columns:repeat(2,1fr);gap:12px; }.lab-control-group { margin:0; }.lab-stream-frame { height:260px; } }
+    @media (max-width:700px) { .admin-wrap { display:block;height:auto; }.admin-side { display:none; }.lab-heading { flex-wrap:wrap; }.lab-content { padding:14px; }.lab-steps { overflow:auto;white-space:nowrap; }.lab-streams,.lab-controls-body { grid-template-columns:1fr; }.lab-dataset-body { align-items:flex-start;flex-direction:column; } }
+  </style>
+</head>
+<body class="admin-app admin-app-cron" data-state="unconnected" data-theme="dark">
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute"><defs>
+    <symbol id="book" viewBox="0 0 24 24"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1m0-15c3-2 6-2 9-1v15c-3-1-6-1-9 1m0-15v15"/></symbol>
+    <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="pulse" viewBox="0 0 24 24"><path d="M2 12h4l3-7 5 14 3-7h5"/></symbol>
+    <symbol id="camera" viewBox="0 0 24 24"><path d="M3 7h4l2-2h6l2 2h4v12H3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  </defs></svg>
+  <header class="admin-top"><div class="admin-brand"><img src="../../../../../katrain/img/logo-white.png" alt=""><span class="admin-brand-cn">智星盒</span><span class="admin-brand-en">StellaBox</span><span class="admin-brand-admin">管理后台</span></div><div class="admin-topright"><span class="admin-env">本机环境</span><span>admin:fan</span><button type="button">退出</button></div></header>
+  <div class="admin-wrap"><aside class="admin-side"><div class="admin-sidehead">内容与服务</div><div class="admin-nav"><svg class="lab-icon"><use href="#book"/></svg>教程管理</div><div class="admin-nav"><svg class="lab-icon"><use href="#clock"/></svg>定时任务</div><div class="admin-nav"><svg class="lab-icon"><use href="#pulse"/></svg>性能监控</div><div class="admin-nav active"><svg class="lab-icon"><use href="#camera"/></svg>视觉实验室</div><div class="admin-sidefoot">当前环境：本机环境<br>相机采集只在 Mac 本机运行。</div></aside>
+    <main class="lab-main"><div class="lab-heading"><div><h1>视觉实验室</h1><p>Mac 本机 · 摆谱采集与数据集</p></div><div class="lab-location"><svg class="lab-icon"><use href="#camera"/></svg><span class="lab-empty-only">摄像头状态未知</span><span class="lab-ready-only">设计示意 · 非实时画面</span></div></div>
+      <div class="lab-content"><p class="lab-demo">设计稿 · 当前不连接摄像头、不会采集或上传文件</p>
+        <div class="lab-steps" aria-label="视觉实验室流程"><span class="lab-step active"><b>1</b>采集与数据集</span><span class="lab-separator"></span><span class="lab-step"><b>2</b>训练与模型</span><span class="lab-separator"></span><span class="lab-step"><b>3</b>本机部署与诊断</span></div>
+        <div class="lab-grid"><section class="lab-preview"><div class="lab-panel-head"><h2>采集预览</h2><span>同一帧 · 原图 / 校正图</span></div><div class="lab-streams"><div class="lab-stream"><div class="lab-stream-label"><strong>原始相机画面</strong><span class="lab-ready-only">设计样本</span></div><div class="lab-stream-frame"><div class="lab-stream-empty lab-empty-only"><svg class="lab-icon"><use href="#camera"/></svg><span>尚未连接本机摄像头</span><small>摄像头不会由测试服务器远程打开</small></div><svg class="lab-stream-board lab-ready-only" viewBox="0 0 280 280" aria-label="棋盘画面设计样本"><rect width="280" height="280" fill="#d7ad64"/><g class="board-lines" stroke="#84643b" stroke-width="1"/><circle cx="60" cy="60" r="8" fill="#171717"/><circle cx="200" cy="200" r="8" fill="#f5f5f5" stroke="#aaa"/></svg></div><div class="lab-stream-footer">采集原分辨率 · 仅本机访问</div></div><div class="lab-stream warped"><div class="lab-stream-label"><strong>标定后的 warped 画面</strong><span class="lab-ready-only">设计样本</span></div><div class="lab-stream-frame"><div class="lab-stream-empty lab-empty-only"><svg class="lab-icon"><use href="#pulse"/></svg><span>等待空盘标定</span><small>标定完成后显示透视校正画面</small></div><svg class="lab-stream-board lab-ready-only" viewBox="0 0 280 280" aria-label="校正棋盘设计样本"><rect width="280" height="280" fill="#d7ad64"/><g class="board-lines" stroke="#84643b" stroke-width="1"/><circle cx="60" cy="60" r="8" fill="#171717"/><circle cx="200" cy="200" r="8" fill="#f5f5f5" stroke="#aaa"/></svg></div><div class="lab-stream-footer">共享同一摄像头帧与标定版本</div></div></div><div class="lab-preview-foot">未连接时不显示假直播；采集样本与 SGF 步数必须一一对应。</div></section>
+          <aside class="lab-controls"><div class="lab-panel-head"><h2>采集步骤</h2><span>按顺序完成</span></div><div class="lab-controls-body"><div class="lab-control-group"><div class="lab-control-label"><b>1</b>选择本机摄像头</div><p>由 Mac 本机视觉服务独占相机，不经浏览器直传到测试机。</p><div class="lab-control-box muted lab-empty-only">尚未读取本机设备列表</div><div class="lab-control-box lab-ready-only">Camera 0 · 1920×1080（示意）</div></div><div class="lab-control-group"><div class="lab-control-label"><b>2</b>空盘标定</div><p>清空棋子后，确认 13 个 LED 锚点并锁定棋盘几何。</p><button class="lab-button" type="button" disabled>开始标定</button><div class="lab-control-box muted lab-calibration-state lab-empty-only">等待连接摄像头</div><div class="lab-control-box lab-calibration-state lab-ready-only">标定已完成（示意）</div></div><div class="lab-control-group"><div class="lab-control-label"><b>3</b>导入棋谱</div><p>使用 SGF 中的落子顺序和提子作为训练真值。</p><div class="lab-control-box muted lab-empty-only">尚未选择 SGF</div><div class="lab-control-box lab-ready-only">棋谱已加载 · 第 2 / 128 手（示意）</div></div><div class="lab-control-group"><div class="lab-control-label"><b>4</b>逐手拍摄</div><p>每手确认后采一帧；保留原图、几何和采集清单。</p><button class="lab-button primary" type="button" disabled>采集当前手</button></div></div></aside></div>
+        <section class="lab-dataset"><div class="lab-panel-head"><h2>数据集草稿</h2><span>标注检查 → 冻结版本 → 上传测试环境</span></div><div class="lab-dataset-body"><div class="lab-dataset-copy"><strong class="lab-empty-only">还没有采集样本</strong><strong class="lab-ready-only">示意数据集 · 尚未冻结</strong><p>上传前会检查自动标注叠图、时间切分、文件校验和目标空间；未核实测试机前不显示“上传成功”。</p></div><div class="lab-dataset-actions"><button class="lab-button" type="button" disabled>检查样本</button><button class="lab-button" type="button" disabled>上传测试环境</button></div></div></section>
+      </div>
+    </main></div>
+  <div class="lab-tweaks"><button id="toggle-state" type="button">采集中示意</button><button id="toggle-theme" type="button">白天版本</button></div>
+  <script>
+    const params=new URLSearchParams(location.search);const body=document.body;
+    body.dataset.state=params.get('state')==='ready'?'ready':'unconnected';body.dataset.theme=params.get('theme')==='light'?'light':'dark';body.dataset.capture=params.get('capture')==='true'?'true':'false';
+    document.getElementById('toggle-state').addEventListener('click',()=>{body.dataset.state=body.dataset.state==='ready'?'unconnected':'ready';});
+    document.getElementById('toggle-theme').addEventListener('click',()=>{body.dataset.theme=body.dataset.theme==='light'?'dark':'light';});
+    document.querySelectorAll('.board-lines').forEach(group=>{for(let i=0;i<19;i++){const n=20+i*13.333;group.insertAdjacentHTML('beforeend',`<line x1="20" y1="${n}" x2="260" y2="${n}"/><line x1="${n}" y1="20" x2="${n}" y2="260"/>`);}});
+  </script>
+</body>
+</html>

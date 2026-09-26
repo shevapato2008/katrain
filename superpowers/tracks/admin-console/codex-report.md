@@ -1,5 +1,24 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
+## 2026-09-26 视觉实验室最新本地进度（覆盖下文阶段性状态）
+
+- 持续开发许可不扩大外部权限：本轮没有 SSH、真实摄像头/LED 操作、目标库写入、数据上传、GPU 训练、push 或部署。性能 Grafana 仍待真实服务核实；视觉采集的真实硬件与最终用户验收未完成。
+- Mac 采集后端已完成本地连接/标定/SGF 导入/采集/会话恢复/样本叠框/冻结接口。纯 SGF `c8969af0`；原子事务 `d65fa3f3`＋CRLF/独立会话 ID 修复 `5e4a3f15`；空盘标定 `429cdaaa`＋稳定棋子误判修复 `2ae78606`；不可变数据集 `70b4b823`＋可搬移 YAML `15aa2b64`；接口集成 `b8c1cf9f`。各阶段独立规格/质量均 APPROVE，保留硬件未验收边界。
+- 接口质量复核重现“采集已成功但相机断开后重试 409”。根代理先跑红测，再修复为校验已有活动会话/文件和确认后只读幂等返回；新帧与显式重拍仍受实时相机/模式/几何限制。提交 `19b43509`，独立质量复核 APPROVE。根代理数据/采集接口聚焦 **146 passed**，计划要求的相机/LED/旧采集/几何邻近组合 **182 passed**；Black、`git diff --check` 通过。仅既有 passlib `crypt` 弃用警告。
+- [v2 操作 HTML](./slice3/design/admin-vision-capture-v2.html) 按 `claude-design` 的 Operate/Inspect 构图与 `ui-ux-pro-max` 标签/确认/错误/焦点原则补齐真实操作路径。独立 Astra max 修正空态图像、确认禁用闸、stale 新标定出口、下一手进度和 900px 主按钮裁切后 APPROVE。正式前端接入进行中，v1 Fixture 尚待删除；v2 React 四图尚未完成，不能将初版展示性 Fixture 当成实际功能验收。
+- 当前继续 Task 5 Step 3：真实前端与 API 集成。Task 5 Step 4 的本机真实硬件、Task 6 的目标机上传、训练/模型版本、模型部署/七阶段诊断仍未完成。所有新提交均仅本地，尚未推送；用户原有 `.playwright-cli` 删除及快照保持原样。
+
+## 2026-09-26 视觉实验室首段记录（历史阶段性状态）
+
+- Fan 睡前要求持续推进所有未完成切片，视觉或方案决策交独立 GPT-6 Astra max；这**不**授权远程连接、上传/写测试机、GPU 训练、push 或部署。性能监控仍停在真实 Grafana 服务核实前的外部授权关卡，故本地转向急需的 Mac 棋盘采集旅程。
+- 已写 [视觉实验室规格](./spec-2026-09-26-admin-vision-lab.md) 与 [Mac 采集计划](./plan-2026-09-26-admin-vision-capture.md)，分采集/数据集、测试机训练/模型版本、Mac 部署/逐帧诊断三个顺序切片。独立 Astra 对计划三个 chunk 复核通过。测试机双 3090 首版只计划单 GPU：现有 `led-safe-blur` 进程内增强在 DDP 子进程未验证，不冒称双卡可用。
+- [采集 HTML 设计稿](./slice3/design/admin-vision-capture.html) 与隔离 React Fixture 的夜间未连接、夜间示意、白天示意三态已做 1440×900 参考/运行/并排/叠加/差异，[设计记录和四图入口](./slice3/design/design-notes.md)。独立 Astra max 两轮检查：先修状态文案，最终 HTML 与 Fixture 四图均裁定 APPROVE。Fixture 不开相机、不上传、不显示假成功；聚焦前端 **12 passed**、`build:admin`、ESLint、`git diff --check` 通过。正式后台尚未挂载视觉页；Fixture 必须在真实集成后删除。
+- 已冻结 [本地采集 API 契约](./slice3/vision-capture-contract.md)，规定 Mac 专用显式启用、后台 Bearer、相机/LED 进程间租约、同帧原图/warp、SGF 逐手采集与无 LED `stones2`/LED 四类分离。独立 Astra 复核旧采集脚本后要求后台专用事务层：LED 旧流程只在暂存目录复用、旧帧必须按相机序号/单调时间戳拒绝、重拍不得删后续帧、图像与 manifest 须分阶段原子发布；已同步规格/计划/契约。设备租约已本地提交 `af0d3fe7`＋修复 LED 占用后自动重连的 `e66b8add`，聚焦 **60 passed**；独立复核尚在收尾。本机硬件仍未验收。任何目标机状态未知时都不能显示“在线/已上传”。
+- 本机后台首段 status/devices/connect/disconnect/preview 接口已本地提交 `54f5be06`，只在 local＋开关＋显式 loopback bind 开启；同次新鲜相机帧输出有界原图/warp、相机序号和观测时间。根代理复跑后台聚焦 **56 passed**；独立规格/质量复核仍在进行。设备租约规格复核已 APPROVE，但质量复核又重现了停止/重连竞态、启动异常未清理部分相机、Linux 数字/设备路径别名三处独占边界，现正加红测修正；不能将租约或实际硬件标成已验收。
+- 上述租约问题连同后续真实 reader-thread 启动失败清理、LED 重启遗留队列哨兵两项均经红测修复，提交 `9ea0d478`、`c3518230`；独立质量复核最终 APPROVE。后台首段接口的 LED 状态更新时间修复 `0c5b8205` 后规格和质量复核也均 APPROVE。根代理再跑租约＋后台视觉＋SGF 聚焦 **128 passed**（cv2 环境）；仍未连接真实摄像头/LED。
+- 原始 SGF 纯准备层 `c8969af0` 与双模式原子采集事务 `d65fa3f3` 已本地提交。事务仅在临时目录复用 LED 旧管线，逐帧严格新鲜度、关灯完成屏障、幂等、重拍保留后续帧、坏 manifest 拒绝及失败保留已引用文件；采集＋SGF＋旧采集回归 **70 passed**。独立规格复核进行中；空盘标定正在接入，导谱/拍摄正式路由及数据集/前端集成尚未完成。
+- 上一笔本地提交 `5796529b`（最终设计对照与性能 Fixture）**未推送**。本轮视觉实验室新增文件当前也未提交/推送。现有 `.playwright-cli` 追踪删除与大量未跟踪快照仍保留原样，不得一并暂存或清理。
+
 ## 2026-09-26 本地进度：最终设计对照与性能监控 Fixture
 
 - Fan 要求把已实现的教程、cron 设计稿同步到最终页面。新增可打开的 [教程最终 HTML](./tutorial-admin-design-final.html) 与 [cron 最终 HTML](./slice1/design/admin-cron-final.html)，直接复用生产 CSS；1440×900 详情/编辑、列表/抽屉截图见各自设计记录。独立 GPT-6 Astra max 复核后均裁定 APPROVE。既有旧稿只作历史。

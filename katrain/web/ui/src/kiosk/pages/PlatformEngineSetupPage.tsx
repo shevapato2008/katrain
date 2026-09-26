@@ -255,7 +255,9 @@ const PlatformEngineSetupPage = () => {
             )}
           </section>
 
-          {/* ── 让子 · 我执 ── 贴目跟着让子算,写在组标题右端,不再单占一段 ── */}
+          {/* ── 让子 · 我执 ── 贴目跟着让子算,写在组标题右端,不再单占一段 ──
+              两列前面**不再各带一个小标签**(2026-09-27):组标题已经写了「让子 · 我执」,
+              而 460 宽一行里放下 −/十档轨/+ 和三段长译文按钮,就差这 76px(jp/ko/es 量过)。 */}
           <section className="setgrp" data-testid="setup-handicap-side">
             <KioskSecLabel
               zh={t('setup:handicap_side', '让子 · 我执')}
@@ -264,7 +266,6 @@ const PlatformEngineSetupPage = () => {
             />
             <div className="twocol">
               <div className="tcol">
-                <span className="iglab">{t('setup:handicap', '让子')}</span>
                 <KioskStepTrack
                   count={HANDICAP_TRACK.length}
                   index={handicapIdx}
@@ -277,7 +278,6 @@ const PlatformEngineSetupPage = () => {
                 />
               </div>
               <div className="tcol">
-                <span className="iglab">{t('setup:my_side', '我执')}</span>
                 <KioskOptSeg
                   ariaLabel={t('setup:my_side', '我执')}
                   testId="setup-side-seg"

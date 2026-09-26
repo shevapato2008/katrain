@@ -314,7 +314,7 @@ export function GeometryCalibrationScreen({
   };
 
   const stepTag = (i: number, state: string): { text: string; cls: string } => {
-    if (state === 'done') return { text: '完成', cls: 'kiosk-tag--good' };
+    if (state === 'done') return { text: '完成', cls: 'kiosk-tag--win' };
     if (state === 'plain') return { text: '完成', cls: '' };
     if (state === 'now') return { text: '进行中', cls: '' };
     if (state === 'bad') return { text: '失败', cls: 'kiosk-tag--bad' };
@@ -505,10 +505,8 @@ export function GeometryCalibrationScreen({
               {!diagnostic && (
                 <><br />失败时给<b>诊断</b>不给「重试」：多半是子压着星位、灯太暗，或摄像头挪过。</>
               )}
-              {/* 稿子把「采集熄灯参考帧」画成独立一步,而它其实是**每个点各做一次**的动作。
-                  删掉那一步不等于可以不说这件事 —— 挪到这儿,它解释的正是「为什么没有那一步」。 */}
-              <br />每个定位点都<b>先熄灯拍一张、亮灯再拍一张</b>，两张相减才找得出灯在哪。
-              <br />{t('vision:led_serial_note', 'LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。')}
+              {/* 旁注最多两行(稿子 §5)。原先还有「每个定位点先熄灯再亮灯各拍一张」和「LED 那格只说串口通了」两句,
+                  Fan 2026-09-27 裁定删掉,别再加回来。 */}
               {reuseBlockedWhy && status.last_valid && (
                 <><br />「沿用上次标定」此刻按不了：{reuseBlockedWhy}。</>
               )}

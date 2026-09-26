@@ -612,9 +612,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : t('Free Game', '自由对弈');
   // 副标 = **开局时定死的那几条**(路数 / 规则 / 贴目 / 让子)。它们不是过程量,
   // 写在这里一次就够,不必像上一版那样占一整条 `Game info bar`。
+  // 「中国」+「规则」要连写成「中国规则」,「AGA」「Japanese」和后面那个词之间才要空格。
+  const joinCjk = (a: string, b: string) =>
+    /[\u3400-\u9fff]$/.test(a) && /^[\u3400-\u9fff]/.test(b) ? a + b : `${a} ${b}`;
   const gameSetupLine = [
     t('game:board_lines', '{n} 路').replace('{n}', String(boardSize)),
-    `${t(gameState.ruleset, gameState.ruleset)} ${t('Rules', '规则')}`,
+    joinCjk(t(gameState.ruleset, gameState.ruleset), t('Rules', '规则')),
     `${t('Komi', '贴目')} ${gameState.komi}`,
     gameState.handicap > 0
       ? t('game:handicap_n', '让 {n} 子').replace('{n}', String(gameState.handicap))

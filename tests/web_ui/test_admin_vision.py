@@ -76,6 +76,7 @@ def make_app(tmp_path, bind_host="127.0.0.1"):
         ("GET", "preview", None),
         ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
         ("POST", "disconnect", None),
+        ("POST", "calibrate", {"empty_confirmed": True}),
     ],
 )
 def test_every_vision_route_requires_dedicated_admin(configured, tmp_path, method, route, body):
@@ -111,6 +112,7 @@ def test_disabled_configuration_fails_closed(configured, monkeypatch, tmp_path, 
         ("GET", "preview", None),
         ("POST", "connect", {"device_id": 0, "mode": "stones2"}),
         ("POST", "disconnect", None),
+        ("POST", "calibrate", {"empty_confirmed": True}),
     ]:
         assert client.request(method, f"{PATH}/{route}", json=body, headers=headers(env)).status_code == 403
 
@@ -378,3 +380,150 @@ def test_cli_passes_actual_bind_host(configured, monkeypatch, env, switch, expec
     monkeypatch.setattr(cli.uvicorn, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
     cli.main()
     assert calls == [{"bind_host": expected}, ((app,), {"host": expected, "port": 8010})]
+
+
+@pytest.fixture
+def calibration(monkeypatch):
+    from katrain.vision.geometry_lock import GeometryLock
+
+    lock = GeometryLock(
+        corners=np.zeros((4, 2), np.float32),
+        points=np.zeros((19, 19, 2), np.float32),
+        xs=np.zeros(19, np.float32),
+        ys=np.zeros(19, np.float32),
+        M=np.eye(3),
+        Minv=np.eye(3),
+        out_size=950,
+        baseline=np.zeros((19, 19, 3), np.float32),
+        confidence=0.9,
+        nmatch=18,
+        source_width=1920,
+        source_height=1080,
+    )
+    bursts = []
+
+    def calibrate(frames):
+        bursts.append(frames)
+        return lock
+
+    monkeypatch.setattr("katrain.vision.geometry_lock.lock_geometry_from_frames", calibrate)
+    return lock, bursts
+
+
+def test_calibration_locks_real_fresh_burst_and_preview_uses_revision(hardware, calibration, tmp_path):
+    lock, bursts = calibration
+    with TestClient(make_app(tmp_path)) as client:
+        client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+        result = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+        assert result.status_code == 200
+        geometry = result.json()
+        assert geometry["state"] == "ready"
+        assert geometry["revision"]
+        assert geometry["confidence"] == 0.9
+        assert geometry["source"] == "opencv_empty_board"
+        assert len(bursts) == 1 and len(bursts[0]) == hardware[0].reads == 8
+        assert all(np.array_equal(frame, hardware[0].frame) for frame in bursts[0])
+        assert client.app.state.vision_runtime.geometry is lock
+        assert client.get(f"{PATH}/status", headers=headers()).json()["geometry"] == geometry
+        preview = client.get(f"{PATH}/preview", headers=headers()).json()
+        assert preview["geometry_revision"] == geometry["revision"]
+        assert preview["warped_jpeg_base64"]
+
+
+@pytest.mark.parametrize("body", [{}, {"empty_confirmed": False}])
+def test_calibration_requires_operator_empty_confirmation(hardware, calibration, tmp_path, body):
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    assert client.post(f"{PATH}/calibrate", json=body, headers=headers()).status_code == 409
+    assert hardware[0].reads == 0
+    assert calibration[1] == []
+
+
+@pytest.mark.parametrize(
+    "body", [{"empty_confirmed": "true"}, {"empty_confirmed": 1}, {"empty_confirmed": True, "path": "/tmp/x"}]
+)
+def test_calibration_rejects_coerced_confirmation_and_extra_fields(hardware, tmp_path, body):
+    assert TestClient(make_app(tmp_path)).post(f"{PATH}/calibrate", json=body, headers=headers()).status_code == 422
+    assert hardware == []
+
+
+@pytest.mark.parametrize("state", ["unknown", "disconnected", "occupied"])
+def test_calibration_requires_connected_camera(hardware, calibration, tmp_path, state):
+    client = TestClient(make_app(tmp_path))
+    client.app.state.vision_runtime._camera_state = state
+    assert client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers()).status_code == 409
+    assert hardware == [] and calibration[1] == []
+
+
+@pytest.mark.parametrize("failure", ["no_frame", "stale", "duplicate_seq", "duplicate_ts", "nan_ts", "disconnected"])
+def test_calibration_rejects_unfresh_or_lost_burst(hardware, calibration, tmp_path, failure):
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    camera = hardware[0]
+    first_ts = None
+
+    def grab(after_ts=None, settle_ms=0):
+        nonlocal first_ts
+        camera.reads += 1
+        ts = time.monotonic()
+        first_ts = first_ts or ts
+        if failure == "disconnected":
+            camera.started = False
+        return (
+            None if failure == "no_frame" else camera.frame,
+            1 if failure == "duplicate_seq" else camera.reads,
+            {"stale": after_ts, "duplicate_ts": first_ts, "nan_ts": float("nan")}.get(failure, ts),
+        )
+
+    camera.grab_fresh = grab
+    result = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+    assert result.status_code == (409 if failure == "disconnected" else 422)
+    assert calibration[1] == []
+    assert client.get(f"{PATH}/status", headers=headers()).json()["geometry"]["state"] == "required"
+
+
+@pytest.mark.parametrize("failure", ["detection", "low_confidence", "nan_confidence", "nonempty"])
+def test_failed_recalibration_preserves_existing_lock(hardware, calibration, monkeypatch, tmp_path, failure):
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "stones2"}, headers=headers())
+    first = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+    assert first.status_code == 200
+    runtime = client.app.state.vision_runtime
+    old_lock, old_revision = runtime.geometry, runtime.geometry_revision
+    from dataclasses import replace
+
+    rejected = {
+        "detection": None,
+        "low_confidence": replace(old_lock, confidence=0.4),
+        "nan_confidence": replace(old_lock, confidence=float("nan")),
+        "nonempty": replace(old_lock, empty_black=1),
+    }[failure]
+    monkeypatch.setattr("katrain.vision.geometry_lock.lock_geometry_from_frames", lambda frames: rejected)
+    result = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+    assert result.status_code == 422
+    assert runtime.geometry is old_lock and runtime.geometry_revision == old_revision
+    geometry = client.get(f"{PATH}/status", headers=headers()).json()["geometry"]
+    for field in ("state", "revision", "source", "confidence"):
+        assert geometry[field] == first.json()[field]
+    assert geometry["error"] == result.json()["detail"]
+
+
+@pytest.mark.parametrize("clear_ok", [True, False])
+def test_led_calibration_clears_led_and_records_actual_opencv_source(
+    hardware, calibration, monkeypatch, tmp_path, clear_ok
+):
+    from katrain.web.admin import vision_runtime
+
+    monkeypatch.setenv("KATRAIN_ADMIN_VISION_LED_PORT", "/dev/cu.test")
+    led = Camera("/dev/cu.test")
+    led.clear = lambda strict=False: {"ok": clear_ok, "connected": True, "shown_at": time.monotonic(), "errors": []}
+    monkeypatch.setattr(vision_runtime, "create_led", lambda port: led)
+    client = TestClient(make_app(tmp_path))
+    client.post(f"{PATH}/connect", json={"device_id": 0, "mode": "led4"}, headers=headers())
+    result = client.post(f"{PATH}/calibrate", json={"empty_confirmed": True}, headers=headers())
+    assert result.status_code == (200 if clear_ok else 409)
+    if clear_ok:
+        assert result.json()["source"] == "opencv_empty_board"
+        assert client.get(f"{PATH}/status", headers=headers()).json()["led"]["state"] == "connected"
+    else:
+        assert hardware[0].reads == 0 and calibration[1] == []

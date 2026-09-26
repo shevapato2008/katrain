@@ -18,6 +18,7 @@ from katrain.web.core.device_lease import DeviceBusy
 log = logging.getLogger(__name__)
 PREVIEW_MAX_EDGE = 960
 PREVIEW_INTERVAL = 0.5
+CALIBRATION_BURST_SIZE = 8
 
 
 class VisionError(RuntimeError):
@@ -70,6 +71,7 @@ class AdminVisionRuntime:
         self.geometry = None
         self.geometry_revision = None
         self.geometry_source = None
+        self._geometry_error = None
         self._camera_state = "unknown"
         self._camera_error = None
         self._led_state = "unknown"
@@ -114,6 +116,7 @@ class AdminVisionRuntime:
                     "revision": self.geometry_revision,
                     "source": self.geometry_source,
                     "confidence": getattr(self.geometry, "confidence", None),
+                    "error": self._geometry_error,
                 },
                 "sgf": {**provenance, "state": "none", "game_id": None, "total_steps": 0, "next_step": None},
                 "dataset": {**provenance, "state": "none", "id": None, "count": 0},
@@ -177,6 +180,7 @@ class AdminVisionRuntime:
                 finally:
                     setattr(self, name, None)
         self.geometry = self.geometry_revision = self.geometry_source = None
+        self._geometry_error = None
         self.mode = None
         self._last_preview = None
         return errors
@@ -195,6 +199,62 @@ class AdminVisionRuntime:
             self._led_error = "LED cleanup failed" if "led" in errors else None
             self._updated_at = _now()
             return self.status()
+
+    def calibrate(self, empty_confirmed: bool) -> dict:
+        self.require_enabled()
+        with self._lock:
+            try:
+                if not empty_confirmed:
+                    raise VisionError(409, "Confirm the board is empty before calibrating")
+                if self.camera is None or not self.camera.is_connected():
+                    raise VisionError(409, "Camera is not connected")
+                if self.mode == "led4":
+                    if self.led is None or not self.led.is_connected():
+                        raise VisionError(409, "LED is not connected; reconnect in stones2 mode without LED")
+                    cleared = self.led.clear(strict=True)
+                    if not cleared.get("ok") or not cleared.get("connected") or cleared.get("errors"):
+                        raise VisionError(409, "LED clear failed")
+                # The barrier is observed after strict LED clear has completed.
+                # Camera.grab_fresh can return an old frame on timeout: verify every sample.
+                barrier, previous_seq = time.monotonic(), 0
+                frames = []
+                for _ in range(CALIBRATION_BURST_SIZE):
+                    if not self.camera.is_connected():
+                        raise VisionError(409, "Camera connection lost during calibration")
+                    frame, seq, ts = self.camera.grab_fresh(after_ts=barrier, settle_ms=0.0)
+                    if not self.camera.is_connected():
+                        raise VisionError(409, "Camera connection lost during calibration")
+                    if frame is None or not math.isfinite(ts) or ts <= barrier or seq <= previous_seq:
+                        raise VisionError(422, "Fresh calibration burst unavailable")
+                    frames.append(frame.copy())
+                    previous_seq = seq
+                    barrier = max(ts, time.monotonic())
+                from katrain.vision.geometry_autocal import CONF_MIN
+                from katrain.vision.geometry_lock import lock_geometry_from_frames
+
+                geometry = lock_geometry_from_frames(frames)
+                if geometry is None:
+                    raise VisionError(422, "Empty board geometry detection failed")
+                if not math.isfinite(geometry.confidence) or geometry.confidence < CONF_MIN:
+                    raise VisionError(422, "Calibration confidence is too low")
+                if not geometry.empty_self_check_ok:
+                    raise VisionError(422, "Board empty self-check failed")
+                if not self.camera.is_connected():
+                    raise VisionError(409, "Camera connection lost during calibration")
+            except Exception as exc:
+                error = exc if isinstance(exc, VisionError) else VisionError(422, "Empty board calibration failed")
+                self._geometry_error = str(error)
+                self._updated_at = _now()
+                if error is exc:
+                    raise
+                raise error from exc
+            # Publish only the validated lock. Rejection retains the previous revision.
+            self.geometry = geometry
+            self.geometry_revision = str(uuid4())
+            self.geometry_source = "opencv_empty_board"
+            self._geometry_error = None
+            self._updated_at = _now()
+            return self.status()["geometry"]
 
     def preview(self) -> dict:
         self.require_enabled()

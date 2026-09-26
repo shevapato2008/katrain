@@ -18,6 +18,11 @@ class ConnectIn(BaseModel):
     mode: Literal["stones2", "led4"]
 
 
+class CalibrateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    empty_confirmed: Annotated[bool, Field(strict=True)] = False
+
+
 class RuntimeState(BaseModel):
     source: str | None
     updated_at: datetime
@@ -38,6 +43,7 @@ class GeometryState(RuntimeState):
     state: Literal["required", "ready", "stale"]
     revision: str | None
     confidence: float | None
+    error: str | None
 
 
 class SgfState(RuntimeState):
@@ -111,6 +117,11 @@ def connect(body: ConnectIn, request: Request):
 @router.post("/disconnect", response_model=VisionStatus)
 def disconnect(request: Request):
     return _call(request, "disconnect")
+
+
+@router.post("/calibrate", response_model=GeometryState)
+def calibrate(body: CalibrateIn, request: Request):
+    return _call(request, "calibrate", body.empty_confirmed)
 
 
 @router.get("/preview", response_model=PreviewOut)

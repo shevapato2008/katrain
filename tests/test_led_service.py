@@ -380,6 +380,47 @@ def test_led_stop_keeps_lease_until_blocked_reconnect_finishes(monkeypatch):
         first.stop()
 
 
+def test_led_explicit_restart_discards_previous_worker_stop_sentinel(monkeypatch):
+    entered = threading.Event()
+    resume = threading.Event()
+
+    class BlockedSerial(FakeSerial):
+        def write(self, data):
+            if data == b"CLEAR\n" and not resume.is_set():
+                entered.set()
+                assert resume.wait(timeout=5)
+            super().write(data)
+
+    serials = [BlockedSerial(), FakeSerial()]
+    svc = LedService(
+        LedServiceConfig(enabled=True, serial_port=f"led-{uuid.uuid4().hex}"),
+        serial_factory=lambda: serials.pop(0),
+    )
+    svc.start()
+    worker = svc._thread
+    original_join = worker.join
+    original_clear = svc.clear
+    try:
+        svc.set_points([], strict=False)
+        assert entered.wait(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        svc.stop()
+        resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert svc._queue.qsize() == 1  # Stop sentinel was never consumed by the old worker.
+
+        monkeypatch.setattr(svc, "clear", original_clear)
+        svc.start()
+        assert svc.clear(strict=True)["ok"] is True
+    finally:
+        resume.set()
+        original_join(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        svc.stop()
+
+
 def test_led_worker_start_failure_releases_port(monkeypatch):
     port = f"led-{uuid.uuid4().hex}"
     first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)

@@ -335,7 +335,11 @@ class CameraManager:
         """Stop the reader thread and release the camera device."""
         self._stop_event.set()
         if self._reader_thread is not None:
-            self._reader_thread.join(timeout=2)
+            # Thread.start() can fail after the capture was acquired. An
+            # unstarted thread cannot be joined, but the capture still needs
+            # releasing before the outer CameraHub releases its device lease.
+            if self._reader_thread.ident is not None:
+                self._reader_thread.join(timeout=2)
             self._reader_thread = None
         if self._cap is not None:
             self._cap.release()

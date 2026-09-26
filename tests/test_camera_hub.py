@@ -184,6 +184,48 @@ def test_partial_camera_open_is_closed_before_lease_is_released():
     peer.stop()
 
 
+def test_real_camera_manager_thread_start_failure_releases_capture_before_lease(monkeypatch):
+    from katrain.vision import camera as camera_module
+
+    device = f"camera-{uuid.uuid4().hex}"
+    peer = CameraHub(CameraHubConfig(device_id=device), camera=FakeCamera())
+
+    class Capture:
+        released = False
+
+        def isOpened(self):
+            return not self.released
+
+        def set(self, *_args):
+            return True
+
+        def get(self, *_args):
+            return 0.0
+
+        def release(self):
+            with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+                peer.start()
+            self.released = True
+
+    capture = Capture()
+    monkeypatch.setattr(camera_module.cv2, "VideoCapture", lambda _device: capture)
+
+    def fail_thread_start(_thread):
+        raise RuntimeError("camera reader could not start")
+
+    monkeypatch.setattr(camera_module.threading.Thread, "start", fail_thread_start)
+    camera = camera_module.CameraManager(device_id=device, warmup_seconds=0)
+    hub = CameraHub(CameraHubConfig(device_id=device), camera=camera)
+    with pytest.raises(RuntimeError, match="camera reader could not start"):
+        hub.start()
+
+    assert capture.released is True
+    assert camera._cap is None
+    assert camera.is_connected is False
+    peer.start()
+    peer.stop()
+
+
 def test_linux_high_camera_index_and_device_path_share_a_lease(monkeypatch):
     monkeypatch.setattr(sys, "platform", "linux")
     device = 10000 + int(uuid.uuid4().hex[:6], 16)

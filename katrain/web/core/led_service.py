@@ -179,6 +179,10 @@ class LedService:
     def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
             return
+        if self._thread is not None or self._stop.is_set():
+            # The previous worker is finished: discard its stop sentinel and
+            # queued commands rather than handing them to the new lifecycle.
+            self._queue = queue.Queue(maxsize=10)
         self._stop.clear()
         self._reconnect_blocked = False
         self._open_serial()

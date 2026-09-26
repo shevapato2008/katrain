@@ -229,3 +229,6 @@ katrain/web/ui/test-results/
 
 # Local admin-console screenshots and browser smoke artifacts; not runtime inputs
 /output/
+
+# Disposable browser CLI snapshots; reviewed design evidence lives under superpowers/tracks/
+/.playwright-cli/

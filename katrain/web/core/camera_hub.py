@@ -88,6 +88,12 @@ class CameraHub:
     def read_frame(self):
         return self._camera.read_frame() if self._camera is not None else None
 
+    def read_frame_identified(self):
+        """(frame, seq, monotonic ts) from one locked read; diagnostics need the frame's identity."""
+        if self._camera is None:
+            return None, 0, 0.0
+        return self._camera.read_frame_identified()
+
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0):
         if self._camera is None:
             return None, 0, 0.0

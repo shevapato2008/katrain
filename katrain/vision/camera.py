@@ -362,6 +362,15 @@ class CameraManager:
         with self._frame_lock:
             return self._latest_frame.copy() if self._latest_frame is not None else None
 
+    def read_frame_identified(self) -> tuple[np.ndarray | None, int, float]:
+        """read_frame() plus the frame's reader sequence and monotonic timestamp, taken under one lock."""
+        self._last_demand = time.monotonic()
+        if not self._connected:
+            return self._try_reconnect(), self._frame_seq, self._frame_ts
+        with self._frame_lock:
+            frame = self._latest_frame.copy() if self._latest_frame is not None else None
+            return frame, self._frame_seq, self._frame_ts
+
     # ------------------------------------------------------------------
     # Background reader
     # ------------------------------------------------------------------
@@ -554,16 +563,17 @@ class CameraManager:
             exposure_readback = None
         auto_valid = auto_readback is not None and bool(np.isfinite(auto_readback))
         exposure_valid = exposure_readback is not None and bool(np.isfinite(exposure_readback))
-        auto_ok = auto_write_ok and auto_valid and (
-            "auto_exposure" not in pending
-            or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
+        auto_ok = (
+            auto_write_ok
+            and auto_valid
+            and (
+                "auto_exposure" not in pending
+                or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
+            )
         )
         exposure_ok = exposure_write_ok and (
             "exposure" not in pending
-            or (
-                exposure_valid
-                and _exposure_readback_matches(pending["exposure"], exposure_readback)
-            )
+            or (exposure_valid and _exposure_readback_matches(pending["exposure"], exposure_readback))
         )
         manual_without_exposure = (
             pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL and "exposure" not in pending

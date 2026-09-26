@@ -786,6 +786,15 @@ class AdminVisionRuntime:
             registry = self._models()
             if registry.loaded is None or registry.loaded_info is None:
                 raise VisionError(409, "Activate a verified model first")
+            # The viewer loads best.pt again from disk: prove it is still the file that was activated.
+            from katrain.web.admin.vision_models import VisionModelError
+
+            try:
+                current = registry._verify(registry._entry(registry.loaded_id), verify_weights=True)
+            except (VisionModelError, OSError, ValueError, KeyError, TypeError) as exc:
+                raise VisionError(409, "Active model files changed since activation; activate it again") from exc
+            if current["weights_sha256"] != registry.loaded_info["weights_sha256"]:
+                raise VisionError(409, "Active model files changed since activation; activate it again")
             self._auto = None
             try:
                 return self._diag().start(
@@ -830,6 +839,7 @@ class AdminVisionRuntime:
         """Light the stones the pending move captures in blue so the operator removes exactly those."""
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             if game_id != self._active_id:
                 raise VisionError(409, "Resume the requested capture session first")
             self._require_led()
@@ -851,6 +861,7 @@ class AdminVisionRuntime:
     def undo_last(self, game_id: str, frame_id: str, operator_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             self._auto = None
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm the board is restored before undoing")
@@ -869,6 +880,7 @@ class AdminVisionRuntime:
     def end_session(self, game_id: str, operator_confirmed: bool) -> dict:
         self.require_enabled()
         with self._lock:
+            self._require_no_diagnostics()
             self._auto = None
             if operator_confirmed is not True:
                 raise VisionError(409, "Confirm ending this capture session")

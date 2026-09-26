@@ -1302,3 +1302,46 @@ def test_auto_check_refuses_fiducial_sessions(led_client):
     take(client, game_id)
     refused = post(client, "auto-check", game_id=game_id, move_index=0)
     assert refused.status_code == 409 and "fiducial" in refused.json()["detail"].lower()
+
+
+def test_extra_fields_can_never_add_trusted_provenance(capture_client):
+    from katrain.web.admin.vision_runtime import VisionError
+
+    client = capture_client
+    runtime = client.app.state.vision_runtime
+    game_id = import_game(client)
+    take(client, game_id)
+    session = runtime.get_session(game_id)
+    for key in ("geometry_correction", "auto_evidence", "qa_status", "capture_trigger", "idempotent"):
+        with pytest.raises(VisionError) as refused:
+            runtime._capture_locked(
+                session,
+                game_id,
+                0,
+                operator_confirmed=True,
+                extra_fields={key: {"M": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "status": "corrected"}},
+            )
+        assert refused.value.status_code == 422
+    assert client.get(f"{PATH}/sessions/{game_id}", headers=headers()).json()["next_step"] == 0
+
+
+def test_a_failed_fiducial_solve_falls_back_to_the_last_good_frame(led_client):
+    import json
+
+    client, _ = led_client
+    post(client, "fiducial", mode="every-move")
+    game_id = post(client, "sgf", sgf=REMOVAL_SGF).json()["game_id"]
+    first = take(client, game_id).json()
+    assert first["geometry_correction"]["status"] == "frozen"  # nothing earlier to fall back to
+    path = client.app.state.vision_runtime.out_dir / game_id / "manifest.json"
+    manifest = json.loads(path.read_bytes())
+    good = [[1.0, 0.0, 4.0], [0.0, 1.0, 2.0], [0.0, 0.0, 1.0]]
+    manifest["frames"][0]["geometry_correction"] = {
+        **first["geometry_correction"],
+        "status": "corrected",
+        "source": "fiducial",
+        "M": good,
+    }
+    path.write_text(json.dumps(manifest))
+    second = take(client, game_id, 0).json()["geometry_correction"]
+    assert second["status"] == "stale" and second["source"] == "last_good" and second["M"] == good

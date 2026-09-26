@@ -27,6 +27,10 @@ SCHEMA_VERSION = 1
 CLASS_ORDERS = {"stones2": ("black", "white"), "led4": tuple(CLASS_NAMES)}
 FIDUCIAL_MODES = ("off", "every-move")
 QA_STATUSES = ("operator_confirmed", "camera_matched")
+# Fields later readers trust; extra_fields may never supply them, whether or not this entry has them yet.
+RESERVED_FRAME_FIELDS = frozenset(
+    {"geometry_correction", "auto_evidence", "qa_status", "capture_trigger", "idempotent"}
+)
 CORRECTION_STATUSES = ("corrected", "stale", "frozen")
 
 
@@ -501,6 +505,27 @@ class VisionCaptureCoordinator:
                         image_path = stage / legacy["file"]
                         led_point, frame_kind = legacy["led_point"], legacy["frame_kind"]
                         correction = legacy.get("geometry_correction")
+                        if (
+                            fiducial_mode != "off"
+                            and isinstance(correction, dict)
+                            and correction.get("status") == "frozen"
+                        ):
+                            # The staging run cannot see earlier frames; fall back to the newest published solve.
+                            last_good = next(
+                                (
+                                    frame["geometry_correction"]
+                                    for frame in reversed(frames)
+                                    if (frame.get("geometry_correction") or {}).get("status") == "corrected"
+                                ),
+                                None,
+                            )
+                            if last_good is not None:
+                                correction = {
+                                    **correction,
+                                    "status": "stale",
+                                    "source": "last_good",
+                                    "M": last_good["M"],
+                                }
                         if fiducial_mode != "off" and not _valid_correction(correction):
                             raise VisionCaptureError(503, "Fiducial correction produced no usable homography")
                     else:
@@ -533,7 +558,7 @@ class VisionCaptureCoordinator:
                     if evidence is not None:
                         entry["auto_evidence"] = json.loads(_json(evidence))
                     for key, value in (extra_fields or {}).items():
-                        if key in entry:
+                        if key in entry or key in RESERVED_FRAME_FIELDS:
                             raise VisionCaptureError(422, "Extra capture fields may not replace provenance")
                         entry[key] = json.loads(_json(value))
                     if fiducial_mode != "off":

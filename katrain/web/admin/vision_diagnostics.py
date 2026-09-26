@@ -132,11 +132,17 @@ class VisionDiagnostics:
         if self.blocking:
             raise DiagnosticsError(409, "Diagnostics are already running or still stopping")
         imgsz = int(model_info.get("parameters", {}).get("imgsz", 960))
+        from katrain.vision.config_service import VisionServiceConfig
+
+        # The chain the kiosk runs (thresholds, averaging, enhancement, parallax, reference check),
+        # with this model, and without software auto-exposure: a viewer must not step the capture camera.
         config = {
+            **VisionServiceConfig().to_worker_config(),
             "model_path": str(model_path),
             "backend": "ultralytics",
             "imgsz": imgsz,
             "board_size": 19,
+            "auto_exposure": "off",
         }
         adapter = self.adapter_factory(config, camera)
         adapter.set_geometry(geometry)

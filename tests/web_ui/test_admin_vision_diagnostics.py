@@ -186,3 +186,48 @@ def test_a_worker_that_will_not_exit_keeps_everything_blocked(diag):
     FakeAdapter.instances[-1].stuck = False
     assert dpost(client, "stop").json()["state"] == "idle"
     assert post(client, "calibrate", empty_confirmed=True).status_code == 200
+
+
+def test_viewer_uses_the_kiosk_recognition_settings_but_never_touches_exposure(diag):
+    from katrain.vision.config_service import VisionServiceConfig
+
+    client, runtime, model_id, _ = diag
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    dpost(client, "start", confirmed=True)
+    config = FakeAdapter.instances[-1].config
+    kiosk = VisionServiceConfig().to_worker_config()
+    assert config["auto_exposure"] == "off"
+    for key in (
+        "confidence_threshold",
+        "confidence_keep",
+        "confidence_sustain",
+        "frame_average",
+        "enhance",
+        "parallax_auto",
+        "reference_check",
+    ):
+        assert config[key] == kiosk[key], key
+
+
+def test_start_rechecks_the_weights_it_is_about_to_load(diag):
+    client, runtime, model_id, _ = diag
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    best = runtime.out_dir / "models" / model_id / "best.pt"
+    best.chmod(0o644)
+    best.write_bytes(b"replaced after activation")
+    refused = dpost(client, "start", confirmed=True)
+    assert refused.status_code == 409 and FakeAdapter.instances == []
+
+
+def test_led_guidance_and_session_edits_wait_for_diagnostics_too(diag):
+    client, runtime, model_id, _ = diag
+    post(client, "models/activate", model_id=model_id, confirmed=True)
+    game_id = import_game(client)
+    take(client, game_id)
+    frame = take(client, game_id, 0).json()
+    dpost(client, "start", confirmed=True)
+    assert (
+        post(client, f"sessions/{game_id}/undo", frame_id=frame["frame_id"], operator_confirmed=True).status_code == 409
+    )
+    assert post(client, f"sessions/{game_id}/end", operator_confirmed=True).status_code == 409
+    assert post(client, "removal-guide", game_id=game_id, move_index=2).status_code == 409

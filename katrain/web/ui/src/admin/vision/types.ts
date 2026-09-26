@@ -81,3 +81,15 @@ export type VisionModel = {
   class_names?: string[]; weights_sha256?: string; weights_bytes?: number; manifest_sha256?: string; parameters?: { imgsz?: number; [key: string]: unknown };
 };
 export type VisionModels = { models: VisionModel[]; current: string | null; previous: string | null; loaded_id: string | null; load_error: string | null };
+export type DiagnosticsState = 'idle' | 'running' | 'stopping' | 'error';
+export type DiagnosticsStatus = { state: DiagnosticsState; error: string | null; started_at: string | null; model_id: string | null; snapshot_age_s: number | null };
+export type DiagnosticsBox = { x1: number; y1: number; x2: number; y2: number; class_id: number; confidence: number; tier?: 'keep' | 'sustain' | 'below' };
+export type DiagnosticsStageId = 'raw' | 'warped' | 'nms' | 'filtered' | 'projection' | 'assigned' | 'published';
+export type DiagnosticsStage = { id: DiagnosticsStageId; image: 'raw' | 'warped' | 'input' | null; boxes: DiagnosticsBox[] | null; board: string | null; unavailable: string | null; derived: boolean };
+export type DiagnosticsImage = { jpeg_base64: string; width: number; height: number };
+export type DiagnosticsSnapshot = {
+  batch_id: string; observed_at: string; camera_seq: number | null; contributors: number[]; contributor_count: number;
+  model_id: string | null; model_sha256: string | null; imgsz: number | null; class_names: string[] | null; geometry_revision: string | null;
+  reference_participates: boolean; reference_mode: string | null; images: Record<'raw' | 'warped' | 'input', DiagnosticsImage>;
+  stages: DiagnosticsStage[]; stale: boolean; age_s: number;
+};

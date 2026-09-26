@@ -1,7 +1,7 @@
 import { BookOpen, Camera, ChevronRight, Clock3 } from 'lucide-react';
 import { isLabPage, type AdminPage } from './adminPages';
 
-const LAB: { id: AdminPage | 'diagnostics'; label: string }[] = [
+const LAB: { id: AdminPage; label: string }[] = [
   { id: 'capture', label: '采集与数据集' },
   { id: 'training', label: '训练与模型' },
   { id: 'diagnostics', label: '本机部署与诊断' },
@@ -11,6 +11,7 @@ const FOOT: Record<AdminPage, string> = {
   cron: '此页面只读，不会运行或暂停任务。',
   capture: '相机、指示灯与训练帧只在 Mac 本机使用。',
   training: '训练运行在测试机；本页不会暗中连接远端。',
+  diagnostics: 'viewer 只读观察，不提交棋步、不驱动指示灯。',
 };
 
 type Props = {
@@ -28,9 +29,7 @@ export default function AdminSidebar({ page, labOpen, environmentLabel, onPage, 
     {nav('cron', Clock3, '定时任务')}
     <button type="button" className={`admin-nav ${inLab && !labOpen ? 'active' : ''}`} aria-expanded={labOpen} aria-controls="admin-lab-subnav" onClick={onToggleLab}><Camera aria-hidden="true" />视觉实验室<ChevronRight className="admin-nav-chev" aria-hidden="true" /></button>
     {labOpen && <div className="admin-subnav" id="admin-lab-subnav">
-      {LAB.map((item, index) => item.id === 'diagnostics'
-        ? <button key={item.id} type="button" disabled title="开发中，尚未接入本机诊断" aria-description="开发中"><b>{index + 1}</b>{item.label}</button>
-        : <button key={item.id} type="button" aria-current={page === item.id ? 'page' : undefined} onClick={() => onPage(item.id as AdminPage)}><b>{index + 1}</b>{item.label}</button>)}
+      {LAB.map((item, index) => <button key={item.id} type="button" aria-current={page === item.id ? 'page' : undefined} onClick={() => onPage(item.id)}><b>{index + 1}</b>{item.label}</button>)}
     </div>}
     <div className="admin-sidefoot">当前环境：{environmentLabel}<br />{FOOT[page]}</div>
   </aside>;

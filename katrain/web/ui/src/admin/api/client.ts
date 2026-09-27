@@ -43,6 +43,9 @@ export interface ErrorList { items: ErrorGroupRow[]; total: number; page: number
 export interface Attention { errors: number; config: number }
 export interface BoxDeviceRow { device_id: string; state: 'online' | 'offline' | 'never' | 'pending' | 'rejected'; status: string; registered_at: string | null; decided_at: string | null; decided_by: string | null; last_seen: string | null; silent_s: number | null; last_ip: string | null; board: string | null; smartbox_version: string | null; katrain_build: string | null; mode: string | null; uptime_s: number | null }
 export interface DeviceFleet { observed_at: string; online_within_s: number; devices: BoxDeviceRow[]; counts: Record<string, number>; versions: { smartbox: Record<string, number>; katrain: Record<string, number> } }
+export interface ArtifactImage { prefix: string; manifest: { version?: string; board?: string; file?: string; sha256?: string; size?: number; uploaded_by?: string; uploaded_at?: string; notes?: string } | null; problems: string[]; object_size: number | null; status?: string; status_note?: string | null; status_by?: string | null; status_at?: string | null }
+export interface ArtifactListing { state: 'configured' | 'unconfigured' | 'unreachable'; bucket: string | null; images: ArtifactImage[]; truncated: boolean; error: string | null }
+export interface ArtifactLink { url: string; expires_at: string; sha256: string }
 export class AdminApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -114,6 +117,9 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronPause: (name: string, reason: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/pause`, { method: 'POST', body: body({ reason }) }),
     cronResume: (name: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/resume`, { method: 'POST' }),
     cronRunNow: (name: string) => adminRequest<{ id: number; job: string; state: string }>(`/cron/jobs/${encodeURIComponent(name)}/run`, { method: 'POST' }),
+    artifacts: (signal?: AbortSignal) => adminRequest<ArtifactListing>('/artifacts', { signal, cache: 'no-store' }),
+    artifactStatus: (prefix: string, status: string, note: string) => adminRequest<{ prefix: string; status: string }>('/artifacts/status', { method: 'POST', body: body({ prefix, status, note }) }),
+    artifactLink: (prefix: string) => adminRequest<ArtifactLink>('/artifacts/link', { method: 'POST', body: body({ prefix }) }),
     configHealth: (signal?: AbortSignal) => adminRequest<ConfigHealth>('/config-health', { signal, cache: 'no-store' }),
     performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),

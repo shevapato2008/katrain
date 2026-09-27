@@ -296,3 +296,8 @@ details.tr-adv summary{cursor:pointer;font-size:14.5px;color:var(--admin-muted)}
 .cron-actions{display:flex;gap:8px;margin:6px 0 4px}.cron-act{min-height:34px;padding:4px 14px;border:1px solid var(--admin-line);border-radius:7px;background:var(--admin-panel2);color:var(--admin-text);font:inherit;font-size:15px;cursor:pointer}.cron-act.primary{background:var(--admin-accent);border-color:var(--admin-accent);color:var(--admin-on-accent)}.cron-act:disabled{opacity:.5;cursor:not-allowed}
 .cron-actions-note{margin:4px 0 14px;font-size:13.5px;color:var(--admin-muted)}.cron-actions-note.bad{color:var(--bad)}
 .cron-paused{display:grid;gap:2px;margin:6px 0;padding:9px 12px;border-radius:8px;background:var(--admin-warn-bg);color:var(--admin-warn);font-size:14px}
+/* ---------- 金镜像 ---------- */
+.ub-lhead.ar,.ub-lrow.ar{grid-template-columns:70px 60px minmax(0,1fr) 76px 100px 150px 76px 180px}
+.ub-lrow.ar{padding-block:6px}.ub-lrow.ar.bad{background:var(--bad-bg)}.ar-file{overflow:hidden;text-overflow:ellipsis}.ar-prob{display:flex!important;align-items:center;gap:4px;color:var(--bad)!important;font-family:inherit!important}.ar-prob svg.i{width:14px;height:14px}
+.ub-lrow.ar small{display:block;font-size:12px;color:var(--admin-subtle)}.ar-act{display:flex;gap:6px;justify-content:flex-end}
+.ar-link-body{display:flex;gap:10px;align-items:center;padding:12px 16px}.ar-link-body code{flex:1;min-width:0;overflow-wrap:anywhere;font-size:12.5px;padding:8px 10px;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-well)}.ar-pad{padding:0 16px 12px}

@@ -1221,3 +1221,16 @@ class CronJobCommand(Base):
     state = Column(String(16), nullable=False, default="pending")
     handled_at = Column(DateTime(timezone=True), nullable=True)
     note = Column(Text, nullable=True)
+
+
+class GoldenImageStatus(Base):
+    """Release status of one golden image (identified by its manifest prefix in the artifacts bucket).
+    Absent row = candidate. The bucket itself is written only by the provisioning upload script."""
+
+    __tablename__ = "golden_image_status"
+
+    prefix = Column(String(255), primary_key=True)
+    status = Column(String(16), nullable=False)  # candidate | released | revoked
+    note = Column(Text, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)

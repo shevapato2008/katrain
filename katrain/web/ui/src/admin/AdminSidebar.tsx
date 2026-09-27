@@ -1,4 +1,4 @@
-import { Activity, BookOpen, CircleCheck, Cpu, TriangleAlert, ShieldCheck, Users, Camera, ChevronRight, Clock3 } from 'lucide-react';
+import { Activity, BookOpen, CircleCheck, Cpu, Database, TriangleAlert, ShieldCheck, Users, Camera, ChevronRight, Clock3 } from 'lucide-react';
 import { isLabPage, type AdminPage } from './adminPages';
 
 const LAB: { id: AdminPage; label: string }[] = [
@@ -15,6 +15,7 @@ const FOOT: Record<AdminPage, string> = {
   health: '只读页面，不修改配置。',
   errors: '标记已解决会写入审计。',
   devices: '批准与拒绝会写入审计。',
+  artifacts: '发布、撤回与下载链接会写入审计。',
   capture: '相机、指示灯与训练帧只在 Mac 本机使用。',
   training: '训练运行在测试机；本页不会暗中连接远端。',
   diagnostics: 'viewer 只读观察，不提交棋步、不驱动指示灯。',
@@ -39,6 +40,7 @@ export default function AdminSidebar({ attention, page, labOpen, environmentLabe
     {nav('audit', ShieldCheck, '审计日志')}
     {nav('health', CircleCheck, '配置体检', attention?.config)}
     {nav('devices', Cpu, '盒子设备')}
+    {nav('artifacts', Database, '金镜像')}
     {nav('errors', TriangleAlert, '报错追踪', attention?.errors)}
     <button type="button" className={`admin-nav ${inLab && !labOpen ? 'active' : ''}`} aria-expanded={labOpen} aria-controls="admin-lab-subnav" onClick={onToggleLab}><Camera aria-hidden="true" />视觉实验室<ChevronRight className="admin-nav-chev" aria-hidden="true" /></button>
     {labOpen && <div className="admin-subnav" id="admin-lab-subnav">

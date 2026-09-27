@@ -195,3 +195,26 @@ pages.devices = {
         ${list.map(([id, st, b, sv, kb, m, seen, up, ip]) => `<div class="ub-lrow dv"><span class="mono">${id}</span><span><span class="chip ${DVS[st][0]}">${DVS[st][1]}</span></span><span>${b}</span><span class="mono">${sv}</span><span class="mono">${kb}</span><span>${m}</span><span class="muted">${seen}</span><span class="muted">${up}</span><span class="mono muted">${ip}</span></div>`).join('') || '<div class="empty-view"><small>还没有批准的设备。盒子联网启动后会自动出现在「待批准」里。</small></div>'}</section></div></main>`;
   },
 };
+
+// ---------- 金镜像 ----------
+P.disk = '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>';
+const AR = { scenario: 'normal' };
+PROTO.push({ id: 'ar', page: 'artifacts', title: '制品库场景', options: [['normal', '有镜像'], ['link', '已生成下载链接'], ['unconfigured', '尚未配置']], get: () => AR.scenario, set: (v) => { AR.scenario = v; } });
+const IMAGES = [
+  ['rk3562/1.4.2/', 'rk3562', '1.4.2', 'smartbox-rk3562-1.4.2.img.xz', '1.82 GB', 'a3f9…c41e', 'provision:fan', '2026-09-27 09:02', 'released', null],
+  ['rk3562/1.4.1/', 'rk3562', '1.4.1', 'smartbox-rk3562-1.4.1.img.xz', '1.80 GB', '77d2…0b9a', 'provision:fan', '2026-09-20 18:40', 'revoked', null],
+  ['rk3562/1.4.3/', 'rk3562', '1.4.3', 'smartbox-rk3562-1.4.3.img.xz', '—', '5c10…e2d7', 'provision:fan', '2026-09-27 10:15', 'candidate', 'manifest 指向的文件不存在'],
+  ['rk3576/0.9.0/', 'rk3576', '0.9.0', 'smartbox-rk3576-0.9.0.img.xz', '2.10 GB', 'b81e…9f03', 'provision:fan', '2026-09-26 21:30', 'candidate', null],
+];
+const ARS = { candidate: ['info', '候选'], released: ['ok', '已发布'], revoked: ['bad', '已撤回'] };
+pages.artifacts = {
+  render() {
+    if (AR.scenario === 'unconfigured') return `<main class="lab-page"><div class="lab-heading"><div><h1>金镜像</h1><p>盒子出厂系统镜像：登记、发布与签名下载，不在后台上传或删除</p></div><span class="lab-status">${ic('info')}私有桶 · 链接 12 小时有效</span></div><div class="lab-content"><section class="panel"><div class="empty-view">${ic('disk')}<span>制品库尚未配置</span><small>在后台进程环境里设置 KATRAIN_ARTIFACTS_S3_ENDPOINT、KATRAIN_ARTIFACTS_ACCESS_KEY / SECRET_KEY（只读账号）与 KATRAIN_ARTIFACTS_PUBLIC_ENDPOINT 后重启。</small></div></section></div></main>`;
+    const link = AR.scenario === 'link' ? `<section class="panel ar-link"><div class="panel-head"><h2>下载链接 · rk3562 1.4.2</h2><small>12 小时内有效 · 生成动作已写入审计</small></div><div class="ar-link-body"><code class="mono">https://media.example/golden-images/rk3562/1.4.2/smartbox-rk3562-1.4.2.img.xz?X-Amz-Algorithm=AWS4-HMAC-SHA256&amp;X-Amz-Expires=43200&amp;X-Amz-Signature=…</code><button class="btn small">复制</button></div><p class="note ar-pad">下载后用 sha256 核对：<b class="mono">a3f9 5d20 … c41e</b></p></section>` : '';
+    return `<main class="lab-page"><div class="lab-heading"><div><h1>金镜像</h1><p>盒子出厂系统镜像：登记、发布与签名下载，不在后台上传或删除</p></div><span class="lab-status">${ic('info')}私有桶 golden-images · 链接 12 小时有效</span></div>
+      <div class="lab-content">${link}<section class="panel"><div class="panel-head"><h2>镜像</h2><small>${IMAGES.length} 个 · 上传只走 provisioning 脚本</small></div>
+        <div class="ub-lhead ar"><span>板型</span><span>版本</span><span>文件</span><span class="num">大小</span><span>sha256</span><span>上传</span><span>状态</span><span></span></div>
+        ${IMAGES.map(([p, b, v, f, sz, sha, by, at, st, prob]) => `<div class="ub-lrow ar ${prob ? 'bad' : ''}"><span>${b}</span><span class="mono">${v}</span><span class="mono ar-file">${f}${prob ? `<small class="ar-prob">${ic('warn')}${prob}</small>` : ''}</span><span class="num">${sz}</span><span class="mono muted">${sha}</span><span class="muted">${by}<small>${at}</small></span><span><span class="chip ${ARS[st][0]}">${ARS[st][1]}</span></span><span class="ar-act">${st === 'revoked' ? '<button class="btn small">设为候选</button>' : st === 'released' ? '<button class="btn small">撤回</button><button class="btn small">下载链接</button>' : `<button class="btn small primary" ${prob ? 'disabled' : ''}>发布</button><button class="btn small" ${prob ? 'disabled' : ''}>下载链接</button>`}</span></div>`).join('')}</section>
+        <p class="note">已撤回的镜像不再提供下载链接；manifest 有问题的镜像不能发布。状态变更与生成链接都写入审计。</p></div></main>`;
+  },
+};

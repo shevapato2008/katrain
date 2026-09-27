@@ -195,3 +195,21 @@ def test_audit_view_filters_by_action_and_target_user(env):
     assert [(r["target_id"], r["target_label"]) for r in only["items"]] == [(3, "chenjing")]
     newest_first = [r["created_at"] for r in everything["items"]]
     assert newest_first == sorted(newest_first, reverse=True)
+
+
+def test_audit_export_is_csv_of_the_filter_and_is_itself_audited(env):
+    import csv
+    import io
+
+    client, headers, factory = env
+    adjust(client, headers, 3, 100)
+    adjust(client, headers, 2, 5, reason="=cmd|' /C calc'!A0")
+    response = client.get("/api/admin/audit/export?action=credit_adjust", headers=headers)
+    assert response.status_code == 200 and response.headers["content-type"].startswith("text/csv")
+    assert response.headers["x-export-rows"] == "2"
+    rows = list(csv.reader(io.StringIO(response.content.decode("utf-8-sig"))))
+    assert rows[0][:4] == ["id", "created_at", "actor", "action"] and {r[3] for r in rows[1:]} == {"credit_adjust"}
+    assert all(not r[7].startswith(("=", "+", "-", "@")) for r in rows[1:])
+    exports = audits(factory, "audit_export")
+    assert len(exports) == 1 and json.loads(exports[0].detail)["rows"] == 2
+    assert client.get("/api/admin/audit/export").status_code == 401

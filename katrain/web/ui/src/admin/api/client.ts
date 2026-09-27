@@ -84,6 +84,19 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
   }
+  async function download(path: string): Promise<{ blob: Blob; rows: number; total: number }> {
+    const headers = new Headers();
+    const value = token();
+    if (value) headers.set('Authorization', `Bearer ${value}`);
+    let response: Response;
+    try { response = await fetcher(`/api/admin${path}`, { headers, cache: 'no-store' }); } catch { throw new AdminApiError(0, '网络连接失败，请重试。'); }
+    if (!response.ok) {
+      let detail = `请求失败（${response.status}）`;
+      try { const body = await response.json() as { detail?: unknown }; if (typeof body.detail === 'string') detail = body.detail; } catch { /* Non-JSON error response. */ }
+      throw new AdminApiError(response.status, detail);
+    }
+    return { blob: await response.blob(), rows: Number(response.headers.get('X-Export-Rows') ?? 0), total: Number(response.headers.get('X-Export-Total') ?? 0) };
+  }
   const publicRead = <T>(path: string) => request<T>(`/api/v1/tutorials${path}`);
   const adminRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/admin${path}`, init, true);
   const body = (value: unknown) => JSON.stringify(value);
@@ -108,6 +121,7 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     adjustCredits: (id: number, value: AdjustInput) => adminRequest<AdjustResult>(`/users/${id}/credits`, { method: 'POST', body: body(value) }),
     redeemCodes: (signal?: AbortSignal) => adminRequest<CodeListing>('/redeem-codes', { signal, cache: 'no-store' }),
     generateCodes: (value: CodesInput) => adminRequest<CodesResult>('/redeem-codes', { method: 'POST', body: body(value) }),
+    auditExport: (query: AuditQuery) => download(`/audit/export?${new URLSearchParams(Object.entries(query).filter(([k, v]) => k !== 'page' && v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`),
     audit: (query: AuditQuery, signal?: AbortSignal) => adminRequest<AuditPage>(`/audit?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
     errors: (query: { status: string; process: string; page: number }, signal?: AbortSignal) => adminRequest<ErrorList>(`/errors?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
     resolveError: (id: number) => adminRequest<ErrorGroupRow>(`/errors/${id}/resolve`, { method: 'POST' }),

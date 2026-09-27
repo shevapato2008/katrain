@@ -374,16 +374,7 @@ def _day(value: str | None, end: bool) -> datetime | None:
     return moment.astimezone(timezone.utc)
 
 
-@router.get("/audit")
-def audit_log(
-    action: str | None = Query(None, max_length=64),
-    since: str | None = Query(None, max_length=10),
-    until: str | None = Query(None, max_length=10),
-    target_user_id: int | None = Query(None, ge=1),
-    page: int = Query(1, ge=1, le=10000),
-    db: Session = Depends(get_admin_db),
-):
-    page_size = 50
+def _audit_query(action, since, until, target_user_id):
     query = select(AdminAuditLog)
     if action:
         query = query.where(AdminAuditLog.action == action)
@@ -394,6 +385,66 @@ def audit_log(
         query = query.where(AdminAuditLog.created_at < end)
     if target_user_id is not None:
         query = query.where(AdminAuditLog.target_type == "user", AdminAuditLog.target_id == target_user_id)
+    return query
+
+
+EXPORT_LIMIT = 10_000
+
+
+@router.get("/audit/export")
+def export_audit(
+    action: str | None = Query(None, max_length=64),
+    since: str | None = Query(None, max_length=10),
+    until: str | None = Query(None, max_length=10),
+    target_user_id: int | None = Query(None, ge=1),
+    admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_admin_db),
+):
+    """The current filter as CSV (newest first, at most EXPORT_LIMIT rows). The export itself is audited
+    before any row is returned."""
+    import csv
+    import io
+
+    from fastapi.responses import Response
+
+    query = _audit_query(action, since, until, target_user_id)
+    total = db.scalar(select(func.count()).select_from(query.subquery()))
+    rows = db.scalars(query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc()).limit(EXPORT_LIMIT)).all()
+    filters = {"action": action, "since": since, "until": until, "target_user_id": target_user_id}
+    _audit(db, admin, "audit_export", None, None, {"filters": {k: v for k, v in filters.items() if v is not None}, "rows": len(rows), "total": total})
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["id", "created_at", "actor", "action", "target_type", "target_id", "success", "detail"])
+    for row in rows:
+        detail = row.detail or ""
+        if detail[:1] in "=+-@":  # keep spreadsheet apps from evaluating a cell as a formula
+            detail = "'" + detail
+        writer.writerow([row.id, _iso(row.created_at), row.actor_username, row.action, row.target_type or "", row.target_id or "", "1" if row.success else "0", detail])
+    headers = {
+        "Content-Disposition": 'attachment; filename="admin-audit.csv"',
+        "X-Export-Rows": str(len(rows)),
+        "X-Export-Total": str(total),
+        "Cache-Control": "no-store",
+    }
+    return Response(content="\ufeff" + buffer.getvalue(), media_type="text/csv; charset=utf-8", headers=headers)
+
+
+@router.get("/audit")
+def audit_log(
+    action: str | None = Query(None, max_length=64),
+    since: str | None = Query(None, max_length=10),
+    until: str | None = Query(None, max_length=10),
+    target_user_id: int | None = Query(None, ge=1),
+    page: int = Query(1, ge=1, le=10000),
+    db: Session = Depends(get_admin_db),
+):
+    page_size = 50
+    query = _audit_query(action, since, until, target_user_id)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
     rows = db.scalars(
         query.order_by(AdminAuditLog.created_at.desc(), AdminAuditLog.id.desc())

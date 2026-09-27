@@ -95,11 +95,11 @@ const AUDIT = [
   ['2026-09-27 09:12:04', 'admin:fan', 'credit_adjust', 'user 3 · chenjing', true, '-50 · 误发补偿退回 · 余额 330→280'],
   ['2026-09-27 09:05:47', 'admin:fan', 'redeem_codes_generate', '批次 20 × 100', true, '九月线下活动奖品 · 到期 2026-12-26'],
   ['2026-09-27 09:01:30', 'admin:fan', 'login', '—', true, ''],
-  ['2026-09-26 22:40:11', 'admin:fan', 'tutorial_figure_update', 'tutorial_figure 1182', true, ''],
+  ['2026-09-26 22:40:11', 'admin:fan', 'tutorial.board', 'tutorial_figure 1182', true, ''],
   ['2026-09-26 22:38:02', 'admin:fan', 'login_failed', '—', false, ''],
   ['2026-09-24 18:40:19', 'admin:fan', 'credit_adjust', 'user 3 · chenjing', true, '+200 · 活动奖励 · 余额 170→370'],
 ];
-const ACTION_LABEL = { credit_adjust: '积分调整', redeem_codes_generate: '生成兑换码', login: '登录', login_failed: '登录失败', logout: '退出', tutorial_figure_update: '教程修改' };
+const ACTION_LABEL = { credit_adjust: '积分调整', redeem_codes_generate: '生成兑换码', login: '登录', login_failed: '登录失败', logout: '退出', 'tutorial.board': '教程棋图修改' };
 pages.audit = {
   render() {
     const rows = AUDIT.filter((r) => AU.action === 'all' || r[2] === AU.action);

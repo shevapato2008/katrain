@@ -57,7 +57,7 @@
 .ub-ellipsis { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ub-err { display:flex; align-items:center; gap:6px; margin:0; color:var(--admin-bad); font-size:13.5px; }
 .ub-err svg { width:16px; height:16px; flex:none; }
-.au-filter { display:grid; grid-template-columns:200px 170px 170px 170px auto; gap:12px; align-items:end; padding:12px 16px; justify-content:start; }
+.au-filter { display:grid; grid-template-columns:200px 170px 170px 170px auto auto; gap:12px; align-items:end; padding:12px 16px; justify-content:start; }
 .ub-dialog { width:min(560px,calc(100vw - 40px)); max-height:calc(100vh - 40px); overflow:auto; padding:22px; border:1px solid var(--admin-line); border-radius:10px; background:var(--admin-panel); color:var(--admin-text); font:inherit; font-size:16px; line-height:1.6; box-shadow:0 18px 60px #0006; }
 .ub-dialog::backdrop { background:#0009; }
 .ub-dialog h2 { margin:0 0 8px; font-size:23px; display:flex; align-items:center; gap:10px; }

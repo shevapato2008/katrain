@@ -106,3 +106,16 @@ describe('audit page', () => {
     await waitFor(() => expect(api.audit).toHaveBeenLastCalledWith(expect.objectContaining({ action: 'credit_adjust', target_user_id: '3', page: 1 }), expect.any(AbortSignal)));
   });
 });
+
+describe('audit export', () => {
+  it('exports the applied filter and says when the result was capped', async () => {
+    const api = createAdminApi(); const u = userEvent.setup();
+    api.audit = vi.fn(async () => ({ items: [], total: 12000, page: 1, page_size: 50 }));
+    api.auditExport = vi.fn(async () => ({ blob: new Blob(['id\n']), rows: 10000, total: 12000 }));
+    URL.createObjectURL = vi.fn(() => 'blob:x'); URL.revokeObjectURL = vi.fn();
+    render(<AuditPage api={api} onUnauthorized={vi.fn()} />);
+    await u.click(await screen.findByRole('button', { name: '导出 CSV' }));
+    expect(await screen.findByText(/已导出最新的 10000 条（共 12000 条/)).toBeInTheDocument();
+    expect(api.auditExport).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
+  });
+});

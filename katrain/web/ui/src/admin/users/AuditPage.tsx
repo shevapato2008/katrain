@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Search, ShieldCheck } from 'lucide-react';
+import { FileDown, Search, ShieldCheck } from 'lucide-react';
 import type { createAdminApi } from '../api/client';
 import { ACTION_LABELS, describe, LoadError, when } from './shared';
 import type { AuditPage as AuditResult, AuditQuery, AuditRow } from './types';
@@ -29,6 +29,8 @@ export default function AuditPage({ api, onUnauthorized }: Props) {
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [exported, setExported] = useState('');
   const unauthorized = useRef(onUnauthorized);
   useEffect(() => { unauthorized.current = onUnauthorized; }, [onUnauthorized]);
   useEffect(() => {
@@ -44,6 +46,21 @@ export default function AuditPage({ api, onUnauthorized }: Props) {
     });
     return () => controller.abort();
   }, [api, query, attempt]);
+  const exportCsv = async () => {
+    setExporting(true); setExported(''); setError('');
+    try {
+      const { blob, rows, total } = await api.auditExport(query);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = `admin-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click(); URL.revokeObjectURL(url);
+      setExported(rows < total ? `已导出最新的 ${rows} 条（共 ${total} 条，单次上限 1 万条；缩小时间范围可导出更早的）` : `已导出 ${rows} 条；这次导出本身也记入了审计`);
+    } catch (cause) {
+      const { status, message } = describe(cause);
+      if (status === 401) unauthorized.current(); else setError(message);
+    }
+    setExporting(false);
+  };
   const page = query.page ?? 1;
   const pages = result ? Math.max(1, Math.ceil(result.total / result.page_size)) : 1;
   const badTarget = !!draft.target_user_id && !/^\d+$/.test(draft.target_user_id);
@@ -56,7 +73,9 @@ export default function AuditPage({ api, onUnauthorized }: Props) {
         <label className="lab-field">止<input type="date" value={draft.until} onChange={(event) => setDraft({ ...draft, until: event.target.value })} /></label>
         <label className="lab-field">目标用户 id<input inputMode="numeric" placeholder="例如 3" value={draft.target_user_id} aria-invalid={badTarget} onChange={(event) => setDraft({ ...draft, target_user_id: event.target.value.trim() })} /></label>
         <button className="lab-btn" type="submit" disabled={badTarget}><Search aria-hidden="true" />筛选</button>
+        <button className="lab-btn" type="button" disabled={exporting || !result?.total} onClick={() => { void exportCsv(); }}><FileDown aria-hidden="true" />{exporting ? '导出中' : '导出 CSV'}</button>
       </form>
+      {exported && <div className="lab-banner ok" role="status"><span>{exported}</span></div>}
       <section className="lab-panel" aria-labelledby="au-title">
         <div className="lab-panel-head"><h2 id="au-title">记录</h2><small>{result ? `${result.total} 条 · 按时间倒序` : '读取中'}</small></div>
         {error && <div className="ub-pad"><LoadError message={error} onRetry={() => setAttempt((n) => n + 1)} /></div>}

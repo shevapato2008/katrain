@@ -8,7 +8,10 @@ export const REASON_LABELS: Record<string, string> = {
 };
 export const ACTION_LABELS: Record<string, string> = {
   credit_adjust: '积分调整', redeem_codes_generate: '生成兑换码', login_success: '登录', login_failed: '登录失败', logout: '退出',
-  tutorial_figure_update: '教程修改', tutorial_figure_review: '教程审核',
+  'tutorial.board': '教程棋图修改', 'tutorial.narration': '教程讲解修改', 'tutorial.generate_audio': '教程生成语音', 'tutorial.verify': '教程审核',
+  error_resolve: '报错标记已解决', device_approve: '批准设备', device_reject: '拒绝设备', device_reset: '重置设备登记',
+  cron_pause: '暂停定时任务', cron_resume: '恢复定时任务', cron_run_now: '立即运行定时任务',
+  artifact_status: '镜像状态变更', artifact_link: '生成镜像下载链接', audit_export: '导出审计',
 };
 
 const shanghai = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });

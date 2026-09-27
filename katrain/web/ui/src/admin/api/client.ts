@@ -1,6 +1,7 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
 import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail, VisionFiducialMode, VisionAutoCheck, VisionModels, DiagnosticsStatus, DiagnosticsSnapshot } from '../vision/types';
+import type { AdminUserList, AdminUserDetail, LedgerPage, QuotaRow, RedeemedRow, AdjustInput, AdjustResult, CodesInput, CodesResult, CodeListing, AuditPage, AuditQuery } from '../users/types';
 import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
@@ -87,6 +88,15 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
     cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
     cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
+    users: (q: string, page: number, signal?: AbortSignal) => adminRequest<AdminUserList>(`/users?${new URLSearchParams({ q: q.trim().slice(0, 64), page: String(page) })}`, { signal, cache: 'no-store' }),
+    user: (id: number, signal?: AbortSignal) => adminRequest<AdminUserDetail>(`/users/${id}`, { signal, cache: 'no-store' }),
+    userLedger: (id: number, beforeId: number | null, signal?: AbortSignal) => adminRequest<LedgerPage>(`/users/${id}/ledger${beforeId ? `?before_id=${beforeId}` : ''}`, { signal, cache: 'no-store' }),
+    userQuota: (id: number, signal?: AbortSignal) => adminRequest<{ items: QuotaRow[] }>(`/users/${id}/quota`, { signal, cache: 'no-store' }),
+    userRedeemed: (id: number, signal?: AbortSignal) => adminRequest<{ items: RedeemedRow[] }>(`/users/${id}/redeemed`, { signal, cache: 'no-store' }),
+    adjustCredits: (id: number, value: AdjustInput) => adminRequest<AdjustResult>(`/users/${id}/credits`, { method: 'POST', body: body(value) }),
+    redeemCodes: (signal?: AbortSignal) => adminRequest<CodeListing>('/redeem-codes', { signal, cache: 'no-store' }),
+    generateCodes: (value: CodesInput) => adminRequest<CodesResult>('/redeem-codes', { method: 'POST', body: body(value) }),
+    audit: (query: AuditQuery, signal?: AbortSignal) => adminRequest<AuditPage>(`/audit?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
     performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),
     kifuAlbum: (id: number, signal?: AbortSignal) => adminRequest<KifuAlbumDetail>(`/kifu/albums/${Math.trunc(id)}`, { signal, cache: 'no-store' }),

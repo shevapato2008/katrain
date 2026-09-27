@@ -1,4 +1,4 @@
-import { Activity, BookOpen, Camera, ChevronRight, Clock3 } from 'lucide-react';
+import { Activity, BookOpen, ShieldCheck, Users, Camera, ChevronRight, Clock3 } from 'lucide-react';
 import { isLabPage, type AdminPage } from './adminPages';
 
 const LAB: { id: AdminPage; label: string }[] = [
@@ -10,6 +10,8 @@ const FOOT: Record<AdminPage, string> = {
   tutorial: '修改会写入该环境的教程数据',
   cron: '此页面只读，不会运行或暂停任务。',
   performance: '只读页面，不修改配置。',
+  users: '调整积分与生成兑换码会写入该环境的主库。',
+  audit: '只读页面。',
   capture: '相机、指示灯与训练帧只在 Mac 本机使用。',
   training: '训练运行在测试机；本页不会暗中连接远端。',
   diagnostics: 'viewer 只读观察，不提交棋步、不驱动指示灯。',
@@ -29,6 +31,8 @@ export default function AdminSidebar({ page, labOpen, environmentLabel, onPage, 
     {nav('tutorial', BookOpen, '教程管理')}
     {nav('cron', Clock3, '定时任务')}
     {nav('performance', Activity, '性能监控')}
+    {nav('users', Users, '用户与计费')}
+    {nav('audit', ShieldCheck, '审计日志')}
     <button type="button" className={`admin-nav ${inLab && !labOpen ? 'active' : ''}`} aria-expanded={labOpen} aria-controls="admin-lab-subnav" onClick={onToggleLab}><Camera aria-hidden="true" />视觉实验室<ChevronRight className="admin-nav-chev" aria-hidden="true" /></button>
     {labOpen && <div className="admin-subnav" id="admin-lab-subnav">
       {LAB.map((item, index) => <button key={item.id} type="button" aria-current={page === item.id ? 'page' : undefined} onClick={() => onPage(item.id)}><b>{index + 1}</b>{item.label}</button>)}

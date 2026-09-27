@@ -77,7 +77,11 @@ class CronScheduler:
         from katrain.cron.controls import ControlPoller
 
         self._controls = ControlPoller(SessionLocal, self._recorder, self._scheduler)
-        await asyncio.to_thread(self._controls.poll, False)  # honour an existing pause before the first runs fire
+        # Honour an existing pause before the first runs fire; retry briefly rather than fail open.
+        for _ in range(6):
+            if await asyncio.to_thread(self._controls.poll, False) or self._shutdown_event.is_set():
+                break
+            await asyncio.sleep(5)
 
         self._scheduler.start()
         logger.info("Scheduler started")

@@ -79,3 +79,15 @@ def test_run_now_queues_one_command_and_refuses_what_cron_cannot_do(env):
         db.commit()
     assert post(client, auth, "fetch_list", "run").status_code == 409  # paused
     assert actions(factory) == ["cron_run_now", "cron_pause"]
+
+
+def test_a_resumed_job_is_not_overdue_for_the_time_it_was_paused(env):
+    client, factory, auth = env
+    with factory() as db:
+        row = db.get(CronJobStatus, "fetch_list")
+        row.last_started_at = datetime.now(timezone.utc) - timedelta(days=2)
+        db.commit()
+    post(client, auth, "fetch_list", "pause", reason="上游接口维护中")
+    post(client, auth, "fetch_list", "resume")
+    job = next(j for j in client.get("/api/admin/cron/jobs", headers=auth).json()["jobs"] if j["name"] == "fetch_list")
+    assert job["health"]["state"] == "ok"

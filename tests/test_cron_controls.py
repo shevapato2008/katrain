@@ -61,7 +61,7 @@ def test_a_paused_job_is_skipped_and_recorded_as_paused(factory):
     asyncio.run(recorder.run(job))
     assert job.calls == 0
     with factory() as db:
-        assert db.get(CronJobStatusDB, "fetch_list").last_status == "paused"
+        assert db.get(CronJobStatusDB, "fetch_list").last_status != "paused"  # still describes the last real run
         assert [r.status for r in db.query(CronJobRunDB).filter_by(job_name="fetch_list")] == ["paused"]
     with factory() as db:
         db.get(CronJobControlDB, "fetch_list").paused = False
@@ -74,11 +74,12 @@ def test_a_paused_job_is_skipped_and_recorded_as_paused(factory):
 def test_run_now_is_handed_to_the_scheduler_and_marked_done(factory):
     recorder = setup(factory)
     scheduler = FakeScheduler(["fetch_list"])
+    poller = ControlPoller(factory, recorder, scheduler)  # the cron process starts before the request
     with factory() as db:
         db.add(CronJobCommandDB(job_name="fetch_list", command="run_now", requested_at=datetime.now(timezone.utc), requested_by="admin:fan", state="pending"))
         db.add(CronJobCommandDB(job_name="ghost", command="run_now", requested_at=datetime.now(timezone.utc), requested_by="admin:fan", state="pending"))
         db.commit()
-    ControlPoller(factory, recorder, scheduler).poll()
+    poller.poll()
     assert scheduler.jobs["fetch_list"].next_run_time is not None
     with factory() as db:
         states = {c.job_name: (c.state, c.note) for c in db.query(CronJobCommandDB)}
@@ -107,3 +108,20 @@ def test_web_and_cron_map_identical_control_tables():
     for web, cron in ((models_db.CronJobControl, CronJobControlDB), (models_db.CronJobCommand, CronJobCommandDB)):
         shape = lambda m: {c.name: (str(c.type), c.nullable, c.primary_key) for c in m.__table__.columns}  # noqa: E731
         assert web.__tablename__ == cron.__tablename__ and shape(web) == shape(cron)
+
+
+def test_run_now_is_refused_while_the_job_is_running_and_stale_commands_expire(factory):
+    from datetime import timedelta
+
+    recorder, scheduler = setup(factory), FakeScheduler(["fetch_list"])
+    poller = ControlPoller(factory, recorder, scheduler)
+    recorder.running.add("fetch_list")
+    with factory() as db:
+        db.add(CronJobCommandDB(job_name="fetch_list", command="run_now", requested_at=datetime.now(timezone.utc), requested_by="admin:fan", state="pending"))
+        db.add(CronJobCommandDB(job_name="fetch_list", command="run_now", requested_at=poller.started_at - timedelta(minutes=1), requested_by="admin:fan", state="pending"))
+        db.commit()
+    poller.poll()
+    assert scheduler.jobs["fetch_list"].next_run_time is None
+    with factory() as db:
+        notes = [c.note for c in db.query(CronJobCommandDB).order_by(CronJobCommandDB.id)]
+    assert "正在运行" in notes[0] and "已过期" in notes[1]

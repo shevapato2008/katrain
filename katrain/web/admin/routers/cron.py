@@ -59,7 +59,9 @@ def list_jobs(request: Request) -> CronJobsResponse:
     for row in rows:
         control = controls.get(row.job_name)
         paused = control is not None and control.paused
-        health = derive_health(row, observed_at, (control.reason or "") if paused else None)
+        health = derive_health(
+            row, observed_at, (control.reason or "") if paused else None, control.changed_at if control is not None and not paused else None
+        )
         jobs.append(
             CronJobOut(
                 name=row.job_name,
@@ -94,12 +96,13 @@ def _controls(request: Request):
     try:
         with request.app.state.session_factory() as db:
             controls = {c.job_name: c for c in db.scalars(select(models_db.CronJobControl)).all()}
-            commands = db.scalars(select(models_db.CronJobCommand).order_by(models_db.CronJobCommand.id.desc()).limit(200)).all()
+            waiting = db.scalars(select(models_db.CronJobCommand).where(models_db.CronJobCommand.state == "pending")).all()
+            commands = list(waiting) + list(db.scalars(select(models_db.CronJobCommand).order_by(models_db.CronJobCommand.id.desc()).limit(200)).all())
             db.expunge_all()
     except DBAPIError:
         return {}, {}, {}
     pending, latest = {}, {}
-    for command in commands:
+    for command in sorted(commands, key=lambda c: c.id, reverse=True):
         latest.setdefault(command.job_name, command)
         if command.state == "pending":
             pending.setdefault(command.job_name, command)

@@ -110,7 +110,7 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     resolveError: (id: number) => adminRequest<ErrorGroupRow>(`/errors/${id}/resolve`, { method: 'POST' }),
     attention: (signal?: AbortSignal) => adminRequest<Attention>('/attention', { signal, cache: 'no-store' }),
     devices: (signal?: AbortSignal) => adminRequest<DeviceFleet>('/devices', { signal, cache: 'no-store' }),
-    decideDevice: (id: string, decision: 'approve' | 'reject') => adminRequest<{ device_id: string; status: string }>(`/devices/${encodeURIComponent(id)}/${decision}`, { method: 'POST' }),
+    decideDevice: (id: string, decision: 'approve' | 'reject' | 'reset') => adminRequest<{ device_id: string; status: string }>(`/devices/${encodeURIComponent(id)}/${decision}`, { method: 'POST' }),
     configHealth: (signal?: AbortSignal) => adminRequest<ConfigHealth>('/config-health', { signal, cache: 'no-store' }),
     performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),

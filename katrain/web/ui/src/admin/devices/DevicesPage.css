@@ -5,4 +5,4 @@
 .dv-pend { display:grid; grid-template-columns:140px 90px minmax(0,1fr) auto; gap:14px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--admin-line); font-size:15px; }
 .dv-pend:last-child { border-bottom:0; }
 .dv-act { display:flex; gap:8px; }
-.ub-lhead.dv, .ub-lrow.dv { grid-template-columns:120px 96px 80px 90px 90px 80px 110px 110px minmax(0,1fr); }
+.ub-lhead.dv, .ub-lrow.dv { grid-template-columns:120px 96px 80px 90px 90px 80px 110px 110px minmax(0,1fr) auto; }

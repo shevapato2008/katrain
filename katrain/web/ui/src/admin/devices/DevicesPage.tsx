@@ -27,7 +27,7 @@ export default function DevicesPage({ api, production, onUnauthorized }: Props) 
   const [fleet, setFleet] = useState<DeviceFleet | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [deciding, setDeciding] = useState<{ device: BoxDeviceRow; decision: 'approve' | 'reject' } | null>(null);
+  const [deciding, setDeciding] = useState<{ device: BoxDeviceRow; decision: 'approve' | 'reject' | 'reset' } | null>(null);
   const unauthorized = useRef(onUnauthorized);
   useEffect(() => { unauthorized.current = onUnauthorized; }, [onUnauthorized]);
   const failed = useCallback((cause: unknown, set: (message: string) => void) => {
@@ -64,8 +64,8 @@ export default function DevicesPage({ api, production, onUnauthorized }: Props) 
       </section>}
       <section className="lab-panel" aria-labelledby="dv-list-title">
         <div className="lab-panel-head"><h2 id="dv-list-title">设备</h2><small>{known.length} 台已批准{rejected.length ? ` · ${rejected.length} 台已拒绝` : ''}</small></div>
-        <div className="ub-lhead dv"><span>设备</span><span>状态</span><span>板型</span><span>smartbox</span><span>katrain</span><span>模式</span><span>最近上报</span><span>开机时长</span><span>IP</span></div>
-        {[...known, ...rejected].map((d) => { const [tone, label] = STATE[d.state] ?? ['', d.state]; return <div key={d.device_id} className="ub-lrow dv"><span className="mono">{d.device_id}</span><span><span className={`lab-chip ${tone}`}>{label}</span></span><span>{d.board ?? '—'}</span><span className="mono">{d.smartbox_version ?? '—'}</span><span className="mono">{d.katrain_build ?? '—'}</span><span>{d.mode ?? '—'}</span><span className="muted">{ago(d.silent_s)}</span><span className="muted">{d.state === 'online' ? uptime(d.uptime_s) : '—'}</span><span className="mono muted">{d.last_ip ?? '—'}</span></div>; })}
+        <div className="ub-lhead dv"><span>设备</span><span>状态</span><span>板型</span><span>smartbox</span><span>katrain</span><span>模式</span><span>最近上报</span><span>开机时长</span><span>IP</span><span /></div>
+        {[...known, ...rejected].map((d) => { const [tone, label] = STATE[d.state] ?? ['', d.state]; return <div key={d.device_id} className="ub-lrow dv"><span className="mono">{d.device_id}</span><span><span className={`lab-chip ${tone}`}>{label}</span></span><span>{d.board ?? '—'}</span><span className="mono">{d.smartbox_version ?? '—'}</span><span className="mono">{d.katrain_build ?? '—'}</span><span>{d.mode ?? '—'}</span><span className="muted">{ago(d.silent_s)}</span><span className="muted">{d.state === 'online' ? uptime(d.uptime_s) : '—'}</span><span className="mono muted">{d.last_ip ?? '—'}</span><span>{d.state === 'rejected' && <button className="lab-btn small" type="button" onClick={() => setDeciding({ device: d, decision: 'reset' })}>重置登记</button>}</span></div>; })}
         {fleet && !known.length && !rejected.length && <div className="lab-empty"><small>还没有批准的设备。盒子联网启动后会自动出现在「待批准」里。</small></div>}
       </section>
     </div>
@@ -73,10 +73,10 @@ export default function DevicesPage({ api, production, onUnauthorized }: Props) 
   </main>;
 }
 
-function DecideDialog({ api, device, decision, production, onClose, onDone, onUnauthorized }: { api: ReturnType<typeof createAdminApi>; device: BoxDeviceRow; decision: 'approve' | 'reject'; production: boolean; onClose: () => void; onDone: () => void; onUnauthorized: () => void }) {
+function DecideDialog({ api, device, decision, production, onClose, onDone, onUnauthorized }: { api: ReturnType<typeof createAdminApi>; device: BoxDeviceRow; decision: 'approve' | 'reject' | 'reset'; production: boolean; onClose: () => void; onDone: () => void; onUnauthorized: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const verb = decision === 'approve' ? '批准' : '拒绝';
+  const verb = decision === 'approve' ? '批准' : decision === 'reject' ? '拒绝' : '重置登记';
   const submit = async () => {
     setBusy(true); setError('');
     try { await api.decideDevice(device.device_id, decision); onDone(); } catch (cause) {
@@ -87,7 +87,7 @@ function DecideDialog({ api, device, decision, production, onClose, onDone, onUn
   };
   return <Dialog label={`${verb}设备 ${device.device_id}`} title={<>{verb}设备 {device.device_id}{production && <span className="lab-chip bad">生产环境</span>}</>} onClose={onClose} closable={!busy}
     actions={<><button className="lab-btn" type="button" disabled={busy} onClick={onClose}>返回</button><button className={`lab-btn ${decision === 'approve' ? 'primary' : ''}`} type="button" disabled={busy} onClick={() => { void submit(); }}>{busy ? '提交中' : `确认${verb}`}</button></>}>
-    <p className="lab-note">{decision === 'approve' ? '批准后这台盒子的上报会进入设备列表。只批准能对上出厂记录的设备。' : '拒绝后这台盒子的上报一律被拒，需要重新出厂登记才能恢复。'}操作会写入审计。</p>
+    <p className="lab-note">{decision === 'approve' ? '批准后这台盒子的上报会进入设备列表。只批准能对上出厂记录的设备。' : decision === 'reject' ? '拒绝后这个设备号的上报一律被拒。若拒错了，或被人抢注了设备号，可在列表里「重置登记」让真盒子重新登记。' : '清除这个设备号的登记记录（含已存的密钥），真盒子下次上报时会重新进入「待批准」。'}操作会写入审计。</p>
     <p className="lab-note mono">板型 {device.board ?? '—'} · 登记于 {when(device.registered_at)}{device.last_ip ? ` · 来自 ${device.last_ip}` : ''}</p>
     {error && <LoadError message={error} />}
   </Dialog>;

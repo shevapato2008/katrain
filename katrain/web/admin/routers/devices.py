@@ -88,3 +88,25 @@ def approve(device_id: str, admin: dict = Depends(get_current_admin), db: Sessio
 @router.post("/devices/{device_id}/reject")
 def reject(device_id: str, admin: dict = Depends(get_current_admin), db: Session = Depends(get_admin_db)):
     return _decide(device_id, "rejected", admin, db)
+
+
+@router.post("/devices/{device_id}/reset")
+def reset(device_id: str, admin: dict = Depends(get_current_admin), db: Session = Depends(get_admin_db)):
+    """Forget a registration (e.g. a squatted id or a mistaken rejection) so the real box can register again."""
+    device = db.get(BoxDevice, device_id)
+    if device is None:
+        raise HTTPException(status_code=404, detail="设备不存在")
+    db.add(
+        AdminAuditLog(
+            actor_realm="admin", actor_username=admin["username"], action="device_reset", target_type="box_device",
+            target_id=None, success=True,
+            detail=json.dumps({"device_id": device_id, "previous_status": device.status, "ip": device.last_ip}, ensure_ascii=False),
+        )
+    )
+    db.delete(device)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return {"device_id": device_id, "status": "reset"}

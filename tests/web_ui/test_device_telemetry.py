@@ -103,8 +103,9 @@ def test_rejected_devices_are_refused(env):
     assert register(client).status_code == 403
 
 
-def test_pending_registrations_are_capped_and_expire(env):
+def test_pending_registrations_are_capped_and_expire(env, monkeypatch):
     client, factory, clock = env
+    monkeypatch.setattr(device_telemetry, "MAX_PENDING_PER_IP", 10_000)  # all test requests share one address
     for index in range(device_telemetry.MAX_PENDING):
         assert register(client, device_id=f"sbx-{index:04d}", key=secrets.token_hex(32)).status_code == 200
     assert register(client, device_id="sbx-over", key=secrets.token_hex(32)).status_code == 429
@@ -173,3 +174,49 @@ def test_admin_approves_pending_devices_with_audit_and_sees_honest_states(env, a
         actions = [a.action for a in db.scalars(select(AdminAuditLog).where(AdminAuditLog.target_type == "box_device")).all()]
     assert sorted(actions) == ["device_approve", "device_reject"]
     assert "key" not in listing["devices"][0]
+
+
+def test_reset_lets_the_real_box_register_after_a_squatter_or_a_mistaken_rejection(env, admin):
+    box, factory, clock = env
+    client, headers = admin
+    register(box, "sbx-real", key=secrets.token_hex(32))  # squatter got there first
+    assert register(box, "sbx-real").status_code == 409
+    client.post("/api/admin/devices/sbx-real/reject", headers=headers)
+    assert register(box, "sbx-real").status_code == 403
+    assert client.post("/api/admin/devices/sbx-real/reset", headers=headers).json()["status"] == "reset"
+    assert register(box, "sbx-real").json()["status"] == "pending"
+
+
+def test_a_pending_box_that_keeps_reporting_does_not_expire(env):
+    box, factory, clock = env
+    register(box)
+    for _ in range(3):
+        clock["now"] += 4 * 86400
+        assert beat(box, clock).status_code == 200
+    register(box, "sbx-other", key=secrets.token_hex(32))  # triggers the expiry sweep
+    with factory() as db:
+        assert db.get(BoxDevice, "sbx-0001") is not None
+
+
+def test_pending_registrations_per_address_are_capped(env):
+    box, _, _ = env
+    for index in range(device_telemetry.MAX_PENDING_PER_IP):
+        assert register(box, f"sbx-ip-{index}", key=secrets.token_hex(32)).status_code == 200
+    assert register(box, "sbx-ip-over", key=secrets.token_hex(32)).status_code == 429
+
+
+def test_proxy_headers_are_only_trusted_from_a_trusted_peer():
+    from types import SimpleNamespace
+
+    def request(peer, **headers):
+        return SimpleNamespace(client=SimpleNamespace(host=peer), headers=headers)
+
+    assert device_telemetry.client_ip(request("172.18.0.1", **{"x-real-ip": "203.0.113.9"})) == "203.0.113.9"
+    assert device_telemetry.client_ip(request("198.51.100.7", **{"x-real-ip": "203.0.113.9"})) == "198.51.100.7"
+
+
+def test_an_oversized_declared_body_is_refused_before_reading(env):
+    box, _, clock = env
+    register(box)
+    response = box.post("/api/v1/devices/heartbeat", content=b"x" * 5000, headers={"X-Device-Id": "sbx-0001", "X-Device-Timestamp": str(int(clock["now"])), "X-Device-Signature": "0" * 64})
+    assert response.status_code == 413

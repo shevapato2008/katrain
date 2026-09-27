@@ -15,6 +15,7 @@ from katrain.web.admin.routers.kifu import router as kifu_router
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
 from katrain.web.admin.routers.users import router as users_router
 from katrain.web.admin.routers.config_health import router as config_health_router
+from katrain.web.admin.routers.errors import router as errors_router
 from katrain.web.admin.routers.vision import router as vision_router
 from katrain.web.admin.routers.vision_training import router as vision_training_router
 from katrain.web.admin.performance import load_grafana
@@ -61,15 +62,19 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
 
     @asynccontextmanager
     async def lifespan(app):
-        from katrain.web.core import health_report
+        from katrain.web.core import error_collector, health_report
 
+        collector = error_collector.ErrorCollector("admin", error_collector.factory_for(session_factory)).start()
         report_task = asyncio.create_task(
-            health_report.report_forever(session_factory, "admin", lambda: health_report.admin_checks(web_settings))
+            health_report.report_forever(
+                session_factory, "admin", lambda: health_report.admin_checks(web_settings), extra=collector.stats
+            )
         )
         try:
             yield
         finally:
             report_task.cancel()
+            await asyncio.to_thread(collector.stop)
             vision_runtime.shutdown()
             vision_training.close()
 
@@ -110,6 +115,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(kifu_router, prefix="/api/admin/kifu", tags=["admin-kifu"])
     app.include_router(users_router, prefix="/api/admin", tags=["admin-users"])
     app.include_router(config_health_router, prefix="/api/admin", tags=["admin-config-health"])
+    app.include_router(errors_router, prefix="/api/admin", tags=["admin-errors"])
     app.include_router(vision_training_router, prefix="/api/admin/vision-training", tags=["admin-vision-training"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])

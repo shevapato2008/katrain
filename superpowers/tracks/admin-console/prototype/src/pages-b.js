@@ -142,3 +142,31 @@ pages.health = {
         <p class="note">不检查：SECRET_KEY（能上报就已通过启动闸）、外部服务是否连通（KataGo /health 会报假绿）、性能监控。</p></div></main>`;
   },
 };
+
+// ---------- 报错追踪 ----------
+const ER = { status: 'open', selected: 1, scenario: 'normal' };
+PROTO.push({ id: 'er', page: 'errors', title: '报错场景', options: [['normal', '有报错'], ['empty', '没有报错'], ['silent', 'cron 采集器失联']], get: () => ER.scenario, set: (v) => { ER.scenario = v; } });
+const ERRORS = [
+  { id: 1, process: 'web', count: 214, template: 'Engine request failed for session %s', exc: 'httpx.ReadTimeout', loc: 'engine_client.py:analyze < router.py:route < games.py:play', last: '3 分钟前', first: '2026-09-26 21:04', build: 'a41c9e2', fresh: true, sample: 'Engine request failed for session 8f1c…\nTraceback (most recent call last):\n  File "katrain/web/core/engine_client.py", line 212, in analyze\n    resp = await client.post(url, json=payload, timeout=30)\nhttpx.ReadTimeout: timed out' },
+  { id: 2, process: 'cron', count: 17, template: 'translate batch failed: %s', exc: 'KeyError', loc: 'translator.py:translate_batch < live_sync.py:run', job: 'translate_names', last: '26 分钟前', first: '2026-09-25 08:40', build: 'a41c9e2', reopened: true, sample: "translate batch failed: 'output'\nTraceback …\nKeyError: 'output'" },
+  { id: 3, process: 'web', count: 3, template: 'SMS provider rejected request for <phone>', exc: null, loc: 'auth.py:request_sms', last: '5 小时前', first: '2026-09-27 04:12', build: 'a41c9e2', sample: 'SMS provider rejected request for <phone> key=<redacted>' },
+];
+pages.errors = {
+  render() {
+    const list = ER.scenario === 'empty' ? [] : ERRORS;
+    const g = list.find((e) => e.id === ER.selected) || list[0];
+    const col = [['web', '网站服务', '12 秒前刷写 · 丢弃 0', 'ok'], ['cron', '定时任务', ER.scenario === 'silent' ? '上报已过期 · 52 分钟前' : '8 秒前刷写 · 丢弃 0', ER.scenario === 'silent' ? 'warn' : 'ok'], ['admin', '管理后台', '3 秒前刷写 · 丢弃 0', 'ok']];
+    const blind = col.some((c) => c[3] !== 'ok');
+    const rows = list.map((e) => `<button class="er-row ${e.id === g?.id ? 'on' : ''}" data-act="er-pick" data-id="${e.id}"><span class="er-count">${e.count}</span><span class="er-main"><strong>${esc(e.template)}</strong><small class="mono">${e.exc ? e.exc + ' · ' : ''}${e.loc}</small></span><span class="er-side"><span class="chip">${e.process}</span>${e.fresh ? '<span class="chip bad">新</span>' : e.reopened ? '<span class="chip warn">重新出现</span>' : ''}<small>${e.last}</small></span></button>`).join('');
+    const detail = g ? `<section class="panel er-detail"><div class="panel-head"><h2>${esc(g.template)}</h2><button class="btn small" data-act="er-resolve">${ic('check')}标记已解决</button></div>
+      <dl class="er-facts"><div><dt>进程</dt><dd>${g.process}${g.job ? ` · 任务 ${g.job}` : ''}</dd></div><div><dt>次数</dt><dd>${g.count}</dd></div><div><dt>首次</dt><dd>${g.first}</dd></div><div><dt>最近</dt><dd>${g.last}</dd></div><div><dt>版本</dt><dd class="mono">${g.build}</dd></div></dl>
+      <div class="er-loc"><span class="note">位置（最内三帧）</span><code>${g.loc}</code></div><pre class="er-sample">${esc(g.sample)}</pre><p class="note er-pad">样本已脱敏（手机号、邮箱、令牌、key= / password=），不含请求体与请求头。再次出现会自动重新打开。</p></section>` : `<section class="panel"><div class="empty-view">${ic(blind ? 'warn' : 'check')}<span>${blind ? '有采集器未在上报，不能据此判断没有报错' : '没有未解决的报错'}</span></div></section>`;
+    return `<main class="lab-page"><div class="lab-heading"><div><h1>报错追踪</h1><p>网站、定时任务、后台三个进程的 ERROR 日志，按指纹聚合</p></div><span class="lab-status">${ic('info')}保留 30 天 · 最多 5000 组 · 告警只在后台内提示</span></div>
+      <div class="lab-content"><section class="panel er-collectors">${col.map(([id, t, m, l]) => `<span class="er-col ${l}">${ic(l === 'ok' ? 'check' : 'warn')}<b>${t}</b><small>采集器 · ${m}</small></span>`).join('')}</section>
+        <div class="er-grid"><section class="panel er-list"><div class="panel-head"><div class="seg">${[['open', '未解决'], ['resolved', '已解决'], ['all', '全部']].map(([v, t]) => `<button aria-pressed="${ER.status === v}" data-act="er-status" data-v="${v}">${t}</button>`).join('')}</div><select class="er-proc" aria-label="进程"><option>全部进程</option><option>web</option><option>cron</option><option>admin</option></select></div>
+          ${rows || `<div class="empty-view"><small>${blind ? '有采集器失联：列表为空不代表没有报错' : '没有未解决的报错'}</small></div>`}<div class="ub-pager"><span class="note">${list.length} 组 · 按最近出现排序</span></div></section>${detail}</div></div></main>`;
+  },
+};
+actions['er-pick'] = (el) => { ER.selected = +el.dataset.id; render(); };
+actions['er-status'] = (el) => { ER.status = el.dataset.v; render(); };
+actions['er-resolve'] = () => { render(); };

@@ -52,7 +52,7 @@ def cron_checks(c) -> list:
     )
 
 
-def write_report(checks: list) -> bool:
+def write_report(checks: list, extra: dict | None = None) -> bool:
     from katrain.cron.db import SessionLocal
     from katrain.cron.models import ProcessHealthReportDB
 
@@ -64,7 +64,7 @@ def write_report(checks: list) -> bool:
                     hostname=socket.gethostname()[:128],
                     build=build_id(),
                     generated_at=datetime.now(timezone.utc),
-                    report=json.dumps({"checks": checks}, ensure_ascii=False),
+                    report=json.dumps({"checks": checks, **(extra or {})}, ensure_ascii=False),
                 )
             )
             db.commit()
@@ -74,11 +74,11 @@ def write_report(checks: list) -> bool:
         return False
 
 
-async def report_forever(shutdown: asyncio.Event, interval: float = INTERVAL_S) -> None:
+async def report_forever(shutdown: asyncio.Event, interval: float = INTERVAL_S, extra=None) -> None:
     from katrain.cron import config
 
     while not shutdown.is_set():
-        written = await asyncio.to_thread(write_report, cron_checks(config))
+        written = await asyncio.to_thread(write_report, cron_checks(config), extra() if extra else None)
         try:
             await asyncio.wait_for(shutdown.wait(), timeout=interval if written else 30)
         except asyncio.TimeoutError:

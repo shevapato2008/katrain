@@ -42,6 +42,8 @@ class ErrorSink:
 
 
 _current_sink: contextvars.ContextVar[ErrorSink | None] = contextvars.ContextVar("cron_error_sink", default=None)
+# Which job the current task is running, for the error collector's `job` tag.
+current_job: contextvars.ContextVar[str | None] = contextvars.ContextVar("cron_current_job", default=None)
 
 
 class ErrorCapture(logging.Handler):
@@ -136,6 +138,7 @@ class RunRecorder:
         run_id = self._write(self._start_rows, name, started, keep)
         sink = ErrorSink()
         token = _current_sink.set(sink)
+        job_token = current_job.set(name)
         error: Exception | None = None
         cancelled = False
         try:
@@ -148,6 +151,7 @@ class RunRecorder:
             raise
         finally:
             _current_sink.reset(token)
+            current_job.reset(job_token)
             if not cancelled:
                 result = "failed" if error is not None else ("errors" if sink.count else "success")
                 detail = f"{type(error).__name__}: {error}"[:ERROR_TEXT_LIMIT] if error is not None else sink.first
@@ -194,6 +198,7 @@ class RunRecorder:
             )
 
     def enter_loop(self, name: str) -> contextvars.Token:
+        current_job.set(name)  # the loop task owns its context; it ends with the task
         return _current_sink.set(self._loops.setdefault(name, _LoopState()).sink)
 
     def exit_loop(self, token: contextvars.Token) -> None:

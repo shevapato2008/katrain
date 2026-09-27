@@ -249,6 +249,9 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
+    collector = getattr(app.state, "error_collector", None)
+    if collector is not None:
+        await asyncio.to_thread(collector.stop)
     for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "health_report_task"):
         task = getattr(app.state, attr, None)
         if task:
@@ -412,10 +415,13 @@ async def _lifespan_server(app: FastAPI, log):
     # billing.py's module docstring) so this loop only runs in server mode.
     app.state.report_settlement_task = asyncio.create_task(_report_settlement_loop(session_factory))
     # Config-check verdicts for the admin console (templated, never values); server mode only.
-    from katrain.web.core import health_report
+    from katrain.web.core import error_collector, health_report
 
+    app.state.error_collector = error_collector.ErrorCollector("web", error_collector.factory_for(session_factory)).start()
     app.state.health_report_task = asyncio.create_task(
-        health_report.report_forever(session_factory, "web", lambda: health_report.web_checks(settings))
+        health_report.report_forever(
+            session_factory, "web", lambda: health_report.web_checks(settings), extra=app.state.error_collector.stats
+        )
     )
 
     # Initialize Live Broadcasting Service

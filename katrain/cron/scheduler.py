@@ -22,6 +22,7 @@ class CronScheduler:
         self._report_analyze_task: asyncio.Task | None = None
         self._heartbeat_task: asyncio.Task | None = None
         self._health_task: asyncio.Task | None = None
+        self._error_collector = None
         self._shutdown_event = asyncio.Event()
         self._recorder = RunRecorder(SessionLocal)
         self._loop_jobs: dict = {}
@@ -107,9 +108,12 @@ class CronScheduler:
             self._recorder.heartbeat_forever(self._loop_jobs, config.HEARTBEAT_INTERVAL, self._shutdown_event)
         )
 
-        from katrain.cron import health_report
+        from katrain.cron import error_collector, health_report
 
-        self._health_task = asyncio.create_task(health_report.report_forever(self._shutdown_event))
+        self._error_collector = error_collector.ErrorCollector(error_collector.dedicated_factory(config.DATABASE_URL)).start()
+        self._health_task = asyncio.create_task(
+            health_report.report_forever(self._shutdown_event, extra=self._error_collector.stats)
+        )
 
         await self._shutdown_event.wait()
 
@@ -157,4 +161,6 @@ class CronScheduler:
                     await task
                 except asyncio.CancelledError:
                     pass
+        if self._error_collector is not None:
+            await asyncio.to_thread(self._error_collector.stop)
         logger.info("Scheduler shut down")

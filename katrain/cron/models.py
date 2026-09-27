@@ -341,3 +341,27 @@ class ProcessHealthReportDB(Base):
     build = Column(String(64), nullable=False)
     generated_at = Column(DateTime(timezone=True), nullable=False)
     report = Column(Text, nullable=False)
+
+
+class ErrorGroupDB(Base):
+    """ERROR-level log records grouped by fingerprint (one row per distinct failure), written by each
+    process's error collector and read / resolved in the admin console. Samples are scrubbed."""
+
+    __tablename__ = "error_groups"
+
+    id = Column(Integer, primary_key=True)
+    fingerprint = Column(String(64), nullable=False, unique=True)
+    process = Column(String(16), nullable=False)
+    logger = Column(String(128), nullable=False)
+    exc_type = Column(String(128), nullable=True)
+    template = Column(Text, nullable=False)
+    location = Column(String(400), nullable=False)
+    job = Column(String(64), nullable=True)
+    first_seen = Column(DateTime(timezone=True), nullable=False)
+    last_seen = Column(DateTime(timezone=True), nullable=False)
+    state_changed_at = Column(DateTime(timezone=True), nullable=False)
+    count = Column(Integer, nullable=False, default=1)
+    sample = Column(Text, nullable=False)
+    build = Column(String(64), nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(128), nullable=True)

@@ -331,6 +331,7 @@ html, body, #root { margin:0; min-height:100%; }
 .admin-side .admin-nav { width:100%; border:0; background:transparent; text-align:left; }
 .admin-side .admin-nav.active { background:var(--admin-active); }
 .admin-nav-chev { margin-left:auto; transition:transform .15s; }
+.admin-nav-badge { margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:99px; background:var(--admin-bad-bg); color:var(--admin-bad); font:13px/22px ui-monospace,Menlo,monospace; text-align:center; }
 .admin-nav[aria-expanded="true"] .admin-nav-chev { transform:rotate(90deg); }
 .admin-subnav { display:grid; gap:2px; margin:2px 0 6px 30px; padding-left:12px; border-left:1px solid var(--admin-line); }
 .admin-subnav button { display:flex; align-items:center; gap:9px; min-height:44px; padding:6px 12px; border:0; border-radius:7px; background:transparent; color:var(--admin-muted); font-size:17px; text-align:left; }

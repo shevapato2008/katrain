@@ -35,6 +35,10 @@ def _checks(raw: str) -> tuple[list, dict]:
 
 @router.get("/config-health")
 def config_health(db: Session = Depends(get_admin_db)):
+    return evaluate(db)
+
+
+def evaluate(db: Session) -> dict:
     now = datetime.now(timezone.utc)
     rows = {row.process: row for row in db.scalars(select(ProcessHealthReport)).all()}
     processes, fresh_builds = [], {}

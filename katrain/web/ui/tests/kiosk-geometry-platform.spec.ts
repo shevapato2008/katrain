@@ -79,15 +79,8 @@ async function boot(page: Page, opts: { camera: boolean; lang?: string }) {
 for (const lang of LOCALES) {
   for (const camera of [true, false] as const) {
     test(`屏 09 最坏内容量下,整条链上没有任何一层在滚(lang=${lang} camera=${camera})`, async ({ page }) => {
-      /**
-       * **2026-09-23 Fan 裁定:`lang=jp camera=true` 这一格记为预期失败,不修。**
-       * 用 `test.fail()` 不用 `test.skip()` —— `skip` 会让这一格从此没人量,
-       * `fail()` 这条仍然真跑,一旦哪天它意外变绿,Playwright 报「unexpected
-       * pass」,红给人看,逼人回来删这个标记,不会烂在这儿。
-       * 根因、为什么不现在修、给下一个修的人的线索:见 `go-screens.css`
-       * `.twocol .iglab { width: 30px }` 那一行上面的注释,不在这里重复。
-       */
-      if (lang === 'jp' && camera === true) test.fail();
+      // 09-23 起 `lang=jp camera=true` 标过 test.fail()(「我执」小标签折行把行撑高);
+      // 09-27 两个小标签撤掉后它真绿了,标记随之删除。
 
       await boot(page, { camera, lang });
 
@@ -232,6 +225,31 @@ for (const lang of LOCALES) {
       expect(b.scrollHeight, `「我执」按钮折行(lang=${lang}):「${b.text}」`)
         .toBeLessThanOrEqual(b.clientHeight);
     }
+  });
+}
+
+/**
+ * 「让子」步进轨不许被挤扁(2026-09-27)。两列按 0.52:1 分,让子那一列在 1024 宽下只剩
+ * ~100px 给 −/轨/+,轨被压到负宽、十个档点叠在一起、+ 键压着「我执」。
+ * 判据落在**轨能不能摆下十个档点**:`.catticks` 的内容宽度(scrollWidth)不超过它自己的盒宽,
+ * 且 + 键右缘不越过本列右缘。最坏语种一并量(「我执」列变宽会反过来挤让子列)。
+ */
+for (const lang of LOCALES) {
+  test(`屏 09「让子」步进轨不被挤扁(lang=${lang})`, async ({ page }) => {
+    await boot(page, { camera: true, lang });
+    const m = await page.evaluate(() => {
+      const pick = document.querySelector('[data-testid="setup-handicap-track"]') as HTMLElement;
+      const ticks = pick.querySelector('.catticks') as HTMLElement;
+      const col = pick.closest('.tcol') as HTMLElement;
+      const steps = pick.querySelectorAll('.catstep');
+      return {
+        tickSW: ticks.scrollWidth, tickCW: ticks.clientWidth,
+        plusRight: steps[1].getBoundingClientRect().right, colRight: col.getBoundingClientRect().right,
+      };
+    });
+    console.log(`[geom 09 handicap lang=${lang}]`, JSON.stringify(m));
+    expect(m.tickSW, `让子轨摆不下十个档点(lang=${lang})`).toBeLessThanOrEqual(m.tickCW);
+    expect(m.plusRight, `让子 + 键越出本列(lang=${lang})`).toBeLessThanOrEqual(m.colRight + 0.5);
   });
 }
 

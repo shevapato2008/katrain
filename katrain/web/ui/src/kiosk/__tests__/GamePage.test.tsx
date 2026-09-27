@@ -183,7 +183,7 @@ describe('GamePage', () => {
     renderPage();
     const sub = document.querySelector('.kiosk-pagebar__sub');
     expect(sub).toHaveTextContent('19 路');
-    expect(sub).toHaveTextContent('日本 规则');
+    expect(sub).toHaveTextContent('日本规则');
     expect(sub).toHaveTextContent('贴目 6.5');
     expect(sub).toHaveTextContent('不让子');
   });

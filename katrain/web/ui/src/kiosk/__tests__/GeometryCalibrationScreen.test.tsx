@@ -90,9 +90,9 @@ describe('屏 26 棋盘标定', () => {
       '准备空盘标定', '定位棋盘四角', '定位九个星位', '生成空盘基线',
     ]);
     expect(screen.queryByText(/采集熄灯参考帧/)).toBeNull();
-    // 那件事没被吞掉 —— 它写在旁注里(放行里会折成两行、把 52 高的行顶破,四图上量到过)
+    // 旁注最多两行:「先熄灯再亮灯各拍一张」那句 Fan 2026-09-27 裁定删掉
     expect(screen.getByTestId('geometry-led-advisory').closest('p'))
-      .toHaveTextContent('先熄灯拍一张、亮灯再拍一张');
+      .not.toHaveTextContent('先熄灯拍一张');
   });
 
   it('没在跑的时候第 1 步是「进行中」—— 清空棋盘本来就是按下之前要做的', () => {

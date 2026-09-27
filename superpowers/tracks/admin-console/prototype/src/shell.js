@@ -8,6 +8,7 @@ const FOOT = {
   audit: '只读页面。',
   health: '只读页面，不修改配置。',
   errors: '标记已解决会写入审计。',
+  devices: '批准与拒绝会写入审计。',
   capture: '相机、指示灯与训练帧只在 Mac 本机使用。',
   training: '训练运行在测试机；本页不会暗中连接远端。',
   diagnostics: 'viewer 只读观察，不提交棋步、不驱动指示灯。',
@@ -18,7 +19,7 @@ function header() {
 function sidebar() {
   const inLab = LAB.some(([id]) => id === S.page);
   const nav = (id, icon, text) => `<button class="admin-nav ${S.page === id ? 'active' : ''}" data-act="go" data-page="${id}" ${S.page === id ? 'aria-current="page"' : ''}>${ic(icon)}${text}</button>`;
-  return `<aside class="admin-side" aria-label="管理导航"><div class="admin-sidehead">内容与服务</div>${nav('tutorial', 'book', '教程管理')}${nav('cron', 'clock', '定时任务')}${nav('performance', 'pulse', '性能监控')}${nav('users', 'users', '用户与计费')}${nav('audit', 'shield', '审计日志')}${nav('health', 'check', '配置体检').replace('配置体检', '配置体检<span class="nav-badge">4</span>')}${nav('errors', 'warn', '报错追踪').replace('报错追踪', '报错追踪<span class="nav-badge">2</span>')}
+  return `<aside class="admin-side" aria-label="管理导航"><div class="admin-sidehead">内容与服务</div>${nav('tutorial', 'book', '教程管理')}${nav('cron', 'clock', '定时任务')}${nav('performance', 'pulse', '性能监控')}${nav('users', 'users', '用户与计费')}${nav('audit', 'shield', '审计日志')}${nav('health', 'check', '配置体检').replace('配置体检', '配置体检<span class="nav-badge">4</span>')}${nav('devices', 'cpu', '盒子设备')}${nav('errors', 'warn', '报错追踪').replace('报错追踪', '报错追踪<span class="nav-badge">2</span>')}
     <button class="admin-nav ${inLab && !S.labOpen ? 'active' : ''} ${inLab ? 'parent-active' : ''}" data-act="lab-toggle" aria-expanded="${S.labOpen}" aria-controls="lab-subnav">${ic('camera')}视觉实验室${ic('chev', 'i chev')}</button>
     ${S.labOpen ? `<div class="p-subnav" id="lab-subnav">${LAB.map(([id, text], i) => `<button data-act="go" data-page="${id}" ${S.page === id ? 'aria-current="page"' : ''}><b>${i + 1}</b>${text}</button>`).join('')}</div>` : ''}
     <div class="admin-sidefoot">当前环境：本机环境<br>${FOOT[S.page] || ''}</div></aside>`;

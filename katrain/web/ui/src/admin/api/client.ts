@@ -41,6 +41,8 @@ export interface ErrorGroupRow { id: number; process: string; logger: string; ex
 export interface CollectorState { state: 'never' | 'stale' | 'fresh'; age_s: number | null; stuck?: boolean | null; last_flush_at?: string | null; last_flush_ok?: boolean | null; dropped?: number; overflow?: number; queued?: number }
 export interface ErrorList { items: ErrorGroupRow[]; total: number; page: number; page_size: number; collectors: Record<string, CollectorState> }
 export interface Attention { errors: number; config: number }
+export interface BoxDeviceRow { device_id: string; state: 'online' | 'offline' | 'never' | 'pending' | 'rejected'; status: string; registered_at: string | null; decided_at: string | null; decided_by: string | null; last_seen: string | null; silent_s: number | null; last_ip: string | null; board: string | null; smartbox_version: string | null; katrain_build: string | null; mode: string | null; uptime_s: number | null }
+export interface DeviceFleet { observed_at: string; online_within_s: number; devices: BoxDeviceRow[]; counts: Record<string, number>; versions: { smartbox: Record<string, number>; katrain: Record<string, number> } }
 export class AdminApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -107,6 +109,8 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     errors: (query: { status: string; process: string; page: number }, signal?: AbortSignal) => adminRequest<ErrorList>(`/errors?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
     resolveError: (id: number) => adminRequest<ErrorGroupRow>(`/errors/${id}/resolve`, { method: 'POST' }),
     attention: (signal?: AbortSignal) => adminRequest<Attention>('/attention', { signal, cache: 'no-store' }),
+    devices: (signal?: AbortSignal) => adminRequest<DeviceFleet>('/devices', { signal, cache: 'no-store' }),
+    decideDevice: (id: string, decision: 'approve' | 'reject') => adminRequest<{ device_id: string; status: string }>(`/devices/${encodeURIComponent(id)}/${decision}`, { method: 'POST' }),
     configHealth: (signal?: AbortSignal) => adminRequest<ConfigHealth>('/config-health', { signal, cache: 'no-store' }),
     performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),

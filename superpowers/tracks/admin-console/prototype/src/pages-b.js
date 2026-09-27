@@ -170,3 +170,28 @@ pages.errors = {
 actions['er-pick'] = (el) => { ER.selected = +el.dataset.id; render(); };
 actions['er-status'] = (el) => { ER.status = el.dataset.v; render(); };
 actions['er-resolve'] = () => { render(); };
+
+// ---------- 盒子设备 ----------
+P.cpu = '<rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/>';
+const DV = { scenario: 'normal' };
+PROTO.push({ id: 'dv', page: 'devices', title: '设备场景', options: [['normal', '有设备'], ['empty', '还没有设备']], get: () => DV.scenario, set: (v) => { DV.scenario = v; } });
+const DEVICES = [
+  ['sbx-00a1', 'online', 'rk3562', '1.4.2', 'a41c9e2', 'go', '2 分钟前', '2 天 4 小时', '10.8.0.21'],
+  ['sbx-00a2', 'online', 'rk3562', '1.4.2', 'a41c9e2', 'xiangqi', '4 分钟前', '6 小时', '10.8.0.22'],
+  ['sbx-00a7', 'offline', 'rk3562', '1.4.1', '9f2ca1e', 'go', '3 天前', '—', '10.8.0.27'],
+  ['sbx-00b3', 'never', 'rk3576', '—', '—', '—', '从未上报', '—', '—'],
+];
+const DVS = { online: ['ok', '在线'], offline: ['warn', '失联'], never: ['', '从未上报'], pending: ['info', '待批准'], rejected: ['bad', '已拒绝'] };
+pages.devices = {
+  render() {
+    const list = DV.scenario === 'empty' ? [] : DEVICES;
+    const pend = DV.scenario === 'empty' ? [] : [['sbx-00c9', 'rk3562', '2026-09-27 08:12', '10.8.0.31']];
+    const n = (s) => list.filter((d) => d[1] === s).length;
+    return `<main class="lab-page"><div class="lab-heading"><div><h1>盒子设备</h1><p>出厂盒子每 5 分钟用设备密钥签名上报一次，只报版本与状态</p></div><span class="lab-status">${ic('info')}15 分钟内有上报算在线</span></div>
+      <div class="lab-content"><section class="panel dv-summary"><div class="ch-counts"><span class="chip ok">${n('online')} 台在线</span><span class="chip warn">${n('offline')} 台失联</span><span class="chip">${n('never')} 台从未上报</span><span class="chip info">${pend.length} 台待批准</span></div><span class="note">smartbox 版本：1.4.2 × 2 · 1.4.1 × 1</span><span class="note">katrain：a41c9e2 × 2 · 9f2ca1e × 1</span></section>
+      ${pend.length ? `<section class="panel"><div class="panel-head"><h2>待批准</h2><small>首次上报自动登记；确认是自家出厂设备后再批准</small></div>${pend.map(([id, b, at, ip]) => `<div class="dv-pend"><span class="mono">${id}</span><span>${b}</span><span class="note">登记于 ${at} · 来自 ${ip}</span><span class="dv-act"><button class="btn small">拒绝</button><button class="btn small primary">批准</button></span></div>`).join('')}</section>` : ''}
+      <section class="panel"><div class="panel-head"><h2>设备</h2><small>${list.length} 台已批准</small></div>
+        <div class="ub-lhead dv"><span>设备</span><span>状态</span><span>板型</span><span>smartbox</span><span>katrain</span><span>模式</span><span>最近上报</span><span>开机时长</span><span>IP</span></div>
+        ${list.map(([id, st, b, sv, kb, m, seen, up, ip]) => `<div class="ub-lrow dv"><span class="mono">${id}</span><span><span class="chip ${DVS[st][0]}">${DVS[st][1]}</span></span><span>${b}</span><span class="mono">${sv}</span><span class="mono">${kb}</span><span>${m}</span><span class="muted">${seen}</span><span class="muted">${up}</span><span class="mono muted">${ip}</span></div>`).join('') || '<div class="empty-view"><small>还没有批准的设备。盒子联网启动后会自动出现在「待批准」里。</small></div>'}</section></div></main>`;
+  },
+};

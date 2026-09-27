@@ -1171,3 +1171,26 @@ class ErrorGroup(Base):
     build = Column(String(64), nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     resolved_by = Column(String(128), nullable=True)
+
+
+class BoxDevice(Base):
+    """A smartbox that reports telemetry. Trust on first use: the first registration stores the
+    device's derived key (never the factory secret) as `pending`; an admin approves or rejects it.
+    Heartbeats are HMAC-signed with that key and must carry strictly increasing timestamps."""
+
+    __tablename__ = "box_devices"
+
+    device_id = Column(String(64), primary_key=True)
+    key = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")  # pending | approved | rejected
+    registered_at = Column(DateTime(timezone=True), nullable=False)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    last_seen = Column(DateTime(timezone=True), nullable=True)
+    last_ts = Column(Integer, nullable=True)
+    last_ip = Column(String(64), nullable=True)
+    board = Column(String(64), nullable=True)
+    smartbox_version = Column(String(32), nullable=True)
+    katrain_build = Column(String(64), nullable=True)
+    mode = Column(String(32), nullable=True)
+    uptime_s = Column(Integer, nullable=True)

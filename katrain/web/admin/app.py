@@ -16,6 +16,7 @@ from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial
 from katrain.web.admin.routers.users import router as users_router
 from katrain.web.admin.routers.config_health import router as config_health_router
 from katrain.web.admin.routers.errors import router as errors_router
+from katrain.web.admin.routers.devices import router as devices_router
 from katrain.web.admin.routers.vision import router as vision_router
 from katrain.web.admin.routers.vision_training import router as vision_training_router
 from katrain.web.admin.performance import load_grafana
@@ -116,6 +117,7 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(users_router, prefix="/api/admin", tags=["admin-users"])
     app.include_router(config_health_router, prefix="/api/admin", tags=["admin-config-health"])
     app.include_router(errors_router, prefix="/api/admin", tags=["admin-errors"])
+    app.include_router(devices_router, prefix="/api/admin", tags=["admin-devices"])
     app.include_router(vision_training_router, prefix="/api/admin/vision-training", tags=["admin-vision-training"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])

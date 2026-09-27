@@ -34,6 +34,9 @@ export interface VerifyResult {
 
 export interface GrafanaDashboard { id: string; title: string; url: string }
 export interface PerformanceConfig { state: 'unconfigured' | 'invalid' | 'configured'; error: string | null; origin: string | null; dashboards: GrafanaDashboard[]; env: string }
+export interface HealthCheck { id: string; level: 'ok' | 'warn' | 'bad' | 'unknown' | string; message: string }
+export interface HealthProcess { process: string; state: 'never' | 'stale' | 'fresh'; hostname: string | null; build: string | null; generated_at: string | null; age_s: number | null; checks: HealthCheck[]; extra: Record<string, unknown> }
+export interface ConfigHealth { observed_at: string; stale_after_s: number; processes: HealthProcess[]; cross_checks: HealthCheck[] }
 export class AdminApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -97,6 +100,7 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     redeemCodes: (signal?: AbortSignal) => adminRequest<CodeListing>('/redeem-codes', { signal, cache: 'no-store' }),
     generateCodes: (value: CodesInput) => adminRequest<CodesResult>('/redeem-codes', { method: 'POST', body: body(value) }),
     audit: (query: AuditQuery, signal?: AbortSignal) => adminRequest<AuditPage>(`/audit?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
+    configHealth: (signal?: AbortSignal) => adminRequest<ConfigHealth>('/config-health', { signal, cache: 'no-store' }),
     performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
     kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),
     kifuAlbum: (id: number, signal?: AbortSignal) => adminRequest<KifuAlbumDetail>(`/kifu/albums/${Math.trunc(id)}`, { signal, cache: 'no-store' }),

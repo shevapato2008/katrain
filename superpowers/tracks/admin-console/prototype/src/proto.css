@@ -258,3 +258,15 @@ details.tr-adv summary{cursor:pointer;font-size:14.5px;color:var(--admin-muted)}
 .ub-lrow .void{text-decoration:line-through;color:var(--admin-subtle)}.ub-actions.flush{padding:0;border:0}
 .ub-err{display:flex;align-items:center;gap:6px;margin:0;color:var(--bad);font-size:13.5px}.ub-err svg.i{width:16px;height:16px}
 .ub-thead,.ub-row{column-gap:20px}.ub-lhead.codes,.ub-lrow.codes{column-gap:20px}
+/* ---------- 配置体检 ---------- */
+.ch-summary{display:flex;align-items:center;gap:16px;padding:12px 16px}.ch-counts{display:flex;gap:8px}
+.ch-cross{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--admin-muted)}.ch-cross.ok{color:var(--ok)}.ch-cross.warn{color:var(--admin-warn)}.ch-cross svg.i{width:18px;height:18px}
+.ch-summary .btn{margin-left:auto}
+.ch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.ch-card .panel-head h2{display:flex;align-items:baseline;gap:8px}.ch-card .panel-head h2 small{font-size:13px;color:var(--admin-subtle);font-weight:400}
+.ch-card.dim .panel-head h2{color:var(--admin-muted)}
+.ch-meta{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--admin-line);font-size:14px;color:var(--admin-muted)}.ch-meta b{color:var(--admin-text);font-weight:400}
+.ch-stale{padding:16px;font-size:14.5px;color:var(--admin-muted);line-height:1.6}
+.ch-list{list-style:none;margin:0;padding:0}.ch-list li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 16px;border-bottom:1px solid var(--admin-line);font-size:15px;line-height:1.5}.ch-list li:last-child{border-bottom:0}
+.ch-list li svg.i{width:20px;height:20px;margin-top:1px}.ch-list li small{display:block;font-size:12px;color:var(--admin-subtle)}.ch-list li em{font-style:normal;font-size:13px;color:var(--admin-muted);white-space:nowrap}
+.ch-list li.ok svg{color:var(--ok)}.ch-list li.warn svg,.ch-list li.warn em{color:var(--admin-warn)}.ch-list li.bad svg,.ch-list li.bad em{color:var(--bad)}.ch-list li.bad{background:var(--bad-bg)}

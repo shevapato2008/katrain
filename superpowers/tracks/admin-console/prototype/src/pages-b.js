@@ -111,3 +111,34 @@ pages.audit = {
   },
 };
 actions['au-action'] = (el) => { AU.action = el.value; render(); };
+
+// ---------- 配置体检 ----------
+const CH = { scenario: 'mixed' };
+PROTO.push({ id: 'ch', page: 'health', title: '体检场景', options: [['mixed', '有问题'], ['stale', 'cron 上报过期'], ['never', 'admin 从未上报']], get: () => CH.scenario, set: (v) => { CH.scenario = v; } });
+const LV = { ok: ['ok', 'check', '正常'], warn: ['warn', 'warn', '注意'], bad: ['bad', 'fail', '有问题'], unknown: ['', 'help', '未知'] };
+function chProcesses() {
+  const web = { process: 'web', title: '网站服务', host: 'katrain-web-7f2c', build: 'a41c9e2', age: 3, checks: [['database', 'ok', 'PostgreSQL 主库'], ['mode', 'ok', '服务器模式'], ['billing', 'bad', '计费闸已开但每周免费报告不为 0（手机绑定与限流未上线前必须为 0）'], ['cloud_katago', 'ok', '已配置云端分析引擎'], ['storage', 'ok', '媒体存对象存储'], ['credentials', 'bad', '数据库或对象存储密码仍是示例默认值']] };
+  const cron = { process: 'cron', title: '定时任务', host: 'katrain-cron-19ab', build: 'a41c9e2', age: CH.scenario === 'stale' ? 47 : 6, checks: [['database', 'ok', 'PostgreSQL 主库'], ['katago', 'ok', '已配置分析引擎地址'], ['translation', 'warn', '未配置翻译服务密钥：直播名称翻译失效'], ['credentials', 'bad', '数据库密码仍是示例默认值']] };
+  const admin = { process: 'admin', title: '管理后台', host: 'katrain-admin-0c1d', build: 'a41c9e2', age: 1, checks: [['database', 'ok', 'PostgreSQL 主库'], ['credentials', 'bad', '数据库或对象存储密码仍是示例默认值']] };
+  if (CH.scenario === 'never') admin.never = true;
+  if (CH.scenario === 'stale') cron.stale = true;
+  return [web, cron, admin];
+}
+pages.health = {
+  render() {
+    const ps = chProcesses();
+    const all = ps.filter((p) => !p.stale && !p.never).flatMap((p) => p.checks);
+    const n = (l) => all.filter((c) => c[1] === l).length;
+    const version = ps.some((p) => p.stale || p.never) ? ['unknown', '不是每个进程都有新近上报，无法比较版本'] : ['ok', '三个进程运行同一构建版本 a41c9e2'];
+    const card = (p) => {
+      const state = p.never ? ['bad', '从未上报'] : p.stale ? ['warn', `上报已过期 · ${p.age} 分钟前`] : ['ok', `${p.age} 分钟前`];
+      return `<section class="panel ch-card ${p.stale || p.never ? 'dim' : ''}"><div class="panel-head"><h2>${p.title}<small class="mono">${p.process}</small></h2><span class="chip ${state[0]}">${state[1]}</span></div>
+        <div class="ch-meta">${p.never ? '<span>这个进程还没有写过体检结果。可能未部署新版本，或进程没在运行。</span>' : `<span>主机 <b class="mono">${p.host}</b></span><span>版本 <b class="mono">${p.build}</b></span>`}</div>
+        ${p.never ? '' : p.stale ? '<div class="ch-stale">超过 30 分钟没有更新，结论不再可信，已隐藏。只保留最后上报时间。</div>' : `<ul class="ch-list">${p.checks.map(([id, l, m]) => `<li class="${LV[l][0]}">${ic(LV[l][1])}<span>${m}<small class="mono">${id}</small></span><em>${LV[l][2]}</em></li>`).join('')}</ul>`}</section>`;
+    };
+    return `<main class="lab-page"><div class="lab-heading"><div><h1>配置体检</h1><p>各进程定时自查生效配置，只上报结论、不上报配置值</p></div><span class="lab-status">${ic('refresh')}每 10 分钟上报 · 30 分钟未更新视为过期</span></div>
+      <div class="lab-content"><section class="panel ch-summary"><div class="ch-counts"><span class="chip bad">${ic('fail')}${n('bad')} 项有问题</span><span class="chip warn">${ic('warn')}${n('warn')} 项注意</span><span class="chip ok">${ic('check')}${n('ok')} 项正常</span></div><div class="ch-cross ${version[0]}">${ic(LV[version[0]][1])}<span>版本一致性：${version[1]}</span></div><button class="btn small">${ic('refresh')}刷新</button></section>
+        <div class="ch-grid">${ps.map(card).join('')}</div>
+        <p class="note">不检查：SECRET_KEY（能上报就已通过启动闸）、外部服务是否连通（KataGo /health 会报假绿）、性能监控。</p></div></main>`;
+  },
+};

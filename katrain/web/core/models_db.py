@@ -1131,3 +1131,19 @@ class CronJobRun(Base):
     error = Column(Text, nullable=True)
 
     __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)
+
+
+class ProcessHealthReport(Base):
+    """Latest config-check verdicts, one row per process (web / cron / admin), overwritten in place.
+
+    `report` is JSON of templated verdicts only — never configuration values. Written by each
+    process about its own effective config; read by the admin console.
+    """
+
+    __tablename__ = "process_health_reports"
+
+    process = Column(String(16), primary_key=True)
+    hostname = Column(String(128), nullable=False)
+    build = Column(String(64), nullable=False)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+    report = Column(Text, nullable=False)

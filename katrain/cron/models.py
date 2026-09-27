@@ -329,3 +329,15 @@ class UpcomingMatchDB(Base):
     source_url = Column(String(512), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ProcessHealthReportDB(Base):
+    """Maps to the web-owned process_health_reports table."""
+
+    __tablename__ = "process_health_reports"
+
+    process = Column(String(16), primary_key=True)
+    hostname = Column(String(128), nullable=False)
+    build = Column(String(64), nullable=False)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+    report = Column(Text, nullable=False)

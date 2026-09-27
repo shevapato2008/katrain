@@ -96,7 +96,15 @@ def test_jobs_include_current_health_and_aware_timestamps(admin_client):
         "consecutive_failures",
         "loop_iteration_at",
         "loop_stats",
+        "paused",
+        "pause_reason",
+        "paused_by",
+        "paused_at",
+        "pending_run",
+        "last_command",
     }
+    # This fixture has no control tables (a web that has not been upgraded yet): nothing reads as paused.
+    assert by_name["fetch_list"]["paused"] is False and by_name["fetch_list"]["pending_run"] is None
 
 
 def test_missing_status_table_returns_503(admin_client):

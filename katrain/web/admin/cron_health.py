@@ -44,7 +44,7 @@ def _human(delta: timedelta) -> str:
     return f"{seconds // 86400} 天"
 
 
-def derive_health(row, now: datetime) -> Health:
+def derive_health(row, now: datetime, paused_reason: str | None = None) -> Health:
     """Apply the spec's health states in priority order, stopping at the first match."""
     now = as_utc(now)
     heartbeat = as_utc(row.heartbeat_at)
@@ -54,6 +54,8 @@ def derive_health(row, now: datetime) -> Health:
         return Health("offline", f"cron 进程失联：{_human(now - heartbeat)}没有心跳")
     if not row.enabled:
         return Health("disabled", "已被配置停用")
+    if paused_reason is not None and row.kind == "interval":
+        return Health("paused", f"已在后台暂停：{paused_reason}")
 
     if row.kind == "loop":
         iteration = as_utc(row.loop_iteration_at)

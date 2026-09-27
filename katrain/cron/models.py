@@ -365,3 +365,30 @@ class ErrorGroupDB(Base):
     build = Column(String(64), nullable=False)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
     resolved_by = Column(String(128), nullable=True)
+
+
+class CronJobControlDB(Base):
+    """Persistent pause state per interval job, set in the admin console and polled by cron."""
+
+    __tablename__ = "cron_job_controls"
+
+    job_name = Column(String(64), primary_key=True)
+    paused = Column(Boolean, nullable=False, default=False)
+    reason = Column(Text, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)
+
+
+class CronJobCommandDB(Base):
+    """Run-now requests from the admin console; cron marks each done or rejected (with a note)."""
+
+    __tablename__ = "cron_job_commands"
+
+    id = Column(Integer, primary_key=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    command = Column(String(16), nullable=False)
+    requested_at = Column(DateTime(timezone=True), nullable=False)
+    requested_by = Column(String(128), nullable=False)
+    state = Column(String(16), nullable=False, default="pending")
+    handled_at = Column(DateTime(timezone=True), nullable=True)
+    note = Column(Text, nullable=True)

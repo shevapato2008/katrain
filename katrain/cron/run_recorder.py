@@ -85,6 +85,7 @@ class RunRecorder:
         self._process_started_at: datetime | None = None
         self._registered = False
         self._loops: dict[str, _LoopState] = {}
+        self.paused: dict[str, str | None] = {}  # job name -> reason, from the admin console
 
     def register(self, jobs: list[tuple[str, str, int | None, bool]]) -> bool:
         self._registry = list(jobs)
@@ -134,6 +135,9 @@ class RunRecorder:
         name = job.name
         keep = (self._intervals.get(name) or 0) >= RECORD_EVERY_RUN_MIN_INTERVAL
         started = self._clock()
+        if name in self.paused:  # set by the admin console, refreshed by ControlPoller
+            self._write(self._paused_rows, name, started, keep)
+            return
         monotonic_start = time.monotonic()
         run_id = self._write(self._start_rows, name, started, keep)
         sink = ErrorSink()
@@ -157,6 +161,13 @@ class RunRecorder:
                 detail = f"{type(error).__name__}: {error}"[:ERROR_TEXT_LIMIT] if error is not None else sink.first
                 duration_ms = int((time.monotonic() - monotonic_start) * 1000)
                 self._write(self._finish_rows, name, run_id, started, result, detail, sink.count, duration_ms, keep)
+
+    def _paused_rows(self, db, name, started, keep):
+        row = db.get(CronJobStatusDB, name)
+        if row is not None:
+            row.last_status, row.updated_at = "paused", started
+        if keep:
+            db.add(CronJobRunDB(job_name=name, started_at=started, finished_at=started, status="paused", error_count=0, duration_ms=0))
 
     def _start_rows(self, db, name, started, keep):
         row = db.get(CronJobStatusDB, name)

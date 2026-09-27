@@ -203,13 +203,18 @@ def test_audit_export_is_csv_of_the_filter_and_is_itself_audited(env):
 
     client, headers, factory = env
     adjust(client, headers, 3, 100)
-    adjust(client, headers, 2, 5, reason="=cmd|' /C calc'!A0")
+    adjust(client, headers, 2, 5, reason="测试补偿一次")
+    client.post("/api/admin/auth/login", json={"username": "=HYPERLINK(\"http://x\")", "password": "nope"})
+    everything = list(csv.reader(io.StringIO(client.get("/api/admin/audit/export", headers=headers).content.decode("utf-8-sig"))))
+    actors = {r[2] for r in everything[1:]}
+    assert "'=HYPERLINK(\"http://x\")" in actors and not any(a.startswith("=") for a in actors)
+    assert all(r[7] != "'" for r in everything[1:])  # an empty detail stays empty
     response = client.get("/api/admin/audit/export?action=credit_adjust", headers=headers)
     assert response.status_code == 200 and response.headers["content-type"].startswith("text/csv")
     assert response.headers["x-export-rows"] == "2"
     rows = list(csv.reader(io.StringIO(response.content.decode("utf-8-sig"))))
-    assert rows[0][:4] == ["id", "created_at", "actor", "action"] and {r[3] for r in rows[1:]} == {"credit_adjust"}
+    assert rows[0][:4] == ["id", "created_at_shanghai", "actor", "action"] and rows[1][1].endswith("+08:00") and {r[3] for r in rows[1:]} == {"credit_adjust"}
     assert all(not r[7].startswith(("=", "+", "-", "@")) for r in rows[1:])
     exports = audits(factory, "audit_export")
-    assert len(exports) == 1 and json.loads(exports[0].detail)["rows"] == 2
+    assert len(exports) == 2 and json.loads(exports[-1].detail)["rows"] == 2
     assert client.get("/api/admin/audit/export").status_code == 401

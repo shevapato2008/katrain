@@ -36,8 +36,15 @@ def list_artifacts(request: Request, db: Session = Depends(get_admin_db)):
     except Exception as exc:
         return {"state": "unreachable", "bucket": config.bucket, "images": [], "truncated": False, "error": type(exc).__name__}
     statuses = {row.prefix: row for row in db.scalars(select(GoldenImageStatus)).all()}
+    listed = {image["prefix"] for image in listing["images"]}
+    if not listing["truncated"]:
+        # A status row whose image is gone from the bucket is shown, not silently dropped.
+        for prefix, row in statuses.items():
+            if prefix not in listed and row.status != "candidate":
+                listing["images"].append({"prefix": prefix, "manifest": None, "problems": ["桶里已经没有这个镜像"], "object_size": None, "etag": None})
     for image in listing["images"]:
         row = statuses.get(image["prefix"])
+        _check_binding(image, row)
         image["status"] = row.status if row else "candidate"
         image["status_note"] = row.note if row else None
         image["status_by"] = row.changed_by if row else None
@@ -61,14 +68,23 @@ class StatusRequest(BaseModel):
         return value
 
 
-def _known(request: Request, prefix: str) -> dict:
+def _check_binding(image: dict, row) -> None:
+    if row is not None and row.status == "released" and row.released_etag and image.get("etag") is not None:
+        if image["etag"] != row.released_etag or image["object_size"] != row.released_size:
+            image["problems"].append("发布后文件被改动过（与发布时的字节不一致）")
+
+
+def _known(request: Request, prefix: str, db: Session) -> dict:
     config = _config(request)
     if config is None:
         raise HTTPException(status_code=409, detail="制品库尚未配置")
-    for image in artifacts.list_images(config, _s3(request))["images"]:
-        if image["prefix"] == prefix:
-            return image
-    raise HTTPException(status_code=404, detail="没有这个镜像")
+    if not artifacts.PREFIX.match(prefix):
+        raise HTTPException(status_code=404, detail="没有这个镜像")
+    image = artifacts.read_image(config, _s3(request), prefix)
+    if image["manifest"] is None and image["problems"] == ["没有 manifest"]:
+        raise HTTPException(status_code=404, detail="没有这个镜像")
+    _check_binding(image, db.get(GoldenImageStatus, prefix))
+    return image
 
 
 def _audit(db, admin, action, prefix, detail):
@@ -77,7 +93,7 @@ def _audit(db, admin, action, prefix, detail):
 
 @router.post("/artifacts/status")
 def set_status(body: StatusRequest, request: Request, admin: dict = Depends(get_current_admin), db: Session = Depends(get_admin_db)):
-    image = _known(request, body.prefix)
+    image = _known(request, body.prefix, db)
     if body.status == "released" and image["problems"]:
         raise HTTPException(status_code=409, detail="manifest 有问题的镜像不能发布：" + "；".join(image["problems"]))
     row = db.get(GoldenImageStatus, body.prefix)
@@ -89,6 +105,8 @@ def set_status(body: StatusRequest, request: Request, admin: dict = Depends(get_
         row = GoldenImageStatus(prefix=body.prefix, status=body.status, changed_at=now, changed_by=admin["username"])
         db.add(row)
     row.status, row.note, row.changed_at, row.changed_by = body.status, body.note, now, admin["username"]
+    if body.status == "released":
+        row.released_etag, row.released_size = image["etag"], image["object_size"]
     _audit(db, admin, "artifact_status", body.prefix, {"from": previous, "to": body.status, "note": body.note})
     try:
         db.commit()
@@ -106,7 +124,7 @@ class LinkRequest(BaseModel):
 
 @router.post("/artifacts/link")
 def download_link(body: LinkRequest, request: Request, admin: dict = Depends(get_current_admin), db: Session = Depends(get_admin_db)):
-    image = _known(request, body.prefix)
+    image = _known(request, body.prefix, db)
     row = db.get(GoldenImageStatus, body.prefix)
     if row is not None and row.status == "revoked":
         raise HTTPException(status_code=409, detail="已撤回的镜像不再提供下载")

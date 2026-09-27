@@ -76,7 +76,7 @@ export default function ArtifactsPage({ api, production, onUnauthorized }: Props
         {data && !data.images.length && <div className="lab-empty"><small>桶里还没有镜像。用 provisioning 脚本上传后会出现在这里。</small></div>}
         {!data && !error && <div className="lab-empty"><small>正在读取镜像</small></div>}
       </section>
-      <p className="lab-note">已撤回的镜像不再提供下载链接；manifest 有问题的镜像不能发布。状态变更与生成链接都写入审计。</p>
+      <p className="lab-note">已撤回的镜像不再生成下载链接（已发出的在过期前仍可用）；manifest 有问题的镜像不能发布。状态变更与生成链接都写入审计。</p>
     </div>
     {changing && <StatusDialog api={api} production={production} {...changing} onClose={() => setChanging(null)} onDone={() => { setChanging(null); setAttempt((n) => n + 1); }} onUnauthorized={() => unauthorized.current()} />}
   </main>;
@@ -97,7 +97,7 @@ function StatusDialog({ api, image, to, production, onClose, onDone, onUnauthori
   };
   return <Dialog label={`${VERB[to]} ${label}`} title={<>{VERB[to]} {label}{production && <span className="lab-chip bad">生产环境</span>}</>} onClose={onClose} closable={!busy}
     actions={<><button className="lab-btn" type="button" disabled={busy} onClick={onClose}>返回</button><button className={`lab-btn ${to === 'released' ? 'primary' : ''}`} type="button" disabled={busy || note.trim().length < 5} onClick={() => { void submit(); }}>{busy ? '提交中' : `确认${VERB[to]}`}</button></>}>
-    <p className="lab-note">{to === 'released' ? '发布后产线按这个版本刷机。' : to === 'revoked' ? '撤回后不再提供下载链接；已刷过的盒子不受影响。' : '回到候选：不再作为发布版本，但仍可下载核对。'}操作会写入审计。</p>
+    <p className="lab-note">{to === 'released' ? '发布后产线按这个版本刷机。' : to === 'revoked' ? '撤回后不再生成新的下载链接；已发出的链接在 12 小时过期前仍可用，已刷过的盒子不受影响。' : '回到候选：不再作为发布版本，但仍可下载核对。'}操作会写入审计。</p>
     <label className="lab-field">原因（至少 5 个字）<input value={note} maxLength={200} onChange={(event) => setNote(event.target.value)} /></label>
     {error && <LoadError message={error} />}
   </Dialog>;

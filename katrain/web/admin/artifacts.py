@@ -4,6 +4,10 @@ Layout (written by smartbox provisioning): `<board>/<version>/manifest.json` nex
 it names. The admin console lists manifests, checks each named file exists with the declared size,
 keeps a release status in the database, and hands out short-lived signed download links. The
 credentials here should be read-only on this bucket.
+
+Signed links sign the Host and path: KATRAIN_ARTIFACTS_PUBLIC_ENDPOINT must be the exact
+scheme://host[:port] the downloader uses, with no path prefix, and a reverse proxy in front of MinIO
+must pass the Host header through unchanged (nginx: `proxy_set_header Host $http_host;`).
 """
 
 from __future__ import annotations
@@ -19,6 +23,8 @@ MAX_MANIFEST_BYTES = 64 * 1024
 LINK_TTL_S = 12 * 3600
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _FILE = re.compile(r"^[A-Za-z0-9._-]{1,200}$")
+PREFIX = re.compile(r"^[A-Za-z0-9._-]{1,64}/[A-Za-z0-9._-]{1,64}/$")
+TEXT_FIELDS = ("version", "board", "uploaded_by", "uploaded_at", "notes")
 
 
 @dataclass(frozen=True)
@@ -67,9 +73,51 @@ def validate(manifest: dict) -> list[str]:
         problems.append("file 必须是同目录下的文件名")
     if "sha256" in manifest and not (isinstance(manifest["sha256"], str) and _SHA256.match(manifest["sha256"])):
         problems.append("sha256 格式不对")
-    if "size" in manifest and not (isinstance(manifest["size"], int) and manifest["size"] > 0):
+    if "size" in manifest and not (isinstance(manifest["size"], int) and not isinstance(manifest["size"], bool) and manifest["size"] > 0):
         problems.append("size 必须是正整数")
+    for key in TEXT_FIELDS:
+        if key in manifest and manifest[key] is not None and not isinstance(manifest[key], str):
+            problems.append(f"{key} 必须是文本")
     return problems
+
+
+def _missing(exc) -> bool:
+    return getattr(exc, "response", {}).get("Error", {}).get("Code") in ("404", "NoSuchKey", "NotFound")
+
+
+def read_image(config: ArtifactConfig, s3, prefix: str) -> dict:
+    """One image by its prefix: manifest fields (text only), problems, and the file's size and ETag.
+    Only a 404 means "missing"; any other failure is reported as temporarily unreadable."""
+    entry = {"prefix": prefix, "manifest": None, "problems": [], "object_size": None, "etag": None}
+    key = prefix + MANIFEST
+    try:
+        head = s3.head_object(Bucket=config.bucket, Key=key)
+        if head["ContentLength"] > MAX_MANIFEST_BYTES:
+            entry["problems"].append("manifest 超过 64 KB")
+            return entry
+        manifest = json.loads(s3.get_object(Bucket=config.bucket, Key=key)["Body"].read())
+    except ValueError:
+        entry["problems"].append("manifest 不是合法 JSON")
+        return entry
+    except Exception as exc:
+        entry["problems"].append("没有 manifest" if _missing(exc) else "manifest 暂时读不到")
+        return entry
+    if not isinstance(manifest, dict):
+        entry["problems"].append("manifest 不是 JSON 对象")
+        return entry
+    entry["problems"] = validate(manifest)
+    shown = {k: manifest.get(k) for k in ("file", "sha256", "size")}
+    shown.update({k: manifest.get(k) if isinstance(manifest.get(k), str) else None for k in TEXT_FIELDS})
+    entry["manifest"] = shown
+    if not entry["problems"]:
+        try:
+            obj = s3.head_object(Bucket=config.bucket, Key=prefix + manifest["file"])
+            entry["object_size"], entry["etag"] = obj["ContentLength"], str(obj.get("ETag", "")).strip('"')
+            if obj["ContentLength"] != manifest["size"]:
+                entry["problems"].append("文件大小与 manifest 不符")
+        except Exception as exc:
+            entry["problems"].append("manifest 指向的文件不存在" if _missing(exc) else "文件暂时读不到")
+    return entry
 
 
 def list_images(config: ArtifactConfig, s3=None) -> dict:
@@ -85,30 +133,7 @@ def list_images(config: ArtifactConfig, s3=None) -> dict:
                     break
         if truncated:
             break
-    images = []
-    for key in sorted(keys):
-        prefix = key[: -len(MANIFEST)]
-        entry = {"prefix": prefix, "manifest": None, "problems": [], "object_size": None}
-        try:
-            head = s3.head_object(Bucket=config.bucket, Key=key)
-            if head["ContentLength"] > MAX_MANIFEST_BYTES:
-                raise ValueError("manifest 超过 64 KB")
-            manifest = json.loads(s3.get_object(Bucket=config.bucket, Key=key)["Body"].read())
-            if not isinstance(manifest, dict):
-                raise ValueError("manifest 不是 JSON 对象")
-            entry["manifest"] = {k: manifest.get(k) for k in ("version", "board", "file", "sha256", "size", "uploaded_by", "uploaded_at", "notes")}
-            entry["problems"] = validate(manifest)
-            if not entry["problems"]:
-                try:
-                    obj = s3.head_object(Bucket=config.bucket, Key=prefix + manifest["file"])
-                    entry["object_size"] = obj["ContentLength"]
-                    if obj["ContentLength"] != manifest["size"]:
-                        entry["problems"].append("文件大小与 manifest 不符")
-                except Exception:
-                    entry["problems"].append("manifest 指向的文件不存在")
-        except Exception as exc:
-            entry["problems"].append(f"manifest 无法读取：{exc}" if isinstance(exc, ValueError) else "manifest 无法读取")
-        images.append(entry)
+    images = [read_image(config, s3, key[: -len(MANIFEST)]) for key in sorted(keys)]
     return {"images": images, "truncated": truncated}
 
 

@@ -419,12 +419,18 @@ def export_audit(
         raise
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["id", "created_at", "actor", "action", "target_type", "target_id", "success", "detail"])
+
+    def cell(value) -> str:
+        # Keep spreadsheet apps from evaluating a cell (the actor of a failed login is unauthenticated input).
+        text = "" if value is None else str(value)
+        return "'" + text if text and text[0] in "=+-@\t\r" else text
+
+    def local(value) -> str:
+        return as_utc(value).astimezone(SHANGHAI).isoformat() if value is not None else ""
+
+    writer.writerow(["id", "created_at_shanghai", "actor", "action", "target_type", "target_id", "success", "detail"])
     for row in rows:
-        detail = row.detail or ""
-        if detail[:1] in "=+-@":  # keep spreadsheet apps from evaluating a cell as a formula
-            detail = "'" + detail
-        writer.writerow([row.id, _iso(row.created_at), row.actor_username, row.action, row.target_type or "", row.target_id or "", "1" if row.success else "0", detail])
+        writer.writerow([row.id, local(row.created_at), cell(row.actor_username), cell(row.action), cell(row.target_type), row.target_id or "", "1" if row.success else "0", cell(row.detail)])
     headers = {
         "Content-Disposition": 'attachment; filename="admin-audit.csv"',
         "X-Export-Rows": str(len(rows)),

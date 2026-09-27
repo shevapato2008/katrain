@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    BigInteger,
     Column,
     Integer,
     String,
@@ -1232,5 +1233,8 @@ class GoldenImageStatus(Base):
     prefix = Column(String(255), primary_key=True)
     status = Column(String(16), nullable=False)  # candidate | released | revoked
     note = Column(Text, nullable=True)
+    # The exact bytes that were released: a later overwrite of the file shows up as a problem.
+    released_etag = Column(String(128), nullable=True)
+    released_size = Column(BigInteger, nullable=True)
     changed_at = Column(DateTime(timezone=True), nullable=False)
     changed_by = Column(String(128), nullable=False)

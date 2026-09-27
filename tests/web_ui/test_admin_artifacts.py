@@ -91,3 +91,29 @@ def test_unconfigured_library_says_so(env):
     client, headers, _ = env
     client.app.state.artifact_config = None
     assert client.get("/api/admin/artifacts", headers=headers).json()["state"] == "unconfigured"
+
+
+def test_an_overwritten_released_file_is_flagged_and_not_linked(env):
+    client, headers, _ = env
+    client.post("/api/admin/artifacts/status", headers=headers, json={"prefix": "rk3562/1.4.2/", "status": "released", "note": "验收通过可发"})
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.put_object(Bucket="golden-images", Key="rk3562/1.4.2/smartbox-rk3562-1.4.2.img.xz", Body=b"x" * len(IMAGE))  # same size, other bytes
+    assert "发布后文件被改动过" in by_prefix(client, headers)["rk3562/1.4.2/"]["problems"][0]
+    assert client.post("/api/admin/artifacts/link", headers=headers, json={"prefix": "rk3562/1.4.2/"}).status_code == 409
+
+
+def test_prefixes_outside_the_layout_are_unknown_and_bad_field_types_are_problems(env):
+    client, headers, _ = env
+    assert client.post("/api/admin/artifacts/link", headers=headers, json={"prefix": "../etc/"}).status_code == 404
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.put_object(Bucket="golden-images", Key="rk3562/9.9/manifest.json", Body=json.dumps(manifest(version={"x": 1}, uploaded_by=["a"])))
+    image = by_prefix(client, headers)["rk3562/9.9/"]
+    assert "version 必须是文本" in image["problems"] and image["manifest"]["version"] is None
+
+
+def test_a_released_image_deleted_from_the_bucket_stays_visible(env):
+    client, headers, _ = env
+    client.post("/api/admin/artifacts/status", headers=headers, json={"prefix": "rk3562/1.4.2/", "status": "released", "note": "验收通过可发"})
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.delete_object(Bucket="golden-images", Key="rk3562/1.4.2/manifest.json")
+    assert by_prefix(client, headers)["rk3562/1.4.2/"]["problems"] == ["桶里已经没有这个镜像"]

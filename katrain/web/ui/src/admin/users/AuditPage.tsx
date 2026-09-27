@@ -52,7 +52,7 @@ export default function AuditPage({ api, onUnauthorized }: Props) {
       const { blob, rows, total } = await api.auditExport(query);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url; link.download = `admin-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.href = url; link.download = `admin-audit-${new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Shanghai' }).format(new Date())}.csv`;
       link.click(); URL.revokeObjectURL(url);
       setExported(rows < total ? `已导出最新的 ${rows} 条（共 ${total} 条，单次上限 1 万条；缩小时间范围可导出更早的）` : `已导出 ${rows} 条；这次导出本身也记入了审计`);
     } catch (cause) {

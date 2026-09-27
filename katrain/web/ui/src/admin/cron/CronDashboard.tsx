@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AdminApiError, type createAdminApi } from '../api/client';
-import CronPage from './CronPage';
+import CronPage, { type CronControls } from './CronPage';
 import type { CronView } from './types';
 
 const initialView: CronView = { state: 'loading', observed_at: null, jobs: [], runs: {}, queues: null };
@@ -63,5 +63,20 @@ export default function CronDashboard({ api, onUnauthorized }: { api: ReturnType
     }
   }, [api]);
 
-  return <CronPage view={view} onRefresh={() => setRefreshCount((count) => count + 1)} onSelectJob={selectJob} />;
+  const controls = useMemo<CronControls>(() => {
+    const run = async (operation: () => Promise<unknown>) => {
+      try { await operation(); } catch (cause) {
+        if (cause instanceof AdminApiError && cause.status === 401) { onUnauthorizedRef.current(); return; }
+        throw cause;
+      }
+      await load();
+    };
+    return {
+      pause: (name, reason) => run(() => api.cronPause(name, reason)),
+      resume: (name) => run(() => api.cronResume(name)),
+      runNow: (name) => run(() => api.cronRunNow(name)),
+    };
+  }, [api, load]);
+
+  return <CronPage view={view} onRefresh={() => setRefreshCount((count) => count + 1)} onSelectJob={selectJob} controls={controls} />;
 }

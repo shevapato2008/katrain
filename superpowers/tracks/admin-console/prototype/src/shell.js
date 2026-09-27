@@ -2,7 +2,7 @@
 const LAB = [['capture', '采集与数据集'], ['training', '训练与模型'], ['diagnostics', '本机部署与诊断']];
 const FOOT = {
   tutorial: '修改会写入该环境的教程数据',
-  cron: '此页面只读，不会运行或暂停任务。',
+  cron: '暂停、恢复与立即运行会写入审计。',
   performance: '只读页面，不修改配置。',
   users: '调整积分与生成兑换码会写入该环境的主库。',
   audit: '只读页面。',

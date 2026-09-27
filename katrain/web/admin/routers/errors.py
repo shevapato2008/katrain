@@ -15,6 +15,7 @@ from katrain.web.core.models_db import AdminAuditLog, ErrorGroup
 
 router = APIRouter(dependencies=[Depends(get_current_admin)])
 ATTENTION_WINDOW = timedelta(hours=24)
+STUCK_AFTER = timedelta(minutes=5)  # a collector whose last write is this much older than its report is stuck
 
 
 def _iso(value):
@@ -49,7 +50,17 @@ def list_errors(
     rows = db.scalars(query.order_by(ErrorGroup.last_seen.desc(), ErrorGroup.id.desc()).offset((page - 1) * page_size).limit(page_size)).all()
     collectors = {}
     for item in evaluate(db)["processes"]:
-        collectors[item["process"]] = {"state": item["state"], "age_s": item["age_s"], **(item["extra"].get("collector") or {})}
+        stats = item["extra"].get("collector") or {}
+        stuck = None
+        if item["state"] == "fresh":
+            if not stats:
+                stuck = True  # the process reports but has no collector running
+            elif stats.get("last_flush_at") and item["generated_at"]:
+                lag = datetime.fromisoformat(item["generated_at"]) - datetime.fromisoformat(stats["last_flush_at"])
+                stuck = lag > STUCK_AFTER
+            else:
+                stuck = stats.get("last_flush_at") is None
+        collectors[item["process"]] = {"state": item["state"], "age_s": item["age_s"], "stuck": stuck, **stats}
     return {"items": [_row(g) for g in rows], "total": total, "page": page, "page_size": page_size, "collectors": collectors}
 
 
@@ -78,10 +89,10 @@ def resolve_error(group_id: int, admin: dict = Depends(get_current_admin), db: S
 
 @router.get("/attention")
 def attention(db: Session = Depends(get_admin_db)):
-    """Badge counts: error groups new or reopened in the last 24 h, and config problems."""
+    """Badge counts: unresolved error groups seen in the last 24 h, and config problems."""
     since = datetime.now(timezone.utc) - ATTENTION_WINDOW
     errors = db.scalar(
-        select(func.count()).select_from(ErrorGroup).where(ErrorGroup.resolved_at.is_(None), ErrorGroup.state_changed_at >= since)
+        select(func.count()).select_from(ErrorGroup).where(ErrorGroup.resolved_at.is_(None), ErrorGroup.last_seen >= since)
     )
     health = evaluate(db)
     config = sum(1 for p in health["processes"] if p["state"] == "never") + sum(

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
-import type { createAdminApi, ErrorGroupRow, ErrorList } from '../api/client';
+import type { CollectorState, createAdminApi, ErrorGroupRow, ErrorList } from '../api/client';
 import { describe, LoadError, when } from '../users/shared';
 import '../vision/lab.css';
 import './ErrorsPage.css';
@@ -53,7 +53,8 @@ export default function ErrorsPage({ api, onUnauthorized, onChanged }: Props) {
     setBusy(false);
   };
   const collectors = data ? (['web', 'cron', 'admin'] as const).map((name) => ({ name, ...(data.collectors[name] ?? { state: 'never' as const }) })) : [];
-  const blind = collectors.some((c) => c.state !== 'fresh' || c.last_flush_ok === false);
+  const healthy = (c: CollectorState) => c.state === 'fresh' && c.last_flush_ok !== false && c.stuck !== true;
+  const blind = collectors.some((c) => !healthy(c));
   const group = data?.items.find((item) => item.id === selected);
   const pages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
   return <main className="lab-page er-page">
@@ -61,8 +62,8 @@ export default function ErrorsPage({ api, onUnauthorized, onChanged }: Props) {
     <div className="lab-content">
       {error && <LoadError message={error} onRetry={() => setAttempt((n) => n + 1)} />}
       <section className="lab-panel er-collectors" aria-label="采集器状态">
-        {data ? collectors.map((c) => { const ok = c.state === 'fresh' && c.last_flush_ok !== false; return <span key={c.name} className={`er-col ${ok ? 'ok' : 'warn'}`}>{ok ? <CheckCircle2 aria-hidden="true" /> : <AlertTriangle aria-hidden="true" />}<b>{TITLES[c.name]}</b>
-          <small>采集器 · {c.state === 'never' ? '从未上报' : c.state === 'stale' ? `上报已过期 · ${Math.round((c.age_s ?? 0) / 60)} 分钟前` : c.last_flush_ok === false ? '最近一次写库失败' : `${ago(c.last_flush_at ?? null)}刷写 · 丢弃 ${c.dropped ?? 0}${c.overflow ? ` · 超上限 ${c.overflow}` : ''}`}</small></span>; }) : <span className="lab-note">正在读取采集器状态</span>}
+        {data ? collectors.map((c) => { const ok = healthy(c); return <span key={c.name} className={`er-col ${ok ? 'ok' : 'warn'}`}>{ok ? <CheckCircle2 aria-hidden="true" /> : <AlertTriangle aria-hidden="true" />}<b>{TITLES[c.name]}</b>
+          <small>采集器 · {c.state === 'never' ? '从未上报' : c.state === 'stale' ? `上报已过期 · ${Math.round((c.age_s ?? 0) / 60)} 分钟前` : c.stuck ? '采集器未在运行或已卡住' : c.last_flush_ok === false ? '最近一次写库失败' : `${ago(c.last_flush_at ?? null)}刷写 · 丢弃 ${c.dropped ?? 0}${c.overflow ? ` · 超上限 ${c.overflow}` : ''}`}</small></span>; }) : <span className="lab-note">正在读取采集器状态</span>}
       </section>
       <div className="er-grid">
         <section className="lab-panel er-list" aria-label="报错分组">

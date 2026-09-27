@@ -414,15 +414,6 @@ async def _lifespan_server(app: FastAPI, log):
     # Board mode never spends locally (billing is proxied to the cloud, see
     # billing.py's module docstring) so this loop only runs in server mode.
     app.state.report_settlement_task = asyncio.create_task(_report_settlement_loop(session_factory))
-    # Config-check verdicts for the admin console (templated, never values); server mode only.
-    from katrain.web.core import error_collector, health_report
-
-    app.state.error_collector = error_collector.ErrorCollector("web", error_collector.factory_for(session_factory)).start()
-    app.state.health_report_task = asyncio.create_task(
-        health_report.report_forever(
-            session_factory, "web", lambda: health_report.web_checks(settings), extra=app.state.error_collector.stats
-        )
-    )
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -440,6 +431,17 @@ async def _lifespan_server(app: FastAPI, log):
 
     # ── Platform Manager (cross-platform online play) ─────────────────────
     _init_platform_manager(app, manager, log)
+
+    # Config-check verdicts and error collection for the admin console; server mode only. Started
+    # last so that a failure earlier in startup cannot leave the handler attached to the root logger.
+    from katrain.web.core import error_collector, health_report
+
+    app.state.error_collector = error_collector.ErrorCollector("web", error_collector.factory_for(session_factory)).start()
+    app.state.health_report_task = asyncio.create_task(
+        health_report.report_forever(
+            session_factory, "web", lambda: health_report.web_checks(settings), extra=app.state.error_collector.stats
+        )
+    )
 
 
 def _init_platform_manager(app, session_manager, log):

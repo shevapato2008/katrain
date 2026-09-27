@@ -41,7 +41,7 @@ def test_same_template_groups_regardless_of_arguments_and_line(factory):
     collector.emit(record(args=("a",), line=10))
     collector.emit(record(args=("b",), line=99))
     collector.emit(record(message="other failure %s"))
-    assert collector.flush() is True
+    assert collector.write() is True
     rows = groups(factory)
     assert [(r.template, r.count) for r in rows] == [("boom %s", 2), ("other failure %s", 1)]
     assert rows[0].sample.startswith("boom b")  # the latest sample is kept
@@ -51,7 +51,7 @@ def test_exception_type_and_frames_are_part_of_the_fingerprint(factory):
     collector = error_collector.ErrorCollector("web", factory)
     collector.emit(record(exc=ValueError("bad")))
     collector.emit(record(exc=KeyError("bad")))
-    collector.flush()
+    collector.write()
     rows = groups(factory)
     assert {r.exc_type for r in rows} == {"ValueError", "KeyError"} and len(rows) == 2
     assert all("test_admin_error_tracking.py:record" in r.location for r in rows)
@@ -59,13 +59,49 @@ def test_exception_type_and_frames_are_part_of_the_fingerprint(factory):
 
 def test_samples_are_scrubbed_and_capped(factory):
     collector = error_collector.ErrorCollector("web", factory)
-    secret = "call 13812345678 mail a.b@example.com Bearer abc.def token=s3cr3t password=hunter2 jwt eyJhbGciOi.eyJzdWIi.sig"
+    secret = (
+        "call 13812345678 or 138-1234-5679 mail a.b@example.com Bearer abc.def token=s3cr3t password=hunter2 "
+        "jwt eyJhbGciOi.eyJzdWIi.sig access_token=at1 refresh_token=rt1 client_secret=cs1 "
+        '{"password": "pw1"} postgresql://u:dbpass@db/x Authorization: Basic dXNlcjpwYXNz '
+        "[parameters: ('hash-of-someone', 'Zhang San')]"
+    )
     collector.emit(record(message="%s", args=(secret + " " + "x" * 9000,)))
-    collector.flush()
+    collector.write()
     sample = groups(factory)[0].sample
-    for leaked in ("13812345678", "a.b@example.com", "abc.def", "s3cr3t", "hunter2", "eyJhbGciOi"):
-        assert leaked not in sample
+    for leaked in ("13812345678", "138-1234-5679", "a.b@example.com", "abc.def", "s3cr3t", "hunter2", "eyJhbGciOi",
+                   "at1", "rt1", "cs1", "pw1", "dbpass", "dXNlcjpwYXNz", "hash-of-someone", "Zhang San"):
+        assert leaked not in sample, leaked
     assert len(sample) <= 4096
+
+
+def test_scrubbing_a_huge_message_is_fast_and_happens_off_the_logging_call(factory):
+    import time
+
+    collector = error_collector.ErrorCollector("web", factory)
+    started = time.perf_counter()
+    collector.emit(record(message="%s", args=("a" * 200_000 + "@",)))
+    assert time.perf_counter() - started < 0.05  # emit does no regex work
+    started = time.perf_counter()
+    collector.write()
+    assert time.perf_counter() - started < 0.5
+
+
+def test_templates_are_scrubbed_and_numbers_do_not_split_groups(factory):
+    collector = error_collector.ErrorCollector("web", factory)
+    collector.emit(record(message="SMS failed for 13812345678 order 1001", args=()))
+    collector.emit(record(message="SMS failed for 13912345678 order 1002", args=()))
+    collector.write()
+    rows = groups(factory)
+    assert len(rows) == 1 and rows[0].count == 2 and "138" not in rows[0].template and "<phone>" in rows[0].template
+
+
+def test_logging_shutdown_flush_does_not_touch_the_database(factory):
+    def boom():
+        raise AssertionError("flush must not write")
+
+    collector = error_collector.ErrorCollector("web", boom)
+    collector.emit(record())
+    collector.flush()  # logging.Handler.flush contract: no-op
 
 
 def test_emit_never_blocks_or_raises_and_counts_drops(factory):
@@ -87,7 +123,7 @@ def test_a_failing_database_is_absorbed_and_reported(factory):
 
     collector = error_collector.ErrorCollector("web", broken)
     collector.emit(record())
-    assert collector.flush() is False
+    assert collector.write() is False
     stats = collector.stats()["collector"]
     assert stats["dropped"] == 1 and stats["last_flush_ok"] is False
 
@@ -95,13 +131,13 @@ def test_a_failing_database_is_absorbed_and_reported(factory):
 def test_resolved_groups_reopen_when_they_recur(factory):
     collector = error_collector.ErrorCollector("web", factory)
     collector.emit(record())
-    collector.flush()
+    collector.write()
     with factory() as db:
         row = db.scalars(select(ErrorGroup)).one()
         row.resolved_at, row.resolved_by = datetime.now(timezone.utc), "admin:fan"
         db.commit()
     collector.emit(record())
-    collector.flush()
+    collector.write()
     row = groups(factory)[0]
     assert row.resolved_at is None and row.count == 2
 
@@ -109,8 +145,8 @@ def test_resolved_groups_reopen_when_they_recur(factory):
 def test_group_cap_and_retention(factory):
     collector = error_collector.ErrorCollector("web", factory, max_groups=2)
     for index in range(3):
-        collector.emit(record(message=f"distinct {index}"))
-    collector.flush()
+        collector.emit(record(message=f"distinct {'abc'[index]} failure", args=()))
+    collector.write()
     assert len(groups(factory)) == 2 and collector.stats()["collector"]["overflow"] == 1
     with factory() as db:
         old = db.scalars(select(ErrorGroup)).first()
@@ -159,11 +195,13 @@ def test_admin_lists_resolves_with_audit_and_counts_attention(admin, factory):
     collector = error_collector.ErrorCollector("web", factory)
     collector.emit(record())
     collector.emit(record(message="cron side %s", logger="katrain_cron.jobs"))
-    collector.flush()
+    collector.write()
     assert client.get("/api/admin/errors").status_code == 401
     listing = client.get("/api/admin/errors?status=open", headers=headers).json()
     assert listing["total"] == 2 and {"count", "sample", "location", "first_seen"} <= set(listing["items"][0])
     assert client.get("/api/admin/attention", headers=headers).json()["errors"] == 2
+    collectors = listing["collectors"]
+    assert collectors["web"]["state"] == "never" and collectors["web"]["stuck"] is None
     target = listing["items"][0]["id"]
     assert client.post(f"/api/admin/errors/{target}/resolve", headers=headers).status_code == 200
     assert client.get("/api/admin/errors?status=open", headers=headers).json()["total"] == 1

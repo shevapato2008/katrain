@@ -38,7 +38,7 @@ export interface HealthCheck { id: string; level: 'ok' | 'warn' | 'bad' | 'unkno
 export interface HealthProcess { process: string; state: 'never' | 'stale' | 'fresh'; hostname: string | null; build: string | null; generated_at: string | null; age_s: number | null; checks: HealthCheck[]; extra: Record<string, unknown> }
 export interface ConfigHealth { observed_at: string; stale_after_s: number; processes: HealthProcess[]; cross_checks: HealthCheck[] }
 export interface ErrorGroupRow { id: number; process: string; logger: string; exc_type: string | null; template: string; location: string; job: string | null; first_seen: string | null; last_seen: string | null; state_changed_at: string | null; count: number; sample: string; build: string; resolved_at: string | null; resolved_by: string | null }
-export interface CollectorState { state: 'never' | 'stale' | 'fresh'; age_s: number | null; last_flush_at?: string | null; last_flush_ok?: boolean | null; dropped?: number; overflow?: number; queued?: number }
+export interface CollectorState { state: 'never' | 'stale' | 'fresh'; age_s: number | null; stuck?: boolean | null; last_flush_at?: string | null; last_flush_ok?: boolean | null; dropped?: number; overflow?: number; queued?: number }
 export interface ErrorList { items: ErrorGroupRow[]; total: number; page: number; page_size: number; collectors: Record<string, CollectorState> }
 export interface Attention { errors: number; config: number }
 export class AdminApiError extends Error {

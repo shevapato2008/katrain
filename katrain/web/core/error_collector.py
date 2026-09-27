@@ -25,19 +25,30 @@ LOGGER_NAME = "katrain.error_collector"
 log = logging.getLogger(LOGGER_NAME)
 SAMPLE_LIMIT = 4096
 TEMPLATE_LIMIT = 500
+SCRUB_INPUT_LIMIT = 8192  # scrub runs on at most this much text, so its cost is bounded
 _SCRUB = [
-    (re.compile(r"eyJ[\w-]+\.[\w-]+(?:\.[\w-]+)?"), "<jwt>"),
+    (re.compile(r"\[parameters: .{0,4000}?\]", re.S), "[parameters: <redacted>]"),
+    (re.compile(r"eyJ[\w-]{1,4000}\.[\w-]{1,4000}(?:\.[\w-]{1,4000})?"), "<jwt>"),
+    (re.compile(r"(?i)(authorization\s*[:=]\s*)(?:\w+\s+)?\S+"), r"\1<redacted>"),
     (re.compile(r"(?i)bearer\s+\S+"), "Bearer <redacted>"),
-    (re.compile(r"(?i)\b(key|password|passwd|secret|token|api_key|apikey)=\S+"), r"\1=<redacted>"),
-    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "<email>"),
-    (re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"), "<phone>"),
+    (re.compile(r"([a-z][\w+.-]{0,20}://[^\s:/@]{1,200}:)[^\s@/]{1,200}@", re.I), r"\1<redacted>@"),
+    (re.compile(r"(?i)(\w{0,40}(?:token|secret|key|passw(?:or)?d|pwd)\w{0,40}[\"']?\s*[:=]\s*[\"']?)[^\s\"',&;]{1,500}"), r"\1<redacted>"),
+    (re.compile(r"[\w.+-]{1,64}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,8}"), "<email>"),
+    (re.compile(r"(?<!\d)1[3-9]\d[- ]?\d{4}[- ]?\d{4}(?!\d)"), "<phone>"),
 ]
+_DIGITS = re.compile(r"\d+")
 
 
 def scrub(text: str) -> str:
+    text = text[:SCRUB_INPUT_LIMIT]
     for pattern, replacement in _SCRUB:
         text = pattern.sub(replacement, text)
     return text
+
+
+def template_of(record: logging.LogRecord) -> str:
+    """The message template, scrubbed, with numbers folded (an f-string with ids must not split groups)."""
+    return _DIGITS.sub("#", scrub(str(record.msg)[:TEMPLATE_LIMIT]))
 
 
 def build_id() -> str:
@@ -54,7 +65,7 @@ def location(record: logging.LogRecord) -> str:
 
 def fingerprint(process: str, record: logging.LogRecord) -> str:
     exc_type = record.exc_info[0].__name__ if record.exc_info and record.exc_info[0] else ""
-    key = "|".join([process, record.name, exc_type, str(record.msg)[:TEMPLATE_LIMIT], location(record)])
+    key = "|".join([process, record.name, exc_type, template_of(record), location(record)])
     return hashlib.sha256(key.encode("utf-8", "replace")).hexdigest()[:40]
 
 
@@ -67,7 +78,10 @@ def dedicated_factory(database_url: str):
     if database_url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
     else:
-        kwargs.update(pool_size=1, max_overflow=0, connect_args={"options": "-c statement_timeout=2000"})
+        kwargs.update(
+            pool_size=1, max_overflow=0, pool_timeout=2, hide_parameters=True,
+            connect_args={"options": "-c statement_timeout=2000", "connect_timeout": 2},
+        )
     return sessionmaker(bind=create_engine(database_url, **kwargs))
 
 
@@ -99,20 +113,20 @@ class ErrorCollector(logging.Handler):
 
     def _event(self, record: logging.LogRecord) -> dict:
         try:
-            message = record.getMessage()
+            message = record.getMessage()[:SCRUB_INPUT_LIMIT]
         except Exception:  # a malformed log call is still an error worth keeping
-            message = f"{record.msg} {record.args!r}"
+            message = f"{str(record.msg)[:TEMPLATE_LIMIT]} {record.args!r}"[:SCRUB_INPUT_LIMIT]
         if record.exc_info and record.exc_info[1] is not None:
-            tail = "".join(traceback.format_exception(*record.exc_info)[-12:])
+            tail = "".join(traceback.format_exception(*record.exc_info)[-12:])[-SCRUB_INPUT_LIMIT:]
             message = f"{message}\n{tail}"
         return {
             "fingerprint": fingerprint(self.process, record),
             "logger": record.name[:128],
             "exc_type": record.exc_info[0].__name__[:128] if record.exc_info and record.exc_info[0] else None,
-            "template": str(record.msg)[:TEMPLATE_LIMIT],
+            "template": template_of(record),
             "location": location(record),
             "job": self._job(),
-            "sample": scrub(message)[:SAMPLE_LIMIT],
+            "raw": message,  # scrubbed in the writer thread, never on the logging caller
             "at": datetime.fromtimestamp(record.created, timezone.utc),
         }
 
@@ -141,7 +155,11 @@ class ErrorCollector(logging.Handler):
 
         return ErrorGroup
 
-    def flush(self) -> bool:
+    def flush(self) -> None:
+        """logging.Handler.flush: deliberately a no-op (logging.shutdown calls it under the handler lock)."""
+
+    def write(self) -> bool:
+        """Drain the queue into `error_groups`. Runs on the collector thread (and once at stop)."""
         events = self._drain()
         now = datetime.now(timezone.utc)
         if not events:
@@ -149,42 +167,55 @@ class ErrorCollector(logging.Handler):
             return True
         merged: dict[str, dict] = {}
         for event in events:
+            event["sample"] = scrub(event.pop("raw"))[:SAMPLE_LIMIT]
             entry = merged.setdefault(event["fingerprint"], {**event, "n": 0, "first": event["at"]})
             entry.update(sample=event["sample"], at=event["at"], job=event["job"] or entry["job"])
             entry["n"] += 1
         Group = self._model()
         try:
-            from sqlalchemy import func, select
+            from sqlalchemy import case, func, select
 
             with self.session_factory() as db:
-                total = db.scalar(select(func.count()).select_from(Group))
+                dialect = db.get_bind().dialect.name
+                if dialect == "postgresql":
+                    from sqlalchemy.dialects.postgresql import insert
+                else:
+                    from sqlalchemy.dialects.sqlite import insert
+                existing = set(db.scalars(select(Group.fingerprint).where(Group.fingerprint.in_(list(merged)))).all())
+                room = self.max_groups - db.scalar(select(func.count()).select_from(Group))
                 for fp, entry in merged.items():
-                    row = db.scalar(select(Group).where(Group.fingerprint == fp))
-                    if row is not None:
-                        row.count += entry["n"]
-                        row.last_seen, row.sample, row.build = entry["at"], entry["sample"], build_id()
-                        if row.resolved_at is not None:
-                            row.resolved_at = row.resolved_by = None
-                            row.state_changed_at = now
-                        continue
-                    if total >= self.max_groups:
-                        self.overflow += entry["n"]
-                        continue
-                    total += 1
-                    db.add(
-                        Group(
-                            fingerprint=fp, process=self.process, logger=entry["logger"], exc_type=entry["exc_type"],
-                            template=entry["template"], location=entry["location"], job=entry["job"],
-                            first_seen=entry["first"], last_seen=entry["at"], state_changed_at=now,
-                            count=entry["n"], sample=entry["sample"], build=build_id(),
-                        )
+                    if fp not in existing:
+                        if room <= 0:
+                            self.overflow += entry["n"]
+                            continue
+                        room -= 1
+                    # One atomic statement per group: concurrent writers add counts instead of losing
+                    # them, and a recurrence of a resolved group reopens it.
+                    statement = insert(Group).values(
+                        fingerprint=fp, process=self.process, logger=entry["logger"], exc_type=entry["exc_type"],
+                        template=entry["template"], location=entry["location"], job=entry["job"],
+                        first_seen=entry["first"], last_seen=entry["at"], state_changed_at=now,
+                        count=entry["n"], sample=entry["sample"], build=build_id(),
                     )
+                    statement = statement.on_conflict_do_update(
+                        index_elements=[Group.fingerprint],
+                        set_={
+                            "count": Group.count + entry["n"],
+                            "last_seen": entry["at"],
+                            "sample": entry["sample"],
+                            "build": build_id(),
+                            "state_changed_at": case((Group.resolved_at.is_not(None), now), else_=Group.state_changed_at),
+                            "resolved_at": None,
+                            "resolved_by": None,
+                        },
+                    )
+                    db.execute(statement)
                 db.commit()
             self.last_flush_ok = True
         except Exception as exc:
             self.dropped += len(events)
             self.last_flush_ok = False
-            log.warning("error collector flush failed: %s", type(exc).__name__)
+            log.warning("error collector write failed: %s", type(exc).__name__)
         self.last_flush_at = now
         self.prune()
         return bool(self.last_flush_ok)
@@ -228,10 +259,12 @@ class ErrorCollector(logging.Handler):
 
     def _run(self) -> None:
         while not self._stop.wait(self.flush_interval):
-            self.flush()
+            self.write()
 
     def stop(self) -> None:
         self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=10)  # never race the thread's own write
         for name in ("", "uvicorn.error"):
             logging.getLogger(name).removeHandler(self)
-        self.flush()
+        self.write()

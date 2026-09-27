@@ -22,6 +22,7 @@ describe('config health page', () => {
     expect(within(screen.getByLabelText('定时任务 体检')).getByText(/结论不再可信，已隐藏/)).toBeInTheDocument();
     expect(within(screen.getByLabelText('管理后台 体检')).getByText('从未上报')).toBeInTheDocument();
     expect(screen.getByText('2 项有问题')).toBeInTheDocument();
+    expect(screen.getByText('1 个进程上报过期，结论未计入')).toBeInTheDocument();
     expect(screen.getByText(/版本一致性：不是每个进程都有新近上报/)).toBeInTheDocument();
   });
 

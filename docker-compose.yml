@@ -58,6 +58,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        # export KATRAIN_BUILD_SHA=$(git rev-parse --short HEAD) before `docker compose build`
+        KATRAIN_BUILD_SHA: ${KATRAIN_BUILD_SHA:-unknown}
     image: katrain-web:local
     container_name: katrain-web
     depends_on:
@@ -120,6 +123,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.cron
+      args:
+        # export KATRAIN_BUILD_SHA=$(git rev-parse --short HEAD) before `docker compose build`
+        KATRAIN_BUILD_SHA: ${KATRAIN_BUILD_SHA:-unknown}
     container_name: katrain-cron
     restart: unless-stopped
     volumes:

@@ -26,6 +26,8 @@ def _checks(raw: str) -> tuple[list, dict]:
     try:
         body = json.loads(raw)
     except ValueError:
+        body = None
+    if not isinstance(body, dict):
         return [{"id": "report", "level": "unknown", "message": "上报内容无法解析"}], {}
     checks = [c for c in body.get("checks", []) if isinstance(c, dict)]
     return checks, {k: v for k, v in body.items() if k != "checks"}
@@ -65,7 +67,7 @@ def config_health(db: Session = Depends(get_admin_db)):
     elif len(set(fresh_builds.values())) > 1:
         version = {"level": "warn", "message": "三个进程运行的构建版本不一致"}
     else:
-        version = {"level": "ok", "message": "三个进程运行同一构建版本"}
+        version = {"level": "ok", "message": f"三个进程运行同一构建版本 {next(iter(fresh_builds.values()))}"}
     return {
         "observed_at": now.isoformat(),
         "stale_after_s": STALE_AFTER_S,

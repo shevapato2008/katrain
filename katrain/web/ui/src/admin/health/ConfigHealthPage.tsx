@@ -45,6 +45,7 @@ export default function ConfigHealthPage({ api, onUnauthorized }: Props) {
 
   const fresh = data?.processes.filter((p) => p.state === 'fresh').flatMap((p) => p.checks) ?? [];
   const missing = data?.processes.filter((p) => p.state === 'never').length ?? 0;
+  const stale = data?.processes.filter((p) => p.state === 'stale').length ?? 0;
   const count = (level: string) => fresh.filter((c) => c.level === level).length;
   const version = data?.cross_checks.find((c) => c.id === 'build_consistency');
   const versionLevel = LEVEL[version?.level ?? 'unknown'] ?? LEVEL.unknown;
@@ -54,7 +55,7 @@ export default function ConfigHealthPage({ api, onUnauthorized }: Props) {
     <div className="lab-content">
       {error && <LoadError message={error} onRetry={() => load()} />}
       <section className="lab-panel ch-summary" aria-label="体检汇总">
-        {data ? <div className="ch-counts"><span className="lab-chip bad"><XCircle aria-hidden="true" />{count('bad') + missing} 项有问题</span><span className="lab-chip warn"><AlertTriangle aria-hidden="true" />{count('warn')} 项注意</span><span className="lab-chip ok"><CheckCircle2 aria-hidden="true" />{count('ok')} 项正常</span>{count('unknown') > 0 && <span className="lab-chip"><CircleHelp aria-hidden="true" />{count('unknown')} 项未知</span>}</div> : <span className="lab-note">{busy ? '正在读取体检结果' : '体检结果未读取'}</span>}
+        {data ? <div className="ch-counts"><span className="lab-chip bad"><XCircle aria-hidden="true" />{count('bad') + missing} 项有问题</span><span className="lab-chip warn"><AlertTriangle aria-hidden="true" />{count('warn')} 项注意</span><span className="lab-chip ok"><CheckCircle2 aria-hidden="true" />{count('ok')} 项正常</span>{count('unknown') > 0 && <span className="lab-chip"><CircleHelp aria-hidden="true" />{count('unknown')} 项未知</span>}{stale > 0 && <span className="lab-chip warn"><CircleHelp aria-hidden="true" />{stale} 个进程上报过期，结论未计入</span>}</div> : <span className="lab-note">{busy ? '正在读取体检结果' : '体检结果未读取'}</span>}
         {version && <div className={`ch-cross ${versionLevel.tone}`}><versionLevel.Icon aria-hidden="true" /><span>版本一致性：{version.message}</span></div>}
         <button className="lab-btn small" type="button" disabled={busy} onClick={() => load()}><RefreshCw aria-hidden="true" />刷新</button>
       </section>

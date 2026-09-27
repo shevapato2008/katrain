@@ -36,7 +36,7 @@ def levels(checks):
 
 def test_healthy_web_config_is_all_ok_or_explained():
     checks = health_report.web_checks(web_settings())
-    assert levels(checks) == {"database": "ok", "mode": "ok", "billing": "ok", "cloud_katago": "ok", "storage": "ok", "credentials": "ok"}
+    assert levels(checks) == {"database": "ok", "billing": "ok", "storage": "ok", "credentials": "ok"}
     assert "免费" in next(c["message"] for c in checks if c["id"] == "billing")
 
 
@@ -44,10 +44,8 @@ def test_healthy_web_config_is_all_ok_or_explained():
     "overrides, check, level",
     [
         ({"DATABASE_URL": "sqlite:///./db.sqlite3"}, "database", "bad"),
-        ({"KATRAIN_MODE": "board"}, "mode", "bad"),
         ({"BILLING_ENFORCED": True, "FREE_WEEKLY_REPORTS": 1}, "billing", "bad"),
         ({"BILLING_ENFORCED": True, "FREE_WEEKLY_REPORTS": 0}, "billing", "ok"),
-        ({"CLOUD_KATAGO_URL": ""}, "cloud_katago", "warn"),
         ({"STORAGE_BACKEND": "local"}, "storage", "warn"),
         ({"DATABASE_URL": "postgresql://u:katrain_secure_password_CHANGE_ME@db/k"}, "credentials", "bad"),
         ({"S3_SECRET_KEY": "minio_secure_password_CHANGE_ME"}, "credentials", "bad"),
@@ -58,9 +56,9 @@ def test_each_web_rule(overrides, check, level):
 
 
 def test_a_check_that_raises_is_unknown_not_ok():
-    broken = SimpleNamespace(KATRAIN_MODE="server")  # every other attribute missing
+    broken = SimpleNamespace(STORAGE_BACKEND="s3")  # every other attribute missing
     checks = health_report.web_checks(broken)
-    assert levels(checks)["database"] == "unknown" and levels(checks)["mode"] == "ok"
+    assert levels(checks)["database"] == "unknown" and levels(checks)["storage"] == "ok"
 
 
 def test_reports_never_carry_config_values(monkeypatch):
@@ -157,3 +155,20 @@ def test_a_process_that_never_reported_is_bad(admin):
     body = client.get("/api/admin/config-health", headers=headers).json()
     web = next(p for p in body["processes"] if p["process"] == "web")
     assert web["state"] == "never" and web["generated_at"] is None
+
+
+def test_a_report_that_is_not_an_object_reads_as_unknown(admin):
+    client, headers, factory = admin
+    with factory() as db:
+        db.merge(ProcessHealthReport(process="web", hostname="h", build="b", generated_at=datetime.now(timezone.utc), report="[1, 2]"))
+        db.commit()
+    web = next(p for p in client.get("/api/admin/config-health", headers=headers).json()["processes"] if p["process"] == "web")
+    assert [c["level"] for c in web["checks"]] == ["unknown"]
+
+
+def test_cron_flags_a_loopback_engine_address_inside_a_container(monkeypatch):
+    from katrain.cron import health_report as cron_report
+
+    monkeypatch.setattr(cron_report.os.path, "exists", lambda path: path == "/.dockerenv")
+    config = SimpleNamespace(DATABASE_URL="postgresql://u:p@db/k", KATAGO_URL="http://127.0.0.1:8002", DASHSCOPE_API_KEY="k")
+    assert levels(cron_report.cron_checks(config))["katago"] == "warn"

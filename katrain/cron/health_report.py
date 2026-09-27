@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import socket
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 
 INTERVAL_S = 600
@@ -36,6 +37,9 @@ def cron_checks(c) -> list:
     def katago():
         if not c.KATAGO_URL:
             return "bad", "未配置分析引擎地址：复盘与直播分析无法运行"
+        host = (urlparse(c.KATAGO_URL).hostname or "").lower()
+        if host in ("127.0.0.1", "localhost", "::1") and os.path.exists("/.dockerenv"):
+            return "warn", "分析引擎地址指向容器自身的回环地址（通常是没配 KATAGO_URL 的默认值）"
         return "ok", "已配置分析引擎地址"
 
     return _run(
@@ -74,8 +78,8 @@ async def report_forever(shutdown: asyncio.Event, interval: float = INTERVAL_S) 
     from katrain.cron import config
 
     while not shutdown.is_set():
-        await asyncio.to_thread(write_report, cron_checks(config))
+        written = await asyncio.to_thread(write_report, cron_checks(config))
         try:
-            await asyncio.wait_for(shutdown.wait(), timeout=interval)
+            await asyncio.wait_for(shutdown.wait(), timeout=interval if written else 30)
         except asyncio.TimeoutError:
             pass

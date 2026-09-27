@@ -55,9 +55,7 @@ def web_checks(s) -> list[dict]:
     return _run(
         [
             ("database", lambda: database_rule(s.DATABASE_URL)),
-            ("mode", lambda: ("ok", "服务器模式") if s.KATRAIN_MODE == "server" else ("bad", "不是服务器模式")),
             ("billing", billing),
-            ("cloud_katago", lambda: ("ok", "已配置云端分析引擎") if s.CLOUD_KATAGO_URL else ("warn", "未配置云端引擎：分析会走本地弱引擎")),
             ("storage", lambda: ("warn", "媒体存本机磁盘，不是对象存储") if s.STORAGE_BACKEND == "local" else ("ok", "媒体存对象存储")),
             ("credentials", lambda: credentials_rule(s.DATABASE_URL, s.S3_SECRET_KEY)),
         ]
@@ -95,7 +93,12 @@ def write_report(session_factory, process: str, checks: list[dict], extra: dict 
         return False
 
 
+RETRY_S = 30
+
+
 async def report_forever(session_factory, process: str, make_checks, interval: float = INTERVAL_S, extra=None):
+    """Write now and every `interval`; a failed write (e.g. the table is not created yet because web
+    has not finished init_db) is retried once after RETRY_S instead of waiting a full interval."""
     while True:
-        await asyncio.to_thread(write_report, session_factory, process, make_checks(), extra() if extra else None)
-        await asyncio.sleep(interval)
+        written = await asyncio.to_thread(write_report, session_factory, process, make_checks(), extra() if extra else None)
+        await asyncio.sleep(RETRY_S if not written else interval)

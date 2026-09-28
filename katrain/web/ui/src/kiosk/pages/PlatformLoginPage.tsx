@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -115,7 +115,20 @@ const PlatformLoginPage = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [smsBusy, setSmsBusy] = useState(false);
+  const [smsCooldownUntil, setSmsCooldownUntil] = useState(0);
   const [smsLeft, setSmsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!smsCooldownUntil) return;
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((smsCooldownUntil - Date.now()) / 1000));
+      setSmsLeft(left);
+      if (left === 0) setSmsCooldownUntil(0);
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [smsCooldownUntil]);
 
   // 软键盘避让(承重,见 `useKeyboardInset` 头注)。这一屏没有 `PlatformConnectPage` 那个
   // 整栏滚的 `.kiosk-side__scroll` —— `.xplogin` 是 `overflow:hidden` + 垂直居中,
@@ -164,6 +177,7 @@ const PlatformLoginPage = () => {
     try {
       await API.platformSmsRequest(platform, account, token);
       setSmsLeft(60);
+      setSmsCooldownUntil(Date.now() + 60_000);
     } catch (e) {
       setError(platformErrorMessage(e, t('platform:sms_failed', '验证码没发出去')));
     } finally {

@@ -32,7 +32,6 @@
 .training-dialog { width:min(480px,calc(100vw - 40px));padding:22px;border:1px solid var(--admin-line);border-radius:9px;background:var(--admin-panel);color:var(--admin-text);font:inherit; }.training-dialog::backdrop { background:#0009; }.training-dialog h2 { margin:0 0 12px;font-size:23px; }.training-dialog p { font-size:15px;line-height:1.65; }.training-dialog-actions { display:flex;justify-content:flex-end;gap:8px; }
 .training-advanced { margin:10px 0 14px;border-top:1px solid var(--admin-line);padding-top:12px; }.training-advanced summary { cursor:pointer;font-size:14.5px;color:var(--admin-muted);line-height:1.6; }.training-advanced[open] summary { margin-bottom:12px; }
 @media(max-width:1200px) { .training-grid { grid-template-columns:290px minmax(0,1fr); }.training-metrics { gap:8px; }.training-panel-head { flex-wrap:wrap; } }
-@media(max-width:900px) { .training-grid { grid-template-columns:1fr; }.training-location { display:none; }
 .training-feedback { margin:0 0 10px;padding:10px 12px;border:1px solid var(--admin-line);border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:16px; }
 .training-history { display:flex;align-items:center;gap:8px;color:var(--admin-muted);font-size:16px;min-width:0; }.training-history select { width:150px;max-width:100%;border:1px solid var(--admin-line);border-radius:6px;background:var(--admin-panel2);color:var(--admin-text);font:inherit;padding:4px 7px; }
 .training-dialog p { overflow-wrap:anywhere; }.training-observation { display:block;font-size:13px;margin-top:3px; }

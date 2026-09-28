@@ -28,12 +28,12 @@ def _touch(request: Request) -> None:
     request.app.state.led_last_activity = time.monotonic()
 
 
-def _tell_vision(request: Request, points: list[tuple[int, int]]) -> None:
-    """Keep monitor-mode glare masking and ambient brightness in step with UI-owned lamps."""
+def _tell_vision(request: Request, points: list[tuple[int, int]], mask_points: list[tuple[int, int]]) -> None:
+    """Measure every lamp, but mask additions only under removal lamps."""
     vision = getattr(request.app.state, "vision", None)
     if vision is not None and hasattr(vision, "set_lit_points"):
         try:
-            vision.set_lit_points(points)
+            vision.set_lit_points(points, mask_points=mask_points)
         except Exception:
             log.warning("Could not report lit points to vision", exc_info=True)
 
@@ -53,7 +53,8 @@ async def led_point(request: Request, body: PointRequest):
     led = _get_led(request)
     _touch(request)
     result = led.set_points([body.model_dump()], strict=False)
-    _tell_vision(request, [(body.row, body.col)])
+    cell = (body.row, body.col)
+    _tell_vision(request, [cell], [cell] if body.color == "remove" else [])
     return result
 
 
@@ -62,7 +63,11 @@ async def led_points(request: Request, body: PointsRequest):
     led = _get_led(request)
     _touch(request)
     result = led.set_points([p.model_dump() for p in body.points], strict=False)
-    _tell_vision(request, [(p.row, p.col) for p in body.points])
+    _tell_vision(
+        request,
+        [(p.row, p.col) for p in body.points],
+        [(p.row, p.col) for p in body.points if p.color == "remove"],
+    )
     return result
 
 
@@ -71,7 +76,7 @@ async def led_clear(request: Request):
     led = _get_led(request)
     _touch(request)
     result = led.clear(strict=False)
-    _tell_vision(request, [])
+    _tell_vision(request, [], [])
     return result
 
 

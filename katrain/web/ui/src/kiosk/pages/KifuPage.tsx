@@ -9,6 +9,7 @@ import {
   type BaipuProgress, type BaipuRecentEntry,
 } from '../../api/baipuApi';
 import { translateResult } from '../../utils/resultTranslation';
+import { formatRank } from '../../utils/rank';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { Icon } from '../shell/icons';
@@ -252,24 +253,45 @@ const KifuPage = () => {
             )
           ) : (
             <>
-              <div className="kiosk-rows">
-                {albums.map((a) => (
-                  <button
-                    type="button"
-                    className="kiosk-row"
-                    key={a.id}
-                    onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
-                  >
-                    <span className="kiosk-row__lead">{a.move_count} {t('kifu:moves_unit', '手')}</span>
-                    <span className="kiosk-row__t">
-                      <b>{a.player_black} {t('kifu:versus', '对')} {a.player_white}</b>
-                      <em>{[a.event, a.round_name, a.date_played].filter(Boolean).join(' · ')}</em>
-                    </span>
-                    <span className="kiosk-row__end">
-                      <span className="kiosk-tag">{translateResult(a.result, t, a.rules)}</span>
-                    </span>
-                  </button>
-                ))}
+              <div className="kifu-records" data-testid="kifu-records">
+                {albums.map((a) => {
+                  const winner = /^[Bb黑]/.test(a.result || '') ? 'black'
+                    : /^[Ww白]/.test(a.result || '') ? 'white' : null;
+                  return (
+                    <button
+                      type="button"
+                      className="kifu-record"
+                      key={a.id}
+                      onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
+                    >
+                      <span className="kifu-record__head">
+                        <span className="kifu-record__event" title={[a.event, a.round_name].filter(Boolean).join(' · ')}>
+                          {a.event || ''}
+                          {a.round_name && <span className="kifu-record__round">{a.round_name}</span>}
+                        </span>
+                        <span className="kifu-record__meta">
+                          {a.date_played && <span>{a.date_played}</span>}
+                          <span>{a.move_count} {t('kifu:moves_unit', '手')}</span>
+                        </span>
+                      </span>
+                      <span className="kifu-record__match">
+                        <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
+                          <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
+                          <span className="kifu-record__name">{a.player_black || t('game:black_side', '黑方')}</span>
+                          {a.black_rank && <small>{formatRank(a.black_rank, t)}</small>}
+                        </span>
+                        <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
+                          {translateResult(a.result, t, a.rules)}
+                        </span>
+                        <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
+                          {a.white_rank && <small>{formatRank(a.white_rank, t)}</small>}
+                          <span className="kifu-record__name">{a.player_white || t('game:white_side', '白方')}</span>
+                          <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
               {totalPages > 1 && (
                 <div className="kpager">

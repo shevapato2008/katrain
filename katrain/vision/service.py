@@ -215,11 +215,19 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.RESUME_DETECTION))
 
-    def set_lit_points(self, points: list[tuple[int, int]]) -> None:
-        """Intersections currently lit by the LED board (R7.1 masking)."""
+    def set_lit_points(
+        self, points: list[tuple[int, int]], *, mask_points: list[tuple[int, int]] | None = None
+    ) -> None:
+        """Report lit cells for glow measurement; mask only cells that cannot receive a new stone."""
         if self._worker:
             self._worker.send_command(
-                WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[r, c] for r, c in points]})
+                WorkerCommand(
+                    action=CommandType.SET_LIT_POINTS,
+                    data={
+                        "points": [[r, c] for r, c in points],
+                        "mask_points": [[r, c] for r, c in (points if mask_points is None else mask_points)],
+                    },
+                )
             )
 
     # -- data retrieval ------------------------------------------------------

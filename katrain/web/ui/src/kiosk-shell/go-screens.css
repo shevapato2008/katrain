@@ -800,6 +800,46 @@
   font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
 .kpager button:disabled { opacity: .4; }
 
+/* 棋谱卡沿用 Galaxy 棋谱库的两行层次:赛事 / 日期手数，黑方 / 结果 / 白方。
+   680px 右栏比网页版卡片略宽，整张卡是触控目标；字号和行距按盒端重排。 */
+.kifu-records { display: flex; flex-direction: column; gap: 8px; }
+.kifu-record {
+  width: 100%; min-height: 82px; padding: 11px 13px;
+  display: flex; flex-direction: column; justify-content: center; gap: 7px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 9px; background: color-mix(in srgb, var(--raise) 90%, white 3%);
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+.kifu-record:hover { background: color-mix(in srgb, var(--raise) 85%, white 7%); border-color: color-mix(in srgb, var(--text) 24%, transparent); }
+.kifu-record:active { background: color-mix(in srgb, var(--accent) 12%, var(--raise)); }
+.kifu-record:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kifu-record__head, .kifu-record__match { display: flex; align-items: center; min-width: 0; }
+.kifu-record__head { gap: 12px; }
+.kifu-record__event {
+  flex: 1; min-width: 0; overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+  font-family: var(--font-sans); font-size: 13px; color: var(--dim);
+}
+.kifu-record__round { margin-left: 7px; opacity: .72; }
+.kifu-record__meta { display: flex; gap: 12px; flex: none; font-family: var(--font-mono); font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.kifu-record__match { gap: 9px; }
+.kifu-record__player { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; font-size: 15px; color: var(--text); }
+.kifu-record__player--white { justify-content: flex-end; }
+.kifu-record__player.is-winner .kifu-record__name { font-weight: 700; }
+.kifu-record__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kifu-record__player small { flex: none; font-size: 10px; color: var(--dim); }
+.kifu-record__stone { width: 15px; height: 15px; flex: none; border-radius: 50%; }
+.kifu-record__stone--black { background: #151716; border: 1px solid rgba(255,255,255,.28); box-shadow: inset 0 -1px 2px rgba(255,255,255,.12); }
+.kifu-record__stone--white { background: #e8e4df; border: 1px solid rgba(0,0,0,.28); box-shadow: inset 0 1px 2px rgba(0,0,0,.1); }
+.kifu-record__result {
+  flex: none; padding: 4px 7px; border: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-radius: 4px; background: rgba(255,255,255,.09); color: var(--text);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 700; line-height: 1; white-space: nowrap;
+}
+.kifu-record__result--black { background: rgba(10,10,10,.9); }
+@media (prefers-reduced-motion: reduce) { .kifu-record { transition: none; } }
+
 /* 行本身可点时它就是个按钮 —— 共享 `.kiosk-row` 是照 `<div>` 写的,
    `<button>` 会自带居中的文字和 UA 字体。**改的是按钮的默认值,不是这一族的几何。** */
 button.kiosk-row { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
@@ -1640,9 +1680,8 @@ button.kiosk-row.figrow { flex: none; }
    四图第一版就是这个样子,当场看出来的。 */
 .lrow .led { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-left: auto; }
 
-/* 这一屏的 pcard 有三态:待摆(青玉,共享 `.pcard.turn`)、待移除、采集失败。
-   后两个各自换描边和底色 —— **它们说的是「此刻你该做什么」,不是装饰**。
-   待移除走蓝(和 `LED_HEX.remove` 同色,盘上那几颗也亮蓝灯);失败走 `--bad`。 */
+/* 摆谱常态复用对弈页棋手卡。状态卡只在异常/试下/采集时出现；
+   待移除走蓝(和盘上的蓝灯同色),采集失败走红。 */
 .pcard.removal { border-color: rgba(47, 111, 255, .75); background: rgba(47, 111, 255, .10); }
 .pcard.failed { border-color: color-mix(in srgb, var(--bad) 65%, transparent); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
 
@@ -1652,6 +1691,14 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+.baipu-layout .kiosk-board__play { position: relative; }
+.baipu-final-result {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(0, 0, 0, .6); color: #fff;
+  font-family: var(--font-sans); font-size: 28px; font-weight: 700;
+  text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
 /* 摄像头用不了、临时露出「确认落子」时,灯折叠头右端的「手动确认」用警告色(稿 17d)。 */
 .baipu-layout .kiosk-fold__head b.warn, .baipu-layout .lrow .warn { color: var(--warn); }
 

@@ -241,6 +241,22 @@ def _make_service(ack="OK", clock=None):
 
 
 class TestColorsAndProtocol:
+    def test_rgb_frame_can_show_blackout_and_new_points_in_one_batch(self):
+        svc, fake = _make_service()
+        svc.start()
+        try:
+            result = svc.set_rgb_points(
+                [{"row": 3, "col": 16, "rgb": (0, 96, 0)}],
+                strict=True,
+                blank_before=True,
+            )
+            assert result["ok"] is True
+            assert fake.written[1:6] == [
+                "CLEAR", "SHOW", "CLEAR", f"SETI {rc2idx(3, 16)} 0 96 0", "SHOW"
+            ]
+        finally:
+            svc.stop()
+
     def test_set_rgb_points_emits_exact_calibration_rgb(self):
         svc, fake = _make_service()
         svc.start()

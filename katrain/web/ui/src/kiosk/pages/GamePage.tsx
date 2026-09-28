@@ -289,7 +289,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
   // 而开局设置屏正是这么答的,两边不能给出两个答案。
   // 开局那一刻定下的值优先(见 `readSessionPlayOnBoard`),与 `PlayInputGuard` 读同一个函数。
-  // 回落分支保留今天的三段式:从房间 / 跨平台引擎进来的局没有开局屏写下的 onBoard。
+  // 回落分支保留给旧记录或从房间进入的局；新开的星阵人机局也会在开局时写下 onBoard。
   const { pathname } = useLocation();
   const [playOnBoard] = useState(() => readSessionPlayOnBoard(pathname));
   // 本局降级刷新后仍保留；路由复用 GamePage 时，降级与锁定历史都不能带进下一局。

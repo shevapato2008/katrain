@@ -6,69 +6,23 @@ import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { useVision } from '../context/VisionContext';
-import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { KioskStepTrack } from '../shell/KioskStepTrack';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
 import AiOpponentPlate from '../components/setup/AiOpponentPlate';
 import AiLevelSheet from '../components/setup/AiLevelSheet';
+import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
+import { SetupSelect } from '../components/setup/SetupSelect';
+import { SetupDerived, SetupFixed } from '../components/setup/SetupDerived';
 import { PLATFORM_META } from '../constants/platforms';
+import { RULE_LABEL } from '../utils/setupOptions';
 import { interpolate } from '../utils/interpolate';
 import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
+import { writeActiveSession } from '../utils/activeSession';
 
-/**
- * 屏 09 跨平台 · 人机开局(`sample-go/shots/09-platform-engine.png`,L2 布局 A)。
- *
- * 星阵 `supports_engine_play`,所以屏 07 上它那张卡进的是这一屏而不是大厅 ——
- * 星阵能给的对手是那 39 档 bot,不是人(它的 `get_online_users` 直接 `return []`)。
- *
- * **和「自由对弈 · 开局设置」(屏 02)同一副骨架**(左盘 516 + 16 + 右栏 460,右栏整栏滚,
- * 主行动键钉栏底),但配的是**别人家的引擎**:
- *
- * · **棋力档由那边下发** —— `API.platformEngineLevels` 拉的是 `GOLAXY_AI_LEVELS`
- *   那 39 档(星猛虎 / 星壮牛 / 星皮猴 …,每档带 `level_name` / `display_elo` / `ref_rank`)。
- *   **加载失败就是加载失败**,不给一份写死的兜底表 —— 那会让人选中一个星阵不认识的档。
- * · **让子和贴目是联动的**,贴目不是第二个可选项:分先→黑贴 7.5,让先→贴 0,让 N 子→黑贴 N 子
- *   (`app.js` 的口径)。「让子 · 我执」那一组的读数写的是**算出来的结果**,不是第二个控件。
- * · **不计时**:星阵这条链不带钟。
- *
- * ## 39 档怎么选:常驻的是步进器,全表是名牌点开的瞬态面板
- *
- * 稿子在步进器**下面**还摊开过一段常驻的 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
- * 那种**常驻**列表没有做,理由仍然成立、没有过期:
- *
- * ① **一屏一种选择手势。** 这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
- *    让子只有步进器,常驻对手再摊开一段带「选它」的列表,屏内自相矛盾。
- * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉:
- *    7″ 触屏上下拉要点两次才看得见选项。
- * ③ **摊开之后装不下。** 真浏览器量:39×52 + 38×8 ⇒ 那一段 390 高,而滚动视口只有 400 ——
- *    一段吃掉 97.5% 的视口,右栏 maxScroll 2627 ≈ 6.6 屏。
- *
- * 但 39 个值一个不少、全都走得到:`AiLevelSheet` 是名牌(`AiOpponentPlate`)点开才挂载的
- * 全表,`position:absolute` 相对 `.kiosk-rail`——**不盖左边那块盘**,关掉不留痕迹,不是
- * 「删掉又加回来」而是常驻列表和瞬态面板从一开始就是两件事。它能放行的原因是**手指跨不动
- * 那条轨**:39 档的 `KioskStepTrack` 每档约 8px,「换一档」按钮只能挪到相邻档,隔着十几档
- * 想跳过去只能长按连发;名牌点开是唯一能一步跳到任意一档的路。共享 `tokens.css` 已经在
- * `.kiosk-optseg` 规范上加了这条例外(2026-09-23),不再是这一屏单独违规。
- * `ref_rank`(名单上唯一不在步进器上的那一列)现在显示在名牌上(`AiOpponentPlate`),
- * 不在 `KioskStepTrack` 自带的 `.catmeta` 读数里 ——`readout={false}` 关掉了后者。
- *
- * ## 这一版改掉的三样
- *
- * ① **那块自己画的 300px `<svg>` 棋盘预览没了**,换成共享的 `KioskSetupBoard` ——
- *    布局 A 的左栏是 516 的真盘,四棋类同一套刻度带与木框;原来那块是这一屏自己发明的。
- * ② **两个 MUI `Menu` 下拉换成档位轨**(`KioskStepTrack`)。理由和屏 02 一样:
- *    7″ 触屏上下拉要点两次才看得见选项,而弹层正好盖住左边那块盘 —— 那块盘画的就是
- *    「按下开始之后会出现的局面」,调让子时它是唯一的反馈。
- * ③ **补上「怎么落子」那颗开关**。屏 02/03/04 已经接了(`utils/playInput`),
- *    这一屏之前漏了 —— 于是同一台盒子上,自由对弈选得了屏幕,跨平台却选不了。
- *    这一屏路数恒 19(星阵只开 19 路),所以 `notNineteen` 那一条永远不成立。
- */
-
-/** 让子 10 挡:分先 / 让先 / 让 2 – 让 9 子。**两头禁用不回绕** —— 见 `KioskStepTrack`。 */
+/** 星阵固定 19 路、中国规则；档位来自平台，让子与贴目沿用平台原有对应关系。 */
 const HANDICAP_TRACK = [0, -1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 const PlatformEngineSetupPage = () => {
@@ -89,13 +43,12 @@ const PlatformEngineSetupPage = () => {
   // 每帧重跑一次(屏 06 刚栽过同一个:`networkidle` 永远等不到)。
   const [levelsError, setLevelsError] = useState<string | null>(null);
   const [level, setLevel] = useState<number | null>(null);
-  const [handicapIdx, setHandicapIdx] = useState(0);
+  const [handicap, setHandicap] = useState<number>(0);
   const [humanColor, setHumanColor] = useState<'B' | 'W' | 'nigiri'>('nigiri');
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  const handicap = HANDICAP_TRACK[handicapIdx];
+  const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,9 +82,6 @@ const PlatformEngineSetupPage = () => {
     [isVisionEnabled, inputTick],
   );
 
-  const handicapLabel = handicap === 0 ? t('setup:even', '分先')
-    : handicap === -1 ? t('platform:black_first', '让先')
-      : interpolate(t('setup:handicap_n', '让 {n} 子'), { n: handicap });
   const komiLabel = handicap === 0 ? t('platform:komi_75', '黑贴 7.5 目')
     : handicap === -1 ? t('platform:komi_0', '不贴目')
       : interpolate(t('platform:komi_n', '黑贴 {n} 子'), { n: handicap });
@@ -144,7 +94,15 @@ const PlatformEngineSetupPage = () => {
       const { session_id } = await API.platformEngineStart(
         platform, { level, human_color: humanColor, handicap }, token,
       );
-      navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`, { state: backToState(location) });
+      const route = `/kiosk/play/cross-platform/engine/game/${session_id}`;
+      writeActiveSession({
+        kind: 'game',
+        label: interpolate(t('platform:engine_title', '{name} · 人机'), { name: t(meta.label, meta.labelCn) }),
+        route,
+        ts: Date.now(),
+        onBoard: playInput.onBoard,
+      });
+      navigate(route, { state: backToState(location) });
     } catch (e) {
       setStartError(platformErrorMessage(e, t('Failed to start game', '创建对局失败')));
     } finally {
@@ -161,7 +119,8 @@ const PlatformEngineSetupPage = () => {
         color={humanColor === 'B' ? 'black' : humanColor === 'W' ? 'white' : undefined}
       />
 
-      <div className="kiosk-rail">
+      <div className="kiosk-rail" data-su="platform" ref={setRailEl}>
+        <SetupPopoverHost.Provider value={railEl}>
         <KioskPagebar
           testId="platform-engine-pagebar"
           backLabel={t('platform:back_to_platforms', '跨平台')}
@@ -171,40 +130,39 @@ const PlatformEngineSetupPage = () => {
         />
 
         <KioskScrollZone className="setgrp-scroll">
-          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框。路数不占一行了:
-              星阵只开 19 路,那句事实降进了提示行的半句(见下)。 */}
-          <section className="setgrp inputgrp" data-testid="setup-input-group">
+          <section className="setgrp" data-testid="setup-game-group">
             <KioskSecLabel
-              zh={t('setup:input', '怎么落子')}
-              en="Input"
+              zh={t('setup:game_terms', '这局棋')}
+              en="Game"
               value={t('setup:locked_after_start', '开局后不可改')}
             />
-            <div className="igrow">
-              <span className="iglab">{t('setup:input_where', '落子')}</span>
-              <KioskOptSeg
-                ariaLabel={t('setup:input_where', '落子')}
-                testId="setup-input"
-                value={playInput.onBoard ? 'board' : 'screen'}
-                onChange={(v) => { writePlayOnBoard(v === 'board'); setInputTick((n) => n + 1); }}
-                options={[
-                  { value: 'screen', label: t('setup:on_screen', '屏幕') },
-                  { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
-                ]}
+            <div className="su-row">
+              <SetupFixed label={t('setup:size', '路数')} value={t('setup:size_19', '19 路')} testId="setup-size" />
+              <SetupFixed label={t('Rules', '规则')} value={RULE_LABEL(t).chinese} testId="setup-rules" />
+              <SetupSelect
+                testId="setup-handicap"
+                label={t('Handicap', '让子')}
+                value={String(handicap)}
+                columns={2}
+                options={HANDICAP_TRACK.map((n) => ({
+                  key: String(n),
+                  label: n === 0 ? t('setup:even', '分先')
+                    : n === -1 ? t('platform:black_first', '让先')
+                      : interpolate(t('setup:handicap_n', '让 {n} 子'), { n }),
+                }))}
+                onChange={(k) => setHandicap(Number(k))}
               />
             </div>
-            {/* 路数不是控件也不占一行:星阵只开 19 路。这句提示同时替掉了原来
-                「这一局会是」段里的规则/路数两项 —— 400px 视口装不下第五段。 */}
-            <p className="kiosk-opthint" data-testid="setup-input-hint">
-              {playInput.available
-                ? interpolate(
-                    t('platform:engine_fixed_hint', '{name}人机固定 19 路 · 中国规则，屏幕和实体盘走同一条隧道'),
-                    { name: t(meta.label, meta.labelCn) },
-                  )
-                : t('setup:no_camera_hint', '这台盒子还没标定摄像头，实体盘这条路现在走不了')}
-            </p>
+            <SetupDerived
+              testId="setup-komi"
+              label={t('Komi', '贴目')}
+              note={t('setup:komi_derived', '随规则和让子定')}
+            >
+              {komiLabel}
+            </SetupDerived>
           </section>
 
-          {/* ── 对手 ── 39 档由平台下发;名牌收读数,轨只负责推档 */}
+          {/* 棋力档只从平台名单选，名牌点开完整菜单。 */}
           <section className="setgrp" data-testid="setup-opponent">
             {levelsLoading ? (
               <>
@@ -241,56 +199,47 @@ const PlatformEngineSetupPage = () => {
                     testId="setup-opponent-plate"
                   />
                 )}
-                <KioskStepTrack
-                  count={sorted.length}
-                  index={Math.max(0, currentIdx)}
-                  onChange={(i) => setLevel(sorted[i].elo_score)}
-                  value=""
-                  readout={false}
-                  decLabel={t('platform:weaker', '换弱一档的对手')}
-                  incLabel={t('platform:stronger', '换强一档的对手')}
-                  testId="setup-level"
-                />
               </>
             )}
           </section>
 
-          {/* ── 让子 · 我执 ── 贴目跟着让子算,写在组标题右端,不再单占一段 ──
-              两列前面**不再各带一个小标签**(2026-09-27):组标题已经写了「让子 · 我执」,
-              而 460 宽一行里放下 −/十档轨/+ 和三段长译文按钮,就差这 76px(jp/ko/es 量过)。 */}
-          <section className="setgrp" data-testid="setup-handicap-side">
-            <KioskSecLabel
-              zh={t('setup:handicap_side', '让子 · 我执')}
-              en="Handicap"
-              value={<>{handicapLabel} · {komiLabel}</>}
-            />
-            <div className="twocol">
-              <div className="tcol">
-                <KioskStepTrack
-                  count={HANDICAP_TRACK.length}
-                  index={handicapIdx}
-                  onChange={setHandicapIdx}
-                  value=""
-                  readout={false}
-                  decLabel={t('setup:handicap_less', '少让一子')}
-                  incLabel={t('setup:handicap_more', '多让一子')}
-                  testId="setup-handicap-track"
-                />
-              </div>
-              <div className="tcol">
-                <KioskOptSeg
-                  ariaLabel={t('setup:my_side', '我执')}
-                  testId="setup-side-seg"
-                  value={humanColor}
-                  onChange={setHumanColor}
-                  options={[
-                    { value: 'nigiri', label: <><span className="disc rnd" />{t('platform:nigiri', '猜先')}</> },
-                    { value: 'B', label: <><span className="disc b" />{t('setup:take_black', '执黑')}</> },
-                    { value: 'W', label: <><span className="disc w" />{t('setup:take_white', '执白')}</> },
-                  ]}
-                />
-              </div>
+          <section className="setgrp" data-testid="setup-seat-group">
+            <KioskSecLabel zh={t('setup:seat', '怎么坐')} en="Seat" />
+            <div className="su-row su-row--2">
+              <SetupSelect
+                testId="setup-input"
+                label={t('setup:input_where', '落子')}
+                value={playInput.onBoard ? 'board' : 'screen'}
+                options={[
+                  { key: 'screen', label: t('setup:on_screen', '屏幕') },
+                  {
+                    key: 'board', label: t('setup:on_board', '实体盘'),
+                    disabled: !playInput.available,
+                    reason: t('setup:board_not_ready', '没标定过摄像头'),
+                  },
+                ]}
+                onChange={(k) => { writePlayOnBoard(k === 'board'); setInputTick((n) => n + 1); }}
+              />
+              <SetupSelect
+                testId="setup-side"
+                label={t('setup:my_side', '我执')}
+                value={humanColor}
+                options={[
+                  { key: 'nigiri', label: <><span className="disc rnd" />{t('platform:nigiri', '猜先')}</> },
+                  { key: 'B', label: <><span className="disc b" />{t('setup:take_black', '执黑')}</> },
+                  { key: 'W', label: <><span className="disc w" />{t('setup:take_white', '执白')}</> },
+                ]}
+                onChange={(k) => setHumanColor(k as 'B' | 'W' | 'nigiri')}
+              />
             </div>
+            <p className="su-hint" data-testid="setup-input-hint">
+              {playInput.available
+                ? interpolate(
+                    t('platform:engine_fixed_hint', '{name}人机固定 19 路 · 中国规则，屏幕和实体盘走同一条隧道'),
+                    { name: t(meta.label, meta.labelCn) },
+                  )
+                : t('setup:no_camera_hint', '这台盒子还没标定摄像头，实体盘这条路现在走不了')}
+            </p>
           </section>
         </KioskScrollZone>
 
@@ -315,6 +264,7 @@ const PlatformEngineSetupPage = () => {
         >
           {starting ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
         </button>
+        </SetupPopoverHost.Provider>
       </div>
     </div>
   );

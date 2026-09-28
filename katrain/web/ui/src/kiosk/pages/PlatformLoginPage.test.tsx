@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -116,6 +116,34 @@ describe('登录独立成页', () => {
     await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'text');
     expect(screen.getByTestId('login-sms-request')).toHaveTextContent('获取验证码');
+  });
+
+  it('验证码发送成功后从 60 秒倒数,结束后可以重发', async () => {
+    renderLogin('golaxy');
+    const tabs = await screen.findByTestId('login-mode-tabs');
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
+    const request = screen.getByTestId('login-sms-request');
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(request);
+        await Promise.resolve();
+      });
+      expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '13800000000', 'tok');
+      expect(request).toHaveTextContent('60 秒后可重发');
+      expect(request).toBeDisabled();
+
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(request).toHaveTextContent('59 秒后可重发');
+
+      act(() => { vi.advanceTimersByTime(59000); });
+      expect(request).toHaveTextContent('获取验证码');
+      expect(request).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('星阵密码模式提交发 password,不是 sms_code', async () => {

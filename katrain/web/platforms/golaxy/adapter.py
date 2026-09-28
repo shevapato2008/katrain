@@ -1,7 +1,7 @@
 """Golaxy / 星阵围棋 (19x19.com) platform adapter.
 
 REST API for game actions + STOMP over SockJS for real-time events.
-Auth: phone-only (+86 Chinese mobile number).
+Auth: phone number with selected international calling code.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import itertools
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -319,13 +320,18 @@ class GolaxyRestClient:
 
     # --- Auth ---
 
+    @staticmethod
+    def _phone_principal(phone: str) -> str:
+        """Accept the selected area prefix while keeping old bare +86 credentials working."""
+        return phone if re.match(r"00[1-9]\d{0,3}-", phone) else f"0086-{phone}"
+
     async def login_password(self, phone: str, password: str) -> dict:
         """Login with phone number and password."""
         client = await self._ensure_client()
         resp = await client.post(
             "/api/auth/oauth/token",
             data={
-                "username": f"0086-{phone}",
+                "username": self._phone_principal(phone),
                 "password": password,
                 "grant_type": "password",
                 "client_id": "golaxy_web",
@@ -345,14 +351,14 @@ class GolaxyRestClient:
     async def login_sms(self, phone: str, code: str) -> dict:
         """Login with phone number and SMS verification code.
 
-        Verified format from browser capture:
-          username=0086-{phone}&password=null&grant_type=sms_code&client_id=golaxy_web&sms_code={code}&scope=any
+        Browser format: username=00{dial}-{phone}, with the other OAuth fields
+        unchanged. A bare phone uses +86 for saved-credential compatibility.
         """
         client = await self._ensure_client()
         resp = await client.post(
             "/api/auth/oauth/token",
             data={
-                "username": f"0086-{phone}",
+                "username": self._phone_principal(phone),
                 "password": "null",
                 "grant_type": "sms_code",
                 "client_id": "golaxy_web",
@@ -400,10 +406,11 @@ class GolaxyRestClient:
 
     async def request_sms_code(self, phone: str) -> bool:
         """Request SMS verification code."""
+        area, local_phone = self._phone_principal(phone).split("-", 1)
         client = await self._ensure_client()
         resp = await client.get(
             "/api/auth/sms/code",
-            params={"username": phone, "login": "true", "area": "0086"},
+            params={"username": local_phone, "login": "true", "area": area},
             headers={
                 "Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -448,7 +455,7 @@ class GolaxyRestClient:
         only ever ADD a principal, never remove one."""
         if not username:
             return
-        self._username = username if username.startswith("0086-") else f"0086-{username}"
+        self._username = self._phone_principal(username)
 
     def clear_username(self) -> None:
         """Explicitly forget the login principal — the deliberate counterpart

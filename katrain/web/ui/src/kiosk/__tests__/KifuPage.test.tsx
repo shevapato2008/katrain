@@ -110,8 +110,12 @@ describe('屏 15 棋谱 · 问候与列表头', () => {
 describe('屏 15 棋谱 · 名局列表默认摊开', () => {
   it('进来就拉第一页六局并铺出行 —— 不先探一个数、不等谁按开关', async () => {
     renderPage();
-    const rows = await screen.findAllByText('柯洁 对 申真谞');
+    const rows = await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
     expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveClass('kifu-record');
+    expect(rows[0]).toHaveTextContent('2026-06-30');
+    expect(rows[0]).toHaveTextContent('241 手');
+    expect(rows[0]).toHaveTextContent('B+R');
     // 判据落在请求形状上:只有一发,就是列表本身。旧写法挂载时先发一发 page_size: 1 探总数。
     expect(getAlbums).toHaveBeenCalledTimes(1);
     expect(getAlbums).toHaveBeenCalledWith({ q: undefined, page: 1, page_size: 6 });
@@ -126,8 +130,8 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
 
   it('点一行进屏 16 的详情', async () => {
     renderPage();
-    const rows = await screen.findAllByText('柯洁 对 申真谞');
-    fireEvent.click(rows[0].closest('button')!);
+    const rows = await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
+    fireEvent.click(rows[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
   });
 
@@ -141,7 +145,7 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
 
   it('搜了对不上:说「没有对得上的谱」并给换词的提示', async () => {
     renderPage();
-    await screen.findAllByText('柯洁 对 申真谞');
+    await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
     getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 6 });
     fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '不存在' } });
     expect(await screen.findByText('没有对得上的谱')).toBeInTheDocument();

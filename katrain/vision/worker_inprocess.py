@@ -317,6 +317,7 @@ class InProcessAdapter:
         self._denial_sampler: CellSampler | None = None
         self._last_ref_gray: np.ndarray | None = None
         self._glow_pending: set[tuple[int, int]] = set()
+        self._glow_lit_at = 0.0
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
@@ -762,6 +763,7 @@ class InProcessAdapter:
                 "data": {
                     "row": int(row),
                     "col": int(col),
+                    "lit_at": self._glow_lit_at,
                     "ok": bool(result.ok),
                     "score": round(float(result.score), 1),
                     "peak": round(float(result.peak), 1),
@@ -1457,6 +1459,7 @@ class InProcessAdapter:
                     # A lamp just came on: the last frame read before this command is its dark reference.
                     self._glow_ref = self._last_raw
                     self._glow_pending = lit - self._lit_points
+                    self._glow_lit_at = time.monotonic()
                     self._glow_wait = GLOW_SETTLE_FRAMES
                 elif not lit:
                     self._glow_ref, self._glow_pending = None, set()

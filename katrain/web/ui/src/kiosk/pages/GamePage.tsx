@@ -4,7 +4,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
 // by the endgame result card below.
 // 顶条那三颗常亮状态灯(Videocam / GpsFixed)和 Refresh、ExitToApp 一起撤了 ——
-// 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
+// 标题与返回归页控条,状态显示归 L1 镜像栏。
 import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
@@ -246,10 +246,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }, [sessionGone]);
 
   const [reviewError, setReviewError] = useState(false);
-  // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
-  // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
-  const resyncingRef = useRef(false);
-  const [resyncError, setResyncError] = useState(false);
   const [connectionNoticeDismissed, setConnectionNoticeDismissed] = useState(false);
 
   // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
@@ -275,13 +271,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
-  // refreshStatus drives the 重置识别 recovery button clearing immediately on success.
-  const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
+  const { visionStatus, isVisionEnabled } = useVision();
 
   // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
   // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
   // 「屏幕 / 实体盘」,偏好存在 `utils/playInput.ts`;这一屏下面**每一处**实体盘 UI
-  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、重置识别键、识别浮层、
+  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、识别浮层、
   // 引擎落子错误弹层)认的都得是**两段之和**,不是设备那一段。
   //
   // 偏好只在**挂载时读一次**:这一局落在哪儿是开局那一刻定的(开局设置屏上写着
@@ -515,26 +510,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     API.hintDismiss().catch(() => undefined);
   }, []);
 
-  // Always-available fallback when vision sync gets stuck (blue-LED / 确认中 deadlock):
-  // re-baseline to the digital board, drop the stuck removal, resume detection. Refresh
-  // status on success so the button clears immediately instead of after the ≤3s poll;
-  // surface a failure instead of silently swallowing it.
-  const handleResetSync = useCallback(async () => {
-    if (resyncingRef.current) return;   // 双击守卫:页控条那个图标键没有忙碌态可显示
-    resyncingRef.current = true;
-    try {
-      await API.visionResetSync();
-      await refreshStatus();
-    } catch {
-      setResyncError(true);
-    } finally {
-      resyncingRef.current = false;
-    }
-  }, [refreshStatus]);
-
-  // 「卡了 10 秒才把重置识别键放出来」那一整套(`stuckEligible` + `syncStuck` 计时器)撤了:
-  // 它存在的唯一理由是「别在例行拍照时闪一个警告按钮」—— 而现在这个键不是警告,是页控条上
-  // 常驻的那个页级图标键(§11),实体模式下一直在。**必须先卡住一次才能自救**是上一版的形状。
   // Remaining-道具 counts for the button badges. Account-level (not per-game),
   // so it's safe to fetch once on mount and re-fetch after each analysis settles
   // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
@@ -1105,7 +1080,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* §11 布局 A:盘 516 贴 x16 + 16 + 右栏 460。三个数一个都不写死 ——
           `.kiosk-layout-a` / `.kiosk-board` 用的是 `tokens.css` 的 `--board-size` / `--content-x`。
 
-          上一版这里是**一条 46 高的自定义顶条**(标题 + 三颗视觉状态灯 + 重置识别 + 退出)
+          上一版这里是**一条 46 高的自定义顶条**(标题 + 三颗视觉状态灯 + 退出)
           加一个 `flex` 的盘/面板并排。两处不对:
             · 标题和返回属于**页控条**(§11 恒在 y70–114),不许各屏自己搭一条;
             · 三颗常亮状态灯是 **L1 镜像栏**的东西(§5),L3 上没有它们的位置。
@@ -1148,15 +1123,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onBack={handleExit}
             title={gameTitle}
             sub={gameSetupLine}
-            // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
-            // 以屏幕上的数字棋盘为权威重建识别基线。上一版它只在 `syncStuck` 之后才出现 ——
-            // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
-            action={physicalPlay ? {
-              icon: 'arrows-clockwise',
-              label: t('vision:resync_screen_authority', '重置识别 · 以屏幕上的数字棋盘局面为准'),
-              visibleLabel: t('Re-sync', '重置识别'),
-              onClick: () => { void handleResetSync(); },
-            } : undefined}
           />
           <GameControlPanel
             onTimeout={localGame ? undefined : handleClockExpired}
@@ -1430,14 +1396,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Snackbar>
       <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
-      </Snackbar>
-
-      {/* Re-sync (重置识别) failure toast */}
-      <Snackbar open={resyncError} autoHideDuration={5000} onClose={() => setResyncError(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="error" onClose={() => setResyncError(false)}>
-          {t('Re-sync failed, please retry', '重置识别失败，请重试')}
-        </Alert>
       </Snackbar>
 
       {/* Review (复盘) save-SGF failure toast */}

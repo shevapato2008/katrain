@@ -661,16 +661,6 @@
   color: var(--text);
   cursor: pointer;
 }
-.kiosk-pagebar__iconbtn--labeled {
-  width: auto;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 0 12px;
-  line-height: 1;
-}
 .kiosk-pagebar__iconbtn svg { width: 18px; height: 18px; }
 
 /* §11 分段控件(2D/3D、屏幕/实体盘) */

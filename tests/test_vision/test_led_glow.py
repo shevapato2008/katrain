@@ -8,6 +8,7 @@ brightens the guidance lamps from it.
 
 from types import SimpleNamespace
 from unittest.mock import patch
+import time
 
 import numpy as np
 
@@ -76,12 +77,15 @@ def test_a_newly_lit_lamp_is_measured_against_the_frame_from_before_it_came_on()
     adapter = _adapter()
     adapter._last_raw = DARK
     adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[5, 7]]}))
+    before_lit = time.monotonic()
     adapter._drain_commands()
+    after_lit = time.monotonic()
     assert adapter._glow_ref is DARK and adapter._glow_pending == {(5, 7)}
     assert adapter._glow_wait == GLOW_SETTLE_FRAMES
     adapter._measure_pending_glow(_lamp(5, 7, 120))
     [event] = _glow_events(adapter)
     assert event["row"] == 5 and event["col"] == 7 and event["ok"] and event["score"] > 0
+    assert before_lit <= event["lit_at"] <= after_lit
     assert adapter._glow_pending == set()  # one measurement per lamp
 
 

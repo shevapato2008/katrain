@@ -74,9 +74,8 @@ test('四图:对局中 ←→ sample-go/shots/05-game.png', async ({ page }) => 
     if (path === '/api/v1/auth/me') {
       return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
     }
-    // 摄像头三格在这一屏上**没有位置**(§5 状态显示归 L1 镜像栏)。这里把实体识别整条关掉,
-    // 取图机器上本来也没有摄像头 —— 开着只会让「重置识别」那个页级图标键出现在一台
-    // 根本没有实体盘的机器上。**那个键在真盒子上是有的**,标签带里写明了。
+    // 摄像头三格在这一屏上**没有位置**(§5 状态显示归 L1 镜像栏)。取图机器没有摄像头，
+    // 这里把实体识别整条关掉。
     if (path === '/api/v1/vision/status') {
       return route.fulfill({ json: { enabled: false, camera_connected: false, pose_locked: false,
         sync_state: 'unbound', recognition_ready: false, led_connected: null, bound_session_id: null } });
@@ -99,7 +98,7 @@ test('四图:对局中 ←→ sample-go/shots/05-game.png', async ({ page }) => 
     slug: '05-game',
     referenceCaption: '参考:sample-go/shots/05-game.png · 稿子上解释「为什么不画胜率曲线」那段是旁注(已作废)·.note 一律不上线',
     implementationCaption:
-      '实现:/kiosk/play/ai/game @1024×600 · 局面/胜率曲线是 fixture(照搬稿子那一局)· 实体识别关着 ⇒ 页控条右端那个「重置识别」键在真盒子上才出现 · 盘是共享 Board(canvas)+ externalRulers',
+      '实现:/kiosk/play/ai/game @1024×600 · 局面/胜率曲线是 fixture(照搬稿子那一局)· 实体识别关着 · 盘是共享 Board(canvas)+ externalRulers',
   });
   console.log('[fourup 05-game]', JSON.stringify(r));
 });

@@ -49,6 +49,7 @@ vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: vi.fn().mock
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: vi.fn() }));
 
 const vision = vi.hoisted(() => ({ enabled: false, poseLocked: true, realSync: false }));
+const visionBinding = vi.hoisted(() => vi.fn());
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
     visionStatus: {
@@ -62,9 +63,12 @@ vi.mock('../context/VisionContext', () => ({
 vi.mock('../hooks/useVisionSync', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../hooks/useVisionSync')>();
   return {
-    useVisionSync: (sessionId: string | null) => vision.realSync
-      ? actual.useVisionSync(sessionId)
-      : { syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false },
+    useVisionSync: (sessionId: string | null) => {
+      visionBinding(sessionId);
+      return vision.realSync
+        ? actual.useVisionSync(sessionId)
+        : { syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false };
+    },
   };
 });
 
@@ -614,12 +618,11 @@ describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
     physical();
     sessionMock.physicalReminder = { kind: 'escalation', to_place: [], to_remove: [] };
     const view = renderPage();
-    // MUI 弹框为页面加 aria-hidden；否定断言也必须包含隐藏元素，不能因过渡期被藏而误绿。
-    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    expect(visionBinding).toHaveBeenLastCalledWith('play-ai-s1');
     fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
     vision.poseLocked = false;
     view.rerender(pageTree());
-    await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
+    expect(visionBinding).toHaveBeenLastCalledWith(null);
     expect(screen.queryByText('棋盘可能被移动')).toBeNull();
     expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBe('1');
     // 解绑前已排队的旧实体盘通知不能把提示重新打开。
@@ -635,7 +638,6 @@ describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
     view.unmount();
     sessionMock.physicalReminder = null;
     renderPage();
-    expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
     expect(screen.queryByText('棋盘可能被移动')).toBeNull();
   });
 
@@ -643,11 +645,11 @@ describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
     physical();
     sessionStorage.setItem('kiosk_screen_fallback:play-ai-s2', '1');
     render(pageTree(true));
-    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    expect(visionBinding).toHaveBeenLastCalledWith('play-ai-s1');
     fireEvent.click(screen.getByText('SESSION_2'));
-    expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
+    expect(visionBinding).toHaveBeenLastCalledWith(null);
     fireEvent.click(screen.getByText('SESSION_1'));
-    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    expect(visionBinding).toHaveBeenLastCalledWith('play-ai-s1');
     expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBeNull();
   });
 
@@ -676,7 +678,7 @@ describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
     try {
       await waitFor(() => expect(bind).toHaveBeenCalledWith('play-ai-s1'));
       fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
-      await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
+      await waitFor(() => expect(unbind).toHaveBeenCalledTimes(1));
       expect(bind).toHaveBeenCalledTimes(1);
       expect(unbind).toHaveBeenCalledTimes(1);
       view.unmount();

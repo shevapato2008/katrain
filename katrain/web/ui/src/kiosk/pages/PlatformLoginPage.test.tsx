@@ -100,6 +100,7 @@ describe('登录独立成页', () => {
     renderLogin('golaxy');
     await toPasswordTab();
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'password');
+    expect(screen.getByTestId('login-phone-area')).toHaveValue('中国');
   });
 
   it('OGS 只有一种登录方式,标签栏整条不渲染', async () => {
@@ -107,6 +108,7 @@ describe('登录独立成页', () => {
     await screen.findByTestId('login-field-user');
     expect(screen.queryByTestId('login-mode-tabs')).not.toBeInTheDocument();
     expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-phone-area')).not.toBeInTheDocument();
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'password');
   });
 
@@ -131,7 +133,7 @@ describe('登录独立成页', () => {
         fireEvent.click(request);
         await Promise.resolve();
       });
-      expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '13800000000', 'tok');
+      expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '0086-13800000000', 'tok');
       expect(request).toHaveTextContent('60 秒后可重发');
       expect(request).toBeDisabled();
 
@@ -153,7 +155,7 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
-      'golaxy', { username: '13800000000', password: 'secret123' }, 'tok',
+      'golaxy', { username: '0086-13800000000', password: 'secret123' }, 'tok',
     ));
   });
 
@@ -165,7 +167,30 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-password'), '123456');
     await userEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
-      'golaxy', { username: '13800000000', sms_code: '123456' }, 'tok',
+      'golaxy', { username: '0086-13800000000', sms_code: '123456' }, 'tok',
+    ));
+  });
+
+  it('切换区号后，密码与验证码请求使用同一个区号', async () => {
+    platformLogin.mockRejectedValue(new Error('stay on login page'));
+    renderLogin('golaxy');
+    const tabs = await toPasswordTab();
+    await userEvent.selectOptions(screen.getByTestId('login-phone-area'), '中国台湾');
+    await userEvent.type(screen.getByTestId('login-field-user'), '912345678');
+    await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
+      'golaxy', { username: '00886-912345678', password: 'secret123' }, 'tok',
+    ));
+
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    expect(screen.getByTestId('login-phone-area')).toHaveValue('中国台湾');
+    await userEvent.click(screen.getByTestId('login-sms-request'));
+    await waitFor(() => expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '00886-912345678', 'tok'));
+    await userEvent.type(screen.getByTestId('login-field-password'), '123456');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(platformLogin).toHaveBeenLastCalledWith(
+      'golaxy', { username: '00886-912345678', sms_code: '123456' }, 'tok',
     ));
   });
 
@@ -175,6 +200,16 @@ describe('登录独立成页', () => {
     await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
     await userEvent.click(screen.getByTestId('login-sms-request'));
     expect(await screen.findByTestId('login-error')).toHaveTextContent('请先输入手机号');
+    expect(platformSmsRequest).not.toHaveBeenCalled();
+  });
+
+  it('手机号含区号或空格时提示只填写本地区号码', async () => {
+    renderLogin('golaxy');
+    const tabs = await screen.findByTestId('login-mode-tabs');
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    await userEvent.type(screen.getByTestId('login-field-user'), '+86 13800000000');
+    await userEvent.click(screen.getByTestId('login-sms-request'));
+    expect(screen.getByTestId('login-error')).toHaveTextContent('手机号只能输入数字');
     expect(platformSmsRequest).not.toHaveBeenCalled();
   });
 

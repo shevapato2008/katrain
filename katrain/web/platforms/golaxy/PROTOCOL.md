@@ -27,18 +27,18 @@ Authorization: Basic Z29sYXh5X3dlYjp4aW5nemhlbjA3MzA=
 (golaxy_web:xingzhen0730)
 ```
 
-**SMS code request:** `GET /api/auth/sms/code?username=PHONE&login=true&area=0086`
-- Note: area is `0086` not `86`
+**SMS code request:** `GET /api/auth/sms/code?username=PHONE&login=true&area=00{DIAL}`
+- The selected calling code uses a `00` prefix (`+86` → `0086`, `+886` → `00886`).
 
 **SMS login (verified body):**
 ```
-username=0086-{PHONE}&password=null&grant_type=sms_code&client_id=golaxy_web&sms_code={CODE}&scope=any
+username=00{DIAL}-{PHONE}&password=null&grant_type=sms_code&client_id=golaxy_web&sms_code={CODE}&scope=any
 ```
-- Key differences: username has `0086-` prefix, field is `sms_code` not `code`, includes `password=null`, `client_id`, `scope=any`
+- Key differences: username includes the selected calling code, field is `sms_code` not `code`, includes `password=null`, `client_id`, `scope=any`
 
 **Password login:**
 ```
-username=0086-{PHONE}&password={PWD}&grant_type=password&client_id=golaxy_web&scope=any
+username=00{DIAL}-{PHONE}&password={PWD}&grant_type=password&client_id=golaxy_web&scope=any
 ```
 
 **Token refresh:**

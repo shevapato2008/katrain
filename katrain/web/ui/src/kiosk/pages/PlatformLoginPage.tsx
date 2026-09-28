@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from 'react';
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -11,6 +11,7 @@ import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { PLATFORM_META } from '../constants/platforms';
+import GOLAXY_PHONE_AREAS from '../constants/golaxyPhoneAreas.json';
 import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
 import { GolaxyScanPanel } from '../components/platform/GolaxyScanPanel';
 
@@ -37,11 +38,11 @@ import { GolaxyScanPanel } from '../components/platform/GolaxyScanPanel';
  * 设计源 07b(密码标签)markup 里字段仍标「手机号」,不是「用户名」——星阵的账号体系
  * 本身就是手机号,密码只是换了一种凭证,不是换了一种账号。
  *
- * ## API 契约(`src/api.ts:641-647`,不改)
+ * ## API 契约(`src/api.ts:641-647`)
  *
  * `platformLogin(platform, { username, password?, sms_code? }, token)`——验证码模式发
- * `sms_code`,密码模式发 `password`,两种模式的 `username` 都是这个页面「账号」那一格的值
- * (星阵是手机号,OGS 是用户名)。
+ * `sms_code`,密码模式发 `password`。星阵账号使用 `00{区号}-{手机号}`，
+ * OGS 保持原来的用户名。
  */
 
 type LoginMode = 'scan' | 'sms' | 'password';
@@ -60,6 +61,8 @@ const PLATFORM_LOGIN_MODES: Record<string, readonly LoginMode[]> = {
   golaxy: ['scan', 'sms', 'password'],
   ogs: ['password'],
 };
+
+// 星阵官网公开的 countryCode.json 区号列表；官网优先展示的十项排在前面。
 
 /** 星阵能给的对手是那 39 档 bot,不是人 ⇒ 登录成功进人机开局;其余家进大厅。
  * 这条判据和 `PlayPage`/`PlatformConnectPage` 里「`supports_engine_play` 决定去向」
@@ -81,9 +84,11 @@ function XpField(props: {
   onChange: (v: string) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   tapHint: string;
+  prefix?: ReactNode;
 }) {
   return (
     <span className="xpfield">
+      {props.prefix}
       <input
         data-testid={props.testId}
         type={props.type}
@@ -111,6 +116,7 @@ const PlatformLoginPage = () => {
   );
 
   const [account, setAccount] = useState('');
+  const [phoneArea, setPhoneArea] = useState(GOLAXY_PHONE_AREAS[0]);
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -146,6 +152,7 @@ const PlatformLoginPage = () => {
   const loginTitle = spaceCjkLatin(interpolate(t('platform:login_title', '登录{name}'), { name: shortName }));
   const isSms = mode === 'sms';
   const isScan = mode === 'scan';
+  const loginAccount = platform === 'golaxy' ? `00${phoneArea.dial}-${account.trim()}` : account;
 
   // 每一家、每一种模式各自一句原话,不套「用{name}的账号密码登录」这种模板 ——
   // 稿子里三屏各说各的:07b(星阵密码)是「用星阵的账号密码登录」,08(OGS)是
@@ -172,10 +179,14 @@ const PlatformLoginPage = () => {
   const sendSms = async () => {
     if (!isAuthenticated) return;
     if (!account.trim()) { setError(t('platform:need_phone', '请先输入手机号')); return; }
+    if (platform === 'golaxy' && !/^\d+$/.test(account.trim())) {
+      setError(t('platform:phone_digits_only', '手机号只能输入数字'));
+      return;
+    }
     setSmsBusy(true);
     setError('');
     try {
-      await API.platformSmsRequest(platform, account, token);
+      await API.platformSmsRequest(platform, loginAccount, token);
       setSmsLeft(60);
       setSmsCooldownUntil(Date.now() + 60_000);
     } catch (e) {
@@ -187,12 +198,16 @@ const PlatformLoginPage = () => {
 
   const submit = async () => {
     if (!isAuthenticated) return;
+    if (platform === 'golaxy' && !/^\d+$/.test(account.trim())) {
+      setError(t('platform:phone_digits_only', '手机号只能输入数字'));
+      return;
+    }
     setBusy(true);
     setError('');
     try {
       await API.platformLogin(
         platform,
-        isSms ? { username: account, sms_code: secret } : { username: account, password: secret },
+        isSms ? { username: loginAccount, sms_code: secret } : { username: loginAccount, password: secret },
         token,
       );
       goToConnectedDest();
@@ -250,6 +265,21 @@ const PlatformLoginPage = () => {
                     value={account}
                     onChange={setAccount}
                     tapHint={t('local:tap_to_type', '点此输入')}
+                    prefix={platform === 'golaxy' ? (
+                      <select
+                        className="xpfield__area"
+                        data-testid="login-phone-area"
+                        aria-label="国家或地区区号"
+                        value={phoneArea.name}
+                        onChange={(e) => setPhoneArea(
+                          GOLAXY_PHONE_AREAS.find(({ name }) => name === e.target.value) ?? GOLAXY_PHONE_AREAS[0],
+                        )}
+                      >
+                        {GOLAXY_PHONE_AREAS.map(({ name, dial }) => (
+                          <option key={name} value={name}>{name} +{dial}</option>
+                        ))}
+                      </select>
+                    ) : undefined}
                   />
                 </div>
 

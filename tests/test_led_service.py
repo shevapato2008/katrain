@@ -711,9 +711,16 @@ def _capturing_service():
 def test_guidance_brightness_scales_every_lamp_and_never_turns_a_lit_channel_off():
     svc, sent = _capturing_service()
     svc.set_guidance_scale(0.5)
-    svc.set_points([{"row": 3, "col": 3, "color": "white"}, {"row": 4, "col": 4, "color": "hint"}])
+    svc.set_points(
+        [
+            {"row": 3, "col": 3, "color": "white"},
+            {"row": 4, "col": 4, "color": "hint"},
+            {"row": 5, "col": 5, "color": "black"},
+        ]
+    )
     assert sent[-1][1] == f"SETI {rc2idx(3, 3)} 0 128 0"
     assert sent[-1][2] == f"SETI {rc2idx(4, 4)} 128 128 128"
+    assert sent[-1][3] == f"SETI {rc2idx(5, 5)} 128 0 0"
     svc.set_guidance_scale(0.0)  # clamped to the floor; a lit channel stays lit
     svc.set_points([{"row": 3, "col": 3, "color": "white"}])
     green = int(sent[-1][1].split()[3])

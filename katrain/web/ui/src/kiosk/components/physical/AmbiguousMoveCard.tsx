@@ -37,7 +37,7 @@ const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfi
     : null;
 
   return (
-    <Dialog open maxWidth="xs" fullWidth>
+    <Dialog open maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
       <DialogTitle>
         {unbacked ? (
           relocationText ?? (who

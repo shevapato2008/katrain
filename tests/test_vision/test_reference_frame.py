@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig
-from katrain.vision.reference_frame import ReferenceFrame, build_sampler, to_gray
+from katrain.vision.reference_frame import ReferenceFrame, build_sampler, cell_zncc, sample_cell, to_gray
 
 BLACK, WHITE = 1, 2
 SIZE = 1056
@@ -807,6 +807,31 @@ def test_denial_masks_the_false_stone_without_rewriting_recognition_history():
     assert (9, 9) in adapter._denied
 
 
+def test_denial_under_lamp_waits_for_fresh_unlit_frames_and_keeps_feedback():
+    dark = _board_frame()
+    lit = _board_frame([(9, 9, WHITE)])  # distinctive cell pixels stand in for violet glare
+
+    def commands(worker, frames_left):
+        if frames_left == 5:  # after first dark frame, before the lit frame
+            worker._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[9, 9]]}))
+        elif frames_left == 4:  # deny while the previous/current frame is lit
+            worker._cmd_queue.put(WorkerCommand(action=CommandType.DENY_STONE, data={"row": 9, "col": 9}))
+        elif frames_left == 3:  # LED clear arrives after the denial
+            worker._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": []}))
+        elif frames_left == 2:  # frame 3 was still lit; the feedback must be pending
+            assert (9, 9) not in worker._denied
+            assert (9, 9) in worker._pending_denials
+
+    worker = _run_loop("on", [dark, lit, lit, dark, dark, dark], [[]] * 6, _empty_board(), on_read=commands)
+
+    assert worker._pending_denials == set()
+    assert (9, 9) in worker._denied
+    expected = sample_cell(worker._denial_sampler, to_gray(dark), 9, 9)
+    glare = sample_cell(worker._denial_sampler, to_gray(lit), 9, 9)
+    assert cell_zncc(worker._denied[(9, 9)], expected) > 0.99
+    assert cell_zncc(worker._denied[(9, 9)], glare) < 0.9
+
+
 def test_a_real_stone_changes_pixels_and_releases_the_denial():
     adapter = _adapter("on")
     _deny_at(adapter, _board_frame())
@@ -862,6 +887,19 @@ def test_game_record_releases_a_denial_when_it_has_a_stone():
 
     assert adapter._denied == {}
     assert adapter._mask_denied(board, adapter._live_denials(to_gray(_board_frame())))[9][9] == WHITE
+
+
+def test_game_record_cancels_deferred_denial_at_a_real_stone():
+    adapter = _adapter("on")
+    adapter._lit_points = {(9, 9)}
+    adapter._deny_stone(9, 9)
+    board = _empty_board()
+    board[9][9] = WHITE
+
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+    adapter._drain_commands()
+
+    assert adapter._pending_denials == set()
 
 
 @pytest.mark.parametrize("action", ["bind", "unbind", "geometry"])

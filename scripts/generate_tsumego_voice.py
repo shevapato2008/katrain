@@ -21,6 +21,8 @@ LINES = {
     "capture_remove": "请提走被吃的棋子",
     "stone_offcenter": "棋子没放正，请摆正后继续。",
     "suspected_move": "检测到疑似落子，请在屏幕上确认。",
+    "board_mismatch": "盘面与对局不一致，请查看屏幕圈出的位置。",
+    "judge_undecided": "星阵数子还有归属未定的位置，请查看棋盘并继续收官。",
 }
 
 

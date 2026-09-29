@@ -72,6 +72,10 @@ class PhysicalPlayOrchestrator:
         self._suspended = False  # cached: tick body suspended (derived from _pause_reasons)
         self._paused_sent: Optional[bool] = None  # last pause state sent to the worker
         self._hint_task: Optional[asyncio.Task] = None
+        self._attention_task: Optional[asyncio.Task] = None
+        self._attention_source: Optional[str] = None
+        self._attention_seen: Dict[str, Tuple[Tuple[int, int], ...]] = {}
+        self._attention_restore_points: List[Dict] = []
         self._behind_since: Optional[float] = None
         self._reminded = False
         self._escalated = False
@@ -106,11 +110,15 @@ class PhysicalPlayOrchestrator:
 
     def on_unbind(self) -> None:
         """Detach: restore callback, cancel hint, blank the lamps (R2.5)."""
+        # Mark detached before cancelling a transient blink so its cleanup cannot
+        # briefly restore old game guidance on a board that is being unbound.
+        self._session_id = None
+        self.dismiss_attention()
+        self._attention_seen.clear()
         self.dismiss_hint()
         if self._session is not None:
             self._session.katrain.update_state_callback = self._orig_callback
         self._session = None
-        self._session_id = None
         self._orig_callback = None
         self._latest_state = None
         self._caught_up = True
@@ -336,6 +344,8 @@ class PhysicalPlayOrchestrator:
                     except Exception as e:  # defensive: LED problems must not kill the loop
                         logger.warning("physical-play awaiting-removal tick error: %s", e)
                     continue
+                if self._attention_task is not None:
+                    continue
                 if self._suspended:
                     continue
                 try:
@@ -346,6 +356,8 @@ class PhysicalPlayOrchestrator:
             pass
 
     def _tick_once(self) -> None:
+        if self._attention_task is not None:
+            return
         state = self._latest_state
         if not state:
             return
@@ -391,6 +403,8 @@ class PhysicalPlayOrchestrator:
         (reuses `_apply_points`, same as the main tick); cleared once removed. A
         reminder re-broadcasts every `awaiting_removal_remind_interval_s` while still
         waiting, for the frontend to re-prompt the user."""
+        if self._attention_task is not None:
+            return
         ctx = self._awaiting_removal_context
         if ctx is None:
             return
@@ -550,12 +564,15 @@ class PhysicalPlayOrchestrator:
         """Blink white lamps on the top-N points. Suspends reconciliation AND move
         detection while lit; board motion dismisses the lamps so a hinted stone
         can be recognized normally, without waiting for the timeout."""
+        self.dismiss_attention()
         self.dismiss_hint()
         logger.info("hint started: %d candidates, timeout=%.1fs", len(points), self.config.hint_timeout_s)
         self._add_pause_reason(self.PAUSE_REASON_HINT)
         if hasattr(self._vision, "set_lit_points"):
             self._vision.set_lit_points(list(points))
-        self._hint_task = asyncio.get_running_loop().create_task(self._blink(points, self._clock()))
+        self._hint_task = asyncio.get_running_loop().create_task(
+            self._blink(points, self._clock(), rgb=(255, 255, 255), timeout_s=self.config.hint_timeout_s, kind="hint")
+        )
 
     def dismiss_hint(self) -> None:
         if self._hint_task is not None and not self._hint_task.done():
@@ -573,9 +590,76 @@ class PhysicalPlayOrchestrator:
         self._remove_pause_reason(self.PAUSE_REASON_HINT)  # stays paused if another reason remains
         self._last_points = None  # force the game lamp state to re-send next tick
 
-    async def _blink(self, points: List[Tuple[int, int]], started_at: float) -> None:
+    def show_attention(self, points: List[Tuple[int, int]], source: str) -> None:
+        """Brief violet blink at vision-grid points without blocking recognition.
+
+        An unchanged issue is shown once until its source reports resolution. This
+        prevents repeated worker mismatch events from making the blink perpetual.
+        """
+        normalized = tuple(sorted({(int(r), int(c)) for r, c in points if 0 <= r <= 18 and 0 <= c <= 18}))
+        # Vision emits the same anomaly every few stable frames; one flash per
+        # unresolved episode is enough. A judge request is a deliberate new tap,
+        # so show its points again even when the verdict is unchanged.
+        if not normalized or (source == "vision" and self._attention_seen.get(source) == normalized):
+            return
+        self.dismiss_attention()
+        self.dismiss_hint()
+        self._attention_seen[source] = normalized
+        self._attention_source = source
+        self._attention_restore_points = list(self._last_points or [])
+        if hasattr(self._vision, "set_lit_points"):
+            self._vision.set_lit_points(list(normalized))
+        self._attention_task = asyncio.get_running_loop().create_task(
+            self._blink(
+                list(normalized),
+                self._clock(),
+                rgb=(160, 64, 255),
+                timeout_s=self.config.attention_timeout_s,
+                kind="attention",
+            )
+        )
+
+    def clear_attention(self, source: str) -> None:
+        """Mark a mismatch source resolved, allowing a later identical issue to flash."""
+        self._attention_seen.pop(source, None)
+        if self._attention_source == source:
+            self.dismiss_attention()
+
+    def dismiss_attention(self) -> None:
+        if self._attention_task is not None and not self._attention_task.done():
+            self._attention_task.cancel()
+        self._attention_task = None
+        self._end_attention()
+
+    def _end_attention(self) -> None:
+        if self._attention_source is None:
+            return
+        self._attention_source = None
+        restore = self._attention_restore_points
+        self._attention_restore_points = []
+        # Clear violet output and its vision mask before restoring ordinary lamps.
+        self._last_points = None
+        self._apply_points([])
+        if self._session_id is None:
+            return
+        if self.PAUSE_REASON_AWAITING_REMOVAL in self._pause_reasons:
+            self._tick_awaiting_removal()
+        elif not self._suspended:
+            self._tick_once()
+        elif restore and self.PAUSE_REASON_GAME_OVER not in self._pause_reasons:
+            self._apply_points(restore)
+
+    async def _blink(
+        self,
+        points: List[Tuple[int, int]],
+        started_at: float,
+        *,
+        rgb: Tuple[int, int, int],
+        timeout_s: float,
+        kind: str,
+    ) -> None:
         half = self.config.hint_blink_period_s / 2
-        deadline = started_at + self.config.hint_timeout_s
+        deadline = started_at + timeout_s
         on = True
         try:
             while self._clock() < deadline:
@@ -584,13 +668,11 @@ class PhysicalPlayOrchestrator:
                 # old motion from before this hint cannot dismiss it.
                 last_motion_at = getattr(self._vision, "last_motion_at", None)
                 if last_motion_at is not None and last_motion_at > started_at:
-                    logger.info("hint dismissed on board motion")
+                    logger.info("%s dismissed on board motion", kind)
                     break
                 if self._led is not None:
                     if on:
-                        self._led.set_rgb_points(
-                            [{"row": r, "col": c, "rgb": (255, 255, 255)} for r, c in points], strict=False
-                        )
+                        self._led.set_rgb_points([{"row": r, "col": c, "rgb": rgb} for r, c in points], strict=False)
                     else:
                         self._led.clear(strict=False)
                     self._touch()
@@ -599,7 +681,10 @@ class PhysicalPlayOrchestrator:
         except asyncio.CancelledError:
             raise
         finally:
-            # A cancelled previous blink must not clear a replacement hint.
-            if self._hint_task is asyncio.current_task():
+            # A cancelled previous blink must not clear its replacement.
+            if kind == "hint" and self._hint_task is asyncio.current_task():
                 self._hint_task = None
                 self._end_hint()
+            elif kind == "attention" and self._attention_task is asyncio.current_task():
+                self._attention_task = None
+                self._end_attention()

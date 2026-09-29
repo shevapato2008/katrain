@@ -2198,3 +2198,65 @@ button.kiosk-row.figrow { flex: none; }
   background: var(--ink); color: var(--text);
 }
 [data-testid="platform-login-page"] .qrbox__refresh svg { width: 30px; height: 30px; fill: currentColor; }
+
+/* During a game, keep the board visible and leave the original right rail legible
+   behind a compact modal. MUI still traps focus and blocks the underlying buttons. */
+.kiosk-game-side-dialog .MuiBackdrop-root { background: transparent !important; }
+.kiosk-game-side-dialog .MuiDialog-container {
+  position: relative;
+  justify-content: flex-end;
+  padding-right: max(16px, calc((100vw - 1024px) / 2 + 56px));
+}
+.kiosk-game-side-dialog .MuiDialog-container::before {
+  content: ''; position: absolute; top: 56px; bottom: 0;
+  left: max(0px, calc(50% + 28px)); right: 0;
+  background: #06100ba8; pointer-events: none;
+}
+.kiosk-game-side-dialog .MuiDialog-paper {
+  position: relative; width: 380px; max-width: min(380px, calc(100vw - 32px));
+  max-height: 380px; margin: 0; border: 2px solid #c486f1;
+  border-radius: 15px; background: #26352e;
+  box-shadow: 0 0 0 4px #b66cf229, 0 18px 38px #000c, 0 0 30px #b66cf24d;
+}
+.kiosk-game-side-dialog .MuiDialogTitle-root { padding: 14px 16px 4px; font-size: 21px; line-height: 1.25; }
+.kiosk-game-side-dialog .MuiDialogContent-root { padding: 8px 16px; }
+.kiosk-game-side-dialog .MuiDialogActions-root { padding: 10px 16px 14px; gap: 8px; flex-wrap: wrap; }
+.kiosk-game-side-dialog .MuiDialogActions-root > :not(style) ~ :not(style) { margin-left: 0; }
+.kiosk-game-side-dialog .MuiButton-root { min-height: 42px; }
+.kiosk-attention-point-row {
+  display: flex; align-items: center; gap: 12px; margin-top: 12px;
+  padding: 9px 11px; border: 1px solid #b66cf27d; border-radius: 8px;
+  background: #4a365775;
+}
+.kiosk-attention-point-row strong {
+  color: #f0ccff; font-size: 24px; line-height: 1; white-space: nowrap;
+}
+.kiosk-attention-point-row span { font-size: 14px; line-height: 1.3; }
+.kiosk-attention-point-row small { display: block; color: #c9c9c9; font-size: 12px; }
+.kiosk-attention-point-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.kiosk-attention-point-list span {
+  padding: 5px 8px; border-radius: 6px; background: #4a365775; color: #f0ccff; font-weight: 700;
+}
+.kiosk-game-toast.MuiSnackbar-root {
+  top: 70px !important; right: max(16px, calc((100vw - 1024px) / 2 + 56px)) !important;
+  left: auto !important; transform: none !important;
+  width: min(380px, calc(100vw - 32px));
+}
+.kiosk-game-toast .MuiAlert-root { width: 100%; }
+@media (max-width: 760px) {
+  .kiosk-game-side-dialog .MuiDialog-container { padding-right: 16px; }
+}
+
+.kiosk-board__play { position: relative; }
+.kiosk-attention-marker {
+  position: absolute; z-index: 8; width: 32px; height: 32px;
+  transform: translate(-50%, -50%); border: 3px solid #b66cf2; border-radius: 50%;
+  box-shadow: 0 0 0 2px #faf1e8, 0 0 0 7px #692b9b72, 0 0 17px #a65cff;
+  pointer-events: none; animation: kiosk-attention-pulse 1.4s ease-in-out infinite;
+}
+@keyframes kiosk-attention-pulse {
+  50% { box-shadow: 0 0 0 2px #faf1e8, 0 0 0 10px #692b9b52, 0 0 23px #a65cff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-attention-marker { animation: none; }
+}

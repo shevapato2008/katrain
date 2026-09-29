@@ -95,6 +95,35 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(mocks.visionResetSync).not.toHaveBeenCalled();
   });
 
+  it('uses the shared denial feedback for a single extra stone in a mismatch', async () => {
+    const mismatch = event(1, 'illegal_change', { positions: [[2, 10, 1]], missing: [] });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: '不是落子' }));
+    expect(mocks.visionDenyStone).toHaveBeenCalledWith(2, 10);
+    expect(mocks.visionResetSync).not.toHaveBeenCalled();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }]} />);
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 },
+      event(3, 'illegal_change', { positions: [[3, 10, 1]], missing: [] })]} />);
+    expect(await screen.findByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
+  it('reports mismatch points to the digital board and clears them on sync', async () => {
+    const onAttentionChange = vi.fn();
+    const mismatch = event(1, 'illegal_change', {
+      positions: [[2, 10, 1]], missing: [[4, 6, 2]],
+    });
+    const { rerender } = render(<VisionSyncOverlay {...props} onAttentionChange={onAttentionChange} syncEvents={[mismatch]} />);
+    await waitFor(() => expect(onAttentionChange).toHaveBeenCalledWith([{ row: 2, col: 10 }, { row: 4, col: 6 }]));
+
+    rerender(<VisionSyncOverlay {...props} onAttentionChange={onAttentionChange}
+      syncEvents={[mismatch, event(2, 'synced')]} />);
+    await waitFor(() => expect(onAttentionChange).toHaveBeenLastCalledWith([]));
+  });
+
   it('announces an off-centre stone once across unchanged and unrelated rerenders', async () => {
     const stone = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true });
     const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[stone]} />);
@@ -157,12 +186,19 @@ describe('VisionSyncOverlay recovery presentation', () => {
 
   it.each([
     ['capture recovery', event(1, 'capture_pending', { positions: [[7, 7, 2]] })],
-    ['initial generic mismatch', event(1, 'illegal_change', { positions: [[5, 5, 1]], missing: [] })],
     ['toast', event(1, 'degraded')],
   ])('keeps %s silent', (_name, syncEvent) => {
     render(<VisionSyncOverlay {...props} syncEvents={[syncEvent]} />);
 
     expect(mocks.voiceSpeak).not.toHaveBeenCalled();
+  });
+
+  it('announces a mismatch once while the same recovery stays visible', async () => {
+    const mismatch = event(1, 'illegal_change', { positions: [[5, 5, 1]], missing: [] });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[mismatch]} />);
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledWith('board_mismatch'));
+    rerender(<VisionSyncOverlay {...props} syncEvents={[mismatch, { ...mismatch, seq: 2 }]} />);
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
   });
 
   it('keeps persistent board loss silent', () => {

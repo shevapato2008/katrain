@@ -26,7 +26,7 @@ const PhysicalSyncEscalationDialog = ({ open, toPlace, toRemove, onClose, onScre
     onClose();
   };
   return (
-    <Dialog open={open} maxWidth="xs" fullWidth>
+    <Dialog open={open} maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
       <DialogTitle>{t('Physical board out of sync', '物理棋盘长时间未跟上对局')}</DialogTitle>
       <DialogContent>
         <Typography variant="body2">

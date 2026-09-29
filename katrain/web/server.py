@@ -4011,7 +4011,7 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
 
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
-    from katrain.web.core.vision_pump import route_vision_event
+    from katrain.web.core.vision_pump import route_vision_attention, route_vision_event
 
     log = logging.getLogger("katrain_web.vision")
     while True:
@@ -4024,6 +4024,11 @@ async def _vision_event_pump(app: FastAPI):
                         continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
+                        route_vision_attention(
+                            evt,
+                            getattr(app.state, "physical_play", None),
+                            bound=bool(vision.bound_session_id),
+                        )
                     route_vision_event(
                         evt,
                         list(app.state.vision_ws_clients.values()),

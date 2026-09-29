@@ -31,3 +31,19 @@ def route_vision_event(
     if isinstance(evt, dict):
         for q in client_queues:
             q.put_nowait(evt)
+
+
+def route_vision_attention(evt, orchestrator, *, bound: bool) -> None:
+    """Route authoritative mismatch points to the physical LED owner.
+
+    Sync payloads already use the vision/LED grid: row 0 is the top edge.
+    """
+    if not bound or orchestrator is None or not isinstance(evt, dict):
+        return
+    if evt.get("type") == "illegal_change":
+        data = evt.get("data") or {}
+        points = [(int(row), int(col)) for row, col, *_ in data.get("positions", []) + data.get("missing", [])]
+        if points:
+            orchestrator.show_attention(points, source="vision")
+    elif evt.get("type") == "synced":
+        orchestrator.clear_attention("vision")

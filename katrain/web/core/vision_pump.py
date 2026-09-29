@@ -16,6 +16,34 @@ import asyncio
 from typing import Iterable
 
 from katrain.vision.ipc import ConfirmedMove
+from katrain.vision.sync import game_state_stones_to_board
+
+
+def is_stale_illegal_change(evt: dict, game_state: dict | None) -> bool:
+    """Discard a worker mismatch if every reported extra is already in the game.
+
+    The game can commit a camera-confirmed stone before the worker consumes its
+    new expected board. A mismatch calculated against the old board may then
+    arrive late. Only an exact match with the authoritative board is stale;
+    missing stones and different colours remain actionable.
+    """
+    if evt.get("type") != "illegal_change" or not game_state:
+        return False
+    data = evt.get("data") or {}
+    positions = data.get("positions") or []
+    if not positions or data.get("missing"):
+        return False
+    try:
+        board_size = int(game_state["board_size"][0])
+        board = game_state_stones_to_board(game_state["stones"], board_size)
+        return all(
+            0 <= int(row) < board_size
+            and 0 <= int(col) < board_size
+            and int(board[int(row), int(col)]) == int(color)
+            for row, col, color in positions
+        )
+    except (KeyError, IndexError, TypeError, ValueError):
+        return False
 
 
 def route_vision_event(

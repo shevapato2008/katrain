@@ -44,6 +44,7 @@ class BaipuStep(BaseModel):
 class BaipuMeta(BaseModel):
     player_black: str = ""
     player_white: str = ""
+    result: str = ""
     handicap: int = 0
     komi: float = 0.0
     ruleset: str = "japanese"

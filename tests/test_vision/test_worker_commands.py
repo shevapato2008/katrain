@@ -41,6 +41,17 @@ def test_vision_service_expected_board_command_carries_node_id():
     assert command.data == {"board": board.tolist(), "expected_node_id": 77}
 
 
+def test_vision_service_reports_guidance_lamps_without_masking_the_move_target():
+    service = VisionService(VisionServiceConfig())
+    service._worker = MagicMock()
+
+    service.set_lit_points([(3, 16), (6, 7)], mask_points=[(6, 7)])
+
+    command = service._worker.send_command.call_args.args[0]
+    assert command.action == CommandType.SET_LIT_POINTS
+    assert command.data == {"points": [[3, 16], [6, 7]], "mask_points": [[6, 7]]}
+
+
 def test_board_observation_reads_the_worker_rather_than_the_cached_status():
     """The third module L0a spans: the service must PULL before it answers.
 
@@ -113,6 +124,15 @@ def _drain_with(worker_obj):
     worker_obj._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[3, 3], [5, 5]]}))
     worker_obj._drain_or_process()
     assert worker_obj._lit_points == {(3, 3), (5, 5)}
+    worker_obj._cmd_queue.put(
+        WorkerCommand(
+            action=CommandType.SET_LIT_POINTS,
+            data={"points": [[3, 16], [6, 7]], "mask_points": [[6, 7]]},
+        )
+    )
+    worker_obj._drain_or_process()
+    assert worker_obj._lit_points == {(3, 16), (6, 7)}
+    assert worker_obj._masked_lit_points == {(6, 7)}
     worker_obj._cmd_queue.put(WorkerCommand(action=CommandType.RESUME_DETECTION))
     worker_obj._drain_or_process()
     assert worker_obj._paused is False
@@ -129,6 +149,34 @@ class TestInProcessDispatcher:
             w = InProcessAdapter({"board_size": 19}, camera=None)
         w._drain_or_process = w._drain_commands
         _drain_with(w)
+
+    def test_guidance_lamp_does_not_mask_a_new_stone(self):
+        camera = _OneFrameCamera()
+        worker = _inprocess_worker(camera)
+        camera.worker = worker
+        worker._running = True
+        worker._config["capture_fps"] = 100000
+        worker._motion_is_stable = MagicMock(return_value=True)
+        worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+        worker._averager = MagicMock()
+        worker._averager.add.side_effect = lambda frame: frame
+        worker._detector.detect.return_value = []
+        extractor = MagicMock()
+        extractor.drop_shadow_boxes.return_value = []
+        extractor.detections_to_board.return_value = np.zeros((19, 19), dtype=int)
+        worker._active_extractor = MagicMock(return_value=extractor)
+        worker._maybe_send_preview = MagicMock()
+        worker._expected_np = np.zeros((19, 19), dtype=int)
+        worker._cmd_queue.put(
+            WorkerCommand(
+                action=CommandType.SET_LIT_POINTS,
+                data={"points": [[3, 16], [6, 7]], "mask_points": [[6, 7]]},
+            )
+        )
+
+        worker._loop()
+
+        assert extractor.detections_to_board.call_args.kwargs["masked_cells"] == {(6, 7)}
 
     def test_unchanged_board_still_forwards_expected_node_id(self):
         w = _inprocess_worker()
@@ -635,6 +683,7 @@ def _subprocess_motion_worker():
     w._last_motion_roi_ratio = None
     w._last_motion_full_ratio = None
     w._observation_seq = SEEDED_OBSERVATION_SEQ
+    w._masked_lit_points = set()
     return w
 
 

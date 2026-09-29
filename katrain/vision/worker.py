@@ -150,6 +150,7 @@ class _VisionWorkerLoop:
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
+        self._masked_lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
         # Confidence-adaptive confirmation: a stone we can already see clearly does not
@@ -336,9 +337,9 @@ class _VisionWorkerLoop:
 
                     # Board state + move detection
                     masked = None
-                    if self._lit_points:
+                    if self._masked_lit_points:
                         exp = self._expected_np
-                        masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
+                        masked = {p for p in self._masked_lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._state_extractor.detections_to_board(
                         detections,
                         img_w=w,
@@ -761,6 +762,7 @@ class _VisionWorkerLoop:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:
                 self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
+                self._masked_lit_points = {tuple(p) for p in cmd.data.get("mask_points", cmd.data.get("points", []))}
 
     def _draw_overlays(self, frame: np.ndarray, overlay: ProcessingOverlay) -> None:
         """Draw detection results and timing info on the raw camera frame."""

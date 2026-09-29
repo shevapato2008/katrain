@@ -288,6 +288,7 @@ class InProcessAdapter:
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
+        self._masked_lit_points: set[tuple[int, int]] = set()
         # Guidance-lamp glow (ambient LED brightness loop, 2026-09-22): the raw frame from just before a lamp
         # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
         self._last_raw: np.ndarray | None = None
@@ -1069,9 +1070,9 @@ class InProcessAdapter:
                         )
                         self._shadow_dropped_since_log = 0
                     masked = None
-                    if self._lit_points:
+                    if self._masked_lit_points:
                         exp = self._expected_np
-                        masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
+                        masked = {p for p in self._masked_lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     weak = [d for d in all_detections if d.confidence < self._keep_threshold]
                     observed_board = self._active_extractor().detections_to_board(
                         detections + self._game_stone_sustain(weak, w, h),
@@ -1494,6 +1495,7 @@ class InProcessAdapter:
                 lit = {tuple(p) for p in cmd.data.get("points", [])}
                 for cell in self._lit_points - lit:
                     self._denial_unlit_wait[cell] = GLOW_SETTLE_FRAMES
+                self._masked_lit_points = {tuple(p) for p in cmd.data.get("mask_points", cmd.data.get("points", []))}
                 if lit - self._lit_points:
                     # A lamp just came on: the last frame read before this command is its dark reference.
                     self._glow_ref = self._last_raw

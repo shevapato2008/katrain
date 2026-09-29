@@ -3,6 +3,8 @@ import { useParams, useLocation } from 'react-router-dom';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
 
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSound } from '../../hooks/useSound';
+import { translateResult } from '../../utils/resultTranslation';
 import { type BaipuCaptureErrorReason,
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress, forgetSgf,
   canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
@@ -34,6 +36,23 @@ const signed = (x: number) => { const v = Math.round(x * 10) / 10; return `${v >
 const savedFilename = (path?: string): string | null => {
   if (!path) return null;
   return path.split(/[\\/]/).filter(Boolean).at(-1) ?? null;
+};
+
+const finalResultLabel = (result: string | undefined, rules: string | undefined, t: (key: string, fallback?: string) => string): string => {
+  const raw = result?.trim();
+  if (!raw) return t('review:no_result_line', '谱里没写结果');
+  if (/^(void|\?)$/i.test(raw)) return t('review:void_result', '这盘没有判出胜负');
+  const finish = raw.match(/^([BW])\+(R(?:esign(?:ation)?)?|T(?:ime)?)$/i);
+  const chineseFinish = raw.match(/^(黑|白)(?:棋)?(中盘|超时)胜$/);
+  if (finish || chineseFinish) {
+    const side = (finish ? finish[1].toUpperCase() === 'B' : chineseFinish?.[1] === '黑') ? 'black' : 'white';
+    const ending = (finish ? /^R/i.test(finish[2]) : chineseFinish?.[2] === '中盘') ? 'resign' : 'timeout';
+    const fallback = side === 'black'
+      ? ending === 'resign' ? '黑棋中盘胜' : '黑棋超时胜'
+      : ending === 'resign' ? '白棋中盘胜' : '白棋超时胜';
+    return t(`game:${side}_wins_${ending}`, fallback);
+  }
+  return translateResult(raw, t, rules);
 };
 
 type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
@@ -93,23 +112,12 @@ const PCARD_CLASS: Record<Mood, string> = {
  * 返回归页控条「← 棋谱」,**但二次确认留着** —— 它不是实现遗留,是这一屏已采纳的裁定
  * (Blocker #2:「确认落子」一局按约 250 次,退出按一次,两颗不能同排;解法是移到角上 + 确认)。
  *
- * ## 四条通栏横幅一条都不进右栏
+ * ## 右栏空间
  *
- * 右栏的账是死的:页控条 44 + pcard 60 + 两个折叠头 30×2 + 动作区 52 + 四条间隙 48 = 264,
- * **两个折叠块的 body 一共只剩 252**;ledger 约 89 ⇒ 着法那块 ~163 ≈ 6 行。
- * 再插一块就把着法压到 3 行以下,右栏得整栏滚,而整栏一滚
- * `.kiosk-rail .kiosk-actions{margin-top:auto}` 就保不住动作区贴底 ——
- * **全 27 屏里最不能让「确认落子」动的就是这一屏**。所以:
- *
- * | 原来的横幅 | 现在 |
- * |---|---|
- * | 正在拍照,请勿伸手 | `.cdlg` 盖住**整个布局根**(不只是盘)—— 第一职责是挡住第二次按键 |
- * | 请移除被提的子 | **pcard 换内容**(`.pcard.removal`,蓝,和 `LED_HEX.remove` 同色) |
- * | 几何漂移三态 | 摄像头 ledger 一行 + 折叠头右端的结论词(收起也看得见) |
- * | 采集失败 | **pcard 换内容**(`.pcard.failed`),`k` 不推进 ⇒ 重按「确认落子」就是重试 |
- *
- * 优先级写死:`拍照遮罩` > `采集失败` > `待移除` > `已完成` > `试下` > `支招` > `把盘面摆对` > `待摆`
- * (后四档只有非采集机有;「把盘面摆对」只有摄像头态有)。
+ * 常态展示两张棋手卡,当前方高亮;「当前待摆」和灯色图例让位给双方姓名。
+ * 放错、提子、试下、灯坏和手动兜底时才显示状态卡;采集机仍保留拍照状态和帧数。
+ * 动作区始终贴底,着法表吃剩余空间。
+ * 状态优先级:`拍照遮罩` > `采集失败` > `待移除` > `已完成` > `试下` > `支招` > `把盘面摆对` > `待摆`。
  *
  * ## 没有「虚手」键
  *
@@ -127,6 +135,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const { source = '' } = useParams();
   const location = useLocation();
   const { t } = useTranslation();
+  const { play: playSound } = useSound();
   // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-22):棋谱屏导入、棋谱详情「摆这一局」
   // 进来回那一页。摆谱列表 `/kiosk/baipu` 已删(K1,只剩重定向),所以入口只剩棋谱这一族,
   // 键名一律「棋谱」;没写明来处(直接输 URL)回棋谱屏,不回那条重定向。
@@ -219,16 +228,23 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
       return next;
     });
   }, [source, steps.length, store]);
+  const onMatched = useCallback(() => {
+    playSound('stone');
+    advance();
+  }, [playSound, advance]);
 
   // ── 三路判据 ── 照抄屏 14 物理盘开关(`TsumegoProblemPage` 那段):识别就绪 **不含**「本次开机确认过几何」,
   // 盒子一重启它就是真而几何是 required ⇒ 几何要单独判。没有 Provider(单测)= 没有摄像头 = 手动兜底。
-  const visionStatus = useOptionalVision()?.visionStatus;
-  const geoStatus = useOptionalGeometry()?.status;
+  const vision = useOptionalVision();
+  const geometry = useOptionalGeometry();
+  const visionStatus = vision?.visionStatus;
+  const geoStatus = geometry?.status;
+  const statusKnown = vision?.loaded !== false && geometry?.loaded !== false;
   const geometryConfirmed = !geoStatus || geoStatus.phase === 'disabled'
     || (geoStatus.phase === 'ready' && geoStatus.session_calibrated && geoStatus.capabilities.geometry_ready);
   const cameraReady = !!visionStatus?.enabled && visionStatus.recognitionReady && geometryConfirmed;
   const camera = !collect && cameraReady;
-  const manual = !collect && !cameraReady;
+  const manual = !collect && statusKnown && !cameraReady;
   // 手动兜底那句「为什么没用摄像头」。几何两种要多说一句去哪儿修。
   const geoPhase = geoStatus?.phase;
   const camWhy: { text: string; calib: boolean } | null = !manual ? null
@@ -259,7 +275,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     next: nextStone,
     paused: trying || hint.open,
     hintLeds: hint.leds,
-    onMatched: advance,
+    onMatched,
   });
 
   // 摆完就清进度(「完成」键删了)。采集机不清 —— 它的「完成」键还在,由人按。
@@ -320,7 +336,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   // 灯跟着屏走(手动兜底 / 采集机;摄像头态的灯归 `usePhysicalBaipu`)。
   // **失败只让那颗键变红,永不拦住摆放** —— 没灯照坐标摆,一样产出可用的帧。
   useEffect(() => {
-    if (camera) return;
+    if (!statusKnown || camera) return;
     if (hint.open) {
       // 支招开着:只亮 AI 候选(白);收起后这个 effect 重跑,按原逻辑重点。
       (hint.leds.length ? LedAPI.points(hint.leds) : LedAPI.clear())
@@ -334,7 +350,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     } else if (phase === 'done') {
       LedAPI.clear().then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
     }
-  }, [camera, hint.open, hint.leds, phase, k, currentStep]);
+  }, [statusKnown, camera, hint.open, hint.leds, phase, k, currentStep]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -484,6 +500,8 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const moveNo = Math.min(k + (phase === 'done' ? 0 : 1), steps.length);
   const colorWord = nextColor === 'W' ? t('baipu:white_s', '白') : t('baipu:black_s', '黑');
   const ledBad = camera ? !physical.ledOk : ledOk === false;
+  const showStatusCard = collect || manual || (mood === 'guiding' && ledBad)
+    || (mood !== 'guiding' && mood !== 'hint');
 
   // 摄像头态「把盘面摆对」说哪句 —— 收敛规则都一样,只按「为什么到这儿」换话。
   const setupCard = (): { h: string; p: string } => {
@@ -651,13 +669,17 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             size={boardSize}
             black={board.black}
             white={board.white}
-            last={board.last}
             pending={ghost[0] && nextColor ? { at: ghost[0], color: nextColor } : undefined}
             atari={atari}
             remove={removeMarks}
             hint={hintMarks}
             label={t('baipu:board_label', '摆谱盘面：圈是下一手该落的点')}
           />
+          {phase === 'done' && (
+            <div className="baipu-final-result" data-testid="baipu-final-result" role="status">
+              {finalResultLabel(meta?.result, meta?.ruleset, t)}
+            </div>
+          )}
         </div>
         <div className="kiosk-board__ruler kiosk-board__ruler--right">
           {boardRows.map((r) => <span key={`r${r}`}>{r}</span>)}
@@ -689,8 +711,8 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           }}
         />
 
-        {/* ── 此刻你该做什么 ── 互斥,同一块 pcard 换内容 */}
-        <div className={`pcard ${PCARD_CLASS[mood]}`.trim()} data-testid="baipu-pcard" data-mood={mood}>
+        {/* 常态由棋手卡承载信息；只有异常、试下和采集态才占一行提示。 */}
+        {showStatusCard && <div className={`pcard ${PCARD_CLASS[mood]}`.trim()} data-testid="baipu-pcard" data-mood={mood}>
           {nextColor && (mood === 'guiding' || mood === 'hint' || mood === 'setup' || mood === 'trying')
             && <span className={nextColor === 'B' ? 'disc b' : 'disc w'} />}
           <div>
@@ -731,9 +753,12 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
               </>
             ) : (
               <>
-                <h4>{coord
-                  ? interpolate(t('baipu:place_at', '当前待摆 · {c}'), { c: coord })
-                  : t('baipu:place_none', '这一步不用摆子')}</h4>
+                <h4>{manual
+                  ? t('baipu:led_value_manual', '手动确认')
+                  : ledBad ? t('baipu:led_problem', '指示灯未亮')
+                    : coord
+                      ? interpolate(t('baipu:place_at', '当前待摆 · {c}'), { c: coord })
+                      : t('baipu:place_none', '这一步不用摆子')}</h4>
                 <p>{guidingLine}</p>
               </>
             )}
@@ -742,10 +767,25 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
             <b>{mood === 'removal' ? (currentStep?.removed.length ?? 0) : moveNo}</b>
             <span>{mood === 'removal' ? t('baipu:stones_unit', '子') : t('baipu:which_move', '第几手')}</span>
           </div>
-        </div>
+        </div>}
 
-        {/* ── AI 支招(开着时)/ 摄像头(采集机)/ 灯(其余)── 这本账也是那条 LED 图例的落点。
-            支招的三行**借灯图例这一块的位置**:右栏的账是死的,多插一块就压着法表(页头那段)。 */}
+        {!collect && ([
+          { color: 'B' as const, name: meta?.player_black?.trim() || t('game:black_side', '黑方'), side: t('game:plays_black', '执黑') },
+          { color: 'W' as const, name: meta?.player_white?.trim() || t('game:white_side', '白方'), side: t('game:plays_white', '执白') },
+        ]).map(({ color, name, side }) => {
+          const turn = nextColor === color && phase !== 'done' && mood !== 'trying' && mood !== 'hint';
+          return (
+            <div key={color} className={turn ? 'pcard turn' : 'pcard'} data-testid={`baipu-player-${color === 'B' ? 'black' : 'white'}`} data-turn={turn}>
+              <span className={color === 'B' ? 'disc b' : 'disc w'} aria-hidden="true" />
+              <div>
+                <h4 title={name}>{name}</h4>
+                <p>{side}{turn && coord ? ` · ${coord}` : ''}</p>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── AI 支招只在打开时出现；采集机保留帧数和几何状态。 */}
         {hint.open ? (
           <KioskFold
             fold="hint"
@@ -802,33 +842,7 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
               </div>
             )}
           </KioskFold>
-        ) : (
-          /* 上线态没有摄像头这回事。**行数和采集态一样是三行** —— 右栏的账是死的(页头「四条通栏横幅一条都不进右栏」那段),
-             这一块一变高就压着法表。图例文案沿用那三句,色点仍是灯的真值。 */
-          <KioskFold
-            fold="led"
-            testId="baipu-led-fold"
-            title={t('baipu:led_title', '灯 · 颜色对照')}
-            value={trying
-              ? t('baipu:led_value_try', '试下中 · 暂停识别')
-              : camera ? t('baipu:led_value_camera', '摄像头在看') : t('baipu:led_value_manual', '手动确认')}
-            valueTone={manual ? 'warn' : undefined}
-            bodyClassName="ledger"
-          >
-            <div className="lrow">
-              <b>{t('baipu:legend_black', '红灯 = 放黑子')}</b>
-              <span className="led" style={{ background: LED_HEX.black }} aria-hidden="true" />
-            </div>
-            <div className="lrow">
-              <b>{t('baipu:legend_white', '绿灯 = 放白子')}</b>
-              <span className="led" style={{ background: LED_HEX.white }} aria-hidden="true" />
-            </div>
-            <div className="lrow">
-              <b>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</b>
-              <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
-            </div>
-          </KioskFold>
-        )}
+        ) : null}
 
         {/* ── 已经摆过的 ── */}
         <KioskFold

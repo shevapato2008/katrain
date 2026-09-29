@@ -395,7 +395,7 @@ test('棋谱:名局列表摊开时右栏自己滚,最后一块(最近摆过)的�
   expect(railW, '右栏不是 680 —— 后面量的滚动都建在错的宽度上').toBe(680);
 
   // 名局列表 2026-09-23 起一进来就摊开(Fan)—— 不用再先按「搜棋谱」,六行 + 翻页就是这条栏的常态。
-  await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');
+  await page.waitForSelector('[data-testid="kifu-search"] .kifu-record');
 
   const before = await overflowOf(page);
   expect(before, '没造出溢出 —— 下面那条断言是空的').toBeGreaterThan(100);
@@ -1158,7 +1158,7 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
      当访客处理),② 种子键要带同一个 uuid 后缀。
 
      少任何一件,页面都会渲染它**正确的**空态「这台盒子上没有这份谱」,而
-     `waitForSelector('[data-testid="baipu-pcard"]')` 就停在那儿超时 30 秒 ——
+     等棋手卡或采集状态卡就停在那儿超时 30 秒 ——
      报错指向选择器,看起来像「摆谱页挂了」,其实页面是对的、夹具过期了。
      (2026-09-21:三条摆谱用例就是这么红了一段时间的,develop 上同样红。) */
   // `addInitScript` 的函数体在**浏览器**里跑,拿不到这个文件里的常量 —— 必须当参数传进去。
@@ -1174,7 +1174,7 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
     json: kioskMeJson(),
   }));
   await page.goto('/kiosk/baipu/session/g1');
-  await page.waitForSelector('[data-testid="baipu-pcard"]');
+  await page.waitForSelector(opts.collect ? '[data-testid="baipu-pcard"]' : '[data-testid="baipu-player-black"]');
 };
 
 /** 右栏、动作区、着法块、画布,一次读齐。 */

@@ -20,7 +20,7 @@ _HISTORICAL_PLAYER_ALIASES = {
     "吳清源": ("吴清源", "go seigen"),
     "本因坊道策": ("honinbo dosaku",),
     "本因坊丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
-    "本因坊秀策": ("honinbo shusaku", "kuwahara shusaku", "yasuda shusaku", "yasuda eisai"),
+    "本因坊秀策": ("shusaku", "yasuda eisai"),
     "木谷实": ("kitani minoru",),
     "木谷實": ("木谷实", "kitani minoru"),
 }

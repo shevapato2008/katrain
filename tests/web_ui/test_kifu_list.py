@@ -178,6 +178,26 @@ def test_historical_chinese_name_finds_english_archive_record(db_with_albums):
     assert result.items[0].player_black == "Honinbo Dosaku"
 
 
+def test_shusaku_alias_finds_team_game_with_short_name(db_with_albums):
+    db_with_albums.add(
+        models_db.KifuAlbum(
+            player_black="Shuwa,Shusaku",
+            player_white="Ito Showa",
+            date_sort="1850-01-01",
+            sgf_content="(;B[pd])",
+            source_path="/fixtures/shusaku-team.sgf",
+            search_text="shuwa,shusaku ito showa",
+            move_count=100,
+        )
+    )
+    db_with_albums.commit()
+
+    result = _list_albums(db_with_albums, q="本因坊秀策")
+
+    assert result.total == 1
+    assert result.items[0].player_black == "Shuwa,Shusaku"
+
+
 def test_ordering_puts_null_date_last(db_with_albums):
     """NULLS LAST 那一支：date_sort 为空的那条排最后，不是最前。"""
     result = _list_albums(db_with_albums)

@@ -2268,6 +2268,12 @@ msgstr "Місце"
 msgid "kifu:source"
 msgstr "Джерело"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Джерело не підтверджено"
+
 msgid "kifu:open_in_research"
 msgstr "Відкрити в дослідженні"
 

@@ -2226,6 +2226,12 @@ msgstr "Place"
 msgid "kifu:source"
 msgstr "Source"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Source unverified"
+
 msgid "kifu:open_in_research"
 msgstr "Open in Research"
 

@@ -84,11 +84,11 @@ async def test_online_passes_through():
     search = AsyncMock(return_value=payload)
     get = AsyncMock(return_value=detail)
     d = _dispatcher(search=search, get=get)
-    listed = await kifu.list_kifu_albums(request=_request(d), q="三星杯", page=3, page_size=6, db=None)
+    listed = await kifu.list_kifu_albums(request=_request(d), q="三星杯", page=3, page_size=6, lang="jp", db=None)
     assert listed == payload
-    search.assert_awaited_once_with(q="三星杯", page=3, page_size=6)
-    assert await kifu.get_kifu_album(request=_request(d), album_id=23, db=None) == detail
-    get.assert_awaited_once_with(23)
+    search.assert_awaited_once_with(q="三星杯", page=3, page_size=6, lang="jp")
+    assert await kifu.get_kifu_album(request=_request(d), album_id=23, lang="jp", db=None) == detail
+    get.assert_awaited_once_with(23, lang="jp")
 
 
 @pytest.mark.asyncio

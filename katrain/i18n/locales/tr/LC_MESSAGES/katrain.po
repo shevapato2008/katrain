@@ -2289,6 +2289,12 @@ msgstr "Yer"
 msgid "kifu:source"
 msgstr "Kaynak"
 
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Kaynak doğrulanmadı"
+
 msgid "kifu:open_in_research"
 msgstr "Araştırmada aç"
 

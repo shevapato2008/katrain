@@ -2063,6 +2063,12 @@ msgstr "地点"
 msgid "kifu:source"
 msgstr "来源"
 
+msgid "kifu:source_golaxy"
+msgstr "星阵"
+
+msgid "kifu:source_unknown"
+msgstr "来源待核实"
+
 msgid "kifu:open_in_research"
 msgstr "在研究中打开"
 

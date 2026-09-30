@@ -710,12 +710,109 @@ class TrainingSample(Base):
     figure = relationship("TutorialFigure")
 
 
+class KifuPlayer(Base):
+    """A person identity, separate from names found in SGF files."""
+
+    __tablename__ = "kifu_players"
+
+    id = Column(Integer, primary_key=True)
+    canonical_name = Column(String(512), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuEvent(Base):
+    """A tournament identity; rounds and rules are not events."""
+
+    __tablename__ = "kifu_events"
+
+    id = Column(Integer, primary_key=True)
+    canonical_name = Column(String(256), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuPlayerAlias(Base):
+    __tablename__ = "kifu_player_aliases"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False, index=True)
+    alias = Column(String(512), nullable=False)
+    normalized_alias = Column(String(512), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("player_id", "normalized_alias", name="uq_kifu_player_alias_identity"),)
+
+
+class KifuEventAlias(Base):
+    __tablename__ = "kifu_event_aliases"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False, index=True)
+    alias = Column(String(256), nullable=False)
+    normalized_alias = Column(String(256), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("event_id", "normalized_alias", name="uq_kifu_event_alias_identity"),)
+
+
+class KifuPlayerName(Base):
+    __tablename__ = "kifu_player_names"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(String(512), nullable=False)
+    status = Column(String(16), nullable=False)
+    reference_url = Column(Text, nullable=True)
+    reference_kind = Column(String(32), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("player_id", "lang", name="uq_kifu_player_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_player_name_status"),
+    )
+
+
+class KifuEventName(Base):
+    __tablename__ = "kifu_event_names"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False, index=True)
+    lang = Column(String(2), nullable=False)
+    display_name = Column(String(256), nullable=False)
+    status = Column(String(16), nullable=False)
+    reference_url = Column(Text, nullable=True)
+    reference_kind = Column(String(32), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("event_id", "lang", name="uq_kifu_event_name_lang"),
+        CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_event_name_status"),
+    )
+
+
+class KifuSource(Base):
+    """A verified dataset/source type, not the raw SGF SO property."""
+
+    __tablename__ = "kifu_sources"
+
+    id = Column(Integer, primary_key=True)
+    source_key = Column(String(64), nullable=False, unique=True)
+    display_name = Column(String(128), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class KifuAlbum(Base):
     """Database model for tournament game records (大赛棋谱)."""
 
     __tablename__ = "kifu_albums"
 
     id = Column(Integer, primary_key=True, index=True)
+    black_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
+    white_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True, index=True)
+    duplicate_of_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True, index=True)
     player_black = Column(String(512), nullable=False, index=True)
     player_white = Column(String(512), nullable=False, index=True)
     black_rank = Column(String(64), nullable=True)
@@ -738,6 +835,50 @@ class KifuAlbum(Base):
     source_path = Column(String(512), unique=True, nullable=False, index=True)  # Prevents duplicate imports
     search_text = Column(Text, nullable=True)  # Lowercased concatenated searchable fields
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuAlbumSource(Base):
+    __tablename__ = "kifu_album_sources"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    source_id = Column(Integer, ForeignKey("kifu_sources.id"), nullable=False, index=True)
+    origin_path = Column(String(1024), nullable=False)
+    match_method = Column(String(32), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("album_id", "source_id", "origin_path", name="uq_kifu_album_source_origin"),)
+
+
+class KifuDedupBatch(Base):
+    """One reversible catalog deduplication run."""
+
+    __tablename__ = "kifu_dedup_batches"
+
+    id = Column(Integer, primary_key=True)
+    batch_key = Column(String(128), nullable=False, unique=True)
+    status = Column(String(24), nullable=False, default="running")
+    summary = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class KifuDedupChange(Base):
+    """Before/after pointer and source links for restoring only this batch."""
+
+    __tablename__ = "kifu_dedup_changes"
+
+    id = Column(Integer, primary_key=True)
+    batch_id = Column(Integer, ForeignKey("kifu_dedup_batches.id"), nullable=False, index=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    duplicate_of_id_before = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True)
+    duplicate_of_id_after = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True)
+    source_links_before = Column(JSON, nullable=False)
+    source_links_after = Column(JSON, nullable=False)
+    sgf_sha256_before = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (UniqueConstraint("batch_id", "album_id", name="uq_kifu_dedup_batch_album"),)
 
 
 class UserGame(Base):

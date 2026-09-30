@@ -251,7 +251,7 @@ describe('PlayPage', () => {
     expect(mockNavigate.mock.calls).toEqual([
       // 2026-09-23(Task 5):未连接改跳独立登录页,不再是连接页本身。
       ['/kiosk/play/cross-platform/login/ogs'],
-      ['/kiosk/play/cross-platform/engine/golaxy'],
+      ['/kiosk/play/cross-platform/golaxy'],
     ]);
   });
 
@@ -263,7 +263,7 @@ describe('PlayPage', () => {
 
     const ogs = await screen.findByRole('button', { name: /^OGS，已连接/ });
     fireEvent.click(ogs);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/lobby?platform=ogs');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/ogs');
   });
 
   it('resets to disconnected defaults immediately when the token changes', async () => {
@@ -368,7 +368,7 @@ describe('PlayPage', () => {
     expectAllDisconnected();
   });
 
-  it('盒端已登录且 token=null 时拉取状态并直达星阵人机开局', async () => {
+  it('盒端已登录且 token=null 时拉取状态并直达星阵专页', async () => {
     useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: null });
     platformStatusMock.mockResolvedValue({ platforms: [platformRecord('golaxy', true)] });
 
@@ -377,6 +377,6 @@ describe('PlayPage', () => {
     const golaxy = await screen.findByRole('button', { name: /^星阵围棋，已连接/ });
     expect(platformStatusMock).toHaveBeenCalledWith(null);
     fireEvent.click(golaxy);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/golaxy');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/golaxy');
   });
 });

@@ -94,9 +94,8 @@ class SessionManager:
             katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=engine_user_id)
             # 无人认领的会话不交付分析结果（理由见 `WebKaTrain.get_state` 的 docstring）。
             # 注意不能用 `engine_user_id` 判 —— 它对匿名会话退化成 session_id，永远为真。
-            # 跨平台局（`create_multiplayer_session` 里 player id 为 -1）随后会把它设回 True：
-            # 那种局是**有主人**的，只是主人不是本站账号。
-            katrain.deliver_analysis = user_id is not None
+            # 在线平台对局由平台权威裁定，开局期间不得交付本机分析结果。
+            katrain.deliver_analysis = user_id is not None and initial_game_type != "pvp_online"
             session = WebSession(session_id=session_id, katrain=katrain, user_id=user_id)
             self._sessions[session_id] = session
 
@@ -122,14 +121,19 @@ class SessionManager:
         b_name: str = None,
         w_name: str = None,
         skip_initial_analysis: bool = False,
+        initial_game_type: str = "free",
     ) -> WebSession:
         primary_user_id = player_b_id if player_b_id >= 0 else player_w_id if player_w_id >= 0 else None
-        session = self.create_session(user_id=primary_user_id, skip_initial_analysis=skip_initial_analysis)
+        session = self.create_session(
+            user_id=primary_user_id,
+            initial_game_type=initial_game_type,
+            skip_initial_analysis=skip_initial_analysis,
+        )
         session.player_b_id = player_b_id
         session.player_w_id = player_w_id
-        # 多人局有主人（哪怕两边都是 -1 的跨平台局），照常交付分析。`create_session` 只看得见
-        # `user_id`，而座位是在它返回之后才填的，所以这里要补一次。
-        session.katrain.deliver_analysis = True
+        session.game_type = initial_game_type
+        # 普通多人局保留既有分析行为；平台在线局不得在这里重开分析交付。
+        session.katrain.deliver_analysis = initial_game_type != "pvp_online"
 
         # Set player names in KaTrain
         if b_name:

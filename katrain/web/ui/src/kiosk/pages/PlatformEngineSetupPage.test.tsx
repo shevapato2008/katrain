@@ -178,11 +178,11 @@ describe('屏 09 跨平台 · 人机开局', () => {
     ));
   });
 
-  it('返回键回跨平台连接页', async () => {
+  it('返回键回星阵专页', async () => {
     renderPage();
     await ready();
-    await userEvent.click(screen.getByRole('button', { name: /跨平台/ }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform');
+    await userEvent.click(screen.getByRole('button', { name: /返回星阵/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/golaxy');
   });
 
   it('拉不到棋力档:说出来,**不给兜底表**,也开不了局', async () => {

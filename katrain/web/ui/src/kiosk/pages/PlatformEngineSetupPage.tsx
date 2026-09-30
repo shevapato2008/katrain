@@ -123,8 +123,8 @@ const PlatformEngineSetupPage = () => {
         <SetupPopoverHost.Provider value={railEl}>
         <KioskPagebar
           testId="platform-engine-pagebar"
-          backLabel={t('platform:back_to_platforms', '跨平台')}
-          onBack={() => navigate('/kiosk/play/cross-platform')}
+          backLabel={t('platform:back_to_golaxy', '返回星阵')}
+          onBack={() => navigate('/kiosk/play/cross-platform/golaxy')}
           title={interpolate(t('platform:engine_title', '{name} · 人机'), { name: t(meta.label, meta.labelCn) })}
           sub={t('platform:engine_sub', '开局设置 · 不计入盒内段位')}
         />

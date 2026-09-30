@@ -24,7 +24,7 @@ import '../kiosk-shell/status.css';
 import '../kiosk-shell/go-screens.css';
 
 import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
@@ -59,13 +59,19 @@ import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import ReportDetailPage from './pages/ReportDetailPage';
 import VisionSetupPage from './pages/VisionSetupPage';
-import PlatformConnectPage from './pages/PlatformConnectPage';
 import PlatformLoginPage from './pages/PlatformLoginPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
+import GolaxyHomePage from './pages/GolaxyHomePage';
 import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
 import TutorialSectionPage from './pages/TutorialSectionPage';
+
+const LegacyPlatformLobbyRedirect = () => {
+  const { search } = useLocation();
+  return <Navigate to={new URLSearchParams(search).get('platform') === 'ogs'
+    ? '/kiosk/play/cross-platform/ogs' : '/kiosk/play'} replace />;
+};
 
 export const KioskRoutes = () => {
   const { user } = useAuth();
@@ -105,6 +111,7 @@ export const KioskRoutes = () => {
 
         {/* --- 游客可达:自由对弈那条链 --- */}
         <Route path="play" element={<PlayPage />} />
+        <Route path="play/cross-platform" element={<Navigate to="/kiosk/play" replace />} />
         <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
         <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
 
@@ -123,12 +130,14 @@ export const KioskRoutes = () => {
           <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
+          <Route path="play/cross-platform/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
 
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
-          <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/login/:platform" element={<PlatformLoginPage />} />
-          <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
+          <Route path="play/cross-platform/lobby" element={<LegacyPlatformLobbyRedirect />} />
+          <Route path="play/cross-platform/golaxy" element={<GolaxyHomePage />} />
+          <Route path="play/cross-platform/ogs" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />

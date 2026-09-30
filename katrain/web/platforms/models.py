@@ -6,6 +6,7 @@ All platform adapters use these models for a consistent interface.
 from __future__ import annotations
 
 import time
+import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -52,6 +53,7 @@ class ClockState:
     white_time: dict
     current_player: str  # "B" or "W"
     paused: bool = False
+    game_id: str = ""
 
 
 @dataclass
@@ -92,6 +94,7 @@ class PlatformChallenge:
     ranked: bool
     handicap: int
     komi: Optional[float] = None  # None = automatic
+    game_id: Optional[str] = None  # OGS public seek's eventual game id
 
 
 @dataclass
@@ -106,6 +109,21 @@ class PlatformGameSession:
     ranked: bool
     handicap: int
     komi: float
+
+
+@dataclass(frozen=True)
+class PlatformGameSnapshot:
+    """Verified remote board history, expressed in KaTrain core coordinates."""
+
+    game_id: str
+    board_size: int
+    setup: tuple[tuple[str, int, int], ...]
+    moves: tuple[PlatformMove, ...]
+    phase: GamePhase
+
+    @property
+    def move_number(self) -> int:
+        return len(self.moves)
 
 
 @dataclass
@@ -126,6 +144,11 @@ class PlatformGameContext:
     needs_resync: bool = False
     my_color: str = "B"
     is_engine: bool = False  # True for synthetic engine-play contexts (later task)
+    remote_session: Optional[PlatformGameSession] = None
+    pending_coords: Optional[tuple[int, int]] = None
+    pending_confirmation: asyncio.Event = field(default_factory=asyncio.Event)
+    game_end_emitted: bool = False
+    platform_end_emitted: bool = False
 
     def recover_from_snapshot(self, snapshot: dict) -> None:
         """Reset local state from a full game snapshot fetched after reconnection."""
@@ -138,10 +161,13 @@ class PlatformGameContext:
     def set_pending(self, action: str) -> None:
         self.pending_action = action
         self.pending_action_timestamp = time.time()
+        self.pending_confirmation.clear()
 
     def clear_pending(self) -> None:
         self.pending_action = None
         self.pending_action_timestamp = None
+        self.pending_coords = None
+        self.pending_confirmation.set()
 
     @property
     def is_pending(self) -> bool:

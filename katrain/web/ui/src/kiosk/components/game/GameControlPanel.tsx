@@ -6,7 +6,7 @@ import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { localizedRank } from '../../../utils/rankUtils';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
-import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
+import type { EngineItemCounts, GameState, PlatformClockState, PlayerInfo } from '../../../api';
 import { useGoClock } from './goClock';
 import { isFreeVsAi } from './gameKinds';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -76,6 +76,10 @@ interface Props {
     retrySameRequest: boolean;
     onRequest: () => void;
   };
+  /** OGS clock and phase arrive on the existing game-session socket. */
+  platformClock?: PlatformClockState | null;
+  platformPhase?: string | null;
+  onlineScoringPending?: boolean;
 }
 
 /**
@@ -150,6 +154,22 @@ const formatClock = (seconds: number) => {
   const total = Math.ceil(Math.max(0, seconds));
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 };
+
+function remoteReading(value: PlatformClockState['black_time']): { seconds: number; byoyomi: boolean } | null {
+  const valid = (number: unknown): number | null =>
+    typeof number === 'number' && Number.isFinite(number) && number >= 0 ? number : null;
+  if (typeof value === 'number') {
+    const seconds = valid(value);
+    return seconds === null ? null : { seconds, byoyomi: false };
+  }
+  const main = valid(value?.thinking_time);
+  const periods = valid(value?.periods);
+  if (main === 0 && periods !== null && periods > 0) {
+    const period = valid(value?.period_time_left) ?? valid(value?.period_time);
+    if (period !== null) return { seconds: period, byoyomi: true };
+  }
+  return main === null ? null : { seconds: main, byoyomi: false };
+}
 
 /**
  * 「上一份服务端状态到现在,客户端过了几秒」。
@@ -299,7 +319,8 @@ const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
-  onTimeout, counting = false, statusSlot = null, territory,
+  onTimeout, counting = false, statusSlot = null, territory, platformClock = null, platformPhase = null,
+  onlineScoringPending = false,
 }: Props) => {
   const { t, lang } = useTranslation();
   const { play: playSound, stop: stopSound } = useSound();
@@ -320,6 +341,7 @@ const GameControlPanel = ({
   // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
   // 开局就定死没有,永久不可用 → 撤掉)。后台分析照跑、只给数子用,见 `GamePage` 的 `wantAnalysis`。
   const localGame = gameState.game_type === 'pvp_local';
+  const onlineGame = gameState.game_type === 'pvp_online';
 
   // 这一局是不是**人机自由对弈**。规范 §8 那张「按对弈方式判」的表只有一句话:
   // 自由对弈能用的,另外四种(升降级 / 本地两人 / 在线大厅 / 星阵人机)一概不能。
@@ -357,6 +379,10 @@ const GameControlPanel = ({
   };
   const stateWord = (c: 'B' | 'W') =>
     isGameOver ? t('game:ended', '本局结束')
+      : onlineGame && platformPhase === 'scoring' ? t('game:ogs_scoring_short', 'OGS 数子中')
+      : onlineGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
+      : onlineGame && c !== gameState.platform_my_color && c === toMove ? t('game:opponent_turn', '对方回合')
+      : onlineGame && c === gameState.platform_my_color && c !== toMove ? t('game:waiting_for_opponent', '等待对方')
       : c !== toMove ? t('game:played', '已落子')
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');
@@ -448,6 +474,17 @@ const GameControlPanel = ({
     };
   };
 
+  const onlineClock = (c: 'B' | 'W'): { value: string; label: string } => {
+    const reading = platformClock ? remoteReading(c === 'B' ? platformClock.black_time : platformClock.white_time) : null;
+    if (reading === null) return { value: '—', label: t('game:ogs_clock_wait', '等待 OGS 计时') };
+    return {
+      value: formatTime(reading.seconds),
+      label: platformClock?.paused ? t('game:ogs_clock_paused', 'OGS 已暂停 · 上次同步')
+        : reading.byoyomi ? t('game:ogs_clock_byo_sync', '读秒 · OGS 上次同步')
+          : t('game:ogs_clock_sync', 'OGS 上次同步'),
+    };
+  };
+
   /* 游客(无主会话)那一句。**灰而不说原因是这份稿子在别处专门骂过的事**,而
      galaxy 那边把它挂在 tooltip 上 —— 那条在这里不成立:**这是 7 寸触屏,
      悬浮提示够不着**。所以走 kiosk 自己那套:`reason` 上 `title`/`aria-description`,
@@ -458,7 +495,7 @@ const GameControlPanel = ({
   const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
 
   // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
-  const analysisActions: KioskAction[] = engineMode || localGame || rankedGame ? [] : [
+  const analysisActions: KioskAction[] = engineMode || localGame || onlineGame || rankedGame ? [] : [
     {
       key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
@@ -492,17 +529,31 @@ const GameControlPanel = ({
       onClick: territory.onRequest, disabled: territory.disabled,
       reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
     }] : []),
-    {
-      key: 'count', icon: 'squares-four', label: t('Score', '数子'),
-      onClick: () => onAction('count'), disabled: !canCount,
-      reason: t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin)),
-    },
+    ...(onlineGame && platformPhase === 'scoring' ? [
+      {
+        key: 'ogs-score-accept', icon: 'handshake' as const, label: t('game:ogs_score_accept_no_dead', '确认无死子'),
+        onClick: () => onAction('ogs-score-accept'), disabled: onlineScoringPending || !gameState.platform_my_color,
+        reason: t('game:ogs_score_no_dead', '当前未同步 OGS 死子标记；将按无死子确认'),
+      },
+      {
+        key: 'ogs-score-reject', icon: 'arrow-counter-clockwise' as const, label: t('game:ogs_score_reject', '继续下棋'),
+        onClick: () => onAction('ogs-score-reject'), disabled: onlineScoringPending || !gameState.platform_my_color,
+      },
+    ] : [{
+      key: 'count', icon: 'squares-four' as const, label: t('Score', '数子'),
+      onClick: () => onAction('count'), disabled: onlineGame || !canCount,
+      reason: onlineGame ? t('game:ogs_scoring_wait', '由 OGS 进入计分阶段后才能操作')
+        : t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin)),
+    }]),
     ...(undoAllowed ? [{
       key: 'undo', icon: 'arrow-counter-clockwise' as const, label: t('Undo', '悔棋'),
       onClick: () => onAction('undo'),
     }] : []),
-    { key: 'pass', icon: 'hand-pointing', label: t('game:pass', '停一手'), onClick: () => onAction('pass') },
-    { key: 'resign', icon: 'flag', label: t('Resign', '认输'), onClick: () => onAction('resign'), danger: true },
+    { key: 'pass', icon: 'hand-pointing', label: t('game:pass', '停一手'), onClick: () => onAction('pass'),
+      disabled: onlineGame && (platformPhase === 'scoring' || platformPhase === 'paused' || platformPhase === 'finished'
+        || !gameState.platform_my_color || gameState.player_to_move !== gameState.platform_my_color) },
+    { key: 'resign', icon: 'flag', label: t('Resign', '认输'), onClick: () => onAction('resign'),
+      disabled: onlineGame && (!gameState.platform_my_color || platformPhase === 'finished'), danger: true },
   ];
 
   const actions = engineMode
@@ -535,15 +586,17 @@ const GameControlPanel = ({
 
   return (
     <>
-      {localGame ? (
+      {localGame || onlineGame ? (
         <>
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
-            turn={toMove === 'W' && !isGameOver} state={stateWord('W')} clock={clockFor('W')} lang={lang} t={t}
+            turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            clock={onlineGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t}
           />
           <PlayerRow
             color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
-            turn={toMove === 'B' && !isGameOver} state={stateWord('B')} clock={clockFor('B')} lang={lang} t={t}
+            turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            clock={onlineGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
           />
         </>
       ) : (
@@ -654,7 +707,15 @@ const GameControlPanel = ({
             ? `领地判断：本局剩余 ${territory.remaining ?? '—'} 次`
             : hardwareFault
             ?? physicalStatus
-            ?? (engineMode
+            ?? (onlineGame
+              ? platformPhase === 'scoring'
+                ? t('game:ogs_score_no_dead', '当前未同步 OGS 死子标记；将按无死子确认')
+                : platformPhase === 'paused'
+                  ? t('game:ogs_paused', 'OGS 对局已暂停')
+                  : platformPhase === 'finished'
+                    ? t('game:ogs_result_wait', '等待 OGS 结果同步')
+                  : t('game:ogs_scoring_disabled', '数子由 OGS 裁定，双方停一手后进入计分')
+              : engineMode
               ? (isGameOver ? '' : t('game:golaxy_judge_hint', '数子只查看当前形势，不结束对局'))
               : analysisRequiresLogin && analysisActions.length > 0
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')

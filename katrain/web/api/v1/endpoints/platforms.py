@@ -145,6 +145,19 @@ class DeclineChallengeRequest(BaseModel):
     challenge_id: str
 
 
+class OGSScoringRequest(BaseModel):
+    session_id: str
+    action: Literal["accept", "reject"]
+    stones: str = ""
+
+    @field_validator("stones")
+    @classmethod
+    def _stones(cls, value: str) -> str:
+        if len(value) % 2 or not value.isascii() or any(not "a" <= letter <= "z" for letter in value):
+            raise ValueError("stones must be OGS coordinate pairs")
+        return value
+
+
 class AutomatchRequest(BaseModel):
     board_size: int = 19
     time_control: dict = {}
@@ -817,10 +830,51 @@ async def platform_challenges(platform: str, request: Request, user: User = Depe
     """List open challenges on a platform (OGS seek graph)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
-    if adapter is None or not adapter.is_connected:
+    if adapter is None:
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
-    challenges = await adapter.get_open_challenges()
+    if not adapter.is_connected:
+        if platform == "ogs":
+            raise HTTPException(status_code=502, detail="Unable to load challenges from platform")
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    try:
+        challenges = await adapter.get_open_challenges()
+    except RuntimeError as exc:
+        logger.warning("Platform challenge list unavailable for %s: %s", platform, exc)
+        raise HTTPException(status_code=502, detail="Unable to load challenges from platform") from exc
     return {"challenges": challenges}
+
+
+@router.get("/{platform}/active-game")
+async def active_platform_game(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Return this local owner's resumable game, without exposing other users' games."""
+    require_platform_owner(platform, request, user)
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        code = 502 if platform == "ogs" else 400
+        raise HTTPException(status_code=code, detail="Platform connection unavailable")
+    try:
+        session_id = await pm.recover_active_game_for_owner(platform, user.id)
+    except Exception as exc:
+        logger.warning("Could not restore active %s game for user %s", platform, user.id, exc_info=True)
+        raise HTTPException(status_code=502, detail="Unable to restore platform game") from exc
+    pending_challenge_id = adapter.pending_direct_challenge_id() if platform == "ogs" and hasattr(adapter, "pending_direct_challenge_id") else None
+    return {"session_id": session_id, "pending_challenge_id": pending_challenge_id}
+
+
+@router.post("/ogs/scoring")
+async def ogs_scoring_action(
+    req: OGSScoringRequest, request: Request, user: User = Depends(require_writable_user)
+):
+    """Relay a stone-removal decision; OGS remains the only result authority."""
+    require_platform_owner("ogs", request, user)
+    gateway = request.app.state.platform_gateway
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    try:
+        return await gateway.scoring_action(req.session_id, user.id, req.action, req.stones)
+    except PlatformMoveRejectedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 # --- Challenge flow ---

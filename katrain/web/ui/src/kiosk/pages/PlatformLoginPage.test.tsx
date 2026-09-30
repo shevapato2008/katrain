@@ -245,19 +245,17 @@ describe('登录独立成页', () => {
     expect(screen.getByText('未连接 · 用手机验证码登录')).toBeInTheDocument();
   });
 
-  it('返回键回连接页', async () => {
+  it('返回键回对弈首页', async () => {
     renderLogin('golaxy');
     await screen.findByTestId('login-mode-tabs');
     await userEvent.click(screen.getByRole('button', { name: /返回对弈|Back/ }));
-    expect(screen.getByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform');
+    expect(screen.getByTestId('__loc')).toHaveTextContent('/kiosk/play');
   });
 
   it('登录成功后的目标路由在当前这一版里真的存在(真 Router + 真 KioskRoutes,不复制路由表)', async () => {
     // ⚠️ **不在测试里复制一份路由表** —— 用的是 `KioskApp.tsx` 导出的真 `KioskRoutes`,
     // 断言的是「跳过去那条路由真的渲染得出来」,不是「我调了这个字符串」。
-    // 切片 A 之前 `/kiosk/play/cross-platform/golaxy` 还不存在,所以目标必须是
-    // `/kiosk/play/cross-platform/engine/golaxy`(今天就有),这条测试顺带锁死这一点:
-    // 写成前者的话,这里会卡在兜底路由(`*` → `/kiosk/play`),下面的 findByTestId 会超时。
+    // 登录成功必须进入星阵专页，而非直接进入人机设置。
     render(
       <ThemeProvider theme={kioskTheme}>
         {/* `KioskRoutes` 的路由段都是相对路径("play/…"),要靠一层 `path="/kiosk/*"` 的
@@ -274,6 +272,15 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
-    expect(await screen.findByTestId('platform-engine-setup-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('golaxy-home-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('platform-engine-setup-page')).toBeNull();
+  });
+
+  it('OGS 密码登录成功进入 OGS 专页', async () => {
+    renderLogin('ogs');
+    await userEvent.type(screen.getByTestId('login-field-user'), 'alice');
+    await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    expect(await screen.findByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform/ogs');
   });
 });

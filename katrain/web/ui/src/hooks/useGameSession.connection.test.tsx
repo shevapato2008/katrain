@@ -87,6 +87,23 @@ describe('useGameSession · 断线与一次性错误分开记(N25)', () => {
     expect(result.current.platformPendingMove).toBeNull();
   });
 
+  it('uses the game socket for OGS clock and phase events, clearing them for a new session', async () => {
+    const { result } = await connected();
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({
+      type: 'clock_update', black_time: { thinking_time: 83 }, white_time: 91,
+      current_player: 'B', paused: false,
+    }) } as MessageEvent); });
+    expect(result.current.platformClock).toEqual({
+      black_time: { thinking_time: 83 }, white_time: 91, current_player: 'B', paused: false,
+    });
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'platform_phase_changed', phase: 'scoring' }) } as MessageEvent); });
+    expect(result.current.platformPhase).toBe('scoring');
+
+    await act(async () => { result.current.setSessionId('session-456'); });
+    expect(result.current.platformClock).toBeNull();
+    expect(result.current.platformPhase).toBeNull();
+  });
+
   it('断线后卸载再回到同一局，重新 GET 状态并建立第二条 WS，没有认输或新建局', async () => {
     const first = await connected();
     act(() => { sockets[0].onclose?.({ code: 1006, reason: '', wasClean: false }); });

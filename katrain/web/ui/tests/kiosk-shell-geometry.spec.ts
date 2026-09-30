@@ -529,8 +529,8 @@ test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', a
 // 顶栏在所有层级恒为品牌态,返回 / 视图切换 / 上下文标题全部下放到这条控件带。
 // 位置写死是**判据本身**:两种布局下纵向位置完全相同,有盘页和无盘页来回切时不上下跳。
 
-test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');
+test('§11 星阵专页布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform/golaxy');
   const screen = await box(page, '.kiosk-screen');
   const bar = await box(page, '.kiosk-pagebar');
   const back = await box(page, '.kiosk-pagebar__back');
@@ -543,8 +543,8 @@ test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高
   expect(back.x).toBe(bar.x);
 });
 
-test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');           // 布局 B
+test('§11 有盘页与 OGS 专页来回切,页控条的纵向位置一模一样', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform/ogs');       // 布局 B
   const b = await box(page, '.kiosk-pagebar');
   await boot(page, '/kiosk/play/ai/setup/free');            // 布局 A
   const a = await box(page, '.kiosk-pagebar');
@@ -555,7 +555,7 @@ test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样',
 });
 
 test('§11 长标题不许把返回键挤成两行 —— 触点位置在每一屏都一样', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform');
+  await boot(page, '/kiosk/play/cross-platform/golaxy');
   const shortBack = await box(page, '.kiosk-pagebar__back');
   const shortBar = await box(page, '.kiosk-pagebar');
   // 把数据造到会溢出 —— 装得下的长度下量出来的数一概不算
@@ -1292,14 +1292,14 @@ test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键
   expect(dist.navBottom, '分布视图:翻手键没贴右栏底').toBe(dist.railBottom);
 });
 
-// ── D2 稿外三屏:只接壳,不推导版式 ──────────────────────────────────────
+// ── D2 层级屏:共享外壳 ──────────────────────────────────────────────────
 
 /**
- * 研究 / 跨平台 / 标定 —— 稿子没画这三屏。**没有参照物就没有四图闸**,
+ * 研究 / 星阵专页 / OGS 专页 / 标定 —— 专页另有已批准的四图闸,
  * (摆谱选谱页 `/kiosk/baipu` 2026-09-14 改成重定向到棋谱屏 —— 它不再是一屏,从名单里拿掉。)
  * 所以它们的验收只有这一条:**共享外壳这一层是对的,切模块的时候不跳**。
  *
- * 三条判据合起来就是「切模块不跳」在这三屏上的全部要求:
+ * 三条判据合起来就是「切模块不跳」在这些屏上的共享外壳要求:
  *   ① 顶栏 1024×56 贴在 (0,0) —— 规范 §5 防跳铁律 1
  *   ② 内容区左缘 x16、通栏 992 —— 外边距 16 是规范开头明写「全部用 px」的那几个之一
  *   ③ 这三屏都不是 Dock 项 ⇒ `dockLevelOf` 判 2 ⇒ 没有 Dock ⇒ 内容区下缘贴画布底 600
@@ -1310,7 +1310,8 @@ test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键
  */
 const D2_SCREENS: readonly [string, string][] = [
   ['/kiosk/research', '研究'],
-  ['/kiosk/play/cross-platform', '跨平台'],
+  ['/kiosk/play/cross-platform/golaxy', '星阵专页'],
+  ['/kiosk/play/cross-platform/ogs', 'OGS 专页'],
   ['/kiosk/vision/setup', '标定'],
 ];
 
@@ -1334,7 +1335,7 @@ for (const [path, name] of D2_SCREENS) {
     // 差的正好是 `--content-pad-y` 的 14。两套数不矛盾,别混着读。
     expect(content.y, '内容区上缘没接顶栏下沿').toBe(topbar.h);
 
-    // 这三屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
+    // 这些屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
     const dock = await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length);
     expect(dock, `${name} 出了 Dock —— 它不在 Dock 词典里`).toBe(0);
     expect(content.bottom, '没有 Dock,内容区下缘就该贴画布底 600').toBe(600);

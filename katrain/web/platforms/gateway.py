@@ -6,13 +6,14 @@ For local games: pass through to KaTrain directly (existing behavior).
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import logging
 import time
 from typing import Optional
 
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import PlatformGameContext, PlatformMove, PlatformPass, PlatformResign
+from katrain.web.platforms.models import GamePhase, PlatformGameContext, PlatformMove, PlatformPass, PlatformResign
 
 logger = logging.getLogger("katrain_web")
 
@@ -159,10 +160,16 @@ class PlatformCommandGateway:
             return False
         return is_platform_engine_session(session)
 
+    def _is_unmapped_online_game(self, session_id: str) -> bool:
+        try:
+            return getattr(self._sm.get_session(session_id), "game_type", None) == "pvp_online"
+        except KeyError:
+            return False
+
     async def play_move(self, session_id: str, col: int, row: int, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
-            if self._is_ended_engine_game(session_id):
+            if self._is_ended_engine_game(session_id) or self._is_unmapped_online_game(session_id):
                 raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_play(session_id, col, row)
 
@@ -171,6 +178,8 @@ class PlatformCommandGateway:
 
         if ctx.is_engine:
             return await self._play_engine_move(session_id, ctx, col, row)
+        if ctx.platform == "ogs":
+            return await self._play_ogs_action(session_id, ctx, (col, row), user_id)
 
         # Platform game — remote first
         ctx.set_pending("move")
@@ -195,6 +204,105 @@ class PlatformCommandGateway:
             ctx.clear_pending()
             self._broadcast_rejected(session_id, "move_rejected")
             raise PlatformMoveRejectedError("Platform rejected the move")
+
+    async def _play_ogs_action(
+        self, session_id: str, ctx: PlatformGameContext, coords: Optional[tuple[int, int]], user_id: int
+    ) -> dict:
+        """Send once, then accept only an exact OGS echo or reconciled snapshot."""
+        from katrain.core.game import IllegalMoveException
+        from katrain.core.sgf_parser import Move
+
+        session = self._sm.get_session(session_id)
+        adapter = self._pm.get_adapter("ogs")
+        if adapter is None or not getattr(adapter, "is_connected", True):
+            raise PlatformMoveRejectedError("OGS connection unavailable", reason="engine_error")
+        with session.lock:
+            game = session.katrain.game
+            if ctx.is_pending:
+                raise PlatformMoveRejectedError("Previous move still pending", reason="pending")
+            if ctx.needs_resync:
+                raise PlatformMoveRejectedError("OGS position requires reconciliation", reason="position_changed")
+            # KaTrain derives end_result after two passes even when OGS enters
+            # stone removal and later resumes play. Only OGS's finished phase
+            # or a committed remote terminal may close this online game.
+            if ctx.game_phase != GamePhase.PLAYING or getattr(game, "terminal", None) is not None:
+                raise PlatformMoveRejectedError("OGS game is not accepting moves", reason="game_ended")
+            if user_id not in (0, session.user_id):
+                raise PlatformMoveRejectedError("Not this game's owner", reason="move_rejected")
+            if game.current_node.next_player != ctx.my_color:
+                raise PlatformMoveRejectedError("Not your turn", reason="move_rejected")
+            try:
+                _check_move_legal(game, Move(coords=coords, player=ctx.my_color))
+            except IllegalMoveException as exc:
+                raise PlatformMoveRejectedError(str(exc), reason="illegal_move") from exc
+            expected_number = ctx.last_confirmed_move + 1
+            submitted_node = game.current_node
+            ctx.set_pending("pass" if coords is None else "move")
+            ctx.pending_coords = (-1, -1) if coords is None else coords
+
+        if coords is not None:
+            self._broadcast_pending(session_id, *coords)
+
+        send_error = None
+        try:
+            if coords is None:
+                sent = await adapter.submit_pass(ctx.remote_game_id)
+            else:
+                sent = await adapter.submit_move(ctx.remote_game_id, *coords)
+            if not sent:
+                send_error = "OGS move was not sent"
+            else:
+                try:
+                    await asyncio.wait_for(ctx.pending_confirmation.wait(), timeout=PLATFORM_ACK_TIMEOUT)
+                except asyncio.TimeoutError:
+                    pass
+        except Exception as exc:
+            send_error = str(exc)
+
+        def exact_remote_move() -> bool:
+            try:
+                snapshot = adapter.get_game_snapshot(ctx.remote_game_id)
+            except (RuntimeError, AttributeError):
+                return False
+            if snapshot.game_id != ctx.remote_game_id or len(snapshot.moves) < expected_number:
+                return False
+            move = snapshot.moves[expected_number - 1]
+            expected_coords = (-1, -1) if coords is None else coords
+            return (
+                move.game_id == ctx.remote_game_id
+                and move.move_number == expected_number
+                and move.color == ctx.my_color
+                and (move.col, move.row) == expected_coords
+            )
+
+        def locally_confirmed() -> bool:
+            with session.lock:
+                return (
+                    ctx.last_confirmed_move >= expected_number
+                    and session.katrain.game.current_node is not submitted_node
+                )
+
+        confirmed = exact_remote_move() and locally_confirmed()
+        if not confirmed:
+            # A send failure can happen after bytes reached OGS. Reconcile once;
+            # never issue a second game/move from this request.
+            try:
+                await adapter.fetch_game_snapshot(ctx.remote_game_id)
+            except Exception as exc:
+                logger.warning("OGS move reconciliation failed for %s: %s", ctx.remote_game_id, exc)
+            confirmed = exact_remote_move() and locally_confirmed()
+
+        if confirmed:
+            if ctx.is_pending:
+                ctx.clear_pending()
+            return {"status": "ok"}
+
+        # Keep uncertain sends pending. A delayed OGS echo may still arrive,
+        # and a second physical detection must not silently send the move again.
+        ctx.needs_resync = True
+        reason = "position_changed" if ctx.last_confirmed_move >= expected_number else "engine_error"
+        self._broadcast_rejected(session_id, reason)
+        raise PlatformMoveRejectedError(send_error or "OGS did not confirm this move", reason=reason)
 
     async def _play_engine_move(self, session_id: str, ctx, col: int, row: int) -> dict:
         return await self._play_engine_turn(session_id, ctx, (col, row))
@@ -371,7 +479,7 @@ class PlatformCommandGateway:
     async def pass_move(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
-            if self._is_ended_engine_game(session_id):
+            if self._is_ended_engine_game(session_id) or self._is_unmapped_online_game(session_id):
                 raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_pass(session_id)
 
@@ -380,6 +488,8 @@ class PlatformCommandGateway:
 
         if ctx.is_engine:
             return await self._play_engine_pass(session_id, ctx)
+        if ctx.platform == "ogs":
+            return await self._play_ogs_action(session_id, ctx, None, user_id)
 
         ctx.set_pending("pass")
         adapter = self._pm.get_adapter(ctx.platform)
@@ -399,7 +509,7 @@ class PlatformCommandGateway:
     async def resign(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
-            if self._is_ended_engine_game(session_id):
+            if self._is_ended_engine_game(session_id) or self._is_unmapped_online_game(session_id):
                 raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_resign(session_id)
 
@@ -407,6 +517,23 @@ class PlatformCommandGateway:
             adapter = self._pm.get_adapter(ctx.platform)
             await adapter.resign_engine_game(ctx.remote_game_id)
             return self._local_resign(session_id)
+
+        if ctx.platform == "ogs":
+            session = self._sm.get_session(session_id)
+            if user_id != session.user_id or ctx.game_phase == GamePhase.FINISHED:
+                raise PlatformMoveRejectedError("OGS game is not available", reason="game_ended")
+            if ctx.is_pending:
+                raise PlatformMoveRejectedError("Previous action still pending", reason="pending")
+            adapter = self._pm.get_adapter("ogs")
+            if adapter is None or not getattr(adapter, "is_connected", True):
+                raise PlatformMoveRejectedError("OGS connection unavailable", reason="engine_error")
+            ctx.set_pending("resign")
+            try:
+                await adapter.resign(ctx.remote_game_id)
+            except Exception as exc:
+                ctx.clear_pending()
+                raise PlatformMoveRejectedError(str(exc), reason="engine_error") from exc
+            return {"status": "pending"}
 
         ctx.set_pending("resign")
         adapter = self._pm.get_adapter(ctx.platform)
@@ -432,6 +559,33 @@ class PlatformCommandGateway:
             await adapter.submit_scoring_action(ctx.remote_game_id, {"action": "request_count"})
             return {"status": "platform_scoring_requested"}
         return {"status": "scoring_not_supported"}
+
+    async def scoring_action(self, session_id: str, user_id: int, action: str, stones: str = "") -> dict:
+        """Relay an OGS stone-removal decision; OGS alone supplies the result."""
+        ctx = self._pm.get_game_context(session_id)
+        if ctx is None or ctx.platform != "ogs" or ctx.game_phase != GamePhase.SCORING:
+            raise PlatformMoveRejectedError("OGS is not in scoring phase", reason="move_rejected")
+        session = self._sm.get_session(session_id)
+        if user_id != session.user_id:
+            raise PlatformMoveRejectedError("Not this game's owner", reason="move_rejected")
+        if action not in ("accept", "reject") or ctx.is_pending:
+            raise PlatformMoveRejectedError("Invalid or pending scoring action", reason="pending")
+        adapter = self._pm.get_adapter("ogs")
+        if adapter is None or not getattr(adapter, "is_connected", True):
+            raise PlatformMoveRejectedError("OGS connection unavailable", reason="engine_error")
+        payload = {"action": action}
+        if action == "accept":
+            payload["stones"] = stones
+        ctx.set_pending(f"score_{action}")
+        try:
+            sent = await adapter.submit_scoring_action(ctx.remote_game_id, payload)
+        except Exception as exc:
+            ctx.clear_pending()
+            raise PlatformMoveRejectedError(str(exc), reason="engine_error") from exc
+        if not sent:
+            ctx.clear_pending()
+            raise PlatformMoveRejectedError("OGS scoring action was not sent", reason="engine_error")
+        return {"status": "pending"}
 
     # --- Local passthrough ---
 

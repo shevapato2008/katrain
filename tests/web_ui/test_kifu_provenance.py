@@ -62,6 +62,8 @@ def test_exact_content_dedup_logs_sources_and_can_undo_only_its_changes():
         master = _album("data/kifu-album/CWI_History_Full/a.sgf")
         duplicate = _album("data/kifu-album/19x19/b.sgf")
         db.add_all([master, duplicate])
+        db.flush()
+        ensure_album_source(db, duplicate.id, "data/kifu-album/CWI_Jowa/extra.sgf", "manual")
         db.commit()
         report = backfill_catalog(db, SEED, dry_run=False, batch_key="batch-1", batch_size=1)
         db.refresh(duplicate)
@@ -73,6 +75,13 @@ def test_exact_content_dedup_logs_sources_and_can_undo_only_its_changes():
             for source in db.query(KifuSource).join(KifuAlbumSource).filter(KifuAlbumSource.album_id == master.id)
         }
         assert sources == {"CWI", "19x19"}
+        assert (
+            db.query(KifuAlbumSource)
+            .filter_by(album_id=master.id, origin_path="data/kifu-album/CWI_Jowa/extra.sgf")
+            .one()
+            .match_method
+            == "manual"
+        )
 
         repeated = backfill_catalog(db, SEED, dry_run=False, batch_key="batch-repeat", batch_size=1)
         assert repeated["exact_duplicates"] == 0
@@ -91,6 +100,7 @@ def test_exact_content_dedup_logs_sources_and_can_undo_only_its_changes():
         assert duplicate.duplicate_of_id is None
         paths = {row.origin_path for row in db.query(KifuAlbumSource).filter_by(album_id=master.id)}
         assert "data/kifu-album/19x19/b.sgf" not in paths
+        assert "data/kifu-album/CWI_Jowa/extra.sgf" not in paths
         assert "data/kifu-album/extra/unrelated.sgf" in paths
         assert db.query(KifuDedupBatch).filter_by(batch_key="batch-1").one().status == "undone"
 
@@ -298,6 +308,63 @@ def test_existing_duplicate_pointer_is_preserved_when_master_has_higher_id():
         assert report["exact_duplicates"] == 0
         assert hidden.duplicate_of_id == master.id
         assert master.duplicate_of_id is None
+
+
+def test_existing_hidden_duplicate_contributes_every_source_link_to_master():
+    engine = _db()
+    with Session(engine) as db:
+        hidden = _album("data/kifu-album/19x19/hidden.sgf")
+        master = _album("data/kifu-album/CWI_History_Full/master.sgf")
+        db.add_all([hidden, master])
+        db.flush()
+        hidden.duplicate_of_id = master.id
+        ensure_album_source(db, hidden.id, hidden.source_path, "source_path")
+        ensure_album_source(db, hidden.id, "data/kifu-album/CWI_Jowa/extra.sgf", "manual")
+        db.commit()
+
+        backfill_catalog(db, None, dry_run=False, batch_key="all-hidden-sources", batch_size=1)
+        links = {
+            (source.source_key, link.origin_path, link.match_method)
+            for link, source in db.query(KifuAlbumSource, KifuSource)
+            .join(KifuSource, KifuAlbumSource.source_id == KifuSource.id)
+            .filter(KifuAlbumSource.album_id == master.id)
+        }
+        assert ("19x19", hidden.source_path, "exact_sgf") in links
+        assert ("CWI", "data/kifu-album/CWI_Jowa/extra.sgf", "manual") in links
+        again = backfill_catalog(db, None, dry_run=False, batch_key="all-hidden-sources-rerun", batch_size=1)
+        assert again["source_links_added"] == 0
+
+
+def test_resumed_batch_undo_keeps_unrelated_source_added_between_runs(monkeypatch):
+    engine = _db()
+    with Session(engine) as db:
+        first = _album("data/kifu-album/CWI_History_Full/a.sgf")
+        second = _album("data/kifu-album/19x19/b.sgf")
+        third = _album("data/kifu-album/CWI_Jowa/c.sgf")
+        db.add_all([first, second, third])
+        db.commit()
+        original = catalog_backfill.classify_source_path
+
+        def interrupt_on_third(path):
+            if path.endswith("/c.sgf"):
+                raise RuntimeError("simulated interruption")
+            return original(path)
+
+        monkeypatch.setattr(catalog_backfill, "classify_source_path", interrupt_on_third)
+        with pytest.raises(RuntimeError, match="interruption"):
+            backfill_catalog(db, None, dry_run=False, batch_key="interleaved", batch_size=2)
+        db.rollback()
+        unrelated_path = "data/kifu-album/other/manual.sgf"
+        ensure_album_source(db, first.id, unrelated_path, "manual")
+        db.commit()
+
+        monkeypatch.setattr(catalog_backfill, "classify_source_path", original)
+        backfill_catalog(db, None, dry_run=False, batch_key="interleaved", batch_size=2)
+        undo_dedup_batch(db, "interleaved")
+        paths = {row.origin_path for row in db.query(KifuAlbumSource).filter_by(album_id=first.id)}
+        assert unrelated_path in paths
+        assert second.source_path not in paths
+        assert third.source_path not in paths
 
 
 def test_backfill_fetches_existing_sources_once_per_batch():

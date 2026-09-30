@@ -37,7 +37,6 @@ from katrain.web.core.models_db import (
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.provenance import (
     classify_source_path,
-    ensure_album_source,
     mainline_signature,
     sgf_sha256,
     source_links_snapshot,
@@ -312,9 +311,22 @@ def _record_change(db: Session, batch_id: int, album: KifuAlbum, before_pointer:
     after_links = source_links_snapshot(db, album.id)
     if album.duplicate_of_id != before_pointer or after_links != before_links:
         existing = db.query(KifuDedupChange).filter_by(batch_id=batch_id, album_id=album.id).one_or_none()
+        before_keys = {(link["source_id"], link["origin_path"], link["match_method"]) for link in before_links}
+        newly_added = [
+            link
+            for link in after_links
+            if (link["source_id"], link["origin_path"], link["match_method"]) not in before_keys
+        ]
         if existing:
             existing.duplicate_of_id_after = album.duplicate_of_id
-            existing.source_links_after = after_links
+            recorded = {
+                (link["source_id"], link["origin_path"], link["match_method"]): link
+                for link in existing.source_links_after
+            }
+            recorded.update(
+                {(link["source_id"], link["origin_path"], link["match_method"]): link for link in newly_added}
+            )
+            existing.source_links_after = [recorded[key] for key in sorted(recorded)]
         else:
             db.add(
                 KifuDedupChange(
@@ -323,10 +335,42 @@ def _record_change(db: Session, batch_id: int, album: KifuAlbum, before_pointer:
                     duplicate_of_id_before=before_pointer,
                     duplicate_of_id_after=album.duplicate_of_id,
                     source_links_before=before_links,
-                    source_links_after=after_links,
+                    source_links_after=before_links + newly_added,
                     sgf_sha256_before=sgf_sha256(album.sgf_content),
                 )
             )
+
+
+def _aggregate_duplicate_sources(db: Session, master: KifuAlbum, duplicate: KifuAlbum, dry_run: bool):
+    """Attach every source of a content-identical row to its visible master."""
+    master_before = source_links_snapshot(db, master.id)
+    duplicate_links = source_links_snapshot(db, duplicate.id)
+    if not any(link["origin_path"] == duplicate.source_path for link in duplicate_links):
+        duplicate_links.append(
+            {"source_id": None, "origin_path": duplicate.source_path, "match_method": "source_path"}
+        )
+    existing = {(link["source_id"], link["origin_path"]) for link in master_before}
+    added = 0
+    for link in duplicate_links:
+        key = (link["source_id"], link["origin_path"])
+        if key in existing or (link["source_id"] is None and any(path == link["origin_path"] for _, path in existing)):
+            continue
+        added += 1
+        existing.add(key)
+        if not dry_run:
+            if link["source_id"] is None:
+                raise ValueError(f"album {duplicate.id} lacks its own source link")
+            db.add(
+                KifuAlbumSource(
+                    album_id=master.id,
+                    source_id=link["source_id"],
+                    origin_path=link["origin_path"],
+                    match_method="exact_sgf" if link["match_method"] == "source_path" else link["match_method"],
+                )
+            )
+    if added and not dry_run:
+        db.flush()
+    return added, master_before
 
 
 def backfill_catalog(
@@ -464,17 +508,10 @@ def backfill_catalog(
                     report["pointer_conflicts"] += 1
                     continue
                 seen_content.setdefault(digest, existing_master.id)
-                has_aggregate = (
-                    db.query(KifuAlbumSource.id)
-                    .filter_by(album_id=existing_master.id, origin_path=album.source_path)
-                    .first()
-                )
-                if not has_aggregate:
-                    report["source_links_added"] += 1
-                    if not dry_run:
-                        before = source_links_snapshot(db, existing_master.id)
-                        ensure_album_source(db, existing_master.id, album.source_path, "exact_sgf")
-                        _record_change(db, batch.id, existing_master, existing_master.duplicate_of_id, before)
+                added, before = _aggregate_duplicate_sources(db, existing_master, album, dry_run)
+                report["source_links_added"] += added
+                if added and not dry_run:
+                    _record_change(db, batch.id, existing_master, existing_master.duplicate_of_id, before)
                 continue
             master_id = seen_content.get(digest)
             if (
@@ -483,12 +520,11 @@ def backfill_catalog(
                 and db.get(KifuAlbum, master_id).sgf_content == album.sgf_content
             ):
                 report["exact_duplicates"] += 1
+                added, master_before = _aggregate_duplicate_sources(db, db.get(KifuAlbum, master_id), album, dry_run)
+                report["source_links_added"] += added
                 if not dry_run:
                     master = db.get(KifuAlbum, master_id)
-                    master_before = source_links_snapshot(db, master.id)
                     duplicate_before = source_links_snapshot(db, album.id)
-                    if ensure_album_source(db, master.id, album.source_path, "exact_sgf"):
-                        report["source_links_added"] += 1
                     album.duplicate_of_id = master.id
                     db.flush()
                     _record_change(db, batch.id, master, master.duplicate_of_id, master_before)

@@ -66,7 +66,7 @@
 
 来源由 `kifu_sources` 和 `kifu_album_sources` 保存，一盘棋可有多个来源，API 返回 `sources` 数组。现有目录 `19x19` 单独记为 `19x19`；`CWI_*` 与已核实的 `Go_Seigen` 专集记为 `CWI`；没有证据的路径记为 `unknown`，不能仅凭 SGF 的 `SO`/`US` 字段推断为星阵。过去因同内容跳过而未入库的第二份来源，只有重新读取原文件并通过完全相同的 SGF 内容校验后才能补到主谱；在此之前数组可能不完整。
 
-新库先运行 `python -m katrain.web.kifu.migrate_catalog --validate` 建立实际外键和索引。数据回填使用 `python -m katrain.web.kifu.catalog_backfill --seed /path/to/kifu-name-seed.json` 预览，再加 `--apply --batch-key <unique-key>` 分批写入；连接从 `KATRAIN_DATABASE_URL` 环境变量读取。完全相同的 SGF 才自动标记重复，主线相同仅列为人工候选。`--undo-dedup-batch <key>` 只撤销已完成批次的重复指针和聚合到主谱的来源链接；不会撤销普通来源、身份关联或待审译名，所以正式写入前必须保留可恢复的数据库备份。
+已有 `kifu_albums` 的棋谱库在部署前运行 `python -m katrain.web.kifu.migrate_catalog --validate` 建立实际外键和索引；全新空库先通过常规应用初始化建表。数据回填使用 `python -m katrain.web.kifu.catalog_backfill --seed /path/to/kifu-name-seed.json` 预览，再加 `--apply --batch-key <unique-key>` 分批写入；连接从 `KATRAIN_DATABASE_URL` 环境变量读取。完全相同的 SGF 才自动标记重复，主线相同仅列为人工候选。`--undo-dedup-batch <key>` 只撤销已完成批次的重复指针和聚合到主谱的来源链接；不会撤销普通来源、身份关联或待审译名，所以正式写入前必须保留可恢复的数据库备份。
 
 ---
 

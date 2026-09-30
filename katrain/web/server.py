@@ -4011,7 +4011,7 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
 
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
-    from katrain.web.core.vision_pump import route_vision_event
+    from katrain.web.core.vision_pump import is_stale_illegal_change, route_vision_attention, route_vision_event
 
     log = logging.getLogger("katrain_web.vision")
     while True:
@@ -4022,8 +4022,21 @@ async def _vision_event_pump(app: FastAPI):
                     if isinstance(evt, dict) and evt.get("type") == "led_glow":
                         _adjust_led_brightness(app, evt.get("data") or {}, log)
                         continue
+                    if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
+                        try:
+                            state = app.state.session_manager.get_session(vision.bound_session_id).last_state
+                        except KeyError:
+                            state = None
+                        if is_stale_illegal_change(evt, state):
+                            log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
+                            continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
+                        route_vision_attention(
+                            evt,
+                            getattr(app.state, "physical_play", None),
+                            bound=bool(vision.bound_session_id),
+                        )
                     route_vision_event(
                         evt,
                         list(app.state.vision_ws_clients.values()),

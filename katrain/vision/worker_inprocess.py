@@ -315,9 +315,12 @@ class InProcessAdapter:
         # 「不是落子」的用户标签:{(row, col): 归一化后的那一格样本}。与参考帧同一个采样器,
         # 换了单应/换了帧尺寸就一起作废(样本对不上新的像素块)。
         self._denied: dict[tuple[int, int], np.ndarray] = {}
+        self._pending_denials: set[tuple[int, int]] = set()
+        self._denial_unlit_wait: dict[tuple[int, int], int] = {}
         self._denial_sampler: CellSampler | None = None
         self._last_ref_gray: np.ndarray | None = None
         self._glow_pending: set[tuple[int, int]] = set()
+        self._glow_lit_at = 0.0
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
@@ -469,18 +472,25 @@ class InProcessAdapter:
         if self._denied:
             logger.info("not-a-stone: dropping %d label(s) (%s)", len(self._denied), reason)
         self._denied.clear()
+        self._pending_denials.clear()
+        self._denial_unlit_wait.clear()
         self._denial_sampler = None
 
     def _deny_stone(self, row: int, col: int) -> None:
-        """用户按了「不是落子」:把这一格**此刻**的样子存成否认样本。
+        """用户按了「不是落子」:采样未被 LED 照亮的画面。
 
         存不下就直接说(这一格现在没法比对 —— 过曝、死黑或者压根没有结构),不要假装记住了:
         「记住了但永远比不上」和「没记住」在用户那里看起来一样,而前者会让我们以为这条需求生效了。
         """
-        gray = self._last_ref_gray
-        if gray is None:
-            logger.warning("not-a-stone (%d,%d): no frame to sample — the label was NOT stored", row, col)
+        cell = (row, col)
+        if cell in self._lit_points or cell in self._denial_unlit_wait or self._last_ref_gray is None:
+            # The last gray frame may contain lamp glare (or no frame exists yet).
+            # Keep the user's feedback until a fresh, settled dark frame arrives.
+            self._pending_denials.add(cell)
             return
+        self._store_denial(row, col, self._last_ref_gray)
+
+    def _store_denial(self, row: int, col: int, gray: np.ndarray) -> bool:
         sampler = self._sampler_for(gray)
         if self._denial_sampler is not sampler:
             self._denied.clear()  # patches from another warp/frame-size are not comparable
@@ -490,11 +500,31 @@ class InProcessAdapter:
             logger.warning(
                 "not-a-stone (%d,%d): this cell cannot be compared right now (flat/blown/crushed) — "
                 "the label was NOT stored",
-                row, col,
+                row,
+                col,
             )
-            return
+            return False
         self._denied[(row, col)] = patch
         logger.info("not-a-stone (%d,%d) stored; %d cell(s) now denied", row, col, len(self._denied))
+        return True
+
+    def _consume_pending_denials(self, gray: np.ndarray) -> None:
+        # SET_LIT_POINTS([]) can precede the serial board actually going dark.
+        # Count only new warped frames, using the same settle budget as LED glow.
+        for cell in list(self._denial_unlit_wait):
+            if cell in self._lit_points:
+                continue
+            remaining = self._denial_unlit_wait[cell] - 1
+            if remaining:
+                self._denial_unlit_wait[cell] = remaining
+            else:
+                del self._denial_unlit_wait[cell]
+        for row, col in list(self._pending_denials):
+            cell = (row, col)
+            if cell in self._lit_points or cell in self._denial_unlit_wait:
+                continue
+            if self._store_denial(row, col, gray):
+                self._pending_denials.discard(cell)
 
     def _live_denials(self, gray: np.ndarray | None) -> list[tuple[int, int]]:
         """本帧仍然站得住的否认标签,顺手丢掉已经失效的。**每帧只调一次**(要采样)。
@@ -763,6 +793,7 @@ class InProcessAdapter:
                 "data": {
                     "row": int(row),
                     "col": int(col),
+                    "lit_at": self._glow_lit_at,
                     "ok": bool(result.ok),
                     "score": round(float(result.score), 1),
                     "peak": round(float(result.peak), 1),
@@ -980,10 +1011,15 @@ class InProcessAdapter:
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
                     # The user's "not a move" label and baipu monitor both use these unenhanced pixels.
-                    want_gray = (self._ref_mode != "off" or self._denied) and (self._bound or self._monitor) and not self._paused
+                    want_gray = (
+                        (self._ref_mode != "off" or self._denied or self._pending_denials or self._denial_unlit_wait)
+                        and (self._bound or self._monitor)
+                        and not self._paused
+                    )
                     ref_gray = to_gray(warped) if want_gray else None
                     if ref_gray is not None:
                         self._last_ref_gray = ref_gray
+                        self._consume_pending_denials(ref_gray)
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
                     if tr:
@@ -1376,6 +1412,9 @@ class InProcessAdapter:
                 for cell in [c for c in self._denied if board[c[0]][c[1]] != EMPTY]:
                     del self._denied[cell]
                     logger.info("not-a-stone (%d,%d) released: the game record now has a stone there", *cell)
+                self._pending_denials.difference_update(
+                    {c for c in self._pending_denials if board[c[0]][c[1]] != EMPTY}
+                )
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
@@ -1454,11 +1493,14 @@ class InProcessAdapter:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:
                 lit = {tuple(p) for p in cmd.data.get("points", [])}
+                for cell in self._lit_points - lit:
+                    self._denial_unlit_wait[cell] = GLOW_SETTLE_FRAMES
                 self._masked_lit_points = {tuple(p) for p in cmd.data.get("mask_points", cmd.data.get("points", []))}
                 if lit - self._lit_points:
                     # A lamp just came on: the last frame read before this command is its dark reference.
                     self._glow_ref = self._last_raw
                     self._glow_pending = lit - self._lit_points
+                    self._glow_lit_at = time.monotonic()
                     self._glow_wait = GLOW_SETTLE_FRAMES
                 elif not lit:
                     self._glow_ref, self._glow_pending = None, set()

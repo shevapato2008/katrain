@@ -43,6 +43,7 @@ interface VisionSyncOverlayProps {
    * modal) is already up, so this generic "board detection abnormal" dialog never
    * stacks on top of / behind it. Default false — unrelated call sites are unaffected. */
   suppressBoardLost?: boolean;
+  onAttentionChange?: (points: Array<{ row: number; col: number }>) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,7 +78,7 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, onAttentionChange, sessionId, boardSize, playerToMove, currentNodeId, platformPendingStone = null, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
   const { speak, stop } = useVoice();
 
@@ -87,13 +88,25 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
 
   const [recovery, setRecovery] = useState<RecoveryState>(initialRecoveryState);
   const spokenRecoveryRef = useRef<string | null>(null);
+  const deniedMismatchRef = useRef<{ key: string; until: number } | null>(null);
   const stoneRecovery = recovery.blocking?.kind === 'stone' ? recovery.blocking : null;
+  const mismatchRecovery = recovery.blocking?.kind === 'mismatch' ? recovery.blocking : null;
   const recoveryVoiceName: VoiceName | null = stoneRecovery
     ? stoneRecovery.unbacked ? 'stone_offcenter' : 'suspected_move'
-    : null;
+    : mismatchRecovery ? 'board_mismatch' : null;
   const recoveryVoiceIdentity = stoneRecovery && recoveryVoiceName
     ? `${recoveryVoiceName}:${stoneRecovery.row}:${stoneRecovery.col}:${stoneRecovery.from?.[0] ?? '-'}:${stoneRecovery.from?.[1] ?? '-'}`
-    : null;
+    : mismatchRecovery ? `board_mismatch:${JSON.stringify(mismatchRecovery.positions)}:${JSON.stringify(mismatchRecovery.missing)}` : null;
+
+  useEffect(() => {
+    const blocking = recovery.blocking;
+    const points = blocking?.kind === 'mismatch'
+      ? [...blocking.positions, ...blocking.missing].map(([row, col]) => ({ row, col }))
+      : blocking?.kind === 'capture' ? blocking.positions.map(({ row, col }) => ({ row, col }))
+        : blocking?.kind === 'stone' ? [{ row: blocking.row, col: blocking.col }] : [];
+    onAttentionChange?.(points);
+    return () => onAttentionChange?.([]);
+  }, [recovery.blocking, onAttentionChange]);
 
   // -- Modal: board_lost (>10s persistent) ----------------------------------
   const [boardLostOpen, setBoardLostOpen] = useState(false);
@@ -119,9 +132,16 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     setRecovery((state) => ({ ...state, blocking: null }));
   }, []);
 
-  const handleMismatchDismiss = useCallback(() => {
+  const handleMismatchNotStone = useCallback((row: number, col: number) => {
+    if (mismatchRecovery) {
+      deniedMismatchRef.current = {
+        key: JSON.stringify([mismatchRecovery.positions, mismatchRecovery.missing]),
+        until: Date.now() + 10_000,
+      };
+    }
+    API.visionDenyStone(row, col).catch(() => undefined);
     setRecovery((state) => ({ ...state, blocking: null }));
-  }, []);
+  }, [mismatchRecovery]);
 
   // -- Ambiguous move card callbacks -----------------------------------------
   const handleAmbiguousConfirm = useCallback((x: number, y: number) => {
@@ -148,6 +168,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
   useEffect(() => {
     if (currentNodeIdRef.current === currentNodeId) return;
     currentNodeIdRef.current = currentNodeId;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- node change clears an in-flight recognition candidate
     setRecovery((state) => reduceRecoveryState(state, { kind: 'node_advanced' }));
   }, [currentNodeId]);
 
@@ -169,10 +190,15 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     if (newEvents.length === 0) return;
 
     const nowMs = Date.now();
-    setRecovery((state) => newEvents.reduce(
-      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs, platformPendingStone }),
-      state,
-    ));
+    setRecovery((state) => newEvents.reduce((next, event) => {
+      if (event.type === 'synced' || event.type === 'move_pending') deniedMismatchRef.current = null;
+      if (event.type === 'illegal_change' && deniedMismatchRef.current) {
+        const key = JSON.stringify([event.data.positions ?? [], event.data.missing ?? []]);
+        if (key === deniedMismatchRef.current.key && nowMs < deniedMismatchRef.current.until) return next;
+        deniedMismatchRef.current = null;
+      }
+      return reduceRecoveryState(next, { kind: 'vision_event', event, nowMs, platformPendingStone });
+    }, state));
 
     for (const event of newEvents) {
       const eventType = event.type;
@@ -242,6 +268,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     <>
       {/* ---- Non-blocking toast ---- */}
       <Snackbar
+        className="kiosk-game-toast"
         open={toastOpen}
         autoHideDuration={SNACKBAR_DURATION}
         onClose={closeToast}
@@ -274,7 +301,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
           playerToMove={playerToMove}
           onAdoptObserved={handleAdoptObserved}
           onRestored={handleMismatchRestored}
-          onDismiss={handleMismatchDismiss}
+          onNotStone={handleMismatchNotStone}
         />
       )}
 
@@ -296,7 +323,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
           suppressBoardLost short-circuits visibility only — the 10s timer/state machine
           above keeps running so it reflects reality once the higher-priority surface clears. */}
       {boardLostOpen && !suppressBoardLost && recovery.blocking === null && (
-        <Dialog open maxWidth="xs" fullWidth>
+        <Dialog open maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
           <DialogTitle sx={{ textAlign: 'center', color: 'error.main' }}>
             棋盘检测异常
           </DialogTitle>

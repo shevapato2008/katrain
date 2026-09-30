@@ -4,7 +4,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
 // by the endgame result card below.
 // 顶条那三颗常亮状态灯(Videocam / GpsFixed)和 Refresh、ExitToApp 一起撤了 ——
-// 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
+// 标题与返回归页控条,状态显示归 L1 镜像栏。
 import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
@@ -16,6 +16,7 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
+import { useVoice } from '../hooks/useVoice';
 import { useVision } from '../context/VisionContext';
 import { readSessionPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
@@ -38,6 +39,7 @@ import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage'
 import { useGameCelebration } from '../hooks/useGameCelebration';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
+type AttentionPoint = { row: number; col: number }; // vision row 0 is the top edge
 
 export interface AiTurnState {
   aiColor: 'B' | 'W' | null;
@@ -138,9 +140,8 @@ const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCar
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
-    <Box data-testid="endgame-card" sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 70,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, px: 3, py: 2, borderRadius: 3,
-          bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+    <Dialog open className="kiosk-game-side-dialog" data-testid="endgame-card">
+      <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
       <EmojiEvents data-testid="result-trophy" className={celebrating ? 'game-win-trophy' : undefined}
         sx={{ color: 'primary.main', fontSize: 32 }} />
       <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
@@ -164,12 +165,13 @@ const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCar
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('game:black_short', '黑')} {gameState.prisoner_count.B} / {t('game:white_short', '白')} {gameState.prisoner_count.W}
       </Typography>
-      <Box sx={{ display: 'flex', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('game:stay_on_board', '留在棋盘')}</Button>
         <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
         <Button variant="contained" onClick={onExit} sx={{ bgcolor: 'primary.main' }}>{t('Confirm result', '确认终局')}</Button>
       </Box>
-    </Box>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -246,10 +248,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }, [sessionGone]);
 
   const [reviewError, setReviewError] = useState(false);
-  // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
-  // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
-  const resyncingRef = useRef(false);
-  const [resyncError, setResyncError] = useState(false);
   const [connectionNoticeDismissed, setConnectionNoticeDismissed] = useState(false);
 
   // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
@@ -258,6 +256,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
   const [engineEvaluation, setEngineEvaluation] = useState<{ winrate: number; delta: number } | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
+  const [judgeUndecided, setJudgeUndecided] = useState<{ positionKey: string; points: AttentionPoint[] } | null>(null);
+  const [visionAttentionPoints, setVisionAttentionPoints] = useState<AttentionPoint[]>([]);
+  const { speak, stop: stopJudgeVoice } = useVoice();
   const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
   // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
   // calls before the first resolves (double quota spend + last-response-wins races).
@@ -275,13 +276,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
-  // refreshStatus drives the 重置识别 recovery button clearing immediately on success.
-  const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
+  const { visionStatus, isVisionEnabled } = useVision();
 
   // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
   // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
   // 「屏幕 / 实体盘」,偏好存在 `utils/playInput.ts`;这一屏下面**每一处**实体盘 UI
-  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、重置识别键、识别浮层、
+  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、识别浮层、
   // 引擎落子错误弹层)认的都得是**两段之和**,不是设备那一段。
   //
   // 偏好只在**挂载时读一次**:这一局落在哪儿是开局那一刻定的(开局设置屏上写着
@@ -461,7 +461,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setEngineOverlay(null);
     setEngineEvaluation(null);
     setActiveEngineKind(null);
-  }, [enginePositionKey]);
+    setJudgeUndecided(null);
+    stopJudgeVoice();
+  }, [enginePositionKey, stopJudgeVoice]);
 
   // Task 11: the physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint)
   // mirror the 支招 (options) overlay above. Whenever activeEngineKind moves AWAY from
@@ -515,26 +517,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     API.hintDismiss().catch(() => undefined);
   }, []);
 
-  // Always-available fallback when vision sync gets stuck (blue-LED / 确认中 deadlock):
-  // re-baseline to the digital board, drop the stuck removal, resume detection. Refresh
-  // status on success so the button clears immediately instead of after the ≤3s poll;
-  // surface a failure instead of silently swallowing it.
-  const handleResetSync = useCallback(async () => {
-    if (resyncingRef.current) return;   // 双击守卫:页控条那个图标键没有忙碌态可显示
-    resyncingRef.current = true;
-    try {
-      await API.visionResetSync();
-      await refreshStatus();
-    } catch {
-      setResyncError(true);
-    } finally {
-      resyncingRef.current = false;
-    }
-  }, [refreshStatus]);
-
-  // 「卡了 10 秒才把重置识别键放出来」那一整套(`stuckEligible` + `syncStuck` 计时器)撤了:
-  // 它存在的唯一理由是「别在例行拍照时闪一个警告按钮」—— 而现在这个键不是警告,是页控条上
-  // 常驻的那个页级图标键(§11),实体模式下一直在。**必须先卡住一次才能自救**是上一版的形状。
   // Remaining-道具 counts for the button badges. Account-level (not per-game),
   // so it's safe to fetch once on mount and re-fetch after each analysis settles
   // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
@@ -594,6 +576,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
   const boardSize = gameState.board_size[0];
+  const attentionPoints = visionAttentionPoints.length > 0 ? visionAttentionPoints
+    : judgeUndecided?.positionKey === enginePositionKey ? judgeUndecided.points : [];
   // 超时判负后(spec §3.3 步骤 3):`end_result` 由 `_do_timeout` 写成 `{赢家}+T`
   // (`current_node.player` = 上一手落子方 = 赢家,见 `interface.py:_do_timeout`)。
   // 只在本地对局说这句话 —— Global Constraints #1:钟/超时判负只对 `pvp_local` 生效。
@@ -907,6 +891,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setActiveEngineKind(null);
       setEngineOverlay(null);
       setEngineEvaluation(null);
+      setJudgeUndecided(null);
+      stopJudgeVoice();
       return;
     }
     if (!sessionId || !isAuthenticated) return;
@@ -922,7 +908,32 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       // below so a discarded overlay still updates the count that was actually spent.
       void refreshItemCounts();
       if (res.ok) {
+        if (kind === 'judge' && res.ended && res.state) {
+          if (res.state.game_id === session.gameState?.game_id) session.setGameState(res.state);
+          setJudgeUndecided(null);
+          stopJudgeVoice();
+          setEngineOverlay(null);
+          setActiveEngineKind(null);
+          return;
+        }
         if (enginePositionRef.current !== requestedPosition) return;
+        if (kind === 'judge') {
+          const judge = res.data as { ownership: JudgePoint[]; winner: string; delta: number };
+          if (judge.winner === 'U') {
+            setJudgeUndecided({
+              positionKey: requestedPosition,
+              points: judge.ownership.filter((point) => point.owner === 'U')
+                .map((point) => ({ row: session.gameState!.board_size[0] - 1 - point.row, col: point.col })),
+            });
+            speak('judge_undecided');
+          } else {
+            setJudgeUndecided(null);
+            stopJudgeVoice();
+          }
+        } else {
+          setJudgeUndecided(null);
+          stopJudgeVoice();
+        }
         const overlay: EngineOverlay =
           kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
@@ -999,7 +1010,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
-      <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
+      <Box sx={{ position: 'absolute', top: 8, right: 56, zIndex: 90, width: 380 }}>
         <AiLadderSettlementAlert feedback={settlementFeedback} />
       </Box>
       {/* 位置走 `.gthink`(go-screens.css)—— **居中在棋盘上,不是整页上**。
@@ -1048,6 +1059,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       */}
       {/* 一次性操作失败说人话，6 秒后清除，也可手动关闭。 */}
       <Snackbar
+        className="kiosk-game-toast"
         open={!!session.error && !session.connectionLost}
         autoHideDuration={6000}
         onClose={() => session.clearError()}
@@ -1068,6 +1080,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           说明弹层开着时，底下整块页面(含页控条的「退出对局」)都在遮罩之下点不到，指哪个具体按钮
           都会指错。 */}
       <Snackbar
+        className="kiosk-game-toast"
         open={!!session.connectionLost && !connectionNoticeDismissed}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
@@ -1105,7 +1118,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* §11 布局 A:盘 516 贴 x16 + 16 + 右栏 460。三个数一个都不写死 ——
           `.kiosk-layout-a` / `.kiosk-board` 用的是 `tokens.css` 的 `--board-size` / `--content-x`。
 
-          上一版这里是**一条 46 高的自定义顶条**(标题 + 三颗视觉状态灯 + 重置识别 + 退出)
+          上一版这里是**一条 46 高的自定义顶条**(标题 + 三颗视觉状态灯 + 退出)
           加一个 `flex` 的盘/面板并排。两处不对:
             · 标题和返回属于**页控条**(§11 恒在 y70–114),不许各屏自己搭一条;
             · 三颗常亮状态灯是 **L1 镜像栏**的东西(§5),L3 上没有它们的位置。
@@ -1132,6 +1145,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               suppressEndResultOverlay={!!timeoutLoserColor}
               onPaintedNode={session.acknowledgePaintedNode}
             />
+            {attentionPoints.map(({ row, col }) => (
+              <span
+                key={`${row}-${col}`}
+                className="kiosk-attention-marker"
+                data-testid="game-attention-marker"
+                aria-label={formatGtpCoord(col, boardSize - 1 - row, boardSize)}
+                style={{ left: `${(col + 0.5) / boardSize * 100}%`, top: `${(row + 0.5) / boardSize * 100}%` }}
+              />
+            ))}
           </div>
           <div className="kiosk-board__ruler kiosk-board__ruler--right">
             {rulerRows.map((r) => <span key={`r${r}`}>{r}</span>)}
@@ -1148,15 +1170,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onBack={handleExit}
             title={gameTitle}
             sub={gameSetupLine}
-            // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
-            // 以屏幕上的数字棋盘为权威重建识别基线。上一版它只在 `syncStuck` 之后才出现 ——
-            // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
-            action={physicalPlay ? {
-              icon: 'arrows-clockwise',
-              label: t('vision:resync_screen_authority', '重置识别 · 以屏幕上的数字棋盘局面为准'),
-              visibleLabel: t('Re-sync', '重置识别'),
-              onClick: () => { void handleResetSync(); },
-            } : undefined}
           />
           <GameControlPanel
             onTimeout={localGame ? undefined : handleClockExpired}
@@ -1219,7 +1232,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Resign confirmation (state D) */}
       {localGame ? (
         /* 本地对局:两个人都在屏前,「认输」不能默认判轮到走的那一方(P5)—— 先问谁认输。 */
-        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)} className="kiosk-game-side-dialog">
           <DialogTitle sx={{ color: 'text.primary' }}>{t('game:which_side_resigns', '哪一方认输？')}</DialogTitle>
           <DialogContent><Typography>{t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</Typography></DialogContent>
           <DialogActions disableSpacing sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
@@ -1235,7 +1248,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </DialogActions>
         </Dialog>
       ) : (
-        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)} className="kiosk-game-side-dialog">
           <DialogTitle sx={{ color: 'text.primary' }}>{resignTitle}</DialogTitle>
           <DialogActions>
             <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
@@ -1265,7 +1278,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Exit confirmation */}
       {localGame ? (
         /* 本地对局退出 = 删会话、不存谱(v2 D2)。已终局不会走到这里(handleExit 直接离开)。 */
-        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)} className="kiosk-game-side-dialog">
           <DialogTitle>{t('game:exit_confirm_title', '退出这局？')}</DialogTitle>
           <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
           <DialogActions sx={{ display: 'flex', gap: 1 }}>
@@ -1276,7 +1289,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </DialogActions>
         </Dialog>
       ) : (
-        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)} className="kiosk-game-side-dialog">
           <DialogTitle>{exitResignTitle}</DialogTitle>
           <DialogActions>
             <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
@@ -1310,7 +1323,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* 这局在服务端已经没了。说人话 + 给出口。说的是「本机没有这一局了」,不是「你认输了」:
           回收会话不会结束远端对局(真正的远端认输在 gateway.py:399-420)。 */}
-      <Dialog open={sessionGone && !gameGoneAcknowledged}
+      <Dialog open={sessionGone && !gameGoneAcknowledged} className="kiosk-game-side-dialog"
               onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
         <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
         <DialogContent>
@@ -1328,7 +1341,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Dialog>
 
       {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
-      <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>
+      <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)} className="kiosk-game-side-dialog">
         <DialogTitle>
           {insufficientKind && t('{item} exhausted', '{item}道具已用尽').replace('{item}', ENGINE_KIND_LABEL[insufficientKind])}
         </DialogTitle>
@@ -1342,6 +1355,27 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setInsufficientKind(null)}>{t('Close', '关闭')}</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!judgeUndecided && judgeUndecided.positionKey === enginePositionKey && !isGameOver}
+        className="kiosk-game-side-dialog" data-testid="golaxy-judge-undecided">
+        <DialogTitle>{t('game:golaxy_undecided_title', '还有归属未定的位置')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">{t('game:golaxy_undecided_body', '星阵尚未给出胜负裁定，这局继续进行。')}</Typography>
+          {judgeUndecided && judgeUndecided.points.length > 0 && (
+            <Typography sx={{ mt: 1.5, color: '#f3d6ff', fontWeight: 700, fontSize: 22, overflowWrap: 'anywhere' }}>
+              {judgeUndecided.points.map(({ row, col }) => formatGtpCoord(col, boardSize - 1 - row, boardSize)).join('、')}
+            </Typography>
+          )}
+          <Typography variant="caption" sx={{ display: 'block', mt: 1 }}>
+            {t('game:golaxy_undecided_led', '紫圈标出电子棋盘位置，实体棋盘对应位置闪紫灯。')}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" onClick={() => { stopJudgeVoice(); setJudgeUndecided(null); setEngineOverlay(null); setActiveEngineKind(null); }}>
+            {t('game:keep_playing', '继续对局')}
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -1364,16 +1398,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             color: gameState.player_to_move === 'B' ? 1 : 2,
           } : null}
           suppressBoardLost={escalationOpen || recalOpen}
+          onAttentionChange={setVisionAttentionPoints}
         />
       )}
 
       {/* AI hint panel + error */}
       {hint && <HintPanel moves={hint.moves} timeoutS={hint.timeout_s} onClose={closeHint} />}
-      <Snackbar open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}
+      <Snackbar className="kiosk-game-toast" open={!!hintError} autoHideDuration={5000} onClose={() => setHintError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
 
       {/* Camera disconnect toast */}
-      <Snackbar open={physicalPlay && cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
+      <Snackbar className="kiosk-game-toast" open={physicalPlay && cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCameraDisconnectToast(false)}>
           {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
@@ -1382,6 +1417,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical catch-up reminder toast */}
       <Snackbar
+        className="kiosk-game-toast"
         open={physicalPlay && reminderOpen}
         autoHideDuration={8000}
         onClose={() => setReminderOpen(false)}
@@ -1415,33 +1451,26 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       />
 
       {/* 数子在途 —— 服务端可能正在给这一手补分析,这几秒里屏上不能什么都不说 */}
-      <Snackbar open={counting} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+      <Snackbar className="kiosk-game-toast" open={counting} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="info">{t('game:counting', '正在数子…')}</Alert>
       </Snackbar>
 
       {/* Count (数子) error toast */}
-      <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
+      <Snackbar className="kiosk-game-toast" open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
       </Snackbar>
       <Snackbar open={!!timeoutError && timeoutError.scope === timeoutScope}
+        className="kiosk-game-toast"
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} onClose={() => setTimeoutError(null)}>
         <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.message}</Alert>
       </Snackbar>
-      <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
+      <Snackbar className="kiosk-game-toast" open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
       </Snackbar>
 
-      {/* Re-sync (重置识别) failure toast */}
-      <Snackbar open={resyncError} autoHideDuration={5000} onClose={() => setResyncError(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="error" onClose={() => setResyncError(false)}>
-          {t('Re-sync failed, please retry', '重置识别失败，请重试')}
-        </Alert>
-      </Snackbar>
-
       {/* Review (复盘) save-SGF failure toast */}
-      <Snackbar open={reviewError} autoHideDuration={5000} onClose={() => setReviewError(false)}
+      <Snackbar className="kiosk-game-toast" open={reviewError} autoHideDuration={5000} onClose={() => setReviewError(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setReviewError(false)}>
           {t('Could not open review, please retry', '无法进入复盘，请重试')}
@@ -1454,7 +1483,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           这一条说的是「对面没了,你现在要么重试落子、要么退出弃局」——
           6 秒之后屏上什么都不剩,而那盘棋还卡在那儿,用户不知道自己在等什么。
           `<Alert onClose>` 那颗 × 是唯一的关法,右上角,手指够得到。 */}
-      <Snackbar open={engineErrorToast} autoHideDuration={null} onClose={() => setEngineErrorToast(false)}
+      <Snackbar className="kiosk-game-toast" open={engineErrorToast} autoHideDuration={null} onClose={() => setEngineErrorToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setEngineErrorToast(false)}>
           {t('AI connection error — please retry your move, or exit to abandon the game.', 'AI 连接出错，请重试落子，或退出以放弃对局。')}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import random
 from typing import Literal, Optional
 
@@ -220,6 +221,39 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
             orchestrator.show_hint(points)
     except Exception:
         logger.exception("show_hint failed for session %s (LED/IPC error ignored)", session_id)
+
+
+def _judge_result(winner: str, delta) -> Optional[str]:
+    """Convert Golaxy's half-point stone delta to an SGF result.
+
+    ``U`` has no terminal result. A decided winner without a usable margin
+    must be rejected rather than saved with a made-up score.
+    """
+    if isinstance(delta, bool) or not isinstance(delta, (int, float)) or not math.isfinite(delta):
+        raise HTTPException(status_code=502, detail="Golaxy judge returned an invalid score")
+    if winner == "U":
+        return None
+    if winner == "D" and delta == 0:
+        return "0"
+    if winner in ("B", "W") and delta != 0:
+        return f"{winner}+{abs(delta) / 2:g}"
+    raise HTTPException(status_code=502, detail="Golaxy judge returned an inconsistent result")
+
+
+def _maybe_show_judge_attention(app_state, session_id: str, result, board_size: int) -> None:
+    """Blink undecided judge points on the bound physical board."""
+    orchestrator = getattr(app_state, "physical_play", None)
+    vision = getattr(app_state, "vision", None)
+    if orchestrator is None or vision is None or vision.bound_session_id != session_id:
+        return
+    try:
+        points = [(board_size - 1 - p.row, p.col) for p in result.ownership if p.owner == "U"]
+        if points:
+            orchestrator.show_attention(points, source="judge")
+        else:
+            orchestrator.clear_attention("judge")
+    except Exception:
+        logger.exception("judge attention failed for session %s (LED/IPC error ignored)", session_id)
 
 
 # --- Credential management ---
@@ -626,6 +660,20 @@ async def engine_analysis(
     # detected afterward. Only "options" ever shows a hint, so skip the lock
     # acquisition for the other kinds.
     position_token = _hint_position_token(request.app.state, req.session_id) if req.kind == "options" else None
+    judge_session = judge_game = judge_node = judge_context = None
+    if req.kind == "judge":
+        try:
+            judge_session = request.app.state.session_manager.get_session(req.session_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}") from exc
+        judge_context = pm.get_game_context(req.session_id)
+        if judge_context is None or not judge_context.is_engine:
+            raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+        with judge_session.lock:
+            if judge_context.is_pending or judge_session.katrain.game.end_result:
+                raise HTTPException(status_code=409, detail="Engine game is busy or already ended")
+            judge_game = judge_session.katrain.game
+            judge_node = judge_game.current_node
 
     with temporary_analysis_lease(request.app, user, req.session_id, f"platform:{req.kind}", "platform analysis"):
         try:
@@ -636,6 +684,43 @@ async def engine_analysis(
             raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
         if req.kind == "options":
             _maybe_show_hint(request.app.state, req.session_id, position_token, result)
+
+        if req.kind == "judge":
+            terminal_result = _judge_result(result.winner, result.delta)
+            with judge_session.lock:
+                current_context = pm.get_game_context(req.session_id)
+                if (
+                    current_context is not judge_context
+                    or current_context.is_pending
+                    or judge_session.katrain.game is not judge_game
+                    or judge_game.current_node is not judge_node
+                    or judge_game.end_result
+                ):
+                    raise HTTPException(status_code=409, detail="Engine game position changed during judge")
+                if terminal_result is not None:
+                    judge_session.katrain._commit_end_state(terminal_result, node=judge_node)
+                    judge_session.game_ended = True
+                state = judge_session.katrain.get_state()
+                judge_session.last_state = state
+                board_size = judge_game.board_size[0]
+
+            if terminal_result is not None:
+                # Keep all I/O outside session.lock and the game commit lock.
+                judge_session.katrain.update_state()
+                from katrain.web.server import _record_platform_engine_game
+
+                await _record_platform_engine_game(judge_session, request.app, user)
+                await pm.end_platform_game(judge_context.remote_game_id, terminal_result)
+            _maybe_show_judge_attention(request.app.state, req.session_id, result, board_size)
+            import dataclasses
+
+            return {
+                "ok": True,
+                "kind": req.kind,
+                "data": dataclasses.asdict(result),
+                "ended": terminal_result is not None,
+                "state": state,
+            }
 
         import dataclasses
 

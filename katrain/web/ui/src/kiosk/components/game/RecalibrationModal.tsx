@@ -53,7 +53,7 @@ const RecalibrationModal = ({ open, onClose }: Props) => {
   };
 
   return (
-    <Dialog open={open && !dismissed} onClose={handleDismiss} maxWidth="xs" fullWidth>
+    <Dialog open={open && !dismissed} onClose={handleDismiss} maxWidth="xs" fullWidth className="kiosk-game-side-dialog">
       <DialogTitle sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, textAlign: 'center' }}>
         <WarningIcon sx={{ color: 'warning.main', fontSize: 30 }} />
         {t('Board may have moved', '棋盘可能被移动')}

@@ -226,7 +226,7 @@ export type EngineAnalysisData =
   | { sequence: AnalysisPoint[]; winrate: number; delta: number } // variation
   | { ownership: JudgePoint[]; winner: string; delta: number }; // judge
 export type EngineAnalysisResponse =
-  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData }
+  | { ok: true; kind: "area" | "options" | "judge" | "variation"; data: EngineAnalysisData; ended?: boolean; state?: GameState }
   | { ok: false; reason: "insufficient"; kind: string };
 // Remaining metered-道具 counts for the analysis-button badges. Each is a
 // number, or null when the platform didn't report it (render as "unknown",

@@ -78,7 +78,6 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
    */
   action?: {
     icon: IconName; label: string; onClick: () => void;
-    visibleLabel?: ReactNode;
     state?: 'bad';
     pressed?: boolean;
   };
@@ -98,7 +97,6 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
       : Math.min(segment.options.length - 1, i + 1);
     segment.onChange(segment.options[next][0]);
   };
-  const actionLabeled = action?.visibleLabel != null;
   return (
     <div className="kiosk-pagebar" data-testid={testId}>
       {onBack && (
@@ -133,7 +131,6 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
           type="button"
           className={[
             'kiosk-pagebar__iconbtn',
-            actionLabeled && 'kiosk-pagebar__iconbtn--labeled',
             action.state === 'bad' && 'is-bad',
             !segment && !status && 'kiosk-pagebar__spacer',
           ].filter(Boolean).join(' ')}
@@ -143,7 +140,6 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
           onClick={action.onClick}
         >
           <Icon name={action.icon} />
-          {actionLabeled ? <span>{action.visibleLabel}</span> : null}
         </button>
       )}
       {segment && (

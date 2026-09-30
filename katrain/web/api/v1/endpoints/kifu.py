@@ -18,9 +18,9 @@ router = APIRouter()
 _HISTORICAL_PLAYER_ALIASES = {
     "吴清源": ("go seigen",),
     "吳清源": ("吴清源", "go seigen"),
-    "本因坊道策": ("honinbo dosaku",),
-    "本因坊丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
-    "本因坊秀策": ("shusaku", "yasuda eisai"),
+    "道策": ("honinbo dosaku",),
+    "丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
+    "秀策": ("shusaku", "yasuda eisai"),
     "木谷实": ("kitani minoru",),
     "木谷實": ("木谷实", "kitani minoru"),
 }
@@ -97,7 +97,7 @@ async def list_kifu_albums(
     if q:
         # Search translated historical names against the original SGF player
         # names, and show player matches before newer events bearing that name.
-        terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q, ()))
+        terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
         player_match = or_(
             *(
                 func.lower(field).contains(term)

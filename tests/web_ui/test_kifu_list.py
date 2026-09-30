@@ -158,7 +158,8 @@ def test_historical_player_alias_precedes_newer_tournament_name(db_with_albums):
     assert result.items[0].player_black == "Go Seigen"
 
 
-def test_historical_chinese_name_finds_english_archive_record(db_with_albums):
+@pytest.mark.parametrize("query", ["本因坊道策", "道策"])
+def test_historical_chinese_name_finds_english_archive_record(db_with_albums, query):
     db_with_albums.add(
         models_db.KifuAlbum(
             player_black="Honinbo Dosaku",
@@ -172,13 +173,14 @@ def test_historical_chinese_name_finds_english_archive_record(db_with_albums):
     )
     db_with_albums.commit()
 
-    result = _list_albums(db_with_albums, q="本因坊道策")
+    result = _list_albums(db_with_albums, q=query)
 
     assert result.total == 1
     assert result.items[0].player_black == "Honinbo Dosaku"
 
 
-def test_shusaku_alias_finds_team_game_with_short_name(db_with_albums):
+@pytest.mark.parametrize("query", ["本因坊秀策", "秀策"])
+def test_shusaku_alias_finds_team_game_with_short_name(db_with_albums, query):
     db_with_albums.add(
         models_db.KifuAlbum(
             player_black="Shuwa,Shusaku",
@@ -192,7 +194,7 @@ def test_shusaku_alias_finds_team_game_with_short_name(db_with_albums):
     )
     db_with_albums.commit()
 
-    result = _list_albums(db_with_albums, q="本因坊秀策")
+    result = _list_albums(db_with_albums, q=query)
 
     assert result.total == 1
     assert result.items[0].player_black == "Shuwa,Shusaku"

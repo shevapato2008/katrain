@@ -39,6 +39,8 @@ def test_seed_has_eleven_languages_and_audited_historical_names():
         assert display_name(seed, "player", "吴清源", lang) == expected.get(lang, "吴清源")
     assert display_name(seed, "event", "吴清源杯", "en") == "Wu Qingyuan Cup"
     assert display_name(seed, "event", "吴清源杯", "ru") == "吴清源杯"
+    assert display_name(seed, "event", "Oteai", "jp") == "大手合"
+    assert display_name(seed, "event", "大手合", "en") == "Oteai"
 
 
 def test_unsupported_or_unverified_translation_falls_back_to_original():
@@ -126,5 +128,5 @@ def test_cli_validation_without_inventory_does_not_claim_zero_coverage(monkeypat
     monkeypatch.setattr("sys.argv", ["seed_kifu_translations.py"])
     assert main() == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["seed_entities"] == 6
+    assert report["seed_entities"] == 7
     assert report["coverage"] is None

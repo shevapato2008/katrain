@@ -94,6 +94,21 @@
       }
     },
     {
+      "key": "event:oteai",
+      "kind": "event",
+      "canonical": "Oteai",
+      "aliases": ["大手合"],
+      "alias_sources": {
+        "大手合": "https://www.nihonkiin.or.jp/profile/faq/"
+      },
+      "names": {
+        "en": {"value": "Oteai", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/english/topics/03/topics2003_01.htm"},
+        "cn": {"value": "大手合", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%89%8B%E5%90%88"},
+        "tw": {"value": "大手合", "status": "verified", "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E6%89%8B%E5%90%88"},
+        "jp": {"value": "大手合", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/profile/faq/"}
+      }
+    },
+    {
       "key": "event:wu_qingyuan_cup",
       "kind": "event",
       "canonical": "吴清源杯",

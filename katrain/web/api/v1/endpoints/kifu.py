@@ -5,7 +5,7 @@ from typing import Optional, List
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
@@ -13,6 +13,17 @@ from katrain.web.core.models_db import KifuAlbum
 from katrain.web.core.repository import RemoteServiceUnavailableError
 
 router = APIRouter()
+
+# The archive uses Japanese romanizations while many kiosk users search in Chinese.
+_HISTORICAL_PLAYER_ALIASES = {
+    "吴清源": ("go seigen",),
+    "吳清源": ("吴清源", "go seigen"),
+    "道策": ("honinbo dosaku",),
+    "丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
+    "秀策": ("shusaku", "yasuda eisai"),
+    "木谷实": ("kitani minoru",),
+    "木谷實": ("木谷实", "kitani minoru"),
+}
 
 
 async def _from_dispatcher(call, not_found_detail: str):
@@ -84,10 +95,20 @@ async def list_kifu_albums(
     count_query = db.query(func.count(KifuAlbum.id))
 
     if q:
-        # search_text is stored lowercased; match with lower(q)
-        needle = KifuAlbum.search_text.contains(q.lower())
+        # Search translated historical names against the original SGF player
+        # names, and show player matches before newer events bearing that name.
+        terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+        player_match = or_(
+            *(
+                func.lower(field).contains(term)
+                for field in (KifuAlbum.player_black, KifuAlbum.player_white)
+                for term in terms
+            )
+        )
+        needle = or_(KifuAlbum.search_text.contains(q.lower()), player_match)
         query = query.filter(needle)
         count_query = count_query.filter(needle)
+        query = query.order_by(case((player_match, 0), else_=1))
 
     # Sort by normalized date descending (nulls last), then by id for deterministic pagination
     query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())

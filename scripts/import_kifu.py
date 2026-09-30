@@ -5,15 +5,19 @@ Import SGF files from data/kifu-album/ into the kifu_albums table.
 Usage:
   python scripts/import_kifu.py --dry-run  # Preview changes
   python scripts/import_kifu.py            # Apply changes
+  python scripts/import_kifu.py --dedupe-content  # Skip identical SGFs across source paths
+  python scripts/import_kifu.py --dedupe-content --dedupe-mainline-years 1950 1978
 """
 
 import argparse
+import hashlib
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from katrain.web.core.db import engine, Base
 from katrain.web.core.models_db import KifuAlbum
@@ -34,6 +38,21 @@ def count_moves(root) -> int:
     return count
 
 
+def mainline_signature(sgf_content: str) -> str | None:
+    """Identify full-length games even when their SGF metadata differs."""
+    root = SGF.parse_sgf(sgf_content)
+    moves = []
+    node = root
+    while node.children:
+        node = node.children[0]
+        if node.move:
+            moves.append(str(node.move))
+    if len(moves) < 30:
+        return None
+    value = f"{root.board_size};" + ";".join(moves)
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
 def normalize_date(raw_date: str | None) -> str | None:
     """Normalize SGF date to a sortable ISO-prefix string.
 
@@ -46,8 +65,8 @@ def normalize_date(raw_date: str | None) -> str | None:
     """
     if not raw_date:
         return None
-    # Extract the first date-like portion (YYYY or YYYY-MM-DD)
-    m = re.match(r"(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?", raw_date)
+    # Historical records may start with "ca." or other explanatory text.
+    m = re.search(r"(?<!\d)(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?", raw_date)
     if not m:
         return None
     year = m.group(1)
@@ -90,7 +109,9 @@ def parse_sgf_file(sgf_path: Path) -> dict:
         "event": root.get_property("EV") or root.get_property("GN"),
         "result": root.get_property("RE"),
         "date_played": date_played,
-        "date_sort": normalize_date(date_played),
+        # DTX often records a publication date, so use it for approximate
+        # sorting only; do not display it as the date the game was played.
+        "date_sort": normalize_date(date_played) or normalize_date(root.get_property("DTX")),
         "place": root.get_property("PC"),
         "komi": root.komi if "KM" in root.properties else None,
         "handicap": root.handicap,
@@ -106,7 +127,9 @@ def parse_sgf_file(sgf_path: Path) -> dict:
     return data
 
 
-def import_kifu(dry_run: bool = False):
+def import_kifu(
+    dry_run: bool = False, dedupe_content: bool = False, dedupe_mainline_years: tuple[int, int] | None = None
+):
     """Import all SGF files from DATA_DIR into database."""
     if not DATA_DIR.exists():
         print(f"ERROR: Data directory not found: {DATA_DIR}")
@@ -120,7 +143,7 @@ def import_kifu(dry_run: bool = False):
     Base.metadata.create_all(engine)
 
     total = len(sgf_files)
-    stats = {"inserted": 0, "skipped": 0, "errors": 0}
+    stats = {"inserted": 0, "skipped": 0, "duplicate_content": 0, "duplicate_mainline": 0, "errors": 0}
     error_files = []
 
     with Session(engine) as db:
@@ -128,6 +151,24 @@ def import_kifu(dry_run: bool = False):
             r.source_path for r in db.query(KifuAlbum.source_path).all()
         }
         print(f"Existing records in DB: {len(existing_paths)}")
+        existing_content_hashes = (
+            {row[0] for row in db.query(func.md5(KifuAlbum.sgf_content)).yield_per(1000)} if dedupe_content else set()
+        )
+        existing_mainlines = set()
+        if dedupe_mainline_years:
+            first_year, last_year = dedupe_mainline_years
+            existing_games = db.query(KifuAlbum.sgf_content).filter(
+                KifuAlbum.date_sort >= f"{first_year}-00-00",
+                KifuAlbum.date_sort < f"{last_year + 1}-00-00",
+            )
+            for (sgf_content,) in existing_games.yield_per(500):
+                try:
+                    signature = mainline_signature(sgf_content)
+                except (ValueError, IndexError):
+                    continue
+                if signature:
+                    existing_mainlines.add(signature)
+            print(f"Existing main lines in {first_year}-{last_year}: {len(existing_mainlines)}")
 
         for i, sgf_path in enumerate(sgf_files, 1):
             rel_path = str(sgf_path.relative_to(DATA_DIR.parent.parent))
@@ -136,9 +177,23 @@ def import_kifu(dry_run: bool = False):
             else:
                 try:
                     data = parse_sgf_file(sgf_path)
-                    if not dry_run:
-                        db.add(KifuAlbum(**data))
-                    stats["inserted"] += 1
+                    content_hash = (
+                        hashlib.md5(data["sgf_content"].encode("utf-8")).hexdigest() if dedupe_content else None
+                    )
+                    if dedupe_content and content_hash in existing_content_hashes:
+                        stats["duplicate_content"] += 1
+                    else:
+                        signature = mainline_signature(data["sgf_content"]) if dedupe_mainline_years else None
+                        if signature and signature in existing_mainlines:
+                            stats["duplicate_mainline"] += 1
+                        else:
+                            if not dry_run:
+                                db.add(KifuAlbum(**data))
+                            stats["inserted"] += 1
+                            if dedupe_content:
+                                existing_content_hashes.add(content_hash)
+                            if signature:
+                                existing_mainlines.add(signature)
                 except Exception as e:
                     stats["errors"] += 1
                     error_files.append(f"{sgf_path.name}: {e}")
@@ -146,7 +201,8 @@ def import_kifu(dry_run: bool = False):
             if i % 500 == 0 or i == total:
                 print(
                     f"  Progress: {i}/{total} ({i * 100 // total}%)"
-                    f" | inserted={stats['inserted']} skipped={stats['skipped']} errors={stats['errors']}"
+                    f" | inserted={stats['inserted']} skipped={stats['skipped']}"
+                    f" duplicates={stats['duplicate_content'] + stats['duplicate_mainline']} errors={stats['errors']}"
                 )
 
         if not dry_run:
@@ -156,6 +212,8 @@ def import_kifu(dry_run: bool = False):
     print(f"\nImport {mode}complete:")
     print(f"  Inserted: {stats['inserted']}")
     print(f"  Skipped (already exists): {stats['skipped']}")
+    print(f"  Skipped (same SGF content): {stats['duplicate_content']}")
+    print(f"  Skipped (same main line): {stats['duplicate_mainline']}")
     print(f"  Errors: {stats['errors']}")
     if error_files:
         print(f"\nError details ({len(error_files)} files):")
@@ -166,5 +224,18 @@ def import_kifu(dry_run: bool = False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Import kifu album SGF files into database")
     parser.add_argument("--dry-run", action="store_true", help="Preview changes only")
+    parser.add_argument(
+        "--dedupe-content", action="store_true", help="Skip SGF content already present in the database"
+    )
+    parser.add_argument(
+        "--dedupe-mainline-years", nargs=2, type=int, metavar=("FIRST", "LAST"),
+        help="Also skip identical full game move sequences already stored in this date range",
+    )
     args = parser.parse_args()
-    import_kifu(dry_run=args.dry_run)
+    if args.dedupe_mainline_years and args.dedupe_mainline_years[0] > args.dedupe_mainline_years[1]:
+        parser.error("FIRST must be no later than LAST")
+    import_kifu(
+        dry_run=args.dry_run,
+        dedupe_content=args.dedupe_content,
+        dedupe_mainline_years=tuple(args.dedupe_mainline_years) if args.dedupe_mainline_years else None,
+    )

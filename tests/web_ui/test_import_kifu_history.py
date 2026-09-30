@@ -16,3 +16,14 @@ def test_import_uses_extended_date_for_sort_only(tmp_path, monkeypatch):
 
     assert record["date_played"] is None
     assert record["date_sort"] == "1842-05-06"
+
+
+def test_mainline_signature_ignores_metadata_but_keeps_moves():
+    moves = ";".join(f"{'B' if i % 2 == 0 else 'W'}[{chr(97 + i % 19)}{chr(97 + i // 19)}]" for i in range(30))
+    first = f"(;SZ[19]PB[A]PW[B];{moves})"
+    second = f"(;SZ[19]PB[C]PW[D]DT[1965];{moves})"
+    changed = second.replace("B[aa]", "B[ba]")
+
+    assert import_kifu.mainline_signature(first) == import_kifu.mainline_signature(second)
+    assert import_kifu.mainline_signature(first) != import_kifu.mainline_signature(changed)
+    assert import_kifu.mainline_signature("(;SZ[19];B[dd];W[pp])") is None

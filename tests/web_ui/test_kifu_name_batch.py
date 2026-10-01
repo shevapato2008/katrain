@@ -327,6 +327,64 @@ def test_v2_new_raw_owner_fixture_dry_run_apply_and_undo(engine):
         assert conn.scalar(select(KifuRawEventValue.id).where(KifuRawEventValue.id == owner_id)) is None
 
 
+def test_v2_new_raw_category_must_match_parser_and_approved_decision(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="Alpha", player_white="Beta", event="GNUGo4.0",
+            sgf_content="(;PB[Alpha]PW[Beta]EV[GNUGo4.0])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    owner = {"kind": "raw_event", "ref": "program-four"}
+    declaration = {
+        "owner": owner, "create": {"raw_value": "GNUGo4.0", "category": "formal_event_candidate"},
+        "occurrence_album_ids": [12], "occurrence_sha256": canonical_sha256([12]),
+        "category_review": {"status": "approved", "producer_id": "researcher-1",
+                            "producer_model": "gpt-6-luna", "produced_at": "2026-10-02T10:00:00Z",
+                            "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                            "reviewed_at": "2026-10-02T10:30:00Z",
+                            "category_basis": "Mistakenly calls engine label a tournament"},
+    }
+    base = approved_bundle(inv)
+    base["members"][0].update(owner=owner, raw_value="GNUGo4.0")
+    base["candidates"][0].update(owner=owner, raw_value="GNUGo4.0")
+    base["member_set_sha256"] = canonical_sha256(base["members"])
+    bundle = _v2_wrap(engine, inv, base, [declaration], [])
+    with pytest.raises(BatchError, match="category"):
+        dry_run_bundle(engine, bundle, registry(), inv, [])
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
+    from katrain.web.kifu import name_candidates
+
+    with engine.begin() as conn:
+        for album_id in (12, 13):
+            conn.execute(KifuAlbum.__table__.insert().values(
+                id=album_id, player_black="吴清源九段", player_white="Opponent", event="Cup",
+                sgf_content="(;PB[吴清源九段]PW[Opponent]EV[Cup])",
+                source_path=f"{album_id}.sgf"))
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
+    base, research = player_bundle(inv)
+    links = [_identity_link(inv, album_id, "black", owner) for album_id in (12, 13)]
+    bundle = _v2_wrap(engine, inv, base, [declaration], links)
+    actual_hash = name_candidates.canonical_sha256
+    scope_hash_calls = 0
+
+    def counting_hash(value):
+        nonlocal scope_hash_calls
+        if isinstance(value, list) and value and all(
+            isinstance(item, list) and len(item) == 2 and item[1] in {"black", "white"}
+            for item in value
+        ):
+            scope_hash_calls += 1
+        return actual_hash(value)
+
+    monkeypatch.setattr(name_candidates, "canonical_sha256", counting_hash)
+    assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
+    assert scope_hash_calls == 1
+
+
 def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
     with engine.begin() as conn:
         conn.execute(KifuEvent.__table__.insert().values(id=19, canonical_name="Test Tournament"))

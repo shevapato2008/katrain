@@ -378,6 +378,17 @@ def test_v2_raw_value_symbolic_owner_is_pinned_to_all_inventory_occurrences():
     bad["owners"][0]["occurrence_sha256"] = canonical_sha256([])
     bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
     assert not validate_bundle(bad, registry(), inventory(), [])["ready"]
+    purported = research(owner=owner, lang="ru", candidate_name="Турнир",
+                         original_name="GNUGo3.8", original_language="en",
+                         source_checks=[check(owner=owner, candidate_name="Турнир",
+                                              body_excerpt="A page calls this Турнир")])
+    inconsistent = deepcopy(proposed)
+    inconsistent["candidates"][0].update(display_name="Турнир", decision_kind="conventional",
+                                          research_sha256=canonical_sha256(purported),
+                                          generation_rule_version="none")
+    assert not validate_bundle(inconsistent, registry(), inventory(), [purported])["ready"]
+    assert any("category" in message for message in
+               validate_bundle(inconsistent, registry(), inventory(), [purported])["errors"])
 
 
 def test_v2_occurrence_index_counts_one_game_but_both_slots_for_duplicate_raw_player():

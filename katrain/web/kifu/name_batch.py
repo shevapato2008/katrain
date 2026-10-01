@@ -19,6 +19,7 @@ from katrain.web.core.models_db import (
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_bundle
 from katrain.web.kifu.name_inventory import ALBUM_COLUMNS, SOURCE_COLUMNS, _hash_row
+from katrain.web.kifu.name_parse import parse_event, parse_player
 
 
 class BatchError(ValueError):
@@ -209,6 +210,10 @@ def _check_owner_manifest(conn, bundle: dict) -> None:
                       f"new identity alias collision needs independent review: {_owner_ref(owner)}")
             else:
                 _fail(set(created) == {"raw_value", "category"}, "new raw create fields not allowlisted")
+                parsed = (parse_player(created["raw_value"], None) if kind == "raw_player"
+                          else parse_event(created["raw_value"], None))
+                _fail(created["category"] == parsed.category,
+                      f"new raw category differs from conservative parser: {_owner_ref(owner)}")
                 existing = conn.scalar(select(model.id).where(model.raw_value == created["raw_value"]).limit(1))
                 _fail(existing is None, f"new raw value already exists: {_owner_ref(owner)}")
 

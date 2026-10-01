@@ -73,6 +73,19 @@ _SCRIPT = {
     "ko": re.compile(r"[\u3400-\u9fff\uac00-\ud7af]"),
     "ru": re.compile(r"[\u0400-\u052f]"), "ua": re.compile(r"[\u0400-\u052f]"),
 }
+_RAW_CATEGORY_DECISIONS = {
+    "raw_player": {
+        "placeholder": {"placeholder"}, "corrupt_pending": {"error", "corrected"},
+        "readable_unlinked": {"conventional", "generated"},
+    },
+    "raw_event": {
+        "empty": {"hidden"}, "program_source_label": {"hidden"},
+        "generic_event_description": {"generic"}, "corrupt_data": {"error", "corrected"},
+        "formal_event_candidate": {"conventional", "generated"},
+        "game_description": {"conventional", "generated"},
+        "unclassified_pending": {"conventional", "generated"},
+    },
+}
 
 
 class CandidateError(ValueError):
@@ -352,6 +365,7 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
     associations = {dict(zip(columns, row))["id"]: dict(zip(columns, row))
                     for row in inventory["album_associations"] if len(row) == len(columns)}
     player_games, event_games, player_slots, event_slots = _occurrence_indexes(associations)
+    raw_scope_hashes = {}
     declarations = {}
     for number, declaration in enumerate(owners):
         try:
@@ -374,7 +388,10 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                 _require(ids == actual_ids and bool(ids), "raw global occurrences differ from inventory")
                 _require(declaration.get("occurrence_sha256") == canonical_sha256(ids),
                          "raw global occurrence hash mismatch")
-                _require(is_new is False or _text(pinned.get("category")), "new raw value needs category")
+                if is_new:
+                    parsed = parse_player(raw, None) if owner["kind"] == "raw_player" else parse_event(raw, None)
+                    _require(pinned.get("category") == parsed.category,
+                             "new raw category must match conservative parser; exceptions remain pending")
                 if is_new:
                     review = declaration.get("category_review")
                     _require(isinstance(review, dict) and review.get("status") == "approved"
@@ -418,7 +435,10 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             if "raw_scope_slots" in link:
                 _require(link["raw_scope_slots"] == actual_scope,
                          "link raw global occurrence slots differ from inventory")
-            _require(link.get("raw_scope_sha256") == canonical_sha256(actual_scope),
+            scope_key = ("raw_event" if slot == "event" else "raw_player", raw_value)
+            if scope_key not in raw_scope_hashes:
+                raw_scope_hashes[scope_key] = canonical_sha256(actual_scope)
+            _require(link.get("raw_scope_sha256") == raw_scope_hashes[scope_key],
                      "link raw global scope hash mismatch")
             target = link.get("target")
             target_key = _owner_token(target)
@@ -536,8 +556,18 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     if bundle["bundle_format"] == 2:
         approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
                          if row["review_status"] == "approved"}
+        decisions_by_owner = defaultdict(list)
+        for row in decisions:
+            decisions_by_owner[_owner_token(row["owner"])].append(row)
         for token, declaration in declarations.items():
             owner = declaration["owner"]
+            if "ref" in owner and owner["kind"].startswith("raw_"):
+                category = declaration["create"]["category"]
+                allowed = _RAW_CATEGORY_DECISIONS[owner["kind"]][category]
+                rows = decisions_by_owner[token]
+                if not rows or any(row["review_status"] != "approved"
+                                   or row["decision_kind"] not in allowed for row in rows):
+                    errors.append(f"new raw category lacks corresponding approved display decision: {token}")
             if "ref" in owner and owner["kind"] in {"player", "event"}:
                 if token not in link_targets:
                     errors.append(f"new identity lacks approved album link: {token}")

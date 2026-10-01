@@ -12,6 +12,8 @@ vi.mock('./components/layout/KioskLayout', () => ({ default: Outlet }));
 vi.mock('./components/vision/PlayInputGuard', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('./pages/PlayPage', () => ({ default: () => <div data-testid="play-page" /> }));
 vi.mock('./pages/PlatformLobbyPage', () => ({ default: () => <div data-testid="ogs-home-page" /> }));
+vi.mock('./pages/GolaxyPregameSetupPage', () => ({ default: () => <div data-testid="golaxy-pregame-page" /> }));
+vi.mock('./pages/GolaxySpectatorPage', () => ({ default: () => <div data-testid="golaxy-spectator-page" /> }));
 vi.mock('./pages/GolaxyHomePage', () => ({ default: () => <div data-testid="golaxy-home-page" /> }));
 vi.mock('./pages/GamePage', () => ({ default: ({ engineMode = false }: { engineMode?: boolean }) =>
   <div data-testid="platform-game" data-engine-mode={String(engineMode)} /> }));
@@ -50,6 +52,9 @@ describe('dedicated platform routes', () => {
   it.each([
     ['/kiosk/play/cross-platform/golaxy', 'golaxy-home-page'],
     ['/kiosk/play/cross-platform/ogs', 'ogs-home-page'],
+    ['/kiosk/play/cross-platform/golaxy/setup/quick', 'golaxy-pregame-page'],
+    ['/kiosk/play/cross-platform/golaxy/setup/room', 'golaxy-pregame-page'],
+    ['/kiosk/play/cross-platform/golaxy/spectate/opaque-room', 'golaxy-spectator-page'],
   ])('directly opens %s after refresh', async (url, testId) => {
     open(url);
     expect(await screen.findByTestId(testId)).toBeInTheDocument();

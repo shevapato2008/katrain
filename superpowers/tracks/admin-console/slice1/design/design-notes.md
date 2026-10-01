@@ -1,6 +1,13 @@
 # cron 可视化：本地设计稿（2026-09-25）
 
-状态：HTML 已按独立 GPT-6 Astra 的源码／语义反馈修订；下列 `v2` 截图是当前 1440×900 Chromium 参考图。独立 Astra 裁定设计稿 **APPROVE FOR LOCAL FIXTURE**，又对下方 Fixture 四图裁定 **APPROVE FOR LOCAL CONTRACT/BACKEND**，均无必改项。Fan 仍在 MacBook 浏览器做最终复核。旧版截图只作构图历史。此稿不是生产页面、真实 cron 数据或发布授权。
+## 2026-09-26 最终实现对照稿
+
+- 现行 [HTML 对照稿](./admin-cron-final.html) 直接复用当前 `AdminApp.css` 与 `CronPage.css`，同步 80px 页眉、280px 侧栏、1440px 三列进程概况、紧凑字号、任务列模块前缀及运行历史抽屉。`?drawer=1` 打开详情，`?capture=true` 隐藏预览按钮；其中任务时间、错误均是标明用途的本机设计样本，不读取真实 cron。
+- Chromium 1440×900：[任务列表](./admin-cron-final-list-1440x900.png) · [详情抽屉](./admin-cron-final-drawer-1440x900.png)。本机真实 React 与隔离合成 API 的对照图在 `output/playwright/admin-cron-compact-runtime-list-1440x900-v2.png`、`admin-cron-compact-runtime-detail-1440x900.png`。
+- 独立 GPT-6 Astra max 对比最终稿与真实运行截图后裁定列表、抽屉 **APPROVE**；已按其反馈补齐 9 行示例、修正详情状态徽标与任务说明。
+- 以下 `admin-cron-design.html` 和 `admin-cron-v3.html` 是早期探索与四图关卡的历史稿；下文写的 52px 顶栏/216px 侧栏及 v2 图不再是最终 UI 规范。最终对照稿也不是 Fixture 或生产数据源。
+
+以下为开发当时的设计与四图关卡历史：独立 Astra 曾裁定旧设计稿 **APPROVE FOR LOCAL FIXTURE**，又对旧 Fixture 四图裁定 **APPROVE FOR LOCAL CONTRACT/BACKEND**。`v2` 截图记录当时 1440×900 基准，不是上面的最终实现对照稿；任何视觉裁定都不构成生产数据或发布授权。
 
 ## 构图与现有后台的一致性
 

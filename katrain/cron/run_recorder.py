@@ -42,6 +42,8 @@ class ErrorSink:
 
 
 _current_sink: contextvars.ContextVar[ErrorSink | None] = contextvars.ContextVar("cron_error_sink", default=None)
+# Which job the current task is running, for the error collector's `job` tag.
+current_job: contextvars.ContextVar[str | None] = contextvars.ContextVar("cron_current_job", default=None)
 
 
 class ErrorCapture(logging.Handler):
@@ -83,6 +85,8 @@ class RunRecorder:
         self._process_started_at: datetime | None = None
         self._registered = False
         self._loops: dict[str, _LoopState] = {}
+        self.paused: dict[str, str | None] = {}  # job name -> reason, from the admin console
+        self.running: set[str] = set()  # interval jobs executing right now
 
     def register(self, jobs: list[tuple[str, str, int | None, bool]]) -> bool:
         self._registry = list(jobs)
@@ -132,10 +136,15 @@ class RunRecorder:
         name = job.name
         keep = (self._intervals.get(name) or 0) >= RECORD_EVERY_RUN_MIN_INTERVAL
         started = self._clock()
+        if name in self.paused:  # set by the admin console, refreshed by ControlPoller
+            self._write(self._paused_rows, name, started, keep)
+            return
+        self.running.add(name)
         monotonic_start = time.monotonic()
         run_id = self._write(self._start_rows, name, started, keep)
         sink = ErrorSink()
         token = _current_sink.set(sink)
+        job_token = current_job.set(name)
         error: Exception | None = None
         cancelled = False
         try:
@@ -147,12 +156,20 @@ class RunRecorder:
             error = exc
             raise
         finally:
+            self.running.discard(name)
             _current_sink.reset(token)
+            current_job.reset(job_token)
             if not cancelled:
                 result = "failed" if error is not None else ("errors" if sink.count else "success")
                 detail = f"{type(error).__name__}: {error}"[:ERROR_TEXT_LIMIT] if error is not None else sink.first
                 duration_ms = int((time.monotonic() - monotonic_start) * 1000)
                 self._write(self._finish_rows, name, run_id, started, result, detail, sink.count, duration_ms, keep)
+
+    def _paused_rows(self, db, name, started, keep):
+        # The status row is left alone: it still describes the last real run (a failure stays visible),
+        # and the admin console reads "paused" from the control table.
+        if keep:
+            db.add(CronJobRunDB(job_name=name, started_at=started, finished_at=started, status="paused", error_count=0, duration_ms=0))
 
     def _start_rows(self, db, name, started, keep):
         row = db.get(CronJobStatusDB, name)
@@ -194,6 +211,7 @@ class RunRecorder:
             )
 
     def enter_loop(self, name: str) -> contextvars.Token:
+        current_job.set(name)  # the loop task owns its context; it ends with the task
         return _current_sink.set(self._loops.setdefault(name, _LoopState()).sink)
 
     def exit_loop(self, token: contextvars.Token) -> None:

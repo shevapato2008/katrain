@@ -1,4 +1,11 @@
-# 教程管理切片：设计方向（Galaxy 视觉修订已获 Fan 确认；新版 Fixture 四图待确认）
+# 教程管理切片：设计与最终实现对照
+
+## 2026-09-26 最终实现对照稿
+
+- 现行可打开的 [HTML 对照稿](./tutorial-admin-design-final.html) 直接复用当前 `AdminApp.css`，对齐已实现页面的 80px 页眉、280px 侧栏、三栏工作台、B/C 主题与楷体最终字号。`?state=editing` 切换编辑态，`?capture=true` 隐藏预览按钮；设计样本不连接教程数据或写接口。
+- Chromium 1440×900：[详情](./tutorial-admin-design-final-detail-1440x900.png) · [编辑](./tutorial-admin-design-final-editing-1440x900.png)。本机实际 React 对照图在忽略目录 `output/playwright/admin-runtime-dark-detail-kaiti-1440x900.png` 与 `admin-runtime-dark-editing-kaiti-1440x900.png`。这两张设计图不是新的产品 Fixture，也不替代真实教程数据验收。
+- 独立 GPT-6 Astra max 对比上述设计/运行截图后裁定最终详情、编辑两态 **APPROVE**；编辑态讲解文本和固定底栏遮挡位置已按其反馈修订。
+- 早期 `tutorial-admin-design-v2.html` 保留为主题与字体选择过程的历史稿；下文的 52px 顶栏、216px 侧栏、Galaxy 绿色及“cron 尚未实现”等描述均是当时记录，**不再作为最终界面规范**。
 
 > 后续视觉变更：Fan 已选后台专属 B「石墨铜」夜间版、C「雾白蓝」白天版与楷体，不再沿用公开 Galaxy 的绿色主题/文楷界面。新[本地设计稿](./tutorial-admin-design-v2.html)及[React 同视口核对](./tutorial-theme-visual-review.md)优先于下方旧配色说明；Fan 已确认新 React 外观，但这不等于教程模块验收。
 

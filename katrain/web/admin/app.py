@@ -1,20 +1,34 @@
 """Separate admin ASGI app with no public routes or database initialization."""
 
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
 from katrain.web.admin.routers.auth import router as auth_router
 from katrain.web.admin.routers.cron import router as cron_router
+from katrain.web.admin.routers.kifu import router as kifu_router
 from katrain.web.admin.routers.tutorials import get_admin_db, router as tutorial_write_router
+from katrain.web.admin.routers.users import router as users_router
+from katrain.web.admin.routers.config_health import router as config_health_router
+from katrain.web.admin.routers.errors import router as errors_router
+from katrain.web.admin.routers.devices import router as devices_router
+from katrain.web.admin.routers.artifacts import router as artifacts_router
+from katrain.web.admin.artifacts import load_config as load_artifact_config
+from katrain.web.admin.routers.vision import router as vision_router
+from katrain.web.admin.routers.vision_training import router as vision_training_router
+from katrain.web.admin.performance import load_grafana
+from katrain.web.admin.session import get_current_admin
 from katrain.web.admin.settings import check_startup
+from katrain.web.admin.vision_runtime import AdminVisionRuntime
+from katrain.web.admin.vision_training_config import create_training_service
 from katrain.web.api.v1.endpoints.tutorials import router as tutorial_read_router
 from katrain.web.core.config import settings as web_settings
 from katrain.web.core.db import get_db
-
 
 DEFAULT_STATIC_DIR = Path(__file__).resolve().parent.parent / "static-admin"
 NOT_BUILT = "Admin frontend has not been built"
@@ -40,16 +54,44 @@ def _media_csp() -> str:
     )
 
 
-def create_admin_app(session_factory=None, static_dir: Path | None = None) -> FastAPI:
+def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_host: str | None = None) -> FastAPI:
     config = check_startup()
     if session_factory is None:
         from katrain.web.core.db import SessionLocal
 
         session_factory = SessionLocal
-    app = FastAPI(title="katrain-admin", docs_url=None, redoc_url=None, openapi_url=None)
+    vision_runtime = AdminVisionRuntime(config, bind_host=bind_host)
+    vision_training = create_training_service(config.env, bind_host)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        from katrain.web.core import error_collector, health_report
+
+        collector = error_collector.ErrorCollector("admin", error_collector.factory_for(session_factory)).start()
+        report_task = asyncio.create_task(
+            health_report.report_forever(
+                session_factory, "admin", lambda: health_report.admin_checks(web_settings), extra=collector.stats
+            )
+        )
+        try:
+            yield
+        finally:
+            report_task.cancel()
+            await asyncio.to_thread(collector.stop)
+            vision_runtime.shutdown()
+            vision_training.close()
+
+    app = FastAPI(title="katrain-admin", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     app.state.admin_config = config
     app.state.session_factory = session_factory
+    app.state.vision_runtime = vision_runtime
+    app.state.vision_training = vision_training
+    grafana = load_grafana()
+    app.state.grafana = grafana
+    app.state.artifact_config = load_artifact_config()
     content_security_policy = _media_csp()
+    if grafana["origin"]:
+        content_security_policy += f"; frame-src {grafana['origin']}"
 
     @app.middleware("http")
     async def security_headers(request, call_next):
@@ -57,7 +99,15 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None) -> Fa
         response.headers["Content-Security-Policy"] = content_security_policy
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
+        if request.url.path == "/api/admin/vision/preview":
+            response.headers["Cache-Control"] = "no-store"
+        if request.url.path.startswith("/api/admin/vision-training/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
+
+    @app.get("/api/admin/performance", dependencies=[Depends(get_current_admin)])
+    async def performance():
+        return {**grafana, "env": config.env}
 
     @app.get("/api/admin/health")
     async def health():
@@ -65,6 +115,14 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None) -> Fa
 
     app.include_router(auth_router)
     app.include_router(cron_router, prefix="/api/admin/cron", tags=["admin-cron"])
+    app.include_router(vision_router, prefix="/api/admin/vision", tags=["admin-vision"])
+    app.include_router(kifu_router, prefix="/api/admin/kifu", tags=["admin-kifu"])
+    app.include_router(users_router, prefix="/api/admin", tags=["admin-users"])
+    app.include_router(config_health_router, prefix="/api/admin", tags=["admin-config-health"])
+    app.include_router(errors_router, prefix="/api/admin", tags=["admin-errors"])
+    app.include_router(devices_router, prefix="/api/admin", tags=["admin-devices"])
+    app.include_router(artifacts_router, prefix="/api/admin", tags=["admin-artifacts"])
+    app.include_router(vision_training_router, prefix="/api/admin/vision-training", tags=["admin-vision-training"])
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db

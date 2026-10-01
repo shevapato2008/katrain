@@ -62,6 +62,8 @@ import VisionSetupPage from './pages/VisionSetupPage';
 import PlatformLoginPage from './pages/PlatformLoginPage';
 import PlatformLobbyPage from './pages/PlatformLobbyPage';
 import GolaxyHomePage from './pages/GolaxyHomePage';
+import GolaxyPregameSetupPage from './pages/GolaxyPregameSetupPage';
+import GolaxySpectatorPage from './pages/GolaxySpectatorPage';
 import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
@@ -137,6 +139,8 @@ export const KioskRoutes = () => {
           <Route path="play/cross-platform/login/:platform" element={<PlatformLoginPage />} />
           <Route path="play/cross-platform/lobby" element={<LegacyPlatformLobbyRedirect />} />
           <Route path="play/cross-platform/golaxy" element={<GolaxyHomePage />} />
+          <Route path="play/cross-platform/golaxy/setup/:mode" element={<GolaxyPregameSetupPage />} />
+          <Route path="play/cross-platform/golaxy/spectate/:roomId" element={<GolaxySpectatorPage />} />
           <Route path="play/cross-platform/ogs" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}

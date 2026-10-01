@@ -21,6 +21,9 @@ class CronScheduler:
         self._analyze_task: asyncio.Task | None = None
         self._report_analyze_task: asyncio.Task | None = None
         self._heartbeat_task: asyncio.Task | None = None
+        self._health_task: asyncio.Task | None = None
+        self._controls_task: asyncio.Task | None = None
+        self._error_collector = None
         self._shutdown_event = asyncio.Event()
         self._recorder = RunRecorder(SessionLocal)
         self._loop_jobs: dict = {}
@@ -71,6 +74,15 @@ class CronScheduler:
         if self._shutdown_event.is_set():
             return
 
+        from katrain.cron.controls import ControlPoller
+
+        self._controls = ControlPoller(SessionLocal, self._recorder, self._scheduler)
+        # Honour an existing pause before the first runs fire; retry briefly rather than fail open.
+        for _ in range(6):
+            if await asyncio.to_thread(self._controls.poll, False) or self._shutdown_event.is_set():
+                break
+            await asyncio.sleep(5)
+
         self._scheduler.start()
         logger.info("Scheduler started")
 
@@ -105,6 +117,14 @@ class CronScheduler:
         self._heartbeat_task = asyncio.create_task(
             self._recorder.heartbeat_forever(self._loop_jobs, config.HEARTBEAT_INTERVAL, self._shutdown_event)
         )
+
+        from katrain.cron import error_collector, health_report
+
+        self._error_collector = error_collector.ErrorCollector(error_collector.dedicated_factory(config.DATABASE_URL)).start()
+        self._health_task = asyncio.create_task(
+            health_report.report_forever(self._shutdown_event, extra=self._error_collector.stats)
+        )
+        self._controls_task = asyncio.create_task(self._controls.poll_forever(self._shutdown_event))
 
         await self._shutdown_event.wait()
 
@@ -145,11 +165,13 @@ class CronScheduler:
         self._shutdown_event.set()
         if self._scheduler.running:
             self._scheduler.shutdown(wait=False)
-        for task in [self._analyze_task, self._report_analyze_task, self._heartbeat_task]:
+        for task in [self._analyze_task, self._report_analyze_task, self._heartbeat_task, self._health_task, self._controls_task]:
             if task and not task.done():
                 task.cancel()
                 try:
                     await task
                 except asyncio.CancelledError:
                     pass
+        if self._error_collector is not None:
+            await asyncio.to_thread(self._error_collector.stop)
         logger.info("Scheduler shut down")

@@ -128,6 +128,8 @@ def build_train_kwargs(args) -> dict:
     )
     if getattr(args, "augment", "default") in ("led-safe", "led-safe-blur"):
         kwargs.update(LED_SAFE_AUG)
+    if getattr(args, "project", None) is not None:
+        kwargs["project"] = args.project
     return kwargs
 
 
@@ -199,6 +201,7 @@ def main():
     train_p.add_argument("--imgsz", type=int, default=960)
     train_p.add_argument("--batch", type=int, default=-1, help="Batch size (-1 for auto-batch based on GPU memory)")
     train_p.add_argument("--name", type=str, default="go_stones")
+    train_p.add_argument("--project", type=str, default=None, help="Optional parent directory for training output")
     train_p.add_argument("--patience", type=int, default=20)
     train_p.add_argument("--seed", type=int, default=0, help="RNG seed (weight init, shuffle, aug) for reproducible/multi-seed runs")
     train_p.add_argument("--device", type=str, default="mps", help="Device: mps (Mac GPU), cpu, 0 (CUDA GPU 0)")

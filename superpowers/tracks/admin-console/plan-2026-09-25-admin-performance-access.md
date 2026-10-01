@@ -1,0 +1,51 @@
+# 内嵌 Grafana 性能监控 Implementation Plan
+
+> **For agentic workers:** REQUIRED: Use superpowers:executing-plans to implement this plan in the current worktree. Steps use checkbox (`- [ ]`) syntax for tracking. Fan 指定逐模块推进，勿另开 worktree。
+
+**Goal:** 在独立后台页面内嵌 Grafana 看板；先完成诚实的设计与 Fixture 视觉验证，真实监控接入前不宣称模块完成。
+
+**Architecture:** 保留现有后台的 Bearer 登录与 B/C 楷体壳层。正式版在页面内嵌 Grafana；未核实服务时只显示“尚未接入”，不从前端构造在线状态，也不展示假指标。嵌入地址、Grafana 自身鉴权、浏览器嵌入策略及同源代理需求须在目标环境只读核实后再冻结，后台 Bearer 不传给 Grafana，不向公网开放无保护端口。
+
+**Tech Stack:** 独立 FastAPI 后台、React/Vite、Vitest、Playwright、Grafana（目标环境服务与部署尚未核实）。
+
+---
+
+## 边界与授权
+
+- 原“独立面板入口”设计与 Fixture 是未获 Fan 确认的提案。Fan 指出原 spec §10 和此前承诺为**内嵌 Grafana**后，该版本已废弃；旧四图只保留历史记录，不能作为新方案的视觉通过证据。
+- 现行本地 HTML 设计稿与预览见 [slice2/design](./slice2/design/design-notes.md)。Fan 于 2026-09-26 睡前明确授权独立 GPT-6 Astra max 代理替他做视觉决策；该代理先前批准新版 HTML 设计，故可推进本地隔离 Fixture。新版四图仍需独立代理复核并留给 Fan 明早验收。此授权不涉及远程连接、写库、push 或部署。
+- 每次 SSH、真实库写入、push、部署仍须 Fan 当场分别授权。测试机先于生产；本计划和设计裁定都不代表这些授权。
+- 保留现有工作树 `.playwright-cli` 文件状态，不暂存、不清理。Fixture 文件必须与生产构建隔离，在真实集成后删除。
+
+## Task 1：内嵌 Grafana HTML 设计稿与视觉基准
+
+- [x] 从仓库主题与 spec 确定 Monitor 构图；用 `claude-design` 将本地 [HTML](./slice2/design/admin-performance-access.html) 改为后台内嵌 Grafana 的设计示意，再用 `ui-ux-pro-max` 核对主题、字号、状态与对比度。
+- [x] 在 1440×900 Chromium 中查看夜间未接入、夜间内嵌示意、白天内嵌示意三态；不使用真实服务或假指标。控制台 0 error、0 warning。
+- [x] 独立 GPT-6 Astra 查看新版三张 1440×900 设计图，裁定 **APPROVE（仅设计方向）**，无必改项。
+- [x] 🛑 Fan 于 2026-09-26 明确将睡前视觉决策委托独立 GPT-6 Astra max；先前设计方向 APPROVE，允许本地 React Fixture。Fan 明早仍可要求修改。
+
+## Task 2：本地隔离 Fixture 前端（新版设计确认后）
+
+**Files:** `katrain/web/ui/admin-performance-fixture.html`、`src/admin/performance/PerformancePage.tsx`、`PerformancePage.css`、`PerformanceFixture.tsx`、`fixture.tsx`、`PerformancePage.test.tsx`。正式 `admin.html`、`AdminApp.tsx`、`vite.admin.config.ts` 暂不接入此模块。
+
+- [x] 把旧独立入口 Fixture 改为后台内嵌 Grafana 区域的纯展示预览；未接入态无 iframe/假数据，内嵌示意态标明不是实际 Grafana，不能传令牌。
+- [x] 更新聚焦组件测试与本地 Vite 1440×900 预览，核对夜间未接入、夜间/白天内嵌示意；`build:admin` 不打包 Fixture 入口。
+
+## Task 3：同视口视觉对比与确认
+
+- [x] 为新版未接入与内嵌示意状态各保留参考图、真实 Fixture 截图、并排图、叠加/差异图；旧外跳方案四图不能复用。
+- [x] 独立 GPT-6 Astra max 查看新版四图并裁定 APPROVE；Fan 明早仍可在本地网页亲自复核。
+- [x] 🛑 四图由独立 GPT-6 Astra max 代理按 Fan 本轮委托做视觉裁定；这不算真实监控验收。Task 4 的测试机 SSH、真实数据写入与部署仍分别等待 Fan 当场批准。
+
+## Task 3b：正式接入后台（2026-09-27，无远程）
+
+- [x] 按 Fan 已确认的可点击原型（v2）接进正式后台侧栏；Fixture 入口与文件已删除。
+- [x] 配置来源：后台进程环境变量 `KATRAIN_ADMIN_GRAFANA_DASHBOARDS`（`[{"title","url"}]` JSON，≤12 个、同一 http(s) 来源、URL 不得带账号或 token/key/auth 类查询参数）。无配置 → 「尚未接入」；配置有误 → 「配置无效」并显示原因、不嵌入。`GET /api/admin/performance`（需后台登录）。
+- [x] CSP 仅在配置有效时追加 `frame-src <该来源>`；iframe `sandbox` 不含 top-navigation，`referrerPolicy=no-referrer`；页面不探测 Grafana，状态写「已配置 · 未探测在线」。
+- [x] 四图 `lab-v3/performance-fourup/`（未接入/已配置夜昼/配置无效，1440×900）；承重实测：看板区高度 = max(470, 100vh−425)，1440×900 下页面不滚动（scrollHeight 820 = clientHeight 820），看板框与设计稿同位 [305,360,1093,835]，Grafana 内容在 iframe 内自滚。
+
+## Task 4：真实监控接入（本轮暂不执行）
+
+- [ ] 取得 Fan 的新版四图确认与单次 SSH 授权后，只读核实测试环境是否有 Grafana、数据源/看板、绑定地址、现有鉴权及 iframe/代理策略；不得凭设计稿假定已安装服务。
+- [ ] 冻结最小嵌入配置/可达性契约，先写相关鉴权边界测试，再接正式只读页面；无有效来源时保持“未接入”，不可猜测“在线”。删除 Fixture。
+- [ ] 本地真实运行时验收、测试机部署和 Fan 验收；生产发布另列 🛑 并单独授权。

@@ -22,6 +22,7 @@ from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import EMPTY, SUSTAIN_RADIUS, BoardStateExtractor
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
+from katrain.vision.diagnostic_observation import diagnostic_projection
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.gating import (
     mean_detection_confidence,
@@ -259,6 +260,7 @@ class InProcessAdapter:
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
             confidence_threshold=self._sustain_threshold,
+            imgsz=int(config.get("imgsz", 960)),
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
@@ -334,6 +336,11 @@ class InProcessAdapter:
         self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
         self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
 
+        # Diagnostics observer (admin vision lab): None in production. When set it only receives copies of
+        # what one processing batch already computed; it never re-runs inference or stateful logic.
+        self._observer = None
+        self._observer_interval = 0.5
+        self._observer_last = 0.0
         self._viewer_active = False
         self._bound = False
         self._monitor = False
@@ -916,6 +923,18 @@ class InProcessAdapter:
         self._averager.reset()  # the brightness step must not blend into the average
         logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 
+    def set_observer(self, callback, interval: float = 0.5) -> None:
+        """Attach (or with None detach) a read-only per-batch observer, emitted at most once per interval."""
+        self._observer_interval = float(interval)
+        self._observer_last = 0.0
+        self._observer = callback
+
+    def _emit_observation(self, observer, snapshot: dict) -> None:
+        try:
+            observer(snapshot)
+        except Exception:  # an observer bug must never stop recognition
+            logger.exception("vision diagnostic observer failed")
+
     def start(self) -> None:
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True, name="vision-inprocess")
@@ -976,7 +995,13 @@ class InProcessAdapter:
                 self._motion_filter.reset()
             tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
-            frame = self._camera.read_frame()
+            observer = self._observer
+            identified = observer is not None and hasattr(self._camera, "read_frame_identified")
+            if identified:
+                frame, camera_seq, camera_ts = self._camera.read_frame_identified()
+            else:
+                frame, camera_seq, camera_ts = self._camera.read_frame(), None, None
+            emit = observer is not None and loop_start - self._observer_last >= self._observer_interval
             board_detected = False
             observed_board = None
             mean_confidence = 0.0
@@ -1020,8 +1045,13 @@ class InProcessAdapter:
                     if ref_gray is not None:
                         self._last_ref_gray = ref_gray
                         self._consume_pending_denials(ref_gray)
+                    pure_warped = warped.copy() if emit else None
                     _t_enh = time.monotonic()
-                    warped = self._averager.add(warped)
+                    warped = (
+                        self._averager.add(warped, ident=camera_seq)
+                        if observer is not None
+                        else self._averager.add(warped)
+                    )
                     if tr:
                         tr.mark("avg")
                     warped = enhance_for_inference(warped, self._enhance_mode)
@@ -1029,7 +1059,11 @@ class InProcessAdapter:
                     if tr:
                         tr.mark("clahe")
                     _t_inf = time.monotonic()
-                    all_detections = self._detector.detect(warped)
+                    nms_detections = None
+                    if emit and hasattr(self._detector, "detect_observed"):
+                        nms_detections, all_detections = self._detector.detect_observed(warped)
+                    else:
+                        all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
                     # A stone's shadow boxed a second time (side light) is dropped before the keep/sustain split,
                     # so no consumer -- board assignment, the sustain tier, the ambiguous-move promoter -- sees it.
@@ -1074,8 +1108,9 @@ class InProcessAdapter:
                         exp = self._expected_np
                         masked = {p for p in self._masked_lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     weak = [d for d in all_detections if d.confidence < self._keep_threshold]
+                    sustained = self._game_stone_sustain(weak, w, h)
                     observed_board = self._active_extractor().detections_to_board(
-                        detections + self._game_stone_sustain(weak, w, h),
+                        detections + sustained,
                         img_w=w,
                         img_h=h,
                         occupancy_aware=True,
@@ -1116,6 +1151,38 @@ class InProcessAdapter:
                     if tr:
                         tr.mark("refchk")
                     self._observation_seq += 1
+                    if emit:
+                        self._observer_last = loop_start
+                        kept = {id(d) for d in detections}
+                        held = {id(d) for d in sustained}
+                        self._emit_observation(
+                            observer,
+                            {
+                                "kind": "batch",
+                                "observation_seq": self._observation_seq,
+                                "observed_monotonic": time.monotonic(),
+                                "camera_seq": camera_seq,
+                                "camera_ts": camera_ts,
+                                "raw": frame.copy(),
+                                "pure_warped": pure_warped,
+                                "input": warped.copy(),
+                                "contributors": tuple(getattr(self._averager, "contributors", ())),
+                                "nms": nms_detections,
+                                "filtered": [
+                                    (d, "keep" if id(d) in kept else "sustain" if id(d) in held else "below")
+                                    for d in all_detections
+                                ],
+                                "img_w": w,
+                                "img_h": h,
+                                "projection": diagnostic_projection(self._active_extractor(), all_detections, w, h),
+                                "assigned": np.array(raw_observation, copy=True),
+                                "published": np.array(observed_board, copy=True),
+                                "geometry": self._geometry,
+                                "reference_mode": self._ref_mode,
+                                "bound": self._bound,
+                                "monitor": self._monitor,
+                            },
+                        )
 
                     # Confident-empty reads score 1.0 (our helper), so the tsumego "clear board" step
                     # doesn't rot into DEGRADED (which would skip the setup check and wedge clearing).

@@ -1,8 +1,62 @@
 # 管理后台 Codex 跨 session 交接（2026-09-24）
 
-## 2026-09-25 教程页字号跟进（本地，未推送/部署）
+## 2026-09-26 Claude 接手快照（覆盖下文历史状态）
 
-- Fan 对照测试后台截图要求教程管理页与定时任务页字号一致。本地仅调整已登录教程页的顶部/侧栏和三栏文字层级，保留楷体、主题、登录页字号、cron 页与业务行为；右侧讲解从 26px 收至 18px，原书说明从 24px 收至 17px。`ui-ux-pro-max` 的后台排版一致性建议用于核对现有层级，未另起主题。`AdminApp.test.tsx` **12 passed**、`build:admin`、单文件 ESLint、`git diff --check` 通过；本机 1440×900 查看/编辑真实浏览器预览在忽略目录 `output/playwright/admin-runtime-dark-*-kaiti-1440x900.png`，无明显遮挡。该样式仅本地提交，未 push 或部署；测试机 `127.0.0.1:8013` 当前仍显示旧字号。
+- [设计稿导航](./design-gallery.html)：汇总六个模块现行设计稿（实时 HTML / 入库截图切换、`#模块/状态` 可引用、四图与设计记录入口），历史稿折叠在页底；在仓库根目录 `python3 -m http.server 8765 --bind 127.0.0.1` 后打开 `http://127.0.0.1:8765/superpowers/tracks/admin-console/design-gallery.html`。
+- Fan 要求停止此轮功能推进，写完整接手 prompt，并明确授权把现有成果 commit & push 到 `feature/admin-console`。详细需求、文件、待办、权限及下一步见 [Claude 接手 prompt](./claude-handoff-prompt.md)。此次授权不包含合并 develop、父仓 submodule、远程、部署或真实训练。
+- 功能基线 `a831389e`；C 计划已独立批准，`slice5/design/admin-vision-diagnostics.html` 和四态1440×900图作为**未经最终独立视觉批准的设计草稿**随交接提交。React Fixture/契约/C后端均未开始；接手先完成Task1视觉门，不能把设计示例当真实诊断。
+- 本次新鲜验证：后端训练/采集/数据集/传输9文件 **215 passed**，前端8文件 **55 passed**，`build:admin`成功；命令见接手prompt。仅既有passlib/Node环境警告。仍未碰真实相机/LED、上传、GPU、模型、目标数据库或部署。
+- `/output/`已忽略，新增 `/.playwright-cli/` 忽略临时快照并停止跟踪六份旧缓存，不清理本地其他文件。正式HTML/视觉证据保留入库。推送结果以本次最终回执与实际 `origin/feature/admin-console` 为准；下文“全部新提交未推送”是此前阶段状态。
+
+## 2026-09-26 视觉实验室最新本地进度（覆盖下文阶段性状态）
+
+- 持续开发许可不扩大外部权限：本轮没有 SSH、真实摄像头/LED 操作、目标库写入、数据上传、GPU 训练、push 或部署。性能 Grafana 仍待真实服务核实；视觉采集的真实硬件与最终用户验收未完成。
+- Mac 采集后端已完成本地连接/标定/SGF 导入/采集/会话恢复/样本叠框/冻结接口。纯 SGF `c8969af0`；原子事务 `d65fa3f3`＋CRLF/独立会话 ID 修复 `5e4a3f15`；空盘标定 `429cdaaa`＋稳定棋子误判修复 `2ae78606`；不可变数据集 `70b4b823`＋可搬移 YAML `15aa2b64`；接口集成 `b8c1cf9f`。各阶段独立规格/质量均 APPROVE，保留硬件未验收边界。
+- 接口质量复核重现“采集已成功但相机断开后重试 409”。根代理先跑红测，再修复为校验已有活动会话/文件和确认后只读幂等返回；新帧与显式重拍仍受实时相机/模式/几何限制。提交 `19b43509`，独立质量复核 APPROVE。根代理数据/采集接口聚焦 **146 passed**，计划要求的相机/LED/旧采集/几何邻近组合 **182 passed**；Black、`git diff --check` 通过。仅既有 passlib `crypt` 弃用警告。
+- [v2 操作 HTML](./slice3/design/admin-vision-capture-v2.html) 按 `claude-design` 的 Operate/Inspect 构图与 `ui-ux-pro-max` 标签/确认/错误/焦点原则补齐实际操作路径。[正式 React 四态四图](./slice3/design/vision-v2-fourup.html) 独立 Astra max APPROVE；样本检查初次截到加载态，仅补弹窗实际出现/图片解码后复核。截图使用临时浏览器 API/camera 响应，生产不含这些数据，不代表真实硬件验收。
+- 正式采集前端已提交 `13dcc74b`：真实接口与同帧预览、导谱/恢复/逐手确认/样本重拍/冻结，模式/设备/几何准备闸，401/Abort/代际取消、最多2Hz且不重叠。独立审核发现读谱过程中刷新导致旧读取跨上下文导入、缺 LED 检查失败没有重拍入口，两项均 RED→GREEN 修复，规格/质量最终 APPROVE。原 v1 Fixture 全部删除，共享 CSS 留用；根代理重新运行5文件聚焦 **39 passed**，实现者 scoped ESLint0、build:admin 通过。未知真硬件状态仍诚实呈现。
+- 上传纯协议 `82228c04` 已本地完成：只验证真实冻结清单/文件并通过可注入传输验证逐文件回执、容量、断点/取消/未校验状态，组合 **41 passed**，独立规格/质量 APPROVE。默认关闭、目标根目录 None，**没有 SSH 适配器或真实上传路由**，不能算上传功能完成。
+- 采集停在 Task 5 Step 4（真实本机硬件）与 Task 6（外部上传）。顺序进入 [训练与模型计划](./plan-2026-09-26-admin-vision-training.md)：独立 Astra 选 admin 协调独立进程组，默认禁用、单运行/单预留GPU，不建通用队列/DDP；最终解析本地权重验哈希且禁止下载回退，取消确认退出才释放运行占用，成功须核对 best.pt/schema/哈希/全部实际参数并原子发布。计划三个 chunk Approved，[训练 HTML](./slice4/design/admin-vision-training.html) 按 claude-design→ui-ux-pro-max 修 CTA/版本首屏与关键16–17px字号后独立 APPROVE。
+- 训练隔离 Fixture `f771a792` 已本地提交；[四態同尺寸四图](./slice4/design/training-fourup.html) 独立 Astra 实际查看后 **APPROVE**，另一独立Astra SPEC+QUALITY APPROVE。根代理重新运行页面/入口 **16 passed**，局部ESLint/build:admin通过、Chromium0error。示例只在控制器，正式入口不引入，无真实训练/下载。[契约](./slice4/vision-training-contract.md) 四图后已冻结，现开始默认禁用的可注入训练核心；尚无正式训练接口/真实GPU验收。worker仅独立进程内兼容已核实Ultralytics8.4.34，不影响ASGI配置；test-only MVP 通过另经授权隧道独立登录，不在Mac暗中SSH/RPC。
+- 训练核心与独立worker/process本地提交 `92879448`，通过两名Astra各自SPEC+QUALITY复核：默认禁用、固定root flock、UUID幂等、单卡/单运行、取消与restart保守busy、全部实际参数及模型SHA/schema只读原子发布。评审发现GPU初始化映射、日志归档满后最新错误丢失、取消/终态保存失败无法重试，四项均精确RED→GREEN修复。根代理聚焦组合 **95 passed**，未使用真实Popen/GPU/网络。
+- 训练真实API/config/entry本地提交 `7b4a0818`：八条独立鉴权接口、test/Linux/loopback/显式开关/已核实配置与权重SHA/version才开启，Mac/prod禁用；无SSH代理/GET训练，返回剔除内部spec/结构化路径。独立Astra本批 **52 passed** 与SPEC+QUALITY APPROVE，根代理加邻近采集组合 **144 passed**。真实GPU服务/数据上传/模型下载未验收。[启用边界说明](../../../docs/operations/admin-console-access.md) 只供后续授权核实，不是本次部署。
+- 训练正式React前端本地提交 `2efca8e2`，Fixture删除；真实目录/运行/指标、显式确认、原UUID幂等重试、≤2秒串行轮询与401/旧响应隔离。独立Astra重现历史选择漏观察活动run、发布后模型列表不更新、首次run读取失败反复hash目录三项，精确RED→GREEN后SPEC+QUALITY APPROVE。六文件 **41 passed**、scoped ESLint0、build:admin通过；根代理复跑原38项与controller9项GREEN。真实8015临时SQLite、训练开关0的 [1440×900空态](./slice4/design/training-runtime-disabled-dark-1440x900.png) 无模拟业务数据，fresh Chromium0error/warning，独立视觉APPROVE。仅本地服务验收，不代表GPU训练完成。
+- 性能真实 Grafana、测试机真实训练/模型版本、Mac 模型部署/七阶段诊断仍未完成。所有新提交均仅本地，尚未推送；用户原有 `.playwright-cli` 删除及快照保持原样。本轮无新增全仓测试/变异体系，沿用比例化聚焦验证；无 SSH、写库、真设备、训练或部署。
+
+## 2026-09-26 视觉实验室首段记录（历史阶段性状态）
+
+- Fan 睡前要求持续推进所有未完成切片，视觉或方案决策交独立 GPT-6 Astra max；这**不**授权远程连接、上传/写测试机、GPU 训练、push 或部署。性能监控仍停在真实 Grafana 服务核实前的外部授权关卡，故本地转向急需的 Mac 棋盘采集旅程。
+- 已写 [视觉实验室规格](./spec-2026-09-26-admin-vision-lab.md) 与 [Mac 采集计划](./plan-2026-09-26-admin-vision-capture.md)，分采集/数据集、测试机训练/模型版本、Mac 部署/逐帧诊断三个顺序切片。独立 Astra 对计划三个 chunk 复核通过。测试机双 3090 首版只计划单 GPU：现有 `led-safe-blur` 进程内增强在 DDP 子进程未验证，不冒称双卡可用。
+- [采集 HTML 设计稿](./slice3/design/admin-vision-capture.html) 与隔离 React Fixture 的夜间未连接、夜间示意、白天示意三态已做 1440×900 参考/运行/并排/叠加/差异，[设计记录和四图入口](./slice3/design/design-notes.md)。独立 Astra max 两轮检查：先修状态文案，最终 HTML 与 Fixture 四图均裁定 APPROVE。Fixture 不开相机、不上传、不显示假成功；聚焦前端 **12 passed**、`build:admin`、ESLint、`git diff --check` 通过。正式后台尚未挂载视觉页；Fixture 必须在真实集成后删除。
+- 已冻结 [本地采集 API 契约](./slice3/vision-capture-contract.md)，规定 Mac 专用显式启用、后台 Bearer、相机/LED 进程间租约、同帧原图/warp、SGF 逐手采集与无 LED `stones2`/LED 四类分离。独立 Astra 复核旧采集脚本后要求后台专用事务层：LED 旧流程只在暂存目录复用、旧帧必须按相机序号/单调时间戳拒绝、重拍不得删后续帧、图像与 manifest 须分阶段原子发布；已同步规格/计划/契约。设备租约已本地提交 `af0d3fe7`＋修复 LED 占用后自动重连的 `e66b8add`，聚焦 **60 passed**；独立复核尚在收尾。本机硬件仍未验收。任何目标机状态未知时都不能显示“在线/已上传”。
+- 本机后台首段 status/devices/connect/disconnect/preview 接口已本地提交 `54f5be06`，只在 local＋开关＋显式 loopback bind 开启；同次新鲜相机帧输出有界原图/warp、相机序号和观测时间。根代理复跑后台聚焦 **56 passed**；独立规格/质量复核仍在进行。设备租约规格复核已 APPROVE，但质量复核又重现了停止/重连竞态、启动异常未清理部分相机、Linux 数字/设备路径别名三处独占边界，现正加红测修正；不能将租约或实际硬件标成已验收。
+- 上述租约问题连同后续真实 reader-thread 启动失败清理、LED 重启遗留队列哨兵两项均经红测修复，提交 `9ea0d478`、`c3518230`；独立质量复核最终 APPROVE。后台首段接口的 LED 状态更新时间修复 `0c5b8205` 后规格和质量复核也均 APPROVE。根代理再跑租约＋后台视觉＋SGF 聚焦 **128 passed**（cv2 环境）；仍未连接真实摄像头/LED。
+- 原始 SGF 纯准备层 `c8969af0` 与双模式原子采集事务 `d65fa3f3` 已本地提交。事务仅在临时目录复用 LED 旧管线，逐帧严格新鲜度、关灯完成屏障、幂等、重拍保留后续帧、坏 manifest 拒绝及失败保留已引用文件；采集＋SGF＋旧采集回归 **70 passed**。独立规格复核进行中；空盘标定正在接入，导谱/拍摄正式路由及数据集/前端集成尚未完成。
+- 上一笔本地提交 `5796529b`（最终设计对照与性能 Fixture）**未推送**。本轮视觉实验室新增文件当前也未提交/推送。现有 `.playwright-cli` 追踪删除与大量未跟踪快照仍保留原样，不得一并暂存或清理。
+
+## 2026-09-26 本地进度：最终设计对照与性能监控 Fixture
+
+- Fan 要求把已实现的教程、cron 设计稿同步到最终页面。新增可打开的 [教程最终 HTML](./tutorial-admin-design-final.html) 与 [cron 最终 HTML](./slice1/design/admin-cron-final.html)，直接复用生产 CSS；1440×900 详情/编辑、列表/抽屉截图见各自设计记录。独立 GPT-6 Astra max 复核后均裁定 APPROVE。既有旧稿只作历史。
+- 性能监控设计内容字号已缩至与教程/cron 相称；Fan 睡前明确授权独立 GPT-6 Astra max 代做视觉决策。它批准新版内嵌 Grafana HTML 与 [新版 React Fixture 四图](./slice2/design/design-notes.md)。旧 Netdata 外跳方案已废弃；新版 Fixture 不在正式后台构建，不连服务、不含假指标或 iframe。聚焦前端 **3 passed**，`build:admin` 通过，本地 Chromium 三态预览正常。
+- 🛑 真实 Grafana 嵌入**未完成**：需要 Fan 当场授权测试机只读 SSH，以核实 Grafana 是否存在、鉴权、看板地址、iframe/CSP；远程连接、写库、push、部署均未在本次进行。Fan 明早可对视觉稿提出修改。
+- Fan 另提出紧急的 Mac 采集 → 测试机 2×3090 YOLO11 训练/版本 → Mac 拉取部署与全链路视觉诊断模块。已只读核对现有 `katrain/vision`、摆谱采集/自动标注/训练脚本；将在性能监控外部授权停点后顺序推进该模块的本地设计与实现，不假定远程训练服务已存在。
+
+## 2026-09-25 性能监控方向修正（历史：当时仅新版 HTML 设计）
+
+- Fan 指出性能监控原 spec §10 与此前沟通是**内嵌 Grafana**。上一版“独立面板入口”没有得到 Fan 确认，不能当作选定方案；其本地 Fixture 和四图已废弃，仅作历史。现已把 [HTML 设计稿](./slice2/design/admin-performance-access.html) 改为后台内嵌 Grafana 布局，保留夜间/白天 B/C 楷体、未接入诚实空态；内嵌示意仅有无数据占位，不冒充实际 Grafana 或服务在线。新版 1440×900 三张设计图见 [设计记录](./slice2/design/design-notes.md)，Chromium 控制台 0 error、0 warning；独立 GPT-6 Astra 裁定设计方向 **APPROVE**，无必改项，但不替代 Fan 确认。
+- 🛑 先请 Fan 确认新版 HTML 设计，再按 [修订计划](./plan-2026-09-25-admin-performance-access.md) 修改隔离 React Fixture、制作新版四图；四图再由 Fan 确认，之后才核实测试环境 Grafana、冻结契约或写后端。真实嵌入必须核实 Grafana 自身鉴权、iframe 策略与后台 CSP，不传后台 Bearer，不开放无保护端口。没有进行远程连接、真实写入或部署。
+
+## 2026-09-25 旧性能监控入口提案（历史；已废弃）
+
+- 按 spec §10 的建议顺序，在 cron 后开始性能监控模块。已完成 `slice2/design/admin-performance-access.html` 单文件设计稿，沿用已批准的 B 石墨铜夜间、C 雾白蓝白天与楷体，经 `ui-ux-pro-max` 核对；独立 GPT-6 Astra 先要求修正后台壳层尺寸，修后批准进入本地 Fixture。设计/架构取舍见 [记录](./slice2/design/design-notes.md) 与 [计划](./plan-2026-09-25-admin-performance-access.md)。
+- React Fixture 使用独立 `admin-performance-fixture.html` 入口，只展示“尚未接入”与明确标记的“已配置示意”；无假指标、可点击监控链接或令牌，正式 `admin.html` 未改。两态各自的参考/真实运行/并排/叠加四图已入 `slice2/design/`；独立 Astra 查看八图，裁定本地视觉 **APPROVE**，轻微壳层字位差异不阻断。Chromium 1440×900 控制台 0 error、0 warning。
+- 聚焦前端 **15 passed**（性能 3 项＋既有后台 12 项），`build:admin`（含 `tsc -b`）、性能文件 ESLint、`git diff --check` 通过；确认 Fixture 入口与示意文案均未进入正式后台构建。
+- 🛑 Fan 尚未确认四图或访问旅程。当前首选是后台提供独立监控面板入口，经已有 SSH 隧道访问，**不是**旧 spec 中的同页 iframe；这只是设计提案，未冻结契约。真实目标环境是否已有 Netdata/Grafana 尚未核实，未连接远端、未写库、未部署。Fan 若要求同页嵌入，先调整设计与鉴权方案。后续每次 SSH、push、部署分别重新授权。
+
+## 2026-09-25 教程页字号跟进（已推送 develop，未部署）
+
+- Fan 对照测试后台截图要求教程管理页与定时任务页字号一致。本地仅调整已登录教程页的顶部/侧栏和三栏文字层级，保留楷体、主题、登录页字号、cron 页与业务行为；右侧讲解从 26px 收至 18px，原书说明从 24px 收至 17px。`ui-ux-pro-max` 的后台排版一致性建议用于核对现有层级，未另起主题。`AdminApp.test.tsx` **12 passed**、`build:admin`、单文件 ESLint、`git diff --check` 通过；本机 1440×900 查看/编辑真实浏览器预览在忽略目录 `output/playwright/admin-runtime-dark-*-kaiti-1440x900.png`，无明显遮挡。
+- Fan 授权一次推送后，先无冲突合并 `origin/develop=c6d8408c`（kiosk 更新），合并结果为 `e9dc7a85`；聚焦 **12 passed**、`build:admin`、`git diff --check` 通过，已执行一次 `git push origin HEAD:develop`，远端回执 `c6d8408c..e9dc7a85 HEAD -> develop`。`origin/feature/admin-console` 未同步，测试/生产均未部署；测试机 `127.0.0.1:8013` 仍显示旧字号。性能监控新模块工作在这次推送之后，不包含于 `e9dc7a85`。
 
 ## 2026-09-25 测试 cron 部署验收（最新）
 

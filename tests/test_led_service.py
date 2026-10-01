@@ -7,9 +7,11 @@ mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 
 import importlib.util
 import logging
+import subprocess
 import sys
 import threading
 import time
+import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -238,6 +240,227 @@ def _make_service(ack="OK", clock=None):
         LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=clock or (lambda: 0.0)
     )
     return svc, fake
+
+
+def test_same_led_port_is_busy_until_owner_stops():
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    second_open_calls = []
+
+    def second_factory():
+        second_open_calls.append(True)
+        return FakeSerial()
+
+    second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=second_factory)
+    first.start()
+    try:
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            second.start()
+        assert second_open_calls == []
+    finally:
+        first.stop()
+    second.start()
+    try:
+        assert second.is_connected()
+    finally:
+        second.stop()
+
+
+def test_different_led_ports_do_not_block_each_other():
+    port = uuid.uuid4().hex
+    first = LedService(LedServiceConfig(enabled=True, serial_port=f"{port}-1"), serial_factory=FakeSerial)
+    second = LedService(LedServiceConfig(enabled=True, serial_port=f"{port}-2"), serial_factory=FakeSerial)
+    first.start()
+    try:
+        second.start()
+        assert second.is_connected()
+    finally:
+        second.stop()
+        first.stop()
+
+
+def test_failed_led_open_releases_port_for_another_service():
+    port = f"led-{uuid.uuid4().hex}"
+
+    def fail_open():
+        raise OSError("serial unplugged")
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=fail_open, clock=lambda: 0.0)
+    first.start()
+    try:
+        assert not first.is_connected()
+        second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+        second.start()
+        try:
+            assert second.is_connected()
+        finally:
+            second.stop()
+    finally:
+        first.stop()
+
+
+def test_led_reconnect_conflict_requires_explicit_stop_start_after_peer_releases():
+    port = f"led-{uuid.uuid4().hex}"
+    clock = FakeClock()
+    clock.t = 0.0
+    state = {"available": False, "open_calls": 0}
+
+    def factory():
+        state["open_calls"] += 1
+        if not state["available"]:
+            raise OSError("serial unplugged")
+        return FakeSerial()
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory, clock=clock)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    peer.start()
+    try:
+        state["available"] = True
+        clock.advance(10)
+        assert first.clear(strict=True)["ok"] is False  # Worker reconnect encounters the peer's lease.
+        peer.stop()
+        clock.advance(10)
+
+        assert first.clear(strict=True)["ok"] is False
+        assert first.is_connected() is False
+        assert state["open_calls"] == 1
+
+        first.stop()
+        first.start()
+        assert first.clear(strict=True)["ok"] is True
+        assert state["open_calls"] == 2
+    finally:
+        peer.stop()
+        first.stop()
+
+
+def test_led_stop_keeps_lease_until_blocked_reconnect_finishes(monkeypatch):
+    port = f"led-{uuid.uuid4().hex}"
+    reconnect_entered = threading.Event()
+    reconnect_resume = threading.Event()
+    fake = FakeSerial()
+    calls = []
+
+    def factory():
+        calls.append(True)
+        if len(calls) == 1:
+            raise OSError("serial unplugged")
+        reconnect_entered.set()
+        assert reconnect_resume.wait(timeout=5)
+        return fake
+
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=factory)
+    peer = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    first.start()
+    worker = first._thread
+    original_join = worker.join
+    try:
+        assert reconnect_entered.wait(timeout=2)
+        monkeypatch.setattr(first, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        first.stop()
+
+        with pytest.raises(RuntimeError, match="[Bb]usy|occupied"):
+            peer.start()
+        assert first.is_connected() is False
+
+        reconnect_resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert fake.closed is True
+        assert fake.written == []
+        assert first.is_connected() is False
+        peer.start()
+        assert peer.is_connected() is True
+    finally:
+        reconnect_resume.set()
+        original_join(timeout=2)
+        peer.stop()
+        first.stop()
+
+
+def test_led_explicit_restart_discards_previous_worker_stop_sentinel(monkeypatch):
+    entered = threading.Event()
+    resume = threading.Event()
+
+    class BlockedSerial(FakeSerial):
+        def write(self, data):
+            if data == b"CLEAR\n" and not resume.is_set():
+                entered.set()
+                assert resume.wait(timeout=5)
+            super().write(data)
+
+    serials = [BlockedSerial(), FakeSerial()]
+    svc = LedService(
+        LedServiceConfig(enabled=True, serial_port=f"led-{uuid.uuid4().hex}"),
+        serial_factory=lambda: serials.pop(0),
+    )
+    svc.start()
+    worker = svc._thread
+    original_join = worker.join
+    original_clear = svc.clear
+    try:
+        svc.set_points([], strict=False)
+        assert entered.wait(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        monkeypatch.setattr(worker, "join", lambda timeout=None: original_join(timeout=0.01))
+        svc.stop()
+        resume.set()
+        original_join(timeout=2)
+        assert not worker.is_alive()
+        assert svc._queue.qsize() == 1  # Stop sentinel was never consumed by the old worker.
+
+        monkeypatch.setattr(svc, "clear", original_clear)
+        svc.start()
+        assert svc.clear(strict=True)["ok"] is True
+    finally:
+        resume.set()
+        original_join(timeout=2)
+        monkeypatch.setattr(svc, "clear", lambda **kwargs: {"ok": False})
+        svc.stop()
+
+
+def test_led_worker_start_failure_releases_port(monkeypatch):
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    original_start = threading.Thread.start
+
+    def fail_thread_start(_thread):
+        raise RuntimeError("worker could not start")
+
+    monkeypatch.setattr(threading.Thread, "start", fail_thread_start)
+    with pytest.raises(RuntimeError, match="worker could not start"):
+        first.start()
+    monkeypatch.setattr(threading.Thread, "start", original_start)
+
+    second = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    second.start()
+    try:
+        assert second.is_connected()
+    finally:
+        second.stop()
+
+
+def test_led_port_lease_blocks_another_process():
+    port = f"led-{uuid.uuid4().hex}"
+    first = LedService(LedServiceConfig(enabled=True, serial_port=port), serial_factory=FakeSerial)
+    script = """import sys
+from katrain.web.core.device_lease import DeviceBusy, DeviceLease
+try:
+    lease = DeviceLease.acquire('led', sys.argv[1])
+except DeviceBusy:
+    sys.exit(0)
+else:
+    lease.release()
+    sys.exit(1)
+"""
+    first.start()
+    try:
+        result = subprocess.run([sys.executable, "-c", script, port], capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0, result.stderr
+    finally:
+        first.stop()
 
 
 class TestColorsAndProtocol:

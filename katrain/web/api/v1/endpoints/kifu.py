@@ -16,6 +16,10 @@ from katrain.web.kifu.identity import (
     display_event_name,
     display_maps,
     matching_entity_ids,
+    resolve_strict_display,
+    strict_display_maps,
+    strict_matching_names,
+    strict_names_enabled,
 )
 from katrain.web.kifu.name_parse import parse_player
 from katrain.web.kifu.round_names import display_round_name
@@ -116,15 +120,22 @@ async def list_kifu_albums(
     count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
 
     if q:
-        player_ids, event_ids = matching_entity_ids(db, q, exact=True)
-        if len(player_ids) == 1 and not event_ids:
+        strict = strict_names_enabled()
+        if strict:
+            player_ids, event_ids, raw_players, raw_events = strict_matching_names(db, q)
+        else:
+            player_ids, event_ids = matching_entity_ids(db, q, exact=True)
+            raw_players, raw_events = set(), set()
+        if len(player_ids) == 1 and not event_ids and not raw_players and not raw_events:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
-        elif len(event_ids) == 1 and not player_ids:
+        elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_events:
             needle = KifuAlbum.event_id == next(iter(event_ids))
         else:
-            partial_players, partial_events = matching_entity_ids(db, q, exact=False)
-            terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+            partial_players, partial_events = (set(), set()) if strict else matching_entity_ids(db, q, exact=False)
+            terms = (
+                (q.lower(),) if strict else (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+            )
             player_match = or_(
                 *(
                     func.lower(field).contains(term, autoescape=True)
@@ -139,6 +150,17 @@ async def list_kifu_albums(
                 )
             if partial_events:
                 clauses.append(KifuAlbum.event_id.in_(partial_events))
+            if strict:
+                if player_ids:
+                    clauses.extend(
+                        (KifuAlbum.black_player_id.in_(player_ids), KifuAlbum.white_player_id.in_(player_ids))
+                    )
+                if event_ids:
+                    clauses.append(KifuAlbum.event_id.in_(event_ids))
+                if raw_players:
+                    clauses.extend((KifuAlbum.player_black.in_(raw_players), KifuAlbum.player_white.in_(raw_players)))
+                if raw_events:
+                    clauses.append(KifuAlbum.event.in_(raw_events))
             needle = or_(*clauses)
             query = query.order_by(case((player_match, 0), else_=1))
         query = query.filter(needle)
@@ -154,9 +176,27 @@ async def list_kifu_albums(
     total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
-    players, events, event_canonical_names, sources = display_maps(db, records, lang)
+    strict = strict_names_enabled()
+    if strict:
+        players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
+            db, records, lang
+        )
+    else:
+        players, events, event_canonical_names, sources = display_maps(db, records, lang)
     return KifuAlbumListResponse(
-        items=[_summary(r, players, events, event_canonical_names, sources, lang) for r in records],
+        items=[
+            _summary(
+                r,
+                players,
+                events,
+                event_canonical_names,
+                sources,
+                lang,
+                raw_players=raw_players if strict else None,
+                raw_events=raw_events if strict else None,
+            )
+            for r in records
+        ],
         total=total,
         page=page,
         page_size=page_size,
@@ -182,8 +222,23 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
-    players, events, event_canonical_names, sources = display_maps(db, [record], lang)
-    values = _summary(record, players, events, event_canonical_names, sources, lang).model_dump()
+    strict = strict_names_enabled()
+    if strict:
+        players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
+            db, [record], lang
+        )
+    else:
+        players, events, event_canonical_names, sources = display_maps(db, [record], lang)
+    values = _summary(
+        record,
+        players,
+        events,
+        event_canonical_names,
+        sources,
+        lang,
+        raw_players=raw_players if strict else None,
+        raw_events=raw_events if strict else None,
+    ).model_dump()
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
     )
@@ -196,22 +251,34 @@ def _summary(
     event_canonical_names: dict[int, str],
     sources: dict[int, list[str]],
     lang: str,
+    *,
+    raw_players: dict[str, str] | None = None,
+    raw_events: dict[str, str] | None = None,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
     white = parse_player(record.player_white, record.white_rank)
+    strict = raw_players is not None and raw_events is not None
+    if strict:
+        black_name, white_name, displayed_event = resolve_strict_display(
+            record, lang, players, events, event_canonical_names, raw_players, raw_events
+        )
+    else:
+        black_name = players.get(record.black_player_id, black.name)
+        white_name = players.get(record.white_player_id, white.name)
+        displayed_event = display_event_name(
+            record.event,
+            events.get(record.event_id),
+            lang,
+            linked_canonical_name=event_canonical_names.get(record.event_id),
+        )
     return summary.model_copy(
         update={
-            "display_player_black": players.get(record.black_player_id, black.name),
-            "display_player_white": players.get(record.white_player_id, white.name),
+            "display_player_black": black_name,
+            "display_player_white": white_name,
             "display_black_rank": black.display_rank,
             "display_white_rank": white.display_rank,
-            "display_event": display_event_name(
-                record.event,
-                events.get(record.event_id),
-                lang,
-                linked_canonical_name=event_canonical_names.get(record.event_id),
-            ),
+            "display_event": displayed_event,
             "display_round_name": display_round_name(record.round_name, lang),
             "sources": sources.get(record.id, []),
         }

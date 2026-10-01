@@ -615,8 +615,9 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             if "ref" in owner and owner["kind"] in {"player", "event"}:
                 if token not in link_targets:
                     errors.append(f"new identity lacks approved album link: {token}")
+            if owner["kind"] in {"player", "event"} and ("ref" in owner or token in link_targets):
                 if any(_owner_key(owner, lang) not in approved_keys for lang in LANGUAGES):
-                    errors.append(f"new identity lacks all eleven approved language names: {token}")
+                    errors.append(f"linked identity lacks all eleven approved language names: {token}")
     collisions = defaultdict(list)
     for row in decisions:
         if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected"}:

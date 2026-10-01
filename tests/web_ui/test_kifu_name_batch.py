@@ -513,6 +513,71 @@ def test_v2_new_raw_category_must_match_parser_and_approved_decision(engine):
     assert counts(engine) == (0, 0, 0, 0, 0)
 
 
+def _eleven_language_identity_fixture(engine, inv, owners):
+    source_registry = registry()
+    source_registry["sources"] = [
+        {"id": f"go-{lang}", "tier": "official", "home_url": "https://example.org/",
+         "language": source_registry["language_tags"][lang]} for lang in LANGS
+    ]
+    source_registry["language_scopes"] = {
+        lang: {"required_source_ids": [f"go-{lang}"], "complete_for_negative_claims": False}
+        for lang in LANGS
+    }
+    members, candidates, research = [], [], []
+    for owner in owners:
+        for lang in LANGS:
+            display = f"Example {owner['kind']} {lang.upper()}"
+            member = {"owner": owner, "lang": lang}
+            check = {"owner": owner, "source_id": f"go-{lang}", "query": "Example Person",
+                     "status": "found", "url": f"https://example.org/{lang}",
+                     "fetched_at": "2026-10-02T10:00:00Z", "http_status": 200,
+                     "body_sha256": hashlib.sha256(display.encode()).hexdigest(),
+                     "body_excerpt": f"Official identity profile: {display}",
+                     "observed_lang": source_registry["language_tags"][lang],
+                     "language_basis": "reviewed_text", "candidate_name": display,
+                     "identity_basis": "Source identifies this synthetic fixture identity"}
+            evidence = {"owner": owner, "lang": lang, "registry_version": "test-1",
+                        "registry_sha256": registry_sha256(source_registry), "scope_status": "found",
+                        "candidate_name": display, "source_checks": [check],
+                        "original_name": "Example Person", "original_language": "en",
+                        "original_language_basis_url": "https://example.org/original",
+                        "reading": "Example Person", "reading_basis_url": "https://example.org/original",
+                        "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
+            decision = bind_fixture_candidate({**member, "display_name": display, "decision_kind": "conventional",
+                        "name_preimage_sha256": name_preimage_sha256(engine, owner, lang) if "id" in owner else None,
+                        "research_sha256": canonical_sha256(evidence), "generation_rule_version": "none",
+                        "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
+                        "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
+                        "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                        "reviewed_at": "2026-10-02T11:00:00Z",
+                        "review_conclusion": "Checked synthetic language-specific profile"})
+            members.append(member)
+            candidates.append(decision)
+            research.append(evidence)
+    base = {"bundle_format": 2, "inventory_format": 2, "inventory_sha256": inv["sha256"],
+            "registry_version": "test-1", "registry_sha256": registry_sha256(source_registry),
+            "rule_version": "candidate-v2", "members": members,
+            "member_set_sha256": canonical_sha256(members), "candidates": candidates}
+    return base, research, source_registry
+
+
+def test_v2_existing_player_link_rejects_one_language_without_writes(engine):
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    base, research = player_bundle(inv)
+    bundle = _v2_wrap(engine, inv, base,
+                      [{"owner": owner, "preimage": {"canonical_name": "吴清源"}}],
+                      [_identity_link(inv, 11, "white", owner)])
+    result = validate_bundle(bundle, registry(), inv, research)
+    assert not result["ready"]
+    assert any("all eleven approved language names" in error for error in result["errors"])
+    with pytest.raises(BatchError, match="all eleven approved language names"):
+        dry_run_bundle(engine, bundle, registry(), inv, research)
+    with pytest.raises(BatchError):
+        apply_bundle(engine, bundle, registry(), inv, research)
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
 def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
     from katrain.web.kifu import name_candidates
 
@@ -525,7 +590,7 @@ def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
     inv = build_inventory(engine)
     owner = {"kind": "player", "id": 17}
     declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
-    base, research = player_bundle(inv)
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
     links = [_identity_link(inv, album_id, "black", owner) for album_id in (12, 13)]
     bundle = _v2_wrap(engine, inv, base, [declaration], links)
     actual_hash = name_candidates.canonical_sha256
@@ -541,7 +606,7 @@ def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
         return actual_hash(value)
 
     monkeypatch.setattr(name_candidates, "canonical_sha256", counting_hash)
-    assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
     assert scope_hash_calls == 1
 
 
@@ -556,38 +621,11 @@ def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
     owners = [{"owner": player, "preimage": {"canonical_name": "吴清源"}},
               {"owner": event_owner, "preimage": {"canonical_name": "Test Tournament"}}]
     links = [_identity_link(inv, 11, "white", player), _identity_link(inv, 11, "event", event_owner)]
-    player_decisions, research = player_bundle(inv)
-    event_display = "Тестовый турнир"
-    event_check = {
-        "owner": event_owner, "source_id": "go", "query": "Test Tournament", "status": "found",
-        "url": "https://example.org/event", "fetched_at": "2026-10-02T10:00:00Z", "http_status": 200,
-        "body_sha256": hashlib.sha256(event_display.encode()).hexdigest(),
-        "body_excerpt": f"Official event record {event_display}", "observed_lang": "ru",
-        "language_basis": "reviewed_text", "candidate_name": event_display,
-        "identity_basis": "The named event matches this fixture's tournament"}
-    event_research = {
-        "owner": event_owner, "lang": "ru", "registry_version": "test-1",
-        "registry_sha256": registry_sha256(registry()), "scope_status": "found",
-        "candidate_name": event_display, "source_checks": [event_check],
-        "original_name": "Test Tournament", "original_language": "en",
-        "original_language_basis_url": "https://example.org/event",
-        "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
-    event_member = {"owner": event_owner, "lang": "ru"}
-    event_candidate = bind_fixture_candidate({
-        **event_member, "display_name": event_display, "decision_kind": "conventional",
-        "name_preimage_sha256": None,
-        "research_sha256": canonical_sha256(event_research), "generation_rule_version": "none",
-        "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
-        "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
-        "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
-        "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "Checked exact event"})
-    player_decisions["members"].append(event_member)
-    player_decisions["member_set_sha256"] = canonical_sha256(player_decisions["members"])
-    player_decisions["candidates"].append(event_candidate)
-    research.append(event_research)
+    player_decisions, research, source_registry = _eleven_language_identity_fixture(
+        engine, inv, [player, event_owner])
     bundle = _v2_wrap(engine, inv, player_decisions, owners, links)
-    assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
-    applied = apply_bundle(engine, bundle, registry(), inv, research)
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
+    applied = apply_bundle(engine, bundle, source_registry, inv, research)
     with engine.connect() as conn:
         assert conn.execute(select(KifuAlbum.white_player_id, KifuAlbum.event_id)
                             .where(KifuAlbum.id == 11)).one() == (17, 19)
@@ -620,51 +658,9 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
     with engine.begin() as conn:
         conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(player_white="Example Person"))
     inv = build_inventory(engine)
-    source_registry = registry()
-    source_registry["sources"] = [
-        {"id": f"go-{lang}", "tier": "official", "home_url": "https://example.org/",
-         "language": source_registry["language_tags"][lang]} for lang in LANGS
-    ]
-    source_registry["language_scopes"] = {
-        lang: {"required_source_ids": [f"go-{lang}"], "complete_for_negative_claims": False}
-        for lang in LANGS
-    }
     owner = {"kind": "player", "ref": "example-person"}
     declaration = {"owner": owner, "create": {"canonical_name": "Example Person"}}
-    members, candidates, research = [], [], []
-    for lang in LANGS:
-        display = f"Example Person {lang.upper()}"
-        member = {"owner": owner, "lang": lang}
-        check = {"owner": owner, "source_id": f"go-{lang}", "query": "Example Person",
-                 "status": "found", "url": f"https://example.org/{lang}",
-                 "fetched_at": "2026-10-02T10:00:00Z", "http_status": 200,
-                 "body_sha256": hashlib.sha256(display.encode()).hexdigest(),
-                 "body_excerpt": f"Official player profile: {display}",
-                 "observed_lang": source_registry["language_tags"][lang],
-                 "language_basis": "reviewed_text", "candidate_name": display,
-                 "identity_basis": "Source identifies this synthetic fixture person"}
-        evidence = {"owner": owner, "lang": lang, "registry_version": "test-1",
-                    "registry_sha256": registry_sha256(source_registry), "scope_status": "found",
-                    "candidate_name": display, "source_checks": [check],
-                    "original_name": "Example Person", "original_language": "en",
-                    "original_language_basis_url": "https://example.org/original",
-                    "reading": "Example Person", "reading_basis_url": "https://example.org/original",
-                    "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
-        decision = bind_fixture_candidate({**member, "display_name": display, "decision_kind": "conventional",
-                    "name_preimage_sha256": None,
-                    "research_sha256": canonical_sha256(evidence), "generation_rule_version": "none",
-                    "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
-                    "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
-                    "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
-                    "reviewed_at": "2026-10-02T11:00:00Z",
-                    "review_conclusion": "Checked synthetic language-specific profile"})
-        members.append(member)
-        candidates.append(decision)
-        research.append(evidence)
-    base = {"bundle_format": 2, "inventory_format": 2, "inventory_sha256": inv["sha256"],
-            "registry_version": "test-1", "registry_sha256": registry_sha256(source_registry),
-            "rule_version": "candidate-v2", "members": members,
-            "member_set_sha256": canonical_sha256(members), "candidates": candidates}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
     link = _identity_link(inv, 11, "white", owner)
     bundle = _v2_wrap(engine, inv, base, [declaration], [link])
     assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]

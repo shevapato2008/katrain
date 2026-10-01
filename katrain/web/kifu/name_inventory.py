@@ -44,6 +44,18 @@ SOURCE_COLUMNS = (
     KifuAlbumSource.origin_path,
     KifuAlbumSource.match_method,
 )
+ASSOCIATION_COLUMNS = (
+    "id",
+    "duplicate_of_id",
+    "player_black",
+    "player_white",
+    "event",
+    "black_player_id",
+    "white_player_id",
+    "event_id",
+    "sources",
+)
+SOURCE_LINK_COLUMNS = ("id", "source_id", "source_key", "origin_path", "match_method")
 
 
 def _new_scope():
@@ -138,6 +150,7 @@ def build_inventory(engine, *, batch_size=1000):
     scopes = {name: _new_scope() for name in ("all", "visible", "sample")}
     source_stats = {name: defaultdict(lambda: [0, set()]) for name in scopes}
     linked_ids = {name: set() for name in scopes}
+    album_associations = {}
     hasher = hashlib.sha256()
     with engine.connect() as conn:
         if engine.dialect.name == "postgresql":
@@ -159,6 +172,10 @@ def build_inventory(engine, *, batch_size=1000):
                 for row in rows:
                     album = dict(zip(ALBUM_KEYS, row))
                     _hash_row(hasher, b"A", row)
+                    album_associations[album["id"]] = [
+                        *(album[field] for field in ASSOCIATION_COLUMNS[:-1]),
+                        [],
+                    ]
                     _record(scopes["all"], album)
                     if album["duplicate_of_id"] is None:
                         _record(scopes["visible"], album)
@@ -180,6 +197,7 @@ def build_inventory(engine, *, batch_size=1000):
                     break
                 for source_id, album_id, dataset_id, key, path, method in rows:
                     _hash_row(hasher, b"S", (source_id, album_id, dataset_id, key, path, method))
+                    album_associations[album_id][-1].append([source_id, dataset_id, key, path, method])
                     for name in scopes:
                         if album_id in scope_ids[name]:
                             entry = source_stats[name][key]
@@ -198,6 +216,9 @@ def build_inventory(engine, *, batch_size=1000):
         "snapshot_time": snapshot_time,
         "counts": {name: len(scope["album_ids"]) for name, scope in scopes.items()},
         "detail_ids": scopes["all"]["album_ids"],
+        "association_columns": list(ASSOCIATION_COLUMNS),
+        "source_link_columns": list(SOURCE_LINK_COLUMNS),
+        "album_associations": list(album_associations.values()),
         "scopes": {name: _finish_scope(scope) for name, scope in scopes.items()},
         "distinct_values": {
             name: {field: len(entries) for field, entries in scope["values"].items()} for name, scope in scopes.items()

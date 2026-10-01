@@ -95,6 +95,48 @@ def test_inventory_hash_is_stable_and_sensitive_to_null_unicode_and_provenance(t
     assert build_inventory(engine)["sha256"] != before_provenance_change
 
 
+def test_album_associations_expose_identity_and_dataset_source_swaps(tmp_path):
+    engine = _engine(tmp_path)
+    with Session(engine) as db:
+        db.add_all(
+            [
+                _album(20, black_player_id=1, white_player_id=3, event_id=10),
+                _album(40, black_player_id=2, white_player_id=4, event_id=20),
+                KifuSource(id=1, source_key="archive-a"),
+                KifuSource(id=2, source_key="archive-b"),
+                KifuAlbumSource(id=1, album_id=20, source_id=1, origin_path="a.sgf", match_method="import"),
+                KifuAlbumSource(id=2, album_id=40, source_id=2, origin_path="b.sgf", match_method="import"),
+            ]
+        )
+        db.commit()
+    before = build_inventory(engine, batch_size=1)
+    assert before["association_columns"] == [
+        "id", "duplicate_of_id", "player_black", "player_white", "event",
+        "black_player_id", "white_player_id", "event_id", "sources",
+    ]
+    assert before["source_link_columns"] == ["id", "source_id", "source_key", "origin_path", "match_method"]
+    assert before["album_associations"][0] == [
+        20, None, "甲某", "乙某", "棋赛", 1, 3, 10, [[1, 1, "archive-a", "a.sgf", "import"]],
+    ]
+
+    with Session(engine) as db:
+        first, second = db.get(KifuAlbum, 20), db.get(KifuAlbum, 40)
+        first.black_player_id, second.black_player_id = second.black_player_id, first.black_player_id
+        first.white_player_id, second.white_player_id = second.white_player_id, first.white_player_id
+        first.event_id, second.event_id = second.event_id, first.event_id
+        first_link, second_link = db.get(KifuAlbumSource, 1), db.get(KifuAlbumSource, 2)
+        first_link.album_id, second_link.album_id = second_link.album_id, first_link.album_id
+        db.commit()
+    after = build_inventory(engine, batch_size=2)
+    assert after["scopes"]["all"]["identity_ids"] == before["scopes"]["all"]["identity_ids"]
+    assert after["source_stats"] == before["source_stats"]
+    assert after["album_associations"] != before["album_associations"]
+    assert after["album_associations"][0] == [
+        20, None, "甲某", "乙某", "棋赛", 2, 4, 20, [[2, 2, "archive-b", "b.sgf", "import"]],
+    ]
+    assert after["sha256"] != before["sha256"]
+
+
 def test_sqlite_snapshot_does_not_change_with_concurrent_insert(tmp_path):
     engine = _engine(tmp_path)
     with engine.connect() as conn:
@@ -127,6 +169,7 @@ def test_sqlite_snapshot_does_not_change_with_concurrent_insert(tmp_path):
         event.remove(engine, "after_cursor_execute", insert_after_first_batch)
     assert inserted
     assert running["sha256"] == baseline["sha256"]
+    assert running["album_associations"] == baseline["album_associations"]
     assert build_inventory(engine)["sha256"] != baseline["sha256"]
 
 
@@ -142,5 +185,6 @@ def test_cli_writes_safe_metadata_and_inventory_without_database_writes(tmp_path
     assert data["database_identifier"].startswith("sqlite:///")
     assert data["snapshot_time"].endswith("Z")
     assert data["sha256"] == build_inventory(engine)["sha256"]
+    assert data["album_associations"] == [[20, None, "甲某", "乙某", "棋赛", None, None, None, []]]
     with Session(engine) as db:
         assert db.query(KifuAlbum).count() == 1

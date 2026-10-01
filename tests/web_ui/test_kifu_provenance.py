@@ -528,6 +528,29 @@ def test_import_links_cwi_promotion_edition_to_oteai(tmp_path, monkeypatch):
         assert db.get(KifuEvent, album.event_id).canonical_name == "Oteai"
 
 
+def test_import_does_not_strip_past_a_conflicting_raw_player_alias(tmp_path, monkeypatch):
+    engine = _db()
+    with Session(engine) as db:
+        backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+        other = KifuPlayer(canonical_name="Different Person")
+        db.add(other)
+        db.flush()
+        db.add(KifuPlayerAlias(player_id=other.id, alias="吴清源六段", normalized_alias="吴清源六段"))
+        db.commit()
+    data_dir = tmp_path / "data/kifu-album"
+    sgf_path = data_dir / "19x19/conflicting-rank.sgf"
+    sgf_path.parent.mkdir(parents=True)
+    sgf_path.write_text("(;FF[4]SZ[19]PB[吴清源六段]PW[Kitani Minoru];B[dd])")
+    monkeypatch.setattr(import_kifu, "DATA_DIR", data_dir)
+    monkeypatch.setattr(import_kifu, "engine", engine)
+
+    import_kifu.import_kifu()
+    with Session(engine) as db:
+        album = db.query(KifuAlbum).one()
+        assert album.black_player_id is None
+        assert album.white_player_id is not None
+
+
 def test_import_leaves_conflicting_audited_alias_unlinked(tmp_path, monkeypatch):
     engine = _db()
     with Session(engine) as db:

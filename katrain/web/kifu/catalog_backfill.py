@@ -277,36 +277,53 @@ def _audited_aliases(db: Session, seed: dict, ids: dict[str, int] | None) -> dic
     result: dict[str, dict[str, set]] = {"player": {}, "event": {}}
     if seed is None:
         return result
-    canonical_by_key = {entity["key"]: entity["canonical"] for entity in seed["entities"]}
     for entity in seed["entities"]:
         key = ids[entity["key"]] if ids is not None else entity["key"]
         aliases = {entity["canonical"], *entity["aliases"]}
         aliases.update(value["value"] for value in entity["names"].values() if value["status"] == "verified")
         for alias in aliases:
             result[entity["kind"]].setdefault(normalize_alias(alias), set()).add(key)
+    key_by_canonical = {
+        kind: {entity["canonical"]: entity["key"] for entity in seed["entities"] if entity["kind"] == kind}
+        for kind in ("player", "event")
+    }
+    seeded_ids = (
+        {
+            kind: {ids[entity["key"]] for entity in seed["entities"] if entity["kind"] == kind}
+            for kind in ("player", "event")
+        }
+        if ids is not None
+        else {}
+    )
     for kind, alias_model, entity_model, fk in (
         ("player", KifuPlayerAlias, KifuPlayer, "player_id"),
         ("event", KifuEventAlias, KifuEvent, "event_id"),
     ):
-        normalized_values = list(result[kind])
-        for start in range(0, len(normalized_values), 500):
-            rows = (
-                db.query(alias_model.normalized_alias, getattr(alias_model, fk), entity_model.canonical_name)
-                .join(entity_model, getattr(alias_model, fk) == entity_model.id)
-                .filter(alias_model.normalized_alias.in_(normalized_values[start : start + 500]))
-            )
-            for normalized, existing_id, canonical in rows:
-                expected = result[kind][normalized]
-                if ids is not None:
-                    if existing_id not in expected:
-                        expected.add(("existing", existing_id))
-                elif all(canonical_by_key.get(key) != canonical for key in expected):
-                    expected.add(("existing", existing_id))
+        rows = db.query(alias_model.normalized_alias, getattr(alias_model, fk), entity_model.canonical_name).join(
+            entity_model, getattr(alias_model, fk) == entity_model.id
+        )
+        for normalized, existing_id, canonical in rows:
+            # A full SGF name can already belong to another player even when its
+            # rank-free form is a seed alias. Preserve that conflict for resolution.
+            lookup = normalize_alias(identity_lookup_name(kind, normalized))
+            if normalized not in result[kind] and lookup not in result[kind]:
+                continue
+            expected = result[kind].setdefault(normalized, set())
+            if ids is not None:
+                expected.add(existing_id if existing_id in seeded_ids[kind] else ("existing", existing_id))
+            else:
+                expected.add(key_by_canonical[kind].get(canonical, ("existing", existing_id)))
     return result
 
 
+def _alias_matches(aliases: dict[str, dict[str, set]], kind: str, raw: str | None) -> set:
+    raw_key = normalize_alias(raw or "")
+    lookup_key = normalize_alias(identity_lookup_name(kind, raw))
+    return aliases[kind].get(raw_key, set()) | aliases[kind].get(lookup_key, set())
+
+
 def _resolve(aliases: dict[str, dict[str, set]], kind: str, raw: str | None):
-    matched = aliases[kind].get(normalize_alias(identity_lookup_name(kind, raw)), set())
+    matched = _alias_matches(aliases, kind, raw)
     return next(iter(matched)) if len(matched) == 1 else None
 
 
@@ -470,8 +487,7 @@ def backfill_catalog(
                     raw_names.add((kind, raw))
                 target = _resolve(aliases, kind, raw)
                 if target is None:
-                    lookup = identity_lookup_name(kind, raw)
-                    if len(aliases[kind].get(normalize_alias(lookup), set())) > 1:
+                    if len(_alias_matches(aliases, kind, raw)) > 1:
                         report["ambiguous_names"] += 1
                     if raw and raw.strip():
                         identity_state.setdefault((kind, raw), set()).add(getattr(album, field))

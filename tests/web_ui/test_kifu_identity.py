@@ -151,6 +151,22 @@ def test_backfill_links_player_names_with_embedded_dan_to_verified_identity():
         assert album.player_black == "吴清源六段"
 
 
+def test_backfill_does_not_strip_past_a_conflicting_raw_player_alias():
+    engine = _db()
+    with Session(engine) as db:
+        album = _album("data/kifu-album/19x19/conflicting-rank.sgf", black="吴清源六段")
+        other = KifuPlayer(canonical_name="Different Person")
+        db.add_all([album, other])
+        db.flush()
+        db.add(KifuPlayerAlias(player_id=other.id, alias="吴清源六段", normalized_alias="吴清源六段"))
+        db.commit()
+
+        report = backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+        db.refresh(album)
+        assert album.black_player_id is None
+        assert report["ambiguous_names"] >= 1
+
+
 def test_audited_seed_upgrades_existing_review_name_with_its_evidence():
     engine = _db()
     with Session(engine) as db:

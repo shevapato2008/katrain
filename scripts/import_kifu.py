@@ -20,13 +20,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy.orm import Session
 from katrain.web.core.db import engine, Base
 from katrain.web.core.models_db import KifuAlbum
-from katrain.web.kifu.identity import event_identity_name, normalize_alias, player_identity_name
+from katrain.web.kifu.identity import identity_lookup_name, normalize_alias
 from katrain.web.kifu.provenance import audited_alias_ids, ensure_album_source, mainline_signature, sgf_sha256
 from katrain.core.sgf_parser import SGF
 
 
 DATA_DIR = Path("data/kifu-album")
 COMMIT_EVERY = 500
+
+
+def _audited_identity_id(aliases: dict[str, dict[str, int | None]], kind: str, raw: str | None) -> int | None:
+    raw_key = normalize_alias(raw or "")
+    lookup_key = normalize_alias(identity_lookup_name(kind, raw))
+    target = aliases[kind].get(lookup_key)
+    if raw_key != lookup_key and raw_key in aliases[kind] and aliases[kind][raw_key] != target:
+        return None
+    return target
 
 
 def count_moves(root) -> int:
@@ -206,15 +215,13 @@ def import_kifu(
                             if len(candidate_files) < 100:
                                 candidate_files.append(rel_path)
                         if not dry_run:
-                            data["black_player_id"] = approved_aliases["player"].get(
-                                normalize_alias(player_identity_name(data["player_black"]))
+                            data["black_player_id"] = _audited_identity_id(
+                                approved_aliases, "player", data["player_black"]
                             )
-                            data["white_player_id"] = approved_aliases["player"].get(
-                                normalize_alias(player_identity_name(data["player_white"]))
+                            data["white_player_id"] = _audited_identity_id(
+                                approved_aliases, "player", data["player_white"]
                             )
-                            data["event_id"] = approved_aliases["event"].get(
-                                normalize_alias(event_identity_name(data["event"]))
-                            )
+                            data["event_id"] = _audited_identity_id(approved_aliases, "event", data["event"])
                             album = KifuAlbum(**data)
                             db.add(album)
                             db.flush()

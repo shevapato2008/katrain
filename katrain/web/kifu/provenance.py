@@ -37,8 +37,8 @@ def sgf_sha256(sgf_content: str) -> str:
     return hashlib.sha256(sgf_content.encode("utf-8")).hexdigest()
 
 
-def audited_alias_ids(db: Session) -> dict[str, dict[str, int]]:
-    """Load unique approved aliases for new imports; review names cannot create identity links."""
+def audited_alias_ids(db: Session) -> dict[str, dict[str, int | None]]:
+    """Load aliases for imports; None marks a conflicting or unapproved alias."""
     result = {}
     for kind, alias_model, name_model, fk in (
         ("player", KifuPlayerAlias, KifuPlayerName, "player_id"),
@@ -55,10 +55,8 @@ def audited_alias_ids(db: Session) -> dict[str, dict[str, int]]:
             alias_ids.setdefault(normalize_alias(alias), set()).add(entity_id)
         result[kind] = {}
         for alias, ids in alias_ids.items():
-            if len(ids) == 1:
-                entity_id = next(iter(ids))
-                if entity_id in approved_ids:
-                    result[kind][alias] = entity_id
+            entity_id = next(iter(ids)) if len(ids) == 1 else None
+            result[kind][alias] = entity_id if entity_id in approved_ids else None
     return result
 
 

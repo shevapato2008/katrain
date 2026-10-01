@@ -6,8 +6,11 @@ read SGF files or write to a database. The JSON seed is the import artifact.
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import create_engine, text
 from katrain.web.kifu.identity import identity_lookup_name

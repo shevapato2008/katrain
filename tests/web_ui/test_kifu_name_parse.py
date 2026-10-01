@@ -44,6 +44,20 @@ def test_valid_explicit_rank_takes_priority_and_records_suffix_conflict():
     assert parsed.confidence == "low"
 
 
+def test_equivalent_chinese_and_arabic_dan_ranks_do_not_conflict():
+    for rank in ("9d", "9D", "9段"):
+        parsed = parse_player("吴清源九段", rank)
+        assert parsed.display_rank == rank
+        assert parsed.embedded_rank == "九段"
+        assert parsed.exceptions == ()
+    assert parse_player("吴清源一段", "1d").exceptions == ()
+
+
+def test_kyu_or_professional_rank_is_not_assumed_equal_to_embedded_dan():
+    for rank in ("8d", "9k", "9p"):
+        assert parse_player("吴清源九段", rank).exceptions == ("rank_conflict",)
+
+
 def test_normal_explicit_rank_and_placeholder_are_classified():
     assert parse_player("Go Seigen", "5p").display_rank == "5p"
     assert parse_player("Unknown", None).category == "placeholder"

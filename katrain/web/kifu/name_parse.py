@@ -12,6 +12,7 @@ _EMBEDDED_DAN = re.compile(r"(.{2,}?)\s*([一二三四五六七八九])段\Z")
 _EXPLICIT_RANK = re.compile(
     r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*[段级級]|[1-9]\d?\s*(?:[dkp]|dan|kyu|pro)", re.IGNORECASE
 )
+_DAN_NUMBER = re.compile(r"([一二三四五六七八九]|[1-9])\s*(?:段|d)", re.IGNORECASE)
 _SGF_FRAGMENT = re.compile(r"[\[\]]")
 _CWI_OTEAI = re.compile(r"JapanPromotionTournament,([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
 _PROGRAM_LABEL = re.compile(r"(?:GNU\s*Go|Engine)\s*\d+(?:\.\d+)*\Z", re.IGNORECASE)
@@ -44,6 +45,15 @@ class EventParse:
     exceptions: tuple[str, ...]
 
 
+def _dan_number_for_comparison(value: str) -> int | None:
+    """Compare only unmistakable one-through-nine dan forms."""
+    match = _DAN_NUMBER.fullmatch(value)
+    if not match:
+        return None
+    digit = match.group(1)
+    return "一二三四五六七八九".index(digit) + 1 if digit in "一二三四五六七八九" else int(digit)
+
+
 def parse_player(raw: str | None, rank: str | None) -> PlayerParse:
     """Extract only unmistakable rank data; leave identity confirmation for review."""
     text = (raw or "").strip()
@@ -63,7 +73,9 @@ def parse_player(raw: str | None, rank: str | None) -> PlayerParse:
     if explicit and not valid_explicit:
         exceptions.append("invalid_explicit_rank")
     if valid_explicit and embedded and explicit != embedded:
-        exceptions.append("rank_conflict")
+        explicit_dan = _dan_number_for_comparison(explicit)
+        if explicit_dan is None or explicit_dan != _dan_number_for_comparison(embedded):
+            exceptions.append("rank_conflict")
     display_rank = explicit if valid_explicit else embedded or ""
     confidence = "low" if exceptions else "high" if embedded or valid_explicit else "medium"
     return PlayerParse(raw, rank, name, embedded, display_rank, category, confidence, tuple(exceptions))

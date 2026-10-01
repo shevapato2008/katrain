@@ -792,6 +792,21 @@ async def platform_users(
     if adapter is None or not adapter.is_connected:
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
 
+    if platform == "golaxy":
+        from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+        require_platform_owner(platform, request, user)
+        try:
+            users = await adapter.get_online_users()
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
+        require_platform_owner(platform, request, user)
+        if q:
+            prefix = q.casefold()
+            users = [entry for entry in users if entry["username"].casefold().startswith(prefix)]
+        return {"users": users}
     if q:
         # Specific player search
         users = await adapter.get_online_users(room=q)
@@ -821,8 +836,47 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(r
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
     if not adapter.supports_rooms:
         raise HTTPException(status_code=400, detail=f"{platform} does not support rooms")
-    rooms = await adapter.get_rooms()
+    if platform == "golaxy":
+        from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+        require_platform_owner(platform, request, user)
+        try:
+            rooms = await adapter.get_rooms()
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
+        require_platform_owner(platform, request, user)
+    else:
+        rooms = await adapter.get_rooms()
     return {"rooms": rooms}
+
+
+@router.get("/{platform}/rooms/{room_id}/snapshot")
+async def platform_room_snapshot(
+    platform: str, room_id: str, request: Request, user: User = Depends(require_platform_owner)
+):
+    """Return one read-only, owner-bound Golaxy board position."""
+    if platform != "golaxy":
+        raise HTTPException(status_code=400, detail=f"{platform} does not support room snapshots")
+    if not room_id.isascii() or not room_id.isdecimal():
+        raise HTTPException(status_code=400, detail="Invalid Golaxy room ID")
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError, GolaxySnapshotUnsupported
+
+    try:
+        snapshot = await adapter.get_room_snapshot(room_id)
+    except GolaxyLobbyAuthError as exc:
+        raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+    except GolaxySnapshotUnsupported as exc:
+        raise HTTPException(status_code=422, detail="Golaxy room setup not yet supported") from exc
+    except GolaxyLobbyError as exc:
+        raise HTTPException(status_code=502, detail="Unable to load Golaxy room snapshot") from exc
+    require_platform_owner(platform, request, user)
+    return snapshot
 
 
 @router.get("/{platform}/challenges")

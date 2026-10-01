@@ -248,6 +248,41 @@ export interface PlatformUser {
   status: string;
 }
 
+/** Display projection for the Golaxy lobby; unknown upstream fields stay null. */
+export interface GolaxyOnlinePlayer {
+  user_id: string;
+  username: string;
+  rank: string | null;
+  status: string | null;
+}
+
+export interface GolaxyRoom {
+  room_id: string;
+  room_number: string | null;
+  room_type: string | null;
+  handicap: number | null;
+  black: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
+  white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
+  phase: string | null;
+  spectator_count: number | null;
+}
+
+/** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
+export interface GolaxySpectatorSnapshot {
+  room_id: string;
+  room_number: string | null;
+  board_size: 19;
+  black: { username: string; rank: string | null } | null;
+  white: { username: string; rank: string | null } | null;
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  phase: string | null;
+  result: string | null;
+  room_type: string | null;
+  handicap: number | null;
+}
+
 export interface PlatformChallenge {
   platform: string;
   challenge_id: string;
@@ -720,19 +755,27 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async (platform: string, token: string | null | undefined, query?: string): Promise<{ users: PlatformUser[] }> => {
+  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string): Promise<{ users: T[] }> => {
     const params = query ? `?q=${encodeURIComponent(query)}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error("Failed to get users");
+    if (!response.ok) throw new ApiError(response.status, `Failed to get users (${response.status})`);
     return response.json();
   },
-  platformRooms: async (platform: string, token: string | null | undefined) => {
+  platformRooms: async (platform: string, token: string | null | undefined): Promise<{ rooms: GolaxyRoom[] }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error("Failed to get rooms");
+    if (!response.ok) throw new ApiError(response.status, `Failed to get rooms (${response.status})`);
+    return response.json();
+  },
+  platformRoomSnapshot: async (roomId: string, token: string | null | undefined, signal?: AbortSignal): Promise<GolaxySpectatorSnapshot> => {
+    const response = await fetch(`/api/v1/platforms/golaxy/rooms/${encodeURIComponent(roomId)}/snapshot`, {
+      headers: authHeaders(token),
+      signal,
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get room snapshot (${response.status})`);
     return response.json();
   },
   platformChallenges: async (platform: string, token: string | null | undefined): Promise<{ challenges: PlatformChallenge[] }> => {

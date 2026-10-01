@@ -160,6 +160,30 @@ def test_cwi_edition_requires_both_link_and_verified_translation():
     engine.dispose()
 
 
+def test_cwi_edition_rejects_a_verified_translation_from_the_wrong_event():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    raw = "JapanPromotionTournament,1934,Fall"
+    with Session() as db:
+        other_event = KifuEvent(canonical_name="Samsung Cup")
+        db.add(other_event)
+        db.flush()
+        db.add_all([
+            KifuEventName(event_id=other_event.id, lang="cn", display_name="三星杯", status="verified"),
+            KifuAlbum(player_black="A", player_white="B", event=raw, event_id=other_event.id,
+                      sgf_content="(;B[aa])", source_path="wrong-event.sgf"),
+            KifuAlbum(player_black="C", player_white="D", event="Samsung Cup", event_id=other_event.id,
+                      sgf_content="(;B[bb])", source_path="ordinary-event.sgf"),
+        ])
+        db.commit()
+        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
+        assert by_source["wrong-event.sgf"].display_event == raw
+        assert by_source["ordinary-event.sgf"].display_event == "三星杯"
+    engine.dispose()
+
+
 def test_unverified_ordinary_event_name_falls_back_to_original_sgf_text():
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
     Base.metadata.create_all(engine)

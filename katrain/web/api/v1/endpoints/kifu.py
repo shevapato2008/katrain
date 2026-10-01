@@ -154,9 +154,9 @@ async def list_kifu_albums(
     total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
-    players, events, sources = display_maps(db, records, lang)
+    players, events, event_canonical_names, sources = display_maps(db, records, lang)
     return KifuAlbumListResponse(
-        items=[_summary(r, players, events, sources, lang) for r in records],
+        items=[_summary(r, players, events, event_canonical_names, sources, lang) for r in records],
         total=total,
         page=page,
         page_size=page_size,
@@ -182,15 +182,20 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
-    players, events, sources = display_maps(db, [record], lang)
-    values = _summary(record, players, events, sources, lang).model_dump()
+    players, events, event_canonical_names, sources = display_maps(db, [record], lang)
+    values = _summary(record, players, events, event_canonical_names, sources, lang).model_dump()
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
     )
 
 
 def _summary(
-    record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
+    record: KifuAlbum,
+    players: dict[int, str],
+    events: dict[int, str],
+    event_canonical_names: dict[int, str],
+    sources: dict[int, list[str]],
+    lang: str,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
@@ -201,7 +206,12 @@ def _summary(
             "display_player_white": players.get(record.white_player_id, white.name),
             "display_black_rank": black.display_rank,
             "display_white_rank": white.display_rank,
-            "display_event": display_event_name(record.event, events.get(record.event_id), lang),
+            "display_event": display_event_name(
+                record.event,
+                events.get(record.event_id),
+                lang,
+                linked_canonical_name=event_canonical_names.get(record.event_id),
+            ),
             "display_round_name": display_round_name(record.round_name, lang),
             "sources": sources.get(record.id, []),
         }

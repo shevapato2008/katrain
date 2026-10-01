@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
     KifuAlbumSource,
+    KifuEvent,
     KifuEventAlias,
     KifuEventName,
     KifuPlayerAlias,
@@ -41,11 +42,15 @@ def identity_lookup_name(kind: str, raw: str | None) -> str:
     return event_identity_name(raw) if kind == "event" else player_identity_name(raw)
 
 
-def display_event_name(raw: str | None, translated: str | None, lang: str) -> str | None:
-    """Decorate a CWI edition only when its linked event has a verified name."""
+def display_event_name(
+    raw: str | None, translated: str | None, lang: str, *, linked_canonical_name: str | None
+) -> str | None:
+    """Decorate a CWI edition only for a linked Oteai with a verified name."""
     parsed = parse_event(raw, None)
-    if parsed.category != "formal_event_candidate" or not translated:
+    if parsed.category != "formal_event_candidate":
         return translated or raw
+    if not translated or linked_canonical_name != "Oteai":
+        return raw
     year, season = parsed.year, parsed.season
     labels = {
         "en": ("Spring", "Autumn"),
@@ -85,13 +90,16 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
     return {row[0] for row in player_query.distinct()}, {row[0] for row in event_query.distinct()}
 
 
-def display_maps(db: Session, albums: list, lang: str) -> tuple[dict[int, str], dict[int, str], dict[int, list[str]]]:
+def display_maps(
+    db: Session, albums: list, lang: str
+) -> tuple[dict[int, str], dict[int, str], dict[int, str], dict[int, list[str]]]:
     """Load one page's verified names and provenance in three batched queries."""
     player_ids = {value for album in albums for value in (album.black_player_id, album.white_player_id) if value}
     event_ids = {album.event_id for album in albums if album.event_id}
     album_ids = [album.id for album in albums]
     players = {}
     events = {}
+    event_canonical_names = {}
     sources: dict[int, set[str]] = {album_id: set() for album_id in album_ids}
     if player_ids:
         players = {
@@ -103,14 +111,18 @@ def display_maps(db: Session, albums: list, lang: str) -> tuple[dict[int, str], 
             )
         }
     if event_ids:
-        events = {
-            row.event_id: row.display_name
-            for row in db.query(KifuEventName).filter(
+        event_rows = (
+            db.query(KifuEventName.event_id, KifuEventName.display_name, KifuEvent.canonical_name)
+            .join(KifuEvent, KifuEventName.event_id == KifuEvent.id)
+            .filter(
                 KifuEventName.event_id.in_(event_ids),
                 KifuEventName.lang == lang,
                 KifuEventName.status == "verified",
             )
-        }
+            .all()
+        )
+        events = {row.event_id: row.display_name for row in event_rows}
+        event_canonical_names = {row.event_id: row.canonical_name for row in event_rows}
     if album_ids:
         for album_id, source_key in (
             db.query(KifuAlbumSource.album_id, KifuSource.source_key)
@@ -118,4 +130,4 @@ def display_maps(db: Session, albums: list, lang: str) -> tuple[dict[int, str], 
             .filter(KifuAlbumSource.album_id.in_(album_ids))
         ):
             sources[album_id].add(source_key)
-    return players, events, {album_id: sorted(keys) for album_id, keys in sources.items()}
+    return players, events, event_canonical_names, {album_id: sorted(keys) for album_id, keys in sources.items()}

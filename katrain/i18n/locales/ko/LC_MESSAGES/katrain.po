@@ -461,6 +461,9 @@ msgstr "급"
 msgid "strength:dan"
 msgstr "단"
 
+msgid "strength:professional_dan_format"
+msgstr "프로 {rank}단"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2144,6 +2147,12 @@ msgstr "장소"
 
 msgid "kifu:source"
 msgstr "출처"
+
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "출처 미확인"
 
 msgid "kifu:open_in_research"
 msgstr "연구에서 열기"
@@ -5082,9 +5091,6 @@ msgstr "끝까지 놓음"
 msgid "kifu:placed_all"
 msgstr "다 놓음"
 
-msgid "kifu:placed_at"
-msgstr ""
-
 msgid "kifu:resume_at"
 msgstr "지난번에는 "
 
@@ -5129,9 +5135,6 @@ msgstr "집"
 
 msgid "kifu:games_unit"
 msgstr "국"
-
-msgid "kifu:move_ordinal"
-msgstr ""
 
 msgid "kifu:total_prefix"
 msgstr "총 "

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>星阵对局反馈 · 1024×600 设计预览</title>
+  <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <style>
+    :root {
+      --bg: #0f1416; --panel: #18211f; --panel-hi: #1d2725;
+      --line: #2b3a35; --text: #eef3f1; --muted: #a8b8b1;
+      --jade: #58b57a; --amber: #e0a24a; --violet: #b66cf2;
+      font-family: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 1048px; background: #0a0f10; color: var(--text); }
+    .review { width: 1024px; margin: 22px auto 34px; }
+    .review-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 13px; }
+    h1 { margin: 0 0 3px; font-size: 19px; font-weight: 650; }
+    .review-head p { margin: 0; color: #a9b7b1; font-size: 12px; }
+    .switches { display: flex; gap: 5px; margin-bottom: 11px; }
+    .switches button {
+      min-height: 44px; border-radius: 9px; border: 1px solid #35453e;
+      padding: 0 13px; color: #cad6d0; background: #18211f; font: inherit;
+      font-size: 13px; cursor: pointer; transition: background 160ms, border-color 160ms;
+    }
+    .switches button:hover { background: #24312c; }
+    .switches button[aria-pressed="true"] { color: #e9f7ee; border-color: var(--jade); background: #244634; }
+    button:focus-visible { outline: 2px solid #e5bf80; outline-offset: 2px; }
+    .canvas { position: relative; width: 1024px; height: 600px; overflow: hidden; background: var(--bg); box-shadow: 0 18px 56px #0008; }
+    .base { display: block; width: 1024px; height: 600px; }
+    .markers { position: absolute; inset: 0; pointer-events: none; }
+    .marker {
+      position: absolute; width: 32px; height: 32px; border: 3px solid var(--violet);
+      border-radius: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 0 0 2px #faf1e8, 0 0 0 7px #692b9b72, 0 0 17px #a65cff;
+      animation: markerPulse 1.4s ease-in-out infinite;
+    }
+    .marker::after {
+      content: attr(data-point); position: absolute; top: -32px; left: 50%; transform: translateX(-50%);
+      color: #fff; background: #512c68; border: 1px solid #d3a4f7; border-radius: 6px;
+      padding: 2px 6px; white-space: nowrap; font: 600 12px "SmartBox Mono", monospace;
+    }
+    @keyframes markerPulse { 50% { box-shadow: 0 0 0 2px #faf1e8, 0 0 0 10px #692b9b52, 0 0 23px #a65cff; } }
+    .rail-shade {
+      position: absolute; inset: 56px 0 0 540px;
+      background: #06100ba8; cursor: not-allowed;
+    }
+    .side {
+      position: absolute; top: 50%; left: 588px; width: 380px;
+      max-height: 380px; transform: translateY(-50%);
+      background: #26352e; border: 2px solid #7d4a9b; border-radius: 15px;
+      box-shadow: 0 0 0 4px #b66cf229, 0 18px 38px #000c, 0 0 30px #b66cf24d;
+      display: flex; flex-direction: column; padding: 14px 16px; overflow: auto;
+    }
+    .side[data-tone="violet"] { border-color: #c486f1; }
+    .side[data-tone="amber"] { border-color: #e2a458; box-shadow: 0 0 0 4px #e0a24a29, 0 18px 38px #000c, 0 0 30px #e0a24a4d; }
+    .side[data-tone="jade"] { border-color: #71d38d; box-shadow: 0 0 0 4px #58b57a29, 0 18px 38px #000c, 0 0 30px #58b57a4d; }
+    .eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .08em; color: var(--jade); }
+    .side[data-tone="violet"] .eyebrow { color: #d2a0f6; }
+    .side[data-tone="amber"] .eyebrow { color: #f3bd73; }
+    .side h2 { margin: 3px 0 3px; font-size: 21px; line-height: 1.25; letter-spacing: .01em; font-weight: 650; }
+    .lead { margin: 0; color: #d2ded5; font-size: 13px; line-height: 1.4; }
+    .point-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 11px;
+      margin-top: 10px; background: #1c2a24; border: 1px solid #4d6456; border-radius: 10px;
+    }
+    .point {
+      min-width: 66px; font: 650 29px "SmartBox Mono", monospace;
+      letter-spacing: -.08em; color: #f3d6ff;
+    }
+    .point-copy { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.3; }
+    .point-copy small { color: var(--muted); font-size: 12px; }
+    .guides { display: grid; gap: 5px; margin-top: 9px; }
+    .guide { display: flex; align-items: center; gap: 9px; color: #d9e5dd; font-size: 12px; line-height: 1.3; }
+    .guide strong { color: #f2f5f2; font-weight: 650; }
+    .led { flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 13px var(--violet); animation: ledBlink .8s steps(1,end) infinite; }
+    @keyframes ledBlink { 50% { opacity: .12; box-shadow: none; } }
+    .voice-icon { flex: none; width: 17px; height: 17px; background: var(--jade); mask: url('../../katrain/web/ui/src/kiosk-shell/icons/speaker-high.svg') center / contain no-repeat; }
+    .note { margin: 8px 0 0; color: #bdcdc2; font-size: 11px; line-height: 1.3; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .actions button { flex: 1; min-height: 42px; border-radius: 9px; border: 1px solid #6d8972; background: #294534; color: #edf6ee; font: 650 14px "SmartBox Sans", "SmartBox Kai", sans-serif; cursor: pointer; }
+    .actions button.primary { background: var(--jade); border-color: var(--jade); color: #102019; }
+    .actions button.violet { background: var(--violet); border-color: var(--violet); color: #201329; }
+    .actions button:hover { filter: brightness(1.1); }
+    .actions button:active { transform: scale(.98); }
+    .review-foot { color: #a9b7b1; font-size: 12px; line-height: 1.5; margin: 12px 0 0; }
+    @media (prefers-reduced-motion: reduce) { .marker, .led { animation: none; } }
+  </style>
+</head>
+<body>
+  <main class="review">
+    <div class="review-head">
+      <div><h1>星阵对局 · 异常与数子反馈</h1><p>1024×600 目标屏幕 · 基于现有对局截图的交互设计预览</p></div>
+      <p>预览数据为示意；按钮不调用设备或星阵</p>
+    </div>
+    <nav class="switches" aria-label="查看设计状态">
+      <button type="button" data-state="mismatch" aria-pressed="true">盘面不一致</button>
+      <button type="button" data-state="undecided" aria-pressed="false">数子未定点</button>
+      <button type="button" data-state="verdict" aria-pressed="false">星阵裁定</button>
+      <button type="button" data-state="stone" aria-pressed="false">疑似落子</button>
+      <button type="button" data-state="camera" aria-pressed="false">摄像头异常</button>
+      <button type="button" data-state="resign" aria-pressed="false">认输确认</button>
+    </nav>
+    <section class="canvas" aria-label="对局页面设计预览">
+      <img class="base" src="../../superpowers/tracks/kiosk-go-shell-align/visual/10-platform-game/1024x600/10-platform-game--implementation.png" alt="现有星阵对局界面底图">
+      <div class="markers" id="markers" aria-hidden="true"></div>
+      <div class="rail-shade" aria-hidden="true" title="弹窗期间，右栏原有按钮不可点击"></div>
+      <aside class="side" id="side" aria-live="polite"></aside>
+    </section>
+    <p class="review-foot">提示卡片浮在右栏中部；原有信息和按钮仍可见，但右栏变暗且不能点击。左侧棋盘不遮挡。紫圈和紫灯使用同一种位置语义。</p>
+  </main>
+  <script>
+    const states = {
+      mismatch: {
+        tone: 'violet', marker: [{x: 296, y: 158, point: 'L17'}],
+        html: `<div class="eyebrow">棋盘识别 · 需要核对</div><h2>盘面与对局不一致</h2><p class="lead">请看左侧紫圈标出的交叉点，再核对实体棋盘。</p>
+          <div class="point-row"><span class="point">L17</span><div class="point-copy"><strong>相机识别到黑子</strong><small>当前棋谱在此处没有落子</small></div></div>
+          <div class="guides"><div class="guide"><span class="led"></span><span>实体盘 <strong>L17 紫灯闪烁</strong></span></div><div class="guide"><span class="voice-icon" aria-hidden="true"></span><span>语音：“L17 盘面不一致，请核对。”</span></div></div>
+          <p class="note">这里没有新棋子时，点“不是落子”；若刚刚确实落子，请调整棋子后等待自动识别。</p>
+          <div class="actions"><button class="violet" type="button">不是落子</button><button type="button">已按提示调整</button></div>`
+      },
+      undecided: {
+        tone: 'violet', marker: [{x: 416, y: 424, point: 'Q6'}],
+        html: `<div class="eyebrow">星阵围棋 · 数子反馈</div><h2>还有归属未定的位置</h2><p class="lead">星阵尚未给出胜负裁定，这局继续进行。</p>
+          <div class="point-row"><span class="point">Q6</span><div class="point-copy"><strong>归属未定 · 1 处</strong><small>已在电子棋盘圈出</small></div></div>
+          <div class="guides"><div class="guide"><span class="led"></span><span>实体盘 <strong>Q6 紫灯闪烁</strong></span></div><div class="guide"><span class="voice-icon" aria-hidden="true"></span><span>语音：“Q6 归属未定，请继续收官。”</span></div></div>
+          <p class="note">提示取自本次数子返回；有多个位置时逐项显示并同步点亮。</p>
+          <div class="actions"><button class="primary" type="button">继续对局</button></div>`
+      },
+      verdict: {
+        tone: 'jade', marker: [],
+        html: `<div class="eyebrow">星阵围棋 · 最终裁定</div><h2>黑棋胜 2.5 目</h2><p class="lead">以星阵数子返回的胜方和目差为准。</p>
+          <div class="point-row"><span class="point" style="color:var(--jade);min-width:77px">B+2.5</span><div class="point-copy"><strong>对局已结束</strong><small>本局结果保存到历史对局</small></div></div>
+          <div class="guides"><div class="guide"><span class="voice-icon" aria-hidden="true"></span><span>语音：“星阵判定，黑棋胜二点五目。”</span></div></div>
+          <p class="note">此处是拟实现的终局状态，只有星阵明确返回胜方时才出现。</p>
+          <div class="actions"><button class="primary" type="button">复盘本局</button><button type="button">返回对弈</button></div>`
+      },
+      stone: {
+        tone: 'violet', marker: [{x: 104, y: 352, point: 'C9'}],
+        html: `<div class="eyebrow">棋盘识别 · 请确认</div><h2>检测到疑似落子</h2><p class="lead">请看左侧 C9 是否真的落下了棋子。</p>
+          <div class="point-row"><span class="point">C9</span><div class="point-copy"><strong>疑似黑棋落子</strong><small>当前识别置信度不足</small></div></div>
+          <div class="guides"><div class="guide"><span class="led"></span><span>实体盘 <strong>C9 紫灯闪烁</strong></span></div><div class="guide"><span class="voice-icon" aria-hidden="true"></span><span>语音：“请确认 C9 是否落子。”</span></div></div>
+          <p class="note">若识别错了，点“不是落子”；只有该格画面发生变化后才重新判断。</p>
+          <div class="actions"><button class="primary" type="button">确认落子</button><button type="button">不是落子</button></div>`
+      },
+      camera: {
+        tone: 'amber', marker: [],
+        html: `<div class="eyebrow">棋盘识别 · 摄像头</div><h2>暂时看不清棋盘</h2><p class="lead">棋盘和摄像头恢复可见后，会自动继续识别。</p>
+          <div class="point-row"><span class="point" style="color:var(--amber);min-width:66px">!</span><div class="point-copy"><strong>请检查摄像头是否被遮挡</strong><small>棋盘挪动过时，请重新标定</small></div></div>
+          <p class="note">没有可信坐标时不显示圆圈，也不点亮实体盘位置灯。</p>
+          <div class="actions"><button class="primary" type="button">知道了</button></div>`
+      },
+      resign: {
+        tone: 'amber', marker: [],
+        html: `<div class="eyebrow">星阵围棋 · 对局操作</div><h2>确定要认输吗？</h2><p class="lead">确认后将结束这局并保存结果。</p>
+          <div class="point-row"><span class="point" style="color:var(--amber);min-width:66px">!</span><div class="point-copy"><strong>此操作无法撤回</strong><small>请确认当前这一局已无需继续</small></div></div>
+          <p class="note">对局操作的确认也放在右侧，左边棋盘保持完整可见。</p>
+          <div class="actions"><button class="primary" type="button">继续对局</button><button type="button">确认认输</button></div>`
+      }
+    };
+    function show(state) {
+      const item = states[state];
+      if (!item) return;
+      document.querySelectorAll('.switches button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === state)));
+      document.getElementById('side').dataset.tone = item.tone;
+      document.getElementById('side').innerHTML = item.html;
+      document.getElementById('markers').innerHTML = item.marker.map(({x,y,point}) => `<span class="marker" style="left:${x}px;top:${y}px" data-point="${point}"></span>`).join('');
+    }
+    document.querySelectorAll('.switches button').forEach(button => button.addEventListener('click', () => show(button.dataset.state)));
+    show('mismatch');
+  </script>
+</body>
+</html>

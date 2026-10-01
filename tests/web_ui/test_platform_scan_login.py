@@ -1014,7 +1014,9 @@ class TestPrincipalVsNickname:
         )
 
         fresh_adapter = GolaxyAdapter()
-        fresh_adapter._rest.get_all_lives = AsyncMock(return_value=[])  # token-verify probe succeeds
+        # Reconnect probes an authenticated endpoint; the public live feed
+        # cannot establish that the stored bearer token still works.
+        fresh_adapter._rest.list_gamezone_users = AsyncMock(return_value=[])
 
         connected = await fresh_adapter.connect(stored)
         assert connected is True

@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { API, type EndGameResponse, type GameState, type PhysicalEngineErrorState } from '../api';
+import { API, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
 import { requestFailureKind } from '../utils/requestFailure';
@@ -55,6 +55,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // The remote engine may take much longer than local move confirmation. Until its
     // reply arrives, the local game record deliberately stays at the old position.
     const [platformPendingMove, setPlatformPendingMove] = useState<{ col: number; row: number } | null>(null);
+    const [platformClock, setPlatformClock] = useState<PlatformClockState | null>(null);
+    const [platformPhase, setPlatformPhase] = useState<string | null>(null);
     // Task 8's awaiting-removal timeout re-prompt (`_tick_awaiting_removal`'s reminder broadcast).
     // A fresh object on every occurrence (like physicalReminder) so a dialog can key an effect off
     // it to re-emphasize the waiting UI without needing a dedicated ack/clear round-trip.
@@ -176,6 +178,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     if (disposed) return;
                     setGameState(data.state);
                     setPlatformPendingMove(null);
+                    setPlatformClock(null);
+                    setPlatformPhase(data.state.platform_phase ?? null);
 
                     /* token 必须带上 —— 服务端 `/ws/{session_id}` 是要鉴权的，而这里
                        在此之前一个凭据都不发（`/ws/lobby` 一直是带的）。详见
@@ -190,6 +194,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'game_update') {
                             setGameState(msg.state);
+                            if (msg.state?.game_type === 'pvp_online' && msg.state.platform_phase) {
+                                setPlatformPhase(msg.state.platform_phase);
+                            }
                         } else if (msg.type === 'spectator_count') {
                             // Lightweight update for spectator count only (doesn't reset timers)
                             setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
@@ -245,6 +252,20 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setPlatformPendingMove({ col: msg.col, row: msg.row });
                         } else if (msg.type === 'platform_move_confirmed' || msg.type === 'platform_move_rejected') {
                             setPlatformPendingMove(null);
+                        } else if (msg.type === 'clock_update') {
+                            if ((msg.current_player === 'B' || msg.current_player === 'W')
+                                && msg.black_time != null && msg.white_time != null) {
+                                setPlatformClock({
+                                    black_time: msg.black_time,
+                                    white_time: msg.white_time,
+                                    current_player: msg.current_player,
+                                    paused: msg.paused === true,
+                                });
+                            }
+                        } else if (msg.type === 'platform_phase_changed') {
+                            if (typeof msg.phase === 'string') setPlatformPhase(msg.phase);
+                        } else if (msg.type === 'platform_game_ended') {
+                            setPlatformPhase('finished');
                         }
                     };
 
@@ -417,6 +438,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
         platformPendingMove,
+        platformClock, platformPhase,
         acknowledgePaintedNode,
     };
 };

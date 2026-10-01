@@ -1,6 +1,4 @@
-// Cross-platform Go-server metadata shared by PlatformConnectPage (login flow) and
-// PlayPage (对弈 hub 跨平台对弈 section). Kept here instead of duplicated so both
-// pages agree on labels/colors when a new platform is added.
+// Cross-platform Go-server metadata shared by PlayPage and platform login/home pages.
 import type { PlatformInfo } from '../../api';
 export type LoginFieldConfig = {
   userLabel: string; userLabelCn: string;

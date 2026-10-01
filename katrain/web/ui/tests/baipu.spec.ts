@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
+import { stubBackendStatics } from './helpers/fourup';
 
 /**
  * 摆谱(屏 17)那台状态机的 e2e:`guiding → 确认 → (采集 → 待移除 → 已移除) → done`,外加撤回。
@@ -7,11 +8,11 @@ import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
  * **不需要 LED 板或相机** —— 只要 web app + 一个假后端。
  *
  * ⚠️ **2026-08-24 把断言迁到了新把手。** 屏 17 按稿子重画成共享外壳的布局 A 之后,
- * 这几块没了:通栏状态条 `baipu-status-bar`、两张玩家卡 `baipu-player-*`、
+ * 这几块没了:通栏状态条 `baipu-status-bar`、
  * 下一手那张 `baipu-next-chip`、最近保存那块 `baipu-latest-frame`、
  * 通栏横幅 `baipu-removal-banner`、以及 `baipu-done-back`。
  * **被测的行为一条没变**,变的是它们现在住在哪:
- *   · 「轮到谁、第几手、在哪一格」→ 同一块 `baipu-pcard`(四态互斥,`data-mood` 标身份)
+ *   · 「轮到谁、第几手、在哪一格」→ 两张棋手卡；异常提示仍由 `baipu-pcard` 承载
  *   · 「已采集 / 最近保存 / 提子 / 几何」→ 摄像头折叠块那本账 `baipu-cam-fold`
  *   · 「请移除被提的子」→ 不再是横幅,是 pcard 的 `removal` 态(固定 516 里没有横幅的位置)
  *   · 「采集失败」→ 同上,`failed` 态
@@ -28,7 +29,7 @@ import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
 
 const STEPS = {
   board_size: 19,
-  meta: { player_black: 'Lee', player_white: 'AlphaGo', handicap: 0, komi: 6.5, ruleset: 'japanese' },
+  meta: { player_black: 'Lee', player_white: 'AlphaGo', handicap: 0, komi: 6.5, ruleset: 'japanese', result: 'W+R' },
   steps: [
     { kind: 'move', move_index: 0, property: 'B', row: 3, col: 15, color: 'B', removed: [], board_hash: 'h0' },
     { kind: 'move', move_index: 1, property: 'W', row: 15, col: 3, color: 'W', removed: [], board_hash: 'h1' },
@@ -37,6 +38,7 @@ const STEPS = {
 };
 
 async function setupSession(page: Page) {
+  await stubBackendStatics(page);
   // Authenticate (isAuthenticated = !!user) and seed the offline SGF cache.
   // 种子键必须带身份后缀,`/me` 必须给同一个 uuid —— 见 helpers/kioskIdentity.ts。
   await page.addInitScript((sgfKey: string) => {
@@ -51,6 +53,10 @@ async function setupSession(page: Page) {
   );
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: STEPS }));
   await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: false } }));
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({ json: {
+    phase: 'disabled', session_calibrated: false,
+    capabilities: { camera_ready: false, led_ready: true, geometry_ready: false, recognition_ready: false },
+  } }));
   // 没接摄像头 ⇒ 手动兜底。钉死,不让它随真后端起没起视觉服务而变。
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
@@ -76,22 +82,25 @@ test.describe('baipu session', () => {
     page.on('request', (r) => { if (r.url().includes('/api/v1/baipu/capture')) captures.push(r.url()); });
     await page.goto('/kiosk/baipu/session/test1');
 
-    // 第 1 手是黑 Q16 —— 手动兜底说清为什么要按键,而**盘上那个圈必须同时是红的**
-    // (规范:屏上高亮色必须和灯同色;黑→红)。
+    // 第 1 手是黑 Q16 —— 手动兜底说清为什么要按键，棋手卡显示姓名和着点。
     const pcard = page.getByTestId('baipu-pcard');
+    const black = page.getByTestId('baipu-player-black');
+    const white = page.getByTestId('baipu-player-white');
     await expect(pcard).toHaveAttribute('data-mood', 'guiding');
-    await expect(pcard).toContainText('当前待摆 · Q16');
+    await expect(pcard).toContainText('手动确认');
     await expect(pcard).toContainText('没接摄像头 —— 摆好后按「确认落子」');
-    await expect(page.locator('.gob .ghost--b')).toHaveCount(1);
+    await expect(black).toContainText('Lee');
+    await expect(black).toContainText('Q16');
+    await expect(page.locator('.gob .pending-ring--b')).toHaveCount(1);
 
     // 确认第 1 手(这一手不提子)→ 轮到白 D4
     await page.getByRole('button', { name: '确认落子' }).click();
-    await expect(pcard).toContainText('当前待摆 · D4');
-    await expect(page.locator('.gob .ghost--w')).toHaveCount(1);
+    await expect(white).toContainText('D4');
+    await expect(page.locator('.gob .pending-ring--w')).toHaveCount(1);
 
     // 确认第 2 手 → 又轮到黑(这一手会提子)
     await page.getByRole('button', { name: '确认落子' }).click();
-    await expect(pcard).toContainText('当前待摆 · A19');
+    await expect(black).toContainText('A19');
 
     // 确认第 3 手 → 提子:**同一块 pcard 换成 removal 态**,盘上被提的子画红框
     await page.getByRole('button', { name: '确认落子' }).click();
@@ -103,6 +112,7 @@ test.describe('baipu session', () => {
     // 摆完了:pcard 说完,进度**自动**清掉(「完成」键删了 —— Fan:「没什么用」),回去走页控条。
     await expect(pcard).toHaveAttribute('data-mood', 'done');
     await expect(pcard).toContainText('进度已清掉');
+    await expect(page.getByTestId('baipu-final-result')).toContainText('白棋中盘胜');
     await expect(page.getByRole('button', { name: '完成' })).toHaveCount(0);
     expect(await page.evaluate((k) => localStorage.getItem(k), scopedKey('baipu:progress:test1'))).toBeNull();
     expect(captures, '上线态一次都不许拍照').toEqual([]);
@@ -113,12 +123,12 @@ test.describe('baipu session', () => {
     await page.goto('/kiosk/baipu/session/test1');
 
     await page.getByRole('button', { name: '确认落子' }).click();   // 到第 2 手(白 D4)
-    await expect(page.getByTestId('baipu-pcard')).toContainText('当前待摆 · D4');
+    await expect(page.getByTestId('baipu-player-white')).toContainText('D4');
 
     // 手动兜底的撤回仍要确认一次(摄像头态是立刻撤 —— 盘面对上了自动继续,撤错了摆回去就是)。
     await page.getByRole('button', { name: '撤回上一手' }).click();
     await page.getByTestId('baipu-undo-confirm-action').click();
-    await expect(page.getByTestId('baipu-pcard')).toContainText('当前待摆 · Q16');
+    await expect(page.getByTestId('baipu-player-black')).toContainText('Q16');
   });
 
   // 退出这条路整个换了:独立的「退出」键没了(它和一局按 250 次的「确认落子」同排,
@@ -154,7 +164,7 @@ test.describe('baipu session', () => {
     const tryBtn = page.getByRole('button', { name: '试下' });
     await expect(tryBtn).toBeDisabled();
     await expect(tryBtn).toHaveAttribute('title', '摄像头没在识别');
-    await expect(page.getByTestId('baipu-led-fold')).toContainText('手动确认');
+    await expect(page.getByTestId('baipu-led-fold')).toHaveCount(0);
   });
 
   test('operator confirmation captures once and advances without override UI', async ({ page }) => {

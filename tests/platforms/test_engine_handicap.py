@@ -72,12 +72,12 @@ def test_handicap_stones_hand_computed_values():
     """Belt-and-suspenders explicit coords for a few n, so a regression in the
     KaTrain-side helper cannot silently move BOTH sides together.
 
-    Golaxy coord = row * 19 + col for (col, row) 0-indexed from top-left.
+    Golaxy coord = (18 - row) * 19 + col for core (col, row), row 0 bottom.
     For 19x19: near=3, far=15, middle=9.
-      (3,3)->60  (15,15)->300  (15,3)->72  (3,15)->288
-      (9,9)->180  (3,9)->174  (15,9)->186  (9,3)->66  (9,15)->294
+      (3,3)->288  (15,15)->72  (15,3)->300  (3,15)->60
+      (9,9)->180  (3,9)->174  (15,9)->186  (9,3)->294  (9,15)->66
     """
-    assert set(_handicap_stones(2)) == {60, 300}
+    assert set(_handicap_stones(2)) == {72, 288}
     assert set(_handicap_stones(4)) == {60, 72, 288, 300}
     assert set(_handicap_stones(9)) == {60, 66, 72, 174, 180, 186, 288, 294, 300}
 

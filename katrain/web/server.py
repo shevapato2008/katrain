@@ -452,6 +452,9 @@ def _init_platform_manager(app, session_manager, log):
 
     platform_cred_store = PlatformCredentialStore()
     platform_manager = PlatformManager(session_manager, credential_store=platform_cred_store)
+    platform_manager.on_online_game_finished = (
+        lambda session, ctx, result: _record_ogs_online_game(session, ctx, result, app)
+    )
     app.state.platform_manager = platform_manager
     app.state.platform_gateway = PlatformCommandGateway(platform_manager, session_manager)
 
@@ -1254,6 +1257,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
         guard_session_reader(session, current_user, "undo")
+        _guard_platform_game_board_mutation(app, request.session_id)
         register_persistent_analysis(current_user, session, "undo", "undo analysis")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
@@ -1269,6 +1273,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="redo not allowed in ranked games")
         guard_session_reader(session, current_user, "redo")
+        _guard_platform_game_board_mutation(app, request.session_id)
         register_persistent_analysis(current_user, session, "redo", "redo analysis")
         _guard_engine_move_pending(app, request.session_id)
         with session.lock:
@@ -1313,6 +1318,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "new-game")
         guard_session_reader(session, current_user, "new game")
+        _guard_platform_game_board_mutation(app, request.session_id)
         # Task 4: validate the rung BEFORE touching the session, so an out-of-range value
         # 422s cleanly instead of partially mutating game state.
         if request.ladder_rung is not None:
@@ -1518,6 +1524,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "edit-game")
         guard_session_reader(session, current_user, "edit game")
+        _guard_platform_game_board_mutation(app, request.session_id)
         register_persistent_analysis(current_user, session, "edit-game", "edit game analysis")
         with session.lock:
             session.katrain(
@@ -2208,6 +2215,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             and gateway
             and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session))
         )
+        if getattr(session, "game_type", None) == "pvp_online":
+            if not platform_game:
+                raise HTTPException(status_code=409, detail="online game is no longer connected to its platform")
+            try:
+                await gateway.resign(request.session_id, current_user.id)
+            except PlatformMoveRejectedError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+            # A WebSocket send is not an OGS result. The platform event path
+            # alone commits and records the terminal state.
+            state = session.katrain.get_state()
+            session.last_state = state
+            return {"session_id": session.session_id, "state": state, "status": "pending"}
         if platform_game:
             before = _terminal_of(session)
             try:
@@ -2576,6 +2595,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
@@ -2667,6 +2687,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
         """Respond to a count request (HvH only). Accept or reject."""
         session = _get_session_or_404(manager, request.session_id)
+        _guard_online_platform_local_ending(session)
 
         # Only for multiplayer games
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
@@ -2715,6 +2736,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except KeyError:
             return _session_gone_reply(request.session_id)
         _require_multiplayer_participant(session, current_user)
+        _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
@@ -2799,6 +2821,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def leave_multiplayer_game(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         """Leave a multiplayer game (counts as forfeit)"""
         session = _get_session_or_404(manager, request.session_id)
+        _guard_online_platform_local_ending(session)
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         if not is_multiplayer:
@@ -3742,6 +3765,19 @@ def _is_guest_participant(app: FastAPI, session) -> bool:
     return False
 
 
+def _guard_platform_game_board_mutation(app: FastAPI, session_id: str) -> None:
+    """Keep generic board editing off a remote platform's authoritative game."""
+    gateway = getattr(app.state, "platform_gateway", None)
+    if gateway and gateway.is_platform_game(session_id):
+        raise HTTPException(status_code=409, detail="platform game board is controlled by the remote platform")
+
+
+def _guard_online_platform_local_ending(session) -> None:
+    """OGS alone decides counting, timeout and forfeits for its live game."""
+    if getattr(session, "game_type", None) == "pvp_online":
+        raise HTTPException(status_code=409, detail="online game result is controlled by the remote platform")
+
+
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
     """409 while an engine-play (Golaxy 人机对弈 genmove tunnel) move is in flight.
 
@@ -4035,7 +4071,7 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
 
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
-    from katrain.web.core.vision_pump import route_vision_event
+    from katrain.web.core.vision_pump import is_stale_illegal_change, route_vision_attention, route_vision_event
 
     log = logging.getLogger("katrain_web.vision")
     while True:
@@ -4046,8 +4082,21 @@ async def _vision_event_pump(app: FastAPI):
                     if isinstance(evt, dict) and evt.get("type") == "led_glow":
                         _adjust_led_brightness(app, evt.get("data") or {}, log)
                         continue
+                    if isinstance(evt, dict) and evt.get("type") == "illegal_change" and vision.bound_session_id:
+                        try:
+                            state = app.state.session_manager.get_session(vision.bound_session_id).last_state
+                        except KeyError:
+                            state = None
+                        if is_stale_illegal_change(evt, state):
+                            log.info("Suppressed stale vision mismatch already present in game: %s", evt.get("data"))
+                            continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
+                        route_vision_attention(
+                            evt,
+                            getattr(app.state, "physical_play", None),
+                            bound=bool(vision.bound_session_id),
+                        )
                     route_vision_event(
                         evt,
                         list(app.state.vision_ws_clients.values()),
@@ -4119,6 +4168,36 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
 async def _record_platform_engine_game_off_request(session, app: FastAPI) -> None:
     """Record a terminal platform engine game for its session owner."""
     await _record_platform_engine_game(session, app, _session_owner(app, session))
+
+
+async def _record_ogs_online_game(session, ctx, result: str, app: FastAPI) -> bool:
+    """Persist one OGS result to the user's game library, including board mode."""
+    import uuid
+
+    user = _session_owner(app, session)
+    record = globals().get("_RECORD_FN")
+    if user is None or record is None or getattr(session, "game_type", None) != "pvp_online":
+        return False
+    opponent = getattr(getattr(ctx, "remote_session", None), "opponent", None)
+    opponent_name = getattr(opponent, "username", None) or "OGS 对手"
+    names = {ctx.my_color: user.username, ("W" if ctx.my_color == "B" else "B"): opponent_name}
+    root = session.katrain.game.root
+    root.set_property("PB", names["B"])
+    root.set_property("PW", names["W"])
+    # A stable 32-character id keeps retry and cloud sync idempotent while
+    # allowing both local users in the same remote OGS game to save a copy.
+    local_game_id = uuid.uuid5(uuid.NAMESPACE_URL, f"ogs:{session.user_id}:{ctx.remote_game_id}").hex
+    await record(
+        session, app, user, result,
+        data_overrides={
+            "id": local_game_id,
+            "source": "play_human",
+            "player_black": names["B"],
+            "player_white": names["W"],
+            "user_color": ctx.my_color,
+        },
+    )
+    return getattr(session, "_recorded", False) is True
 
 
 def _apply_engine_recovery_outcome(

@@ -800,6 +800,44 @@
   font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
 .kpager button:disabled { opacity: .4; }
 
+/* 7 英寸棋谱列表:赛事 / 日期手数，黑方靠左 / 结果居中 / 白方靠右。
+   64px 行高保留触控目标，也让 680px 右栏露出更多棋谱。 */
+.kifu-records { display: flex; flex-direction: column; gap: 6px; }
+.kifu-record {
+  width: 100%; height: 64px; padding: 7px 13px 8px;
+  display: grid; grid-template-rows: 18px 25px; align-content: center; row-gap: 4px;
+  border: 1px solid #33423d;
+  border-radius: 9px; background: #202b28;
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+.kifu-record:hover { background: #26362f; border-color: #61977a; }
+.kifu-record:active { background: #2b4034; }
+.kifu-record:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kifu-record__head { display: flex; align-items: center; min-width: 0; gap: 12px; }
+.kifu-record__event {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-sans); font-size: 12px; color: #b7c5bf;
+}
+.kifu-record__round { margin-left: 7px; opacity: .72; }
+.kifu-record__meta { display: flex; gap: 11px; flex: none; font-family: var(--font-mono); font-size: 10.5px; color: #9eadab; font-variant-numeric: tabular-nums; }
+.kifu-record__match { display: grid; grid-template-columns: minmax(0, 1fr) 126px minmax(0, 1fr); align-items: center; min-width: 0; gap: 8px; }
+.kifu-record__player { min-width: 0; display: flex; align-items: center; gap: 7px; font-size: 15px; color: var(--text); }
+.kifu-record__player--white { justify-content: flex-end; text-align: right; }
+.kifu-record__player.is-winner .kifu-record__name { font-weight: 700; }
+.kifu-record__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kifu-record__player small { flex: none; font-size: 10.5px; color: var(--dim); }
+.kifu-record__stone { width: 17px; height: 17px; flex: none; border-radius: 50%; }
+.kifu-record__stone--black { background: #151716; border: 1px solid rgba(255,255,255,.28); box-shadow: inset 0 -1px 2px rgba(255,255,255,.12); }
+.kifu-record__stone--white { background: #e8e4df; border: 1px solid rgba(0,0,0,.28); box-shadow: inset 0 1px 2px rgba(0,0,0,.1); }
+.kifu-record__result {
+  justify-self: center; min-width: 94px; max-width: 126px; padding: 4px 8px;
+  border: 1px solid #53645a; border-radius: 5px; background: #17211e; color: var(--text);
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; line-height: 1.15;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (prefers-reduced-motion: reduce) { .kifu-record { transition: none; } }
+
 /* 行本身可点时它就是个按钮 —— 共享 `.kiosk-row` 是照 `<div>` 写的,
    `<button>` 会自带居中的文字和 UA 字体。**改的是按钮的默认值,不是这一族的几何。** */
 button.kiosk-row { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
@@ -1513,6 +1551,10 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); font-size: 13.5px; color: var(--dim); }
 [data-testid="platform-login-page"] .xpfield input { flex: 1; min-width: 0; border: 0; background: none; padding: 0;
   font-family: var(--font-mono); font-size: 17px; font-weight: 500; letter-spacing: .04em; color: var(--text); }
+[data-testid="platform-login-page"] .xpfield__area { width: 128px; height: 44px; flex: none; border: 0;
+  border-right: 1px solid var(--hair); padding: 0 8px 0 0; background: transparent;
+  color: var(--text); font: inherit; cursor: pointer; }
+[data-testid="platform-login-page"] .xpfield__area:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 [data-testid="platform-login-page"] .xpfield input::placeholder { color: var(--dim); font-family: var(--font-sans);
   font-weight: 400; letter-spacing: normal; }
 [data-testid="platform-login-page"] .xpfield i { margin-left: auto; flex: none; font-style: normal; font-size: 12px; color: var(--accent); }
@@ -1636,9 +1678,8 @@ button.kiosk-row.figrow { flex: none; }
    四图第一版就是这个样子,当场看出来的。 */
 .lrow .led { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-left: auto; }
 
-/* 这一屏的 pcard 有三态:待摆(青玉,共享 `.pcard.turn`)、待移除、采集失败。
-   后两个各自换描边和底色 —— **它们说的是「此刻你该做什么」,不是装饰**。
-   待移除走蓝(和 `LED_HEX.remove` 同色,盘上那几颗也亮蓝灯);失败走 `--bad`。 */
+/* 摆谱常态复用对弈页棋手卡。状态卡只在异常/试下/采集时出现；
+   待移除走蓝(和盘上的蓝灯同色),采集失败走红。 */
 .pcard.removal { border-color: rgba(47, 111, 255, .75); background: rgba(47, 111, 255, .10); }
 .pcard.failed { border-color: color-mix(in srgb, var(--bad) 65%, transparent); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
 
@@ -1648,6 +1689,14 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+.baipu-layout .kiosk-board__play { position: relative; }
+.baipu-final-result {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(0, 0, 0, .6); color: #fff;
+  font-family: var(--font-sans); font-size: 28px; font-weight: 700;
+  text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
 /* 摄像头用不了、临时露出「确认落子」时,灯折叠头右端的「手动确认」用警告色(稿 17d)。 */
 .baipu-layout .kiosk-fold__head b.warn, .baipu-layout .lrow .warn { color: var(--warn); }
 
@@ -2194,3 +2243,65 @@ button.kiosk-row.figrow { flex: none; }
   background: var(--ink); color: var(--text);
 }
 [data-testid="platform-login-page"] .qrbox__refresh svg { width: 30px; height: 30px; fill: currentColor; }
+
+/* During a game, keep the board visible and leave the original right rail legible
+   behind a compact modal. MUI still traps focus and blocks the underlying buttons. */
+.kiosk-game-side-dialog .MuiBackdrop-root { background: transparent !important; }
+.kiosk-game-side-dialog .MuiDialog-container {
+  position: relative;
+  justify-content: flex-end;
+  padding-right: max(16px, calc((100vw - 1024px) / 2 + 56px));
+}
+.kiosk-game-side-dialog .MuiDialog-container::before {
+  content: ''; position: absolute; top: 56px; bottom: 0;
+  left: max(0px, calc(50% + 28px)); right: 0;
+  background: #06100ba8; pointer-events: none;
+}
+.kiosk-game-side-dialog .MuiDialog-paper {
+  position: relative; width: 380px; max-width: min(380px, calc(100vw - 32px));
+  max-height: 380px; margin: 0; border: 2px solid #c486f1;
+  border-radius: 15px; background: #26352e;
+  box-shadow: 0 0 0 4px #b66cf229, 0 18px 38px #000c, 0 0 30px #b66cf24d;
+}
+.kiosk-game-side-dialog .MuiDialogTitle-root { padding: 14px 16px 4px; font-size: 21px; line-height: 1.25; }
+.kiosk-game-side-dialog .MuiDialogContent-root { padding: 8px 16px; }
+.kiosk-game-side-dialog .MuiDialogActions-root { padding: 10px 16px 14px; gap: 8px; flex-wrap: wrap; }
+.kiosk-game-side-dialog .MuiDialogActions-root > :not(style) ~ :not(style) { margin-left: 0; }
+.kiosk-game-side-dialog .MuiButton-root { min-height: 42px; }
+.kiosk-attention-point-row {
+  display: flex; align-items: center; gap: 12px; margin-top: 12px;
+  padding: 9px 11px; border: 1px solid #b66cf27d; border-radius: 8px;
+  background: #4a365775;
+}
+.kiosk-attention-point-row strong {
+  color: #f0ccff; font-size: 24px; line-height: 1; white-space: nowrap;
+}
+.kiosk-attention-point-row span { font-size: 14px; line-height: 1.3; }
+.kiosk-attention-point-row small { display: block; color: #c9c9c9; font-size: 12px; }
+.kiosk-attention-point-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.kiosk-attention-point-list span {
+  padding: 5px 8px; border-radius: 6px; background: #4a365775; color: #f0ccff; font-weight: 700;
+}
+.kiosk-game-toast.MuiSnackbar-root {
+  top: 70px !important; right: max(16px, calc((100vw - 1024px) / 2 + 56px)) !important;
+  left: auto !important; transform: none !important;
+  width: min(380px, calc(100vw - 32px));
+}
+.kiosk-game-toast .MuiAlert-root { width: 100%; }
+@media (max-width: 760px) {
+  .kiosk-game-side-dialog .MuiDialog-container { padding-right: 16px; }
+}
+
+.kiosk-board__play { position: relative; }
+.kiosk-attention-marker {
+  position: absolute; z-index: 8; width: 32px; height: 32px;
+  transform: translate(-50%, -50%); border: 3px solid #b66cf2; border-radius: 50%;
+  box-shadow: 0 0 0 2px #faf1e8, 0 0 0 7px #692b9b72, 0 0 17px #a65cff;
+  pointer-events: none; animation: kiosk-attention-pulse 1.4s ease-in-out infinite;
+}
+@keyframes kiosk-attention-pulse {
+  50% { box-shadow: 0 0 0 2px #faf1e8, 0 0 0 10px #692b9b52, 0 0 23px #a65cff; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-attention-marker { animation: none; }
+}

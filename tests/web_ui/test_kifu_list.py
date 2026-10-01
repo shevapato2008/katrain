@@ -126,6 +126,80 @@ def test_count_is_zero_when_nothing_matches(db_with_albums):
     assert result.items == []
 
 
+def test_historical_player_alias_precedes_newer_tournament_name(db_with_albums):
+    db_with_albums.add_all(
+        [
+            models_db.KifuAlbum(
+                player_black="Go Seigen",
+                player_white="Kitani Minoru",
+                date_sort="1939-01-01",
+                sgf_content="(;B[pd])",
+                source_path="/fixtures/go-seigen.sgf",
+                search_text="go seigen kitani minoru",
+                move_count=100,
+            ),
+            models_db.KifuAlbum(
+                player_black="崔精",
+                player_white="金恩持",
+                event="吴清源杯",
+                date_sort="2025-01-01",
+                sgf_content="(;B[dp])",
+                source_path="/fixtures/wu-cup.sgf",
+                search_text="崔精 金恩持 吴清源杯",
+                move_count=100,
+            ),
+        ]
+    )
+    db_with_albums.commit()
+
+    result = _list_albums(db_with_albums, q="吴清源")
+
+    assert result.total == 2
+    assert result.items[0].player_black == "Go Seigen"
+
+
+@pytest.mark.parametrize("query", ["本因坊道策", "道策"])
+def test_historical_chinese_name_finds_english_archive_record(db_with_albums, query):
+    db_with_albums.add(
+        models_db.KifuAlbum(
+            player_black="Honinbo Dosaku",
+            player_white="Yasui Chitetsu",
+            date_sort="1678-01-17",
+            sgf_content="(;B[pd])",
+            source_path="/fixtures/dosaku.sgf",
+            search_text="honinbo dosaku yasui chitetsu",
+            move_count=100,
+        )
+    )
+    db_with_albums.commit()
+
+    result = _list_albums(db_with_albums, q=query)
+
+    assert result.total == 1
+    assert result.items[0].player_black == "Honinbo Dosaku"
+
+
+@pytest.mark.parametrize("query", ["本因坊秀策", "秀策"])
+def test_shusaku_alias_finds_team_game_with_short_name(db_with_albums, query):
+    db_with_albums.add(
+        models_db.KifuAlbum(
+            player_black="Shuwa,Shusaku",
+            player_white="Ito Showa",
+            date_sort="1850-01-01",
+            sgf_content="(;B[pd])",
+            source_path="/fixtures/shusaku-team.sgf",
+            search_text="shuwa,shusaku ito showa",
+            move_count=100,
+        )
+    )
+    db_with_albums.commit()
+
+    result = _list_albums(db_with_albums, q=query)
+
+    assert result.total == 1
+    assert result.items[0].player_black == "Shuwa,Shusaku"
+
+
 def test_ordering_puts_null_date_last(db_with_albums):
     """NULLS LAST 那一支：date_sort 为空的那条排最后，不是最前。"""
     result = _list_albums(db_with_albums)

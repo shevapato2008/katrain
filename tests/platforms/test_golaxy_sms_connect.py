@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
-from katrain.web.platforms.golaxy.adapter import GolaxyAdapter
+from katrain.web.platforms.golaxy.adapter import GolaxyAdapter, GolaxyRestClient
 from katrain.web.platforms.models import PlatformCredentials
 
 
@@ -78,3 +79,25 @@ async def test_no_token_no_sms_no_password_returns_false():
 
     assert result is False
     assert adapter.is_connected is False
+
+
+async def test_selected_area_reaches_golaxy_auth_and_sms_requests():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"access_token": "tok", "refresh_token": "ref"})
+
+    rest = GolaxyRestClient()
+    rest._client = httpx.AsyncClient(base_url="https://example.test", transport=httpx.MockTransport(handler))
+    try:
+        assert await rest.request_sms_code("00886-912345678") is True
+        await rest.login_sms("00886-912345678", "123456")
+        await rest.login_password("00886-912345678", "secret")
+    finally:
+        await rest.close()
+
+    assert seen[0].url.params["area"] == "00886"
+    assert seen[0].url.params["username"] == "912345678"
+    assert httpx.QueryParams(seen[1].content.decode())["username"] == "00886-912345678"
+    assert httpx.QueryParams(seen[2].content.decode())["username"] == "00886-912345678"

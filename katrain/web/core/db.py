@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 from katrain.web.core.config import settings
 import logging
@@ -30,6 +30,21 @@ engine = create_engine(
     echo=False,  # Set to True to see raw SQL queries
     **_pool_kwargs,
 )
+
+
+def enable_sqlite_foreign_keys(target_engine) -> None:
+    """Make SQLite enforce the same declared foreign keys as PostgreSQL."""
+    if target_engine.dialect.name != "sqlite":
+        return
+
+    @event.listens_for(target_engine, "connect")
+    def _enable_foreign_keys(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+
+enable_sqlite_foreign_keys(engine)
 
 # 2. Create SessionLocal Class
 # Each instance of the SessionLocal class will be a database session.

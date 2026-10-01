@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>星阵专页 · 1024 × 600 运行时审核</title>
+  <style>
+    :root { color-scheme:dark; font-family:system-ui,sans-serif; background:#0e1414; color:#e7eeeb; }
+    * { box-sizing:border-box; }
+    body { max-width:1100px; margin:0 auto; padding:24px 20px 48px; }
+    h1 { margin:0 0 8px; font-size:23px; }
+    p { max-width:1024px; line-height:1.6; color:#a9bbb2; }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0; }
+    button { min-height:44px; padding:0 15px; border:1px solid #466352; border-radius:9px; background:#1a2823; color:inherit; font:inherit; cursor:pointer; }
+    button[aria-pressed="true"] { border-color:#6bc190; background:#256146; }
+    .frame { position:relative; width:min(100%,1024px); aspect-ratio:1024/600; overflow:hidden; border:1px solid #42624f; }
+    .frame img { position:absolute; width:100%; height:100%; object-fit:contain; }
+    #runtime { clip-path:inset(0 0 0 50%); }
+    #divider { position:absolute; top:0; bottom:0; left:50%; border-left:2px solid #e1c56a; pointer-events:none; }
+    .pair { display:none; gap:12px; width:min(100%,1024px); }
+    figure { width:50%; margin:0; }
+    figure img { width:100%; display:block; border:1px solid #42624f; }
+    figcaption { padding:7px 0; color:#a9bbb2; }
+    input[type="range"] { display:block; width:min(100%,1024px); margin:14px 0; accent-color:#67bf8c; }
+    a { color:#85d5a4; }
+    .links { display:flex; gap:22px; margin:12px 0; }
+    .note { border-left:3px solid #68b786; padding:9px 13px; background:#17231f; }
+  </style>
+</head>
+<body>
+  <h1>星阵专页 · 1024 × 600 运行时审核</h1>
+  <p>设计稿与 React 运行时均按 7 英寸目标视口截图。选择页面后可拖动分界线查看叠加效果，或切换并排查看。</p>
+  <div class="controls" role="group" aria-label="选择页面">
+    <button data-page="home" aria-pressed="true">对战大厅</button>
+    <button data-page="quick" aria-pressed="false">快速匹配</button>
+    <button data-page="room-create" aria-pressed="false">创建房间</button>
+    <button data-page="room-join" aria-pressed="false">加入房间</button>
+    <button data-page="ai" aria-pressed="false">人机对弈</button>
+    <button data-mode="overlay" aria-pressed="true">叠加</button>
+    <button data-mode="pair" aria-pressed="false">并排</button>
+  </div>
+  <div class="frame" id="overlay"><img id="reference" src="golaxy-live-lobby-revised-home-1024x600.png" alt="设计稿"><img id="runtime" src="golaxy-home-runtime-review-1024x600.png" alt="React 运行时"><div id="divider"></div></div>
+  <div class="pair" id="pair"><figure><img id="pair-reference" src="golaxy-live-lobby-revised-home-1024x600.png" alt="设计稿"><figcaption>已确认设计稿</figcaption></figure><figure><img id="pair-runtime" src="golaxy-home-runtime-review-1024x600.png" alt="React 运行时"><figcaption>React 运行时</figcaption></figure></div>
+  <input id="split" type="range" min="0" max="100" value="50" aria-label="设计稿与运行时分界位置">
+  <div class="links"><a id="reference-link" href="golaxy-live-lobby-revised-home-1024x600.png">设计稿原尺寸</a><a id="runtime-link" href="golaxy-home-runtime-review-1024x600.png">运行时原尺寸</a></div>
+  <p class="note" id="note">大厅里的房号和棋友仅来自截图测试的 API 拦截，生产页面没有示例数据。点击房间只提示观战尚未接通。</p>
+  <p><a href="golaxy-live-lobby-1024x600.html">打开已确认的交互设计稿</a></p>
+  <script>
+    const pages = {
+      home: ['golaxy-live-lobby-revised-home-1024x600.png','golaxy-home-runtime-review-1024x600.png','大厅里的房号和棋友仅来自截图测试的 API 拦截，生产页面没有示例数据。点击房间只提示观战尚未接通。'],
+      quick: ['golaxy-live-lobby-quick-1024x600.png','golaxy-setup-quick-runtime-review-1024x600.png','落子方式可选。星阵匹配协议尚未确认，提交按钮明确标示暂不可用。棋盘使用项目共享的真实棋盘组件，因此木纹与设计示意图有差异。'],
+      'room-create': ['golaxy-live-lobby-room-1024x600.png','golaxy-setup-room-create-runtime-review-1024x600.png','建房协议尚未确认，提交按钮明确标示暂不可用。'],
+      'room-join': ['golaxy-live-lobby-room-1024x600.png','golaxy-setup-room-join-runtime-review-1024x600.png','左侧是同一房间设置页的创建状态；右侧是运行时加入状态。'],
+      ai: ['golaxy-live-lobby-ai-1024x600.png','golaxy-setup-ai-runtime-review-1024x600.png','右侧沿用现有可用的人机对弈设置页；落子方式仍在开局前设置，布局与左侧示意不同。']
+    };
+    document.querySelectorAll('[data-page]').forEach(button => button.addEventListener('click', () => {
+      document.querySelectorAll('[data-page]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      const [reference,runtime,note] = pages[button.dataset.page];
+      for (const [id,src] of [['reference',reference],['runtime',runtime],['pair-reference',reference],['pair-runtime',runtime]]) document.getElementById(id).src = src;
+      document.getElementById('reference-link').href = reference;
+      document.getElementById('runtime-link').href = runtime;
+      document.getElementById('note').textContent = note;
+    }));
+    document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
+      const pair = button.dataset.mode === 'pair';
+      document.querySelectorAll('[data-mode]').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+      document.getElementById('overlay').style.display = pair ? 'none' : 'block';
+      document.getElementById('pair').style.display = pair ? 'flex' : 'none';
+      document.getElementById('split').style.display = pair ? 'none' : 'block';
+    }));
+    document.getElementById('split').addEventListener('input', event => {
+      const value = Number(event.target.value);
+      document.getElementById('runtime').style.clipPath = `inset(0 0 0 ${value}%)`;
+      document.getElementById('divider').style.left = `${value}%`;
+    });
+  </script>
+</body>
+</html>

@@ -54,8 +54,8 @@ class FakeVision:
     def __init__(self):
         self.lit = []
 
-    def set_lit_points(self, points):
-        self.lit.append(points)
+    def set_lit_points(self, points, *, mask_points=None):
+        self.lit.append((points, mask_points))
 
 
 class TestLedEndpoints:
@@ -67,7 +67,11 @@ class TestLedEndpoints:
             {"row": 8, "col": 9, "color": "white"}, {"row": 6, "col": 7, "color": "remove"},
         ]}).status_code == 200
         assert c.post("/led/clear").status_code == 200
-        assert vision.lit == [[(3, 4)], [(8, 9), (6, 7)], []]
+        assert vision.lit == [
+            ([(3, 4)], []),
+            ([(8, 9), (6, 7)], [(6, 7)]),
+            ([], []),
+        ]
 
     def test_point(self):
         fake = FakeLed()

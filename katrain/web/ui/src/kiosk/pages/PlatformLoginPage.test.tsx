@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -100,6 +100,7 @@ describe('登录独立成页', () => {
     renderLogin('golaxy');
     await toPasswordTab();
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'password');
+    expect(screen.getByTestId('login-phone-area')).toHaveValue('中国');
   });
 
   it('OGS 只有一种登录方式,标签栏整条不渲染', async () => {
@@ -107,6 +108,7 @@ describe('登录独立成页', () => {
     await screen.findByTestId('login-field-user');
     expect(screen.queryByTestId('login-mode-tabs')).not.toBeInTheDocument();
     expect(screen.getByLabelText('用户名')).toBeInTheDocument();
+    expect(screen.queryByTestId('login-phone-area')).not.toBeInTheDocument();
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'password');
   });
 
@@ -118,6 +120,34 @@ describe('登录独立成页', () => {
     expect(screen.getByTestId('login-sms-request')).toHaveTextContent('获取验证码');
   });
 
+  it('验证码发送成功后从 60 秒倒数,结束后可以重发', async () => {
+    renderLogin('golaxy');
+    const tabs = await screen.findByTestId('login-mode-tabs');
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
+    const request = screen.getByTestId('login-sms-request');
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        fireEvent.click(request);
+        await Promise.resolve();
+      });
+      expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '0086-13800000000', 'tok');
+      expect(request).toHaveTextContent('60 秒后可重发');
+      expect(request).toBeDisabled();
+
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(request).toHaveTextContent('59 秒后可重发');
+
+      act(() => { vi.advanceTimersByTime(59000); });
+      expect(request).toHaveTextContent('获取验证码');
+      expect(request).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('星阵密码模式提交发 password,不是 sms_code', async () => {
     renderLogin('golaxy');
     await toPasswordTab();
@@ -125,7 +155,7 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
-      'golaxy', { username: '13800000000', password: 'secret123' }, 'tok',
+      'golaxy', { username: '0086-13800000000', password: 'secret123' }, 'tok',
     ));
   });
 
@@ -137,7 +167,30 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-password'), '123456');
     await userEvent.click(screen.getByTestId('login-submit'));
     await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
-      'golaxy', { username: '13800000000', sms_code: '123456' }, 'tok',
+      'golaxy', { username: '0086-13800000000', sms_code: '123456' }, 'tok',
+    ));
+  });
+
+  it('切换区号后，密码与验证码请求使用同一个区号', async () => {
+    platformLogin.mockRejectedValue(new Error('stay on login page'));
+    renderLogin('golaxy');
+    const tabs = await toPasswordTab();
+    await userEvent.selectOptions(screen.getByTestId('login-phone-area'), '中国台湾');
+    await userEvent.type(screen.getByTestId('login-field-user'), '912345678');
+    await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
+      'golaxy', { username: '00886-912345678', password: 'secret123' }, 'tok',
+    ));
+
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    expect(screen.getByTestId('login-phone-area')).toHaveValue('中国台湾');
+    await userEvent.click(screen.getByTestId('login-sms-request'));
+    await waitFor(() => expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '00886-912345678', 'tok'));
+    await userEvent.type(screen.getByTestId('login-field-password'), '123456');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    await waitFor(() => expect(platformLogin).toHaveBeenLastCalledWith(
+      'golaxy', { username: '00886-912345678', sms_code: '123456' }, 'tok',
     ));
   });
 
@@ -147,6 +200,16 @@ describe('登录独立成页', () => {
     await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
     await userEvent.click(screen.getByTestId('login-sms-request'));
     expect(await screen.findByTestId('login-error')).toHaveTextContent('请先输入手机号');
+    expect(platformSmsRequest).not.toHaveBeenCalled();
+  });
+
+  it('手机号含区号或空格时提示只填写本地区号码', async () => {
+    renderLogin('golaxy');
+    const tabs = await screen.findByTestId('login-mode-tabs');
+    await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
+    await userEvent.type(screen.getByTestId('login-field-user'), '+86 13800000000');
+    await userEvent.click(screen.getByTestId('login-sms-request'));
+    expect(screen.getByTestId('login-error')).toHaveTextContent('手机号只能输入数字');
     expect(platformSmsRequest).not.toHaveBeenCalled();
   });
 
@@ -182,19 +245,17 @@ describe('登录独立成页', () => {
     expect(screen.getByText('未连接 · 用手机验证码登录')).toBeInTheDocument();
   });
 
-  it('返回键回连接页', async () => {
+  it('返回键回对弈首页', async () => {
     renderLogin('golaxy');
     await screen.findByTestId('login-mode-tabs');
     await userEvent.click(screen.getByRole('button', { name: /返回对弈|Back/ }));
-    expect(screen.getByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform');
+    expect(screen.getByTestId('__loc')).toHaveTextContent('/kiosk/play');
   });
 
   it('登录成功后的目标路由在当前这一版里真的存在(真 Router + 真 KioskRoutes,不复制路由表)', async () => {
     // ⚠️ **不在测试里复制一份路由表** —— 用的是 `KioskApp.tsx` 导出的真 `KioskRoutes`,
     // 断言的是「跳过去那条路由真的渲染得出来」,不是「我调了这个字符串」。
-    // 切片 A 之前 `/kiosk/play/cross-platform/golaxy` 还不存在,所以目标必须是
-    // `/kiosk/play/cross-platform/engine/golaxy`(今天就有),这条测试顺带锁死这一点:
-    // 写成前者的话,这里会卡在兜底路由(`*` → `/kiosk/play`),下面的 findByTestId 会超时。
+    // 登录成功必须进入星阵专页，而非直接进入人机设置。
     render(
       <ThemeProvider theme={kioskTheme}>
         {/* `KioskRoutes` 的路由段都是相对路径("play/…"),要靠一层 `path="/kiosk/*"` 的
@@ -211,6 +272,15 @@ describe('登录独立成页', () => {
     await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
-    expect(await screen.findByTestId('platform-engine-setup-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('golaxy-home-page')).toBeInTheDocument();
+    expect(screen.queryByTestId('platform-engine-setup-page')).toBeNull();
+  });
+
+  it('OGS 密码登录成功进入 OGS 专页', async () => {
+    renderLogin('ogs');
+    await userEvent.type(screen.getByTestId('login-field-user'), 'alice');
+    await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
+    await userEvent.click(screen.getByTestId('login-submit'));
+    expect(await screen.findByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform/ogs');
   });
 });

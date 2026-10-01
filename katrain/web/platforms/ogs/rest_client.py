@@ -172,11 +172,22 @@ class OGSRestClient:
     async def challenge_player(self, player_id: int, settings: dict) -> tuple[int, int]:
         """POST /api/v1/players/{id}/challenge/ -> (challenge_id, game_id)."""
         client = await self._ensure_client()
+        csrf = client.cookies.get("csrftoken")
+        if not csrf:
+            raise RuntimeError("OGS session CSRF token is unavailable")
+        default_time = {"system": "byoyomi", "main_time": 600, "period_time": 30, "periods": 5}
+        time_control = settings.get("time_control") or default_time
+        if not isinstance(time_control, dict) or not isinstance(time_control.get("system"), str):
+            raise ValueError("invalid OGS time control")
+        time_parameters = {**time_control, "time_control": time_control["system"]}
+        time_parameters.setdefault("speed", "live")
+        time_parameters.setdefault("pause_on_weekends", False)
         # Build challenge payload
         payload = {
             "initialized": False,
             "min_ranking": -1000,
             "max_ranking": 1000,
+            "challenger_color": "automatic",
             "game": {
                 "name": "KaTrain Game",
                 "rules": settings.get("rules", "chinese"),
@@ -185,36 +196,61 @@ class OGSRestClient:
                 "height": settings.get("board_size", 19),
                 "handicap": settings.get("handicap", 0),
                 "komi_auto": "automatic" if settings.get("komi") is None else "custom",
-                "komi": settings.get("komi"),
                 "disable_analysis": True,
-                "time_control": settings.get("time_control", "byoyomi"),
-                "time_control_parameters": settings.get(
-                    "time_control_parameters",
-                    {
-                        "system": "byoyomi",
-                        "main_time": 600,
-                        "period_time": 30,
-                        "periods": 5,
-                    },
-                ),
+                "time_control": time_control["system"],
+                "time_control_parameters": time_parameters,
+                "pause_on_weekends": time_parameters["pause_on_weekends"],
+                "private": False,
+                "rengo": False,
             },
         }
-        resp = await client.post(f"/api/v1/players/{player_id}/challenge/", json=payload)
+        if settings.get("komi") is not None:
+            payload["game"]["komi"] = settings["komi"]
+        resp = await client.post(
+            f"/api/v1/players/{player_id}/challenge/", json=payload,
+            headers={"X-CSRFToken": csrf, "Referer": f"{self._base_url}/"},
+        )
         resp.raise_for_status()
         data = resp.json()
-        return data.get("challenge", data.get("id")), data.get("game")
+        game = data.get("game")
+        return data.get("challenge", data.get("id")), game.get("id") if isinstance(game, dict) else game
 
     async def accept_challenge(self, challenge_id: int) -> dict:
-        """POST /api/v1/me/challenges/{id}/accept."""
+        """Accept a direct invitation addressed to the logged-in player."""
         client = await self._ensure_client()
         resp = await client.post(f"/api/v1/me/challenges/{challenge_id}/accept")
         resp.raise_for_status()
         return resp.json()
 
-    async def decline_challenge(self, challenge_id: int) -> None:
-        """DELETE /api/v1/me/challenges/{id}."""
+    async def accept_open_challenge(self, challenge_id: int) -> None:
+        """Accept a public seek, using OGS's public challenge route.
+
+        The official web client ignores the POST response and navigates using
+        the seek's game_id, so callers must retain that id before posting.
+        """
+        if type(challenge_id) is not int or challenge_id <= 0:
+            raise ValueError("invalid OGS challenge id")
         client = await self._ensure_client()
-        resp = await client.delete(f"/api/v1/me/challenges/{challenge_id}/")
+        csrf = client.cookies.get("csrftoken")
+        if not csrf:
+            raise RuntimeError("OGS session CSRF token is unavailable")
+        resp = await client.post(
+            f"/api/v1/challenges/{challenge_id}/accept",
+            json={},
+            headers={"X-CSRFToken": csrf, "Referer": f"{self._base_url}/"},
+        )
+        resp.raise_for_status()
+
+    async def decline_challenge(self, challenge_id: int) -> None:
+        """Cancel an owned invitation through OGS's challenge route."""
+        client = await self._ensure_client()
+        csrf = client.cookies.get("csrftoken")
+        if not csrf:
+            raise RuntimeError("OGS session CSRF token is unavailable")
+        resp = await client.delete(
+            f"/api/v1/me/challenges/{challenge_id}",
+            headers={"X-CSRFToken": csrf, "Referer": f"{self._base_url}/"},
+        )
         resp.raise_for_status()
 
     async def get_my_challenges(self) -> list[dict]:

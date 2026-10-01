@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>智星盒 · 星阵在线大厅与开局设置 · 1024 × 600 审核稿</title>
+  <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <style>
+    :root { --ink:#0f1416; --panel:#18211f; --raise:#1d2725; --hair:#2b3a35; --text:#eef3f1; --dim:#93a49d; --accent:#58b57a; --font-sans:"SmartBox Sans","SmartBox Kai",system-ui,sans-serif; --font-serif:"SmartBox Serif","SmartBox Kai",Georgia,serif; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; background:#0b100f; color:var(--text); }
+    body { font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+    button { font:inherit; cursor:pointer; touch-action:manipulation; }
+    button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    button:active { transform:scale(.985); }
+    .device { width:1024px; height:600px; overflow:hidden; background:var(--ink); }
+    .topbar { height:56px; display:flex; align-items:center; gap:10px; padding:0 24px; border-bottom:1px solid var(--hair); background:#17211e; }
+    .topbar img { width:32px; height:32px; object-fit:contain; }
+    .brand-zh { font-family:"SmartBox Brand LongCang",var(--font-serif); font-size:20px; letter-spacing:.08em; }
+    .brand-en { font:italic 11px var(--font-serif); color:#a8bcb1; }
+    .top-rule { width:1px; height:20px; background:#4a6255; margin:0 4px; }
+    .top-game { color:var(--accent); font-size:15px; }
+    .spacer { flex:1; }
+    .avatar { display:grid; place-items:center; width:26px; height:26px; border-radius:50%; background:var(--accent); color:#102018; font-size:12px; }
+    .top-user,.clock { font-size:12px; }
+    .clock { font-variant-numeric:tabular-nums; letter-spacing:.06em; }
+    .content { height:544px; padding:14px 16px; }
+    .pagebar { height:44px; display:flex; align-items:center; gap:12px; }
+    .back { height:44px; padding:0 14px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); color:var(--text); font-size:13px; }
+    .mark { width:30px; height:30px; object-fit:cover; border-radius:8px; }
+    .pagebar strong { font:600 16px var(--font-serif); white-space:nowrap; }
+    .account { color:var(--dim); font-size:11px; }
+    .connected { margin-left:auto; color:var(--accent); font-size:11px; }
+    .connected::before { content:""; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:currentColor; }
+    .view[hidden] { display:none; }
+    .input-row { display:flex; align-items:center; gap:12px; }
+    .input-label { width:48px; flex:none; color:var(--dim); font-size:12px; }
+    .seg { display:flex; flex:1; height:46px; padding:3px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); }
+    .seg button { flex:1; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:14px; }
+    .seg button.selected { color:var(--accent); background:var(--panel); font-weight:600; }
+    .section-head { display:flex; align-items:center; gap:8px; height:21px; margin-top:13px; margin-bottom:6px; }
+    .section-head h2 { margin:0; font-size:13px; font-weight:650; }
+    .section-head em { color:var(--dim); font:italic 11px var(--font-serif); }
+    .rule { flex:1; height:1px; background:var(--hair); }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    .card { display:flex; align-items:center; gap:11px; height:76px; padding:0 14px; border:1px solid var(--hair); border-radius:12px; background:var(--raise); color:var(--text); text-align:left; }
+    .card:hover,.room-card:hover { border-color:#579d6e; background:#25352d; }
+    .card:focus-visible,.room-card:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .card-icon { flex:none; display:grid; place-items:center; width:40px; height:40px; border:1px solid #375144; border-radius:10px; background:var(--panel); color:var(--accent); }
+    .card-icon svg { width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .card strong,.card small { display:block; } .card strong { font:600 16px var(--font-serif); } .card small { margin-top:3px; color:var(--dim); font-size:11px; }
+    .lobby { height:305px; display:flex; flex-direction:column; border:1px solid var(--hair); border-radius:12px; background:#151d1b; overflow:hidden; }
+    .lobby-tabs { display:flex; align-items:center; gap:5px; height:44px; flex:none; padding:3px 8px; border-bottom:1px solid var(--hair); }
+    .lobby-tabs button { height:36px; min-width:120px; padding:0 12px; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:12px; }
+    .lobby-tabs button[aria-selected="true"] { background:var(--raise); color:var(--accent); font-weight:600; }
+    .lobby-hint { margin-left:auto; color:var(--dim); font-size:10px; }
+    .lobby-panel { flex:1; min-height:0; overflow:auto; padding:5px 7px; scrollbar-width:thin; scrollbar-color:#486c58 transparent; }
+    .lobby-panel[hidden] { display:none; }
+    .room-grid,.player-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .room-card,.player-card { min-width:0; height:87px; padding:7px 10px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); }
+    .room-card { cursor:pointer; }
+    .room-top { display:flex; align-items:center; gap:8px; height:17px; color:#dce7e0; font-size:11px; white-space:nowrap; }
+    .room-top b { font-size:12px; }
+    .watchers { margin-left:auto; color:var(--dim); font-size:10px; }
+    .room-body { display:grid; grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr); align-items:center; gap:6px; height:54px; }
+    .seat { min-width:0; display:flex; align-items:center; gap:7px; }
+    .seat.right { flex-direction:row-reverse; text-align:right; }
+    .face { position:relative; display:grid; place-items:center; flex:none; width:35px; height:35px; border:1px solid #3c5f49; border-radius:7px; background:#26332f; color:#c8e8d0; font-size:13px; }
+    .face::after { content:""; position:absolute; right:-3px; bottom:-3px; width:10px; height:10px; border:1px solid #82968b; border-radius:50%; background:#101513; }
+    .seat.right .face::after { right:auto; left:-3px; background:#f4f4ee; }
+    .seat-info { min-width:0; }
+    .seat-info b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:550; }
+    .seat-info small { display:block; margin-top:2px; color:var(--accent); font-size:10px; }
+    .board-status { display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--dim); font-size:10px; }
+    .mini-board { position:relative; width:25px; height:25px; border:1px solid #a8793c; border-radius:3px; background-color:#d79b4a; background-image:linear-gradient(#9a6b35 1px,transparent 1px),linear-gradient(90deg,#9a6b35 1px,transparent 1px); background-size:6px 6px; background-position:2px 2px; }
+    .mini-board::before,.mini-board::after { content:""; position:absolute; width:6px; height:6px; border-radius:50%; }
+    .mini-board::before { top:5px; left:5px; background:#181a17; } .mini-board::after { right:4px; bottom:5px; background:#f1eee4; }
+    .player-card { display:flex; align-items:center; gap:9px; }
+    .player-card .face { width:39px; height:39px; border-radius:50%; }
+    .player-info { min-width:0; flex:1; }
+    .player-info b { display:block; font-size:13px; } .player-info small { display:block; margin-top:3px; color:var(--dim); font-size:10px; }
+    .state { padding:3px 8px; border:1px solid #3a5645; border-radius:99px; color:#80c698; font-size:10px; }
+    .state.busy { border-color:#5e5541; color:#d9bd77; }
+    .setup-title { margin:14px 0 10px; font:600 22px var(--font-serif); }
+    .setup-title small { display:block; margin-top:4px; color:var(--dim); font:12px var(--font-sans); }
+    .setup-layout { display:grid; grid-template-columns:1.15fr 1fr; gap:16px; height:404px; }
+    .board-shell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; border:1px solid var(--hair); border-radius:12px; background:#18211d; }
+    .board-demo { position:relative; width:342px; height:342px; border:14px solid #a67335; border-radius:5px; background-color:#d9a45b; background-image:repeating-linear-gradient(0deg,transparent 0,transparent 17.36px,#80562f 17.36px,#80562f 18.36px),repeating-linear-gradient(90deg,transparent 0,transparent 17.36px,#80562f 17.36px,#80562f 18.36px); box-shadow:0 8px 20px #0005; }
+    .board-demo::after { content:""; position:absolute; inset:0; background:radial-gradient(circle at 17.6% 17.6%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 50% 17.6%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 82.4% 17.6%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 17.6% 50%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 50% 50%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 82.4% 50%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 17.6% 82.4%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 50% 82.4%,#674523 0 2px,transparent 2.5px),radial-gradient(circle at 82.4% 82.4%,#674523 0 2px,transparent 2.5px); pointer-events:none; }
+    .demo-stone { position:absolute; z-index:1; width:17px; height:17px; border-radius:50%; transform:translate(-50%,-50%); box-shadow:0 2px 3px #0007; }
+    .demo-stone.black { background:radial-gradient(circle at 35% 30%,#4a4a47,#0a0c0b 70%); }
+    .demo-stone.white { background:radial-gradient(circle at 35% 30%,#fff,#d9d9d5 75%); }
+    .board-shell small { color:var(--dim); font-size:11px; }
+    .setup-panel { display:flex; flex-direction:column; gap:11px; padding:17px; border:1px solid var(--hair); border-radius:12px; background:var(--panel); }
+    .setting-label { color:var(--dim); font-size:12px; }
+    .setting-value { padding:10px 12px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); font-size:13px; }
+    .setting-note { color:var(--dim); font-size:11px; line-height:1.5; }
+    .setup-tabs { display:flex; gap:8px; }
+    .setup-tabs button { flex:1; height:40px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); color:var(--dim); }
+    .setup-tabs button.selected { border-color:var(--accent); color:var(--accent); }
+    .room-number { width:100%; height:44px; padding:0 12px; border:1px solid var(--hair); border-radius:9px; outline:none; background:var(--raise); color:var(--text); font:inherit; }
+    .room-number:focus { border-color:var(--accent); }
+    .primary { width:100%; height:48px; margin-top:auto; border:0; border-radius:10px; background:var(--accent); color:#102018; font-size:15px; font-weight:700; }
+    .toast { position:absolute; left:320px; bottom:18px; padding:10px 16px; border:1px solid #5ca675; border-radius:10px; background:#223b2b; color:#d9f0df; font-size:12px; box-shadow:0 8px 24px #0007; }
+    .toast[hidden] { display:none; }
+    .review { width:1024px; padding:14px 20px 24px; color:#c7d8ce; font-size:13px; line-height:1.6; }
+    .review b { color:var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="device" style="position:relative" aria-label="星阵在线大厅 1024 乘 600 审核稿">
+    <header class="topbar">
+      <img src="../../../smartbox-software/superpowers/shared/kiosk-shell/assets/brand/logo-white.png" alt="">
+      <span class="brand-zh">智星盒</span><span class="brand-en">StellaBox</span><span class="top-rule"></span><span class="top-game">围棋</span>
+      <span class="spacer"></span><span class="avatar">访</span><span class="top-user">访客</span><span class="clock">16:40</span>
+    </header>
+    <main class="content view" id="home-view">
+      <div class="pagebar"><button class="back" type="button">← 返回对弈</button><img class="mark" src="../../katrain/web/ui/src/kiosk/assets/platform-marks/golaxy.png" alt=""><strong>星阵围棋</strong><span class="account">已连接 · 当前星阵账号</span><span class="connected">已连接</span></div>
+      <div class="section-head"><h2>开一局</h2><em>Start</em><span class="rule"></span></div>
+      <div class="cards">
+        <button class="card" type="button" data-view="quick"><span class="card-icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 20c0-4 3-6 6-6s6 2 6 6M13 15c4-2 9 0 9 5"/></svg></span><span><strong>快速匹配</strong><small>选择落子方式后匹配 →</small></span></button>
+        <button class="card" type="button" data-view="room"><span class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM8 8h8M8 12h8M8 16h4"/></svg></span><span><strong>房间</strong><small>创建或加入房间 →</small></span></button>
+        <button class="card" type="button" data-view="ai"><span class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M12 3v4M8 12h.01M16 12h.01M8 17h8"/></svg></span><span><strong>人机对弈</strong><small>星阵 AI · 选档开局 →</small></span></button>
+      </div>
+      <div class="section-head"><h2>对战大厅</h2><em>Lobby</em><span class="rule"></span><span style="color:var(--dim);font-size:10px">点选对局，进入观战</span></div>
+      <div class="lobby">
+        <div class="lobby-tabs" role="tablist" aria-label="对战大厅列表">
+          <button type="button" role="tab" id="games-tab" aria-controls="games-panel" aria-selected="true">全部对局</button>
+          <button type="button" role="tab" id="players-tab" aria-controls="players-panel" aria-selected="false">在线棋友</button>
+          <span class="lobby-hint">示意数据 · 点选房间观战</span>
+        </div>
+        <section class="lobby-panel" id="games-panel" role="tabpanel" aria-labelledby="games-tab">
+          <div class="room-grid">
+            <article class="room-card"><div class="room-top"><b>8799 房</b><span>自由战</span><span>分先</span><span class="watchers">◉ 8 人</span></div><div class="room-body"><div class="seat"><span class="face">甲</span><span class="seat-info"><b>棋手甲</b><small>7 段</small></span></div><span class="board-status"><span>官子</span><span class="mini-board"></span></span><div class="seat right"><span class="face">乙</span><span class="seat-info"><b>棋手乙</b><small>7 段</small></span></div></div></article>
+            <article class="room-card"><div class="room-top"><b>8895 房</b><span>升降战</span><span>让先</span><span class="watchers">◉ 6 人</span></div><div class="room-body"><div class="seat"><span class="face">丙</span><span class="seat-info"><b>棋手丙</b><small>6 段</small></span></div><span class="board-status"><span>中盘</span><span class="mini-board"></span></span><div class="seat right"><span class="face">丁</span><span class="seat-info"><b>棋手丁</b><small>准 7 段</small></span></div></div></article>
+            <article class="room-card"><div class="room-top"><b>8843 房</b><span>升降战</span><span>分先</span><span class="watchers">◉ 4 人</span></div><div class="room-body"><div class="seat"><span class="face">戊</span><span class="seat-info"><b>棋手戊</b><small>6 段</small></span></div><span class="board-status"><span>中盘</span><span class="mini-board"></span></span><div class="seat right"><span class="face">己</span><span class="seat-info"><b>棋手己</b><small>6 段</small></span></div></div></article>
+            <article class="room-card"><div class="room-top"><b>8591 房</b><span>升降战</span><span>分先</span><span class="watchers">◉ 2 人</span></div><div class="room-body"><div class="seat"><span class="face">庚</span><span class="seat-info"><b>棋手庚</b><small>准 6 段</small></span></div><span class="board-status"><span>官子</span><span class="mini-board"></span></span><div class="seat right"><span class="face">辛</span><span class="seat-info"><b>棋手辛</b><small>准 6 段</small></span></div></div></article>
+            <article class="room-card"><div class="room-top"><b>9011 房</b><span>升降战</span><span>让先</span><span class="watchers">◉ 4 人</span></div><div class="room-body"><div class="seat"><span class="face">壬</span><span class="seat-info"><b>棋手壬</b><small>5 段</small></span></div><span class="board-status"><span>布局</span><span class="mini-board"></span></span><div class="seat right"><span class="face">癸</span><span class="seat-info"><b>棋手癸</b><small>准 6 段</small></span></div></div></article>
+          </div>
+        </section>
+        <section class="lobby-panel" id="players-panel" role="tabpanel" aria-labelledby="players-tab" hidden>
+          <div class="player-grid">
+            <article class="player-card"><span class="face">甲</span><span class="player-info"><b>棋友甲</b><small>星阵 3 星 · 120 胜 82 负</small></span><span class="state">空闲</span></article>
+            <article class="player-card"><span class="face">乙</span><span class="player-info"><b>棋友乙</b><small>业余 5 段 · 86 胜 61 负</small></span><span class="state busy">对弈中</span></article>
+            <article class="player-card"><span class="face">丙</span><span class="player-info"><b>棋友丙</b><small>星阵 2 星 · 47 胜 30 负</small></span><span class="state">空闲</span></article>
+            <article class="player-card"><span class="face">丁</span><span class="player-info"><b>棋友丁</b><small>业余 3 段 · 22 胜 18 负</small></span><span class="state">空闲</span></article>
+          </div>
+        </section>
+      </div>
+    </main>
+    <main class="content view" id="setup-view" hidden>
+      <div class="pagebar"><button class="back" type="button" data-view="home">← 星阵围棋</button><img class="mark" src="../../katrain/web/ui/src/kiosk/assets/platform-marks/golaxy.png" alt=""><strong id="setup-page-name">快速匹配</strong><span class="connected">已连接</span></div>
+      <div class="setup-title" id="setup-title">快速匹配<small>开局前选择落子方式，再由星阵匹配对手</small></div>
+      <div class="setup-layout">
+        <div class="board-shell"><div class="board-demo" aria-hidden="true"></div><small>19 路棋盘预览</small></div>
+        <div class="setup-panel">
+          <div class="setting-label">落子方式</div>
+          <div class="input-row"><span class="input-label">落子</span><div class="seg"><button type="button" data-input="screen">屏幕</button><button class="selected" type="button" data-input="physical">实体盘</button></div></div>
+          <div id="quick-settings"><div class="setting-label">对局</div><div class="setting-value">19 路 · 星阵快速匹配</div><p class="setting-note">匹配与对局规则以星阵返回为准。</p></div>
+          <div id="room-settings" hidden><div class="setup-tabs"><button type="button" class="selected" data-room-tab="create">创建房间</button><button type="button" data-room-tab="join">加入房间</button></div><div id="room-create"><div class="setting-label">对局</div><div class="setting-value">19 路 · 房间对弈</div></div><div id="room-join" hidden><div class="setting-label">房间号</div><input class="room-number" inputmode="numeric" aria-label="房间号" placeholder="输入星阵房间号"></div></div>
+          <div id="ai-settings" hidden><div class="setting-label">星阵 AI 对手</div><div class="setting-value">选择 AI 对手与难度　⌄</div><div class="setting-label">对局</div><div class="setting-value">19 路 · 对局设置　⌄</div></div>
+          <button class="primary" type="button" id="setup-action">开始匹配</button>
+        </div>
+      </div>
+    </main>
+    <main class="content view" id="spectate-view" hidden>
+      <div class="pagebar"><button class="back" type="button" data-view="home">← 对战大厅</button><img class="mark" src="../../katrain/web/ui/src/kiosk/assets/platform-marks/golaxy.png" alt=""><strong>对局观战</strong><span class="connected">示意页面</span></div>
+      <div class="setup-title">8799 房 · 对局观战<small>棋谱由星阵同步 · 观战为只读模式</small></div>
+      <div class="setup-layout"><div class="board-shell"><div class="board-demo" aria-hidden="true"><i class="demo-stone black" style="left:17.6%;top:17.6%"></i><i class="demo-stone white" style="left:82.4%;top:82.4%"></i><i class="demo-stone black" style="left:82.4%;top:17.6%"></i><i class="demo-stone white" style="left:17.6%;top:82.4%"></i><i class="demo-stone black" style="left:50%;top:50%"></i><i class="demo-stone white" style="left:55.5%;top:50%"></i><i class="demo-stone black" style="left:50%;top:55.5%"></i><i class="demo-stone white" style="left:55.5%;top:55.5%"></i></div><small>星阵实时棋盘示意</small></div><div class="setup-panel"><div class="setting-label">正在对局</div><div class="setting-value">● 棋手甲 7 段　　○ 棋手乙 7 段</div><div class="setting-label">对局信息</div><div class="setting-value">自由战 · 分先 · 19 路</div><p class="setting-note">本审核稿只展示观战入口与只读布局。实际棋谱同步须完成星阵观战协议验证。</p><button class="primary" type="button" data-view="home">返回对战大厅</button></div></div>
+    </main>
+    <div class="toast" id="toast" role="status" hidden>交互示意：星阵开局接口尚待接入</div>
+  </div>
+  <div class="review"><b>审核范围：</b>首页移除落子方式，快速匹配、房间与人机对弈成为可点击入口；落子方式位于各自开局前的设置页。对局卡可点击查看只读观战布局。当前均为交互设计示意，示意姓名和房号不代表线上数据；真实匹配、房间和观战仍须完成星阵协议接入。</div>
+  <script>
+    const tabs = document.querySelectorAll('[role="tab"]');
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+      document.querySelectorAll('[role="tabpanel"]').forEach((panel) => { panel.hidden = panel.id !== tab.getAttribute('aria-controls'); });
+    }));
+    const showView = (name) => {
+      document.getElementById('toast').hidden = true;
+      document.getElementById('home-view').hidden = name !== 'home';
+      document.getElementById('setup-view').hidden = !['quick','room','ai'].includes(name);
+      document.getElementById('spectate-view').hidden = name !== 'spectate';
+      if (['quick','room','ai'].includes(name)) {
+        const labels = { quick:['快速匹配','开局前选择落子方式，再由星阵匹配对手','开始匹配'], room:['房间','开局前选择落子方式，再创建或加入房间','创建房间'], ai:['人机对弈','开局前设置星阵 AI 对手与落子方式','开始对弈'] };
+        const [title, subtitle, action] = labels[name];
+        document.getElementById('setup-page-name').textContent = title;
+        document.getElementById('setup-title').innerHTML = `${title}<small>${subtitle}</small>`;
+        document.getElementById('setup-action').textContent = action;
+        document.getElementById('quick-settings').hidden = name !== 'quick';
+        document.getElementById('room-settings').hidden = name !== 'room';
+        document.getElementById('ai-settings').hidden = name !== 'ai';
+      }
+    };
+    document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => showView(button.dataset.view)));
+    document.querySelectorAll('.room-card').forEach((card) => { card.tabIndex = 0; card.setAttribute('role','button'); card.setAttribute('aria-label', '进入观战'); card.addEventListener('click', () => showView('spectate')); card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showView('spectate'); } }); });
+    document.querySelectorAll('[data-input]').forEach((button) => button.addEventListener('click', () => { document.querySelectorAll('[data-input]').forEach((item) => item.classList.toggle('selected', item === button)); }));
+    document.querySelectorAll('[data-room-tab]').forEach((button) => button.addEventListener('click', () => { const join = button.dataset.roomTab === 'join'; document.querySelectorAll('[data-room-tab]').forEach((item) => item.classList.toggle('selected', item === button)); document.getElementById('room-create').hidden = join; document.getElementById('room-join').hidden = !join; document.getElementById('setup-action').textContent = join ? '加入房间' : '创建房间'; }));
+    document.getElementById('setup-action').addEventListener('click', () => { const toast = document.getElementById('toast'); toast.hidden = false; setTimeout(() => toast.hidden = true, 2800); });
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 """Golaxy / 星阵围棋 (19x19.com) platform adapter.
 
 REST API for game actions + STOMP over SockJS for real-time events.
-Auth: phone-only (+86 Chinese mobile number).
+Auth: phone number with selected international calling code.
 """
 
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 import base64
 import itertools
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -43,6 +44,18 @@ from katrain.web.platforms.models import (
 )
 
 logger = logging.getLogger("katrain_web")
+
+
+class GolaxyLobbyError(RuntimeError):
+    """The upstream lobby did not return a usable response."""
+
+
+class GolaxyLobbyAuthError(GolaxyLobbyError):
+    """The current Golaxy credential is invalid or expired."""
+
+
+class GolaxySnapshotUnsupported(GolaxyLobbyError):
+    """This room uses a board setup not yet verified for spectating."""
 
 
 def _handicap_stones(n: int, board_size: int = 19) -> list[int]:
@@ -319,13 +332,18 @@ class GolaxyRestClient:
 
     # --- Auth ---
 
+    @staticmethod
+    def _phone_principal(phone: str) -> str:
+        """Accept the selected area prefix while keeping old bare +86 credentials working."""
+        return phone if re.match(r"00[1-9]\d{0,3}-", phone) else f"0086-{phone}"
+
     async def login_password(self, phone: str, password: str) -> dict:
         """Login with phone number and password."""
         client = await self._ensure_client()
         resp = await client.post(
             "/api/auth/oauth/token",
             data={
-                "username": f"0086-{phone}",
+                "username": self._phone_principal(phone),
                 "password": password,
                 "grant_type": "password",
                 "client_id": "golaxy_web",
@@ -345,14 +363,14 @@ class GolaxyRestClient:
     async def login_sms(self, phone: str, code: str) -> dict:
         """Login with phone number and SMS verification code.
 
-        Verified format from browser capture:
-          username=0086-{phone}&password=null&grant_type=sms_code&client_id=golaxy_web&sms_code={code}&scope=any
+        Browser format: username=00{dial}-{phone}, with the other OAuth fields
+        unchanged. A bare phone uses +86 for saved-credential compatibility.
         """
         client = await self._ensure_client()
         resp = await client.post(
             "/api/auth/oauth/token",
             data={
-                "username": f"0086-{phone}",
+                "username": self._phone_principal(phone),
                 "password": "null",
                 "grant_type": "sms_code",
                 "client_id": "golaxy_web",
@@ -400,10 +418,11 @@ class GolaxyRestClient:
 
     async def request_sms_code(self, phone: str) -> bool:
         """Request SMS verification code."""
+        area, local_phone = self._phone_principal(phone).split("-", 1)
         client = await self._ensure_client()
         resp = await client.get(
             "/api/auth/sms/code",
-            params={"username": phone, "login": "true", "area": "0086"},
+            params={"username": local_phone, "login": "true", "area": area},
             headers={
                 "Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -448,7 +467,7 @@ class GolaxyRestClient:
         only ever ADD a principal, never remove one."""
         if not username:
             return
-        self._username = username if username.startswith("0086-") else f"0086-{username}"
+        self._username = self._phone_principal(username)
 
     def clear_username(self) -> None:
         """Explicitly forget the login principal — the deliberate counterpart
@@ -520,6 +539,58 @@ class GolaxyRestClient:
         resp = await client.get(f"/api/social/wsgame/game/meta/{game_id}", headers=self._auth_headers())
         resp.raise_for_status()
         return resp.json()
+
+    async def _lobby_list(self, path: str, params: dict) -> list[dict]:
+        """Read and validate a Golaxy list envelope; never expose its body in errors."""
+        client = await self._ensure_client()
+        try:
+            resp = await client.get(path, params=params, headers=self._auth_headers())
+            if resp.status_code in (401, 403):
+                raise GolaxyLobbyAuthError("Golaxy login expired")
+            resp.raise_for_status()
+            body = resp.json()
+        except GolaxyLobbyError:
+            raise
+        except (httpx.HTTPError, ValueError) as exc:
+            raise GolaxyLobbyError("Golaxy lobby unavailable") from exc
+        if not isinstance(body, dict):
+            raise GolaxyLobbyError("Golaxy lobby response malformed")
+        if str(body.get("code")) == "6003":
+            raise GolaxyLobbyAuthError("Golaxy login expired")
+        if str(body.get("code")) != "0" or not isinstance(body.get("data"), list):
+            raise GolaxyLobbyError("Golaxy lobby response malformed")
+        if not all(isinstance(row, dict) for row in body["data"]):
+            raise GolaxyLobbyError("Golaxy lobby response malformed")
+        return body["data"]
+
+    async def list_gamerooms(self) -> list[dict]:
+        return await self._lobby_list("/api/social/gameroom/list", {"page": 0, "size": 15})
+
+    async def list_gamezone_users(self) -> list[dict]:
+        return await self._lobby_list("/api/social/gamezone/user/list", {"page": 0, "size": 15, "level": -1})
+
+    async def get_gameroom_info(self, room_id: str) -> dict:
+        """Read one authenticated room, without forwarding upstream response bodies on errors."""
+        if re.fullmatch(r"[0-9]+", room_id) is None:
+            raise GolaxyLobbyError("Golaxy room ID malformed")
+        client = await self._ensure_client()
+        try:
+            resp = await client.get(f"/api/social/gameroom/info/{room_id}", headers=self._auth_headers())
+            if resp.status_code in (401, 403):
+                raise GolaxyLobbyAuthError("Golaxy login expired")
+            resp.raise_for_status()
+            body = resp.json()
+        except GolaxyLobbyError:
+            raise
+        except (httpx.HTTPError, ValueError) as exc:
+            raise GolaxyLobbyError("Golaxy room unavailable") from exc
+        if not isinstance(body, dict):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        if str(body.get("code")) == "6003":
+            raise GolaxyLobbyAuthError("Golaxy login expired")
+        if str(body.get("code")) != "0" or not isinstance(body.get("data"), dict):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        return body["data"]
 
     # --- Live/spectating (no auth required) ---
 
@@ -659,15 +730,18 @@ class GolaxyAdapter(PlatformAdapter):
                 # Try token-based reconnection
                 self._rest.set_tokens(auth_data["access_token"], auth_data.get("refresh_token", ""))
                 try:
-                    # Verify token is still valid by making a test request
-                    await self._rest.get_all_lives()
+                    # The public live-game feed cannot verify a saved token.
+                    await self._rest.list_gamezone_users()
                     self._connected = True
                     return True
-                except Exception:
-                    # Token expired, try refresh
+                except GolaxyLobbyAuthError:
+                    # Refresh only an explicitly rejected credential.
                     if auth_data.get("refresh_token"):
                         try:
                             await self._rest.refresh_access_token()
+                            if not self._rest.is_authenticated:
+                                raise GolaxyLobbyAuthError("Golaxy login expired")
+                            await self._rest.list_gamezone_users()
                             self._connected = True
                             await self._emit("token_refreshed", self._rest.get_auth_data())
                             return True
@@ -679,7 +753,7 @@ class GolaxyAdapter(PlatformAdapter):
                 await self._rest.login_sms(credentials.username, sms_code)
                 self._connected = True
                 await self._emit("token_refreshed", self._rest.get_auth_data())
-                logger.info(f"Golaxy connected via SMS as {credentials.username}")
+                logger.info("Golaxy connected via SMS")
                 return True
 
             # Scan-login: the confirmed uuid IS the credential, there is no
@@ -706,12 +780,12 @@ class GolaxyAdapter(PlatformAdapter):
                 await self._rest.login_password(credentials.username, password)
                 self._connected = True
                 await self._emit("token_refreshed", self._rest.get_auth_data())
-                logger.info(f"Golaxy connected as {credentials.username}")
+                logger.info("Golaxy connected via password")
                 return True
 
             return False
         except Exception as e:
-            logger.error(f"Golaxy connection failed: {e}")
+            logger.error("Golaxy connection failed: %s", type(e).__name__)
             return False
 
     async def disconnect(self) -> None:
@@ -743,8 +817,134 @@ class GolaxyAdapter(PlatformAdapter):
         return self._rest.get_auth_data()
 
     async def get_rooms(self) -> list[dict]:
-        # Golaxy rooms are created on-demand; no global room list
-        return []
+        rows = await self._rest.list_gamerooms()
+        rooms = []
+        for row in rows:
+            room_id = row.get("id")
+            if not isinstance(room_id, (str, int)) or isinstance(room_id, bool) or not str(room_id):
+                raise GolaxyLobbyError("Golaxy room response malformed")
+            meta = row.get("gameMetaDto") if isinstance(row.get("gameMetaDto"), dict) else {}
+            state = meta.get("gameState") if isinstance(meta.get("gameState"), dict) else {}
+            move_num = state.get("moveNum")
+
+            def player(color: str):
+                code, name = meta.get(f"{color}UserCode"), meta.get(f"{color}Nickname")
+                if not code or not name:
+                    return None
+                return {"user_id": str(code), "username": str(name), "rank": None}
+
+            rooms.append(
+                {
+                    "room_id": str(room_id),
+                    "room_number": str(row["gameroomCode"]) if row.get("gameroomCode") is not None else None,
+                    "room_type": None,
+                    "handicap": meta.get("handicap") if type(meta.get("handicap")) is int else None,
+                    "black": player("black"),
+                    "white": player("white"),
+                    "phase": f"{move_num}手" if type(move_num) is int and move_num >= 0 else None,
+                    "spectator_count": None,
+                }
+            )
+        return rooms
+
+    async def get_room_snapshot(self, room_id: str) -> dict:
+        """Replay the verified 19x19, no-handicap ordered history from room info."""
+        room = await self._rest.get_gameroom_info(room_id)
+        if str(room.get("id")) != room_id:
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        meta = room.get("gameMetaDto")
+        if not isinstance(meta, dict):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        setup = (meta.get("boardSize"), meta.get("handicap"), meta.get("startMoveNum"))
+        if any(type(value) is not int for value in setup):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        if not isinstance(meta.get("gameType"), str) or not isinstance(meta.get("rule"), str):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        if setup != (19, 0, 0) or meta["gameType"] != "82" or meta["rule"] != "chinese":
+            raise GolaxySnapshotUnsupported("Golaxy room setup not yet supported")
+        state = meta.get("gameState")
+        if not isinstance(state, dict):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        move_number = state.get("moveNum")
+        if (
+            type(move_number) is not int
+            or type(meta.get("moveNum")) is not int
+            or move_number < 0
+            or meta["moveNum"] != move_number
+        ):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        situation = state.get("situation")
+        if not isinstance(situation, str):
+            raise GolaxyLobbyError("Golaxy room response malformed")
+        moves = [] if not situation and move_number == 0 else situation.split(",")
+        if len(moves) != move_number or any(re.fullmatch(r"-?(?:0|[1-9][0-9]*)", item) is None for item in moves):
+            raise GolaxyLobbyError("Golaxy room history malformed")
+
+        from sgfmill import boards
+
+        board = boards.Board(19)
+        ko_point = None
+        for turn, item in enumerate(moves):
+            point = golaxy_to_katrain(int(item), 19)
+            if isinstance(point, Pass):
+                ko_point = None
+                continue
+            if not isinstance(point, Move) or (point.row, point.col) == ko_point:
+                raise GolaxyLobbyError("Golaxy room history malformed")
+            color = "b" if turn % 2 == 0 else "w"
+            try:
+                ko_point = board.play(point.row, point.col, color)
+            except ValueError as exc:
+                raise GolaxyLobbyError("Golaxy room history malformed") from exc
+            # sgfmill handles captures but deliberately permits self-capture.
+            if board.get(point.row, point.col) != color:
+                raise GolaxyLobbyError("Golaxy room history malformed")
+
+        columns = "ABCDEFGHJKLMNOPQRST"
+        black_stones = []
+        white_stones = []
+        for row in range(19):
+            for col in range(19):
+                color = board.get(row, col)
+                if color == "b":
+                    black_stones.append(f"{columns[col]}{row + 1}")
+                elif color == "w":
+                    white_stones.append(f"{columns[col]}{row + 1}")
+
+        def player(color: str) -> dict | None:
+            name = meta.get(f"{color}Nickname")
+            return {"username": name, "rank": None} if isinstance(name, str) and name else None
+
+        room_status = room.get("gameroomStatus")
+        phase = "进行中" if room_status == 30 else "已结束" if room_status == 40 else None
+        room_number = room.get("gameroomCode")
+        return {
+            "room_id": room_id,
+            "room_number": (
+                str(room_number) if isinstance(room_number, (str, int)) and not isinstance(room_number, bool) else None
+            ),
+            "room_type": None,
+            "handicap": 0,
+            "board_size": 19,
+            "black": player("black"),
+            "white": player("white"),
+            "black_stones": black_stones,
+            "white_stones": white_stones,
+            "move_number": move_number,
+            "phase": phase,
+            "result": None,
+        }
+
+    async def get_online_users(self, room: Optional[str] = None) -> list[dict]:
+        rows = await self._rest.list_gamezone_users()
+        users = []
+        for row in rows:
+            code = row.get("userCode")
+            name = row.get("followAlias") or row.get("nickname")
+            if not code or not name:
+                raise GolaxyLobbyError("Golaxy user response malformed")
+            users.append({"user_id": str(code), "username": str(name), "rank": None, "status": None})
+        return users
 
     async def submit_move(self, game_id: str, col: int, row: int) -> bool:
         try:

@@ -487,6 +487,9 @@ msgstr "級"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "プロ{rank}段"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2217,6 +2220,12 @@ msgstr "場所"
 
 msgid "kifu:source"
 msgstr "出典"
+
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "出典未確認"
 
 msgid "kifu:open_in_research"
 msgstr "研究で開く"

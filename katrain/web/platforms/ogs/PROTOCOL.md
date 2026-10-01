@@ -70,6 +70,17 @@ No explicit ACK — invalid moves trigger error events.
 `move` is `AdHocPackedMove`: `[x, y, timedelta?, color?]`. 0-indexed from top-left.
 Pass = `[-1, -1]`.
 
+### Snapshot decoding audit (2026-09-30)
+
+The official [Goban protocol types](https://docs.online-go.com/goban/modules/protocol.html), [GobanEngine config](https://github.com/online-go/goban/blob/main/src/engine/GobanEngine.ts), [AdHoc move format](https://github.com/online-go/goban/blob/main/src/engine/formats/AdHocFormat.ts), and [OGSConnectivity move handler](https://github.com/online-go/goban/blob/main/src/Goban/OGSConnectivity.ts) establish the following source-derived shape. **This is not a captured game from the box's account**; authenticated live sequence and final-result timing still need an integration check.
+
+- `gamedata.initial_state.black` and `.white` are coordinate strings. Decode their two-character coordinates and place these stones before replaying moves.
+- `gamedata.moves` is an array of packed move arrays such as `[[x, y, delta], ...]` (or JGOF move objects), never a flat `x,y,delta,x,y,delta` list.
+- A `game/{id}/move` event includes `game_id`, `move_number`, and one packed move. The official client's continuity check compares its current count with `move_number - 1`, so the event number is the new move's one-based number. Check the game ID and sequence; on a gap, fetch an authoritative snapshot before applying more moves.
+- The `game/{id}/phase = "finished"` event alone gives no result. `gamedata` can contain `winner`, `outcome`, `score`, and `end_time`; scoring acceptance may also carry these. Do not save a winner until an authoritative result is available.
+
+An anonymous read of three public completed games via `GET /api/v1/games/{id}/` confirmed the **REST nesting**: outer `width`, `height`, `players`, `outcome`, `black_lost`, `white_lost`, `ended` accompany an inner `gamedata` object containing `game_id`, board settings, `players`, `phase`, `initial_state`, nested packed `moves`, `winner` (a player id), `outcome`, `score`, and `end_time`. Outer `winner`, `phase`, and `moves` were absent. One anonymized 13-road scored result had `phase="finished"`, 124 packed moves ending in two `[-1,-1,time_delta]` passes, `outcome="59.5 points"`, and `score.black.total=25`, `score.white.total=84.5`; the winning id matched inner `players.white.id`. Other public results showed `outcome="Timeout"` and `"Resignation"` with a winning id, without score totals. This verifies actual REST shapes, not this box's authenticated game event timing.
+
 ### Clock update
 ```
 <- ["game/12345/clock", {
@@ -121,8 +132,36 @@ Signaled by `game/{id}/phase` = `"finished"` and/or updated `game/{id}/gamedata`
 
 ```
 -> ["seek_graph/connect", {"channel": "global"}]
-<- ["seekgraph/global", [{challenge_id, user_id, username, ranking, ranked, ...}, ...]]
+<- ["seekgraph/global", [{challenge_id, user_id, username, rank, ranked, ...}, ...]]
 ```
+
+### Public challenge contract checked 2026-09-30
+
+The anonymous public WebSocket returned an initial `seekgraph/global` array of 49 entries. Two had `time_control_parameters.speed = "live"`; 47 were `"correspondence"`. The live entries had top-level `width`, `height`, `rengo`, `invite_only`, `private`, `user_id`, `username`, and numeric `rank` (not `ranking`). OGS's [Goban seek message interface](https://docs.online-go.com/goban/interfaces/protocol.SeekgraphChallengeMessage.html) confirms the main seek fields; the observed `rank` and `private` names come from the actual wire frame. The example below replaces player identifiers and omits unrelated fields:
+
+```json
+{
+  "challenge_id": 123,
+  "user_id": 456,
+  "username": "anonymous",
+  "rank": 26.25,
+  "width": 19,
+  "height": 19,
+  "rengo": false,
+  "invite_only": false,
+  "private": false,
+  "time_control": "byoyomi",
+  "time_control_parameters": {
+    "system": "byoyomi", "time_control": "byoyomi", "speed": "live",
+    "main_time": 900, "period_time": 30, "periods": 5
+  },
+  "rules": "japanese", "ranked": true, "handicap": 0, "komi": null
+}
+```
+
+The adapter offers only square 9/13/19 games with an explicit non-rengo, public seek and a recognized real-time speed (`live`, `rapid`, `blitz`; these values are in the [official Speed type](https://docs.online-go.com/goban/types/protocol.Speed.html)). Missing or unknown fields are excluded. An empty initial WebSocket snapshot is a real empty list. Before a snapshot arrives, or after the connection drops, listing fails and the box API returns 502; it must not present a false empty list.
+
+The REST `GET /api/v1/challenges/?page_size=3` request returned HTTP 401 without an authenticated OGS session. Its response shape, including `game.width/height/rengo/time_control_parameters.speed`, was **not verified** on 2026-09-30. REST fallback is therefore disabled. Do not enable it from assumed paths without an authenticated, redacted response sample.
 
 ## Automatch
 ```
@@ -139,6 +178,10 @@ Signaled by `game/{id}/phase` = `"finished"` and/or updated `game/{id}/gamedata`
 ```
 
 ## Challenge Flow
+Current [OGS web client public-seek accept handler](https://github.com/online-go/online-go.com/blob/main/src/components/GameAcceptModal/GameAcceptModal.tsx) calls `POST /api/v1/challenges/{challenge_id}/accept` with `{}`. It ignores the POST response and navigates with the seek entry's `game_id`. Its [request helper](https://github.com/online-go/online-go.com/blob/main/src/lib/requests.ts) prefixes `/api/v1/` and sends `X-CSRFToken` from the login session cookie. This differs from the `me/challenges/{id}/accept` path used for direct invitations. A public seek without a verified `game_id` must not be accepted because the POST response is not a reliable source for it. Source reviewed 2026-09-30; an authenticated accept/result frame from this box remains unverified.
+
+For a direct live invitation, the [current OGS ChallengeModal](https://github.com/online-go/online-go.com/blob/main/src/components/ChallengeModal/ChallengeModal.tsx#L3009-L3388) sends a `game.time_control` string, a `game.time_control_parameters` object containing both `system` and the legacy `time_control` key, and `challenger_color`. Its response carries `challenge` and `game` (number or object with `id`). While waiting, the client subscribes to `game/{game_id}/gamedata` and sends `challenge/keepalive` with `{challenge_id, game_id}` each second. It stops on gamedata, rejection, or cancellation; cancellation calls `DELETE /api/v1/me/challenges/{challenge_id}`. The box follows those wire shapes. A two-account OGS match has not yet verified this flow on the device.
+
 Challenges arrive as notifications:
 ```
 <- ["notification", {

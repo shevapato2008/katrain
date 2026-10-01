@@ -265,9 +265,9 @@ class LedService:
         if self._last_guidance:
             self.set_points(self._last_guidance, strict=False)
 
-    def set_rgb_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
-        """Light points with explicit RGB values for calibration and diagnostics."""
-        commands = ["CLEAR"]
+    def set_rgb_points(self, points: List[Dict], *, strict: bool = False, blank_before: bool = False) -> Dict:
+        """Light explicit RGB points; optionally SHOW a blackout first in the same batch."""
+        commands = ["CLEAR", "SHOW", "CLEAR"] if blank_before else ["CLEAR"]
         for point in points:
             row, col = point.get("row"), point.get("col")
             rgb = point.get("rgb")

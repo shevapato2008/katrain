@@ -43,6 +43,7 @@ import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 import { formatRank } from '../../utils/rank';
+import { kifuSourceLabel } from '../../utils/kifuSource';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -119,12 +120,14 @@ function GameRecordCard({
   onClick,
   tMovesUnit,
   t,
+  lang,
   selected,
 }: {
   album: KifuAlbumSummary;
   onClick: () => void;
   tMovesUnit: string;
   t: (key: string, fallback?: string) => string;
+  lang: string;
   selected?: boolean;
 }) {
   const r = album.result || '';
@@ -158,10 +161,10 @@ function GameRecordCard({
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
             overflow: 'hidden', wordBreak: 'break-word',
           }}>
-            {album.event || ''}
-            {album.round_name && (
+            {album.display_event ?? album.event ?? ''}
+            {(album.display_round_name ?? album.round_name) && (
               <Typography component="span" sx={{ opacity: 0.6, ...railMetaSx, ml: 0.5 }}>
-                {album.round_name}
+                {album.display_round_name ?? album.round_name}
               </Typography>
             )}
           </Typography>
@@ -190,11 +193,11 @@ function GameRecordCard({
               noWrap
               sx={{ fontWeight: blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
-              {album.player_black}
+              {album.display_player_black ?? album.player_black}
             </Typography>
-            {album.black_rank && (
+            {(album.display_black_rank ?? album.black_rank) && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
-                {formatRank(album.black_rank, t)}
+                {formatRank(album.display_black_rank ?? album.black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -204,9 +207,9 @@ function GameRecordCard({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-            {album.white_rank && (
+            {(album.display_white_rank ?? album.white_rank) && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
-                {formatRank(album.white_rank, t)}
+                {formatRank(album.display_white_rank ?? album.white_rank, t)}
               </Typography>
             )}
             <Typography
@@ -214,7 +217,7 @@ function GameRecordCard({
               noWrap
               sx={{ fontWeight: !blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
-              {album.player_white}
+              {album.display_player_white ?? album.player_white}
             </Typography>
             <Box sx={{
               width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
@@ -225,6 +228,16 @@ function GameRecordCard({
             }} />
           </Box>
         </Box>
+        {!!album.sources?.length && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, minWidth: 0, mt: 0.6 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ ...railMetaSx, mr: 0.2 }}>
+              {t('kifu:source', '来源')}
+            </Typography>
+            {album.sources.map((source) => (
+              <Chip key={source} label={kifuSourceLabel(source, t, lang)} size="small" variant="outlined" sx={{ height: 19, maxWidth: '100%', fontSize: '0.63rem', '& .MuiChip-label': { px: 0.65, overflow: 'hidden', textOverflow: 'ellipsis' } }} />
+            ))}
+          </Box>
+        )}
       </CardActionArea>
     </Card>
   );
@@ -233,7 +246,7 @@ function GameRecordCard({
 /* ── Main page ── */
 export default function KifuLibraryPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const page = Number(searchParams.get('page')) || 1;
@@ -245,12 +258,15 @@ export default function KifuLibraryPage() {
   const [searchInput, setSearchInput] = useState(query);
 
   // Board preview state
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<KifuAlbumSummary | null>(null);
+  const [selectedAlbumLang, setSelectedAlbumLang] = useState<string | null>(null);
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewReload, setPreviewReload] = useState(0);
   const [boardEdge, setBoardEdge] = useState(0);
   const coordinates = useBoardCoordinates(boardEdge);
 
@@ -258,21 +274,24 @@ export default function KifuLibraryPage() {
     setSearchInput(query);
   }, [query]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (request: { cancelled: boolean }) => {
     setLoading(true);
     try {
-      const data = await KifuAPI.getAlbums({ q: query || undefined, page, page_size: PAGE_SIZE });
+      const data = await KifuAPI.getAlbums({ q: query || undefined, page, page_size: PAGE_SIZE, lang });
+      if (request.cancelled) return;
       setItems(data.items);
       setTotal(data.total);
     } catch (err) {
-      console.error('Failed to fetch kifu albums:', err);
+      if (!request.cancelled) console.error('Failed to fetch kifu albums:', err);
     } finally {
-      setLoading(false);
+      if (!request.cancelled) setLoading(false);
     }
-  }, [query, page]);
+  }, [query, page, lang]);
 
   useEffect(() => {
-    fetchData();
+    const request = { cancelled: false };
+    fetchData(request);
+    return () => { request.cancelled = true; };
   }, [fetchData]);
 
   const handleSearch = () => {
@@ -292,55 +311,79 @@ export default function KifuLibraryPage() {
     setSearchParams(params, { replace: false });
   };
 
-  // Load SGF for board preview when a card is clicked
-  const handleCardClick = useCallback(async (album: KifuAlbumSummary) => {
+  // Keep the selection by ID so a language change can refresh its detail.
+  const handleCardClick = useCallback((album: KifuAlbumSummary) => {
+    if (selectedId === album.id) {
+      if (!previewLoading && (selectedAlbumLang !== lang || previewMoves.length === 0)) {
+        setPreviewReload((value) => value + 1);
+      }
+      return;
+    }
+    setSelectedId(album.id);
     setSelectedAlbum(album);
+    setSelectedAlbumLang(lang);
+    setPreviewMoves([]);
+  }, [lang, selectedId, selectedAlbumLang, previewLoading, previewMoves.length]);
+
+  const fetchSelected = useCallback(async (id: number, request: { cancelled: boolean }) => {
     setPreviewLoading(true);
     try {
-      const detail: KifuAlbumDetail = await KifuAPI.getAlbum(album.id);
+      const detail: KifuAlbumDetail = await KifuAPI.getAlbum(id, lang);
+      if (request.cancelled) return;
+      setSelectedAlbum(detail);
+      setSelectedAlbumLang(lang);
       if (detail.sgf_content) {
         const parsed = sgfToMoves(detail.sgf_content);
         setPreviewMoves(parsed.moves);
         setPreviewColors(parsed.stoneColors);
         setPreviewCurrentMove(parsed.moves.length); // Show final position
-        setPreviewBoardSize(parsed.metadata.boardSize || album.board_size || 19);
+        setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
       }
     } catch (err) {
-      console.error('Failed to load kifu preview:', err);
+      if (!request.cancelled) console.error('Failed to load kifu preview:', err);
     } finally {
-      setPreviewLoading(false);
+      if (!request.cancelled) setPreviewLoading(false);
     }
-  }, []);
+  }, [lang]);
+
+  useEffect(() => {
+    if (selectedId === null) return;
+    const request = { cancelled: false };
+    fetchSelected(selectedId, request);
+    return () => { request.cancelled = true; };
+  }, [selectedId, fetchSelected, previewReload]);
+
+  const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
 
   const handleOpenInResearch = useCallback(() => {
-    if (selectedAlbum) {
-      navigate(`/galaxy/research?kifu_id=${selectedAlbum.id}`);
+    if (selectedId !== null) {
+      navigate(`/galaxy/research?kifu_id=${selectedId}`);
     }
-  }, [selectedAlbum, navigate]);
+  }, [selectedId, navigate]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const movesUnit = t('kifu:moves_unit', '手');
 
-  const hasPreview = selectedAlbum !== null && !previewLoading && previewMoves.length > 0;
+  const hasPreview = visibleSelectedAlbum !== null && !previewLoading && previewMoves.length > 0;
 
   /* 模块牌副标题：选中棋谱后是对局双方 + 手数，没选中时是记录总数。
      列表还在加载时给一条骨架，避免标题行先塌一次再撑开。 */
-  const plateSubtitle = loading && !selectedAlbum
+  const plateSubtitle = (loading && selectedId === null) || (selectedId !== null && !visibleSelectedAlbum)
     ? <Skeleton width={140} />
-    : selectedAlbum
-      ? `${selectedAlbum.player_black} vs ${selectedAlbum.player_white} · ${selectedAlbum.move_count} ${movesUnit}`
+    : visibleSelectedAlbum
+      ? `${visibleSelectedAlbum.display_player_black ?? visibleSelectedAlbum.player_black} vs ${visibleSelectedAlbum.display_player_white ?? visibleSelectedAlbum.player_white} · ${visibleSelectedAlbum.move_count} ${movesUnit}`
       : `${total.toLocaleString()} ${t('kifu:records', 'records')}${query ? ` · "${query}"` : ''}`;
 
   /* 胜负 chip 进模块牌最右 —— spec §2.4「状态放最右」，和已批准的直播样板
      （`LiveMatchPage.tsx:130-140` 的直播中/已结束 chip）同一个槽。
      §2.4 禁的是把 eyebrow / 面包屑 / 长副标题 / 状态说明和一堆 chip **堆**进页头，
      不是禁这一个状态位。 */
-  const plateStatus = selectedAlbum?.result
+  const plateStatus = visibleSelectedAlbum?.result
     ? (
       <Chip
         size="small"
         variant="outlined"
-        label={translateResult(selectedAlbum.result, t, selectedAlbum.rules)}
+        label={translateResult(visibleSelectedAlbum.result, t, visibleSelectedAlbum.rules)}
       />
     )
     : undefined;
@@ -456,7 +499,8 @@ export default function KifuLibraryPage() {
                         onClick={() => handleCardClick(album)}
                         tMovesUnit={movesUnit}
                         t={t}
-                        selected={selectedAlbum?.id === album.id}
+                        lang={lang}
+                        selected={selectedId === album.id}
                       />
                     </Box>
                   </Fade>

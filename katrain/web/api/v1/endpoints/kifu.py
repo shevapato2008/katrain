@@ -4,15 +4,34 @@ from typing import Optional, List
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func
+from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import KifuAlbum
 from katrain.web.core.repository import RemoteServiceUnavailableError
+from katrain.web.kifu.identity import (
+    LANGUAGES,
+    display_event_name,
+    display_maps,
+    matching_entity_ids,
+    split_player_rank,
+)
+from katrain.web.kifu.round_names import display_round_name
 
 router = APIRouter()
+
+# The archive uses Japanese romanizations while many kiosk users search in Chinese.
+_HISTORICAL_PLAYER_ALIASES = {
+    "吴清源": ("go seigen",),
+    "吳清源": ("吴清源", "go seigen"),
+    "道策": ("honinbo dosaku",),
+    "丈和": ("honinbo jowa", "kadono jowa", "kadono matsunosuke", "todani matsunosuke"),
+    "秀策": ("shusaku", "yasuda eisai"),
+    "木谷实": ("kitani minoru",),
+    "木谷實": ("木谷实", "kitani minoru"),
+}
 
 
 async def _from_dispatcher(call, not_found_detail: str):
@@ -46,6 +65,13 @@ class KifuAlbumSummary(BaseModel):
     board_size: int
     round_name: Optional[str]
     move_count: int
+    display_player_black: str = ""
+    display_player_white: str = ""
+    display_black_rank: Optional[str] = None
+    display_white_rank: Optional[str] = None
+    display_event: Optional[str] = None
+    display_round_name: Optional[str] = None
+    sources: List[str] = Field(default_factory=list)
 
 
 class KifuAlbumDetail(KifuAlbumSummary):
@@ -72,20 +98,49 @@ async def list_kifu_albums(
     q: Optional[str] = Query(None, description="Search query (fuzzy match on player names, event, date)"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    lang: str = "cn",
     db: Session = Depends(get_db),
 ):
     """List tournament game records with optional search and pagination."""
+    if lang not in LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported language")
     # Board mode: delegate to repository dispatcher
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await _from_dispatcher(lambda: dispatcher.kifu_list_albums(q, page, page_size), "Kifu albums not found")
+        return await _from_dispatcher(
+            lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
+        )
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
-    count_query = db.query(func.count(KifuAlbum.id))
+    query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
+    count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
 
     if q:
-        # search_text is stored lowercased; match with lower(q)
-        needle = KifuAlbum.search_text.contains(q.lower())
+        player_ids, event_ids = matching_entity_ids(db, q, exact=True)
+        if len(player_ids) == 1 and not event_ids:
+            player_id = next(iter(player_ids))
+            needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
+        elif len(event_ids) == 1 and not player_ids:
+            needle = KifuAlbum.event_id == next(iter(event_ids))
+        else:
+            partial_players, partial_events = matching_entity_ids(db, q, exact=False)
+            terms = (q.lower(), *_HISTORICAL_PLAYER_ALIASES.get(q.removeprefix("本因坊"), ()))
+            player_match = or_(
+                *(
+                    func.lower(field).contains(term, autoescape=True)
+                    for field in (KifuAlbum.player_black, KifuAlbum.player_white)
+                    for term in terms
+                )
+            )
+            clauses = [KifuAlbum.search_text.contains(q.lower(), autoescape=True), player_match]
+            if partial_players:
+                clauses.extend(
+                    (KifuAlbum.black_player_id.in_(partial_players), KifuAlbum.white_player_id.in_(partial_players))
+                )
+            if partial_events:
+                clauses.append(KifuAlbum.event_id.in_(partial_events))
+            needle = or_(*clauses)
+            query = query.order_by(case((player_match, 0), else_=1))
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 
@@ -99,8 +154,9 @@ async def list_kifu_albums(
     total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
+    players, events, sources = display_maps(db, records, lang)
     return KifuAlbumListResponse(
-        items=[KifuAlbumSummary.model_validate(r) for r in records],
+        items=[_summary(r, players, events, sources, lang) for r in records],
         total=total,
         page=page,
         page_size=page_size,
@@ -108,12 +164,16 @@ async def list_kifu_albums(
 
 
 @router.get("/albums/{album_id}", response_model=KifuAlbumDetail)
-async def get_kifu_album(request: Request, album_id: int, db: Session = Depends(get_db)):
+async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: Session = Depends(get_db)):
     """Get a single kifu album record with full SGF content."""
+    if lang not in LANGUAGES:
+        raise HTTPException(status_code=422, detail="Unsupported language")
     # Board mode: delegate to repository dispatcher
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        result = await _from_dispatcher(lambda: dispatcher.kifu_get_album(album_id), f"Kifu album {album_id} not found")
+        result = await _from_dispatcher(
+            lambda: dispatcher.kifu_get_album(album_id, lang), f"Kifu album {album_id} not found"
+        )
         if not result:
             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
         return result
@@ -122,4 +182,27 @@ async def get_kifu_album(request: Request, album_id: int, db: Session = Depends(
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
-    return KifuAlbumDetail.model_validate(record)
+    players, events, sources = display_maps(db, [record], lang)
+    values = _summary(record, players, events, sources, lang).model_dump()
+    return KifuAlbumDetail.model_validate(
+        {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
+    )
+
+
+def _summary(
+    record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
+) -> KifuAlbumSummary:
+    summary = KifuAlbumSummary.model_validate(record)
+    black_name, embedded_black_rank = split_player_rank(record.player_black)
+    white_name, embedded_white_rank = split_player_rank(record.player_white)
+    return summary.model_copy(
+        update={
+            "display_player_black": players.get(record.black_player_id, black_name),
+            "display_player_white": players.get(record.white_player_id, white_name),
+            "display_black_rank": record.black_rank or embedded_black_rank,
+            "display_white_rank": record.white_rank or embedded_white_rank,
+            "display_event": display_event_name(record.event, events.get(record.event_id), lang),
+            "display_round_name": display_round_name(record.round_name, lang),
+            "sources": sources.get(record.id, []),
+        }
+    )

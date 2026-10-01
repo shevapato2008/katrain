@@ -13,6 +13,7 @@ export interface VisionStatus {
 
 interface VisionContextType {
   visionStatus: VisionStatus;
+  loaded: boolean;
   isVisionEnabled: boolean;
   refreshStatus: () => Promise<void>;
 }
@@ -43,11 +44,13 @@ const mapResponse = (r: VisionStatusResponse): VisionStatus => ({
 
 export const VisionProvider = ({ children }: { children: ReactNode }) => {
   const [visionStatus, setVisionStatus] = useState<VisionStatus>(DEFAULT_STATUS);
+  const [loaded, setLoaded] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     try {
       const response = await API.visionStatus();
       setVisionStatus(mapResponse(response));
+      setLoaded(true);
     } catch (err) {
       console.error('Failed to fetch vision status', err);
       // Keep the last known status on transient errors rather than
@@ -63,7 +66,7 @@ export const VisionProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshStatus]);
 
   return (
-    <VisionContext.Provider value={{ visionStatus, isVisionEnabled: visionStatus.enabled, refreshStatus }}>
+    <VisionContext.Provider value={{ visionStatus, loaded, isVisionEnabled: visionStatus.enabled, refreshStatus }}>
       {children}
     </VisionContext.Provider>
   );

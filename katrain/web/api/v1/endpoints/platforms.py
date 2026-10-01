@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import random
 from typing import Literal, Optional
 
@@ -144,6 +145,19 @@ class DeclineChallengeRequest(BaseModel):
     challenge_id: str
 
 
+class OGSScoringRequest(BaseModel):
+    session_id: str
+    action: Literal["accept", "reject"]
+    stones: str = ""
+
+    @field_validator("stones")
+    @classmethod
+    def _stones(cls, value: str) -> str:
+        if len(value) % 2 or not value.isascii() or any(not "a" <= letter <= "z" for letter in value):
+            raise ValueError("stones must be OGS coordinate pairs")
+        return value
+
+
 class AutomatchRequest(BaseModel):
     board_size: int = 19
     time_control: dict = {}
@@ -220,6 +234,39 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
             orchestrator.show_hint(points)
     except Exception:
         logger.exception("show_hint failed for session %s (LED/IPC error ignored)", session_id)
+
+
+def _judge_result(winner: str, delta) -> Optional[str]:
+    """Convert Golaxy's half-point stone delta to an SGF result.
+
+    ``U`` has no terminal result. A decided winner without a usable margin
+    must be rejected rather than saved with a made-up score.
+    """
+    if isinstance(delta, bool) or not isinstance(delta, (int, float)) or not math.isfinite(delta):
+        raise HTTPException(status_code=502, detail="Golaxy judge returned an invalid score")
+    if winner == "U":
+        return None
+    if winner == "D" and delta == 0:
+        return "0"
+    if winner in ("B", "W") and delta != 0:
+        return f"{winner}+{abs(delta) / 2:g}"
+    raise HTTPException(status_code=502, detail="Golaxy judge returned an inconsistent result")
+
+
+def _maybe_show_judge_attention(app_state, session_id: str, result, board_size: int) -> None:
+    """Blink undecided judge points on the bound physical board."""
+    orchestrator = getattr(app_state, "physical_play", None)
+    vision = getattr(app_state, "vision", None)
+    if orchestrator is None or vision is None or vision.bound_session_id != session_id:
+        return
+    try:
+        points = [(board_size - 1 - p.row, p.col) for p in result.ownership if p.owner == "U"]
+        if points:
+            orchestrator.show_attention(points, source="judge")
+        else:
+            orchestrator.clear_attention("judge")
+    except Exception:
+        logger.exception("judge attention failed for session %s (LED/IPC error ignored)", session_id)
 
 
 # --- Credential management ---
@@ -626,6 +673,20 @@ async def engine_analysis(
     # detected afterward. Only "options" ever shows a hint, so skip the lock
     # acquisition for the other kinds.
     position_token = _hint_position_token(request.app.state, req.session_id) if req.kind == "options" else None
+    judge_session = judge_game = judge_node = judge_context = None
+    if req.kind == "judge":
+        try:
+            judge_session = request.app.state.session_manager.get_session(req.session_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}") from exc
+        judge_context = pm.get_game_context(req.session_id)
+        if judge_context is None or not judge_context.is_engine:
+            raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
+        with judge_session.lock:
+            if judge_context.is_pending or judge_session.katrain.game.end_result:
+                raise HTTPException(status_code=409, detail="Engine game is busy or already ended")
+            judge_game = judge_session.katrain.game
+            judge_node = judge_game.current_node
 
     with temporary_analysis_lease(request.app, user, req.session_id, f"platform:{req.kind}", "platform analysis"):
         try:
@@ -636,6 +697,43 @@ async def engine_analysis(
             raise HTTPException(status_code=404, detail=f"No engine game for session {req.session_id}")
         if req.kind == "options":
             _maybe_show_hint(request.app.state, req.session_id, position_token, result)
+
+        if req.kind == "judge":
+            terminal_result = _judge_result(result.winner, result.delta)
+            with judge_session.lock:
+                current_context = pm.get_game_context(req.session_id)
+                if (
+                    current_context is not judge_context
+                    or current_context.is_pending
+                    or judge_session.katrain.game is not judge_game
+                    or judge_game.current_node is not judge_node
+                    or judge_game.end_result
+                ):
+                    raise HTTPException(status_code=409, detail="Engine game position changed during judge")
+                if terminal_result is not None:
+                    judge_session.katrain._commit_end_state(terminal_result, node=judge_node)
+                    judge_session.game_ended = True
+                state = judge_session.katrain.get_state()
+                judge_session.last_state = state
+                board_size = judge_game.board_size[0]
+
+            if terminal_result is not None:
+                # Keep all I/O outside session.lock and the game commit lock.
+                judge_session.katrain.update_state()
+                from katrain.web.server import _record_platform_engine_game
+
+                await _record_platform_engine_game(judge_session, request.app, user)
+                await pm.end_platform_game(judge_context.remote_game_id, terminal_result)
+            _maybe_show_judge_attention(request.app.state, req.session_id, result, board_size)
+            import dataclasses
+
+            return {
+                "ok": True,
+                "kind": req.kind,
+                "data": dataclasses.asdict(result),
+                "ended": terminal_result is not None,
+                "state": state,
+            }
 
         import dataclasses
 
@@ -694,6 +792,21 @@ async def platform_users(
     if adapter is None or not adapter.is_connected:
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
 
+    if platform == "golaxy":
+        from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+        require_platform_owner(platform, request, user)
+        try:
+            users = await adapter.get_online_users()
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
+        require_platform_owner(platform, request, user)
+        if q:
+            prefix = q.casefold()
+            users = [entry for entry in users if entry["username"].casefold().startswith(prefix)]
+        return {"users": users}
     if q:
         # Specific player search
         users = await adapter.get_online_users(room=q)
@@ -723,8 +836,47 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(r
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
     if not adapter.supports_rooms:
         raise HTTPException(status_code=400, detail=f"{platform} does not support rooms")
-    rooms = await adapter.get_rooms()
+    if platform == "golaxy":
+        from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+        require_platform_owner(platform, request, user)
+        try:
+            rooms = await adapter.get_rooms()
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
+        require_platform_owner(platform, request, user)
+    else:
+        rooms = await adapter.get_rooms()
     return {"rooms": rooms}
+
+
+@router.get("/{platform}/rooms/{room_id}/snapshot")
+async def platform_room_snapshot(
+    platform: str, room_id: str, request: Request, user: User = Depends(require_platform_owner)
+):
+    """Return one read-only, owner-bound Golaxy board position."""
+    if platform != "golaxy":
+        raise HTTPException(status_code=400, detail=f"{platform} does not support room snapshots")
+    if not room_id.isascii() or not room_id.isdecimal():
+        raise HTTPException(status_code=400, detail="Invalid Golaxy room ID")
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError, GolaxySnapshotUnsupported
+
+    try:
+        snapshot = await adapter.get_room_snapshot(room_id)
+    except GolaxyLobbyAuthError as exc:
+        raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+    except GolaxySnapshotUnsupported as exc:
+        raise HTTPException(status_code=422, detail="Golaxy room setup not yet supported") from exc
+    except GolaxyLobbyError as exc:
+        raise HTTPException(status_code=502, detail="Unable to load Golaxy room snapshot") from exc
+    require_platform_owner(platform, request, user)
+    return snapshot
 
 
 @router.get("/{platform}/challenges")
@@ -732,10 +884,51 @@ async def platform_challenges(platform: str, request: Request, user: User = Depe
     """List open challenges on a platform (OGS seek graph)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
-    if adapter is None or not adapter.is_connected:
+    if adapter is None:
         raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
-    challenges = await adapter.get_open_challenges()
+    if not adapter.is_connected:
+        if platform == "ogs":
+            raise HTTPException(status_code=502, detail="Unable to load challenges from platform")
+        raise HTTPException(status_code=400, detail=f"Not connected to {platform}")
+    try:
+        challenges = await adapter.get_open_challenges()
+    except RuntimeError as exc:
+        logger.warning("Platform challenge list unavailable for %s: %s", platform, exc)
+        raise HTTPException(status_code=502, detail="Unable to load challenges from platform") from exc
     return {"challenges": challenges}
+
+
+@router.get("/{platform}/active-game")
+async def active_platform_game(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Return this local owner's resumable game, without exposing other users' games."""
+    require_platform_owner(platform, request, user)
+    pm = request.app.state.platform_manager
+    adapter = pm.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        code = 502 if platform == "ogs" else 400
+        raise HTTPException(status_code=code, detail="Platform connection unavailable")
+    try:
+        session_id = await pm.recover_active_game_for_owner(platform, user.id)
+    except Exception as exc:
+        logger.warning("Could not restore active %s game for user %s", platform, user.id, exc_info=True)
+        raise HTTPException(status_code=502, detail="Unable to restore platform game") from exc
+    pending_challenge_id = adapter.pending_direct_challenge_id() if platform == "ogs" and hasattr(adapter, "pending_direct_challenge_id") else None
+    return {"session_id": session_id, "pending_challenge_id": pending_challenge_id}
+
+
+@router.post("/ogs/scoring")
+async def ogs_scoring_action(
+    req: OGSScoringRequest, request: Request, user: User = Depends(require_writable_user)
+):
+    """Relay a stone-removal decision; OGS remains the only result authority."""
+    require_platform_owner("ogs", request, user)
+    gateway = request.app.state.platform_gateway
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    try:
+        return await gateway.scoring_action(req.session_id, user.id, req.action, req.stones)
+    except PlatformMoveRejectedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 # --- Challenge flow ---

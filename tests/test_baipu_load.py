@@ -118,10 +118,11 @@ class TestDeterminism:
         assert [s["board_hash"] for s in a["steps"]] == [s["board_hash"] for s in b["steps"]]
 
     def test_meta_fields(self):
-        data = _steps("(;SZ[19]PB[Lee]PW[AlphaGo]KM[7.5];B[pd])")
+        data = _steps("(;SZ[19]PB[Lee]PW[AlphaGo]KM[7.5]RE[W+R];B[pd])")
         assert data["meta"]["player_black"] == "Lee"
         assert data["meta"]["player_white"] == "AlphaGo"
         assert data["meta"]["komi"] == 7.5
+        assert data["meta"]["result"] == "W+R"
 
 
 class TestExpectedBoardAndNext:

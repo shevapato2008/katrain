@@ -44,7 +44,7 @@ const boot = async (page: Page, path: string, css?: string, readySelector = '.ki
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson() }));
   await page.goto(path);
   await page.waitForSelector('.kiosk-screen', { state: 'attached' });
-  // 跨平台三张卡是 `/api/v1/platform/status` 回来之后才渲的 —— 不等它,量到的是没长齐的内容。
+  // 等到目标页滚动区挂载，随后各场景再等自己的接口数据。
   await page.waitForSelector(readySelector, { state: 'attached' });
 };
 
@@ -395,7 +395,7 @@ test('棋谱:名局列表摊开时右栏自己滚,最后一块(最近摆过)的�
   expect(railW, '右栏不是 680 —— 后面量的滚动都建在错的宽度上').toBe(680);
 
   // 名局列表 2026-09-23 起一进来就摊开(Fan)—— 不用再先按「搜棋谱」,六行 + 翻页就是这条栏的常态。
-  await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');
+  await page.waitForSelector('[data-testid="kifu-search"] .kifu-record');
 
   const before = await overflowOf(page);
   expect(before, '没造出溢出 —— 下面那条断言是空的').toBeGreaterThan(100);
@@ -879,15 +879,14 @@ test('跨平台人机开局:设置装不下时右栏自己滚,而「开始对局
 });
 
 /* ─────────────────────────────────────────────────────────────────────────
- * 屏 08 跨平台 · 大厅:布局 B,搜到的人多了整栏自己滚,底下两段滚得到
+ * OGS 专页:展开找人后名单很长时，整栏自己滚且末行可达。
  *
- * 稿子那一帧只有三个人,**一屏装得下** —— 拿它量等于什么都没量。这里造 24 个,
- * 那才是「搜 a」在 OGS 上的常态。判据:
+ * 造 24 个用户来检验长列表。判据:
  *   · 该滚的是 `.kiosk-side__scroll`(布局 B 形态 1 整栏滚),**不是页面**
- *   · 滚到底之后「自动匹配」那一段整个进得了视野 —— 到不了就等于它不存在
+ *   · 滚到底之后最后一名用户进得了视野
  *   · 页面不许横向溢出;通栏仍是 992
  * ────────────────────────────────────────────────────────────────────────── */
-test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹配」那一段滚得到', async ({ page }) => {
+test('OGS 专页:找人名单装不下时整栏自己滚，最后一名用户可达', async ({ page }) => {
   await page.route('**/api/v1/platforms/status', (route) => route.fulfill({
     json: {
       platforms: [{
@@ -905,9 +904,9 @@ test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹
       })),
     },
   }));
-  await boot(page, '/kiosk/play/cross-platform/lobby?platform=ogs');
-  await page.waitForSelector('[data-testid="platform-automatch"]');
-  expect(await page.locator('[data-testid="platform-user"]').count(), '24 个人没渲出来').toBe(24);
+  await boot(page, '/kiosk/play/cross-platform/ogs', undefined, '[data-testid="platform-lobby-page"]');
+  await page.getByRole('button', { name: /找人下/ }).click();
+  await expect(page.locator('[data-testid="platform-user"]')).toHaveCount(24);
 
   const zoneW = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-side__scroll')!.getBoundingClientRect().width));
@@ -923,11 +922,11 @@ test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹
 
   const m = await page.evaluate(() => {
     const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
-    const auto = document.querySelector('[data-testid="platform-automatch"]') as HTMLElement;
+    const last = document.querySelector('[data-testid="platform-user"]:last-of-type') as HTMLElement;
     return {
       scrollTop: Math.round(el.scrollTop),
       atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
-      autoBottom: Math.round(auto.getBoundingClientRect().bottom),
+      lastBottom: Math.round(last.getBoundingClientRect().bottom),
       zoneBottom: Math.round(el.getBoundingClientRect().bottom),
       pageScroll: Math.round(document.documentElement.scrollTop),
       horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -936,7 +935,7 @@ test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹
 
   expect(m.scrollTop, '拨了十六下滚轮,一格都没动').toBeGreaterThan(0);
   expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.autoBottom, '滚到底了,「自动匹配」那一段还在视野外 —— 那一段就是到不了的')
+  expect(m.lastBottom, '滚到底了，最后一名用户还在视野外')
     .toBeLessThanOrEqual(m.zoneBottom);
   // 滚的必须是那一栏,不是整页 —— 整页一滚,顶栏和 Dock 会跟着跑出去(规范 §5 防跳铁律 1)。
   expect(m.pageScroll, '滚的是整个页面,不是那一栏').toBe(0);
@@ -1158,7 +1157,7 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
      当访客处理),② 种子键要带同一个 uuid 后缀。
 
      少任何一件,页面都会渲染它**正确的**空态「这台盒子上没有这份谱」,而
-     `waitForSelector('[data-testid="baipu-pcard"]')` 就停在那儿超时 30 秒 ——
+     等棋手卡或采集状态卡就停在那儿超时 30 秒 ——
      报错指向选择器,看起来像「摆谱页挂了」,其实页面是对的、夹具过期了。
      (2026-09-21:三条摆谱用例就是这么红了一段时间的,develop 上同样红。) */
   // `addInitScript` 的函数体在**浏览器**里跑,拿不到这个文件里的常量 —— 必须当参数传进去。
@@ -1174,7 +1173,7 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
     json: kioskMeJson(),
   }));
   await page.goto('/kiosk/baipu/session/g1');
-  await page.waitForSelector('[data-testid="baipu-pcard"]');
+  await page.waitForSelector(opts.collect ? '[data-testid="baipu-pcard"]' : '[data-testid="baipu-player-black"]');
 };
 
 /** 右栏、动作区、着法块、画布,一次读齐。 */

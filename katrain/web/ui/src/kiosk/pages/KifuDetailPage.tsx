@@ -7,6 +7,7 @@ import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
 import { replayBaipuSteps } from '../../utils/baipuReplay';
 import { translateResult } from '../../utils/resultTranslation';
+import { formatRank } from '../../utils/rank';
 import { interpolate } from '../utils/interpolate';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
@@ -85,9 +86,10 @@ const KifuDetailPage = () => {
   const { kifuId } = useParams<{ kifuId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
 
-  const [album, setAlbum] = useState<KifuAlbumDetail | null>(null);
+  const [loadedAlbum, setLoadedAlbum] = useState<KifuAlbumDetail | null>(null);
+  const [loadedLang, setLoadedLang] = useState<string | null>(null);
   const [steps, setSteps] = useState<BaipuStep[] | null>(null);
   const [boardSize, setBoardSize] = useState(19);
   const [error, setError] = useState<string | null>(null);
@@ -96,23 +98,26 @@ const KifuDetailPage = () => {
   const [reload, setReload] = useState(0);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
   const nowRef = useRef<HTMLSpanElement | null>(null);
+  const loadedIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!kifuId) return;
     let cancelled = false;
     // ⚠️ 清空只能发生在异步回调里(`react-hooks/set-state-in-effect`) —— 效应体里同步
     // setState 会连锁重渲染。重试时那句 `setError(null)` 挂在按钮的点击处理里,那是事件不是效应。
-    KifuAPI.getAlbum(Number(kifuId))
+    KifuAPI.getAlbum(Number(kifuId), lang)
       .then(async (detail) => {
         if (cancelled) return;
         if (!detail.sgf_content) throw new Error('empty sgf');
         const loaded = await BaipuAPI.load({ sgf: detail.sgf_content });
         if (cancelled) return;
         setError(null);
-        setAlbum(detail);
+        setLoadedAlbum(detail);
+        setLoadedLang(lang);
         setSteps(loaded.steps);
         setBoardSize(loaded.board_size || detail.board_size || 19);
-        setCursor(0);
+        if (loadedIdRef.current !== detail.id) setCursor(0);
+        loadedIdRef.current = detail.id;
       })
       .catch((e: Error) => {
         if (!cancelled) {
@@ -121,7 +126,9 @@ const KifuDetailPage = () => {
         }
       });
     return () => { cancelled = true; };
-  }, [kifuId, reload]);
+  }, [kifuId, reload, lang]);
+
+  const album = loadedLang === lang ? loadedAlbum : null;
 
   // 手数表:只有 `move` / `pass` 算一手,让子的 setup 不算。
   const entries = useMemo<MoveEntry[]>(() => {
@@ -171,7 +178,7 @@ const KifuDetailPage = () => {
   const cols = colsFor(boardSize);
   const rows = rowsFor(boardSize);
   const title = album
-    ? [album.event, album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
+    ? [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
 
   const meta = album
@@ -274,11 +281,11 @@ const KifuDetailPage = () => {
           <>
             <div className="khero" data-testid="kifu-detail-hero">
               <b>
-                {album.player_black}
-                {album.black_rank && <em>{album.black_rank}</em>}
+                {album.display_player_black ?? album.player_black}
+                {(album.display_black_rank ?? album.black_rank) && <em>{formatRank(album.display_black_rank ?? album.black_rank, t)}</em>}
                 <i>{t('kifu:versus', '对')}</i>
-                {album.player_white}
-                {album.white_rank && <em>{album.white_rank}</em>}
+                {album.display_player_white ?? album.player_white}
+                {(album.display_white_rank ?? album.white_rank) && <em>{formatRank(album.display_white_rank ?? album.white_rank, t)}</em>}
               </b>
               <p>{meta}</p>
             </div>

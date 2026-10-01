@@ -8,4 +8,8 @@
 - 使用审过的代码（含提交 `444bddd1` 的前像绑定门禁）在隔离库运行 `dry-run`，结果 `approved=2, ready=true, write_ready=true`，预计撤销 4 行。实际 `apply` 返回 `batch_id=1, status=applied`，收据登记 `change_count=4`、上述批次和清单哈希；查询两条姓名为 `es: Go Seigen`、`ua: Ґо Сейґен`，`decision_kind=conventional, revision=1`。
 - 对该批次执行条件 `undo` 返回 `status=undone, reverted=4, skipped=0`。撤销后隔离库这两条姓名行数为 0。
 
+另九条由独立审核者批准，受控文件 `wu-v4-prod-bound-v2-candidates.jsonl` SHA-256 为 `d4b40556a2fb7ea934163c5c4de62c0a9153af069ade484eb112c73584a8bdbd`；审核备忘录见 [九语审核](kifu-name-wu-v4-prod-bound-review.md)。批次 SHA-256 为 `2172c77a48aec4e82da3b25cadff079855960382873ebfca13ef3733c319c890`。离线校验 `approved=9, ready=true, write_ready=true`；隔离库 `dry-run` 同样通过，单独应用返回批次 2、18 项变更，核实九语显示值后撤销 `reverted=18, skipped=0`。
+
+批次工件一旦撤销，幂等保护禁止同一哈希再次应用。因此，为核对**实际连续导入顺序**，从同一正式备份重新恢复第二个独立数据库 `kifu_name_rehearsal_sequence_20261002`，运行相同的兼容 schema 迁移。该库用同一个原始棋局/来源快照 SHA，仅把受控清单的连接标识改为该隔离库。先应用九语 `.2` 批次（ID 1），再应用西语/乌克兰语 `.3` 批次（ID 2），确认 `player:1` 的 `verified` 名称恰为全部十一语码；按 2、1 逆序撤销，分别 `reverted=4` 和 `reverted=18`，均 `skipped=0`。撤销后保留原库已有的六条旧 `verified` 吴清源名称，两个演练批次均为 `undone`。
+
 该演练证明此有限批次的写入和回滚机制；不能代替其他九种吴清源译名的复核，也不能代表全库十一语言覆盖完成。全库严格展示和发布仍受覆盖门禁限制。

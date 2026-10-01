@@ -1,9 +1,4 @@
-"""Transactional import and conditional undo for independently reviewed names.
-
-Only names for identities already linked in the pinned inventory are accepted.
-Album identity-link proposals require a separate reviewed contract and are
-rejected here; this importer never changes SGF or raw album metadata.
-"""
+"""Transactional import and conditional undo for independently reviewed names."""
 
 from __future__ import annotations
 
@@ -16,9 +11,9 @@ from sqlalchemy import DateTime, func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumSource, KifuEvent, KifuEventName, KifuNameBatch,
+    KifuAlbum, KifuAlbumSource, KifuEvent, KifuEventAlias, KifuEventName, KifuNameBatch,
     KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry,
-    KifuPlayer, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
+    KifuPlayer, KifuPlayerAlias, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
     KifuRawPlayerName, KifuRawPlayerValue, KifuSource,
 )
 from katrain.web.kifu.identity import normalize_alias
@@ -41,7 +36,8 @@ _OWNER_EVIDENCE_COLUMN = {
 }
 _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
     KifuNameSourceRegistry, KifuNameResearchEvidence, KifuPlayerName, KifuEventName,
-    KifuRawPlayerName, KifuRawEventName,
+    KifuRawPlayerName, KifuRawEventName, KifuPlayer, KifuEvent,
+    KifuRawPlayerValue, KifuRawEventValue, KifuAlbum,
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 
@@ -64,6 +60,26 @@ def _snapshot_sha(conn) -> str:
     return digest.hexdigest()
 
 
+def _catalog_sha(conn) -> str:
+    """Hash catalog owners and aliases, including currently unlinked identities."""
+    digest = hashlib.sha256()
+    for model in (KifuPlayer, KifuEvent, KifuPlayerAlias, KifuEventAlias,
+                  KifuRawPlayerValue, KifuRawEventValue):
+        table = model.__table__
+        for row in conn.execute(select(table).order_by(table.c.id)).mappings():
+            image = {key: value.isoformat() if isinstance(value, datetime) else value
+                     for key, value in row.items()}
+            digest.update(model.__tablename__.encode("utf-8") + b":")
+            digest.update(canonical_sha256(image).encode("ascii") + b"\n")
+    return digest.hexdigest()
+
+
+def catalog_snapshot_sha(engine) -> str:
+    """Produce the v2 catalog supplement hash using only SELECT statements."""
+    with engine.connect() as conn:
+        return _catalog_sha(conn)
+
+
 @contextmanager
 def _locked_write(engine):
     conn = engine.connect()
@@ -74,6 +90,8 @@ def _locked_write(engine):
             conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (_ADVISORY_LOCK_KEY,))
             conn.exec_driver_sql(
                 "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
+                "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
+                "kifu_raw_player_values, kifu_raw_event_values, "
                 "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
                 "kifu_name_research_evidence, kifu_name_source_registry IN SHARE ROW EXCLUSIVE MODE"
             )
@@ -120,7 +138,8 @@ def _record_change(conn, batch_id: int, sequence: int, model, row_id: int,
 
 
 def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
-    _fail(not bundle.get("album_links"), "album identity links require a separate approved mapping contract")
+    _fail(bundle.get("bundle_format") == 2 or not bundle.get("album_links"),
+          "album identity links require bundle format 2")
     try:
         report = validate_bundle(bundle, registry, inventory, evidence_records)
     except CandidateError as exc:
@@ -139,8 +158,82 @@ def _check_snapshot(conn, inventory: dict) -> None:
     _fail(actual == inventory.get("sha256"), f"full database snapshot changed: expected {inventory.get('sha256')}, got {actual}")
 
 
-def _check_raw_owner(conn, row: dict) -> None:
+def _check_catalog(conn, bundle: dict) -> None:
+    if bundle["bundle_format"] == 2:
+        actual = _catalog_sha(conn)
+        _fail(actual == bundle["catalog_sha256"],
+              f"catalog supplement snapshot changed: expected {bundle['catalog_sha256']}, got {actual}")
+
+
+def _owner_ref(owner: dict) -> str:
+    return f"{owner['kind']}:@{owner['ref']}" if "ref" in owner else f"{owner['kind']}:{owner['id']}"
+
+
+def _reviewed_collision(declaration: dict) -> bool:
+    review = declaration.get("alias_collision_review")
+    return bool(isinstance(review, dict) and review.get("status") == "approved"
+                and review.get("producer_id") and review.get("producer_model")
+                and review.get("reviewer_id") and review.get("reviewer_model")
+                and review["reviewer_id"] != review["producer_id"]
+                and review.get("basis") and review.get("source_urls"))
+
+
+def _check_owner_manifest(conn, bundle: dict) -> None:
+    proposed_names = defaultdict(list)
+    for declaration in bundle["owners"]:
+        owner = declaration["owner"]
+        kind = owner["kind"]
+        model = _OWNER[kind][0]
+        table = model.__table__
+        if "id" in owner:
+            current = conn.execute(select(table).where(table.c.id == owner["id"])).mappings().one_or_none()
+            _fail(current is not None, f"owner preimage missing: {_owner_ref(owner)}")
+            expected = declaration["preimage"]
+            _fail(all(current.get(key) == value for key, value in expected.items()),
+                  f"owner catalog preimage differs: {_owner_ref(owner)}")
+        else:
+            created = declaration["create"]
+            if kind in {"player", "event"}:
+                _fail(set(created) == {"canonical_name"}, "new identity create fields not allowlisted")
+                target = normalize_alias(created["canonical_name"])
+                for earlier in proposed_names[(kind, target)]:
+                    _fail(_reviewed_collision(declaration) and _reviewed_collision(earlier),
+                          f"new identities share a normalized canonical name: {_owner_ref(owner)}")
+                proposed_names[(kind, target)].append(declaration)
+                canonical_collision = any(normalize_alias(value) == target for value in conn.scalars(
+                    select(model.canonical_name)))
+                alias_model = KifuPlayerAlias if kind == "player" else KifuEventAlias
+                alias_collision = any(normalize_alias(value) == target for value in conn.scalars(
+                    select(alias_model.alias)))
+                _fail(not (canonical_collision or alias_collision) or _reviewed_collision(declaration),
+                      f"new identity alias collision needs independent review: {_owner_ref(owner)}")
+            else:
+                _fail(set(created) == {"raw_value", "category"}, "new raw create fields not allowlisted")
+                existing = conn.scalar(select(model.id).where(model.raw_value == created["raw_value"]).limit(1))
+                _fail(existing is None, f"new raw value already exists: {_owner_ref(owner)}")
+
+
+def _check_album_links(conn, bundle: dict) -> None:
+    for link in bundle["album_links"]:
+        album = conn.execute(select(KifuAlbum).where(KifuAlbum.id == link["album_id"])).mappings().one_or_none()
+        _fail(album is not None, f"album link row vanished: {link['album_id']}")
+        for field in ("player_black", "player_white", "event", "date_played", "round_name",
+                      "black_rank", "white_rank"):
+            _fail(album[field] == link["expected"][field],
+                  f"album link {link['album_id']} expected {field} differs from live row")
+        column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[link["slot"]]
+        _fail(album[column] == link["expected"]["old_id"],
+              f"album link {link['album_id']} expected old ID differs from live row")
+
+
+def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None) -> None:
     kind = row["owner"]["kind"]
+    if "ref" in row["owner"]:
+        if kind.startswith("raw_"):
+            owner_model = _OWNER[kind][0]
+            found = conn.scalar(select(owner_model.id).where(owner_model.raw_value == row["raw_value"]).limit(1))
+            _fail(found is None, "new raw ref duplicates an existing raw ID/spelling")
+        return
     owner_id = row["owner"]["id"]
     owner_model = _OWNER[kind][0]
     owner_row = conn.execute(select(owner_model.__table__).where(owner_model.id == owner_id)).mappings().one_or_none()
@@ -157,20 +250,26 @@ def _check_raw_owner(conn, row: dict) -> None:
     elif kind == "player":
         linked = conn.scalar(select(KifuAlbum.id).where(or_(
             KifuAlbum.black_player_id == owner_id, KifuAlbum.white_player_id == owner_id)).limit(1))
-        _fail(linked is not None, "player ID is not linked in the current album snapshot")
+        _fail(linked is not None or _owner_ref(row["owner"]) in (link_targets or set()),
+              "player ID is not linked in the current album snapshot or approved links")
     else:
         linked = conn.scalar(select(KifuAlbum.id).where(KifuAlbum.event_id == owner_id).limit(1))
-        _fail(linked is not None, "event ID is not linked in the current album snapshot")
+        _fail(linked is not None or _owner_ref(row["owner"]) in (link_targets or set()),
+              "event ID is not linked in the current album snapshot or approved links")
 
 
-def _affected_albums(conn, candidates: list[dict]) -> list[int]:
+def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = None) -> list[int]:
     ids = set()
     for row in candidates:
         owner = row["owner"]
-        kind, target = owner["kind"], owner["id"]
+        kind, target = owner["kind"], owner.get("id")
         if kind == "player":
+            if target is None:
+                continue
             condition = or_(KifuAlbum.black_player_id == target, KifuAlbum.white_player_id == target)
         elif kind == "event":
+            if target is None:
+                continue
             condition = KifuAlbum.event_id == target
         elif kind == "raw_player":
             condition = or_(KifuAlbum.player_black == row["raw_value"],
@@ -178,6 +277,7 @@ def _affected_albums(conn, candidates: list[dict]) -> list[int]:
         else:
             condition = KifuAlbum.event == row["raw_value"]
         ids.update(conn.scalars(select(KifuAlbum.id).where(condition)))
+    ids.update(link["album_id"] for link in links or ())
     return sorted(ids)
 
 
@@ -197,7 +297,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
         if row["decision_kind"] not in {"conventional", "generated", "corrected"}:
             continue
         owner = row["owner"]
-        own_kind, own_id = owner["kind"], owner["id"]
+        own_kind, own_id = owner["kind"], owner.get("id")
         name_key = normalize_alias(row["display_name"])
         for kind, existing_id, evidence_id in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
@@ -215,12 +315,18 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
 def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
     report = _prevalidate(bundle, registry, inventory, evidence_records)
     _check_snapshot(conn, inventory)
+    _check_catalog(conn, bundle)
+    if bundle["bundle_format"] == 2:
+        _check_owner_manifest(conn, bundle)
+        _check_album_links(conn, bundle)
+    link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
-        _check_raw_owner(conn, candidate)
+        _check_raw_owner(conn, candidate, link_targets)
     _check_cross_bundle_collisions(conn, bundle["candidates"])
     return {**report, "bundle_sha256": canonical_sha256(bundle),
-            "affected_albums": _affected_albums(conn, bundle["candidates"]),
-            "estimated_undo_rows": len(bundle["candidates"]) * 2 + 1}
+            "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links")),
+            "estimated_undo_rows": len(bundle["candidates"]) * 2
+            + len(bundle.get("album_links", ())) + sum("ref" in owner["owner"] for owner in bundle.get("owners", ()))}
 
 
 def dry_run_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
@@ -229,12 +335,13 @@ def dry_run_bundle(engine, bundle: dict, registry: dict, inventory: dict, eviden
         return _inspect(conn, bundle, registry, inventory, evidence_records)
 
 
-def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_id: int, revision: int) -> dict:
+def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_id: int,
+                        revision: int, owner_id: int) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
     reviewed_at = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
     return {
-        _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner["id"], "lang": row["lang"], "revision": revision,
+        _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner_id, "lang": row["lang"], "revision": revision,
         "source_registry_id": registry_id, "candidate_name": row["display_name"],
         "decision_kind": row["decision_kind"], "generation_rule_version": row["generation_rule_version"],
         "research_payload": {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))},
@@ -246,21 +353,22 @@ def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_i
 
 
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
-                     batch_id: int, sequence: int) -> int:
+                     batch_id: int, sequence: int, resolved: dict[str, int] | None = None) -> int:
     owner = row["owner"]
+    owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
     name_table = name_model.__table__
-    current = conn.execute(select(name_table).where(name_table.c[owner_column] == owner["id"],
+    current = conn.execute(select(name_table).where(name_table.c[owner_column] == owner_id,
                                                     name_table.c.lang == row["lang"])).mappings().one_or_none()
     before = _image(conn, name_table, current["id"]) if current else None
     revision = max(int(current["revision"] or 0), 0) + 1 if current else 1
     evidence_table = KifuNameResearchEvidence.__table__
     latest = conn.scalar(select(func.max(evidence_table.c.revision)).where(
-        evidence_table.c[_OWNER_EVIDENCE_COLUMN[owner["kind"]]] == owner["id"],
+        evidence_table.c[_OWNER_EVIDENCE_COLUMN[owner["kind"]]] == owner_id,
         evidence_table.c.lang == row["lang"]))
     revision = max(revision, int(latest or 0) + 1)
     evidence_id, evidence_after = _insert(
-        conn, KifuNameResearchEvidence, _candidate_evidence(row, research_by_hash, registry_id, revision))
+        conn, KifuNameResearchEvidence, _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id))
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
     desired = {"display_name": row["display_name"], "status": "verified",
@@ -272,11 +380,54 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
         conn.execute(name_table.update().where(name_table.c.id == current["id"]).values(**desired))
         name_id = current["id"]
     else:
-        inserted = {owner_column: owner["id"], "lang": row["lang"], **desired}
+        inserted = {owner_column: owner_id, "lang": row["lang"], **desired}
         name_id, _ = _insert(conn, name_model, inserted)
     after = _image(conn, name_table, name_id)
     _record_change(conn, batch_id, sequence, name_model, name_id, before, after)
     return sequence + 1
+
+
+def _apply_owners(conn, bundle: dict, batch_id: int, sequence: int) -> tuple[dict[str, int], int]:
+    resolved = {}
+    for declaration in bundle.get("owners", ()):
+        owner = declaration["owner"]
+        token = _owner_ref(owner)
+        if "id" in owner:
+            resolved[token] = owner["id"]
+            continue
+        model = _OWNER[owner["kind"]][0]
+        created = dict(declaration["create"])
+        if owner["kind"].startswith("raw_"):
+            created["review_status"] = "approved"
+            created["review_metadata"] = declaration["category_review"]
+        row_id, after = _insert(conn, model, created)
+        _record_change(conn, batch_id, sequence, model, row_id, None, after)
+        sequence += 1
+        resolved[token] = row_id
+    return resolved, sequence
+
+
+def _apply_links(conn, bundle: dict, batch_id: int, sequence: int, resolved: dict[str, int]) -> int:
+    table = KifuAlbum.__table__
+    grouped = defaultdict(list)
+    for link in bundle.get("album_links", ()):
+        grouped[link["album_id"]].append(link)
+    for row_id, links in sorted(grouped.items()):
+        before = _image(conn, table, row_id)
+        changes = {}
+        for link in links:
+            column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[link["slot"]]
+            target_id = resolved[_owner_ref(link["target"])]
+            _fail(before[column] == link["expected"]["old_id"], "album link changed after snapshot check")
+            if before[column] != target_id:
+                changes[column] = target_id
+        if not changes:
+            continue
+        conn.execute(table.update().where(table.c.id == row_id).values(**changes))
+        after = _image(conn, table, row_id)
+        _record_change(conn, batch_id, sequence, KifuAlbum, row_id, before, after)
+        sequence += 1
+    return sequence
 
 
 def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
@@ -298,13 +449,21 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         })
         sequence = 1
         # Keep the immutable registry snapshot because the retained audit batch references it.
+        resolved, sequence = _apply_owners(conn, bundle, batch_id, sequence)
+        sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         research_by_hash = {canonical_sha256(item): item for item in evidence_records}
         for candidate in bundle["candidates"]:
-            sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence)
+            sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
+                                        resolved if bundle["bundle_format"] == 2 else None)
+        if bundle["bundle_format"] == 2:
+            artifact = {"bundle": bundle, "research_hashes": sorted(canonical_sha256(item)
+                         for item in evidence_records), "resolved_refs": resolved}
+            conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
+                         .values(reviewed_artifact=artifact))
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(
             status="applied", applied_at=datetime.now(timezone.utc)))
         return {"status": "applied", "batch_id": batch_id, "change_count": sequence - 1,
-                "affected_albums": report["affected_albums"]}
+                "affected_albums": report["affected_albums"], "resolved_refs": resolved}
 
 
 def _source_registry_for_batch(conn, registry: dict, bundle: dict) -> tuple[int, dict | None]:

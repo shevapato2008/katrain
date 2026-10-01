@@ -18,6 +18,7 @@ from katrain.web.kifu.name_evidence import (
     EvidenceError,
     OWNER_KINDS,
     registry_sha256,
+    owner_key as evidence_owner_key,
     validate_research_record,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
@@ -109,12 +110,15 @@ def classification_template_sha256(lang: str) -> str:
 
 
 def _owner_key(owner: object, lang: object) -> str:
-    _require(isinstance(owner, dict) and set(owner) == {"kind", "id"}, "exact owner kind/id required")
-    _require(isinstance(owner["kind"], str) and owner["kind"] in OWNER_KINDS
-             and type(owner["id"]) is int and owner["id"] > 0,
-             "invalid owner kind/id")
     _require(isinstance(lang, str) and lang in LANGUAGES, "one of the eleven product languages is required")
-    return f"{owner['kind']}:{owner['id']}:{lang}"
+    try:
+        return evidence_owner_key(owner, lang)
+    except EvidenceError as exc:
+        raise CandidateError(str(exc)) from exc
+
+
+def _owner_token(owner: dict) -> str:
+    return _owner_key(owner, "en").rsplit(":", 1)[0]
 
 
 def _inventory_values(inventory: dict) -> dict[str, set]:
@@ -136,15 +140,26 @@ def _inventory_values(inventory: dict) -> dict[str, set]:
     return values
 
 
-def _check_owner_in_inventory(row: dict, values: dict[str, set]) -> None:
+def _check_owner_in_inventory(row: dict, values: dict[str, set], *,
+                              declarations: dict[str, dict] | None = None,
+                              link_targets: set[str] | None = None) -> None:
     owner = row["owner"]
+    declaration = declarations.get(_owner_token(owner)) if declarations is not None else None
+    if declarations is not None:
+        _require(declaration is not None, "owner missing from finite v2 manifest")
+        pinned = declaration.get("create") or declaration.get("preimage")
+        _require(isinstance(pinned, dict), "owner manifest preimage/create is missing")
     if owner["kind"].startswith("raw_"):
         _require("raw_value" in row and isinstance(row["raw_value"], str),
                  "raw owner spelling must be text")
         _require(row["raw_value"] in values[owner["kind"]],
                  "raw owner needs exact spelling present in pinned inventory")
+        if declaration is not None:
+            _require(pinned.get("raw_value") == row["raw_value"], "raw spelling differs from owner manifest")
     else:
-        _require(owner["id"] in values[owner["kind"]], "entity ID absent from pinned inventory")
+        linked = owner.get("id") in values[owner["kind"]] if "id" in owner else False
+        _require(linked or (link_targets is not None and _owner_token(owner) in link_targets),
+                 "entity ID/ref absent from pinned inventory and approved links")
         _require("raw_value" not in row, "entity candidate must not claim a raw spelling")
 
 
@@ -178,10 +193,12 @@ def _research_for(row: dict, research: dict | None, registry: dict) -> dict:
     return checked
 
 
-def _validate_candidate(row: dict, research: dict | None, registry: dict, inventory_values: dict) -> dict:
+def _validate_candidate(row: dict, research: dict | None, registry: dict, inventory_values: dict,
+                        *, declarations: dict[str, dict] | None = None,
+                        link_targets: set[str] | None = None) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
-    _check_owner_in_inventory(row, inventory_values)
+    _check_owner_in_inventory(row, inventory_values, declarations=declarations, link_targets=link_targets)
     _check_signature(row)
     decision = row.get("decision_kind")
     _require(isinstance(decision, str) and decision in DECISION_KINDS, "decision kind invalid")
@@ -209,7 +226,9 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
                      "adopted name must match found target-language evidence")
             sources = {source["id"]: source for source in registry["sources"]}
             _require(any(check["status"] == "found" and check["candidate_name"] == display
-                         and sources[check["source_id"]]["tier"] in {"official", "language_go"}
+                         and sources[check["source_id"]]["tier"] in {
+                             "official", "language_go", "wikipedia_article", "encyclopedia"
+                         }
                          for check in checked["source_checks"]),
                      "discovery tier alone cannot attest a final conventional name")
             conflicts = {(item["source_id"], item["candidate_name"])
@@ -297,11 +316,149 @@ def validate_candidate(row: dict, research: dict | None, registry: dict, invento
     return _validate_candidate(row, research, registry, _inventory_values(inventory))
 
 
+def _occurrence_indexes(associations: dict[int, dict]) -> tuple[dict[str, list[int]], dict[str, list[int]],
+                                                                    dict[str, list[list]], dict[str, list[list]]]:
+    """Build global exact-spelling scopes once, retaining black/white slot multiplicity."""
+    player_games = defaultdict(set)
+    event_games = defaultdict(set)
+    player_slots = defaultdict(list)
+    event_slots = defaultdict(list)
+    for album_id, album in associations.items():
+        for slot, field in (("black", "player_black"), ("white", "player_white")):
+            raw = album[field]
+            player_games[raw].add(album_id)
+            player_slots[raw].append([album_id, slot])
+        event = album["event"]
+        event_games[event].add(album_id)
+        event_slots[event].append([album_id, "event"])
+    return ({raw: sorted(ids) for raw, ids in player_games.items()},
+            {raw: sorted(ids) for raw, ids in event_games.items()},
+            {raw: sorted(slots) for raw, slots in player_slots.items()},
+            {raw: sorted(slots) for raw, slots in event_slots.items()})
+
+
+def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str], list[str]]:
+    """Validate finite owner/link declarations without treating a ref as a DB ID."""
+    errors = []
+    _require(bool(_HASH.fullmatch(str(bundle.get("catalog_sha256", "")))),
+             "v2 requires a pinned catalog supplement SHA-256")
+    owners = bundle.get("owners")
+    links = bundle.get("album_links")
+    _require(isinstance(owners, list) and owners and isinstance(links, list),
+             "v2 requires finite owners and album links lists")
+    _require(bundle.get("owner_set_sha256") == canonical_sha256(owners), "owner set hash mismatch")
+    _require(bundle.get("link_set_sha256") == canonical_sha256(links), "album link set hash mismatch")
+    columns = inventory["association_columns"]
+    associations = {dict(zip(columns, row))["id"]: dict(zip(columns, row))
+                    for row in inventory["album_associations"] if len(row) == len(columns)}
+    player_games, event_games, player_slots, event_slots = _occurrence_indexes(associations)
+    declarations = {}
+    for number, declaration in enumerate(owners):
+        try:
+            _require(isinstance(declaration, dict), "owner declaration must be an object")
+            owner = declaration.get("owner")
+            token = _owner_token(owner)
+            _require(token not in declarations, "duplicate owner declaration")
+            is_new = "ref" in owner
+            pinned_key = "create" if is_new else "preimage"
+            _require(set(declaration) >= {"owner", pinned_key} and
+                     ("preimage" not in declaration if is_new else "create" not in declaration),
+                     "owner declaration needs exactly one create or preimage")
+            pinned = declaration[pinned_key]
+            _require(isinstance(pinned, dict), "owner preimage/create must be an object")
+            if owner["kind"].startswith("raw_"):
+                raw = pinned.get("raw_value")
+                _require(isinstance(raw, str), "raw owner needs exact text spelling")
+                actual_ids = (player_games if owner["kind"] == "raw_player" else event_games).get(raw, [])
+                ids = declaration.get("occurrence_album_ids")
+                _require(ids == actual_ids and bool(ids), "raw global occurrences differ from inventory")
+                _require(declaration.get("occurrence_sha256") == canonical_sha256(ids),
+                         "raw global occurrence hash mismatch")
+                _require(is_new is False or _text(pinned.get("category")), "new raw value needs category")
+                if is_new:
+                    review = declaration.get("category_review")
+                    _require(isinstance(review, dict) and review.get("status") == "approved"
+                             and _text(review.get("producer_id")) and _text(review.get("producer_model"))
+                             and _time(review.get("produced_at")) and _text(review.get("reviewer_id"))
+                             and review["reviewer_id"] != review["producer_id"]
+                             and _text(review.get("reviewer_model")) and _time(review.get("reviewed_at"))
+                             and _text(review.get("category_basis")),
+                             "new raw value needs independent category review")
+            else:
+                _require(_text(pinned.get("canonical_name")), "identity owner needs canonical name preimage/create")
+            declarations[token] = declaration
+        except (AttributeError, TypeError, CandidateError) as exc:
+            errors.append(f"owner[{number}]: {exc}")
+    link_targets = set()
+    seen_slots = set()
+    required_context = {"player_black", "player_white", "event", "date_played", "round_name",
+                        "black_rank", "white_rank", "old_id"}
+    slot_ids = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}
+    for number, link in enumerate(links):
+        try:
+            _require(isinstance(link, dict), "link must be an object")
+            album_id, slot = link.get("album_id"), link.get("slot")
+            _require(type(album_id) is int and album_id in associations and slot in slot_ids,
+                     "link album ID/slot absent from inventory")
+            _require((album_id, slot) not in seen_slots, "duplicate album slot link")
+            seen_slots.add((album_id, slot))
+            album = associations[album_id]
+            _require(link.get("association_sha256") == canonical_sha256(album),
+                     "link source/context association hash mismatch")
+            expected = link.get("expected")
+            _require(isinstance(expected, dict) and set(expected) == required_context,
+                     "link needs complete raw/date/round/rank/old-ID context")
+            for field in required_context - {"old_id"}:
+                _require(expected[field] == album.get(field), f"link expected {field} differs from inventory")
+            _require(expected["old_id"] == album.get(slot_ids[slot]), "link old ID differs from inventory")
+            raw_field = {"black": "player_black", "white": "player_white", "event": "event"}[slot]
+            raw_value = expected[raw_field]
+            actual_scope = (event_slots if slot == "event" else player_slots).get(raw_value, [])
+            _require(bool(actual_scope), "link raw global occurrence slots absent from inventory")
+            if "raw_scope_slots" in link:
+                _require(link["raw_scope_slots"] == actual_scope,
+                         "link raw global occurrence slots differ from inventory")
+            _require(link.get("raw_scope_sha256") == canonical_sha256(actual_scope),
+                     "link raw global scope hash mismatch")
+            target = link.get("target")
+            target_key = _owner_token(target)
+            _require(target_key in declarations, "link target missing from owner manifest")
+            _require(target["kind"] == ("event" if slot == "event" else "player"),
+                     "link target kind differs from slot")
+            if expected["old_id"] is not None and target.get("id") != expected["old_id"]:
+                _require(link.get("corrects_existing") is True, "non-null identity correction needs explicit approval")
+            review = link.get("identity_review")
+            _require(isinstance(review, dict) and review.get("status") == "approved",
+                     "link needs approved identity-mapping review")
+            _require(_text(review.get("producer_id")) and _text(review.get("producer_model"))
+                     and _time(review.get("produced_at")) and _text(review.get("reviewer_id"))
+                     and review["reviewer_id"] != review["producer_id"]
+                     and _text(review.get("reviewer_model")) and _time(review.get("reviewed_at"))
+                     and _time(review["reviewed_at"]) >= _time(review["produced_at"])
+                     and _text(review.get("identity_basis")) and _text(review.get("review_conclusion")),
+                     "link identity review lacks independent signed decision")
+            checks = review.get("source_checks")
+            _require(isinstance(checks, list) and checks, "link identity review needs source checks")
+            for check in checks:
+                _require(isinstance(check, dict) and isinstance(check.get("url"), str)
+                         and check["url"].startswith("https://")
+                         and bool(_HASH.fullmatch(str(check.get("body_sha256", ""))))
+                         and _text(check.get("body_excerpt")) and _text(check.get("identity_match")),
+                         "link source check lacks real body or identity match")
+            if slot == "event":
+                _require(_text(review.get("event_period_basis")),
+                         "event identity link needs naming-period evidence")
+            link_targets.add(target_key)
+        except (AttributeError, KeyError, TypeError, CandidateError) as exc:
+            errors.append(f"album_link[{number}]: {exc}")
+    return declarations, link_targets, errors
+
+
 def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_records: list[dict]) -> dict:
     """Report exact batch defects; ready means this finite bundle, not the whole catalog."""
     errors: list[str] = []
     _require(isinstance(bundle, dict), "bundle must be an object")
-    _require(bundle.get("bundle_format") == 1 and bundle.get("inventory_format") == 2,
+    _require(bundle.get("bundle_format") in {1, 2} and bundle.get("inventory_format") == 2,
              "bundle and inventory format mismatch")
     _require(bundle.get("inventory_sha256") == inventory.get("sha256")
              and bool(_HASH.fullmatch(str(bundle.get("inventory_sha256", "")))), "inventory hash mismatch")
@@ -314,18 +471,24 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     _require(bundle.get("member_set_sha256") == canonical_sha256(members), "member set hash mismatch")
     _require(set(registry["language_tags"]) == LANGUAGES, "source registry must define eleven product languages")
     values = _inventory_values(inventory)
+    declarations = link_targets = None
+    if bundle["bundle_format"] == 2:
+        declarations, link_targets, v2_errors = _v2_scope(bundle, inventory)
+        errors.extend(v2_errors)
     member_keys = []
     member_map = {}
     raw_spellings = {}
     for number, item in enumerate(members):
         try:
             key = _owner_key(item.get("owner"), item.get("lang"))
-            _check_owner_in_inventory(item, values)
+            if bundle["bundle_format"] == 1:
+                _require("id" in item["owner"], "v1 members need existing DB IDs")
+            _check_owner_in_inventory(item, values, declarations=declarations, link_targets=link_targets)
             if key in member_map:
                 raise CandidateError("duplicate member")
             owner = item["owner"]
             if owner["kind"].startswith("raw_"):
-                raw_key = (owner["kind"], owner["id"])
+                raw_key = _owner_token(owner)
                 if raw_key in raw_spellings and raw_spellings[raw_key] != item["raw_value"]:
                     raise CandidateError("same raw ID has different raw spellings across languages")
                 raw_spellings[raw_key] = item["raw_value"]
@@ -362,19 +525,30 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             evidence = evidence_by_hash.get(item.get("research_sha256"), [])
             if len(evidence) > 1:
                 raise CandidateError("duplicate research record hash")
-            checked = _validate_candidate(item, evidence[0] if evidence else None, registry, values)
+            checked = _validate_candidate(item, evidence[0] if evidence else None, registry, values,
+                                          declarations=declarations, link_targets=link_targets)
             decisions.append(checked)
         except (AttributeError, CandidateError) as exc:
             errors.append(f"candidate[{number}]: {exc}")
     missing = sorted(set(member_keys) - seen)
     for key in missing:
         errors.append(f"missing candidate: {key}")
+    if bundle["bundle_format"] == 2:
+        approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
+                         if row["review_status"] == "approved"}
+        for token, declaration in declarations.items():
+            owner = declaration["owner"]
+            if "ref" in owner and owner["kind"] in {"player", "event"}:
+                if token not in link_targets:
+                    errors.append(f"new identity lacks approved album link: {token}")
+                if any(_owner_key(owner, lang) not in approved_keys for lang in LANGUAGES):
+                    errors.append(f"new identity lacks all eleven approved language names: {token}")
     collisions = defaultdict(list)
     for row in decisions:
         if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected"}:
             collisions[(row["lang"], normalize_alias(row["display_name"]))].append(row["owner"])
     for (lang, name), owners in collisions.items():
-        if len({(owner["kind"], owner["id"]) for owner in owners}) > 1:
+        if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang
                      and normalize_alias(row["display_name"]) == name]
             if not all(row.get("collision_decision") == "distinct_people_confirmed"

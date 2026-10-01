@@ -15,6 +15,9 @@ import os
 import tempfile
 import time
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from katrain.web.kifu.name_evidence import (
     DEFAULT_REGISTRY,
@@ -23,6 +26,7 @@ from katrain.web.kifu.name_evidence import (
     load_registry,
     product_language_tag,
     registry_sha256,
+    owner_key,
     validate_research_record,
 )
 
@@ -62,10 +66,10 @@ def _capture_rows(input_path: Path, registry: dict, *, min_interval: float, max_
     previous_started = None
     for line_number, task in _rows(input_path):
         owner = task.get("owner")
-        if not isinstance(owner, dict) or set(owner) != {"kind", "id"} or owner["kind"] not in {
-            "player", "event", "raw_player", "raw_event"
-        } or type(owner["id"]) is not int or owner["id"] <= 0:
-            raise EvidenceError(f"{input_path}:{line_number}: exact owner kind/id required")
+        try:
+            owner_key(owner, task.get("lang"))
+        except EvidenceError as exc:
+            raise EvidenceError(f"{input_path}:{line_number}: {exc}") from exc
         product_language_tag(task.get("lang"), registry)
         now = time.monotonic()
         if previous_started is not None:

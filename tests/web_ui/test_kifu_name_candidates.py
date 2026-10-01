@@ -10,6 +10,7 @@ from katrain.web.kifu.name_candidates import (
     CandidateError,
     canonical_sha256,
     classification_template_sha256,
+    _occurrence_indexes,
     validate_bundle,
     validate_candidate,
     render_event_components,
@@ -135,6 +136,27 @@ def test_discovery_only_and_incomplete_research_do_not_approve_conventional_name
         validate_candidate(candidate(research_sha256=canonical_sha256(incomplete)), incomplete, registry(), inventory())
 
 
+def test_reviewed_wikipedia_article_can_support_conventional_name_but_wikidata_label_cannot():
+    sources = registry()
+    sources["sources"].append({"id": "ru-wp", "tier": "wikipedia_article",
+                               "home_url": "https://ru.wikipedia.org/", "language": "ru"})
+    passage = "Го Сэйгэн — профессиональный игрок го"
+    article = check(source_id="ru-wp", url="https://ru.wikipedia.org/wiki/Го_Сэйгэн",
+                    body_excerpt=passage,
+                    article_evidence={"revision_id": "123456", "title": "Го Сэйгэн",
+                                      "passage": passage,
+                                      "passage_sha256": hashlib.sha256(passage.encode()).hexdigest(),
+                                      "subject_identity": "Original name 呉清源 matches this player"},
+                    identity_corroboration={"source_id": "go", "url": "https://example.org/go-seigen",
+                                            "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200,
+                                            "body_sha256": hashlib.sha256(b"professional source").hexdigest(),
+                                            "body_excerpt": "Professional archive: 呉清源, Go Seigen",
+                                            "original_name": "呉清源", "identity_basis": "Same original name"})
+    evidence = research(registry_sha256=registry_sha256(sources), source_checks=[article])
+    proposed = candidate(research_sha256=canonical_sha256(evidence))
+    assert validate_candidate(proposed, evidence, sources, inventory())["decision_kind"] == "conventional"
+
+
 def test_conflicting_found_names_need_explicit_exclusion_reason():
     conflicting = research(source_checks=[check(), check(candidate_name="Го Сейген",
                                                           body_excerpt="Alternate Го Сейген")])
@@ -164,7 +186,7 @@ def test_conflicting_found_names_need_explicit_exclusion_reason():
 def test_generated_name_requires_completed_negative_scope_and_reading_basis():
     negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
         status="not_found", candidate_name="", identity_basis="", body_excerpt="Search finished with no Russian name",
-        search_scope="All player names", scope_complete=True)])
+        search_scope="All player names", scope_complete=True, negative_outcome="no_target_string")])
     generated = candidate(display_name="Го Сэйгэн", decision_kind="generated",
                           research_sha256=canonical_sha256(negative), generation_rule_version="ja-ru-v1")
     assert validate_candidate(generated, negative, registry(), inventory())["decision_kind"] == "generated"
@@ -190,7 +212,7 @@ def test_pending_is_reported_but_never_upgraded_to_approved():
 def test_unselected_contradictory_research_for_same_owner_language_blocks_bundle():
     negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
         status="not_found", candidate_name="", identity_basis="", body_excerpt="Completed Russian search, no name",
-        search_scope="All indexed profiles", scope_complete=True)])
+        search_scope="All indexed profiles", scope_complete=True, negative_outcome="no_target_string")])
     report = validate_bundle(bundle(), registry(), inventory(), [research(), negative])
     assert not report["ready"]
     assert any("multiple research records" in error for error in report["errors"])
@@ -332,3 +354,54 @@ def test_cli_report_is_read_only_and_reports_missing_approval(tmp_path, capsys):
     paths["bundle"].write_text(json.dumps(bundle(candidates=[pending]), ensure_ascii=False), encoding="utf-8")
     assert main(args) == 1
     assert json.loads(capsys.readouterr().out)["pending"] == 1
+
+
+def test_v2_raw_value_symbolic_owner_is_pinned_to_all_inventory_occurrences():
+    owner = {"kind": "raw_event", "ref": "program-label"}
+    declaration = {"owner": owner, "create": {"raw_value": "GNUGo3.8", "category": "program_source_label"},
+                   "occurrence_album_ids": [1], "occurrence_sha256": canonical_sha256([1]),
+                   "category_review": {"status": "approved", "producer_id": "researcher-1",
+                                       "producer_model": "gpt-6-luna", "produced_at": "2026-10-02T10:00:00Z",
+                                       "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                                       "reviewed_at": "2026-10-02T10:30:00Z",
+                                       "category_basis": "Parser and SGF context identify a program label"}}
+    one_member = member(owner, "ru", "GNUGo3.8")
+    row = candidate(owner=owner, lang="ru", raw_value="GNUGo3.8", display_name="",
+                    decision_kind="hidden", research_sha256="", generation_rule_version="classification-v1")
+    proposed = bundle(members=[one_member], member_set_sha256=canonical_sha256([one_member]),
+                      candidates=[row], bundle_format=2, catalog_sha256="b" * 64,
+                      owners=[declaration], owner_set_sha256=canonical_sha256([declaration]),
+                      album_links=[], link_set_sha256=canonical_sha256([]))
+    assert validate_bundle(proposed, registry(), inventory(), [])["ready"]
+    bad = deepcopy(proposed)
+    bad["owners"][0]["occurrence_album_ids"] = []
+    bad["owners"][0]["occurrence_sha256"] = canonical_sha256([])
+    bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
+    assert not validate_bundle(bad, registry(), inventory(), [])["ready"]
+
+
+def test_v2_occurrence_index_counts_one_game_but_both_slots_for_duplicate_raw_player():
+    associations = {
+        11: {"player_black": "Same", "player_white": "Same", "event": "Cup"},
+        12: {"player_black": "Other", "player_white": "Same", "event": "Cup"},
+    }
+    player_games, event_games, player_slots, event_slots = _occurrence_indexes(associations)
+    assert player_games["Same"] == [11, 12]
+    assert player_slots["Same"] == [[11, "black"], [11, "white"], [12, "white"]]
+    assert event_games["Cup"] == [11, 12]
+    assert event_slots["Cup"] == [[11, "event"], [12, "event"]]
+
+
+def test_v2_new_person_cannot_link_with_only_one_language_name():
+    new_owner = {"kind": "player", "ref": "historical-player"}
+    declaration = {"owner": new_owner, "create": {"canonical_name": "呉清源"}}
+    one_member = member(new_owner, "ru")
+    one_research = research(owner=new_owner, source_checks=[check(owner=new_owner)])
+    row = candidate(owner=new_owner, research_sha256=canonical_sha256(one_research))
+    proposed = bundle(members=[one_member], member_set_sha256=canonical_sha256([one_member]),
+                      candidates=[row], bundle_format=2, catalog_sha256="b" * 64,
+                      owners=[declaration], owner_set_sha256=canonical_sha256([declaration]),
+                      album_links=[], link_set_sha256=canonical_sha256([]))
+    report = validate_bundle(proposed, registry(), inventory(), [one_research])
+    assert not report["ready"]
+    assert any("eleven" in error or "link" in error for error in report["errors"])

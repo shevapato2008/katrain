@@ -85,6 +85,16 @@ def test_repository_source_registry_is_versioned_and_has_all_product_languages()
     assert set(registry["language_scopes"]) == set(registry["language_tags"])
     assert all(source["home_url"].startswith("https://") for source in registry["sources"])
     assert len(registry_sha256(registry)) == 64
+    assert all(source["tier"] == "wikipedia_article" for source in registry["sources"]
+               if source["id"].startswith("wikipedia-"))
+    assert next(source for source in registry["sources"] if source["id"] == "wikidata")["tier"] == "discovery"
+    assert [source["id"] for source in source_plan("ru", registry)] == [
+        "rusgolib", "wikipedia-ru", "wikidata"]
+    pilot_sources = {source["id"]: source for source in registry["sources"]}
+    assert {pilot_sources[source_id]["tier"] for source_id in (
+        "china-sport", "pts-tw", "baduk-mobile", "cyberoro", "centrocultural-sol",
+        "gofed-be", "gomagic-ru", "go-school-tr", "asialogy-tr", "merdiven-go-tr"
+    )} == {"official", "language_go", "reference"}
 
 
 def test_source_plan_places_professional_references_before_discovery_leads():
@@ -177,9 +187,37 @@ def test_discovery_hit_needs_a_separate_explicit_api_label_response():
         validate_research_record(_record(source_checks=[bad]), _registry())
 
 
+def test_target_language_wikipedia_article_needs_revision_passage_and_separate_identity_source():
+    registry = _registry()
+    registry["sources"].append({"id": "ru-wp", "tier": "wikipedia_article",
+                                "home_url": "https://ru.wikipedia.org/", "language": "ru"})
+    passage = "Го Сэйгэн — профессиональный игрок го"
+    article = _check("ru-wp", url="https://ru.wikipedia.org/wiki/Го_Сэйгэн",
+                     article_evidence={"revision_id": "123456", "title": "Го Сэйгэн",
+                                       "passage": passage,
+                                       "passage_sha256": hashlib.sha256(passage.encode()).hexdigest(),
+                                       "subject_identity": "Japanese name 呉清源 identifies this player"},
+                     identity_corroboration={"source_id": "ru-go", "url": "https://example.org/go-seigen",
+                                             "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200,
+                                             "body_sha256": hashlib.sha256(b"separate page").hexdigest(),
+                                             "body_excerpt": "Professional archive: 呉清源, Go Seigen",
+                                             "original_name": "呉清源",
+                                             "identity_basis": "Same original name and career dates"})
+    record = _record(registry_sha256=registry_sha256(registry), source_checks=[article])
+    assert validate_research_record(record, registry)["review_status"] == "pending"
+    for mutation in (
+        {"article_evidence": {**article["article_evidence"], "revision_id": ""}},
+        {"article_evidence": {**article["article_evidence"], "passage_sha256": "0" * 64}},
+        {"identity_corroboration": {**article["identity_corroboration"], "original_name": "Another"}},
+        {"identity_corroboration": {**article["identity_corroboration"], "url": article["url"]}},
+    ):
+        with pytest.raises(EvidenceError):
+            validate_research_record({**record, "source_checks": [{**article, **mutation}]}, registry)
+
+
 def test_not_found_requires_completed_defined_scope_and_documented_searches():
-    no_hit = _check(status="not_found", candidate_name="", identity_basis="", body_excerpt="Search results, no matching player", search_scope="All indexed player results", scope_complete=True)
-    record = _record(scope_status="not_found_in_scope", candidate_name="", source_checks=[no_hit, _check("wd", status="not_found", candidate_name="", identity_basis="", url="https://www.wikidata.org/wiki/Q1", body_excerpt="Search results, no matching label", label_lang="ru", search_scope="Entity labels and aliases", scope_complete=True)])
+    no_hit = _check(status="not_found", candidate_name="", identity_basis="", body_excerpt="Search results, no matching player", search_scope="All indexed player results", scope_complete=True, negative_outcome="no_target_string")
+    record = _record(scope_status="not_found_in_scope", candidate_name="", source_checks=[no_hit, _check("wd", status="not_found", candidate_name="", identity_basis="", url="https://www.wikidata.org/wiki/Q1", body_excerpt="Search results, no matching label", label_lang="ru", search_scope="Entity labels and aliases", scope_complete=True, negative_outcome="no_target_string")])
     assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
     with pytest.raises(EvidenceError, match="scope"):
         validate_research_record({**record, "source_checks": [no_hit]}, _registry())
@@ -189,6 +227,29 @@ def test_not_found_requires_completed_defined_scope_and_documented_searches():
         validate_research_record({**record, "registry_sha256": registry_sha256(incomplete)}, incomplete)
     with pytest.raises(EvidenceError, match="scope"):
         validate_research_record({**record, "source_checks": [{**no_hit, "scope_complete": False}, record["source_checks"][1]]}, _registry())
+    with pytest.raises(EvidenceError, match="outcome"):
+        validate_research_record({**record, "source_checks": [{**no_hit, "negative_outcome": ""},
+                                                        record["source_checks"][1]]}, _registry())
+
+
+def test_negative_scope_distinguishes_reviewed_rejected_lead_from_no_string():
+    lead = {"candidate_name": "Го Сэйгэн", "url": "https://example.org/lead",
+            "body_sha256": hashlib.sha256(b"lead page").hexdigest(),
+            "body_excerpt": "Found Го Сэйгэн but this profile describes another person",
+            "rejection_basis": "Different birth date and original name",
+            "reviewer_id": "independent-2", "reviewer_model": "gpt-6-sol",
+            "reviewed_at": "2026-10-02T11:00:00Z"}
+    rejected = _check(status="not_found", candidate_name="", identity_basis="",
+                      body_excerpt="Search returned an ambiguous name", search_scope="All indexed profiles",
+                      scope_complete=True, negative_outcome="rejected_leads", rejected_leads=[lead])
+    wd = _check("wd", status="not_found", candidate_name="", identity_basis="",
+                url="https://www.wikidata.org/wiki/Q1", body_excerpt="No target label",
+                search_scope="All entity labels", scope_complete=True,
+                negative_outcome="no_target_string")
+    record = _record(scope_status="not_found_in_scope", candidate_name="", source_checks=[rejected, wd])
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+    with pytest.raises(EvidenceError, match="rejected lead"):
+        validate_research_record({**record, "source_checks": [{**rejected, "rejected_leads": []}, wd]}, _registry())
 
 
 def test_unavailable_page_is_incomplete_not_absence():
@@ -207,6 +268,30 @@ def test_record_cannot_claim_approval_or_mix_owner_types():
         validate_research_record(_record(reviewer_id="same-agent"), _registry())
     with pytest.raises(EvidenceError, match="owner"):
         validate_research_record(_record(owner={"kind": "player", "id": 17, "raw_player_id": 9}), _registry())
+
+
+def test_research_can_bind_a_new_bundle_local_symbolic_owner_without_fake_db_id():
+    owner = {"kind": "player", "ref": "go-seigen-1934"}
+    linked_check = _check(owner=owner)
+    validated = validate_research_record(_record(owner=owner, source_checks=[linked_check]), _registry())
+    assert validated["owner_key"] == "player:@go-seigen-1934:ru"
+    for invalid in ({"kind": "player", "ref": ""}, {"kind": "player", "ref": "go", "id": 17},
+                    {"kind": "event", "ref": "../../escape"}):
+        with pytest.raises(EvidenceError, match="owner"):
+            validate_research_record(_record(owner=invalid, source_checks=[_check(owner=invalid)]), _registry())
+
+
+def test_capture_cli_accepts_symbolic_owner_and_keeps_it_exact(tmp_path, monkeypatch):
+    from scripts import kifu_name_research
+
+    owner = {"kind": "player", "ref": "go-seigen-1934"}
+    source = tmp_path / "tasks.jsonl"
+    source.write_text(json.dumps({"owner": owner, "lang": "ru", "source_id": "ru-go",
+                                  "query": "Go Seigen", "url": "https://example.org/go"}) + "\n", encoding="utf-8")
+    monkeypatch.setattr(kifu_name_research, "capture_source_check",
+                        lambda task, *_args, **_kwargs: {"owner": task["owner"], "status": "incomplete"})
+    rows = list(kifu_name_research._capture_rows(source, _registry(), min_interval=0, max_attempts=1))
+    assert rows[0]["owner"] == owner and rows[0]["source_check"]["owner"] == owner
 
 
 def test_capture_retries_transient_error_and_never_infers_not_found():

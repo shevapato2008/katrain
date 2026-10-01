@@ -24,8 +24,10 @@ OWNER_KINDS = {"player", "event", "raw_player", "raw_event"}
 CHECK_STATUSES = {"found", "not_found", "incomplete", "unavailable"}
 SCOPE_STATUSES = {"found", "not_found_in_scope", "incomplete"}
 LANGUAGE_BASIS = {"html_lang", "http_header", "reviewed_text"}
-SOURCE_PRIORITY = {"official": 0, "language_go": 1, "discovery": 2}
+SOURCE_PRIORITY = {"official": 0, "language_go": 1, "reference": 2,
+                   "wikipedia_article": 3, "encyclopedia": 3, "discovery": 4}
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_OWNER_REF = re.compile(r"^[a-z][a-z0-9_-]{1,63}$")
 
 
 class EvidenceError(ValueError):
@@ -39,6 +41,21 @@ def _require(condition: bool, message: str) -> None:
 
 def _text(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def owner_key(owner: object, lang: str) -> str:
+    """Pin one existing DB ID or one new identity's bundle-local reference."""
+    _require(isinstance(owner, dict) and owner.get("kind") in OWNER_KINDS, "one exact owner is required")
+    if set(owner) == {"kind", "id"}:
+        _require(type(owner["id"]) is int and owner["id"] > 0, "owner ID invalid")
+        token = str(owner["id"])
+    elif set(owner) == {"kind", "ref"}:
+        _require(isinstance(owner["ref"], str) and bool(_OWNER_REF.fullmatch(owner["ref"])),
+                 "owner symbolic reference invalid")
+        token = "@" + owner["ref"]
+    else:
+        raise EvidenceError("one exact owner ID or symbolic reference is required")
+    return f"{owner['kind']}:{token}:{lang}"
 
 
 def _https_url(value: object) -> bool:
@@ -159,6 +176,63 @@ def _validate_discovery_label(check: dict, source: dict, target: str) -> None:
     _require(excerpt_label == label, "API label excerpt differs from the claimed label")
 
 
+def _validate_article_evidence(check: dict, sources: dict[str, dict], original_name: str) -> None:
+    """Article usage is separate from an API label and needs outside identity evidence."""
+    source = sources[check["source_id"]]
+    article = check.get("article_evidence")
+    _require(isinstance(article, dict), "article needs captured article evidence")
+    if source["tier"] == "wikipedia_article":
+        _require(_text(article.get("revision_id")) and str(article["revision_id"]).isdigit(),
+                 "Wikipedia article revision ID required")
+    else:
+        _require(_text(article.get("edition")) or _text(article.get("revision_id")),
+                 "encyclopedia edition or revision required")
+    passage = article.get("passage")
+    _require(_text(article.get("title")) and _text(passage)
+             and check["candidate_name"] in passage
+             and passage in check["body_excerpt"]
+             and hashlib.sha256(passage.encode("utf-8")).hexdigest() == article.get("passage_sha256")
+             and _text(article.get("subject_identity")),
+             "article title, exact passage/hash and subject identity required")
+    corroboration = check.get("identity_corroboration")
+    _require(isinstance(corroboration, dict), "article needs separately published identity corroboration")
+    other_id = corroboration.get("source_id")
+    _require(other_id in sources and sources[other_id]["tier"] in {"official", "language_go", "reference"}
+             and _source_url_matches(corroboration.get("url"), sources[other_id]),
+             "identity corroboration needs a registered independent reference")
+    article_host = urlparse(check["url"]).hostname
+    other_host = urlparse(corroboration["url"]).hostname
+    _require(article_host != other_host, "identity corroboration must be separately published")
+    _require(_aware_timestamp(corroboration.get("fetched_at")) and corroboration.get("http_status") == 200
+             and bool(_HEX_SHA256.fullmatch(str(corroboration.get("body_sha256", ""))))
+             and _text(corroboration.get("body_excerpt")) and _text(corroboration.get("identity_basis"))
+             and corroboration.get("original_name") == original_name
+             and original_name in corroboration["body_excerpt"],
+             "corroboration needs real body evidence for the exact original name")
+
+
+def _validate_negative_outcome(check: dict, source: dict, producer_id: str) -> None:
+    outcome = check.get("negative_outcome")
+    _require(outcome in {"no_target_string", "rejected_leads"},
+             "completed negative source needs an explicit outcome")
+    leads = check.get("rejected_leads", [])
+    if outcome == "no_target_string":
+        _require(not leads, "no-string outcome cannot hide rejected leads")
+        return
+    _require(isinstance(leads, list) and bool(leads), "rejected lead outcome needs lead records")
+    for lead in leads:
+        _require(isinstance(lead, dict) and _text(lead.get("candidate_name"))
+                 and _source_url_matches(lead.get("url"), source)
+                 and bool(_HEX_SHA256.fullmatch(str(lead.get("body_sha256", ""))))
+                 and _text(lead.get("body_excerpt"))
+                 and lead["candidate_name"] in lead["body_excerpt"]
+                 and _text(lead.get("rejection_basis"))
+                 and _text(lead.get("reviewer_id")) and lead["reviewer_id"] != producer_id
+                 and lead.get("reviewer_model") == "gpt-6-sol"
+                 and _aware_timestamp(lead.get("reviewed_at")),
+                 "rejected lead needs sourced body and independent Sol rejection")
+
+
 def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, dict]) -> None:
     _require(isinstance(check, dict), "source check must be an object")
     _require(check.get("owner") == owner, "source check owner differs from research record")
@@ -200,10 +274,8 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     """Validate one candidate or negative search claim, always returning pending status."""
     _require(isinstance(record, dict), "research record must be an object")
     owner = record.get("owner")
-    _require(isinstance(owner, dict) and set(owner) == {"kind", "id"}, "one exact owner is required")
-    _require(owner["kind"] in OWNER_KINDS and type(owner["id"]) is int and owner["id"] > 0,
-             "owner kind/id invalid")
     lang = record.get("lang")
+    exact_owner_key = owner_key(owner, lang)
     target = product_language_tag(lang, registry)
     _require(record.get("registry_version") == registry["version"], "registry version mismatch")
     _require(record.get("registry_sha256") == registry_sha256(registry), "registry hash mismatch")
@@ -226,6 +298,11 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     sources = {source["id"]: source for source in registry["sources"]}
     for check in checks:
         _validate_check(check, owner, target, sources)
+        if check["status"] == "found" and sources[check["source_id"]]["tier"] in {
+            "wikipedia_article", "encyclopedia"
+        }:
+            _require(_text(record.get("original_name")), "article identity needs original name")
+            _validate_article_evidence(check, sources, record["original_name"])
     if scope_status == "found":
         candidate = record.get("candidate_name")
         _require(_text(candidate), "found record needs candidate name")
@@ -239,10 +316,12 @@ def validate_research_record(record: dict, registry: dict) -> dict:
             _require(any(check["source_id"] == source_id and check["status"] == "not_found" for check in checks),
                      f"source scope lacks completed negative search for {source_id}")
         _require(all(check["status"] == "not_found" for check in checks), "negative source scope has unresolved checks")
+        for check in checks:
+            _validate_negative_outcome(check, sources[check["source_id"]], record["producer_id"])
     else:
         _require(not _text(record.get("candidate_name")), "incomplete scope cannot claim a candidate")
     result = deepcopy(record)
-    result["owner_key"] = f"{owner['kind']}:{owner['id']}:{lang}"
+    result["owner_key"] = exact_owner_key
     return result
 
 
@@ -291,8 +370,7 @@ def capture_source_check(
     """
     _require(isinstance(task, dict), "capture task must be an object")
     owner = task.get("owner")
-    _require(isinstance(owner, dict) and set(owner) == {"kind", "id"} and owner.get("kind") in OWNER_KINDS
-             and type(owner.get("id")) is int and owner["id"] > 0, "capture task needs exact owner")
+    owner_key(owner, task.get("lang"))
     lang = task.get("lang")
     target = product_language_tag(lang, registry)
     source = next((item for item in registry["sources"] if item["id"] == task.get("source_id")), None)

@@ -10,6 +10,9 @@ import argparse
 import gzip
 import json
 from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from katrain.web.kifu.name_candidates import CandidateError, validate_bundle
 from katrain.web.kifu.name_evidence import EvidenceError, load_registry

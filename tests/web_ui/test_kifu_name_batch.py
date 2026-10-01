@@ -8,10 +8,12 @@ import pytest
 from sqlalchemy import create_engine, event, func, select
 
 from katrain.web.core.models_db import (
-    Base, KifuAlbum, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
+    Base, KifuAlbum, KifuEvent, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
     KifuNameSourceRegistry, KifuPlayer, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
 )
-from katrain.web.kifu.name_batch import BatchError, apply_bundle, batch_status, dry_run_bundle, undo_batch
+from katrain.web.kifu.name_batch import (
+    BatchError, apply_bundle, batch_status, catalog_snapshot_sha, dry_run_bundle, undo_batch,
+)
 from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
@@ -252,3 +254,209 @@ def test_cli_validate_and_dry_run_leave_database_untouched(engine, tmp_path, cap
     assert main(["dry-run", *inputs, "--database-url", str(engine.url)]) == 0
     assert json.loads(capsys.readouterr().out)["affected_albums"] == [11]
     assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def _v2_wrap(engine, inventory, bundle, owners, links):
+    result = deepcopy(bundle)
+    result.update(bundle_format=2, catalog_sha256=catalog_snapshot_sha(engine), owners=owners,
+                  owner_set_sha256=canonical_sha256(owners), album_links=links,
+                  link_set_sha256=canonical_sha256(links))
+    return result
+
+
+def _identity_link(inventory, album_id, slot, target):
+    columns = inventory["association_columns"]
+    album = next(dict(zip(columns, row)) for row in inventory["album_associations"] if row[0] == album_id)
+    context = {key: album[key] for key in (
+        "player_black", "player_white", "event", "date_played", "round_name", "black_rank", "white_rank")}
+    context["old_id"] = album[{"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[slot]]
+    raw = album[{"black": "player_black", "white": "player_white", "event": "event"}[slot]]
+    compared = ("event",) if slot == "event" else ("black", "white")
+    scope = sorted([other["id"], other_slot] for row in inventory["album_associations"]
+                   for other in [dict(zip(columns, row))] for other_slot in compared
+                   if other[{"black": "player_black", "white": "player_white", "event": "event"}[other_slot]] == raw)
+    review = {
+        "status": "approved", "producer_id": "mapper-1", "producer_model": "gpt-6-luna",
+        "produced_at": "2026-10-02T10:00:00Z", "reviewer_id": "mapper-2",
+        "reviewer_model": "gpt-6-luna", "reviewed_at": "2026-10-02T11:00:00Z",
+        "identity_basis": "Original names and source record identify the exact person or event",
+        "review_conclusion": "Checked source record and exact original name",
+        "source_checks": [{"url": "https://example.org/record", "body_sha256": "a" * 64,
+                           "body_excerpt": "Original match record", "identity_match": "Same source record"}],
+    }
+    if slot == "event":
+        review["event_period_basis"] = "This event name was used in the recorded year"
+    return {"album_id": album_id, "slot": slot, "association_sha256": canonical_sha256(album),
+            "expected": context, "raw_scope_sha256": canonical_sha256(scope),
+            "target": target, "identity_review": review}
+
+
+def test_v2_new_raw_owner_fixture_dry_run_apply_and_undo(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="Alpha", player_white="Beta", event="GNUGo4.0",
+            sgf_content="(;PB[Alpha]PW[Beta]EV[GNUGo4.0])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    owner = {"kind": "raw_event", "ref": "program-four"}
+    ids = [12]
+    declaration = {
+        "owner": owner, "create": {"raw_value": "GNUGo4.0", "category": "program_source_label"},
+        "occurrence_album_ids": ids, "occurrence_sha256": canonical_sha256(ids),
+        "category_review": {"status": "approved", "producer_id": "researcher-1",
+                            "producer_model": "gpt-6-luna", "produced_at": "2026-10-02T10:00:00Z",
+                            "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                            "reviewed_at": "2026-10-02T10:30:00Z",
+                            "category_basis": "Parser and SGF context identify a program label"},
+    }
+    bundle = approved_bundle(inv)
+    bundle["members"][0].update(owner=owner, raw_value="GNUGo4.0")
+    bundle["candidates"][0].update(owner=owner, raw_value="GNUGo4.0")
+    bundle["member_set_sha256"] = canonical_sha256(bundle["members"])
+    bundle = _v2_wrap(engine, inv, bundle, [declaration], [])
+    before = counts(engine)
+    assert dry_run_bundle(engine, bundle, registry(), inv, [])["ready"]
+    assert counts(engine) == before
+    applied = apply_bundle(engine, bundle, registry(), inv, [])
+    owner_id = applied["resolved_refs"]["raw_event:@program-four"]
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventValue.raw_value).where(KifuRawEventValue.id == owner_id)) == "GNUGo4.0"
+        assert conn.scalar(select(KifuRawEventName.display_name).where(KifuRawEventName.raw_event_id == owner_id)) == ""
+        assert conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == 12)) == "(;PB[Alpha]PW[Beta]EV[GNUGo4.0])"
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventValue.id).where(KifuRawEventValue.id == owner_id)) is None
+
+
+def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=19, canonical_name="Test Tournament"))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            player_white="吴清源九段", event="Test Tournament"))
+    inv = build_inventory(engine)
+    player = {"kind": "player", "id": 17}
+    event_owner = {"kind": "event", "id": 19}
+    owners = [{"owner": player, "preimage": {"canonical_name": "吴清源"}},
+              {"owner": event_owner, "preimage": {"canonical_name": "Test Tournament"}}]
+    links = [_identity_link(inv, 11, "white", player), _identity_link(inv, 11, "event", event_owner)]
+    player_decisions, research = player_bundle(inv)
+    event_display = "Тестовый турнир"
+    event_check = {
+        "owner": event_owner, "source_id": "go", "query": "Test Tournament", "status": "found",
+        "url": "https://example.org/event", "fetched_at": "2026-10-02T10:00:00Z", "http_status": 200,
+        "body_sha256": hashlib.sha256(event_display.encode()).hexdigest(),
+        "body_excerpt": f"Official event record {event_display}", "observed_lang": "ru",
+        "language_basis": "reviewed_text", "candidate_name": event_display,
+        "identity_basis": "The named event matches this fixture's tournament"}
+    event_research = {
+        "owner": event_owner, "lang": "ru", "registry_version": "test-1",
+        "registry_sha256": registry_sha256(registry()), "scope_status": "found",
+        "candidate_name": event_display, "source_checks": [event_check],
+        "original_name": "Test Tournament", "original_language": "en",
+        "original_language_basis_url": "https://example.org/event",
+        "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
+    event_member = {"owner": event_owner, "lang": "ru"}
+    event_candidate = {
+        **event_member, "display_name": event_display, "decision_kind": "conventional",
+        "research_sha256": canonical_sha256(event_research), "generation_rule_version": "none",
+        "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
+        "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
+        "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+        "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "Checked exact event"}
+    player_decisions["members"].append(event_member)
+    player_decisions["member_set_sha256"] = canonical_sha256(player_decisions["members"])
+    player_decisions["candidates"].append(event_candidate)
+    research.append(event_research)
+    bundle = _v2_wrap(engine, inv, player_decisions, owners, links)
+    assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
+    applied = apply_bundle(engine, bundle, registry(), inv, research)
+    with engine.connect() as conn:
+        assert conn.execute(select(KifuAlbum.white_player_id, KifuAlbum.event_id)
+                            .where(KifuAlbum.id == 11)).one() == (17, 19)
+        changes = conn.execute(select(KifuNameChange).where(
+            KifuNameChange.batch_id == applied["batch_id"], KifuNameChange.target_table == "kifu_albums")) \
+            .mappings().all()
+        assert len(changes) == 1
+        assert changes[0]["before_image"]["white_player_id"] is None
+        assert changes[0]["after_image"]["event_id"] == 19
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.execute(select(KifuAlbum.white_player_id, KifuAlbum.event_id)
+                            .where(KifuAlbum.id == 11)).one() == (None, None)
+
+
+def test_v2_stale_catalog_rejects_bundle_without_writes(engine):
+    inv = build_inventory(engine)
+    bundle = _v2_wrap(engine, inv, approved_bundle(inv),
+                      [{"owner": {"kind": "raw_event", "id": 7},
+                        "preimage": {"raw_value": "GNUGo3.8"},
+                        "occurrence_album_ids": [11], "occurrence_sha256": canonical_sha256([11])}], [])
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(canonical_name="Concurrent new event"))
+    with pytest.raises(BatchError, match="catalog supplement"):
+        apply_bundle(engine, bundle, registry(), inv, [])
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(player_white="Example Person"))
+    inv = build_inventory(engine)
+    source_registry = registry()
+    source_registry["sources"] = [
+        {"id": f"go-{lang}", "tier": "official", "home_url": "https://example.org/",
+         "language": source_registry["language_tags"][lang]} for lang in LANGS
+    ]
+    source_registry["language_scopes"] = {
+        lang: {"required_source_ids": [f"go-{lang}"], "complete_for_negative_claims": False}
+        for lang in LANGS
+    }
+    owner = {"kind": "player", "ref": "example-person"}
+    declaration = {"owner": owner, "create": {"canonical_name": "Example Person"}}
+    members, candidates, research = [], [], []
+    for lang in LANGS:
+        display = f"Example Person {lang.upper()}"
+        member = {"owner": owner, "lang": lang}
+        check = {"owner": owner, "source_id": f"go-{lang}", "query": "Example Person",
+                 "status": "found", "url": f"https://example.org/{lang}",
+                 "fetched_at": "2026-10-02T10:00:00Z", "http_status": 200,
+                 "body_sha256": hashlib.sha256(display.encode()).hexdigest(),
+                 "body_excerpt": f"Official player profile: {display}",
+                 "observed_lang": source_registry["language_tags"][lang],
+                 "language_basis": "reviewed_text", "candidate_name": display,
+                 "identity_basis": "Source identifies this synthetic fixture person"}
+        evidence = {"owner": owner, "lang": lang, "registry_version": "test-1",
+                    "registry_sha256": registry_sha256(source_registry), "scope_status": "found",
+                    "candidate_name": display, "source_checks": [check],
+                    "original_name": "Example Person", "original_language": "en",
+                    "original_language_basis_url": "https://example.org/original",
+                    "reading": "Example Person", "reading_basis_url": "https://example.org/original",
+                    "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
+        decision = {**member, "display_name": display, "decision_kind": "conventional",
+                    "research_sha256": canonical_sha256(evidence), "generation_rule_version": "none",
+                    "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
+                    "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
+                    "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                    "reviewed_at": "2026-10-02T11:00:00Z",
+                    "review_conclusion": "Checked synthetic language-specific profile"}
+        members.append(member)
+        candidates.append(decision)
+        research.append(evidence)
+    base = {"bundle_format": 2, "inventory_format": 2, "inventory_sha256": inv["sha256"],
+            "registry_version": "test-1", "registry_sha256": registry_sha256(source_registry),
+            "rule_version": "candidate-v2", "members": members,
+            "member_set_sha256": canonical_sha256(members), "candidates": candidates}
+    link = _identity_link(inv, 11, "white", owner)
+    bundle = _v2_wrap(engine, inv, base, [declaration], [link])
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
+    applied = apply_bundle(engine, bundle, source_registry, inv, research)
+    player_id = applied["resolved_refs"]["player:@example-person"]
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) == player_id
+        names = conn.execute(select(KifuPlayerName).where(KifuPlayerName.player_id == player_id)).mappings().all()
+        assert {name["lang"] for name in names} == set(LANGS)
+        assert all(name["status"] == "verified" and name["evidence_id"] for name in names)
+        assert conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == 11)).startswith("(;FF[4]")
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) is None
+        assert conn.scalar(select(KifuPlayer.id).where(KifuPlayer.id == player_id)) is None

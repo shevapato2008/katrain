@@ -4,7 +4,7 @@
 
 ## 本次实际检查
 
-对现有模板的四个 UFGO 指定页、论坛主题 824 两页、九个乌克兰维基 API 查询、Wikidata Q4335071 `uk` 字段逐项请求；另补做此前未完成的九个 `https://ufgo.org/?s=...` 原生搜索。完整逐项 URL、UTC 抓取时间、HTTP 状态、响应和正文 SHA-256、正文摘录、API 命中数与续页字段暂存在权限 `0600` 的 `/tmp/oteai-uk-observations-2026-10-02.json`（此文件没有提交，且不是获批研究记录）。HTML `body_sha256` 是 BeautifulSoup 所取主要正文的 `get_text(' ', strip=True)` UTF-8 哈希；API 正文哈希是排序键、紧凑 JSON 的 UTF-8 哈希。原始响应字节另有 `response_sha256`。该提取方式与正式研究记录尚未独立核对。
+对现有模板的四个 UFGO 指定页、论坛主题 824 两页、九个乌克兰维基 API 查询、Wikidata Q4335071 `uk` 字段逐项请求；另补做此前未完成的九个 `https://ufgo.org/?s=...` 原生搜索。完整逐项 URL、UTC 抓取时间、HTTP 状态、响应和正文 SHA-256、正文摘录、API 命中数与续页字段保存在权限 `0600` 的 `/Users/fan/.local/share/kifu-name-audit/2026-10-02/oteai-uk-observations-2026-10-02.json`，文件 SHA-256 为 `580011a93d157c34a28a776a4b517462c9d8392cc29cbd31fc5a1cf99a669dd0`（此文件没有提交，且不是获批研究记录）。HTML `body_sha256` 是 BeautifulSoup 所取主要正文的 `get_text(' ', strip=True)` UTF-8 哈希；API 正文哈希是排序键、紧凑 JSON 的 UTF-8 哈希。原始响应字节另有 `response_sha256`。该提取方式与正式研究记录尚未独立核对。
 
 | 检查 | 观察 | `response_sha256` | `body_sha256` |
 |---|---|---|---|

@@ -382,6 +382,39 @@ def _assert_name_evidence_fk(table: str, fks: dict[str, dict]) -> None:
         raise RuntimeError(f"{table}.evidence_id must reference kifu_name_research_evidence.id")
 
 
+def _legacy_name_constraint_status(inspector, table: str) -> tuple[bool, bool]:
+    owner = "player_id" if table == "kifu_player_names" else "event_id"
+    has_unique = (owner, "lang") in {
+        tuple(item["column_names"]) for item in inspector.get_unique_constraints(table)
+    }
+    check_name = "ck_kifu_player_name_status" if owner == "player_id" else "ck_kifu_event_name_status"
+    has_check = check_name in {item["name"] for item in inspector.get_check_constraints(table)}
+    return has_unique, has_check
+
+
+def _repair_legacy_name_constraints(engine, table: str) -> None:
+    """Repair missing small legacy-table constraints only during explicit migration."""
+
+    has_unique, has_check = _legacy_name_constraint_status(inspect(engine), table)
+    if has_unique and has_check:
+        return
+    if engine.dialect.name != "postgresql":
+        raise RuntimeError(f"Missing {table} name integrity constraint; SQLite requires manual repair")
+    owner = "player_id" if table == "kifu_player_names" else "event_id"
+    kind = "player" if owner == "player_id" else "event"
+    with engine.begin() as conn:
+        if not has_unique:
+            conn.execute(
+                text(f'ALTER TABLE "{table}" ADD CONSTRAINT "uq_kifu_{kind}_name_lang" '
+                     f'UNIQUE ("{owner}", "lang")')
+            )
+        if not has_check:
+            conn.execute(
+                text(f'ALTER TABLE "{table}" ADD CONSTRAINT "ck_kifu_{kind}_name_status" '
+                     "CHECK (status IN ('verified', 'review', 'missing'))")
+            )
+
+
 def postgres_kifu_name_statements(
     *, table: str, existing_columns: set[str], existing_fks: dict[str, dict]
 ) -> list[str]:
@@ -417,6 +450,8 @@ def migrate_kifu_name_schema(engine) -> None:
         fks = _kifu_name_foreign_keys(inspector, table)
         _assert_name_evidence_fk(table, fks)
         if engine.dialect.name == "sqlite":
+            _repair_legacy_name_constraints(engine, table)
+        if engine.dialect.name == "sqlite":
             if "evidence_id" in columns and "evidence_id" not in fks:
                 raise RuntimeError(f"{table}.evidence_id exists without foreign key; SQLite cannot repair in place")
             with engine.begin() as conn:
@@ -434,6 +469,8 @@ def migrate_kifu_name_schema(engine) -> None:
                     conn.execute(text(statement))
         else:
             raise RuntimeError(f"Kifu name migration unsupported for {engine.dialect.name}")
+        if engine.dialect.name == "postgresql":
+            _repair_legacy_name_constraints(engine, table)
 
 
 def verify_kifu_name_schema(engine) -> None:
@@ -461,23 +498,22 @@ def verify_kifu_name_schema(engine) -> None:
                     or actual.get("referred_columns") != [target.name]
                 ):
                     raise RuntimeError(f"{table}.{column.name} foreign key missing or incorrect; run migrate_catalog")
-        if table not in {"kifu_player_names", "kifu_event_names"}:
-            expected_unique = {
-                tuple(column.name for column in constraint.columns)
-                for constraint in model_table.constraints
-                if isinstance(constraint, UniqueConstraint)
-            }
-            actual_unique = {
-                tuple(constraint["column_names"]) for constraint in inspector.get_unique_constraints(table)
-            }
-            if not expected_unique.issubset(actual_unique):
-                raise RuntimeError(f"{table} unique constraint missing; run migrate_catalog")
-            expected_checks = {
-                constraint.name for constraint in model_table.constraints if isinstance(constraint, CheckConstraint)
-            }
-            actual_checks = {constraint["name"] for constraint in inspector.get_check_constraints(table)}
-            if not expected_checks.issubset(actual_checks):
-                raise RuntimeError(f"{table} check constraint missing; run migrate_catalog")
+        expected_unique = {
+            tuple(column.name for column in constraint.columns)
+            for constraint in model_table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        actual_unique = {
+            tuple(constraint["column_names"]) for constraint in inspector.get_unique_constraints(table)
+        }
+        if not expected_unique.issubset(actual_unique):
+            raise RuntimeError(f"{table} unique constraint missing; run migrate_catalog")
+        expected_checks = {
+            constraint.name for constraint in model_table.constraints if isinstance(constraint, CheckConstraint)
+        }
+        actual_checks = {constraint["name"] for constraint in inspector.get_check_constraints(table)}
+        if not expected_checks.issubset(actual_checks):
+            raise RuntimeError(f"{table} check constraint missing; run migrate_catalog")
 
 
 def postgres_kifu_name_validation_statements(statuses: dict[str, tuple[str, bool]]) -> list[str]:

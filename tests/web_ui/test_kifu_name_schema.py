@@ -32,14 +32,24 @@ def engine():
     return engine
 
 
-def _legacy_name_tables(engine):
+def _legacy_name_tables(engine, *, include_checks=True, include_unique=True):
+    player_check = (
+        ", CONSTRAINT ck_kifu_player_name_status CHECK (status IN ('verified', 'review', 'missing'))"
+        if include_checks else ""
+    )
+    event_check = (
+        ", CONSTRAINT ck_kifu_event_name_status CHECK (status IN ('verified', 'review', 'missing'))"
+        if include_checks else ""
+    )
+    player_unique = ", UNIQUE(player_id, lang)" if include_unique else ""
+    event_unique = ", UNIQUE(event_id, lang)" if include_unique else ""
     with engine.begin() as conn:
         conn.execute(
             text(
                 "CREATE TABLE kifu_player_names (id INTEGER PRIMARY KEY, player_id INTEGER NOT NULL "
                 "REFERENCES kifu_players(id), lang VARCHAR(2) NOT NULL, display_name VARCHAR(512) NOT NULL, "
                 "status VARCHAR(16) NOT NULL, reference_url TEXT, reference_kind VARCHAR(32), "
-                "verified_at DATETIME, created_at DATETIME, UNIQUE(player_id, lang))"
+                f"verified_at DATETIME, created_at DATETIME{player_unique}{player_check})"
             )
         )
         conn.execute(
@@ -47,7 +57,7 @@ def _legacy_name_tables(engine):
                 "CREATE TABLE kifu_event_names (id INTEGER PRIMARY KEY, event_id INTEGER NOT NULL "
                 "REFERENCES kifu_events(id), lang VARCHAR(2) NOT NULL, display_name VARCHAR(256) NOT NULL, "
                 "status VARCHAR(16) NOT NULL, reference_url TEXT, reference_kind VARCHAR(32), "
-                "verified_at DATETIME, created_at DATETIME, UNIQUE(event_id, lang))"
+                f"verified_at DATETIME, created_at DATETIME{event_unique}{event_check})"
             )
         )
     models_db.Base.metadata.create_all(engine)
@@ -183,6 +193,13 @@ def test_legacy_sqlite_bare_evidence_column_fails_closed(engine):
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE kifu_player_names ADD COLUMN evidence_id INTEGER"))
     with pytest.raises(RuntimeError, match="evidence_id"):
+        migrations.migrate_kifu_name_schema(engine)
+
+
+@pytest.mark.parametrize("missing", ["check", "unique"])
+def test_legacy_sqlite_missing_name_integrity_constraint_fails_closed(engine, missing):
+    _legacy_name_tables(engine, include_checks=missing != "check", include_unique=missing != "unique")
+    with pytest.raises(RuntimeError, match="constraint"):
         migrations.migrate_kifu_name_schema(engine)
 
 

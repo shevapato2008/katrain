@@ -148,6 +148,19 @@ describe('GameLibraryModal', () => {
     });
   });
 
+  it('formats a public kifu result for the current language', async () => {
+    (UserGamesAPI.list as Mock).mockResolvedValueOnce({ items: [], total: 0 });
+    (KifuAPI.getAlbums as Mock).mockResolvedValueOnce({
+      items: [{ id: 1, display_event: 'Tournament', display_player_black: 'Lee',
+        display_player_white: 'Ke', result: '黑中盘胜', move_count: 100 }],
+      total: 1,
+    });
+    render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    fireEvent.click(screen.getByText('大赛棋谱'));
+    expect(await screen.findByText('B+R')).toBeInTheDocument();
+    expect(screen.queryByText('黑中盘胜')).not.toBeInTheDocument();
+  });
+
   it('loads a game and closes modal', async () => {
     (UserGamesAPI.list as Mock).mockResolvedValueOnce({
       items: [

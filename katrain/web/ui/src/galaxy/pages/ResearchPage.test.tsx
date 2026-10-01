@@ -5,6 +5,11 @@ import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { API } from '../../api';
 
+const { language } = vi.hoisted(() => ({ language: { current: 'cn' } }));
+vi.mock('../../hooks/useTranslation', () => ({
+  useTranslation: () => ({ lang: language.current, t: (_key: string, fallback?: string) => fallback ?? _key }),
+}));
+
 vi.mock('../../api', () => ({ API: {
   quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [] }] }),
   // 全盘扫描：深链那条用例拿它当绊线（导航不许触发计费的分析）。
@@ -87,7 +92,7 @@ vi.mock('../../components/live/LiveBoard', () => ({
 // 统一版式把「开始研究」拆成了同一个模块的具名导出（它归右栏动作区，不跟着滚），
 // 所以这里两个导出都要给，否则页面渲染时 ResearchSetupActions 是 undefined。
 vi.mock('../components/research/ResearchSetupPanel', () => ({
-  default: ({ onToggleHints }: { onToggleHints: () => void }) => <div data-testid="mock-setup-panel"><button onClick={onToggleHints}>支招</button></div>,
+  default: ({ onToggleHints, playerBlack, onPlayerBlackChange }: { onToggleHints: () => void; playerBlack: string; onPlayerBlackChange: (name: string) => void }) => <div data-testid="mock-setup-panel"><button onClick={onToggleHints}>支招</button><input aria-label="黑方姓名" value={playerBlack} onChange={(event) => onPlayerBlackChange(event.target.value)} /></div>,
   ResearchSetupActions: ({ onStartAnalysis }: { onStartAnalysis: () => void }) => (
     <button data-testid="mock-start-analysis" onClick={onStartAnalysis}>开始研究</button>
   ),
@@ -112,6 +117,7 @@ describe('ResearchPage', () => {
   // 有两条 `not.toHaveBeenCalled()`，调用记录必须逐条清零，否则前一条用例的调用会算到后一条头上。
   beforeEach(() => {
     vi.clearAllMocks();
+    language.current = 'cn';
     // clearAllMocks 会连 mockResolvedValue 一起清掉，所以每条用例前重新给上。
     createSession.mockResolvedValue('sess-1');
     getAlbum.mockResolvedValue({
@@ -125,6 +131,22 @@ describe('ResearchPage', () => {
        就是返回 Promise），补的是 jsdom 的缺口。以前没人踩到，是因为在此之前没有一条
        用例真的让 `currentMove` 动过 —— 深链这条是第一个。 */
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  });
+
+  it('keeps an edited player name when the deep-linked kifu language changes', async () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    getAlbum.mockImplementation((_id: number, lang: string) => Promise.resolve({
+      id: 42, sgf_content: KIFU_SGF,
+      display_player_black: `${lang}-black`, display_player_white: `${lang}-white`,
+    }));
+    const view = renderPage('/galaxy/research?kifu_id=42');
+    const input = await screen.findByRole('textbox', { name: '黑方姓名' });
+    await waitFor(() => expect(input).toHaveValue('cn-black'));
+    fireEvent.change(input, { target: { value: 'Edited player' } });
+    language.current = 'ru';
+    view.rerender(<MemoryRouter initialEntries={['/galaxy/research?kifu_id=42']}><ResearchPage /></MemoryRouter>);
+    await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(42, 'ru'));
+    await waitFor(() => expect(input).toHaveValue('Edited player'));
   });
 
   // Test A — research is intentionally available without login (no auth gate).

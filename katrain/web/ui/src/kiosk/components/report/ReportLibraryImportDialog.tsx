@@ -63,7 +63,6 @@ export default function ReportLibraryImportDialog({
     const requestGeneration = ++requestGenerationRef.current;
     setFetching(true);
     setFetchError(false);
-    setSelectedAlbum(null);
     try {
       const response = await KifuAPI.getAlbums({
         ...(query ? { q: query } : {}),
@@ -74,7 +73,7 @@ export default function ReportLibraryImportDialog({
       if (requestGeneration !== requestGenerationRef.current) return;
       setItems(response.items);
       setTotal(response.total);
-      setSelectedAlbum(response.items[0] ?? null);
+      setSelectedAlbum((current) => response.items.find((item) => item.id === current?.id) ?? response.items[0] ?? null);
     } catch {
       if (requestGeneration !== requestGenerationRef.current) return;
       setItems([]);

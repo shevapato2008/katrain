@@ -419,6 +419,11 @@ const ResearchPage = () => {
   // 直接串进 `createSession`。
   const kifuRef = useRef<string | null>(null);
   const kifuRequestRef = useRef(0);
+  const lastKifuPlayersRef = useRef<{ id: string; black: string; white: string } | null>(null);
+  const currentPlayersRef = useRef({ black: board.playerBlack, white: board.playerWhite });
+  useEffect(() => {
+    currentPlayersRef.current = { black: board.playerBlack, white: board.playerWhite };
+  }, [board.playerBlack, board.playerWhite]);
   useEffect(() => {
     const id = searchParams.get('kifu_id');
     if (!id) return;
@@ -433,8 +438,10 @@ const ResearchPage = () => {
       }
       const black = album.display_player_black ?? t('game:black_side', '黑方');
       const white = album.display_player_white ?? t('game:white_side', '白方');
-      board.setPlayerBlack(black);
-      board.setPlayerWhite(white);
+      const previous = lastKifuPlayersRef.current;
+      if (firstLoad || previous?.id !== id || currentPlayersRef.current.black === previous.black) board.setPlayerBlack(black);
+      if (firstLoad || previous?.id !== id || currentPlayersRef.current.white === previous.white) board.setPlayerWhite(white);
+      lastKifuPlayersRef.current = { id, black, white };
       const head = album.display_event
         ? `${album.display_event}${album.display_round_name ? ` · ${album.display_round_name}` : ''}`
         : `${black} vs ${white}`;

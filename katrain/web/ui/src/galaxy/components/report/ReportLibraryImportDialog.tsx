@@ -55,7 +55,7 @@ export default function ReportLibraryImportDialog({
       if (requestGeneration !== requestGenerationRef.current) return;
       setItems(response.items);
       setTotal(response.total);
-      setSelectedAlbum(response.items[0] ?? null);
+      setSelectedAlbum((current) => response.items.find((item) => item.id === current?.id) ?? response.items[0] ?? null);
     } finally {
       if (requestGeneration === requestGenerationRef.current) setFetching(false);
     }
@@ -133,19 +133,19 @@ export default function ReportLibraryImportDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={loading}>{t('report:cancel', 'Cancel')}</Button>
-        <Button disabled={loading || !selectedAlbum} onClick={() => selectedAlbum && onImport(selectedAlbum)}>
+        <Button disabled={loading || fetching || !selectedAlbum} onClick={() => selectedAlbum && onImport(selectedAlbum)}>
           {loading ? t('report:importing', 'Importing...') : t('report:import_only', 'Import only')}
         </Button>
         <Button
           variant="contained"
-          disabled={loading || !selectedAlbum}
+          disabled={loading || fetching || !selectedAlbum}
           onClick={() => selectedAlbum && onImport(selectedAlbum, 'normal')}
         >
           {t('report:import_and_normal', 'Import & generate normal report')}
         </Button>
         <Button
           variant="outlined"
-          disabled={loading || !selectedAlbum}
+          disabled={loading || fetching || !selectedAlbum}
           onClick={() => selectedAlbum && onImport(selectedAlbum, 'deep')}
         >
           {t('report:import_and_deep', 'Import & generate deep report')}

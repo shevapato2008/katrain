@@ -9,9 +9,10 @@ import { kioskTheme } from '../../theme';
 import ReportLibraryImportDialog from './ReportLibraryImportDialog';
 
 vi.mock('../../../api/kifuApi', () => ({ KifuAPI: { getAlbums: vi.fn() } }));
+const { language } = vi.hoisted(() => ({ language: { current: 'cn' } }));
 vi.mock('../../../hooks/useTranslation', () => ({
   useTranslation: () => ({
-    lang: 'cn',
+    lang: language.current,
     t: (key: string, fallback?: string) => (
       key === 'report:library_players_title' ? '{black} against {white}' :
       key === 'report:library_game_accessible' ? '{title} / {black} versus {white}' : (fallback ?? key)
@@ -55,11 +56,23 @@ function renderDialog(options: { loading?: boolean; open?: boolean } = {}) {
 }
 
 beforeEach(() => {
+  language.current = 'cn';
   vi.mocked(KifuAPI.getAlbums).mockReset();
   vi.mocked(KifuAPI.getAlbums).mockResolvedValue(response([album(1), album(2)]));
 });
 
 describe('ReportLibraryImportDialog data flow', () => {
+  it('keeps the selected game when its language-specific list reloads', async () => {
+    const user = userEvent.setup();
+    const view = renderDialog();
+    await user.click(await screen.findByRole('button', { name: /赛事 2/ }));
+    language.current = 'ru';
+    vi.mocked(KifuAPI.getAlbums).mockResolvedValueOnce(response([album(1, 'Турнир 1'), album(2, 'Турнир 2')]));
+    view.rerender(<ThemeProvider theme={kioskTheme}><ReportLibraryImportDialog open onClose={view.onClose} onImport={view.onImport} /></ThemeProvider>);
+    await waitFor(() => expect(screen.getByRole('button', { name: /Турнир 2/ })).toHaveAttribute('aria-pressed', 'true'));
+    await user.click(screen.getByRole('button', { name: '仅导入' }));
+    expect(view.onImport).toHaveBeenCalledWith(album(2, 'Турнир 2'));
+  });
   it('fetches only when opened, searches on Enter, and paginates', async () => {
     const user = userEvent.setup();
     const view = renderDialog({ open: false });

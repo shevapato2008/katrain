@@ -195,6 +195,11 @@ const ResearchPage = () => {
     // Deep linking: load kifu from ?kifu_id=xxx query param
     const kifuLoadedRef = useRef<string | null>(null);
     const kifuRequestRef = useRef(0);
+    const lastKifuPlayersRef = useRef<{ id: string; black: string; white: string } | null>(null);
+    const currentPlayersRef = useRef({ black: board.playerBlack, white: board.playerWhite });
+    useEffect(() => {
+        currentPlayersRef.current = { black: board.playerBlack, white: board.playerWhite };
+    }, [board.playerBlack, board.playerWhite]);
     /* `?analyze=1` 不在这条 effect 里直接开分析，而是先立一个标志、等下一帧再开。
        原因见下面那条 effect 的注释 —— 这里直接开会拿一张空棋盘去分析。 */
     const [autoAnalyzeAfterLoad, setAutoAnalyzeAfterLoad] = useState(false);
@@ -211,8 +216,12 @@ const ResearchPage = () => {
                     board.loadFromSGF(album.sgf_content);
                     kifuLoadedRef.current = kifuId;
                 }
-                board.setPlayerBlack(album.display_player_black ?? t('game:black_side', '黑方'));
-                board.setPlayerWhite(album.display_player_white ?? t('game:white_side', '白方'));
+                const black = album.display_player_black ?? t('game:black_side', '黑方');
+                const white = album.display_player_white ?? t('game:white_side', '白方');
+                const previous = lastKifuPlayersRef.current;
+                if (firstLoad || previous?.id !== kifuId || currentPlayersRef.current.black === previous.black) board.setPlayerBlack(black);
+                if (firstLoad || previous?.id !== kifuId || currentPlayersRef.current.white === previous.white) board.setPlayerWhite(white);
+                lastKifuPlayersRef.current = { id: kifuId, black, white };
 
                 // Auto-start analysis if ?analyze=1 is set
                 if (firstLoad && searchParams.get('analyze') === '1') {

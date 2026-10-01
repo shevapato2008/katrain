@@ -17,7 +17,9 @@ import PublicIcon from '@mui/icons-material/Public';
 import { useAuth } from '../../../context/AuthContext';
 import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
 import { KifuAPI } from '../../../api/kifuApi';
+import type { KifuAlbumSummary } from '../../../types/kifu';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { translateResult } from '../../../utils/resultTranslation';
 
 type Category = 'my_games' | 'my_positions' | 'public_kifu';
 
@@ -64,16 +66,16 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
       if (category === 'public_kifu') {
         const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE, lang });
         if (requestGeneration !== requestGenerationRef.current) return;
-        setItems(resp.items.map((item: any) => ({
+        setItems(resp.items.map((item: KifuAlbumSummary) => ({
           id: String(item.id),
           title: item.display_event || `${item.display_player_black ?? t('game:black_side', '黑方')} vs ${item.display_player_white ?? t('game:white_side', '白方')}`,
           playerBlack: item.display_player_black ?? t('game:black_side', '黑方'),
           playerWhite: item.display_player_white ?? t('game:white_side', '白方'),
           result: item.result || '',
+          rules: item.rules,
           moveCount: item.move_count || 0,
-          date: item.game_date || item.event_date || '',
+          date: item.date_played || '',
           source: 'public_kifu' as const,
-          sgfContent: item.sgf_content,
         })));
         setTotal(resp.total);
       } else if (token) {
@@ -91,6 +93,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           playerBlack: item.player_black || '',
           playerWhite: item.player_white || '',
           result: item.result || '',
+          rules: item.rules,
           moveCount: item.move_count,
           date: item.game_date || item.created_at || '',
           source: category,
@@ -261,7 +264,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
                               {item.title}
                             </Typography>
                             {item.result && (
-                              <Chip label={item.result} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
+                              <Chip label={translateResult(item.result, t, item.rules)} size="small" sx={{ height: 20, fontSize: '0.7rem' }} />
                             )}
                           </Box>
                         }
@@ -302,6 +305,7 @@ interface GameListItem {
   playerBlack: string;
   playerWhite: string;
   result: string;
+  rules?: string | null;
   moveCount: number;
   date: string;
   source: Category | 'public_kifu';

@@ -15,7 +15,10 @@ from katrain.web.kifu.name_candidates import (
     validate_candidate,
     render_event_components,
 )
-from katrain.web.kifu.name_evidence import negative_closure_evidence_sha256, registry_sha256
+from katrain.web.kifu.name_evidence import (
+    negative_closure_evidence_sha256, negative_closure_scope_sha256,
+    negative_closure_template_sha256, registry_sha256,
+)
 from scripts.kifu_name_candidates import main
 
 
@@ -92,6 +95,22 @@ def candidate(**updates):
             "reviewed_at": item["reviewed_at"], "conclusion": "Reviewed this language's classification phrases",
         }
     return item
+
+
+def approved_generated(row, evidence):
+    row = {**row, "review_conclusion": "approved_generated_display_and_rule"}
+    row["generated_review"] = {
+        "decision": "approve_generated", "display_name": row["display_name"],
+        "owner": row["owner"], "lang": row["lang"],
+        "generation_rule_version": row["generation_rule_version"],
+        "research_sha256": row["research_sha256"],
+        "original_name": evidence["original_name"], "reading": evidence["reading"],
+        "reading_basis_url": evidence["reading_basis_url"],
+        "reviewer_id": row["reviewer_id"], "reviewer_model": row["reviewer_model"],
+        "reviewed_at": row["reviewed_at"],
+        "reason": "Checked the exact spelling against the named rule and sourced reading",
+    }
+    return row
 
 
 def member(owner=None, lang="ru", raw_value=None):
@@ -187,9 +206,24 @@ def test_generated_name_requires_completed_negative_scope_and_reading_basis():
     negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
         status="not_found", candidate_name="", identity_basis="", body_excerpt="Search finished with no Russian name",
         search_scope="All player names", scope_complete=True, negative_outcome="no_target_string")])
-    generated = candidate(display_name="Го Сэйгэн", decision_kind="generated",
-                          research_sha256=canonical_sha256(negative), generation_rule_version="ja-ru-v1")
+    generated = approved_generated(candidate(display_name="Го Сэйгэн", decision_kind="generated",
+                                             research_sha256=canonical_sha256(negative),
+                                             generation_rule_version="ja-ru-v1"), negative)
     assert validate_candidate(generated, negative, registry(), inventory())["decision_kind"] == "generated"
+    with pytest.raises(CandidateError, match="generated review"):
+        validate_candidate({**generated, "review_conclusion": "rejected: invented spelling"},
+                           negative, registry(), inventory())
+    for change in ({"display_name": "Другое имя"}, {"owner": {"kind": "player", "id": 18}},
+                   {"lang": "ua"}, {"generation_rule_version": "other-rule"},
+                   {"reading": "other reading"}, {"research_sha256": "0" * 64},
+                   {"reviewer_id": "someone-else"}, {"decision": "reject_generated"}):
+        bad = deepcopy(generated)
+        bad["generated_review"].update(change)
+        with pytest.raises(CandidateError, match="generated review"):
+            validate_candidate(bad, negative, registry(), inventory())
+    with pytest.raises(CandidateError, match="generated review"):
+        validate_candidate({key: value for key, value in generated.items() if key != "generated_review"},
+                           negative, registry(), inventory())
     with pytest.raises(CandidateError):
         validate_candidate(candidate(decision_kind="generated", generation_rule_version="ja-ru-v1"),
                            research(), registry(), inventory())
@@ -199,7 +233,9 @@ def test_generated_name_requires_completed_negative_scope_and_reading_basis():
         validate_candidate({**generated, "research_sha256": canonical_sha256(missing_reading)},
                            missing_reading, registry(), inventory())
     with pytest.raises(CandidateError, match="script"):
-        validate_candidate({**generated, "display_name": "Go Seigen"}, negative, registry(), inventory())
+        validate_candidate({**generated, "display_name": "Go Seigen",
+                            "generated_review": {**generated["generated_review"], "display_name": "Go Seigen"}},
+                           negative, registry(), inventory())
 
 
 def test_finite_negative_closure_only_opens_generated_candidate_for_its_owner():
@@ -210,22 +246,41 @@ def test_finite_negative_closure_only_opens_generated_candidate_for_its_owner():
                             status="not_found", candidate_name="", identity_basis="",
                             body_excerpt="Search completed without a Russian name", check_id="go-search",
                             method="site_search", response_sha256="a" * 64, completeness="complete",
+                            searched_forms=["Го Сэйгэн"], entity_field_scope=None, scan_id="go-profiles",
+                            page_index=1, page_count=1, next_page_url="", pagination_exhausted=True,
+                            pagination_basis="No next-page link",
                             search_scope="Indexed profiles", scope_complete=True,
                             negative_outcome="no_target_string")])
     negative["negative_closure"] = {
         "version": 1, "owner": negative["owner"], "lang": "ru", "source_lang": "ja",
         "scope_id": "player-17-ru", "scope_version": "1", "registry_sha256": negative["registry_sha256"],
         "required_check_ids": ["go-search"], "scope_boundary": "Indexed profiles only",
+        "required_checks": [{"check_id": "go-search", "source_id": "go", "method": "site_search",
+                             "query": "Go Seigen", "url": "https://example.org/go",
+                             "searched_forms": ["Го Сэйгэн"], "entity_field_scope": None,
+                             "scan_id": "go-profiles", "page_index": 1, "page_count": 1,
+                             "next_page_url": "", "pagination_exhausted": True,
+                             "pagination_basis": "No next-page link"}], "known_leads": [],
         "retained_limitations": ["Printed sources"], "reviewer_id": "scope-reviewer",
         "reviewer_model": "gpt-6-astra", "reviewed_at": "2026-10-02T11:00:00Z",
         "conclusion": "approved_not_found_in_scope", "reason": "No admissible Russian name in this scope",
     }
+    negative["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(negative)
+    negative["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(negative)
     negative["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(negative)
-    generated = candidate(decision_kind="generated", generation_rule_version="ja-ru-v1",
-                          research_sha256=canonical_sha256(negative), reviewed_at="2026-10-02T11:01:00Z")
+    generated = approved_generated(candidate(decision_kind="generated", generation_rule_version="ja-ru-v1",
+                                             research_sha256=canonical_sha256(negative),
+                                             reviewed_at="2026-10-02T11:01:00Z"), negative)
     assert validate_candidate(generated, negative, sources, inventory())["decision_kind"] == "generated"
     with pytest.raises(CandidateError, match="negative closure"):
-        validate_candidate({**generated, "reviewed_at": "2026-10-02T10:59:00Z"},
+        validate_candidate({**generated, "reviewed_at": "2026-10-02T10:59:00Z",
+                            "generated_review": {**generated["generated_review"],
+                                                 "reviewed_at": "2026-10-02T10:59:00Z"}},
+                           negative, sources, inventory())
+    with pytest.raises(CandidateError, match="negative closure"):
+        validate_candidate({**generated, "reviewed_at": "2026-10-02T11:00:00Z",
+                            "generated_review": {**generated["generated_review"],
+                                                 "reviewed_at": "2026-10-02T11:00:00Z"}},
                            negative, sources, inventory())
     changed = deepcopy(negative)
     changed["owner"] = {"kind": "player", "id": 18}
@@ -245,6 +300,8 @@ def test_finite_negative_closure_only_opens_generated_candidate_for_its_owner():
     event_research["original_name"] = "大手合"
     event_research["reading"] = ""
     event_research["reading_basis_url"] = ""
+    event_research["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(event_research)
+    event_research["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(event_research)
     event_research["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(event_research)
     event_candidate = {**generated, "owner": event_research["owner"],
                        "research_sha256": canonical_sha256(event_research)}

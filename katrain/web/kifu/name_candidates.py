@@ -231,9 +231,26 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
             _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
                      "generated name needs sourced original reading")
+            if row["review_status"] == "approved":
+                review = row.get("generated_review")
+                _require(isinstance(review, dict)
+                         and row.get("review_conclusion") == "approved_generated_display_and_rule"
+                         and review.get("decision") == "approve_generated"
+                         and review.get("display_name") == display
+                         and review.get("owner") == row["owner"] and review.get("lang") == row["lang"]
+                         and review.get("generation_rule_version") == row["generation_rule_version"]
+                         and review.get("research_sha256") == row["research_sha256"]
+                         and review.get("original_name") == checked["original_name"]
+                         and review.get("reading") == checked["reading"]
+                         and review.get("reading_basis_url") == checked["reading_basis_url"]
+                         and review.get("reviewer_id") == row["reviewer_id"]
+                         and review.get("reviewer_model") == row["reviewer_model"]
+                         and review.get("reviewed_at") == row["reviewed_at"]
+                         and _text(review.get("reason")),
+                         "approved generated name needs an affirmative exact generated review")
             closure = checked.get("negative_closure")
             if closure and row["review_status"] == "approved":
-                _require(_time(row["reviewed_at"]) >= _time(closure["reviewed_at"]),
+                _require(_time(row["reviewed_at"]) > _time(closure["reviewed_at"]),
                          "generated name review must follow its negative closure")
             _require(row["generation_rule_version"] != "none", "generated name needs a named conversion rule")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "generated name lacks target-language script")

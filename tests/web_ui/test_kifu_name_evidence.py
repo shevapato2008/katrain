@@ -3,6 +3,7 @@
 import hashlib
 import json
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,8 @@ from katrain.web.kifu.name_evidence import (
     product_language_tag,
     registry_sha256,
     negative_closure_evidence_sha256,
+    negative_closure_scope_sha256,
+    negative_closure_template_sha256,
     source_plan,
     validate_research_record,
 )
@@ -84,26 +87,47 @@ def _finite_negative():
                    identity_basis="", observed_lang="uk", body_excerpt="Search found no Ukrainian name",
                    search_scope="Named pages and indexed results", scope_complete=True,
                    negative_outcome="no_target_string", method="site_search",
+                   entity_field_scope=None, scan_id="professional-scan",
                    response_sha256="a" * 64),
             _check("wd", check_id="wikidata-uk", status="not_found", candidate_name="", identity_basis="",
-                   url="https://www.wikidata.org/wiki/Q1", observed_lang="uk",
+                   url="https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=uk&props=labels%7Caliases%7Csitelinks&format=json", observed_lang="uk",
                    body_excerpt="Q1 has no uk label or alias", search_scope="Q1 exact uk labels and aliases",
                    scope_complete=True, negative_outcome="no_target_string", method="entity_api",
+                   entity_field_scope={"entity_id": "Q1", "requested_lang": "uk",
+                                       "fields": ["labels", "aliases", "sitelinks"],
+                                       "sitelink_site": "ukwiki"},
+                   scan_id="wikidata-q1",
                    response_sha256="b" * 64),
         ],
     )
     for check in record["source_checks"]:
         check["completeness"] = "complete"
+        check["searched_forms"] = ["Oteai", "Отеаи"]
+        check["page_index"] = 1
+        check["page_count"] = 1
+        check["next_page_url"] = ""
+        check["pagination_exhausted"] = True
+        check["pagination_basis"] = "Result has no next-page link"
     record["negative_closure"] = {
         "version": 1, "owner": record["owner"], "lang": "ua", "source_lang": "ja",
         "scope_id": "oteai-uk-pilot", "scope_version": "1", "registry_sha256": record["registry_sha256"],
         "required_check_ids": ["professional", "wikidata-uk"],
+        "required_checks": [
+            {key: check[key] for key in ("check_id", "source_id", "method", "query", "url",
+                                          "searched_forms", "entity_field_scope", "scan_id", "page_index",
+                                          "page_count", "next_page_url", "pagination_exhausted",
+                                          "pagination_basis")}
+            for check in record["source_checks"]
+        ],
+        "known_leads": [],
         "scope_boundary": "Named pages, indexed search, and exact Q1 uk fields",
         "retained_limitations": ["Unindexed forum posts and print publications"],
         "reviewer_id": "negative-reviewer", "reviewer_model": "gpt-6-astra",
         "reviewed_at": "2026-10-02T11:00:00Z", "conclusion": "approved_not_found_in_scope",
         "reason": "All listed checks finished without an admissible Ukrainian name",
     }
+    record["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(record)
+    record["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(record)
     record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
     return record
 
@@ -125,6 +149,11 @@ def test_finite_negative_closure_binds_exact_identity_scope_checks_and_reading()
         bad["negative_closure"].update(change)
         with pytest.raises(EvidenceError):
             validate_research_record(bad, _registry())
+    altered = deepcopy(record)
+    altered["negative_closure"]["retained_limitations"].append("Another unavailable source")
+    altered["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(altered)
+    with pytest.raises(EvidenceError, match="scope.*hash"):
+        validate_research_record(altered, _registry())
 
 
 def test_finite_negative_closure_rejects_unfinished_and_unsupported_checks():
@@ -139,6 +168,120 @@ def test_finite_negative_closure_rejects_unfinished_and_unsupported_checks():
             validate_research_record(bad, _registry())
 
 
+def test_finite_scope_requires_exact_declared_queries_urls_and_all_pages():
+    record = _finite_negative()
+    for field, value in (("query", "different query"), ("url", "https://example.org/other"),
+                         ("method", "other method"), ("searched_forms", ["removed original term"])):
+        bad = deepcopy(record)
+        bad["source_checks"][0][field] = value
+        bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+        with pytest.raises(EvidenceError, match="manifest|required check"):
+            validate_research_record(bad, _registry())
+    paged = deepcopy(record)
+    paged["source_checks"][0]["page_count"] = 2
+    paged["negative_closure"]["required_checks"][0]["page_count"] = 2
+    paged["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(paged)
+    paged["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(paged)
+    paged["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(paged)
+    with pytest.raises(EvidenceError, match="page"):
+        validate_research_record(paged, _registry())
+    second = deepcopy(paged["source_checks"][0])
+    second.update(check_id="professional-page-2", page_index=2,
+                  url="https://example.org/search?page=2", next_page_url="",
+                  pagination_exhausted=True, pagination_basis="Page 2 has no continuation")
+    paged["source_checks"][0]["next_page_url"] = second["url"]
+    paged["source_checks"][0]["pagination_exhausted"] = False
+    paged["source_checks"][0]["pagination_basis"] = "Page 1 links to page 2"
+    paged["source_checks"].append(second)
+    paged["negative_closure"]["required_check_ids"].append(second["check_id"])
+    fields = tuple(paged["negative_closure"]["required_checks"][0])
+    paged["negative_closure"]["required_checks"][0] = {
+        field: paged["source_checks"][0][field] for field in fields
+    }
+    paged["negative_closure"]["required_checks"].append({field: second[field] for field in fields})
+    paged["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(paged)
+    paged["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(paged)
+    paged["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(paged)
+    assert validate_research_record(paged, _registry())["scope_status"] == "not_found_in_scope"
+
+
+def test_finite_scope_pins_terminal_page_and_exact_entity_fields():
+    record = _finite_negative()
+    for change in ({"pagination_exhausted": False}, {"next_page_url": "https://example.org/page-2"}):
+        bad = deepcopy(record)
+        bad["source_checks"][0].update(change)
+        bad["negative_closure"]["required_checks"][0].update(change)
+        bad["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(bad)
+        bad["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(bad)
+        bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+        with pytest.raises(EvidenceError, match="terminal|page chain"):
+            validate_research_record(bad, _registry())
+    bad = deepcopy(record)
+    bad["source_checks"][1]["entity_field_scope"]["requested_lang"] = "ru"
+    bad["negative_closure"]["required_checks"][1]["entity_field_scope"]["requested_lang"] = "ru"
+    bad["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(bad)
+    bad["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(bad)
+    bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+    with pytest.raises(EvidenceError, match="entity|target-language"):
+        validate_research_record(bad, _registry())
+    bad = deepcopy(record)
+    wrong_action = bad["source_checks"][1]["url"].replace("action=wbgetentities", "action=query")
+    bad["source_checks"][1]["url"] = wrong_action
+    bad["negative_closure"]["required_checks"][1]["url"] = wrong_action
+    bad["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(bad)
+    bad["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(bad)
+    bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+    with pytest.raises(EvidenceError, match="entity"):
+        validate_research_record(bad, _registry())
+    bad = deepcopy(record)
+    bad["source_checks"][1]["entity_field_scope"]["sitelink_site"] = "ruwiki"
+    bad["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(bad)
+    bad["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(bad)
+    bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+    with pytest.raises(EvidenceError, match="entity|target-language"):
+        validate_research_record(bad, _registry())
+
+
+def test_finite_no_string_cannot_hide_obvious_known_forms_in_captured_body():
+    record = _finite_negative()
+    check = record["source_checks"][0]
+    check["body_excerpt"] = "UFGO forum discusses Russian Отеаи and English Oteai"
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    with pytest.raises(EvidenceError, match="known form|lead"):
+        validate_research_record(record, _registry())
+    check["negative_outcome"] = "rejected_leads"
+    check["rejected_leads"] = [
+        {"original_name": term, "candidate_name": term, "url": "https://example.org/forum",
+         "body_sha256": "c" * 64, "body_excerpt": check["body_excerpt"], "observed_lang": lang,
+         "language_basis": "reviewed_text", "rejection_basis": f"{lang} source, not Ukrainian usage",
+         "reviewer_id": "lead-reviewer", "reviewer_model": "gpt-6-sol",
+         "reviewed_at": "2026-10-02T10:30:00Z", "decision": "rejected_for_target_language"}
+        for term, lang in (("Отеаи", "ru"), ("Oteai", "en"))
+    ]
+    record["negative_closure"]["known_leads"] = [
+        {"check_id": check["check_id"], "candidate_name": lead["candidate_name"], "url": lead["url"]}
+        for lead in check["rejected_leads"]
+    ]
+    record["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(record)
+    record["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(record)
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+    omitted = deepcopy(record)
+    omitted["source_checks"][0]["rejected_leads"].pop()
+    omitted["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(omitted)
+    with pytest.raises(EvidenceError, match="known form|lead"):
+        validate_research_record(omitted, _registry())
+
+
+def test_finite_scope_reports_malformed_rejected_lead_as_evidence_error():
+    record = _finite_negative()
+    record["source_checks"][0]["negative_outcome"] = "rejected_leads"
+    record["source_checks"][0]["rejected_leads"] = [{"candidate_name": 123}]
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    with pytest.raises(EvidenceError, match="rejected lead"):
+        validate_research_record(record, _registry())
+
+
 def test_finite_negative_closure_preserves_independently_rejected_leads():
     record = _finite_negative()
     check = record["source_checks"][0]
@@ -151,6 +294,11 @@ def test_finite_negative_closure_preserves_independently_rejected_leads():
         "reviewer_id": "lead-reviewer", "reviewer_model": "gpt-6-sol",
         "reviewed_at": "2026-10-02T10:30:00Z", "decision": "rejected_for_target_language",
     }]
+    record["negative_closure"]["known_leads"] = [
+        {"check_id": check["check_id"], "candidate_name": "Отеай", "url": "https://example.org/forum"}
+    ]
+    record["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(record)
+    record["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(record)
     record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
     assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
     late = deepcopy(record)
@@ -170,10 +318,17 @@ def test_finite_scope_records_foreign_language_pages_without_counting_them_as_ta
     record = _finite_negative()
     foreign = deepcopy(record["source_checks"][0])
     foreign.update(check_id="russian-page", observed_lang="ru", query="Oteai on named Russian page",
-                   url="https://example.org/pro-go-2", body_excerpt="Russian page has no Ukrainian Oteai term",
-                   search_scope="Named Russian page body")
+                   url="https://example.org/pro-go-2", body_excerpt="Russian page has no named term",
+                   search_scope="Named Russian page body", scan_id="russian-page")
     record["source_checks"].append(foreign)
     record["negative_closure"]["required_check_ids"].append("russian-page")
+    record["negative_closure"]["required_checks"].append({
+        key: foreign[key] for key in ("check_id", "source_id", "method", "query", "url",
+                                  "searched_forms", "entity_field_scope", "scan_id", "page_index",
+                                  "page_count", "next_page_url", "pagination_exhausted", "pagination_basis")
+    })
+    record["negative_closure"]["scope_template_sha256"] = negative_closure_template_sha256(record)
+    record["negative_closure"]["scope_sha256"] = negative_closure_scope_sha256(record)
     record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
     assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
     record["source_checks"][0]["observed_lang"] = "ru"
@@ -205,6 +360,24 @@ def test_repository_source_registry_is_versioned_and_has_all_product_languages()
         "china-sport", "pts-tw", "baduk-mobile", "cyberoro", "centrocultural-sol",
         "gofed-be", "gomagic-ru", "go-school-tr", "asialogy-tr", "merdiven-go-tr"
     )} == {"official", "language_go", "reference"}
+
+
+def test_oteai_scope_template_pins_named_pages_known_leads_and_pending_native_search():
+    path = Path(__file__).resolve().parents[2] / "docs/resource/kifu-name-oteai-uk-manifest.json"
+    template = json.loads(path.read_text(encoding="utf-8"))
+    record = {"lang": template["lang"], "source_lang": template["source_lang"],
+              "registry_sha256": template["registry_sha256"], "negative_closure": template}
+    assert template["status"] == "pending_review"
+    assert template["scope_template_sha256"] == negative_closure_template_sha256(record)
+    assert template["scope_template_sha256"] == "489b505914c248f60fc956c54ce0d5ed2665bd69c6e94dbd889117efb70d022b"
+    assert template["registry_sha256"] == registry_sha256(load_registry())
+    ids = set(template["required_check_ids"])
+    assert {"ufgo-pro-go-1", "ufgo-pro-go-2", "ufgo-pro-go-3", "ufgo-go-literature",
+            "forum-824-page-1", "forum-824-page-2", "wikidata-q4335071-uk"} <= ids
+    assert len([item for item in ids if item.startswith("ukwiki-search-")]) == 9
+    assert not any(item.startswith("ufgo-search-") for item in ids)
+    assert any("UFGO native" in limit for limit in template["retained_limitations"])
+    assert {item["candidate_name"] for item in template["known_leads"]} == {"Отеаи", "Отэаи", "Oteai"}
 
 
 def test_source_plan_places_professional_references_before_discovery_leads():

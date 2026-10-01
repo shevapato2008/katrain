@@ -2,6 +2,10 @@
 
 调查日期：2026-10-02。范围按委托限定为 UFGO 指定文章/文学页、`uk.wikipedia.org`、`ufgo.org`、`forum.ufgo.org` 与 Wikidata Q4335071。目的是检验是否存在可采纳的乌克兰语称呼；不推测音译，不批准名称。
 
+## 结构化范围清单（待独立审核）
+
+[逐项范围模板](kifu-name-oteai-uk-manifest.json)固定四个 UFGO 指定页面、论坛主题 824 的两页、乌克兰维基的六个精确词项和三个描述性查询，以及 Wikidata Q4335071 精确 `uk` 标签/别名与 `ukwiki` 链接字段，共 16 项必查。其 `scope_template_sha256` 为 `489b505914c248f60fc956c54ce0d5ed2665bd69c6e94dbd889117efb70d022b`。UFGO 站内九个查询因无法取得可读的逐条结果及续页，连同精确查询词保留在 `retained_limitations`，**不算已完成的必查项**。该模板当前标记 `pending_review`：虽已固定 URL、检索词、分页和已知论坛线索，尚未经独立审核者逐条签署，也没有形成可批准的实际检查记录。模板不含生产对象 ID；实际闭环须按准确事件 owner 再计算绑定 owner 的 `scope_sha256`、观察证据的 `evidence_sha256` 和完整研究 `research_sha256`。
+
 ## UFGO 指定页面
 
 | URL | 页面正文实际语言 | 检查结果 |

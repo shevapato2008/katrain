@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
 
@@ -122,6 +122,10 @@ def negative_closure_evidence_sha256(record: dict) -> str:
         "scope_boundary": closure.get("scope_boundary"),
         "retained_limitations": closure.get("retained_limitations"),
         "required_check_ids": closure.get("required_check_ids"),
+        "required_checks": closure.get("required_checks"),
+        "known_leads": closure.get("known_leads"),
+        "scope_template_sha256": closure.get("scope_template_sha256"),
+        "scope_sha256": closure.get("scope_sha256"),
         "source_checks": record.get("source_checks"),
         "original_name": record.get("original_name"),
         "original_language": record.get("original_language"),
@@ -129,6 +133,33 @@ def negative_closure_evidence_sha256(record: dict) -> str:
         "reading": record.get("reading"), "reading_basis_url": record.get("reading_basis_url"),
     }
     canonical = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _negative_scope_template(record: dict) -> dict:
+    closure = record.get("negative_closure") or {}
+    return {
+        "lang": record.get("lang"),
+        "source_lang": record.get("source_lang"), "registry_sha256": record.get("registry_sha256"),
+        "scope_id": closure.get("scope_id"), "scope_version": closure.get("scope_version"),
+        "scope_boundary": closure.get("scope_boundary"),
+        "retained_limitations": closure.get("retained_limitations"),
+        "required_check_ids": closure.get("required_check_ids"),
+        "required_checks": closure.get("required_checks"), "known_leads": closure.get("known_leads"),
+    }
+
+
+def negative_closure_template_sha256(record: dict) -> str:
+    """Hash a reusable scope template before binding it to a database owner."""
+    scope = _negative_scope_template(record)
+    canonical = json.dumps(scope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def negative_closure_scope_sha256(record: dict) -> str:
+    """Identify reviewed obligations and their exact owner without hashing observed results."""
+    scope = {"owner": record.get("owner"), "template_sha256": negative_closure_template_sha256(record)}
+    canonical = json.dumps(scope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -284,15 +315,101 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
              and len(required) == len(set(required))
              and len(check_ids) == len(set(check_ids)) and set(required) == set(check_ids),
              "finite negative closure must bind every unique check ID")
+    manifest = closure.get("required_checks")
+    fields = ("check_id", "source_id", "method", "query", "url", "searched_forms",
+              "entity_field_scope", "scan_id", "page_index", "page_count", "next_page_url",
+              "pagination_exhausted", "pagination_basis")
+    _require(isinstance(manifest, list) and len(manifest) == len(checks)
+             and all(isinstance(item, dict) and set(item) == set(fields) for item in manifest)
+             and all(_text(item["check_id"]) for item in manifest)
+             and {item["check_id"] for item in manifest} == set(required),
+             "finite negative closure needs an exact required check manifest")
+    declared = {item["check_id"]: item for item in manifest}
+    _require(all({field: check.get(field) for field in fields} == declared[check["check_id"]]
+                 for check in checks), "source check differs from required check manifest")
+    pages: dict[str, list[dict]] = {}
+    for item in manifest:
+        _require(type(item["page_index"]) is int and type(item["page_count"]) is int
+                 and 1 <= item["page_index"] <= item["page_count"]
+                 and _text(item["scan_id"]) and _text(item["pagination_basis"]),
+                 "required check page index/count invalid")
+        pages.setdefault(item["scan_id"], []).append(item)
+    for group in pages.values():
+        count = group[0]["page_count"]
+        _require(all(item["page_count"] == count and item["source_id"] == group[0]["source_id"]
+                     and item["method"] == group[0]["method"] and item["query"] == group[0]["query"]
+                     for item in group)
+                 and len(group) == count
+                 and {item["page_index"] for item in group} == set(range(1, count + 1)),
+                 "required check manifest omits or duplicates a page")
+        by_page = {item["page_index"]: item for item in group}
+        _require(all(item["next_page_url"] == (by_page[index + 1]["url"] if index < count else "")
+                     and item["pagination_exhausted"] is (index == count)
+                     for index, item in by_page.items()),
+                 "required check page chain lacks terminal exhaustion evidence")
     registered = set(registry["language_scopes"][record["lang"]]["required_source_ids"])
     target = product_language_tag(record["lang"], registry)
+    sources = {source["id"]: source for source in registry["sources"]}
+    for item in manifest:
+        if sources[item["source_id"]]["tier"] == "discovery":
+            entity = item["entity_field_scope"]
+            parsed = urlparse(item["url"])
+            params = parse_qs(parsed.query)
+            _require(item["method"] == "entity_api" and isinstance(entity, dict)
+                     and parsed.path == "/w/api.php"
+                     and params.get("action") == ["wbgetentities"]
+                     and params.get("format") == ["json"]
+                     and set(entity) == {"entity_id", "requested_lang", "fields", "sitelink_site"}
+                     and bool(re.fullmatch(r"Q[1-9][0-9]*", str(entity["entity_id"])))
+                     and entity["requested_lang"] == target
+                     and entity["sitelink_site"] == target.split("-")[0] + "wiki"
+                     and isinstance(entity["fields"], list)
+                     and all(_text(field) for field in entity["fields"])
+                     and set(entity["fields"]) == {"labels", "aliases", "sitelinks"}
+                     and params.get("ids") == [entity["entity_id"]]
+                     and params.get("languages") == [target]
+                     and set(params.get("props", [""])[0].split("|")) == set(entity["fields"]),
+                     "discovery check needs exact entity and target-language fields")
+        else:
+            _require(item["entity_field_scope"] is None,
+                     "non-entity check cannot claim entity fields")
     _require(registered <= {check["source_id"] for check in checks
                             if _matches_target(check.get("observed_lang", ""), target)},
              "finite negative closure lacks a completed target-language check for a required source")
     _require(all(check.get("status") == "not_found" and check.get("completeness") == "complete"
                  and check.get("scope_complete") is True and _text(check.get("method"))
+                 and isinstance(check.get("searched_forms"), list) and bool(check["searched_forms"])
+                 and all(_text(form) for form in check["searched_forms"])
                  and bool(_HEX_SHA256.fullmatch(str(check.get("response_sha256", ""))))
                  for check in checks), "finite negative closure has partial or unavailable checks")
+    known_leads = closure.get("known_leads")
+    _require(isinstance(known_leads, list)
+             and all(isinstance(item, dict) and set(item) == {"check_id", "candidate_name", "url"}
+                     and _text(item["check_id"]) and item["check_id"] in declared
+                     and _text(item["candidate_name"])
+                     and _https_url(item["url"]) for item in known_leads),
+             "finite negative closure needs an explicit known lead list")
+    _require(len({(item["check_id"], item["candidate_name"], item["url"])
+                  for item in known_leads}) == len(known_leads), "duplicate known lead")
+    for check in checks:
+        leads = check.get("rejected_leads", [])
+        _require(isinstance(leads, list) and all(isinstance(lead, dict) for lead in leads),
+                 "rejected leads must be a list of records")
+        _require(all(_text(lead.get("candidate_name")) for lead in leads),
+                 "rejected lead needs a candidate name")
+        forms = [*check["searched_forms"], record["original_name"],
+                 *(item["candidate_name"] for item in known_leads if item["check_id"] == check["check_id"])]
+        matched = {form.casefold() for form in forms
+                   if form.casefold() in check["body_excerpt"].casefold()}
+        rejected = {lead["candidate_name"].casefold() for lead in leads}
+        _require(not matched or check.get("negative_outcome") == "rejected_leads" and matched <= rejected,
+                 "captured known form needs an independently rejected lead")
+    _require(all(any(check["check_id"] == item["check_id"]
+                     and check.get("negative_outcome") == "rejected_leads"
+                     and any(lead.get("candidate_name") == item["candidate_name"]
+                             and lead.get("url") == item["url"] for lead in check.get("rejected_leads", []))
+                     for check in checks) for item in known_leads),
+             "declared known lead lacks adjudication")
     _require(_text(closure.get("reviewer_id")) and closure["reviewer_id"] != record["producer_id"]
              and _text(closure.get("reviewer_model")) and _aware_timestamp(closure.get("reviewed_at"))
              and closure.get("conclusion") == "approved_not_found_in_scope"
@@ -305,6 +422,10 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
                  for check in checks for lead in check.get("rejected_leads", [])
                  if _aware_timestamp(lead.get("reviewed_at"))),
              "negative closure precedes a rejected lead review")
+    _require(closure.get("scope_template_sha256") == negative_closure_template_sha256(record),
+             "finite negative closure scope template hash mismatch")
+    _require(closure.get("scope_sha256") == negative_closure_scope_sha256(record),
+             "finite negative closure scope hash mismatch")
     _require(closure.get("evidence_sha256") == negative_closure_evidence_sha256(record),
              "finite negative closure evidence hash mismatch")
 

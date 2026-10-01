@@ -89,6 +89,14 @@ def test_asset_tables_are_protected_from_the_drift_rebuild():
         "kifu_album_sources",
         "kifu_dedup_batches",
         "kifu_dedup_changes",
+        "kifu_raw_player_values",
+        "kifu_raw_event_values",
+        "kifu_raw_player_names",
+        "kifu_raw_event_names",
+        "kifu_name_source_registry",
+        "kifu_name_research_evidence",
+        "kifu_name_batches",
+        "kifu_name_changes",
     } == migrations.PROTECTED_TABLES
     # Billing is a strict subset: the drift rebuild must refuse both groups.
     assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES

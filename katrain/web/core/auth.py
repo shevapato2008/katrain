@@ -142,6 +142,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # PostgreSQL adds these album FKs as NOT VALID; validation is a separate
         # post-deploy operation via validate_kifu_album_foreign_keys().
         migrations.migrate_kifu_catalog_schema(engine)
+        migrations.verify_kifu_name_schema(engine)
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.verify_kifu_album_identity_indexes(engine)
@@ -189,6 +190,7 @@ class SQLAlchemyUserRepository(UserRepository):
         #   1. `backfill_ai_ladder_decisions`(:122)要对存量行发 UPDATE,得先跑完;
         #   2. 上面的漂移重建走 drop+create,会把触发器一并带走 —— 虽然账本在
         #      PROTECTED_TABLES 里不会被重建,但顺序放在后面就不必依赖那个事实。
+        migrations.install_kifu_name_change_immutability(engine)
         ledger_immutability.install(engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:

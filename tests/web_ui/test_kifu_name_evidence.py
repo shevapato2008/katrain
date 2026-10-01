@@ -132,6 +132,324 @@ def _finite_negative():
     return record
 
 
+def _sign_negative(record, *, manifest=False):
+    closure = record["negative_closure"]
+    if manifest:
+        fields = tuple(closure["required_checks"][0])
+        closure["required_checks"] = [{field: check[field] for field in fields}
+                                      for check in record["source_checks"]]
+        closure["required_check_ids"] = [check["check_id"] for check in record["source_checks"]]
+    closure["scope_template_sha256"] = negative_closure_template_sha256(record)
+    closure["scope_sha256"] = negative_closure_scope_sha256(record)
+    closure["evidence_sha256"] = negative_closure_evidence_sha256(record)
+
+
+def _secondary_negative(lang="ua", *, second="wikidata", bounded=False):
+    """Two completed target-language legs; registered unsearched channels stay outside this scope."""
+    registry = _registry()
+    registry["language_tags"].update({"de": "de", "es": "es", "fr": "fr", "tr": "tr", "en": "en", "ko": "ko"})
+    target = registry["language_tags"][lang]
+    registry["sources"].extend([
+        {"id": "target-go", "tier": "language_go", "home_url": "https://example.org/", "language": target},
+        {"id": "target-wiki", "tier": "wikipedia_article", "home_url": "https://example.net/", "language": target},
+    ])
+    registry["language_scopes"][lang] = {"required_source_ids": ["target-go", "target-wiki", "wd"],
+                                          "complete_for_negative_claims": False}
+    record = _finite_negative()
+    record.update(lang=lang, registry_sha256=registry_sha256(registry))
+    professional, other = record["source_checks"]
+    professional.update(source_id="target-go", observed_lang=target)
+    other.update(observed_lang=target,
+                 url=other["url"].replace("languages=uk", "languages=" + target))
+    other["entity_field_scope"].update(requested_lang=target, sitelink_site=target.split("-")[0] + "wiki")
+    other["body_excerpt"] = json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {}, "aliases": {}, "sitelinks": {}}}})
+    other["entity_identity_evidence"] = {
+        "api_url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=ja&props=labels&format=json",
+        "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200, "response_sha256": "c" * 64,
+        "body_excerpt": json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {
+            "ja": {"language": "ja", "value": record["original_name"]}}}}}, ensure_ascii=False),
+        "identity_basis": "Original Japanese name identifies this player; separately checked career dates",
+    }
+    if second != "wikidata":
+        registry["sources"][-1]["tier"] = second
+        other.update(source_id="target-wiki", url="https://example.net/search", method="site_search",
+                     entity_field_scope=None, scan_id="encyclopedia-search")
+        record["registry_sha256"] = registry_sha256(registry)
+    closure = record["negative_closure"]
+    closure.update(version=2, search_policy="secondary_reasonable_v1", bounded_scan_ids=[],
+                   unsearched_source_ids=["target-wiki"] if second == "wikidata" else ["wd"],
+                   lang=lang, registry_sha256=record["registry_sha256"],
+                   scope_boundary="Listed target-language searches only; no global absence claim",
+                   retained_limitations=["Unsearched channel: " + ("target-wiki" if second == "wikidata" else "wd"),
+                                         "Print publications remain unsearched"])
+    if bounded:
+        professional.update(page_count=2, next_page_url="https://example.org/search?page=2",
+                            pagination_exhausted=False, pagination_basis="Page 1 links to page 2")
+        page_two = deepcopy(professional)
+        page_two.update(check_id="professional-page-2", page_index=2,
+                        url=professional["next_page_url"], next_page_url="https://example.org/search?page=3",
+                        continuation_href="?page=3", continuation_excerpt='<a href="?page=3">Next</a>',
+                        pagination_basis="Stopped after two indexed pages; page 3 remains unsearched")
+        page_two["body_excerpt"] += " " + page_two["continuation_excerpt"]
+        record["source_checks"].append(page_two)
+        closure["bounded_scan_ids"] = ["professional-scan"]
+        closure["retained_limitations"].append("professional-scan: https://example.org/search?page=3 and later pages remain unsearched")
+    _sign_negative(record, manifest=True)
+    return record, registry
+
+
+@pytest.mark.parametrize("lang", ["de", "es", "fr", "ru", "tr", "ua"])
+@pytest.mark.parametrize("second", ["wikidata", "wikipedia_article", "encyclopedia"])
+def test_secondary_reasonable_scope_accepts_two_completed_target_language_legs(lang, second):
+    record, registry = _secondary_negative(lang, second=second)
+    result = validate_research_record(record, registry)
+    assert result["scope_status"] == "not_found_in_scope"
+    assert result["review_status"] == "pending"
+
+
+@pytest.mark.parametrize("lang", ["en", "cn", "tw", "jp", "ko"])
+def test_secondary_reasonable_policy_cannot_relax_original_five_languages(lang):
+    record, registry = _secondary_negative(lang)
+    with pytest.raises(EvidenceError, match="secondary|language"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_scope_requires_professional_and_encyclopedia_or_exact_wikidata():
+    record, registry = _secondary_negative()
+    for index in (0, 1):
+        bad = deepcopy(record)
+        bad["source_checks"].pop(index)
+        _sign_negative(bad, manifest=True)
+        with pytest.raises(EvidenceError, match="professional|encyclopedia|Wikidata"):
+            validate_research_record(bad, registry)
+    wrong_source = deepcopy(registry)
+    wrong_source["sources"][-2]["language"] = "ru"
+    record["registry_sha256"] = record["negative_closure"]["registry_sha256"] = registry_sha256(wrong_source)
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="professional|target-language"):
+        validate_research_record(record, wrong_source)
+
+
+@pytest.mark.parametrize("change", [
+    {"observed_lang": "en"}, {"observed_lang": "mul"}, {"fallback": True},
+    {"completeness": "partial"}, {"status": "incomplete"}, {"status": "unavailable"},
+    {"body_excerpt": ""}, {"http_status": 429}, {"response_sha256": ""},
+])
+def test_secondary_reasonable_scope_never_completes_wrong_language_or_failed_capture(change):
+    record, registry = _secondary_negative()
+    record["source_checks"][0].update(change)
+    _sign_negative(record)
+    with pytest.raises(EvidenceError):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_wikidata_leg_must_be_exact_entity_target_fields_on_wikidata():
+    record, registry = _secondary_negative()
+    for mutation in ("entity", "language", "fields", "host"):
+        bad = deepcopy(record)
+        check = bad["source_checks"][1]
+        if mutation == "entity":
+            check["entity_field_scope"]["entity_id"] = "Q2"
+        elif mutation == "language":
+            check["entity_field_scope"]["requested_lang"] = "ru"
+        elif mutation == "fields":
+            check["entity_field_scope"]["fields"] = ["labels"]
+        else:
+            fake = {"id": "fake-discovery", "tier": "discovery",
+                    "home_url": "https://example.net/", "language": "mul"}
+            bad_registry = deepcopy(registry)
+            bad_registry["sources"].append(fake)
+            check.update(source_id="fake-discovery", url=check["url"].replace("www.wikidata.org", "example.net"))
+            bad["registry_sha256"] = bad["negative_closure"]["registry_sha256"] = registry_sha256(bad_registry)
+        _sign_negative(bad, manifest=True)
+        with pytest.raises(EvidenceError, match="entity|Wikidata|target-language"):
+            validate_research_record(bad, bad_registry if mutation == "host" else registry)
+
+
+def test_secondary_reasonable_scope_keeps_all_known_leads_independently_resolved():
+    record, registry = _secondary_negative()
+    check = record["source_checks"][0]
+    lead = {"candidate_name": "Отеаи", "original_name": "大手合", "url": "https://example.org/lead",
+            "body_sha256": "c" * 64, "body_excerpt": "Russian spelling Отеаи",
+            "observed_lang": "ru", "language_basis": "reviewed_text",
+            "rejection_basis": "Russian usage, not Ukrainian usage", "reviewer_id": "lead-reviewer",
+            "reviewer_model": "gpt-6-sol", "reviewed_at": "2026-10-02T10:30:00Z",
+            "decision": "rejected_for_target_language"}
+    record["negative_closure"]["known_leads"] = [
+        {"check_id": check["check_id"], "candidate_name": lead["candidate_name"], "url": lead["url"]}]
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="lead"):
+        validate_research_record(record, registry)
+    check.update(negative_outcome="rejected_leads", rejected_leads=[lead])
+    _sign_negative(record)
+    assert validate_research_record(record, registry)["scope_status"] == "not_found_in_scope"
+    lead["reviewer_id"] = record["producer_id"]
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="independent"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_scope_accepts_continuous_bounded_scan_with_real_continuation():
+    record, registry = _secondary_negative(bounded=True)
+    assert validate_research_record(record, registry)["scope_status"] == "not_found_in_scope"
+    assert record["source_checks"][-1]["pagination_exhausted"] is False
+    assert record["source_checks"][-1]["next_page_url"].endswith("page=3")
+
+
+def test_secondary_reasonable_scope_can_retain_independently_rejected_foreign_language_check():
+    record, registry = _secondary_negative()
+    foreign = deepcopy(record["source_checks"][0])
+    foreign.update(check_id="foreign-lead", scan_id="foreign-forum", observed_lang="ru",
+                   source_id="ru-go", url="https://example.org/forum", body_excerpt="Russian Отеаи",
+                   negative_outcome="rejected_leads", rejected_leads=[{
+                       "candidate_name": "Отеаи", "original_name": "大手合", "url": "https://example.org/forum",
+                       "body_sha256": "c" * 64, "body_excerpt": "Russian Отеаи", "observed_lang": "ru",
+                       "language_basis": "reviewed_text", "rejection_basis": "Russian usage, not Ukrainian",
+                       "reviewer_id": "lead-reviewer", "reviewer_model": "gpt-6-sol",
+                       "reviewed_at": "2026-10-02T10:30:00Z", "decision": "rejected_for_target_language"}])
+    record["source_checks"].append(foreign)
+    record["negative_closure"]["known_leads"] = [
+        {"check_id": "foreign-lead", "candidate_name": "Отеаи", "url": foreign["url"]}]
+    _sign_negative(record, manifest=True)
+    assert validate_research_record(record, registry)["scope_status"] == "not_found_in_scope"
+    record["source_checks"].pop(0)
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="professional"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_scan_cannot_count_the_same_page_twice():
+    record, registry = _secondary_negative(bounded=True)
+    record["source_checks"][-1]["url"] = record["source_checks"][0]["url"]
+    record["source_checks"][0]["next_page_url"] = record["source_checks"][-1]["url"]
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="duplicate|page"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_entity_request_cannot_enable_language_fallback():
+    record, registry = _secondary_negative()
+    record["source_checks"][1]["url"] += "&languagefallback=1"
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="fallback"):
+        validate_research_record(record, registry)
+
+
+@pytest.mark.parametrize("mutation", ["gap", "duplicate", "terminal", "no_next", "wrong_host",
+                                     "loop", "no_basis", "no_limit", "undeclared", "unknown", "duplicate_bound"])
+def test_secondary_reasonable_bounded_scan_rejects_false_or_undocumented_boundaries(mutation):
+    record, registry = _secondary_negative(bounded=True)
+    terminal = record["source_checks"][-1]
+    closure = record["negative_closure"]
+    if mutation == "gap":
+        terminal["page_index"] = 3
+    elif mutation == "duplicate":
+        terminal["page_index"] = 1
+    elif mutation == "terminal":
+        terminal.update(next_page_url="", pagination_exhausted=True)
+    elif mutation == "no_next":
+        terminal["next_page_url"] = ""
+    elif mutation == "wrong_host":
+        terminal["next_page_url"] = "https://unregistered.example/page=3"
+    elif mutation == "loop":
+        terminal["next_page_url"] = record["source_checks"][0]["url"]
+    elif mutation == "no_basis":
+        terminal["pagination_basis"] = ""
+    elif mutation == "no_limit":
+        closure["retained_limitations"] = []
+    elif mutation == "undeclared":
+        closure["bounded_scan_ids"] = []
+    elif mutation == "unknown":
+        closure["bounded_scan_ids"].append("unknown-scan")
+    else:
+        closure["bounded_scan_ids"].append("professional-scan")
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="page|bounded|limitation|scan"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_strategy_bounds_and_reading_are_bound_to_reviewed_hashes():
+    record, registry = _secondary_negative(bounded=True)
+    for field, value in (("search_policy", "other-policy"), ("bounded_scan_ids", []), ("version", 1),
+                         ("scope_boundary", "Changed scope")):
+        bad = deepcopy(record)
+        bad["negative_closure"][field] = value
+        assert negative_closure_template_sha256(bad) != negative_closure_template_sha256(record)
+        assert negative_closure_scope_sha256(bad) != negative_closure_scope_sha256(record)
+        assert negative_closure_evidence_sha256(bad) != negative_closure_evidence_sha256(record)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, registry)
+    bad = deepcopy(record)
+    bad["reading"] = "other reading"
+    with pytest.raises(EvidenceError, match="evidence hash"):
+        validate_research_record(bad, registry)
+
+
+def test_secondary_reasonable_entity_cannot_be_reassigned_while_retaining_original_subject_capture():
+    record, registry = _secondary_negative()
+    check = record["source_checks"][1]
+    check["url"] = check["url"].replace("ids=Q1", "ids=Q2")
+    check["entity_field_scope"]["entity_id"] = "Q2"
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="entity|subject"):
+        validate_research_record(record, registry)
+
+
+@pytest.mark.parametrize("field", ["labels", "aliases", "sitelinks"])
+def test_secondary_reasonable_entity_cannot_claim_absence_when_requested_target_field_exists(field):
+    record, registry = _secondary_negative()
+    check = record["source_checks"][1]
+    response = json.loads(check["body_excerpt"])
+    target = registry["language_tags"][record["lang"]]
+    key = target + "wiki" if field == "sitelinks" else target
+    response["entities"]["Q1"][field][key] = (
+        [{"language": target, "value": "Conventional name"}] if field == "aliases" else
+        {"site": key, "title": "Conventional name"} if field == "sitelinks" else
+        {"language": target, "value": "Conventional name"})
+    check["body_excerpt"] = json.dumps(response)
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="target.*field|absence"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_bounded_scan_cannot_invent_a_continuation_url():
+    record, registry = _secondary_negative(bounded=True)
+    record["source_checks"][-1]["next_page_url"] = "https://example.org/invented-next"
+    record["source_checks"][-1]["pagination_basis"] = "Reasonable scan"
+    record["negative_closure"]["retained_limitations"] = ["professional-scan"]
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="continuation|remaining|unsearched"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_continuation_must_occur_in_terminal_page_capture():
+    record, registry = _secondary_negative(bounded=True)
+    terminal = record["source_checks"][-1]
+    terminal.update(next_page_url="https://example.org/invented-next", continuation_href="/invented-next",
+                    continuation_excerpt='<a href="/invented-next">Next</a>')
+    record["negative_closure"]["retained_limitations"][-1] = (
+        "professional-scan: https://example.org/invented-next and later pages remain unsearched")
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="continuation.*capture|captured.*body"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_scope_cannot_silently_omit_registered_channels():
+    record, registry = _secondary_negative()
+    record["negative_closure"]["retained_limitations"] = []
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="unsearched|limitation"):
+        validate_research_record(record, registry)
+
+
+def test_v1_negative_closure_canonical_hashes_remain_unchanged():
+    record = _finite_negative()
+    assert negative_closure_template_sha256(record) == "642bf583a4144b24afc25a1029da013ed3dc6352f0cee67066099d31713496a2"
+    assert negative_closure_scope_sha256(record) == "11a89e52bab5fa047c47266ff5c0d0c44886d9db348f3a5eecc58916ca83ac61"
+    assert negative_closure_evidence_sha256(record) == "ab8b2fcbfd76edb474c2db1521f0ac6eec61ecfa1b178f0008f4726a7e11926f"
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+
+
 def test_finite_negative_closure_binds_exact_identity_scope_checks_and_reading():
     record = _finite_negative()
     assert _registry()["language_scopes"]["ua"]["complete_for_negative_claims"] is False

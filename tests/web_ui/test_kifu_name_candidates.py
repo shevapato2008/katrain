@@ -416,6 +416,94 @@ def test_finite_negative_closure_only_opens_generated_candidate_for_its_owner():
         validate_candidate(event_candidate, event_research, sources, inventory())
 
 
+def secondary_generated(lang="ru"):
+    sources = registry()
+    target = sources["language_tags"][lang]
+    sources["sources"][0]["language"] = target
+    sources["language_scopes"][lang] = {"required_source_ids": ["go", "wd"],
+                                         "complete_for_negative_claims": False}
+    negative = research(lang=lang, registry_sha256=registry_sha256(sources), source_lang="ja",
+                        scope_status="not_found_in_scope", candidate_name="", source_checks=[])
+    common = dict(status="not_found", candidate_name="", identity_basis="", observed_lang=target,
+                  body_excerpt="Completed target-language search: no matching name", completeness="complete",
+                  searched_forms=["Go Seigen", "呉清源"], response_sha256="b" * 64,
+                  page_index=1, page_count=1, search_scope="Listed exact-name checks",
+                  scope_complete=True, negative_outcome="no_target_string")
+    negative["source_checks"] = [
+        check(**common, check_id="professional", method="site_search", entity_field_scope=None,
+              scan_id="go-search", next_page_url="https://example.org/search?page=2",
+              continuation_href="/search?page=2", continuation_excerpt='<a href="/search?page=2">Next</a>',
+              pagination_exhausted=False, pagination_basis="Stop after page 1; page 2 remains unsearched"),
+        check(**common, check_id="wikidata", source_id="wd", method="entity_api", scan_id="q1-fields",
+              url=f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages={target}&props=labels%7Caliases%7Csitelinks&format=json",
+              entity_field_scope={"entity_id": "Q1", "requested_lang": target,
+                                  "fields": ["labels", "aliases", "sitelinks"], "sitelink_site": target + "wiki"},
+              next_page_url="", pagination_exhausted=True, pagination_basis="Single exact entity response"),
+    ]
+    negative["source_checks"][0]["body_excerpt"] += " " + negative["source_checks"][0]["continuation_excerpt"]
+    negative["source_checks"][1]["body_excerpt"] = json.dumps({"entities": {"Q1": {"id": "Q1"}}})
+    negative["source_checks"][1]["entity_identity_evidence"] = {
+        "api_url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=ja&props=labels&format=json",
+        "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200, "response_sha256": "c" * 64,
+        "body_excerpt": json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {
+            "ja": {"language": "ja", "value": negative["original_name"]}}}}}, ensure_ascii=False),
+        "identity_basis": "Original Japanese name and career dates identify this player",
+    }
+    fields = ("check_id", "source_id", "method", "query", "url", "searched_forms", "entity_field_scope",
+              "scan_id", "page_index", "page_count", "next_page_url", "pagination_exhausted", "pagination_basis")
+    negative["negative_closure"] = {
+        "version": 2, "search_policy": "secondary_reasonable_v1", "bounded_scan_ids": ["go-search"],
+        "unsearched_source_ids": [],
+        "owner": negative["owner"], "lang": lang, "source_lang": "ja", "scope_id": "reasonable-player-17",
+        "scope_version": "1", "registry_sha256": negative["registry_sha256"],
+        "scope_boundary": "Listed exact entity and first indexed professional page only",
+        "retained_limitations": ["go-search: https://example.org/search?page=2 onward remains unsearched", "Print publications"],
+        "required_check_ids": [item["check_id"] for item in negative["source_checks"]],
+        "required_checks": [{field: item[field] for field in fields} for item in negative["source_checks"]],
+        "known_leads": [], "reviewer_id": "scope-reviewer", "reviewer_model": "gpt-6-astra",
+        "reviewed_at": "2026-10-02T11:00:00Z", "conclusion": "approved_not_found_in_scope",
+        "reason": "No admissible name found within this reasonable search scope",
+    }
+    closure = negative["negative_closure"]
+    closure["scope_template_sha256"] = negative_closure_template_sha256(negative)
+    closure["scope_sha256"] = negative_closure_scope_sha256(negative)
+    closure["evidence_sha256"] = negative_closure_evidence_sha256(negative)
+    display = {"ru": "Го Сэйгэн", "ua": "Ґо Сейґен"}.get(lang, "Go Seigen")
+    row = approved_generated(candidate(lang=lang, display_name=display, decision_kind="generated",
+                                       generation_rule_version=f"ja-{lang}-v1",
+                                       research_sha256=canonical_sha256(negative),
+                                       reviewed_at="2026-10-02T11:01:00Z"), negative)
+    return row, negative, sources
+
+
+@pytest.mark.parametrize("lang", ["de", "es", "fr", "ru", "tr", "ua"])
+def test_secondary_reasonable_closure_opens_only_independently_reviewed_generated_candidate(lang):
+    row, negative, sources = secondary_generated(lang)
+    assert validate_candidate(row, negative, sources, inventory())["decision_kind"] == "generated"
+    report = validate_bundle(bundle(members=[member(lang=lang)], candidates=[row],
+                                    registry_sha256=registry_sha256(sources)), sources, inventory(), [negative])
+    assert report["ready"] and not report["write_ready"]  # Existing preimage gate still applies.
+    for mutation in ("unsigned", "self_review", "early_review", "missing_reading", "rule", "stale_hash"):
+        bad_row, bad_evidence = deepcopy(row), deepcopy(negative)
+        if mutation == "unsigned":
+            bad_row.pop("generated_review")
+        elif mutation == "self_review":
+            bad_row["reviewer_id"] = bad_row["producer_id"]
+        elif mutation == "early_review":
+            bad_row["reviewed_at"] = bad_row["generated_review"]["reviewed_at"] = "2026-10-02T11:00:00Z"
+        elif mutation == "missing_reading":
+            bad_evidence["reading"] = ""
+            bad_evidence["reading_basis_url"] = ""
+            bad_evidence["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad_evidence)
+            bad_row["research_sha256"] = canonical_sha256(bad_evidence)
+        elif mutation == "rule":
+            bad_row["generation_rule_version"] = "different-rule"
+        else:
+            bad_evidence["negative_closure"]["bounded_scan_ids"] = []
+        with pytest.raises(CandidateError):
+            validate_candidate(bad_row, bad_evidence, sources, inventory())
+
+
 def test_pending_is_reported_but_never_upgraded_to_approved():
     pending = candidate(review_status="pending", reviewer_id="", reviewer_model="",
                         reviewed_at="", review_conclusion="")

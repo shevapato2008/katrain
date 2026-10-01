@@ -95,3 +95,21 @@ def test_missing_digest_is_stable_across_database_page_sizes():
         assert one["languages"] == two["languages"]
     finally:
         engine.dispose()
+
+
+def test_absent_event_is_an_explicit_empty_display_decision():
+    engine = _catalog()
+    try:
+        with Session(engine) as db:
+            album = db.query(KifuAlbum).one()
+            album.event = None
+            db.commit()
+        inventory = build_inventory(engine)
+        result = coverage_report(engine, inventory, languages=("cn",), batch_size=1)
+        counts = result["languages"]["cn"]
+        assert counts["approved"] == 2
+        assert counts["missing"] == 1
+        assert counts["by_decision"] == {"conventional": 1, "hidden": 1}
+        assert {gap["slot"] for gap in result["missing_examples"]} == {"white"}
+    finally:
+        engine.dispose()

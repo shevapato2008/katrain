@@ -154,11 +154,18 @@ def strict_display_maps(db: Session, albums: list, lang: str):
     return players, events, canonical, {k: sorted(v) for k, v in sources.items()}, *raw_maps
 
 
-def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tuple[tuple[str, int] | None, ...]]:
+def _empty_event(raw: str | None) -> bool:
+    """An absent SGF event has one explicit, language-independent empty display."""
+    return parse_event(raw, None).category == "empty"
+
+
+def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tuple[tuple[str, int | None] | None, ...]]:
     """Return approved decision/evidence for each visible slot; None is a coverage gap.
 
     CWI editions need both an approved Oteai identity name and their own approved
-    exact raw-event display. Queries remain bounded by the supplied album page.
+    exact raw-event display. An absent event has an explicit empty decision with
+    no evidence row because there is no source value to research. Queries remain
+    bounded by the supplied album page.
     """
     player_ids = {v for album in albums for v in (album.black_player_id, album.white_player_id) if v}
     event_ids = {album.event_id for album in albums if album.event_id}
@@ -199,7 +206,7 @@ def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tup
                     raw_events.get(album.event) if event_approval and canonical.get(album.event_id) == "Oteai" else None
                 )
         else:
-            event_approval = raw_events.get(album.event or "")
+            event_approval = ("hidden", None) if _empty_event(album.event) else raw_events.get(album.event or "")
         result[album.id] = black, white, event_approval
     return result
 
@@ -217,7 +224,7 @@ def strict_fallback(raw: str | None, lang: str, kind: str) -> str:
             return labels["placeholder"]
         return strict_unavailable_label(lang, kind)
     category = parse_event(raw, None).category
-    if category == "empty":
+    if _empty_event(raw):
         return ""
     if category == "corrupt_data":
         return labels["event_error"]

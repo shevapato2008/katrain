@@ -111,6 +111,27 @@ def registry_sha256(registry: dict) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def negative_closure_evidence_sha256(record: dict) -> str:
+    """Hash the exact finite scope, checks, and source-language anchors, excluding the review itself."""
+    closure = record.get("negative_closure") or {}
+    evidence = {
+        "owner": record.get("owner"), "lang": record.get("lang"),
+        "source_lang": record.get("source_lang"),
+        "registry_sha256": record.get("registry_sha256"),
+        "scope_id": closure.get("scope_id"), "scope_version": closure.get("scope_version"),
+        "scope_boundary": closure.get("scope_boundary"),
+        "retained_limitations": closure.get("retained_limitations"),
+        "required_check_ids": closure.get("required_check_ids"),
+        "source_checks": record.get("source_checks"),
+        "original_name": record.get("original_name"),
+        "original_language": record.get("original_language"),
+        "original_language_basis_url": record.get("original_language_basis_url"),
+        "reading": record.get("reading"), "reading_basis_url": record.get("reading_basis_url"),
+    }
+    canonical = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def product_language_tag(lang: str, registry: dict) -> str:
     try:
         return registry["language_tags"][lang]
@@ -211,7 +232,7 @@ def _validate_article_evidence(check: dict, sources: dict[str, dict], original_n
              "corroboration needs real body evidence for the exact original name")
 
 
-def _validate_negative_outcome(check: dict, source: dict, producer_id: str) -> None:
+def _validate_negative_outcome(check: dict, source: dict, producer_id: str, *, finite: bool = False) -> None:
     outcome = check.get("negative_outcome")
     _require(outcome in {"no_target_string", "rejected_leads"},
              "completed negative source needs an explicit outcome")
@@ -231,9 +252,65 @@ def _validate_negative_outcome(check: dict, source: dict, producer_id: str) -> N
                  and lead.get("reviewer_model") == "gpt-6-sol"
                  and _aware_timestamp(lead.get("reviewed_at")),
                  "rejected lead needs sourced body and independent Sol rejection")
+        if finite:
+            _require(_text(lead.get("original_name")) and _text(lead.get("observed_lang"))
+                     and lead.get("language_basis") in LANGUAGE_BASIS
+                     and lead.get("decision") == "rejected_for_target_language",
+                     "finite rejected lead needs original name, actual language and independent decision")
 
 
-def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, dict]) -> None:
+def _validate_negative_closure(record: dict, registry: dict, checks: list[dict]) -> None:
+    closure = record.get("negative_closure")
+    _require(isinstance(closure, dict), "finite negative closure must be an object")
+    _require(type(closure.get("version")) is int and closure["version"] == 1
+             and closure.get("owner") == record["owner"]
+             and closure.get("lang") == record["lang"]
+             and _text(record.get("source_lang"))
+             and record["source_lang"] == record.get("original_language")
+             and closure.get("source_lang") == record["source_lang"],
+             "negative closure owner, language or source language mismatch")
+    _require(_text(closure.get("scope_id")) and _text(closure.get("scope_version"))
+             and _text(closure.get("scope_boundary"))
+             and isinstance(closure.get("retained_limitations"), list)
+             and all(_text(item) for item in closure["retained_limitations"]),
+             "finite negative closure needs a named scope, boundary and limitations")
+    _require(closure.get("registry_sha256") == record["registry_sha256"] == registry_sha256(registry),
+             "negative closure registry mismatch")
+    required = closure.get("required_check_ids")
+    check_ids = [check.get("check_id") for check in checks]
+    _require(isinstance(required, list) and bool(required)
+             and all(_text(item) for item in required)
+             and all(_text(item) for item in check_ids)
+             and len(required) == len(set(required))
+             and len(check_ids) == len(set(check_ids)) and set(required) == set(check_ids),
+             "finite negative closure must bind every unique check ID")
+    registered = set(registry["language_scopes"][record["lang"]]["required_source_ids"])
+    target = product_language_tag(record["lang"], registry)
+    _require(registered <= {check["source_id"] for check in checks
+                            if _matches_target(check.get("observed_lang", ""), target)},
+             "finite negative closure lacks a completed target-language check for a required source")
+    _require(all(check.get("status") == "not_found" and check.get("completeness") == "complete"
+                 and check.get("scope_complete") is True and _text(check.get("method"))
+                 and bool(_HEX_SHA256.fullmatch(str(check.get("response_sha256", ""))))
+                 for check in checks), "finite negative closure has partial or unavailable checks")
+    _require(_text(closure.get("reviewer_id")) and closure["reviewer_id"] != record["producer_id"]
+             and _text(closure.get("reviewer_model")) and _aware_timestamp(closure.get("reviewed_at"))
+             and closure.get("conclusion") == "approved_not_found_in_scope"
+             and _text(closure.get("reason")),
+             "finite negative closure needs independent signed approval of absence in scope")
+    reviewed_at = datetime.fromisoformat(closure["reviewed_at"].replace("Z", "+00:00"))
+    _require(all(reviewed_at >= datetime.fromisoformat(check["fetched_at"].replace("Z", "+00:00"))
+                 for check in checks), "negative closure review precedes a source check")
+    _require(all(reviewed_at >= datetime.fromisoformat(lead["reviewed_at"].replace("Z", "+00:00"))
+                 for check in checks for lead in check.get("rejected_leads", [])
+                 if _aware_timestamp(lead.get("reviewed_at"))),
+             "negative closure precedes a rejected lead review")
+    _require(closure.get("evidence_sha256") == negative_closure_evidence_sha256(record),
+             "finite negative closure evidence hash mismatch")
+
+
+def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, dict],
+                    *, finite_negative: bool = False) -> None:
     _require(isinstance(check, dict), "source check must be an object")
     _require(check.get("owner") == owner, "source check owner differs from research record")
     source_id = check.get("source_id")
@@ -253,7 +330,9 @@ def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, di
     _require(check.get("language_basis") in LANGUAGE_BASIS, "completed search needs actual-language basis")
     observed = check.get("observed_lang")
     _require(_text(observed), "actual page language must be recorded")
-    if sources[source_id]["tier"] != "discovery" or status == "not_found":
+    if (sources[source_id]["tier"] != "discovery" or status == "not_found") and not (
+        finite_negative and status == "not_found"
+    ):
         _require(_matches_target(observed, target), "actual page language differs from target")
     returned = check.get("returned_lang")
     _require(not returned or _matches_target(returned, target), "returned label language differs from target")
@@ -286,6 +365,8 @@ def validate_research_record(record: dict, registry: dict) -> dict:
              "actual producer identity/model required")
     scope_status = record.get("scope_status")
     _require(scope_status in SCOPE_STATUSES, "invalid scope status")
+    _require("negative_closure" not in record or scope_status == "not_found_in_scope",
+             "negative closure applies only to a negative scope")
     if scope_status != "incomplete":
         _require(_text(record.get("original_name")) and _text(record.get("original_language")),
                  "completed research needs original name and language")
@@ -297,7 +378,7 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     _require(isinstance(checks, list) and bool(checks), "source checks required")
     sources = {source["id"]: source for source in registry["sources"]}
     for check in checks:
-        _validate_check(check, owner, target, sources)
+        _validate_check(check, owner, target, sources, finite_negative="negative_closure" in record)
         if check["status"] == "found" and sources[check["source_id"]]["tier"] in {
             "wikipedia_article", "encyclopedia"
         }:
@@ -311,13 +392,17 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     elif scope_status == "not_found_in_scope":
         _require(not _text(record.get("candidate_name")), "negative scope cannot claim a candidate")
         scope = registry["language_scopes"][lang]
-        _require(scope["complete_for_negative_claims"], "source scope is incomplete for negative claims")
+        finite = "negative_closure" in record
+        if finite:
+            _validate_negative_closure(record, registry, checks)
+        else:
+            _require(scope["complete_for_negative_claims"], "source scope is incomplete for negative claims")
         for source_id in scope["required_source_ids"]:
             _require(any(check["source_id"] == source_id and check["status"] == "not_found" for check in checks),
                      f"source scope lacks completed negative search for {source_id}")
         _require(all(check["status"] == "not_found" for check in checks), "negative source scope has unresolved checks")
         for check in checks:
-            _validate_negative_outcome(check, sources[check["source_id"]], record["producer_id"])
+            _validate_negative_outcome(check, sources[check["source_id"]], record["producer_id"], finite=finite)
     else:
         _require(not _text(record.get("candidate_name")), "incomplete scope cannot claim a candidate")
     result = deepcopy(record)

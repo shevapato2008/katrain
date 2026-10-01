@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+from copy import deepcopy
 
 import pytest
 
@@ -11,6 +12,7 @@ from katrain.web.kifu.name_evidence import (
     load_registry,
     product_language_tag,
     registry_sha256,
+    negative_closure_evidence_sha256,
     source_plan,
     validate_research_record,
 )
@@ -73,6 +75,113 @@ def _record(owner=None, **updates):
     return record
 
 
+def _finite_negative():
+    registry = _registry()
+    record = _record(
+        lang="ua", source_lang="ja", scope_status="not_found_in_scope", candidate_name="",
+        source_checks=[
+            _check(source_id="ru-go", check_id="professional", status="not_found", candidate_name="",
+                   identity_basis="", observed_lang="uk", body_excerpt="Search found no Ukrainian name",
+                   search_scope="Named pages and indexed results", scope_complete=True,
+                   negative_outcome="no_target_string", method="site_search",
+                   response_sha256="a" * 64),
+            _check("wd", check_id="wikidata-uk", status="not_found", candidate_name="", identity_basis="",
+                   url="https://www.wikidata.org/wiki/Q1", observed_lang="uk",
+                   body_excerpt="Q1 has no uk label or alias", search_scope="Q1 exact uk labels and aliases",
+                   scope_complete=True, negative_outcome="no_target_string", method="entity_api",
+                   response_sha256="b" * 64),
+        ],
+    )
+    for check in record["source_checks"]:
+        check["completeness"] = "complete"
+    record["negative_closure"] = {
+        "version": 1, "owner": record["owner"], "lang": "ua", "source_lang": "ja",
+        "scope_id": "oteai-uk-pilot", "scope_version": "1", "registry_sha256": record["registry_sha256"],
+        "required_check_ids": ["professional", "wikidata-uk"],
+        "scope_boundary": "Named pages, indexed search, and exact Q1 uk fields",
+        "retained_limitations": ["Unindexed forum posts and print publications"],
+        "reviewer_id": "negative-reviewer", "reviewer_model": "gpt-6-astra",
+        "reviewed_at": "2026-10-02T11:00:00Z", "conclusion": "approved_not_found_in_scope",
+        "reason": "All listed checks finished without an admissible Ukrainian name",
+    }
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    return record
+
+
+def test_finite_negative_closure_binds_exact_identity_scope_checks_and_reading():
+    record = _finite_negative()
+    assert _registry()["language_scopes"]["ua"]["complete_for_negative_claims"] is False
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+    for change in (
+        {"owner": {"kind": "player", "id": 18}}, {"lang": "ru"}, {"source_lang": "zh"},
+        {"reading": "別の読み"}, {"original_name": "別人"},
+        {"source_checks": [record["source_checks"][0]]},
+    ):
+        with pytest.raises(EvidenceError):
+            validate_research_record({**record, **change}, _registry())
+    for change in ({"scope_id": "other"}, {"required_check_ids": ["professional"]},
+                   {"registry_sha256": "0" * 64}, {"reviewer_id": record["producer_id"]}):
+        bad = deepcopy(record)
+        bad["negative_closure"].update(change)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, _registry())
+
+
+def test_finite_negative_closure_rejects_unfinished_and_unsupported_checks():
+    record = _finite_negative()
+    for change in ({"completeness": "partial"}, {"status": "unavailable"},
+                   {"negative_outcome": "rejected_leads", "rejected_leads": []},
+                   {"response_sha256": ""}):
+        bad = deepcopy(record)
+        bad["source_checks"][0].update(change)
+        bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, _registry())
+
+
+def test_finite_negative_closure_preserves_independently_rejected_leads():
+    record = _finite_negative()
+    check = record["source_checks"][0]
+    check["negative_outcome"] = "rejected_leads"
+    check["rejected_leads"] = [{
+        "original_name": "Отеай", "candidate_name": "Отеай", "url": "https://example.org/forum",
+        "body_sha256": "c" * 64, "body_excerpt": "Russian discussion of Отеай",
+        "observed_lang": "ru", "language_basis": "reviewed_text",
+        "rejection_basis": "Russian discussion, not Ukrainian usage",
+        "reviewer_id": "lead-reviewer", "reviewer_model": "gpt-6-sol",
+        "reviewed_at": "2026-10-02T10:30:00Z", "decision": "rejected_for_target_language",
+    }]
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+    late = deepcopy(record)
+    late["source_checks"][0]["rejected_leads"][0]["reviewed_at"] = "2026-10-02T12:00:00Z"
+    late["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(late)
+    with pytest.raises(EvidenceError, match="lead review"):
+        validate_research_record(late, _registry())
+    for missing in ("original_name", "observed_lang", "rejection_basis", "decision", "body_excerpt"):
+        bad = deepcopy(record)
+        bad["source_checks"][0]["rejected_leads"][0].pop(missing)
+        bad["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(bad)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, _registry())
+
+
+def test_finite_scope_records_foreign_language_pages_without_counting_them_as_target_searches():
+    record = _finite_negative()
+    foreign = deepcopy(record["source_checks"][0])
+    foreign.update(check_id="russian-page", observed_lang="ru", query="Oteai on named Russian page",
+                   url="https://example.org/pro-go-2", body_excerpt="Russian page has no Ukrainian Oteai term",
+                   search_scope="Named Russian page body")
+    record["source_checks"].append(foreign)
+    record["negative_closure"]["required_check_ids"].append("russian-page")
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    assert validate_research_record(record, _registry())["scope_status"] == "not_found_in_scope"
+    record["source_checks"][0]["observed_lang"] = "ru"
+    record["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(record)
+    with pytest.raises(EvidenceError, match="target-language|target"):
+        validate_research_record(record, _registry())
+
+
 @pytest.mark.parametrize("product,expected", [("ua", "uk"), ("jp", "ja"), ("cn", "zh-Hans"), ("tw", "zh-Hant")])
 def test_product_language_mapping(product, expected):
     assert product_language_tag(product, _registry()) == expected
@@ -85,6 +194,7 @@ def test_repository_source_registry_is_versioned_and_has_all_product_languages()
     assert set(registry["language_scopes"]) == set(registry["language_tags"])
     assert all(source["home_url"].startswith("https://") for source in registry["sources"])
     assert len(registry_sha256(registry)) == 64
+    assert registry["language_scopes"]["ua"]["complete_for_negative_claims"] is False
     assert all(source["tier"] == "wikipedia_article" for source in registry["sources"]
                if source["id"].startswith("wikipedia-"))
     assert next(source for source in registry["sources"] if source["id"] == "wikidata")["tier"] == "discovery"

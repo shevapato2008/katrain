@@ -229,9 +229,12 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
         checked = _research_for(row, research, registry)
         if decision == "generated":
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
-            if row["owner"]["kind"] in {"player", "raw_player"}:
-                _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
-                         "generated player name needs sourced original reading")
+            _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
+                     "generated name needs sourced original reading")
+            closure = checked.get("negative_closure")
+            if closure and row["review_status"] == "approved":
+                _require(_time(row["reviewed_at"]) >= _time(closure["reviewed_at"]),
+                         "generated name review must follow its negative closure")
             _require(row["generation_rule_version"] != "none", "generated name needs a named conversion rule")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "generated name lacks target-language script")
         else:

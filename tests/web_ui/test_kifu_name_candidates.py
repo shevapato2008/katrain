@@ -15,7 +15,7 @@ from katrain.web.kifu.name_candidates import (
     validate_candidate,
     render_event_components,
 )
-from katrain.web.kifu.name_evidence import registry_sha256
+from katrain.web.kifu.name_evidence import negative_closure_evidence_sha256, registry_sha256
 from scripts.kifu_name_candidates import main
 
 
@@ -200,6 +200,56 @@ def test_generated_name_requires_completed_negative_scope_and_reading_basis():
                            missing_reading, registry(), inventory())
     with pytest.raises(CandidateError, match="script"):
         validate_candidate({**generated, "display_name": "Go Seigen"}, negative, registry(), inventory())
+
+
+def test_finite_negative_closure_only_opens_generated_candidate_for_its_owner():
+    sources = registry()
+    sources["language_scopes"]["ru"]["complete_for_negative_claims"] = False
+    negative = research(registry_sha256=registry_sha256(sources), source_lang="ja",
+                        scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
+                            status="not_found", candidate_name="", identity_basis="",
+                            body_excerpt="Search completed without a Russian name", check_id="go-search",
+                            method="site_search", response_sha256="a" * 64, completeness="complete",
+                            search_scope="Indexed profiles", scope_complete=True,
+                            negative_outcome="no_target_string")])
+    negative["negative_closure"] = {
+        "version": 1, "owner": negative["owner"], "lang": "ru", "source_lang": "ja",
+        "scope_id": "player-17-ru", "scope_version": "1", "registry_sha256": negative["registry_sha256"],
+        "required_check_ids": ["go-search"], "scope_boundary": "Indexed profiles only",
+        "retained_limitations": ["Printed sources"], "reviewer_id": "scope-reviewer",
+        "reviewer_model": "gpt-6-astra", "reviewed_at": "2026-10-02T11:00:00Z",
+        "conclusion": "approved_not_found_in_scope", "reason": "No admissible Russian name in this scope",
+    }
+    negative["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(negative)
+    generated = candidate(decision_kind="generated", generation_rule_version="ja-ru-v1",
+                          research_sha256=canonical_sha256(negative), reviewed_at="2026-10-02T11:01:00Z")
+    assert validate_candidate(generated, negative, sources, inventory())["decision_kind"] == "generated"
+    with pytest.raises(CandidateError, match="negative closure"):
+        validate_candidate({**generated, "reviewed_at": "2026-10-02T10:59:00Z"},
+                           negative, sources, inventory())
+    changed = deepcopy(negative)
+    changed["owner"] = {"kind": "player", "id": 18}
+    changed["source_checks"][0]["owner"] = changed["owner"]
+    with pytest.raises(CandidateError):
+        validate_candidate({**generated, "research_sha256": canonical_sha256(changed)},
+                           changed, sources, inventory())
+    unsigned = deepcopy(negative)
+    del unsigned["negative_closure"]
+    with pytest.raises(CandidateError):
+        validate_candidate({**generated, "research_sha256": canonical_sha256(unsigned)},
+                           unsigned, sources, inventory())
+    event_research = deepcopy(negative)
+    event_research["owner"] = {"kind": "event", "id": 3}
+    event_research["source_checks"][0]["owner"] = event_research["owner"]
+    event_research["negative_closure"]["owner"] = event_research["owner"]
+    event_research["original_name"] = "大手合"
+    event_research["reading"] = ""
+    event_research["reading_basis_url"] = ""
+    event_research["negative_closure"]["evidence_sha256"] = negative_closure_evidence_sha256(event_research)
+    event_candidate = {**generated, "owner": event_research["owner"],
+                       "research_sha256": canonical_sha256(event_research)}
+    with pytest.raises(CandidateError, match="reading"):
+        validate_candidate(event_candidate, event_research, sources, inventory())
 
 
 def test_pending_is_reported_but_never_upgraded_to_approved():

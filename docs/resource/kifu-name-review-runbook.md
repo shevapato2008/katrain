@@ -8,7 +8,7 @@
 2. 按 `kifu-name-source-registry.json` 检索目标语言的棋院/主办方及专业围棋资料，再查维基百科对应语言页和 Wikidata 精确语言标签。记录每次查询词、URL、实际正文语言、页面正文摘要和 SHA-256、访问时间、身份匹配依据。主页、目录、搜索摘要和 Wikidata 回退标签只能发现线索，不能单独证明最终名称。
 3. 找到可采用的惯用名时，候选类型为 `conventional`，名称必须逐字出现在有实际目标语言正文的专业来源中。目标语言维基百科文章或独立百科可作为名称用法证据，须另记文章版本、标题、逐字正文及其哈希，并用**另一出版方**的棋院、围棋资料或参考资料核对原名和身份；Wikidata Q 标签仍只是线索。来源清单 `2026-10-02.2` 已将维基百科单列为 `wikipedia_article`，旧版研究哈希不会自动升级，须按新版重做证据。自动抓取只提供页面线索，文章版本和独立身份依据仍须人工核对并补齐。各来源互相冲突时，保留冲突和排除理由，转交疑难审核，不自动挑一个。
    吴清源样本的德/西/法语部分来源是 PDF。当前 `capture` 命令只解析 HTML，**不能**从 PDF 自动取得正文证据；可人工读取原 PDF 字节计算 `body_sha256`，逐字记录目标页正文、页码、实际语种 `observed_lang` 和 `language_basis: "reviewed_text"`，再由独立审核者对照 PDF。缺页、乱码或仅有搜索摘要时标 `incomplete`。
-4. 只有目标语言范围内**所有规定来源**均完成搜索、逐项记录未命中且来源清单明确允许负面结论，才可以生成 `generated` 候选。每项未命中须明确记为 `no_target_string` 或 `rejected_leads`；后者逐条保存原候选、网页正文、拒绝依据和独立 Sol 审核，不得把发现过的名字写成“完全没找到”。棋手必须有可信原名、所属语言和**独立来源的读音**；中日同形文字不证明读音相同。赛事翻译要有原语言来源及组成部分依据。网络不可用、限流、反爬、空正文、语言回退或未遍历分页一律标 `incomplete`，不能视作“无通行名”。当前来源清单各语种负面范围均未完成，因此此时不会有合格的自译批准产物。
+4. 只有目标语言范围内**所有规定来源**均完成搜索、逐项记录未命中，并取得下述逐对象有限负面闭环（或来源清单明确允许全语种负面结论），才可以提出 `generated` 候选。每项未命中须明确记为 `no_target_string` 或 `rejected_leads`；后者逐条保存原名/候选、网页正文及哈希、实际正文语言、拒绝依据和独立 Sol 审核，不得把发现过的名字写成“完全没找到”。棋手与赛事均须有可信源语原名、所属语言和**独立来源的读音**；中日同形文字不证明读音相同。赛事翻译还需组成部分依据。网络不可用、限流、反爬、空正文、语言回退或未遍历分页一律标 `incomplete`，不能视作“无通行名”。
 5. 清晰的泛称如“段位赛”可提交 `generic`；明确空值和程序标签可提交空显示的 `hidden`；`Unknown/Black/White` 等占位棋手用本地化“未知棋手”提交 `placeholder`；损坏原文可提交本地化 `error` 或有专业来源对应的 `corrected`。不能用这些类型隐藏真实赛事、对局叙述或未完成核名的棋手。数据库 `NULL` 或空白 EV 槽位根本没有待翻译的来源值，API/覆盖率代码仅对该狭窄情形作明确空显示决策，无需伪造检索证据；非空真实赛事仍须获准证据。
 
 `classification-v1` 在代码中给十一语言定义了这些类别的**待审核文案模板**。模板存在不等于译文获准上线；每种语言须由独立审核代理核对后，在候选中记录 `template_review`（版本、语言、模板 SHA-256、审核者实际 ID/模型/时间和结论），且候选本身也须有独立批准签名。校验器只接受与该版模板逐字相同的显示值；改文案须升级版本并重审，不能靠候选里任意写词来绕过来源查证。真实赛事绝不能改标泛称。
@@ -20,6 +20,16 @@
 每条候选记录 `producer_id`、`producer_model`、`produced_at`，以及独立的 `reviewer_id`、`reviewer_model`、`reviewed_at`、`review_conclusion`。审核者实际比对过的来源和语种应写在结论中。待审行没有审核签名，任何脚本不得自动改为 `approved`。检索记录与候选记录以规范 JSON SHA-256 绑定；候选中的 `research_sha256` 必须与对应原始检索记录完全一致。
 
 同一检索记录里出现不同候选名时，每个被排除的名称须在 `excluded_candidates` 留下 `source_id`、`candidate_name`、`reason`。同语言同显示名落到不同身份 ID 时，批次校验报告碰撞；只有逐人核查后在每条候选写 `collision_decision: "distinct_people_confirmed"` 和具体 `collision_basis` 才能通过。这不合并两个身份。跨批次碰撞由数据库导入/覆盖率步骤继续检查。
+
+## 逐对象有限未命中闭环
+
+`negative_closure` 只批准**一个精确 `owner × lang × source_lang × scope`** 内未找到可采纳惯用名，不批准任何显示词。`ua.complete_for_negative_claims` 及其他全局标志仍为 `false`。大手合乌克兰语的已裁定范围见 [定向检索记录](kifu-name-oteai-uk-scope.md)和[独立裁决](kifu-name-oteai-uk-decision.md)；具体乌克兰语词形仍待读音/构词规则研究及独立候选审核。
+
+在研究记录中写 `source_lang`（必须等于有来源证明的 `original_language`）和 `negative_closure`。闭环字段为 `version: 1`、精确 `owner`、产品语码 `lang`、`source_lang`、`scope_id`/`scope_version`、`registry_sha256`、`required_check_ids`、文字 `scope_boundary`、明确保留的 `retained_limitations` 列表、`evidence_sha256`、独立审核者实际 `reviewer_id`/`reviewer_model`/`reviewed_at`、`conclusion: "approved_not_found_in_scope"` 及具体 `reason`。`scope_boundary` 应列清页面、检索词、分页和实体字段；未索引论坛、不可取得的出版物等写入限制，不得记为已查完。来源清单的该语种必查专业/百科/Wikidata 来源必须全部由闭环的检查覆盖。
+
+每条闭环检查须有唯一 `check_id`、来源 `source_id`、`method`、查询词、实际结果/正文 `url`、`fetched_at`、实际正文 `observed_lang` 与 `language_basis`、`response_sha256`、`body_sha256` 和正文摘录，并标 `status: "not_found"`、`completeness: "complete"`、`scope_complete: true`、`search_scope`，以及 `negative_outcome: "no_target_string"` 或 `"rejected_leads"`。`partial/unavailable` 不能进入已批准闭环。范围内的俄语页面可以作为额外的已查页面保留其真实语种，但每个登记必查来源仍须至少有一次目标语种的完整检查；俄语页面不能替代乌克兰语检索。已知俄语论坛命中等必须以 `rejected_leads` 保存原名、原文链接/正文/哈希、实际语种、排除依据及独立裁决；不得写成 `no_target_string`。Wikidata `uk` 空标签仅是该实体该语言字段的未命中，不能代替 UFGO 与乌克兰维基检查。
+
+用 `negative_closure_evidence_sha256(record)` 计算哈希，它覆盖精确对象/语言、来源清单、范围与限制、全部检查以及源语原名/语言/读音依据，不覆盖闭环自身的审核签署，避免自引用。任一依据变动须重新由独立审核者签署。候选仍通过完整 `research_sha256` 绑定研究记录；生成规则版、实际目标语词形及候选审核签名另行填写，且候选审核时间须晚于闭环审核。仅有闭环不能导入名称。
 
 若同一个对象和语言有多条相互矛盾的研究记录，应先合成一条保留全部命中、未命中与排除理由的记录；校验器会拒绝同键多记录。冲突候选的取舍必须记录 `gpt-6-sol` 的定向裁决、来源 URL 和独立高级模型审核，普通排除文案加轻量模型签名不足以批准。
 

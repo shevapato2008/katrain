@@ -262,6 +262,62 @@ def test_startup_rejects_changed_name_trigger_definition(engine):
         SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
 
 
+def test_startup_does_not_rebuild_missing_name_index(engine):
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
+    with engine.begin() as conn:
+        conn.execute(text('DROP INDEX "ix_kifu_name_research_evidence_player_id"'))
+    with pytest.raises(RuntimeError, match="ix_kifu_name_research_evidence_player_id.*migrate_catalog"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert "ix_kifu_name_research_evidence_player_id" not in {
+        index["name"] for index in inspect(engine).get_indexes("kifu_name_research_evidence")
+    }
+
+
+def test_generic_index_migration_skips_name_tables(engine):
+    models_db.Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(text('DROP INDEX "ix_kifu_name_research_evidence_player_id"'))
+    migrations.create_missing_indexes(engine)
+    assert "ix_kifu_name_research_evidence_player_id" not in {
+        index["name"] for index in inspect(engine).get_indexes("kifu_name_research_evidence")
+    }
+
+
+def test_explicit_catalog_cli_repairs_missing_name_index(engine, monkeypatch):
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
+    with engine.begin() as conn:
+        conn.execute(text('DROP INDEX "ix_kifu_name_research_evidence_player_id"'))
+    monkeypatch.setattr(migrate_catalog, "engine", engine)
+    monkeypatch.setattr("sys.argv", ["migrate_catalog", "--validate"])
+    migrate_catalog.main()
+    assert "ix_kifu_name_research_evidence_player_id" in {
+        index["name"] for index in inspect(engine).get_indexes("kifu_name_research_evidence")
+    }
+
+
+def test_postgres_name_index_planner_uses_concurrent_ddl_and_rejects_wrong_index():
+    statements = migrations.postgres_kifu_name_index_statements(existing_indexes={})
+    assert any(
+        statement.startswith('CREATE INDEX CONCURRENTLY IF NOT EXISTS "ix_kifu_name_research_evidence_player_id"')
+        for statement in statements
+    )
+    assert all("CREATE INDEX CONCURRENTLY" in statement for statement in statements)
+    with pytest.raises(RuntimeError, match="ix_kifu_name_research_evidence_player_id"):
+        migrations.postgres_kifu_name_index_statements(
+            existing_indexes={
+                "ix_kifu_name_research_evidence_player_id": (
+                    "kifu_name_research_evidence",
+                    ("event_id",),
+                    True,
+                    True,
+                    False,
+                )
+            }
+        )
+
+
 def test_startup_rejects_drift_in_new_authoritative_name_table(engine):
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE kifu_raw_player_values (id INTEGER PRIMARY KEY)"))

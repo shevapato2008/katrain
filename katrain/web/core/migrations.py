@@ -269,6 +269,105 @@ KIFU_LEGACY_NAME_COLUMNS = {
 }
 
 
+def _kifu_name_required_indexes() -> dict[str, tuple[str, tuple[str, ...]]]:
+    return {
+        index.name: (table_name, tuple(column.name for column in index.columns))
+        for table_name in sorted(KIFU_NAME_TABLES)
+        for index in sorted(models_db.Base.metadata.tables[table_name].indexes, key=lambda index: index.name)
+    }
+
+
+def _kifu_name_missing_indexes(
+    existing_indexes: dict[str, tuple[str, tuple[str, ...], bool, bool, bool]],
+) -> dict[str, tuple[str, tuple[str, ...]]]:
+    missing = {}
+    for name, (table, columns) in _kifu_name_required_indexes().items():
+        status = existing_indexes.get(name)
+        if status is None:
+            missing[name] = (table, columns)
+        elif status != (table, columns, True, True, False):
+            raise RuntimeError(f"Invalid kifu name index {name}; repair it before migrate_catalog")
+    return missing
+
+
+def postgres_kifu_name_index_statements(
+    *, existing_indexes: dict[str, tuple[str, tuple[str, ...], bool, bool, bool]]
+) -> list[str]:
+    """Build missing name indexes concurrently, including populated legacy tables."""
+
+    return [
+        f'CREATE INDEX CONCURRENTLY IF NOT EXISTS "{name}" ON "{table}" '
+        f'({", ".join(f"\"{column}\"" for column in columns)})'
+        for name, (table, columns) in _kifu_name_missing_indexes(existing_indexes).items()
+    ]
+
+
+def _kifu_name_index_status(engine) -> dict[str, tuple[str, tuple[str, ...], bool, bool, bool]]:
+    required = _kifu_name_required_indexes()
+    if engine.dialect.name == "sqlite":
+        inspector = inspect(engine)
+        return {
+            index["name"]: (table, tuple(index["column_names"]), True, True, bool(index["unique"]))
+            for table in KIFU_NAME_TABLES
+            if table in inspector.get_table_names()
+            for index in inspector.get_indexes(table)
+            if index["name"] in required
+        }
+    if engine.dialect.name == "postgresql":
+        names = ", ".join("'" + name.replace("'", "''") + "'" for name in required)
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT index_table.relname, indexed_table.relname, "
+                    "ARRAY(SELECT attribute.attname FROM unnest(pg_index.indkey::smallint[]) "
+                    "WITH ORDINALITY AS index_key(attnum, ordinal) "
+                    "LEFT JOIN pg_attribute attribute ON attribute.attrelid = pg_index.indrelid "
+                    "AND attribute.attnum = index_key.attnum ORDER BY index_key.ordinal), "
+                    "(pg_index.indisvalid AND pg_index.indisready), "
+                    "(pg_index.indpred IS NULL AND pg_index.indexprs IS NULL AND access_method.amname = 'btree'), "
+                    "pg_index.indisunique FROM pg_index "
+                    "JOIN pg_class index_table ON index_table.oid = pg_index.indexrelid "
+                    "JOIN pg_class indexed_table ON indexed_table.oid = pg_index.indrelid "
+                    "JOIN pg_am access_method ON access_method.oid = index_table.relam "
+                    "JOIN pg_namespace namespace ON namespace.oid = index_table.relnamespace "
+                    f"WHERE namespace.nspname = current_schema() AND index_table.relname IN ({names})"
+                )
+            )
+            return {
+                name: (table, tuple(columns), bool(valid), bool(full_btree), bool(unique))
+                for name, table, columns, valid, full_btree, unique in rows
+            }
+    raise RuntimeError(f"Kifu name index verification unsupported for {engine.dialect.name}")
+
+
+def verify_kifu_name_indexes(engine) -> None:
+    """Startup metadata check; never build indexes on authoritative name tables."""
+
+    missing = _kifu_name_missing_indexes(_kifu_name_index_status(engine))
+    if missing:
+        raise RuntimeError(f"Missing kifu name index {next(iter(missing))}; run migrate_catalog")
+
+
+def create_kifu_name_indexes(engine) -> None:
+    """Explicit catalog migration step; PostgreSQL builds outside transactions."""
+
+    status = _kifu_name_index_status(engine)
+    missing = _kifu_name_missing_indexes(status)
+    if engine.dialect.name == "postgresql":
+        for statement in postgres_kifu_name_index_statements(existing_indexes=status):
+            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+                conn.execute(text(statement))
+    elif engine.dialect.name == "sqlite":
+        with engine.begin() as conn:
+            for name, (table, _) in missing.items():
+                next(index for index in models_db.Base.metadata.tables[table].indexes if index.name == name).create(
+                    bind=conn, checkfirst=True
+                )
+    else:
+        raise RuntimeError(f"Kifu name index migration unsupported for {engine.dialect.name}")
+    verify_kifu_name_indexes(engine)
+
+
 def _kifu_name_foreign_keys(inspector, table: str) -> dict[str, dict]:
     return {
         fk["constrained_columns"][0]: fk
@@ -868,6 +967,8 @@ def create_missing_indexes(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
+            if table.name in KIFU_NAME_TABLES:
+                continue  # Explicit catalog CLI owns these indexes, including PostgreSQL CONCURRENTLY.
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:
                 if index.name in existing_idx:

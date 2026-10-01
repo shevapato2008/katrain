@@ -10,6 +10,7 @@ import argparse
 from katrain.web.core.db import Base, engine
 from katrain.web.core.migrations import (
     create_kifu_album_identity_indexes,
+    create_kifu_name_indexes,
     install_kifu_name_change_immutability,
     migrate_kifu_catalog_schema,
     migrate_kifu_name_schema,
@@ -71,6 +72,7 @@ def main() -> None:
     migrate_kifu_catalog_schema(engine)
     migrate_kifu_name_schema(engine)
     verify_kifu_name_schema(engine)
+    create_kifu_name_indexes(engine)
     install_kifu_name_change_immutability(engine)
     create_kifu_album_identity_indexes(engine)
     if args.validate:

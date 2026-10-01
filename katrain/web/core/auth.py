@@ -140,10 +140,12 @@ class SQLAlchemyUserRepository(UserRepository):
             # Refuse an unmigrated existing database before any startup DDL.
             migrations.verify_kifu_name_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
+            migrations.verify_kifu_name_indexes(engine)
             models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
         if fresh_database:
             migrations.verify_kifu_name_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
+            migrations.verify_kifu_name_indexes(engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
         # to update game_id FK from games.id (Integer) to user_games.id (String)

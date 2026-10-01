@@ -24,6 +24,7 @@ OWNER_KINDS = {"player", "event", "raw_player", "raw_event"}
 CHECK_STATUSES = {"found", "not_found", "incomplete", "unavailable"}
 SCOPE_STATUSES = {"found", "not_found_in_scope", "incomplete"}
 LANGUAGE_BASIS = {"html_lang", "http_header", "reviewed_text"}
+SECONDARY_LANGUAGES = {"de", "es", "fr", "ru", "tr", "ua"}
 SOURCE_PRIORITY = {"official": 0, "language_go": 1, "reference": 2,
                    "wikipedia_article": 3, "encyclopedia": 3, "discovery": 4}
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -132,13 +133,16 @@ def negative_closure_evidence_sha256(record: dict) -> str:
         "original_language_basis_url": record.get("original_language_basis_url"),
         "reading": record.get("reading"), "reading_basis_url": record.get("reading_basis_url"),
     }
+    if closure.get("version") == 2:
+        evidence.update(version=2, search_policy=closure.get("search_policy"),
+                        bounded_scan_ids=closure.get("bounded_scan_ids"))
     canonical = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _negative_scope_template(record: dict) -> dict:
     closure = record.get("negative_closure") or {}
-    return {
+    scope = {
         "lang": record.get("lang"),
         "source_lang": record.get("source_lang"), "registry_sha256": record.get("registry_sha256"),
         "scope_id": closure.get("scope_id"), "scope_version": closure.get("scope_version"),
@@ -147,6 +151,10 @@ def _negative_scope_template(record: dict) -> dict:
         "required_check_ids": closure.get("required_check_ids"),
         "required_checks": closure.get("required_checks"), "known_leads": closure.get("known_leads"),
     }
+    if closure.get("version") == 2:
+        scope.update(version=2, search_policy=closure.get("search_policy"),
+                     bounded_scan_ids=closure.get("bounded_scan_ids"))
+    return scope
 
 
 def negative_closure_template_sha256(record: dict) -> str:
@@ -293,13 +301,23 @@ def _validate_negative_outcome(check: dict, source: dict, producer_id: str, *, f
 def _validate_negative_closure(record: dict, registry: dict, checks: list[dict]) -> None:
     closure = record.get("negative_closure")
     _require(isinstance(closure, dict), "finite negative closure must be an object")
-    _require(type(closure.get("version")) is int and closure["version"] == 1
+    _require(type(closure.get("version")) is int and closure["version"] in {1, 2}
              and closure.get("owner") == record["owner"]
              and closure.get("lang") == record["lang"]
              and _text(record.get("source_lang"))
              and record["source_lang"] == record.get("original_language")
              and closure.get("source_lang") == record["source_lang"],
              "negative closure owner, language or source language mismatch")
+    secondary = closure["version"] == 2
+    if secondary:
+        _require(record["lang"] in SECONDARY_LANGUAGES
+                 and closure.get("search_policy") == "secondary_reasonable_v1",
+                 "secondary reasonable search policy is restricted to the six secondary languages")
+        bounded = closure.get("bounded_scan_ids")
+        _require(isinstance(bounded, list) and all(_text(item) for item in bounded)
+                 and len(bounded) == len(set(bounded)), "bounded scan IDs must be explicit and unique")
+    else:
+        bounded = []
     _require(_text(closure.get("scope_id")) and _text(closure.get("scope_version"))
              and _text(closure.get("scope_boundary"))
              and isinstance(closure.get("retained_limitations"), list)
@@ -334,7 +352,9 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
                  and _text(item["scan_id"]) and _text(item["pagination_basis"]),
                  "required check page index/count invalid")
         pages.setdefault(item["scan_id"], []).append(item)
-    for group in pages.values():
+    _require(set(bounded) <= set(pages), "bounded scan ID is absent from the manifest")
+    sources = {source["id"]: source for source in registry["sources"]}
+    for scan_id, group in pages.items():
         count = group[0]["page_count"]
         _require(all(item["page_count"] == count and item["source_id"] == group[0]["source_id"]
                      and item["method"] == group[0]["method"] and item["query"] == group[0]["query"]
@@ -343,18 +363,38 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
                  and {item["page_index"] for item in group} == set(range(1, count + 1)),
                  "required check manifest omits or duplicates a page")
         by_page = {item["page_index"]: item for item in group}
-        _require(all(item["next_page_url"] == (by_page[index + 1]["url"] if index < count else "")
-                     and item["pagination_exhausted"] is (index == count)
-                     for index, item in by_page.items()),
-                 "required check page chain lacks terminal exhaustion evidence")
+        if secondary:
+            _require(len({item["url"] for item in group}) == count,
+                     "secondary scan cannot count duplicate page URLs")
+        is_bounded = scan_id in bounded
+        terminal = by_page[count]
+        if is_bounded:
+            _require(sources[terminal["source_id"]]["tier"] != "discovery"
+                     and _source_url_matches(terminal["next_page_url"], sources[terminal["source_id"]])
+                     and terminal["next_page_url"] not in {item["url"] for item in group}
+                     and terminal["pagination_exhausted"] is False,
+                     "bounded scan must retain a real unvisited next page without claiming exhaustion")
+            _require(any(scan_id in limitation for limitation in closure["retained_limitations"]),
+                     "bounded scan needs an explicit retained limitation naming its scan ID")
+        for index, item in by_page.items():
+            expected_next = by_page[index + 1]["url"] if index < count else ""
+            if index == count and is_bounded:
+                expected_next = terminal["next_page_url"]
+            _require(item["next_page_url"] == expected_next
+                     and item["pagination_exhausted"] is (index == count and not is_bounded),
+                     "required check page chain lacks terminal exhaustion evidence")
     registered = set(registry["language_scopes"][record["lang"]]["required_source_ids"])
     target = product_language_tag(record["lang"], registry)
-    sources = {source["id"]: source for source in registry["sources"]}
     for item in manifest:
         if sources[item["source_id"]]["tier"] == "discovery":
             entity = item["entity_field_scope"]
             parsed = urlparse(item["url"])
             params = parse_qs(parsed.query)
+            if secondary:
+                _require(parsed.hostname in {"www.wikidata.org", "wikidata.org"},
+                         "secondary discovery leg must check exact Wikidata entity fields")
+                _require(params.get("languagefallback", ["0"]) == ["0"],
+                         "secondary Wikidata check cannot request language fallback")
             _require(item["method"] == "entity_api" and isinstance(entity, dict)
                      and parsed.path == "/w/api.php"
                      and params.get("action") == ["wbgetentities"]
@@ -373,9 +413,22 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
         else:
             _require(item["entity_field_scope"] is None,
                      "non-entity check cannot claim entity fields")
-    _require(registered <= {check["source_id"] for check in checks
-                            if _matches_target(check.get("observed_lang", ""), target)},
-             "finite negative closure lacks a completed target-language check for a required source")
+    if secondary:
+        _require(all(_matches_target(check.get("observed_lang", ""), target)
+                     or check.get("negative_outcome") == "rejected_leads" for check in checks),
+                 "secondary non-target-language checks need independently rejected leads")
+        target_checks = [check for check in checks if _matches_target(check.get("observed_lang", ""), target)]
+        tiers = {sources[check["source_id"]]["tier"] for check in target_checks
+                 if _matches_target(sources[check["source_id"]]["language"], target)}
+        _require(bool(tiers & {"official", "language_go"}),
+                 "secondary reasonable search needs a target-language professional source")
+        _require(bool(tiers & {"wikipedia_article", "encyclopedia"})
+                 or any(sources[check["source_id"]]["tier"] == "discovery" for check in target_checks),
+                 "secondary reasonable search needs a target-language encyclopedia or exact Wikidata check")
+    else:
+        _require(registered <= {check["source_id"] for check in checks
+                                if _matches_target(check.get("observed_lang", ""), target)},
+                 "finite negative closure lacks a completed target-language check for a required source")
     _require(all(check.get("status") == "not_found" and check.get("completeness") == "complete"
                  and check.get("scope_complete") is True and _text(check.get("method"))
                  and isinstance(check.get("searched_forms"), list) and bool(check["searched_forms"])
@@ -518,9 +571,10 @@ def validate_research_record(record: dict, registry: dict) -> dict:
             _validate_negative_closure(record, registry, checks)
         else:
             _require(scope["complete_for_negative_claims"], "source scope is incomplete for negative claims")
-        for source_id in scope["required_source_ids"]:
-            _require(any(check["source_id"] == source_id and check["status"] == "not_found" for check in checks),
-                     f"source scope lacks completed negative search for {source_id}")
+        if not finite or record["negative_closure"]["version"] == 1:
+            for source_id in scope["required_source_ids"]:
+                _require(any(check["source_id"] == source_id and check["status"] == "not_found" for check in checks),
+                         f"source scope lacks completed negative search for {source_id}")
         _require(all(check["status"] == "not_found" for check in checks), "negative source scope has unresolved checks")
         for check in checks:
             _validate_negative_outcome(check, sources[check["source_id"]], record["producer_id"], finite=finite)

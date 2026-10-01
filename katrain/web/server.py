@@ -249,7 +249,10 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task"):
+    collector = getattr(app.state, "error_collector", None)
+    if collector is not None:
+        await asyncio.to_thread(collector.stop)
+    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task", "health_report_task"):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
@@ -428,6 +431,17 @@ async def _lifespan_server(app: FastAPI, log):
 
     # ── Platform Manager (cross-platform online play) ─────────────────────
     _init_platform_manager(app, manager, log)
+
+    # Config-check verdicts and error collection for the admin console; server mode only. Started
+    # last so that a failure earlier in startup cannot leave the handler attached to the root logger.
+    from katrain.web.core import error_collector, health_report
+
+    app.state.error_collector = error_collector.ErrorCollector("web", error_collector.factory_for(session_factory)).start()
+    app.state.health_report_task = asyncio.create_task(
+        health_report.report_forever(
+            session_factory, "web", lambda: health_report.web_checks(settings), extra=app.state.error_collector.stats
+        )
+    )
 
 
 def _init_platform_manager(app, session_manager, log):
@@ -639,6 +653,8 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.physical_play_config = None
 
     # One physical camera owner shared by capture, calibration, and recognition.
+    from katrain.web.core.device_lease import DeviceBusy
+
     camera_hub = None
     hardware_vision_state = None
     if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
@@ -700,6 +716,9 @@ async def _lifespan_board(app: FastAPI, log):
         camera_hub = CameraHub(hub_config)
         try:
             camera_hub.start()
+        except DeviceBusy as exc:
+            log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
+            camera_hub = None
         except RuntimeError as exc:
             # CameraHub uses this error only when CameraManager cannot open the
             # configured device. Preserve every other RuntimeError as a startup
@@ -758,14 +777,19 @@ async def _lifespan_board(app: FastAPI, log):
         from katrain.web.core.led_service import LedService
 
         led = LedService(led_config)
-        led.start()
-        app.state.led = led
-        app.state.led_last_activity = time.monotonic()
-        app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
-        # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
-        # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
-        _load_guidance_scale(app, log)
-        log.info("LED service started (port=%s)", led_config.serial_port)
+        try:
+            led.start()
+        except DeviceBusy as exc:
+            log.warning("LED occupied; continuing without LED guidance: %s", exc)
+            app.state.led = None
+        else:
+            app.state.led = led
+            app.state.led_last_activity = time.monotonic()
+            app.state.led_failsafe_task = asyncio.create_task(_led_failsafe_loop(app))
+            # 上次学到的引导亮度必须在**第一盏灯点亮之前**装回去 —— 晚一步就等于让用户先卡一手,
+            # 那正是 09-24 那次故障(见 `_load_guidance_scale`)。
+            _load_guidance_scale(app, log)
+            log.info("LED service started (port=%s)", led_config.serial_port)
     else:
         app.state.led = None
 

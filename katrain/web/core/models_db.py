@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    BigInteger,
     Column,
     Integer,
     String,
@@ -1447,3 +1448,109 @@ class CronJobRun(Base):
     error = Column(Text, nullable=True)
 
     __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)
+
+
+class ProcessHealthReport(Base):
+    """Latest config-check verdicts, one row per process (web / cron / admin), overwritten in place.
+
+    `report` is JSON of templated verdicts only — never configuration values. Written by each
+    process about its own effective config; read by the admin console.
+    """
+
+    __tablename__ = "process_health_reports"
+
+    process = Column(String(16), primary_key=True)
+    hostname = Column(String(128), nullable=False)
+    build = Column(String(64), nullable=False)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+    report = Column(Text, nullable=False)
+
+
+class ErrorGroup(Base):
+    """ERROR-level log records grouped by fingerprint (one row per distinct failure), written by each
+    process's error collector and read / resolved in the admin console. Samples are scrubbed."""
+
+    __tablename__ = "error_groups"
+
+    id = Column(Integer, primary_key=True)
+    fingerprint = Column(String(64), nullable=False, unique=True)
+    process = Column(String(16), nullable=False)
+    logger = Column(String(128), nullable=False)
+    exc_type = Column(String(128), nullable=True)
+    template = Column(Text, nullable=False)
+    location = Column(String(400), nullable=False)
+    job = Column(String(64), nullable=True)
+    first_seen = Column(DateTime(timezone=True), nullable=False)
+    last_seen = Column(DateTime(timezone=True), nullable=False)
+    state_changed_at = Column(DateTime(timezone=True), nullable=False)
+    count = Column(Integer, nullable=False, default=1)
+    sample = Column(Text, nullable=False)
+    build = Column(String(64), nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(128), nullable=True)
+
+
+class BoxDevice(Base):
+    """A smartbox that reports telemetry. Trust on first use: the first registration stores the
+    device's derived key (never the factory secret) as `pending`; an admin approves or rejects it.
+    Heartbeats are HMAC-signed with that key and must carry strictly increasing timestamps."""
+
+    __tablename__ = "box_devices"
+
+    device_id = Column(String(64), primary_key=True)
+    key = Column(String(64), nullable=False)
+    status = Column(String(16), nullable=False, default="pending")  # pending | approved | rejected
+    registered_at = Column(DateTime(timezone=True), nullable=False)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decided_by = Column(String(128), nullable=True)
+    last_seen = Column(DateTime(timezone=True), nullable=True)
+    last_ts = Column(Integer, nullable=True)
+    last_ip = Column(String(64), nullable=True)
+    board = Column(String(64), nullable=True)
+    smartbox_version = Column(String(32), nullable=True)
+    katrain_build = Column(String(64), nullable=True)
+    mode = Column(String(32), nullable=True)
+    uptime_s = Column(Integer, nullable=True)
+
+
+class CronJobControl(Base):
+    """Persistent pause state per interval job, set in the admin console and polled by cron."""
+
+    __tablename__ = "cron_job_controls"
+
+    job_name = Column(String(64), primary_key=True)
+    paused = Column(Boolean, nullable=False, default=False)
+    reason = Column(Text, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)
+
+
+class CronJobCommand(Base):
+    """Run-now requests from the admin console; cron marks each done or rejected (with a note)."""
+
+    __tablename__ = "cron_job_commands"
+
+    id = Column(Integer, primary_key=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    command = Column(String(16), nullable=False)
+    requested_at = Column(DateTime(timezone=True), nullable=False)
+    requested_by = Column(String(128), nullable=False)
+    state = Column(String(16), nullable=False, default="pending")
+    handled_at = Column(DateTime(timezone=True), nullable=True)
+    note = Column(Text, nullable=True)
+
+
+class GoldenImageStatus(Base):
+    """Release status of one golden image (identified by its manifest prefix in the artifacts bucket).
+    Absent row = candidate. The bucket itself is written only by the provisioning upload script."""
+
+    __tablename__ = "golden_image_status"
+
+    prefix = Column(String(255), primary_key=True)
+    status = Column(String(16), nullable=False)  # candidate | released | revoked
+    note = Column(Text, nullable=True)
+    # The exact bytes that were released: a later overwrite of the file shows up as a problem.
+    released_etag = Column(String(128), nullable=True)
+    released_size = Column(BigInteger, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)

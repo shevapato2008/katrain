@@ -125,12 +125,14 @@ class LedService:
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._serial = None
+        self._device_lease = None
         self._connected = False
         self._last_reconnect = 0.0
         self._last_errors: List[str] = []
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
+        self._reconnect_blocked = False
         # Guidance brightness (MIN_GUIDANCE_SCALE..1): multiplies every set_points colour. Steered by the
         # ambient-light loop (server `_adjust_led_brightness`, fed by the vision worker's led_glow
         # readings) — at night full brightness shines through a white stone and it is no longer
@@ -175,12 +177,27 @@ class LedService:
         )
 
     def start(self) -> None:
+        if self._thread is not None and self._thread.is_alive():
+            return
+        if self._thread is not None or self._stop.is_set():
+            # The previous worker is finished: discard its stop sentinel and
+            # queued commands rather than handing them to the new lifecycle.
+            self._queue = queue.Queue(maxsize=10)
         self._stop.clear()
+        self._reconnect_blocked = False
         self._open_serial()
         self._thread = threading.Thread(target=self._worker, name="led-serial", daemon=True)
-        self._thread.start()
+        try:
+            self._thread.start()
+        except BaseException:
+            self._thread = None
+            self._close_serial()
+            raise
 
     def stop(self) -> None:
+        if self._thread is None:
+            self._close_serial()
+            return
         # Blackout via the WORKER (strict) so all serial I/O stays on one thread,
         # then tear down. No post-join serial access → no main/worker race.
         try:
@@ -188,13 +205,19 @@ class LedService:
         except Exception:
             pass
         self._stop.set()
+        self._connected = False
         try:
             self._queue.put_nowait(_SENTINEL)
         except queue.Full:
             pass
         if self._thread:
             self._thread.join(timeout=3)
+            if self._thread.is_alive():
+                # A blocked open still owns the device. The worker closes any
+                # late result and releases its lease before it exits.
+                return
         self._close_serial()
+        self._thread = None
 
     def is_connected(self) -> bool:
         return self._connected
@@ -289,27 +312,30 @@ class LedService:
 
     # -- worker ------------------------------------------------------------ #
     def _worker(self) -> None:
-        while not self._stop.is_set():
-            try:
-                item = self._queue.get(timeout=0.2)
-            except queue.Empty:
+        try:
+            while not self._stop.is_set():
+                try:
+                    item = self._queue.get(timeout=0.2)
+                except queue.Empty:
+                    if self._serial is None:
+                        self._maybe_reconnect()
+                    continue
+                if item is _SENTINEL:
+                    break
                 if self._serial is None:
                     self._maybe_reconnect()
-                continue
-            if item is _SENTINEL:
-                break
-            if self._serial is None:
-                self._maybe_reconnect()
-            if self._serial is None:
-                self._finish(item, ok=False, shown_at=None, errors=["not connected"])
-                continue
-            try:
-                self._run_batch(item)
-            except Exception as e:
-                log.warning("LED serial error: %s", e)
-                self._connected = False
-                self._close_serial()
-                self._finish(item, ok=False, shown_at=None, errors=[str(e)])
+                if self._serial is None:
+                    self._finish(item, ok=False, shown_at=None, errors=["not connected"])
+                    continue
+                try:
+                    self._run_batch(item)
+                except Exception as e:
+                    log.warning("LED serial error: %s", e)
+                    self._connected = False
+                    self._close_serial()
+                    self._finish(item, ok=False, shown_at=None, errors=[str(e)])
+        finally:
+            self._close_serial()
 
     def _run_batch(self, batch: _Batch) -> None:
         errors: List[str] = []
@@ -414,9 +440,18 @@ class LedService:
             self._serial.timeout = previous_timeout
 
     def _open_serial(self) -> None:
+        if self._device_lease is None:
+            # Imported here so standalone LED users can load this leaf module
+            # without importing the web application package.
+            from katrain.web.core.device_lease import DeviceLease
+
+            self._device_lease = DeviceLease.acquire("led", self.config.serial_port)
         try:
             self._serial = self._serial_factory()
             self._connected = False
+            if self._stop.is_set():
+                self._close_serial()
+                return
 
             # A USB-open can reset the ESP32. Wait for its boot banner (or a
             # bounded timeout), then discard boot chatter before BRIGHT.
@@ -433,6 +468,9 @@ class LedService:
                 if self._clock() >= deadline:
                     break
                 if line.startswith("OK"):
+                    if self._stop.is_set():
+                        self._close_serial()
+                        return
                     self._connected = True
                     log.info("LED serial opened on %s", self.config.serial_port)
                     return
@@ -455,13 +493,20 @@ class LedService:
             log.warning("LED serial open failed (%s): %s", self.config.serial_port, e)
 
     def _maybe_reconnect(self) -> None:
-        if self._serial_unavailable:
-            return  # pyserial missing — never recoverable by retrying
+        if self._stop.is_set() or self._serial_unavailable or self._reconnect_blocked:
+            return  # Missing pyserial is permanent; a lease conflict requires explicit stop/start.
         now = self._clock()
         if now - self._last_reconnect < self._reconnect_interval:
             return
         self._last_reconnect = now
-        self._open_serial()
+        from katrain.web.core.device_lease import DeviceBusy
+
+        try:
+            self._open_serial()
+        except DeviceBusy as exc:
+            self._reconnect_blocked = True
+            self._last_errors = [str(exc)]
+            log.warning("LED serial unavailable: %s", exc)
 
     def _close_serial(self) -> None:
         if self._serial is not None:
@@ -471,3 +516,6 @@ class LedService:
                 pass
         self._serial = None
         self._connected = False
+        if self._device_lease is not None:
+            self._device_lease.release()
+            self._device_lease = None

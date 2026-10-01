@@ -329,3 +329,66 @@ class UpcomingMatchDB(Base):
     source_url = Column(String(512), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ProcessHealthReportDB(Base):
+    """Maps to the web-owned process_health_reports table."""
+
+    __tablename__ = "process_health_reports"
+
+    process = Column(String(16), primary_key=True)
+    hostname = Column(String(128), nullable=False)
+    build = Column(String(64), nullable=False)
+    generated_at = Column(DateTime(timezone=True), nullable=False)
+    report = Column(Text, nullable=False)
+
+
+class ErrorGroupDB(Base):
+    """ERROR-level log records grouped by fingerprint (one row per distinct failure), written by each
+    process's error collector and read / resolved in the admin console. Samples are scrubbed."""
+
+    __tablename__ = "error_groups"
+
+    id = Column(Integer, primary_key=True)
+    fingerprint = Column(String(64), nullable=False, unique=True)
+    process = Column(String(16), nullable=False)
+    logger = Column(String(128), nullable=False)
+    exc_type = Column(String(128), nullable=True)
+    template = Column(Text, nullable=False)
+    location = Column(String(400), nullable=False)
+    job = Column(String(64), nullable=True)
+    first_seen = Column(DateTime(timezone=True), nullable=False)
+    last_seen = Column(DateTime(timezone=True), nullable=False)
+    state_changed_at = Column(DateTime(timezone=True), nullable=False)
+    count = Column(Integer, nullable=False, default=1)
+    sample = Column(Text, nullable=False)
+    build = Column(String(64), nullable=False)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
+    resolved_by = Column(String(128), nullable=True)
+
+
+class CronJobControlDB(Base):
+    """Persistent pause state per interval job, set in the admin console and polled by cron."""
+
+    __tablename__ = "cron_job_controls"
+
+    job_name = Column(String(64), primary_key=True)
+    paused = Column(Boolean, nullable=False, default=False)
+    reason = Column(Text, nullable=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by = Column(String(128), nullable=False)
+
+
+class CronJobCommandDB(Base):
+    """Run-now requests from the admin console; cron marks each done or rejected (with a note)."""
+
+    __tablename__ = "cron_job_commands"
+
+    id = Column(Integer, primary_key=True)
+    job_name = Column(String(64), nullable=False, index=True)
+    command = Column(String(16), nullable=False)
+    requested_at = Column(DateTime(timezone=True), nullable=False)
+    requested_by = Column(String(128), nullable=False)
+    state = Column(String(16), nullable=False, default="pending")
+    handled_at = Column(DateTime(timezone=True), nullable=True)
+    note = Column(Text, nullable=True)

@@ -335,7 +335,11 @@ class CameraManager:
         """Stop the reader thread and release the camera device."""
         self._stop_event.set()
         if self._reader_thread is not None:
-            self._reader_thread.join(timeout=2)
+            # Thread.start() can fail after the capture was acquired. An
+            # unstarted thread cannot be joined, but the capture still needs
+            # releasing before the outer CameraHub releases its device lease.
+            if self._reader_thread.ident is not None:
+                self._reader_thread.join(timeout=2)
             self._reader_thread = None
         if self._cap is not None:
             self._cap.release()
@@ -357,6 +361,15 @@ class CameraManager:
 
         with self._frame_lock:
             return self._latest_frame.copy() if self._latest_frame is not None else None
+
+    def read_frame_identified(self) -> tuple[np.ndarray | None, int, float]:
+        """read_frame() plus the frame's reader sequence and monotonic timestamp, taken under one lock."""
+        self._last_demand = time.monotonic()
+        if not self._connected:
+            return self._try_reconnect(), self._frame_seq, self._frame_ts
+        with self._frame_lock:
+            frame = self._latest_frame.copy() if self._latest_frame is not None else None
+            return frame, self._frame_seq, self._frame_ts
 
     # ------------------------------------------------------------------
     # Background reader

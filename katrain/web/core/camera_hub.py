@@ -6,6 +6,8 @@ import threading
 import time
 from dataclasses import dataclass
 
+from katrain.web.core.device_lease import DeviceLease
+
 
 @dataclass(frozen=True)
 class CameraHubConfig:
@@ -28,6 +30,7 @@ class CameraHub:
         self._camera = camera
         self._started = False
         self._lifecycle_lock = threading.Lock()
+        self._device_lease = None
 
     @property
     def is_started(self) -> bool:
@@ -37,34 +40,59 @@ class CameraHub:
         with self._lifecycle_lock:
             if self._started:
                 return
-            if self._camera is None:
-                from katrain.vision.camera import CameraManager
+            self._device_lease = DeviceLease.acquire("camera", self.config.device_id)
+            try:
+                if self._camera is None:
+                    from katrain.vision.camera import CameraManager
 
-                self._camera = CameraManager(
-                    device_id=self.config.device_id,
-                    width=self.config.width,
-                    height=self.config.height,
-                    warmup_seconds=self.config.warmup_seconds,
-                    lock_exposure=self.config.lock_exposure,
-                    exposure=self.config.exposure,
-                    lock_awb=self.config.lock_awb,
-                )
-            if not self._camera.open():
-                raise RuntimeError(f"Failed to open camera {self.config.device_id}")
-            self._started = True
+                    self._camera = CameraManager(
+                        device_id=self.config.device_id,
+                        width=self.config.width,
+                        height=self.config.height,
+                        warmup_seconds=self.config.warmup_seconds,
+                        lock_exposure=self.config.lock_exposure,
+                        exposure=self.config.exposure,
+                        lock_awb=self.config.lock_awb,
+                    )
+                if not self._camera.open():
+                    raise RuntimeError(f"Failed to open camera {self.config.device_id}")
+                self._started = True
+            except BaseException:
+                # open() may have acquired the device before failing. Keep the
+                # lease through cleanup so a peer cannot open it concurrently.
+                try:
+                    if self._camera is not None:
+                        try:
+                            self._camera.close()
+                        except Exception:
+                            pass
+                finally:
+                    self._device_lease.release()
+                    self._device_lease = None
+                raise
 
     def stop(self) -> None:
         with self._lifecycle_lock:
             if not self._started:
                 return
-            self._camera.close()
-            self._started = False
+            try:
+                self._camera.close()
+            finally:
+                self._started = False
+                self._device_lease.release()
+                self._device_lease = None
 
     def is_connected(self) -> bool:
         return bool(self._started and self._camera is not None and getattr(self._camera, "is_connected", False))
 
     def read_frame(self):
         return self._camera.read_frame() if self._camera is not None else None
+
+    def read_frame_identified(self):
+        """(frame, seq, monotonic ts) from one locked read; diagnostics need the frame's identity."""
+        if self._camera is None:
+            return None, 0, 0.0
+        return self._camera.read_frame_identified()
 
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0):
         if self._camera is None:

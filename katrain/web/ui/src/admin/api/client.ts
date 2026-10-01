@@ -1,5 +1,8 @@
 import type { SGFPayload } from '../../components/tutorials/SGFBoard';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../cron/types';
+import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail, VisionFiducialMode, VisionAutoCheck, VisionModels, DiagnosticsStatus, DiagnosticsSnapshot } from '../vision/types';
+import type { AdminUserList, AdminUserDetail, LedgerPage, QuotaRow, RedeemedRow, AdjustInput, AdjustResult, CodesInput, CodesResult, CodeListing, AuditPage, AuditQuery } from '../users/types';
+import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
 export interface TutorialBook { id: number; category: string; title: string; slug: string; chapter_count: number }
@@ -29,6 +32,20 @@ export interface VerifyResult {
   training_export: { status: 'exported' | 'skipped' | 'failed'; count: number; reason?: string };
 }
 
+export interface GrafanaDashboard { id: string; title: string; url: string }
+export interface PerformanceConfig { state: 'unconfigured' | 'invalid' | 'configured'; error: string | null; origin: string | null; dashboards: GrafanaDashboard[]; env: string }
+export interface HealthCheck { id: string; level: 'ok' | 'warn' | 'bad' | 'unknown' | string; message: string }
+export interface HealthProcess { process: string; state: 'never' | 'stale' | 'fresh'; hostname: string | null; build: string | null; generated_at: string | null; age_s: number | null; checks: HealthCheck[]; extra: Record<string, unknown> }
+export interface ConfigHealth { observed_at: string; stale_after_s: number; processes: HealthProcess[]; cross_checks: HealthCheck[] }
+export interface ErrorGroupRow { id: number; process: string; logger: string; exc_type: string | null; template: string; location: string; job: string | null; first_seen: string | null; last_seen: string | null; state_changed_at: string | null; count: number; sample: string; build: string; resolved_at: string | null; resolved_by: string | null }
+export interface CollectorState { state: 'never' | 'stale' | 'fresh'; age_s: number | null; stuck?: boolean | null; last_flush_at?: string | null; last_flush_ok?: boolean | null; dropped?: number; overflow?: number; queued?: number }
+export interface ErrorList { items: ErrorGroupRow[]; total: number; page: number; page_size: number; collectors: Record<string, CollectorState> }
+export interface Attention { errors: number; config: number }
+export interface BoxDeviceRow { device_id: string; state: 'online' | 'offline' | 'never' | 'pending' | 'rejected'; status: string; registered_at: string | null; decided_at: string | null; decided_by: string | null; last_seen: string | null; silent_s: number | null; last_ip: string | null; board: string | null; smartbox_version: string | null; katrain_build: string | null; mode: string | null; uptime_s: number | null }
+export interface DeviceFleet { observed_at: string; online_within_s: number; devices: BoxDeviceRow[]; counts: Record<string, number>; versions: { smartbox: Record<string, number>; katrain: Record<string, number> } }
+export interface ArtifactImage { prefix: string; manifest: { version?: string; board?: string; file?: string; sha256?: string; size?: number; uploaded_by?: string; uploaded_at?: string; notes?: string } | null; problems: string[]; object_size: number | null; status?: string; status_note?: string | null; status_by?: string | null; status_at?: string | null }
+export interface ArtifactListing { state: 'configured' | 'unconfigured' | 'unreachable'; bucket: string | null; images: ArtifactImage[]; truncated: boolean; error: string | null }
+export interface ArtifactLink { url: string; expires_at: string; sha256: string }
 export class AdminApiError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -52,7 +69,8 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     let response: Response;
     try {
       response = await fetcher(url, { ...init, headers });
-    } catch {
+    } catch (cause) {
+      if (init.signal?.aborted || (cause instanceof DOMException && cause.name === 'AbortError')) throw cause;
       throw new AdminApiError(0, '网络连接失败，请重试。');
     }
     if (!response.ok) {
@@ -66,9 +84,28 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
   }
+  async function download(path: string): Promise<{ blob: Blob; rows: number; total: number }> {
+    const headers = new Headers();
+    const value = token();
+    if (value) headers.set('Authorization', `Bearer ${value}`);
+    let response: Response;
+    try { response = await fetcher(`/api/admin${path}`, { headers, cache: 'no-store' }); } catch { throw new AdminApiError(0, '网络连接失败，请重试。'); }
+    if (!response.ok) {
+      let detail = `请求失败（${response.status}）`;
+      try { const body = await response.json() as { detail?: unknown }; if (typeof body.detail === 'string') detail = body.detail; } catch { /* Non-JSON error response. */ }
+      throw new AdminApiError(response.status, detail);
+    }
+    return { blob: await response.blob(), rows: Number(response.headers.get('X-Export-Rows') ?? 0), total: Number(response.headers.get('X-Export-Total') ?? 0) };
+  }
   const publicRead = <T>(path: string) => request<T>(`/api/v1/tutorials${path}`);
   const adminRequest = <T>(path: string, init?: RequestInit) => request<T>(`/api/admin${path}`, init, true);
   const body = (value: unknown) => JSON.stringify(value);
+  const vision = <T>(path: string, signal?: AbortSignal, value?: unknown, post = false) => adminRequest<T>(`/vision${path}`, {
+    signal, cache: 'no-store', ...(post ? { method: 'POST' } : {}), ...(value !== undefined ? { body: body(value) } : {}),
+  });
+  const training = <T>(path: string, signal?: AbortSignal, value?: unknown) => adminRequest<T>(`/vision-training${path}`, {
+    signal, cache: 'no-store', ...(value !== undefined ? { method: 'POST', body: body(value) } : {}),
+  });
   return {
     login: (username: string, password: string) => request<{ access_token: string; token_type: string }>('/api/admin/auth/login', { method: 'POST', body: body({ username, password }) }),
     me: () => adminRequest<{ username: string; env: string }>('/auth/me'),
@@ -76,6 +113,67 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     cronJobs: () => adminRequest<CronJobsResponse>('/cron/jobs'),
     cronQueues: () => adminRequest<CronQueuesResponse>('/cron/queues'),
     cronRuns: (name: string, limit = 50) => adminRequest<CronRunsResponse>(`/cron/jobs/${encodeURIComponent(name)}/runs?limit=${Math.min(200, Math.max(1, Math.trunc(limit)))}`),
+    users: (q: string, page: number, signal?: AbortSignal) => adminRequest<AdminUserList>(`/users?${new URLSearchParams({ q: q.trim().slice(0, 64), page: String(page) })}`, { signal, cache: 'no-store' }),
+    user: (id: number, signal?: AbortSignal) => adminRequest<AdminUserDetail>(`/users/${id}`, { signal, cache: 'no-store' }),
+    userLedger: (id: number, beforeId: number | null, signal?: AbortSignal) => adminRequest<LedgerPage>(`/users/${id}/ledger${beforeId ? `?before_id=${beforeId}` : ''}`, { signal, cache: 'no-store' }),
+    userQuota: (id: number, signal?: AbortSignal) => adminRequest<{ items: QuotaRow[] }>(`/users/${id}/quota`, { signal, cache: 'no-store' }),
+    userRedeemed: (id: number, signal?: AbortSignal) => adminRequest<{ items: RedeemedRow[] }>(`/users/${id}/redeemed`, { signal, cache: 'no-store' }),
+    adjustCredits: (id: number, value: AdjustInput) => adminRequest<AdjustResult>(`/users/${id}/credits`, { method: 'POST', body: body(value) }),
+    redeemCodes: (signal?: AbortSignal) => adminRequest<CodeListing>('/redeem-codes', { signal, cache: 'no-store' }),
+    generateCodes: (value: CodesInput) => adminRequest<CodesResult>('/redeem-codes', { method: 'POST', body: body(value) }),
+    auditExport: (query: AuditQuery) => download(`/audit/export?${new URLSearchParams(Object.entries(query).filter(([k, v]) => k !== 'page' && v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`),
+    audit: (query: AuditQuery, signal?: AbortSignal) => adminRequest<AuditPage>(`/audit?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
+    errors: (query: { status: string; process: string; page: number }, signal?: AbortSignal) => adminRequest<ErrorList>(`/errors?${new URLSearchParams(Object.entries(query).filter(([, v]) => v !== '').map(([k, v]) => [k, String(v)]))}`, { signal, cache: 'no-store' }),
+    resolveError: (id: number) => adminRequest<ErrorGroupRow>(`/errors/${id}/resolve`, { method: 'POST' }),
+    attention: (signal?: AbortSignal) => adminRequest<Attention>('/attention', { signal, cache: 'no-store' }),
+    devices: (signal?: AbortSignal) => adminRequest<DeviceFleet>('/devices', { signal, cache: 'no-store' }),
+    decideDevice: (id: string, decision: 'approve' | 'reject' | 'reset') => adminRequest<{ device_id: string; status: string }>(`/devices/${encodeURIComponent(id)}/${decision}`, { method: 'POST' }),
+    cronPause: (name: string, reason: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/pause`, { method: 'POST', body: body({ reason }) }),
+    cronResume: (name: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/resume`, { method: 'POST' }),
+    cronRunNow: (name: string) => adminRequest<{ id: number; job: string; state: string }>(`/cron/jobs/${encodeURIComponent(name)}/run`, { method: 'POST' }),
+    artifacts: (signal?: AbortSignal) => adminRequest<ArtifactListing>('/artifacts', { signal, cache: 'no-store' }),
+    artifactStatus: (prefix: string, status: string, note: string) => adminRequest<{ prefix: string; status: string }>('/artifacts/status', { method: 'POST', body: body({ prefix, status, note }) }),
+    artifactLink: (prefix: string) => adminRequest<ArtifactLink>('/artifacts/link', { method: 'POST', body: body({ prefix }) }),
+    configHealth: (signal?: AbortSignal) => adminRequest<ConfigHealth>('/config-health', { signal, cache: 'no-store' }),
+    performance: (signal?: AbortSignal) => adminRequest<PerformanceConfig>('/performance', { signal, cache: 'no-store' }),
+    kifuSearch: (q: string, signal?: AbortSignal) => adminRequest<KifuAlbumList>(`/kifu/albums?${new URLSearchParams({ ...(q.trim() ? { q: q.trim().slice(0, 100) } : {}), page_size: '30' })}`, { signal, cache: 'no-store' }),
+    kifuAlbum: (id: number, signal?: AbortSignal) => adminRequest<KifuAlbumDetail>(`/kifu/albums/${Math.trunc(id)}`, { signal, cache: 'no-store' }),
+    visionStatus: (signal?: AbortSignal) => vision<VisionStatus>('/status', signal),
+    visionDevices: (signal?: AbortSignal) => vision<VisionDevices>('/devices', signal),
+    visionConnect: (device_id: number, mode: VisionMode, signal?: AbortSignal) => vision<VisionStatus>('/connect', signal, { device_id, mode }, true),
+    visionDisconnect: (signal?: AbortSignal) => vision<VisionStatus>('/disconnect', signal, undefined, true),
+    visionCalibrate: (empty_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/calibrate', signal, { empty_confirmed }, true),
+    visionImportSgf: (sgf: string, signal?: AbortSignal) => vision<VisionImport>('/sgf', signal, { sgf }, true),
+    visionImportKifu: (album_id: number, signal?: AbortSignal) => vision<VisionImport>('/sgf/kifu', signal, { album_id }, true),
+    visionCapture: (input: VisionCaptureInput, signal?: AbortSignal) => vision<VisionFrame>('/capture', signal, input, true),
+    visionSessions: (signal?: AbortSignal) => vision<VisionSessionList>('/sessions', signal),
+    visionSession: (id: string, signal?: AbortSignal) => vision<VisionSession>(`/sessions/${encodeURIComponent(id)}`, signal),
+    visionResumeSession: (id: string, signal?: AbortSignal) => vision<VisionStatus>(`/sessions/${encodeURIComponent(id)}/resume`, signal, undefined, true),
+    visionVerifyGeometry: (game_id: string, frame_id: string, overlay_confirmed: boolean, signal?: AbortSignal) => vision<VisionGeometry>('/verify-geometry', signal, { game_id, frame_id, overlay_confirmed }, true),
+    visionPreview: (signal?: AbortSignal) => vision<VisionPreview>('/preview', signal),
+    visionRemovalGuide: (game_id: string, move_index: number, signal?: AbortSignal) => vision<{ game_id: string; move_index: number; points: { row: number; col: number }[] }>('/removal-guide', signal, { game_id, move_index }, true),
+    visionUndo: (id: string, frame_id: string, signal?: AbortSignal) => vision<{ session: VisionSession; led_restored: boolean }>(`/sessions/${encodeURIComponent(id)}/undo`, signal, { frame_id, operator_confirmed: true }, true),
+    visionEnd: (id: string, signal?: AbortSignal) => vision<{ session: VisionSession; led_restored: boolean }>(`/sessions/${encodeURIComponent(id)}/end`, signal, { operator_confirmed: true }, true),
+    visionLedTest: (signal?: AbortSignal) => vision<{ points: { row: number; col: number }[]; guidance_restored: boolean | null }>('/led-test', signal, { operator_confirmed: true }, true),
+    visionFiducial: (mode: VisionFiducialMode, signal?: AbortSignal) => vision<VisionStatus>('/fiducial', signal, { mode }, true),
+    visionAutoCheck: (game_id: string, move_index: number, signal?: AbortSignal) => vision<VisionAutoCheck>('/auto-check', signal, { game_id, move_index }, true),
+    visionModels: (signal?: AbortSignal) => vision<VisionModels>('/models', signal),
+    visionActivateModel: (model_id: string, signal?: AbortSignal) => vision<VisionModels>('/models/activate', signal, { model_id, confirmed: true }, true),
+    visionRollbackModel: (signal?: AbortSignal) => vision<VisionModels>('/models/rollback', signal, { confirmed: true }, true),
+    diagnosticsStatus: (signal?: AbortSignal) => vision<DiagnosticsStatus>('/diagnostics/status', signal),
+    diagnosticsSnapshot: (signal?: AbortSignal) => vision<DiagnosticsSnapshot>('/diagnostics/snapshot', signal),
+    diagnosticsStart: (signal?: AbortSignal) => vision<DiagnosticsStatus>('/diagnostics/start', signal, { confirmed: true }, true),
+    diagnosticsStop: (signal?: AbortSignal) => vision<DiagnosticsStatus>('/diagnostics/stop', signal, undefined, true),
+    visionReviewSample: (id: string, frame: string, signal?: AbortSignal) => vision<VisionSampleReview>(`/sessions/${encodeURIComponent(id)}/frames/${encodeURIComponent(frame)}/review`, signal),
+    visionFreezeSession: (id: string, parameters: VisionFreezeParameters = {}, signal?: AbortSignal) => vision<VisionFrozen>(`/sessions/${encodeURIComponent(id)}/freeze`, signal, parameters, true),
+    trainingStatus: (signal?: AbortSignal) => training<TrainingStatus>('/status', signal),
+    trainingDatasets: (signal?: AbortSignal) => training<TrainingDataset[]>('/datasets', signal),
+    trainingPresets: (signal?: AbortSignal) => training<TrainingPresets>('/presets', signal),
+    trainingRuns: (signal?: AbortSignal) => training<TrainingRun[]>('/runs', signal),
+    trainingRun: (id: string, signal?: AbortSignal) => training<TrainingRun>(`/runs/${encodeURIComponent(id)}`, signal),
+    trainingModels: (signal?: AbortSignal) => training<TrainingModel[]>('/models', signal),
+    trainingStart: (input: TrainingStartInput, signal?: AbortSignal) => training<TrainingRun>('/runs', signal, input),
+    trainingCancel: (id: string, confirmed: boolean, signal?: AbortSignal) => training<TrainingRun>(`/runs/${encodeURIComponent(id)}/cancel`, signal, { confirmed }),
     categories: () => publicRead<TutorialCategory[]>('/categories'),
     books: (category: string) => publicRead<TutorialBook[]>(`/categories/${encodeURIComponent(category)}/books`),
     book: (id: number) => publicRead<TutorialBookDetail>(`/books/${id}`),

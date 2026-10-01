@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>性能监控 · 同视口四图对比</title>
+  <style>
+    * { box-sizing:border-box; }
+    html,body { margin:0; background:#101316; }
+    #frame { position:relative; }
+    #frame.side { display:flex; width:2880px; height:900px; }
+    #frame.overlay,#frame.diff { width:1440px; height:900px; }
+    img,canvas { display:block; width:1440px; height:900px; }
+    .overlay img { position:absolute; inset:0; }
+    .overlay img:last-of-type { opacity:.5; }
+    .diff img,.side canvas,.overlay canvas { display:none; }
+  </style>
+</head>
+<body>
+  <div id="frame"><img id="reference" alt="HTML 参考图"><img id="fixture" alt="React Fixture 运行图"><canvas id="difference" width="1440" height="900" aria-label="像素差异"></canvas></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const files = {
+      'unconnected-dark': ['performance-grafana-design-unconnected-dark-1440x900.png','performance-grafana-fixture-unconnected-dark-1440x900.png'],
+      'embedded-dark': ['performance-grafana-design-embedded-dark-1440x900.png','performance-grafana-fixture-embedded-dark-1440x900.png'],
+      'embedded-light': ['performance-grafana-design-embedded-light-1440x900.png','performance-grafana-fixture-embedded-light-1440x900.png'],
+    };
+    const pair = files[params.get('pair')] || files['unconnected-dark'];
+    const mode = ['side','overlay','diff'].includes(params.get('mode')) ? params.get('mode') : 'side';
+    document.getElementById('frame').className = mode;
+    const reference = document.getElementById('reference');
+    const fixture = document.getElementById('fixture');
+    reference.src = pair[0]; fixture.src = pair[1];
+    Promise.all([reference.decode(), fixture.decode()]).then(() => {
+      if (mode === 'diff') {
+        const canvas = document.getElementById('difference');
+        const context = canvas.getContext('2d',{willReadFrequently:true});
+        context.drawImage(reference,0,0);
+        const first = context.getImageData(0,0,1440,900);
+        context.drawImage(fixture,0,0);
+        const second = context.getImageData(0,0,1440,900);
+        for (let i=0;i<first.data.length;i+=4) {
+          for (let channel=0;channel<3;channel++) first.data[i+channel]=Math.min(255,Math.abs(first.data[i+channel]-second.data[i+channel])*4);
+          first.data[i+3]=255;
+        }
+        context.putImageData(first,0,0);
+      }
+      document.body.dataset.ready='true';
+    });
+  </script>
+</body>
+</html>

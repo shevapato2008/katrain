@@ -29,3 +29,8 @@ def test_default_augment_leaves_ultralytics_defaults():
 
 def test_led_safe_aug_constant_is_hue_locked():
     assert LED_SAFE_AUG["hsv_h"] == 0.0
+
+
+def test_fixed_project_is_optional_and_does_not_change_existing_defaults():
+    assert "project" not in build_train_kwargs(_args())
+    assert build_train_kwargs(_args(project="/controlled/run/worker"))["project"] == "/controlled/run/worker"

@@ -33,4 +33,8 @@ RUN cd katrain/web/ui && npm install && npm run build && npm run build:admin
 
 ENV PYTHONPATH=/app
 EXPOSE 8001 8010
+# Build identity for the admin config check (set by compose from `git rev-parse --short HEAD`).
+ARG KATRAIN_BUILD_SHA=unknown
+ENV KATRAIN_BUILD_SHA=${KATRAIN_BUILD_SHA}
+
 CMD ["python3", "-m", "katrain", "--ui", "web", "--host", "0.0.0.0", "--port", "8001"]

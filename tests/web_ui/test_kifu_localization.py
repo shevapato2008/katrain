@@ -108,6 +108,7 @@ def test_cwi_oteai_edition_is_localized_but_unknown_event_is_preserved():
         db.add_all([
             KifuEventName(event_id=event.id, lang="cn", display_name="大手合", status="verified"),
             KifuEventName(event_id=event.id, lang="jp", display_name="大手合", status="verified"),
+            KifuEventName(event_id=event.id, lang="en", display_name="Oteai", status="verified"),
             KifuAlbum(
                 player_black="Go Seigen", player_white="Hashimoto Utaro",
                 event="JapanPromotionTournament,1934,Fall", event_id=event.id,
@@ -127,6 +128,35 @@ def test_cwi_oteai_edition_is_localized_but_unknown_event_is_preserved():
         assert cn_by_event["JapanPromotionTournament,1934,Fall"].display_event == "1934年秋季大手合"
         assert en_by_event["JapanPromotionTournament,1934,Fall"].display_event == "Oteai · Autumn 1934"
         assert cn_by_event["Unknown,1934,Fall"].display_event == "Unknown,1934,Fall"
+    engine.dispose()
+
+
+def test_cwi_edition_requires_both_link_and_verified_translation():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    raw = "JapanPromotionTournament,1934,Fall"
+    with Session() as db:
+        approved = KifuEvent(canonical_name="Oteai")
+        unapproved = KifuEvent(canonical_name="Unreviewed Oteai")
+        db.add_all([approved, unapproved])
+        db.flush()
+        db.add_all([
+            KifuEventName(event_id=approved.id, lang="cn", display_name="大手合", status="verified"),
+            KifuEventName(event_id=unapproved.id, lang="cn", display_name="大手合", status="review"),
+            KifuAlbum(player_black="A", player_white="B", event=raw, event_id=approved.id,
+                      sgf_content="(;B[aa])", source_path="approved.sgf"),
+            KifuAlbum(player_black="C", player_white="D", event=raw, event_id=unapproved.id,
+                      sgf_content="(;B[bb])", source_path="unapproved.sgf"),
+            KifuAlbum(player_black="E", player_white="F", event=raw,
+                      sgf_content="(;B[cc])", source_path="unlinked.sgf"),
+        ])
+        db.commit()
+        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
+        assert by_source["approved.sgf"].display_event == "1934年秋季大手合"
+        assert by_source["unapproved.sgf"].display_event == raw
+        assert by_source["unlinked.sgf"].display_event == raw
     engine.dispose()
 
 
@@ -169,6 +199,32 @@ def test_embedded_player_dan_has_separate_display_fields_and_preserves_raw_sgf()
         assert item.display_black_rank == "六段"
         assert item.display_player_white == "木谷实"
         assert item.display_white_rank == "七段"
+    engine.dispose()
+
+
+def test_invalid_explicit_ranks_never_fall_through_to_raw_frontend_fields():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        db.add_all([
+            KifuAlbum(player_black="吴清源九段", player_white="木谷实", black_rank="白九目半胜",
+                      white_rank="黑中盘胜", sgf_content="(;B[dd])", source_path="rank-fallback.sgf"),
+            KifuAlbum(player_black="甲", player_white="乙", black_rank="白九目半胜",
+                      white_rank="黑中盘胜", sgf_content="(;B[pp])", source_path="rank-empty.sgf"),
+        ])
+        db.commit()
+        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        by_source = {db.get(KifuAlbum, item.id).source_path: item for item in result.items}
+        fallback = by_source["rank-fallback.sgf"]
+        assert fallback.black_rank == "白九目半胜"
+        assert fallback.white_rank == "黑中盘胜"
+        assert fallback.display_player_black == "吴清源"
+        assert fallback.display_black_rank == "九段"
+        assert fallback.display_white_rank == ""
+        empty = by_source["rank-empty.sgf"]
+        assert empty.display_black_rank == ""
+        assert empty.display_white_rank == ""
     engine.dispose()
 
 

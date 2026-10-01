@@ -16,8 +16,8 @@ from katrain.web.kifu.identity import (
     display_event_name,
     display_maps,
     matching_entity_ids,
-    split_player_rank,
 )
+from katrain.web.kifu.name_parse import parse_player
 from katrain.web.kifu.round_names import display_round_name
 
 router = APIRouter()
@@ -193,14 +193,14 @@ def _summary(
     record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
-    black_name, embedded_black_rank = split_player_rank(record.player_black)
-    white_name, embedded_white_rank = split_player_rank(record.player_white)
+    black = parse_player(record.player_black, record.black_rank)
+    white = parse_player(record.player_white, record.white_rank)
     return summary.model_copy(
         update={
-            "display_player_black": players.get(record.black_player_id, black_name),
-            "display_player_white": players.get(record.white_player_id, white_name),
-            "display_black_rank": record.black_rank or embedded_black_rank,
-            "display_white_rank": record.white_rank or embedded_white_rank,
+            "display_player_black": players.get(record.black_player_id, black.name),
+            "display_player_white": players.get(record.white_player_id, white.name),
+            "display_black_rank": black.display_rank,
+            "display_white_rank": white.display_rank,
             "display_event": display_event_name(record.event, events.get(record.event_id), lang),
             "display_round_name": display_round_name(record.round_name, lang),
             "sources": sources.get(record.id, []),

@@ -1,6 +1,5 @@
 """Resolve multilingual kifu names without changing original SGF metadata."""
 
-import re
 import unicodedata
 
 from sqlalchemy.orm import Session
@@ -13,10 +12,9 @@ from katrain.web.core.models_db import (
     KifuPlayerName,
     KifuSource,
 )
+from katrain.web.kifu.name_parse import parse_event, parse_player
 
 LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"})
-_CWI_OTEAI = re.compile(r"JapanPromotionTournament,([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
-_EMBEDDED_DAN = re.compile(r"(.{2,}?)\s*([一二三四五六七八九])段\Z")
 
 
 def normalize_alias(value: str) -> str:
@@ -26,9 +24,8 @@ def normalize_alias(value: str) -> str:
 
 def split_player_rank(raw: str | None) -> tuple[str, str | None]:
     """Separate an unambiguous Chinese dan suffix from a player's raw SGF name."""
-    text = (raw or "").strip()
-    match = _EMBEDDED_DAN.fullmatch(text)
-    return (match.group(1).strip(), f"{match.group(2)}段") if match else (text, None)
+    parsed = parse_player(raw, None)
+    return parsed.name, parsed.embedded_rank
 
 
 def player_identity_name(raw: str | None) -> str:
@@ -36,10 +33,8 @@ def player_identity_name(raw: str | None) -> str:
 
 
 def event_identity_name(raw: str | None) -> str:
-    """Treat a sourced CWI Oteai edition as the Oteai event identity."""
-    if raw and _CWI_OTEAI.fullmatch(raw.strip()):
-        return "JapanPromotionTournament"
-    return raw or ""
+    """Find a provisional identity lookup key without approving the event."""
+    return parse_event(raw, None).event_candidate or raw or ""
 
 
 def identity_lookup_name(kind: str, raw: str | None) -> str:
@@ -47,12 +42,11 @@ def identity_lookup_name(kind: str, raw: str | None) -> str:
 
 
 def display_event_name(raw: str | None, translated: str | None, lang: str) -> str | None:
-    """Keep the year and session when presenting a recognized CWI Oteai edition."""
-    match = _CWI_OTEAI.fullmatch((raw or "").strip())
-    if not match:
+    """Decorate a CWI edition only when its linked event has a verified name."""
+    parsed = parse_event(raw, None)
+    if parsed.category != "formal_event_candidate" or not translated:
         return translated or raw
-    translated = translated or "Oteai"
-    year, season = match.groups()
+    year, season = parsed.year, parsed.season
     labels = {
         "en": ("Spring", "Autumn"),
         "cn": ("春季", "秋季"),

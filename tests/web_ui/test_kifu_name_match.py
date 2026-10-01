@@ -1,5 +1,25 @@
 """Identity matching produces review proposals, never unreviewed links."""
 
+from datetime import datetime, timezone
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from katrain.web.core.models_db import (
+    Base,
+    KifuEvent,
+    KifuEventName,
+    KifuNameResearchEvidence,
+    KifuNameSourceRegistry,
+    KifuPlayer,
+    KifuPlayerName,
+    KifuRawEventName,
+    KifuRawEventValue,
+    KifuRawPlayerName,
+    KifuRawPlayerValue,
+)
+from katrain.web.kifu.identity import strict_matching_names
 from katrain.web.kifu.name_match import propose_album_matches
 
 
@@ -152,3 +172,72 @@ def test_structural_event_groups_are_distinct_review_candidates():
     assert [item["structure"]["grammar"] for item in events] == ["oteai_year", "explicit_components"]
     assert all(item["status"] == "review_candidate" for item in events)
     assert all("family_identity_review" in item["exceptions"] for item in events)
+
+
+@pytest.mark.parametrize(
+    "entity_kind, raw_kind",
+    [("player", "raw_player"), ("event", "raw_event"), ("player", "raw_event"), ("event", "raw_player")],
+)
+def test_strict_translated_search_does_not_merge_entity_and_raw_owners(entity_kind, raw_kind):
+    models = {
+        "player": (KifuPlayer, KifuPlayerName),
+        "event": (KifuEvent, KifuEventName),
+        "raw_player": (KifuRawPlayerValue, KifuRawPlayerName),
+        "raw_event": (KifuRawEventValue, KifuRawEventName),
+    }
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as db:
+            registry = KifuNameSourceRegistry(version="test", sha256="a" * 64, registry={})
+            db.add(registry)
+            db.flush()
+            owners = []
+            evidence_rows = []
+            for kind in (entity_kind, raw_kind):
+                owner_model, name_model = models[kind]
+                owner = (
+                    owner_model(raw_value="Distinct unlinked spelling", category="readable", review_status="approved")
+                    if kind.startswith("raw_") else owner_model(canonical_name="Distinct linked identity")
+                )
+                db.add(owner)
+                db.flush()
+                evidence = KifuNameResearchEvidence(
+                    **{f"{kind}_id": owner.id},
+                    lang="ru", revision=1, source_registry_id=registry.id,
+                    candidate_name="Общее имя", decision_kind="conventional", generation_rule_version="test-v1",
+                    research_payload={"candidate": {"collision_decision": "distinct_people_confirmed"}},
+                    producer_id="producer", producer_model="gpt-6-luna",
+                    reviewer_id="reviewer", reviewer_model="gpt-6-sol",
+                    reviewed_at=datetime.now(timezone.utc), review_status="approved",
+                )
+                db.add(evidence)
+                db.flush()
+                db.add(name_model(
+                    **{f"{kind}_id": owner.id},
+                    lang="ru", display_name="Общее имя", status="verified",
+                    decision_kind="conventional", generation_rule_version="test-v1", revision=1,
+                    evidence_id=evidence.id,
+                ))
+                owners.append(owner)
+                evidence_rows.append(evidence)
+            db.commit()
+
+            assert strict_matching_names(db, "Общее имя") == (set(), set(), set(), set())
+
+            # A pending raw display cannot make an otherwise unique entity ambiguous.
+            evidence_rows[1].review_status = "pending"
+            db.commit()
+            expected = [set(), set(), set(), set()]
+            expected[0 if entity_kind == "player" else 1] = {owners[0].id}
+            assert strict_matching_names(db, "Общее имя") == tuple(expected)
+
+            # A unique raw translation still expands only its exact original spelling.
+            evidence_rows[1].review_status = "approved"
+            evidence_rows[0].review_status = "pending"
+            db.commit()
+            expected = [set(), set(), set(), set()]
+            expected[2 if raw_kind == "raw_player" else 3] = {owners[1].raw_value}
+            assert strict_matching_names(db, "Общее имя") == tuple(expected)
+    finally:
+        engine.dispose()

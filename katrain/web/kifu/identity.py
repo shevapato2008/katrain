@@ -82,7 +82,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
 
 
 def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], set[str], set[str]]:
-    """Only unique approved identity names expand across languages."""
+    """Expand only a unique approved owner across identity and raw-name scopes."""
     needle = normalize_alias(query)
     if not needle:
         return set(), set(), set(), set()
@@ -92,9 +92,6 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
             or_(model.display_name == query, func.lower(model.display_name) == query.lower())
         )
         identity_matches.append({getattr(row, owner) for row in rows if normalize_alias(row.display_name) == needle})
-    player_ids, event_ids = identity_matches
-    if len(player_ids) + len(event_ids) != 1:
-        player_ids, event_ids = set(), set()
     raw_matches = []
     for model, value_model, owner in (
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id"),
@@ -110,8 +107,11 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
             .with_entities(model.display_name, value_model.raw_value)
         )
         matches = {raw for display, raw in rows if normalize_alias(display) == needle}
-        raw_matches.append(matches if len(matches) == 1 else set())
-    return player_ids, event_ids, *raw_matches
+        raw_matches.append(matches)
+    matches_by_owner = (*identity_matches, *raw_matches)
+    if sum(len(matches) for matches in matches_by_owner) != 1:
+        return set(), set(), set(), set()
+    return matches_by_owner
 
 
 def strict_display_maps(db: Session, albums: list, lang: str):

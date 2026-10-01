@@ -201,13 +201,17 @@ class OGSRealtimeClient:
                         else:
                             fut.set_result(data)
         except Exception as e:
-            if self._connected:
+            if self._connected and not self._intentional_disconnect:
                 logger.error(f"OGS receive loop error: {e}")
+        finally:
+            # A clean WebSocket close ends `async for` without raising. Treat it
+            # exactly like an abnormal close so the adapter cannot serve stale
+            # seek graph entries while the reconnect loop is running.
+            if self._connected and not self._intentional_disconnect:
                 self._connected = False
                 self._authenticated.clear()
                 await self._dispatch("_connection_lost", None)
-                if not self._intentional_disconnect:
-                    self._reconnect_task = asyncio.create_task(self._reconnect_loop())
+                self._reconnect_task = asyncio.create_task(self._reconnect_loop())
 
     async def _dispatch(self, event: str, data) -> None:
         """Dispatch event to registered callbacks."""
@@ -226,7 +230,14 @@ class OGSRealtimeClient:
 
     def on(self, event: str, handler: Callable) -> None:
         """Register a callback for a WebSocket event."""
-        self._callbacks[event].append(handler)
+        if handler not in self._callbacks[event]:
+            self._callbacks[event].append(handler)
+
+    def off(self, event: str, handler: Callable) -> None:
+        """Remove a game-scoped callback after a failed subscription."""
+        callbacks = self._callbacks.get(event)
+        if callbacks and handler in callbacks:
+            callbacks.remove(handler)
 
     # --- Game connection ---
 
@@ -238,8 +249,10 @@ class OGSRealtimeClient:
 
     async def game_disconnect(self, game_id: int) -> None:
         """Disconnect from a game's event stream."""
-        await self._send("game/disconnect", {"game_id": game_id})
-        self._connected_games.discard(game_id)
+        try:
+            await self._send("game/disconnect", {"game_id": game_id})
+        finally:
+            self._connected_games.discard(game_id)
 
     # --- Game actions ---
 
@@ -250,6 +263,10 @@ class OGSRealtimeClient:
     async def game_resign(self, game_id: int) -> None:
         """Resign the current game."""
         await self._send("game/resign", {"game_id": game_id})
+
+    async def challenge_keepalive(self, challenge_id: int, game_id: int) -> None:
+        """Keep a live direct invitation pending while its game stream is open."""
+        await self._send("challenge/keepalive", {"challenge_id": challenge_id, "game_id": game_id})
 
     async def game_removed_stones_set(self, game_id: int, stones: str, removed: bool = True) -> None:
         """Mark/unmark stones as dead during scoring phase."""

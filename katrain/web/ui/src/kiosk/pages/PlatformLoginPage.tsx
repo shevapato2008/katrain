@@ -64,12 +64,6 @@ const PLATFORM_LOGIN_MODES: Record<string, readonly LoginMode[]> = {
 
 // 星阵官网公开的 countryCode.json 区号列表；官网优先展示的十项排在前面。
 
-/** 星阵能给的对手是那 39 档 bot,不是人 ⇒ 登录成功进人机开局;其余家进大厅。
- * 这条判据和 `PlayPage`/`PlatformConnectPage` 里「`supports_engine_play` 决定去向」
- * 是同一件事的静态版本 —— 登录刚成功那一刻还没有新的 `/platforms` 数据可读,
- * 而「星阵进人机开局、其余进大厅」今天是协议层面的恒定事实(PROTOCOL.md),不是要猜的。 */
-const engineCapable = (platform: string) => platform === 'golaxy';
-
 /**
  * `.xpfield` 一格:真 `<input>`(必须真能输入,判例见屏 04)+ 右端常驻的绿色「点此输入」
  * 提示(设计源 `.xpfield i`)。这句提示不是 placeholder —— placeholder 一输入就消失,
@@ -166,9 +160,7 @@ const PlatformLoginPage = () => {
         ? t('platform:login_sub_ogs', '未连接 · 用 online-go.com 的账号')
         : t('platform:login_sub_golaxy_password', '未连接 · 用星阵的账号密码登录');
 
-  const goToConnectedDest = () => navigate(engineCapable(platform)
-    ? `/kiosk/play/cross-platform/engine/${platform}`
-    : `/kiosk/play/cross-platform/lobby?platform=${platform}`);
+  const goToConnectedDest = () => navigate(`/kiosk/play/cross-platform/${platform}`);
 
   const switchMode = (next: LoginMode) => {
     setMode(next);
@@ -222,7 +214,7 @@ const PlatformLoginPage = () => {
     <div className="kiosk-layout-b" data-testid="platform-login-page">
       <KioskPagebar
         backLabel={t('Back to play', '返回对弈')}
-        onBack={() => navigate('/kiosk/play/cross-platform')}
+        onBack={() => navigate('/kiosk/play')}
         title={name}
         sub={sub}
       />

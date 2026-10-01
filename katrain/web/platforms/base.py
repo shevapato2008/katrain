@@ -14,6 +14,7 @@ from katrain.web.platforms.models import (
     PlatformGameSession,
     PlatformEngineReply,
     PlatformMove,
+    PlatformGameSnapshot,
     GamePhase,
 )
 
@@ -151,6 +152,9 @@ class PlatformAdapter(ABC):
 
     def on_clock_update(self, callback: Callable[[ClockState], Awaitable[None]]) -> None:
         self._callbacks["clock_update"].append(callback)
+
+    def on_game_snapshot(self, callback: Callable[[str, PlatformGameSnapshot], Awaitable[None]]) -> None:
+        self._callbacks["game_snapshot"].append(callback)
 
     def on_challenge_received(self, callback: Callable[[PlatformChallenge], Awaitable[None]]) -> None:
         self._callbacks["challenge_received"].append(callback)

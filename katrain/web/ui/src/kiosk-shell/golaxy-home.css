@@ -1,0 +1,26 @@
+.golaxy-home__title { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+.golaxy-home__title img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
+.golaxy-home__title strong { flex: none; font: inherit; }
+.golaxy-home__title small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font: 400 11px var(--font-sans); }
+.golaxy-home .kiosk-pagebar__status { color: var(--accent); }
+.golaxy-home .kiosk-pagebar__status::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; }
+.golaxy-home__scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #486c58 transparent; padding-right: 2px; }
+.golaxy-home__input { min-height: 74px; display: flex; align-items: center; gap: 16px; padding: 10px 16px; border: 1px solid rgba(88,181,122,.54); border-radius: 12px; background: var(--panel); }
+.golaxy-home__input-label { width: 44px; flex: none; color: var(--dim); font-size: 12px; }
+.golaxy-home__input-seg { display: flex; width: 404px; height: 48px; padding: 3px; border: 1px solid var(--hair); border-radius: 11px; background: var(--raise); }
+.golaxy-home__input-seg button { flex: 1; min-width: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dim); font-size: 14px; }
+.golaxy-home__input-seg button[aria-pressed='true'] { background: var(--panel); color: var(--accent); font-weight: 600; }
+.golaxy-home__input-seg button:disabled { opacity: .45; cursor: default; }
+.golaxy-home__size { margin-left: auto; display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.golaxy-home__size span { color: var(--dim); font-size: 11px; }
+.golaxy-home__size b { font-size: 14px; }
+.golaxy-home__input-hint { margin: 5px 0 0 16px; color: var(--dim); font-size: 11px; }
+.golaxy-home__section { margin-top: 18px; }
+.golaxy-home__section .kiosk-seclabel { margin-bottom: 6px; }
+.golaxy-home__cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.golaxy-home__cards .kiosk-card { width: 100%; }
+.golaxy-home__empty, .golaxy-home__state { border: 1px solid var(--hair); border-radius: 10px; background: var(--raise); color: var(--dim); }
+.golaxy-home__empty { min-height: 64px; display: flex; align-items: center; padding: 0 16px; font-size: 12px; }
+.golaxy-home__state { min-height: 120px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; padding: 20px; }
+.golaxy-home__state p { margin: 0; }
+.golaxy-home__state button { min-height: 44px; padding: 0 16px; border: 1px solid var(--hair); border-radius: 10px; background: var(--panel); color: var(--text); }

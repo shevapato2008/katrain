@@ -140,6 +140,74 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('不限时')).toBeInTheDocument();
   });
 
+  test('OGS seats wait for remote clock and never show inherited local time', () => {
+    const online = panel({
+      game_type: 'pvp_online', platform_my_color: 'B',
+      timer: { configured: true, paused: false, current_node_time_used: 12, main_time_used: 123, next_player_periods_used: 0,
+        settings: { main_time: 20, byo_length: 30, byo_periods: 5, minimal_use: 0, sound: true } },
+    });
+    expect(screen.getAllByText('等待 OGS 计时')).toHaveLength(2);
+    expect(screen.queryByText('19:48')).toBeNull();
+    online.rerender(<GameControlPanel
+      gameState={{ ...mockGameState, game_type: 'pvp_online', platform_my_color: 'B' }}
+      platformClock={{ black_time: { thinking_time: 83 }, white_time: 91, current_player: 'B', paused: false }}
+      onAction={() => {}} onNavigate={() => {}} analysisToggles={{}} onToggleAnalysis={() => {}} />);
+    expect(screen.getByText('1:23')).toBeInTheDocument();
+    expect(screen.getByText('1:31')).toBeInTheDocument();
+    expect(screen.queryByText('等待 OGS 计时')).toBeNull();
+  });
+
+  test('OGS byoyomi displays the synced period time without pretending to tick locally', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, {
+      platformClock: {
+        black_time: { thinking_time: 0, periods: 3, period_time: 30, period_time_left: 18 },
+        white_time: { thinking_time: 91 }, current_player: 'B', paused: false,
+      },
+    });
+    expect(screen.getByText('0:18')).toBeInTheDocument();
+    expect(screen.getByText('读秒 · OGS 上次同步')).toBeInTheDocument();
+    expect(screen.getByText('OGS 上次同步')).toBeInTheDocument();
+  });
+
+  test('OGS scoring offers remote accept/reject and blocks ordinary passing', () => {
+    const onAction = vi.fn();
+    panel({ game_type: 'pvp_online', platform_my_color: 'W' }, { platformPhase: 'scoring', onAction });
+    fireEvent.click(screen.getByRole('button', { name: '确认无死子' }));
+    fireEvent.click(screen.getByRole('button', { name: '继续下棋' }));
+    expect(onAction).toHaveBeenCalledWith('ogs-score-accept');
+    expect(onAction).toHaveBeenCalledWith('ogs-score-reject');
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.getByText('当前未同步 OGS 死子标记；将按无死子确认')).toBeInTheDocument();
+    expect(screen.queryByText('领地')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+  });
+
+  test('OGS scoring disables duplicate actions while awaiting the platform', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'scoring', onlineScoringPending: true });
+    expect(screen.getByRole('button', { name: '确认无死子' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '继续下棋' })).toBeDisabled();
+  });
+
+  test('OGS playing phase cannot launch local counting', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'playing' });
+    expect(screen.queryByRole('button', { name: '确认无死子' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '继续下棋' })).toBeNull();
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
+  });
+
+  test('OGS opponent turn is not labeled as my turn', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'W', player_to_move: 'B' });
+    expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
+    expect(within(screen.getByTestId('player-card-W')).getByText(/等待对方/)).toBeInTheDocument();
+    expect(screen.queryByText('轮到你')).toBeNull();
+  });
+
+  test('OGS finished phase blocks resign until the remote result is reflected locally', () => {
+    panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'finished' });
+    expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();
+    expect(screen.getByText(/等待 OGS 结果/)).toBeInTheDocument();
+  });
+
   test('physical placement status replaces login/count hints without fault styling', () => {
     const { container } = panel(
       { game_type: 'free', analysis_delivered: false, history: [] },

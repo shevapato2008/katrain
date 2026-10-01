@@ -67,10 +67,10 @@ vi.mock('../context/GeometryContext', () => ({
 }));
 
 // 「关于」那一组的唯一数据来源是 `/api/v1/health`(`API.engineHealth`)—— 响应是**输入**,每条用例自己造。
-const health = vi.hoisted(() => ({ engineHealth: vi.fn() }));
+const health = vi.hoisted(() => ({ engineHealth: vi.fn(), platformStatus: vi.fn() }));
 vi.mock('../../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api')>();
-  return { ...actual, API: { ...actual.API, engineHealth: health.engineHealth } };
+  return { ...actual, API: { ...actual.API, engineHealth: health.engineHealth, platformStatus: health.platformStatus } };
 });
 const mockHealth = (body: unknown) => health.engineHealth.mockResolvedValue(body);
 
@@ -96,6 +96,9 @@ const renderPage = () =>
 describe('屏 27 设置 · 分组与导航', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    health.platformStatus.mockResolvedValue({ platforms: [
+      { platform: 'ogs', connected: false }, { platform: 'golaxy', connected: false },
+    ] });
     mockGeometry({ loaded: true });
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
@@ -149,19 +152,24 @@ describe('屏 27 设置 · 分组与导航', () => {
 describe('屏 27 设置 · 每一组的内容都是真的', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    health.platformStatus.mockResolvedValue({ platforms: [
+      { platform: 'ogs', connected: false }, { platform: 'golaxy', connected: false },
+    ] });
     mockGeometry({ loaded: true });
     mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
   // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
   // 99围棋/野狐/腾讯/新浪 —— **和真正能连的三家对不上**。
-  it('平台那一行念的是真能连的三家,并且点得动', () => {
+  it('平台账号来自真实状态，并从对弈首页选择连接', async () => {
     renderPage();
-    expect(screen.getByText(/OGS · 野狐围棋 · 星阵围棋/)).toBeInTheDocument();
+    expect(screen.getByText('跨平台账号')).toBeInTheDocument();
+    expect(await screen.findByTestId('platform-account-ogs')).toHaveTextContent('未连接');
+    expect(screen.getByTestId('platform-account-golaxy')).toHaveTextContent('未连接');
     expect(screen.queryByText(/99围棋/)).toBeNull();
     expect(screen.queryByText(/腾讯围棋/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '去连接' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play');
   });
 
   it('实体棋盘那一组给的是真读数和一条去标定的路', () => {

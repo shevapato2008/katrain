@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import nullcontext
 import logging
+import math
 from typing import Optional
 
 from katrain.web.platforms.base import PlatformAdapter
@@ -14,12 +16,14 @@ from katrain.web.platforms.models import (
     PlatformCredentials,
     PlatformGameContext,
     PlatformGameSession,
+    PlatformGameSnapshot,
     PlatformMove,
     PlatformPass,
     PlatformResign,
 )
 
 logger = logging.getLogger("katrain_web")
+ONLINE_RECORD_RETRY_DELAYS = (0.5, 1.0, 2.0)
 
 
 class PlatformBusyError(Exception):
@@ -65,6 +69,9 @@ class PlatformManager:
         # _on_token_refreshed attribute a mid-login refresh to the right
         # person even before `_platform_user_ids` is updated (see below).
         self._pending_owner: dict[str, int] = {}
+        # Wired by server after its game-recording helper is available.
+        self.on_online_game_finished = None
+        self._record_retry_tasks: dict[str, asyncio.Task] = {}
 
     # --- Adapter registry ---
 
@@ -239,32 +246,196 @@ class PlatformManager:
     def is_platform_game(self, session_id: str) -> bool:
         return session_id in self._session_to_game
 
+    def active_game_for_owner(self, platform: str, user_id: int) -> Optional[str]:
+        """Return only this box user's verified unfinished platform session."""
+        adapter = self._adapters.get(platform)
+        if not adapter or not adapter.is_connected or self._platform_user_ids.get(platform) != user_id:
+            return None
+        for ctx in self._active_games.values():
+            if ctx.platform != platform:
+                continue
+            try:
+                session = self._session_manager.get_session(ctx.session_id)
+            except KeyError:
+                continue
+            if session.user_id == user_id:
+                return ctx.session_id
+        return None
+
+    async def recover_active_game_for_owner(self, platform: str, user_id: int) -> Optional[str]:
+        """Recreate an expired local OGS session from the current remote board."""
+        active = self.active_game_for_owner(platform, user_id)
+        if active is not None or platform != "ogs":
+            return active
+        adapter = self._adapters.get("ogs")
+        if not adapter or not adapter.is_connected or self._platform_user_ids.get("ogs") != user_id:
+            return None
+        for ctx in list(self._active_games.values()):
+            if ctx.platform != "ogs":
+                continue
+            try:
+                self._session_manager.get_session(ctx.session_id)
+            except KeyError:
+                remote_session = await adapter.refresh_game_session(ctx.remote_game_id)
+                return await self.start_platform_game("ogs", remote_session, user_id)
+        return None
+
     # --- Bridge: platform game -> KaTrain session ---
 
     async def start_platform_game(self, platform: str, game_session: PlatformGameSession, user_id: int) -> str:
-        """Creates a KaTrain session backed by a platform game. Returns session_id."""
+        """Create one local online session for a verified remote game identity.
+
+        Board history is not reconstructed here: callers must restore an OGS
+        snapshot before exposing an already-running game to the user.
+        """
+        if game_session.platform != platform or not game_session.game_id:
+            raise ValueError("invalid platform game identity")
+        if type(game_session.board_size) is not int or game_session.board_size not in (9, 13, 19):
+            raise ValueError("unsupported platform board size")
+        if game_session.my_color not in ("B", "W"):
+            raise ValueError("invalid platform player color")
+        if game_session.rules not in ("chinese", "japanese", "korean", "aga"):
+            raise ValueError("unsupported platform rules")
+        if type(game_session.handicap) is not int or not 0 <= game_session.handicap <= 9:
+            raise ValueError("unsupported platform handicap")
+        if type(game_session.komi) not in (int, float) or not math.isfinite(game_session.komi):
+            raise ValueError("invalid platform komi")
+
+        lock = self._locks.setdefault(f"game:{platform}:{game_session.game_id}", asyncio.Lock())
+        async with lock:
+            return await self._start_platform_game_locked(platform, game_session, user_id)
+
+    async def _start_platform_game_locked(self, platform: str, game_session: PlatformGameSession, user_id: int) -> str:
+        adapter = self._adapters.get(platform)
+        snapshot = None
+        if platform == "ogs" and adapter is not None:
+            snapshot = adapter.get_game_snapshot(game_session.game_id)
+            if snapshot.board_size != game_session.board_size:
+                raise ValueError("OGS snapshot does not match game settings")
+
+        existing = self._active_games.get(game_session.game_id)
+        if existing is not None:
+            if existing.platform != platform:
+                raise ValueError("remote game id belongs to a different platform")
+            try:
+                existing_session = self._session_manager.get_session(existing.session_id)
+            except KeyError as exc:
+                if snapshot is None:
+                    raise RuntimeError("remote game needs verified snapshot recovery") from exc
+                # The web session may have expired while OGS kept the game.
+                # Its verified snapshot can seed a new local session.
+                self._active_games.pop(game_session.game_id, None)
+                if self._session_to_game.get(existing.session_id) == game_session.game_id:
+                    self._session_to_game.pop(existing.session_id, None)
+                retry = self._record_retry_tasks.pop(game_session.game_id, None)
+                if retry is not None:
+                    retry.cancel()
+                existing = None
+        if existing is not None:
+            if existing_session.user_id != user_id:
+                raise ValueError("remote game belongs to a different local user")
+            if snapshot is not None and (existing.needs_resync or existing.last_confirmed_move != snapshot.move_number):
+                self._restore_ogs_snapshot(existing_session, snapshot, game_session)
+                existing.last_confirmed_move = snapshot.move_number
+                existing.game_phase = snapshot.phase
+                existing.needs_resync = False
+            return existing.session_id
+
         # Create a multiplayer session (local user vs virtual opponent)
         opponent_name = f"[{platform}] {game_session.opponent.username}"
         if game_session.my_color == "B":
             session = self._session_manager.create_multiplayer_session(
-                player_b_id=user_id, player_w_id=-1, b_name="Me", w_name=opponent_name
+                player_b_id=user_id,
+                player_w_id=-1,
+                b_name="Me",
+                w_name=opponent_name,
+                initial_game_type="pvp_online",
+                skip_initial_analysis=True,
             )
         else:
             session = self._session_manager.create_multiplayer_session(
-                player_b_id=-1, player_w_id=user_id, b_name=opponent_name, w_name="Me"
+                player_b_id=-1,
+                player_w_id=user_id,
+                b_name=opponent_name,
+                w_name="Me",
+                initial_game_type="pvp_online",
+                skip_initial_analysis=True,
             )
+
+        try:
+            session.katrain(
+                "edit_game",
+                size=game_session.board_size,
+                rules=game_session.rules,
+                handicap=game_session.handicap,
+                komi=game_session.komi,
+            )
+            if snapshot is not None:
+                self._restore_ogs_snapshot(session, snapshot, game_session)
+            session.katrain.platform_my_color = game_session.my_color
+        except Exception:
+            self._session_manager.remove_session(session.session_id)
+            raise
 
         ctx = PlatformGameContext(
             session_id=session.session_id,
             platform=platform,
             remote_game_id=game_session.game_id,
             my_color=game_session.my_color,
+            remote_session=game_session,
         )
         self._active_games[game_session.game_id] = ctx
+        if snapshot is not None:
+            ctx.last_confirmed_move = snapshot.move_number
+            ctx.game_phase = snapshot.phase
+            session.katrain.platform_phase = snapshot.phase.value
         self._session_to_game[session.session_id] = game_session.game_id
+
+        if snapshot is not None and snapshot.phase == GamePhase.FINISHED:
+            # A finished snapshot may have arrived before this context was
+            # registered. Re-read its result now so the terminal callback has
+            # a session to commit and save; the adapter schedules retries if
+            # the REST result is still incomplete.
+            try:
+                await adapter.fetch_game_snapshot(game_session.game_id)
+            except Exception:
+                logger.exception("OGS finished game result not yet available for %s", game_session.game_id)
 
         logger.info(f"Platform game started: {platform} game {game_session.game_id} -> session {session.session_id}")
         return session.session_id
+
+    @staticmethod
+    def _restore_ogs_snapshot(session, snapshot: PlatformGameSnapshot, game_session: PlatformGameSession) -> None:
+        """Replace the local tree from OGS history, including real setup stones."""
+        from katrain.core.game import KaTrainSGF
+
+        def sgf_point(col: int, row: int) -> str:
+            return chr(97 + col) + chr(97 + snapshot.board_size - row - 1)
+
+        root = [f"(;GM[1]FF[4]SZ[{snapshot.board_size}]KM[{game_session.komi}]RU[{game_session.rules}]",
+                f"HA[{game_session.handicap}]", "PL[W]" if game_session.handicap else "PL[B]"]
+        for color, property_name in (("B", "AB"), ("W", "AW")):
+            stones = [sgf_point(col, row) for c, col, row in snapshot.setup if c == color]
+            if stones:
+                root.append(property_name + "".join(f"[{point}]" for point in stones))
+        for move in snapshot.moves:
+            point = "" if move.col == -1 else sgf_point(move.col, move.row)
+            root.append(f";{move.color}[{point}]")
+        root.append(")")
+        move_tree = KaTrainSGF.parse_sgf("".join(root))
+        session.katrain(
+            "new_game", move_tree=move_tree, size=snapshot.board_size, handicap=0,
+            komi=game_session.komi, rules=game_session.rules,
+            game_type="pvp_online", skip_initial_analysis=True,
+        )
+        game = getattr(session.katrain, "game", None)
+        if game is not None:
+            node = game.root
+            while node.children:
+                node = node.children[0]
+            game.set_current_node(node)
+            session.katrain.update_state()
+        session.katrain.platform_my_color = game_session.my_color
 
     async def start_engine_game(self, platform: str, config, user_id: int) -> str:
         """Start a human-vs-engine game. Returns the local session_id.
@@ -406,6 +577,9 @@ class PlatformManager:
 
     async def end_platform_game(self, game_id: str, result: str) -> None:
         """Clean up after a platform game ends."""
+        retry = self._record_retry_tasks.pop(game_id, None)
+        if retry is not None and retry is not asyncio.current_task():
+            retry.cancel()
         ctx = self._active_games.pop(game_id, None)
         if ctx:
             # A late reply from an old game must not remove a newer game that has
@@ -424,8 +598,10 @@ class PlatformManager:
 
     def _setup_callbacks(self, adapter: PlatformAdapter) -> None:
         adapter.on_opponent_move(self._on_opponent_move)
+        adapter.on_game_snapshot(self._on_game_snapshot)
         adapter.on_clock_update(self._on_clock_update)
         adapter.on_game_started(self._on_game_started)
+        adapter.on_automatch_found(self._on_game_started)
         adapter.on_game_ended(self._on_game_ended)
         adapter.on_game_phase_changed(self._on_game_phase_changed)
         adapter.on_connection_lost(self._on_connection_lost)
@@ -442,10 +618,32 @@ class PlatformManager:
         if ctx.game_phase != GamePhase.PLAYING:
             logger.warning(f"Opponent move for game {move.game_id} not in PLAYING phase; dropping")
             return
+        if ctx.platform == "ogs":
+            if move.move_number <= ctx.last_confirmed_move:
+                return
+            if move.move_number != ctx.last_confirmed_move + 1 or move.color not in ("B", "W"):
+                ctx.needs_resync = True
+                ctx.pending_confirmation.set()
+                return
+            if move.color == ctx.my_color:
+                expected = (-1, -1) if ctx.pending_action == "pass" else ctx.pending_coords
+                if not ctx.is_pending or expected != (move.col, move.row):
+                    ctx.needs_resync = True
+                    ctx.pending_confirmation.set()
+                    return
         try:
             session = self._session_manager.get_session(ctx.session_id)
-            session.katrain("play", coords=(move.col, move.row))
-            ctx.last_confirmed_move = move.move_number
+            with getattr(session, "lock", nullcontext()):
+                if ctx.platform == "ogs" and move.move_number != ctx.last_confirmed_move + 1:
+                    return
+                coords = None if move.col == -1 and move.row == -1 else (move.col, move.row)
+                session.katrain("play", coords=coords)
+                ctx.last_confirmed_move = move.move_number
+                if ctx.platform == "ogs" and move.color == ctx.my_color:
+                    ctx.clear_pending()
+                    # A timed-out send may receive its exact echo later. That
+                    # echo reconciles the position and unlocks the next turn.
+                    ctx.needs_resync = False
             self._session_manager.broadcast_to_session(
                 ctx.session_id,
                 {
@@ -460,6 +658,8 @@ class PlatformManager:
 
     async def _on_clock_update(self, clock: ClockState) -> None:
         for game_id, ctx in self._active_games.items():
+            if clock.game_id and game_id != clock.game_id:
+                continue
             if ctx.game_phase in (GamePhase.PLAYING, GamePhase.PAUSED):
                 ctx.remote_clock_version += 1
                 self._session_manager.broadcast_to_session(
@@ -474,27 +674,178 @@ class PlatformManager:
                 )
                 break
 
+    async def _on_game_snapshot(self, game_id: str, snapshot: PlatformGameSnapshot) -> None:
+        ctx = self._active_games.get(game_id)
+        if ctx is None:
+            # Initial gamedata is retained by the adapter until start_platform_game.
+            return
+        if ctx.platform != "ogs" or ctx.remote_session is None:
+            return
+        if snapshot.game_id != game_id or snapshot.board_size != ctx.remote_session.board_size:
+            ctx.needs_resync = True
+            return
+        if ctx.game_phase == GamePhase.FINISHED and snapshot.phase != GamePhase.FINISHED:
+            logger.warning("Ignoring OGS snapshot phase rollback after finish for %s", game_id)
+            return
+        try:
+            session = self._session_manager.get_session(ctx.session_id)
+        except KeyError:
+            ctx.needs_resync = True
+            return
+        terminal = getattr(getattr(session.katrain, "game", None), "terminal", None)
+        if (
+            terminal is not None and snapshot.phase == GamePhase.FINISHED
+            and snapshot.move_number == ctx.last_confirmed_move
+        ):
+            # A retrying record may keep this context alive. Do not replace
+            # its committed RE with an identical reconnect snapshot.
+            ctx.needs_resync = False
+            return
+        if snapshot.move_number == ctx.last_confirmed_move and snapshot.phase == ctx.game_phase and not ctx.needs_resync:
+            return
+        try:
+            with getattr(session, "lock", nullcontext()):
+                if snapshot.move_number == ctx.last_confirmed_move and snapshot.phase == ctx.game_phase and not ctx.needs_resync:
+                    return
+                self._restore_ogs_snapshot(session, snapshot, ctx.remote_session)
+                ctx.last_confirmed_move = snapshot.move_number
+                ctx.game_phase = snapshot.phase
+                ctx.clear_pending()
+                ctx.needs_resync = False
+                session.katrain.platform_phase = snapshot.phase.value
+        except Exception:
+            ctx.needs_resync = True
+            logger.exception("OGS snapshot restore failed for game %s", game_id)
+            return
+        self._session_manager.broadcast_to_session(
+            ctx.session_id, {"type": "platform_phase_changed", "phase": snapshot.phase.value}
+        )
+
     async def _on_game_started(self, game_session: PlatformGameSession) -> None:
-        logger.info(f"Game started event from {game_session.platform}: {game_session.game_id}")
+        if game_session.platform != "ogs":
+            logger.info(f"Game started event from {game_session.platform}: {game_session.game_id}")
+            return
+        owner = self._pending_owner.get("ogs") or self._platform_user_ids.get("ogs")
+        if owner is None:
+            logger.warning("OGS game start before local owner is established")
+            return
+        try:
+            await self.start_platform_game("ogs", game_session, owner)
+        except Exception:
+            logger.exception("Could not start OGS local session for %s", game_session.game_id)
 
     async def _on_game_ended(self, game_id: str, result: str, winner: str) -> None:
         ctx = self._active_games.get(game_id)
-        if ctx:
+        if ctx is None:
+            return
+        if ctx.platform != "ogs":
+            ctx.clear_pending()
             self._session_manager.broadcast_to_session(
                 ctx.session_id, {"type": "platform_game_ended", "game_id": game_id, "result": result, "winner": winner}
             )
             await self.end_platform_game(game_id, result)
+            return
+
+        async with self._locks.setdefault(f"finish:{game_id}", asyncio.Lock()):
+            ctx = self._active_games.get(game_id)
+            if ctx is None:
+                return
+            adapter = self._adapters.get("ogs")
+            get_snapshot = getattr(adapter, "get_game_snapshot", None)
+            if get_snapshot is not None:
+                snapshot = get_snapshot(game_id)
+                if (
+                    ctx.needs_resync or snapshot.phase != GamePhase.FINISHED
+                    or ctx.last_confirmed_move != snapshot.move_number
+                ):
+                    raise RuntimeError("OGS final board has not been restored locally")
+            try:
+                session = self._session_manager.get_session(ctx.session_id)
+            except KeyError:
+                logger.error("OGS result for %s has no local session to settle", game_id)
+                raise
+            terminal = getattr(session.katrain.game, "terminal", None)
+            if terminal is None:
+                try:
+                    session.katrain._commit_end_state(result)
+                except Exception:
+                    logger.exception("Could not commit OGS result for game %s", game_id)
+                    raise
+            elif terminal.result != result:
+                raise ValueError(f"Conflicting OGS result for game {game_id}: {terminal.result} versus {result}")
+
+            # A failed state update or broadcast can happen after the result
+            # was committed. Retrying must finish the remaining steps rather
+            # than skipping them because terminal is already populated.
+            ctx.game_phase = GamePhase.FINISHED
+            session.katrain.platform_phase = GamePhase.FINISHED.value
+            session.katrain.update_state()
+            session.last_state = session.katrain.get_state()
+            session.game_ended = True
+            winner_id = (
+                getattr(session, "player_b_id", None) if winner == "B"
+                else getattr(session, "player_w_id", None) if winner == "W" else None
+            )
+            if not ctx.game_end_emitted:
+                self._session_manager.broadcast_to_session(
+                    ctx.session_id,
+                    {"type": "game_end", "data": {"reason": "platform", "winner_id": winner_id, "result": result}},
+                )
+                ctx.game_end_emitted = True
+            if not ctx.platform_end_emitted:
+                self._session_manager.broadcast_to_session(
+                    ctx.session_id,
+                    {"type": "platform_game_ended", "game_id": game_id, "result": result, "winner": winner},
+                )
+                ctx.platform_end_emitted = True
+
+            ctx.clear_pending()
+            record = self.on_online_game_finished
+            try:
+                saved = bool(await record(session, ctx, result)) if record is not None else False
+            except Exception:
+                logger.exception("Could not save OGS result for game %s", game_id)
+                saved = False
+            if saved:
+                await self.end_platform_game(game_id, result)
+            elif game_id not in self._record_retry_tasks or self._record_retry_tasks[game_id].done():
+                self._record_retry_tasks[game_id] = asyncio.create_task(
+                    self._retry_online_game_record(game_id, result, winner)
+                )
+
+    async def _retry_online_game_record(self, game_id: str, result: str, winner: str) -> None:
+        for delay in ONLINE_RECORD_RETRY_DELAYS:
+            await asyncio.sleep(delay)
+            if game_id not in self._active_games:
+                return
+            await self._on_game_ended(game_id, result, winner)
+            if game_id not in self._active_games:
+                return
+        logger.error("OGS game %s remains unsaved; waiting for a later terminal event", game_id)
 
     async def _on_game_phase_changed(self, game_id: str, phase: GamePhase) -> None:
         ctx = self._active_games.get(game_id)
         if ctx:
+            if ctx.platform == "ogs" and ctx.game_phase == GamePhase.FINISHED and phase != GamePhase.FINISHED:
+                logger.warning("Ignoring OGS phase rollback after finish for %s", game_id)
+                return
             ctx.game_phase = phase
+            if phase != GamePhase.SCORING and ctx.pending_action in ("score_accept", "score_reject"):
+                ctx.clear_pending()
+            try:
+                session = self._session_manager.get_session(ctx.session_id)
+                session.katrain.platform_phase = phase.value
+            except KeyError:
+                pass
             self._session_manager.broadcast_to_session(
                 ctx.session_id, {"type": "platform_phase_changed", "phase": phase.value}
             )
 
     async def _on_connection_lost(self) -> None:
         logger.warning("Platform connection lost")
+        for ctx in self._active_games.values():
+            ctx.needs_resync = True
+            ctx.pending_confirmation.set()
 
     async def _on_reconnected(self) -> None:
         logger.info("Platform reconnected")

@@ -121,6 +121,10 @@ export interface GameState {
   // PVP, multiplayer). Authoritative signal for humanColor/aiColor derivation —
   // see kiosk/pages/GamePage.tsx deriveHumanColor/deriveAiTurnState (G2).
   platform_engine_color?: 'B' | 'W' | null;
+  /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
+  platform_my_color?: 'B' | 'W' | null;
+  /** Current OGS phase, mirrored in get_state so reload can restore scoring UI. */
+  platform_phase?: 'playing' | 'paused' | 'scoring' | 'finished' | null;
 }
 
 export interface SessionResponse {
@@ -244,9 +248,29 @@ export interface PlatformUser {
   status: string;
 }
 
+export interface PlatformChallenge {
+  platform: string;
+  challenge_id: string;
+  from_user: PlatformUser & { platform: string; rank_numeric: number };
+  board_size: number;
+  time_control: {
+    system: string;
+    main_time: number;
+    period_time?: number | null;
+    periods?: number | null;
+    time_increment?: number | null;
+    max_time?: number | null;
+    stones_per_period?: number | null;
+  };
+  rules: string;
+  ranked: boolean;
+  handicap: number;
+  komi: number | null;
+}
+
 export interface PlatformClockState {
-  black_time: Record<string, any>;
-  white_time: Record<string, any>;
+  black_time: Record<string, unknown> | number;
+  white_time: Record<string, unknown> | number;
   current_player: "B" | "W";
   paused?: boolean;
 }
@@ -711,17 +735,24 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get rooms");
     return response.json();
   },
-  platformChallenges: async (platform: string, token: string | null | undefined) => {
+  platformChallenges: async (platform: string, token: string | null | undefined): Promise<{ challenges: PlatformChallenge[] }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/challenges`, {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get challenges");
     return response.json();
   },
-  platformSendChallenge: (platform: string, data: object, token: string | null | undefined) =>
+  platformSendChallenge: (platform: string, data: object, token: string | null | undefined): Promise<{ challenge_id: string }> =>
     apiPost(`/api/v1/platforms/${platform}/challenge`, data, token),
-  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
+  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined): Promise<{ session_id: string; game?: unknown }> =>
     apiPost(`/api/v1/platforms/${platform}/challenge/accept`, { challenge_id: challengeId }, token),
+  platformActiveGame: async (platform: string, token: string | null | undefined): Promise<{ session_id: string | null; pending_challenge_id?: string | null }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/active-game`, { headers: authHeaders(token) });
+    if (!response.ok) throw new Error('Failed to get active platform game');
+    return response.json();
+  },
+  platformOgsScoring: (sessionId: string, action: 'accept' | 'reject', token: string | null | undefined): Promise<{ status: 'pending' }> =>
+    apiPost('/api/v1/platforms/ogs/scoring', { session_id: sessionId, action }, token),
   platformDeclineChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/decline`, { challenge_id: challengeId }, token),
   platformStartAutomatch: (platform: string, prefs: object, token: string | null | undefined) =>

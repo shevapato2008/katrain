@@ -65,6 +65,7 @@ interface AiPlacementStatus {
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
 export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
+  if (gameState.game_type === 'pvp_online') return gameState.platform_my_color ?? null;
   // Both-human (local PvP, server.py 'pvp_local'): null lets EITHER side play, so the
   // touchscreen fallback works for BOTH colors. Must precede the single-human checks
   // below, which would otherwise collapse to 'B' and block White from moving. Uses the
@@ -233,6 +234,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // ref 挡同一帧里的连点(state 要等下一次渲染才看得见),state 负责屏上那句「正在数子…」。
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
+  const [ogsScoring, setOgsScoring] = useState<{ scope: string; status: 'sending' | 'waiting' | 'error' } | null>(null);
+  const [ogsNoDeadConfirm, setOgsNoDeadConfirm] = useState<string | null>(null);
+  const [onlineMoveError, setOnlineMoveError] = useState<string | null>(null);
+  const ogsScoringRef = useRef<string | null>(null);
+  const ogsPhaseForReset = session.platformPhase ?? session.gameState?.platform_phase ?? null;
+  useEffect(() => {
+    ogsScoringRef.current = null;
+    setOgsScoring(null);
+    setOgsNoDeadConfirm(null);
+  }, [sessionId, ogsPhaseForReset]);
   const [resignError, setResignError] = useState<string | null>(null);
   const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
   const sessionGone = session.connectionLost === 'gone';
@@ -495,6 +506,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
+    if (gs.game_type === 'pvp_online') return;
     if (isRankedGameType(gs.game_type)) return;
     // 无人认领的会话:服务端**算了但不交付**(`analysis_delivered`)。开关那边已经灰了,
     // 这里再早退一次是因为**这条 `.catch(() => undefined)` 会把失败整个吞掉** ——
@@ -575,6 +587,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
+  const onlineGame = gameState.game_type === 'pvp_online';
+  const onlinePhase = session.platformPhase ?? gameState.platform_phase ?? null;
+  const ogsScoringScope = `${sessionId}|${gameState.game_id}|${onlinePhase}`;
+  const activeOgsScoring = ogsScoring?.scope === ogsScoringScope ? ogsScoring : null;
+  const onlineScoringPending = activeOgsScoring?.status === 'sending' || activeOgsScoring?.status === 'waiting';
+  const onlineHome = '/kiosk/play/cross-platform/ogs';
   const boardSize = gameState.board_size[0];
   const attentionPoints = visionAttentionPoints.length > 0 ? visionAttentionPoints
     : judgeUndecided?.positionKey === enginePositionKey ? judgeUndecided.points : [];
@@ -631,6 +649,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // (touchscreen fallback works for BOTH colors — see the helper's both-human guard).
   const humanColor = deriveHumanColor(gameState);
   const handleClockExpired = (color: 'B' | 'W') => {
+    if (onlineGame) return;
     if (!sessionId || isGameOver || gameState.player_to_move !== color || gameState.children.length > 0) return;
     if (gameState.last_ladder_error || (isRanked && humanColor !== color)) return;
     const key = `${gameState.game_id}|${gameState.current_node_id}|${color}`;
@@ -689,6 +708,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 当前局面和权威时钟核实。409/time_not_expired 带回的新状态直接用于重算；真正的
   // 网络或服务错误才提示失败。GameControlPanel 会在钟仍停在 00:00 时隔 5 秒再触发。
   const handleTimeExpired = async () => {
+    if (onlineGame) return;
     if (!sessionId || timeoutRequestRef.current) return;
     timeoutRequestRef.current = true;
     try {
@@ -719,7 +739,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地双人局按轮到落子的一方认输，人机局始终按人的座位认输。
   const bothHuman = gameState.players_info.B.player_type === 'player:human'
     && gameState.players_info.W.player_type === 'player:human';
-  const resignSide = gameState.player_to_move === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方');
+  const resignColor = onlineGame ? gameState.platform_my_color : gameState.player_to_move;
+  const resignSide = resignColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方');
   const resignTitle = bothHuman
     ? t('game:resign_confirm_side', '{side}认输？').replace('{side}', resignSide)
     : t('Confirm resign?', '确认认输？');
@@ -750,7 +771,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
-  const boardAnalysisToggles = isGameOver ? { ...analysisToggles, ownership: true } : analysisToggles;
+  const boardAnalysisToggles = isGameOver && !onlineGame ? { ...analysisToggles, ownership: true } : analysisToggles;
 
   // 刻度带的字。`坐标` 关掉时给空数组 —— **带还在,只是没字**(撤了带落子区会从 460 跳成 516)。
   const rulerCols = analysisToggles.coords ? colsFor(boardSize) : [];
@@ -767,8 +788,39 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : visionStatus.ledConnected === false ? t('vision:led_down', 'LED 未连接 · 不再亮灯引导')
     : null;
 
+  const sendOgsScoring = async (action: 'accept' | 'reject') => {
+    if (!onlineGame || onlinePhase !== 'scoring' || !sessionId || !gameState.platform_my_color
+      || ogsScoringRef.current === ogsScoringScope) return;
+    ogsScoringRef.current = ogsScoringScope;
+    setOgsScoring({ scope: ogsScoringScope, status: 'sending' });
+    try {
+      // No trustworthy OGS dead-stone selection is available in GameState.
+      // Omitting `stones` makes accept mean "no dead stones" on the backend.
+      await API.platformOgsScoring(sessionId, action, token);
+      setOgsScoring({ scope: ogsScoringScope, status: 'waiting' });
+    } catch {
+      ogsScoringRef.current = null;
+      setOgsScoring({ scope: ogsScoringScope, status: 'error' });
+    }
+  };
+
   const handleAction = async (action: string) => {
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
+    if (action === 'ogs-score-accept') {
+      if (onlineGame && onlinePhase === 'scoring' && !onlineScoringPending) setOgsNoDeadConfirm(ogsScoringScope);
+      return;
+    }
+    if (action === 'ogs-score-reject') {
+      await sendOgsScoring('reject');
+      return;
+    }
+    if (onlineGame) {
+      if (onlinePhase === 'finished' && action === 'resign') return;
+      if (!gameState.platform_my_color || (action === 'pass'
+        && (gameState.player_to_move !== gameState.platform_my_color
+          || (onlinePhase != null && onlinePhase !== 'playing')))) return;
+      if (action === 'count') return;
+    }
     if (action === 'resign') {
       setShowResignConfirm(true);
       return;
@@ -799,12 +851,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
     if (isGameOver) return;
+    if (onlineGame && (!gameState.platform_my_color
+      || gameState.player_to_move !== gameState.platform_my_color
+      || (onlinePhase != null && onlinePhase !== 'playing'))) return;
+    setOnlineMoveError(null);
     try {
       await session.onMove(x, y);
       setAiPlacementStatus(null);
     } catch (e) {
-      console.error(e);
-      if (engineMode) setEngineErrorToast(true);
+      if (onlineGame) {
+        setOnlineMoveError(e instanceof ApiError && e.status === 409
+          ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
+          : e instanceof ApiError && [502, 503, 504].includes(e.status)
+            ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
+            : t('game:ogs_move_unconfirmed', '这手没有得到 OGS 确认，请核对后再操作'));
+      } else {
+        console.error(e);
+        if (engineMode) setEngineErrorToast(true);
+      }
     }
   };
 
@@ -812,7 +876,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (!isGameOver) {
       setShowExitConfirm(true);
     } else {
-      navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked' : '/kiosk/play');
+      navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked'
+        : onlineGame ? onlineHome : '/kiosk/play');
     }
   };
 
@@ -963,7 +1028,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
   // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
   // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
-  const statusSlot = (timeoutLoserColor || autoCount.status !== 'idle') ? (
+  const statusSlot = onlineMoveError ? (
+    <div className="gstatus" data-testid="ogs-move-error" data-tone="bad" role="alert">
+      <div><b>{onlineMoveError}</b></div>
+    </div>
+  ) : activeOgsScoring ? (
+    <div className="gstatus" data-testid="ogs-scoring-status" data-tone={activeOgsScoring.status === 'error' ? 'bad' : undefined}>
+      {activeOgsScoring.status === 'sending' && <CircularProgress size={14} />}
+      <div>
+        <b>{activeOgsScoring.status === 'error'
+          ? t('game:ogs_scoring_failed', 'OGS 操作未送达')
+          : activeOgsScoring.status === 'sending'
+            ? t('game:ogs_scoring_sending', '正在发送给 OGS…')
+            : t('game:ogs_scoring_waiting', '等待 OGS 确认')}</b>
+        <span>{activeOgsScoring.status === 'error'
+          ? t('game:ogs_scoring_retry', '请检查连接后重试')
+          : t('game:ogs_scoring_authority', '本机不提前裁定胜负')}</span>
+      </div>
+    </div>
+  ) : (timeoutLoserColor || autoCount.status !== 'idle') ? (
     <div className="gstatus" data-testid="auto-count-status" data-tone={timeoutLoserColor || autoCount.status === 'failed' ? 'bad' : undefined}>
       {!timeoutLoserColor && autoCount.status === 'counting' && <CircularProgress size={14} />}
       <div>
@@ -1172,7 +1255,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             sub={gameSetupLine}
           />
           <GameControlPanel
-            onTimeout={localGame ? undefined : handleClockExpired}
+            onTimeout={localGame || onlineGame ? undefined : handleClockExpired}
             onTimeExpired={localGame ? handleTimeExpired : undefined}
             gameState={gameState}
             onAction={handleAction}
@@ -1203,6 +1286,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             hardwareFault={hardwareFault}
             physicalStatus={physicalStatus}
             counting={autoCount.status === 'counting'}
+            platformClock={onlineGame ? session.platformClock : null}
+            platformPhase={onlineGame ? onlinePhase : null}
+            onlineScoringPending={onlineScoringPending}
             statusSlot={statusSlot}
           />
         </div>
@@ -1229,6 +1315,31 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         />
       )}
 
+      <Dialog
+        open={ogsNoDeadConfirm === ogsScoringScope && onlinePhase === 'scoring'}
+        onClose={() => setOgsNoDeadConfirm(null)}
+        className="kiosk-game-side-dialog"
+      >
+        <DialogTitle>{t('game:ogs_no_dead_confirm_title', '确认无死子')}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {t('game:ogs_no_dead_confirm_body', '盒子尚未同步 OGS 死子标记；确认会向 OGS 发送无死子。若有待提子的棋，请点继续下棋')}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOgsNoDeadConfirm(null)}>{t('game:ogs_no_dead_cancel', '取消无死子确认')}</Button>
+          <Button
+            disabled={onlineScoringPending}
+            onClick={() => {
+              setOgsNoDeadConfirm(null);
+              void sendOgsScoring('accept');
+            }}
+          >
+            {t('game:ogs_no_dead_send', '确认发送无死子')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Resign confirmation (state D) */}
       {localGame ? (
         /* 本地对局:两个人都在屏前,「认输」不能默认判轮到走的那一方(P5)—— 先问谁认输。 */
@@ -1254,6 +1365,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
             <Button
               color="error"
+              disabled={onlineGame && (!gameState.platform_my_color || onlinePhase === 'finished')}
               onClick={async () => {
                 try {
                   await session.handleAction('resign');
@@ -1295,12 +1407,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
             <Button data-testid="exit-leave-keep" onClick={() => {
               setShowExitConfirm(false);
-              navigate('/kiosk/play');
+              navigate(onlineGame ? onlineHome : '/kiosk/play');
             }}>
               {t('game:leave_keep_game', '先离开，不认输')}
             </Button>
             <Button
               color="error"
+              disabled={onlineGame && (!gameState.platform_my_color || onlinePhase === 'finished')}
               onClick={async () => {
                 try {
                   await session.handleAction('resign');
@@ -1312,7 +1425,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                 // confirms a resign, so the engine-error recovery dialog (if open) must
                 // close too — no-op if it wasn't open.
                 session.clearPhysicalEngineError();
-                navigate('/kiosk/play');
+                navigate(onlineGame ? onlineHome : '/kiosk/play');
               }}
             >
               {t('Exit', '退出')}
@@ -1324,7 +1437,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* 这局在服务端已经没了。说人话 + 给出口。说的是「本机没有这一局了」,不是「你认输了」:
           回收会话不会结束远端对局(真正的远端认输在 gateway.py:399-420)。 */}
       <Dialog open={sessionGone && !gameGoneAcknowledged} className="kiosk-game-side-dialog"
-              onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+              onClose={() => { setGameGoneAcknowledged(true); navigate(onlineGame ? onlineHome : '/kiosk/play'); }}>
         <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
         <DialogContent>
           {/* 这里**不能**复用载入失败那一屏的 `game:unavailable_reason` —— 它第三条说
@@ -1334,7 +1447,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </DialogContent>
         <DialogActions>
           <Button data-testid="game-gone-leave"
-                  onClick={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+                  onClick={() => { setGameGoneAcknowledged(true); navigate(onlineGame ? onlineHome : '/kiosk/play'); }}>
             {t('game:back_to_play', '回到对弈')}
           </Button>
         </DialogActions>

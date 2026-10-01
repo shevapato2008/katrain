@@ -20,6 +20,7 @@ interface MockBoardProps {
   analysisToggles?: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
   onPaintedNode?: (nodeId: number) => void;
+  onMove?: (x: number, y: number) => void;
 }
 const { capturedBoardProps } = vi.hoisted(() => ({
   capturedBoardProps: { current: null as MockBoardProps | null },
@@ -36,6 +37,7 @@ vi.mock('../../components/Board', () => ({
 interface MockControlPanelProps {
   onAction: (action: string) => void;
   onTimeExpired?: () => void;
+  onTimeout?: (color: 'B' | 'W') => void;
   statusSlot?: React.ReactNode;
   physicalStatus?: string | null;
 }
@@ -53,6 +55,8 @@ vi.mock('../components/game/GameControlPanel', () => ({
         <i className="ghint">{props.physicalStatus}</i>
         <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
         <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
+        <button onClick={() => props.onAction('ogs-score-accept')}>MOCK_OGS_ACCEPT</button>
+        <button onClick={() => props.onAction('ogs-score-reject')}>MOCK_OGS_REJECT</button>
         <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
       </div>
     );
@@ -170,12 +174,14 @@ const NavigationProbe = () => {
   return null;
 };
 
-const pageTree = () => (
+const pageTree = (initial = '/kiosk/play/ai/game/test-session') => (
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
+    <MemoryRouter initialEntries={[initial]}>
       <NavigationProbe />
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/cross-platform/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/cross-platform/ogs" element={<div>OGS_HOME</div>} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
         <Route path="/kiosk/research" element={<div>RESEARCH_PAGE</div>} />
       </Routes>
@@ -183,7 +189,7 @@ const pageTree = () => (
   </ThemeProvider>
 );
 
-const renderPage = () => render(pageTree());
+const renderPage = (initial?: string) => render(pageTree(initial));
 
 describe('GamePage', () => {
   beforeEach(() => {
@@ -698,6 +704,111 @@ describe('GamePage', () => {
       expect(await screen.findByText('认输没成')).toBeInTheDocument();
       expect(screen.queryByText('认输请求失败')).toBeNull();
       expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
+    });
+  });
+
+  describe('OGS online game authority', () => {
+    const ogsPair: GameState['players_info'] = {
+      B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+      W: { ...basePlayer, player_type: 'player:human', name: '我' },
+    };
+    const ogs = (over: Partial<GameState> = {}) => makeGameState({
+      game_type: 'pvp_online', platform_my_color: 'W', players_info: ogsPair, ...over,
+    });
+    const route = '/kiosk/play/cross-platform/game/test-session';
+
+    it('uses the authoritative OGS seat for move, count, resignation and return', async () => {
+      mockGameState = ogs({ player_to_move: 'B' });
+      const count = vi.spyOn(API, 'requestCount');
+      try {
+        renderPage(route);
+        expect(capturedBoardProps.current?.playerColor).toBe('W');
+        await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+        fireEvent.click(screen.getByText('MOCK_COUNT'));
+        expect(mockOnMove).not.toHaveBeenCalled();
+        expect(count).not.toHaveBeenCalled();
+        expect(capturedControlPanelProps.current?.onTimeout).toBeUndefined();
+        expect(capturedControlPanelProps.current?.onTimeExpired).toBeUndefined();
+        fireEvent.click(screen.getByText('MOCK_RESIGN'));
+        expect(screen.getByText('白方认输？')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '认输' }));
+        await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
+        fireEvent.click(screen.getByText('退出对局'));
+        fireEvent.click(screen.getByTestId('exit-leave-keep'));
+        expect(await screen.findByText('OGS_HOME')).toBeInTheDocument();
+      } finally { count.mockRestore(); }
+    });
+
+    it('sends only the OGS scoring decision and waits for the remote verdict', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockResolvedValue({ status: 'pending' });
+      const localCount = vi.spyOn(API, 'requestCount');
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(screen.getByText(/盒子尚未同步 OGS 死子标记/)).toBeInTheDocument();
+        expect(score).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: '确认发送无死子' }));
+        await waitFor(() => expect(score).toHaveBeenCalledWith('test-session', 'accept', 'mock-token'));
+        expect(localCount).not.toHaveBeenCalled();
+        expect(mockSetGameState).not.toHaveBeenCalled();
+        expect(await screen.findByText(/等待 OGS/)).toBeInTheDocument();
+      } finally { score.mockRestore(); localCount.mockRestore(); }
+    });
+
+    it('prevents duplicate OGS scoring sends while waiting for the platform', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      let resolveFirst!: (value: { status: 'pending' }) => void;
+      const first = new Promise<{ status: 'pending' }>(resolve => { resolveFirst = resolve; });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockReturnValue(first);
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        fireEvent.click(screen.getByRole('button', { name: '确认发送无死子' }));
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(score).toHaveBeenCalledTimes(1);
+        await act(async () => { resolveFirst({ status: 'pending' }); });
+        // A confirmed send still waits for OGS; no local score or duplicate POST.
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        expect(score).toHaveBeenCalledTimes(1);
+      } finally { score.mockRestore(); }
+    });
+
+    it('can cancel the no-dead-stones confirmation without sending to OGS', () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring');
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_ACCEPT'));
+        fireEvent.click(screen.getByRole('button', { name: '取消无死子确认' }));
+        expect(score).not.toHaveBeenCalled();
+      } finally { score.mockRestore(); }
+    });
+
+    it('shows an OGS scoring failure and allows retry', async () => {
+      mockGameState = ogs({ platform_phase: 'scoring' });
+      const score = vi.spyOn(API, 'platformOgsScoring').mockRejectedValueOnce(new Error('network'))
+        .mockResolvedValue({ status: 'pending' });
+      try {
+        renderPage(route);
+        fireEvent.click(screen.getByText('MOCK_OGS_REJECT'));
+        expect(await screen.findByText(/OGS 操作未送达/)).toBeInTheDocument();
+        fireEvent.click(screen.getByText('MOCK_OGS_REJECT'));
+        await waitFor(() => expect(score).toHaveBeenCalledTimes(2));
+      } finally { score.mockRestore(); }
+    });
+
+    it.each([
+      [new ApiError(409, 'conflict'), 'OGS 未确认这手棋'],
+      [new ApiError(502, 'upstream'), 'OGS 暂时不可用'],
+      [new Error('timeout'), '没有得到 OGS 确认'],
+    ])('shows an online move failure instead of a silent console error', async (failure, expected) => {
+      mockGameState = ogs({ player_to_move: 'W' });
+      mockOnMove.mockRejectedValueOnce(failure);
+      renderPage(route);
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(await screen.findByText(new RegExp(expected))).toBeInTheDocument();
+      expect(mockSetGameState).not.toHaveBeenCalled();
     });
   });
 

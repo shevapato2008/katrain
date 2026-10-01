@@ -6,7 +6,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import AccountSection from '../components/settings/AccountSection';
-import { PLATFORM_META } from '../constants/platforms';
+import PlatformAccounts from '../components/settings/PlatformAccounts';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
@@ -223,28 +223,7 @@ const SettingsPage = () => {
             {/* 账号那两行(账号 + AI 段位)在 `AccountSection` 里,和下面那行是同一族 `.kiosk-row`。
                 ⚠️ **段位详情那张卡还没重画** —— 它只在点开对话框之后才出现,不占这一组的正面。 */}
             <AccountSection />
-            {/* 上一版这儿摆着四张 `pointer-events:none` 的死卡,列的是 99围棋/野狐/腾讯/新浪 ——
-                **和真正能连的三家对不上**。改成一行真入口:连哪一家、怎么连,都在跨平台对弈那条路上,
-                三家的登录字段还各不相同,不该在这儿复制一套表单。 */}
-            <div className="kiosk-row">
-              <span className="kiosk-row__t">
-                <b>{t('settings:platforms', '跨平台账号')}</b>
-                <em>
-                  {Object.values(PLATFORM_META).map((p) => p.labelCn).join(' · ')}
-                  {' · '}
-                  {t('settings:platforms_sub', '各家登录字段不同，在跨平台对弈里连')}
-                </em>
-              </span>
-              <span className="kiosk-row__end">
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--secondary"
-                  onClick={() => navigate('/kiosk/play/cross-platform')}
-                >
-                  {t('settings:go_connect', '去连接')}
-                </button>
-              </span>
-            </div>
+            <PlatformAccounts />
           </div>
         </section>
 

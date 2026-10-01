@@ -411,8 +411,10 @@ class RepositoryDispatcher:
                 raise RemoteServiceUnavailableError(unavailable_detail) from exc
             raise
 
-    async def user_games_delete(self, game_id: str):
-        return await self._remote_only(lambda: self._remote_client.delete_user_game(game_id))
+    async def user_games_delete(self, game_id: str, user_id: int):
+        result = await self._remote_only(lambda: self._remote_client.delete_user_game(game_id))
+        self._local_user_game_repo.delete(game_id, user_id, remote_confirmed=True)
+        return result
 
     async def reports_list(self):
         return await self._remote_only(lambda: self._remote_client.list_reports(), "Remote report service unavailable")

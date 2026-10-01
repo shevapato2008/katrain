@@ -17,7 +17,7 @@ REST API + STOMP over SockJS for real-time events.
 
 **API Base:** `https://api.19x19.com` (NOT www.19x19.com!)
 
-**Phone-only** — requires Chinese mobile number (+86). No email login.
+**Phone-number login** — the web login offers multiple country codes; the verified request format includes the selected dial code. A successful login with a non-`+86` number has not been verified here. No email login is implemented.
 
 **OAuth2 token endpoint:** `POST https://api.19x19.com/api/auth/oauth/token`
 
@@ -110,9 +110,23 @@ grant_type=refresh_token&client_id=golaxy_web&refresh_token={TOKEN}
 2. **Add authenticated play** via REST + STOMP subscriptions
 3. **Capture STOMP message payloads** from browser DevTools to document schemas
 
+## PvP readiness — repository audit 2026-09-30
+
+**NO-GO for box-side human games.** The REST paths and STOMP destinations above are transport clues, not a verified playable contract. This audit only inspected repository code and documentation; it did not capture a live PvP session.
+
+| Behavior | Repository evidence | Missing evidence |
+|----------|---------------------|------------------|
+| Quick match and challenge | Adapter has no matching/challenge implementation | Requests, responses, cancellation, timeout, and game-zone events |
+| Rooms | `get_rooms()` returns an empty list; HTTP room wrappers exist | Room listing, creation/join payloads, config handshake, and events |
+| Moves | `submit_move()` labels its `{x, y}` payload as unverified | Accepted request shape, pass, turn and rejection events |
+| End of game | HTTP end/state wrappers exist | Authoritative resign, scoring, timeout and final-result events |
+| Realtime transport | STOMP destination names are documented | Authenticated connection, event bodies and replay/recovery rules |
+
+The AI stateless `genmove` tunnel is a separate, working path and does not establish PvP readiness. The kiosk must keep its human-game entries disabled until authorized test-account captures provide anonymized samples for each required flow and those flows pass integration tests.
+
 ## Key Risks
 
-- **Phone-only auth** — requires +86 number, international users excluded
+- **Phone-number auth** — non-`+86` login success remains unverified
 - **No official API docs** — reverse-engineered from JS bundle
 - **STOMP payload schemas unknown** — subscription channels known but message formats must be captured
 - **Endpoints can change on any deploy** (latest JS bundle: 2026-04-03)

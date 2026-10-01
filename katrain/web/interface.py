@@ -341,11 +341,12 @@ class WebKaTrain(KaTrainBase):
     #:                     already exist with this value and the kiosk report card
     #:                     labels off it.
     #:   pvp_local         同板双人 on one kiosk.
-    GAME_TYPES = ("free", "ai_ladder_ranked", "rated", "ranked", "pvp_local")
+    #:   pvp_online        远端平台在线对弈，平台裁定胜负，局中不得分析。
+    GAME_TYPES = ("free", "ai_ladder_ranked", "rated", "ranked", "pvp_local", "pvp_online")
 
     #: Games where analysis during play would be cheating, so every analysis action
     #: is refused at the dispatch chokepoint and /api/undo returns 403.
-    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked")
+    SCORING_GAME_TYPES = ("rated", "ranked", "ai_ladder_ranked", "pvp_online")
 
     #: Games whose result moves the player's rank. Exactly one, by design: the user's
     #: rank is defined as "what your 升降级对弈 games against the AI say it is", so
@@ -736,6 +737,8 @@ class WebKaTrain(KaTrainBase):
             "awaiting_count": is_awaiting_count(self),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
+            "platform_my_color": getattr(self, "platform_my_color", None),
+            "platform_phase": getattr(getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)),
             "analysis_allowed": self.analysis_allowed,
             # 与 `analysis_allowed` 是两件事，别合并：
             #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
@@ -746,6 +749,14 @@ class WebKaTrain(KaTrainBase):
             "analysis_delivered": bool(getattr(self, "deliver_analysis", True)),
             "last_ladder_error": getattr(self, "last_ladder_error", False),
         }
+        if getattr(self, "game_type", None) == "pvp_online":
+            # Core Go rules call two consecutive passes "game end". OGS instead
+            # enters stone removal and may return to play. Only a remote result
+            # committed as a terminal fact is an online game's final result.
+            remote_result = self.game.terminal.result if self.game.terminal is not None else None
+            state["end_result"] = remote_result
+            state["terminal_result"] = remote_result
+            state["awaiting_count"] = False
         if not getattr(self, "deliver_analysis", True):
             state["analysis"] = None
             state["commentary"] = ""
@@ -793,6 +804,8 @@ class WebKaTrain(KaTrainBase):
             # WebKaTrain instance, e.g. POST /api/new-game) would retain the stale engine color,
             # making the LED orchestrator (Task 2) treat a purely local game as engine-controlled.
             self.platform_engine_color = None
+            self.platform_my_color = None
+            self.platform_phase = None
             # Task 4: fail-closed lifecycle reset. A brand new game is never a ladder game
             # until the caller explicitly injects a rung (POST /api/new-game ladder_rung=...).
             # Any new-game / load_sgf call that omits it (including a plain reset) clears a

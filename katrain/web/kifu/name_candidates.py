@@ -639,6 +639,31 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             write_errors.append(f"candidate[{number}]: name preimage must be null or lowercase SHA-256")
         if isinstance(item.get("owner"), dict) and "ref" in item["owner"] and preimage is not None:
             write_errors.append(f"candidate[{number}]: new owner name preimage must be null")
+        binding = item.get("preimage_binding")
+        if not isinstance(binding, dict):
+            write_errors.append(f"candidate[{number}]: independently reviewed preimage binding missing")
+            continue
+        actor = binding.get("actor_id")
+        captured_at = _time(binding.get("captured_at"))
+        bound_at = _time(binding.get("bound_at"))
+        produced_at = _time(item.get("produced_at"))
+        reviewed_at = _time(item.get("reviewed_at"))
+        if not (_text(actor) and _text(binding.get("actor_model"))
+                and "name_preimage_sha256" in binding
+                and binding["name_preimage_sha256"] == preimage
+                and captured_at and bound_at and produced_at
+                and produced_at <= bound_at and captured_at <= bound_at
+                and (item.get("review_status") != "approved"
+                     or (reviewed_at and bound_at <= reviewed_at and actor != item.get("reviewer_id")))):
+            write_errors.append(f"candidate[{number}]: preimage binding identity, value or chronology invalid")
+        source_hash = binding.get("source_candidate_sha256")
+        capture_hash = binding.get("capture_sha256")
+        if actor != item.get("producer_id") and not (isinstance(source_hash, str) and _HASH.fullmatch(source_hash)):
+            write_errors.append(f"candidate[{number}]: separate binder needs source candidate hash")
+        if source_hash is not None and not (isinstance(source_hash, str) and _HASH.fullmatch(source_hash)):
+            write_errors.append(f"candidate[{number}]: source candidate hash invalid")
+        if capture_hash is not None and not (isinstance(capture_hash, str) and _HASH.fullmatch(capture_hash)):
+            write_errors.append(f"candidate[{number}]: preimage capture hash invalid")
     ready = not errors and not statuses["pending"] and not statuses["rejected"]
     return {
         "ready": ready, "write_ready": ready and not write_errors, "write_errors": write_errors,

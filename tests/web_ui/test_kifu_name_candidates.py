@@ -144,6 +144,33 @@ def test_conventional_approved_name_requires_professional_target_language_body_a
             validate_candidate(candidate(**changes), research(), registry(), inventory())
 
 
+def test_write_ready_requires_independently_reviewed_preimage_binding():
+    original = candidate()
+    row = {**original, "name_preimage_sha256": None}
+    before = validate_bundle(bundle(candidates=[row]), registry(), inventory(), [research()])
+    assert before["ready"] and not before["write_ready"]
+    binding = {
+        "actor_id": "binder-3", "actor_model": "gpt-6.1-sol",
+        "captured_at": "2026-10-02T10:05:00Z", "bound_at": "2026-10-02T10:10:00Z",
+        "name_preimage_sha256": None, "source_candidate_sha256": canonical_sha256(original),
+        "capture_sha256": "a" * 64,
+    }
+    ready = validate_bundle(bundle(candidates=[{**row, "preimage_binding": binding}]),
+                            registry(), inventory(), [research()])
+    assert ready["write_ready"]
+    for bad in (
+        {**binding, "actor_id": row["reviewer_id"]},
+        {**binding, "bound_at": "2026-10-02T11:01:00Z"},
+        {**binding, "captured_at": "2026-10-02T10:11:00Z"},
+        {**binding, "name_preimage_sha256": "b" * 64},
+        {**binding, "source_candidate_sha256": ""},
+        {**binding, "capture_sha256": ""},
+    ):
+        report = validate_bundle(bundle(candidates=[{**row, "preimage_binding": bad}]),
+                                 registry(), inventory(), [research()])
+        assert report["ready"] and not report["write_ready"]
+
+
 def test_approved_conventional_name_cannot_precede_its_source_capture():
     later = research(source_checks=[check(fetched_at="2026-10-03T10:00:00Z")])
     with pytest.raises(CandidateError, match="source capture"):

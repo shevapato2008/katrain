@@ -24,6 +24,22 @@ from scripts.kifu_name_batch import main
 LANGS = ("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua")
 
 
+def bind_fixture_candidate(row):
+    row["preimage_binding"] = {
+        "actor_id": "fixture-binder-3", "actor_model": "gpt-6.1-sol",
+        "captured_at": "2026-10-02T10:05:00Z", "bound_at": "2026-10-02T10:30:00Z",
+        "name_preimage_sha256": row["name_preimage_sha256"],
+        "source_candidate_sha256": canonical_sha256(row),
+        "capture_sha256": hashlib.sha256(b"synthetic fixture preimage capture").hexdigest(),
+    }
+    return row
+
+
+def set_fixture_preimage(row, preimage):
+    row["name_preimage_sha256"] = preimage
+    row["preimage_binding"]["name_preimage_sha256"] = preimage
+
+
 def registry():
     return {
         "version": "test-1",
@@ -60,7 +76,7 @@ def engine(tmp_path):
 def approved_bundle(inventory):
     owner = {"kind": "raw_event", "id": 7}
     member = {"owner": owner, "lang": "ru", "raw_value": "GNUGo3.8"}
-    candidate = {
+    candidate = bind_fixture_candidate({
         **member, "display_name": "", "decision_kind": "hidden", "research_sha256": "",
         "name_preimage_sha256": None,
         "generation_rule_version": "classification-v1",
@@ -73,7 +89,7 @@ def approved_bundle(inventory):
             "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
             "reviewed_at": "2026-10-02T10:30:00Z", "conclusion": "Checked this language template",
         },
-    }
+    })
     return {
         "bundle_format": 1, "inventory_format": 2, "inventory_sha256": inventory["sha256"],
         "registry_version": "test-1", "registry_sha256": registry_sha256(registry()),
@@ -101,7 +117,7 @@ def player_bundle(inventory, owner_id=17, display="Го Сэйгэн"):
         "reading": "ご せいげん", "reading_basis_url": "https://example.org/go",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending",
     }
-    candidate = {
+    candidate = bind_fixture_candidate({
         **member, "display_name": display, "decision_kind": "conventional",
         "name_preimage_sha256": None,
         "research_sha256": canonical_sha256(research), "generation_rule_version": "none",
@@ -109,7 +125,7 @@ def player_bundle(inventory, owner_id=17, display="Го Сэйгэн"):
         "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
         "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
         "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "Confirmed exact Russian professional profile",
-    }
+    })
     return {
         "bundle_format": 1, "inventory_format": 2, "inventory_sha256": inventory["sha256"],
         "registry_version": "test-1", "registry_sha256": registry_sha256(registry()),
@@ -221,8 +237,8 @@ def test_existing_name_modified_after_review_aborts_without_writes(engine):
             raw_event_id=7, lang="ru", display_name="Old", status="review"))
     inv = build_inventory(engine)
     bundle = approved_bundle(inv)
-    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
-        engine, {"kind": "raw_event", "id": 7}, "ru")
+    set_fixture_preimage(bundle["candidates"][0], name_preimage_sha256(
+        engine, {"kind": "raw_event", "id": 7}, "ru"))
     assert dry_run_bundle(engine, bundle, registry(), inv, [])["ready"]
     with engine.begin() as conn:
         conn.execute(KifuRawEventName.__table__.update().where(KifuRawEventName.raw_event_id == 7)
@@ -241,8 +257,8 @@ def test_existing_name_hash_covers_reference_and_row_identity(engine):
             reference_url="https://example.org/old"))
     inv = build_inventory(engine)
     bundle, research = player_bundle(inv)
-    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
-        engine, {"kind": "player", "id": 17}, "ru")
+    set_fixture_preimage(bundle["candidates"][0], name_preimage_sha256(
+        engine, {"kind": "player", "id": 17}, "ru"))
     assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
     with engine.begin() as conn:
         conn.execute(KifuPlayerName.__table__.update().where(KifuPlayerName.id == 22)
@@ -266,8 +282,8 @@ def test_matching_existing_name_preimage_allows_audited_update_and_undo(engine):
             raw_event_id=7, lang="ru", display_name="Prior review", status="review"))
     inv = build_inventory(engine)
     bundle = approved_bundle(inv)
-    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
-        engine, {"kind": "raw_event", "id": 7}, "ru")
+    set_fixture_preimage(bundle["candidates"][0], name_preimage_sha256(
+        engine, {"kind": "raw_event", "id": 7}, "ru"))
     applied = apply_bundle(engine, bundle, registry(), inv, [])
     assert applied["status"] == "applied"
     with engine.connect() as conn:
@@ -557,14 +573,14 @@ def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
         "original_language_basis_url": "https://example.org/event",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
     event_member = {"owner": event_owner, "lang": "ru"}
-    event_candidate = {
+    event_candidate = bind_fixture_candidate({
         **event_member, "display_name": event_display, "decision_kind": "conventional",
         "name_preimage_sha256": None,
         "research_sha256": canonical_sha256(event_research), "generation_rule_version": "none",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
         "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
         "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
-        "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "Checked exact event"}
+        "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "Checked exact event"})
     player_decisions["members"].append(event_member)
     player_decisions["member_set_sha256"] = canonical_sha256(player_decisions["members"])
     player_decisions["candidates"].append(event_candidate)
@@ -634,14 +650,14 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
                     "original_language_basis_url": "https://example.org/original",
                     "reading": "Example Person", "reading_basis_url": "https://example.org/original",
                     "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
-        decision = {**member, "display_name": display, "decision_kind": "conventional",
+        decision = bind_fixture_candidate({**member, "display_name": display, "decision_kind": "conventional",
                     "name_preimage_sha256": None,
                     "research_sha256": canonical_sha256(evidence), "generation_rule_version": "none",
                     "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
                     "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
                     "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
                     "reviewed_at": "2026-10-02T11:00:00Z",
-                    "review_conclusion": "Checked synthetic language-specific profile"}
+                    "review_conclusion": "Checked synthetic language-specific profile"})
         members.append(member)
         candidates.append(decision)
         research.append(evidence)

@@ -59,6 +59,8 @@ python scripts/kifu_name_candidates.py validate \
 
 每条待写候选还要在独立审核前固定 `name_preimage_sha256`：该对象及语言尚无名称行时写显式 `null`，已有行则使用当前完整数据库行的规范 JSON SHA-256（包含行 ID、译名、状态、引用和时间等字段）。可用 `name_preimage_sha256(engine, owner, lang)` 只读取得；新增符号对象必须为 `null`。审核者需核对这份前像。离线报告的 `ready` 只表示名称证据合格；`write_ready` 才表示包含可写入的前像约束。`scripts/kifu_name_batch.py validate` 对 `write_ready=false` 返回非零退出码，数据库 `dry-run/apply` 还会重新读取并比较当前行。审核后发生的人工编辑或插入会使批次失败，须重取前像并重新审核，不可由导入脚本现场补上。
 
+可写候选另需 `preimage_binding`：`actor_id`/实际 `actor_model`、带时区的 `captured_at`/`bound_at`、与顶层完全一致的 `name_preimage_sha256`（允许显式 `null`）。来源候选的 `producer_id`/`produced_at` 和 `research_sha256` 保留原作者与原证据；后来绑定前像的人只写在 `preimage_binding`，不能冒充来源作者。不同人绑定时还需 `source_candidate_sha256` 指向归档来源候选的规范哈希；有受控前像文件时记录其原始字节 `capture_sha256`。两个哈希均须为小写 SHA-256，审核人还须对照归档文件实际核实，格式校验不能自行证明引用真实。写入闸要求来源候选先于绑定，前像采集不晚于绑定，绑定不晚于新审核，且审核人与来源作者、绑定人各不相同。旧来源审核可作为历史依据，但不能批准其后才采集的前像；要保留旧候选不变，复制成待审的生产绑定产物并重新独立审核。来源证据的 `ready` 校验不受该写入专用元数据影响。
+
 本地第二版小样本可运行 `pytest -q tests/web_ui/test_kifu_name_batch.py -k 'v2'`：分别演示新增原始值符号引用、同一棋局两个槽位关联、新增棋手十一语言名称以及快照失效。测试里的名称和来源是虚构 fixture，绝不可作为线上译名。
 
 `inventory_format=2` 包含原始 PB/PW/EV 文本及已链接的棋手/赛事 ID，但不含新增原始值表 ID。离线校验只证明原文出现在固定快照；Task 7 批次导入必须在写入事务里再次核对 `raw_player/raw_event` 的声明 ID **确实指向同一个精确原文**，并验证 album/身份链接及当前正式库快照。校验器从不写数据库，也不生成所谓自动翻译。

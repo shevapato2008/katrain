@@ -3,6 +3,9 @@
 These hints never establish an event identity or approve a translated display.
 """
 
+from collections import defaultdict
+import hashlib
+import json
 import re
 
 from katrain.web.kifu.name_parse import parse_event
@@ -91,3 +94,63 @@ def structure_event(raw: str) -> dict:
         unit = suffix.group(2)
         parts.append(_part(raw, "round" if unit == "轮" else "game", suffix.group(1) + unit, end, len(raw)))
     return _result(raw, parts, "explicit_components" if len(parts) > 1 else "unparsed")
+
+
+def _canonical_hash(value: dict) -> str:
+    data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+
+
+def build_event_group_manifest(inventory: dict) -> dict:
+    """Group every raw EV spelling for finite, separately reviewed batch manifests."""
+    if inventory.get("inventory_format") != 2:
+        raise ValueError("inventory_format 2 is required")
+    if not re.fullmatch(r"[0-9a-f]{64}", inventory.get("sha256", "")):
+        raise ValueError("inventory SHA-256 is required")
+    rows = inventory["scopes"]["all"]["values"]["event"]
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    seen = set()
+    for row in rows:
+        raw = row["value"]
+        if raw in seen:
+            raise ValueError(f"duplicate raw event value: {raw!r}")
+        seen.add(raw)
+        if raw is None or raw == "":
+            structure = {
+                "raw_value": raw, "core": "", "grammar": "empty", "parts": [], "components": [],
+                "status": "pending_review", "rule_version": RULE_VERSION, "exceptions": [],
+            }
+        elif isinstance(raw, str):
+            structure = structure_event(raw)
+        else:
+            raise ValueError("raw event value must be text or null")
+        groups[(structure["grammar"], structure["core"])].append({
+            "raw_value": raw,
+            "occurrences": row["occurrences"],
+            "affected_games": row["affected_games"],
+            "structure": structure,
+        })
+
+    result_groups = []
+    for (grammar, core), members in groups.items():
+        members.sort(key=lambda item: (item["raw_value"] is not None, (item["raw_value"] or "").encode("utf-8")))
+        group = {
+            "grammar": grammar,
+            "core": core,
+            "status": "pending_review",
+            "occurrences": sum(item["occurrences"] for item in members),
+            "affected_games": sum(item["affected_games"] for item in members),
+            "members": members,
+        }
+        group["sha256"] = _canonical_hash(group)
+        result_groups.append(group)
+    result_groups.sort(key=lambda item: (-item["occurrences"], item["grammar"], item["core"].encode("utf-8")))
+    manifest = {
+        "inventory_format": 2,
+        "inventory_sha256": inventory["sha256"],
+        "rule_version": RULE_VERSION,
+        "group_count": len(result_groups),
+        "groups": result_groups,
+    }
+    manifest["sha256"] = _canonical_hash(manifest)
+    return manifest

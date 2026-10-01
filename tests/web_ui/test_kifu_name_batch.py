@@ -5,7 +5,7 @@ import hashlib
 import json
 
 import pytest
-from sqlalchemy import create_engine, event, func, select
+from sqlalchemy import create_engine, event, func, select, text
 
 from katrain.web.core.models_db import (
     Base, KifuAlbum, KifuEvent, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
@@ -324,6 +324,30 @@ def test_undo_preserves_later_user_edit_and_reports_partial(engine):
     with engine.connect() as conn:
         assert conn.scalar(select(KifuRawEventName.display_name).where(KifuRawEventName.raw_event_id == 7)) == "Later user edit"
         assert conn.scalar(select(func.count()).select_from(KifuNameResearchEvidence)) == 1
+
+
+def test_undo_preserves_evidence_on_default_sqlite_cli_engine(engine):
+    # The CLI constructs a plain engine, unlike this test module's FK-enabled fixture.
+    plain_engine = create_engine(engine.url)
+    try:
+        inventory = build_inventory(plain_engine)
+        bundle, evidence = player_bundle(inventory)
+        applied = apply_bundle(plain_engine, bundle, registry(), inventory, evidence)
+        with plain_engine.begin() as conn:
+            conn.execute(KifuPlayerName.__table__.update().where(
+                KifuPlayerName.player_id == 17, KifuPlayerName.lang == "ru"
+            ).values(display_name="later editor change"))
+        undone = undo_batch(plain_engine, applied["batch_id"])
+        assert undone["status"] == "partial_undo"
+        with plain_engine.connect() as conn:
+            name = conn.execute(select(KifuPlayerName).where(
+                KifuPlayerName.player_id == 17, KifuPlayerName.lang == "ru"
+            )).mappings().one()
+            assert name["evidence_id"] is not None
+            assert conn.scalar(select(func.count()).select_from(KifuNameResearchEvidence)) == 1
+            assert conn.execute(text("PRAGMA foreign_key_check")).all() == []
+    finally:
+        plain_engine.dispose()
 
 
 def test_conventional_name_evidence_matches_verified_row_and_collision_is_blocked(engine):

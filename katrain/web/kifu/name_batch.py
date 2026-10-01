@@ -99,6 +99,11 @@ def _locked_write(engine):
                 "kifu_name_research_evidence, kifu_name_source_registry IN SHARE ROW EXCLUSIVE MODE"
             )
         elif engine.dialect.name == "sqlite":
+            # CLI engines do not share the application's connect hook. Undo relies
+            # on FK rejection when a later edit still references batch evidence.
+            conn.exec_driver_sql("PRAGMA foreign_keys=ON")
+            _fail(conn.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1,
+                  "SQLite foreign-key enforcement is required for name batch writes")
             conn.exec_driver_sql("BEGIN IMMEDIATE")
         else:
             raise BatchError("Only PostgreSQL and SQLite are supported")

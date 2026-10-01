@@ -132,7 +132,7 @@ const BACK_FALLBACK = { path: '/kiosk/play', label: '对弈' };
 const ResearchPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { token, isAuthenticated } = useAuth();
 
   const board = useResearchBoard();
@@ -417,28 +417,37 @@ const ResearchPage = () => {
   // 异步续体里从 `board` 反推 SGF —— `loadFromSGF` 的 setState 还没 flush,读到的是载入前
   // 的空盘(galaxy `ResearchPage.tsx:187-199` 那个陈旧闭包 bug)。把刚取到的 `sgf_content`
   // 直接串进 `createSession`。
-  const kifuRef = useRef(false);
+  const kifuRef = useRef<string | null>(null);
+  const kifuRequestRef = useRef(0);
   useEffect(() => {
     const id = searchParams.get('kifu_id');
-    if (!id || kifuRef.current) return;
-    kifuRef.current = true;
-    KifuAPI.getAlbum(Number(id)).then(async (album) => {
-      if (album.sgf_content) {
+    if (!id) return;
+    const request = ++kifuRequestRef.current;
+    KifuAPI.getAlbum(Number(id), lang).then(async (album) => {
+      if (request !== kifuRequestRef.current) return;
+      const firstLoad = kifuRef.current !== id;
+      if (firstLoad && album.sgf_content) {
         const r = board.loadFromSGF(album.sgf_content);
         if (!r.success) { console.error('Failed to load kifu for deep link:', r.error); return; }
+        kifuRef.current = id;
       }
-      if (album.player_black) board.setPlayerBlack(album.player_black);
-      if (album.player_white) board.setPlayerWhite(album.player_white);
-      const head = album.event
-        ? `${album.event}${album.round_name ? ` · ${album.round_name}` : ''}`
-        : `${album.player_black} vs ${album.player_white}`;
+      const black = album.display_player_black ?? t('game:black_side', '黑方');
+      const white = album.display_player_white ?? t('game:white_side', '白方');
+      board.setPlayerBlack(black);
+      board.setPlayerWhite(white);
+      const head = album.display_event
+        ? `${album.display_event}${album.display_round_name ? ` · ${album.display_round_name}` : ''}`
+        : `${black} vs ${white}`;
       setProvenance({
         label: `${t('research:from_kifu', '棋谱库')}：${head}${album.date_played ? ` · ${album.date_played}` : ''}`,
         backPath: `/kiosk/kifu/${id}`, backLabel: t('kifu:title', '棋谱'),
       });
-      if (searchParams.get('analyze') === '1' && album.sgf_content) await startScan(album.sgf_content);
-    }).catch((err) => console.error('Failed to load kifu for deep link:', err));
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+      if (firstLoad && searchParams.get('analyze') === '1' && album.sgf_content) await startScan(album.sgf_content);
+    }).catch((err) => {
+      if (request === kifuRequestRef.current) console.error('Failed to load kifu for deep link:', err);
+    });
+    return () => { kifuRequestRef.current += 1; };
+  }, [searchParams, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const userGameRef = useRef(false);
   useEffect(() => {

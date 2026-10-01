@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -32,35 +32,38 @@ export default function ReportLibraryImportDialog({
   onClose,
   onImport,
 }: ReportLibraryImportDialogProps) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<KifuAlbumSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [selectedAlbum, setSelectedAlbum] = useState<KifuAlbumSummary | null>(null);
   const [fetching, setFetching] = useState(false);
+  const requestGenerationRef = useRef(0);
 
   const fetchData = useCallback(async () => {
     if (!open) return;
+    const requestGeneration = ++requestGenerationRef.current;
     setFetching(true);
     try {
       const response = await KifuAPI.getAlbums({
         q: query || undefined,
         page,
         page_size: PAGE_SIZE,
+        lang,
       });
+      if (requestGeneration !== requestGenerationRef.current) return;
       setItems(response.items);
       setTotal(response.total);
-      if (response.items.length > 0 && !selectedAlbum) {
-        setSelectedAlbum(response.items[0]);
-      }
+      setSelectedAlbum(response.items[0] ?? null);
     } finally {
-      setFetching(false);
+      if (requestGeneration === requestGenerationRef.current) setFetching(false);
     }
-  }, [open, page, query, selectedAlbum]);
+  }, [open, page, query, lang]);
 
   useEffect(() => {
     fetchData().catch(() => {});
+    return () => { requestGenerationRef.current += 1; };
   }, [fetchData]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -104,16 +107,16 @@ export default function ReportLibraryImportDialog({
                 >
                   <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
                     <Typography variant="body2" noWrap sx={{ flex: 1 }}>
-                      {album.event || `${album.player_black} vs ${album.player_white}`}
+                      {album.display_event || `${album.display_player_black ?? t('game:black_side', '黑方')} vs ${album.display_player_white ?? t('game:white_side', '白方')}`}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {album.date_played || '-'} · {album.move_count} {t('report:moves_unit', 'moves')}
                     </Typography>
                   </Stack>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="subtitle2">{album.player_black}</Typography>
+                    <Typography variant="subtitle2">{album.display_player_black ?? t('game:black_side', '黑方')}</Typography>
                     <Typography variant="caption" color="text.secondary">{album.result ? translateResult(album.result, t, album.rules) : t('report:no_result', 'No result')}</Typography>
-                    <Typography variant="subtitle2">{album.player_white}</Typography>
+                    <Typography variant="subtitle2">{album.display_player_white ?? t('game:white_side', '白方')}</Typography>
                   </Stack>
                 </Box>
               ))

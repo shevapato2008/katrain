@@ -122,7 +122,9 @@ describe('GameLibraryModal', () => {
     });
     (KifuAPI.getAlbums as Mock).mockResolvedValueOnce({
       items: [
-        { id: 1, title: 'Tournament Game', player_black: 'Lee', player_white: 'Ke', result: 'W+2.5', move_count: 250, sgf_content: '(;FF[4];B[pd])' },
+        { id: 1, title: 'Tournament Game', player_black: 'Lee', player_white: 'Ke',
+          display_event: 'Tournament Game', display_player_black: 'Lee', display_player_white: 'Ke',
+          result: 'W+2.5', move_count: 250, sgf_content: '(;FF[4];B[pd])' },
       ],
       total: 1,
     });

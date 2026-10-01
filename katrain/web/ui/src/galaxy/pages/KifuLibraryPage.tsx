@@ -161,10 +161,10 @@ function GameRecordCard({
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
             overflow: 'hidden', wordBreak: 'break-word',
           }}>
-            {album.display_event ?? album.event ?? ''}
-            {(album.display_round_name ?? album.round_name) && (
+            {album.display_event ?? ''}
+            {album.display_round_name && (
               <Typography component="span" sx={{ opacity: 0.6, ...railMetaSx, ml: 0.5 }}>
-                {album.display_round_name ?? album.round_name}
+                {album.display_round_name}
               </Typography>
             )}
           </Typography>
@@ -193,11 +193,11 @@ function GameRecordCard({
               noWrap
               sx={{ fontWeight: blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
-              {album.display_player_black ?? album.player_black}
+              {album.display_player_black ?? t('game:black_side', '黑方')}
             </Typography>
-            {(album.display_black_rank ?? album.black_rank) && (
+            {album.display_black_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
-                {formatRank(album.display_black_rank ?? album.black_rank, t)}
+                {formatRank(album.display_black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -207,9 +207,9 @@ function GameRecordCard({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-            {(album.display_white_rank ?? album.white_rank) && (
+            {album.display_white_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
-                {formatRank(album.display_white_rank ?? album.white_rank, t)}
+                {formatRank(album.display_white_rank, t)}
               </Typography>
             )}
             <Typography
@@ -217,7 +217,7 @@ function GameRecordCard({
               noWrap
               sx={{ fontWeight: !blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
-              {album.display_player_white ?? album.player_white}
+              {album.display_player_white ?? t('game:white_side', '白方')}
             </Typography>
             <Box sx={{
               width: 16, height: 16, borderRadius: '50%', flexShrink: 0, ml: 0.7,
@@ -371,7 +371,7 @@ export default function KifuLibraryPage() {
   const plateSubtitle = (loading && selectedId === null) || (selectedId !== null && !visibleSelectedAlbum)
     ? <Skeleton width={140} />
     : visibleSelectedAlbum
-      ? `${visibleSelectedAlbum.display_player_black ?? visibleSelectedAlbum.player_black} vs ${visibleSelectedAlbum.display_player_white ?? visibleSelectedAlbum.player_white} · ${visibleSelectedAlbum.move_count} ${movesUnit}`
+      ? `${visibleSelectedAlbum.display_player_black ?? t('game:black_side', '黑方')} vs ${visibleSelectedAlbum.display_player_white ?? t('game:white_side', '白方')} · ${visibleSelectedAlbum.move_count} ${movesUnit}`
       : `${total.toLocaleString()} ${t('kifu:records', 'records')}${query ? ` · "${query}"` : ''}`;
 
   /* 胜负 chip 进模块牌最右 —— spec §2.4「状态放最右」，和已批准的直播样板

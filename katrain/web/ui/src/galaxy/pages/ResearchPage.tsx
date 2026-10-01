@@ -24,7 +24,7 @@ import type { ResearchBoardState } from '../hooks/useResearchBoard';
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
     const { token, isAuthenticated, isLoading: authLoading } = useAuth();
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
 
     // L1 ↔ L2 state
@@ -193,32 +193,37 @@ const ResearchPage = () => {
     }, [session.sessionId]);
 
     // Deep linking: load kifu from ?kifu_id=xxx query param
-    const kifuLoadedRef = useRef(false);
+    const kifuLoadedRef = useRef<string | null>(null);
+    const kifuRequestRef = useRef(0);
     /* `?analyze=1` 不在这条 effect 里直接开分析，而是先立一个标志、等下一帧再开。
        原因见下面那条 effect 的注释 —— 这里直接开会拿一张空棋盘去分析。 */
     const [autoAnalyzeAfterLoad, setAutoAnalyzeAfterLoad] = useState(false);
     useEffect(() => {
         const kifuId = searchParams.get('kifu_id');
-        if (!kifuId || kifuLoadedRef.current) return;
-        kifuLoadedRef.current = true;
+        if (!kifuId) return;
+        const request = ++kifuRequestRef.current;
 
-        KifuAPI.getAlbum(Number(kifuId))
+        KifuAPI.getAlbum(Number(kifuId), lang)
             .then((album) => {
-                if (album.sgf_content) {
+                if (request !== kifuRequestRef.current) return;
+                const firstLoad = kifuLoadedRef.current !== kifuId;
+                if (firstLoad && album.sgf_content) {
                     board.loadFromSGF(album.sgf_content);
+                    kifuLoadedRef.current = kifuId;
                 }
-                if (album.player_black) board.setPlayerBlack(album.player_black);
-                if (album.player_white) board.setPlayerWhite(album.player_white);
+                board.setPlayerBlack(album.display_player_black ?? t('game:black_side', '黑方'));
+                board.setPlayerWhite(album.display_player_white ?? t('game:white_side', '白方'));
 
                 // Auto-start analysis if ?analyze=1 is set
-                if (searchParams.get('analyze') === '1') {
+                if (firstLoad && searchParams.get('analyze') === '1') {
                     setAutoAnalyzeAfterLoad(true);
                 }
             })
             .catch((err) => {
-                console.error('Failed to load kifu for deep link:', err);
+                if (request === kifuRequestRef.current) console.error('Failed to load kifu for deep link:', err);
             });
-    }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+        return () => { kifuRequestRef.current += 1; };
+    }, [searchParams, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* `?kifu_id=…&analyze=1` 的自动分析在这里发，不在上面那条 effect 里。
 

@@ -373,8 +373,10 @@ describe('屏 21 研究', () => {
   it('?kifu_id&analyze=1:把刚取到的 SGF 直接串进 createSession,并写出出处', async () => {
     vi.mocked(KifuAPI.getAlbum).mockResolvedValue({
       id: 7, player_black: '柯洁', player_white: '申真谞', black_rank: null, white_rank: null,
-      event: 'LG杯', result: null, rules: 'chinese', date_played: '2026-06-15', komi: 7.5,
+      display_player_black: '柯洁', display_player_white: '申真谞',
+      event: 'LG杯', display_event: 'LG杯', result: null, rules: 'chinese', date_played: '2026-06-15', komi: 7.5,
       handicap: 0, board_size: 19, round_name: '决赛', move_count: 2,
+      display_round_name: '决赛',
       place: null, source: null, sgf_content: '(;GM[1]FF[4]SZ[19];B[pd];W[dp])',
     } as any);
 

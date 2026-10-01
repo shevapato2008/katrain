@@ -3,7 +3,7 @@
  * - Personal game library (user_games API, requires auth)
  * - Public tournament kifu albums (kifu API, no auth needed)
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, Box, Typography,
   List, ListItem, ListItemButton, ListItemText,
@@ -37,7 +37,7 @@ const PAGE_SIZE = 15;
 
 export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibraryModalProps) {
   const { token } = useAuth();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [category, setCategory] = useState<Category>('my_games');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -46,6 +46,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   // Data
   const [items, setItems] = useState<GameListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const requestGenerationRef = useRef(0);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -53,18 +54,21 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   useEffect(() => {
     if (!open) return;
     fetchData();
-  }, [open, category, page]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { requestGenerationRef.current += 1; };
+  }, [open, category, page, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = useCallback(async () => {
+    const requestGeneration = ++requestGenerationRef.current;
     setLoading(true);
     try {
       if (category === 'public_kifu') {
-        const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE });
+        const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE, lang });
+        if (requestGeneration !== requestGenerationRef.current) return;
         setItems(resp.items.map((item: any) => ({
           id: String(item.id),
-          title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
-          playerBlack: item.player_black || '',
-          playerWhite: item.player_white || '',
+          title: item.display_event || `${item.display_player_black ?? t('game:black_side', '黑方')} vs ${item.display_player_white ?? t('game:white_side', '白方')}`,
+          playerBlack: item.display_player_black ?? t('game:black_side', '黑方'),
+          playerWhite: item.display_player_white ?? t('game:white_side', '白方'),
           result: item.result || '',
           moveCount: item.move_count || 0,
           date: item.game_date || item.event_date || '',
@@ -80,6 +84,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           category: catFilter,
           q: searchQuery || undefined,
         });
+        if (requestGeneration !== requestGenerationRef.current) return;
         setItems(resp.items.map((item: UserGameSummary) => ({
           id: item.id,
           title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
@@ -96,13 +101,14 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
         setTotal(0);
       }
     } catch (err) {
+      if (requestGeneration !== requestGenerationRef.current) return;
       console.error('Failed to fetch games:', err);
       setItems([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestGeneration === requestGenerationRef.current) setLoading(false);
     }
-  }, [category, page, searchQuery, token]);
+  }, [category, page, searchQuery, token, lang, t]);
 
   const handleSearch = () => {
     setPage(1);
@@ -121,7 +127,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
         if (item.sgfContent) {
           sgf = item.sgfContent;
         } else {
-          const detail = await KifuAPI.getAlbum(Number(item.id));
+          const detail = await KifuAPI.getAlbum(Number(item.id), lang);
           sgf = detail.sgf_content;
         }
       } else if (token) {

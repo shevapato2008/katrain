@@ -47,7 +47,7 @@ export default function ReportLibraryImportDialog({
   onClose,
   onImport,
 }: ReportLibraryImportDialogProps) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const [queryInput, setQueryInput] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -69,6 +69,7 @@ export default function ReportLibraryImportDialog({
         ...(query ? { q: query } : {}),
         page,
         page_size: PAGE_SIZE,
+        lang,
       });
       if (requestGeneration !== requestGenerationRef.current) return;
       setItems(response.items);
@@ -83,7 +84,7 @@ export default function ReportLibraryImportDialog({
     } finally {
       if (requestGeneration === requestGenerationRef.current) setFetching(false);
     }
-  }, [open, page, query]);
+  }, [open, page, query, lang]);
 
   useEffect(() => {
     void fetchData();
@@ -174,12 +175,14 @@ export default function ReportLibraryImportDialog({
             <Stack spacing={1} sx={{ minWidth: 0 }}>
               {items.map((item) => {
                 const selected = selectedAlbum?.id === item.id;
-                const title = item.event || t(
+                const black = item.display_player_black ?? t('game:black_side', '黑方');
+                const white = item.display_player_white ?? t('game:white_side', '白方');
+                const title = item.display_event || t(
                   'report:library_players_title',
                   '{black} 对 {white}',
                 )
-                  .replace('{black}', item.player_black)
-                  .replace('{white}', item.player_white);
+                  .replace('{black}', black)
+                  .replace('{white}', white);
                 return (
                   <Button
                     key={item.id}
@@ -189,8 +192,8 @@ export default function ReportLibraryImportDialog({
                       '{title}，黑方 {black} 对 白方 {white}',
                     )
                       .replace('{title}', title)
-                      .replace('{black}', item.player_black)
-                      .replace('{white}', item.player_white)}
+                      .replace('{black}', black)
+                      .replace('{white}', white)}
                     onClick={() => setSelectedAlbum(item)}
                     disabled={loading || fetching}
                     variant={selected ? 'contained' : 'outlined'}
@@ -209,7 +212,7 @@ export default function ReportLibraryImportDialog({
                       <Box sx={{ minWidth: 0 }}>
                         <Typography noWrap variant="body2" sx={{ fontWeight: 600 }}>{title}</Typography>
                         <Typography noWrap variant="caption" color="text.secondary">
-                          {item.player_black} {item.black_rank || ''} · {item.player_white} {item.white_rank || ''}
+                          {black} {item.display_black_rank || ''} · {white} {item.display_white_rank || ''}
                         </Typography>
                       </Box>
                       <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'right', whiteSpace: 'normal' }}>

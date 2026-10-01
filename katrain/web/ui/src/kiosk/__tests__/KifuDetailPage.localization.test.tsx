@@ -28,7 +28,8 @@ const RAW_SGF = '(;FF[4]GM[1]SZ[19]PB[原黑]PW[原白];B[pd])';
 const detail = (lang: string) => ({
   id: 7, player_black: '原黑', player_white: '原白',
   display_player_black: `${lang}-black`, display_player_white: `${lang}-white`,
-  black_rank: '9d', white_rank: '9d', event: '原赛事', display_event: `${lang}-event`,
+  black_rank: '9d', white_rank: '9d', display_black_rank: '9d', display_white_rank: '9d',
+  event: '原赛事', display_event: `${lang}-event`,
   round_name: '原轮次', display_round_name: `${lang}-round`, sources: ['gokifu'],
   date_played: '2026-01-01', result: 'B+R', rules: 'chinese', komi: 7.5,
   handicap: 0, board_size: 19, move_count: 1, place: null, source: null, sgf_content: RAW_SGF,

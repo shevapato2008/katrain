@@ -25,7 +25,8 @@ vi.mock('../../hooks/useTranslation', () => ({
 const record = (lang: string) => ({
   id: 9, player_black: '原黑', player_white: '原白',
   display_player_black: `${lang}-black`, display_player_white: `${lang}-white`,
-  black_rank: '9d', white_rank: '9d', event: '原赛事', display_event: `${lang}-event`,
+  black_rank: '9d', white_rank: '9d', display_black_rank: '9d', display_white_rank: '9d',
+  event: '原赛事', display_event: `${lang}-event`,
   round_name: '原轮次', display_round_name: `${lang}-round`, sources: ['golaxy', 'cwi', '19x19', 'unknown'],
   date_played: '2026-01-01', result: 'B+R', rules: 'chinese', komi: 7.5,
   handicap: 0, board_size: 19, move_count: 101,
@@ -86,11 +87,11 @@ describe('棋谱 kiosk 语言展示', () => {
     expect(screen.getByRole('searchbox')).toHaveValue('原黑');
   });
 
-  it('译名为空时显示原文', async () => {
+  it('译名为空时不回退原始 SGF 字段', async () => {
     getAlbums.mockResolvedValue({ items: [{ ...record('cn'), display_player_black: null, display_player_white: null, display_event: null, display_round_name: null }], total: 1, page: 1, page_size: 6 });
     renderPage();
-    const row = await screen.findByRole('button', { name: /原赛事.*原轮次.*原黑.*原白/ });
-    expect(row).toBeInTheDocument();
+    const row = await screen.findByRole('button', { name: /黑方.*白方/ });
+    expect(row).not.toHaveTextContent(/原赛事|原轮次|原黑|原白/);
   });
 
   it('迟到的旧语言响应不能覆盖新语言', async () => {

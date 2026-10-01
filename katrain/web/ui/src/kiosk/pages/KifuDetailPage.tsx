@@ -166,19 +166,19 @@ const KifuDetailPage = () => {
   const goBaipu = useCallback(() => {
     if (!album?.sgf_content) return;
     const id = `kifu_${album.id}`;
-    const name = [album.event, album.round_name].filter(Boolean).join(' · ')
-      || `${album.player_black} vs ${album.player_white}`;
+    const name = [album.display_event, album.display_round_name].filter(Boolean).join(' · ')
+      || `${album.display_player_black ?? t('game:black_side', '黑方')} vs ${album.display_player_white ?? t('game:white_side', '白方')}`;
     cacheSgf(id, name, album.sgf_content);
     navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, {
       // 带上来处:摆谱会话的返回键回这一局的详情页,不是摆谱列表
       state: { ...backToState(location), sgf: album.sgf_content, name },
     });
-  }, [album, navigate, location]);
+  }, [album, navigate, location, t]);
 
   const cols = colsFor(boardSize);
   const rows = rowsFor(boardSize);
   const title = album
-    ? [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
+    ? [album.display_event, album.display_round_name].filter(Boolean).join(' · ') || t('kifu:untitled_game', '无题名的一局')
     : t('kifu:back_kifu', '棋谱');
 
   const meta = album
@@ -281,11 +281,11 @@ const KifuDetailPage = () => {
           <>
             <div className="khero" data-testid="kifu-detail-hero">
               <b>
-                {album.display_player_black ?? album.player_black}
-                {(album.display_black_rank ?? album.black_rank) && <em>{formatRank(album.display_black_rank ?? album.black_rank, t)}</em>}
+                {album.display_player_black ?? t('game:black_side', '黑方')}
+                {album.display_black_rank && <em>{formatRank(album.display_black_rank, t)}</em>}
                 <i>{t('kifu:versus', '对')}</i>
-                {album.display_player_white ?? album.player_white}
-                {(album.display_white_rank ?? album.white_rank) && <em>{formatRank(album.display_white_rank ?? album.white_rank, t)}</em>}
+                {album.display_player_white ?? t('game:white_side', '白方')}
+                {album.display_white_rank && <em>{formatRank(album.display_white_rank, t)}</em>}
               </b>
               <p>{meta}</p>
             </div>

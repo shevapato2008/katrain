@@ -156,6 +156,7 @@
 
 **Files:** Deployment record and approved data bundles; follow existing deployment runbook for web services.
 
+- [ ] **前置兼容迁移（不激活功能）**：旧生产 `kifu_player_names/kifu_event_names` 尚无 `decision_kind/generation_rule_version/revision/evidence_id`，因此不能在旧表上臆造完整行的 `name_preimage_sha256`。固定代码 SHA，先对正式备份在隔离 PostgreSQL 副本恢复并运行显式 `migrate_catalog --validate`，核对旧姓名行、棋谱原文及行数不变、旧应用可读；再保留可恢复的正式备份，以有限锁等待运行同 SHA 的一次性迁移。保持现役 Web 和 `KIFU_STRICT_NAMES` 关闭。迁移后只读采集**实际正式库完整姓名行**的前像，将其加入有限候选，重新进行独立签署；候选缺失或前像改变即阻止导入。此前的来源审核仍有效，但不能替代新前像审核。此步骤经独立 `gpt-6-astra` max 决策，且不降低下述 100% 发布门槛。
 - [ ] 查两环境当前 SHA、服务及数据库版本；各自做可验证备份与恢复演练。先部署测试代码/迁移，在生产等价的隔离测试副本上对**最终正式快照及每个增量 bundle**分别 dry-run、apply、100%/零缺口覆盖核对、条件撤销演练、页面 11 语种及跨语搜索验收；记录每批 bundle 哈希和 batch ID。
 - [ ] 正式环境使用同一代码 SHA 和**在隔离测试副本通过的同哈希审核产物**分批 dry-run/apply；任何正式清单差异必须先生成新 bundle，回到隔离测试副本完成 dry-run、apply、覆盖率及撤销演练后才可进正式；若正式快照再次变化，重复这一关。每批前后检查行数、FK、原始 SGF/元数据哈希、覆盖率与 API 健康。新进棋谱持续进入增量查证队列，冻结验收时点后重新跑全库报告。
 - [ ] **发布完成条件**：正式库当前全部可见棋谱在 11 语言的黑方、白方、赛事均有合格显示决策，待审/无证据自译/不明原文回退为 0；真实赛事有独立 ID，例外类别有审查原因；`吴清源/Go Seigen/Го Сэйгэн` 搜索一致，语言切换页面正确；代码审查通过并记录备份、批次与回滚点。任一条件未达，只报告阶段进度，不宣称全量完成。

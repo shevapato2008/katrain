@@ -295,11 +295,11 @@ def postgres_kifu_name_index_statements(
 ) -> list[str]:
     """Build missing name indexes concurrently, including populated legacy tables."""
 
-    return [
-        f'CREATE INDEX CONCURRENTLY IF NOT EXISTS "{name}" ON "{table}" '
-        f'({", ".join(f"\"{column}\"" for column in columns)})'
-        for name, (table, columns) in _kifu_name_missing_indexes(existing_indexes).items()
-    ]
+    statements = []
+    for name, (table, columns) in _kifu_name_missing_indexes(existing_indexes).items():
+        quoted_columns = ", ".join('"' + column + '"' for column in columns)
+        statements.append(f'CREATE INDEX CONCURRENTLY IF NOT EXISTS "{name}" ON "{table}" ({quoted_columns})')
+    return statements
 
 
 def _kifu_name_index_status(engine) -> dict[str, tuple[str, tuple[str, ...], bool, bool, bool]]:

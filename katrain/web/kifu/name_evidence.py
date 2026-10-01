@@ -434,6 +434,8 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
             captured = observed_checks[terminal["check_id"]]
             href, excerpt = captured.get("continuation_href"), captured.get("continuation_excerpt")
             _require(_text(href) and _text(excerpt), "bounded scan needs a captured continuation anchor")
+            _require(excerpt in captured["body_excerpt"],
+                     "bounded scan continuation anchor must occur in the captured terminal body")
             links = _AnchorLinks()
             links.feed(excerpt)
             _require(href in links.hrefs and urljoin(terminal["url"], href) == terminal["next_page_url"],

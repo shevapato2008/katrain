@@ -190,6 +190,7 @@ def _secondary_negative(lang="ua", *, second="wikidata", bounded=False):
                         url=professional["next_page_url"], next_page_url="https://example.org/search?page=3",
                         continuation_href="?page=3", continuation_excerpt='<a href="?page=3">Next</a>',
                         pagination_basis="Stopped after two indexed pages; page 3 remains unsearched")
+        page_two["body_excerpt"] += " " + page_two["continuation_excerpt"]
         record["source_checks"].append(page_two)
         closure["bounded_scan_ids"] = ["professional-scan"]
         closure["retained_limitations"].append("professional-scan: https://example.org/search?page=3 and later pages remain unsearched")
@@ -418,6 +419,18 @@ def test_secondary_reasonable_bounded_scan_cannot_invent_a_continuation_url():
     record["negative_closure"]["retained_limitations"] = ["professional-scan"]
     _sign_negative(record, manifest=True)
     with pytest.raises(EvidenceError, match="continuation|remaining|unsearched"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_continuation_must_occur_in_terminal_page_capture():
+    record, registry = _secondary_negative(bounded=True)
+    terminal = record["source_checks"][-1]
+    terminal.update(next_page_url="https://example.org/invented-next", continuation_href="/invented-next",
+                    continuation_excerpt='<a href="/invented-next">Next</a>')
+    record["negative_closure"]["retained_limitations"][-1] = (
+        "professional-scan: https://example.org/invented-next and later pages remain unsearched")
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="continuation.*capture|captured.*body"):
         validate_research_record(record, registry)
 
 

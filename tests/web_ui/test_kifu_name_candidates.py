@@ -440,6 +440,7 @@ def secondary_generated(lang="ru"):
                                   "fields": ["labels", "aliases", "sitelinks"], "sitelink_site": target + "wiki"},
               next_page_url="", pagination_exhausted=True, pagination_basis="Single exact entity response"),
     ]
+    negative["source_checks"][0]["body_excerpt"] += " " + negative["source_checks"][0]["continuation_excerpt"]
     negative["source_checks"][1]["body_excerpt"] = json.dumps({"entities": {"Q1": {"id": "Q1"}}})
     negative["source_checks"][1]["entity_identity_evidence"] = {
         "api_url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=ja&props=labels&format=json",

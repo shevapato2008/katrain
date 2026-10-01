@@ -19,9 +19,9 @@ Independent identity source for both language rows: [Hanguk Kiwon profile](https
 
 ## Pending controlled artifacts
 
-- Evidence JSONL: `/Users/fan/.local/share/kifu-name-audit/2026-10-02/lee-player-143-ru-tr-source-followup.jsonl`, mode `0600`, raw file SHA-256 `db5a780d9b878777d9b89e0cf6932323fe137271c6fd59657f3a5140a6f6b777`.
-- Candidate JSONL: `/Users/fan/.local/share/kifu-name-audit/2026-10-02/lee-player-143-ru-tr-candidates.jsonl`, mode `0600`, raw file SHA-256 `c3d3935098cbfd0c353a21b8ff271a1dd2cc49ecb484275046382b8b21189f6d`.
-- Candidate `ru`: `Ли Чхан Хо`; `research_sha256` `d140cacad34dca76ae55c27176939aa1e04e65446473452d06f770d6ad922e16`.
+- Evidence JSONL: `/Users/fan/.local/share/kifu-name-audit/2026-10-02/lee-player-143-ru-tr-source-followup.jsonl`, mode `0600`, raw file SHA-256 `1dc41022502cd8d99d2dcb7ad2110968b5878ea5f67604202ea9a41d9f0710c6`.
+- Candidate JSONL: `/Users/fan/.local/share/kifu-name-audit/2026-10-02/lee-player-143-ru-tr-candidates.jsonl`, mode `0600`, raw file SHA-256 `c527d070237324dcdee9faebda0f32d598020e4e5f23a0f06f8ff2bb53bc79eb`.
+- Candidate `ru`: `Ли Чхан Хо`; `research_sha256` `23e474476bb6a17ee966a0a5e74f44df57e0b48ab2072ab51b2b45077d0290ef`.
 - Candidate `tr`: `Lee Chang-ho`; `research_sha256` `195e695dd6e339b62478f03b6219cc8a4523ea733d736c1f884defd184265279`.
 
 Both research rows validate against registry `2026-10-02.3`; status remains `pending`. No reviewer signature, preimage, negative closure, or database write is included.

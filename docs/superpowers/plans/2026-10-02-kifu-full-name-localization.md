@@ -98,6 +98,17 @@
 - [ ] 每批报告 `gpt-6-luna` 已查、升级 `gpt-6-sol`、仍待审、被规则校验驳回的数量及实际模型/令牌开销；按来源哈希去重缓存，不重复付费查询。抽查轻量模型判定“已有惯用名”和“未发现惯用名”的证据质量；抽查失败时扩大该规则批次的复核范围。独立语种审核仍是发布门槛。
 - [ ] 完成小型高风险样本的人工对照，并运行 `pytest tests/web_ui/test_kifu_name_candidates.py -q`，预期通过，提交工具及 runbook；大规模批准数据作为独立受控产物保存。
 
+### Task 6a：逐对象、逐语言的有限未命中审核（2026-10-02 补充）
+
+**Files:** Modify `katrain/web/kifu/name_evidence.py`, `katrain/web/kifu/name_candidates.py`, `docs/resource/kifu-name-review-runbook.md`, `tests/web_ui/test_kifu_name_evidence.py`, `tests/web_ui/test_kifu_name_candidates.py`; keep `docs/resource/kifu-name-source-registry.json` as source registry, not a global absence assertion.
+
+大手合乌克兰语调研显示：规定的专业和百科范围可以对**一个对象 × 一种语言**收口，而全局 `ua.complete_for_negative_claims` 仍须保持 `false`。独立 `gpt-6-astra` 已裁定这项有限范围足以进入自译候选研究，但**没有**批准具体乌克兰语显示词。`docs/resource/kifu-name-oteai-uk-scope.md` 是本例的范围记录，论坛俄语命中须作为被排除线索保存，不能写成无命中。
+
+- [ ] 先写失败测试：同一审核闭环只能用于其精确 `owner/lang/source_lang/registry_sha256/scope_id`；证据检查集合或原文读音变更使签名失效；必查项 `partial/unavailable` 拒绝；已发现但被排除的线索需要正文、实际语种、排除理由和独立裁决；发现 Wikidata `uk` 空标签只证明该来源未命中；生成候选不能因为其他对象的未命中获准。
+- [ ] 定义有限 `negative_closure`：版本、对象、产品/来源语码、范围 ID/版本、registry 哈希、必查 check ID 列表、证据哈希、范围边界、保留的不可用/未索引渠道、独立审核者真实 ID/模型/时间、`approved_not_found_in_scope` 结论和理由。证据哈希只覆盖闭环之外的对象/语码/来源检查及原名读音锚点，避免自引用；整个研究记录仍由候选 `research_sha256` 绑定。
+- [ ] 每条必查检查记录来源 ID、方式、查询词、结果/正文 URL、访问时间、实际正文语种、响应/正文哈希、`complete|partial|unavailable`、`no_target_string|rejected_leads`；被排除线索带原名、来源正文哈希、实际语种、排除依据和独立裁决。校验器要求所有必查项完成且覆盖该对象范围内的登记专业/百科/Wikidata 来源；明确列出的非索引渠道可以保留为边界，不得被伪称已查完。
+- [ ] 生成姓名或赛事名仍另需独立候选审核、源语原名和读音来源、命名规则版；闭环只批准“所列范围未发现惯用名”，不自动批准任何转写。运行 `pytest tests/web_ui/test_kifu_name_evidence.py tests/web_ui/test_kifu_name_candidates.py -q`，确认上述失败案例变绿，提交代码和手册。大手合 `おおてあい` 的读音需引用可靠日语辞典；具体乌克兰语写法须再由语言资料支持并独立审核。
+
 ## Chunk 3：安全写入、API/前端与真实覆盖率
 
 ### Task 7：独立批次导入、幂等及条件撤销
@@ -106,6 +117,7 @@
 
 - [ ] 先写失败测试：dry-run 零写入；同一 bundle 二次执行零新增；只写清单中原始值/album ID；FK 冲突中止；事务中每行记录前后像；撤销只在当前值仍等于本批后像时恢复，保留后续用户改动。
 - [ ] 实现 `validate/dry-run/apply/undo/status` 子命令，入库前核对 source registry 版本、清单哈希、11 语言证据、批准人和数据约束。独立于现有会写来源/去重的 `backfill_catalog`。一个有唯一 bundle 哈希的子批次是原子写入单位：身份/译名/album FK/前后像在同一事务提交或全部回滚；失败只能从上一个已提交子批次续接；每次显示受影响对局和预计回滚范围。
+- [ ] 覆盖已有译名行时，在审核工件中钉住该 `(owner,lang)` 的既有行前像或等价哈希；`apply` 在已持有写锁的事务内逐行比对，不允许研究后发生的人工改名被静默覆盖。新增姓名行须钉住“原先不存在”；缺少这个约束的旧 bundle 只允许验证，不得写入正式库。加入并发/陈旧前像拒绝测试。
 - [ ] 在测试库对 5% 样本批次演练写入、重复写入、**子批次中途故障全回滚**、他人改动后条件撤销和再次应用；对比 SGF 及原始元数据哈希。运行 `pytest tests/web_ui/test_kifu_name_batch.py -q`，预期通过，提交。
 
 ### Task 8：API 显示与跨语言搜索

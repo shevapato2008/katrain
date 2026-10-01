@@ -54,6 +54,24 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱库语言展示', () => {
+  it('将姓名中的段位放进独立的小号段位元素', async () => {
+    getAlbums.mockResolvedValue({
+      items: [{
+        ...record('cn'),
+        player_black: '吴清源六段',
+        display_player_black: '吴清源',
+        black_rank: null,
+        display_black_rank: '六段',
+      }],
+      total: 1, page: 2, page_size: 20,
+    });
+    render(page());
+    const name = await screen.findByText('吴清源');
+    const rank = screen.getByText('六段');
+    expect(name).not.toContainElement(rank);
+    expect(rank.tagName).toBe('SPAN');
+  });
+
   it('切语言保留搜索、页码和选中卡，并更新卡片及页头译名', async () => {
     const view = render(page());
     fireEvent.click(await screen.findByText('cn-black'));

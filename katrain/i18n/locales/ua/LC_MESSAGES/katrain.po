@@ -771,6 +771,9 @@ msgstr "к"
 msgid "strength:dan"
 msgstr "д"
 
+msgid "strength:professional_dan_format"
+msgstr "{rank}-й дан (проф.)"
+
 msgid "ai:default"
 msgstr "Recommended"
 

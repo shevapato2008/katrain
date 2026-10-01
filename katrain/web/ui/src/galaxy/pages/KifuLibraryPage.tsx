@@ -195,9 +195,9 @@ function GameRecordCard({
             >
               {album.display_player_black ?? album.player_black}
             </Typography>
-            {album.black_rank && (
+            {(album.display_black_rank ?? album.black_rank) && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
-                {formatRank(album.black_rank, t)}
+                {formatRank(album.display_black_rank ?? album.black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -207,9 +207,9 @@ function GameRecordCard({
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-            {album.white_rank && (
+            {(album.display_white_rank ?? album.white_rank) && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
-                {formatRank(album.white_rank, t)}
+                {formatRank(album.display_white_rank ?? album.white_rank, t)}
               </Typography>
             )}
             <Typography

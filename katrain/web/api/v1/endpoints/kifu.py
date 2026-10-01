@@ -11,7 +11,13 @@ from sqlalchemy.orm import Session, defer
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import KifuAlbum
 from katrain.web.core.repository import RemoteServiceUnavailableError
-from katrain.web.kifu.identity import LANGUAGES, display_maps, matching_entity_ids
+from katrain.web.kifu.identity import (
+    LANGUAGES,
+    display_event_name,
+    display_maps,
+    matching_entity_ids,
+    split_player_rank,
+)
 from katrain.web.kifu.round_names import display_round_name
 
 router = APIRouter()
@@ -61,6 +67,8 @@ class KifuAlbumSummary(BaseModel):
     move_count: int
     display_player_black: str = ""
     display_player_white: str = ""
+    display_black_rank: Optional[str] = None
+    display_white_rank: Optional[str] = None
     display_event: Optional[str] = None
     display_round_name: Optional[str] = None
     sources: List[str] = Field(default_factory=list)
@@ -185,11 +193,15 @@ def _summary(
     record: KifuAlbum, players: dict[int, str], events: dict[int, str], sources: dict[int, list[str]], lang: str
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
+    black_name, embedded_black_rank = split_player_rank(record.player_black)
+    white_name, embedded_white_rank = split_player_rank(record.player_white)
     return summary.model_copy(
         update={
-            "display_player_black": players.get(record.black_player_id, record.player_black),
-            "display_player_white": players.get(record.white_player_id, record.player_white),
-            "display_event": events.get(record.event_id, record.event),
+            "display_player_black": players.get(record.black_player_id, black_name),
+            "display_player_white": players.get(record.white_player_id, white_name),
+            "display_black_rank": record.black_rank or embedded_black_rank,
+            "display_white_rank": record.white_rank or embedded_white_rank,
+            "display_event": display_event_name(record.event, events.get(record.event_id), lang),
             "display_round_name": display_round_name(record.round_name, lang),
             "sources": sources.get(record.id, []),
         }

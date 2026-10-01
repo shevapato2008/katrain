@@ -97,9 +97,10 @@
       "key": "event:oteai",
       "kind": "event",
       "canonical": "Oteai",
-      "aliases": ["大手合"],
+      "aliases": ["大手合", "JapanPromotionTournament"],
       "alias_sources": {
-        "大手合": "https://www.nihonkiin.or.jp/profile/faq/"
+        "大手合": "https://www.nihonkiin.or.jp/profile/faq/",
+        "JapanPromotionTournament": "https://homepages.cwi.nl/~aeb/go/games/games/Oteai/1934/index.html"
       },
       "names": {
         "en": {"value": "Oteai", "status": "verified", "source_url": "https://www.nihonkiin.or.jp/english/topics/03/topics2003_01.htm"},

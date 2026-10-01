@@ -487,6 +487,9 @@ msgstr "級"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "プロ{rank}段"
+
 msgid "ai:default"
 msgstr "Recommended"
 

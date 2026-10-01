@@ -8,14 +8,17 @@
  *    the database would record some other user's language and could never be re-localized;
  *  - KaTrain's numeric scale, where 6 kyu is -5 and 3 dan is 3 (`calculated_rank`).
  *
- * Anything else is passed through untouched. Imported SGFs carry free-text ranks
+ * Professional SGF ranks ("5p") use a separate localized template. Anything else
+ * is passed through untouched. Imported SGFs carry free-text ranks
  * ("业5", "5級", "amateur 3 dan", "?") that we must not mangle into something wrong.
  */
 
 type Translate = (key: string, defaultText?: string) => string;
 
-/** "6k" / "3d", case-insensitive, with optional surrounding space. Nothing else. */
-const SGF_RANK = /^\s*(\d{1,2})\s*([kdKD])\s*$/;
+/** "6k" / "3d" / professional "5p", case-insensitive. */
+const SGF_RANK = /^\s*(\d{1,2})\s*([kdpKDP])\s*$/;
+const CHINESE_DAN = /^\s*([一二三四五六七八九])段\s*$/;
+const CHINESE_NUMERAL = '一二三四五六七八九';
 
 const units = (t: Translate) => ({
   k: t('strength:kyu', '级'),
@@ -40,8 +43,16 @@ export function formatRank(value: string | number | null | undefined, t: Transla
     return value >= 0.5 ? `${Math.round(value)}${u.d}` : `${Math.round(1 - value)}${u.k}`;
   }
 
+  const chinese = CHINESE_DAN.exec(value);
+  if (chinese) {
+    return u.d === '段' ? chinese[0].trim() : `${CHINESE_NUMERAL.indexOf(chinese[1]) + 1}${u.d}`;
+  }
+
   const m = SGF_RANK.exec(value);
   if (!m) return value.trim();
+  if (m[2].toLowerCase() === 'p') {
+    return t('strength:professional_dan_format', '职业{rank}段').replace('{rank}', m[1]);
+  }
   return `${m[1]}${m[2].toLowerCase() === 'd' ? u.d : u.k}`;
 }
 

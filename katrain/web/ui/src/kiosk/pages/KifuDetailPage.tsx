@@ -282,10 +282,10 @@ const KifuDetailPage = () => {
             <div className="khero" data-testid="kifu-detail-hero">
               <b>
                 {album.display_player_black ?? album.player_black}
-                {album.black_rank && <em>{formatRank(album.black_rank, t)}</em>}
+                {(album.display_black_rank ?? album.black_rank) && <em>{formatRank(album.display_black_rank ?? album.black_rank, t)}</em>}
                 <i>{t('kifu:versus', '对')}</i>
                 {album.display_player_white ?? album.player_white}
-                {album.white_rank && <em>{formatRank(album.white_rank, t)}</em>}
+                {(album.display_white_rank ?? album.white_rank) && <em>{formatRank(album.display_white_rank ?? album.white_rank, t)}</em>}
               </b>
               <p>{meta}</p>
             </div>

@@ -655,6 +655,9 @@ msgstr "级"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "职业{rank}段"
+
 msgid "ai:default"
 msgstr "推荐 (Recommended)"
 

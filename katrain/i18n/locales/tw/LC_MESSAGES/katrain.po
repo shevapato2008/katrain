@@ -577,6 +577,9 @@ msgstr "級"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "職業{rank}段"
+
 msgid "ai:default"
 msgstr "推薦 (Recommended)"
 

@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, text
+from katrain.web.kifu.identity import identity_lookup_name
 
 
 LANGUAGES = ("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua")
@@ -89,7 +90,8 @@ def display_name(seed: dict, kind: str, original: str, lang: str) -> str:
     """Use only verified names; unknown languages, aliases, and candidates fall back."""
     if lang not in LANGUAGES or not original:
         return original
-    entities = _index(seed).get((kind, original.strip().casefold()), [])
+    lookup = identity_lookup_name(kind, original)
+    entities = _index(seed).get((kind, lookup.strip().casefold()), [])
     if len(entities) != 1:
         return original
     record = entities[0].get("names", {}).get(lang, {})
@@ -118,7 +120,8 @@ def coverage(seed: dict, inventory: list[dict]) -> dict:
             "languages": {lang: {"verified": 0, "review": 0, "fallback_total": 0} for lang in LANGUAGES},
         }
         for name in raw_names:
-            entities = index.get((kind, name.casefold()), [])
+            lookup = identity_lookup_name(kind, name)
+            entities = index.get((kind, lookup.casefold()), [])
             if len(entities) > 1:
                 stats["ambiguous"] += 1
             elif not entities:

@@ -14,6 +14,8 @@ from katrain.web.core.models_db import (
     KifuPlayer,
     KifuPlayerAlias,
     KifuPlayerName,
+    KifuEvent,
+    KifuEventName,
     KifuSource,
 )
 
@@ -92,6 +94,81 @@ def test_exact_player_aliases_find_the_same_games_and_localize_the_card():
         assert detail.display_player_black == "吴清源"
         assert detail.sgf_content == game.sgf_content
 
+    engine.dispose()
+
+
+def test_cwi_oteai_edition_is_localized_but_unknown_event_is_preserved():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        event = KifuEvent(canonical_name="Oteai")
+        db.add(event)
+        db.flush()
+        db.add_all([
+            KifuEventName(event_id=event.id, lang="cn", display_name="大手合", status="verified"),
+            KifuEventName(event_id=event.id, lang="jp", display_name="大手合", status="verified"),
+            KifuAlbum(
+                player_black="Go Seigen", player_white="Hashimoto Utaro",
+                event="JapanPromotionTournament,1934,Fall", event_id=event.id,
+                sgf_content="(;EV[JapanPromotionTournament,1934,Fall];B[dd])",
+                source_path="cwi/oteai.sgf",
+            ),
+            KifuAlbum(
+                player_black="A", player_white="B", event="Unknown,1934,Fall",
+                sgf_content="(;EV[Unknown,1934,Fall];B[pp])", source_path="other/unknown.sgf",
+            ),
+        ])
+        db.commit()
+        cn = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        en = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="en", db=db))
+        cn_by_event = {item.event: item for item in cn.items}
+        en_by_event = {item.event: item for item in en.items}
+        assert cn_by_event["JapanPromotionTournament,1934,Fall"].display_event == "1934年秋季大手合"
+        assert en_by_event["JapanPromotionTournament,1934,Fall"].display_event == "Oteai · Autumn 1934"
+        assert cn_by_event["Unknown,1934,Fall"].display_event == "Unknown,1934,Fall"
+    engine.dispose()
+
+
+def test_unverified_ordinary_event_name_falls_back_to_original_sgf_text():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        event = KifuEvent(canonical_name="Oteai")
+        db.add(event)
+        db.flush()
+        db.add(KifuAlbum(
+            player_black="A", player_white="B", event="大手合", event_id=event.id,
+            sgf_content="(;EV[大手合];B[dd])", source_path="cwi/ordinary.sgf",
+        ))
+        db.commit()
+        result = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="ru", db=db))
+        assert result.items[0].display_event == "大手合"
+    engine.dispose()
+
+
+def test_embedded_player_dan_has_separate_display_fields_and_preserves_raw_sgf():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    with Session() as db:
+        album = KifuAlbum(
+            player_black="吴清源六段", player_white="木谷实",
+            black_rank=None, white_rank="七段",
+            sgf_content="(;PB[吴清源六段]PW[木谷实]WR[七段];B[dd])",
+            source_path="19x19/embedded.sgf",
+        )
+        db.add(album)
+        db.commit()
+        response = asyncio.run(kifu.list_kifu_albums(_request(), q=None, page=1, page_size=20, lang="cn", db=db))
+        item = response.items[0]
+        assert item.player_black == "吴清源六段"
+        assert item.black_rank is None
+        assert item.display_player_black == "吴清源"
+        assert item.display_black_rank == "六段"
+        assert item.display_player_white == "木谷实"
+        assert item.display_white_rank == "七段"
     engine.dispose()
 
 

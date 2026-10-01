@@ -114,6 +114,43 @@ def test_seed_entities_persist_even_when_album_table_is_empty():
         assert db.query(KifuPlayer).count() == 5
 
 
+def test_cwi_promotion_event_links_to_oteai_without_changing_sgf_event():
+    engine = _db()
+    with Session(engine) as db:
+        album = _album(
+            "data/kifu-album/CWI_History_Full/oteai.sgf",
+            event="JapanPromotionTournament,1934,Fall",
+        )
+        db.add(album)
+        db.commit()
+
+        report = backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+        db.refresh(album)
+        assert report["identity_updates"] >= 1
+        assert album.event == "JapanPromotionTournament,1934,Fall"
+        assert db.get(KifuEvent, album.event_id).canonical_name == "Oteai"
+
+        again = backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+        assert again["identity_updates"] == 0
+
+
+def test_backfill_links_player_names_with_embedded_dan_to_verified_identity():
+    engine = _db()
+    with Session(engine) as db:
+        album = _album(
+            "data/kifu-album/19x19/embedded-rank.sgf",
+            black="吴清源六段",
+            white="木谷实六段",
+        )
+        db.add(album)
+        db.commit()
+        backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+        db.refresh(album)
+        assert db.get(KifuPlayer, album.black_player_id).canonical_name == "Go Seigen"
+        assert db.get(KifuPlayer, album.white_player_id).canonical_name == "Kitani Minoru"
+        assert album.player_black == "吴清源六段"
+
+
 def test_audited_seed_upgrades_existing_review_name_with_its_evidence():
     engine = _db()
     with Session(engine) as db:

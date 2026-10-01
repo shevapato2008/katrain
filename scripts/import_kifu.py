@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy.orm import Session
 from katrain.web.core.db import engine, Base
 from katrain.web.core.models_db import KifuAlbum
-from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.identity import event_identity_name, normalize_alias, player_identity_name
 from katrain.web.kifu.provenance import audited_alias_ids, ensure_album_source, mainline_signature, sgf_sha256
 from katrain.core.sgf_parser import SGF
 
@@ -207,12 +207,14 @@ def import_kifu(
                                 candidate_files.append(rel_path)
                         if not dry_run:
                             data["black_player_id"] = approved_aliases["player"].get(
-                                normalize_alias(data["player_black"])
+                                normalize_alias(player_identity_name(data["player_black"]))
                             )
                             data["white_player_id"] = approved_aliases["player"].get(
-                                normalize_alias(data["player_white"])
+                                normalize_alias(player_identity_name(data["player_white"]))
                             )
-                            data["event_id"] = approved_aliases["event"].get(normalize_alias(data["event"] or ""))
+                            data["event_id"] = approved_aliases["event"].get(
+                                normalize_alias(event_identity_name(data["event"]))
+                            )
                             album = KifuAlbum(**data)
                             db.add(album)
                             db.flush()

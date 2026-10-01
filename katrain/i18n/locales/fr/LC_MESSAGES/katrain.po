@@ -539,6 +539,9 @@ msgstr "k"
 msgid "strength:dan"
 msgstr "d"
 
+msgid "strength:professional_dan_format"
+msgstr "{rank}e dan professionnel"
+
 msgid "ai:default"
 msgstr "Recommended"
 

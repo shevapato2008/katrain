@@ -34,7 +34,7 @@ from katrain.web.core.models_db import (
     PlayerTranslationDB,
     TournamentTranslationDB,
 )
-from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.identity import identity_lookup_name, normalize_alias
 from katrain.web.kifu.provenance import (
     classify_source_path,
     mainline_signature,
@@ -93,12 +93,17 @@ def seed_coverage(seed: dict, raw_names: set[tuple[str, str]], review_map: dict[
     result = {}
     for kind in ("player", "event"):
         names = {name for item_kind, name in raw_names if item_kind == kind and name.strip()}
-        linked = sum(len(aliases[kind].get(normalize_alias(name), [])) == 1 for name in names)
+        matches = {
+            name: aliases[kind].get(normalize_alias(identity_lookup_name(kind, name)), [])
+            for name in names
+        }
+        linked = sum(len(found) == 1 for found in matches.values())
+        ambiguous = sum(len(found) > 1 for found in matches.values())
         languages = {}
         for lang in LANGUAGES:
             verified = review = 0
             for name in names:
-                matching = aliases[kind].get(normalize_alias(name), [])
+                matching = matches[name]
                 status = matching[0].get("names", {}).get(lang, {}).get("status") if len(matching) == 1 else None
                 if status != "verified" and lang in review_map.get((kind, name), set()):
                     status = "review"
@@ -113,10 +118,8 @@ def seed_coverage(seed: dict, raw_names: set[tuple[str, str]], review_map: dict[
         result[kind] = {
             "distinct_names": len(names),
             "linked": linked,
-            "ambiguous": sum(len(aliases[kind].get(normalize_alias(name), [])) > 1 for name in names),
-            "unlinked": len(names)
-            - linked
-            - sum(len(aliases[kind].get(normalize_alias(name), [])) > 1 for name in names),
+            "ambiguous": ambiguous,
+            "unlinked": len(names) - linked - ambiguous,
             "linked_rate": linked / len(names) if names else 0.0,
             "languages": languages,
         }
@@ -303,7 +306,7 @@ def _audited_aliases(db: Session, seed: dict, ids: dict[str, int] | None) -> dic
 
 
 def _resolve(aliases: dict[str, dict[str, set]], kind: str, raw: str | None):
-    matched = aliases[kind].get(normalize_alias(raw or ""), set())
+    matched = aliases[kind].get(normalize_alias(identity_lookup_name(kind, raw)), set())
     return next(iter(matched)) if len(matched) == 1 else None
 
 
@@ -467,7 +470,8 @@ def backfill_catalog(
                     raw_names.add((kind, raw))
                 target = _resolve(aliases, kind, raw)
                 if target is None:
-                    if len(aliases[kind].get(normalize_alias(raw or ""), set())) > 1:
+                    lookup = identity_lookup_name(kind, raw)
+                    if len(aliases[kind].get(normalize_alias(lookup), set())) > 1:
                         report["ambiguous_names"] += 1
                     if raw and raw.strip():
                         identity_state.setdefault((kind, raw), set()).add(getattr(album, field))

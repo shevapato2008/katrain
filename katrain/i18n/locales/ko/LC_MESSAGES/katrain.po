@@ -461,6 +461,9 @@ msgstr "급"
 msgid "strength:dan"
 msgstr "단"
 
+msgid "strength:professional_dan_format"
+msgstr "프로 {rank}단"
+
 msgid "ai:default"
 msgstr "Recommended"
 

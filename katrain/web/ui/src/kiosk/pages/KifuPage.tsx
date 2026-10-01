@@ -285,13 +285,13 @@ const KifuPage = () => {
                         <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
                           <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
                           <span className="kifu-record__name">{(a.display_player_black ?? a.player_black) || t('game:black_side', '黑方')}</span>
-                          {a.black_rank && <small>{formatRank(a.black_rank, t)}</small>}
+                          {(a.display_black_rank ?? a.black_rank) && <small>{formatRank(a.display_black_rank ?? a.black_rank, t)}</small>}
                         </span>
                         <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
                           {translateResult(a.result, t, a.rules)}
                         </span>
                         <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
-                          {a.white_rank && <small>{formatRank(a.white_rank, t)}</small>}
+                          {(a.display_white_rank ?? a.white_rank) && <small>{formatRank(a.display_white_rank ?? a.white_rank, t)}</small>}
                           <span className="kifu-record__name">{(a.display_player_white ?? a.player_white) || t('game:white_side', '白方')}</span>
                           <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
                         </span>

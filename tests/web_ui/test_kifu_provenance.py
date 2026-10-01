@@ -10,6 +10,7 @@ from katrain.web.core.models_db import (
     KifuAlbumSource,
     KifuDedupBatch,
     KifuDedupChange,
+    KifuEvent,
     KifuPlayer,
     KifuPlayerAlias,
     KifuSource,
@@ -493,7 +494,7 @@ def test_import_links_only_unambiguous_audited_aliases(tmp_path, monkeypatch):
     data_dir = tmp_path / "data/kifu-album"
     sgf_path = data_dir / "CWI_History_Full/new.sgf"
     sgf_path.parent.mkdir(parents=True)
-    sgf_path.write_text("(;FF[4]SZ[19]PB[Go Seigen]PW[Unknown]EV[吴清源杯];B[dd])")
+    sgf_path.write_text("(;FF[4]SZ[19]PB[吴清源六段]PW[Unknown]EV[吴清源杯];B[dd])")
     monkeypatch.setattr(import_kifu, "DATA_DIR", data_dir)
     monkeypatch.setattr(import_kifu, "engine", engine)
 
@@ -501,8 +502,30 @@ def test_import_links_only_unambiguous_audited_aliases(tmp_path, monkeypatch):
     with Session(engine) as db:
         album = db.query(KifuAlbum).one()
         assert album.black_player_id is not None
+        assert album.player_black == "吴清源六段"
         assert album.white_player_id is None
         assert album.event_id is not None
+
+
+def test_import_links_cwi_promotion_edition_to_oteai(tmp_path, monkeypatch):
+    engine = _db()
+    with Session(engine) as db:
+        backfill_catalog(db, SEED, dry_run=False, dedupe=False)
+    data_dir = tmp_path / "data/kifu-album"
+    sgf_path = data_dir / "CWI_History_Full/oteai.sgf"
+    sgf_path.parent.mkdir(parents=True)
+    sgf_path.write_text(
+        "(;FF[4]SZ[19]PB[Go Seigen]PW[Hashimoto Utaro]"
+        "EV[JapanPromotionTournament,1934,Fall];B[dd])"
+    )
+    monkeypatch.setattr(import_kifu, "DATA_DIR", data_dir)
+    monkeypatch.setattr(import_kifu, "engine", engine)
+
+    import_kifu.import_kifu()
+    with Session(engine) as db:
+        album = db.query(KifuAlbum).one()
+        assert album.event == "JapanPromotionTournament,1934,Fall"
+        assert db.get(KifuEvent, album.event_id).canonical_name == "Oteai"
 
 
 def test_import_leaves_conflicting_audited_alias_unlinked(tmp_path, monkeypatch):

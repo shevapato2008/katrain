@@ -274,20 +274,31 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
             _require(conflicts <= explained, "conflicting source names need documented exclusion reasons")
             if conflicts:
                 adjudication = row.get("conflict_adjudication")
-                _require(isinstance(adjudication, dict) and row.get("reviewer_model") in {"gpt-6-sol", "gpt-6-astra"},
-                         "conflicting names require independent Sol or Astra adjudication")
-                _require(adjudication.get("model") == "gpt-6-sol"
-                         and adjudication.get("agent_id") in {row["producer_id"], row.get("reviewer_id")}
-                         and adjudication.get("model") == (
-                             row["producer_model"] if adjudication.get("agent_id") == row["producer_id"]
-                             else row.get("reviewer_model"))
-                         and _time(adjudication.get("decided_at")) and _text(adjudication.get("rationale"))
-                         and _time(adjudication["decided_at"]) <= _time(row["reviewed_at"])
-                         and isinstance(adjudication.get("source_urls"), list)
-                         and all(isinstance(url, str) and url.startswith("https://")
-                                 for url in adjudication["source_urls"])
-                         and bool(adjudication["source_urls"]),
-                         "conflicting names need documented gpt-6-sol decision and source URLs")
+                _require(isinstance(adjudication, dict), "conflicting names need documented Sol adjudication")
+                if row["review_status"] == "pending":
+                    _require(row["producer_model"] == "gpt-6-sol"
+                             and adjudication.get("agent_id") == row["producer_id"]
+                             and adjudication.get("model") == "gpt-6-sol",
+                             "pending conflicting names need their actual Sol producer decision")
+                else:
+                    _require(row.get("reviewer_model") in {"gpt-6-sol", "gpt-6-astra"}
+                             and adjudication.get("model") == "gpt-6-sol"
+                             and adjudication.get("agent_id") in {row["producer_id"], row.get("reviewer_id")}
+                             and adjudication.get("model") == (
+                                 row["producer_model"] if adjudication.get("agent_id") == row["producer_id"]
+                                 else row.get("reviewer_model")),
+                             "conflicting names require independent Sol or Astra reviewer and gpt-6-sol adjudication")
+                _require(_time(adjudication.get("decided_at")) and _text(adjudication.get("rationale")),
+                         "conflicting names need documented Sol decision time and rationale")
+                if row["review_status"] != "pending":
+                    _require(_time(adjudication["decided_at"]) <= _time(row["reviewed_at"]),
+                             "conflicting names need gpt-6-sol decision before reviewer approval")
+                urls = adjudication.get("source_urls")
+                found_urls = {item["url"] for item in checked["source_checks"] if item["status"] == "found"}
+                _require(isinstance(urls, list) and bool(urls)
+                         and all(isinstance(url, str) and url.startswith("https://") for url in urls)
+                         and found_urls <= set(urls),
+                         "conflicting names need exact attested source URLs")
         if decision == "corrected":
             _require(row["owner"]["kind"] in {"raw_player", "raw_event"}, "correction needs raw owner")
             raw = row["raw_value"]

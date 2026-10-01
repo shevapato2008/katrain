@@ -202,6 +202,35 @@ def test_conflicting_found_names_need_explicit_exclusion_reason():
                            conflicting, registry(), inventory())
 
 
+def test_pending_sol_producer_can_document_conflict_without_reviewer_signature():
+    evidence = research(
+        producer_model="gpt-6-sol",
+        source_checks=[check(), check(candidate_name="Го Сейген", url="https://example.org/alternate",
+                                      body_excerpt="Alternate Го Сейген")],
+    )
+    pending = candidate(
+        producer_model="gpt-6-sol", research_sha256=canonical_sha256(evidence),
+        review_status="pending", reviewer_id="", reviewer_model="", reviewed_at="", review_conclusion="",
+        excluded_candidates=[{"source_id": "go", "candidate_name": "Го Сейген",
+                              "reason": "The alternate requires independent language review"}],
+        conflict_adjudication={
+            "agent_id": "researcher-1", "model": "gpt-6-sol", "decided_at": "2026-10-02T10:30:00Z",
+            "rationale": "Compared the two attested Russian spellings and retained both for review",
+            "source_urls": ["https://example.org/go", "https://example.org/alternate"],
+        },
+    )
+    assert validate_candidate(pending, evidence, registry(), inventory())["review_status"] == "pending"
+    with pytest.raises(CandidateError, match="source URLs"):
+        validate_candidate({**pending, "conflict_adjudication": {
+            **pending["conflict_adjudication"], "source_urls": ["https://example.org/go"]}},
+                           evidence, registry(), inventory())
+    lightweight_evidence = {**evidence, "producer_model": "gpt-6-luna"}
+    with pytest.raises(CandidateError, match="Sol"):
+        validate_candidate({**pending, "producer_model": "gpt-6-luna",
+                            "research_sha256": canonical_sha256(lightweight_evidence)},
+                           lightweight_evidence, registry(), inventory())
+
+
 def test_generated_name_requires_completed_negative_scope_and_reading_basis():
     negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
         status="not_found", candidate_name="", identity_basis="", body_excerpt="Search finished with no Russian name",

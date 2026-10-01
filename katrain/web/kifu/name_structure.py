@@ -3,7 +3,7 @@
 These hints never establish an event identity or approve a translated display.
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 import hashlib
 import json
 import re
@@ -110,11 +110,15 @@ def build_event_group_manifest(inventory: dict) -> dict:
     rows = inventory["scopes"]["all"]["values"]["event"]
     groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     seen = set()
+    inventory_counts = Counter()
     for row in rows:
         raw = row["value"]
         if raw in seen:
             raise ValueError(f"duplicate raw event value: {raw!r}")
         seen.add(raw)
+        if type(row["occurrences"]) is not int or row["occurrences"] < 1:
+            raise ValueError("event occurrence count must be positive")
+        inventory_counts[raw] = row["occurrences"]
         if raw is None or raw == "":
             structure = {
                 "raw_value": raw, "core": "", "grammar": "empty", "parts": [], "components": [],
@@ -130,6 +134,31 @@ def build_event_group_manifest(inventory: dict) -> dict:
             "affected_games": row["affected_games"],
             "structure": structure,
         })
+
+    expected_distinct = inventory.get("distinct_values", {}).get("all", {}).get("event")
+    expected_total = inventory.get("counts", {}).get("all")
+    columns = inventory.get("association_columns", [])
+    associations = inventory.get("album_associations", [])
+    if "id" not in columns or "event" not in columns:
+        raise ValueError("incomplete inventory: album event associations are required")
+    id_index, event_index = columns.index("id"), columns.index("event")
+    association_counts = Counter()
+    album_ids = set()
+    for association in associations:
+        if len(association) != len(columns):
+            raise ValueError("incomplete inventory: malformed album association")
+        album_id = association[id_index]
+        if album_id in album_ids:
+            raise ValueError("incomplete inventory: duplicate album association")
+        album_ids.add(album_id)
+        association_counts[association[event_index]] += 1
+    if (
+        expected_distinct != len(rows)
+        or expected_total != len(associations)
+        or sum(inventory_counts.values()) != expected_total
+        or inventory_counts != association_counts
+    ):
+        raise ValueError("incomplete inventory: event values disagree with album associations or counts")
 
     result_groups = []
     for (grammar, core), members in groups.items():

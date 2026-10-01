@@ -11,9 +11,16 @@ from scripts.kifu_name_groups import main
 
 
 def _inventory(values):
+    associations = []
+    for row in values:
+        associations.extend([[len(associations) + i + 1, row["value"]] for i in range(row["occurrences"])])
     return {
         "inventory_format": 2,
         "sha256": "a" * 64,
+        "counts": {"all": len(associations)},
+        "distinct_values": {"all": {"event": len({row["value"] for row in values})}},
+        "association_columns": ["id", "event"],
+        "album_associations": associations,
         "scopes": {"all": {"values": {"event": values}}},
     }
 
@@ -57,6 +64,21 @@ def test_group_manifest_refuses_old_inventory_and_duplicate_raw_values():
         assert "duplicate" in str(exc)
     else:
         raise AssertionError("duplicate raw value accepted")
+
+
+def test_group_manifest_refuses_truncated_value_rows_even_with_plausible_hash():
+    rows = [
+        {"value": "赛事甲", "occurrences": 2, "affected_games": 2},
+        {"value": "赛事乙", "occurrences": 1, "affected_games": 1},
+    ]
+    inventory = _inventory(rows)
+    inventory["scopes"]["all"]["values"]["event"] = rows[:1]
+    try:
+        build_event_group_manifest(inventory)
+    except ValueError as exc:
+        assert "incomplete" in str(exc)
+    else:
+        raise AssertionError("truncated event rows accepted")
 
 
 def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):

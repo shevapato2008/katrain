@@ -11,7 +11,10 @@ COLUMNS = [
 
 
 def _inventory(*rows):
-    return {"inventory_format": 2, "association_columns": COLUMNS, "album_associations": list(rows)}
+    return {
+        "inventory_format": 2, "sha256": "a" * 64,
+        "association_columns": COLUMNS, "album_associations": list(rows),
+    }
 
 
 def test_rank_suffix_and_cross_script_aliases_propose_the_same_identity():
@@ -30,6 +33,10 @@ def test_rank_suffix_and_cross_script_aliases_propose_the_same_identity():
     ]
     assert all(item["existing_id"] is None for item in black)
     assert black[0]["parsed_rank"] == "九段"
+    assert black[0]["inventory_sha256"] == "a" * 64
+    assert black[0]["inventory_format"] == 2
+    assert black[0]["rule_version"] == "name-match-v1"
+    assert black[0]["confidence_boundary"] == "candidate_only"
 
 
 def test_same_spelling_collision_stays_ambiguous_and_unlinked_name_stays_raw_scoped():
@@ -56,6 +63,17 @@ def test_bad_and_placeholder_values_never_propose_an_identity():
         ("white", "non_identity", []),
         ("event", "non_identity", []),
     ]
+
+
+def test_mixed_tournament_and_result_remains_pending_for_manual_extraction():
+    raw = "冠华弈手杯职业棋手训练赛赵兴华执白中盘胜李莹"
+    proposals = list(propose_album_matches(
+        _inventory([12, None, "甲", "乙", raw, None, None, None, None, None, None, None, []]),
+        player_aliases={}, event_aliases={},
+    ))
+    assert proposals[2]["raw_value"] == raw
+    assert proposals[2]["status"] == "manual_event_extraction"
+    assert proposals[2]["candidate_ids"] == []
 
 
 def test_event_year_is_only_a_component_after_event_identity_review():

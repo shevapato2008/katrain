@@ -13,6 +13,9 @@ from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.name_structure import structure_event
 
 
+RULE_VERSION = "name-match-v1"
+
+
 def _alias_index(aliases: Mapping[str, Iterable[int]]) -> dict[str, set[int]]:
     result: dict[str, set[int]] = defaultdict(set)
     for spelling, entity_ids in aliases.items():
@@ -56,6 +59,15 @@ def propose_album_matches(
     }
     if inventory.get("inventory_format") != 2 or not required.issubset(columns):
         raise ValueError("inventory_format 2 with date, round and ranks is required")
+    snapshot_hash = inventory.get("sha256", "")
+    if not re.fullmatch(r"[0-9a-f]{64}", snapshot_hash):
+        raise ValueError("inventory SHA-256 is required")
+    provenance = {
+        "inventory_format": 2,
+        "inventory_sha256": snapshot_hash,
+        "rule_version": RULE_VERSION,
+        "confidence_boundary": "candidate_only",
+    }
     player_index = _alias_index(player_aliases)
     event_index = _alias_index(event_aliases)
     for values in inventory["album_associations"]:
@@ -73,6 +85,7 @@ def propose_album_matches(
             )
             ids = sorted(player_index.get(normalize_alias(parsed.name), ())) if not excluded else []
             yield {
+                **provenance,
                 "album_id": album["id"],
                 "side": side,
                 "raw_value": raw,
@@ -90,6 +103,8 @@ def propose_album_matches(
         non_events = {"empty", "program_source_label", "generic_event_description", "game_description"}
         if parsed.category == "corrupt_data":
             excluded = "corrupt_pending"
+        elif parsed.category == "game_description":
+            excluded = "manual_event_extraction"
         elif parsed.category in non_events:
             excluded = "non_identity"
         else:
@@ -112,6 +127,7 @@ def propose_album_matches(
         ):
             exceptions.append("event_season_round_mismatch")
         yield {
+            **provenance,
             "album_id": album["id"],
             "side": "event",
             "raw_value": raw,

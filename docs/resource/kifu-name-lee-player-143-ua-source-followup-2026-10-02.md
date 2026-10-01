@@ -12,7 +12,7 @@ The independently published Ukrainian [Kinorium page for Партія](https://u
 
 | Source | Capture detail | Body hash |
 |---|---|---|
-| Ukrainian Wikipedia `Ґо (гра)`, revision `47335190` | Firecrawl scrape ID `01a0f958-f4ef-7181-a58b-1ac29736cd87`; HTTP 200; rendered HTML declares `lang="uk"`, `wgRevisionId: 47335190`; exact caption and interwiki link inspected. Hash is of the scrape's `rawHtml` field re-encoded as UTF-8, **not** original HTTP response bytes. | `aeab1b2eb9461dd1c26922478113a66e3b7ca48cfb4075795a1808f6d083024f` |
+| Ukrainian Wikipedia `Ґо (гра)`, revision `47335190` | Firecrawl scrape ID `01a0f958-f4eb-7796-b7b0-c0bfc6595e09`; HTTP 200; rendered HTML declares `lang="uk"`, `wgRevisionId: 47335190`; exact caption and interwiki link inspected. Hash is of the scrape's `rawHtml` field re-encoded as UTF-8, **not** original HTTP response bytes. | `aeab1b2eb9461dd1c26922478113a66e3b7ca48cfb4075795a1808f6d083024f` |
 | Kinorium Ukrainian page | Firecrawl Markdown, Ukrainian Go-film prose with `Лі Чхан Хо (이창호)` and teacher relationship. | `bbaeef3f7667f57d47118a121edc9ccf2da87a856ec0544e512606ba86281c99` |
 | Korean Baduk Association player profile | Fresh HTTP 200 response; Korean `이창호`, rank, birth date and professional career directly inspected. | `ad0fb2eedf8fbcebca17581ba3752a3ee40726a819e102217dbc9950367ce3c6` |
 

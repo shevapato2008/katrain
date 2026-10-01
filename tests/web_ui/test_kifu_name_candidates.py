@@ -9,6 +9,7 @@ import pytest
 from katrain.web.kifu.name_candidates import (
     CandidateError,
     canonical_sha256,
+    classification_template_sha256,
     validate_bundle,
     validate_candidate,
     render_event_components,
@@ -82,6 +83,13 @@ def candidate(**updates):
         "reviewed_at": "2026-10-02T11:00:00Z", "review_conclusion": "confirmed profile and Russian usage",
     }
     item.update(updates)
+    if item["decision_kind"] in {"generic", "hidden", "placeholder", "error"} and item["review_status"] == "approved":
+        item["template_review"] = {
+            "version": "classification-v1", "lang": item["lang"],
+            "sha256": classification_template_sha256(item["lang"]),
+            "reviewer_id": item["reviewer_id"], "reviewer_model": item["reviewer_model"],
+            "reviewed_at": item["reviewed_at"], "conclusion": "Reviewed this language's classification phrases",
+        }
     return item
 
 
@@ -135,6 +143,14 @@ def test_conflicting_found_names_need_explicit_exclusion_reason():
         validate_candidate(proposed, conflicting, registry(), inventory())
     proposed["excluded_candidates"] = [{"source_id": "go", "candidate_name": "Го Сейген",
                                          "reason": "Independent reviewer checked contemporary profile and selected preferred form"}]
+    with pytest.raises(CandidateError, match="Sol"):
+        validate_candidate(proposed, conflicting, registry(), inventory())
+    proposed["reviewer_model"] = "gpt-6-sol"
+    proposed["conflict_adjudication"] = {
+        "agent_id": "reviewer-2", "model": "gpt-6-sol", "decided_at": "2026-10-02T10:30:00Z",
+        "rationale": "Compared historical spellings against the identified player profile",
+        "source_urls": ["https://example.org/go"],
+    }
     assert validate_candidate(proposed, conflicting, registry(), inventory())["review_status"] == "approved"
 
 
@@ -162,6 +178,15 @@ def test_pending_is_reported_but_never_upgraded_to_approved():
                         reviewed_at="", review_conclusion="")
     report = validate_bundle(bundle(candidates=[pending]), registry(), inventory(), [research()])
     assert report["pending"] == 1 and report["approved"] == 0 and not report["ready"]
+
+
+def test_unselected_contradictory_research_for_same_owner_language_blocks_bundle():
+    negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
+        status="not_found", candidate_name="", identity_basis="", body_excerpt="Completed Russian search, no name",
+        search_scope="All indexed profiles", scope_complete=True)])
+    report = validate_bundle(bundle(), registry(), inventory(), [research(), negative])
+    assert not report["ready"]
+    assert any("multiple research records" in error for error in report["errors"])
 
 
 def test_finite_inventory_member_set_detects_missing_extra_duplicate_and_changed_snapshot():
@@ -196,8 +221,12 @@ def test_raw_owner_requires_exact_snapshot_spelling_and_non_event_cannot_be_hidd
 def test_unknown_player_uses_localized_placeholder_instead_of_disappearing():
     placeholder = candidate(owner={"kind": "raw_player", "id": 21}, raw_value="Unknown", lang="ru",
                             display_name="Неизвестный игрок", decision_kind="placeholder",
-                            research_sha256="", generation_rule_version="placeholder-ru-v1")
+                            research_sha256="", generation_rule_version="classification-v1")
     assert validate_candidate(placeholder, None, registry(), inventory())["display_name"] == "Неизвестный игрок"
+    with pytest.raises(CandidateError, match="template"):
+        validate_candidate({**placeholder, "template_review": {}}, None, registry(), inventory())
+    with pytest.raises(CandidateError, match="template"):
+        validate_candidate({**placeholder, "display_name": "Go Seigen"}, None, registry(), inventory())
     with pytest.raises(CandidateError):
         validate_candidate({**placeholder, "display_name": "", "decision_kind": "hidden"},
                            None, registry(), inventory())
@@ -225,16 +254,46 @@ def test_distinct_id_same_language_name_is_flagged_for_identity_review():
     assert report["ready"]
 
 
+def test_collision_uses_normalized_width_case_and_space():
+    inv = inventory()
+    other = candidate(owner={"kind": "player", "id": 18}, display_name="ＧО  СЭЙГЭН")
+    other_research = research(owner={"kind": "player", "id": 18}, candidate_name="ＧО  СЭЙГЭН",
+                              source_checks=[check(owner={"kind": "player", "id": 18},
+                                                   candidate_name="ＧО  СЭЙГЭН",
+                                                   body_excerpt="Player ＧО  СЭЙГЭН")])
+    other["research_sha256"] = canonical_sha256(other_research)
+    first = candidate(display_name="GО СЭЙГЭН")
+    first_research = research(candidate_name="GО СЭЙГЭН", source_checks=[check(
+        candidate_name="GО СЭЙГЭН", body_excerpt="Player GО СЭЙГЭН")])
+    first["research_sha256"] = canonical_sha256(first_research)
+    members = [member(), member({"kind": "player", "id": 18})]
+    report = validate_bundle(bundle(members=members, member_set_sha256=canonical_sha256(members),
+                                    candidates=[first, other]), registry(), inv,
+                             [first_research, other_research])
+    assert not report["ready"] and any("collision" in error for error in report["errors"])
+
+
+def test_same_raw_id_cannot_claim_different_spellings_across_languages():
+    inv = inventory()
+    inv["album_associations"].append([3, "Black", "White", "Engine3.8", None, None, None])
+    members = [member({"kind": "raw_event", "id": 7}, "ru", "GNUGo3.8"),
+               member({"kind": "raw_event", "id": 7}, "en", "Engine3.8")]
+    report = validate_bundle(bundle(members=members, member_set_sha256=canonical_sha256(members),
+                                    candidates=[]), registry(), inv, [])
+    assert not report["ready"]
+    assert any("different raw spellings" in error for error in report["errors"])
+
+
 def test_unreviewed_generic_event_and_corrupt_player_error_are_explicit():
     generic = candidate(owner={"kind": "raw_event", "id": 8}, lang="ru", raw_value="段位赛",
-                        display_name="турнир данов", decision_kind="generic", research_sha256="",
-                        generation_rule_version="generic-ru-v1")
+                        display_name="Турнир разрядов", decision_kind="generic", research_sha256="",
+                        generation_rule_version="classification-v1")
     inv = inventory()
     inv["album_associations"].append([3, "崔珪昞]BR[九段", "Unknown", "段位赛", None, None, None])
     assert validate_candidate(generic, None, registry(), inv)["decision_kind"] == "generic"
     error = candidate(owner={"kind": "raw_player", "id": 8}, lang="ru", raw_value="崔珪昞]BR[九段",
                       display_name="Ошибка в имени игрока", decision_kind="error", research_sha256="",
-                      generation_rule_version="error-ru-v1")
+                      generation_rule_version="classification-v1")
     assert validate_candidate(error, None, registry(), inv)["decision_kind"] == "error"
 
 
@@ -247,6 +306,10 @@ def test_event_components_are_rendered_separately_from_approved_core_name():
         rendered = render_event_components("Oteai", {"year": "1934", "season": "Spring",
                                                      "edition": "4届", "round": "3轮", "game": "2局"}, lang)
         assert rendered.startswith("Oteai · ") and len(rendered.split(" · ")) == 6
+        if lang not in {"cn", "tw"}:
+            assert "届" not in rendered and "期" not in rendered
+    assert "第4届" in render_event_components("大手合", {"edition": "四届"}, "cn")
+    assert "4th" in render_event_components("Oteai", {"edition": "四届"}, "en")
 
 
 def test_cli_report_is_read_only_and_reports_missing_approval(tmp_path, capsys):

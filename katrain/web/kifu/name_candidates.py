@@ -21,6 +21,7 @@ from katrain.web.kifu.name_evidence import (
     validate_research_record,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
+from katrain.web.kifu.identity import normalize_alias
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -30,6 +31,38 @@ _RANK_SUFFIX = re.compile(r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*(
 _RESULT = re.compile(r"(?:中盘|中盤|目半|resign|resignation|points?)\s*(?:胜|勝|win|won)?", re.I)
 _UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
 _MAX_NAME = {"player": 512, "event": 256, "raw_player": 1024, "raw_event": 4096}
+CLASSIFICATION_RULE_VERSION = "classification-v1"
+_CLASSIFICATION_TEMPLATES = {
+    "en": {"placeholder": "Unknown player", "player_error": "Player name unavailable",
+           "event_error": "Event data unavailable", "rank_event": "Rank Tournament",
+           "individual_event": "Individual Tournament"},
+    "cn": {"placeholder": "未知棋手", "player_error": "棋手姓名有误",
+           "event_error": "赛事资料有误", "rank_event": "段位赛", "individual_event": "个人赛"},
+    "tw": {"placeholder": "未知棋手", "player_error": "棋手姓名有誤",
+           "event_error": "賽事資料有誤", "rank_event": "段位賽", "individual_event": "個人賽"},
+    "jp": {"placeholder": "不明な棋士", "player_error": "棋士名のデータに誤りがあります",
+           "event_error": "棋戦データに誤りがあります", "rank_event": "段位戦", "individual_event": "個人戦"},
+    "ko": {"placeholder": "알 수 없는 기사", "player_error": "기사 이름 데이터 오류",
+           "event_error": "대회 데이터 오류", "rank_event": "단위 대회", "individual_event": "개인전"},
+    "de": {"placeholder": "Unbekannter Spieler", "player_error": "Spielername fehlerhaft",
+           "event_error": "Turnierdaten fehlerhaft", "rank_event": "Rangturnier",
+           "individual_event": "Einzelturnier"},
+    "es": {"placeholder": "Jugador desconocido", "player_error": "Nombre del jugador incorrecto",
+           "event_error": "Datos del torneo incorrectos", "rank_event": "Torneo de grados",
+           "individual_event": "Torneo individual"},
+    "fr": {"placeholder": "Joueur inconnu", "player_error": "Nom du joueur invalide",
+           "event_error": "Données du tournoi invalides", "rank_event": "Tournoi de niveaux",
+           "individual_event": "Tournoi individuel"},
+    "ru": {"placeholder": "Неизвестный игрок", "player_error": "Ошибка в имени игрока",
+           "event_error": "Ошибка в данных турнира", "rank_event": "Турнир разрядов",
+           "individual_event": "Личный турнир"},
+    "tr": {"placeholder": "Bilinmeyen oyuncu", "player_error": "Oyuncu adında hata",
+           "event_error": "Turnuva verilerinde hata", "rank_event": "Seviye turnuvası",
+           "individual_event": "Bireysel turnuva"},
+    "ua": {"placeholder": "Невідомий гравець", "player_error": "Помилка в імені гравця",
+           "event_error": "Помилка в даних турніру", "rank_event": "Турнір розрядів",
+           "individual_event": "Особистий турнір"},
+}
 _SCRIPT = {
     "en": re.compile(r"[A-Za-z]"), "de": re.compile(r"[A-Za-zÀ-ÿ]"),
     "es": re.compile(r"[A-Za-zÀ-ÿ]"), "fr": re.compile(r"[A-Za-zÀ-ÿ]"),
@@ -67,6 +100,12 @@ def _time(value: object) -> datetime | None:
 def canonical_sha256(value: object) -> str:
     data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
+
+
+def classification_template_sha256(lang: str) -> str:
+    _require(lang in LANGUAGES, "unknown classification template language")
+    return canonical_sha256({"version": CLASSIFICATION_RULE_VERSION, "lang": lang,
+                             "templates": _CLASSIFICATION_TEMPLATES[lang]})
 
 
 def _owner_key(owner: object, lang: object) -> str:
@@ -181,6 +220,18 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
             explained = {(item.get("source_id"), item.get("candidate_name")) for item in exclusions
                          if isinstance(item, dict) and _text(item.get("reason"))}
             _require(conflicts <= explained, "conflicting source names need documented exclusion reasons")
+            if conflicts:
+                adjudication = row.get("conflict_adjudication")
+                _require(isinstance(adjudication, dict) and row.get("reviewer_model") in {"gpt-6-sol", "gpt-6-astra"},
+                         "conflicting names require independent Sol or Astra adjudication")
+                _require(adjudication.get("model") == "gpt-6-sol"
+                         and adjudication.get("agent_id") in {row["producer_id"], row.get("reviewer_id")}
+                         and _time(adjudication.get("decided_at")) and _text(adjudication.get("rationale"))
+                         and isinstance(adjudication.get("source_urls"), list)
+                         and all(isinstance(url, str) and url.startswith("https://")
+                                 for url in adjudication["source_urls"])
+                         and bool(adjudication["source_urls"]),
+                         "conflicting names need documented gpt-6-sol decision and source URLs")
         if decision == "corrected":
             _require(row["owner"]["kind"] in {"raw_player", "raw_event"}, "correction needs raw owner")
             raw = row["raw_value"]
@@ -206,6 +257,29 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
             _require((kind == "raw_player" and category == "corrupt_pending")
                      or (kind == "raw_event" and category == "corrupt_data"),
                      "error display requires a damaged raw value")
+        _require(row["generation_rule_version"] == CLASSIFICATION_RULE_VERSION,
+                 "classification decision must bind the reviewed template version")
+        template_key = (
+            "placeholder" if decision == "placeholder"
+            else ("player_error" if kind == "raw_player" else "event_error") if decision == "error"
+            else "rank_event" if raw in {"段位赛", "段位賽"}
+            else "individual_event" if decision == "generic"
+            else "hidden"
+        )
+        expected = "" if template_key == "hidden" else _CLASSIFICATION_TEMPLATES[row["lang"]][template_key]
+        _require(display == expected, "classification display differs from versioned language template")
+        if row["review_status"] == "approved":
+            template_review = row.get("template_review")
+            _require(isinstance(template_review, dict)
+                     and template_review.get("version") == CLASSIFICATION_RULE_VERSION
+                     and template_review.get("lang") == row["lang"]
+                     and template_review.get("sha256") == classification_template_sha256(row["lang"])
+                     and template_review.get("reviewer_id") == row.get("reviewer_id")
+                     and template_review.get("reviewer_model") == row.get("reviewer_model")
+                     and _time(template_review.get("reviewed_at"))
+                     and _time(template_review["reviewed_at"]) <= _time(row["reviewed_at"])
+                     and _text(template_review.get("conclusion")),
+                     "approved classification needs signed review of exact language template version")
     if row["owner"]["kind"] in {"player", "raw_player"} and decision not in {"error", "placeholder"}:
         _require(not _RANK_SUFFIX.search(display) and not _RESULT.search(display),
                  "player name contains a rank or result")
@@ -238,19 +312,37 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     values = _inventory_values(inventory)
     member_keys = []
     member_map = {}
+    raw_spellings = {}
     for number, item in enumerate(members):
         try:
             key = _owner_key(item.get("owner"), item.get("lang"))
             _check_owner_in_inventory(item, values)
             if key in member_map:
                 raise CandidateError("duplicate member")
+            owner = item["owner"]
+            if owner["kind"].startswith("raw_"):
+                raw_key = (owner["kind"], owner["id"])
+                if raw_key in raw_spellings and raw_spellings[raw_key] != item["raw_value"]:
+                    raise CandidateError("same raw ID has different raw spellings across languages")
+                raw_spellings[raw_key] = item["raw_value"]
             member_map[key] = item
             member_keys.append(key)
         except (AttributeError, CandidateError) as exc:
             errors.append(f"member[{number}]: {exc}")
     evidence_by_hash = defaultdict(list)
-    for record in research_records:
-        evidence_by_hash[canonical_sha256(record)].append(record)
+    research_keys = defaultdict(list)
+    for number, record in enumerate(research_records):
+        try:
+            key = _owner_key(record.get("owner"), record.get("lang"))
+            validate_research_record(record, registry)
+            digest = canonical_sha256(record)
+            evidence_by_hash[digest].append(record)
+            research_keys[key].append(digest)
+        except (AttributeError, CandidateError, EvidenceError) as exc:
+            errors.append(f"research[{number}]: {exc}")
+    for key, hashes in research_keys.items():
+        if len(hashes) > 1:
+            errors.append(f"multiple research records for {key}; consolidate findings before approval")
     seen = set()
     decisions = []
     for number, item in enumerate(candidates):
@@ -276,10 +368,11 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     collisions = defaultdict(list)
     for row in decisions:
         if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected"}:
-            collisions[(row["lang"], row["display_name"].casefold())].append(row["owner"])
+            collisions[(row["lang"], normalize_alias(row["display_name"]))].append(row["owner"])
     for (lang, name), owners in collisions.items():
         if len({(owner["kind"], owner["id"]) for owner in owners}) > 1:
-            group = [row for row in decisions if row["lang"] == lang and row["display_name"].casefold() == name]
+            group = [row for row in decisions if row["lang"] == lang
+                     and normalize_alias(row["display_name"]) == name]
             if not all(row.get("collision_decision") == "distinct_people_confirmed"
                        and _text(row.get("collision_basis")) for row in group):
                 errors.append(f"possible name collision: {lang}:{name} owners={owners}")
@@ -303,6 +396,11 @@ _ROUND = {"en": "Round {}", "cn": "第{}轮", "tw": "第{}輪", "jp": "第{}回"
           "de": "Runde {}", "es": "Ronda {}", "fr": "Tour {}", "ru": "Тур {}", "tr": "{}. tur", "ua": "Тур {}"}
 _GAME = {"en": "Game {}", "cn": "第{}局", "tw": "第{}局", "jp": "第{}局", "ko": "{}국",
          "de": "Partie {}", "es": "Partida {}", "fr": "Partie {}", "ru": "Партия {}", "tr": "{}. oyun", "ua": "Партія {}"}
+_EDITION = {
+    "cn": "第{}届", "tw": "第{}屆", "jp": "第{}回", "ko": "제{}회", "de": "{}. Ausgabe",
+    "es": "{}.ª edición", "fr": "{}e édition", "ru": "{}-й розыгрыш", "tr": "{}. edisyon", "ua": "{}-й розіграш",
+}
+_HAN_NUMERALS = {char: number for number, char in enumerate("一二三四五六七八九", 1)}
 
 
 def _ordinal(value: str) -> str:
@@ -312,6 +410,24 @@ def _ordinal(value: str) -> str:
     else:
         suffix = {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
     return f"{number}{suffix}"
+
+
+def _edition_number(value: str) -> int:
+    _require(isinstance(value, str) and re.fullmatch(r"(?:[1-9]\d{0,2}|[一二三四五六七八九十]{1,3}|首)[届期]", value),
+             "invalid event edition")
+    raw = value[:-1]
+    if raw == "首":
+        return 1
+    if raw.isascii():
+        return int(raw)
+    if raw == "十":
+        return 10
+    if "十" in raw:
+        tens, ones = raw.split("十")
+        _require(tens in {"", *_HAN_NUMERALS} and ones in {"", *_HAN_NUMERALS}, "invalid event edition")
+        return (1 if not tens else _HAN_NUMERALS[tens]) * 10 + (0 if not ones else _HAN_NUMERALS[ones])
+    _require(raw in _HAN_NUMERALS, "invalid event edition")
+    return _HAN_NUMERALS[raw]
 
 
 def render_event_components(core_name: str, components: dict, lang: str) -> str:
@@ -329,9 +445,13 @@ def render_event_components(core_name: str, components: dict, lang: str) -> str:
         parts.append(_SEASONS[lang][0 if season == "Spring" else 1])
     edition = components.get("edition")
     if edition is not None:
-        _require(isinstance(edition, str) and re.fullmatch(r"[1-9]\d{0,2}[届期]", edition), "invalid event edition")
-        number = edition[:-1]
-        parts.append(_ordinal(number) if lang == "en" else edition)
+        number = _edition_number(edition)
+        if lang == "en":
+            parts.append(_ordinal(str(number)))
+        elif lang == "jp" and edition.endswith("期"):
+            parts.append(f"第{number}期")
+        else:
+            parts.append(_EDITION[lang].format(number))
     for key in ("round", "game"):
         value = components.get(key)
         if value is not None:

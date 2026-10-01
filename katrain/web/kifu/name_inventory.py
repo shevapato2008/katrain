@@ -50,6 +50,10 @@ ASSOCIATION_COLUMNS = (
     "player_black",
     "player_white",
     "event",
+    "round_name",
+    "black_rank",
+    "white_rank",
+    "date_played",
     "black_player_id",
     "white_player_id",
     "event_id",
@@ -219,6 +223,7 @@ def build_inventory(engine, *, batch_size=1000):
                 conn.rollback()
 
     return {
+        "inventory_format": 2,
         "database_identifier": engine.url.render_as_string(hide_password=True),
         "snapshot_time": snapshot_time,
         "counts": {name: len(scope["album_ids"]) for name, scope in scopes.items()},

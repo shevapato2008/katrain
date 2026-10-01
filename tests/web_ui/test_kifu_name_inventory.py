@@ -114,11 +114,14 @@ def test_album_associations_expose_identity_and_dataset_source_swaps(tmp_path):
     before = build_inventory(engine, batch_size=1)
     assert before["association_columns"] == [
         "id", "duplicate_of_id", "player_black", "player_white", "event",
+        "round_name", "black_rank", "white_rank", "date_played",
         "black_player_id", "white_player_id", "event_id", "sources",
     ]
+    assert before["inventory_format"] == 2
     assert before["source_link_columns"] == ["id", "source_id", "source_key", "origin_path", "match_method"]
     assert before["album_associations"][0] == [
-        20, None, "甲某", "乙某", "棋赛", 1, 3, 10, [[1, 1, "archive-a", "a.sgf", "import"]],
+        20, None, "甲某", "乙某", "棋赛", None, None, None, "1934-05-01",
+        1, 3, 10, [[1, 1, "archive-a", "a.sgf", "import"]],
     ]
 
     with Session(engine) as db:
@@ -134,7 +137,8 @@ def test_album_associations_expose_identity_and_dataset_source_swaps(tmp_path):
     assert after["source_stats"] == before["source_stats"]
     assert after["album_associations"] != before["album_associations"]
     assert after["album_associations"][0] == [
-        20, None, "甲某", "乙某", "棋赛", 2, 4, 20, [[2, 2, "archive-b", "b.sgf", "import"]],
+        20, None, "甲某", "乙某", "棋赛", None, None, None, "1934-05-01",
+        2, 4, 20, [[2, 2, "archive-b", "b.sgf", "import"]],
     ]
     assert after["sha256"] != before["sha256"]
 
@@ -187,7 +191,10 @@ def test_cli_writes_safe_metadata_and_inventory_without_database_writes(tmp_path
     assert data["database_identifier"].startswith("sqlite:///")
     assert data["snapshot_time"].endswith("Z")
     assert data["sha256"] == build_inventory(engine)["sha256"]
-    assert data["album_associations"] == [[20, None, "甲某", "乙某", "棋赛", None, None, None, []]]
+    assert data["inventory_format"] == 2
+    assert data["album_associations"] == [
+        [20, None, "甲某", "乙某", "棋赛", None, None, None, "1934-05-01", None, None, None, []]
+    ]
     with Session(engine) as db:
         assert db.query(KifuAlbum).count() == 1
 

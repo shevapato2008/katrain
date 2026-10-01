@@ -63,6 +63,14 @@ def test_normal_explicit_rank_and_placeholder_are_classified():
     assert parse_player("Unknown", None).category == "placeholder"
 
 
+def test_black_and_white_side_labels_are_provisional_placeholders():
+    for raw in ("Black", "White", "black", "WHITE"):
+        parsed = parse_player(raw, None)
+        assert parsed.raw_name == raw
+        assert parsed.category == "placeholder"
+        assert parsed.embedded_rank is None
+
+
 def test_gnugo_is_a_program_label_not_a_tournament_identity():
     parsed = parse_event("GNUGo3.8", None)
     assert parsed.raw_event == "GNUGo3.8"

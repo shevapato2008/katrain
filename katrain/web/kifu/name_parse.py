@@ -18,7 +18,7 @@ _CWI_OTEAI = re.compile(r"JapanPromotionTournament,([12]\d{3}),(Spring|Fall)\Z",
 _PROGRAM_LABEL = re.compile(r"(?:GNU\s*Go|Engine)\s*\d+(?:\.\d+)*\Z", re.IGNORECASE)
 _GAME_RESULT = re.compile(r"[黑白]?(?:执[黑白])?.*(?:中盘胜|目半胜|目胜|胜[负負])")
 _GENERIC_EVENTS = frozenset({"段位赛", "段位賽", "个人赛", "個人賽"})
-_PLACEHOLDERS = frozenset({"unknown", "?", "n/a", "不详", "不詳", "未知"})
+_PLACEHOLDERS = frozenset({"unknown", "black", "white", "?", "n/a", "不详", "不詳", "未知"})
 
 
 @dataclass(frozen=True)

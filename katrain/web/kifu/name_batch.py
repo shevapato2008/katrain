@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from collections import defaultdict
 from datetime import datetime, timezone
 import hashlib
+import re
 
 from sqlalchemy import DateTime, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -41,6 +42,7 @@ _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
     KifuRawPlayerValue, KifuRawEventValue, KifuAlbum,
 )}
 _ADVISORY_LOCK_KEY = 720220261002
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _fail(condition: bool, message: str) -> None:
@@ -114,6 +116,37 @@ def _image(conn, table, row_id: int) -> dict | None:
     if row is None:
         return None
     return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
+
+
+def _name_preimage_sha256(conn, owner: dict, lang: str) -> str | None:
+    """Hash the complete existing name row, or record that no row exists."""
+    _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
+    table = name_model.__table__
+    row_id = conn.scalar(select(table.c.id).where(
+        table.c[owner_column] == owner["id"], table.c.lang == lang))
+    return canonical_sha256(_image(conn, table, row_id)) if row_id is not None else None
+
+
+def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
+    """Capture a read-only name preimage before an independently reviewed bundle is signed."""
+    _fail(owner.get("kind") in _OWNER and type(owner.get("id")) is int and owner["id"] > 0,
+          "existing name owner ID required")
+    with engine.connect() as conn:
+        return _name_preimage_sha256(conn, owner, lang)
+
+
+def _check_name_preimages(conn, candidates: list[dict]) -> None:
+    for candidate in candidates:
+        _fail("name_preimage_sha256" in candidate, "name preimage is missing from reviewed candidate")
+        expected = candidate["name_preimage_sha256"]
+        _fail(expected is None or (isinstance(expected, str) and _SHA256.fullmatch(expected) is not None),
+              "name preimage must be null or a lowercase SHA-256")
+        owner = candidate["owner"]
+        if "ref" in owner:
+            _fail(expected is None, "new owner name preimage must be absent")
+            continue
+        actual = _name_preimage_sha256(conn, owner, candidate["lang"])
+        _fail(actual == expected, f"name preimage changed: {_owner_ref(owner)}:{candidate['lang']}")
 
 
 def _values_for_table(table, image: dict) -> dict:
@@ -324,6 +357,7 @@ def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_recor
     if bundle["bundle_format"] == 2:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
+    _check_name_preimages(conn, bundle["candidates"])
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
         _check_raw_owner(conn, candidate, link_targets)

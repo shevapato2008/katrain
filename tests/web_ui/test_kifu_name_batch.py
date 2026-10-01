@@ -12,7 +12,8 @@ from katrain.web.core.models_db import (
     KifuNameSourceRegistry, KifuPlayer, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
 )
 from katrain.web.kifu.name_batch import (
-    BatchError, apply_bundle, batch_status, catalog_snapshot_sha, dry_run_bundle, undo_batch,
+    BatchError, apply_bundle, batch_status, catalog_snapshot_sha, dry_run_bundle,
+    name_preimage_sha256, undo_batch,
 )
 from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256
 from katrain.web.kifu.name_evidence import registry_sha256
@@ -61,6 +62,7 @@ def approved_bundle(inventory):
     member = {"owner": owner, "lang": "ru", "raw_value": "GNUGo3.8"}
     candidate = {
         **member, "display_name": "", "decision_kind": "hidden", "research_sha256": "",
+        "name_preimage_sha256": None,
         "generation_rule_version": "classification-v1",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
         "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
@@ -101,6 +103,7 @@ def player_bundle(inventory, owner_id=17, display="Го Сэйгэн"):
     }
     candidate = {
         **member, "display_name": display, "decision_kind": "conventional",
+        "name_preimage_sha256": None,
         "research_sha256": canonical_sha256(research), "generation_rule_version": "none",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
         "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
@@ -171,6 +174,103 @@ def test_stale_snapshot_and_wrong_raw_id_abort_without_writes(engine):
     with pytest.raises(BatchError, match="snapshot"):
         apply_bundle(engine, bundle, registry(), inv, [])
     assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def test_name_preimage_is_required_for_database_inspection(engine):
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    del bundle["candidates"][0]["name_preimage_sha256"]
+    with pytest.raises(BatchError, match="name preimage"):
+        dry_run_bundle(engine, bundle, registry(), inv, [])
+    with pytest.raises(BatchError, match="name preimage"):
+        apply_bundle(engine, bundle, registry(), inv, [])
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def test_name_absent_at_review_then_inserted_aborts_without_writes(engine):
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    assert dry_run_bundle(engine, bundle, registry(), inv, [])["ready"]
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=7, lang="ru", display_name="Later edit", status="review"))
+    with pytest.raises(BatchError, match="name preimage"):
+        apply_bundle(engine, bundle, registry(), inv, [])
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.display_name)) == "Later edit"
+    assert counts(engine) == (0, 0, 1, 0, 0)
+
+
+def test_existing_name_modified_after_review_aborts_without_writes(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=7, lang="ru", display_name="Old", status="review"))
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
+        engine, {"kind": "raw_event", "id": 7}, "ru")
+    assert dry_run_bundle(engine, bundle, registry(), inv, [])["ready"]
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.update().where(KifuRawEventName.raw_event_id == 7)
+                     .values(display_name="Curator's edit"))
+    with pytest.raises(BatchError, match="name preimage"):
+        apply_bundle(engine, bundle, registry(), inv, [])
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.display_name)) == "Curator's edit"
+    assert counts(engine) == (0, 0, 1, 0, 0)
+
+
+def test_existing_name_hash_covers_reference_and_row_identity(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuPlayerName.__table__.insert().values(
+            id=22, player_id=17, lang="ru", display_name="Old", status="review",
+            reference_url="https://example.org/old"))
+    inv = build_inventory(engine)
+    bundle, research = player_bundle(inv)
+    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
+        engine, {"kind": "player", "id": 17}, "ru")
+    assert dry_run_bundle(engine, bundle, registry(), inv, research)["ready"]
+    with engine.begin() as conn:
+        conn.execute(KifuPlayerName.__table__.update().where(KifuPlayerName.id == 22)
+                     .values(reference_url="https://example.org/new"))
+    with pytest.raises(BatchError, match="name preimage"):
+        apply_bundle(engine, bundle, registry(), inv, research)
+    with engine.begin() as conn:
+        conn.execute(KifuPlayerName.__table__.delete().where(KifuPlayerName.id == 22))
+        conn.execute(KifuPlayerName.__table__.insert().values(
+            id=23, player_id=17, lang="ru", display_name="Old", status="review",
+            reference_url="https://example.org/old"))
+    with pytest.raises(BatchError, match="name preimage"):
+        apply_bundle(engine, bundle, registry(), inv, research)
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuNameBatch)) == 0
+
+
+def test_matching_existing_name_preimage_allows_audited_update_and_undo(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=7, lang="ru", display_name="Prior review", status="review"))
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    bundle["candidates"][0]["name_preimage_sha256"] = name_preimage_sha256(
+        engine, {"kind": "raw_event", "id": 7}, "ru")
+    applied = apply_bundle(engine, bundle, registry(), inv, [])
+    assert applied["status"] == "applied"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.display_name)) == ""
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.display_name)) == "Prior review"
+
+
+def test_unrelated_name_change_does_not_stale_reviewed_name(engine):
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=8, lang="ru", display_name="Other", status="review"))
+    result = apply_bundle(engine, bundle, registry(), inv, [])
+    assert result["status"] == "applied"
 
 
 def test_failed_mid_batch_rolls_back_every_table(engine, monkeypatch):
@@ -415,6 +515,7 @@ def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
     event_member = {"owner": event_owner, "lang": "ru"}
     event_candidate = {
         **event_member, "display_name": event_display, "decision_kind": "conventional",
+        "name_preimage_sha256": None,
         "research_sha256": canonical_sha256(event_research), "generation_rule_version": "none",
         "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
         "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",
@@ -490,6 +591,7 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
                     "reading": "Example Person", "reading_basis_url": "https://example.org/original",
                     "producer_id": "researcher-1", "producer_model": "gpt-6-luna", "review_status": "pending"}
         decision = {**member, "display_name": display, "decision_kind": "conventional",
+                    "name_preimage_sha256": None,
                     "research_sha256": canonical_sha256(evidence), "generation_rule_version": "none",
                     "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
                     "produced_at": "2026-10-02T10:01:00Z", "review_status": "approved",

@@ -25,6 +25,13 @@
 
 这只是代码与旧数据的兼容发布，不是十一语言全量交付。正式库截至本次审计仍有 5,678,904 个槽位缺少合格显示决定；正式环境 Web、严格开关和候选姓名数据均未变更。
 
+## 05:57 CST 代码更新
+
+- 将同一测试机的 `katrain-web` 更新到功能分支 `2e4fcef5ced8bc24f4029a871ebdb203185e30eb`，专用镜像 `katrain-web:kifu-name-2e4fcef5`（ID `sha256:7e70210e4ffafc2abe6d4533607ad02ff5654a68c35a1a77f3302b6eb1a80752`）。先前镜像 `katrain-web:kifu-name-ff573f0b` 保留为即时回滚点；本次只重建 Web 容器，没有迁移数据库或导入名称候选。
+- 本次新增六种次要语言合理检索的证据校验。独立规范与代码审查通过；合并分支后的证据/候选聚焦测试为 `128 passed`。镜像内前端和管理端构建完成。现役环境确认 `KATRAIN_BUILD_SHA=2e4fcef5`、`KIFU_STRICT_NAMES=0`。
+- 健康接口、棋谱列表、ID `24171` 的详情均返回 200；列表仍为 `173016` 盘。`吴清源` 与 `Go Seigen` 搜索均为 `1059` 盘且首条 ID 同为 `140859`；俄语 `Го Сэйгэн` 仍为 0，属于未导入译名的现存缺口。测试库仍为 `173025` 盘、9 个重复标记、0 条名称研究证据；近期 Web 日志无 traceback/exception/error。
+- 新覆盖文件为 `/home/fan/kifu-name-test-deploy-20261002/kifu-web-only-2e4fcef5.override.yml`；即时回滚使用同目录的 `kifu-web-rollback-ff573f0b.override.yml`，仍以 `docker compose ... up -d --no-deps --no-build katrain-web` 仅替换 Web。测试机在构建后约剩 13 GB 磁盘空间；旧镜像已保留以便回滚。
+
 ## 回滚点
 
 测试机已保留 `kifu-web-rollback.override.yml`，只把 Web 镜像改回 `katrain-web:kifu-name-prev-20261002`，并继续令 `KIFU_STRICT_NAMES=0`。如需回滚，在 `/home/fan/Repositories/katrain` 使用原 compose 文件、原测试机 override 和此回滚 override，以 `up -d --no-deps --no-build katrain-web` 只替换 Web。副本已证明旧 Web 可读新增的兼容 schema；不要直接用备份覆盖有并发新写入的共享测试库。

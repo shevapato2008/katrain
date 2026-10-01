@@ -75,7 +75,8 @@ def _script_type(value):
     scripts = set()
     for char in value:
         code = ord(char)
-        if 0x4E00 <= code <= 0x9FFF or 0x3400 <= code <= 0x4DBF:
+        character_name = unicodedata.name(char, "")
+        if character_name.startswith(("CJK UNIFIED IDEOGRAPH", "CJK COMPATIBILITY IDEOGRAPH")):
             scripts.add("han")
         elif 0x3040 <= code <= 0x30FF:
             scripts.add("kana")
@@ -83,7 +84,7 @@ def _script_type(value):
             scripts.add("hangul")
         elif 0x0400 <= code <= 0x052F:
             scripts.add("cyrillic")
-        elif "LATIN" in unicodedata.name(char, "") and char.isalpha():
+        elif "LATIN" in character_name and char.isalpha():
             scripts.add("latin")
         elif char.isalpha():
             scripts.add("other")
@@ -154,7 +155,8 @@ def build_inventory(engine, *, batch_size=1000):
     hasher = hashlib.sha256()
     with engine.connect() as conn:
         if engine.dialect.name == "postgresql":
-            conn.exec_driver_sql("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            conn = conn.execution_options(isolation_level="REPEATABLE READ", postgresql_readonly=True)
+            conn.begin()
         elif engine.dialect.name == "sqlite":
             conn.exec_driver_sql("PRAGMA query_only=ON")
             conn.exec_driver_sql("BEGIN")
@@ -162,6 +164,11 @@ def build_inventory(engine, *, batch_size=1000):
             raise ValueError("Only PostgreSQL and SQLite are supported")
         snapshot_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         try:
+            if engine.dialect.name == "postgresql":
+                isolation = conn.exec_driver_sql("SHOW transaction_isolation").scalar_one()
+                read_only = conn.exec_driver_sql("SHOW transaction_read_only").scalar_one()
+                if isolation.lower() != "repeatable read" or read_only.lower() != "on":
+                    raise RuntimeError(f"Inventory requires REPEATABLE READ READ ONLY, got {isolation} / {read_only}")
             last_id = -1
             while True:
                 rows = conn.execute(

@@ -3,13 +3,15 @@
 import hashlib
 import json
 import sqlite3
+from types import SimpleNamespace
 
+import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from katrain.web.core.db import Base
 from katrain.web.core.models_db import KifuAlbum, KifuAlbumSource, KifuSource
-from katrain.web.kifu.name_inventory import build_inventory
+from katrain.web.kifu.name_inventory import _script_type, build_inventory
 from scripts.kifu_name_inventory import main
 
 
@@ -188,3 +190,69 @@ def test_cli_writes_safe_metadata_and_inventory_without_database_writes(tmp_path
     assert data["album_associations"] == [[20, None, "甲某", "乙某", "棋赛", None, None, None, []]]
     with Session(engine) as db:
         assert db.query(KifuAlbum).count() == 1
+
+
+def test_postgres_isolation_and_read_only_are_set_before_the_first_query():
+    calls = []
+    transaction_read_only = ["on"]
+
+    class Result:
+        def __init__(self, value=None):
+            self.value = value
+
+        def scalar_one(self):
+            return self.value
+
+        def all(self):
+            return []
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            calls.append("close")
+
+        def execution_options(self, **options):
+            calls.append(("execution_options", options))
+            return self
+
+        def begin(self):
+            calls.append("begin")
+
+        def exec_driver_sql(self, sql):
+            calls.append(sql)
+            return Result("repeatable read" if sql == "SHOW transaction_isolation" else transaction_read_only[0])
+
+        def execute(self, _query):
+            calls.append("SELECT albums or sources")
+            return Result()
+
+        def rollback(self):
+            calls.append("rollback")
+
+    engine = SimpleNamespace(
+        dialect=SimpleNamespace(name="postgresql"),
+        connect=lambda: Connection(),
+        url=SimpleNamespace(render_as_string=lambda **_kwargs: "postgresql://test"),
+    )
+    assert build_inventory(engine)["counts"] == {"all": 0, "visible": 0, "sample": 0}
+    assert calls[:4] == [
+        ("execution_options", {"isolation_level": "REPEATABLE READ", "postgresql_readonly": True}),
+        "begin",
+        "SHOW transaction_isolation",
+        "SHOW transaction_read_only",
+    ]
+    assert calls.index("SHOW transaction_read_only") < calls.index("SELECT albums or sources")
+    assert "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY" not in calls
+    calls.clear()
+    transaction_read_only[0] = "off"
+    with pytest.raises(RuntimeError, match="REPEATABLE READ READ ONLY"):
+        build_inventory(engine)
+    assert "SELECT albums or sources" not in calls
+    assert "rollback" in calls
+
+
+def test_supplementary_and_compatibility_han_are_classified_as_han():
+    assert _script_type("𠀀") == "han"
+    assert _script_type("豈") == "han"

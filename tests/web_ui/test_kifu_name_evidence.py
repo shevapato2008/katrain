@@ -162,6 +162,14 @@ def _secondary_negative(lang="ua", *, second="wikidata", bounded=False):
     other.update(observed_lang=target,
                  url=other["url"].replace("languages=uk", "languages=" + target))
     other["entity_field_scope"].update(requested_lang=target, sitelink_site=target.split("-")[0] + "wiki")
+    other["body_excerpt"] = json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {}, "aliases": {}, "sitelinks": {}}}})
+    other["entity_identity_evidence"] = {
+        "api_url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=ja&props=labels&format=json",
+        "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200, "response_sha256": "c" * 64,
+        "body_excerpt": json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {
+            "ja": {"language": "ja", "value": record["original_name"]}}}}}, ensure_ascii=False),
+        "identity_basis": "Original Japanese name identifies this player; separately checked career dates",
+    }
     if second != "wikidata":
         registry["sources"][-1]["tier"] = second
         other.update(source_id="target-wiki", url="https://example.net/search", method="site_search",
@@ -169,19 +177,22 @@ def _secondary_negative(lang="ua", *, second="wikidata", bounded=False):
         record["registry_sha256"] = registry_sha256(registry)
     closure = record["negative_closure"]
     closure.update(version=2, search_policy="secondary_reasonable_v1", bounded_scan_ids=[],
+                   unsearched_source_ids=["target-wiki"] if second == "wikidata" else ["wd"],
                    lang=lang, registry_sha256=record["registry_sha256"],
                    scope_boundary="Listed target-language searches only; no global absence claim",
-                   retained_limitations=["Unsearched registered channels and print publications"])
+                   retained_limitations=["Unsearched channel: " + ("target-wiki" if second == "wikidata" else "wd"),
+                                         "Print publications remain unsearched"])
     if bounded:
         professional.update(page_count=2, next_page_url="https://example.org/search?page=2",
                             pagination_exhausted=False, pagination_basis="Page 1 links to page 2")
         page_two = deepcopy(professional)
         page_two.update(check_id="professional-page-2", page_index=2,
                         url=professional["next_page_url"], next_page_url="https://example.org/search?page=3",
+                        continuation_href="?page=3", continuation_excerpt='<a href="?page=3">Next</a>',
                         pagination_basis="Stopped after two indexed pages; page 3 remains unsearched")
         record["source_checks"].append(page_two)
         closure["bounded_scan_ids"] = ["professional-scan"]
-        closure["retained_limitations"].append("professional-scan: page 3 and later pages remain unsearched")
+        closure["retained_limitations"].append("professional-scan: https://example.org/search?page=3 and later pages remain unsearched")
     _sign_negative(record, manifest=True)
     return record, registry
 
@@ -371,6 +382,51 @@ def test_secondary_reasonable_strategy_bounds_and_reading_are_bound_to_reviewed_
     bad["reading"] = "other reading"
     with pytest.raises(EvidenceError, match="evidence hash"):
         validate_research_record(bad, registry)
+
+
+def test_secondary_reasonable_entity_cannot_be_reassigned_while_retaining_original_subject_capture():
+    record, registry = _secondary_negative()
+    check = record["source_checks"][1]
+    check["url"] = check["url"].replace("ids=Q1", "ids=Q2")
+    check["entity_field_scope"]["entity_id"] = "Q2"
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="entity|subject"):
+        validate_research_record(record, registry)
+
+
+@pytest.mark.parametrize("field", ["labels", "aliases", "sitelinks"])
+def test_secondary_reasonable_entity_cannot_claim_absence_when_requested_target_field_exists(field):
+    record, registry = _secondary_negative()
+    check = record["source_checks"][1]
+    response = json.loads(check["body_excerpt"])
+    target = registry["language_tags"][record["lang"]]
+    key = target + "wiki" if field == "sitelinks" else target
+    response["entities"]["Q1"][field][key] = (
+        [{"language": target, "value": "Conventional name"}] if field == "aliases" else
+        {"site": key, "title": "Conventional name"} if field == "sitelinks" else
+        {"language": target, "value": "Conventional name"})
+    check["body_excerpt"] = json.dumps(response)
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="target.*field|absence"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_bounded_scan_cannot_invent_a_continuation_url():
+    record, registry = _secondary_negative(bounded=True)
+    record["source_checks"][-1]["next_page_url"] = "https://example.org/invented-next"
+    record["source_checks"][-1]["pagination_basis"] = "Reasonable scan"
+    record["negative_closure"]["retained_limitations"] = ["professional-scan"]
+    _sign_negative(record, manifest=True)
+    with pytest.raises(EvidenceError, match="continuation|remaining|unsearched"):
+        validate_research_record(record, registry)
+
+
+def test_secondary_reasonable_scope_cannot_silently_omit_registered_channels():
+    record, registry = _secondary_negative()
+    record["negative_closure"]["retained_limitations"] = []
+    _sign_negative(record)
+    with pytest.raises(EvidenceError, match="unsearched|limitation"):
+        validate_research_record(record, registry)
 
 
 def test_v1_negative_closure_canonical_hashes_remain_unchanged():

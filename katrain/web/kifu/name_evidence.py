@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 
@@ -135,7 +135,8 @@ def negative_closure_evidence_sha256(record: dict) -> str:
     }
     if closure.get("version") == 2:
         evidence.update(version=2, search_policy=closure.get("search_policy"),
-                        bounded_scan_ids=closure.get("bounded_scan_ids"))
+                        bounded_scan_ids=closure.get("bounded_scan_ids"),
+                        unsearched_source_ids=closure.get("unsearched_source_ids"))
     canonical = json.dumps(evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -153,7 +154,8 @@ def _negative_scope_template(record: dict) -> dict:
     }
     if closure.get("version") == 2:
         scope.update(version=2, search_policy=closure.get("search_policy"),
-                     bounded_scan_ids=closure.get("bounded_scan_ids"))
+                     bounded_scan_ids=closure.get("bounded_scan_ids"),
+                     unsearched_source_ids=closure.get("unsearched_source_ids"))
     return scope
 
 
@@ -298,6 +300,60 @@ def _validate_negative_outcome(check: dict, source: dict, producer_id: str, *, f
                      "finite rejected lead needs original name, actual language and independent decision")
 
 
+class _AnchorLinks(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.hrefs = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            self.hrefs.append(dict(attrs).get("href"))
+
+
+def _entity_excerpt(excerpt: object, entity_id: str) -> dict:
+    try:
+        response = json.loads(excerpt)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise EvidenceError("Wikidata entity evidence needs captured JSON") from exc
+    entities = response.get("entities") if isinstance(response, dict) else None
+    entity = entities.get(entity_id) if isinstance(entities, dict) else None
+    _require(isinstance(entity, dict) and entity.get("id") == entity_id,
+             "Wikidata captured entity differs from requested subject")
+    return entity
+
+
+def _validate_entity_identity(check: dict, record: dict, source: dict) -> None:
+    """Bind target-field absence to a separately captured original-language subject label."""
+    entity_scope = check["entity_field_scope"]
+    entity_id = entity_scope["entity_id"]
+    target_entity = _entity_excerpt(check.get("body_excerpt"), entity_id)
+    for field in entity_scope["fields"]:
+        values = target_entity.get(field, {})
+        key = entity_scope["sitelink_site"] if field == "sitelinks" else entity_scope["requested_lang"]
+        _require(isinstance(values, dict) and key not in values,
+                 "Wikidata target field exists or is malformed; cannot claim absence")
+    identity = check.get("entity_identity_evidence")
+    _require(isinstance(identity, dict), "Wikidata needs separate entity identity evidence")
+    api_url = identity.get("api_url")
+    _require(_source_url_matches(api_url, source), "entity identity URL must be on registered Wikidata host")
+    parsed = urlparse(api_url)
+    params = parse_qs(parsed.query)
+    _require(parsed.path == "/w/api.php" and params.get("action") == ["wbgetentities"]
+             and params.get("ids") == [entity_id] and params.get("languages") == [record["source_lang"]]
+             and params.get("props") == ["labels"] and params.get("format") == ["json"]
+             and params.get("languagefallback", ["0"]) == ["0"],
+             "entity identity request differs from exact entity or original language")
+    _require(_aware_timestamp(identity.get("fetched_at")) and identity.get("http_status") == 200
+             and bool(_HEX_SHA256.fullmatch(str(identity.get("response_sha256", ""))))
+             and _text(identity.get("identity_basis")), "entity identity needs a completed separate capture")
+    entity = _entity_excerpt(identity.get("body_excerpt"), entity_id)
+    labels = entity.get("labels")
+    label = labels.get(record["source_lang"]) if isinstance(labels, dict) else None
+    _require(isinstance(label, dict) and _matches_target(str(label.get("language", "")), record["source_lang"])
+             and label.get("value") == record["original_name"],
+             "entity identity captured original name or language differs from research subject")
+
+
 def _validate_negative_closure(record: dict, registry: dict, checks: list[dict]) -> None:
     closure = record.get("negative_closure")
     _require(isinstance(closure, dict), "finite negative closure must be an object")
@@ -343,6 +399,7 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
              and {item["check_id"] for item in manifest} == set(required),
              "finite negative closure needs an exact required check manifest")
     declared = {item["check_id"]: item for item in manifest}
+    observed_checks = {check["check_id"]: check for check in checks}
     _require(all({field: check.get(field) for field in fields} == declared[check["check_id"]]
                  for check in checks), "source check differs from required check manifest")
     pages: dict[str, list[dict]] = {}
@@ -374,8 +431,16 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
                      and terminal["next_page_url"] not in {item["url"] for item in group}
                      and terminal["pagination_exhausted"] is False,
                      "bounded scan must retain a real unvisited next page without claiming exhaustion")
-            _require(any(scan_id in limitation for limitation in closure["retained_limitations"]),
-                     "bounded scan needs an explicit retained limitation naming its scan ID")
+            captured = observed_checks[terminal["check_id"]]
+            href, excerpt = captured.get("continuation_href"), captured.get("continuation_excerpt")
+            _require(_text(href) and _text(excerpt), "bounded scan needs a captured continuation anchor")
+            links = _AnchorLinks()
+            links.feed(excerpt)
+            _require(href in links.hrefs and urljoin(terminal["url"], href) == terminal["next_page_url"],
+                     "bounded scan continuation anchor differs from the unvisited next page")
+            _require(any(scan_id in limitation and terminal["next_page_url"] in limitation
+                         for limitation in closure["retained_limitations"]),
+                     "bounded scan needs a retained limitation naming its scan ID and remaining page URL")
         for index, item in by_page.items():
             expected_next = by_page[index + 1]["url"] if index < count else ""
             if index == count and is_bounded:
@@ -410,6 +475,8 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
                      and params.get("languages") == [target]
                      and set(params.get("props", [""])[0].split("|")) == set(entity["fields"]),
                      "discovery check needs exact entity and target-language fields")
+            if secondary:
+                _validate_entity_identity(observed_checks[item["check_id"]], record, sources[item["source_id"]])
         else:
             _require(item["entity_field_scope"] is None,
                      "non-entity check cannot claim entity fields")
@@ -425,6 +492,13 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
         _require(bool(tiers & {"wikipedia_article", "encyclopedia"})
                  or any(sources[check["source_id"]]["tier"] == "discovery" for check in target_checks),
                  "secondary reasonable search needs a target-language encyclopedia or exact Wikidata check")
+        unsearched = closure.get("unsearched_source_ids")
+        completed_target_sources = {check["source_id"] for check in target_checks}
+        _require(isinstance(unsearched, list) and all(_text(item) for item in unsearched)
+                 and len(unsearched) == len(set(unsearched)) and set(unsearched) == registered - completed_target_sources,
+                 "secondary scope must list exact unsearched registered source IDs")
+        _require(all(any(source_id in limitation for limitation in closure["retained_limitations"])
+                     for source_id in unsearched), "unsearched source needs an explicit retained limitation")
     else:
         _require(registered <= {check["source_id"] for check in checks
                                 if _matches_target(check.get("observed_lang", ""), target)},
@@ -471,6 +545,10 @@ def _validate_negative_closure(record: dict, registry: dict, checks: list[dict])
     reviewed_at = datetime.fromisoformat(closure["reviewed_at"].replace("Z", "+00:00"))
     _require(all(reviewed_at >= datetime.fromisoformat(check["fetched_at"].replace("Z", "+00:00"))
                  for check in checks), "negative closure review precedes a source check")
+    if secondary:
+        _require(all(reviewed_at >= datetime.fromisoformat(check["entity_identity_evidence"]["fetched_at"].replace("Z", "+00:00"))
+                     for check in checks if sources[check["source_id"]]["tier"] == "discovery"),
+                 "negative closure review precedes entity identity capture")
     _require(all(reviewed_at >= datetime.fromisoformat(lead["reviewed_at"].replace("Z", "+00:00"))
                  for check in checks for lead in check.get("rejected_leads", [])
                  if _aware_timestamp(lead.get("reviewed_at"))),

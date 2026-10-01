@@ -432,6 +432,7 @@ def secondary_generated(lang="ru"):
     negative["source_checks"] = [
         check(**common, check_id="professional", method="site_search", entity_field_scope=None,
               scan_id="go-search", next_page_url="https://example.org/search?page=2",
+              continuation_href="/search?page=2", continuation_excerpt='<a href="/search?page=2">Next</a>',
               pagination_exhausted=False, pagination_basis="Stop after page 1; page 2 remains unsearched"),
         check(**common, check_id="wikidata", source_id="wd", method="entity_api", scan_id="q1-fields",
               url=f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages={target}&props=labels%7Caliases%7Csitelinks&format=json",
@@ -439,14 +440,23 @@ def secondary_generated(lang="ru"):
                                   "fields": ["labels", "aliases", "sitelinks"], "sitelink_site": target + "wiki"},
               next_page_url="", pagination_exhausted=True, pagination_basis="Single exact entity response"),
     ]
+    negative["source_checks"][1]["body_excerpt"] = json.dumps({"entities": {"Q1": {"id": "Q1"}}})
+    negative["source_checks"][1]["entity_identity_evidence"] = {
+        "api_url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q1&languages=ja&props=labels&format=json",
+        "fetched_at": "2026-10-02T10:05:00Z", "http_status": 200, "response_sha256": "c" * 64,
+        "body_excerpt": json.dumps({"entities": {"Q1": {"id": "Q1", "labels": {
+            "ja": {"language": "ja", "value": negative["original_name"]}}}}}, ensure_ascii=False),
+        "identity_basis": "Original Japanese name and career dates identify this player",
+    }
     fields = ("check_id", "source_id", "method", "query", "url", "searched_forms", "entity_field_scope",
               "scan_id", "page_index", "page_count", "next_page_url", "pagination_exhausted", "pagination_basis")
     negative["negative_closure"] = {
         "version": 2, "search_policy": "secondary_reasonable_v1", "bounded_scan_ids": ["go-search"],
+        "unsearched_source_ids": [],
         "owner": negative["owner"], "lang": lang, "source_lang": "ja", "scope_id": "reasonable-player-17",
         "scope_version": "1", "registry_sha256": negative["registry_sha256"],
         "scope_boundary": "Listed exact entity and first indexed professional page only",
-        "retained_limitations": ["go-search: page 2 onward and print publications remain unsearched"],
+        "retained_limitations": ["go-search: https://example.org/search?page=2 onward remains unsearched", "Print publications"],
         "required_check_ids": [item["check_id"] for item in negative["source_checks"]],
         "required_checks": [{field: item[field] for field in fields} for item in negative["source_checks"]],
         "known_leads": [], "reviewer_id": "scope-reviewer", "reviewer_model": "gpt-6-astra",

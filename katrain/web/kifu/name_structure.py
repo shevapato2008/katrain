@@ -118,6 +118,8 @@ def build_event_group_manifest(inventory: dict) -> dict:
         seen.add(raw)
         if type(row["occurrences"]) is not int or row["occurrences"] < 1:
             raise ValueError("event occurrence count must be positive")
+        if row.get("affected_games") != row["occurrences"]:
+            raise ValueError("event affected_games must equal occurrences")
         inventory_counts[raw] = row["occurrences"]
         if raw is None or raw == "":
             structure = {

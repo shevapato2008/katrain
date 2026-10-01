@@ -81,6 +81,16 @@ def test_group_manifest_refuses_truncated_value_rows_even_with_plausible_hash():
         raise AssertionError("truncated event rows accepted")
 
 
+def test_group_manifest_refuses_inflated_affected_game_count():
+    inventory = _inventory([{"value": "赛事甲", "occurrences": 2, "affected_games": 3}])
+    try:
+        build_event_group_manifest(inventory)
+    except ValueError as exc:
+        assert "affected_games" in str(exc)
+    else:
+        raise AssertionError("inflated affected_games accepted")
+
+
 def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):
     inventory = tmp_path / "inventory.json.gz"
     output = tmp_path / "groups.json.gz"

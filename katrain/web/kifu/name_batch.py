@@ -180,6 +180,8 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
         raise BatchError(str(exc)) from exc
     _fail(report["ready"], "bundle has missing, unreviewed, rejected or conflicting name decisions: "
           + "; ".join(report["errors"][:5]))
+    _fail(report["write_ready"], "bundle name preimages are not write-ready: "
+          + "; ".join(report["write_errors"][:5]))
     return report
 
 

@@ -15,7 +15,7 @@ from katrain.web.kifu.name_batch import (
     BatchError, apply_bundle, batch_status, catalog_snapshot_sha, dry_run_bundle,
     name_preimage_sha256, undo_batch,
 )
-from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256
+from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256, validate_bundle
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
 from scripts.kifu_name_batch import main
@@ -180,10 +180,24 @@ def test_name_preimage_is_required_for_database_inspection(engine):
     inv = build_inventory(engine)
     bundle = approved_bundle(inv)
     del bundle["candidates"][0]["name_preimage_sha256"]
+    report = validate_bundle(bundle, registry(), inv, [])
+    assert report["ready"] and not report["write_ready"]
+    assert "name preimage missing" in report["write_errors"][0]
     with pytest.raises(BatchError, match="name preimage"):
         dry_run_bundle(engine, bundle, registry(), inv, [])
     with pytest.raises(BatchError, match="name preimage"):
         apply_bundle(engine, bundle, registry(), inv, [])
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+def test_name_preimage_rejects_malformed_digest(engine):
+    inv = build_inventory(engine)
+    bundle = approved_bundle(inv)
+    bundle["candidates"][0]["name_preimage_sha256"] = "A" * 64
+    report = validate_bundle(bundle, registry(), inv, [])
+    assert report["ready"] and not report["write_ready"]
+    with pytest.raises(BatchError, match="name preimage"):
+        dry_run_bundle(engine, bundle, registry(), inv, [])
     assert counts(engine) == (0, 0, 0, 0, 0)
 
 
@@ -350,10 +364,16 @@ def test_cli_validate_and_dry_run_leave_database_untouched(engine, tmp_path, cap
     inputs = ["--bundle", str(paths["bundle"]), "--registry", str(paths["registry"]),
               "--inventory", str(paths["inventory"]), "--evidence", str(paths["evidence"])]
     assert main(["validate", *inputs]) == 0
-    assert json.loads(capsys.readouterr().out)["ready"]
+    validated = json.loads(capsys.readouterr().out)
+    assert validated["ready"] and validated["write_ready"]
     assert main(["dry-run", *inputs, "--database-url", str(engine.url)]) == 0
     assert json.loads(capsys.readouterr().out)["affected_albums"] == [11]
     assert counts(engine) == (0, 0, 0, 0, 0)
+    del bundle["candidates"][0]["name_preimage_sha256"]
+    paths["bundle"].write_text(json.dumps(bundle, ensure_ascii=False), encoding="utf-8")
+    assert main(["validate", *inputs]) == 1
+    legacy = json.loads(capsys.readouterr().out)
+    assert legacy["ready"] and not legacy["write_ready"]
 
 
 def _v2_wrap(engine, inventory, bundle, owners, links):

@@ -81,7 +81,7 @@ def main(argv=None) -> int:
         if engine is not None:
             engine.dispose()
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    return 0 if result.get("ready", True) and "error" not in result else 1
+    return 0 if result.get("ready", True) and result.get("write_ready", True) and "error" not in result else 1
 
 
 if __name__ == "__main__":

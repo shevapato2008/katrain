@@ -588,8 +588,19 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
                        and _text(row.get("collision_basis")) for row in group):
                 errors.append(f"possible name collision: {lang}:{name} owners={owners}")
     statuses = Counter(row["review_status"] for row in decisions)
+    write_errors = []
+    for number, item in enumerate(candidates):
+        if not isinstance(item, dict) or "name_preimage_sha256" not in item:
+            write_errors.append(f"candidate[{number}]: name preimage missing")
+            continue
+        preimage = item["name_preimage_sha256"]
+        if preimage is not None and not (isinstance(preimage, str) and _HASH.fullmatch(preimage)):
+            write_errors.append(f"candidate[{number}]: name preimage must be null or lowercase SHA-256")
+        if isinstance(item.get("owner"), dict) and "ref" in item["owner"] and preimage is not None:
+            write_errors.append(f"candidate[{number}]: new owner name preimage must be null")
+    ready = not errors and not statuses["pending"] and not statuses["rejected"]
     return {
-        "ready": not errors and not statuses["pending"] and not statuses["rejected"],
+        "ready": ready, "write_ready": ready and not write_errors, "write_errors": write_errors,
         "inventory_sha256": inventory["sha256"], "member_count": len(members),
         "candidate_count": len(candidates), "approved": statuses["approved"],
         "pending": statuses["pending"], "rejected": statuses["rejected"],

@@ -10,6 +10,8 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.api.v1.endpoints import kifu
 from katrain.web.kifu import identity
+from katrain.web.kifu.name_coverage import coverage_report
+from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.core.models_db import (
     Base,
     KifuAlbum,
@@ -490,6 +492,73 @@ def test_strict_cwi_edition_requires_exact_approved_raw_display(monkeypatch):
         db.commit()
         assert _list(db).items[0].display_event == "1934年秋季大手合"
         assert identity.strict_slot_approvals(db, [album], "cn")[album.id][2] == ("conventional", raw_evidence.id)
+    finally:
+        db.close()
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "raw_spelling, display",
+    [
+        ("Oteai 1960", "大手合 · 1960"),
+        ("1934年第十二届日本大手合第3轮", "1934年第十二届大手合第3轮"),
+    ],
+)
+@pytest.mark.parametrize("approved", [False, True])
+def test_strict_linked_event_preserves_only_approved_structural_display(monkeypatch, raw_spelling, display, approved):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        tournament = KifuEvent(canonical_name="Oteai")
+        raw = KifuRawEventValue(raw_value=raw_spelling, category="formal_event_candidate", review_status="approved")
+        db.add_all([tournament, raw])
+        db.flush()
+        core_evidence = _evidence(db, "event", tournament.id, "cn", "大手合")
+        raw_evidence = _evidence(db, "raw_event", raw.id, "cn", display, approved=approved)
+        db.add_all(
+            [
+                KifuEventName(
+                    event_id=tournament.id,
+                    lang="cn",
+                    display_name="大手合",
+                    status="verified",
+                    decision_kind="conventional",
+                    generation_rule_version="test-v1",
+                    revision=1,
+                    evidence_id=core_evidence.id,
+                ),
+                KifuRawEventName(
+                    raw_event_id=raw.id,
+                    lang="cn",
+                    display_name=display,
+                    status="verified",
+                    decision_kind="conventional",
+                    generation_rule_version="test-v1",
+                    revision=1,
+                    evidence_id=raw_evidence.id,
+                ),
+            ]
+        )
+        album = KifuAlbum(
+            player_black="Unknown",
+            player_white="Unknown",
+            event=raw_spelling,
+            event_id=tournament.id,
+            sgf_content="(;B[aa])",
+            source_path="structured-event.sgf",
+        )
+        db.add(album)
+        db.commit()
+
+        item = _list(db).items[0]
+        assert item.event == raw_spelling
+        assert item.display_event == (display if approved else "赛事名称待核实")
+        assert identity.strict_slot_approvals(db, [album], "cn")[album.id][2] == (
+            ("conventional", raw_evidence.id) if approved else None
+        )
+        coverage = coverage_report(engine, build_inventory(engine), languages=("cn",))
+        assert coverage["languages"]["cn"]["approved"] == int(approved)
+        assert any(gap["slot"] == "event" for gap in coverage["missing_examples"]) is not approved
     finally:
         db.close()
         engine.dispose()

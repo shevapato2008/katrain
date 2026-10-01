@@ -21,6 +21,7 @@ from katrain.web.core.models_db import (
     KifuSource,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
+from katrain.web.kifu.name_structure import structure_event
 
 LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"})
 _DECISIONS = frozenset({"conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected"})
@@ -162,8 +163,9 @@ def _empty_event(raw: str | None) -> bool:
 def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tuple[tuple[str, int | None] | None, ...]]:
     """Return approved decision/evidence for each visible slot; None is a coverage gap.
 
-    CWI editions need both an approved Oteai identity name and their own approved
-    exact raw-event display. An absent event has an explicit empty decision with
+    Structured events need both an approved identity name and their own approved
+    exact raw-event display; CWI editions additionally require an Oteai identity.
+    An absent event has an explicit empty decision with
     no evidence row because there is no source value to research. Queries remain
     bounded by the supplied album page.
     """
@@ -204,6 +206,10 @@ def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tup
             if parse_event(album.event, None).category == "formal_event_candidate":
                 event_approval = (
                     raw_events.get(album.event) if event_approval and canonical.get(album.event_id) == "Oteai" else None
+                )
+            elif event_approval:
+                event_approval = raw_events.get(
+                    album.event, None if structure_event(album.event or "")["components"] else event_approval
                 )
         else:
             event_approval = ("hidden", None) if _empty_event(album.event) else raw_events.get(album.event or "")
@@ -248,7 +254,9 @@ def resolve_strict_display(
         if parse_event(album.event, None).category == "formal_event_candidate":
             displayed_event = raw_events.get(album.event) if canonical_events.get(album.event_id) == "Oteai" else None
         else:
-            displayed_event = event_name
+            displayed_event = raw_events.get(
+                album.event, None if structure_event(album.event or "")["components"] else event_name
+            )
     else:
         displayed_event = event_name
     return (

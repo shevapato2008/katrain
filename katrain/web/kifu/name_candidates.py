@@ -299,6 +299,13 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
                          and all(isinstance(url, str) and url.startswith("https://") for url in urls)
                          and found_urls <= set(urls),
                          "conflicting names need exact attested source URLs")
+                _require(all(_time(adjudication["decided_at"]) >= _time(item["fetched_at"])
+                             for item in checked["source_checks"] if item["url"] in urls),
+                         "conflict adjudication predates a cited source capture")
+                if row["review_status"] != "pending":
+                    _require(all(_time(row["reviewed_at"]) >= _time(item["fetched_at"])
+                                 for item in checked["source_checks"]),
+                             "candidate approval predates a source capture")
         if decision == "corrected":
             _require(row["owner"]["kind"] in {"raw_player", "raw_event"}, "correction needs raw owner")
             raw = row["raw_value"]

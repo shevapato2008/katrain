@@ -231,6 +231,45 @@ def test_pending_sol_producer_can_document_conflict_without_reviewer_signature()
                            lightweight_evidence, registry(), inventory())
 
 
+def test_conflict_decision_and_approval_follow_all_attested_source_captures():
+    late = research(source_checks=[
+        check(),
+        check(candidate_name="Го Сейген", url="https://example.org/alternate",
+              body_excerpt="Alternate Го Сейген", fetched_at="2026-10-02T12:00:00Z"),
+    ])
+    approved = candidate(
+        research_sha256=canonical_sha256(late), reviewer_model="gpt-6-sol",
+        excluded_candidates=[{"source_id": "go", "candidate_name": "Го Сейген",
+                              "reason": "Independently compared both attested forms"}],
+        conflict_adjudication={
+            "agent_id": "reviewer-2", "model": "gpt-6-sol", "decided_at": "2026-10-02T10:30:00Z",
+            "rationale": "Compared both attested forms against the player identity",
+            "source_urls": ["https://example.org/go", "https://example.org/alternate"],
+        },
+    )
+    with pytest.raises(CandidateError, match="source|capture"):
+        validate_candidate(approved, late, registry(), inventory())
+    report = validate_bundle(bundle(candidates=[approved]), registry(), inventory(), [late])
+    assert not report["ready"] and not report["write_ready"]
+
+    fresh = deepcopy(late)
+    fresh["source_checks"][1]["fetched_at"] = "2026-10-02T10:10:00Z"
+    approved["research_sha256"] = canonical_sha256(fresh)
+    assert validate_candidate(approved, fresh, registry(), inventory())["review_status"] == "approved"
+
+    pending_research = deepcopy(late)
+    pending_research["producer_model"] = "gpt-6-sol"
+    pending = {**approved, "producer_model": "gpt-6-sol", "research_sha256": canonical_sha256(pending_research),
+               "review_status": "pending", "reviewer_id": "", "reviewer_model": "", "reviewed_at": "",
+               "review_conclusion": "", "conflict_adjudication": {
+                   **approved["conflict_adjudication"], "agent_id": approved["producer_id"]}}
+    with pytest.raises(CandidateError, match="source|capture"):
+        validate_candidate(pending, pending_research, registry(), inventory())
+    pending_research["source_checks"][1]["fetched_at"] = "2026-10-02T10:10:00Z"
+    pending["research_sha256"] = canonical_sha256(pending_research)
+    assert validate_candidate(pending, pending_research, registry(), inventory())["review_status"] == "pending"
+
+
 def test_generated_name_requires_completed_negative_scope_and_reading_basis():
     negative = research(scope_status="not_found_in_scope", candidate_name="", source_checks=[check(
         status="not_found", candidate_name="", identity_basis="", body_excerpt="Search finished with no Russian name",

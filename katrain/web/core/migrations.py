@@ -9,6 +9,7 @@ protects authoritative tables from the SQLite schema-drift rebuild fallback.
 import logging
 
 from sqlalchemy import CheckConstraint, UniqueConstraint, inspect, text
+from sqlalchemy.engine import Connection
 
 from katrain.web.core import models_db
 
@@ -282,7 +283,9 @@ def _assert_name_evidence_fk(table: str, fks: dict[str, dict]) -> None:
         raise RuntimeError(f"{table}.evidence_id must reference kifu_name_research_evidence.id")
 
 
-def postgres_kifu_name_statements(*, table: str, existing_columns: set[str], existing_fks: dict[str, dict]) -> list[str]:
+def postgres_kifu_name_statements(
+    *, table: str, existing_columns: set[str], existing_fks: dict[str, dict]
+) -> list[str]:
     """Plan short PostgreSQL ALTERs; defer existing-row FK validation."""
 
     if table not in {"kifu_player_names", "kifu_event_names"}:
@@ -420,19 +423,17 @@ def validate_kifu_name_foreign_keys(engine) -> None:
             conn.execute(text(statement))
 
 
-def install_kifu_name_change_immutability(engine) -> None:
-    """Keep per-row before/after images append-only across both DB dialects."""
-
+def _kifu_name_change_immutability_statements(dialect_name: str) -> list[str]:
     table = "kifu_name_changes"
-    if table not in inspect(engine).get_table_names():
-        return
-    if engine.dialect.name == "sqlite":
-        statements = [f'DROP TRIGGER IF EXISTS "trg_{table}_no_{action.lower()}"' for action in ("UPDATE", "DELETE")] + [
+    if dialect_name == "sqlite":
+        statements = [
+            f'DROP TRIGGER IF EXISTS "trg_{table}_no_{action.lower()}"' for action in ("UPDATE", "DELETE")
+        ] + [
             f'CREATE TRIGGER "trg_{table}_no_{action.lower()}" BEFORE {action} ON "{table}" '
             "BEGIN SELECT RAISE(ABORT, 'kifu name change history is immutable'); END"
             for action in ("UPDATE", "DELETE")
         ]
-    elif engine.dialect.name == "postgresql":
+    elif dialect_name == "postgresql":
         statements = [
             "CREATE OR REPLACE FUNCTION reject_kifu_name_change_mutation() RETURNS trigger AS $$ "
             "BEGIN RAISE EXCEPTION 'kifu name change history is immutable'; END; $$ LANGUAGE plpgsql"
@@ -447,10 +448,74 @@ def install_kifu_name_change_immutability(engine) -> None:
                 ]
             )
     else:
-        raise RuntimeError(f"Kifu name change immutability unsupported for {engine.dialect.name}")
-    with engine.begin() as conn:
+        raise RuntimeError(f"Kifu name change immutability unsupported for {dialect_name}")
+    return statements
+
+
+def install_kifu_name_change_immutability(bind) -> None:
+    """Install immutable history in the explicit CLI or a fresh bootstrap transaction."""
+
+    if "kifu_name_changes" not in inspect(bind).get_table_names():
+        return
+    statements = _kifu_name_change_immutability_statements(bind.dialect.name)
+    if isinstance(bind, Connection):
         for statement in statements:
-            conn.execute(text(statement))
+            bind.execute(text(statement))
+    else:
+        with bind.begin() as conn:
+            for statement in statements:
+                conn.execute(text(statement))
+
+
+def postgres_name_change_trigger_valid(status: tuple, action: str) -> bool:
+    expected_type = {"UPDATE": 19, "DELETE": 11}[action]  # ROW | BEFORE | action
+    enabled, trigger_type, unconditional, function_name, function_body = status
+    expected_body = "BEGIN RAISE EXCEPTION 'kifu name change history is immutable'; END;"
+    return (
+        enabled == "O"
+        and trigger_type == expected_type
+        and unconditional
+        and function_name == "reject_kifu_name_change_mutation"
+        and " ".join(function_body.split()) == expected_body
+    )
+
+
+def verify_kifu_name_change_immutability(engine) -> None:
+    """Read only metadata check; startup never repairs or replaces name triggers."""
+
+    table = "kifu_name_changes"
+    if engine.dialect.name == "sqlite":
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text("SELECT name, sql FROM sqlite_master WHERE type='trigger' AND tbl_name='kifu_name_changes'")
+            )
+            actual = {name: ddl for name, ddl in rows}
+        expected = _kifu_name_change_immutability_statements("sqlite")[2:]
+        for action, statement in zip(("update", "delete"), expected):
+            name = f"trg_{table}_no_{action}"
+            if " ".join((actual.get(name) or "").split()).lower() != " ".join(statement.split()).lower():
+                raise RuntimeError(f"{table} trigger {name} missing or changed; run migrate_catalog")
+    elif engine.dialect.name == "postgresql":
+        with engine.connect() as conn:
+            rows = conn.execute(
+                text(
+                    "SELECT trigger_info.tgname, trigger_info.tgenabled, trigger_info.tgtype, "
+                    "(trigger_info.tgqual IS NULL), procedure_info.proname, procedure_info.prosrc "
+                    "FROM pg_trigger trigger_info "
+                    "JOIN pg_proc procedure_info ON procedure_info.oid = trigger_info.tgfoid "
+                    "WHERE trigger_info.tgrelid = to_regclass('kifu_name_changes') AND NOT trigger_info.tgisinternal"
+                )
+            )
+            actual = {
+                name: (enabled, trigger_type, unconditional, function_name, function_body)
+                for name, enabled, trigger_type, unconditional, function_name, function_body in rows
+            }
+        for action in ("UPDATE", "DELETE"):
+            name = f"trg_{table}_no_{action.lower()}"
+            if name not in actual or not postgres_name_change_trigger_valid(actual[name], action):
+                raise RuntimeError(f"{table} trigger {name} missing or changed; run migrate_catalog")
+    else:
+        raise RuntimeError(f"Kifu name change trigger verification unsupported for {engine.dialect.name}")
 
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (

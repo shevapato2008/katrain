@@ -193,9 +193,80 @@ def test_startup_requires_explicit_migration_for_legacy_name_tables(engine):
     assert "decision_kind" not in {column["name"] for column in inspect(engine).get_columns("kifu_player_names")}
 
 
+def test_existing_database_does_not_get_new_name_tables_at_startup(engine):
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE legacy_marker (id INTEGER PRIMARY KEY)"))
+    with pytest.raises(RuntimeError, match="migrate_catalog"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert NEW_TABLES.isdisjoint(inspect(engine).get_table_names())
+    assert {"kifu_player_names", "kifu_event_names"}.isdisjoint(inspect(engine).get_table_names())
+    assert set(inspect(engine).get_table_names()) == {"legacy_marker"}
+
+
+def test_empty_bootstrap_creates_tables_and_name_triggers(engine):
+    SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert NEW_TABLES <= set(inspect(engine).get_table_names())
+    with engine.connect() as conn:
+        triggers = conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='trigger' " "AND tbl_name='kifu_name_changes'")
+        ).all()
+    assert {name for (name,) in triggers} == {"trg_kifu_name_changes_no_update", "trg_kifu_name_changes_no_delete"}
+
+
+def test_empty_bootstrap_rolls_back_if_name_trigger_install_fails(engine, monkeypatch):
+    def fail_install(_bind):
+        raise RuntimeError("trigger installation failed")
+
+    monkeypatch.setattr(migrations, "install_kifu_name_change_immutability", fail_install)
+    with pytest.raises(RuntimeError, match="trigger installation failed"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert inspect(engine).get_table_names() == []
+
+
+def test_existing_database_requires_explicit_name_triggers(engine):
+    models_db.Base.metadata.create_all(engine)
+    with pytest.raises(RuntimeError, match="kifu_name_changes.*trigger"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    with engine.connect() as conn:
+        assert (
+            conn.execute(
+                text("SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' " "AND tbl_name='kifu_name_changes'")
+            ).scalar_one()
+            == 0
+        )
+
+
+def test_startup_does_not_replace_existing_name_triggers(engine, monkeypatch):
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
+    monkeypatch.setattr(
+        migrations,
+        "install_kifu_name_change_immutability",
+        lambda _engine: pytest.fail("startup replaced name change triggers"),
+    )
+    SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+
+
+def test_startup_rejects_changed_name_trigger_definition(engine):
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
+    with engine.begin() as conn:
+        conn.execute(text('DROP TRIGGER "trg_kifu_name_changes_no_update"'))
+        conn.execute(
+            text(
+                'CREATE TRIGGER "trg_kifu_name_changes_no_update" BEFORE UPDATE ON "kifu_name_changes" '
+                "BEGIN SELECT 1; END"
+            )
+        )
+    with pytest.raises(RuntimeError, match="kifu_name_changes.*trigger"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+
+
 def test_startup_rejects_drift_in_new_authoritative_name_table(engine):
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE kifu_raw_player_values (id INTEGER PRIMARY KEY)"))
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
     with pytest.raises(RuntimeError, match="kifu_raw_player_values.*migrate_catalog"):
         SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
     assert {column["name"] for column in inspect(engine).get_columns("kifu_raw_player_values")} == {"id"}
@@ -212,6 +283,8 @@ def test_startup_rejects_bare_raw_name_owner_fk(engine):
                 "evidence_id INTEGER REFERENCES kifu_name_research_evidence(id), created_at DATETIME)"
             )
         )
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
     with pytest.raises(RuntimeError, match="raw_player_id.*foreign key"):
         SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
 
@@ -225,6 +298,8 @@ def test_startup_rejects_missing_registry_unique_constraint(engine):
                 "created_at DATETIME)"
             )
         )
+    models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
     with pytest.raises(RuntimeError, match="kifu_name_source_registry.*unique"):
         SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
 
@@ -261,6 +336,29 @@ def test_postgres_name_migration_is_non_destructive_and_defers_validation():
             "kifu_event_names": ("fk_kifu_event_names_evidence_id", True),
         }
     ) == ['ALTER TABLE "kifu_player_names" VALIDATE CONSTRAINT "fk_kifu_player_names_evidence_id"']
+
+
+def test_postgres_name_change_trigger_metadata_must_be_exact():
+    expected = (
+        "O",
+        19,
+        True,
+        "reject_kifu_name_change_mutation",
+        "BEGIN RAISE EXCEPTION 'kifu name change history is immutable'; END;",
+    )
+    assert migrations.postgres_name_change_trigger_valid(expected, "UPDATE")
+    assert not migrations.postgres_name_change_trigger_valid(("O", 17, *expected[2:]), "UPDATE")
+    assert not migrations.postgres_name_change_trigger_valid(("O", 19, False, *expected[3:]), "UPDATE")
+    assert not migrations.postgres_name_change_trigger_valid(
+        (
+            "O",
+            19,
+            True,
+            expected[3],
+            "BEGIN IF FALSE THEN RAISE EXCEPTION 'kifu name change history is immutable'; " "END IF; RETURN OLD; END;",
+        ),
+        "UPDATE",
+    )
 
 
 def test_name_change_history_is_immutable_after_insert(engine):
@@ -311,3 +409,43 @@ def test_evidence_approval_requires_independent_reviewer(engine):
                     "'same-agent', 'same-agent', CURRENT_TIMESTAMP, 'approved')"
                 )
             )
+
+
+def test_raw_verified_name_requires_evidence_but_legacy_verified_is_preserved(engine):
+    models_db.Base.metadata.create_all(engine)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO kifu_raw_player_values (id, raw_value, category) "
+                "VALUES (1, '吴清源 九段', 'person_rank')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO kifu_raw_event_values (id, raw_value, category) "
+                "VALUES (2, '大手合 第三局', 'event_round')"
+            )
+        )
+        conn.execute(text("INSERT INTO kifu_players (id, canonical_name) VALUES (3, '吴清源')"))
+        conn.execute(
+            text(
+                "INSERT INTO kifu_player_names (player_id, lang, display_name, status) "
+                "VALUES (3, 'en', 'Go Seigen', 'verified')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO kifu_raw_player_names (raw_player_id, lang, display_name, status) "
+                "VALUES (1, 'en', 'Go Seigen', 'review')"
+            )
+        )
+    for sql in (
+        "INSERT INTO kifu_raw_player_names (raw_player_id, lang, display_name, status) "
+        "VALUES (1, 'ja', '呉清源', 'verified')",
+        "INSERT INTO kifu_raw_event_names (raw_event_id, lang, display_name, status) "
+        "VALUES (2, 'en', 'Oteai', 'verified')",
+        "UPDATE kifu_raw_player_names SET status='verified' WHERE raw_player_id=1 AND lang='en'",
+    ):
+        with pytest.raises(IntegrityError):
+            with engine.begin() as conn:
+                conn.execute(text(sql))

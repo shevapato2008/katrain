@@ -122,8 +122,28 @@ class SQLAlchemyUserRepository(UserRepository):
         from katrain.web.core import ledger_immutability, migrations
 
         engine = self._bind()
-
-        models_db.Base.metadata.create_all(bind=engine)
+        # An existing application database must run the explicit catalog CLI
+        # before these authoritative name tables appear. A truly empty database
+        # is bootstrapped with its history triggers in one transaction.
+        fresh_database = not inspect(engine).get_table_names()
+        startup_tables = [
+            table for table in models_db.Base.metadata.sorted_tables if table.name not in migrations.KIFU_NAME_TABLES
+        ]
+        if fresh_database:
+            with engine.begin() as conn:
+                if engine.dialect.name == "sqlite":
+                    # sqlite3 legacy transaction mode does not begin for DDL.
+                    conn.exec_driver_sql("BEGIN")
+                models_db.Base.metadata.create_all(bind=conn)
+                migrations.install_kifu_name_change_immutability(conn)
+        else:
+            # Refuse an unmigrated existing database before any startup DDL.
+            migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_name_change_immutability(engine)
+            models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
+        if fresh_database:
+            migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_name_change_immutability(engine)
 
         # Dev migration: drop old 'games' table and recreate 'rating_history'
         # to update game_id FK from games.id (Integer) to user_games.id (String)
@@ -133,7 +153,7 @@ class SQLAlchemyUserRepository(UserRepository):
                 conn.execute(text("DROP TABLE IF EXISTS rating_history"))
                 conn.execute(text("DROP TABLE IF EXISTS games"))
             # Recreate rating_history with the new schema
-            models_db.Base.metadata.create_all(bind=engine)
+            models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
 
         # Lightweight, non-destructive migration (all dialects): ADD COLUMN / CREATE
         # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs
@@ -142,7 +162,6 @@ class SQLAlchemyUserRepository(UserRepository):
         # PostgreSQL adds these album FKs as NOT VALID; validation is a separate
         # post-deploy operation via validate_kifu_album_foreign_keys().
         migrations.migrate_kifu_catalog_schema(engine)
-        migrations.verify_kifu_name_schema(engine)
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.verify_kifu_album_identity_indexes(engine)
@@ -190,7 +209,6 @@ class SQLAlchemyUserRepository(UserRepository):
         #   1. `backfill_ai_ladder_decisions`(:122)要对存量行发 UPDATE,得先跑完;
         #   2. 上面的漂移重建走 drop+create,会把触发器一并带走 —— 虽然账本在
         #      PROTECTED_TABLES 里不会被重建,但顺序放在后面就不必依赖那个事实。
-        migrations.install_kifu_name_change_immutability(engine)
         ledger_immutability.install(engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:

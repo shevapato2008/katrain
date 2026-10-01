@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import migrations, models_db
 from katrain.web.core.auth import SQLAlchemyUserRepository
+from katrain.web.kifu import migrate_catalog
 
 
 @pytest.fixture
@@ -62,13 +63,16 @@ def test_fresh_catalog_has_distinct_entities_aliases_names_and_source_constraint
                               "VALUES (999, 1, 'missing.sgf', 'manual')"))
 
 
-def test_legacy_sqlite_catalog_migrates_without_rebuilding_or_changing_sgf(engine):
+def test_legacy_sqlite_catalog_migrates_without_rebuilding_or_changing_sgf(engine, monkeypatch):
     with engine.begin() as conn:
         conn.execute(text("CREATE TABLE kifu_albums (id INTEGER PRIMARY KEY, player_black VARCHAR(512) NOT NULL, "
                           "player_white VARCHAR(512) NOT NULL, sgf_content TEXT NOT NULL, "
                           "source_path VARCHAR(512) NOT NULL UNIQUE, source VARCHAR(256))"))
         conn.execute(text("INSERT INTO kifu_albums VALUES "
                           "(7, '吴清源', '木谷实', '(;FF[4]PB[吴清源]SO[CWI])', 'archive/7.sgf', 'SO value')"))
+    monkeypatch.setattr(migrate_catalog, "engine", engine)
+    monkeypatch.setattr("sys.argv", ["migrate_catalog", "--validate"])
+    migrate_catalog.main()
     repository = SQLAlchemyUserRepository(sessionmaker(bind=engine))
     repository.init_db()
     repository.init_db()
@@ -135,6 +139,7 @@ def test_postgres_album_indexes_are_planned_concurrently_and_wrong_indexes_fail(
 def test_startup_checks_indexes_without_building_them(engine, monkeypatch):
     monkeypatch.setattr(migrations, "create_kifu_album_identity_indexes", lambda _engine: pytest.fail("startup build"))
     models_db.Base.metadata.create_all(engine)
+    migrations.install_kifu_name_change_immutability(engine)
     SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
 
 

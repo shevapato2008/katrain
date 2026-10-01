@@ -907,6 +907,9 @@ class KifuRawPlayerName(Base):
     __table_args__ = (
         UniqueConstraint("raw_player_id", "lang", name="uq_kifu_raw_player_name_lang"),
         CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_raw_player_name_status"),
+        CheckConstraint(
+            "status <> 'verified' OR evidence_id IS NOT NULL", name="ck_kifu_raw_player_name_verified_evidence"
+        ),
     )
 
 
@@ -927,6 +930,9 @@ class KifuRawEventName(Base):
     __table_args__ = (
         UniqueConstraint("raw_event_id", "lang", name="uq_kifu_raw_event_name_lang"),
         CheckConstraint("status IN ('verified', 'review', 'missing')", name="ck_kifu_raw_event_name_status"),
+        CheckConstraint(
+            "status <> 'verified' OR evidence_id IS NOT NULL", name="ck_kifu_raw_event_name_verified_evidence"
+        ),
     )
 
 

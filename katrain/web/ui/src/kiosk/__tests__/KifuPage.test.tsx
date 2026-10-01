@@ -43,6 +43,10 @@ const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSumma
   event: '第 29 届三星杯', result: 'B+R', move_count: 241,
   date_played: '2026-06-30', board_size: 19, handicap: 0,
   komi: 7.5, rules: 'chinese', round_name: '半决赛',
+  // 页面展示 API 按当前语言返回的 display_* 字段，原始 SGF 字段仅保留为源数据。
+  display_player_black: '柯洁', display_player_white: '申真谞',
+  display_black_rank: '九段', display_white_rank: '九段',
+  display_event: '第 29 届三星杯', display_round_name: '半决赛',
   ...over,
 });
 

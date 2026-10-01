@@ -219,8 +219,8 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
-    async def get_kifu(self, album_id: int) -> Dict:
-        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}")
+    async def get_kifu(self, album_id: int, lang: str = "cn") -> Dict:
+        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}", params={"lang": lang})
         resp.raise_for_status()
         return resp.json()
 

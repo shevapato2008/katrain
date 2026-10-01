@@ -862,7 +862,7 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
             而选中的那一行是你刚点过、正在看的,删除出现在那儿是你自己把它叫出来的。
             (`kiosk-shell/icons/` 里没有 trash:那 41 对图标由 MANIFEST 钉着,
              为一个按钮往共享资产包里塞一份新二进制不划算,所以这里用文字。) */}
-        {selected && (
+        {selected && game.source !== 'kifu_library' && (
           <button type="button" className="kiosk-btn kiosk-btn--pill rvdanger" onClick={onDelete}>
             {t('review:delete_game', '删除')}
           </button>

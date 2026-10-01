@@ -19,3 +19,20 @@ describe('棋谱 HTTP 错误保留状态码，供列表和详情识别离线', (
     }
   });
 });
+
+describe('棋谱展示语言', () => {
+  it('列表与详情传 lang，旧详情调用仍保持原 URL', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response('{}', { status: 200 })));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await KifuAPI.getAlbums({ q: '柯洁', page: 2, lang: 'jp' });
+    await KifuAPI.getAlbum(7, 'en');
+    await KifuAPI.getAlbum(7);
+
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/kifu/albums?q=%E6%9F%AF%E6%B4%81&page=2&lang=jp',
+      '/api/v1/kifu/albums/7?lang=en',
+      '/api/v1/kifu/albums/7',
+    ]);
+  });
+});

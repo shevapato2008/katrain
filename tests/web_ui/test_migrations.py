@@ -76,7 +76,19 @@ def test_asset_tables_are_protected_from_the_drift_rebuild():
         "ai_ladder_game_ledger",
         "ai_ladder_pending_games",
         "ai_ladder_active_games",
+        "ai_ladder_territory_requests",
         "ai_ladder_game_ledger_legacy_v1",
+        "kifu_albums",
+        "kifu_players",
+        "kifu_events",
+        "kifu_player_aliases",
+        "kifu_event_aliases",
+        "kifu_player_names",
+        "kifu_event_names",
+        "kifu_sources",
+        "kifu_album_sources",
+        "kifu_dedup_batches",
+        "kifu_dedup_changes",
     } == migrations.PROTECTED_TABLES
     # Billing is a strict subset: the drift rebuild must refuse both groups.
     assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES

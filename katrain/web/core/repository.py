@@ -129,14 +129,14 @@ class RemoteKifuRepository:
     def __init__(self, client: RemoteAPIClient):
         self._client = client
 
-    async def list_albums(self, q: Optional[str] = None, page: int = 1, page_size: int = 20) -> Dict:
-        params = {"page": page, "page_size": page_size}
+    async def list_albums(self, q: Optional[str] = None, page: int = 1, page_size: int = 20, lang: str = "cn") -> Dict:
+        params = {"page": page, "page_size": page_size, "lang": lang}
         if q:
             params["q"] = q
         return await self._client.search_kifu(**params)
 
-    async def get_album(self, album_id: int) -> Dict:
-        return await self._client.get_kifu(album_id)
+    async def get_album(self, album_id: int, lang: str = "cn") -> Dict:
+        return await self._client.get_kifu(album_id, lang=lang)
 
 
 class RemoteUserGameRepository:
@@ -241,13 +241,13 @@ class RepositoryDispatcher:
     # 说成了「没搜到 / 没有这一局」,屏 15 写「没有对得上的谱 · 换棋手名再试」。
     # 远端 404 照旧是 404:`_remote_only` 只把离线、传输错误和 5xx 收成不可用。
 
-    async def kifu_list_albums(self, q=None, page=1, page_size=20):
+    async def kifu_list_albums(self, q=None, page=1, page_size=20, lang="cn"):
         return await self._remote_only(
-            lambda: self.remote_kifu.list_albums(q, page, page_size), "Remote kifu service unavailable"
+            lambda: self.remote_kifu.list_albums(q, page, page_size, lang), "Remote kifu service unavailable"
         )
 
-    async def kifu_get_album(self, album_id):
-        return await self._remote_only(lambda: self.remote_kifu.get_album(album_id), "Remote kifu service unavailable")
+    async def kifu_get_album(self, album_id, lang="cn"):
+        return await self._remote_only(lambda: self.remote_kifu.get_album(album_id, lang), "Remote kifu service unavailable")
 
     # ── User Games (online→remote, offline→local+sync) ──
 
@@ -411,8 +411,10 @@ class RepositoryDispatcher:
                 raise RemoteServiceUnavailableError(unavailable_detail) from exc
             raise
 
-    async def user_games_delete(self, game_id: str):
-        return await self._remote_only(lambda: self._remote_client.delete_user_game(game_id))
+    async def user_games_delete(self, game_id: str, user_id: int):
+        result = await self._remote_only(lambda: self._remote_client.delete_user_game(game_id))
+        self._local_user_game_repo.delete(game_id, user_id, remote_confirmed=True)
+        return result
 
     async def reports_list(self):
         return await self._remote_only(lambda: self._remote_client.list_reports(), "Remote report service unavailable")

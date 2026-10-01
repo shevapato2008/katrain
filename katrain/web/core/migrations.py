@@ -1,10 +1,9 @@
 """Lightweight, auditable schema migrations (no Alembic).
 
 The project relies on Base.metadata.create_all for new tables, but that cannot
-add columns/indexes to tables that already exist. This module performs only
-non-destructive ALTERs (ADD COLUMN, CREATE INDEX) that work on both SQLite and
-PostgreSQL, and it protects the billing/ledger tables from the SQLite
-schema-drift "drop all and rebuild" fallback (those must never lose rows).
+add columns/indexes to tables that already exist. This module performs
+non-destructive ALTERs and index creation for SQLite and PostgreSQL, and it
+protects authoritative tables from the SQLite schema-drift rebuild fallback.
 """
 
 import logging
@@ -33,7 +32,212 @@ AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 # `models_db.Base.metadata.sorted_tables`,模型没了就永远进不了 drop 名单,数据不会被动。
 # 额度桶记录已消费的额度；drift 重建它 = 给所有人白重置一次额度。
 QUOTA_TABLES = {"quota_buckets"}
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | {AI_LADDER_LEGACY_TABLE}
+KIFU_CATALOG_TABLES = {
+    "kifu_albums",
+    "kifu_players",
+    "kifu_events",
+    "kifu_player_aliases",
+    "kifu_event_aliases",
+    "kifu_player_names",
+    "kifu_event_names",
+    "kifu_sources",
+    "kifu_album_sources",
+    "kifu_dedup_batches",
+    "kifu_dedup_changes",
+}
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE}
+
+KIFU_ALBUM_FKS = {
+    "black_player_id": "kifu_players",
+    "white_player_id": "kifu_players",
+    "event_id": "kifu_events",
+    "duplicate_of_id": "kifu_albums",
+}
+KIFU_ALBUM_IDENTITY_INDEXES = {column: f"ix_kifu_albums_{column}" for column in KIFU_ALBUM_FKS}
+
+
+def postgres_kifu_album_fk_statements(*, existing_columns: set[str], existing_fks: dict[str, object]) -> list[str]:
+    """Add FKs without scanning 173k existing rows during Web startup."""
+
+    statements = []
+    for column, target in KIFU_ALBUM_FKS.items():
+        if column not in existing_columns:
+            statements.append(f'ALTER TABLE "kifu_albums" ADD COLUMN IF NOT EXISTS "{column}" INTEGER')
+        if column not in existing_fks:
+            statements.append(
+                f'ALTER TABLE "kifu_albums" ADD CONSTRAINT "fk_kifu_albums_{column}" '
+                f'FOREIGN KEY ("{column}") REFERENCES "{target}" (id) NOT VALID'
+            )
+    return statements
+
+
+def postgres_kifu_album_index_statements(
+    *, existing_indexes: dict[str, tuple[str, tuple[str, ...], bool, bool]]
+) -> list[str]:
+    """Plan nonblocking indexes, refusing an invalid or wrongly defined index."""
+
+    statements = []
+    for column, index_name in KIFU_ALBUM_IDENTITY_INDEXES.items():
+        if index_name in existing_indexes:
+            table, columns, valid, full_btree = existing_indexes[index_name]
+            if table != "kifu_albums" or columns != (column,) or not valid or not full_btree:
+                raise RuntimeError(f"Invalid PostgreSQL index {index_name}; repair it before startup")
+            continue
+        statements.append(
+            f'CREATE INDEX CONCURRENTLY IF NOT EXISTS "{index_name}" ON "kifu_albums" ("{column}")'
+        )
+    return statements
+
+
+POSTGRES_KIFU_ALBUM_INDEX_STATUS_SQL = (
+    "SELECT index_table.relname, album_table.relname, "
+    "(pg_index.indisvalid AND pg_index.indisready), "
+    "ARRAY(SELECT attribute.attname "
+    "FROM unnest(pg_index.indkey::smallint[]) WITH ORDINALITY AS index_key(attnum, ordinal) "
+    "LEFT JOIN pg_attribute attribute "
+    "ON attribute.attrelid = pg_index.indrelid AND attribute.attnum = index_key.attnum "
+    "ORDER BY index_key.ordinal), "
+    "(pg_index.indpred IS NULL AND pg_index.indexprs IS NULL AND access_method.amname = 'btree') "
+    "FROM pg_index "
+    "JOIN pg_class index_table ON index_table.oid = pg_index.indexrelid "
+    "JOIN pg_class album_table ON album_table.oid = pg_index.indrelid "
+    "JOIN pg_am access_method ON access_method.oid = index_table.relam "
+    "WHERE pg_index.indrelid = to_regclass('kifu_albums') "
+    "AND index_table.relname IN ("
+    "'ix_kifu_albums_black_player_id', 'ix_kifu_albums_white_player_id', "
+    "'ix_kifu_albums_event_id', 'ix_kifu_albums_duplicate_of_id')"
+)
+
+
+def _postgres_kifu_album_index_status(engine) -> dict[str, tuple[str, tuple[str, ...], bool, bool]]:
+    with engine.connect() as conn:
+        rows = conn.execute(text(POSTGRES_KIFU_ALBUM_INDEX_STATUS_SQL))
+        return {
+            name: (table, tuple(columns), bool(valid), bool(full_btree))
+            for name, table, valid, columns, full_btree in rows
+        }
+
+
+def verify_kifu_album_identity_indexes(engine) -> None:
+    """Fast startup check; production index construction is a separate step."""
+
+    if engine.dialect.name != "postgresql" or "kifu_albums" not in inspect(engine).get_table_names():
+        return
+    missing = postgres_kifu_album_index_statements(existing_indexes=_postgres_kifu_album_index_status(engine))
+    if missing:
+        raise RuntimeError("Missing PostgreSQL kifu album identity indexes; run explicit concurrent index migration")
+
+
+def create_kifu_album_identity_indexes(engine) -> None:
+    """Explicit deployment step: build legacy PostgreSQL FK indexes outside a transaction."""
+
+    if engine.dialect.name != "postgresql" or "kifu_albums" not in inspect(engine).get_table_names():
+        return
+    statements = postgres_kifu_album_index_statements(existing_indexes=_postgres_kifu_album_index_status(engine))
+    for statement in statements:
+        with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(text(statement))
+    verify_kifu_album_identity_indexes(engine)
+
+
+def _postgres_kifu_album_constraint_validation(engine) -> dict[str, bool]:
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT conname, convalidated FROM pg_constraint "
+                "WHERE conrelid = to_regclass('kifu_albums') AND contype = 'f'"
+            )
+        )
+        return {name: bool(validated) for name, validated in rows}
+
+
+def postgres_kifu_album_validation_statements(fk_statuses: dict[str, tuple[str, bool]]) -> list[str]:
+    """Generate an explicit, separately run validation for pending album FKs."""
+
+    statements = []
+    for column in KIFU_ALBUM_FKS:
+        if column not in fk_statuses:
+            raise RuntimeError(f"Missing kifu_albums.{column} foreign key")
+        name, validated = fk_statuses[column]
+        if not validated:
+            quoted_name = name.replace('"', '""')
+            statements.append(f'ALTER TABLE "kifu_albums" VALIDATE CONSTRAINT "{quoted_name}"')
+    return statements
+
+
+def validate_kifu_album_foreign_keys(engine) -> None:
+    """Explicit post-deploy FK scan; inspect ``convalidated`` before and after."""
+
+    if engine.dialect.name != "postgresql":
+        return
+    inspector = inspect(engine)
+    if "kifu_albums" not in inspector.get_table_names():
+        return
+    fks = _kifu_album_foreign_keys(inspector)
+    _assert_kifu_album_fk_targets(fks)
+    validation = _postgres_kifu_album_constraint_validation(engine)
+    statuses = {
+        column: (fk["name"], validation.get(fk["name"], False))
+        for column, fk in fks.items() if column in KIFU_ALBUM_FKS
+    }
+    for statement in postgres_kifu_album_validation_statements(statuses):
+        with engine.begin() as conn:
+            conn.execute(text(statement))
+    validation = _postgres_kifu_album_constraint_validation(engine)
+    if any(not validation.get(name, False) for name, _ in statuses.values()):
+        raise RuntimeError("Kifu album foreign key validation did not complete")
+
+
+def _kifu_album_foreign_keys(inspector) -> dict[str, dict]:
+    fks = {}
+    for fk in inspector.get_foreign_keys("kifu_albums"):
+        constrained = fk.get("constrained_columns") or []
+        if len(constrained) == 1:
+            fks[constrained[0]] = fk
+    return fks
+
+
+def _assert_kifu_album_fk_targets(fks: dict[str, dict]) -> None:
+    for column, target in KIFU_ALBUM_FKS.items():
+        fk = fks.get(column)
+        if fk and (fk["referred_table"] != target or fk.get("referred_columns") != ["id"]):
+            raise RuntimeError(f"kifu_albums.{column} must reference {target}.id")
+
+
+def migrate_kifu_catalog_schema(engine) -> None:
+    """Add nullable catalog FKs to existing albums without rewriting SGFs or rows.
+
+    SQLite supports a nullable ``ADD COLUMN ... REFERENCES`` but cannot attach a
+    FK to an already existing bare column. Such a partial migration is refused
+    instead of rebuilding an authoritative album table.
+    """
+
+    inspector = inspect(engine)
+    if "kifu_albums" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("kifu_albums")}
+    fks = _kifu_album_foreign_keys(inspector)
+    _assert_kifu_album_fk_targets(fks)
+    if engine.dialect.name == "sqlite":
+        unconstrained = [column for column in KIFU_ALBUM_FKS if column in columns and column not in fks]
+        if unconstrained:
+            raise RuntimeError(
+                "kifu_albums has catalog column(s) without foreign keys: "
+                + ", ".join(unconstrained)
+                + "; SQLite cannot repair these in place"
+            )
+        with engine.begin() as conn:
+            for column, target in KIFU_ALBUM_FKS.items():
+                if column not in columns:
+                    conn.execute(
+                        text(f'ALTER TABLE "kifu_albums" ADD COLUMN "{column}" INTEGER REFERENCES "{target}"(id)')
+                    )
+    elif engine.dialect.name == "postgresql":
+        with engine.begin() as conn:
+            for statement in postgres_kifu_album_fk_statements(existing_columns=columns, existing_fks=fks):
+                conn.execute(text(statement))
+    else:
+        raise RuntimeError(f"Kifu catalog migration unsupported for {engine.dialect.name}")
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (
     "(terminal_source IS NULL AND origin_device_id IS NULL "
@@ -338,6 +542,8 @@ def add_missing_columns(engine) -> None:
             for col in table.columns:
                 if col.name in existing_cols:
                     continue
+                if table.name == "kifu_albums" and col.name in KIFU_ALBUM_FKS:
+                    raise RuntimeError("Run migrate_kifu_catalog_schema before adding kifu album columns")
                 col_type = col.type.compile(engine.dialect)
                 ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'
                 default = _default_clause(col)
@@ -383,6 +589,14 @@ def create_missing_indexes(engine) -> None:
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:
                 if index.name in existing_idx:
+                    continue
+                if (
+                    engine.dialect.name == "postgresql"
+                    and table.name == "kifu_albums"
+                    and index.name in KIFU_ALBUM_IDENTITY_INDEXES.values()
+                ):
+                    # Existing production albums need CREATE INDEX CONCURRENTLY.
+                    # The dedicated migration builds and verifies these first.
                     continue
                 # Let SQLAlchemy compile dialect clauses such as partial unique
                 # predicates. Reconstructing an index from column names would

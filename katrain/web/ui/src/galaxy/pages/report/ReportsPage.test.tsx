@@ -475,6 +475,19 @@ describe('ReportsPage', () => {
     expect(mockTaskRefresh).toHaveBeenCalled();
   });
 
+  it('does not offer deletion for a game imported from the kifu library', async () => {
+    mockUserGamesList.mockResolvedValue({ items: [{ ...gameSummary, source: 'kifu_library' }], total: 1, page: 1, page_size: 12 });
+
+    render(
+      <MemoryRouter><GameNavigationProvider>
+        <ReportsPage />
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByText('Report Game')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Delete game' })).not.toBeInTheDocument();
+  });
+
   it('shows retry button for failed tasks and retries on click', async () => {
     setReportTasks([
       {

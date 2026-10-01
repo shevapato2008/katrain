@@ -15,6 +15,13 @@ export interface KifuAlbumSummary {
   board_size: number;
   round_name: string | null;
   move_count: number;
+  display_player_black?: string | null;
+  display_player_white?: string | null;
+  display_black_rank?: string | null;
+  display_white_rank?: string | null;
+  display_event?: string | null;
+  display_round_name?: string | null;
+  sources?: string[];
 }
 
 export interface KifuAlbumDetail extends KifuAlbumSummary {

@@ -995,6 +995,9 @@ msgstr "k"
 msgid "strength:dan"
 msgstr "d"
 
+msgid "strength:professional_dan_format"
+msgstr "Pro {rank} dan"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2225,6 +2228,12 @@ msgstr "Place"
 
 msgid "kifu:source"
 msgstr "Source"
+
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Source unverified"
 
 msgid "kifu:open_in_research"
 msgstr "Open in Research"

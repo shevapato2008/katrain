@@ -15,6 +15,10 @@ class ProtectedRankedGameError(ValueError):
     pass
 
 
+class ProtectedLibraryGameError(ValueError):
+    pass
+
+
 class InvalidAuthoritativeRankedGameError(ValueError):
     pass
 
@@ -131,6 +135,8 @@ class UserGameRepository:
                 if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
                     raise ValueError("authoritative ranked AI game is immutable")
                 return self._to_dict(existing, include_sgf=True)
+            if session.query(models_db.AiLadderGameLedger.id).filter_by(game_id=game_id).first() is not None:
+                raise ProtectedRankedGameError("deleted ranked game cannot be recreated")
 
             db_game = models_db.UserGame(
                 id=game_id,
@@ -192,6 +198,7 @@ class UserGameRepository:
         return (
             session.get(models_db.AiLadderPendingGame, game_id) is not None
             or session.get(models_db.AiLadderActiveGame, game_id) is not None
+            or session.query(models_db.AiLadderGameLedger.id).filter_by(game_id=game_id).first() is not None
         )
 
     def get_authoritative_ai_ladder_ranked(self, game_id: str, user_id: int) -> Optional[Dict[str, Any]]:
@@ -367,7 +374,7 @@ class UserGameRepository:
         finally:
             session.close()
 
-    def delete(self, game_id: str, user_id: int) -> bool:
+    def delete(self, game_id: str, user_id: int, *, remote_confirmed: bool = False) -> bool:
         session = self.session_factory()
         try:
             game = (
@@ -380,8 +387,19 @@ class UserGameRepository:
             )
             if not game:
                 return False
-            if game.game_type == "ai_ladder_ranked":
-                raise ProtectedRankedGameError("authoritative ranked AI games are protected from generic deletion")
+            if game.source == "kifu_library":
+                raise ProtectedLibraryGameError("games imported from the kifu library cannot be deleted")
+            if game.game_type == "ai_ladder_ranked" and not remote_confirmed:
+                settled = (
+                    session.query(models_db.AiLadderGameLedger.id)
+                    .filter_by(game_id=game_id, user_id=user_id)
+                    .first()
+                )
+                if settled is None and (
+                    session.get(models_db.AiLadderPendingGame, game_id) is not None
+                    or session.get(models_db.AiLadderActiveGame, game_id) is not None
+                ):
+                    raise ProtectedRankedGameError("ranked AI game settlement is not complete")
             session.delete(game)
             session.commit()
             return True

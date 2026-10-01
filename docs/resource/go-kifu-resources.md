@@ -58,6 +58,18 @@
 - **授权**: 仓库顶层没有许可证文件，GitHub API 的 `license` 为空。公开可下载不等于允许产品分发；取得明确授权并完成重复、坏谱和元数据审计前，不并入正式库。
 - **历史记录**: 2026-09-19 调研会话曾提到该仓库；目前本机只找到 CWI 完整包及其审计报告，未找到 PGD 的本地下载包或独立分析报告。
 
+### 棋手、赛事译名与来源的核对口径（2026-10-01）
+
+`kifu_albums` 保留 SGF 和原始姓名、赛事；另以 `black_player_id`、`white_player_id`、`event_id` 关联独立实体。别名用于识别同一实体，逐语言名称另存核实状态和参考链接。界面只用已核实译名；没有证据的语言显示 SGF 原文。旧五语言译名进入 `review` 待审队列，不会自动成为可搜索别名，也不会把同名异人合并。
+
+首批有来源链接的审定种子见 [`kifu-name-seed.json`](kifu-name-seed.json)，含吴清源、道策、丈和、秀策、木谷实、大手合及吴清源杯。种子仅覆盖这七个实体，**不代表全库已完成十一语言翻译**。回填报告按不同原始棋手名和赛事实值统计每种语言的核实率、回退数及身份关联率；后续审核应以这份缺口清单推进。
+
+CWI 的 `JapanPromotionTournament,YYYY,Spring/Fall` 经 [CWI 1934 年大手合档案](https://homepages.cwi.nl/~aeb/go/games/games/Oteai/1934/index.html)和[日本棋院沿革](https://www.nihonkiin.or.jp/profile/enkaku/index.html)核对，归入“大手合”赛事实体；年份和春秋场次仅用于卡片显示，原始 `EV` 保留。其他未经核实的复合赛事名仍显示原文。CWI 的 `5p` 等职业段位在前端按当前语言格式化。另有部分 `PB/PW` 把“六段”直接接在棋手姓名后；仅识别明确的中文数字段位后缀，展示时拆为姓名和段位，并用去掉段位的姓名匹配经审核的棋手身份。原始 `PB/PW/BR/WR` 和 SGF 内容不改。
+
+来源由 `kifu_sources` 和 `kifu_album_sources` 保存，一盘棋可有多个来源，API 返回 `sources` 数组。现有目录 `19x19` 单独记为 `19x19`；`CWI_*` 与已核实的 `Go_Seigen` 专集记为 `CWI`；没有证据的路径记为 `unknown`，不能仅凭 SGF 的 `SO`/`US` 字段推断为星阵。过去因同内容跳过而未入库的第二份来源，只有重新读取原文件并通过完全相同的 SGF 内容校验后才能补到主谱；在此之前数组可能不完整。
+
+已有 `kifu_albums` 的棋谱库在部署前运行 `python -m katrain.web.kifu.migrate_catalog --validate` 建立实际外键和索引；全新空库先通过常规应用初始化建表。数据回填使用 `python -m katrain.web.kifu.catalog_backfill --seed /path/to/kifu-name-seed.json` 预览，再加 `--apply --batch-key <unique-key>` 分批写入；连接从 `KATRAIN_DATABASE_URL` 环境变量读取。完全相同的 SGF 才自动标记重复，主线相同仅列为人工候选。`--undo-dedup-batch <key>` 只撤销已完成批次的重复指针和聚合到主谱的来源链接；不会撤销普通来源、身份关联或待审译名，所以正式写入前必须保留可恢复的数据库备份。
+
 ---
 
 ## 二、中国棋谱资源

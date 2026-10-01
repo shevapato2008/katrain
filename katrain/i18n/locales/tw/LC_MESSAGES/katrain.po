@@ -577,6 +577,9 @@ msgstr "級"
 msgid "strength:dan"
 msgstr "段"
 
+msgid "strength:professional_dan_format"
+msgstr "職業{rank}段"
+
 msgid "ai:default"
 msgstr "推薦 (Recommended)"
 
@@ -2199,6 +2202,12 @@ msgstr "地點"
 
 msgid "kifu:source"
 msgstr "來源"
+
+msgid "kifu:source_golaxy"
+msgstr "星陣"
+
+msgid "kifu:source_unknown"
+msgstr "來源待核實"
 
 msgid "kifu:open_in_research"
 msgstr "在研究中開啟"

@@ -139,8 +139,12 @@ class SQLAlchemyUserRepository(UserRepository):
         # INDEX for anything missing (e.g. users.is_admin, billing indexes). Runs
         # BEFORE the SQLite drift-rebuild so a simple new column never drops data.
         migrations.migrate_ai_ladder_decision_schema(engine)
+        # PostgreSQL adds these album FKs as NOT VALID; validation is a separate
+        # post-deploy operation via validate_kifu_album_foreign_keys().
+        migrations.migrate_kifu_catalog_schema(engine)
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
+        migrations.verify_kifu_album_identity_indexes(engine)
         migrations.create_missing_indexes(engine)
         # PostgreSQL-only: the kifu list's DESC NULLS LAST ordering cannot be
         # declared in __table_args__ without breaking SQLite. See the docstring.

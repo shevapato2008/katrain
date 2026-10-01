@@ -771,6 +771,9 @@ msgstr "к"
 msgid "strength:dan"
 msgstr "д"
 
+msgid "strength:professional_dan_format"
+msgstr "{rank}-й дан (проф.)"
+
 msgid "ai:default"
 msgstr "Recommended"
 
@@ -2267,6 +2270,12 @@ msgstr "Місце"
 
 msgid "kifu:source"
 msgstr "Джерело"
+
+msgid "kifu:source_golaxy"
+msgstr "GoLaxy"
+
+msgid "kifu:source_unknown"
+msgstr "Джерело не підтверджено"
 
 msgid "kifu:open_in_research"
 msgstr "Відкрити в дослідженні"

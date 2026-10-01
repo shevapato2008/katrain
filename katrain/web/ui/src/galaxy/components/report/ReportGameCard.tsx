@@ -123,22 +123,24 @@ export default function ReportGameCard({
           <Typography variant="caption" color="text.secondary">
             {game.move_count} {t('report:moves_unit', 'moves')}
           </Typography>
-          <IconButton
-            size="small"
-            aria-label={t('report:delete_game', 'Delete game')}
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete();
-            }}
-            sx={{
-              p: 0.25,
-              color: 'text.secondary',
-              opacity: 0.5,
-              '&:hover': { color: 'error.main', opacity: 1 },
-            }}
-          >
-            <DeleteOutlineIcon sx={{ fontSize: 16 }} />
-          </IconButton>
+          {game.source !== 'kifu_library' && (
+            <IconButton
+              size="small"
+              aria-label={t('report:delete_game', 'Delete game')}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+              sx={{
+                p: 0.25,
+                color: 'text.secondary',
+                opacity: 0.5,
+                '&:hover': { color: 'error.main', opacity: 1 },
+              }}
+            >
+              <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -139,6 +139,44 @@ def test_wikidata_mul_and_fallback_labels_are_only_discovery_leads():
         validate_research_record(_record(source_checks=[wd_check]), _registry())
 
 
+def test_discovery_hit_needs_a_separate_explicit_api_label_response():
+    check = _check("wd", url="https://www.wikidata.org/wiki/Q1", label_lang="ru", fallback=False)
+    with pytest.raises(EvidenceError, match="API label"):
+        validate_research_record(_record(source_checks=[check]), _registry())
+    label = {"language": "ru", "value": "Го Сэйгэн"}
+    check["label_evidence"] = {
+        "api_url": "https://www.wikidata.org/wiki/Special:EntityData/Q1.json",
+        "fetched_at": "2026-10-02T10:01:00Z",
+        "http_status": 200,
+        "response_sha256": hashlib.sha256(json.dumps(label, ensure_ascii=False).encode()).hexdigest(),
+        "body_excerpt": json.dumps(label, ensure_ascii=False),
+        "json_pointer": "/entities/Q1/labels/ru",
+        "label": label,
+        "fallback": False,
+    }
+    assert validate_research_record(_record(source_checks=[check]), _registry())["review_status"] == "pending"
+    check["observed_lang"] = "en"  # Wikidata page chrome may be English while its API label is Russian.
+    assert validate_research_record(_record(source_checks=[check]), _registry())["review_status"] == "pending"
+    check["observed_lang"] = "ru"
+    for change in ({"language": "mul"}, {"value": "Go Seigen"}):
+        bad = {**check, "label_evidence": {**check["label_evidence"], "label": {**label, **change}}}
+        with pytest.raises(EvidenceError):
+            validate_research_record(_record(source_checks=[bad]), _registry())
+    bad = {**check, "label_evidence": {**check["label_evidence"], "fallback": True}}
+    with pytest.raises(EvidenceError):
+        validate_research_record(_record(source_checks=[bad]), _registry())
+    bad = {**check, "label_evidence": {**check["label_evidence"], "body_excerpt": '{"language":"ru","value":"Wrong"}'}}
+    with pytest.raises(EvidenceError):
+        validate_research_record(_record(source_checks=[bad]), _registry())
+    bad = {**check, "label_lang": "mul"}
+    with pytest.raises(EvidenceError):
+        validate_research_record(_record(source_checks=[bad]), _registry())
+    bad = {**check, "label_evidence": {**check["label_evidence"],
+                                       "api_url": "https://www.wikidata.org/wiki/Special:EntityData/Q2.json"}}
+    with pytest.raises(EvidenceError, match="entity"):
+        validate_research_record(_record(source_checks=[bad]), _registry())
+
+
 def test_not_found_requires_completed_defined_scope_and_documented_searches():
     no_hit = _check(status="not_found", candidate_name="", identity_basis="", body_excerpt="Search results, no matching player", search_scope="All indexed player results", scope_complete=True)
     record = _record(scope_status="not_found_in_scope", candidate_name="", source_checks=[no_hit, _check("wd", status="not_found", candidate_name="", identity_basis="", url="https://www.wikidata.org/wiki/Q1", body_excerpt="Search results, no matching label", label_lang="ru", search_scope="Entity labels and aliases", scope_complete=True)])
@@ -234,6 +272,33 @@ def test_capture_rejects_page_language_fallback():
     check = capture_source_check(task, _registry(), open_url=lambda *_args, **_kw: Response())
     assert check["status"] == "incomplete"
     assert check["observed_lang"] == "en"
+
+
+def test_discovery_html_language_does_not_prove_label_language_or_no_fallback():
+    from email.message import Message
+
+    class Response:
+        status = 200
+        url = "https://www.wikidata.org/wiki/Q1"
+        headers = Message()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self, _limit):
+            return '<html lang="ru"><body>Го Сэйгэн</body></html>'.encode()
+
+    task = {"owner": {"kind": "player", "id": 17}, "lang": "ru", "source_id": "wd", "query": "Go Seigen",
+            "url": "https://www.wikidata.org/wiki/Q1", "candidate_name": "Го Сэйгэн",
+            "identity_basis": "Entity Q1 is Go Seigen", "label_lang": "ru", "fallback": False}
+    check = capture_source_check(task, _registry(), open_url=lambda *_args, **_kw: Response())
+    assert check["status"] == "incomplete"
+    assert "Го Сэйгэн" in check["body_excerpt"]
+    assert "label_lang" not in check
+    assert "fallback" not in check
 
 
 def test_cli_validates_pending_jsonl_atomically(tmp_path):

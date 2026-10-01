@@ -122,6 +122,43 @@ def _matches_target(observed: str, target: str) -> bool:
     return observed == target or observed.startswith(target + "-")
 
 
+def _validate_discovery_label(check: dict, source: dict, target: str) -> None:
+    """Require a separately captured language-specific API field for discovery leads."""
+    evidence = check.get("label_evidence")
+    _require(isinstance(evidence, dict), "discovery hit needs explicit API label evidence")
+    api_url = evidence.get("api_url")
+    _require(_source_url_matches(api_url, source), "API label URL must be on registered host")
+    _require(urlparse(api_url).path.endswith(".json") or urlparse(api_url).path.endswith("/api.php"),
+             "API label URL must identify a JSON or API response")
+    _require(_aware_timestamp(evidence.get("fetched_at")), "API label timestamp required")
+    _require(evidence.get("http_status") == 200, "API label response must have HTTP 200")
+    _require(bool(_HEX_SHA256.fullmatch(str(evidence.get("response_sha256", "")))),
+             "API label response hash required")
+    pointer = evidence.get("json_pointer")
+    _require(_text(pointer) and pointer.startswith("/") and "/labels/" in pointer
+             and _matches_target(pointer.rsplit("/", 1)[-1], target),
+             "API label field must explicitly name target language")
+    if (urlparse(api_url).hostname or "").endswith("wikidata.org"):
+        page_entity = re.fullmatch(r"/wiki/(Q[1-9][0-9]*)", urlparse(check["url"]).path)
+        api_entity = re.fullmatch(r"/wiki/Special:EntityData/(Q[1-9][0-9]*)\.json", urlparse(api_url).path)
+        _require(bool(page_entity and api_entity and page_entity.group(1) == api_entity.group(1)
+                      and f"/entities/{page_entity.group(1)}/labels/" in pointer),
+                 "Wikidata page, API and label pointer must identify the same entity")
+    label = evidence.get("label")
+    _require(isinstance(label, dict) and _text(label.get("language")) and _text(label.get("value")),
+             "API label object must contain language and value")
+    _require(_matches_target(label["language"], target) and label["value"] == check.get("candidate_name"),
+             "API label language/value differs from candidate")
+    _require(not check.get("label_lang") or check["label_lang"] == label["language"],
+             "page label language conflicts with API label language")
+    _require(evidence.get("fallback") is False, "API label cannot be a fallback")
+    try:
+        excerpt_label = json.loads(evidence.get("body_excerpt", ""))
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise EvidenceError("API label body excerpt must contain the returned label object") from exc
+    _require(excerpt_label == label, "API label excerpt differs from the claimed label")
+
+
 def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, dict]) -> None:
     _require(isinstance(check, dict), "source check must be an object")
     _require(check.get("owner") == owner, "source check owner differs from research record")
@@ -141,17 +178,18 @@ def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, di
     _require(_text(check.get("body_excerpt")), "completed search needs real body excerpt")
     _require(check.get("language_basis") in LANGUAGE_BASIS, "completed search needs actual-language basis")
     observed = check.get("observed_lang")
-    _require(_text(observed) and _matches_target(observed, target), "actual page language differs from target")
+    _require(_text(observed), "actual page language must be recorded")
+    if sources[source_id]["tier"] != "discovery" or status == "not_found":
+        _require(_matches_target(observed, target), "actual page language differs from target")
     returned = check.get("returned_lang")
     _require(not returned or _matches_target(returned, target), "returned label language differs from target")
     _require(not check.get("fallback"), "fallback label is not target-language evidence")
-    if sources[source_id]["tier"] == "discovery" and status == "found":
-        _require(_text(check.get("label_lang")) and _matches_target(check["label_lang"], target),
-                 "Wikidata/discovery label must be explicitly in target language")
     if status == "found":
         _require(_text(check.get("candidate_name")), "found check needs candidate name")
         _require(check["candidate_name"] in check["body_excerpt"], "candidate must occur in captured body excerpt")
         _require(_text(check.get("identity_basis")), "found check needs identity matching basis")
+        if sources[source_id]["tier"] == "discovery":
+            _validate_discovery_label(check, sources[source_id], target)
     else:
         _require(not _text(check.get("candidate_name")), "not-found check cannot contain candidate")
         _require(check.get("scope_complete") is True and _text(check.get("search_scope")),
@@ -312,12 +350,13 @@ def capture_source_check(
                 if not (_text(candidate) and candidate in body_text and _text(task.get("identity_basis"))):
                     check["status"] = "incomplete"
                     return check
+                if source["tier"] == "discovery":
+                    # An HTML page language says nothing about API label fallback.
+                    check["status"] = "incomplete"
+                    return check
                 check["status"] = "found"
                 check["candidate_name"] = candidate
                 check["identity_basis"] = task["identity_basis"]
-                if source["tier"] == "discovery":
-                    check["label_lang"] = observed
-                    check["fallback"] = False
                 return check
         except HTTPError as exc:
             check["http_status"] = exc.code

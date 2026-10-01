@@ -152,6 +152,13 @@ def test_conflicting_found_names_need_explicit_exclusion_reason():
         "source_urls": ["https://example.org/go"],
     }
     assert validate_candidate(proposed, conflicting, registry(), inventory())["review_status"] == "approved"
+    with pytest.raises(CandidateError, match="gpt-6-sol"):
+        validate_candidate({**proposed, "reviewer_model": "gpt-6-astra"},
+                           conflicting, registry(), inventory())
+    with pytest.raises(CandidateError, match="gpt-6-sol"):
+        validate_candidate({**proposed, "conflict_adjudication": {
+            **proposed["conflict_adjudication"], "decided_at": "2026-10-02T12:00:00Z"}},
+                           conflicting, registry(), inventory())
 
 
 def test_generated_name_requires_completed_negative_scope_and_reading_basis():

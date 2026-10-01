@@ -226,7 +226,11 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
                          "conflicting names require independent Sol or Astra adjudication")
                 _require(adjudication.get("model") == "gpt-6-sol"
                          and adjudication.get("agent_id") in {row["producer_id"], row.get("reviewer_id")}
+                         and adjudication.get("model") == (
+                             row["producer_model"] if adjudication.get("agent_id") == row["producer_id"]
+                             else row.get("reviewer_model"))
                          and _time(adjudication.get("decided_at")) and _text(adjudication.get("rationale"))
+                         and _time(adjudication["decided_at"]) <= _time(row["reviewed_at"])
                          and isinstance(adjudication.get("source_urls"), list)
                          and all(isinstance(url, str) and url.startswith("https://")
                                  for url in adjudication["source_urls"])

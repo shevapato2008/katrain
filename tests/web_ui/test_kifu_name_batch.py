@@ -15,7 +15,7 @@ from katrain.web.kifu.name_batch import (
     BatchError, apply_bundle, batch_status, catalog_snapshot_sha, dry_run_bundle,
     name_preimage_sha256, undo_batch,
 )
-from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256, validate_bundle
+from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256, identity_scope_sha256, validate_bundle
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
 from scripts.kifu_name_batch import main
@@ -421,6 +421,19 @@ def _v2_wrap(engine, inventory, bundle, owners, links):
     result.update(bundle_format=2, catalog_sha256=catalog_snapshot_sha(engine), owners=owners,
                   owner_set_sha256=canonical_sha256(owners), album_links=links,
                   link_set_sha256=canonical_sha256(links))
+    groups = {}
+    for link in links:
+        field = {"black": "player_black", "white": "player_white", "event": "event"}[link["slot"]]
+        key = (canonical_sha256(link["target"]), link["expected"][field])
+        groups.setdefault(key, []).append(link)
+    for group in groups.values():
+        declaration = next(item for item in owners if item["owner"] == group[0]["target"])
+        for link in group:
+            link["identity_review"]["scope_frozen_at"] = "2026-10-02T10:30:00Z"
+        scope_hash = identity_scope_sha256(result, group, declaration)
+        for link in group:
+            link["identity_review"]["scope_sha256"] = scope_hash
+    result["link_set_sha256"] = canonical_sha256(links)
     return result
 
 
@@ -676,3 +689,51 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
     with engine.connect() as conn:
         assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) is None
         assert conn.scalar(select(KifuPlayer.id).where(KifuPlayer.id == player_id)) is None
+
+
+@pytest.mark.parametrize("change", ["expand", "remove", "target", "context", "evidence", "freeze"])
+def test_v2_identity_scope_rejects_reusing_review_after_payload_changes(engine, change):
+    with engine.begin() as conn:
+        for album_id in (12, 13):
+            conn.execute(KifuAlbum.__table__.insert().values(
+                id=album_id, player_black="吴清源九段", player_white="Opponent", event="Cup",
+                sgf_content="(;PB[吴清源九段]PW[Opponent]EV[Cup])", source_path=f"{album_id}.sgf"))
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
+    links = [_identity_link(inv, album_id, "black", owner) for album_id in (12, 13)]
+    bundle = _v2_wrap(engine, inv, base, [declaration], links[:1] if change == "expand" else links)
+    assert validate_bundle(bundle, source_registry, inv, research)["ready"]
+    if change == "expand":
+        extra = links[1]
+        extra["identity_review"] = deepcopy(bundle["album_links"][0]["identity_review"])
+        bundle["album_links"].append(extra)
+    elif change == "remove":
+        bundle["album_links"].pop()
+    elif change == "target":
+        other = {"kind": "player", "ref": "other"}
+        bundle["owners"].append({"owner": other, "create": {"canonical_name": "Other"}})
+        bundle["owner_set_sha256"] = canonical_sha256(bundle["owners"])
+        for link in bundle["album_links"]:
+            link["target"] = other
+    elif change == "context":
+        columns = inv["association_columns"]
+        for row in inv["album_associations"]:
+            if row[0] == 12:
+                row[columns.index("round_name")] = "Changed round"
+                album = dict(zip(columns, row))
+        inv["sha256"] = canonical_sha256(inv["album_associations"])
+        bundle["inventory_sha256"] = inv["sha256"]
+        bundle["album_links"][0]["expected"]["round_name"] = "Changed round"
+        bundle["album_links"][0]["association_sha256"] = canonical_sha256(album)
+    elif change == "evidence":
+        for link in bundle["album_links"]:
+            link["identity_review"]["source_checks"][0]["body_sha256"] = "b" * 64
+    else:
+        for link in bundle["album_links"]:
+            link["identity_review"]["scope_frozen_at"] = link["identity_review"]["reviewed_at"]
+    bundle["link_set_sha256"] = canonical_sha256(bundle["album_links"])
+    result = validate_bundle(bundle, source_registry, inv, research)
+    assert not result["ready"]
+    assert any("scope hash mismatch" in error or "scope freeze" in error for error in result["errors"])

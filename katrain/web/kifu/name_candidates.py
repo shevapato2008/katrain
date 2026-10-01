@@ -394,6 +394,34 @@ def _occurrence_indexes(associations: dict[int, dict]) -> tuple[dict[str, list[i
             {raw: sorted(slots) for raw, slots in event_slots.items()})
 
 
+def identity_scope_sha256(bundle: dict, links: list[dict], declaration: dict) -> str:
+    """Hash one exact target/raw scope before its independent approval is issued.
+
+    Approval provenance stays outside the payload; evidence and freeze time are
+    pinned so an old approval cannot authorize replacement evidence or members.
+    """
+    members = []
+    for link in links:
+        review = link["identity_review"]
+        members.append({
+            "album_id": link["album_id"], "slot": link["slot"],
+            "association_sha256": link["association_sha256"],
+            "expected": link["expected"], "target": link["target"],
+            "raw_scope_sha256": link["raw_scope_sha256"],
+            "corrects_existing": link.get("corrects_existing", False),
+            "source_checks": review.get("source_checks"),
+            "identity_basis": review.get("identity_basis"),
+            "event_period_basis": review.get("event_period_basis"),
+            "scope_frozen_at": review.get("scope_frozen_at"),
+        })
+    return canonical_sha256({
+        "inventory_sha256": bundle["inventory_sha256"],
+        "catalog_sha256": bundle["catalog_sha256"], "rule_version": bundle["rule_version"],
+        "target_declaration": declaration,
+        "members": sorted(members, key=lambda item: (item["album_id"], item["slot"])),
+    })
+
+
 def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str], list[str]]:
     """Validate finite owner/link declarations without treating a ref as a DB ID."""
     errors = []
@@ -450,6 +478,7 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             declarations[token] = declaration
         except (AttributeError, TypeError, CandidateError) as exc:
             errors.append(f"owner[{number}]: {exc}")
+    review_groups = defaultdict(list)
     link_targets = set()
     seen_slots = set()
     required_context = {"player_black", "player_white", "event", "date_played", "round_name",
@@ -512,9 +541,22 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             if slot == "event":
                 _require(_text(review.get("event_period_basis")),
                          "event identity link needs naming-period evidence")
+            frozen_at = _time(review.get("scope_frozen_at"))
+            _require(frozen_at and _time(review["reviewed_at"]) > frozen_at,
+                     "link identity review must follow scope freeze")
+            review_groups[(target_key, raw_value)].append((number, link))
             link_targets.add(target_key)
         except (AttributeError, KeyError, TypeError, CandidateError) as exc:
             errors.append(f"album_link[{number}]: {exc}")
+    for (target_key, raw_value), group in review_groups.items():
+        scope_hash = identity_scope_sha256(bundle, [link for _, link in group], declarations[target_key])
+        first_review = group[0][1]["identity_review"]
+        for number, link in group:
+            review = link["identity_review"]
+            if review.get("scope_sha256") != scope_hash:
+                errors.append(f"album_link[{number}]: identity review scope hash mismatch")
+            if review != first_review:
+                errors.append(f"album_link[{number}]: identity review scope needs the same independent decision")
     return declarations, link_targets, errors
 
 

@@ -227,6 +227,16 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
 
     if decision in {"conventional", "generated", "corrected"}:
         checked = _research_for(row, research, registry)
+        if row["review_status"] == "approved":
+            captures = []
+            for source_check in checked["source_checks"]:
+                captures.append(source_check["fetched_at"])
+                for nested_key in ("identity_corroboration", "label_evidence"):
+                    nested = source_check.get(nested_key)
+                    if isinstance(nested, dict):
+                        captures.append(nested["fetched_at"])
+            _require(all(_time(row["reviewed_at"]) >= _time(captured_at) for captured_at in captures),
+                     "candidate approval predates a source capture")
         if decision == "generated":
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
             _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
@@ -302,10 +312,6 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
                 _require(all(_time(adjudication["decided_at"]) >= _time(item["fetched_at"])
                              for item in checked["source_checks"] if item["url"] in urls),
                          "conflict adjudication predates a cited source capture")
-                if row["review_status"] != "pending":
-                    _require(all(_time(row["reviewed_at"]) >= _time(item["fetched_at"])
-                                 for item in checked["source_checks"]),
-                             "candidate approval predates a source capture")
         if decision == "corrected":
             _require(row["owner"]["kind"] in {"raw_player", "raw_event"}, "correction needs raw owner")
             raw = row["raw_value"]
@@ -336,7 +342,7 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
         template_key = (
             "placeholder" if decision == "placeholder"
             else ("player_error" if kind == "raw_player" else "event_error") if decision == "error"
-            else "rank_event" if raw in {"段位赛", "段位賽"}
+            else "rank_event" if raw.strip() in {"段位赛", "段位賽"}
             else "individual_event" if decision == "generic"
             else "hidden"
         )

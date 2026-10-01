@@ -144,6 +144,13 @@ def test_conventional_approved_name_requires_professional_target_language_body_a
             validate_candidate(candidate(**changes), research(), registry(), inventory())
 
 
+def test_approved_conventional_name_cannot_precede_its_source_capture():
+    later = research(source_checks=[check(fetched_at="2026-10-03T10:00:00Z")])
+    with pytest.raises(CandidateError, match="source capture"):
+        validate_candidate(candidate(research_sha256=canonical_sha256(later)),
+                           later, registry(), inventory())
+
+
 def test_discovery_only_and_incomplete_research_do_not_approve_conventional_name():
     discovery = research(source_checks=[check(source_id="wd", url="https://www.wikidata.org/wiki/Q1")])
     with pytest.raises(CandidateError):
@@ -174,6 +181,11 @@ def test_reviewed_wikipedia_article_can_support_conventional_name_but_wikidata_l
     evidence = research(registry_sha256=registry_sha256(sources), source_checks=[article])
     proposed = candidate(research_sha256=canonical_sha256(evidence))
     assert validate_candidate(proposed, evidence, sources, inventory())["decision_kind"] == "conventional"
+    article["identity_corroboration"]["fetched_at"] = "2026-10-03T10:00:00Z"
+    evidence["source_checks"] = [article]
+    with pytest.raises(CandidateError, match="source capture"):
+        validate_candidate(candidate(research_sha256=canonical_sha256(evidence)),
+                           evidence, sources, inventory())
 
 
 def test_conflicting_found_names_need_explicit_exclusion_reason():
@@ -495,6 +507,11 @@ def test_unreviewed_generic_event_and_corrupt_player_error_are_explicit():
     inv = inventory()
     inv["album_associations"].append([3, "崔珪昞]BR[九段", "Unknown", "段位赛", None, None, None])
     assert validate_candidate(generic, None, registry(), inv)["decision_kind"] == "generic"
+    spaced = {**generic, "raw_value": " 段位赛 "}
+    inv["album_associations"].append([4, "Black", "White", " 段位赛 ", None, None, None])
+    assert validate_candidate(spaced, None, registry(), inv)["display_name"] == "Турнир разрядов"
+    with pytest.raises(CandidateError, match="template"):
+        validate_candidate({**spaced, "display_name": "Личный турнир"}, None, registry(), inv)
     error = candidate(owner={"kind": "raw_player", "id": 8}, lang="ru", raw_value="崔珪昞]BR[九段",
                       display_name="Ошибка в имени игрока", decision_kind="error", research_sha256="",
                       generation_rule_version="classification-v1")

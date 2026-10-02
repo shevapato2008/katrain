@@ -13,3 +13,11 @@
 在当前工作区新来源分支上重新核对：六语 rule source provenance 6/6 PASS，五语 research 5/5 PASS，六语输出机械复算 6/6 匹配旧审核矩阵。完整 validate_bundle 实际 `ready=false/write_ready=false`，三个根错误均为未签 scope/anchor/规则的 exact approval 缺失，其余为未签 scope 导致 owner/member/candidate 依赖拒绝；provenance 错误 0。日志 `validation.after-latin-source-fix.json` 记录实际代码 HEAD `11bb4bf3281c1f1c3ab57a41a9f7e91de15de00a` 和结果；最终演练须重新核对代码提交与工作区文件 hash。
 
 所有 DB 读操作只访问原隔离 clone，前后目录 hash 和表计数相同；173,025 album、876 player，raw value/name/batch/research/change 仍均为 0。没有生产或现役测试库写入，没有自行 Git 提交；克隆容器已停止。独立签署前未执行 importer dry-run/apply。后续须按交接说明先签 scope/rules，再由实际生产者重绑 v3 anchor/研究和批次；尤其 batch 必须重新生产于规则审核之后，不能直接给现稿补签并伪造旧时间。
+
+## 第二阶段：已签范围与规则后的锚点/五语研究重产
+
+按 [Astra 第一阶段独立 PASS](kifu-name-raw-player-dingbo-37-v2-independent-review-astra-2026-10-03.md)于真实时间 `2026-10-02T22:29:32.368505+00:00` 重新生产 raw v3 anchor 和五语研究；生产者仍为 `/root/raw31_bundle_producer`。新工件绑定已签 scope 规范 hash `5e9fbb5b309d6b9d3850b062c0b43abe4f12b01c0094f18e3114478c99c0a1de`，已签 rules 集规范 hash `129f6ee2bb0c0e25b76e5c5626bfe93903a5640e1a7d80f18f1f6b57ada7355b`；未沿用旧 draft scope hash 或生产日期。
+
+保护子目录 `raw-player-dingbo-37-v2-producer/phase2-anchor-research/` 中的新 `source-raw-anchor-v3.pending.json` 规范 hash 为 `5492f42e079f82205494d2c66f2af8a8204953a6fed3c4871fff590971389ddc`，内容 hash 为 `61dc5b19d8c8864e42c2a8f707535f7df3c9f5e9a791b2e3af1bb27d5133cff8`。五语研究为 `five-primary-research.pending.jsonl`，联合证据为 `evidence.pending.jsonl`，日志为 `validation.producer.json`。修正 `source_link.review_basis` 不再声称音节待定；明确已审 `ding / bo`，来源记录人物对应与精确 37 raw 槽读音适用性是分别审核的决定，不建立 album 人物归属。
+
+验证：签 scope 的全部成员与原 inventory 完整对应，双出版方来源记录结构一致，5/5 新 research 通过 validator；原来源事实、旧人物 anchor、五语来源记录和真实前像保留原字节，前像仍明确引用原捕获时间，不伪称本阶段重新查询。新 anchor 的完整 validator 按预期报 `transliteration content lacks exact approval`，留给 Astra 独立签署。本阶段无数据库连接、无新审核签名、无新候选或批次。原 `manifest.json` 保持原字节；新 `manifest.phase2.json` 冻结本阶段文件，阶段一 memo 原字节另存子目录，便于核验历史 hash。

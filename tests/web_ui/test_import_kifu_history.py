@@ -1,4 +1,5 @@
 from scripts import import_kifu
+import pytest
 
 
 def test_normalize_historical_date_with_text_prefix():
@@ -27,3 +28,49 @@ def test_mainline_signature_ignores_metadata_but_keeps_moves():
     assert import_kifu.mainline_signature(first) == import_kifu.mainline_signature(second)
     assert import_kifu.mainline_signature(first) != import_kifu.mainline_signature(changed)
     assert import_kifu.mainline_signature("(;SZ[19];B[dd];W[pp])") is None
+
+
+@pytest.mark.parametrize(
+    ("properties", "source", "expected"),
+    [
+        (
+            "GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]GC[第5届韩国最强棋士战预选 | 194手]",
+            "https://19x19.com",
+            "第5届韩国最强棋士战预选",
+        ),
+        (
+            "GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]GC[其他对局]",
+            "https://19x19.com",
+            "GNUGo3.8",
+        ),
+        (
+            "EV[正式赛事]GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]"
+            "GC[第5届韩国最强棋士战预选 | 194手]",
+            "https://19x19.com",
+            "正式赛事",
+        ),
+        (
+            "GN[段位赛]GN[第4届中国棋王战]GC[第4届中国棋王战 | 200手]",
+            "https://19x19.com",
+            "段位赛",
+        ),
+        (
+            "GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]GC[第5届韩国最强棋士战预选 | 194手]",
+            "https://other.example",
+            "GNUGo3.8",
+        ),
+    ],
+)
+def test_import_selects_second_game_name_only_for_verified_program_label(
+    tmp_path, monkeypatch, properties, source, expected
+):
+    sgf = tmp_path / "data" / "kifu-album" / "19x19" / "game.sgf"
+    sgf.parent.mkdir(parents=True)
+    sgf.write_text(f"(;FF[4]SZ[19]PB[Black]PW[White]{properties}SO[{source}];B[aa])", encoding="utf-8")
+    monkeypatch.setattr(import_kifu, "DATA_DIR", sgf.parent.parent)
+
+    record = import_kifu.parse_sgf_file(sgf)
+
+    assert record["event"] == expected
+    if "GNUGo" in properties:
+        assert "GN[GNUGo3.8][第5届韩国最强棋士战预选]" in record["sgf_content"]

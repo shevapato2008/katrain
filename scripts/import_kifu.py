@@ -96,13 +96,26 @@ def parse_sgf_file(sgf_path: Path) -> dict:
     sgf_content = root.sgf()
 
     date_played = root.get_property("DT")
+    event = root.get_property("EV") or root.get_property("GN")
+    game_names = root.get_list_property("GN") or []
+    if (
+        "EV" not in root.properties
+        and sgf_path.relative_to(DATA_DIR).parts[0] == "19x19"
+        and root.get_property("SO") == "https://19x19.com"
+        and len(game_names) == 2
+        and game_names[0] == "GNUGo3.8"
+        and game_names[1]
+        and (root.get_property("GC") or "").startswith(game_names[1])
+    ):
+        # This source stores its program label before the actual game name.
+        event = game_names[1]
 
     data = {
         "player_black": root.get_property("PB", "Unknown"),
         "player_white": root.get_property("PW", "Unknown"),
         "black_rank": root.get_property("BR"),
         "white_rank": root.get_property("WR"),
-        "event": root.get_property("EV") or root.get_property("GN"),
+        "event": event,
         "result": root.get_property("RE"),
         "date_played": date_played,
         # DTX often records a publication date, so use it for approximate

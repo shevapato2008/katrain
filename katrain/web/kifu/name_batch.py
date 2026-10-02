@@ -262,6 +262,10 @@ def _check_album_links(conn, bundle: dict) -> None:
     for link in bundle["album_links"]:
         album = conn.execute(select(KifuAlbum).where(KifuAlbum.id == link["album_id"])).mappings().one_or_none()
         _fail(album is not None, f"album link row vanished: {link['album_id']}")
+        sgf_content = album["sgf_content"]
+        _fail(isinstance(sgf_content, str) and
+              hashlib.sha256(sgf_content.encode("utf-8")).hexdigest() == link["production_sgf_sha256"],
+              f"album link {link['album_id']} SGF content differs from reviewed preimage")
         for field in ("player_black", "player_white", "event", "date_played", "round_name",
                       "black_rank", "white_rank"):
             _fail(album[field] == link["expected"][field],

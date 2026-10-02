@@ -437,7 +437,7 @@ def _v2_wrap(engine, inventory, bundle, owners, links):
     return result
 
 
-def _identity_link(inventory, album_id, slot, target):
+def _identity_link(engine, inventory, album_id, slot, target):
     columns = inventory["association_columns"]
     album = next(dict(zip(columns, row)) for row in inventory["album_associations"] if row[0] == album_id)
     context = {key: album[key] for key in (
@@ -459,7 +459,10 @@ def _identity_link(inventory, album_id, slot, target):
     }
     if slot == "event":
         review["event_period_basis"] = "This event name was used in the recorded year"
+    with engine.connect() as conn:
+        sgf_content = conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == album_id))
     return {"album_id": album_id, "slot": slot, "association_sha256": canonical_sha256(album),
+            "production_sgf_sha256": hashlib.sha256(sgf_content.encode("utf-8")).hexdigest(),
             "expected": context, "raw_scope_sha256": canonical_sha256(scope),
             "target": target, "identity_review": review}
 
@@ -580,7 +583,7 @@ def test_v2_existing_player_link_rejects_one_language_without_writes(engine):
     base, research = player_bundle(inv)
     bundle = _v2_wrap(engine, inv, base,
                       [{"owner": owner, "preimage": {"canonical_name": "吴清源"}}],
-                      [_identity_link(inv, 11, "white", owner)])
+                      [_identity_link(engine, inv, 11, "white", owner)])
     result = validate_bundle(bundle, registry(), inv, research)
     assert not result["ready"]
     assert any("all eleven approved language names" in error for error in result["errors"])
@@ -604,7 +607,7 @@ def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
     owner = {"kind": "player", "id": 17}
     declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
     base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
-    links = [_identity_link(inv, album_id, "black", owner) for album_id in (12, 13)]
+    links = [_identity_link(engine, inv, album_id, "black", owner) for album_id in (12, 13)]
     bundle = _v2_wrap(engine, inv, base, [declaration], links)
     actual_hash = name_candidates.canonical_sha256
     scope_hash_calls = 0
@@ -633,7 +636,7 @@ def test_v2_two_slot_links_one_album_have_one_change_and_reverse_undo(engine):
     event_owner = {"kind": "event", "id": 19}
     owners = [{"owner": player, "preimage": {"canonical_name": "吴清源"}},
               {"owner": event_owner, "preimage": {"canonical_name": "Test Tournament"}}]
-    links = [_identity_link(inv, 11, "white", player), _identity_link(inv, 11, "event", event_owner)]
+    links = [_identity_link(engine, inv, 11, "white", player), _identity_link(engine, inv, 11, "event", event_owner)]
     player_decisions, research, source_registry = _eleven_language_identity_fixture(
         engine, inv, [player, event_owner])
     bundle = _v2_wrap(engine, inv, player_decisions, owners, links)
@@ -674,7 +677,7 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
     owner = {"kind": "player", "ref": "example-person"}
     declaration = {"owner": owner, "create": {"canonical_name": "Example Person"}}
     base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
-    link = _identity_link(inv, 11, "white", owner)
+    link = _identity_link(engine, inv, 11, "white", owner)
     bundle = _v2_wrap(engine, inv, base, [declaration], [link])
     assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
     applied = apply_bundle(engine, bundle, source_registry, inv, research)
@@ -702,7 +705,7 @@ def test_v2_identity_scope_rejects_reusing_review_after_payload_changes(engine, 
     owner = {"kind": "player", "id": 17}
     declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
     base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
-    links = [_identity_link(inv, album_id, "black", owner) for album_id in (12, 13)]
+    links = [_identity_link(engine, inv, album_id, "black", owner) for album_id in (12, 13)]
     bundle = _v2_wrap(engine, inv, base, [declaration], links[:1] if change == "expand" else links)
     assert validate_bundle(bundle, source_registry, inv, research)["ready"]
     if change == "expand":
@@ -737,3 +740,49 @@ def test_v2_identity_scope_rejects_reusing_review_after_payload_changes(engine, 
     result = validate_bundle(bundle, source_registry, inv, research)
     assert not result["ready"]
     assert any("scope hash mismatch" in error or "scope freeze" in error for error in result["errors"])
+
+
+@pytest.mark.parametrize("change", ["missing", "malformed", "changed"])
+def test_v2_link_requires_signed_production_sgf_preimage(engine, change):
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
+    bundle = _v2_wrap(engine, inv, base, [declaration], [_identity_link(engine, inv, 11, "black", owner)])
+    assert validate_bundle(bundle, source_registry, inv, research)["ready"]
+
+    link = bundle["album_links"][0]
+    if change == "missing":
+        del link["production_sgf_sha256"]
+    elif change == "malformed":
+        link["production_sgf_sha256"] = "invalid"
+    else:
+        link["production_sgf_sha256"] = "b" * 64
+    if change != "changed":
+        link["identity_review"]["scope_sha256"] = identity_scope_sha256(bundle, [link], declaration)
+    bundle["link_set_sha256"] = canonical_sha256(bundle["album_links"])
+
+    result = validate_bundle(bundle, source_registry, inv, research)
+    assert not result["ready"]
+    expected = "production SGF SHA-256" if change != "changed" else "scope hash mismatch"
+    assert any(expected in error for error in result["errors"])
+
+
+def test_v2_live_sgf_drift_rejects_dry_run_and_apply_before_writes(engine):
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    declaration = {"owner": owner, "preimage": {"canonical_name": "吴清源"}}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
+    bundle = _v2_wrap(engine, inv, base, [declaration], [_identity_link(engine, inv, 11, "black", owner)])
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
+    before = counts(engine)
+
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            sgf_content="(;FF[4]PB[吴清源九段]PW[Unknown]EV[GNUGo3.8];B[aa])"))
+    assert build_inventory(engine)["sha256"] == inv["sha256"]
+    with pytest.raises(BatchError, match="SGF content"):
+        dry_run_bundle(engine, bundle, source_registry, inv, research)
+    with pytest.raises(BatchError, match="SGF content"):
+        apply_bundle(engine, bundle, source_registry, inv, research)
+    assert counts(engine) == before

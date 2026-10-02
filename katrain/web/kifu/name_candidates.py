@@ -406,6 +406,7 @@ def identity_scope_sha256(bundle: dict, links: list[dict], declaration: dict) ->
         members.append({
             "album_id": link["album_id"], "slot": link["slot"],
             "association_sha256": link["association_sha256"],
+            "production_sgf_sha256": link.get("production_sgf_sha256"),
             "expected": link["expected"], "target": link["target"],
             "raw_scope_sha256": link["raw_scope_sha256"],
             "corrects_existing": link.get("corrects_existing", False),
@@ -495,6 +496,8 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             album = associations[album_id]
             _require(link.get("association_sha256") == canonical_sha256(album),
                      "link source/context association hash mismatch")
+            _require(bool(_HASH.fullmatch(str(link.get("production_sgf_sha256", "")))),
+                     "link requires a valid production SGF SHA-256 preimage")
             expected = link.get("expected")
             _require(isinstance(expected, dict) and set(expected) == required_context,
                      "link needs complete raw/date/round/rank/old-ID context")

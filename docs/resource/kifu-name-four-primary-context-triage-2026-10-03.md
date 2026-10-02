@@ -14,4 +14,6 @@
 
 同一局的黑白双方都落在这 153 人队列的有 1,440 盘／2,880 槽位。双向同局出现可供后续源谱、对手和年代复核，**不能单独作为人物身份证明**。本队列的 14,920 个槽位均来自此前冻结的 `19x19` 来源路径；来源标签只标识导入包，不证明真实人物。
 
+用冻结的正式目录快照 `2026-10-02/honinbo-final-review-astra-v2/catalog-recheck.jsonl` 对 153 人的中、英、日、韩显示候选做与运行时代码相同的规范化比较：四个语种各 **0 条**与现有 `kifu_player_names` 撞名，英文候选与现有 `kifu_players.canonical_name` 也是 **0 条**。这只排除该快照下的字面碰撞；入库时仍须重新查当前目录，也不能凭零撞名推定人物归属。
+
 逐人日期类别、异常 album ID/执色/原始日期、名册编号、Wikidata QID、GoRatings ID、原槽位集合与上下文哈希存于受控文件 `~/.local/share/kifu-name-audit/2026-10-03/china-professional-roster/four-primary-context-triage/context-triage.pending.json`，SHA-256 `3feedf6e510fef4b864978b533a39fa64b4c2c05b9f5025ca07d975707c1eab6`。输入精确槽位 gzip SHA-256 `d6d10384211cfe6e21eb66271c5dd2abd83503367bef81e6a3f0de838c1728e2`，四语候选 JSONL SHA-256 `7b6b592aeb59afa8a2243b542e93eb2e105e15b6beb9631d33c38d105c7518c0`。下一步由独立审核者按此异常队列核 SGF 人物归属；四语姓名也须独立复核，繁中和六种次要语言分别补齐。

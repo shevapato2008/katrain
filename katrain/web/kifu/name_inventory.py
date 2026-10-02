@@ -66,6 +66,8 @@ SOURCE_LINK_COLUMNS = ("id", "source_id", "source_key", "origin_path", "match_me
 SELECTION_COLUMNS = (
     "album_id", "selected_raw", "sgf_sha256", "reviewer_id", "reviewed_at", "batch_id", "bundle_sha256",
 )
+SELECTION_COLUMNS_V4 = (*SELECTION_COLUMNS, "event_id", "source_after_image", "source_after_sha256",
+                        "name_batch_id", "name_proof_sha256")
 
 
 def _new_scope():

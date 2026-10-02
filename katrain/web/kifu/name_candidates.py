@@ -9,7 +9,7 @@ also check that each raw ID resolves to the declared exact spelling in DB.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import date, datetime
 import hashlib
 import json
 import re
@@ -23,7 +23,7 @@ from katrain.web.kifu.name_evidence import (
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.identity import normalize_alias
-from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, SELECTION_COLUMNS_V4, _hash_row
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -34,6 +34,10 @@ _RESULT = re.compile(r"(?:中盘|中盤|目半|resign|resignation|points?)\s*(?:
 _UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
 _MAX_NAME = {"player": 512, "event": 256, "raw_player": 1024, "raw_event": 4096}
 CLASSIFICATION_RULE_VERSION = "classification-v1"
+_SELECTION_RULE_VERSION = "19x19-gnugo-second-gn-v1"
+_SELECTION_IMAGE_KEYS = {"album_id", "event_id", "batch_id", "selected_raw", "sgf_sha256",
+                         "property_name", "property_index", "status", "rule_version",
+                         "reviewer_id", "reviewed_at", "created_at"}
 _CLASSIFICATION_TEMPLATES = {
     "en": {"placeholder": "Unknown player", "player_error": "Player name unavailable",
            "event_error": "Event data unavailable", "rank_event": "Rank Tournament",
@@ -112,6 +116,15 @@ def _time(value: object) -> datetime | None:
         return None
 
 
+def _iso_date(value: object) -> date | None:
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
 def canonical_sha256(value: object) -> str:
     data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
@@ -139,18 +152,24 @@ def _selection_rows(inventory: dict) -> list[list]:
     if inventory.get("inventory_format") == 2:
         _require("event_selection" not in inventory, "v2 inventory cannot include event selections")
         return []
-    _require(inventory.get("inventory_format") == 3, "inventory format 2 or 3 required")
+    version = inventory.get("inventory_format")
+    _require(version in {3, 4}, "inventory format 2, 3 or 4 required")
+    if version == 4:
+        _require(bool(_HASH.fullmatch(str(inventory.get("base_sha256", "")))),
+                 "v4 inventory base SHA-256 required")
     selection = inventory.get("event_selection")
-    _require(isinstance(selection, dict) and selection.get("selection_format") == 1
-             and selection.get("columns") == list(SELECTION_COLUMNS)
+    selection_version = 2 if version == 4 else 1
+    columns = SELECTION_COLUMNS_V4 if version == 4 else SELECTION_COLUMNS
+    _require(isinstance(selection, dict) and selection.get("selection_format") == selection_version
+             and selection.get("columns") == list(columns)
              and isinstance(selection.get("rows"), list), "event selection supplement is incomplete")
     digest = hashlib.sha256()
-    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    _hash_row(digest, b"E", (selection_version, columns))
     previous_id = -1
     for row in selection["rows"]:
-        _require(isinstance(row, list) and len(row) == len(SELECTION_COLUMNS),
+        _require(isinstance(row, list) and len(row) == len(columns),
                  "event selection row is malformed")
-        album_id, raw, sgf_sha, reviewer, reviewed_at, batch_id, bundle_sha = row
+        album_id, raw, sgf_sha, reviewer, reviewed_at, batch_id, bundle_sha = row[:7]
         _require(type(album_id) is int and album_id > previous_id and isinstance(raw, str) and bool(raw.strip())
                  and isinstance(sgf_sha, str) and _HASH.fullmatch(sgf_sha)
                  and isinstance(reviewer, str) and bool(reviewer)
@@ -158,6 +177,24 @@ def _selection_rows(inventory: dict) -> list[list]:
                  and type(batch_id) is int and batch_id > 0
                  and isinstance(bundle_sha, str) and _HASH.fullmatch(bundle_sha),
                  "event selection row is invalid or unsorted")
+        if version == 4:
+            event_id, image, image_sha, name_batch_id, proof_sha = row[7:]
+            _require(event_id is None or (type(event_id) is int and event_id > 0),
+                     "event selection target ID invalid")
+            _require(isinstance(image, dict) and set(image) == _SELECTION_IMAGE_KEYS
+                     and image.get("album_id") == album_id and image.get("event_id") is None
+                     and image.get("batch_id") == batch_id and image.get("selected_raw") == raw
+                     and image.get("sgf_sha256") == sgf_sha and image.get("reviewer_id") == reviewer
+                     and image.get("reviewed_at") == reviewed_at and image.get("property_name") == "GN"
+                     and image.get("property_index") == 1 and image.get("status") == "approved"
+                     and image.get("rule_version") == _SELECTION_RULE_VERSION
+                     and _text(image.get("created_at"))
+                     and image_sha == canonical_sha256(image),
+                     "event selection original after-image or hash invalid")
+            _require((name_batch_id is None and proof_sha is None) or
+                     (type(name_batch_id) is int and name_batch_id > 0
+                      and isinstance(proof_sha, str) and _HASH.fullmatch(proof_sha)),
+                     "event selection name proof invalid")
         previous_id = album_id
         _hash_row(digest, b"E", row)
     _require(selection.get("sha256") == digest.hexdigest(), "event selection supplement hash mismatch")
@@ -165,9 +202,9 @@ def _selection_rows(inventory: dict) -> list[list]:
 
 
 def _inventory_values(inventory: dict) -> dict[str, set]:
-    _require(inventory.get("inventory_format") in {2, 3}
+    _require(inventory.get("inventory_format") in {2, 3, 4}
              and bool(_HASH.fullmatch(str(inventory.get("sha256", "")))),
-             "inventory format 2 or 3 and SHA-256 required")
+             "inventory format 2, 3 or 4 and SHA-256 required")
     columns = inventory.get("association_columns")
     rows = inventory.get("album_associations")
     required = {"player_black", "player_white", "event", "black_player_id", "white_player_id", "event_id"}
@@ -442,9 +479,10 @@ def identity_scope_sha256(bundle: dict, links: list[dict], declaration: dict) ->
     pinned so an old approval cannot authorize replacement evidence or members.
     """
     members = []
+    v4 = bundle.get("bundle_format") == 4
     for link in links:
         review = link["identity_review"]
-        members.append({
+        member = {
             "album_id": link["album_id"], "slot": link["slot"],
             "association_sha256": link["association_sha256"],
             "production_sgf_sha256": link.get("production_sgf_sha256"),
@@ -455,7 +493,15 @@ def identity_scope_sha256(bundle: dict, links: list[dict], declaration: dict) ->
             "identity_basis": review.get("identity_basis"),
             "event_period_basis": review.get("event_period_basis"),
             "scope_frozen_at": review.get("scope_frozen_at"),
-        })
+        }
+        if v4:
+            member.update(member_type="selected_event", selection_batch_id=link.get("selection_batch_id"),
+                          selection_bundle_sha256=link.get("selection_bundle_sha256"),
+                          selection_before_image=link.get("selection_before_image"),
+                          selection_before_sha256=link.get("selection_before_sha256"),
+                          event_period=review.get("event_period"), event_region=review.get("event_region"),
+                          event_region_basis=review.get("event_region_basis"))
+        members.append(member)
     return canonical_sha256({
         "inventory_sha256": bundle["inventory_sha256"],
         "catalog_sha256": bundle["catalog_sha256"], "rule_version": bundle["rule_version"],
@@ -480,6 +526,9 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                     for row in inventory["album_associations"] if len(row) == len(columns)}
     player_games, event_games, player_slots, event_slots = _occurrence_indexes(
         associations, _selection_rows(inventory))
+    v4 = bundle["bundle_format"] == 4
+    selections = ({row[0]: dict(zip(SELECTION_COLUMNS_V4, row))
+                   for row in _selection_rows(inventory)} if v4 else {})
     raw_scope_hashes = {}
     declarations = {}
     for number, declaration in enumerate(owners):
@@ -487,8 +536,13 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             _require(isinstance(declaration, dict), "owner declaration must be an object")
             owner = declaration.get("owner")
             token = _owner_token(owner)
+            if v4:
+                _require(owner["kind"] in {"event", "raw_event"},
+                         "v4 writes only event and raw_event names")
             _require(token not in declarations, "duplicate owner declaration")
             is_new = "ref" in owner
+            if v4 and owner["kind"] == "raw_event":
+                _require(not is_new, "v4 cannot create or mutate a raw field")
             pinned_key = "create" if is_new else "preimage"
             _require(set(declaration) >= {"owner", pinned_key} and
                      ("preimage" not in declaration if is_new else "create" not in declaration),
@@ -518,6 +572,14 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                              "new raw value needs independent category review")
             else:
                 _require(_text(pinned.get("canonical_name")), "identity owner needs canonical name preimage/create")
+                if v4:
+                    context = declaration.get("identity_context")
+                    _require(isinstance(context, dict) and set(context) == {"start_date", "end_date", "region"}
+                             and _text(context.get("region"))
+                             and _iso_date(context.get("start_date"))
+                             and _iso_date(context.get("end_date"))
+                             and context["start_date"] <= context["end_date"],
+                             "selected_event target needs bounded period and region context")
             declarations[token] = declaration
         except (AttributeError, TypeError, CandidateError) as exc:
             errors.append(f"owner[{number}]: {exc}")
@@ -526,13 +588,21 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
     seen_slots = set()
     required_context = {"player_black", "player_white", "event", "date_played", "round_name",
                         "black_rank", "white_rank", "old_id"}
-    slot_ids = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}
+    slot_ids = {"black": "black_player_id", "white": "white_player_id", "event": "event_id",
+                **({"selected_event": "event_id"} if v4 else {})}
     for number, link in enumerate(links):
         try:
             _require(isinstance(link, dict), "link must be an object")
             album_id, slot = link.get("album_id"), link.get("slot")
             _require(type(album_id) is int and album_id in associations and slot in slot_ids,
                      "link album ID/slot absent from inventory")
+            if v4:
+                _require(slot == "selected_event", "v4 permits only selected_event album links")
+                _require(set(link) <= {"album_id", "slot", "association_sha256", "production_sgf_sha256",
+                                        "expected", "target", "raw_scope_sha256", "raw_scope_slots",
+                                        "identity_review", "selection_batch_id", "selection_bundle_sha256",
+                                        "selection_before_image", "selection_before_sha256"},
+                         "selected_event link contains unsupported write fields")
             _require((album_id, slot) not in seen_slots, "duplicate album slot link")
             seen_slots.add((album_id, slot))
             album = associations[album_id]
@@ -546,15 +616,35 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                      "link needs complete raw/date/round/rank/old-ID context")
             for field in required_context - {"old_id"}:
                 _require(expected[field] == album.get(field), f"link expected {field} differs from inventory")
-            _require(expected["old_id"] == album.get(slot_ids[slot]), "link old ID differs from inventory")
-            raw_field = {"black": "player_black", "white": "player_white", "event": "event"}[slot]
-            raw_value = expected[raw_field]
-            actual_scope = (event_slots if slot == "event" else player_slots).get(raw_value, [])
+            if slot == "selected_event":
+                selection = selections.get(album_id)
+                _require(selection is not None, "selected_event album absent from pinned selection scope")
+                _require(selection["event_id"] is None and selection["name_batch_id"] is None
+                         and selection["name_proof_sha256"] is None,
+                         "selected_event is already linked or proved")
+                _require(expected["old_id"] is None and album.get("event_id") is None,
+                         "selected_event requires null old event ID")
+                _require(selection["selected_raw"] != album.get("event"),
+                         "selected_event must be a distinct reviewed selection")
+                _require(selection["sgf_sha256"] == sgf_hash,
+                         "selected_event production SGF hash differs from source selection")
+                _require(link.get("selection_batch_id") == selection["batch_id"]
+                         and link.get("selection_bundle_sha256") == selection["bundle_sha256"]
+                         and link.get("selection_before_image") == selection["source_after_image"]
+                         and link.get("selection_before_sha256") == selection["source_after_sha256"],
+                         "selected_event original batch or complete after-image differs from inventory")
+                raw_value = selection["selected_raw"]
+                actual_scope = event_slots.get(raw_value, [])
+            else:
+                _require(expected["old_id"] == album.get(slot_ids[slot]), "link old ID differs from inventory")
+                raw_field = {"black": "player_black", "white": "player_white", "event": "event"}[slot]
+                raw_value = expected[raw_field]
+                actual_scope = (event_slots if slot == "event" else player_slots).get(raw_value, [])
             _require(bool(actual_scope), "link raw global occurrence slots absent from inventory")
             if "raw_scope_slots" in link:
                 _require(link["raw_scope_slots"] == actual_scope,
                          "link raw global occurrence slots differ from inventory")
-            scope_key = ("raw_event" if slot == "event" else "raw_player", raw_value)
+            scope_key = ("raw_event" if slot in {"event", "selected_event"} else "raw_player", raw_value)
             if scope_key not in raw_scope_hashes:
                 raw_scope_hashes[scope_key] = canonical_sha256(actual_scope)
             _require(link.get("raw_scope_sha256") == raw_scope_hashes[scope_key],
@@ -562,7 +652,7 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             target = link.get("target")
             target_key = _owner_token(target)
             _require(target_key in declarations, "link target missing from owner manifest")
-            _require(target["kind"] == ("event" if slot == "event" else "player"),
+            _require(target["kind"] == ("event" if slot in {"event", "selected_event"} else "player"),
                      "link target kind differs from slot")
             if expected["old_id"] is not None and target.get("id") != expected["old_id"]:
                 _require(link.get("corrects_existing") is True, "non-null identity correction needs explicit approval")
@@ -584,9 +674,21 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                          and bool(_HASH.fullmatch(str(check.get("body_sha256", ""))))
                          and _text(check.get("body_excerpt")) and _text(check.get("identity_match")),
                          "link source check lacks real body or identity match")
-            if slot == "event":
+            if slot in {"event", "selected_event"}:
                 _require(_text(review.get("event_period_basis")),
                          "event identity link needs naming-period evidence")
+            if slot == "selected_event":
+                context = declarations[target_key].get("identity_context")
+                _require(isinstance(context, dict), "selected_event target identity context missing")
+                _require(review.get("event_period") == {key: context[key] for key in ("start_date", "end_date")},
+                         "selected_event event_period differs from target context")
+                _require(review.get("event_region") == context["region"]
+                         and _text(review.get("event_region_basis")),
+                         "selected_event event_region differs from target context or lacks evidence")
+                played = album.get("date_played")
+                if isinstance(played, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", played):
+                    _require(context["start_date"] <= played <= context["end_date"],
+                             "selected_event period excludes album date")
             frozen_at = _time(review.get("scope_frozen_at"))
             _require(frozen_at and _time(review["reviewed_at"]) > frozen_at,
                      "link identity review must follow scope freeze")
@@ -603,6 +705,18 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                 errors.append(f"album_link[{number}]: identity review scope hash mismatch")
             if review != first_review:
                 errors.append(f"album_link[{number}]: identity review scope needs the same independent decision")
+    if v4:
+        selected_raws = {raw for _, raw in review_groups}
+        if not review_groups:
+            errors.append("v4 requires a finite selected_event link")
+        for token, declaration in declarations.items():
+            owner = declaration["owner"]
+            if owner["kind"] == "event" and token not in link_targets:
+                errors.append(f"irrelevant v4 event owner: {token}")
+            elif owner["kind"] == "raw_event":
+                pinned = declaration.get("create") or declaration.get("preimage") or {}
+                if pinned.get("raw_value") not in selected_raws:
+                    errors.append(f"irrelevant v4 raw_event owner: {token}")
     return declarations, link_targets, errors
 
 
@@ -611,7 +725,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     errors: list[str] = []
     _require(isinstance(bundle, dict), "bundle must be an object")
     _require((bundle.get("bundle_format"), bundle.get("inventory_format"), inventory.get("inventory_format"))
-             in {(1, 2, 2), (2, 2, 2), (3, 3, 3)},
+             in {(1, 2, 2), (2, 2, 2), (3, 3, 3), (4, 4, 4)},
              "bundle and inventory format mismatch")
     _require(bundle.get("inventory_sha256") == inventory.get("sha256")
              and bool(_HASH.fullmatch(str(bundle.get("inventory_sha256", "")))), "inventory hash mismatch")
@@ -625,7 +739,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     _require(set(registry["language_tags"]) == LANGUAGES, "source registry must define eleven product languages")
     values = _inventory_values(inventory)
     declarations = link_targets = None
-    if bundle["bundle_format"] in {2, 3}:
+    if bundle["bundle_format"] in {2, 3, 4}:
         declarations, link_targets, v2_errors = _v2_scope(bundle, inventory)
         errors.extend(v2_errors)
     member_keys = []
@@ -634,6 +748,9 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     for number, item in enumerate(members):
         try:
             key = _owner_key(item.get("owner"), item.get("lang"))
+            if bundle["bundle_format"] == 4:
+                _require(item["owner"]["kind"] in {"event", "raw_event"},
+                         "v4 writes only event and raw_event names")
             if bundle["bundle_format"] == 1:
                 _require("id" in item["owner"], "v1 members need existing DB IDs")
             _check_owner_in_inventory(item, values, declarations=declarations, link_targets=link_targets)
@@ -668,6 +785,9 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     for number, item in enumerate(candidates):
         try:
             key = _owner_key(item.get("owner"), item.get("lang"))
+            if bundle["bundle_format"] == 4:
+                _require(item["owner"]["kind"] in {"event", "raw_event"},
+                         "v4 writes only event and raw_event names")
             if key in seen:
                 raise CandidateError("duplicate candidate")
             seen.add(key)
@@ -686,7 +806,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     missing = sorted(set(member_keys) - seen)
     for key in missing:
         errors.append(f"missing candidate: {key}")
-    if bundle["bundle_format"] in {2, 3}:
+    if bundle["bundle_format"] in {2, 3, 4}:
         approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
                          if row["review_status"] == "approved"}
         decisions_by_owner = defaultdict(list)

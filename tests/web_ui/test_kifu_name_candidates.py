@@ -11,6 +11,7 @@ from katrain.web.kifu.name_candidates import (
     canonical_sha256,
     classification_template_sha256,
     _occurrence_indexes,
+    identity_scope_sha256,
     validate_bundle,
     validate_candidate,
     render_event_components,
@@ -749,6 +750,258 @@ def test_selected_event_is_a_v3_raw_scope_but_legacy_bundle_cannot_claim_it():
     old["member_set_sha256"] = canonical_sha256(old["members"])
     with pytest.raises(CandidateError, match="format"):
         validate_bundle(old, registry(), inv, [evidence])
+
+
+def _selected_v4_case():
+    from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
+
+    columns = list(inventory()["association_columns"]) + [
+        "source", "source_path", "date_played", "round_name", "board_size", "black_rank", "white_rank",
+    ]
+    first = [1, "Black", "White", "GNUGo3.8", None, None, None,
+             "collection", "archive/game.sgf", "1934-10-01", "final", 19, "9d", "8d"]
+    second = [2, "Black", "White", "Selected Cup", None, None, 3,
+              "collection", "archive/other.sgf", "1934-10-02", "final", 19, "9d", "8d"]
+    source_image = {
+        "album_id": 1, "event_id": None, "batch_id": 7, "selected_raw": "Selected Cup",
+        "sgf_sha256": "c" * 64, "property_name": "GN", "property_index": 1,
+        "status": "approved", "rule_version": "19x19-gnugo-second-gn-v1",
+        "reviewer_id": "selection-reviewer", "reviewed_at": "2026-10-02T09:00:00+00:00",
+        "created_at": "2026-10-02T09:00:00+00:00",
+    }
+    selection_columns = [*SELECTION_COLUMNS, "event_id", "source_after_image", "source_after_sha256",
+                         "name_batch_id", "name_proof_sha256"]
+    selection_row = [1, "Selected Cup", "c" * 64, "selection-reviewer",
+                     "2026-10-02T09:00:00+00:00", 7, "d" * 64,
+                     None, source_image, canonical_sha256(source_image), None, None]
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (2, tuple(selection_columns)))
+    _hash_row(digest, b"E", selection_row)
+    inv = inventory()
+    inv.update(inventory_format=4, base_sha256="e" * 64,
+               association_columns=columns, album_associations=[first, second],
+               event_selection={"selection_format": 2, "columns": selection_columns,
+                                "rows": [selection_row], "sha256": digest.hexdigest()})
+    target = {"kind": "event", "id": 3}
+    declaration = {"owner": target, "preimage": {"canonical_name": "Selected Cup"},
+                   "identity_context": {"start_date": "1934-01-01", "end_date": "1934-12-31",
+                                        "region": "Japan"}}
+    album = dict(zip(columns, first))
+    expected = {key: album[key] for key in (
+        "player_black", "player_white", "event", "date_played", "round_name", "black_rank", "white_rank")}
+    expected["old_id"] = None
+    link = {
+        "album_id": 1, "slot": "selected_event", "association_sha256": canonical_sha256(album),
+        "production_sgf_sha256": "c" * 64, "expected": expected, "target": target,
+        "raw_scope_sha256": canonical_sha256([[1, "selected_event"], [2, "event"]]),
+        "selection_batch_id": 7, "selection_bundle_sha256": "d" * 64,
+        "selection_before_image": source_image, "selection_before_sha256": canonical_sha256(source_image),
+        "identity_review": {
+            "status": "approved", "producer_id": "identity-researcher", "producer_model": "gpt-6-luna",
+            "produced_at": "2026-10-02T09:30:00Z", "reviewer_id": "identity-reviewer",
+            "reviewer_model": "gpt-6-astra", "reviewed_at": "2026-10-02T11:00:00Z",
+            "scope_frozen_at": "2026-10-02T10:00:00Z", "review_conclusion": "approved exact selection",
+            "identity_basis": "Source identifies this tournament and edition",
+            "event_period": {"start_date": "1934-01-01", "end_date": "1934-12-31"},
+            "event_region": "Japan",
+            "event_period_basis": "Contemporary record dates this tournament to 1934",
+            "event_region_basis": "Contemporary record places it in Japan",
+            "source_checks": [{"url": "https://example.org/event", "body_sha256": "f" * 64,
+                               "body_excerpt": "1934 Selected Cup in Japan",
+                               "identity_match": "Same event and edition"}],
+        },
+    }
+    event_member = member(target)
+    proposed = bundle(members=[event_member], candidates=[], bundle_format=4,
+                      inventory_format=4, inventory_sha256=inv["sha256"],
+                      catalog_sha256="b" * 64, owners=[declaration],
+                      member_set_sha256=canonical_sha256([event_member]),
+                      owner_set_sha256=canonical_sha256([declaration]), album_links=[link],
+                      link_set_sha256=canonical_sha256([link]))
+    link["identity_review"]["scope_sha256"] = identity_scope_sha256(proposed, [link], declaration)
+    proposed["link_set_sha256"] = canonical_sha256([link])
+    return inv, proposed
+
+
+def test_v4_selected_event_scope_accepts_exact_source_proof_and_requires_all_event_names():
+    inv, proposed = _selected_v4_case()
+    report = validate_bundle(proposed, registry(), inv, [])
+    assert not report["ready"]
+    assert report["errors"] == ["missing candidate: event:3:ru", "linked identity lacks all eleven approved language names: event:3"]
+
+
+def test_v4_selected_event_scope_signature_changes_with_source_batch_and_after_image():
+    inv, proposed = _selected_v4_case()
+    link = proposed["album_links"][0]
+    original = link["identity_review"]["scope_sha256"]
+    for field, value in (("selection_bundle_sha256", "a" * 64),
+                         ("selection_before_sha256", "a" * 64),
+                         ("selection_before_image", {**link["selection_before_image"], "selected_raw": "Other"}),
+                         ("raw_scope_sha256", "a" * 64)):
+        changed = deepcopy(link)
+        changed[field] = value
+        assert identity_scope_sha256(proposed, [changed], proposed["owners"][0]) != original
+
+
+def test_v4_selected_event_rejects_wrong_target_context_and_ordinary_link():
+    inv, proposed = _selected_v4_case()
+    for change in ("event_period", "event_region"):
+        bad = deepcopy(proposed)
+        bad["album_links"][0]["identity_review"][change] = "wrong"
+        bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+        report = validate_bundle(bad, registry(), inv, [])
+        assert any(change in error for error in report["errors"])
+    bad = deepcopy(proposed)
+    bad["album_links"][0]["slot"] = "event"
+    bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+    assert any("selected_event" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+    old = deepcopy(proposed)
+    old["bundle_format"] = old["inventory_format"] = inv["inventory_format"] = 3
+    with pytest.raises(CandidateError, match="supplement"):
+        validate_bundle(old, registry(), inv, [])
+
+
+def test_v3_inventory_cannot_authorize_selected_event_slot():
+    from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
+
+    inv, proposed = _selected_v4_case()
+    row = inv["event_selection"]["rows"][0][:len(SELECTION_COLUMNS)]
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    _hash_row(digest, b"E", row)
+    inv["inventory_format"] = 3
+    inv["event_selection"] = {"selection_format": 1, "columns": list(SELECTION_COLUMNS),
+                              "rows": [row], "sha256": digest.hexdigest()}
+    proposed["bundle_format"] = proposed["inventory_format"] = 3
+    report = validate_bundle(proposed, registry(), inv, [])
+    assert any("album_link[0]" in error for error in report["errors"])
+
+
+def test_v4_selected_event_rejects_borrowed_or_mutated_source_proof():
+    inv, proposed = _selected_v4_case()
+    for field, value in (("selection_bundle_sha256", "a" * 64),
+                         ("selection_batch_id", 8),
+                         ("selection_before_sha256", "a" * 64),
+                         ("selection_before_image", {**proposed["album_links"][0]["selection_before_image"],
+                                                     "selected_raw": "Other Cup"}),
+                         ("production_sgf_sha256", "a" * 64),
+                         ("raw_scope_sha256", "a" * 64)):
+        bad = deepcopy(proposed)
+        bad["album_links"][0][field] = value
+        bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+        report = validate_bundle(bad, registry(), inv, [])
+        assert any("album_link[0]" in error for error in report["errors"]), field
+
+
+def test_v4_selected_event_requires_original_base_and_exact_gn_rule():
+    from katrain.web.kifu.name_inventory import SELECTION_COLUMNS_V4, _hash_row
+
+    inv, proposed = _selected_v4_case()
+    missing_base = deepcopy(inv)
+    del missing_base["base_sha256"]
+    with pytest.raises(CandidateError, match="base"):
+        validate_bundle(proposed, registry(), missing_base, [])
+    bad_rule = deepcopy(inv)
+    row = bad_rule["event_selection"]["rows"][0]
+    row[8]["rule_version"] = "other-rule"
+    row[9] = canonical_sha256(row[8])
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (2, SELECTION_COLUMNS_V4))
+    _hash_row(digest, b"E", row)
+    bad_rule["event_selection"]["sha256"] = digest.hexdigest()
+    with pytest.raises(CandidateError, match="after-image"):
+        validate_bundle(proposed, registry(), bad_rule, [])
+
+
+def test_v4_selected_event_rejects_irrelevant_owner_and_non_event_member():
+    inv, proposed = _selected_v4_case()
+    unrelated = {"owner": {"kind": "event", "id": 19},
+                 "preimage": {"canonical_name": "Other Cup"},
+                 "identity_context": {"start_date": "1934-01-01", "end_date": "1934-12-31",
+                                      "region": "Japan"}}
+    bad = deepcopy(proposed)
+    bad["owners"].append(unrelated)
+    bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
+    assert any("irrelevant" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+    bad = deepcopy(proposed)
+    bad["members"].append(member())
+    bad["member_set_sha256"] = canonical_sha256(bad["members"])
+    assert any("only event" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+    bad = deepcopy(proposed)
+    new_raw = {"owner": {"kind": "raw_event", "ref": "selected-raw"},
+               "create": {"raw_value": "Selected Cup", "category": "formal_event_candidate"},
+               "occurrence_album_ids": [1, 2], "occurrence_sha256": canonical_sha256([1, 2])}
+    bad["owners"].append(new_raw)
+    bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
+    assert any("raw field" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+
+
+def test_v4_selected_event_rejects_invalid_or_out_of_range_period():
+    inv, proposed = _selected_v4_case()
+    for invalid_date, end_date in (("1934-02-30", "1934-12-31"), ("1934-01-01", "1934-09-30")):
+        bad = deepcopy(proposed)
+        bad["owners"][0]["identity_context"]["start_date"] = invalid_date
+        bad["owners"][0]["identity_context"]["end_date"] = end_date
+        bad["album_links"][0]["identity_review"]["event_period"] = {
+            "start_date": invalid_date, "end_date": end_date}
+        bad["album_links"][0]["identity_review"]["scope_sha256"] = identity_scope_sha256(
+            bad, bad["album_links"], bad["owners"][0])
+        bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+        bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
+        report = validate_bundle(bad, registry(), inv, [])
+        assert any("period" in error for error in report["errors"])
+
+
+def test_v4_selected_event_accepts_eleven_independently_reviewed_event_names():
+    inv, proposed = _selected_v4_case()
+    sources = [{"id": lang, "tier": "language_go", "home_url": "https://example.org/",
+                "language": lang} for lang in LANGS]
+    full_registry = registry()
+    full_registry["sources"] = sources
+    full_registry["language_scopes"] = {
+        lang: {"required_source_ids": [lang], "complete_for_negative_claims": True} for lang in LANGS
+    }
+    proposed["registry_sha256"] = registry_sha256(full_registry)
+    target = proposed["owners"][0]["owner"]
+    members, candidates, evidence = [], [], []
+    for lang in LANGS:
+        display = f"Cup {lang}"
+        language_tag = full_registry["language_tags"][lang]
+        source_check = check(owner=target, source_id=lang, observed_lang=language_tag,
+                             candidate_name=display, body_excerpt=f"Event profile for {display}",
+                             identity_basis="Same 1934 event in Japan")
+        record = research(owner=target, lang=lang, registry_sha256=proposed["registry_sha256"],
+                          candidate_name=display, original_name="Selected Cup",
+                          source_checks=[source_check])
+        evidence.append(record)
+        members.append(member(target, lang))
+        candidates.append(candidate(owner=target, lang=lang, display_name=display,
+                                    research_sha256=canonical_sha256(record)))
+    proposed["members"] = members
+    proposed["member_set_sha256"] = canonical_sha256(members)
+    proposed["candidates"] = candidates
+    report = validate_bundle(proposed, full_registry, inv, evidence)
+    assert report["ready"], report["errors"]
+    assert report["approved"] == 11
+    new = deepcopy(proposed)
+    new_evidence = deepcopy(evidence)
+    new_owner = {"kind": "event", "ref": "selected-cup"}
+    new["owners"][0]["owner"] = new_owner
+    new["owners"][0]["create"] = new["owners"][0].pop("preimage")
+    new["owner_set_sha256"] = canonical_sha256(new["owners"])
+    new["album_links"][0]["target"] = new_owner
+    for name_member, row, record in zip(new["members"], new["candidates"], new_evidence):
+        name_member["owner"] = new_owner
+        row["owner"] = new_owner
+        record["owner"] = new_owner
+        record["source_checks"][0]["owner"] = new_owner
+        row["research_sha256"] = canonical_sha256(record)
+    new["member_set_sha256"] = canonical_sha256(new["members"])
+    new["album_links"][0]["identity_review"]["scope_sha256"] = identity_scope_sha256(
+        new, new["album_links"], new["owners"][0])
+    new["link_set_sha256"] = canonical_sha256(new["album_links"])
+    report = validate_bundle(new, full_registry, inv, new_evidence)
+    assert report["ready"], report["errors"]
 
 
 def test_v2_new_person_cannot_link_with_only_one_language_name():

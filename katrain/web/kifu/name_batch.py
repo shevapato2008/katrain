@@ -50,8 +50,8 @@ def _fail(condition: bool, message: str) -> None:
         raise BatchError(message)
 
 
-def _snapshot_sha(conn) -> tuple[str, dict | None]:
-    """Recompute the inventory's full album/source hash inside this transaction."""
+def _snapshot_parts(conn) -> tuple[str, dict | None, str]:
+    """Recompute the full and base album/source hashes in one transaction."""
     digest = hashlib.sha256()
     for row in conn.execute(select(*ALBUM_COLUMNS).order_by(KifuAlbum.id)):
         _hash_row(digest, b"A", row)
@@ -60,10 +60,16 @@ def _snapshot_sha(conn) -> tuple[str, dict | None]:
                     .order_by(KifuAlbumSource.id))
     for row in conn.execute(source_query):
         _hash_row(digest, b"S", row)
+    base_sha256 = digest.hexdigest()
     selection = _selection_supplement(conn)
     if selection is not None:
         _hash_row(digest, b"E", (selection["selection_format"], selection["sha256"]))
-    return digest.hexdigest(), selection
+    return digest.hexdigest(), selection, base_sha256
+
+
+def _snapshot_sha(conn) -> tuple[str, dict | None]:
+    full_sha256, selection, _ = _snapshot_parts(conn)
+    return full_sha256, selection
 
 
 def _catalog_sha(conn) -> str:

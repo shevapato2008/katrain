@@ -72,6 +72,10 @@ def coverage_report(
         and isinstance(pinned_selection.get("rows"), list)
     ):
         raise ValueError("inventory event selection supplement is incomplete")
+    if inventory["inventory_format"] == 3 and not (
+        isinstance(inventory.get("base_sha256"), str) and len(inventory["base_sha256"]) == 64
+    ):
+        raise ValueError("inventory base album/source hash is required")
     columns = inventory.get("association_columns")
     rows = inventory.get("album_associations")
     if not isinstance(columns, list) or not isinstance(rows, list) or not set((*_FIELDS, "sources")) <= set(columns):
@@ -103,9 +107,9 @@ def coverage_report(
                 connection.execute(text("SET TRANSACTION READ ONLY"))
             db = Session(bind=connection)
             try:
-                from katrain.web.kifu.name_batch import _snapshot_sha
+                from katrain.web.kifu.name_batch import _snapshot_parts
 
-                live_snapshot_sha256, current_selection = _snapshot_sha(connection)
+                live_snapshot_sha256, current_selection, live_base_sha256 = _snapshot_parts(connection)
                 pinned_columns = pinned_selection["columns"] if pinned_selection else []
                 pinned_rows = {
                     dict(zip(pinned_columns, row))["album_id"]: row for row in pinned_selection["rows"]
@@ -119,8 +123,11 @@ def coverage_report(
                     pinned_rows.get(album_id) != live_rows.get(album_id) or album_id not in live_rows
                     for album_id in set(pinned_rows) | set(live_rows) | all_selection_ids
                 )
-                if live_snapshot_sha256 != inventory["sha256"] and selection_drift == 0:
+                pinned_base_sha256 = inventory["base_sha256"] if pinned_selection else inventory["sha256"]
+                if live_base_sha256 != pinned_base_sha256:
                     raise RuntimeError("snapshot drift: album metadata or source links changed")
+                if live_snapshot_sha256 != inventory["sha256"] and selection_drift == 0:
+                    raise RuntimeError("snapshot drift: inventory selection hash changed")
                 selection_snapshot_sha256 = current_selection["sha256"] if current_selection else None
                 for album_id, raw, pinned_hash, content in (
                     db.query(

@@ -791,6 +791,12 @@ def _ordinal(value: str) -> str:
 
 
 def _edition_number(value: str) -> int:
+    if isinstance(value, str):
+        english = re.fullmatch(r"([1-9]\d{0,2})(st|nd|rd|th)", value, re.IGNORECASE)
+        if english:
+            number = int(english.group(1))
+            _require(_ordinal(str(number)).casefold() == value.casefold(), "invalid event edition")
+            return number
     _require(isinstance(value, str) and re.fullmatch(r"(?:[1-9]\d{0,2}|[一二三四五六七八九十]{1,3}|首)[届期]", value),
              "invalid event edition")
     raw = value[:-1]

@@ -218,5 +218,10 @@ def test_selected_event_coverage_tracks_live_sgf_and_reports_drift():
             "black", "white", "event"
         }
         assert after["complete"] is False
+        with Session(engine) as db:
+            db.get(KifuAlbum, album_id).source = "changed while SGF also drifted"
+            db.commit()
+        with pytest.raises(RuntimeError, match="snapshot drift"):
+            coverage_report(engine, inventory, languages=("cn",), batch_size=2)
     finally:
         engine.dispose()

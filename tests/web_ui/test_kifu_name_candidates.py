@@ -646,6 +646,12 @@ def test_event_components_are_rendered_separately_from_approved_core_name():
             assert "届" not in rendered and "期" not in rendered
     assert "第4届" in render_event_components("大手合", {"edition": "四届"}, "cn")
     assert "4th" in render_event_components("Oteai", {"edition": "四届"}, "en")
+    for lang in LANGS:
+        assert render_event_components("Honinbo", {"edition": "28th"}, lang)
+    assert render_event_components("Honinbo", {"edition": "28th"}, "en") == "Honinbo · 28th"
+    for malformed in ("11st", "0th", "28rd"):
+        with pytest.raises(CandidateError, match="invalid event edition"):
+            render_event_components("Honinbo", {"edition": malformed}, "en")
 
 
 def test_cli_report_is_read_only_and_reports_missing_approval(tmp_path, capsys):

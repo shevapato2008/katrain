@@ -274,6 +274,7 @@ def build_inventory(engine, *, batch_size=1000):
                             entry[1].add(album_id)
                             linked_ids[name].add(album_id)
                 last_id = rows[-1][0]
+            base_sha256 = hasher.hexdigest()
             selection = _selection_supplement(conn)
             if selection is not None:
                 _hash_row(hasher, b"E", (selection["selection_format"], selection["sha256"]))
@@ -285,6 +286,7 @@ def build_inventory(engine, *, batch_size=1000):
 
     return {
         "inventory_format": 3 if selection is not None else 2,
+        **({"base_sha256": base_sha256} if selection is not None else {}),
         **({"event_selection": selection} if selection is not None else {}),
         "database_identifier": engine.url.render_as_string(hide_password=True),
         "snapshot_time": snapshot_time,

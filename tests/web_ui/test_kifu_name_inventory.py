@@ -115,6 +115,7 @@ def test_reviewed_second_gn_adds_hashed_selection_supplement_without_changing_le
     apply_reviewed_selection(engine, 20)
     selected = build_inventory(engine)
     assert selected["inventory_format"] == 3
+    assert selected["base_sha256"] == original["sha256"]
     assert selected["sha256"] != original["sha256"]
     assert selected["album_associations"] == original["album_associations"]
     assert selected["event_selection"]["rows"][0][0:3] == [20, "Selected Cup", hashlib.sha256(sgf.encode()).hexdigest()]

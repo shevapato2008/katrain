@@ -145,6 +145,269 @@ def counts(engine):
             KifuNameSourceRegistry, KifuNameResearchEvidence, KifuRawEventName, KifuNameBatch, KifuNameChange))
 
 
+def composition_bundle(engine, *, symbolic=False):
+    from tests.web_ui.test_kifu_name_composition import fixture
+    from katrain.web.kifu.name_composition import HONINBO_RAWS
+
+    series = {"kind": "event", "ref": "honinbo"} if symbolic else {"kind": "event", "id": 7}
+    bundle, sources, _, research = fixture(series)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.delete())
+        conn.execute(KifuRawEventValue.__table__.delete())
+        if not symbolic:
+            conn.execute(KifuEvent.__table__.insert().values(id=7, canonical_name="本因坊戦"))
+        for edition, raw in enumerate(HONINBO_RAWS, 1):
+            conn.execute(KifuRawEventValue.__table__.insert().values(
+                id=edition, raw_value=raw, category="unclassified_pending", review_status="approved"))
+            conn.execute(KifuAlbum.__table__.insert().values(
+                id=edition, event=raw, event_id=None if symbolic else 7, black_player_id=17,
+                player_black="Black", player_white="White",
+                sgf_content=f"(;PB[Black]PW[White]EV[{raw}])", source_path=f"honinbo-{edition}.sgf"))
+    inventory = build_inventory(engine)
+    links = [_identity_link(engine, inventory, n, "event", series) for n in range(1, 35)] if symbolic else []
+    bundle["inventory_sha256"] = inventory["sha256"]
+    bundle = _v2_wrap(engine, inventory, bundle, bundle["owners"], links)
+    scope = bundle["composition"]["scope"]
+    scope["content"].update(inventory_sha256=inventory["sha256"], catalog_sha256=bundle["catalog_sha256"])
+    scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    for row in bundle["candidates"]:
+        row["name_preimage_sha256"] = None
+        bind_fixture_candidate(row)
+        row["preimage_binding"].update(captured_at=row["produced_at"], bound_at=row["reviewed_at"])
+    # Input ordering must never dictate whether a dependency has been written yet.
+    bundle["candidates"].reverse()
+    return bundle, sources, inventory, research
+
+
+@pytest.mark.parametrize("symbolic", [False, True])
+def test_composed_import_preserves_signed_candidates_and_resolved_dependencies(engine, symbolic):
+    bundle, sources, inv, research = composition_bundle(engine, symbolic=symbolic)
+    reviewed = deepcopy(bundle)
+    assert dry_run_bundle(engine, bundle, sources, inv, research)["approved"] == 385
+    applied = apply_bundle(engine, bundle, sources, inv, research)
+    assert bundle == reviewed
+    before_retry = counts(engine)
+    assert apply_bundle(engine, bundle, sources, inv, research)["change_count"] == 0
+    assert counts(engine) == before_retry
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuRawEventName)) == 374
+        assert conn.scalar(select(func.count()).select_from(KifuEventName)) == 11
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+            KifuNameResearchEvidence.decision_kind == "composed")).mappings().all()
+        for stored in evidence:
+            payload = stored["research_payload"]
+            candidate = payload["candidate"]
+            assert candidate in reviewed["candidates"] and payload["research"] is None
+            composition = payload["composition"]
+            rule = next(rule for rule in reviewed["composition"]["rules"]
+                        if rule["content"]["lang"] == stored["lang"])
+            assert composition["version"] == "honinbo-composition-v1"
+            assert composition["rule"] == rule
+            assert composition["scope"] == reviewed["composition"]["scope"]
+            dependencies = composition["dependencies"]
+            series_id = applied["resolved_refs"]["event:@honinbo" if symbolic else "event:7"]
+            base = conn.execute(select(KifuEventName.__table__).where(
+                KifuEventName.event_id == series_id, KifuEventName.lang == stored["lang"])).mappings().one()
+            assert dependencies == {
+                "series_event_id": series_id, "base_name_id": base["id"],
+                "base_evidence_id": base["evidence_id"], "base_revision": base["revision"],
+                "base_candidate_sha256": candidate["base_candidate_sha256"],
+                "composition_rule_sha256": canonical_sha256(rule),
+                "raw_scope_sha256": candidate["raw_scope_sha256"],
+                "scope_sha256": canonical_sha256(reviewed["composition"]["scope"]),
+            }
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuRawEventName)) == 0
+        assert conn.scalar(select(func.count()).select_from(KifuEventName)) == 0
+
+
+@pytest.mark.parametrize("fault", ["missing", "no_capture", "new_row", "changed_row", "missing_language"])
+def test_composed_import_rejects_unproven_or_stale_preimages_and_missing_language(engine, fault):
+    bundle, sources, inv, research = composition_bundle(engine)
+    row = bundle["candidates"][0]
+    if fault == "missing":
+        del row["name_preimage_sha256"]
+    elif fault == "no_capture":
+        del row["preimage_binding"]["capture_sha256"]
+    elif fault in {"new_row", "changed_row"}:
+        with engine.begin() as conn:
+            conn.execute(KifuRawEventName.__table__.insert().values(
+                raw_event_id=row["owner"]["id"], lang=row["lang"], display_name="Prior", status="review"))
+        if fault == "changed_row":
+            set_fixture_preimage(row, name_preimage_sha256(engine, row["owner"], row["lang"]))
+            with engine.begin() as conn:
+                conn.execute(KifuRawEventName.__table__.update().values(display_name="Later"))
+    else:
+        bundle["candidates"].pop(0)
+    before = counts(engine)
+    with pytest.raises(BatchError, match="preimage|capture|candidate set|decisions"):
+        apply_bundle(engine, bundle, sources, inv, research)
+    assert counts(engine) == before
+
+
+def test_composed_import_rejects_cross_bundle_same_language_collision(engine):
+    bundle, sources, inv, research = composition_bundle(engine)
+    row = next(row for row in bundle["candidates"] if row["decision_kind"] == "composed" and row["lang"] == "ru")
+    # A separately reviewed conventional name occupies this same-language spelling.
+    other, records = player_bundle(inv, display=row["display_name"])
+    apply_bundle(engine, other, registry(), inv, records)
+    before = counts(engine)
+    with pytest.raises(BatchError, match="cross-bundle"):
+        apply_bundle(engine, bundle, sources, inv, research)
+    assert counts(engine) == before
+
+
+def test_composed_undo_retains_dependencies_of_later_manual_edit(engine):
+    bundle, sources, inv, research = composition_bundle(engine)
+    applied = apply_bundle(engine, bundle, sources, inv, research)
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventName.__table__.update().where(
+            KifuRawEventName.raw_event_id == 1, KifuRawEventName.lang == "ru").values(display_name="Manual edit"))
+    undone = undo_batch(engine, applied["batch_id"])
+    assert undone["status"] == "partial_undo"
+    with engine.connect() as conn:
+        retained = conn.execute(select(KifuRawEventName.__table__)).mappings().one()
+        assert retained["display_name"] == "Manual edit"
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+            KifuNameResearchEvidence.id == retained["evidence_id"])).mappings().one()
+        dependency = evidence["research_payload"]["composition"]["dependencies"]
+        assert conn.scalar(select(KifuEventName.id).where(KifuEventName.id == dependency["base_name_id"])) is not None
+        assert conn.scalar(select(KifuNameResearchEvidence.id).where(
+            KifuNameResearchEvidence.id == dependency["base_evidence_id"])) is not None
+
+
+def test_composed_mid_import_failure_rolls_back_dependencies_and_all_names(engine, monkeypatch):
+    from katrain.web.kifu import name_batch
+    bundle, sources, inv, research = composition_bundle(engine, symbolic=True)
+    before = counts(engine)
+    original = name_batch._apply_candidate
+
+    def fail_on_composed(conn, row, *args, **kwargs):
+        result = original(conn, row, *args, **kwargs)
+        if row["decision_kind"] == "composed":
+            raise RuntimeError("injected composed failure")
+        return result
+
+    monkeypatch.setattr(name_batch, "_apply_candidate", fail_on_composed)
+    with pytest.raises(RuntimeError, match="injected composed"):
+        apply_bundle(engine, bundle, sources, inv, research)
+    assert counts(engine) == before
+    with engine.connect() as conn:
+        assert conn.scalar(select(func.count()).select_from(KifuEventName)) == 0
+        assert conn.scalar(select(func.count()).select_from(KifuEvent)) == 0
+        assert set(conn.scalars(select(KifuAlbum.event_id))) == {None}
+
+
+def test_composed_undo_restores_other_batch_bases_and_preserves_existing_links(engine):
+    bundle, sources, inv, research = composition_bundle(engine)
+    base_bundle = deepcopy(bundle)
+    base_bundle.pop("composition")
+    base_bundle["candidates"] = [row for row in base_bundle["candidates"] if row["owner"]["kind"] == "event"]
+    base_bundle["members"] = [row for row in base_bundle["members"] if row["owner"]["kind"] == "event"]
+    base_bundle["member_set_sha256"] = canonical_sha256(base_bundle["members"])
+    base_bundle["owners"] = base_bundle["owners"][:1]
+    base_bundle["owner_set_sha256"] = canonical_sha256(base_bundle["owners"])
+    first = apply_bundle(engine, base_bundle, sources, inv, research)
+    with engine.connect() as conn:
+        before = conn.execute(select(KifuEventName.__table__).order_by(KifuEventName.id)).mappings().all()
+    for row in bundle["candidates"]:
+        if row["owner"]["kind"] == "event":
+            set_fixture_preimage(row, name_preimage_sha256(engine, row["owner"], row["lang"]))
+    second = apply_bundle(engine, bundle, sources, inv, research)
+    assert undo_batch(engine, second["batch_id"])["status"] == "undone"
+    assert batch_status(engine, first["batch_id"])["status"] == "applied"
+    with engine.connect() as conn:
+        assert conn.execute(select(KifuEventName.__table__).order_by(KifuEventName.id)).mappings().all() == before
+        assert set(conn.scalars(select(KifuAlbum.event_id))) == {7}
+        assert conn.scalar(select(func.count()).select_from(KifuNameResearchEvidence)) == 11
+
+
+def selected_composition_bundle(engine):
+    from tests.web_ui.test_kifu_name_candidates import _selected_v4_case
+
+    bundle, sources, _, research = composition_bundle(engine, symbolic=True)
+    raws = bundle["composition"]["scope"]["content"]["raws"]
+    with engine.begin() as conn:
+        for raw in raws:
+            album_id = raw["edition"]
+            value = raw["raw_value"]
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == album_id).values(
+                event="GNUGo3.8", date_played="1934-10-01", board_size=19, source="https://19x19.com",
+                source_path=f"data/kifu-album/19x19/{album_id}.sgf",
+                sgf_content=f"(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[{value}]GC[{value} | 1手])"))
+    for raw in raws:
+        apply_reviewed_selection(engine, raw["edition"])
+    inventory = build_inventory(engine, inventory_format=4)
+    _, template = _selected_v4_case()
+    declaration = bundle["owners"][0]
+    declaration["identity_context"] = template["owners"][0]["identity_context"]
+    links = []
+    for values, selected in zip(inventory["album_associations"], inventory["event_selection"]["rows"]):
+        album = dict(zip(inventory["association_columns"], values))
+        selection = dict(zip(inventory["event_selection"]["columns"], selected))
+        raw = raws[album["id"] - 1]
+        raw["raw_scope_sha256"] = canonical_sha256([[album["id"], "selected_event"]])
+        link = deepcopy(template["album_links"][0])
+        link.update(
+            album_id=album["id"], target=declaration["owner"], association_sha256=canonical_sha256(album),
+            production_sgf_sha256=selection["sgf_sha256"], raw_scope_sha256=raw["raw_scope_sha256"],
+            selection_batch_id=selection["batch_id"], selection_bundle_sha256=selection["bundle_sha256"],
+            selection_before_image=selection["source_after_image"],
+            selection_before_sha256=selection["source_after_sha256"],
+            expected={key: album[key] for key in ("player_black", "player_white", "event", "date_played",
+                                                 "round_name", "black_rank", "white_rank")} | {"old_id": None})
+        links.append(link)
+    bundle.update(bundle_format=4, inventory_format=4, inventory_sha256=inventory["sha256"],
+                  album_links=links, catalog_sha256=catalog_snapshot_sha(engine),
+                  owner_set_sha256=canonical_sha256(bundle["owners"]))
+    for link in links:
+        link["identity_review"]["scope_sha256"] = identity_scope_sha256(bundle, [link], declaration)
+    bundle["link_set_sha256"] = canonical_sha256(links)
+    scope = bundle["composition"]["scope"]
+    scope["content"].update(inventory_sha256=inventory["sha256"], catalog_sha256=bundle["catalog_sha256"])
+    scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    for row in bundle["candidates"]:
+        if row["decision_kind"] == "composed":
+            row["raw_scope_sha256"] = raws[row["edition"] - 1]["raw_scope_sha256"]
+            row["composition_review_sha256"] = canonical_sha256({
+                key: value for key, value in row.items() if key not in {
+                    "reviewer_id", "reviewer_model", "reviewed_at", "review_conclusion",
+                    "composition_review_sha256", "name_preimage_sha256", "preimage_binding"}})
+    return bundle, sources, inventory, research
+
+
+def test_v4_composed_retry_checks_metadata_and_undo_is_atomic(engine):
+    bundle, sources, inv, research = selected_composition_bundle(engine)
+    expected = canonical_sha256(bundle)
+    applied = apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    assert apply_bundle(engine, bundle, sources, inv, research,
+                        expected_bundle_sha256=expected)["change_count"] == 0
+    with engine.begin() as conn:
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+            KifuNameResearchEvidence.decision_kind == "composed").limit(1)).mappings().one()
+        payload = deepcopy(evidence["research_payload"])
+        forged = deepcopy(payload)
+        forged["composition"]["dependencies"]["base_revision"] += 1
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == evidence["id"]).values(research_payload=forged))
+    before = counts(engine)
+    for action in (lambda: apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected),
+                   lambda: undo_batch(engine, applied["batch_id"])):
+        with pytest.raises(BatchError, match="evidence|after-image"):
+            action()
+        assert counts(engine) == before
+    with engine.begin() as conn:
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == evidence["id"]).values(research_payload=payload))
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert set(conn.scalars(select(KifuAlbumEventSelection.event_id))) == {None}
+        assert conn.scalar(select(func.count()).select_from(KifuEventName)) == 0
+        assert conn.scalar(select(func.count()).select_from(KifuRawEventName)) == 0
+        assert conn.scalar(select(func.count()).select_from(KifuEventSelectionBatch)) == 34
+
+
 def test_dry_run_is_strictly_read_only_and_reports_scope(engine):
     inv = build_inventory(engine)
     bundle = approved_bundle(inv)

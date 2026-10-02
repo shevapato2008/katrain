@@ -19,6 +19,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_bundle
+from katrain.web.kifu.name_composition import base_candidate_sha256
 from katrain.web.kifu.name_inventory import ALBUM_COLUMNS, SOURCE_COLUMNS, _hash_row, _selection_supplement
 from katrain.web.kifu.name_parse import parse_event, parse_player
 
@@ -157,6 +158,10 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
 
 def _check_name_preimages(conn, candidates: list[dict]) -> None:
     for candidate in candidates:
+        if candidate["decision_kind"] == "composed":
+            capture = candidate.get("preimage_binding", {}).get("capture_sha256")
+            _fail(isinstance(capture, str) and _SHA256.fullmatch(capture) is not None,
+                  "composed name preimage requires capture SHA-256")
         _fail("name_preimage_sha256" in candidate, "name preimage is missing from reviewed candidate")
         expected = candidate["name_preimage_sha256"]
         _fail(expected is None or (isinstance(expected, str) and _SHA256.fullmatch(expected) is not None),
@@ -390,7 +395,7 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
 
 def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
     languages = {row["lang"] for row in candidates
-                 if row["decision_kind"] in {"conventional", "generated", "corrected"}}
+                 if row["decision_kind"] in {"conventional", "generated", "corrected", "composed"}}
     if not languages:
         return
     existing_names = defaultdict(list)
@@ -401,7 +406,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
             existing_names[(existing["lang"], normalize_alias(existing["display_name"]))].append(
                 (kind, existing[owner_column], existing["evidence_id"]))
     for row in candidates:
-        if row["decision_kind"] not in {"conventional", "generated", "corrected"}:
+        if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed"}:
             continue
         owner = row["owner"]
         own_kind, own_id = owner["kind"], owner.get("id")
@@ -412,7 +417,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
             previous = (evidence or {}).get("research_payload") or {}
             previous_candidate = previous.get("candidate", {}) if isinstance(previous, dict) else {}
-            _fail(row.get("collision_decision") == "distinct_people_confirmed"
+            _fail(row["decision_kind"] != "composed" and previous_candidate.get("decision_kind") != "composed"
+                  and row.get("collision_decision") == "distinct_people_confirmed"
                   and row.get("collision_basis")
                   and previous_candidate.get("collision_decision") == "distinct_people_confirmed"
                   and previous_candidate.get("collision_basis"),
@@ -453,16 +459,48 @@ def dry_run_bundle(engine, bundle: dict, registry: dict, inventory: dict, eviden
         return _inspect(conn, bundle, registry, inventory, evidence_records)
 
 
+def _composition_evidence(conn, row: dict, composition: dict, resolved: dict[str, int]) -> dict:
+    """Bind immutable approvals to the same-language base just written under this lock."""
+    _fail(row["owner"]["kind"] == "raw_event", "composed names require raw event owners")
+    series_id = resolved[_owner_ref(row["series_owner"])]
+    base = conn.execute(select(KifuEventName.__table__).where(
+        KifuEventName.event_id == series_id, KifuEventName.lang == row["lang"])).mappings().one_or_none()
+    _fail(base is not None and base["status"] == "verified", "composed base name is missing or unapproved")
+    evidence = _image(conn, KifuNameResearchEvidence.__table__, base["evidence_id"])
+    candidate = ((evidence or {}).get("research_payload") or {}).get("candidate")
+    _fail(evidence is not None and evidence["review_status"] == "approved"
+          and evidence["event_id"] == series_id and evidence["lang"] == row["lang"]
+          and evidence["revision"] == base["revision"]
+          and evidence["candidate_name"] == base["display_name"]
+          and isinstance(candidate, dict) and base_candidate_sha256(candidate) == row["base_candidate_sha256"],
+          "composed base evidence differs from approved dependency")
+    rule = next(rule for rule in composition["rules"] if rule["content"]["lang"] == row["lang"])
+    return {
+        "version": composition["version"], "rule": rule, "scope": composition["scope"],
+        "dependencies": {
+            "series_event_id": series_id, "base_name_id": base["id"],
+            "base_evidence_id": base["evidence_id"], "base_revision": base["revision"],
+            "base_candidate_sha256": row["base_candidate_sha256"],
+            "composition_rule_sha256": row["composition_rule_sha256"],
+            "raw_scope_sha256": row["raw_scope_sha256"],
+            "scope_sha256": canonical_sha256(composition["scope"]),
+        },
+    }
+
+
 def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_id: int,
-                        revision: int, owner_id: int) -> dict:
+                        revision: int, owner_id: int, composition: dict | None = None) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
     reviewed_at = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
+    payload = {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))}
+    if composition is not None:
+        payload["composition"] = composition
     return {
         _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner_id, "lang": row["lang"], "revision": revision,
         "source_registry_id": registry_id, "candidate_name": row["display_name"],
         "decision_kind": row["decision_kind"], "generation_rule_version": row["generation_rule_version"],
-        "research_payload": {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))},
+        "research_payload": payload,
         "producer_id": row["producer_id"], "producer_model": row["producer_model"],
         "produced_at": produced_at, "reviewer_id": row["reviewer_id"],
         "reviewer_model": row["reviewer_model"], "reviewed_at": reviewed_at,
@@ -471,7 +509,8 @@ def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_i
 
 
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
-                     batch_id: int, sequence: int, resolved: dict[str, int] | None = None) -> int:
+                     batch_id: int, sequence: int, resolved: dict[str, int] | None = None,
+                     composition: dict | None = None) -> int:
     owner = row["owner"]
     owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
@@ -485,8 +524,10 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
         evidence_table.c[_OWNER_EVIDENCE_COLUMN[owner["kind"]]] == owner_id,
         evidence_table.c.lang == row["lang"]))
     revision = max(revision, int(latest or 0) + 1)
+    composed = _composition_evidence(conn, row, composition, resolved) if row["decision_kind"] == "composed" else None
     evidence_id, evidence_after = _insert(
-        conn, KifuNameResearchEvidence, _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id))
+        conn, KifuNameResearchEvidence, _candidate_evidence(
+            row, research_by_hash, registry_id, revision, owner_id, composed))
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
     desired = {"display_name": row["display_name"], "status": "verified",
@@ -610,7 +651,9 @@ def _check_applied_v4(conn, batch, bundle):
               "applied batch research differs from signed candidate")
         expected_evidence = _candidate_evidence(
             candidate, {research_hash: research} if research_hash else {},
-            batch["source_registry_id"], name["revision"], owner_id)
+            batch["source_registry_id"], name["revision"], owner_id,
+            _composition_evidence(conn, candidate, bundle["composition"], resolved)
+            if candidate["decision_kind"] == "composed" else None)
         for key, value in expected_evidence.items():
             stored = evidence[key]
             if isinstance(value, datetime) and isinstance(stored, datetime) and stored.tzinfo is None:
@@ -658,9 +701,10 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         if bundle["bundle_format"] != 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         research_by_hash = {canonical_sha256(item): item for item in evidence_records}
-        for candidate in bundle["candidates"]:
+        for candidate in sorted(bundle["candidates"], key=lambda row: row["decision_kind"] == "composed"):
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
-                                        resolved if bundle["bundle_format"] in {2, 3, 4} else None)
+                                        resolved if bundle["bundle_format"] in {2, 3, 4} else None,
+                                        bundle.get("composition"))
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:
@@ -696,6 +740,18 @@ def batch_status(engine, batch_id: int) -> dict:
                 "inventory_sha256": row["inventory_sha256"], "change_count": count}
 
 
+def _retained_composition_dependency(conn, table, row_id: int) -> bool:
+    """JSON dependencies need the same undo protection as ordinary foreign keys."""
+    key = {KifuEventName.__tablename__: "base_name_id",
+           KifuNameResearchEvidence.__tablename__: "base_evidence_id"}.get(table.name)
+    if key is None:
+        return False
+    payloads = conn.scalars(select(KifuNameResearchEvidence.research_payload).where(
+        KifuNameResearchEvidence.decision_kind == "composed"))
+    return any(((payload.get("composition") or {}).get("dependencies") or {}).get(key) == row_id
+               for payload in payloads if isinstance(payload, dict))
+
+
 def undo_batch(engine, batch_id: int) -> dict:
     """Undo each unchanged after-image in reverse order, retaining later edits."""
     with _locked_write(engine) as conn:
@@ -721,6 +777,8 @@ def undo_batch(engine, batch_id: int) -> dict:
                     _fail(table is not None, f"undo target table is not allowlisted: {change['target_table']}")
                     _fail(_image(conn, table, change["target_row_id"]) == change["after_image"],
                           "v4 batch after-image changed")
+                    _fail(not _retained_composition_dependency(conn, table, change["target_row_id"]),
+                          "retained composed evidence blocks atomic v4 undo")
                     before = change["before_image"]
                     if before is None:
                         conn.execute(table.delete().where(_primary_key(table) == change["target_row_id"]))
@@ -745,6 +803,9 @@ def undo_batch(engine, batch_id: int) -> dict:
                 already_reverted += 1
                 continue
             if current != change["after_image"]:
+                skipped += 1
+                continue
+            if _retained_composition_dependency(conn, table, change["target_row_id"]):
                 skipped += 1
                 continue
             try:

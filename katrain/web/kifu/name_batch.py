@@ -227,7 +227,7 @@ def _check_owner_manifest(conn, bundle: dict) -> None:
         model = _OWNER[kind][0]
         table = model.__table__
         if "id" in owner:
-            current = conn.execute(select(table).where(table.c.id == owner["id"])).mappings().one_or_none()
+            current = _image(conn, table, owner["id"])
             _fail(current is not None, f"owner preimage missing: {_owner_ref(owner)}")
             expected = declaration["preimage"]
             _fail(all(current.get(key) == value for key, value in expected.items()),

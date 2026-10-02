@@ -594,6 +594,20 @@ def test_v2_existing_player_link_rejects_one_language_without_writes(engine):
     assert counts(engine) == (0, 0, 0, 0, 0)
 
 
+def test_v2_owner_preimage_accepts_pinned_iso_timestamp(engine):
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "id": 17}
+    with engine.connect() as conn:
+        created_at = conn.scalar(select(KifuPlayer.created_at).where(KifuPlayer.id == 17))
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
+    bundle = _v2_wrap(
+        engine, inv, base,
+        [{"owner": owner, "preimage": {"canonical_name": "吴清源", "created_at": created_at.isoformat()}}],
+        [_identity_link(engine, inv, 11, "white", owner)],
+    )
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
+
+
 def test_v2_repeated_links_hash_common_raw_scope_once(engine, monkeypatch):
     from katrain.web.kifu import name_candidates
 

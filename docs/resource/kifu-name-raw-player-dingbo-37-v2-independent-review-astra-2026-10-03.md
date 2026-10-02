@@ -1,6 +1,6 @@
 # 丁波 37 槽十一语 v2 独立审核
 
-2026-10-03；审核者 `/root/dingbo_37_sign_review_astra`。任务指定 Astra/max；运行时仅声明 GPT-6，未独立认证底层子型号。审核与生产者 `/root/raw31_bundle_producer` 独立；没有生成后自行批准业务候选。本备忘录当前记录第一阶段结果，后续锚点、批次、候选及隔离克隆验收尚未完成。
+2026-10-03；审核者 `/root/dingbo_37_sign_review_astra`。任务指定 Astra/max；运行时仅声明 GPT-6，未独立认证底层子型号。审核与生产者 `/root/raw31_bundle_producer` 独立；没有生成后自行批准业务候选。本备忘录当前记录范围、规则及新 raw 锚点的审核结果，批次、候选及隔离克隆验收尚未完成。
 
 **第一阶段 PASS：批准精确 37 槽 raw 显示范围、六语转写规则、`readable_unlinked` 分类，以及隔离 registry 中 `taiwango-blog-tw` 的繁中围棋专业来源登记。尚未批准整个包写入。** 2026-10-02T22:24:16.656746+00:00 写入真实审核签署；没有修改生产者的待签文件，没有生产或现役测试库写入。
 
@@ -23,4 +23,8 @@
 
 受控目录 `~/.local/share/kifu-name-audit/2026-10-03/raw-player-dingbo-37-v2-independent-review-astra/` 为 0700、文件为 0600。`phase1-verification.json` 记录实际复算结果；`raw-display-scope.approved.json` 的规范 JSON hash 为 `5e9fbb5b309d6b9d3850b062c0b43abe4f12b01c0094f18e3114478c99c0a1de`，`rules.approved.json` 的规范 JSON hash 为 `129f6ee2bb0c0e25b76e5c5626bfe93903a5640e1a7d80f18f1f6b57ada7355b`。另含独立分类和 registry 审核及六条规则各自的 hash。第一阶段 manifest 文件 hash 为 `4034fd4c876529419442f53339853e20b7556903108bd191fefe5b51bf26aa01`。
 
-下一步由原生产者按已签 scope 和实际时间重绑新的 raw v3 锚点及五语研究；保留旧人物来源批准的原字节。待独立批准新锚点后，再按规则审核之后的真实生产时间重产六个有限批次，并完成候选的真实前像绑定，之后独立签署。最终包仍须 `validate_bundle`、唯一隔离克隆 dry-run/apply/replay/undo/reapply 及十一语显示、搜索、覆盖核对。当前没有已发生显示增益，潜在上限为 407 个姓名语言槽，人物身份增量固定为 0；任何第一阶段 PASS 都不能代替上述后续验收。
+**第二阶段 PASS：2026-10-02T22:32:37.298471+00:00 独立批准原生产者新产的 raw v3 锚点。** 第二阶段 manifest 的全部 7 份文件匹配固定 hash；新锚点生产时间 22:29:32.368505+00:00 晚于范围和规则审核，绑定已签 scope，发表拼法、`[[ding], [bo]]` 读音以及三份来源正文事实与已审材料一致。重新核对五语正文和协会完整名册 hash；`validate_transliteration_anchor` 在真实签署后通过，5/5 新研究记录亦通过验证。新 `source_link.review_basis` 已准确区分来源记录对应、有限 raw 读音适用性和未批准的棋谱人物身份。本阶段没有数据库连接。
+
+签后锚点位于上述审核目录 `phase2-anchor-research/source-raw-anchor-v3.approved.json`，规范 JSON hash 为 `54778896d12031859791485d791b486d1327ef1abe53787a16780312be309324`，文件 hash 为 `8a0a8d0d64206cbe626da5584ee631d5ed90dc9996efe88e5d72091bdb214ca4`；该子目录 manifest hash 为 `431fd655e5e9a9296a530bfcd641ca48020e5ee1472fff1368276d006136f504`。五语研究按现有协议保持 `pending` 且没有 reviewer 字段，独立审核另存 `five-primary-research.review.json`，钉住输入文件和每语种研究的规范 hash，待候选阶段实际签署。这没有降低研究与候选的审批边界。
+
+下一步由原生产者按已签锚点、范围和规则重产六个有限批次，并完成十一语候选的真实前像绑定，之后独立签署。最终包仍须 `validate_bundle`、唯一隔离克隆 dry-run/apply/replay/undo/reapply 及十一语显示、搜索、覆盖核对。当前没有已发生显示增益，潜在上限为 407 个姓名语言槽，人物身份增量固定为 0；上述阶段 PASS 不能代替后续验收。

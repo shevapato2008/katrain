@@ -203,3 +203,91 @@ def test_selected_event_invalid_proof_and_current_name_keep_gap(engine, monkeypa
         assert result.items == []
     report = coverage_report(engine, inventory, languages=("en",))
     assert any(row["slot"] == "event" for row in report["missing_examples"])
+
+
+def test_invalid_selection_cannot_fall_back_to_hidden_program_label(engine, monkeypatch):
+    from katrain.web.core.models_db import KifuRawEventName
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    _applied(engine)
+    inventory = build_inventory(engine, inventory_format=4)
+    with Session(engine) as db:
+        evidence = _evidence(db, "raw_event", 7, "en", "", decision="hidden")
+        db.add(
+            KifuRawEventName(
+                raw_event_id=7,
+                lang="en",
+                display_name="",
+                status="verified",
+                decision_kind="hidden",
+                generation_rule_version="test-v1",
+                revision=1,
+                evidence_id=evidence.id,
+            )
+        )
+        album = db.get(KifuAlbum, 11)
+        album.sgf_content = "(;FF[4]SZ[19]GN[GNUGo3.8])"
+        db.commit()
+        assert (
+            asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Event name unverified"
+        )
+    report = coverage_report(engine, inventory, languages=("en",))
+    assert any(row["slot"] == "event" for row in report["missing_examples"])
+
+
+def _multi_selected_bundle(engine, count):
+    bundle, sources, _, research = _selected_bundle(engine, "Selected Cup 0")
+    for offset in range(1, count):
+        raw = f"Selected Cup {offset}"
+        with engine.begin() as conn:
+            original = dict(conn.execute(select(KifuAlbum.__table__).where(KifuAlbum.id == 11)).mappings().one())
+            original.update(
+                id=11 + offset,
+                source_path=f"data/kifu-album/19x19/{offset}.sgf",
+                sgf_content=f"(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[{raw}]GC[{raw} | 1手])",
+            )
+            conn.execute(KifuAlbum.__table__.insert().values(**original))
+        apply_reviewed_selection(engine, 11 + offset)
+    inventory = build_inventory(engine, inventory_format=4)
+    template = deepcopy(bundle["album_links"][0])
+    links = []
+    for album_values, selection_values in zip(inventory["album_associations"], inventory["event_selection"]["rows"]):
+        album = dict(zip(inventory["association_columns"], album_values))
+        selection = dict(zip(inventory["event_selection"]["columns"], selection_values))
+        link = deepcopy(template)
+        link.update(
+            album_id=album["id"],
+            association_sha256=canonical_sha256(album),
+            production_sgf_sha256=selection["sgf_sha256"],
+            raw_scope_sha256=canonical_sha256([[album["id"], "selected_event"]]),
+            selection_batch_id=selection["batch_id"],
+            selection_bundle_sha256=selection["bundle_sha256"],
+            selection_before_image=selection["source_after_image"],
+            selection_before_sha256=selection["source_after_sha256"],
+        )
+        links.append(link)
+    bundle.update(inventory_sha256=inventory["sha256"], album_links=links)
+    for link in links:
+        link["identity_review"]["scope_sha256"] = identity_scope_sha256(bundle, [link], bundle["owners"][0])
+    bundle["link_set_sha256"] = canonical_sha256(links)
+    return bundle, sources, inventory, research
+
+
+@pytest.mark.parametrize("count", [1, 5, 20])
+def test_one_page_selection_proof_queries_bounded_across_raw_groups(engine, count):
+    from sqlalchemy import event
+
+    bundle, sources, inventory, research = _multi_selected_bundle(engine, count)
+    apply_bundle(engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle))
+    statements = []
+
+    def record(_conn, _cursor, statement, _params, _context, _many):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup 0", 19)}
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    assert len(statements) <= 20

@@ -274,7 +274,10 @@ def obscured_program_event_ids(db: Session, albums: list, *, selected_events=Non
     if not candidates:
         return set()
     rows = db.query(KifuAlbum.id, KifuAlbum.sgf_content).filter(KifuAlbum.id.in_(candidates))
-    obscured = set()
+    # An existing selection that failed shared proof cannot become a hidden
+    # program label merely because its replacement SGF no longer has a second GN.
+    obscured = {album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id)
+                .filter(KifuAlbumEventSelection.album_id.in_(candidates))}
     for album_id, content in rows:
         try:
             names = SGF.parse_sgf(content).get_list_property("GN") or []

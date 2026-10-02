@@ -298,12 +298,21 @@ def _same_review_time(stored: datetime, signed: str) -> bool:
 
 
 def _raw_scope_sha256(conn, raw: str, cache: dict, source_batch_cache: dict) -> str | None:
-    """Rebuild the original raw-event slots from live albums and source-valid selections."""
-    if raw in cache:
-        return cache[raw]
-    slots = [[album_id, "event"] for album_id in conn.scalars(select(KifuAlbum.id).where(KifuAlbum.event == raw))]
+    """Read one original raw scope, reusing the batch-prefetched proof cache."""
+    _raw_scope_sha256_many(conn, {raw}, cache, source_batch_cache)
+    return cache[raw]
+
+
+def _raw_scope_sha256_many(conn, raws: set[str], cache: dict, source_batch_cache: dict) -> None:
+    """Rebuild all requested raw scopes with bounded album/source queries."""
+    raws = raws - cache.keys()
+    if not raws:
+        return
+    slots = {raw: [] for raw in raws}
+    for album_id, raw in conn.execute(select(KifuAlbum.id, KifuAlbum.event).where(KifuAlbum.event.in_(raws))):
+        slots[raw].append([album_id, "event"])
     selections = list(conn.execute(select(KifuAlbumEventSelection.__table__).where(
-        KifuAlbumEventSelection.selected_raw == raw)).mappings())
+        KifuAlbumEventSelection.selected_raw.in_(raws))).mappings())
     selection_ids = {row["album_id"] for row in selections}
     albums = {row["id"]: row for row in conn.execute(select(KifuAlbum.__table__).where(
         KifuAlbum.id.in_(selection_ids))).mappings()} if selection_ids else {}
@@ -317,7 +326,9 @@ def _raw_scope_sha256(conn, raw: str, cache: dict, source_batch_cache: dict) -> 
         members = {item["album_id"]: item for item in batch["reviewed_artifact"]["bundle"]["members"]} \
             if images is not None else {}
         source_batch_cache[batch_id] = (images, members)
+    invalid_raws = set()
     for selection in selections:
+        raw = selection["selected_raw"]
         images, members = source_batch_cache[selection["batch_id"]]
         album = albums.get(selection["album_id"])
         source_image = (images or {}).get(selection["album_id"])
@@ -326,19 +337,19 @@ def _raw_scope_sha256(conn, raw: str, cache: dict, source_batch_cache: dict) -> 
                 or {**source_image, "event_id": selection["event_id"]} != _image(selection)
                 or any(album[key] != member[old_key] for key, old_key in _ALBUM_PREIMAGE.items())
                 or sgf_sha256(album["sgf_content"]) != selection["sgf_sha256"]):
-            cache[raw] = None
-            return None
+            invalid_raws.add(raw)
+            continue
         try:
             selected = selected_second_gn(SGF.parse_sgf(album["sgf_content"]),
                                           classify_source_path(album["source_path"]))
         except (ParseError, ValueError, TypeError, AttributeError, IndexError):
             selected = None
         if selected != raw:
-            cache[raw] = None
-            return None
-        slots.append([selection["album_id"], "selected_event"])
-    cache[raw] = canonical_sha256(sorted(slots)) if slots else None
-    return cache[raw]
+            invalid_raws.add(raw)
+            continue
+        slots[raw].append([selection["album_id"], "selected_event"])
+    for raw in raws:
+        cache[raw] = canonical_sha256(sorted(slots[raw])) if slots[raw] and raw not in invalid_raws else None
 
 
 def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache: dict) -> tuple[dict, dict] | None:
@@ -579,6 +590,18 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
     raw_scope_cache = {}
     source_batch_cache = {batch_id: (source_images[batch_id], source_members.get(batch_id, {}))
                           for batch_id in source_ids}
+    raw_scope_values = set()
+    for batch in name_batches.values():
+        artifact = batch.get("reviewed_artifact")
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        links = bundle.get("album_links") if isinstance(bundle, dict) else None
+        if isinstance(links, list):
+            for link in links:
+                image = link.get("selection_before_image") if isinstance(link, dict) else None
+                raw = image.get("selected_raw") if isinstance(image, dict) else None
+                if isinstance(raw, str):
+                    raw_scope_values.add(raw)
+    _raw_scope_sha256_many(conn, raw_scope_values, raw_scope_cache, source_batch_cache)
     reviewed_links = {batch_id: _reviewed_name_links(conn, batch, raw_scope_cache, source_batch_cache)
                       for batch_id, batch in name_batches.items()}
     event_ids = {row["event_id"] for row in selections if row["event_id"] is not None}

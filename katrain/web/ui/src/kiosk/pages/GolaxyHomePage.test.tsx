@@ -5,14 +5,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { ApiError } from '../../api';
 import GolaxyHomePage from './GolaxyHomePage';
 
-const { platformStatus, platformRooms, platformUsers, navigate, vision, auth } = vi.hoisted(() => ({
+const { platformStatus, platformRooms, platformUsers, platformLogout, navigate, vision, auth } = vi.hoisted(() => ({
   platformStatus: vi.fn(),
-  platformRooms: vi.fn(), platformUsers: vi.fn(),
+  platformRooms: vi.fn(), platformUsers: vi.fn(), platformLogout: vi.fn(),
   navigate: vi.fn(),
   vision: { enabled: true },
   auth: { token: 'token', isAuthenticated: true },
 }));
-vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers } }));
+vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers, platformLogout } }));
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => auth,
 }));
@@ -49,6 +49,7 @@ beforeEach(() => {
   platformStatus.mockResolvedValue(connected('真实账号'));
   platformRooms.mockResolvedValue({ rooms: [] });
   platformUsers.mockResolvedValue({ users: [] });
+  platformLogout.mockResolvedValue({ status: 'disconnected', platform: 'golaxy' });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -98,16 +99,83 @@ describe('Golaxy home', () => {
   });
 
   it('renders room facts and opens the read-only spectator route, then switches to players', async () => {
-    platformRooms.mockResolvedValue({ rooms: [{ room_id: 'r1', room_number: '1234', room_type: '普通对局', handicap: 0, black: { user_id: 'a', username: '测试黑方', rank: '3段' }, white: { user_id: 'b', username: '测试白方', rank: '2段' }, phase: '进行中', spectator_count: 8 }] });
+    platformRooms.mockResolvedValue({ rooms: [{ room_id: 'r1', room_number: '1234', room_type: '普通对局', handicap: 0, black: { user_id: 'a', username: '测试黑方', rank: '3段' }, white: { user_id: 'b', username: '测试白方', rank: '2段' }, phase: '进行中', room_user_count: 8, spectator_count: null }] });
     platformUsers.mockResolvedValue({ users: [{ user_id: 'p1', username: '测试棋友', rank: '1段', status: '空闲' }] });
     renderPage();
     const room = await screen.findByRole('button', { name: /1234/ });
-    for (const text of ['普通对局', '分先', '测试黑方', '测试白方', '3段', '2段', '进行中', '8 人观战']) expect(screen.getByText(text)).toBeInTheDocument();
+    for (const text of ['普通对局', '分先', '测试黑方', '测试白方', '3段', '2段', '进行中', '8 人在房间']) expect(screen.getByText(text)).toBeInTheDocument();
     await userEvent.click(room);
     expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/golaxy/spectate/r1');
     expect(screen.queryByTestId('kiosk-setup-board')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
     expect(await screen.findByText('测试棋友')).toBeInTheDocument();
+  });
+
+  it('shows verified room users and player avatar, while hiding absent profile facts', async () => {
+    platformRooms.mockResolvedValue({ rooms: [{ ...room('1234'), room_user_count: 8 }] });
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', rank: '3段', status: null,
+      wins: null, losses: null, invite_able: null, avatar_url: 'https://assets.19x19.com/photo/one.png' }] });
+    renderPage();
+    expect(await screen.findByText('8 人在房间')).toBeInTheDocument();
+    expect(screen.queryByText(/人观战/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.querySelector('img[src="https://assets.19x19.com/photo/one.png"]')).not.toBeNull();
+    expect(screen.getByText('u1')).toBeInTheDocument();
+    expect(screen.queryByText('地区')).not.toBeInTheDocument();
+    expect(screen.queryByText('对弈战绩')).not.toBeInTheDocument();
+    expect(screen.queryByText('邀请状态')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '邀请对局' })).toBeDisabled();
+  });
+
+  it('keeps the selected player through a refresh and updates only that identity', async () => {
+    platformUsers.mockResolvedValueOnce({ users: [{ user_id: 'u1', username: '棋友甲', rank: '3段', status: '空闲', wins: 1, losses: 2, invite_able: true }] })
+      .mockResolvedValueOnce({ users: [{ user_id: 'u1', username: '棋友甲', rank: '4段', status: '观战', wins: 2, losses: 2, invite_able: false },
+        { user_id: 'u2', username: '棋友乙', rank: '2段', status: '空闲' }] });
+    vi.useFakeTimers();
+    renderPage();
+    await act(async () => { await Promise.resolve(); });
+    act(() => screen.getByRole('tab', { name: '在线棋友' }).click());
+    act(() => screen.getByRole('button', { name: '查看棋友甲的个人资料' }).click());
+    expect(screen.getByRole('dialog')).toHaveTextContent('1 胜 · 2 负');
+    await act(async () => vi.advanceTimersByTime(30_000));
+    expect(screen.getByRole('dialog')).toHaveTextContent('棋友甲');
+    expect(screen.getByRole('dialog')).toHaveTextContent('2 胜 · 2 负');
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('棋友乙');
+  });
+
+  it.each(['switch', 'logout'] as const)('waits for owner logout before %s', async (intent) => {
+    const pending = deferred<{ status: string; platform: string }>();
+    platformLogout.mockReturnValue(pending.promise);
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('button', { name: /当前账号/ }));
+    await userEvent.click(screen.getByRole('button', { name: intent === 'switch' ? '切换账号' : '退出星阵' }));
+    await userEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(platformLogout).toHaveBeenCalledWith('golaxy', 'token');
+    expect(screen.getByRole('button', { name: '正在断开' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /当前账号.*真实账号/ })).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+    await act(async () => pending.resolve({ status: 'disconnected', platform: 'golaxy' }));
+    if (intent === 'switch') expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/login/golaxy');
+    else expect(screen.getByRole('button', { name: '连接星阵' })).toBeInTheDocument();
+    expect(screen.queryByText(/真实账号/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the account and offers retry when logout fails', async () => {
+    platformLogout.mockRejectedValueOnce(new Error('offline'));
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('button', { name: /当前账号/ }));
+    await userEvent.click(screen.getByRole('button', { name: '切换账号' }));
+    await userEvent.click(screen.getByRole('button', { name: '确认' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('没能断开星阵账号');
+    expect(screen.getByRole('button', { name: /当前账号.*真实账号/ })).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '重试断开' }));
+    await waitFor(() => expect(platformLogout).toHaveBeenCalledTimes(2));
+    expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/login/golaxy');
   });
 
   it('opens each room by its opaque id without leaking a fixture room number into the URL', async () => {

@@ -20,6 +20,7 @@
 .golaxy-home__seat-name b {display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; }
 .golaxy-home__seat-name small {display:block; margin-top:2px; color:#91d9a4; font-size:12px; }
 .golaxy-home__avatar {position:relative; display:grid; place-items:center; width:34px; height:34px; flex:none; border:1px solid #526e58; border-radius:7px; background:#31483a; color:#e5f3e6; font-size:13px; }
+.golaxy-home img.golaxy-home__avatar {display:block; object-fit:cover; }
 .golaxy-home__avatar--circle {border-radius:50%; }
 .golaxy-home__seat .golaxy-home__avatar::after {content:""; position:absolute; right:-3px; bottom:-3px; width:10px; height:10px; border:1px solid #91a79a; border-radius:50%; background:#101715; }
 .golaxy-home__seat--white .golaxy-home__avatar::after {right:auto; left:-3px; background:#fffdf4; }
@@ -46,6 +47,7 @@
 .golaxy-home__account-actions button {height:44px; flex:1; padding:0 6px; border:1px solid #6aa279; border-radius:8px; background:#294737; font-size:12px; }
 .golaxy-home__account-actions button:last-child {border-color:#8f7060; background:#3a302b; }
 .golaxy-home__account-confirm {margin-top:10px; padding:9px; border:1px solid #6d885f; border-radius:8px; background:#18271f; }
+.golaxy-home__account-confirm [role='alert'] {color:#ffd0bc; }
 .golaxy-home__account-confirm button {height:44px; padding:0 10px; border:1px solid #79bf8e; border-radius:7px; background:#31583b; font-size:11px; }
 .golaxy-home__account-confirm button + button {margin-left:5px; background:transparent; border-color:#53705b; }
 .golaxy-home__profile-layer {position:absolute; z-index:20; inset:0; display:grid; place-items:center; background:#050a08ba; }

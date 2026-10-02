@@ -259,8 +259,6 @@ export interface GolaxyOnlinePlayer {
   losses?: number | null;
   invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
   avatar_url?: string | null;
-  user_code?: string | null;
-  region?: string | null;
 }
 
 export interface GolaxyRoom {
@@ -766,12 +764,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string | null | undefined) => {
+  platformLogout: async (platform: string, token: string | null | undefined): Promise<{ status: string; platform: string }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status, `Logout failed: ${response.status}`);
     return response.json();
   },
   platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {

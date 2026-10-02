@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.platforms.golaxy.adapter import GolaxyAdapter
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import OnlineUser, PlatformCredentials
@@ -381,6 +382,37 @@ def test_foreign_owner_cannot_read_lobby():
     adapter = _adapter(lambda request: (_ for _ in ()).throw(AssertionError("upstream called")))
     assert TestClient(_app(adapter, owner=8)).get("/api/v1/platforms/golaxy/rooms").status_code == 403
     assert TestClient(_app(adapter, owner=8)).get("/api/v1/platforms/golaxy/users").status_code == 403
+
+
+def test_golaxy_logout_requires_owner_and_preserves_foreign_connection():
+    adapter = _adapter(lambda request: (_ for _ in ()).throw(AssertionError("upstream called")))
+    app = _app(adapter, owner=8)
+    app.dependency_overrides[require_writable_user] = lambda: SimpleNamespace(id=7)
+    delete_credentials = Mock()
+    app.state.platform_manager._credential_store = SimpleNamespace(delete_credentials=delete_credentials)
+
+    response = TestClient(app).delete("/api/v1/platforms/golaxy/logout")
+
+    assert response.status_code == 403
+    assert adapter.is_connected
+    assert app.state.platform_manager.owner_of("golaxy") == 8
+    delete_credentials.assert_not_called()
+
+
+def test_golaxy_logout_failure_keeps_owner_and_credentials_for_retry():
+    adapter = _adapter(lambda request: (_ for _ in ()).throw(AssertionError("upstream called")))
+    adapter.disconnect = AsyncMock(side_effect=RuntimeError("offline"))
+    app = _app(adapter)
+    app.dependency_overrides[require_writable_user] = lambda: SimpleNamespace(id=7)
+    delete_credentials = Mock()
+    app.state.platform_manager._credential_store = SimpleNamespace(delete_credentials=delete_credentials)
+
+    response = TestClient(app, raise_server_exceptions=False).delete("/api/v1/platforms/golaxy/logout")
+
+    assert response.status_code == 500
+    assert adapter.is_connected
+    assert app.state.platform_manager.owner_of("golaxy") == 7
+    delete_credentials.assert_not_called()
 
 
 @pytest.mark.parametrize("path", ["rooms", "users"])

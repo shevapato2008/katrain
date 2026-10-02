@@ -224,6 +224,11 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_kifu_analysis(self, album_id: int) -> Dict:
+        resp = await self._request("GET", f"/api/v1/kifu/albums/{album_id}/analysis")
+        resp.raise_for_status()
+        return resp.json()
+
     # ── User Games (CRUD) ──
 
     async def list_user_games(self, **params) -> Dict:

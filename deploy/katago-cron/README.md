@@ -39,6 +39,7 @@ The image has **one** configured analysis model and verifies its SHA before repo
 - A warm 2000-visit request on the V100 took about 9 seconds; four concurrent requests took 14.57 seconds total (0.274 positions/second). The candidate and existing gameplay engine used 3186 MiB GPU memory together during the probe.
 - The production kifu catalog has 173025 rows and 173016 distinct byte-identical SGFs; nine rows are existing duplicate aliases. At roughly 200 positions per game, the canonical corpus needs about 34.8 million positions, or roughly four years of uninterrupted compute at the measured four-request rate, before yielding to user workloads. Measured report rows were about 2.8–3.0 KB each, implying roughly 100 GB for analysis rows before indexes; production had about 40 GB free at the feasibility check.
 - The user chose to implement the system and run a small pilot, while **deferring full-corpus backfill**. Keep bulk admission disabled until capacity and storage are explicitly revisited.
+- The production cloud disk device was expanded to 200G on 2026-10-02, but `lsblk` still showed a ~100G root partition and `df` showed only 35G free on the PostgreSQL data volume (`/var/lib/docker/volumes/katrain-ucloud_postgres-data/_data`). The unallocated device capacity is not yet database capacity. A future partition/filesystem resize still would not address the measured GPU throughput.
 
 ## Production Compose integration
 

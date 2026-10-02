@@ -1,6 +1,6 @@
 // API functions for kifu album (tournament game records) module
 
-import type { KifuAlbumListResponse, KifuAlbumDetail } from '../types/kifu';
+import type { KifuAlbumListResponse, KifuAlbumDetail, KifuAnalysisDetail } from '../types/kifu';
 import { ApiError } from '../api';
 
 const API_BASE = '/api/v1/kifu';
@@ -30,4 +30,6 @@ export const KifuAPI = {
   getAlbum: (id: number, lang?: string): Promise<KifuAlbumDetail> => {
     return apiGet(`/albums/${id}${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`);
   },
+
+  getAnalysis: (id: number): Promise<KifuAnalysisDetail> => apiGet(`/albums/${id}/analysis`),
 };

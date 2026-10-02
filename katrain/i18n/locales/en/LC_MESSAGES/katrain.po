@@ -7221,3 +7221,54 @@ msgstr "Couldn't confirm sign-in"
 
 msgid "vision:not_a_stone"
 msgstr "Not a stone"
+
+msgid "kifu:view_analysis_report"
+msgstr "View analysis report"
+
+msgid "kifu:view_kifu"
+msgstr "View game record"
+
+msgid "kifu:professional_game"
+msgstr "Professional game"
+
+msgid "kifu:report_title"
+msgstr "Professional game report"
+
+msgid "kifu:report_load_failed"
+msgstr "This professional game is temporarily unavailable"
+
+msgid "kifu:report_loading"
+msgstr "Loading professional game report"
+
+msgid "kifu:report_progress"
+msgstr "Analyzed {done} / {total} moves"
+
+msgid "kifu:report_visits"
+msgstr "2000 visits per position · {total} moves"
+
+msgid "kifu:report_visits_heading"
+msgstr "Professional game · 2000 visits per position"
+
+msgid "kifu:report_no_position"
+msgstr "No analysis for this position yet"
+
+msgid "kifu:analysis_read_error"
+msgstr "Analysis status temporarily unavailable"
+
+msgid "kifu:analysis_loading"
+msgstr "Loading analysis"
+
+msgid "kifu:analysis_unavailable"
+msgstr "Analysis not scheduled"
+
+msgid "kifu:analysis_pending"
+msgstr "Waiting for analysis"
+
+msgid "kifu:analysis_running"
+msgstr "Analyzing"
+
+msgid "kifu:analysis_failed"
+msgstr "Analysis incomplete"
+
+msgid "kifu:analysis_completed"
+msgstr "Analysis completed"

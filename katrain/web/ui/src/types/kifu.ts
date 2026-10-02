@@ -36,3 +36,37 @@ export interface KifuAlbumListResponse {
   page: number;
   page_size: number;
 }
+
+/** Analysis belongs to the canonical professional game, independently of user reports. */
+export interface KifuAnalysisMove {
+  move_number: number;
+  actual_move: string | null;
+  actual_player: string | null;
+  winrate: number | null;
+  score_lead: number | null;
+  visits: number | null;
+  root_visits: number | null;
+  top_moves: import('./live').TopMove[] | null;
+  ownership: number[][] | null;
+  delta_score: number | null;
+  delta_winrate: number | null;
+  grade: string | null;
+  points_lost: number | null;
+  points_lost_source: string | null;
+  is_top_move: boolean | null;
+  top_prior: number | null;
+  brilliance: number | null;
+}
+
+export interface KifuAnalysisDetail {
+  album_id: number;
+  canonical_album_id: number;
+  sgf_sha256: string;
+  model_sha256: string;
+  requested_visits: number;
+  status: 'unavailable' | 'pending' | 'running' | 'completed' | 'failed';
+  total_moves: number;
+  analyzed_moves: number;
+  error_message: string | null;
+  moves: KifuAnalysisMove[];
+}

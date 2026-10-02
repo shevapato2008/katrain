@@ -30,7 +30,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ScienceIcon from '@mui/icons-material/Science';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -355,9 +355,9 @@ export default function KifuLibraryPage() {
 
   const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
 
-  const handleOpenInResearch = useCallback(() => {
+  const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
-      navigate(`/galaxy/research?kifu_id=${selectedId}`);
+      navigate(`/galaxy/kifu/${selectedId}/report`);
     }
   }, [selectedId, navigate]);
 
@@ -548,12 +548,12 @@ export default function KifuLibraryPage() {
             <Button
               fullWidth
               variant="contained"
-              startIcon={<ScienceIcon />}
+              startIcon={<AssessmentIcon />}
               disabled={!selectedAlbum}
-              onClick={handleOpenInResearch}
+              onClick={handleViewReport}
               sx={{ textTransform: 'none', minHeight: 40, borderRadius: '8px' }}
             >
-              {t('kifu:open_in_research', '在研究中打开')}
+              {t('kifu:view_analysis_report', '查看分析报告')}
             </Button>
           </Box>
         </>

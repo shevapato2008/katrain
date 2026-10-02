@@ -116,6 +116,8 @@ REPORT_ANALYZE_ENABLED = os.getenv("CRON_REPORT_ANALYZE_ENABLED", "true").lower(
 REPORT_CONCURRENCY = int(os.getenv("CRON_REPORT_CONCURRENCY", "3"))
 REPORT_POLL_INTERVAL = float(os.getenv("CRON_REPORT_POLL_INTERVAL", "2.0"))
 REPORT_ANALYSIS_PRIORITY = int(os.getenv("CRON_REPORT_ANALYSIS_PRIORITY", "1000"))
+KIFU_ANALYZE_ENABLED = os.getenv("CRON_KIFU_ANALYZE_ENABLED", "false").lower() == "true"
+KIFU_ANALYSIS_TIMEOUT = float(os.getenv("CRON_KIFU_ANALYSIS_TIMEOUT", "180.0"))
 
 # Job enable/disable toggles
 FETCH_LIST_ENABLED = os.getenv("CRON_FETCH_LIST_ENABLED", "true").lower() == "true"

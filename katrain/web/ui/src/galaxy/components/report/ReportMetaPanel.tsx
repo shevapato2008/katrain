@@ -4,14 +4,14 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
 import type { MoveAnalysis } from '../../../types/live';
 import type { UserGameDetail } from '../../../api/userGamesApi';
-import type { ReportTaskSummary } from '../../../api/reportApi';
 import { formatRank } from '../../../utils/rank';
 
 interface ReportMetaPanelProps {
-  game: UserGameDetail | null;
-  task: ReportTaskSummary | null;
+  game: Pick<UserGameDetail, 'game_date' | 'source' | 'event' | 'title' | 'round_name' | 'result' | 'rules' | 'player_black' | 'player_white' | 'black_rank' | 'white_rank' | 'komi'> | null;
+  task: { status: string; report_type: string } | null;
   currentMove: number;
   currentAnalysis: MoveAnalysis | null;
+  professional?: boolean;
 }
 
 function reportTypeLabel(reportType: string | undefined, t: (key: string, fallback: string) => string) {
@@ -19,6 +19,8 @@ function reportTypeLabel(reportType: string | undefined, t: (key: string, fallba
 }
 
 function statusLabel(status: string | undefined, t: (key: string, fallback: string) => string) {
+  if (status === 'loading') return t('kifu:analysis_loading', '正在读取分析');
+  if (status === 'unavailable') return t('kifu:analysis_unavailable', '尚未安排');
   if (status === 'completed') return t('report:completed', 'Completed');
   if (status === 'running') return t('report:generating', 'Generating');
   if (status === 'pending') return t('report:queuing', 'Queued');
@@ -44,6 +46,7 @@ export default function ReportMetaPanel({
   task,
   currentMove,
   currentAnalysis,
+  professional = false,
 }: ReportMetaPanelProps) {
   const { t } = useTranslation();
   const blackWinrate = currentAnalysis ? currentAnalysis.winrate * 100 : null;
@@ -70,7 +73,7 @@ export default function ReportMetaPanel({
         )}
         {sourceInfo && (
           <Chip
-            label={t(sourceInfo.key, sourceInfo.fallback)}
+            label={professional ? t('kifu:professional_game', '职业棋谱') : t(sourceInfo.key, sourceInfo.fallback)}
             size="small"
             sx={{
               height: 20,

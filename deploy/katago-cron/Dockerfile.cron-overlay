@@ -3,3 +3,4 @@
 ARG BASE=katrain-cron:pre-transformer-20261002
 FROM ${BASE}
 COPY katrain/cron/ /app/katrain/cron/
+COPY scripts/backfill_kifu_analysis.py /app/scripts/backfill_kifu_analysis.py

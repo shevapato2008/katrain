@@ -6795,3 +6795,54 @@ msgstr "确认登录失败"
 
 msgid "vision:not_a_stone"
 msgstr "不是落子"
+
+msgid "kifu:view_analysis_report"
+msgstr "查看分析报告"
+
+msgid "kifu:view_kifu"
+msgstr "查看棋谱"
+
+msgid "kifu:professional_game"
+msgstr "职业棋局"
+
+msgid "kifu:report_title"
+msgstr "职业棋局报告"
+
+msgid "kifu:report_load_failed"
+msgstr "职业棋局暂时无法读取"
+
+msgid "kifu:report_loading"
+msgstr "正在读取职业棋局报告"
+
+msgid "kifu:report_progress"
+msgstr "已分析 {done} / {total} 手"
+
+msgid "kifu:report_visits"
+msgstr "每局面 2000 visits · {total} 手"
+
+msgid "kifu:report_visits_heading"
+msgstr "职业棋局 · 每局面 2000 visits"
+
+msgid "kifu:report_no_position"
+msgstr "当前局面暂无分析结果"
+
+msgid "kifu:analysis_read_error"
+msgstr "分析状态暂时无法读取"
+
+msgid "kifu:analysis_loading"
+msgstr "正在读取分析"
+
+msgid "kifu:analysis_unavailable"
+msgstr "尚未安排分析"
+
+msgid "kifu:analysis_pending"
+msgstr "等待分析"
+
+msgid "kifu:analysis_running"
+msgstr "分析中"
+
+msgid "kifu:analysis_failed"
+msgstr "分析未完成"
+
+msgid "kifu:analysis_completed"
+msgstr "分析已完成"

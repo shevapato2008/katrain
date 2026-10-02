@@ -19,6 +19,8 @@
 - Initial corpus scope: canonical `kifu_albums` rows (`duplicate_of_id IS NULL`); duplicate aliases use the canonical analysis. Future imports enter the same scheduler. Validate this assumption before implementation if the user requests per-duplicate copies.
 - Existing completed reports retain their historical results. Do not silently relabel them as transformer reports or resume a partially analyzed b28 report with transformer output.
 - The user confirmed that phase one includes displaying the stored move-by-move professional analysis in the kifu library UI.
+- UI correction: professional games must open a dedicated deep-report view modeled on the current personal deep report on both Galaxy and kiosk. The Galaxy action is “查看分析报告”; the kifu library is the professional-report entry, while Review remains the personal-report entry. The earlier compact analysis panel was rejected and removed.
+- Capacity decision (2026-10-02): implement the system and run a small representative pilot; **do not start full-corpus backfill**. The 200G production disk device still has a ~100G root partition, leaving ~35G on the PostgreSQL volume. Even after resizing, ~97–104 GB of analysis rows plus indexes/WAL would leave limited headroom, and measured V100 throughput projects years of compute. Revisit both storage and GPU capacity before bulk admission.
 - Preserve current personal-report credit pricing during this model rollout. `analysis_cost.report_cost` does not receive a model from its callers, and settlement recalculates from the current default. Any later price change needs its own authorized, per-task frozen pricing contract.
 
 ## Chunk 1: Engine switch and downstream contract
@@ -93,14 +95,14 @@
 - [ ] Connect both relevant kifu views to the frozen contract using the shared winrate/top-move/grade presentation. The page must never imply an unfinished job is complete; remove the temporary fixture.
 - [ ] Test API authorization/read behavior and one representative real-runtime UI preview at the target viewport. Remove any temporary fixture before completion.
 
-### Task 8: Pilot and controlled full-corpus run
+### Task 8: Pilot with full-corpus admission disabled
 
 **Files:** `scripts/backfill_kifu_analysis.py` (new, if admin CLI is needed), `docs/operations/kifu-analysis.md` (new).
 
 - [ ] Run a small representative pilot on the test DB: normal, long, historical, handicap/pass, and known duplicate SGFs. Compare parsed moves and stored rows with the personal report contract.
 - [ ] Recheck measured per-game duration and row/JSON size against the initial feasibility estimate, then set a conservative work rate and storage budget. Explicitly report projected completion time before starting the full backlog.
-- [ ] Promote schema and worker through test then production; use dry run and migration checks. Start a bounded background backfill with observable completion/failure counts and pause/resume control. Verify new imports are picked up.
-- [ ] Report corpus status, model SHA, throughput, failures, and remaining games during the run. The full-corpus requirement remains unfinished until every eligible canonical game has a matching completed job (or an explicit user-approved exclusion); errors must be resolved and counts reconciled.
+- [ ] Promote schema and worker through test then production; use dry run and migration checks. Run only a bounded, explicit small pilot with observable completion/failure counts and pause/resume control. Keep automatic discovery and full-corpus admission disabled for now.
+- [ ] Report pilot status, model SHA, throughput, failures, and remaining eligible games. A future full-corpus run requires a separate capacity decision; the current task does not claim all canonical games are analyzed.
 
 ## Verification gates
 

@@ -53,6 +53,7 @@ import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import KifuDetailPage from './pages/KifuDetailPage';
+import KifuReportDetailPage from './pages/KifuReportDetailPage';
 import BaipuSessionRoute from './pages/BaipuSessionRoute';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
@@ -165,7 +166,8 @@ export const KioskRoutes = () => {
               旧地址 `/kiosk/live*` 落到下面的 `*` 兜底(→ 对弈),不另留重定向。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
-          <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
+          <Route path="kifu/:kifuId" element={<KifuReportDetailPage />} />
+          <Route path="kifu/:kifuId/replay" element={<KifuDetailPage />} />
           <Route path="baipu" element={<Navigate to="/kiosk/kifu" replace />} />
           <Route path="baipu/session/:source" element={<BaipuSessionRoute />} />
           <Route path="report" element={<ReportsPage />} />

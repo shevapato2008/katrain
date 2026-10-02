@@ -839,6 +839,66 @@ class KifuAlbum(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class KifuAnalysisJob(Base):
+    """Analysis of a canonical professional album, independent of user reports."""
+
+    __tablename__ = "kifu_analysis_jobs"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    sgf_sha256 = Column(String(64), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    requested_visits = Column(Integer, nullable=False)
+    status = Column(String(16), nullable=False, default="pending")
+    total_moves = Column(Integer, nullable=False)
+    analyzed_moves = Column(Integer, nullable=False, default=0)
+    retry_count = Column(Integer, nullable=False, default=0)
+    error_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("album_id", "sgf_sha256", "model_sha256", "requested_visits", name="uq_kifu_analysis_identity"),
+        CheckConstraint("requested_visits > 0", name="ck_kifu_analysis_visits"),
+        CheckConstraint("status IN ('pending', 'running', 'completed', 'failed')", name="ck_kifu_analysis_status"),
+        Index("ix_kifu_analysis_jobs_status_created", "status", "created_at"),
+    )
+
+
+class KifuAnalysisMove(Base):
+    """Depth verified position snapshot for a professional game."""
+
+    __tablename__ = "kifu_analysis_moves"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("kifu_analysis_jobs.id"), nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    root_visits = Column(Integer, nullable=False)
+    visits = Column(Integer)
+    winrate = Column(Float)
+    score_lead = Column(Float)
+    top_moves = Column(JSON)
+    ownership = Column(JSON)
+    actual_move = Column(String(8))
+    actual_player = Column(String(1))
+    delta_score = Column(Float)
+    delta_winrate = Column(Float)
+    grade = Column(String(16))
+    points_lost = Column(Float)
+    points_lost_source = Column(String(12))
+    is_top_move = Column(Boolean)
+    top_prior = Column(Float)
+    brilliance = Column(Integer)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("job_id", "move_number", name="uq_kifu_analysis_move"),
+        CheckConstraint("root_visits > 0", name="ck_kifu_analysis_root_visits"),
+    )
+
+
 class KifuAlbumSource(Base):
     __tablename__ = "kifu_album_sources"
 

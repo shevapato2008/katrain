@@ -1,6 +1,7 @@
 """REST API endpoints for the kifu album (tournament game records) module."""
 
 from typing import Optional, List
+import hashlib
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -9,7 +10,7 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import KifuAlbum
+from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob, KifuAnalysisMove
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
     LANGUAGES,
@@ -21,6 +22,8 @@ from katrain.web.kifu.identity import (
 from katrain.web.kifu.round_names import display_round_name
 
 router = APIRouter()
+KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
+KIFU_VISITS = 2000
 
 # The archive uses Japanese romanizations while many kiosk users search in Chinese.
 _HISTORICAL_PLAYER_ALIASES = {
@@ -90,6 +93,71 @@ class KifuAlbumListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+@router.get("/albums/{album_id}/analysis")
+async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depends(get_db)):
+    """Read only the current pinned analysis; duplicate SGFs share their canonical job."""
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _from_dispatcher(
+            lambda: dispatcher.kifu_get_analysis(album_id), f"Kifu album {album_id} not found"
+        )
+
+    album = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
+    if album is None:
+        raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+    canonical_id = album.duplicate_of_id or album.id
+    canonical = album if canonical_id == album.id else db.query(KifuAlbum).filter(KifuAlbum.id == canonical_id).first()
+    if canonical is None or canonical.duplicate_of_id is not None:
+        raise HTTPException(status_code=409, detail="Canonical kifu album is invalid")
+    sgf_sha256 = hashlib.sha256(canonical.sgf_content.encode("utf-8")).hexdigest()
+    # A duplicate link is only valid while both SGF payloads remain byte-identical.
+    if album.id != canonical_id and album.sgf_content != canonical.sgf_content:
+        canonical_id = album.id
+        canonical = album
+        sgf_sha256 = hashlib.sha256(album.sgf_content.encode("utf-8")).hexdigest()
+    job = (
+        db.query(KifuAnalysisJob)
+        .filter(
+            KifuAnalysisJob.album_id == canonical_id,
+            KifuAnalysisJob.sgf_sha256 == sgf_sha256,
+            KifuAnalysisJob.model_sha256 == KIFU_MODEL_SHA256,
+            KifuAnalysisJob.requested_visits == KIFU_VISITS,
+        )
+        .first()
+    )
+    moves = [] if job is None else (
+        db.query(KifuAnalysisMove)
+        .filter(KifuAnalysisMove.job_id == job.id, KifuAnalysisMove.root_visits >= KIFU_VISITS)
+        .order_by(KifuAnalysisMove.move_number)
+        .all()
+    )
+    complete = bool(job and len(moves) == job.total_moves + 1 and all(
+        row.move_number == number for number, row in enumerate(moves)
+    ))
+    status = job.status if job else "unavailable"
+    error_message = job.error_message if job else None
+    if status == "completed" and not complete:
+        status = "failed"
+        error_message = "Stored analysis is incomplete"
+    fields = (
+        "move_number", "actual_move", "actual_player", "winrate", "score_lead", "visits", "root_visits",
+        "top_moves", "ownership", "delta_score", "delta_winrate", "grade", "points_lost",
+        "points_lost_source", "is_top_move", "top_prior", "brilliance",
+    )
+    return {
+        "album_id": album_id,
+        "canonical_album_id": canonical_id,
+        "sgf_sha256": sgf_sha256,
+        "model_sha256": KIFU_MODEL_SHA256,
+        "requested_visits": KIFU_VISITS,
+        "status": status,
+        "total_moves": job.total_moves if job else canonical.move_count,
+        "analyzed_moves": job.analyzed_moves if job else 0,
+        "error_message": error_message,
+        "moves": [{field: getattr(row, field) for field in fields} for row in moves],
+    }
 
 
 @router.get("/albums", response_model=KifuAlbumListResponse)

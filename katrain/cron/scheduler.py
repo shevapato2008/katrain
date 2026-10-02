@@ -38,6 +38,7 @@ class CronScheduler:
         from katrain.cron.jobs.fetch_upcoming import FetchUpcomingJob
         from katrain.cron.jobs.cleanup import CleanupJob
         from katrain.cron.jobs.tutorial_backup import TutorialBackupJob
+        from katrain.cron.jobs.kifu_analyze import KifuAnalyzeJob
 
         # Interval jobs
         interval_jobs = [
@@ -48,6 +49,7 @@ class CronScheduler:
             (FetchUpcomingJob, config.FETCH_UPCOMING_INTERVAL, config.FETCH_UPCOMING_ENABLED),
             (CleanupJob, config.CLEANUP_INTERVAL, config.CLEANUP_ENABLED),
             (TutorialBackupJob, config.TUTORIAL_BACKUP_INTERVAL, config.TUTORIAL_BACKUP_ENABLED),
+            (KifuAnalyzeJob, KifuAnalyzeJob.interval_seconds, config.KIFU_ANALYZE_ENABLED),
         ]
 
         install_error_capture()

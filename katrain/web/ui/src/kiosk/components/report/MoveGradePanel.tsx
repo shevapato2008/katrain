@@ -207,7 +207,10 @@ export default function MoveGradePanel({
   ];
   const PHASE_OPTIONS: { id: PhaseId; label: string }[] = ([
     'all', ...GRADE_PHASES.map((p) => p.id),
-  ] as PhaseId[]).map((p) => ({ id: p, label: t(`grade:phase_${p}`, p) }));
+  ] as PhaseId[]).map((p) => ({
+    id: p,
+    label: t(`grade:phase_${p}`, { all: '全盘', opening: '布局', midgame: '中盘', endgame: '官子' }[p]),
+  }));
 
   /** 筛选行。**走势 tab 不用它** —— 那张图画的是整局曲线,截一段等于把上下文砍掉
    *  (galaxy 同一条,Fan 2026-09-01 定的)。 */

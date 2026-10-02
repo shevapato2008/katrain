@@ -936,8 +936,10 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang
                      and normalize_alias(row["display_name"]) == name]
-            if not all(row.get("collision_decision") == "distinct_people_confirmed"
-                       and _text(row.get("collision_basis")) for row in group):
+            if any(row["review_status"] == "approved" and row["decision_kind"] == "composed" for row in group) or not all(
+                row.get("collision_decision") == "distinct_people_confirmed" and _text(row.get("collision_basis"))
+                for row in group
+            ):
                 errors.append(f"possible name collision: {lang}:{name} owners={owners}")
     statuses = Counter(row["review_status"] for row in decisions)
     write_errors = []

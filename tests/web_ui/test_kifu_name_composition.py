@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 import katrain.web.kifu.name_candidates as candidate_module
-from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
+from katrain.web.kifu.name_candidates import canonical_sha256, identity_scope_sha256, validate_bundle
 from katrain.web.kifu.name_composition import HONINBO_RAWS, render_edition
 from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.name_evidence import registry_sha256
@@ -28,7 +28,7 @@ SERIES = {"kind": "event", "id": 7}
 T0, T1, T2, T3 = (f"2026-10-02T{hour:02d}:00:00Z" for hour in (10, 11, 12, 13))
 
 
-def fixture():
+def fixture(series=SERIES):
     sources = []
     for lang in LANGS:
         sources.append(
@@ -52,14 +52,16 @@ def fixture():
         "inventory_format": 2,
         "sha256": "a" * 64,
         "association_columns": columns,
-        "album_associations": [[n, "Black", "White", raw, None, None, 7] for n, raw in enumerate(HONINBO_RAWS, 1)],
+        "album_associations": [
+            [n, "Black", "White", raw, None, None, series.get("id")] for n, raw in enumerate(HONINBO_RAWS, 1)
+        ],
     }
     research = []
     base_rows = []
     rules = []
     for lang, base in zip(LANGS, BASES):
         check = {
-            "owner": SERIES,
+            "owner": series,
             "source_id": lang,
             "query": base,
             "status": "found",
@@ -74,7 +76,7 @@ def fixture():
             "identity_basis": "Synthetic series match",
         }
         evidence = {
-            "owner": SERIES,
+            "owner": series,
             "lang": lang,
             "registry_version": registry["version"],
             "registry_sha256": registry_sha256(registry),
@@ -92,7 +94,7 @@ def fixture():
         }
         research.append(evidence)
         base_row = {
-            "owner": SERIES,
+            "owner": series,
             "lang": lang,
             "display_name": base,
             "decision_kind": "conventional",
@@ -109,7 +111,7 @@ def fixture():
         }
         base_rows.append(base_row)
         content = {
-            "series_owner": SERIES,
+            "series_owner": series,
             "lang": lang,
             "base_candidate_sha256": canonical_sha256(base_row),
             "renderer_version": "honinbo-edition-v1",
@@ -153,7 +155,7 @@ def fixture():
         for n, raw in enumerate(HONINBO_RAWS, 1)
     ]
     scope_content = {
-        "series_owner": SERIES,
+        "series_owner": series,
         "inventory_sha256": inventory["sha256"],
         "catalog_sha256": None,
         "raws": raws,
@@ -194,7 +196,7 @@ def fixture():
                 "decision_kind": "composed",
                 "research_sha256": "",
                 "generation_rule_version": "honinbo-edition-v1",
-                "series_owner": SERIES,
+                "series_owner": series,
                 "base_candidate_sha256": rule["content"]["base_candidate_sha256"],
                 "composition_rule_sha256": canonical_sha256(rule),
                 "edition": raw["edition"],
@@ -241,6 +243,82 @@ def fixture():
 
 def report(bundle, registry, inventory, research):
     return validate_bundle(bundle, registry, inventory, research)
+
+
+def symbolic_v2_case_with_one_link():
+    series = {"kind": "event", "ref": "honinbo-series-test"}
+    bundle, registry, inventory, research = fixture(series)
+    inventory["association_columns"].extend(["date_played", "round_name", "black_rank", "white_rank"])
+    for row in inventory["album_associations"]:
+        row.extend(["1940-01-01", "League", "9d", "9d"])
+    declarations = [{"owner": series, "create": {"canonical_name": "本因坊戦"}}]
+    for raw in bundle["composition"]["scope"]["content"]["raws"]:
+        ids = raw["occurrence_album_ids"]
+        declarations.append(
+            {
+                "owner": raw["owner"],
+                "preimage": {"raw_value": raw["raw_value"]},
+                "occurrence_album_ids": ids,
+                "occurrence_sha256": canonical_sha256(ids),
+            }
+        )
+    album = dict(zip(inventory["association_columns"], inventory["album_associations"][0]))
+    expected = {
+        key: album[key]
+        for key in ("player_black", "player_white", "event", "date_played", "round_name", "black_rank", "white_rank")
+    }
+    expected["old_id"] = None
+    link = {
+        "album_id": 1,
+        "slot": "event",
+        "association_sha256": canonical_sha256(album),
+        "production_sgf_sha256": "c" * 64,
+        "expected": expected,
+        "target": series,
+        "raw_scope_sha256": canonical_sha256([[1, "event"]]),
+        "identity_review": {
+            "status": "approved",
+            "producer_id": "identity-author",
+            "producer_model": "test",
+            "produced_at": T0,
+            "reviewer_id": "identity-reviewer",
+            "reviewer_model": "test",
+            "reviewed_at": T2,
+            "scope_frozen_at": T1,
+            "review_conclusion": "Synthetic identity approval",
+            "identity_basis": "Synthetic Honinbo source",
+            "event_period_basis": "Synthetic period source",
+            "source_checks": [
+                {
+                    "url": "https://en.example.org/identity",
+                    "body_sha256": "b" * 64,
+                    "body_excerpt": "Synthetic Honinbo series identity",
+                    "identity_match": "Same series",
+                }
+            ],
+        },
+    }
+    bundle.update(
+        bundle_format=2,
+        catalog_sha256="b" * 64,
+        owners=declarations,
+        owner_set_sha256=canonical_sha256(declarations),
+        album_links=[link],
+    )
+    link["identity_review"]["scope_sha256"] = identity_scope_sha256(bundle, [link], declarations[0])
+    bundle["link_set_sha256"] = canonical_sha256([link])
+    scope = bundle["composition"]["scope"]
+    scope["content"]["catalog_sha256"] = bundle["catalog_sha256"]
+    scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    return bundle, registry, inventory, research
+
+
+def test_symbolic_series_requires_reviewed_link_for_every_raw_occurrence():
+    bundle, registry, inventory, research = symbolic_v2_case_with_one_link()
+    result = report(bundle, registry, inventory, research)
+    assert result["candidate_count"] == 385
+    assert not result["ready"], result["errors"]
+    assert any("lacks matching reviewed series link" in error for error in result["errors"])
 
 
 def test_exact_frozen_raws_and_grammatical_branches():
@@ -315,6 +393,43 @@ def test_composed_rows_participate_in_display_collision_check(monkeypatch):
         lambda name: "same-name" if name in {"1st Honinbo", "2nd Honinbo"} else original(name),
     )
     result = report(bundle, registry, inventory, research)
+    assert any("possible name collision" in error for error in result["errors"])
+
+
+def test_composed_collision_cannot_use_distinct_people_waiver():
+    bundle, registry, inventory, research = fixture()
+    other_owner = {"kind": "event", "id": 8}
+    inventory["album_associations"].append([35, "Black", "White", "Other", None, None, 8])
+    evidence = deepcopy(research[0])
+    evidence["owner"] = other_owner
+    evidence["candidate_name"] = "1st Honinbo"
+    evidence["source_checks"][0].update(
+        owner=other_owner, query="1st Honinbo", candidate_name="1st Honinbo", body_excerpt="Synthetic 1st Honinbo"
+    )
+    research.append(evidence)
+    other = deepcopy(bundle["candidates"][0])
+    other.update(
+        owner=other_owner,
+        display_name="1st Honinbo",
+        research_sha256=canonical_sha256(evidence),
+        collision_decision="distinct_people_confirmed",
+        collision_basis="Synthetic distinct identity",
+    )
+    bundle["candidates"].append(other)
+    bundle["members"].append({"owner": other_owner, "lang": "en"})
+    bundle["member_set_sha256"] = canonical_sha256(bundle["members"])
+    composed = bundle["candidates"][11]
+    composed.update(collision_decision="distinct_people_confirmed", collision_basis="Synthetic distinct identity")
+    composed["composition_review_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in composed.items()
+            if key
+            not in {"reviewer_id", "reviewer_model", "reviewed_at", "review_conclusion", "composition_review_sha256"}
+        }
+    )
+    result = report(bundle, registry, inventory, research)
+    assert not result["ready"], result["errors"]
     assert any("possible name collision" in error for error in result["errors"])
 
 

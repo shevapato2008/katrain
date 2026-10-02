@@ -228,7 +228,11 @@ def validate_composition(
             "composition occurrence or raw scope differs from inventory",
         )
         for album_id, slot in slots:
-            if slot == "event" and associations[album_id].get("event_id") == series.get("id"):
+            if (
+                slot == "event"
+                and type(series.get("id")) is int
+                and associations[album_id].get("event_id") == series["id"]
+            ):
                 continue
             _require(
                 (album_id, slot, json.dumps(series, sort_keys=True)) in linked,

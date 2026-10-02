@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from katrain.web.core.db import engine, Base
 from katrain.web.core.models_db import KifuAlbum
 from katrain.web.kifu.identity import identity_lookup_name, normalize_alias
+from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.provenance import audited_alias_ids, ensure_album_source, mainline_signature, sgf_sha256
 from katrain.core.sgf_parser import SGF
 
@@ -98,6 +99,7 @@ def parse_sgf_file(sgf_path: Path) -> dict:
     date_played = root.get_property("DT")
     event = root.get_property("EV") or root.get_property("GN")
     game_names = root.get_list_property("GN") or []
+    game_comments = root.get_list_property("GC") or []
     if (
         "EV" not in root.properties
         and sgf_path.relative_to(DATA_DIR).parts[0] == "19x19"
@@ -105,7 +107,9 @@ def parse_sgf_file(sgf_path: Path) -> dict:
         and len(game_names) == 2
         and game_names[0] == "GNUGo3.8"
         and game_names[1]
-        and (root.get_property("GC") or "").startswith(game_names[1])
+        and parse_event(game_names[1], None).category not in {"program_source_label", "corrupt_data"}
+        and len(game_comments) == 1
+        and (game_comments[0] == game_names[1] or game_comments[0].startswith(game_names[1] + " | "))
     ):
         # This source stores its program label before the actual game name.
         event = game_names[1]

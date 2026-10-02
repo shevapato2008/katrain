@@ -44,6 +44,22 @@ def test_mainline_signature_ignores_metadata_but_keeps_moves():
             "GNUGo3.8",
         ),
         (
+            "GN[GNUGo3.8]GN[GNUGo4.0]GC[GNUGo4.0 | 194手]",
+            "https://19x19.com",
+            "GNUGo3.8",
+        ),
+        (
+            "GN[GNUGo3.8]GN[第5届]GC[第5届韩国最强棋士战预选 | 194手]",
+            "https://19x19.com",
+            "GNUGo3.8",
+        ),
+        (
+            "GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]"
+            "GC[第5届韩国最强棋士战预选 | 194手]GC[其他赛事]",
+            "https://19x19.com",
+            "GNUGo3.8",
+        ),
+        (
             "EV[正式赛事]GN[GNUGo3.8]GN[第5届韩国最强棋士战预选]"
             "GC[第5届韩国最强棋士战预选 | 194手]",
             "https://19x19.com",
@@ -73,4 +89,4 @@ def test_import_selects_second_game_name_only_for_verified_program_label(
 
     assert record["event"] == expected
     if "GNUGo" in properties:
-        assert "GN[GNUGo3.8][第5届韩国最强棋士战预选]" in record["sgf_content"]
+        assert "GN[GNUGo3.8][" in record["sgf_content"]

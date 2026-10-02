@@ -9,12 +9,14 @@ from sqlalchemy.orm import Session
 from katrain.web.core.models_db import (
     Base,
     KifuAlbum,
+    KifuAlbumSource,
     KifuNameResearchEvidence,
     KifuNameSourceRegistry,
     KifuPlayer,
     KifuPlayerName,
     KifuRawEventName,
     KifuRawEventValue,
+    KifuSource,
 )
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
@@ -78,6 +80,43 @@ def test_coverage_rejects_a_snapshot_that_no_longer_matches_album_metadata():
             db.commit()
         with pytest.raises(RuntimeError, match="snapshot drift"):
             coverage_report(engine, inventory, languages=("cn",), batch_size=1)
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("field,new_value", [
+    ("source", "changed raw source"),
+    ("source_path", "changed/path.sgf"),
+])
+def test_coverage_rejects_source_metadata_drift(field, new_value):
+    engine = _catalog()
+    try:
+        inventory = build_inventory(engine)
+        with Session(engine) as db:
+            setattr(db.query(KifuAlbum).one(), field, new_value)
+            db.commit()
+        with pytest.raises(RuntimeError, match="snapshot drift"):
+            coverage_report(engine, inventory, languages=("cn",))
+    finally:
+        engine.dispose()
+
+
+def test_coverage_rejects_source_link_drift():
+    engine = _catalog()
+    try:
+        with Session(engine) as db:
+            db.add(KifuSource(id=1, source_key="archive"))
+            db.add(KifuAlbumSource(
+                album_id=db.query(KifuAlbum.id).scalar(), source_id=1,
+                origin_path="original.sgf", match_method="exact",
+            ))
+            db.commit()
+        inventory = build_inventory(engine)
+        with Session(engine) as db:
+            db.query(KifuAlbumSource).one().origin_path = "changed.sgf"
+            db.commit()
+        with pytest.raises(RuntimeError, match="snapshot drift"):
+            coverage_report(engine, inventory, languages=("cn",))
     finally:
         engine.dispose()
 

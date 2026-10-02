@@ -103,9 +103,9 @@ def coverage_report(
                 connection.execute(text("SET TRANSACTION READ ONLY"))
             db = Session(bind=connection)
             try:
-                from katrain.web.kifu.name_inventory import _selection_supplement
+                from katrain.web.kifu.name_batch import _snapshot_sha
 
-                current_selection = _selection_supplement(connection)
+                live_snapshot_sha256, current_selection = _snapshot_sha(connection)
                 pinned_columns = pinned_selection["columns"] if pinned_selection else []
                 pinned_rows = {
                     dict(zip(pinned_columns, row))["album_id"]: row for row in pinned_selection["rows"]
@@ -119,6 +119,8 @@ def coverage_report(
                     pinned_rows.get(album_id) != live_rows.get(album_id) or album_id not in live_rows
                     for album_id in set(pinned_rows) | set(live_rows) | all_selection_ids
                 )
+                if live_snapshot_sha256 != inventory["sha256"] and selection_drift == 0:
+                    raise RuntimeError("snapshot drift: album metadata or source links changed")
                 selection_snapshot_sha256 = current_selection["sha256"] if current_selection else None
                 for album_id, raw, pinned_hash, content in (
                     db.query(

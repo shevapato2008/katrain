@@ -740,16 +740,36 @@ def batch_status(engine, batch_id: int) -> dict:
                 "inventory_sha256": row["inventory_sha256"], "change_count": count}
 
 
-def _retained_composition_dependency(conn, table, row_id: int) -> bool:
-    """JSON dependencies need the same undo protection as ordinary foreign keys."""
+def _retained_composition_dependency(conn, table, row_id: int, before_image: dict | None) -> bool:
+    """Block undo only when its restored image would break a retained JSON dependency."""
     key = {KifuEventName.__tablename__: "base_name_id",
            KifuNameResearchEvidence.__tablename__: "base_evidence_id"}.get(table.name)
     if key is None:
         return False
     payloads = conn.scalars(select(KifuNameResearchEvidence.research_payload).where(
         KifuNameResearchEvidence.decision_kind == "composed"))
-    return any(((payload.get("composition") or {}).get("dependencies") or {}).get(key) == row_id
-               for payload in payloads if isinstance(payload, dict))
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        dependency = ((payload.get("composition") or {}).get("dependencies") or {})
+        if dependency.get(key) != row_id:
+            continue
+        if before_image is None or not (
+            before_image.get("event_id") == dependency.get("series_event_id")
+            and before_image.get("lang") == payload.get("candidate", {}).get("lang")
+            and before_image.get("revision") == dependency.get("base_revision")
+        ):
+            return True
+        if key == "base_name_id":
+            if (before_image.get("status") != "verified"
+                    or before_image.get("evidence_id") != dependency.get("base_evidence_id")):
+                return True
+        else:
+            candidate = (before_image.get("research_payload") or {}).get("candidate")
+            if (before_image.get("review_status") != "approved" or not isinstance(candidate, dict)
+                    or base_candidate_sha256(candidate) != dependency.get("base_candidate_sha256")):
+                return True
+    return False
 
 
 def undo_batch(engine, batch_id: int) -> dict:
@@ -777,7 +797,8 @@ def undo_batch(engine, batch_id: int) -> dict:
                     _fail(table is not None, f"undo target table is not allowlisted: {change['target_table']}")
                     _fail(_image(conn, table, change["target_row_id"]) == change["after_image"],
                           "v4 batch after-image changed")
-                    _fail(not _retained_composition_dependency(conn, table, change["target_row_id"]),
+                    _fail(not _retained_composition_dependency(
+                        conn, table, change["target_row_id"], change["before_image"]),
                           "retained composed evidence blocks atomic v4 undo")
                     before = change["before_image"]
                     if before is None:
@@ -805,7 +826,7 @@ def undo_batch(engine, batch_id: int) -> dict:
             if current != change["after_image"]:
                 skipped += 1
                 continue
-            if _retained_composition_dependency(conn, table, change["target_row_id"]):
+            if _retained_composition_dependency(conn, table, change["target_row_id"], change["before_image"]):
                 skipped += 1
                 continue
             try:

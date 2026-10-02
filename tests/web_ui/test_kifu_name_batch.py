@@ -323,6 +323,48 @@ def test_composed_undo_restores_other_batch_bases_and_preserves_existing_links(e
         assert conn.scalar(select(func.count()).select_from(KifuNameResearchEvidence)) == 11
 
 
+@pytest.mark.parametrize("manual_edit", [False, True])
+def test_composed_undo_restores_complete_previous_composition_batch(engine, manual_edit):
+    bundle, sources, inv, research = composition_bundle(engine)
+    first = apply_bundle(engine, bundle, sources, inv, research)
+    models = (KifuEventName, KifuRawEventName, KifuNameResearchEvidence)
+    with engine.connect() as conn:
+        before = {model: conn.execute(select(model.__table__).order_by(model.id)).mappings().all()
+                  for model in models}
+    revised = deepcopy(bundle)
+    for candidate in revised["candidates"]:
+        set_fixture_preimage(candidate, name_preimage_sha256(engine, candidate["owner"], candidate["lang"]))
+    second = apply_bundle(engine, revised, sources, inv, research)
+    if manual_edit:
+        with engine.begin() as conn:
+            conn.execute(KifuRawEventName.__table__.update().where(
+                KifuRawEventName.raw_event_id == 1, KifuRawEventName.lang == "ru").values(display_name="Manual B"))
+    undone = undo_batch(engine, second["batch_id"])
+    assert batch_status(engine, first["batch_id"])["status"] == "applied"
+    if manual_edit:
+        assert undone["status"] == "partial_undo"
+        with engine.connect() as conn:
+            name = conn.execute(select(KifuRawEventName.__table__).where(
+                KifuRawEventName.raw_event_id == 1, KifuRawEventName.lang == "ru")).mappings().one()
+            assert name["display_name"] == "Manual B" and name["revision"] == 2
+            evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+                KifuNameResearchEvidence.id == name["evidence_id"])).mappings().one()
+            dependency = evidence["research_payload"]["composition"]["dependencies"]
+            base = conn.execute(select(KifuEventName.__table__).where(
+                KifuEventName.id == dependency["base_name_id"])).mappings().one()
+            assert base["revision"] == dependency["base_revision"] == 2
+            assert base["evidence_id"] == dependency["base_evidence_id"]
+            assert conn.scalar(select(KifuNameResearchEvidence.id).where(
+                KifuNameResearchEvidence.id == dependency["base_evidence_id"])) is not None
+        return
+    assert undone["status"] == "undone" and undone["skipped"] == 0
+    assert undone["reverted"] == second["change_count"]
+    with engine.connect() as conn:
+        for model in models:
+            assert conn.execute(select(model.__table__).order_by(model.id)).mappings().all() == before[model]
+        assert set(conn.scalars(select(KifuAlbum.event_id))) == {7}
+
+
 def selected_composition_bundle(engine):
     from tests.web_ui.test_kifu_name_candidates import _selected_v4_case
 

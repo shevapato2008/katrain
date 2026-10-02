@@ -9,7 +9,7 @@
   "review_status": "pending",
   "approval": null,
   "production_write_authorized": false,
-  "candidate_basis": "Seven positive languages now have raw source captures, registry-bound research records validated by scripts/kifu_name_research.py, and matching pending conventional candidate rows. No independent candidate approvals or production name preimages are present; no bundle is ready to write.",
+  "candidate_basis": "Eight positive languages have raw source captures, registry-bound research records validated by scripts/kifu_name_research.py, and pending conventional candidate rows. Seven earlier displays have a separate independent review; the new Russian candidate awaits independent review. No production name preimages are present, and no bundle is ready to write.",
   "evidence_file": "kifu-name-park-junghwan-11lang-evidence-2026-10-02.json",
   "candidates": [
     {
@@ -85,11 +85,13 @@
     },
     {
       "lang": "ru",
-      "display_name": null,
-      "decision_kind": null,
-      "review_status": "unresolved",
-      "evidence_language": null,
-      "reason": "Conflicting Russian transliterations remain for Sol adjudication."
+      "display_name": "Пак Чонхван",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "ru",
+      "research_sha256": "986b9a96a3521636bbb5200869f266e86145be10e595dba72959b9eed4070599",
+      "source_check_id": "wikipedia-ru",
+      "reason": "Sol producer adjudication favors the pinned Russian biography title/full name/prose; Russian Wikipedia event article Пак Чжон Хван remains a documented excluded primary form. Independent review required."
     },
     {
       "lang": "tr",
@@ -117,5 +119,11 @@
     "sha256": "9aa60cd246a38b895eba39d787b80b1f0bfce74251eaa1ac5bfd8bf00fddbac6",
     "validated_output": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/research.validated.jsonl",
     "validated_output_sha256": "5fb7d649bc03203a4e2b9f4f535bc6a90c4f1764e0cb152c4457760ca7792013"
+  },
+  "ru_pending_candidate_archive": {
+    "file": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/ru-sol/candidate-pending.jsonl",
+    "sha256": "308003c4e184de622d0fb948e20460893363b6dab8b4c7557fc22b8de4358557",
+    "research_file": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/ru-sol/research-pending.jsonl",
+    "research_sha256": "3933672617f66b18d5bc5865abd13e891aed63f5d3540a4cfdc6d254a79ca33c"
   }
 }

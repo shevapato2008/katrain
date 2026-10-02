@@ -18,7 +18,7 @@
   "producer_model": "gpt-6",
   "produced_at": "2026-10-02",
   "review_status": "pending",
-  "evidence_capture_limit": "Current-registry research records and raw source captures are archived in the controlled 0700 directory referenced in capture fields. Spanish has a captured same-language no-name lead only; no candidate. Russian/Turkish/Ukrainian remain unresolved. This file remains a human-facing research summary, not an importable bundle.",
+  "evidence_capture_limit": "Current-registry research records and raw source captures are archived in the controlled 0700 directory referenced in capture fields. Spanish has a captured same-language no-name lead only; no candidate. Russian has a new pending Sol candidate; Turkish/Ukrainian remain unresolved. This file remains a human-facing research summary, not an importable bundle.",
   "languages": [
     {
       "lang": "cn",
@@ -250,16 +250,34 @@
     {
       "lang": "ru",
       "observed_lang": "ru",
-      "candidate_name": "",
+      "candidate_name": "Пак Чонхван",
       "observed_forms": [
         "Пак Чонхван",
         "Пак Чжон Хван"
       ],
-      "status": "conflicting_lead_unresolved",
-      "source": "Russian Wikipedia biography, surfaced with GoGameWorld cross-reference",
-      "url": "https://ru.wikipedia.org/wiki/Пак_Чонхван",
-      "excerpt": "Пак Чонхван (род. 11 января 1993 года) — корейский го-профессионал 9 дана; outbound GoGameWorld reference is rendered Пак Чжон Хван",
-      "identity_basis": "Russian-language biography gives matching birth date and Go rank; its linked GoGameWorld form differs. KBA independently anchors the Korean identity; a source-level spelling adjudication is required."
+      "status": "found_lead_pending_review",
+      "source": "Russian Wikipedia biography, pinned revision 149787533",
+      "url": "https://ru.wikipedia.org/w/index.php?title=Пак_Чонхван&oldid=149787533",
+      "excerpt": "| Полное имя | Пак Чонхван |; Korean original 박정환 and 1993-01-11, 9 dan appear in the same biography.",
+      "identity_basis": "KBA profile independently identifies 박정환 (朴廷桓), born 1993-01-11, 9 dan. Russian Wikipedia biography agrees. Russian tournament article attests excluded competing form Пак Чжон Хван; Korea.net Russian news uses unregistered spacing variant Пак Чон Хван.",
+      "capture": {
+        "source_id": "wikipedia-ru",
+        "url": "https://ru.wikipedia.org/w/index.php?title=Пак_Чонхван&oldid=149787533",
+        "fetched_at": "2026-10-02T04:32:57.795856Z",
+        "http_status": 200,
+        "observed_lang": "ru",
+        "body_archive": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/ru-sol/wiki-pinned.md",
+        "body_sha256": "a7fb5e115d567456ac46ab0a9edf4f258c035d4e5280c41c841a39d8df669476",
+        "body_bytes": 38853,
+        "capture_status": "found"
+      },
+      "validator_research": {
+        "file": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/ru-sol/research-pending.jsonl",
+        "file_sha256": "3933672617f66b18d5bc5865abd13e891aed63f5d3540a4cfdc6d254a79ca33c",
+        "research_sha256": "986b9a96a3521636bbb5200869f266e86145be10e595dba72959b9eed4070599",
+        "validation": "valid_pending"
+      },
+      "adjudication_memo": "kifu-name-park-junghwan-ru-sol-adjudication-2026-10-02.md"
     },
     {
       "lang": "tr",

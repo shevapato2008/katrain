@@ -28,13 +28,13 @@
 
 ### Task 1：冻结精确成员契约
 
-- [ ] 在 `tests/web_ui/test_kifu_name_candidates.py` 先写红灯：旧 `bundle_format=3` 不接受 `selected_event`；新格式 4 的成员必须带 `album_id`、原选择批次完整摘要、原选择后像及 SHA、SGF SHA、目标 `event` ID/ref、原 album/context SHA、全局原文作用域 SHA、独立 `identity_review`。v4 的 `identity_scope_sha256` 单独增加这些选择证明字段和成员类型，旧格式摘要逐字节不变；同一 `album_id` 替换来源批次、第二 GN 原文或来源后像，旧签审必须失效。从 v3 清单或其他 `GNUGo3.8` 盘挪用签名须失败。
+- [ ] 在 `tests/web_ui/test_kifu_name_candidates.py` 先写红灯：旧 `bundle_format=3` 不接受 `selected_event`；新格式 4 的成员必须带 `album_id`、原选择批次完整摘要、原选择后像及 SHA、SGF SHA、目标 `event` ID/ref、原 album/context SHA、全局原文作用域 SHA、独立 `identity_review`。新增关联字段名固定为 `selection_batch_id`、`selection_bundle_sha256`、`selection_before_image`、`selection_before_sha256`；原后像须完整包含 GN 属性、索引、原文和空 FK。v4 的 `identity_scope_sha256` 单独增加这些选择证明字段和成员类型，旧格式摘要逐字节不变；同一 `album_id` 替换来源批次、第二 GN 原文或来源后像，旧签审必须失效。从 v3 清单或其他 `GNUGo3.8` 盘挪用签名须失败。
 - [ ] 运行 `uv run pytest -q tests/web_ui/test_kifu_name_candidates.py -k selected_event` 确认失败。随后在 `name_candidates.py` 增加格式 4 allowlist 与 `selected_event` 专属校验；重用已有 `identity_scope_sha256`、目标声明、来源检查和十一语门槛，不从同名、同届或 SGF 一致性推断身份。旧格式 1/2/3 的规范哈希和验证结果不变。
 - [ ] 仅允许 `old_id is None`，目标是已有或同批新建 `event`；链接到已有 ID 也须在本批附齐该 ID 的十一语独立批准名称。v4 写入白名单只包含本次所需 `event`/`raw_event` 名称及 `selected_event`，拒绝夹带普通 album 黑/白/赛事关联、无关 owner、其他槽位或原始字段修改。缺语种、错时期、错地域或未签署范围返回有限错误。测试转绿并提交。
 
 ### Task 2：版本 4 清单和共同证明
 
-- [ ] 在 `tests/web_ui/test_kifu_event_selection.py`、`test_kifu_name_inventory.py` 先写红灯：原选择后像有效时默认 v3 不变；`build_inventory(..., inventory_format=4)` / `scripts/kifu_name_inventory.py --inventory-format 4` 显式导出同一只读快照，未关联选择在 `selection_format=2` 中携带 `event_id=null` 与原来源后像 SHA，因此**零关联也能导出首个 v4 审核清单**；经有效名称批次链接时 v4 增加名称批次 ID/证明 SHA。导入器用同一格式 4 重算。伪造 FK、伪造/撤销关联批次、两份活跃证明、SGF 漂移或任何来源字段改变都须被拒并使覆盖失效。
+- [ ] 在 `tests/web_ui/test_kifu_event_selection.py`、`test_kifu_name_inventory.py` 先写红灯：原选择后像有效时默认 v3 不变；`build_inventory(..., inventory_format=4)` / `scripts/kifu_name_inventory.py --inventory-format 4` 显式导出同一只读快照，未关联选择在 `selection_format=2` 中携带 `event_id=null` 与原来源后像 SHA，因此**零关联也能导出首个 v4 审核清单**；经有效名称批次链接时 v4 增加名称批次 ID/证明 SHA。v4 位置列固定为 `(*SELECTION_COLUMNS, event_id, source_after_image, source_after_sha256, name_batch_id, name_proof_sha256)`；未关联的两个名称证明字段为 JSON null，完整原来源后像包含空 FK。导入器用同一格式 4 重算。伪造 FK、伪造/撤销关联批次、两份活跃证明、SGF 漂移或任何来源字段改变都须被拒并使覆盖失效。
 - [ ] 在 `event_selection.py` 建一个批量共享读取函数，接受连接和逐盘选择行，按来源批次/名称批次缓存完整审核工件与变更账本。来源证明先走现有 `audited_selection_images`；若 FK 非空，仅接受唯一 `applied` 格式 4 关联批次，其 `KifuNameChange.before_image` 精确等于原来源后像、`after_image` 精确等于现行完整行，且审核工件规范 SHA、有限成员、独立签名、目标/ref 解析相符。保留 `selection_matches_audit` 对原后像的严格比较，不能通过忽略 `event_id` 绕过证明。
 - [ ] `name_inventory.py` 在显式 v4 导出时对未关联选择输出原来源证明和 `event_id=null`，对已关联选择仅在关联证明有效时输出非空 FK；基本 album/source SHA 独立固定，选择补充增列证明字段。无有效证明的非空 FK 不可退化成旧 v3 合格行，必须形成可见漂移。旧 v2/v3 工件和哈希逐字节兼容。v4 的 `build_event_group_manifest` 仍须传入独立固定的完整 inventory artifact SHA，不可因扩大格式白名单绕过 v3 的外部钉住。运行聚焦测试并提交。
 

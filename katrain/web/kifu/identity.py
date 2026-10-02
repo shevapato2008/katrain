@@ -123,51 +123,19 @@ def live_event_selections(
     db: Session, albums: list, *, album_ids: set[int] | None = None
 ) -> dict[int, tuple[str, int | None]]:
     """Read current approved GN[1] choices for a page, rejecting changed SGF content."""
-    from katrain.web.kifu.event_selection import (
-        audited_selection_images, selected_second_gn, selection_matches_audit,
-    )
-    from katrain.web.kifu.provenance import classify_source_path
+    from katrain.web.kifu.event_selection import verified_selection_rows
 
     if album_ids is None:
         album_ids = {album.id for album in albums if album.event == "GNUGo3.8"}
     if not album_ids:
         return {}
     table = KifuAlbumEventSelection.__table__
-    selected_rows = db.execute(
-        table.select().where(table.c.album_id.in_(album_ids))
-    ).mappings().all()
-    if not selected_rows:
-        return {}
-    batches = {
-        row["id"]: audited_selection_images(row)
-        for row in db.execute(
-            KifuEventSelectionBatch.__table__.select().where(
-                KifuEventSelectionBatch.id.in_({row["batch_id"] for row in selected_rows})
-            )
-        ).mappings()
+    selected_rows = db.execute(table.select().where(table.c.album_id.in_(album_ids))).mappings().all()
+    proofs = verified_selection_rows(db.connection(), selected_rows)
+    return {
+        row["album_id"]: (row["selected_raw"], proofs[row["album_id"]]["event_id"])
+        for row in selected_rows if row["album_id"] in proofs
     }
-    content_by_id = {
-        album_id: (content, path)
-        for album_id, content, path in (
-            db.query(KifuAlbum.id, KifuAlbum.sgf_content, KifuAlbum.source_path)
-            .filter(KifuAlbum.id.in_([row["album_id"] for row in selected_rows]))
-        )
-    }
-    result = {}
-    for row in selected_rows:
-        content_and_path = content_by_id.get(row["album_id"])
-        if not selection_matches_audit(row, batches.get(row["batch_id"])) or not content_and_path:
-            continue
-        content, path = content_and_path
-        if hashlib.sha256(content.encode("utf-8")).hexdigest() != row["sgf_sha256"]:
-            continue
-        try:
-            selected = selected_second_gn(SGF.parse_sgf(content), classify_source_path(path))
-        except Exception:
-            continue
-        if selected == row["selected_raw"]:
-            result[row["album_id"]] = (selected, row["event_id"])
-    return result
 
 
 def strict_selected_event_search_ids(
@@ -217,7 +185,33 @@ def strict_selected_event_search_ids(
             album_id for album_id, pinned_hash, content in selected
             if hashlib.sha256(content.encode("utf-8")).hexdigest() == pinned_hash
         }
-    return set(live_event_selections(db, [], album_ids=candidate_ids))
+    verified = live_event_selections(db, [], album_ids=candidate_ids)
+    composed_ids = {
+        album_id for album_id, (raw, event_id) in verified.items()
+        if event_id and (structure_event(raw)["components"]
+                         or parse_event(raw, None).category == "formal_event_candidate")
+    }
+    if not composed_ids:
+        return set(verified)
+    # A core identity match must still have an approved complete current event
+    # in a product language, using the same composition gate as display/coverage.
+    albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(composed_ids)).all()
+    approved_ids = set(verified) - composed_ids
+    composed_raws = {verified[album_id][0] for album_id in composed_ids}
+    name_languages = (
+        _approved_names(db, KifuRawEventName, "raw_event_id")
+        .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
+        .filter(KifuRawEventValue.review_status == "approved", KifuRawEventValue.raw_value.in_(composed_raws))
+        .with_entities(KifuRawEventName.lang).distinct()
+    )
+    for (lang,) in name_languages:
+        if lang not in LANGUAGES:
+            continue
+        approvals = strict_slot_approvals(db, albums, lang, obscured_event_ids=set(), selected_events=verified)
+        approved_ids.update(album_id for album_id, slots in approvals.items() if slots[2] is not None)
+        if composed_ids <= approved_ids:
+            break
+    return approved_ids
 
 
 def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events=None):

@@ -62,17 +62,17 @@ def coverage_report(
     placeholder. The caller can stream every missing slot to a controlled file.
     """
 
-    if inventory.get("inventory_format") not in {2, 3} or len(str(inventory.get("sha256", ""))) != 64:
-        raise ValueError("inventory format 2 or 3 with SHA-256 required")
-    pinned_selection = inventory.get("event_selection") if inventory["inventory_format"] == 3 else None
-    if inventory["inventory_format"] == 3 and not (
+    if inventory.get("inventory_format") not in {2, 3, 4} or len(str(inventory.get("sha256", ""))) != 64:
+        raise ValueError("inventory format 2, 3 or 4 with SHA-256 required")
+    pinned_selection = inventory.get("event_selection") if inventory["inventory_format"] in {3, 4} else None
+    if inventory["inventory_format"] in {3, 4} and not (
         isinstance(pinned_selection, dict)
-        and pinned_selection.get("selection_format") == 1
+        and pinned_selection.get("selection_format") == (2 if inventory["inventory_format"] == 4 else 1)
         and isinstance(pinned_selection.get("columns"), list)
         and isinstance(pinned_selection.get("rows"), list)
     ):
         raise ValueError("inventory event selection supplement is incomplete")
-    if inventory["inventory_format"] == 3 and not (
+    if inventory["inventory_format"] in {3, 4} and not (
         isinstance(inventory.get("base_sha256"), str) and len(inventory["base_sha256"]) == 64
     ):
         raise ValueError("inventory base album/source hash is required")
@@ -109,7 +109,9 @@ def coverage_report(
             try:
                 from katrain.web.kifu.name_batch import _snapshot_parts
 
-                live_snapshot_sha256, current_selection, live_base_sha256 = _snapshot_parts(connection)
+                live_snapshot_sha256, current_selection, live_base_sha256 = _snapshot_parts(
+                    connection, inventory_format=4 if inventory["inventory_format"] == 4 else None
+                )
                 pinned_columns = pinned_selection["columns"] if pinned_selection else []
                 pinned_rows = {
                     dict(zip(pinned_columns, row))["album_id"]: row for row in pinned_selection["rows"]
@@ -139,7 +141,8 @@ def coverage_report(
                 ):
                     selection_sgf_sha256.update(
                         (json.dumps(
-                            [album_id, raw, pinned_hash, sha256(content.encode("utf-8")).hexdigest()],
+                            [album_id, raw, pinned_hash, sha256(content.encode("utf-8")).hexdigest()]
+                            + ([live_rows.get(album_id)] if inventory["inventory_format"] == 4 else []),
                             ensure_ascii=False, separators=(",", ":"),
                         ) + "\n").encode("utf-8")
                     )

@@ -60,16 +60,20 @@ def propose_album_matches(
         "black_player_id", "white_player_id", "event_id",
     }
     inventory_format = inventory.get("inventory_format")
-    if inventory_format not in {2, 3} or not isinstance(columns, list) or not required.issubset(columns):
-        raise ValueError("inventory_format 2 or 3 with date, round and ranks is required")
+    if inventory_format not in {2, 3, 4} or not isinstance(columns, list) or not required.issubset(columns):
+        raise ValueError("inventory_format 2, 3 or 4 with date, round and ranks is required")
     snapshot_hash = inventory.get("sha256", "")
     if not re.fullmatch(r"[0-9a-f]{64}", snapshot_hash):
         raise ValueError("inventory SHA-256 is required")
     selections = {}
-    if inventory_format == 3:
+    selected_ids = {}
+    if inventory_format in {3, 4}:
         if not re.fullmatch(r"[0-9a-f]{64}", inventory.get("base_sha256", "")):
             raise ValueError("v3 base inventory SHA-256 is required")
-        selections = {row[0]: row[1] for row in _selection_rows(inventory)}
+        selection_rows = _selection_rows(inventory)
+        selections = {row[0]: row[1] for row in selection_rows}
+        if inventory_format == 4:
+            selected_ids = {row[0]: row[7] for row in selection_rows}
         pending = set(selections)
         for values in inventory["album_associations"]:
             if not isinstance(values, list) or len(values) != len(columns):
@@ -155,8 +159,8 @@ def propose_album_matches(
             "lookup_name": lookup,
             "components": {"year": components.get("year"), "season": components.get("season")},
             "structure": structure,
-            "existing_id": album["event_id"],
+            "existing_id": selected_ids.get(album["id"], album["event_id"]),
             "candidate_ids": ids,
-            "status": _status(album["event_id"], ids, excluded=excluded),
+            "status": _status(selected_ids.get(album["id"], album["event_id"]), ids, excluded=excluded),
             "exceptions": exceptions,
         }

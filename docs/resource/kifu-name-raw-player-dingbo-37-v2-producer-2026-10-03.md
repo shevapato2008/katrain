@@ -21,3 +21,13 @@
 保护子目录 `raw-player-dingbo-37-v2-producer/phase2-anchor-research/` 中的新 `source-raw-anchor-v3.pending.json` 规范 hash 为 `5492f42e079f82205494d2c66f2af8a8204953a6fed3c4871fff590971389ddc`，内容 hash 为 `61dc5b19d8c8864e42c2a8f707535f7df3c9f5e9a791b2e3af1bb27d5133cff8`。五语研究为 `five-primary-research.pending.jsonl`，联合证据为 `evidence.pending.jsonl`，日志为 `validation.producer.json`。修正 `source_link.review_basis` 不再声称音节待定；明确已审 `ding / bo`，来源记录人物对应与精确 37 raw 槽读音适用性是分别审核的决定，不建立 album 人物归属。
 
 验证：签 scope 的全部成员与原 inventory 完整对应，双出版方来源记录结构一致，5/5 新 research 通过 validator；原来源事实、旧人物 anchor、五语来源记录和真实前像保留原字节，前像仍明确引用原捕获时间，不伪称本阶段重新查询。新 anchor 的完整 validator 按预期报 `transliteration content lacks exact approval`，留给 Astra 独立签署。本阶段无数据库连接、无新审核签名、无新候选或批次。原 `manifest.json` 保持原字节；新 `manifest.phase2.json` 冻结本阶段文件，阶段一 memo 原字节另存子目录，便于核验历史 hash。
+
+## 第三阶段：签后锚点依赖的待审批次与候选
+
+Astra 于真实时间 `2026-10-02T22:32:37.298471+00:00` 签署新 raw v3 anchor，规范 hash 为 `54778896d12031859791485d791b486d1327ef1abe53787a16780312be309324`。本生产者随后只读重查唯一隔离 clone，实际前像捕获时间 `2026-10-02T22:36:33.107109+00:00`；连接显式 `postgresql_readonly=True` 并核实 `transaction_read_only=on`。inventory/catalog 仍与签 scope 对应，精确 raw owner 和十一语名称行确实不存在，已批准名称快照仍为空。旧前像文件原样保留，新前像写入阶段三目录，未把旧查询伪称新捕获。
+
+真实新生产时间 `2026-10-02T22:36:36.148331+00:00`，晚于 scope/rules/anchor 的全部审核时间。保护子目录 `raw-player-dingbo-37-v2-producer/phase3-batches-candidates/` 中新增六个单成员 `transliteration-batches.pending.json` 和十一语 `candidates.pending.json`，全部 pending、无新 reviewer；完整 `bundle.pending.json` 为原协议 v2、空 album_links，绑定已签 scope、rules、anchor、category 及已独立审核的 registry。规范 bundle hash `ee9a072eccd4a96d136e0cb86214ebb2e167d15ea736f85039ed0cf5e529a4db`。五语研究保持阶段二已逐语审核的原字节和实际生产日期。
+
+实际 `validate_bundle` 为 11 members、11 candidates、0 missing、`ready=false/write_ready=false/write_errors=[]`。唯一根错误为六个待签 batch 的 `transliteration content lacks exact approval`；六语候选不能取得已签 member context，及新 raw 尚缺相应获准显示值，是该 pending 状态的派生拒绝。没有额外范围、来源、拼写、碰撞或前像格式错误。生产者日志逐一列出原始错误；最初日志断言漏列 signed-member-context 这一预期派生错误，保留实际报告后补齐核对，没有修改业务产物来绕过门禁。
+
+前后 table counts/catalog 完全相同，未写隔离 clone 或现役测试/生产库，未自签候选或批次，未执行 importer apply。原 manifest 和阶段二 manifest 保留原字节；`manifest.phase3.json` 冻结本阶段工件及第二阶段 memo 的未改副本。下一步由 Astra 独立签署六语批次，并让对应六语候选继承真实批次签署字段/签后 hash；五语候选独立签署，之后才能重新 validate 和执行唯一隔离 clone 演练。潜在显示收益仍为 407 单元，当前已发生收益仍为 0，人物身份增量为 0。

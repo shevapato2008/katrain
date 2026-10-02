@@ -21,6 +21,6 @@ Protected replacement packet: `~/.local/share/kifu-name-audit/2026-10-03/china-p
 - Independent reviewed rows SHA-256: `28d9f877e0a7000c0250e3be26a4ed202fa5868ccf6124bc28eb87ad3d1e2ab0`
 - Independent review memo: [kifu-name-tw-primary-next20-independent-review-sol-2026-10-03.md](kifu-name-tw-primary-next20-independent-review-sol-2026-10-03.md)
 
-Original Haifong raw bodies are copied unchanged into the new protected packet, with their prior URLs, timestamps, and hashes in its manifest. The added Sina Sports raw body `li-xinyi-2017-pro-name-context-sina.html` is 107,608 bytes, SHA-256 `e6c5d56b4213c233ebcafb4828be24b65b2793d8e4528d55bd2c40a498574d62`, captured `2026-10-02T21:18:31.594983Z`; its excerpt is `預賽對陣（2017年新初段標記為——新）： 李鑫怡（新） 勝 叶桂`.
+Original Haifong raw bodies are copied unchanged into the new protected packet, with their prior URLs, timestamps, and hashes in its manifest. The added Sina Sports raw body `li-xinyi-2017-pro-name-context-sina.html` is 107,608 bytes, SHA-256 `e6c5d56b4213c233ebcafb4828be24b65b2793d8e4528d55bd2c40a498574d62`, captured `2026-10-02T21:18:31.594983Z`; its literal excerpt is `预赛对阵（2017年新初段标记为——新）： 李鑫怡（新） 胜 叶桂`.
 
 The packet retains the registered Haifong source registry version `2026-10-02.5` (SHA-256 `2ebd1c462887632717f0b281ed983db41de7065d9e5f7c4332a4fef8a5624511`). No display write, entity/QID/FK/SGF/album approval, database write, code change, or commit is authorized or included.

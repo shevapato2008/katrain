@@ -1,7 +1,6 @@
 """Reviewed name bundles apply atomically and undo only their own unchanged writes."""
 
 from copy import deepcopy
-from datetime import datetime, timezone
 import hashlib
 import json
 
@@ -21,6 +20,7 @@ from katrain.web.kifu.name_candidates import canonical_sha256, classification_te
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.kifu.name_parse import parse_event
+from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from scripts.kifu_name_batch import main
 
 
@@ -157,20 +157,12 @@ def test_selected_only_raw_event_can_be_imported_and_live_scope_is_rechecked(eng
     raw = "Selected Cup"
     sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
            "GC[Selected Cup | 194 moves])")
-    reviewed_at = datetime(2026, 10, 2, 10, tzinfo=timezone.utc)
     with engine.begin() as conn:
         conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
-            sgf_content=sgf, source_path="data/kifu-album/19x19/a.sgf"))
+            sgf_content=sgf, source="https://19x19.com", source_path="data/kifu-album/19x19/a.sgf"))
         conn.execute(KifuRawEventValue.__table__.insert().values(
             id=9, raw_value=raw, category=parse_event(raw, None).category, review_status="approved"))
-        conn.execute(KifuEventSelectionBatch.__table__.insert().values(
-            id=3, bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
-            producer_id="producer", reviewer_id="reviewer", reviewed_at=reviewed_at, status="applied"))
-        conn.execute(KifuAlbumEventSelection.__table__.insert().values(
-            album_id=11, batch_id=3, selected_raw=raw, sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
-            property_name="GN", property_index=1, status="approved",
-            rule_version="19x19-gnugo-second-gn-v1",
-            reviewer_id="reviewer", reviewed_at=reviewed_at))
+    selection_batch_id = apply_reviewed_selection(engine, 11)["batch_id"]
     inv = build_inventory(engine)
     owner = {"kind": "raw_event", "id": 9}
     base, records = player_bundle(inv)
@@ -197,12 +189,12 @@ def test_selected_only_raw_event_can_be_imported_and_live_scope_is_rechecked(eng
     with engine.begin() as conn:
         conn.execute(KifuAlbumEventSelection.__table__.update().where(KifuAlbumEventSelection.album_id == 11)
                      .values(selected_raw=raw))
-        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == 3)
+        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == selection_batch_id)
                      .values(status="undone"))
     with pytest.raises(BatchError, match="snapshot|selection"):
         dry_run_bundle(engine, reviewed, registry(), inv, records)
     with engine.begin() as conn:
-        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == 3)
+        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == selection_batch_id)
                      .values(status="applied"))
         pinned = dict(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings().one())
         conn.execute(KifuAlbumEventSelection.__table__.delete().where(KifuAlbumEventSelection.album_id == 11))

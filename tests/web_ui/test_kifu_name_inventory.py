@@ -15,6 +15,7 @@ from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuSource,
 )
 from katrain.web.kifu.name_inventory import _script_type, build_inventory
+from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from scripts.kifu_name_inventory import main
 
 
@@ -105,24 +106,13 @@ def test_reviewed_second_gn_adds_hashed_selection_supplement_without_changing_le
     sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
            "GC[Selected Cup | 194 moves])")
     with Session(engine) as db:
-        db.add(_album(20, event="GNUGo3.8", sgf_content=sgf,
+        db.add(_album(20, event="GNUGo3.8", sgf_content=sgf, source="https://19x19.com",
                       source_path="data/kifu-album/19x19/a.sgf"))
         db.commit()
     original = build_inventory(engine)
     assert original["inventory_format"] == 2
     assert "event_selection" not in original
-    reviewed_at = datetime(2026, 10, 2, 10, tzinfo=timezone.utc)
-    with Session(engine) as db:
-        db.add(KifuEventSelectionBatch(
-            id=3, bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
-            producer_id="producer", reviewer_id="reviewer", reviewed_at=reviewed_at,
-            status="applied"))
-        db.add(KifuAlbumEventSelection(
-            album_id=20, batch_id=3, selected_raw="Selected Cup", sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
-            property_name="GN", property_index=1, status="approved",
-            rule_version="19x19-gnugo-second-gn-v1",
-            reviewer_id="reviewer", reviewed_at=reviewed_at))
-        db.commit()
+    apply_reviewed_selection(engine, 20)
     selected = build_inventory(engine)
     assert selected["inventory_format"] == 3
     assert selected["sha256"] != original["sha256"]
@@ -142,6 +132,29 @@ def test_reviewed_second_gn_adds_hashed_selection_supplement_without_changing_le
     drifted = build_inventory(engine)
     assert drifted["event_selection"]["rows"] == []
     assert drifted["sha256"] != selected["sha256"]
+
+
+def test_inventory_rejects_fabricated_applied_batch_without_review_artifact(tmp_path):
+    engine = _engine(tmp_path)
+    sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
+           "GC[Selected Cup | 194 moves])")
+    reviewed_at = datetime(2026, 10, 2, 10, tzinfo=timezone.utc)
+    with Session(engine) as db:
+        db.add(_album(20, event="GNUGo3.8", sgf_content=sgf,
+                      source_path="data/kifu-album/19x19/a.sgf"))
+        db.add(KifuEventSelectionBatch(
+            id=3, bundle_sha256="a" * 64, member_set_sha256="b" * 64,
+            reviewed_artifact={}, producer_id="producer", reviewer_id="reviewer",
+            reviewed_at=reviewed_at, status="applied"))
+        db.add(KifuAlbumEventSelection(
+            album_id=20, batch_id=3, selected_raw="Selected Cup",
+            sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(), property_name="GN", property_index=1,
+            status="approved", rule_version="19x19-gnugo-second-gn-v1",
+            reviewer_id="reviewer", reviewed_at=reviewed_at))
+        db.commit()
+    result = build_inventory(engine)
+    assert result["inventory_format"] == 3
+    assert result["event_selection"]["rows"] == []
 
 
 def test_album_associations_expose_identity_and_dataset_source_swaps(tmp_path):

@@ -157,44 +157,45 @@ def _hash_row(hasher, prefix, values):
 def _selection_supplement(conn):
     """Return the approved live-SGF subset, retaining an empty v3 scope on drift."""
     from katrain.core.sgf_parser import SGF, ParseError
-    from katrain.web.kifu.event_selection import RULE_VERSION, selected_second_gn
+    from katrain.web.kifu.event_selection import (
+        audited_selection_images, selected_second_gn, selection_matches_audit,
+    )
     from katrain.web.kifu.provenance import classify_source_path
 
+    table = KifuAlbumEventSelection.__table__
+    columns = tuple(table.c)
     query = (
-        select(
-            KifuAlbumEventSelection.album_id, KifuAlbumEventSelection.selected_raw,
-            KifuAlbumEventSelection.sgf_sha256, KifuAlbumEventSelection.reviewer_id,
-            KifuAlbumEventSelection.reviewed_at, KifuAlbumEventSelection.status,
-            KifuAlbumEventSelection.property_name, KifuAlbumEventSelection.property_index,
-            KifuAlbumEventSelection.rule_version,
-            KifuAlbumEventSelection.batch_id, KifuEventSelectionBatch.bundle_sha256,
-            KifuEventSelectionBatch.reviewer_id, KifuEventSelectionBatch.reviewed_at,
-            KifuEventSelectionBatch.status, KifuAlbum.sgf_content, KifuAlbum.event, KifuAlbum.source_path,
-        )
-        .join(KifuEventSelectionBatch, KifuAlbumEventSelection.batch_id == KifuEventSelectionBatch.id)
+        select(*columns, KifuAlbum.sgf_content, KifuAlbum.event, KifuAlbum.source_path)
         .join(KifuAlbum, KifuAlbumEventSelection.album_id == KifuAlbum.id)
         .order_by(KifuAlbumEventSelection.album_id)
     )
     rows = []
     seen = False
-    for (album_id, raw, pinned_sha, reviewer, reviewed_at, status, prop, index, rule_version,
-         batch_id, bundle_sha, batch_reviewer, batch_reviewed_at, batch_status, sgf_content,
-         old_event, source_path) in conn.execute(query):
+    audited_batches = {}
+    for result in conn.execute(query):
         seen = True
+        selection = dict(zip((column.key for column in columns), result[:len(columns)]))
+        sgf_content, old_event, source_path = result[len(columns):]
+        batch_id = selection["batch_id"]
+        if batch_id not in audited_batches:
+            batch = conn.execute(select(KifuEventSelectionBatch.__table__).where(
+                KifuEventSelectionBatch.id == batch_id)).mappings().one_or_none()
+            audited_batches[batch_id] = (batch, audited_selection_images(batch) if batch is not None else None)
+        batch, images = audited_batches[batch_id]
         if not (
-            status == "approved" and batch_status == "applied" and prop == "GN" and index == 1
-            and rule_version == RULE_VERSION and old_event == "GNUGo3.8"
-            and reviewer == batch_reviewer and reviewed_at == batch_reviewed_at
-            and isinstance(sgf_content, str) and hashlib.sha256(sgf_content.encode("utf-8")).hexdigest() == pinned_sha
+            selection_matches_audit(selection, images) and old_event == "GNUGo3.8"
+            and isinstance(sgf_content, str)
+            and hashlib.sha256(sgf_content.encode("utf-8")).hexdigest() == selection["sgf_sha256"]
         ):
             continue
         try:
             selected = selected_second_gn(SGF.parse_sgf(sgf_content), classify_source_path(source_path))
         except (ParseError, ValueError, TypeError, AttributeError, IndexError):
             continue
-        if selected != raw:
+        if selected != selection["selected_raw"]:
             continue
-        rows.append([album_id, raw, pinned_sha, reviewer, reviewed_at.isoformat(), batch_id, bundle_sha])
+        rows.append([selection["album_id"], selected, selection["sgf_sha256"], selection["reviewer_id"],
+                     selection["reviewed_at"].isoformat(), batch_id, batch["bundle_sha256"]])
     if not seen:
         return None
     digest = hashlib.sha256()

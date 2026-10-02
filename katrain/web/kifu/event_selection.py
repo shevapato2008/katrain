@@ -221,43 +221,64 @@ def _image(row) -> dict:
     return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
 
 
+def audited_selection_images(batch) -> dict[int, dict] | None:
+    """Return signed after-images only for an intact, independently reviewed applied batch."""
+    try:
+        if batch["status"] != "applied":
+            return None
+        artifact = batch["reviewed_artifact"]
+        bundle = artifact["bundle"]
+        report = validate_bundle(bundle)
+        before = artifact["before_images"]
+        after = artifact["after_images"]
+        review = bundle["review"]
+        reviewed_at = _timestamp(review["reviewed_at"], "review time")
+        stored_reviewed_at = batch["reviewed_at"]
+        if stored_reviewed_at.tzinfo is None:
+            reviewed_at = reviewed_at.replace(tzinfo=None)
+        if not (
+            report["bundle_sha256"] == batch["bundle_sha256"]
+            and report["member_set_sha256"] == batch["member_set_sha256"]
+            and before == bundle["members"]
+            and isinstance(after, list) and len(before) == len(after)
+            and batch["producer_id"] == bundle["producer_id"]
+            and batch["reviewer_id"] == review["reviewer_id"]
+            and stored_reviewed_at == reviewed_at
+        ):
+            return None
+        images = {}
+        image_keys = set(KifuAlbumEventSelection.__table__.columns.keys())
+        for member, image in zip(before, after):
+            expected = {
+                "album_id": member["album_id"],
+                "event_id": None,
+                "batch_id": batch["id"],
+                "selected_raw": member["selected_raw"],
+                "sgf_sha256": member["sgf_sha256"],
+                "property_name": member["property_name"],
+                "property_index": member["property_index"],
+                "status": "approved",
+                "rule_version": member["rule_version"],
+                "reviewer_id": review["reviewer_id"],
+                "reviewed_at": stored_reviewed_at.isoformat(),
+            }
+            if not isinstance(image, dict) or set(image) != image_keys or any(
+                image.get(key) != value for key, value in expected.items()
+            ):
+                return None
+            images[member["album_id"]] = image
+        return images
+    except (EventSelectionError, KeyError, TypeError, AttributeError, ValueError):
+        return None
+
+
+def selection_matches_audit(selection, images: dict[int, dict] | None) -> bool:
+    """Require the entire live selection row to match its approved after-image."""
+    return bool(images is not None and images.get(selection["album_id"]) == _image(selection))
+
+
 def _audit_images_match_review(batch) -> bool:
-    artifact = batch["reviewed_artifact"]
-    bundle = artifact["bundle"]
-    before = artifact["before_images"]
-    after = artifact["after_images"]
-    review = bundle["review"]
-    reviewed_at = _timestamp(review["reviewed_at"], "review time")
-    stored_reviewed_at = batch["reviewed_at"]
-    if stored_reviewed_at.tzinfo is None:
-        reviewed_at = reviewed_at.replace(tzinfo=None)
-    if not (
-        canonical_sha256(bundle) == batch["bundle_sha256"]
-        and canonical_sha256(before) == batch["member_set_sha256"]
-        and before == bundle["members"]
-        and len(before) == len(after)
-        and batch["producer_id"] == bundle["producer_id"]
-        and batch["reviewer_id"] == review["reviewer_id"]
-        and stored_reviewed_at == reviewed_at
-    ):
-        return False
-    for member, image in zip(before, after):
-        expected = {
-            "album_id": member["album_id"],
-            "event_id": None,
-            "batch_id": batch["id"],
-            "selected_raw": member["selected_raw"],
-            "sgf_sha256": member["sgf_sha256"],
-            "property_name": member["property_name"],
-            "property_index": member["property_index"],
-            "status": "approved",
-            "rule_version": member["rule_version"],
-            "reviewer_id": review["reviewer_id"],
-            "reviewed_at": stored_reviewed_at.isoformat(),
-        }
-        if any(image.get(key) != value for key, value in expected.items()):
-            return False
-    return True
+    return audited_selection_images(batch) is not None
 
 
 def _inspect(conn, bundle: dict) -> dict:

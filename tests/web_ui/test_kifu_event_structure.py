@@ -7,7 +7,7 @@ def test_explicit_year_edition_and_round_preserve_every_character():
     raw = "1934年第十二届日本大手合第3轮"
     item = structure_event(raw)
     assert item["status"] == "pending_review"
-    assert item["rule_version"] == "event-components-v4"
+    assert item["rule_version"] == "event-components-v5"
     assert item["core"] == "日本大手合"
     assert [(part["kind"], part["value"]) for part in item["components"]] == [
         ("year", "1934"), ("edition", "十二届"), ("round", "3轮")
@@ -91,7 +91,7 @@ def test_ordinal_suffix_and_joined_prefix_keep_qualifiers_and_exact_spans():
     )
     for raw, grammar, core, edition in examples:
         item = structure_event(raw)
-        assert item["rule_version"] == "event-components-v4"
+        assert item["rule_version"] == "event-components-v5"
         assert item["grammar"] == grammar
         assert item["core"] == core
         assert item["status"] == "pending_review"
@@ -128,3 +128,44 @@ def test_ambiguous_or_unsupported_infix_edition_stays_raw():
         else:
             assert item["core"] == raw
             assert item["components"] == []
+
+
+def test_single_round_fragment_preserves_roles_qualifiers_and_exact_spans():
+    for raw, core, number in (
+        ("2010金立手机杯围甲联赛第11轮主将", "2010金立手机杯围甲联赛主将", "11"),
+        ("2010金立手机杯围甲联赛第九十九轮快棋", "2010金立手机杯围甲联赛快棋", "九十九"),
+        ("友情杯第１轮", "友情杯", "１"),
+        (" 友情杯 第９９９轮主将", " 友情杯 主将", "９９９"),
+    ):
+        item = structure_event(raw)
+        assert item["grammar"] == "single_round_fragment"
+        assert item["core"] == core
+        assert item["status"] == "pending_review"
+        assert item["exceptions"] == []
+        assert [(p["kind"], p["value"]) for p in item["components"]] == [("round", number + "轮")]
+        assert item["components"][0]["text"] == "第" + number + "轮"
+        assert "".join(p["text"] for p in item["parts"]) == raw
+        assert all(raw[p["start"]:p["end"]] == p["text"] for p in item["parts"])
+
+
+def test_single_round_fragment_rejects_unsupported_boundaries_and_numbers():
+    for raw in (
+        "2013韩国围棋联赛总决赛第3回合", "第42回NHK杯テレビ囲碁トーナメント",
+        "第1回おかげ杯1回戦", "《受》第1局：三子局", "2008韩国围棋联赛第6轮第1场",
+        "2013金立智能手机杯围甲第19轮主将(三劫循环无胜负）", "第三轮",
+        "友情杯第0轮主将", "友情杯第01轮主将", "友情杯第０１轮", "友情杯第1１轮主将",
+        "友情杯第一百轮主将", "友情杯第廿轮主将", "友情杯第壹轮主将", "友情杯第1000轮主将",
+        "友情杯第１轮主将 ", "友情杯第１轮其他", "友情杯第轮主将", " 第１轮", "第友情杯第１轮",
+    ):
+        item = structure_event(raw)
+        assert item["grammar"] != "single_round_fragment"
+        assert "".join(p["text"] for p in item["parts"]) == raw
+
+
+def test_existing_grammars_take_precedence_over_round_fallback():
+    for raw, grammar in (
+        ("友情杯第1轮", "explicit_components"),
+        ("2026年友情杯第１轮主将", "explicit_components"),
+        ("日本第11期龙星战第１轮主将", "unparsed"),
+    ):
+        assert structure_event(raw)["grammar"] == grammar

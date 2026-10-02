@@ -12,12 +12,14 @@ from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 
 
-RULE_VERSION = "event-components-v4"
+RULE_VERSION = "event-components-v5"
 _YEAR = re.compile(r"([12]\d{3})年(?:度)?\s*")
 _NUMBER = r"(?:[0-9]{1,3}|[一二三四五六七八九]|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
 _EDITION = re.compile(rf"(?:(?:第)?({_NUMBER})|首)(届|期)\s*")
 _INFIX_EDITION = re.compile(rf"第({_NUMBER}|[０-９]{{1,3}})(期|届)")
 _EXPLICIT_NUMBERED_FRAGMENT = re.compile(r"第[0-9０-９一二三四五六七八九十百]+[期届轮回局场]")
+_SINGLE_ROUND_NUMBER = r"(?:[1-9][0-9]{0,2}|[１-９][０-９]{0,2}|[一二三四五六七八九]|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
+_SINGLE_ROUND_FRAGMENT = re.compile(rf"(?P<left>.+?)第(?P<number>{_SINGLE_ROUND_NUMBER})轮(?P<tail>主将|快棋)?\Z")
 _ROUND = re.compile(rf"\s*(?:第)?({_NUMBER})(轮|局)\s*\Z")
 _OTEAI_YEAR = re.compile(r"(Oteai)\s+([12]\d{3})\Z", re.IGNORECASE)
 _CWI = re.compile(r"(JapanPromotionTournament),([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
@@ -144,6 +146,18 @@ def structure_event(raw: str) -> dict:
                 _part(raw, "edition", edition.group(1) + edition.group(2), edition.start(), edition.end()),
                 _part(raw, "core", raw[edition.end():], edition.end(), len(raw)),
             ], "single_edition_fragment")
+        # Fallback after all existing grammars, with no normalization or identity inference.
+        round_fragment = _SINGLE_ROUND_FRAGMENT.fullmatch(raw)
+        if round_fragment and raw.count("第") == 1 and round_fragment.group("left").strip():
+            round_start = round_fragment.end("left")
+            round_end = round_fragment.end("number") + 1
+            round_parts = [
+                _part(raw, "core", round_fragment.group("left"), 0, round_start),
+                _part(raw, "round", round_fragment.group("number") + "轮", round_start, round_end),
+            ]
+            if round_fragment.group("tail"):
+                round_parts.append(_part(raw, "core", round_fragment.group("tail"), round_end, len(raw)))
+            return _result(raw, round_parts, "single_round_fragment")
     return _result(raw, parts, "explicit_components" if len(parts) > 1 else "unparsed")
 
 

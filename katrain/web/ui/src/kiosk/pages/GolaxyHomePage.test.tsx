@@ -199,6 +199,29 @@ describe('Golaxy home', () => {
     expect(screen.getByText('5678 房')).toBeInTheDocument();
   });
 
+  it('preserves the focused invite mode when the lobby refreshes', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'invitable', username: '可邀棋友', rank: '6段', status: '空闲', invite_able: true }] });
+    vi.useFakeTimers();
+    renderPage();
+    await act(async () => { await Promise.resolve(); });
+    act(() => screen.getByRole('tab', { name: '在线棋友' }).click());
+    const opener = screen.getByRole('button', { name: '查看可邀棋友的个人资料' });
+    act(() => { opener.focus(); opener.click(); });
+    act(() => screen.getByRole('button', { name: '邀请对局', exact: true }).click());
+    const physicalMode = screen.getByRole('button', { name: '实体棋盘' });
+    act(() => { physicalMode.focus(); physicalMode.click(); });
+    expect(physicalMode).toHaveFocus();
+    expect(physicalMode).toHaveAttribute('aria-pressed', 'true');
+
+    await act(async () => vi.advanceTimersByTime(30_000));
+    expect(platformUsers).toHaveBeenCalledTimes(2);
+    expect(physicalMode).toHaveFocus();
+    expect(physicalMode).toHaveAttribute('aria-pressed', 'true');
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+
   it('stops polling while hidden and after unmount', async () => {
     vi.useFakeTimers();
     const page = renderPage();

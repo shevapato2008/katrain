@@ -254,6 +254,13 @@ export interface GolaxyOnlinePlayer {
   username: string;
   rank: string | null;
   status: string | null;
+  // Optional display fields: only present when the server has verified them.
+  wins?: number | null;
+  losses?: number | null;
+  invite_able?: boolean | null;
+  avatar_url?: string | null;
+  user_code?: string | null;
+  region?: string | null;
 }
 
 export interface GolaxyRoom {
@@ -265,6 +272,21 @@ export interface GolaxyRoom {
   white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   phase: string | null;
   spectator_count: number | null;
+  move_number?: number | null;
+  room_user_count?: number | null;
+}
+
+export interface GolaxySpectatorPosition {
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  last_move?: { color: 'B' | 'W'; coordinate: string | null } | null;
+}
+
+export interface GolaxySpectatorClock {
+  remaining_seconds: number;
+  period_seconds?: number | null;
+  periods_remaining?: number | null;
 }
 
 /** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
@@ -281,6 +303,10 @@ export interface GolaxySpectatorSnapshot {
   result: string | null;
   room_type: string | null;
   handicap: number | null;
+  last_move?: GolaxySpectatorPosition['last_move'];
+  history?: GolaxySpectatorPosition[] | null;
+  clocks?: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
+  members?: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
 }
 
 export interface PlatformChallenge {

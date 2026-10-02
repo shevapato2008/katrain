@@ -29,7 +29,11 @@ from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
 from tests.web_ui.test_kifu_name_api import _evidence, _request
 from tests.web_ui.test_kifu_name_batch import _v2_wrap
-from tests.web_ui.test_kifu_name_transliteration import refresh_bindings, registry, transliteration_bundle
+from tests.web_ui.test_kifu_name_transliteration import (
+    refresh_bindings, registry, transliteration_bundle, two_publisher_anchor, source_anchor,
+)
+from tests.web_ui.test_kifu_raw_player_scope import _scope
+from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS
 
 MODELS = {
     "player": (KifuPlayer, KifuPlayerName, "player_id", 17),
@@ -97,6 +101,66 @@ def catalog(kind="player", count=1):
     inventory = build_inventory(engine)
     proposed.update(inventory_format=inventory["inventory_format"], inventory_sha256=inventory["sha256"])
     return engine, proposed, anchors, inventory
+
+
+def scoped_raw_catalog():
+    engine, proposed, anchors, inventory = catalog("raw_player")
+    owner = proposed["candidates"][0]["owner"]
+    anchor = two_publisher_anchor()
+    anchor["content"].update(anchor_format=3, owner=owner, raw_value="李元赫",
+                             original_language_basis="Reviewed Simplified Chinese source and slot",
+                             reading_applicability_basis="Published reading suits the signed slot",
+                             spelling_exceptions_basis="No exception in the signed slot")
+    scope = _scope()
+    album = dict(zip(inventory["association_columns"], inventory["album_associations"][0]))
+    scope["content"]["inventory_sha256"] = inventory["sha256"]
+    scope["content"]["slots"] = [{"album_id": album["id"], "slot": "black",
+                                   "context": {field: album[field] for field in CONTEXT_FIELDS}}]
+    scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    scope_hash = canonical_sha256(scope)
+    anchor["content"]["raw_display_scope_sha256"] = scope_hash
+    anchors[:] = [anchor]
+    row = proposed["candidates"][0]
+    row["raw_display_scope_sha256"] = scope_hash
+    proposed["transliteration"]["batches"][0]["content"]["members"][0]["raw_display_scope_sha256"] = scope_hash
+    refresh_bindings(proposed, anchors)
+    binding = row["preimage_binding"]
+    binding["source_candidate_sha256"] = canonical_sha256({key: value for key, value in row.items()
+                                                              if key != "preimage_binding"})
+    declaration = {"owner": owner, "preimage": {"raw_value": "李元赫", "category": "readable_unlinked",
+                                             "review_status": "approved"},
+                   "occurrence_album_ids": [album["id"]],
+                   "occurrence_sha256": canonical_sha256([album["id"]]),
+                   "raw_display_scope": scope}
+    return engine, _v2_wrap(engine, inventory, proposed, [declaration], []), anchors, inventory
+
+
+def test_scoped_raw_transliteration_requires_v3_anchor_and_v2_owner_scope():
+    engine, proposed, anchors, inventory = scoped_raw_catalog()
+    try:
+        assert validate_bundle(proposed, registry(), inventory, anchors,
+                               approved_name_snapshot=[])["write_ready"]
+        assert dry_run_bundle(engine, proposed, registry(), inventory, anchors)["write_ready"]
+        applied = apply_bundle(engine, proposed, registry(), inventory, anchors)
+        assert applied["status"] == "applied"
+
+        legacy_anchor = [source_anchor(owner=proposed["candidates"][0]["owner"])]
+        legacy_anchor[0]["content"].update(raw_value="李元赫",
+                                           raw_display_scope_sha256=proposed["candidates"][0]["raw_display_scope_sha256"])
+        changed = deepcopy(proposed)
+        changed["transliteration"]["batches"][0]["content"]["members"][0].pop("raw_display_scope_sha256")
+        refresh_bindings(changed, legacy_anchor)
+        assert not validate_bundle(changed, registry(), inventory, legacy_anchor,
+                                   approved_name_snapshot=[])["ready"]
+
+        unscoped = deepcopy(proposed)
+        unscoped["bundle_format"] = 1
+        for key in ("owners", "owner_set_sha256", "catalog_sha256", "album_links", "link_set_sha256"):
+            unscoped.pop(key)
+        assert not validate_bundle(unscoped, registry(), inventory, anchors,
+                                   approved_name_snapshot=[])["ready"]
+    finally:
+        engine.dispose()
 
 
 @pytest.mark.parametrize("kind", list(MODELS))

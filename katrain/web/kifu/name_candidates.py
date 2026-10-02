@@ -30,6 +30,7 @@ from katrain.web.kifu.name_composition import (
     CompositionError, HONINBO_RAWS, validate_composition, validate_composed_candidate,
 )
 from katrain.web.kifu.name_transliteration import validate_transliteration, validate_transliterated_candidate
+from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, validate_raw_player_scope
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -647,6 +648,13 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                 _require(ids == actual_ids and bool(ids), "raw global occurrences differ from inventory")
                 _require(declaration.get("occurrence_sha256") == canonical_sha256(ids),
                          "raw global occurrence hash mismatch")
+                if owner["kind"] == "raw_player" and "raw_display_scope" in declaration:
+                    contexts = {album_id: {field: album[field] for field in CONTEXT_FIELDS}
+                                for album_id, album in associations.items()}
+                    slots = {(album_id, slot) for album_id, slot in player_slots.get(raw, [])
+                             if contexts[album_id][f"{slot}_player_id"] is None}
+                    validate_raw_player_scope(declaration["raw_display_scope"], inventory["sha256"], raw,
+                                              slots, contexts)
                 if is_new:
                     parsed = parse_player(raw, None) if owner["kind"] == "raw_player" else parse_event(raw, None)
                     _require(pinned.get("category") == parsed.category,
@@ -671,7 +679,7 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                              and context["start_date"] <= context["end_date"],
                              "selected_event target needs bounded period and region context")
             declarations[token] = declaration
-        except (AttributeError, TypeError, CandidateError) as exc:
+        except (AttributeError, TypeError, CandidateError, EvidenceError, KeyError) as exc:
             errors.append(f"owner[{number}]: {exc}")
     review_groups = defaultdict(list)
     link_targets = set()
@@ -895,6 +903,11 @@ def validate_bundle(
     for key, hashes in research_keys.items():
         if len(hashes) > 1:
             errors.append(f"multiple research records for {key}; consolidate findings before approval")
+    if bundle["bundle_format"] == 1 and (
+        any(record["content"].get("anchor_format") == 3 for record in anchors_by_hash.values())
+        or any(isinstance(item, dict) and "raw_display_scope_sha256" in item for item in candidates)
+    ):
+        errors.append("raw-player display scope requires a validated v2 owner declaration")
     transliteration_context = None
     has_transliteration = bundle.get("transliteration") is not None or any(
         isinstance(item, dict) and item.get("decision_kind") == "transliterated" for item in candidates
@@ -947,6 +960,31 @@ def validate_bundle(
                 raise CandidateError("candidate lies outside finite member set")
             if item.get("raw_value") != member_map[key].get("raw_value"):
                 raise CandidateError("candidate raw spelling differs from member")
+            if item["owner"]["kind"] == "raw_player" and declarations is not None:
+                declaration = declarations[_owner_token(item["owner"])]
+                scope = declaration.get("raw_display_scope")
+                if scope is not None:
+                    scope_hash = canonical_sha256(scope)
+                    _require(item.get("raw_display_scope_sha256") == scope_hash,
+                             "raw-player candidate differs from signed display scope")
+                    if item.get("decision_kind") != "transliterated":
+                        research = evidence_by_hash.get(item.get("research_sha256"), [])
+                        _require(len(research) == 1 and research[0].get("raw_display_scope_sha256") == scope_hash,
+                                 "raw-player research differs from signed display scope")
+                else:
+                    _require("raw_display_scope_sha256" not in item,
+                             "raw-player candidate has no signed display scope")
+            if item["owner"]["kind"] == "raw_player" and item.get("decision_kind") == "transliterated" \
+                    and "raw_display_scope_sha256" in item:
+                binding = transliteration_context.get(key) if isinstance(transliteration_context, dict) else None
+                anchor = anchors_by_hash.get(item.get("source_anchor_sha256"))
+                _require(
+                    binding is not None and anchor is not None
+                    and anchor["content"].get("anchor_format") == 3
+                    and anchor["content"].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"]
+                    and binding[1].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"],
+                    "scoped raw-player transliteration requires one matching format-3 source and signed member",
+                )
             evidence = evidence_by_hash.get(item.get("research_sha256"), [])
             if len(evidence) > 1:
                 raise CandidateError("duplicate research record hash")

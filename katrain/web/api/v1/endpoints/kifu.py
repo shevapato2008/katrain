@@ -21,6 +21,7 @@ from katrain.web.kifu.identity import (
     resolve_strict_display,
     strict_display_maps,
     strict_matching_names,
+    strict_raw_player_search_clause,
     strict_raw_event_search_clause,
     strict_names_enabled,
     strict_selected_event_search_ids,
@@ -126,7 +127,9 @@ async def list_kifu_albums(
     if q:
         strict = strict_names_enabled()
         if strict:
-            player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(db, q)
+            raw_name_rows = []
+            player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(
+                db, q, raw_name_rows=raw_name_rows)
             selected_event_ids = strict_selected_event_search_ids(db, q, raw_event_name_ids, event_ids)
         else:
             player_ids, event_ids = matching_entity_ids(db, q, exact=True)
@@ -164,7 +167,7 @@ async def list_kifu_albums(
                 if event_ids:
                     clauses.append(KifuAlbum.event_id.in_(event_ids))
                 if raw_players:
-                    clauses.extend((KifuAlbum.player_black.in_(raw_players), KifuAlbum.player_white.in_(raw_players)))
+                    clauses.append(strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
                 if raw_event_name_ids:
                     clauses.append(strict_raw_event_search_clause(db, raw_event_name_ids))
             needle = or_(*clauses)

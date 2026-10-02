@@ -14,6 +14,7 @@ from katrain.web.kifu.name_evidence import (
     owner_key,
     registry_sha256,
     validate_transliteration_review,
+    validate_transliteration_anchor,
     validate_transliteration_sources,
 )
 
@@ -197,8 +198,13 @@ def validate_transliteration(section, candidates, anchors, snapshot):
             key = owner_key(member.get("owner"), member.get("lang"))
             member_fields = {"owner", "lang", "display_name", "source_anchor_sha256", "rule_sha256"}
             is_raw = member["owner"]["kind"].startswith("raw_")
+            is_scoped_raw = False
+            anchor_hash = member.get("source_anchor_sha256")
+            if isinstance(anchor_hash, str) and anchor_hash in anchors:
+                is_scoped_raw = is_raw and anchors[anchor_hash]["content"].get("anchor_format") == 3
             _require(
-                set(member) == member_fields | ({"raw_value"} if is_raw else set()),
+                set(member) == member_fields | ({"raw_value"} if is_raw else set())
+                | ({"raw_display_scope_sha256"} if is_scoped_raw else set()),
                 "transliteration member must sign exact raw spelling for raw owners",
             )
             _require(
@@ -207,7 +213,6 @@ def validate_transliteration(section, candidates, anchors, snapshot):
                 and member.get("rule_sha256") == rule_hash,
                 "transliteration member duplicate or outside batch scope",
             )
-            anchor_hash = member.get("source_anchor_sha256")
             _require(isinstance(anchor_hash, str) and anchor_hash in anchors, "transliteration source anchor missing")
             anchor = anchors[anchor_hash]
             source = anchor["content"]
@@ -216,6 +221,9 @@ def validate_transliteration(section, candidates, anchors, snapshot):
                     member.get("raw_value") == source.get("raw_value"),
                     "transliteration signed raw spelling differs from source anchor",
                 )
+            if is_scoped_raw:
+                _require(member.get("raw_display_scope_sha256") == source.get("raw_display_scope_sha256"),
+                         "transliteration source and signed display scope differ")
             _require(
                 source["owner"] == member["owner"]
                 and all(source[field] == content[field] for field in ("source_lang", "reading_system", "entity_kind")),
@@ -393,12 +401,21 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         if row["source_anchor_sha256"] not in artifact.get("research_hashes", []):
             return False
         source = validate_transliteration_review(anchor, "approved_original_name_and_reading")
+        validate_transliteration_anchor(anchor)
         signed_batch = bindings[key][0]["content"]
         if source["owner"] != owner or not all(
             source[field] == signed_batch[field] for field in ("source_lang", "reading_system", "entity_kind")
         ):
             return False
         if owner["kind"].startswith("raw_") and source.get("raw_value") != raw:
+            return False
+        scope_hash = row.get("raw_display_scope_sha256")
+        if (source.get("anchor_format") == 3) != (scope_hash is not None):
+            return False
+        if scope_hash is not None and (
+            source.get("raw_display_scope_sha256") != scope_hash
+            or bindings[key][1].get("raw_display_scope_sha256") != scope_hash
+        ):
             return False
         for field in ("producer_id", "producer_model", "reviewer_id", "reviewer_model"):
             if getattr(evidence, field) != row[field]:

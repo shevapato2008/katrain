@@ -200,7 +200,7 @@ def _validate_two_publisher_reading(content: dict, reviewed_at: str) -> None:
     """Bind an official Han name to one bilingual professional profile and its reading."""
     _require(
         content.get("entity_kind") == "player"
-        and content["owner"]["kind"] == "player"
+        and content["owner"]["kind"] == ("raw_player" if content.get("anchor_format") == 3 else "player")
         and content.get("source_lang") == "zh-Hans"
         and content.get("source_reading_kind") == "published_roman_name",
         "two-publisher reading supports only Chinese player profiles",
@@ -351,8 +351,18 @@ def validate_transliteration_anchor(record: dict) -> dict:
     )
     sources = content.get("sources")
     anchor_format = content.get("anchor_format", 1)
-    _require(type(anchor_format) is int and anchor_format in {1, 2}, "transliteration anchor format invalid")
-    if anchor_format == 2:
+    _require(type(anchor_format) is int and anchor_format in {1, 2, 3}, "transliteration anchor format invalid")
+    if anchor_format == 3:
+        _require(
+            content["owner"]["kind"] == "raw_player"
+            and content.get("raw_value") == content["original_name"]
+            and bool(_HEX_SHA256.fullmatch(str(content.get("raw_display_scope_sha256", ""))))
+            and all(_text(content.get(field)) for field in (
+                "original_language_basis", "reading_applicability_basis", "spelling_exceptions_basis"
+            )),
+            "raw transliteration anchor requires exact spelling, finite scope and reviewed applicability",
+        )
+    if anchor_format in {2, 3}:
         _validate_two_publisher_reading(content, record["approval"]["reviewed_at"])
     else:
         _require(

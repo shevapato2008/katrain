@@ -4,7 +4,7 @@ import hashlib
 import os
 import unicodedata
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from katrain.core.sgf_parser import SGF
@@ -28,6 +28,8 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.name_structure import structure_event
+from katrain.web.kifu.name_raw_player_scope import prepare_raw_player_scope, raw_player_scope_slot
+from katrain.web.kifu.name_evidence import EvidenceError
 
 LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"})
 _DECISIONS = frozenset({"conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected"})
@@ -122,6 +124,110 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
         if persisted_name_eligible(name, evidence, owner_column, raw, batches[batch_id], contexts[batch_id]):
             result.append(row)
     return result
+
+
+def _approved_raw_player_names(db, *, values=None, lang=None, display=None):
+    """Return approved raw names with a verified finite scope when one was signed."""
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    query = (_approved_names(db, KifuRawPlayerName, "raw_player_id", lang=lang)
+             .join(KifuRawPlayerValue, KifuRawPlayerName.raw_player_id == KifuRawPlayerValue.id)
+             .filter(KifuRawPlayerValue.review_status == "approved"))
+    if values is not None:
+        query = query.filter(KifuRawPlayerValue.raw_value.in_(values))
+    if display is not None:
+        query = query.filter(or_(KifuRawPlayerName.display_name == display,
+                                 func.lower(KifuRawPlayerName.display_name) == display.lower()))
+    rows = _qualified_name_rows(db, query, KifuRawPlayerName, "raw_player_id", KifuRawPlayerValue.raw_value)
+    batch_ids = set()
+    for _, evidence, _ in rows:
+        payload = evidence.research_payload
+        proof = payload.get("raw_display_scope") if isinstance(payload, dict) else None
+        if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
+            batch_ids.add(proof["batch_id"])
+    batches = ({batch.id: batch for batch in db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))}
+               if batch_ids else {})
+    result = []
+    for name, evidence, raw in rows:
+        payload = evidence.research_payload
+        candidate = payload.get("candidate") if isinstance(payload, dict) else None
+        proof = payload.get("raw_display_scope") if isinstance(payload, dict) else None
+        if not isinstance(candidate, dict) or "raw_display_scope_sha256" not in candidate:
+            if proof is None:
+                result.append((name, raw, None))
+            continue
+        if not isinstance(proof, dict):
+            continue
+        batch = batches.get(proof.get("batch_id"))
+        if batch is None or batch.status != "applied" or not isinstance(batch.reviewed_artifact, dict):
+            continue
+        bundle = batch.reviewed_artifact.get("bundle")
+        if not isinstance(bundle, dict) or canonical_sha256(bundle) != batch.bundle_sha256:
+            continue
+        if candidate not in bundle.get("candidates", ()):
+            continue
+        owner = candidate.get("owner")
+        owner_id = owner.get("id") if isinstance(owner, dict) else None
+        if isinstance(owner, dict) and "ref" in owner:
+            owner_id = batch.reviewed_artifact.get("resolved_refs", {}).get(
+                f"raw_player:@{owner['ref']}")
+        if (not isinstance(owner, dict) or owner.get("kind") != "raw_player"
+                or owner_id != name.raw_player_id or candidate.get("raw_value") != raw
+                or candidate.get("lang") != name.lang or candidate.get("display_name") != name.display_name
+                or candidate.get("decision_kind") != name.decision_kind):
+            continue
+        declaration = next((item for item in bundle.get("owners", ())
+                            if item.get("owner") == candidate.get("owner")), None)
+        scope = declaration.get("raw_display_scope") if isinstance(declaration, dict) else None
+        content = scope.get("content") if isinstance(scope, dict) else None
+        if (not isinstance(scope, dict) or canonical_sha256(scope) != proof.get("scope_sha256")
+                or proof["scope_sha256"] != candidate["raw_display_scope_sha256"]
+                or not isinstance(content, dict) or not isinstance(content.get("slots"), list)
+                or any(not isinstance(member, dict) or type(member.get("album_id")) is not int
+                       or member.get("slot") not in {"black", "white"} for member in content["slots"])
+                or content.get("raw_value") != raw
+                or content.get("inventory_sha256") != bundle.get("inventory_sha256")):
+            continue
+        research = payload.get("research")
+        if name.decision_kind != "transliterated" and (
+                not isinstance(research, dict)
+                or research.get("raw_display_scope_sha256") != proof["scope_sha256"]):
+            continue
+        try:
+            prepared = prepare_raw_player_scope(scope)
+        except (EvidenceError, KeyError, TypeError, AttributeError):
+            continue
+        result.append((name, raw, prepared))
+    return result
+
+
+def _raw_player_slot(names, album, slot):
+    raw = getattr(album, f"player_{slot}")
+    item = names.get(raw)
+    if item is None:
+        return None
+    value, scope = item
+    return value if scope is None or raw_player_scope_slot(scope, album, slot, raw) else None
+
+
+def strict_raw_player_search_clause(db, raw_values: set[str], display: str, *, names=None):
+    """Expand a translated raw name only to eligible unlinked album slots."""
+    clauses = []
+    if names is None:
+        names = _approved_raw_player_names(db, values=raw_values, display=display)
+    for name, raw, scope in names:
+        if raw not in raw_values:
+            continue
+        if scope is None:
+            clauses.extend(((KifuAlbum.player_black == raw) & KifuAlbum.black_player_id.is_(None),
+                            (KifuAlbum.player_white == raw) & KifuAlbum.white_player_id.is_(None)))
+            continue
+        for (album_id, _slot), context in scope.members.items():
+            clauses.append(and_(KifuAlbum.id == album_id, *(
+                getattr(KifuAlbum, field).is_(None) if value is None else getattr(KifuAlbum, field) == value
+                for field, value in context.items()
+            )))
+    return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
 def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None, name_ids=None):
@@ -296,7 +402,7 @@ def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
-def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], set[str], set[int]]:
+def strict_matching_names(db: Session, query: str, *, raw_name_rows=None) -> tuple[set[int], set[int], set[str], set[int]]:
     """Expand only a unique approved owner across identity and raw-name scopes."""
     needle = normalize_alias(query)
     if not needle:
@@ -328,17 +434,12 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
             raw_matches.append({raw for _, raw in matched})
             raw_event_name_ids = {name.id for name, _ in matched}
             continue
-        rows = (
-            _approved_names(db, model, owner)
-            .join(value_model, getattr(model, owner) == value_model.id)
-            .filter(
-                value_model.review_status == "approved",
-                or_(model.display_name == query, func.lower(model.display_name) == query.lower()),
-            )
-        )
+        scoped_matches = _approved_raw_player_names(db, display=query)
+        if raw_name_rows is not None:
+            raw_name_rows.extend(scoped_matches)
         matches = {
             raw
-            for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
+            for name, raw, _ in scoped_matches
             if normalize_alias(name.display_name) == needle
         }
         raw_matches.append(matches)
@@ -498,17 +599,8 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
                 _raw_event_map(_approved_raw_event_names(db, values=values, lang=lang), albums, selected_events)
             )
             continue
-        rows = (
-            _approved_names(db, model, owner, lang=lang)
-            .join(value_model, getattr(model, owner) == value_model.id)
-            .filter(value_model.review_status == "approved", value_model.raw_value.in_(values))
-        )
-        raw_maps.append(
-            {
-                raw: name.display_name
-                for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
-            }
-        )
+        raw_maps.append({raw: (name.display_name, scope)
+                         for name, raw, scope in _approved_raw_player_names(db, values=values, lang=lang)})
     album_ids = [album.id for album in albums]
     sources: dict[int, set[str]] = {album_id: set() for album_id in album_ids}
     if album_ids:
@@ -597,25 +689,16 @@ def strict_slot_approvals(
                 )
             )
             continue
-        rows = (
-            _approved_names(db, model, owner, lang=lang)
-            .join(value_model, getattr(model, owner) == value_model.id)
-            .filter(value_model.review_status == "approved", value_model.raw_value.in_(values))
-        )
-        raw_approvals.append(
-            {
-                raw: (name.decision_kind, name.evidence_id)
-                for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
-            }
-        )
+        raw_approvals.append({raw: ((name.decision_kind, name.evidence_id), scope)
+                              for name, raw, scope in _approved_raw_player_names(db, values=values, lang=lang)})
     canonical = dict(db.query(KifuEvent.id, KifuEvent.canonical_name).filter(KifuEvent.id.in_(event_ids)))
     players, events = entity_approvals
     raw_players, raw_events = raw_approvals
     result = {}
     for album in albums:
         event_raw, event_id = selected_events.get(album.id, (album.event, album.event_id))
-        black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
-        white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
+        black = players.get(album.black_player_id) if album.black_player_id else _raw_player_slot(raw_players, album, "black")
+        white = players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
         if event_id:
             event_approval = events.get(event_id)
             if parse_event(event_raw, None).category == "formal_event_candidate":
@@ -673,8 +756,8 @@ def resolve_strict_display(
     selected_events: dict[int, tuple[str, int | None]] | None = None,
 ) -> tuple[str, str, str]:
     """Resolve the three visible name slots from the same maps used by coverage checks."""
-    black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
-    white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
+    black = players.get(album.black_player_id) if album.black_player_id else _raw_player_slot(raw_players, album, "black")
+    white = players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
     event_raw, event_id = (selected_events or {}).get(album.id, (album.event, album.event_id))
     event_name = events.get(event_id) if event_id else _raw_event_value(raw_events, album.id, event_raw or "", event_id)
     if obscured_event_ids and album.id in obscured_event_ids:

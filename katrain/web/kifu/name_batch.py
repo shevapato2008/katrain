@@ -571,6 +571,7 @@ def _candidate_evidence(
     owner_id: int,
     composition: dict | None = None,
     transliteration: dict | None = None,
+    raw_display_scope: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
@@ -580,6 +581,8 @@ def _candidate_evidence(
         payload["composition"] = composition
     if transliteration is not None:
         payload["transliteration"] = transliteration
+    if raw_display_scope is not None:
+        payload["raw_display_scope"] = raw_display_scope
     return {
         _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner_id, "lang": row["lang"], "revision": revision,
         "source_registry_id": registry_id, "candidate_name": row["display_name"],
@@ -594,7 +597,7 @@ def _candidate_evidence(
 
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
                      batch_id: int, sequence: int, resolved: dict[str, int] | None = None,
-                     composition: dict | None = None) -> int:
+                     composition: dict | None = None, raw_display_scope: dict | None = None) -> int:
     owner = row["owner"]
     owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
@@ -617,7 +620,9 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
     evidence_id, evidence_after = _insert(
         conn,
         KifuNameResearchEvidence,
-        _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id, composed, transliteration),
+        _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id, composed, transliteration,
+                            {"batch_id": batch_id, "scope_sha256": canonical_sha256(raw_display_scope)}
+                            if raw_display_scope is not None else None),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
@@ -761,6 +766,8 @@ def _check_applied_v4(conn, batch, bundle):
                 else None
             ),
             transliteration,
+            ({"batch_id": batch["id"], "scope_sha256": candidate["raw_display_scope_sha256"]}
+             if "raw_display_scope_sha256" in candidate else None),
         )
         for key, value in expected_evidence.items():
             stored = evidence[key]
@@ -857,9 +864,11 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         research_by_hash = {canonical_sha256(item): item for item in evidence_records}
         for candidate in sorted(bundle["candidates"], key=lambda row: row["decision_kind"] == "composed"):
+            raw_scope = next((declaration.get("raw_display_scope") for declaration in bundle.get("owners", ())
+                              if declaration["owner"] == candidate["owner"]), None)
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
                                         resolved if bundle["bundle_format"] in {2, 3, 4} else None,
-                                        bundle.get("composition"))
+                                        bundle.get("composition"), raw_scope)
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:

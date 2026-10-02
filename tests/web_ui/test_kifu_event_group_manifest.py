@@ -48,6 +48,20 @@ def test_group_manifest_binds_inventory_and_exact_raw_members_without_approval()
     assert build_event_group_manifest(_inventory(list(reversed(rows))))["sha256"] == manifest["sha256"]
 
 
+def test_ordinal_editions_group_only_within_the_same_full_series_name():
+    rows = [
+        {"value": raw, "occurrences": 1, "affected_games": 1}
+        for raw in ("28th Honinbo", "29th Honinbo", "14th Old Meijin", "1st Meijin")
+    ]
+    manifest = build_event_group_manifest(_inventory(rows))
+    assert manifest["rule_version"] == "event-components-v2"
+    assert manifest["group_count"] == 3
+    honinbo = next(group for group in manifest["groups"] if group["core"] == "Honinbo")
+    assert {member["raw_value"] for member in honinbo["members"]} == {"28th Honinbo", "29th Honinbo"}
+    assert all(group["status"] == "pending_review" for group in manifest["groups"])
+    assert {group["core"] for group in manifest["groups"]} == {"Honinbo", "Old Meijin", "Meijin"}
+
+
 def test_group_manifest_refuses_old_inventory_and_duplicate_raw_values():
     rows = [{"value": "赛事", "occurrences": 1, "affected_games": 1}]
     old = _inventory(rows)

@@ -11,13 +11,20 @@ import re
 from katrain.web.kifu.name_parse import parse_event
 
 
-RULE_VERSION = "event-components-v1"
+RULE_VERSION = "event-components-v2"
 _YEAR = re.compile(r"([12]\d{3})年(?:度)?\s*")
 _NUMBER = r"(?:[0-9]{1,3}|[一二三四五六七八九]|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
 _EDITION = re.compile(rf"(?:(?:第)?({_NUMBER})|首)(届|期)\s*")
 _ROUND = re.compile(rf"\s*(?:第)?({_NUMBER})(轮|局)\s*\Z")
 _OTEAI_YEAR = re.compile(r"(Oteai)\s+([12]\d{3})\Z", re.IGNORECASE)
 _CWI = re.compile(r"(JapanPromotionTournament),([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
+_ENGLISH_ORDINAL = re.compile(r"([1-9]\d{0,2})(st|nd|rd|th)\s+(\S.*)\Z", re.IGNORECASE)
+
+
+def _ordinal_suffix(number: int) -> str:
+    if number % 100 in {11, 12, 13}:
+        return "th"
+    return {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
 
 
 def _part(raw: str, kind: str, value: str, start: int, end: int) -> dict:
@@ -64,6 +71,14 @@ def structure_event(raw: str) -> dict:
             _part(raw, "year", named.group(2), core_end, year_end),
             _part(raw, "season", named.group(3), year_end, len(raw)),
         ], "cwi_japan_promotion")
+
+    ordinal = _ENGLISH_ORDINAL.fullmatch(raw)
+    if ordinal and ordinal.group(2).lower() == _ordinal_suffix(int(ordinal.group(1))):
+        core_start = ordinal.start(3)
+        return _result(raw, [
+            _part(raw, "edition", ordinal.group(1) + ordinal.group(2), 0, core_start),
+            _part(raw, "core", ordinal.group(3), core_start, len(raw)),
+        ], "english_ordinal_edition")
 
     start, end = 0, len(raw)
     prefixes = []

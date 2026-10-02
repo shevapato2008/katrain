@@ -7,7 +7,7 @@ def test_explicit_year_edition_and_round_preserve_every_character():
     raw = "1934年第十二届日本大手合第3轮"
     item = structure_event(raw)
     assert item["status"] == "pending_review"
-    assert item["rule_version"] == "event-components-v1"
+    assert item["rule_version"] == "event-components-v2"
     assert item["core"] == "日本大手合"
     assert [(part["kind"], part["value"]) for part in item["components"]] == [
         ("year", "1934"), ("edition", "十二届"), ("round", "3轮")
@@ -55,3 +55,25 @@ def test_round_unit_and_year_are_kept_distinct():
     assert two["components"][-1]["value"] == "2轮"
     assert one["components"][-1]["kind"] == "game"
     assert two["components"][-1]["kind"] == "round"
+
+
+def test_english_ordinal_edition_keeps_full_series_name_and_raw_spans():
+    for raw, edition, core in (
+        ("28th Honinbo", "28th", "Honinbo"),
+        ("14th Old Meijin", "14th", "Old Meijin"),
+        ("1st Meijin", "1st", "Meijin"),
+    ):
+        item = structure_event(raw)
+        assert item["grammar"] == "english_ordinal_edition"
+        assert item["core"] == core
+        assert item["status"] == "pending_review"
+        assert [(part["kind"], part["value"]) for part in item["components"]] == [("edition", edition)]
+        assert "".join(part["text"] for part in item["parts"]) == raw
+        assert all(raw[part["start"]:part["end"]] == part["text"] for part in item["parts"])
+
+
+def test_malformed_ordinal_and_non_event_do_not_merge_with_series():
+    for raw in ("11st Honinbo", "0th Honinbo", "28th", "28th 中盘胜"):
+        item = structure_event(raw)
+        assert item["grammar"] == "unparsed"
+        assert item["core"] == raw

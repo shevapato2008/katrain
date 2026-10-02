@@ -713,6 +713,18 @@ def test_undo_refuses_later_selection_edit(engine):
     assert counts(engine) == (1, 1)
 
 
+def test_source_undo_refuses_active_name_link_even_if_fk_was_cleared(engine):
+    from katrain.web.kifu.event_selection import EventSelectionError, undo_batch
+
+    linked_name_proof(engine)
+    with engine.begin() as conn:
+        source_id = conn.scalar(select(KifuAlbumEventSelection.batch_id))
+        conn.execute(KifuAlbumEventSelection.__table__.update().values(event_id=None))
+    with pytest.raises(EventSelectionError, match="active name link"):
+        undo_batch(engine, source_id)
+    assert counts(engine) == (1, 1)
+
+
 def test_undo_refuses_corrupt_batch_audit(engine):
     from katrain.web.kifu.event_selection import EventSelectionError, undo_batch
 

@@ -202,6 +202,11 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
           + "; ".join(report["errors"][:5]))
     _fail(report["write_ready"], "bundle name preimages are not write-ready: "
           + "; ".join(report["write_errors"][:5]))
+    if bundle.get("bundle_format") == 4:
+        referenced = sorted(row["research_sha256"] for row in bundle["candidates"]
+                            if row.get("research_sha256"))
+        supplied = sorted(canonical_sha256(row) for row in evidence_records)
+        _fail(supplied == referenced, "unreferenced research or missing candidate evidence in v4 bundle")
     return report
 
 
@@ -284,6 +289,11 @@ def _check_owner_manifest(conn, bundle: dict) -> None:
 
 
 def _check_album_links(conn, bundle: dict) -> None:
+    raw_scope_cache = {}
+    source_batch_cache = {}
+    if bundle["bundle_format"] == 4:
+        from katrain.web.kifu.event_selection import _raw_scope_sha256
+
     for link in bundle["album_links"]:
         album = conn.execute(select(KifuAlbum).where(KifuAlbum.id == link["album_id"])).mappings().one_or_none()
         _fail(album is not None, f"album link row vanished: {link['album_id']}")
@@ -301,6 +311,8 @@ def _check_album_links(conn, bundle: dict) -> None:
                   "selected event complete preimage changed")
             _fail(canonical_sha256(current) == link["selection_before_sha256"],
                   "selected event preimage SHA changed")
+            _fail(_raw_scope_sha256(conn, current["selected_raw"], raw_scope_cache, source_batch_cache)
+                  == link["raw_scope_sha256"], "selected event raw scope changed")
             continue
         column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[link["slot"]]
         _fail(album[column] == link["expected"]["old_id"],
@@ -540,18 +552,60 @@ def _check_applied_v4(conn, batch, bundle):
     expected_targets = {(KifuAlbumEventSelection.__tablename__, link["album_id"])
                         for link in bundle["album_links"]}
     for declaration in bundle["owners"]:
-        if "ref" in declaration["owner"]:
-            model = _OWNER[declaration["owner"]["kind"]][0]
-            expected_targets.add((model.__tablename__, resolved.get(_owner_ref(declaration["owner"]))))
+        owner = declaration["owner"]
+        model = _OWNER[owner["kind"]][0]
+        owner_id = resolved.get(_owner_ref(owner))
+        _fail(type(owner_id) is int and owner_id > 0, "applied batch owner resolution is missing")
+        if "id" in owner:
+            _fail(owner_id == owner["id"], "applied batch existing owner resolution changed")
+            live_owner = _image(conn, model.__table__, owner_id)
+            _fail(live_owner is not None and all(
+                live_owner.get(key) == value for key, value in declaration["preimage"].items()),
+                "applied batch existing owner preimage changed")
+        else:
+            expected_targets.add((model.__tablename__, owner_id))
+    changes_by_target = {(change["target_table"], change["target_row_id"]): change for change in changes}
     for candidate in bundle["candidates"]:
         owner = candidate["owner"]
         _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
+        owner_id = resolved.get(_owner_ref(owner))
         name = conn.execute(select(name_model.__table__).where(
-            name_model.__table__.c[owner_column] == resolved.get(_owner_ref(owner)),
+            name_model.__table__.c[owner_column] == owner_id,
             name_model.lang == candidate["lang"])).mappings().one_or_none()
         _fail(name is not None, "applied batch name after-image missing")
         expected_targets.add((name_model.__tablename__, name["id"]))
         expected_targets.add((KifuNameResearchEvidence.__tablename__, name["evidence_id"]))
+        name_change = changes_by_target.get((name_model.__tablename__, name["id"]))
+        preimage = candidate.get("name_preimage_sha256")
+        _fail(name_change is not None and preimage == (
+            canonical_sha256(name_change["before_image"]) if name_change["before_image"] is not None else None),
+            "applied batch name preimage differs from signed candidate")
+        _fail(name["status"] == "verified" and name["display_name"] == candidate["display_name"]
+              and name["decision_kind"] == candidate["decision_kind"]
+              and name["generation_rule_version"] == candidate["generation_rule_version"],
+              "applied batch name differs from signed candidate")
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+            KifuNameResearchEvidence.id == name["evidence_id"])).mappings().one_or_none()
+        _fail(evidence is not None and evidence["revision"] == name["revision"],
+              "applied batch candidate evidence missing or revised")
+        evidence_change = changes_by_target.get((KifuNameResearchEvidence.__tablename__, name["evidence_id"]))
+        _fail(evidence_change is not None and evidence_change["before_image"] is None,
+              "applied batch evidence creation ledger changed")
+        payload = evidence["research_payload"]
+        _fail(isinstance(payload, dict) and payload.get("candidate") == candidate,
+              "applied batch evidence differs from signed candidate")
+        research = payload.get("research")
+        research_hash = candidate.get("research_sha256")
+        _fail((canonical_sha256(research) == research_hash) if research_hash else research is None,
+              "applied batch research differs from signed candidate")
+        expected_evidence = _candidate_evidence(
+            candidate, {research_hash: research} if research_hash else {},
+            batch["source_registry_id"], name["revision"], owner_id)
+        for key, value in expected_evidence.items():
+            stored = evidence[key]
+            if isinstance(value, datetime) and isinstance(stored, datetime) and stored.tzinfo is None:
+                value = value.replace(tzinfo=None)
+            _fail(stored == value, "applied batch evidence differs from signed candidate")
     actual_targets = {(change["target_table"], change["target_row_id"]) for change in changes}
     _fail(actual_targets == expected_targets and len(changes) == len(expected_targets),
           "applied batch full ledger changed")
@@ -637,6 +691,38 @@ def undo_batch(engine, batch_id: int) -> dict:
     with _locked_write(engine) as conn:
         batch = conn.execute(select(KifuNameBatch).where(KifuNameBatch.id == batch_id)).mappings().one_or_none()
         _fail(batch is not None, f"batch {batch_id} not found")
+        bundle = batch["reviewed_artifact"].get("bundle")
+        _fail(isinstance(bundle, dict) and canonical_sha256(bundle) == batch["bundle_sha256"],
+              "batch artifact changed")
+        has_selection_change = conn.execute(select(KifuNameChange.id).where(
+            KifuNameChange.batch_id == batch_id,
+            KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__).limit(1)).first()
+        _fail(has_selection_change is None or bundle.get("bundle_format") == 4,
+              "selected event artifact changed")
+        if isinstance(bundle, dict) and bundle.get("bundle_format") == 4:
+            _fail(batch["status"] == "applied", "v4 batch is not applied")
+            _fail(canonical_sha256(bundle) == batch["bundle_sha256"], "v4 batch artifact changed")
+            _check_applied_v4(conn, batch, bundle)
+            changes = conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == batch_id)
+                                   .order_by(KifuNameChange.sequence.desc())).mappings().all()
+            try:
+                for change in changes:
+                    table = _UNDO_TABLES.get(change["target_table"])
+                    _fail(table is not None, f"undo target table is not allowlisted: {change['target_table']}")
+                    _fail(_image(conn, table, change["target_row_id"]) == change["after_image"],
+                          "v4 batch after-image changed")
+                    before = change["before_image"]
+                    if before is None:
+                        conn.execute(table.delete().where(_primary_key(table) == change["target_row_id"]))
+                    else:
+                        conn.execute(table.update().where(_primary_key(table) == change["target_row_id"])
+                                     .values(**_values_for_table(table, before)))
+            except IntegrityError as exc:
+                raise BatchError("dependent row blocks atomic v4 undo") from exc
+            conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
+                         .values(status="undone"))
+            return {"batch_id": batch_id, "status": "undone", "reverted": len(changes),
+                    "already_reverted": 0, "skipped": 0}
         _fail(batch["status"] in {"applied", "partial_undo"}, "batch is not applied")
         changes = conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == batch_id)
                                .order_by(KifuNameChange.sequence.desc())).mappings().all()

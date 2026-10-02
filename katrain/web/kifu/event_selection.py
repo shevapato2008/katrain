@@ -856,6 +856,13 @@ def undo_batch(engine, batch_id: int) -> dict:
         before = artifact["before_images"]
         after = artifact["after_images"]
         _require(_audit_images_match_review(batch), "batch audit images changed")
+        album_ids = [member["album_id"] for member in before]
+        active_name_link = conn.execute(select(KifuNameChange.id).join(
+            KifuNameBatch, KifuNameChange.batch_id == KifuNameBatch.id).where(
+                KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__,
+                KifuNameChange.target_row_id.in_(album_ids),
+                KifuNameBatch.status == "applied").limit(1)).first()
+        _require(active_name_link is None, "source selection has an active name link")
         for member, expected in zip(before, after):
             album = conn.execute(select(albums).where(albums.c.id == member["album_id"])).mappings().one_or_none()
             _require(album is not None, f"album {member['album_id']} changed since apply")

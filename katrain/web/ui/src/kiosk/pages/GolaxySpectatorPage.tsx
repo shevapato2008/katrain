@@ -25,6 +25,10 @@ const samePosition = (left: GolaxySpectatorPosition, right: GolaxySpectatorPosit
   && left.last_move?.color === right.last_move?.color
   && left.last_move?.coordinate === right.last_move?.coordinate
 );
+const sameHistoryPrefix = (left: GolaxySpectatorSnapshot, right: GolaxySpectatorSnapshot) => {
+  const lastSharedMove = Math.min(left.move_number, right.move_number);
+  return left.history.slice(0, lastSharedMove + 1).every((position, index) => samePosition(position, right.history[index]));
+};
 
 function snapshotError(snapshot: GolaxySpectatorSnapshot, roomId: string): string | null {
   if (!snapshot || typeof snapshot !== 'object') return '星阵返回的棋谱内容不完整';
@@ -136,15 +140,15 @@ const GolaxySpectatorPage = () => {
           return;
         }
         const prior = previousSnapshot;
-        const sameGame = prior !== null && prior.game_id === snapshot.game_id
-          && snapshot.move_number >= prior.move_number
-          && samePosition(prior, snapshot.history[prior.move_number]);
-        if (prior && !sameGame) setHistoryMove(null);
-        if (sameGame && !suppressNextSound && !document.hidden && historyMoveRef.current === null
-          && soundOnRef.current && snapshot.move_number === prior.move_number + 1 && snapshot.last_move?.coordinate) {
-          playSound('stone');
+        const sameGame = prior !== null && prior.game_id === snapshot.game_id && sameHistoryPrefix(prior, snapshot);
+        const regressed = sameGame && snapshot.move_number < prior.move_number;
+        if (prior && (!sameGame || regressed)) setHistoryMove(null);
+        if (sameGame && !suppressNextSound && !document.hidden && historyMoveRef.current === null && soundOnRef.current) {
+          for (const position of snapshot.history.slice(prior.move_number + 1)) {
+            if (position.last_move?.coordinate) playSound('stone');
+          }
         }
-        previousSnapshot = snapshot;
+        if (!regressed) previousSnapshot = snapshot;
         suppressNextSound = false;
         setView({ kind: 'ready', snapshot, roomId: roomId!, token });
       }).catch((error: unknown) => {

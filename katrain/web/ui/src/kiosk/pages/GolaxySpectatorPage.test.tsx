@@ -38,6 +38,13 @@ const nextSnapshot: GolaxySpectatorSnapshot = {
   history: [...snapshot.history, { black_stones: ['D16', 'K10', 'Q4'], white_stones: ['Q16', 'L10'],
     move_number: 5, last_move: { color: 'B', coordinate: 'Q4' } }],
 };
+const sixthSnapshot: GolaxySpectatorSnapshot = {
+  ...nextSnapshot, white_stones: ['Q16', 'L10', 'R4'], move_number: 6,
+  last_move: { color: 'W', coordinate: 'R4' },
+  history: [...nextSnapshot.history, { black_stones: nextSnapshot.black_stones,
+    white_stones: ['Q16', 'L10', 'R4'], move_number: 6,
+    last_move: { color: 'W', coordinate: 'R4' } }],
+};
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   let reject!: (reason: unknown) => void;
@@ -156,14 +163,49 @@ describe('Golaxy spectator', () => {
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(playSound).toHaveBeenCalledTimes(1);
     act(() => screen.getByRole('button', { name: '落子音：开' }).click());
-    const afterWhite = { ...nextSnapshot, white_stones: [...nextSnapshot.white_stones, 'R4'], move_number: 6,
-      last_move: { color: 'W' as const, coordinate: 'R4' },
-      history: [...nextSnapshot.history, { black_stones: nextSnapshot.black_stones,
-        white_stones: [...nextSnapshot.white_stones, 'R4'], move_number: 6,
-        last_move: { color: 'W' as const, coordinate: 'R4' } }] };
-    platformRoomSnapshot.mockResolvedValueOnce(afterWhite);
+    platformRoomSnapshot.mockResolvedValueOnce(sixthSnapshot);
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(playSound).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not sound twice when an older same-game snapshot arrives between copies of move five', async () => {
+    await openReadyWithFakeTimers();
+    platformRoomSnapshot.mockResolvedValueOnce(nextSnapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    platformRoomSnapshot.mockResolvedValueOnce(snapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    platformRoomSnapshot.mockResolvedValueOnce(nextSnapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledTimes(1);
+    platformRoomSnapshot.mockResolvedValueOnce(sixthSnapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledTimes(2);
+  });
+
+  it('sounds once for each new stone in a validated two-move jump', async () => {
+    await openReadyWithFakeTimers();
+    platformRoomSnapshot.mockResolvedValueOnce(sixthSnapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledTimes(2);
+    expect(playSound).toHaveBeenNthCalledWith(1, 'stone');
+    expect(playSound).toHaveBeenNthCalledWith(2, 'stone');
+  });
+
+  it('skips a pass while sounding the later stone in a two-move jump', async () => {
+    await openReadyWithFakeTimers();
+    const passed = { ...snapshot, black_stones: snapshot.black_stones,
+      white_stones: [...snapshot.white_stones, 'R4'], move_number: 6,
+      last_move: { color: 'W' as const, coordinate: 'R4' },
+      history: [...snapshot.history,
+        { black_stones: snapshot.black_stones, white_stones: snapshot.white_stones,
+          move_number: 5, last_move: { color: 'B' as const, coordinate: null } },
+        { black_stones: snapshot.black_stones, white_stones: [...snapshot.white_stones, 'R4'],
+          move_number: 6, last_move: { color: 'W' as const, coordinate: 'R4' } }],
+    };
+    platformRoomSnapshot.mockResolvedValueOnce(passed);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
   });
 
   it('does not play a stone sound for a new pass', async () => {
@@ -221,6 +263,9 @@ describe('Golaxy spectator', () => {
     platformRoomSnapshot.mockResolvedValueOnce({ ...snapshot, game_id: null });
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(screen.getByRole('button', { name: /正在看最新/ })).toBeDisabled();
+    expect(playSound).toHaveBeenCalledTimes(1);
+    platformRoomSnapshot.mockResolvedValueOnce({ ...nextSnapshot, game_id: null });
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(playSound).toHaveBeenCalledTimes(1);
   });
 

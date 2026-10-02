@@ -867,3 +867,157 @@ def test_v2_live_sgf_drift_rejects_dry_run_and_apply_before_writes(engine):
     with pytest.raises(BatchError, match="SGF content"):
         apply_bundle(engine, bundle, source_registry, inv, research)
     assert counts(engine) == before
+
+
+def selected_event_bundle(engine, *, new=False):
+    from tests.web_ui.test_kifu_name_candidates import _selected_v4_case
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            source='https://19x19.com', source_path='data/kifu-album/19x19/one.sgf', date_played='1934-10-01', board_size=19,
+            sgf_content='(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]GC[Selected Cup | 1手])'))
+        if not new:
+            conn.execute(KifuEvent.__table__.insert().values(id=19, canonical_name='Selected Cup'))
+    apply_reviewed_selection(engine, 11)
+    inv = build_inventory(engine, inventory_format=4)
+    owner = {'kind': 'event', 'ref': 'selected-cup'} if new else {'kind': 'event', 'id': 19}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inv, [owner])
+    _, template = _selected_v4_case()
+    declaration = deepcopy(template['owners'][0])
+    declaration['owner'] = owner
+    if new:
+        declaration['create'] = declaration.pop('preimage')
+    album = dict(zip(inv['association_columns'], inv['album_associations'][0]))
+    selection = dict(zip(inv['event_selection']['columns'], inv['event_selection']['rows'][0]))
+    link = deepcopy(template['album_links'][0])
+    link.update(album_id=11, target=owner, association_sha256=canonical_sha256(album),
+                production_sgf_sha256=selection['sgf_sha256'], raw_scope_sha256=canonical_sha256([[11, 'selected_event']]),
+                selection_batch_id=selection['batch_id'], selection_bundle_sha256=selection['bundle_sha256'],
+                selection_before_image=selection['source_after_image'],
+                selection_before_sha256=selection['source_after_sha256'],
+                expected={key: album[key] for key in ('player_black', 'player_white', 'event', 'date_played',
+                                                     'round_name', 'black_rank', 'white_rank')} | {'old_id': None})
+    base.update(bundle_format=4, inventory_format=4, inventory_sha256=inv['sha256'],
+                catalog_sha256=catalog_snapshot_sha(engine), owners=[declaration],
+                owner_set_sha256=canonical_sha256([declaration]), album_links=[link])
+    link['identity_review']['scope_sha256'] = identity_scope_sha256(base, [link], declaration)
+    base['link_set_sha256'] = canonical_sha256([link])
+    return base, source_registry, inv, research
+
+
+@pytest.mark.parametrize('new', [False, True])
+def test_v4_selected_event_apply_has_exact_selection_ledger(engine, new):
+    bundle, sources, inv, research = selected_event_bundle(engine, new=new)
+    expected = canonical_sha256(bundle)
+    before = counts(engine)
+    assert dry_run_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)['ready']
+    assert counts(engine) == before
+    with engine.connect() as conn:
+        album_before = dict(conn.execute(select(KifuAlbum.__table__)).mappings().one())
+        source_before = dict(conn.execute(select(KifuEventSelectionBatch.__table__)).mappings().one())
+    applied = apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    target = applied['resolved_refs']['event:@selected-cup' if new else 'event:19']
+    with engine.connect() as conn:
+        assert dict(conn.execute(select(KifuAlbum.__table__)).mappings().one()) == album_before
+        assert dict(conn.execute(select(KifuEventSelectionBatch.__table__)).mappings().one()) == source_before
+        changes = conn.execute(select(KifuNameChange.__table__).where(
+            KifuNameChange.batch_id == applied['batch_id'],
+            KifuNameChange.target_table == 'kifu_album_event_selections')).mappings().all()
+        assert len(changes) == 1
+        assert changes[0]['target_row_id'] == 11
+        assert changes[0]['before_image'] == bundle['album_links'][0]['selection_before_image']
+        assert changes[0]['after_image'] == changes[0]['before_image'] | {'event_id': target}
+    assert build_inventory(engine, inventory_format=4)['event_selection']['rows'][0][7] == target
+    assert apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)['status'] == 'already_applied'
+
+
+@pytest.mark.parametrize('expected', [None, 'f' * 64])
+def test_v4_requires_external_trusted_bundle_hash(engine, expected):
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    for action in (dry_run_bundle, apply_bundle):
+        with pytest.raises(BatchError, match='bundle SHA'):
+            action(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    assert counts(engine) == (0, 0, 0, 0, 0)
+
+
+@pytest.mark.parametrize('drift', ['selection', 'sgf', 'catalog', 'name'])
+def test_v4_live_drift_rejects_without_writes(engine, drift):
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    with engine.begin() as conn:
+        if drift == 'selection':
+            conn.execute(KifuAlbumEventSelection.__table__.update().values(reviewer_id='later'))
+        elif drift == 'sgf':
+            conn.execute(KifuAlbum.__table__.update().values(sgf_content='(;GN[changed])'))
+        elif drift == 'catalog':
+            conn.execute(KifuEvent.__table__.update().values(canonical_name='Changed'))
+        else:
+            from katrain.web.core.models_db import KifuEventName
+            conn.execute(KifuEventName.__table__.insert().values(event_id=19, lang='en', display_name='Later', status='review'))
+    before = counts(engine)
+    for action in (dry_run_bundle, apply_bundle):
+        with pytest.raises(BatchError):
+            action(engine, bundle, sources, inv, research, expected_bundle_sha256=canonical_sha256(bundle))
+    assert counts(engine) == before
+
+
+def test_v4_retry_rejects_changed_ledger_after_image(engine):
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    expected = canonical_sha256(bundle)
+    applied = apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbumEventSelection.__table__.update().values(reviewer_id='later'))
+    with pytest.raises(BatchError, match='after-image'):
+        apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+
+
+@pytest.mark.parametrize("command", ["dry-run", "apply"])
+def test_v4_cli_requires_external_hash(engine, tmp_path, capsys, command):
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    inputs = []
+    for kind, value in (("bundle", bundle), ("registry", sources), ("inventory", inv)):
+        path = tmp_path / f"{kind}.json"
+        path.write_text(json.dumps(value), encoding="utf-8")
+        inputs.extend([f"--{kind}", str(path)])
+    path = tmp_path / "evidence.jsonl"
+    path.write_text("".join(json.dumps(row) + "\n" for row in research), encoding="utf-8")
+    inputs.extend(["--evidence", str(path), "--database-url", str(engine.url)])
+    assert main([command, *inputs]) == 1
+    assert "bundle SHA" in json.loads(capsys.readouterr().out)["error"]
+    assert main([command, *inputs, "--expected-bundle-sha256", "f" * 64]) == 1
+    assert "mismatch" in json.loads(capsys.readouterr().out)["error"]
+    assert counts(engine) == (0, 0, 0, 0, 0)
+    assert main([command, *inputs, "--expected-bundle-sha256", canonical_sha256(bundle)]) == 0
+    assert "error" not in json.loads(capsys.readouterr().out)
+
+
+@pytest.mark.parametrize("drift", ["name", "target", "ledger", "sgf", "undone"])
+def test_v4_retry_rechecks_target_and_full_ledger(engine, drift):
+    from katrain.web.core.models_db import KifuEventName
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    expected = canonical_sha256(bundle)
+    applied = apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    with engine.begin() as conn:
+        if drift == "name":
+            conn.execute(KifuEventName.__table__.update().values(display_name="Later"))
+        elif drift == "target":
+            conn.execute(KifuEvent.__table__.update().values(canonical_name="Later"))
+        elif drift == "ledger":
+            change = conn.scalar(select(KifuNameChange.id).where(
+                KifuNameChange.target_table == "kifu_name_research_evidence").limit(1))
+            conn.execute(KifuNameChange.__table__.delete().where(KifuNameChange.id == change))
+        elif drift == "sgf":
+            conn.execute(KifuAlbum.__table__.update().values(sgf_content="(;GN[changed])"))
+        else:
+            conn.execute(KifuNameBatch.__table__.update().values(status="undone"))
+    before = counts(engine)
+    with pytest.raises(BatchError):
+        apply_bundle(engine, bundle, sources, inv, research, expected_bundle_sha256=expected)
+    assert counts(engine) == before
+
+
+def test_v4_rejects_forged_base_inventory_hash(engine):
+    bundle, sources, inv, research = selected_event_bundle(engine)
+    inv['base_sha256'] = 'f' * 64
+    for action in (dry_run_bundle, apply_bundle):
+        with pytest.raises(BatchError, match='base'):
+            action(engine, bundle, sources, inv, research, expected_bundle_sha256=canonical_sha256(bundle))
+    assert counts(engine) == (0, 0, 0, 0, 0)

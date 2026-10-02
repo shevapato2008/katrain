@@ -54,6 +54,7 @@ def main(argv=None) -> int:
         sub.add_argument("--evidence", type=Path, required=True)
         if command != "validate":
             sub.add_argument("--database-url", required=True)
+            sub.add_argument("--expected-bundle-sha256")
     for command in ("status", "undo"):
         sub = commands.add_parser(command)
         sub.add_argument("--database-url", required=True)
@@ -71,7 +72,8 @@ def main(argv=None) -> int:
             else:
                 engine = create_engine(args.database_url)
                 result = (dry_run_bundle if args.command == "dry-run" else apply_bundle)(
-                    engine, bundle, registry, inventory, evidence_records)
+                    engine, bundle, registry, inventory, evidence_records,
+                    expected_bundle_sha256=args.expected_bundle_sha256)
         else:
             engine = create_engine(args.database_url)
             result = batch_status(engine, args.batch_id) if args.command == "status" else undo_batch(engine, args.batch_id)

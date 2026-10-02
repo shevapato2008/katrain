@@ -12,7 +12,7 @@ from sqlalchemy import DateTime, func, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumSource, KifuEvent, KifuEventAlias, KifuEventName, KifuNameBatch,
+    KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEvent, KifuEventAlias, KifuEventName, KifuNameBatch,
     KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry,
     KifuPlayer, KifuPlayerAlias, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
     KifuRawPlayerName, KifuRawPlayerValue, KifuSource,
@@ -39,7 +39,7 @@ _OWNER_EVIDENCE_COLUMN = {
 _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
     KifuNameSourceRegistry, KifuNameResearchEvidence, KifuPlayerName, KifuEventName,
     KifuRawPlayerName, KifuRawEventName, KifuPlayer, KifuEvent,
-    KifuRawPlayerValue, KifuRawEventValue, KifuAlbum,
+    KifuRawPlayerValue, KifuRawEventValue, KifuAlbum, KifuAlbumEventSelection,
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -50,7 +50,7 @@ def _fail(condition: bool, message: str) -> None:
         raise BatchError(message)
 
 
-def _snapshot_parts(conn) -> tuple[str, dict | None, str]:
+def _snapshot_parts(conn, *, inventory_format=None) -> tuple[str, dict | None, str]:
     """Recompute the full and base album/source hashes in one transaction."""
     digest = hashlib.sha256()
     for row in conn.execute(select(*ALBUM_COLUMNS).order_by(KifuAlbum.id)):
@@ -61,14 +61,14 @@ def _snapshot_parts(conn) -> tuple[str, dict | None, str]:
     for row in conn.execute(source_query):
         _hash_row(digest, b"S", row)
     base_sha256 = digest.hexdigest()
-    selection = _selection_supplement(conn)
+    selection = _selection_supplement(conn, inventory_format=inventory_format)
     if selection is not None:
         _hash_row(digest, b"E", (selection["selection_format"], selection["sha256"]))
     return digest.hexdigest(), selection, base_sha256
 
 
-def _snapshot_sha(conn) -> tuple[str, dict | None]:
-    full_sha256, selection, _ = _snapshot_parts(conn)
+def _snapshot_sha(conn, *, inventory_format=None) -> tuple[str, dict | None]:
+    full_sha256, selection, _ = _snapshot_parts(conn, inventory_format=inventory_format)
     return full_sha256, selection
 
 
@@ -100,6 +100,7 @@ def _locked_write(engine):
             conn = conn.execution_options(isolation_level="READ COMMITTED")
             conn.begin()
             conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (_ADVISORY_LOCK_KEY,))
+            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
             conn.exec_driver_sql(
                 "LOCK TABLE kifu_albums, kifu_album_sources, kifu_sources, "
                 "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
@@ -126,8 +127,12 @@ def _locked_write(engine):
         conn.close()
 
 
+def _primary_key(table):
+    return table.c.album_id if table.name == KifuAlbumEventSelection.__tablename__ else table.c.id
+
+
 def _image(conn, table, row_id: int) -> dict | None:
-    row = conn.execute(select(table).where(table.c.id == row_id)).mappings().one_or_none()
+    row = conn.execute(select(table).where(_primary_key(table) == row_id)).mappings().one_or_none()
     if row is None:
         return None
     return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
@@ -187,8 +192,8 @@ def _record_change(conn, batch_id: int, sequence: int, model, row_id: int,
 
 
 def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
-    _fail(bundle.get("bundle_format") in {2, 3} or not bundle.get("album_links"),
-          "album identity links require bundle format 2 or 3")
+    _fail(bundle.get("bundle_format") in {2, 3, 4} or not bundle.get("album_links"),
+          "album identity links require bundle format 2, 3 or 4")
     try:
         report = validate_bundle(bundle, registry, inventory, evidence_records)
     except CandidateError as exc:
@@ -201,13 +206,15 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
 
 
 def _check_snapshot(conn, inventory: dict) -> dict[str, set[int]]:
-    _fail(inventory.get("inventory_format") in {2, 3}, "inventory format 2 or 3 required")
+    _fail(inventory.get("inventory_format") in {2, 3, 4}, "inventory format 2, 3 or 4 required")
     actual_database = conn.engine.url.render_as_string(hide_password=True)
     _fail(inventory.get("database_identifier") in {None, actual_database},
           "inventory database identifier differs from target database")
-    actual, selection = _snapshot_sha(conn)
+    actual, selection, base_sha256 = _snapshot_parts(conn, inventory_format=inventory["inventory_format"])
+    if inventory["inventory_format"] == 4:
+        _fail(base_sha256 == inventory.get("base_sha256"), "base album/source snapshot changed")
     _fail((selection is None and inventory["inventory_format"] == 2)
-          or (selection is not None and inventory["inventory_format"] == 3
+          or (selection is not None and inventory["inventory_format"] in {3, 4}
               and selection == inventory.get("event_selection")),
           "event selection supplement changed")
     _fail(actual == inventory.get("sha256"), f"full database snapshot changed: expected {inventory.get('sha256')}, got {actual}")
@@ -218,7 +225,7 @@ def _check_snapshot(conn, inventory: dict) -> dict[str, set[int]]:
 
 
 def _check_catalog(conn, bundle: dict) -> None:
-    if bundle["bundle_format"] in {2, 3}:
+    if bundle["bundle_format"] in {2, 3, 4}:
         actual = _catalog_sha(conn)
         _fail(actual == bundle["catalog_sha256"],
               f"catalog supplement snapshot changed: expected {bundle['catalog_sha256']}, got {actual}")
@@ -288,6 +295,13 @@ def _check_album_links(conn, bundle: dict) -> None:
                       "black_rank", "white_rank"):
             _fail(album[field] == link["expected"][field],
                   f"album link {link['album_id']} expected {field} differs from live row")
+        if link["slot"] == "selected_event":
+            current = _image(conn, KifuAlbumEventSelection.__table__, link["album_id"])
+            _fail(current == link["selection_before_image"] and current["event_id"] is None,
+                  "selected event complete preimage changed")
+            _fail(canonical_sha256(current) == link["selection_before_sha256"],
+                  "selected event preimage SHA changed")
+            continue
         column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[link["slot"]]
         _fail(album[column] == link["expected"]["old_id"],
               f"album link {link['album_id']} expected old ID differs from live row")
@@ -388,7 +402,7 @@ def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_recor
     report = _prevalidate(bundle, registry, inventory, evidence_records)
     selected_scope = _check_snapshot(conn, inventory)
     _check_catalog(conn, bundle)
-    if bundle["bundle_format"] in {2, 3}:
+    if bundle["bundle_format"] in {2, 3, 4}:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
     _check_name_preimages(conn, bundle["candidates"])
@@ -402,8 +416,17 @@ def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_recor
             + len(bundle.get("album_links", ())) + sum("ref" in owner["owner"] for owner in bundle.get("owners", ()))}
 
 
-def dry_run_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
+def _check_bundle_hash(bundle, expected_bundle_sha256):
+    if bundle.get("bundle_format") == 4 or expected_bundle_sha256 is not None:
+        _fail(isinstance(expected_bundle_sha256, str) and _SHA256.fullmatch(expected_bundle_sha256) is not None,
+              "trusted external bundle SHA-256 is required")
+        _fail(canonical_sha256(bundle) == expected_bundle_sha256, "trusted bundle SHA-256 mismatch")
+
+
+def dry_run_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict],
+                   *, expected_bundle_sha256: str | None = None) -> dict:
     """Validate against the live database without issuing any write statement."""
+    _check_bundle_hash(bundle, expected_bundle_sha256)
     with engine.connect() as conn:
         return _inspect(conn, bundle, registry, inventory, evidence_records)
 
@@ -481,35 +504,80 @@ def _apply_owners(conn, bundle: dict, batch_id: int, sequence: int) -> tuple[dic
 
 
 def _apply_links(conn, bundle: dict, batch_id: int, sequence: int, resolved: dict[str, int]) -> int:
-    table = KifuAlbum.__table__
+    table = KifuAlbumEventSelection.__table__ if bundle["bundle_format"] == 4 else KifuAlbum.__table__
+    model = KifuAlbumEventSelection if bundle["bundle_format"] == 4 else KifuAlbum
     grouped = defaultdict(list)
     for link in bundle.get("album_links", ()):
         grouped[link["album_id"]].append(link)
     for row_id, links in sorted(grouped.items()):
         before = _image(conn, table, row_id)
         changes = {}
+        if bundle["bundle_format"] == 4:
+            _fail(before == links[0]["selection_before_image"], "selected event complete preimage changed")
         for link in links:
-            column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id"}[link["slot"]]
+            column = {"black": "black_player_id", "white": "white_player_id", "event": "event_id", "selected_event": "event_id"}[link["slot"]]
             target_id = resolved[_owner_ref(link["target"])]
             _fail(before[column] == link["expected"]["old_id"], "album link changed after snapshot check")
             if before[column] != target_id:
                 changes[column] = target_id
         if not changes:
             continue
-        conn.execute(table.update().where(table.c.id == row_id).values(**changes))
+        conn.execute(table.update().where(_primary_key(table) == row_id).values(**changes))
         after = _image(conn, table, row_id)
-        _record_change(conn, batch_id, sequence, KifuAlbum, row_id, before, after)
+        _record_change(conn, batch_id, sequence, model, row_id, before, after)
         sequence += 1
     return sequence
 
 
-def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
+
+def _check_applied_v4(conn, batch, bundle):
+    from katrain.web.kifu.event_selection import verified_selection_rows
+
+    _fail(batch["reviewed_artifact"].get("bundle") == bundle, "applied bundle artifact changed")
+    changes = conn.execute(select(KifuNameChange.__table__).where(
+        KifuNameChange.batch_id == batch["id"])).mappings().all()
+    resolved = batch["reviewed_artifact"].get("resolved_refs", {})
+    expected_targets = {(KifuAlbumEventSelection.__tablename__, link["album_id"])
+                        for link in bundle["album_links"]}
+    for declaration in bundle["owners"]:
+        if "ref" in declaration["owner"]:
+            model = _OWNER[declaration["owner"]["kind"]][0]
+            expected_targets.add((model.__tablename__, resolved.get(_owner_ref(declaration["owner"]))))
+    for candidate in bundle["candidates"]:
+        owner = candidate["owner"]
+        _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
+        name = conn.execute(select(name_model.__table__).where(
+            name_model.__table__.c[owner_column] == resolved.get(_owner_ref(owner)),
+            name_model.lang == candidate["lang"])).mappings().one_or_none()
+        _fail(name is not None, "applied batch name after-image missing")
+        expected_targets.add((name_model.__tablename__, name["id"]))
+        expected_targets.add((KifuNameResearchEvidence.__tablename__, name["evidence_id"]))
+    actual_targets = {(change["target_table"], change["target_row_id"]) for change in changes}
+    _fail(actual_targets == expected_targets and len(changes) == len(expected_targets),
+          "applied batch full ledger changed")
+    for change in changes:
+        table = _UNDO_TABLES.get(change["target_table"])
+        _fail(table is not None and _image(conn, table, change["target_row_id"]) == change["after_image"],
+              "applied batch current after-image changed")
+    table = KifuAlbumEventSelection.__table__
+    ids = [link["album_id"] for link in bundle["album_links"]]
+    selections = conn.execute(select(table).where(table.c.album_id.in_(ids))).mappings().all()
+    proofs = verified_selection_rows(conn, selections)
+    _fail(all(proofs.get(album_id, {}).get("name_batch_id") == batch["id"] for album_id in ids),
+          "applied selection target or ledger proof changed")
+
+def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict],
+                 *, expected_bundle_sha256: str | None = None) -> dict:
     """Apply exactly one reviewed finite bundle in one locked transaction."""
+    _check_bundle_hash(bundle, expected_bundle_sha256)
     bundle_hash = canonical_sha256(bundle)
     with _locked_write(engine) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
             _fail(previous["status"] == "applied", "bundle was previously undone; issue a new reviewed revision")
+            if bundle["bundle_format"] == 4:
+                _prevalidate(bundle, registry, inventory, evidence_records)
+                _check_applied_v4(conn, previous, bundle)
             return {"status": "already_applied", "batch_id": previous["id"], "change_count": 0}
         report = _inspect(conn, bundle, registry, inventory, evidence_records)
         registry_id, _registry_after = _source_registry_for_batch(conn, registry, bundle)
@@ -523,12 +591,15 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         sequence = 1
         # Keep the immutable registry snapshot because the retained audit batch references it.
         resolved, sequence = _apply_owners(conn, bundle, batch_id, sequence)
-        sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
+        if bundle["bundle_format"] != 4:
+            sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         research_by_hash = {canonical_sha256(item): item for item in evidence_records}
         for candidate in bundle["candidates"]:
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
-                                        resolved if bundle["bundle_format"] in {2, 3} else None)
-        if bundle["bundle_format"] in {2, 3}:
+                                        resolved if bundle["bundle_format"] in {2, 3, 4} else None)
+        if bundle["bundle_format"] == 4:
+            sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
+        if bundle["bundle_format"] in {2, 3, 4}:
             artifact = {"bundle": bundle, "research_hashes": sorted(canonical_sha256(item)
                          for item in evidence_records), "resolved_refs": resolved}
             conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
@@ -584,9 +655,9 @@ def undo_batch(engine, batch_id: int) -> dict:
                 with conn.begin_nested():
                     before = change["before_image"]
                     if before is None:
-                        conn.execute(table.delete().where(table.c.id == change["target_row_id"]))
+                        conn.execute(table.delete().where(_primary_key(table) == change["target_row_id"]))
                     else:
-                        conn.execute(table.update().where(table.c.id == change["target_row_id"])
+                        conn.execute(table.update().where(_primary_key(table) == change["target_row_id"])
                                      .values(**_values_for_table(table, before)))
             except IntegrityError:
                 # A later edit may still reference this row. Never delete it.

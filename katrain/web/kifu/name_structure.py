@@ -9,6 +9,7 @@ import json
 import re
 
 from katrain.web.kifu.name_parse import parse_event
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 
 
 RULE_VERSION = "event-components-v2"
@@ -19,6 +20,7 @@ _ROUND = re.compile(rf"\s*(?:第)?({_NUMBER})(轮|局)\s*\Z")
 _OTEAI_YEAR = re.compile(r"(Oteai)\s+([12]\d{3})\Z", re.IGNORECASE)
 _CWI = re.compile(r"(JapanPromotionTournament),([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
 _ENGLISH_ORDINAL = re.compile(r"([1-9]\d{0,2})(st|nd|rd|th)\s+(\S.*)\Z", re.IGNORECASE)
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 def _ordinal_suffix(number: int) -> str:
@@ -116,14 +118,57 @@ def _canonical_hash(value: dict) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def _selected_event_rows(inventory: dict, original_events: dict[int, str | None]) -> dict[int, str]:
+    if inventory["inventory_format"] == 2:
+        if "event_selection" in inventory:
+            raise ValueError("inventory_format 2 cannot include event selection")
+        return {}
+    selection = inventory.get("event_selection")
+    if (
+        not isinstance(selection, dict)
+        or selection.get("selection_format") != 1
+        or selection.get("columns") != list(SELECTION_COLUMNS)
+        or not isinstance(selection.get("rows"), list)
+        or not _SHA256.fullmatch(str(inventory.get("base_sha256", "")))
+    ):
+        raise ValueError("inventory event selection supplement is incomplete")
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    selected = {}
+    previous_id = -1
+    for row in selection["rows"]:
+        if not isinstance(row, list) or len(row) != len(SELECTION_COLUMNS):
+            raise ValueError("event selection row is malformed")
+        album_id, raw, sgf_sha, reviewer, reviewed_at, batch_id, bundle_sha = row
+        if not (
+            type(album_id) is int and album_id > previous_id
+            and isinstance(raw, str) and bool(raw.strip())
+            and isinstance(sgf_sha, str) and _SHA256.fullmatch(sgf_sha)
+            and isinstance(reviewer, str) and bool(reviewer)
+            and isinstance(reviewed_at, str) and bool(reviewed_at)
+            and type(batch_id) is int and batch_id > 0
+            and isinstance(bundle_sha, str) and _SHA256.fullmatch(bundle_sha)
+        ):
+            raise ValueError("event selection row is invalid or unsorted")
+        if album_id not in original_events:
+            raise ValueError("event selection album ID is absent from inventory")
+        if original_events[album_id] != "GNUGo3.8":
+            raise ValueError("event selection original event is not GNUGo3.8")
+        selected[album_id] = raw
+        previous_id = album_id
+        _hash_row(digest, b"E", row)
+    if selection.get("sha256") != digest.hexdigest():
+        raise ValueError("event selection supplement hash mismatch")
+    return selected
+
+
 def build_event_group_manifest(inventory: dict) -> dict:
     """Group every raw EV spelling for finite, separately reviewed batch manifests."""
-    if inventory.get("inventory_format") != 2:
-        raise ValueError("inventory_format 2 is required")
-    if not re.fullmatch(r"[0-9a-f]{64}", inventory.get("sha256", "")):
+    if inventory.get("inventory_format") not in {2, 3}:
+        raise ValueError("inventory_format 2 or 3 is required")
+    if not _SHA256.fullmatch(str(inventory.get("sha256", ""))):
         raise ValueError("inventory SHA-256 is required")
     rows = inventory["scopes"]["all"]["values"]["event"]
-    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
     seen = set()
     inventory_counts = Counter()
     for row in rows:
@@ -136,21 +181,8 @@ def build_event_group_manifest(inventory: dict) -> dict:
         if row.get("affected_games") != row["occurrences"]:
             raise ValueError("event affected_games must equal occurrences")
         inventory_counts[raw] = row["occurrences"]
-        if raw is None or raw == "":
-            structure = {
-                "raw_value": raw, "core": "", "grammar": "empty", "parts": [], "components": [],
-                "status": "pending_review", "rule_version": RULE_VERSION, "exceptions": [],
-            }
-        elif isinstance(raw, str):
-            structure = structure_event(raw)
-        else:
+        if raw is not None and not isinstance(raw, str):
             raise ValueError("raw event value must be text or null")
-        groups[(structure["grammar"], structure["core"])].append({
-            "raw_value": raw,
-            "occurrences": row["occurrences"],
-            "affected_games": row["affected_games"],
-            "structure": structure,
-        })
 
     expected_distinct = inventory.get("distinct_values", {}).get("all", {}).get("event")
     expected_total = inventory.get("counts", {}).get("all")
@@ -160,15 +192,15 @@ def build_event_group_manifest(inventory: dict) -> dict:
         raise ValueError("incomplete inventory: album event associations are required")
     id_index, event_index = columns.index("id"), columns.index("event")
     association_counts = Counter()
-    album_ids = set()
+    original_events = {}
     for association in associations:
         if len(association) != len(columns):
             raise ValueError("incomplete inventory: malformed album association")
         album_id = association[id_index]
-        if album_id in album_ids:
+        if album_id in original_events:
             raise ValueError("incomplete inventory: duplicate album association")
-        album_ids.add(album_id)
-        association_counts[association[event_index]] += 1
+        original_events[album_id] = association[event_index]
+        association_counts[original_events[album_id]] += 1
     if (
         expected_distinct != len(rows)
         or expected_total != len(associations)
@@ -176,6 +208,21 @@ def build_event_group_manifest(inventory: dict) -> dict:
         or inventory_counts != association_counts
     ):
         raise ValueError("incomplete inventory: event values disagree with album associations or counts")
+
+    selected = _selected_event_rows(inventory, original_events)
+    effective_counts = Counter(selected.get(album_id, raw) for album_id, raw in original_events.items())
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for raw, count in effective_counts.items():
+        if raw is None or raw == "":
+            structure = {
+                "raw_value": raw, "core": "", "grammar": "empty", "parts": [], "components": [],
+                "status": "pending_review", "rule_version": RULE_VERSION, "exceptions": [],
+            }
+        else:
+            structure = structure_event(raw)
+        groups[(structure["grammar"], structure["core"])].append({
+            "raw_value": raw, "occurrences": count, "affected_games": count, "structure": structure,
+        })
 
     result_groups = []
     for (grammar, core), members in groups.items():
@@ -192,8 +239,10 @@ def build_event_group_manifest(inventory: dict) -> dict:
         result_groups.append(group)
     result_groups.sort(key=lambda item: (-item["occurrences"], item["grammar"], item["core"].encode("utf-8")))
     manifest = {
-        "inventory_format": 2,
+        "inventory_format": inventory["inventory_format"],
         "inventory_sha256": inventory["sha256"],
+        **({"event_selection_sha256": inventory["event_selection"]["sha256"]}
+           if inventory["inventory_format"] == 3 else {}),
         "rule_version": RULE_VERSION,
         "group_count": len(result_groups),
         "groups": result_groups,

@@ -1,11 +1,15 @@
 """Full inventory event groups remain exact, pending review manifests."""
 
 import gzip
+import hashlib
 import json
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 from katrain.web.kifu.name_structure import build_event_group_manifest
 from scripts.kifu_name_groups import main
 
@@ -23,6 +27,29 @@ def _inventory(values):
         "album_associations": associations,
         "scopes": {"all": {"values": {"event": values}}},
     }
+
+
+def _selected_inventory(values, selected_rows):
+    inventory = _inventory(values)
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    for row in selected_rows:
+        _hash_row(digest, b"E", row)
+    inventory.update(
+        inventory_format=3,
+        base_sha256="b" * 64,
+        event_selection={
+            "selection_format": 1,
+            "columns": list(SELECTION_COLUMNS),
+            "rows": selected_rows,
+            "sha256": digest.hexdigest(),
+        },
+    )
+    return inventory
+
+
+def _selection(album_id, raw):
+    return [album_id, raw, "c" * 64, "independent-reviewer", "2026-10-02T10:00:00", 5, "d" * 64]
 
 
 def test_group_manifest_binds_inventory_and_exact_raw_members_without_approval():
@@ -103,6 +130,54 @@ def test_group_manifest_refuses_inflated_affected_game_count():
         assert "affected_games" in str(exc)
     else:
         raise AssertionError("inflated affected_games accepted")
+
+
+def test_v3_group_manifest_uses_selected_raw_by_album_and_keeps_groups_pending():
+    rows = [
+        {"value": "GNUGo3.8", "occurrences": 3, "affected_games": 3},
+        {"value": "1st Meijin", "occurrences": 1, "affected_games": 1},
+    ]
+    inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo"), _selection(2, "29th Honinbo")])
+    manifest = build_event_group_manifest(inventory)
+    assert manifest["inventory_format"] == 3
+    assert manifest["inventory_sha256"] == inventory["sha256"]
+    assert manifest["event_selection_sha256"] == inventory["event_selection"]["sha256"]
+    assert manifest["group_count"] == 3
+    grouped = {group["core"]: group for group in manifest["groups"]}
+    assert grouped["Honinbo"]["occurrences"] == 2
+    assert {member["raw_value"] for member in grouped["Honinbo"]["members"]} == {
+        "28th Honinbo", "29th Honinbo",
+    }
+    assert grouped["GNUGo3.8"]["occurrences"] == 1
+    assert grouped["Meijin"]["occurrences"] == 1
+    assert sum(group["affected_games"] for group in manifest["groups"]) == 4
+    assert all(group["status"] == "pending_review" for group in manifest["groups"])
+
+
+def test_v3_group_manifest_rejects_tampered_or_unbound_selection_rows():
+    rows = [{"value": "GNUGo3.8", "occurrences": 2, "affected_games": 2}]
+    inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
+    tampered = json.loads(json.dumps(inventory))
+    tampered["event_selection"]["rows"][0][1] = "Other Event"
+    with pytest.raises(ValueError, match="selection.*hash"):
+        build_event_group_manifest(tampered)
+
+    for selected in ([_selection(3, "28th Honinbo")],
+                     [_selection(1, "28th Honinbo"), _selection(1, "29th Honinbo")]):
+        with pytest.raises(ValueError, match="selection"):
+            build_event_group_manifest(_selected_inventory(rows, selected))
+
+    truncated = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
+    truncated["event_selection"]["rows"] = []
+    with pytest.raises(ValueError, match="selection.*hash"):
+        build_event_group_manifest(truncated)
+
+
+def test_v3_group_manifest_rejects_selected_row_for_wrong_original_event():
+    rows = [{"value": "1st Meijin", "occurrences": 1, "affected_games": 1}]
+    inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
+    with pytest.raises(ValueError, match="selection.*original"):
+        build_event_group_manifest(inventory)
 
 
 def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):

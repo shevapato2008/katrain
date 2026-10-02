@@ -210,7 +210,7 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
     return report
 
 
-def _check_snapshot(conn, inventory: dict) -> dict[str, set[int]]:
+def _check_snapshot(conn, inventory: dict) -> tuple[dict[str, set[int]], dict[int, set[int]]]:
     _fail(inventory.get("inventory_format") in {2, 3, 4}, "inventory format 2, 3 or 4 required")
     actual_database = conn.engine.url.render_as_string(hide_password=True)
     _fail(inventory.get("database_identifier") in {None, actual_database},
@@ -224,9 +224,13 @@ def _check_snapshot(conn, inventory: dict) -> dict[str, set[int]]:
           "event selection supplement changed")
     _fail(actual == inventory.get("sha256"), f"full database snapshot changed: expected {inventory.get('sha256')}, got {actual}")
     selected_scope = defaultdict(set)
-    for album_id, raw, *_ in selection["rows"] if selection is not None else ():
+    selected_events = defaultdict(set)
+    for row in selection["rows"] if selection is not None else ():
+        album_id, raw = row[:2]
         selected_scope[raw].add(album_id)
-    return selected_scope
+        if inventory["inventory_format"] == 4 and row[7] is not None:
+            selected_events[row[7]].add(album_id)
+    return selected_scope, selected_events
 
 
 def _check_catalog(conn, bundle: dict) -> None:
@@ -320,7 +324,8 @@ def _check_album_links(conn, bundle: dict) -> None:
 
 
 def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
-                     selected_scope: dict[str, set[int]] | None = None) -> None:
+                     selected_scope: dict[str, set[int]] | None = None,
+                     selected_events: dict[int, set[int]] | None = None) -> None:
     kind = row["owner"]["kind"]
     if "ref" in row["owner"]:
         if kind.startswith("raw_"):
@@ -349,12 +354,14 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
               "player ID is not linked in the current album snapshot or approved links")
     else:
         linked = conn.scalar(select(KifuAlbum.id).where(KifuAlbum.event_id == owner_id).limit(1))
-        _fail(linked is not None or _owner_ref(row["owner"]) in (link_targets or set()),
+        _fail(linked is not None or bool((selected_events or {}).get(owner_id))
+              or _owner_ref(row["owner"]) in (link_targets or set()),
               "event ID is not linked in the current album snapshot or approved links")
 
 
 def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = None,
-                     selected_scope: dict[str, set[int]] | None = None) -> list[int]:
+                     selected_scope: dict[str, set[int]] | None = None,
+                     selected_events: dict[int, set[int]] | None = None) -> list[int]:
     ids = set()
     for row in candidates:
         owner = row["owner"]
@@ -375,6 +382,8 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
         ids.update(conn.scalars(select(KifuAlbum.id).where(condition)))
         if kind == "raw_event":
             ids.update((selected_scope or {}).get(row["raw_value"], ()))
+        elif kind == "event":
+            ids.update((selected_events or {}).get(target, ()))
     ids.update(link["album_id"] for link in links or ())
     return sorted(ids)
 
@@ -412,7 +421,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
 
 def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
     report = _prevalidate(bundle, registry, inventory, evidence_records)
-    selected_scope = _check_snapshot(conn, inventory)
+    selected_scope, selected_events = _check_snapshot(conn, inventory)
     _check_catalog(conn, bundle)
     if bundle["bundle_format"] in {2, 3, 4}:
         _check_owner_manifest(conn, bundle)
@@ -420,10 +429,11 @@ def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_recor
     _check_name_preimages(conn, bundle["candidates"])
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
-        _check_raw_owner(conn, candidate, link_targets, selected_scope)
+        _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events)
     _check_cross_bundle_collisions(conn, bundle["candidates"])
     return {**report, "bundle_sha256": canonical_sha256(bundle),
-            "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"), selected_scope),
+            "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"),
+                                                 selected_scope, selected_events),
             "estimated_undo_rows": len(bundle["candidates"]) * 2
             + len(bundle.get("album_links", ())) + sum("ref" in owner["owner"] for owner in bundle.get("owners", ()))}
 

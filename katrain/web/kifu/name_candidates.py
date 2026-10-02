@@ -258,10 +258,13 @@ def _inventory_values(inventory: dict) -> dict[str, set]:
         values["raw_event"].add(album["event"])
         values["player"].update((album["black_player_id"], album["white_player_id"]))
         values["event"].add(album["event_id"])
-    for album_id, raw, *_ in _selection_rows(inventory):
+    for row in _selection_rows(inventory):
+        album_id, raw = row[:2]
         _require(album_id in album_ids,
                  "event selection album absent from inventory")
         values["raw_event"].add(raw)
+        if inventory["inventory_format"] == 4:
+            values["event"].add(row[7])
     return values
 
 
@@ -773,7 +776,8 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     errors: list[str] = []
     _require(isinstance(bundle, dict), "bundle must be an object")
     _require((bundle.get("bundle_format"), bundle.get("inventory_format"), inventory.get("inventory_format"))
-             in {(1, 2, 2), (2, 2, 2), (3, 3, 3), (4, 4, 4)},
+             in {(1, 2, 2), (2, 2, 2), (3, 3, 3),
+                 (1, 4, 4), (2, 4, 4), (3, 4, 4), (4, 4, 4)},
              "bundle and inventory format mismatch")
     _require(bundle.get("inventory_sha256") == inventory.get("sha256")
              and bool(_HASH.fullmatch(str(bundle.get("inventory_sha256", "")))), "inventory hash mismatch")

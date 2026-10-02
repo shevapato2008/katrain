@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 import re
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 
 from katrain.core.sgf_parser import ParseError, SGF
 from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuEvent,
-    KifuEventName, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry, KifuSource,
+    KifuEventName, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry, KifuSource, KifuPlayer,
 )
 from katrain.web.kifu.name_candidates import (
     CandidateError, LANGUAGES, _iso_date, _played_date_bounds, _validate_candidate,
@@ -352,7 +352,9 @@ def _raw_scope_sha256_many(conn, raws: set[str], cache: dict, source_batch_cache
         cache[raw] = canonical_sha256(sorted(slots[raw])) if slots[raw] and raw not in invalid_raws else None
 
 
-def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache: dict) -> tuple[dict, dict] | None:
+def _reviewed_name_links(
+    conn, batch, raw_scope_cache: dict, source_batch_cache: dict, target_data: dict
+) -> tuple[dict, dict] | None:
     """Check the finite v4 identity scope independently of change-row images."""
     try:
         if batch["status"] != "applied":
@@ -369,6 +371,7 @@ def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache:
                 or bundle["owner_set_sha256"] != canonical_sha256(owners)
                 or bundle["link_set_sha256"] != canonical_sha256(links)):
             return None
+
         def member_key(item):
             owner = item["owner"]
             return (owner["kind"], owner.get("id", owner.get("ref")), item["lang"])
@@ -441,17 +444,88 @@ def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache:
             if any(member_key(item) not in member_map for item in (
                     {"owner": target, "lang": lang} for lang in LANGUAGES)):
                 return None
-        if not _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, groups):
+        if not _name_batch_targets_proved(target_data, batch, bundle, declarations, candidates, groups):
             return None
         return ({link["album_id"]: link for link in links}, declarations)
     except (EventSelectionError, CandidateError, KeyError, TypeError, AttributeError, ValueError):
         return None
 
 
-def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, groups) -> bool:
-    """Check persisted approval and ledger proof; historical inventory is unavailable for replay."""
-    registry_row = conn.execute(select(KifuNameSourceRegistry.__table__).where(
-        KifuNameSourceRegistry.id == batch["source_registry_id"])).mappings().one_or_none()
+def _prefetch_name_batch_targets(conn, batches: dict, batch_changes: dict) -> dict:
+    """Read target proof data once for all name batches relevant to this page."""
+    if not batches:
+        return {"registries": {}, "changes": {}, "names": {}, "history": {}, "evidence": {}}
+    registry_ids = {batch["source_registry_id"] for batch in batches.values()}
+    registries = {
+        row["id"]: row
+        for row in conn.execute(
+            select(KifuNameSourceRegistry.__table__).where(KifuNameSourceRegistry.id.in_(registry_ids))
+        ).mappings()
+    }
+    changes = {}
+    name_ids, evidence_ids = set(), set()
+    for change in (
+        row
+        for rows in batch_changes.values()
+        for row in rows
+        if row["target_table"] in (KifuEventName.__tablename__, KifuNameResearchEvidence.__tablename__)
+    ):
+        changes.setdefault(change["batch_id"], []).append(change)
+        if change["target_table"] == KifuEventName.__tablename__:
+            name_ids.add(change["target_row_id"])
+        else:
+            evidence_ids.add(change["target_row_id"])
+    names = (
+        {
+            row["id"]: row
+            for row in conn.execute(select(KifuEventName.__table__).where(KifuEventName.id.in_(name_ids))).mappings()
+        }
+        if name_ids
+        else {}
+    )
+    history_changes = (
+        list(
+            conn.execute(
+                select(KifuNameChange.__table__).where(
+                    KifuNameChange.target_table == KifuEventName.__tablename__,
+                    KifuNameChange.target_row_id.in_(name_ids),
+                )
+            ).mappings()
+        )
+        if name_ids
+        else []
+    )
+    statuses = {batch_id: batch["status"] for batch_id, batch in batches.items()}
+    missing_batch_ids = {change["batch_id"] for change in history_changes} - statuses.keys()
+    if missing_batch_ids:
+        statuses.update(
+            {
+                row["id"]: row["status"]
+                for row in conn.execute(
+                    select(KifuNameBatch.id, KifuNameBatch.status).where(KifuNameBatch.id.in_(missing_batch_ids))
+                ).mappings()
+            }
+        )
+    history = {}
+    for change in history_changes:
+        if statuses.get(change["batch_id"]) == "applied":
+            history.setdefault(change["target_row_id"], []).append(change)
+    evidence = (
+        {
+            row["id"]: row
+            for row in conn.execute(
+                select(KifuNameResearchEvidence.__table__).where(KifuNameResearchEvidence.id.in_(evidence_ids))
+            ).mappings()
+        }
+        if evidence_ids
+        else {}
+    )
+    return {"registries": registries, "changes": changes, "names": names, "history": history, "evidence": evidence}
+
+
+def _name_batch_targets_proved(target_data, batch, bundle, declarations, candidates, groups) -> bool:
+    """Check persisted approval and ledger proof from the prefetched current rows."""
+    registry_row = target_data["registries"].get(batch["source_registry_id"])
     if registry_row is None:
         return False
     registry = registry_row["registry"]
@@ -463,30 +537,21 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
     expected_research_hashes = sorted(row["research_sha256"] for row in candidates if row.get("research_sha256"))
     if batch["reviewed_artifact"].get("research_hashes") != expected_research_hashes:
         return False
-    changes = list(conn.execute(select(KifuNameChange.__table__).where(
-        KifuNameChange.batch_id == batch["id"],
-        KifuNameChange.target_table.in_((KifuEventName.__tablename__, KifuNameResearchEvidence.__tablename__))
-    )).mappings())
+    changes = target_data["changes"].get(batch["id"], ())
     name_changes = {change["target_row_id"]: change for change in changes
                     if change["target_table"] == KifuEventName.__tablename__}
     evidence_changes = {change["target_row_id"]: change for change in changes
                         if change["target_table"] == KifuNameResearchEvidence.__tablename__}
-    names = {row["id"]: row for row in conn.execute(select(KifuEventName.__table__).where(
-        KifuEventName.id.in_(name_changes))).mappings()} if name_changes else {}
-    later_changes = list(conn.execute(select(KifuNameChange.__table__).where(
-        KifuNameChange.target_table == KifuEventName.__tablename__,
-        KifuNameChange.target_row_id.in_(name_changes),
-        KifuNameChange.batch_id != batch["id"])).mappings()) if name_changes else []
-    later_batch_ids = {change["batch_id"] for change in later_changes}
-    later_statuses = {row["id"]: row["status"] for row in conn.execute(select(
-        KifuNameBatch.id, KifuNameBatch.status).where(KifuNameBatch.id.in_(later_batch_ids))).mappings()}
-    name_history = {}
-    for change in later_changes:
-        original = name_changes[change["target_row_id"]]
-        if change["id"] > original["id"] and later_statuses.get(change["batch_id"]) == "applied":
-            name_history.setdefault(change["target_row_id"], []).append(change)
-    evidence = {row["id"]: row for row in conn.execute(select(KifuNameResearchEvidence.__table__).where(
-        KifuNameResearchEvidence.id.in_(evidence_changes))).mappings()} if evidence_changes else {}
+    names = {row_id: target_data["names"][row_id] for row_id in name_changes if row_id in target_data["names"]}
+    name_history = {
+        row_id: [
+            change
+            for change in target_data["history"].get(row_id, ())
+            if change["batch_id"] != batch["id"] and change["id"] > original["id"]
+        ]
+        for row_id, original in name_changes.items()
+    }
+    evidence = target_data["evidence"]
     candidate_map = {(canonical_sha256(row["owner"]), row["lang"]): row for row in candidates}
     resolved = batch["reviewed_artifact"].get("resolved_refs", {})
     for token, _raw in groups:
@@ -556,6 +621,268 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
     return True
 
 
+def _selection_name_history(conn, album_ids: set[int]) -> tuple[dict, dict] | None:
+    """Close ledger history over every album member, including members with no change row."""
+    frontier = set(album_ids)
+    fetched_ids, batches, changes = set(), {}, {}
+    # Ordinary pages close in one pass. Bound pathological connected histories,
+    # and leave their selections unverified rather than using incomplete proof.
+    for _ in range(8):
+        fetched_ids.update(frontier)
+        more_batches, more_changes = _selection_ledger_history(conn, frontier)
+        batches.update(more_batches)
+        changes.update(more_changes)
+        fetched_ids.update(
+            row["target_row_id"] for rows in more_changes.values() for row in rows
+            if row["target_table"] == KifuAlbum.__tablename__
+        )
+        member_ids = set()
+        for batch in more_batches.values():
+            if batch["status"] == "undone":
+                continue
+            artifact = batch.get("reviewed_artifact")
+            bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+            if not isinstance(bundle, dict) or canonical_sha256(bundle) != batch["bundle_sha256"]:
+                return None
+            links = bundle.get("album_links", [])
+            if not isinstance(links, list):
+                return None
+            for link in links:
+                if not isinstance(link, dict):
+                    return None
+                if link.get("slot") in _ALBUM_LINK_FIELDS:
+                    album_id = link.get("album_id")
+                    if type(album_id) is not int or album_id <= 0:
+                        return None
+                    member_ids.add(album_id)
+        frontier = member_ids - fetched_ids
+        if not frontier:
+            return batches, changes
+    return None
+
+
+def _selection_ledger_history(conn, album_ids: set[int]) -> tuple[dict, dict]:
+    """Fetch page batches, their album members and those members' later history together."""
+    table = KifuNameChange.__table__
+    seed_batches = select(table.c.batch_id).where(
+        table.c.target_table.in_((KifuAlbum.__tablename__, KifuAlbumEventSelection.__tablename__)),
+        table.c.target_row_id.in_(album_ids),
+    )
+    history_batches = seed_batches.cte("selected_album_name_history", recursive=True)
+    member = table.alias("history_member")
+    history_batches = history_batches.union(
+        select(table.c.batch_id)
+        .join(
+            member,
+            and_(
+                table.c.target_table == KifuAlbum.__tablename__,
+                member.c.target_table == KifuAlbum.__tablename__,
+                table.c.target_row_id == member.c.target_row_id,
+            ),
+        )
+        .join(history_batches, member.c.batch_id == history_batches.c.batch_id)
+    )
+    batches = {
+        row["id"]: row
+        for row in conn.execute(
+            select(KifuNameBatch.__table__).where(KifuNameBatch.id.in_(select(history_batches.c.batch_id)))
+        ).mappings()
+    }
+    changes = {}
+    if batches:
+        for row in conn.execute(select(table).where(table.c.batch_id.in_(batches))).mappings():
+            changes.setdefault(row["batch_id"], []).append(row)
+    return batches, changes
+
+
+_ALBUM_LINK_FIELDS = {
+    "black": ("black_player_id", "player_black", "player"),
+    "white": ("white_player_id", "player_white", "player"),
+    "event": ("event_id", "event", "event"),
+}
+
+
+def _has_album_transition(change) -> bool:
+    """Identify association changes without trusting the ledger JSON shape."""
+    before, after = change["before_image"], change["after_image"]
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return True
+    return any(before.get(column) != after.get(column) for column, _, _ in _ALBUM_LINK_FIELDS.values())
+
+
+def _reviewed_album_changes(batch, changes, albums, associations, players, raw_scopes, events,
+                            event_raw_scope_hashes) -> bool:
+    """Derive complete after-images from every signed link and approve the whole batch."""
+    from katrain.web.kifu.name_inventory import ASSOCIATION_COLUMNS
+
+    try:
+        artifact, bundle = batch["reviewed_artifact"], batch["reviewed_artifact"]["bundle"]
+        if (
+            batch["status"] != "applied"
+            or bundle["bundle_format"] not in (2, 3)
+            or canonical_sha256(bundle) != batch["bundle_sha256"]
+            or bundle["inventory_sha256"] != batch["inventory_sha256"]
+            or canonical_sha256(bundle["owners"]) != bundle["owner_set_sha256"]
+            or canonical_sha256(bundle["album_links"]) != bundle["link_set_sha256"]
+        ):
+            return False
+        declarations = {}
+        for declaration in bundle["owners"]:
+            owner = declaration["owner"]
+            token = f"{owner['kind']}:{owner['id']}" if "id" in owner else f"{owner['kind']}:@{owner['ref']}"
+            if token in declarations:
+                return False
+            declarations[token] = declaration
+        album_rows = [row for row in changes if row["target_table"] == KifuAlbum.__tablename__]
+        album_changes = {row["target_row_id"]: row for row in album_rows}
+        if len(album_changes) != len(album_rows):
+            return False
+        expected_images, before_images, scope_groups, seen = {}, {}, {}, set()
+        album_columns = set(KifuAlbum.__table__.columns.keys())
+        for link in bundle["album_links"]:
+            album_id, slot, owner = link["album_id"], link["slot"], link["target"]
+            if slot not in _ALBUM_LINK_FIELDS or (album_id, slot) in seen:
+                return False
+            seen.add((album_id, slot))
+            column, raw_field, kind = _ALBUM_LINK_FIELDS[slot]
+            if owner["kind"] != kind:
+                return False
+            album = _image(albums[album_id])
+            change = album_changes.get(album_id, {"before_image": album, "after_image": album})
+            before, after = change["before_image"], change["after_image"]
+            if (
+                not isinstance(before, dict) or not isinstance(after, dict)
+                or set(before) != album_columns or set(after) != album_columns
+                or type(before["id"]) is not int or type(after["id"]) is not int
+                or before["id"] != album_id or after["id"] != album_id
+                or after != album
+                or any(
+                    image[id_column] is not None and (type(image[id_column]) is not int or image[id_column] <= 0)
+                    for image in (before, after)
+                    for id_column, _, _ in _ALBUM_LINK_FIELDS.values()
+                )
+            ):
+                return False
+            before_images[album_id] = before
+            expected_images.setdefault(album_id, dict(before))
+            association = {key: before[key] for key in ASSOCIATION_COLUMNS if key != "sources"}
+            association["sources"] = associations[album_id]["sources"]
+            expected = link["expected"]
+            if (
+                link["association_sha256"] != canonical_sha256(association)
+                or not isinstance(before["sgf_content"], str)
+                or link["production_sgf_sha256"] != sgf_sha256(before["sgf_content"])
+                or set(expected) != {
+                    "player_black", "player_white", "event", "date_played", "round_name",
+                    "black_rank", "white_rank", "old_id",
+                }
+                or any(before[key] != value for key, value in expected.items() if key != "old_id")
+                or before[column] != expected["old_id"]
+            ):
+                return False
+            token = f"{kind}:{owner['id']}" if "id" in owner else f"{kind}:@{owner['ref']}"
+            declaration = declarations[token]
+            target_id = artifact["resolved_refs"][token]
+            if (
+                type(target_id) is not int or target_id <= 0
+                or (expected["old_id"] is not None and owner.get("id") != expected["old_id"]
+                    and link.get("corrects_existing") is not True)
+            ):
+                return False
+            target = _image((players if kind == "player" else events)[target_id])
+            if "id" in owner:
+                if target_id != owner["id"] or any(
+                    target.get(key) != value for key, value in declaration["preimage"].items()
+                ):
+                    return False
+            else:
+                model = KifuPlayer if kind == "player" else KifuEvent
+                created = [
+                    row for row in changes
+                    if row["target_table"] == model.__tablename__ and row["target_row_id"] == target_id
+                ]
+                if (
+                    len(created) != 1 or created[0]["before_image"] is not None
+                    or created[0]["after_image"] != target
+                    or any(target.get(key) != value for key, value in declaration["create"].items())
+                ):
+                    return False
+            review = link["identity_review"]
+            if (
+                review["status"] != "approved"
+                or not review["producer_id"] or not review["producer_model"]
+                or not review["reviewer_id"] or not review["reviewer_model"]
+                or review["producer_id"] == review["reviewer_id"]
+                or not review["identity_basis"] or not review["review_conclusion"]
+                or not _timestamp(review["produced_at"], "production time")
+                <= _timestamp(review["reviewed_at"], "review time")
+                or not _timestamp(review["scope_frozen_at"], "freeze time")
+                < _timestamp(review["reviewed_at"], "review time")
+                or not review["source_checks"]
+                or (kind == "event" and not review["event_period_basis"])
+            ):
+                return False
+            if any(
+                not check["url"].startswith("https://")
+                or not _SHA256.fullmatch(check["body_sha256"])
+                or not check["body_excerpt"] or not check["identity_match"]
+                for check in review["source_checks"]
+            ):
+                return False
+            raw = before[raw_field]
+            scope_slots = raw_scopes.get((kind, raw), [])
+            raw_hash = (event_raw_scope_hashes.get(raw)
+                        if kind == "event" and bundle["inventory_format"] in (3, 4)
+                        else canonical_sha256(scope_slots))
+            if (link["raw_scope_sha256"] != raw_hash
+                    or ("raw_scope_slots" in link and canonical_sha256(link["raw_scope_slots"]) != raw_hash)):
+                return False
+            scope_groups.setdefault((token, raw), []).append(link)
+            expected_images[album_id][column] = target_id
+        # No ledger delta may change anything beyond the independently reviewed
+        # foreign keys, and no signed delta may be omitted from the ledger.
+        changed_ids = set()
+        for album_id, expected_after in expected_images.items():
+            if expected_after != _image(albums[album_id]):
+                return False
+            if expected_after != before_images[album_id]:
+                changed_ids.add(album_id)
+        if changed_ids != set(album_changes):
+            return False
+        for (token, _raw), links in scope_groups.items():
+            scope = identity_scope_sha256(bundle, links, declarations[token])
+            if any(link["identity_review"] != links[0]["identity_review"]
+                   or link["identity_review"]["scope_sha256"] != scope for link in links):
+                return False
+        return True
+    except (EventSelectionError, KeyError, TypeError, AttributeError, ValueError):
+        return False
+
+
+def _original_album_association(
+    album_id, selection_change, associations, albums, batches, batch_changes, reviewed_albums
+) -> dict | None:
+    """Reverse every later applied full image; never discard an unexplained FK difference."""
+    current = _image(albums[album_id])
+    history = [
+        row
+        for rows in batch_changes.values()
+        for row in rows
+        if row["target_table"] == KifuAlbum.__tablename__
+        and row["target_row_id"] == album_id
+        and row["id"] > selection_change["id"]
+    ]
+    for later in sorted(history, key=lambda row: row["id"], reverse=True):
+        batch = batches[later["batch_id"]]
+        if batch["status"] == "undone":
+            continue
+        if (not _has_album_transition(later) or not reviewed_albums.get(batch["id"])
+                or current != later["after_image"]):
+            return None
+        current = later["before_image"]
+    return {key: current[key] if key != "sources" else value for key, value in associations[album_id].items()}
+
+
 def verified_selection_rows(conn, selections) -> dict[int, dict]:
     """Batch-check source, live SGF and unique name-link evidence for read consumers."""
     from katrain.web.kifu.name_inventory import ASSOCIATION_COLUMNS, SOURCE_COLUMNS
@@ -565,13 +892,36 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
         return {}
     album_ids = {row["album_id"] for row in selections}
     source_ids = {row["batch_id"] for row in selections}
-    albums = {row["id"]: row for row in conn.execute(
-        select(KifuAlbum.__table__).where(KifuAlbum.id.in_(album_ids))).mappings()}
+    history = _selection_name_history(conn, album_ids)
+    if history is None:
+        return {}
+    name_batches, batch_changes = history
+    related_ids = album_ids | {
+        row["target_row_id"]
+        for rows in batch_changes.values()
+        for row in rows
+        if row["target_table"] == KifuAlbum.__tablename__
+    }
+    for batch in name_batches.values():
+        artifact = batch.get("reviewed_artifact")
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        links = bundle.get("album_links") if isinstance(bundle, dict) else None
+        if isinstance(links, list):
+            related_ids.update(link["album_id"] for link in links if isinstance(link, dict)
+                               and link.get("slot") in _ALBUM_LINK_FIELDS
+                               and type(link.get("album_id")) is int and link["album_id"] > 0)
+    albums = {
+        row["id"]: row
+        for row in conn.execute(select(KifuAlbum.__table__).where(KifuAlbum.id.in_(related_ids))).mappings()
+    }
     associations = {album_id: {key: album[key] for key in ASSOCIATION_COLUMNS if key != "sources"} | {"sources": []}
                     for album_id, album in albums.items()}
     for source_id, album_id, dataset_id, key, path, method in conn.execute(
-            select(*SOURCE_COLUMNS).join(KifuSource, KifuAlbumSource.source_id == KifuSource.id)
-            .where(KifuAlbumSource.album_id.in_(album_ids)).order_by(KifuAlbumSource.id)):
+        select(*SOURCE_COLUMNS)
+        .join(KifuSource, KifuAlbumSource.source_id == KifuSource.id)
+        .where(KifuAlbumSource.album_id.in_(related_ids))
+        .order_by(KifuAlbumSource.id)
+    ):
         associations[album_id]["sources"].append([source_id, dataset_id, key, path, method])
     source_batches = {row["id"]: row for row in conn.execute(
         select(KifuEventSelectionBatch.__table__).where(KifuEventSelectionBatch.id.in_(source_ids))).mappings()}
@@ -580,39 +930,162 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
     source_members = {batch_id: {member["album_id"]: member for member in batch["reviewed_artifact"]["bundle"]["members"]}
                       for batch_id, batch in source_batches.items() if source_images[batch_id] is not None}
     changes = {}
-    for change in conn.execute(select(KifuNameChange.__table__).where(
-            KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__,
-            KifuNameChange.target_row_id.in_(album_ids))).mappings():
-        changes.setdefault(change["target_row_id"], []).append(change)
-    name_ids = {change["batch_id"] for group in changes.values() for change in group}
-    name_batches = {row["id"]: row for row in conn.execute(
-        select(KifuNameBatch.__table__).where(KifuNameBatch.id.in_(name_ids))).mappings()} if name_ids else {}
+    for rows in batch_changes.values():
+        for change in rows:
+            if change["target_table"] == KifuAlbumEventSelection.__tablename__:
+                changes.setdefault(change["target_row_id"], []).append(change)
     raw_scope_cache = {}
     source_batch_cache = {batch_id: (source_images[batch_id], source_members.get(batch_id, {}))
                           for batch_id in source_ids}
     raw_scope_values = set()
+    player_raw_values = set()
+    event_raw_values = set()
     for batch in name_batches.values():
         artifact = batch.get("reviewed_artifact")
         bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
         links = bundle.get("album_links") if isinstance(bundle, dict) else None
         if isinstance(links, list):
             for link in links:
+                if isinstance(link, dict) and link.get("slot") in _ALBUM_LINK_FIELDS:
+                    expected = link.get("expected")
+                    _, field, kind = _ALBUM_LINK_FIELDS[link["slot"]]
+                    if isinstance(expected, dict) and isinstance(expected.get(field), str):
+                        if kind == "player":
+                            player_raw_values.add(expected[field])
+                        else:
+                            event_raw_values.add(expected[field])
+                            if bundle.get("inventory_format") in (3, 4):
+                                raw_scope_values.add(expected[field])
                 image = link.get("selection_before_image") if isinstance(link, dict) else None
                 raw = image.get("selected_raw") if isinstance(image, dict) else None
                 if isinstance(raw, str):
                     raw_scope_values.add(raw)
     _raw_scope_sha256_many(conn, raw_scope_values, raw_scope_cache, source_batch_cache)
-    reviewed_links = {batch_id: _reviewed_name_links(conn, batch, raw_scope_cache, source_batch_cache)
-                      for batch_id, batch in name_batches.items()}
-    event_ids = {row["event_id"] for row in selections if row["event_id"] is not None}
+    target_data = _prefetch_name_batch_targets(conn, name_batches, batch_changes)
+    reviewed_links = {
+        batch_id: _reviewed_name_links(conn, batch, raw_scope_cache, source_batch_cache, target_data)
+        for batch_id, batch in name_batches.items()
+    }
+    historical_images = [
+        row[field] for rows in batch_changes.values() for row in rows
+        if row["target_table"] == KifuAlbum.__tablename__
+        for field in ("before_image", "after_image") if isinstance(row[field], dict)
+    ]
+    event_ids = {row["event_id"] for row in selections if row["event_id"] is not None} | {
+        row["event_id"] for row in albums.values() if type(row["event_id"]) is int and row["event_id"] > 0} | {
+        image["event_id"] for image in historical_images
+        if type(image.get("event_id")) is int and image["event_id"] > 0
+    }
+    for batch in name_batches.values():
+        artifact = batch.get("reviewed_artifact")
+        resolved = artifact.get("resolved_refs") if isinstance(artifact, dict) else None
+        if isinstance(resolved, dict):
+            event_ids.update(value for token, value in resolved.items() if isinstance(token, str)
+                             and token.startswith("event:") and type(value) is int and value > 0)
     events = {row["id"]: row for row in conn.execute(select(KifuEvent.__table__).where(
         KifuEvent.id.in_(event_ids))).mappings()} if event_ids else {}
-    event_changes = {}
-    if name_ids:
-        for change in conn.execute(select(KifuNameChange.__table__).where(
-                KifuNameChange.batch_id.in_(name_ids),
-                KifuNameChange.target_table == KifuEvent.__tablename__)).mappings():
-            event_changes[(change["batch_id"], change["target_row_id"])] = change
+    event_changes = {
+        (change["batch_id"], change["target_row_id"]): change
+        for rows in batch_changes.values()
+        for change in rows
+        if change["target_table"] == KifuEvent.__tablename__
+    }
+    album_batches = {
+        batch_id: batch
+        for batch_id, batch in name_batches.items()
+        if any(row["target_table"] == KifuAlbum.__tablename__ for row in batch_changes[batch_id])
+    }
+    player_ids = {
+        image[column]
+        for image in historical_images
+        for column in ("black_player_id", "white_player_id")
+        if type(image.get(column)) is int and image[column] > 0
+    }
+    for batch in album_batches.values():
+        artifact = batch.get("reviewed_artifact")
+        resolved = artifact.get("resolved_refs") if isinstance(artifact, dict) else None
+        if isinstance(resolved, dict):
+            player_ids.update(value for token, value in resolved.items() if isinstance(token, str)
+                              and token.startswith("player:") and type(value) is int and value > 0)
+    players = (
+        {
+            row["id"]: row
+            for row in conn.execute(select(KifuPlayer.__table__).where(KifuPlayer.id.in_(player_ids))).mappings()
+        }
+        if player_ids
+        else {}
+    )
+    raw_scopes = {}
+    if album_batches:
+        for row in conn.execute(
+            select(KifuAlbum.id, KifuAlbum.player_black, KifuAlbum.player_white, KifuAlbum.event).where(
+                or_(KifuAlbum.player_black.in_(player_raw_values), KifuAlbum.player_white.in_(player_raw_values),
+                    KifuAlbum.event.in_(event_raw_values))
+            )
+        ):
+            for slot, raw in (("black", row.player_black), ("white", row.player_white), ("event", row.event)):
+                kind = _ALBUM_LINK_FIELDS[slot][2]
+                raw_scopes.setdefault((kind, raw), []).append([row.id, slot])
+        raw_scopes = {raw: sorted(slots) for raw, slots in raw_scopes.items()}
+    # Derive all three FK after-images at each historical batch position, then
+    # rewind the complete batch atomically. No-op members use that same position.
+    historical_albums = {album_id: _image(album) for album_id, album in albums.items()}
+    reviewed_albums = {}
+    for batch_id in sorted(album_batches, key=lambda item: max(row["id"] for row in batch_changes[item]), reverse=True):
+        batch = album_batches[batch_id]
+        album_changes = [
+            row for row in batch_changes[batch_id]
+            if row["target_table"] == KifuAlbum.__tablename__
+        ]
+        reviewed_albums[batch_id] = (
+            _reviewed_album_changes(
+                batch, batch_changes[batch_id], historical_albums, associations, players, raw_scopes, events,
+                raw_scope_cache,
+            )
+            and all(historical_albums.get(row["target_row_id"]) == row["after_image"] for row in album_changes)
+        )
+        if reviewed_albums[batch_id]:
+            for row in album_changes:
+                historical_albums[row["target_row_id"]] = row["before_image"]
+    album_history = {}
+    for rows in batch_changes.values():
+        for change in rows:
+            if change["target_table"] == KifuAlbum.__tablename__:
+                album_history.setdefault(change["target_row_id"], []).append(change)
+    album_members = {album_id: {row["batch_id"] for row in history} for album_id, history in album_history.items()}
+    for batch_id, batch in album_batches.items():
+        artifact = batch.get("reviewed_artifact")
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        links = bundle.get("album_links") if isinstance(bundle, dict) else None
+        if isinstance(links, list):
+            for link in links:
+                if (isinstance(link, dict) and link.get("slot") in _ALBUM_LINK_FIELDS
+                        and type(link.get("album_id")) is int and link["album_id"] > 0):
+                    album_members.setdefault(link["album_id"], set()).add(batch_id)
+    invalid_album_batches = set()
+    for album_id, history in album_history.items():
+        current = _image(albums[album_id]) if album_id in albums else None
+        for later in sorted(history, key=lambda row: row["id"], reverse=True):
+            if name_batches[later["batch_id"]]["status"] == "undone":
+                continue
+            if not reviewed_albums.get(later["batch_id"]) or current != later["after_image"]:
+                for row in history:
+                    if name_batches[row["batch_id"]]["status"] != "undone":
+                        invalid_album_batches.add(row["batch_id"])
+                break
+            current = later["before_image"]
+    # A broken member invalidates its entire batch and any batch relying on that member's chain.
+    while True:
+        expanded = invalid_album_batches.copy()
+        for member_ids in album_members.values():
+            active_ids = {batch_id for batch_id in member_ids if name_batches[batch_id]["status"] != "undone"}
+            if active_ids & invalid_album_batches:
+                expanded.update(active_ids)
+        if expanded == invalid_album_batches:
+            break
+        invalid_album_batches = expanded
+    for batch_id in invalid_album_batches:
+        reviewed_albums[batch_id] = False
     verified = {}
     for selection in selections:
         album_id = selection["album_id"]
@@ -652,16 +1125,32 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
                 or change["after_image"] != current_image):
             continue
         link, declarations = reviewed[0].get(album_id), reviewed[1]
-        if (link is None or link["selection_batch_id"] != selection["batch_id"]
-                or link["association_sha256"] != canonical_sha256(associations[album_id])
-                or link["selection_bundle_sha256"] != source_batches[selection["batch_id"]]["bundle_sha256"]
-                or link["selection_before_image"] != source_image
-                or link["selection_before_sha256"] != proof["source_after_sha256"]
-                or link["production_sgf_sha256"] != selection["sgf_sha256"]
-                or link["expected"]["old_id"] is not None
-                or any(album[field] != link["expected"][field] for field in (
-                    "player_black", "player_white", "event", "date_played", "round_name",
-                    "black_rank", "white_rank"))):
+        original_association = _original_album_association(
+            album_id, change, associations, albums, name_batches, batch_changes, reviewed_albums
+        )
+        if (
+            link is None
+            or link["selection_batch_id"] != selection["batch_id"]
+            or original_association is None
+            or link["association_sha256"] != canonical_sha256(original_association)
+            or link["selection_bundle_sha256"] != source_batches[selection["batch_id"]]["bundle_sha256"]
+            or link["selection_before_image"] != source_image
+            or link["selection_before_sha256"] != proof["source_after_sha256"]
+            or link["production_sgf_sha256"] != selection["sgf_sha256"]
+            or link["expected"]["old_id"] is not None
+            or any(
+                album[field] != link["expected"][field]
+                for field in (
+                    "player_black",
+                    "player_white",
+                    "event",
+                    "date_played",
+                    "round_name",
+                    "black_rank",
+                    "white_rank",
+                )
+            )
+        ):
             continue
         target = link["target"]
         token = f"event:{target['id']}" if "id" in target else f"event:@{target['ref']}"

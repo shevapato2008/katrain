@@ -8,7 +8,7 @@ from katrain.web.core.models_db import KifuAlbum, KifuEvent, KifuEventName, Kifu
 from katrain.web.kifu.name_candidates import identity_scope_sha256
 from katrain.web.kifu.name_batch import catalog_snapshot_sha
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
-from tests.web_ui.test_kifu_name_batch import _eleven_language_identity_fixture
+from tests.web_ui.test_kifu_name_batch import _eleven_language_identity_fixture, _identity_link, _v2_wrap
 from tests.web_ui.test_kifu_name_api import _evidence
 
 import pytest
@@ -31,6 +31,465 @@ def _applied(engine):
         engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle)
     )
     return applied
+
+
+def _later_player_link(engine, album_ids=(11,), *, new=False, new_name="Unknown", new_suffix=" New"):
+    inventory = build_inventory(engine, inventory_format=4)
+    owner = {"kind": "player", "ref": "later-person"} if new else {"kind": "player", "id": 17}
+    declaration = {"owner": owner, "create" if new else "preimage": {"canonical_name": new_name if new else "吴清源"}}
+    bundle, research, sources = _eleven_language_identity_fixture(engine, inventory, [owner])
+    if new:
+        for candidate, record in zip(bundle["candidates"], research):
+            display = candidate["display_name"] + new_suffix
+            candidate["display_name"] = record["candidate_name"] = display
+            for check in record["source_checks"]:
+                check.update(candidate_name=display, body_excerpt=f"Official identity profile: {display}")
+            candidate["research_sha256"] = canonical_sha256(record)
+    bundle["inventory_format"] = 4
+    links = [_identity_link(engine, inventory, album_id, "white", owner) for album_id in album_ids]
+    for link in links:
+        if link["expected"]["old_id"] is not None and owner.get("id") != link["expected"]["old_id"]:
+            link["corrects_existing"] = True
+    bundle = _v2_wrap(engine, inventory, bundle, [declaration], links)
+    return apply_bundle(engine, bundle, sources, inventory, research), bundle
+
+
+def _later_album_links(engine, declarations, slots, *, suffix=" Other"):
+    inventory = build_inventory(engine, inventory_format=4)
+    bundle, research, sources = _eleven_language_identity_fixture(
+        engine, inventory, [declaration["owner"] for declaration in declarations]
+    )
+    for candidate, record in zip(bundle["candidates"], research):
+        candidate["display_name"] += suffix
+        record["candidate_name"] = candidate["display_name"]
+        for check in record["source_checks"]:
+            check.update(candidate_name=candidate["display_name"], body_excerpt=f"Identity: {candidate['display_name']}")
+        candidate["research_sha256"] = canonical_sha256(record)
+    links = [_identity_link(engine, inventory, album_id, slot, owner) for album_id, slot, owner in slots]
+    for link in links:
+        if link["expected"]["old_id"] is not None and link["target"].get("id") != link["expected"]["old_id"]:
+            link["corrects_existing"] = True
+    bundle["inventory_format"] = 4
+    bundle = _v2_wrap(engine, inventory, bundle, declarations, links)
+    return apply_bundle(engine, bundle, sources, inventory, research), bundle
+
+
+def _off_page_album(engine, *, player_id=None, event_id=None):
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=20, canonical_name="Other Cup"))
+        conn.execute(
+            KifuAlbum.__table__.insert().values(
+                id=12, player_black="Other", player_white="Unknown", event="Other Cup",
+                sgf_content="(;PB[Other]PW[Unknown]EV[Other Cup])", source_path="other.sgf",
+                white_player_id=player_id, event_id=event_id,
+            )
+        )
+
+
+def _later_event_link(engine):
+    owner = {"kind": "event", "ref": "later-event"}
+    return _later_album_links(
+        engine, [{"owner": owner, "create": {"canonical_name": "Later Cup"}}], [(12, "event", owner)],
+        suffix=" Later",
+    )
+
+
+def test_reviewed_mixed_off_page_member_replays_one_complete_batch(engine):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    _applied(engine)
+    _off_page_album(engine)
+    player, event = {"kind": "player", "id": 17}, {"kind": "event", "id": 20}
+    applied, _ = _later_album_links(
+        engine,
+        [{"owner": player, "preimage": {"canonical_name": "吴清源"}},
+         {"owner": event, "preimage": {"canonical_name": "Other Cup"}}],
+        [(11, "white", player), (12, "white", player), (12, "event", event)],
+    )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    correction, _ = _later_event_link(engine)
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    assert undo_batch(engine, correction["batch_id"])["status"] == "undone"
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+
+
+@pytest.mark.parametrize("order", [("event", "player"), ("player", "event")])
+def test_reviewed_event_and_player_corrections_replay_in_order_and_undo(engine, order):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    _applied(engine)
+    _off_page_album(engine, player_id=17, event_id=20)
+    _later_player_link(engine, (11, 12))
+    corrections = []
+    for kind in order:
+        applied, _ = _later_event_link(engine) if kind == "event" else _later_player_link(engine, (12,), new=True)
+        corrections.append(applied)
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    for applied in reversed(corrections):
+        assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+
+
+def test_event_noop_member_closes_later_history_and_rejects_direct_revert(engine):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    _applied(engine)
+    _off_page_album(engine, event_id=20)
+    player, event = {"kind": "player", "id": 17}, {"kind": "event", "id": 20}
+    _later_album_links(
+        engine,
+        [{"owner": player, "preimage": {"canonical_name": "吴清源"}},
+         {"owner": event, "preimage": {"canonical_name": "Other Cup"}}],
+        [(11, "white", player), (12, "event", event)],
+    )
+    correction, _ = _later_event_link(engine)
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    with engine.begin() as conn:
+        original = conn.scalar(select(KifuAlbum.event_id).where(KifuAlbum.id == 12))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(event_id=20))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(event_id=original))
+    assert undo_batch(engine, correction["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+
+
+def test_unrelated_separate_event_batch_drift_keeps_selected_event_proof(engine):
+    _applied(engine)
+    _off_page_album(engine, event_id=20)
+    _later_player_link(engine)
+    _later_event_link(engine)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(event_id=20))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+
+
+@pytest.mark.parametrize("drift", ["direct_revert", "ledger_before", "ledger_after", "bundle", "sgf"])
+def test_event_history_drift_invalidates_connected_atomic_batch(engine, drift):
+    from katrain.web.core.models_db import KifuNameChange
+
+    _applied(engine)
+    _off_page_album(engine, player_id=17, event_id=20)
+    _later_player_link(engine, (11, 12))
+    applied, _ = _later_event_link(engine)
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    with engine.begin() as conn:
+        if drift == "direct_revert":
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(event_id=20))
+        elif drift == "sgf":
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(sgf_content="Changed"))
+        elif drift == "bundle":
+            artifact = deepcopy(conn.scalar(
+                select(KifuNameBatch.reviewed_artifact).where(KifuNameBatch.id == applied["batch_id"])
+            ))
+            artifact["bundle"]["album_links"][0]["identity_review"]["event_period_basis"] = "Changed"
+            conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == applied["batch_id"])
+                         .values(reviewed_artifact=artifact))
+        else:
+            change = conn.execute(select(KifuNameChange.__table__).where(
+                KifuNameChange.batch_id == applied["batch_id"], KifuNameChange.target_table == KifuAlbum.__tablename__,
+            )).mappings().one()
+            field = "before_image" if drift == "ledger_before" else "after_image"
+            image = deepcopy(change[field])
+            image["event_id"] = None
+            conn.execute(KifuNameChange.__table__.update().where(KifuNameChange.id == change["id"])
+                         .values(**{field: image}))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+
+
+@pytest.mark.parametrize("new", [False, True])
+def test_later_reviewed_player_link_keeps_selected_event_api_proof(engine, monkeypatch, new):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    _applied(engine)
+    _later_player_link(engine, new=new)
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+        assert asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Example event EN"
+        result = asyncio.run(
+            kifu.list_kifu_albums(_request(), q="Example event RU", page=1, page_size=20, lang="en", db=db)
+        )
+        assert result.total == 1
+        assert result.items[0].display_event == "Example event EN"
+
+
+@pytest.mark.parametrize(
+    ("extra", "drift"),
+    [(extra, drift) for extra in ("event", "noop_player", "event_noop", "event_noop_new") for drift in ("sgf", "fk")]
+    + [(extra, "reverted_fk") for extra in ("noop_player", "event_noop", "event_noop_new")],
+)
+def test_later_player_replay_allows_unrelated_links_and_noop_members(engine, extra, drift):
+    from katrain.web.kifu.name_batch import dry_run_bundle
+
+    _applied(engine)
+    with engine.begin() as conn:
+        conn.execute(
+            KifuAlbum.__table__.insert().values(
+                id=12,
+                player_black="Other",
+                player_white="Unknown" if extra != "event" else "Other",
+                event="Other Cup",
+                sgf_content="(;PB[Other]PW[Other]EV[Other Cup])",
+                source_path="other.sgf",
+                white_player_id=17 if extra != "event" else None,
+            )
+        )
+        if extra in ("event", "event_noop"):
+            conn.execute(KifuEvent.__table__.insert().values(id=20, canonical_name="Other Cup"))
+    inventory = build_inventory(engine, inventory_format=4)
+    player = {"kind": "player", "id": 17}
+    owners = [{"owner": player, "preimage": {"canonical_name": "吴清源"}}]
+    links = [_identity_link(engine, inventory, 11, "white", player)]
+    if extra != "noop_player":
+        event = {"kind": "event", "ref": "other-cup"} if extra == "event_noop_new" else {"kind": "event", "id": 20}
+        owners.append(
+            {"owner": event, "create" if extra == "event_noop_new" else "preimage": {"canonical_name": "Other Cup"}}
+        )
+        links.append(_identity_link(engine, inventory, 12, "event", event))
+    if extra != "event":
+        links.append(_identity_link(engine, inventory, 12, "white", player))
+    bundle, research, sources = _eleven_language_identity_fixture(
+        engine, inventory, [owner["owner"] for owner in owners]
+    )
+    if extra != "noop_player":
+        for candidate, record in zip(bundle["candidates"], research):
+            if candidate["owner"]["kind"] == "event":
+                candidate["display_name"] += " Other"
+                record["candidate_name"] = candidate["display_name"]
+                for check in record["source_checks"]:
+                    check["candidate_name"] = candidate["display_name"]
+                    check["body_excerpt"] += " Other"
+                candidate["research_sha256"] = canonical_sha256(record)
+    bundle["inventory_format"] = 4
+    bundle = _v2_wrap(engine, inventory, bundle, owners, links)
+    assert dry_run_bundle(engine, bundle, sources, inventory, research)["ready"]
+    assert apply_bundle(engine, bundle, sources, inventory, research)["status"] == "applied"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    if extra != "event":
+        _later_player_link(engine, (12,), new=True)
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+        if drift == "reverted_fk":
+            with engine.begin() as conn:
+                conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(white_player_id=17))
+            with Session(engine) as db:
+                assert live_event_selections(db, [], album_ids={11}) == {}
+            return
+    with engine.begin() as conn:
+        column = "sgf_content" if drift == "sgf" else "white_player_id" if extra != "event" else "event_id"
+        old = conn.scalar(select(getattr(KifuAlbum, column)).where(KifuAlbum.id == 12))
+        conn.execute(
+            KifuAlbum.__table__.update()
+            .where(KifuAlbum.id == 12)
+            .values(**{column: old + " " if drift == "sgf" else None})
+        )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+
+
+@pytest.mark.parametrize("value", [[], {}, True, -1, "17"])
+def test_malformed_player_ledger_ids_leave_readers_unverified(engine, monkeypatch, value):
+    from katrain.web.core.models_db import KifuNameChange
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    _applied(engine)
+    applied, _ = _later_player_link(engine)
+    with engine.begin() as conn:
+        change = (
+            conn.execute(
+                select(KifuNameChange.__table__).where(
+                    KifuNameChange.batch_id == applied["batch_id"],
+                    KifuNameChange.target_table == KifuAlbum.__tablename__,
+                )
+            )
+            .mappings()
+            .one()
+        )
+        after = deepcopy(change["after_image"])
+        after["white_player_id"] = value
+        conn.execute(
+            KifuNameChange.__table__.update().where(KifuNameChange.id == change["id"]).values(after_image=after)
+        )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+        assert (
+            asyncio.run(kifu.get_kifu_album(_request(), 11, lang="en", db=db)).display_event == "Event name unverified"
+        )
+        assert (
+            asyncio.run(
+                kifu.list_kifu_albums(_request(), q="Example event EN", page=1, page_size=20, lang="en", db=db)
+            ).total
+            == 0
+        )
+    report = coverage_report(engine, build_inventory(engine, inventory_format=4), languages=("en",))
+    assert any(row["slot"] == "event" for row in report["missing_examples"])
+
+
+@pytest.mark.parametrize(
+    "drift", ["direct_fk", "bundle", "missing_bundle", "raw_scope", "ledger", "partial_undo", "resolved_ref"]
+)
+def test_later_player_link_cannot_mask_unreviewed_association_change(engine, drift):
+    from katrain.web.core.models_db import KifuNameChange
+
+    _applied(engine)
+    applied, _ = _later_player_link(engine)
+    with engine.begin() as conn:
+        if drift == "direct_fk":
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(black_player_id=None))
+        elif drift == "ledger":
+            change = (
+                conn.execute(
+                    select(KifuNameChange.__table__).where(
+                        KifuNameChange.batch_id == applied["batch_id"],
+                        KifuNameChange.target_table == KifuAlbum.__tablename__,
+                    )
+                )
+                .mappings()
+                .one()
+            )
+            after = deepcopy(change["after_image"])
+            after["black_player_id"] = None
+            conn.execute(
+                KifuNameChange.__table__.update().where(KifuNameChange.id == change["id"]).values(after_image=after)
+            )
+        elif drift == "partial_undo":
+            conn.execute(
+                KifuNameBatch.__table__.update()
+                .where(KifuNameBatch.id == applied["batch_id"])
+                .values(status="partial_undo")
+            )
+        else:
+            artifact = deepcopy(
+                conn.scalar(select(KifuNameBatch.reviewed_artifact).where(KifuNameBatch.id == applied["batch_id"]))
+            )
+            if drift == "bundle":
+                artifact["bundle"]["album_links"][0]["identity_review"]["identity_basis"] = "Changed"
+            elif drift == "missing_bundle":
+                artifact["bundle"] = None
+            elif drift == "raw_scope":
+                artifact["bundle"]["album_links"][0]["expected"]["player_white"] = []
+            else:
+                artifact["resolved_refs"]["player:17"] = 18
+            conn.execute(
+                KifuNameBatch.__table__.update()
+                .where(KifuNameBatch.id == applied["batch_id"])
+                .values(reviewed_artifact=artifact)
+            )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+
+
+@pytest.mark.parametrize("drift", ["sgf", "fk"])
+def test_later_player_batch_checks_off_page_drift_and_fully_undone_batch(engine, drift):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    bundle, sources, inventory, research = _multi_selected_bundle(engine, 2)
+    apply_bundle(engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle))
+    applied, _ = _later_player_link(engine, (11, 12))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup 0", 19)}
+    with engine.begin() as conn:
+        column = "sgf_content" if drift == "sgf" else "white_player_id"
+        original = conn.scalar(select(getattr(KifuAlbum, column)).where(KifuAlbum.id == 12))
+        conn.execute(
+            KifuAlbum.__table__.update()
+            .where(KifuAlbum.id == 12)
+            .values(**{column: original + " " if drift == "sgf" else None})
+        )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(**{column: original}))
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup 0", 19)}
+
+
+def test_later_player_changes_replay_exact_chain_and_reverse_undo(engine):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    _applied(engine)
+    first, _ = _later_player_link(engine)
+    second, _ = _later_player_link(engine, new=True)
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    assert undo_batch(engine, second["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    assert undo_batch(engine, first["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+
+
+def test_original_selected_event_batch_undo_keeps_later_player_link(engine):
+    from katrain.web.core.models_db import KifuAlbumEventSelection
+    from katrain.web.kifu.name_batch import undo_batch
+
+    selected = _applied(engine)
+    _later_player_link(engine)
+    assert undo_batch(engine, selected["batch_id"])["status"] == "undone"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) == 17
+        assert (
+            conn.scalar(select(KifuAlbumEventSelection.event_id).where(KifuAlbumEventSelection.album_id == 11)) is None
+        )
+
+
+def test_later_player_replay_prefetches_connected_off_page_histories(engine):
+    bundle, sources, inventory, research = _multi_selected_bundle(engine, 3)
+    apply_bundle(engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle))
+    _later_player_link(engine, (11, 12))
+    _later_player_link(engine, (12, 13), new=True)
+    _later_player_link(engine, (13,))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup 0", 19)}
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 13).values(white_player_id=None))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+
+
+def test_later_player_replay_closes_history_through_successive_noop_members(engine):
+    from katrain.web.kifu.name_batch import undo_batch
+
+    _applied(engine)
+    with engine.begin() as conn:
+        for album_id in (12, 13):
+            conn.execute(
+                KifuAlbum.__table__.insert().values(
+                    id=album_id, player_black="Other", player_white="Unknown", event="Other Cup",
+                    sgf_content="(;PB[Other]PW[Unknown]EV[Other Cup])", source_path=f"other-{album_id}.sgf",
+                    white_player_id=17,
+                )
+            )
+    _later_player_link(engine, (11, 12))
+    _later_player_link(engine, (12,), new=True)
+    _later_player_link(engine, (12, 13))
+    last, _ = _later_player_link(engine, (13,), new=True, new_name="Another reviewed player", new_suffix=" New Second")
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
+    with engine.begin() as conn:
+        original = conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 13))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 13).values(white_player_id=17))
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 13).values(white_player_id=original))
+    assert undo_batch(engine, last["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup", 19)}
 
 
 def test_selected_event_link_readers_share_valid_proof(engine, monkeypatch):
@@ -291,3 +750,97 @@ def test_one_page_selection_proof_queries_bounded_across_raw_groups(engine, coun
     finally:
         event.remove(engine, "before_cursor_execute", record)
     assert len(statements) <= 20
+
+
+def _apply_independent_selected_batches(engine, count):
+    template, _, _, _ = _multi_selected_bundle(engine, count)
+    applied = []
+    for original_link in template["album_links"]:
+        inventory = build_inventory(engine, inventory_format=4)
+        bundle, research, sources = _eleven_language_identity_fixture(
+            engine, inventory, [template["owners"][0]["owner"]]
+        )
+        link = deepcopy(original_link)
+        bundle.update(
+            bundle_format=4,
+            inventory_format=4,
+            catalog_sha256=catalog_snapshot_sha(engine),
+            owners=deepcopy(template["owners"]),
+            owner_set_sha256=template["owner_set_sha256"],
+            album_links=[link],
+        )
+        link["identity_review"]["scope_sha256"] = identity_scope_sha256(bundle, [link], bundle["owners"][0])
+        bundle["link_set_sha256"] = canonical_sha256([link])
+        applied.append(
+            apply_bundle(engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle))
+        )
+    return applied
+
+
+@pytest.mark.parametrize("count", [1, 5, 20])
+def test_one_page_selection_proof_queries_bounded_across_name_batches(engine, count):
+    from sqlalchemy import event
+
+    _apply_independent_selected_batches(engine, count)
+    statements = []
+
+    def record(_conn, _cursor, statement, _params, _context, _many):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids=set(range(11, 11 + count))) == {
+                11 + offset: (f"Selected Cup {offset}", 19) for offset in range(count)
+            }
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    assert len(statements) <= 20
+
+
+@pytest.mark.parametrize("count", [1, 5, 20])
+def test_one_page_later_player_proof_queries_stay_bounded(engine, count):
+    from sqlalchemy import event
+
+    bundle, sources, inventory, research = _multi_selected_bundle(engine, count)
+    apply_bundle(engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle))
+    _later_player_link(engine, tuple(range(11, 11 + count)))
+    statements = []
+
+    def record(_conn, _cursor, statement, _params, _context, _many):
+        statements.append(statement)
+
+    event.listen(engine, "before_cursor_execute", record)
+    try:
+        with Session(engine) as db:
+            assert live_event_selections(db, [], album_ids=set(range(11, 11 + count))) == {
+                11 + offset: (f"Selected Cup {offset}", 19) for offset in range(count)
+            }
+    finally:
+        event.remove(engine, "before_cursor_execute", record)
+    assert len(statements) <= 20
+
+
+def test_selected_event_proof_checks_off_page_batch_member_and_undo_stays_atomic(engine):
+    from katrain.web.core.models_db import KifuAlbumEventSelection
+    from katrain.web.kifu.name_batch import BatchError, undo_batch
+
+    bundle, sources, inventory, research = _multi_selected_bundle(engine, 2)
+    applied = apply_bundle(
+        engine, bundle, sources, inventory, research, expected_bundle_sha256=canonical_sha256(bundle)
+    )
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ("Selected Cup 0", 19)}
+    with engine.begin() as conn:
+        content = conn.scalar(select(KifuAlbum.sgf_content).where(KifuAlbum.id == 12))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(sgf_content=content + " "))
+        before_selections = list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings())
+        before_names = list(conn.execute(select(KifuEventName.__table__)).mappings())
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {}
+    with pytest.raises(BatchError):
+        undo_batch(engine, applied["batch_id"])
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuNameBatch.status).where(KifuNameBatch.id == applied["batch_id"])) == "applied"
+        assert list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings()) == before_selections
+        assert list(conn.execute(select(KifuEventName.__table__)).mappings()) == before_names

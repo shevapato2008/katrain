@@ -6,9 +6,10 @@ import json
 
 import pytest
 from sqlalchemy import create_engine, event, func, select, text
+from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
-    Base, KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventSelectionBatch,
+    Base, KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventName, KifuEventSelectionBatch,
     KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
     KifuNameSourceRegistry, KifuPlayer, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
 )
@@ -19,6 +20,7 @@ from katrain.web.kifu.name_batch import (
 from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256, identity_scope_sha256, validate_bundle
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
+from katrain.web.kifu.identity import live_event_selections
 from katrain.web.kifu.name_parse import parse_event
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from scripts.kifu_name_batch import main
@@ -902,6 +904,75 @@ def selected_event_bundle(engine, *, new=False):
     link['identity_review']['scope_sha256'] = identity_scope_sha256(base, [link], declaration)
     base['link_set_sha256'] = canonical_sha256([link])
     return base, source_registry, inv, research
+
+
+def test_general_player_name_batch_remains_writable_after_selected_event_link(engine):
+    selected, sources, selected_inventory, selected_research = selected_event_bundle(engine)
+    apply_bundle(engine, selected, sources, selected_inventory, selected_research,
+                 expected_bundle_sha256=canonical_sha256(selected))
+    inventory = build_inventory(engine)
+    assert inventory['inventory_format'] == 4
+    ordinary, research = player_bundle(inventory)
+    ordinary['inventory_format'] = 4
+    assert dry_run_bundle(engine, ordinary, registry(), inventory, research)['affected_albums'] == [11]
+    applied = apply_bundle(engine, ordinary, registry(), inventory, research)
+    assert applied['status'] == 'applied'
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuPlayerName.display_name).where(
+            KifuPlayerName.player_id == 17, KifuPlayerName.lang == 'ru')) == 'Го Сэйгэн'
+        assert conn.scalar(select(KifuAlbumEventSelection.event_id).where(
+            KifuAlbumEventSelection.album_id == 11)) == 19
+
+
+def test_selected_only_event_name_can_be_revised_with_general_bundle(engine):
+    selected, sources, selected_inventory, selected_research = selected_event_bundle(engine)
+    apply_bundle(engine, selected, sources, selected_inventory, selected_research,
+                 expected_bundle_sha256=canonical_sha256(selected))
+    inventory = build_inventory(engine)
+    ordinary, research = player_bundle(inventory, owner_id=19, display='Новый Кубок')
+    owner = {'kind': 'event', 'id': 19}
+    ordinary['inventory_format'] = 4
+    ordinary['members'][0]['owner'] = owner
+    ordinary['member_set_sha256'] = canonical_sha256(ordinary['members'])
+    candidate = ordinary['candidates'][0]
+    candidate['owner'] = owner
+    with engine.connect() as conn:
+        current = conn.execute(select(KifuEventName.__table__).where(
+            KifuEventName.event_id == 19, KifuEventName.lang == 'ru')).mappings().one()
+    set_fixture_preimage(candidate, canonical_sha256({
+        key: value.isoformat() if hasattr(value, 'isoformat') else value
+        for key, value in current.items()}))
+    research[0]['owner'] = owner
+    research[0]['source_checks'][0]['owner'] = owner
+    candidate['research_sha256'] = canonical_sha256(research[0])
+    assert dry_run_bundle(engine, ordinary, registry(), inventory, research)['affected_albums'] == [11]
+    applied = apply_bundle(engine, ordinary, registry(), inventory, research)
+    assert applied['affected_albums'] == [11]
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuEventName.display_name).where(
+            KifuEventName.event_id == 19, KifuEventName.lang == 'ru')) == 'Новый Кубок'
+
+
+def test_general_player_link_remains_writable_after_selected_event_link(engine):
+    selected, sources, selected_inventory, selected_research = selected_event_bundle(engine)
+    apply_bundle(engine, selected, sources, selected_inventory, selected_research,
+                 expected_bundle_sha256=canonical_sha256(selected))
+    inventory = build_inventory(engine)
+    owner = {'kind': 'player', 'id': 17}
+    base, research, source_registry = _eleven_language_identity_fixture(engine, inventory, [owner])
+    base['inventory_format'] = 4
+    ordinary = _v2_wrap(engine, inventory, base,
+                        [{'owner': owner, 'preimage': {'canonical_name': '吴清源'}}],
+                        [_identity_link(engine, inventory, 11, 'white', owner)])
+    assert dry_run_bundle(engine, ordinary, source_registry, inventory, research)['affected_albums'] == [11]
+    applied = apply_bundle(engine, ordinary, source_registry, inventory, research)
+    assert applied['status'] == 'applied'
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) == 17
+        assert conn.scalar(select(KifuAlbumEventSelection.event_id).where(
+            KifuAlbumEventSelection.album_id == 11)) == 19
+    with Session(engine) as db:
+        assert live_event_selections(db, [], album_ids={11}) == {11: ('Selected Cup', 19)}
 
 
 @pytest.mark.parametrize('new', [False, True])

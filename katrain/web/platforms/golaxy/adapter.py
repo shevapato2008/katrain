@@ -12,6 +12,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from typing import Optional
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -56,6 +57,69 @@ class GolaxyLobbyAuthError(GolaxyLobbyError):
 
 class GolaxySnapshotUnsupported(GolaxyLobbyError):
     """This room uses a board setup not yet verified for spectating."""
+
+
+# Exact official display entries verified in PROTOCOL.md; do not extrapolate ranks.
+_LOBBY_RANKS = {"2500": "7段", "2600": "准8段"}
+_LOBBY_GAME_TYPES = {"80": "自由战", "82": "升降战"}
+_LOBBY_PRESENCE = {
+    "-1": "拒绝",
+    "0": "创建",
+    "10": "登录",
+    "20": "空闲",
+    "30": "忙碌",
+    "40": "对弈",
+    "50": "离线",
+    "90": "退出",
+    "WSGAME_WATCH": "观战",
+    "AI_LIFE_DEATH": "AI解题中",
+    "AI_ANALYSIS": "研究中",
+    "AI_GAME": "对弈",
+}
+
+
+def _lobby_label(value, labels: dict[str, str]) -> Optional[str]:
+    return labels.get(str(value)) if type(value) in (int, str) else None
+
+
+def _lobby_count(value) -> Optional[int]:
+    return value if type(value) is int and value >= 0 else None
+
+
+def _lobby_presence(row: dict) -> Optional[str]:
+    connection = _lobby_label(row.get("connectionStatus"), {"0": "closed", "1": "open"})
+    if connection == "closed":
+        return "离线"
+    if connection != "open":
+        return None
+    if row.get("inviteAble") is False:
+        return "拒绝"
+    detail = None
+    for device in ("web", "app"):
+        if _lobby_label(row.get(f"{device}ConnectionStatus"), {"1": "open"}) and row.get(f"{device}UserStatusDetail"):
+            detail = row[f"{device}UserStatusDetail"]
+            break
+    return _lobby_label(detail, _LOBBY_PRESENCE) or _lobby_label(row.get("userStatus"), _LOBBY_PRESENCE)
+
+
+def _lobby_avatar(row: dict) -> Optional[str]:
+    """Keep verified official HTTPS assets; filename resolution is not verified."""
+    value = row.get("photoFile") or row.get("photo")
+    if not isinstance(value, str) or any(char.isspace() for char in value) or "\\" in value:
+        return None
+    try:
+        url = urlsplit(value)
+        if (
+            url.scheme == "https"
+            and url.hostname == "assets.19x19.com"
+            and url.port in (None, 443)
+            and url.username is None
+            and url.password is None
+        ):
+            return value
+    except ValueError:
+        pass
+    return None
 
 
 def _handicap_stones(n: int, board_size: int = 19) -> list[int]:
@@ -825,23 +889,30 @@ class GolaxyAdapter(PlatformAdapter):
                 raise GolaxyLobbyError("Golaxy room response malformed")
             meta = row.get("gameMetaDto") if isinstance(row.get("gameMetaDto"), dict) else {}
             state = meta.get("gameState") if isinstance(meta.get("gameState"), dict) else {}
-            move_num = state.get("moveNum")
+            move_num = _lobby_count(state.get("moveNum"))
+            room_state = row.get("gameroomStateDto") if isinstance(row.get("gameroomStateDto"), dict) else {}
 
             def player(color: str):
                 code, name = meta.get(f"{color}UserCode"), meta.get(f"{color}Nickname")
                 if not code or not name:
                     return None
-                return {"user_id": str(code), "username": str(name), "rank": None}
+                return {
+                    "user_id": str(code),
+                    "username": str(name),
+                    "rank": _lobby_label(meta.get(f"{color}Level"), _LOBBY_RANKS),
+                }
 
             rooms.append(
                 {
                     "room_id": str(room_id),
                     "room_number": str(row["gameroomCode"]) if row.get("gameroomCode") is not None else None,
-                    "room_type": None,
+                    "room_type": _lobby_label(meta.get("gameType"), _LOBBY_GAME_TYPES),
                     "handicap": meta.get("handicap") if type(meta.get("handicap")) is int else None,
                     "black": player("black"),
                     "white": player("white"),
-                    "phase": f"{move_num}手" if type(move_num) is int and move_num >= 0 else None,
+                    "phase": f"{move_num}手" if move_num is not None else None,
+                    "move_number": move_num,
+                    "room_user_count": _lobby_count(room_state.get("onlineUserCount")),
                     "spectator_count": None,
                 }
             )
@@ -943,7 +1014,18 @@ class GolaxyAdapter(PlatformAdapter):
             name = row.get("followAlias") or row.get("nickname")
             if not code or not name:
                 raise GolaxyLobbyError("Golaxy user response malformed")
-            users.append({"user_id": str(code), "username": str(name), "rank": None, "status": None})
+            users.append(
+                {
+                    "user_id": str(code),
+                    "username": str(name),
+                    "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
+                    "status": _lobby_presence(row),
+                    "wins": _lobby_count(row.get("winNum")),
+                    "losses": _lobby_count(row.get("loseNum")),
+                    "invite_able": row.get("inviteAble") if type(row.get("inviteAble")) is bool else None,
+                    "avatar_url": _lobby_avatar(row),
+                }
+            )
         return users
 
     async def submit_move(self, game_id: str, col: int, row: int) -> bool:

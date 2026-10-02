@@ -254,10 +254,10 @@ export interface GolaxyOnlinePlayer {
   username: string;
   rank: string | null;
   status: string | null;
-  // Optional display fields: only present when the server has verified them.
+  // Verified display projections; malformed or missing values remain null.
   wins?: number | null;
   losses?: number | null;
-  invite_able?: boolean | null;
+  invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
   avatar_url?: string | null;
   user_code?: string | null;
   region?: string | null;
@@ -266,14 +266,14 @@ export interface GolaxyOnlinePlayer {
 export interface GolaxyRoom {
   room_id: string;
   room_number: string | null;
-  room_type: string | null;
+  room_type: string | null; // Verified game category (自由战 / 升降战), not gameroomType.
   handicap: number | null;
   black: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   phase: string | null;
-  spectator_count: number | null;
+  spectator_count: number | null; // No verified spectator membership count; currently null.
   move_number?: number | null;
-  room_user_count?: number | null;
+  room_user_count?: number | null; // All room users, including players.
 }
 
 export interface GolaxySpectatorPosition {

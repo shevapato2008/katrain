@@ -439,6 +439,61 @@ def test_strict_approved_program_label_is_hidden(monkeypatch):
         engine.dispose()
 
 
+def test_strict_duplicate_gn_event_stays_unverified_despite_approved_program_label(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        raw = KifuRawEventValue(raw_value="GNUGo3.8", category="program_source_label", review_status="approved")
+        db.add(raw)
+        db.flush()
+        evidence = _evidence(db, "raw_event", raw.id, "cn", "", decision="hidden")
+        db.add(KifuRawEventName(
+            raw_event_id=raw.id, lang="cn", display_name="", status="verified", decision_kind="hidden",
+            generation_rule_version="test-v1", revision=1, evidence_id=evidence.id,
+        ))
+        program = KifuAlbum(
+            player_black="Black", player_white="White", event="GNUGo3.8",
+            sgf_content="(;SO[https://19x19.com]GN[GNUGo3.8]GC[GNUGo3.8])",
+            source_path="program-only.sgf",
+        )
+        masked = KifuAlbum(
+            player_black="Black", player_white="White", event="GNUGo3.8",
+            sgf_content=("(;SO[https://19x19.com]GN[GNUGo3.8]"
+                         "GN[第5届韩国最强棋士战预选]GC[第5届韩国最强棋士战预选 | 194手])"),
+            source_path="masked-event.sgf",
+        )
+        db.add_all([program, masked])
+        db.commit()
+
+        statements = []
+
+        def record_sql(_connection, _cursor, statement, _parameters, _context, _executemany):
+            statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", record_sql)
+        try:
+            items = {item.id: item for item in _list(db).items}
+        finally:
+            event.remove(engine, "before_cursor_execute", record_sql)
+        assert sum("sgf_content" in statement for statement in statements) == 1
+        assert items[program.id].display_event == ""
+        assert items[masked.id].display_event == "赛事名称待核实"
+        detail = asyncio.run(kifu.get_kifu_album(_request(), masked.id, lang="cn", db=db))
+        assert detail.display_event == "赛事名称待核实"
+        approvals = identity.strict_slot_approvals(db, [program, masked], "cn")
+        assert approvals[program.id][2] == ("hidden", evidence.id)
+        assert approvals[masked.id][2] is None
+
+        coverage = coverage_report(engine, build_inventory(engine), languages=("cn",))
+        assert coverage["languages"]["cn"]["by_decision"] == {"hidden": 1}
+        assert {gap["album_id"] for gap in coverage["missing_examples"] if gap["slot"] == "event"} == {
+            masked.id,
+        }
+    finally:
+        db.close()
+        engine.dispose()
+
+
 def test_strict_cwi_edition_requires_exact_approved_raw_display(monkeypatch):
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     engine, db = _db()

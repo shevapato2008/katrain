@@ -6,7 +6,9 @@ import unicodedata
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from katrain.core.sgf_parser import SGF
 from katrain.web.core.models_db import (
+    KifuAlbum,
     KifuAlbumSource,
     KifuEvent,
     KifuEventAlias,
@@ -160,7 +162,36 @@ def _empty_event(raw: str | None) -> bool:
     return parse_event(raw, None).category == "empty"
 
 
-def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tuple[tuple[str, int | None] | None, ...]]:
+def obscured_program_event_ids(db: Session, albums: list) -> set[int]:
+    """Find albums where an imported program label conceals another root game name.
+
+    This is a coverage guard, not approval of the second GN as a translated
+    event. Read candidate SGFs in one query when the caller deferred content.
+    """
+    candidates = [album.id for album in albums if album.event == "GNUGo3.8"]
+    if not candidates:
+        return set()
+    rows = db.query(KifuAlbum.id, KifuAlbum.sgf_content).filter(KifuAlbum.id.in_(candidates))
+    obscured = set()
+    for album_id, content in rows:
+        try:
+            names = SGF.parse_sgf(content).get_list_property("GN") or []
+        except Exception:
+            # A program label with unreadable source cannot earn a hidden approval.
+            obscured.add(album_id)
+            continue
+        if names and names[0] == "GNUGo3.8" and any(
+            name and name != names[0]
+            and parse_event(name, None).category not in {"program_source_label", "corrupt_data"}
+            for name in names[1:]
+        ):
+            obscured.add(album_id)
+    return obscured
+
+
+def strict_slot_approvals(
+    db: Session, albums: list, lang: str, *, obscured_event_ids: set[int] | None = None
+) -> dict[int, tuple[tuple[str, int | None] | None, ...]]:
     """Return approved decision/evidence for each visible slot; None is a coverage gap.
 
     Structured events need both an approved identity name and their own approved
@@ -169,6 +200,8 @@ def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tup
     no evidence row because there is no source value to research. Queries remain
     bounded by the supplied album page.
     """
+    if obscured_event_ids is None:
+        obscured_event_ids = obscured_program_event_ids(db, albums)
     player_ids = {v for album in albums for v in (album.black_player_id, album.white_player_id) if v}
     event_ids = {album.event_id for album in albums if album.event_id}
     raw_player_values = {v for album in albums for v in (album.player_black, album.player_white)}
@@ -213,6 +246,8 @@ def strict_slot_approvals(db: Session, albums: list, lang: str) -> dict[int, tup
                 )
         else:
             event_approval = ("hidden", None) if _empty_event(album.event) else raw_events.get(album.event or "")
+        if album.id in obscured_event_ids:
+            event_approval = None
         result[album.id] = black, white, event_approval
     return result
 
@@ -245,12 +280,16 @@ def resolve_strict_display(
     canonical_events: dict[int, str],
     raw_players: dict[str, str],
     raw_events: dict[str, str],
+    *,
+    obscured_event_ids: set[int] | None = None,
 ) -> tuple[str, str, str]:
     """Resolve the three visible name slots from the same maps used by coverage checks."""
     black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
     white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
     event_name = events.get(album.event_id) if album.event_id else raw_events.get(album.event or "")
-    if album.event_id and event_name is not None:
+    if obscured_event_ids and album.id in obscured_event_ids:
+        displayed_event = strict_unavailable_label(lang, "event")
+    elif album.event_id and event_name is not None:
         if parse_event(album.event, None).category == "formal_event_candidate":
             displayed_event = raw_events.get(album.event) if canonical_events.get(album.event_id) == "Oteai" else None
         else:

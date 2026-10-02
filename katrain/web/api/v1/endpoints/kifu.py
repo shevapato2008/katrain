@@ -16,6 +16,7 @@ from katrain.web.kifu.identity import (
     display_event_name,
     display_maps,
     matching_entity_ids,
+    obscured_program_event_ids,
     resolve_strict_display,
     strict_display_maps,
     strict_matching_names,
@@ -178,6 +179,7 @@ async def list_kifu_albums(
 
     strict = strict_names_enabled()
     if strict:
+        obscured_event_ids = obscured_program_event_ids(db, records)
         players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
             db, records, lang
         )
@@ -194,6 +196,7 @@ async def list_kifu_albums(
                 lang,
                 raw_players=raw_players if strict else None,
                 raw_events=raw_events if strict else None,
+                obscured_event_ids=obscured_event_ids if strict else None,
             )
             for r in records
         ],
@@ -224,6 +227,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
 
     strict = strict_names_enabled()
     if strict:
+        obscured_event_ids = obscured_program_event_ids(db, [record])
         players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
             db, [record], lang
         )
@@ -238,6 +242,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         lang,
         raw_players=raw_players if strict else None,
         raw_events=raw_events if strict else None,
+        obscured_event_ids=obscured_event_ids if strict else None,
     ).model_dump()
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
@@ -254,6 +259,7 @@ def _summary(
     *,
     raw_players: dict[str, str] | None = None,
     raw_events: dict[str, str] | None = None,
+    obscured_event_ids: set[int] | None = None,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
@@ -261,7 +267,8 @@ def _summary(
     strict = raw_players is not None and raw_events is not None
     if strict:
         black_name, white_name, displayed_event = resolve_strict_display(
-            record, lang, players, events, event_canonical_names, raw_players, raw_events
+            record, lang, players, events, event_canonical_names, raw_players, raw_events,
+            obscured_event_ids=obscured_event_ids,
         )
     else:
         black_name = players.get(record.black_player_id, black.name)

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, defer
 from katrain.web.core.models_db import KifuAlbum
 from katrain.web.kifu.identity import (
     LANGUAGES,
+    obscured_program_event_ids,
     resolve_strict_display,
     strict_display_maps,
     strict_slot_approvals,
@@ -103,14 +104,18 @@ def coverage_report(
                     )
                     if len(albums) != len(expected):
                         raise RuntimeError("snapshot drift: inventory album ID is absent")
+                    obscured_event_ids = obscured_program_event_ids(db, albums)
                     for lang in languages:
                         maps = strict_display_maps(db, albums, lang)
-                        approvals = strict_slot_approvals(db, albums, lang)
+                        approvals = strict_slot_approvals(db, albums, lang, obscured_event_ids=obscured_event_ids)
                         sources = maps[3]
                         for album, item in zip(albums, expected):
                             if not _row_matches(album, item, sources.get(album.id, [])):
                                 raise RuntimeError(f"snapshot drift: album {item['id']} metadata or sources changed")
-                            displayed = resolve_strict_display(album, lang, maps[0], maps[1], maps[2], maps[4], maps[5])
+                            displayed = resolve_strict_display(
+                                album, lang, maps[0], maps[1], maps[2], maps[4], maps[5],
+                                obscured_event_ids=obscured_event_ids,
+                            )
                             for slot, approval, value in zip(_SLOTS, approvals[album.id], displayed):
                                 aggregate = stats[lang]
                                 aggregate["slots"] += 1

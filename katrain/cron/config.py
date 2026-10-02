@@ -39,6 +39,7 @@ DATABASE_MAX_OVERFLOW = int(os.getenv("CRON_DB_MAX_OVERFLOW", "10"))
 KATAGO_URL = os.getenv("KATAGO_URL", "http://127.0.0.1:8002")
 KATAGO_ANALYZE_PATH = os.getenv("KATAGO_ANALYZE_PATH", "/analyze")
 KATAGO_HEALTH_PATH = os.getenv("KATAGO_HEALTH_PATH", "/health")
+KATAGO_EXPECTED_MODEL_SHA256 = os.getenv("KATAGO_EXPECTED_MODEL_SHA256", "")
 
 # Analysis flight window
 ANALYSIS_WINDOW_SIZE = int(os.getenv("CRON_ANALYSIS_WINDOW_SIZE", "16"))

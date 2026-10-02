@@ -206,9 +206,20 @@ class ReportAnalyzerJob(BaseJob):
                     return
 
             parsed = parse_game(game.sgf_content)
+            if parsed.dropped_midgame_setup or parsed.invalid_moves:
+                task.status = "failed"
+                task.error_message = "棋谱包含分析引擎无法忠实还原的中途摆子或无效着手"
+                db.commit()
+                return
             moves = parsed.moves
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
+            expected_sha = config.KATAGO_EXPECTED_MODEL_SHA256
+            if expected_sha and (task.model_sha256 not in (None, expected_sha) or (resume_from and not task.model_sha256)):
+                task.status = "failed"
+                task.error_message = "已有棋谱报告使用旧版或未知模型，不能混合续跑；请联系管理员处理"
+                db.commit()
+                return
             task.status = "running"
             # total_moves 由 web 在建任务时解析并写死（那是计价的操作数）。
             # 这里只在它缺失时兜底 —— 覆盖它会让「已付费的手数」与「实际分析的手数」
@@ -244,6 +255,14 @@ class ReportAnalyzerJob(BaseJob):
                     self._mark_task_for_retry_or_failure(task, f"Analysis failed at move {move_number}")
                     db.commit()
                     return
+
+                if expected_sha:
+                    if task.model_sha256 not in (None, expected_sha):
+                        task.status = "failed"
+                        task.error_message = "报告模型在分析过程中发生变化"
+                        db.commit()
+                        return
+                    task.model_sha256 = expected_sha
 
                 record = (
                     db.query(ReportTaskMoveDB)

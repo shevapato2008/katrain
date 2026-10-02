@@ -134,6 +134,7 @@ services:
       - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - KATAGO_URL=http://host.docker.internal:8002
+      - KATAGO_EXPECTED_MODEL_SHA256=${KATAGO_EXPECTED_MODEL_SHA256:-}
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
       - CRON_LOG_LEVEL=INFO
       - CRON_REPORT_ANALYZE_ENABLED=true

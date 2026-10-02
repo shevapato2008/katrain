@@ -1,0 +1,16 @@
+katago:
+  path: /opt/katago/katago
+  config_path: /opt/katago/analysis_example.cfg
+  models:
+    - name: tf3-b11c768
+      path: /opt/katago/models/kata1-tf3-b11c768-s11003M-d5973M-7gres.bin.gz
+      sha256: 93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871
+      auto_download: false
+  default_model: tf3-b11c768
+  additional_args:
+    - -override-config
+    - numAnalysisThreads=8,numSearchThreadsPerAnalysisThread=4,nnMaxBatchSize=16
+api:
+  host: 0.0.0.0
+  port: 8000
+  reload: false

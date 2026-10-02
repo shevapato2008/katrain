@@ -1,0 +1,5 @@
+# Roll out the isolated cron code onto the current production cron runtime.
+# BASE is tagged from the running image before this build; do not use a mutable remote tag.
+ARG BASE=katrain-cron:pre-transformer-20261002
+FROM ${BASE}
+COPY katrain/cron/ /app/katrain/cron/

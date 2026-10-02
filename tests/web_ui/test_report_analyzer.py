@@ -110,6 +110,57 @@ def _seed_tasks(SessionLocal, count: int):
         return task_ids
 
 
+@pytest.mark.asyncio
+async def test_old_partial_report_cannot_resume_with_new_model():
+    SessionLocal = _make_session()
+    task_id = _seed_task(SessionLocal)
+    with SessionLocal() as db:
+        db.add(models_db.ReportTaskMove(task_id=task_id, move_number=0, status="success", winrate=0.5))
+        db.commit()
+
+    from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
+
+    job = ReportAnalyzerJob()
+    job._running = True
+    with patch("katrain.cron.jobs.report_analyze.SessionLocal", side_effect=SessionLocal), patch(
+        "katrain.cron.jobs.report_analyze.config.KATAGO_EXPECTED_MODEL_SHA256", "new-model-sha"
+    ), patch.object(job, "_analyze_position", new_callable=AsyncMock) as analyze:
+        await job._process_task(task_id)
+        analyze.assert_not_awaited()
+
+    with SessionLocal() as db:
+        task = db.get(models_db.ReportTask, task_id)
+        assert task.status == "failed"
+        assert "不能混合续跑" in task.error_message
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sgf",
+    [
+        "(;SZ[19];B[pd];AB[dd];W[dp])",
+        "(;SZ[19];B[not-a-coordinate];W[dp])",
+    ],
+)
+async def test_report_rejects_sgf_that_parser_would_silently_change(sgf):
+    SessionLocal = _make_session()
+    task_id = _seed_task(SessionLocal, sgf=sgf)
+    from katrain.cron.jobs.report_analyze import ReportAnalyzerJob
+
+    job = ReportAnalyzerJob()
+    job._running = True
+    with patch("katrain.cron.jobs.report_analyze.SessionLocal", side_effect=SessionLocal), patch.object(
+        job, "_analyze_position", new_callable=AsyncMock
+    ) as analyze:
+        await job._process_task(task_id)
+        analyze.assert_not_awaited()
+
+    with SessionLocal() as db:
+        task = db.get(models_db.ReportTask, task_id)
+        assert task.status == "failed"
+        assert "无法忠实还原" in task.error_message
+
+
 # ── Tests ──
 
 

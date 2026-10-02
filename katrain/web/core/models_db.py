@@ -399,6 +399,7 @@ class LiveAnalysisDB(Base):
     score_lead = Column(Float, nullable=True)  # Black's lead in points
     top_moves = Column(JSON, nullable=True)  # [{move, visits, winrate, score_lead, prior, pv}, ...]
     ownership = Column(JSON, nullable=True)  # 2D array of ownership values (-1 to 1, positive=Black)
+    model_sha256 = Column(String(64), nullable=True)
 
     # Move classification
     actual_move = Column(String(8), nullable=True)  # The move that was played
@@ -980,6 +981,7 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    model_sha256 = Column(String(64), nullable=True)
     # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
     # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
     # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，

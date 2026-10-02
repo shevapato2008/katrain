@@ -10,8 +10,11 @@ import re
 from sqlalchemy import select
 
 from katrain.core.sgf_parser import ParseError, SGF
-from katrain.web.core.models_db import KifuAlbum, KifuAlbumEventSelection, KifuEventSelectionBatch
-from katrain.web.kifu.name_candidates import canonical_sha256
+from katrain.web.core.models_db import (
+    KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuEvent,
+    KifuNameBatch, KifuNameChange, KifuSource,
+)
+from katrain.web.kifu.name_candidates import LANGUAGES, canonical_sha256, identity_scope_sha256
 from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.provenance import classify_source_path, sgf_sha256
 
@@ -275,6 +278,221 @@ def audited_selection_images(batch) -> dict[int, dict] | None:
 def selection_matches_audit(selection, images: dict[int, dict] | None) -> bool:
     """Require the entire live selection row to match its approved after-image."""
     return bool(images is not None and images.get(selection["album_id"]) == _image(selection))
+
+
+def name_link_proof_sha256(batch_id: int, bundle_sha256: str, change_id: int,
+                           before_image: dict, after_image: dict) -> str:
+    """Pin the exact applied name-ledger row used to justify one selected-event FK."""
+    return canonical_sha256({"batch_id": batch_id, "bundle_sha256": bundle_sha256,
+                             "change_id": change_id, "before_image": before_image,
+                             "after_image": after_image})
+
+
+def _reviewed_name_links(batch) -> tuple[dict, dict] | None:
+    """Check the finite v4 identity scope independently of change-row images."""
+    try:
+        if batch["status"] != "applied":
+            return None
+        artifact = batch["reviewed_artifact"]
+        bundle = artifact["bundle"]
+        if (bundle["bundle_format"] != 4 or bundle["inventory_format"] != 4
+                or canonical_sha256(bundle) != batch["bundle_sha256"]
+                or bundle["inventory_sha256"] != batch["inventory_sha256"]):
+            return None
+        members, candidates, owners, links = (bundle[key] for key in ("members", "candidates", "owners", "album_links"))
+        if (not all(isinstance(items, list) and items for items in (members, candidates, owners, links))
+                or bundle["member_set_sha256"] != canonical_sha256(members)
+                or bundle["owner_set_sha256"] != canonical_sha256(owners)
+                or bundle["link_set_sha256"] != canonical_sha256(links)):
+            return None
+        def member_key(item):
+            owner = item["owner"]
+            return (owner["kind"], owner.get("id", owner.get("ref")), item["lang"])
+
+        member_keys = [member_key(item) for item in members]
+        if len(set(member_keys)) != len(member_keys):
+            return None
+        member_map = {member_key(item): item for item in members}
+        if (len(candidates) != len(members) or {member_key(item) for item in candidates} != set(member_map)
+                or any(item.get("raw_value") != member_map[member_key(item)].get("raw_value")
+                       or item.get("review_status") != "approved"
+                       or not item.get("producer_id") or not item.get("reviewer_id")
+                       or item["producer_id"] == item["reviewer_id"] for item in candidates)):
+            return None
+        declarations = {}
+        for declaration in owners:
+            target = declaration["owner"]
+            token = f"{target['kind']}:{target['id']}" if "id" in target else f"{target['kind']}:@{target['ref']}"
+            if token in declarations:
+                return None
+            declarations[token] = declaration
+        groups = {}
+        seen = set()
+        for link in links:
+            album_id = link["album_id"]
+            if link["slot"] != "selected_event" or album_id in seen:
+                return None
+            seen.add(album_id)
+            target = link["target"]
+            if target["kind"] != "event":
+                return None
+            token = f"event:{target['id']}" if "id" in target else f"event:@{target['ref']}"
+            declaration = declarations.get(token)
+            if declaration is None:
+                return None
+            review = link["identity_review"]
+            context = declaration["identity_context"]
+            if (review["event_period"] != {key: context[key] for key in ("start_date", "end_date")}
+                    or review["event_region"] != context["region"]):
+                return None
+            if (review["status"] != "approved" or not review["producer_id"] or not review["producer_model"]
+                    or not review["reviewer_id"] or not review["reviewer_model"]
+                    or review["producer_id"] == review["reviewer_id"]
+                    or not review["review_conclusion"] or not review["identity_basis"]
+                    or not review["event_period_basis"] or not review["event_region_basis"]
+                    or not review["source_checks"]):
+                return None
+            produced = _timestamp(review["produced_at"], "identity production time")
+            frozen = _timestamp(review["scope_frozen_at"], "identity freeze time")
+            reviewed = _timestamp(review["reviewed_at"], "identity review time")
+            if not produced <= frozen < reviewed:
+                return None
+            for check in review["source_checks"]:
+                if (not check["url"].startswith("https://") or not _SHA256.fullmatch(check["body_sha256"])
+                        or not check["body_excerpt"] or not check["identity_match"]
+                        or _timestamp(check["fetched_at"], "source capture time") > produced):
+                    return None
+            group_key = (token, link["selection_before_image"]["selected_raw"])
+            groups.setdefault(group_key, []).append(link)
+        for (token, _raw), group in groups.items():
+            expected_scope = identity_scope_sha256(bundle, group, declarations[token])
+            first_review = group[0]["identity_review"]
+            if any(link["identity_review"] != first_review
+                   or link["identity_review"]["scope_sha256"] != expected_scope for link in group):
+                return None
+            target = group[0]["target"]
+            if any(member_key(item) not in member_map for item in (
+                    {"owner": target, "lang": lang} for lang in LANGUAGES)):
+                return None
+        return ({link["album_id"]: link for link in links}, declarations)
+    except (EventSelectionError, KeyError, TypeError, AttributeError, ValueError):
+        return None
+
+
+def verified_selection_rows(conn, selections) -> dict[int, dict]:
+    """Batch-check source, live SGF and unique name-link evidence for read consumers."""
+    from katrain.web.kifu.name_inventory import ASSOCIATION_COLUMNS, SOURCE_COLUMNS
+
+    selections = [dict(row) for row in selections]
+    if not selections:
+        return {}
+    album_ids = {row["album_id"] for row in selections}
+    source_ids = {row["batch_id"] for row in selections}
+    albums = {row["id"]: row for row in conn.execute(
+        select(KifuAlbum.__table__).where(KifuAlbum.id.in_(album_ids))).mappings()}
+    associations = {album_id: {key: album[key] for key in ASSOCIATION_COLUMNS if key != "sources"} | {"sources": []}
+                    for album_id, album in albums.items()}
+    for source_id, album_id, dataset_id, key, path, method in conn.execute(
+            select(*SOURCE_COLUMNS).join(KifuSource, KifuAlbumSource.source_id == KifuSource.id)
+            .where(KifuAlbumSource.album_id.in_(album_ids)).order_by(KifuAlbumSource.id)):
+        associations[album_id]["sources"].append([source_id, dataset_id, key, path, method])
+    source_batches = {row["id"]: row for row in conn.execute(
+        select(KifuEventSelectionBatch.__table__).where(KifuEventSelectionBatch.id.in_(source_ids))).mappings()}
+    source_images = {batch_id: audited_selection_images(source_batches.get(batch_id))
+                     if source_batches.get(batch_id) is not None else None for batch_id in source_ids}
+    source_members = {batch_id: {member["album_id"]: member for member in batch["reviewed_artifact"]["bundle"]["members"]}
+                      for batch_id, batch in source_batches.items() if source_images[batch_id] is not None}
+    changes = {}
+    for change in conn.execute(select(KifuNameChange.__table__).where(
+            KifuNameChange.target_table == KifuAlbumEventSelection.__tablename__,
+            KifuNameChange.target_row_id.in_(album_ids))).mappings():
+        changes.setdefault(change["target_row_id"], []).append(change)
+    name_ids = {change["batch_id"] for group in changes.values() for change in group}
+    name_batches = {row["id"]: row for row in conn.execute(
+        select(KifuNameBatch.__table__).where(KifuNameBatch.id.in_(name_ids))).mappings()} if name_ids else {}
+    reviewed_links = {batch_id: _reviewed_name_links(batch) for batch_id, batch in name_batches.items()}
+    event_ids = {row["event_id"] for row in selections if row["event_id"] is not None}
+    events = {row["id"]: row for row in conn.execute(select(KifuEvent.__table__).where(
+        KifuEvent.id.in_(event_ids))).mappings()} if event_ids else {}
+    event_changes = {}
+    if name_ids:
+        for change in conn.execute(select(KifuNameChange.__table__).where(
+                KifuNameChange.batch_id.in_(name_ids),
+                KifuNameChange.target_table == KifuEvent.__tablename__)).mappings():
+            event_changes[(change["batch_id"], change["target_row_id"])] = change
+    verified = {}
+    for selection in selections:
+        album_id = selection["album_id"]
+        album = albums.get(album_id)
+        source_image = (source_images.get(selection["batch_id"]) or {}).get(album_id)
+        member = source_members.get(selection["batch_id"], {}).get(album_id)
+        if album is None or source_image is None or member is None:
+            continue
+        if any(album[current_key] != member[member_key] for current_key, member_key in _ALBUM_PREIMAGE.items()):
+            continue
+        content = album["sgf_content"]
+        if not isinstance(content, str) or sgf_sha256(content) != selection["sgf_sha256"]:
+            continue
+        try:
+            raw = selected_second_gn(SGF.parse_sgf(content), classify_source_path(album["source_path"]))
+        except (ParseError, ValueError, TypeError, AttributeError, IndexError):
+            continue
+        if raw != selection["selected_raw"]:
+            continue
+        current_image = _image(selection)
+        active = [(change, name_batches[change["batch_id"]]) for change in changes.get(album_id, ())
+                  if change["batch_id"] in name_batches and name_batches[change["batch_id"]]["status"] == "applied"]
+        proof = {"event_id": selection["event_id"], "source_after_image": source_image,
+                 "source_after_sha256": canonical_sha256(source_image),
+                 "name_batch_id": None, "name_proof_sha256": None}
+        if selection_matches_audit(selection, source_images[selection["batch_id"]]) and not active:
+            verified[album_id] = proof
+            continue
+        if (type(selection["event_id"]) is not int or selection["event_id"] <= 0
+                or {**source_image, "event_id": selection["event_id"]} != current_image):
+            continue
+        if len(active) != 1:
+            continue
+        change, name_batch = active[0]
+        reviewed = reviewed_links.get(name_batch["id"])
+        if (reviewed is None or change["before_image"] != source_image
+                or change["after_image"] != current_image):
+            continue
+        link, declarations = reviewed[0].get(album_id), reviewed[1]
+        if (link is None or link["selection_batch_id"] != selection["batch_id"]
+                or link["association_sha256"] != canonical_sha256(associations[album_id])
+                or link["selection_bundle_sha256"] != source_batches[selection["batch_id"]]["bundle_sha256"]
+                or link["selection_before_image"] != source_image
+                or link["selection_before_sha256"] != proof["source_after_sha256"]
+                or link["production_sgf_sha256"] != selection["sgf_sha256"]
+                or link["expected"]["old_id"] is not None
+                or any(album[field] != link["expected"][field] for field in (
+                    "player_black", "player_white", "event", "date_played", "round_name",
+                    "black_rank", "white_rank"))):
+            continue
+        target = link["target"]
+        token = f"event:{target['id']}" if "id" in target else f"event:@{target['ref']}"
+        resolved = name_batch["reviewed_artifact"].get("resolved_refs", {})
+        if resolved.get(token) != selection["event_id"]:
+            continue
+        declaration = declarations[token]
+        event_row = events.get(selection["event_id"])
+        if event_row is None:
+            continue
+        if "id" in target:
+            if declaration.get("preimage", {}).get("canonical_name") != event_row["canonical_name"]:
+                continue
+        else:
+            if declaration.get("create", {}).get("canonical_name") != event_row["canonical_name"]:
+                continue
+            created = event_changes.get((name_batch["id"], selection["event_id"]))
+            if created is None or created["before_image"] is not None or created["after_image"] != _image(event_row):
+                continue
+        proof["name_batch_id"] = name_batch["id"]
+        proof["name_proof_sha256"] = name_link_proof_sha256(name_batch["id"], name_batch["bundle_sha256"],
+                                                             change["id"], source_image, current_image)
+        verified[album_id] = proof
+    return verified
 
 
 def _audit_images_match_review(batch) -> bool:

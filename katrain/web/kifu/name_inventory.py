@@ -156,61 +156,47 @@ def _hash_row(hasher, prefix, values):
     hasher.update(b"\n")
 
 
-def _selection_supplement(conn):
-    """Return the approved live-SGF subset, retaining an empty v3 scope on drift."""
-    from katrain.core.sgf_parser import SGF, ParseError
-    from katrain.web.kifu.event_selection import (
-        audited_selection_images, selected_second_gn, selection_matches_audit,
-    )
-    from katrain.web.kifu.provenance import classify_source_path
+def _selection_supplement(conn, *, inventory_format=None):
+    """Return verified selections; v4 retains an empty scope for first-link review."""
+    from katrain.web.kifu.event_selection import verified_selection_rows
 
-    table = KifuAlbumEventSelection.__table__
-    columns = tuple(table.c)
-    query = (
-        select(*columns, KifuAlbum.sgf_content, KifuAlbum.event, KifuAlbum.source_path)
-        .join(KifuAlbum, KifuAlbumEventSelection.album_id == KifuAlbum.id)
-        .order_by(KifuAlbumEventSelection.album_id)
-    )
-    rows = []
-    seen = False
-    audited_batches = {}
-    for result in conn.execute(query):
-        seen = True
-        selection = dict(zip((column.key for column in columns), result[:len(columns)]))
-        sgf_content, old_event, source_path = result[len(columns):]
-        batch_id = selection["batch_id"]
-        if batch_id not in audited_batches:
-            batch = conn.execute(select(KifuEventSelectionBatch.__table__).where(
-                KifuEventSelectionBatch.id == batch_id)).mappings().one_or_none()
-            audited_batches[batch_id] = (batch, audited_selection_images(batch) if batch is not None else None)
-        batch, images = audited_batches[batch_id]
-        if not (
-            selection_matches_audit(selection, images) and old_event == "GNUGo3.8"
-            and isinstance(sgf_content, str)
-            and hashlib.sha256(sgf_content.encode("utf-8")).hexdigest() == selection["sgf_sha256"]
-        ):
-            continue
-        try:
-            selected = selected_second_gn(SGF.parse_sgf(sgf_content), classify_source_path(source_path))
-        except (ParseError, ValueError, TypeError, AttributeError, IndexError):
-            continue
-        if selected != selection["selected_raw"]:
-            continue
-        rows.append([selection["album_id"], selected, selection["sgf_sha256"], selection["reviewer_id"],
-                     selection["reviewed_at"].isoformat(), batch_id, batch["bundle_sha256"]])
-    if not seen:
+    selection_columns = tuple(KifuAlbumEventSelection.__table__.c)
+    selections = [dict(zip((column.key for column in selection_columns), row)) for row in conn.execute(
+        select(*selection_columns).order_by(KifuAlbumEventSelection.album_id)).all()]
+    if not selections and inventory_format != 4:
         return None
+    linked = any(selection["event_id"] is not None for selection in selections)
+    selection_format = 2 if inventory_format == 4 or linked else 1
+    columns = SELECTION_COLUMNS_V4 if selection_format == 2 else SELECTION_COLUMNS
+    verified = verified_selection_rows(conn, selections)
+    source_ids = {selection["batch_id"] for selection in selections}
+    batches = {row["id"]: row for row in conn.execute(select(KifuEventSelectionBatch.__table__).where(
+        KifuEventSelectionBatch.id.in_(source_ids))).mappings()} if source_ids else {}
+    rows = []
+    for selection in selections:
+        proof = verified.get(selection["album_id"])
+        if proof is None:
+            continue
+        row = [selection["album_id"], selection["selected_raw"], selection["sgf_sha256"],
+               selection["reviewer_id"], selection["reviewed_at"].isoformat(), selection["batch_id"],
+               batches[selection["batch_id"]]["bundle_sha256"]]
+        if selection_format == 2:
+            row.extend(proof[key] for key in ("event_id", "source_after_image", "source_after_sha256",
+                                               "name_batch_id", "name_proof_sha256"))
+        rows.append(row)
     digest = hashlib.sha256()
-    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    _hash_row(digest, b"E", (selection_format, columns))
     for row in rows:
         _hash_row(digest, b"E", row)
-    return {"selection_format": 1, "columns": list(SELECTION_COLUMNS), "rows": rows, "sha256": digest.hexdigest()}
+    return {"selection_format": selection_format, "columns": list(columns), "rows": rows, "sha256": digest.hexdigest()}
 
 
-def build_inventory(engine, *, batch_size=1000):
+def build_inventory(engine, *, batch_size=1000, inventory_format=None):
     """Scan one consistent database snapshot in ID order without writing data."""
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
+    if inventory_format not in (None, 4):
+        raise ValueError("inventory_format must be 4 when specified")
     scopes = {name: _new_scope() for name in ("all", "visible", "sample")}
     source_stats = {name: defaultdict(lambda: [0, set()]) for name in scopes}
     linked_ids = {name: set() for name in scopes}
@@ -277,7 +263,7 @@ def build_inventory(engine, *, batch_size=1000):
                             linked_ids[name].add(album_id)
                 last_id = rows[-1][0]
             base_sha256 = hasher.hexdigest()
-            selection = _selection_supplement(conn)
+            selection = _selection_supplement(conn, inventory_format=inventory_format)
             if selection is not None:
                 _hash_row(hasher, b"E", (selection["selection_format"], selection["sha256"]))
         finally:
@@ -287,7 +273,8 @@ def build_inventory(engine, *, batch_size=1000):
                 conn.rollback()
 
     return {
-        "inventory_format": 3 if selection is not None else 2,
+        "inventory_format": 4 if selection is not None and selection["selection_format"] == 2
+                            else (3 if selection is not None else 2),
         **({"base_sha256": base_sha256} if selection is not None else {}),
         **({"event_selection": selection} if selection is not None else {}),
         "database_identifier": engine.url.render_as_string(hide_password=True),

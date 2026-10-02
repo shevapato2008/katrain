@@ -16,10 +16,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database-url", required=True)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--inventory-format", type=int, choices=(4,))
     args = parser.parse_args(argv)
     engine = create_engine(args.database_url)
     try:
-        result = build_inventory(engine)
+        result = build_inventory(engine, inventory_format=args.inventory_format)
     finally:
         engine.dispose()
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

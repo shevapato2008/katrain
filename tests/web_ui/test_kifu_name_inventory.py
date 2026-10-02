@@ -14,7 +14,8 @@ from katrain.web.core.db import Base
 from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuSource,
 )
-from katrain.web.kifu.name_inventory import _script_type, build_inventory
+from katrain.web.kifu.name_candidates import canonical_sha256
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS_V4, _script_type, build_inventory
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from scripts.kifu_name_inventory import main
 
@@ -133,6 +134,51 @@ def test_reviewed_second_gn_adds_hashed_selection_supplement_without_changing_le
     drifted = build_inventory(engine)
     assert drifted["event_selection"]["rows"] == []
     assert drifted["sha256"] != selected["sha256"]
+
+
+def test_explicit_v4_exports_original_unlinked_selection_and_preserves_legacy_hash(tmp_path):
+    engine = _engine(tmp_path)
+    sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
+           "GC[Selected Cup | 194 moves])")
+    with Session(engine) as db:
+        db.add(_album(20, event="GNUGo3.8", sgf_content=sgf, source="https://19x19.com",
+                      source_path="data/kifu-album/19x19/a.sgf"))
+        db.commit()
+    apply_reviewed_selection(engine, 20)
+    legacy = build_inventory(engine)
+    v4 = build_inventory(engine, inventory_format=4)
+    assert legacy["inventory_format"] == 3
+    assert v4["inventory_format"] == 4
+    assert v4["base_sha256"] == legacy["base_sha256"]
+    assert v4["sha256"] != legacy["sha256"]
+    assert build_inventory(engine)["sha256"] == legacy["sha256"]
+    selection = v4["event_selection"]
+    assert selection["selection_format"] == 2
+    assert selection["columns"] == list(SELECTION_COLUMNS_V4)
+    row = selection["rows"][0]
+    assert row[:7] == legacy["event_selection"]["rows"][0]
+    assert row[7] is None
+    assert row[8]["event_id"] is None
+    assert row[9] == canonical_sha256(row[8])
+    assert row[10:] == [None, None]
+    output = tmp_path / "v4.json"
+    assert main(["--database-url", str(engine.url), "--output", str(output), "--inventory-format", "4"]) == 0
+    assert json.loads(output.read_text(encoding="utf-8"))["sha256"] == v4["sha256"]
+
+
+def test_explicit_v4_has_a_hashed_empty_selection_scope_before_any_review(tmp_path):
+    engine = _engine(tmp_path)
+    with Session(engine) as db:
+        db.add(_album(20))
+        db.commit()
+    legacy = build_inventory(engine)
+    v4 = build_inventory(engine, inventory_format=4)
+    assert legacy["inventory_format"] == 2
+    assert v4["inventory_format"] == 4
+    assert v4["base_sha256"] == legacy["sha256"]
+    assert v4["event_selection"]["rows"] == []
+    assert v4["event_selection"]["columns"] == list(SELECTION_COLUMNS_V4)
+    assert v4["sha256"] != legacy["sha256"]
 
 
 def test_inventory_rejects_fabricated_applied_batch_without_review_artifact(tmp_path):

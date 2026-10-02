@@ -15,12 +15,14 @@ from katrain.web.kifu.identity import (
     LANGUAGES,
     display_event_name,
     display_maps,
+    live_event_selections,
     matching_entity_ids,
     obscured_program_event_ids,
     resolve_strict_display,
     strict_display_maps,
     strict_matching_names,
     strict_names_enabled,
+    strict_selected_event_search_ids,
 )
 from katrain.web.kifu.name_parse import parse_player
 from katrain.web.kifu.round_names import display_round_name
@@ -124,9 +126,11 @@ async def list_kifu_albums(
         strict = strict_names_enabled()
         if strict:
             player_ids, event_ids, raw_players, raw_events = strict_matching_names(db, q)
+            selected_event_ids = strict_selected_event_search_ids(db, q, raw_events, event_ids)
         else:
             player_ids, event_ids = matching_entity_ids(db, q, exact=True)
             raw_players, raw_events = set(), set()
+            selected_event_ids = set()
         if len(player_ids) == 1 and not event_ids and not raw_players and not raw_events:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
@@ -164,6 +168,8 @@ async def list_kifu_albums(
                     clauses.append(KifuAlbum.event.in_(raw_events))
             needle = or_(*clauses)
             query = query.order_by(case((player_match, 0), else_=1))
+        if selected_event_ids:
+            needle = or_(needle, KifuAlbum.id.in_(selected_event_ids))
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 
@@ -179,9 +185,10 @@ async def list_kifu_albums(
 
     strict = strict_names_enabled()
     if strict:
-        obscured_event_ids = obscured_program_event_ids(db, records)
+        selected_events = live_event_selections(db, records)
+        obscured_event_ids = obscured_program_event_ids(db, records, selected_events=selected_events)
         players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
-            db, records, lang
+            db, records, lang, selected_events=selected_events
         )
     else:
         players, events, event_canonical_names, sources = display_maps(db, records, lang)
@@ -197,6 +204,7 @@ async def list_kifu_albums(
                 raw_players=raw_players if strict else None,
                 raw_events=raw_events if strict else None,
                 obscured_event_ids=obscured_event_ids if strict else None,
+                selected_events=selected_events if strict else None,
             )
             for r in records
         ],
@@ -227,9 +235,10 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
 
     strict = strict_names_enabled()
     if strict:
-        obscured_event_ids = obscured_program_event_ids(db, [record])
+        selected_events = live_event_selections(db, [record])
+        obscured_event_ids = obscured_program_event_ids(db, [record], selected_events=selected_events)
         players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
-            db, [record], lang
+            db, [record], lang, selected_events=selected_events
         )
     else:
         players, events, event_canonical_names, sources = display_maps(db, [record], lang)
@@ -243,6 +252,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         raw_players=raw_players if strict else None,
         raw_events=raw_events if strict else None,
         obscured_event_ids=obscured_event_ids if strict else None,
+        selected_events=selected_events if strict else None,
     ).model_dump()
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
@@ -260,6 +270,7 @@ def _summary(
     raw_players: dict[str, str] | None = None,
     raw_events: dict[str, str] | None = None,
     obscured_event_ids: set[int] | None = None,
+    selected_events: dict[int, tuple[str, int | None]] | None = None,
 ) -> KifuAlbumSummary:
     summary = KifuAlbumSummary.model_validate(record)
     black = parse_player(record.player_black, record.black_rank)
@@ -269,6 +280,7 @@ def _summary(
         black_name, white_name, displayed_event = resolve_strict_display(
             record, lang, players, events, event_canonical_names, raw_players, raw_events,
             obscured_event_ids=obscured_event_ids,
+            selected_events=selected_events,
         )
     else:
         black_name = players.get(record.black_player_id, black.name)

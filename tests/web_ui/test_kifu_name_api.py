@@ -25,7 +25,10 @@ from katrain.web.core.models_db import (
     KifuRawPlayerName,
     KifuRawEventValue,
     KifuRawEventName,
+    KifuAlbumEventSelection,
+    KifuEventSelectionBatch,
 )
+from katrain.web.kifu.provenance import sgf_sha256
 
 
 def _request():
@@ -67,6 +70,74 @@ def _evidence(db, owner, owner_id, lang, display, decision="conventional", revis
 
 def _list(db, q=None, lang="cn"):
     return asyncio.run(kifu.list_kifu_albums(_request(), q=q, page=1, page_size=20, lang=lang, db=db))
+
+
+def test_reviewed_second_gn_event_display_search_and_sgf_drift(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    selected_raw = "第5届韩国最强棋士战预选"
+    sgf = (
+        "(;FF[4]SZ[19]SO[https://19x19.com]"
+        f"GN[GNUGo3.8]GN[{selected_raw}]GC[{selected_raw} | 194手];B[aa])"
+    )
+    try:
+        raw = KifuRawEventValue(raw_value=selected_raw, category="game_description", review_status="approved")
+        db.add(raw)
+        db.flush()
+        for lang, display in (("cn", "韩国最强棋士战预选"), ("en", "Korean Strongest Qualifier")):
+            evidence = _evidence(db, "raw_event", raw.id, lang, display)
+            db.add(KifuRawEventName(
+                raw_event_id=raw.id, lang=lang, display_name=display, status="verified",
+                decision_kind="conventional", generation_rule_version="test-v1", revision=1,
+                evidence_id=evidence.id,
+            ))
+        selected = KifuAlbum(
+            player_black="Black", player_white="White", event="GNUGo3.8", sgf_content=sgf,
+            source="https://19x19.com", source_path="data/kifu-album/19x19/selected.sgf",
+        )
+        unselected = KifuAlbum(
+            player_black="Black", player_white="White", event="GNUGo3.8", sgf_content=sgf,
+            source="https://19x19.com", source_path="data/kifu-album/19x19/unselected.sgf",
+        )
+        db.add_all([selected, unselected])
+        db.flush()
+        batch = KifuEventSelectionBatch(
+            bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
+            producer_id="producer", reviewer_id="reviewer", reviewed_at=datetime.now(timezone.utc),
+            status="applied",
+        )
+        db.add(batch)
+        db.flush()
+        db.add(KifuAlbumEventSelection(
+            album_id=selected.id, batch_id=batch.id, selected_raw=selected_raw,
+            sgf_sha256=sgf_sha256(sgf), property_name="GN", property_index=1,
+            status="approved", rule_version="19x19-gnugo-second-gn-v1",
+            reviewer_id="reviewer", reviewed_at=datetime.now(timezone.utc),
+        ))
+        db.commit()
+
+        by_id = {item.id: item for item in _list(db, lang="cn").items}
+        assert by_id[selected.id].display_event == "韩国最强棋士战预选"
+        assert by_id[unselected.id].display_event == "赛事名称待核实"
+        assert asyncio.run(kifu.get_kifu_album(_request(), selected.id, lang="en", db=db)).display_event == (
+            "Korean Strongest Qualifier"
+        )
+        for query in ("韩国最强棋士战预选", "Korean Strongest Qualifier", selected_raw):
+            result = _list(db, query, "cn")
+            assert result.total == 1
+            assert [item.id for item in result.items] == [selected.id]
+
+        selected.sgf_content += " "
+        db.commit()
+        assert asyncio.run(kifu.get_kifu_album(_request(), selected.id, lang="cn", db=db)).display_event == (
+            "赛事名称待核实"
+        )
+        result = _list(db, "Korean Strongest Qualifier", "cn")
+        assert result.total == 0
+        assert result.items == []
+    finally:
+        db.close()
+        engine.dispose()
 
 
 def test_strict_display_checks_exact_evidence_and_never_leaks_raw(monkeypatch):

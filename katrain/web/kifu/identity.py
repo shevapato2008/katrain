@@ -1,5 +1,6 @@
 """Resolve multilingual kifu names without changing original SGF metadata."""
 
+import hashlib
 import os
 import unicodedata
 
@@ -9,10 +10,12 @@ from sqlalchemy.orm import Session
 from katrain.core.sgf_parser import SGF
 from katrain.web.core.models_db import (
     KifuAlbum,
+    KifuAlbumEventSelection,
     KifuAlbumSource,
     KifuEvent,
     KifuEventAlias,
     KifuEventName,
+    KifuEventSelectionBatch,
     KifuNameResearchEvidence,
     KifuPlayerAlias,
     KifuPlayerName,
@@ -116,12 +119,96 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
     return matches_by_owner
 
 
-def strict_display_maps(db: Session, albums: list, lang: str):
+def live_event_selections(db: Session, albums: list) -> dict[int, tuple[str, int | None]]:
+    """Read current approved GN[1] choices for a page, rejecting changed SGF content."""
+    album_ids = [album.id for album in albums if album.event == "GNUGo3.8"]
+    if not album_ids:
+        return {}
+    rows = (
+        db.query(
+            KifuAlbumEventSelection.album_id,
+            KifuAlbumEventSelection.selected_raw,
+            KifuAlbumEventSelection.event_id,
+            KifuAlbumEventSelection.sgf_sha256,
+        )
+        .join(KifuEventSelectionBatch, KifuEventSelectionBatch.id == KifuAlbumEventSelection.batch_id)
+        .filter(
+            KifuAlbumEventSelection.album_id.in_(album_ids),
+            KifuAlbumEventSelection.status == "approved",
+            KifuEventSelectionBatch.status == "applied",
+        )
+    )
+    selected_rows = rows.all()
+    if not selected_rows:
+        return {}
+    content_by_id = dict(
+        db.query(KifuAlbum.id, KifuAlbum.sgf_content)
+        .filter(KifuAlbum.id.in_([row.album_id for row in selected_rows]))
+    )
+    return {
+        album_id: (raw, event_id)
+        for album_id, raw, event_id, pinned_hash in selected_rows
+        if album_id in content_by_id
+        and hashlib.sha256(content_by_id[album_id].encode("utf-8")).hexdigest() == pinned_hash
+    }
+
+
+def strict_selected_event_search_ids(
+    db: Session, query: str, raw_aliases: set[str], event_ids: set[int]
+) -> set[int]:
+    """Match reviewed selected events and validate the same live SGF hash as display."""
+    raw_matches = set(raw_aliases)
+    raw_rows = (
+        _approved_names(db, KifuRawEventName, "raw_event_id")
+        .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
+        .join(KifuAlbumEventSelection, KifuAlbumEventSelection.selected_raw == KifuRawEventValue.raw_value)
+        .filter(
+            KifuRawEventValue.review_status == "approved",
+            KifuRawEventValue.raw_value.contains(query, autoescape=True),
+        )
+        .with_entities(KifuRawEventValue.raw_value)
+        .distinct()
+    )
+    raw_matches.update(row[0] for row in raw_rows)
+    conditions = []
+    if raw_matches:
+        conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_matches))
+    if event_ids:
+        conditions.append(KifuAlbumEventSelection.event_id.in_(event_ids))
+    if not conditions:
+        return set()
+    selected = (
+        db.query(KifuAlbumEventSelection.album_id, KifuAlbumEventSelection.sgf_sha256, KifuAlbum.sgf_content)
+        .join(KifuAlbum, KifuAlbum.id == KifuAlbumEventSelection.album_id)
+        .join(KifuEventSelectionBatch, KifuEventSelectionBatch.id == KifuAlbumEventSelection.batch_id)
+        .filter(
+            KifuAlbum.duplicate_of_id.is_(None),
+            KifuAlbum.event == "GNUGo3.8",
+            KifuAlbumEventSelection.status == "approved",
+            KifuEventSelectionBatch.status == "applied",
+            or_(*conditions),
+        )
+    )
+    if db.bind.dialect.name == "postgresql":
+        live_hash = func.encode(func.sha256(func.convert_to(KifuAlbum.sgf_content, "UTF8")), "hex")
+        return {album_id for (album_id,) in selected.filter(live_hash == KifuAlbumEventSelection.sgf_sha256)
+                .with_entities(KifuAlbumEventSelection.album_id)}
+    rows = selected
+    return {
+        album_id for album_id, pinned_hash, content in rows
+        if hashlib.sha256(content.encode("utf-8")).hexdigest() == pinned_hash
+    }
+
+
+def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events=None):
     """Read names for the current page in bounded, batched queries."""
     player_ids = {v for album in albums for v in (album.black_player_id, album.white_player_id) if v}
+    selected_events = selected_events or {}
     event_ids = {album.event_id for album in albums if album.event_id}
+    event_ids.update(event_id for _, event_id in selected_events.values() if event_id)
     raw_players = {v for album in albums for v in (album.player_black, album.player_white) if v is not None}
     raw_events = {album.event or "" for album in albums}
+    raw_events.update(raw for raw, _ in selected_events.values())
     players = {
         row.player_id: row.display_name for row in _approved_names(db, KifuPlayerName, "player_id", player_ids, lang)
     }
@@ -162,13 +249,14 @@ def _empty_event(raw: str | None) -> bool:
     return parse_event(raw, None).category == "empty"
 
 
-def obscured_program_event_ids(db: Session, albums: list) -> set[int]:
+def obscured_program_event_ids(db: Session, albums: list, *, selected_events=None) -> set[int]:
     """Find albums where an imported program label conceals another root game name.
 
     This is a coverage guard, not approval of the second GN as a translated
     event. Read candidate SGFs in one query when the caller deferred content.
     """
-    candidates = [album.id for album in albums if album.event == "GNUGo3.8"]
+    selected_events = selected_events or {}
+    candidates = [album.id for album in albums if album.event == "GNUGo3.8" and album.id not in selected_events]
     if not candidates:
         return set()
     rows = db.query(KifuAlbum.id, KifuAlbum.sgf_content).filter(KifuAlbum.id.in_(candidates))
@@ -190,7 +278,8 @@ def obscured_program_event_ids(db: Session, albums: list) -> set[int]:
 
 
 def strict_slot_approvals(
-    db: Session, albums: list, lang: str, *, obscured_event_ids: set[int] | None = None
+    db: Session, albums: list, lang: str, *, obscured_event_ids: set[int] | None = None,
+    selected_events: dict[int, tuple[str, int | None]] | None = None,
 ) -> dict[int, tuple[tuple[str, int | None] | None, ...]]:
     """Return approved decision/evidence for each visible slot; None is a coverage gap.
 
@@ -200,12 +289,15 @@ def strict_slot_approvals(
     no evidence row because there is no source value to research. Queries remain
     bounded by the supplied album page.
     """
+    selected_events = selected_events or {}
     if obscured_event_ids is None:
-        obscured_event_ids = obscured_program_event_ids(db, albums)
+        obscured_event_ids = obscured_program_event_ids(db, albums, selected_events=selected_events)
     player_ids = {v for album in albums for v in (album.black_player_id, album.white_player_id) if v}
     event_ids = {album.event_id for album in albums if album.event_id}
+    event_ids.update(event_id for _, event_id in selected_events.values() if event_id)
     raw_player_values = {v for album in albums for v in (album.player_black, album.player_white)}
     raw_event_values = {album.event or "" for album in albums}
+    raw_event_values.update(raw for raw, _ in selected_events.values())
     entity_approvals = []
     for model, owner, ids in (
         (KifuPlayerName, "player_id", player_ids),
@@ -232,20 +324,21 @@ def strict_slot_approvals(
     raw_players, raw_events = raw_approvals
     result = {}
     for album in albums:
+        event_raw, event_id = selected_events.get(album.id, (album.event, album.event_id))
         black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
         white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
-        if album.event_id:
-            event_approval = events.get(album.event_id)
-            if parse_event(album.event, None).category == "formal_event_candidate":
+        if event_id:
+            event_approval = events.get(event_id)
+            if parse_event(event_raw, None).category == "formal_event_candidate":
                 event_approval = (
-                    raw_events.get(album.event) if event_approval and canonical.get(album.event_id) == "Oteai" else None
+                    raw_events.get(event_raw) if event_approval and canonical.get(event_id) == "Oteai" else None
                 )
             elif event_approval:
                 event_approval = raw_events.get(
-                    album.event, None if structure_event(album.event or "")["components"] else event_approval
+                    event_raw, None if structure_event(event_raw or "")["components"] else event_approval
                 )
         else:
-            event_approval = ("hidden", None) if _empty_event(album.event) else raw_events.get(album.event or "")
+            event_approval = ("hidden", None) if _empty_event(event_raw) else raw_events.get(event_raw or "")
         if album.id in obscured_event_ids:
             event_approval = None
         result[album.id] = black, white, event_approval
@@ -282,26 +375,28 @@ def resolve_strict_display(
     raw_events: dict[str, str],
     *,
     obscured_event_ids: set[int] | None = None,
+    selected_events: dict[int, tuple[str, int | None]] | None = None,
 ) -> tuple[str, str, str]:
     """Resolve the three visible name slots from the same maps used by coverage checks."""
     black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
     white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
-    event_name = events.get(album.event_id) if album.event_id else raw_events.get(album.event or "")
+    event_raw, event_id = (selected_events or {}).get(album.id, (album.event, album.event_id))
+    event_name = events.get(event_id) if event_id else raw_events.get(event_raw or "")
     if obscured_event_ids and album.id in obscured_event_ids:
         displayed_event = strict_unavailable_label(lang, "event")
-    elif album.event_id and event_name is not None:
-        if parse_event(album.event, None).category == "formal_event_candidate":
-            displayed_event = raw_events.get(album.event) if canonical_events.get(album.event_id) == "Oteai" else None
+    elif event_id and event_name is not None:
+        if parse_event(event_raw, None).category == "formal_event_candidate":
+            displayed_event = raw_events.get(event_raw) if canonical_events.get(event_id) == "Oteai" else None
         else:
             displayed_event = raw_events.get(
-                album.event, None if structure_event(album.event or "")["components"] else event_name
+                event_raw, None if structure_event(event_raw or "")["components"] else event_name
             )
     else:
         displayed_event = event_name
     return (
         black if black is not None else strict_fallback(album.player_black, lang, "player"),
         white if white is not None else strict_fallback(album.player_white, lang, "player"),
-        displayed_event if displayed_event is not None else strict_fallback(album.event, lang, "event"),
+        displayed_event if displayed_event is not None else strict_fallback(event_raw, lang, "event"),
     )
 
 

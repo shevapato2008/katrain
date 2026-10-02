@@ -7,7 +7,7 @@ def test_explicit_year_edition_and_round_preserve_every_character():
     raw = "1934年第十二届日本大手合第3轮"
     item = structure_event(raw)
     assert item["status"] == "pending_review"
-    assert item["rule_version"] == "event-components-v2"
+    assert item["rule_version"] == "event-components-v3"
     assert item["core"] == "日本大手合"
     assert [(part["kind"], part["value"]) for part in item["components"]] == [
         ("year", "1934"), ("edition", "十二届"), ("round", "3轮")
@@ -73,7 +73,28 @@ def test_english_ordinal_edition_keeps_full_series_name_and_raw_spans():
 
 
 def test_malformed_ordinal_and_non_event_do_not_merge_with_series():
-    for raw in ("11st Honinbo", "0th Honinbo", "28th", "28th 中盘胜"):
+    for raw in (
+        "11st Honinbo", "0th Honinbo", "28th", "28th 中盘胜",
+        "Judan,11st", "0thTengen", "27th", "10th日本天元戦",
+    ):
         item = structure_event(raw)
         assert item["grammar"] == "unparsed"
         assert item["core"] == raw
+
+
+def test_ordinal_suffix_and_joined_prefix_keep_qualifiers_and_exact_spans():
+    examples = (
+        ("Judan,32nd", "english_ordinal_suffix", "Judan", "32nd"),
+        ("Meijin(Yomiuri),14th", "english_ordinal_suffix", "Meijin(Yomiuri)", "14th"),
+        ("27thTengen", "english_ordinal_joined", "Tengen", "27th"),
+        ("14thOldMeijinLeague", "english_ordinal_joined", "OldMeijinLeague", "14th"),
+    )
+    for raw, grammar, core, edition in examples:
+        item = structure_event(raw)
+        assert item["rule_version"] == "event-components-v3"
+        assert item["grammar"] == grammar
+        assert item["core"] == core
+        assert item["status"] == "pending_review"
+        assert [(part["kind"], part["value"]) for part in item["components"]] == [("edition", edition)]
+        assert "".join(part["text"] for part in item["parts"]) == raw
+        assert all(raw[part["start"]:part["end"]] == part["text"] for part in item["parts"])

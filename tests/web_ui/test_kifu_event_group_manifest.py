@@ -86,12 +86,24 @@ def test_ordinal_editions_group_only_within_the_same_full_series_name():
         for raw in ("28th Honinbo", "29th Honinbo", "14th Old Meijin", "1st Meijin")
     ]
     manifest = build_event_group_manifest(_inventory(rows))
-    assert manifest["rule_version"] == "event-components-v2"
+    assert manifest["rule_version"] == "event-components-v3"
     assert manifest["group_count"] == 3
     honinbo = next(group for group in manifest["groups"] if group["core"] == "Honinbo")
     assert {member["raw_value"] for member in honinbo["members"]} == {"28th Honinbo", "29th Honinbo"}
     assert all(group["status"] == "pending_review" for group in manifest["groups"])
     assert {group["core"] for group in manifest["groups"]} == {"Honinbo", "Old Meijin", "Meijin"}
+
+
+def test_new_ordinal_groups_do_not_erase_distinct_series_qualifiers():
+    rows = [
+        {"value": raw, "occurrences": 1, "affected_games": 1}
+        for raw in ("Judan,31st", "Judan,32nd", "Meijin(Yomiuri),14th", "27thTengen", "28thTengen", "27thOldTengen")
+    ]
+    manifest = build_event_group_manifest(_inventory(rows))
+    assert manifest["group_count"] == 4
+    judan = next(group for group in manifest["groups"] if group["core"] == "Judan")
+    assert {member["raw_value"] for member in judan["members"]} == {"Judan,31st", "Judan,32nd"}
+    assert {group["core"] for group in manifest["groups"]} == {"Judan", "Meijin(Yomiuri)", "Tengen", "OldTengen"}
 
 
 def test_group_manifest_refuses_old_inventory_and_duplicate_raw_values():

@@ -12,7 +12,7 @@ from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 
 
-RULE_VERSION = "event-components-v2"
+RULE_VERSION = "event-components-v3"
 _YEAR = re.compile(r"([12]\d{3})年(?:度)?\s*")
 _NUMBER = r"(?:[0-9]{1,3}|[一二三四五六七八九]|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
 _EDITION = re.compile(rf"(?:(?:第)?({_NUMBER})|首)(届|期)\s*")
@@ -20,6 +20,8 @@ _ROUND = re.compile(rf"\s*(?:第)?({_NUMBER})(轮|局)\s*\Z")
 _OTEAI_YEAR = re.compile(r"(Oteai)\s+([12]\d{3})\Z", re.IGNORECASE)
 _CWI = re.compile(r"(JapanPromotionTournament),([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
 _ENGLISH_ORDINAL = re.compile(r"([1-9]\d{0,2})(st|nd|rd|th)\s+(\S.*)\Z", re.IGNORECASE)
+_ENGLISH_ORDINAL_SUFFIX = re.compile(r"(\S(?:.*\S)?),([1-9]\d{0,2})(st|nd|rd|th)\Z", re.IGNORECASE)
+_ENGLISH_ORDINAL_JOINED = re.compile(r"([1-9]\d{0,2})(st|nd|rd|th)([A-Za-z(].*)\Z", re.IGNORECASE)
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
@@ -81,6 +83,22 @@ def structure_event(raw: str) -> dict:
             _part(raw, "edition", ordinal.group(1) + ordinal.group(2), 0, core_start),
             _part(raw, "core", ordinal.group(3), core_start, len(raw)),
         ], "english_ordinal_edition")
+
+    suffix_ordinal = _ENGLISH_ORDINAL_SUFFIX.fullmatch(raw)
+    if suffix_ordinal and suffix_ordinal.group(3).lower() == _ordinal_suffix(int(suffix_ordinal.group(2))):
+        core_end = suffix_ordinal.end(1)
+        return _result(raw, [
+            _part(raw, "core", suffix_ordinal.group(1), 0, core_end),
+            _part(raw, "edition", suffix_ordinal.group(2) + suffix_ordinal.group(3), core_end, len(raw)),
+        ], "english_ordinal_suffix")
+
+    joined_ordinal = _ENGLISH_ORDINAL_JOINED.fullmatch(raw)
+    if joined_ordinal and joined_ordinal.group(2).lower() == _ordinal_suffix(int(joined_ordinal.group(1))):
+        core_start = joined_ordinal.start(3)
+        return _result(raw, [
+            _part(raw, "edition", joined_ordinal.group(1) + joined_ordinal.group(2), 0, core_start),
+            _part(raw, "core", joined_ordinal.group(3), core_start, len(raw)),
+        ], "english_ordinal_joined")
 
     start, end = 0, len(raw)
     prefixes = []

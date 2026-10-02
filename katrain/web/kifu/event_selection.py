@@ -12,9 +12,13 @@ from sqlalchemy import select
 from katrain.core.sgf_parser import ParseError, SGF
 from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuEvent,
-    KifuNameBatch, KifuNameChange, KifuSource,
+    KifuEventName, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuNameSourceRegistry, KifuSource,
 )
-from katrain.web.kifu.name_candidates import LANGUAGES, canonical_sha256, identity_scope_sha256
+from katrain.web.kifu.name_candidates import (
+    CandidateError, LANGUAGES, _iso_date, _played_date_bounds, _validate_candidate,
+    canonical_sha256, identity_scope_sha256,
+)
+from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.provenance import classify_source_path, sgf_sha256
 
@@ -288,7 +292,56 @@ def name_link_proof_sha256(batch_id: int, bundle_sha256: str, change_id: int,
                              "after_image": after_image})
 
 
-def _reviewed_name_links(batch) -> tuple[dict, dict] | None:
+def _same_review_time(stored: datetime, signed: str) -> bool:
+    expected = _timestamp(signed, "name review time")
+    return stored == (expected.replace(tzinfo=None) if stored.tzinfo is None else expected)
+
+
+def _raw_scope_sha256(conn, raw: str, cache: dict, source_batch_cache: dict) -> str | None:
+    """Rebuild the original raw-event slots from live albums and source-valid selections."""
+    if raw in cache:
+        return cache[raw]
+    slots = [[album_id, "event"] for album_id in conn.scalars(select(KifuAlbum.id).where(KifuAlbum.event == raw))]
+    selections = list(conn.execute(select(KifuAlbumEventSelection.__table__).where(
+        KifuAlbumEventSelection.selected_raw == raw)).mappings())
+    selection_ids = {row["album_id"] for row in selections}
+    albums = {row["id"]: row for row in conn.execute(select(KifuAlbum.__table__).where(
+        KifuAlbum.id.in_(selection_ids))).mappings()} if selection_ids else {}
+    batch_ids = {row["batch_id"] for row in selections}
+    missing_batch_ids = batch_ids - source_batch_cache.keys()
+    batches = {row["id"]: row for row in conn.execute(select(KifuEventSelectionBatch.__table__).where(
+        KifuEventSelectionBatch.id.in_(missing_batch_ids))).mappings()} if missing_batch_ids else {}
+    for batch_id in missing_batch_ids:
+        batch = batches.get(batch_id)
+        images = audited_selection_images(batch) if batch is not None else None
+        members = {item["album_id"]: item for item in batch["reviewed_artifact"]["bundle"]["members"]} \
+            if images is not None else {}
+        source_batch_cache[batch_id] = (images, members)
+    for selection in selections:
+        images, members = source_batch_cache[selection["batch_id"]]
+        album = albums.get(selection["album_id"])
+        source_image = (images or {}).get(selection["album_id"])
+        member = members.get(selection["album_id"])
+        if (album is None or source_image is None or member is None
+                or {**source_image, "event_id": selection["event_id"]} != _image(selection)
+                or any(album[key] != member[old_key] for key, old_key in _ALBUM_PREIMAGE.items())
+                or sgf_sha256(album["sgf_content"]) != selection["sgf_sha256"]):
+            cache[raw] = None
+            return None
+        try:
+            selected = selected_second_gn(SGF.parse_sgf(album["sgf_content"]),
+                                          classify_source_path(album["source_path"]))
+        except (ParseError, ValueError, TypeError, AttributeError, IndexError):
+            selected = None
+        if selected != raw:
+            cache[raw] = None
+            return None
+        slots.append([selection["album_id"], "selected_event"])
+    cache[raw] = canonical_sha256(sorted(slots)) if slots else None
+    return cache[raw]
+
+
+def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache: dict) -> tuple[dict, dict] | None:
     """Check the finite v4 identity scope independently of change-row images."""
     try:
         if batch["status"] != "applied":
@@ -368,15 +421,106 @@ def _reviewed_name_links(batch) -> tuple[dict, dict] | None:
             expected_scope = identity_scope_sha256(bundle, group, declarations[token])
             first_review = group[0]["identity_review"]
             if any(link["identity_review"] != first_review
-                   or link["identity_review"]["scope_sha256"] != expected_scope for link in group):
+                   or link["identity_review"]["scope_sha256"] != expected_scope
+                   or link["raw_scope_sha256"] != _raw_scope_sha256(conn, _raw, raw_scope_cache,
+                                                                      source_batch_cache)
+                   for link in group):
                 return None
             target = group[0]["target"]
             if any(member_key(item) not in member_map for item in (
                     {"owner": target, "lang": lang} for lang in LANGUAGES)):
                 return None
+        if not _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, groups):
+            return None
         return ({link["album_id"]: link for link in links}, declarations)
-    except (EventSelectionError, KeyError, TypeError, AttributeError, ValueError):
+    except (EventSelectionError, CandidateError, KeyError, TypeError, AttributeError, ValueError):
         return None
+
+
+def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, groups) -> bool:
+    """Check persisted approval and ledger proof; the historical inventory is not stored for full revalidation."""
+    registry_row = conn.execute(select(KifuNameSourceRegistry.__table__).where(
+        KifuNameSourceRegistry.id == batch["source_registry_id"])).mappings().one_or_none()
+    if registry_row is None:
+        return False
+    registry = registry_row["registry"]
+    if (registry_row["version"] != bundle.get("registry_version")
+            or registry_row["sha256"] != bundle.get("registry_sha256")
+            or registry_sha256(registry) != registry_row["sha256"]
+            or set(registry.get("language_tags", {})) != LANGUAGES):
+        return False
+    expected_research_hashes = sorted(row["research_sha256"] for row in candidates if row.get("research_sha256"))
+    if batch["reviewed_artifact"].get("research_hashes") != expected_research_hashes:
+        return False
+    changes = list(conn.execute(select(KifuNameChange.__table__).where(
+        KifuNameChange.batch_id == batch["id"],
+        KifuNameChange.target_table.in_((KifuEventName.__tablename__, KifuNameResearchEvidence.__tablename__))
+    )).mappings())
+    name_changes = {change["target_row_id"]: change for change in changes
+                    if change["target_table"] == KifuEventName.__tablename__}
+    evidence_changes = {change["target_row_id"]: change for change in changes
+                        if change["target_table"] == KifuNameResearchEvidence.__tablename__}
+    names = {row["id"]: row for row in conn.execute(select(KifuEventName.__table__).where(
+        KifuEventName.id.in_(name_changes))).mappings()} if name_changes else {}
+    evidence = {row["id"]: row for row in conn.execute(select(KifuNameResearchEvidence.__table__).where(
+        KifuNameResearchEvidence.id.in_(evidence_changes))).mappings()} if evidence_changes else {}
+    candidate_map = {(canonical_sha256(row["owner"]), row["lang"]): row for row in candidates}
+    resolved = batch["reviewed_artifact"].get("resolved_refs", {})
+    for token, _raw in groups:
+        owner = declarations[token]["owner"]
+        owner_id = resolved.get(token)
+        if type(owner_id) is not int or owner_id <= 0:
+            return False
+        for lang in LANGUAGES:
+            candidate = candidate_map.get((canonical_sha256(owner), lang))
+            if candidate is None or candidate.get("review_status") != "approved":
+                return False
+            matching_names = [row for row in names.values() if row["event_id"] == owner_id and row["lang"] == lang]
+            if len(matching_names) != 1:
+                return False
+            name = matching_names[0]
+            name_change = name_changes[name["id"]]
+            evidence_row = evidence.get(name["evidence_id"])
+            evidence_change = evidence_changes.get(name["evidence_id"])
+            if (name["status"] != "verified" or name_change["after_image"] != _image(name)
+                    or evidence_row is None or evidence_change is None
+                    or evidence_change["before_image"] is not None
+                    or evidence_change["after_image"] != _image(evidence_row)
+                    or evidence_row["event_id"] != owner_id or evidence_row["lang"] != lang
+                    or evidence_row["source_registry_id"] != registry_row["id"]
+                    or evidence_row["review_status"] != "approved"
+                    or evidence_row["candidate_name"] != candidate.get("display_name")
+                    or evidence_row["producer_id"] != candidate.get("producer_id")
+                    or evidence_row["producer_model"] != candidate.get("producer_model")
+                    or not _same_review_time(evidence_row["produced_at"], candidate.get("produced_at"))
+                    or evidence_row["reviewer_id"] != candidate.get("reviewer_id")
+                    or evidence_row["reviewer_model"] != candidate.get("reviewer_model")
+                    or not _same_review_time(evidence_row["reviewed_at"], candidate.get("reviewed_at"))
+                    or evidence_row["decision_kind"] != candidate.get("decision_kind")
+                    or evidence_row["generation_rule_version"] != candidate.get("generation_rule_version")
+                    or name["display_name"] != candidate.get("display_name")
+                    or name["decision_kind"] != candidate.get("decision_kind")
+                    or name["generation_rule_version"] != candidate.get("generation_rule_version")
+                    or name["revision"] != evidence_row["revision"]):
+                return False
+            payload = evidence_row["research_payload"]
+            research = payload.get("research") if isinstance(payload, dict) else None
+            if payload.get("candidate") != candidate or canonical_sha256(research) != candidate.get("research_sha256"):
+                return False
+            _validate_candidate(candidate, research, registry, {"event": {owner_id}},
+                                declarations=declarations, link_targets={token})
+            preimage = candidate.get("name_preimage_sha256")
+            if preimage != (canonical_sha256(name_change["before_image"])
+                            if name_change["before_image"] is not None else None):
+                return False
+            binding = candidate.get("preimage_binding")
+            if (not isinstance(binding, dict) or binding.get("name_preimage_sha256") != preimage
+                    or not binding.get("actor_id") or binding["actor_id"] == candidate["reviewer_id"]
+                    or not binding.get("actor_model") or not _timestamp(binding.get("captured_at"), "name capture time")
+                    <= _timestamp(binding.get("bound_at"), "name binding time")
+                    <= _timestamp(candidate.get("reviewed_at"), "name review time")):
+                return False
+    return True
 
 
 def verified_selection_rows(conn, selections) -> dict[int, dict]:
@@ -410,7 +554,11 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
     name_ids = {change["batch_id"] for group in changes.values() for change in group}
     name_batches = {row["id"]: row for row in conn.execute(
         select(KifuNameBatch.__table__).where(KifuNameBatch.id.in_(name_ids))).mappings()} if name_ids else {}
-    reviewed_links = {batch_id: _reviewed_name_links(batch) for batch_id, batch in name_batches.items()}
+    raw_scope_cache = {}
+    source_batch_cache = {batch_id: (source_images[batch_id], source_members.get(batch_id, {}))
+                          for batch_id in source_ids}
+    reviewed_links = {batch_id: _reviewed_name_links(conn, batch, raw_scope_cache, source_batch_cache)
+                      for batch_id, batch in name_batches.items()}
     event_ids = {row["event_id"] for row in selections if row["event_id"] is not None}
     events = {row["id"]: row for row in conn.execute(select(KifuEvent.__table__).where(
         KifuEvent.id.in_(event_ids))).mappings()} if event_ids else {}
@@ -476,6 +624,13 @@ def verified_selection_rows(conn, selections) -> dict[int, dict]:
         if resolved.get(token) != selection["event_id"]:
             continue
         declaration = declarations[token]
+        context = declaration["identity_context"]
+        played_bounds = _played_date_bounds(album["date_played"])
+        if (played_bounds is None or _iso_date(context["start_date"]) is None
+                or _iso_date(context["end_date"]) is None
+                or not _iso_date(context["start_date"]) <= played_bounds[0]
+                or not played_bounds[1] <= _iso_date(context["end_date"])):
+            continue
         event_row = events.get(selection["event_id"])
         if event_row is None:
             continue

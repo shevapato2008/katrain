@@ -141,6 +141,18 @@ def _selected_event_rows(inventory: dict, original_events: dict[int, str | None]
         if "event_selection" in inventory:
             raise ValueError("inventory_format 2 cannot include event selection")
         return {}
+    if inventory["inventory_format"] == 4:
+        from katrain.web.kifu.name_candidates import _selection_rows
+
+        selected = {}
+        for row in _selection_rows(inventory):
+            album_id, raw = row[:2]
+            if album_id not in original_events:
+                raise ValueError("event selection album ID is absent from inventory")
+            if original_events[album_id] != "GNUGo3.8":
+                raise ValueError("event selection original event is not GNUGo3.8")
+            selected[album_id] = raw
+        return selected
     selection = inventory.get("event_selection")
     if (
         not isinstance(selection, dict)
@@ -182,9 +194,9 @@ def _selected_event_rows(inventory: dict, original_events: dict[int, str | None]
 
 def build_event_group_manifest(inventory: dict, *, expected_artifact_sha256: str | None = None) -> dict:
     """Group every raw EV spelling for finite, separately reviewed batch manifests."""
-    if inventory.get("inventory_format") not in {2, 3}:
-        raise ValueError("inventory_format 2 or 3 is required")
-    if inventory["inventory_format"] == 3 or expected_artifact_sha256 is not None:
+    if inventory.get("inventory_format") not in {2, 3, 4}:
+        raise ValueError("inventory_format 2, 3 or 4 is required")
+    if inventory["inventory_format"] in {3, 4} or expected_artifact_sha256 is not None:
         if not isinstance(expected_artifact_sha256, str) or not _SHA256.fullmatch(expected_artifact_sha256):
             raise ValueError("external inventory artifact SHA-256 is required")
         if _canonical_hash(inventory) != expected_artifact_sha256:
@@ -265,9 +277,9 @@ def build_event_group_manifest(inventory: dict, *, expected_artifact_sha256: str
         "inventory_format": inventory["inventory_format"],
         "inventory_sha256": inventory["sha256"],
         **({"inventory_artifact_sha256": expected_artifact_sha256}
-           if inventory["inventory_format"] == 3 else {}),
+           if inventory["inventory_format"] in {3, 4} else {}),
         **({"event_selection_sha256": inventory["event_selection"]["sha256"]}
-           if inventory["inventory_format"] == 3 else {}),
+           if inventory["inventory_format"] in {3, 4} else {}),
         "rule_version": RULE_VERSION,
         "group_count": len(result_groups),
         "groups": result_groups,

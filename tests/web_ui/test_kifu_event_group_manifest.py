@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, SELECTION_COLUMNS_V4, _hash_row
+from katrain.web.kifu.name_candidates import canonical_sha256
 from katrain.web.kifu.name_structure import build_event_group_manifest
 from scripts.kifu_name_groups import main
 
@@ -45,6 +46,26 @@ def _selected_inventory(values, selected_rows):
             "sha256": digest.hexdigest(),
         },
     )
+    return inventory
+
+
+def _selected_v4_inventory(values, selected_rows):
+    inventory = _selected_inventory(values, selected_rows)
+    rows = []
+    for album_id, raw, sgf, reviewer, reviewed_at, batch_id, bundle_sha in selected_rows:
+        image = {"album_id": album_id, "event_id": None, "batch_id": batch_id, "selected_raw": raw,
+                 "sgf_sha256": sgf, "property_name": "GN", "property_index": 1,
+                 "status": "approved", "rule_version": "19x19-gnugo-second-gn-v1",
+                 "reviewer_id": reviewer, "reviewed_at": reviewed_at,
+                 "created_at": "2026-10-02T10:00:00"}
+        rows.append([album_id, raw, sgf, reviewer, reviewed_at, batch_id, bundle_sha,
+                     None, image, canonical_sha256(image), None, None])
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (2, SELECTION_COLUMNS_V4))
+    for row in rows:
+        _hash_row(digest, b"E", row)
+    inventory.update(inventory_format=4, event_selection={"selection_format": 2,
+        "columns": list(SELECTION_COLUMNS_V4), "rows": rows, "sha256": digest.hexdigest()})
     return inventory
 
 
@@ -213,6 +234,25 @@ def test_v3_manifest_requires_an_external_full_inventory_digest():
     changed["event_selection"]["sha256"] = digest.hexdigest()
     with pytest.raises(ValueError, match="artifact SHA"):
         build_event_group_manifest(changed, expected_artifact_sha256=pinned_sha)
+
+
+def test_v4_manifest_uses_selected_raw_only_with_external_full_artifact_pin():
+    inventory = _selected_v4_inventory(
+        [{"value": "GNUGo3.8", "occurrences": 1, "affected_games": 1}],
+        [_selection(1, "28th Honinbo")],
+    )
+    pinned = _artifact_sha(inventory)
+    with pytest.raises(ValueError, match="artifact SHA"):
+        build_event_group_manifest(inventory)
+    manifest = build_event_group_manifest(inventory, expected_artifact_sha256=pinned)
+    assert manifest["inventory_format"] == 4
+    assert manifest["inventory_artifact_sha256"] == pinned
+    assert manifest["event_selection_sha256"] == inventory["event_selection"]["sha256"]
+    assert manifest["groups"][0]["core"] == "Honinbo"
+    changed = json.loads(json.dumps(inventory))
+    changed["event_selection"]["rows"][0][8]["created_at"] = "2026-10-02T11:00:00"
+    with pytest.raises(ValueError, match="artifact SHA"):
+        build_event_group_manifest(changed, expected_artifact_sha256=pinned)
 
 
 def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):

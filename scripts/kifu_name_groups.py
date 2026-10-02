@@ -23,7 +23,7 @@ def main(argv=None) -> int:
     parser.add_argument("--inventory", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--expected-inventory-artifact-sha256",
-                        help="independently pinned canonical JSON SHA-256; required for v3 inventories")
+                        help="independently pinned canonical JSON SHA-256; required for v3/v4 inventories")
     args = parser.parse_args(argv)
     with _open_json(args.inventory, "r") as stream:
         manifest = build_event_group_manifest(

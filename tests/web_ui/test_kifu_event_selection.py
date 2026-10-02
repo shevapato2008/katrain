@@ -1,6 +1,7 @@
 """Reviewed duplicate-GN selection changes only the derived event table."""
 
 from copy import deepcopy
+from datetime import datetime
 import json
 
 import pytest
@@ -9,7 +10,8 @@ from sqlalchemy import create_engine, event, func, select
 from katrain.core.sgf_parser import SGF
 from katrain.web.core.db import Base
 from katrain.web.core.models_db import (KifuAlbum, KifuAlbumEventSelection, KifuEventSelectionBatch,
-                                       KifuEvent, KifuNameBatch, KifuNameChange, KifuNameSourceRegistry)
+                                       KifuEvent, KifuEventName, KifuNameBatch, KifuNameChange,
+                                       KifuNameResearchEvidence, KifuNameSourceRegistry)
 from katrain.web.kifu.name_candidates import canonical_sha256, identity_scope_sha256
 from katrain.web.kifu.name_inventory import ASSOCIATION_COLUMNS
 from katrain.web.kifu.provenance import sgf_sha256
@@ -116,16 +118,22 @@ def counts(engine):
         )
 
 
-def linked_name_proof(engine, *, target_ref=False):
+def linked_name_proof(engine, *, target_ref=False, real_names=True):
     """A finite reviewed name batch and exact selection transition for read-side tests."""
     applied = apply_reviewed(engine, bundle())
     from katrain.web.kifu.event_selection import _image
+    owner = {"kind": "event", "ref": "new"} if target_ref else {"kind": "event", "id": 2}
+    if real_names:
+        from tests.web_ui.test_kifu_name_batch import _eleven_language_identity_fixture
+        from katrain.web.kifu.name_inventory import build_inventory
+
+        base, research, registry = _eleven_language_identity_fixture(
+            engine, build_inventory(engine, inventory_format=4), [owner])
     with engine.begin() as conn:
         table = KifuAlbumEventSelection.__table__
         before = _image(conn.execute(select(table)).mappings().one())
         album = conn.execute(select(KifuAlbum.__table__)).mappings().one()
         association = {key: album[key] for key in ASSOCIATION_COLUMNS if key != "sources"} | {"sources": []}
-        owner = {"kind": "event", "ref": "new"} if target_ref else {"kind": "event", "id": 2}
         declaration = {"owner": owner,
                        ("create" if target_ref else "preimage"): {"canonical_name": "Other event"},
                        "identity_context": {"start_date": "1934-01-01", "end_date": "1934-12-31", "region": "Korea"}}
@@ -150,24 +158,33 @@ def linked_name_proof(engine, *, target_ref=False):
                 "selection_bundle_sha256": applied["bundle_sha256"],
                 "selection_before_image": before, "selection_before_sha256": canonical_sha256(before),
                 "identity_review": review}
-        members = [{"owner": owner, "lang": lang, "raw_value": before["selected_raw"]}
-                   for lang in ("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua")]
-        candidates = [{**item, "review_status": "approved", "producer_id": "name-producer",
-                       "reviewer_id": "name-reviewer"} for item in members]
+        if real_names:
+            members, candidates = base["members"], base["candidates"]
+        else:
+            members = [{"owner": owner, "lang": lang, "raw_value": before["selected_raw"]}
+                       for lang in ("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua")]
+            candidates = [{**item, "review_status": "approved", "producer_id": "name-producer",
+                           "reviewer_id": "name-reviewer"} for item in members]
+            research, registry = [], {}
         name_bundle = {"bundle_format": 4, "inventory_format": 4, "inventory_sha256": "b" * 64,
                        "catalog_sha256": "c" * 64, "rule_version": "fixture-v4",
                        "members": members, "member_set_sha256": canonical_sha256(members),
                        "candidates": candidates,
                        "owners": [declaration], "owner_set_sha256": canonical_sha256([declaration]),
                        "album_links": [link]}
+        if real_names:
+            name_bundle.update(registry_version=registry["version"], registry_sha256=base["registry_sha256"])
         review["scope_sha256"] = identity_scope_sha256(name_bundle, [link], declaration)
         name_bundle["link_set_sha256"] = canonical_sha256([link])
         registry_id = conn.execute(KifuNameSourceRegistry.__table__.insert().values(
-            version="fixture", sha256="d" * 64, registry={})).inserted_primary_key[0]
+            version=registry["version"] if real_names else "fixture",
+            sha256=name_bundle["registry_sha256"] if real_names else "d" * 64,
+            registry=registry)).inserted_primary_key[0]
         batch_id = conn.execute(KifuNameBatch.__table__.insert().values(
             bundle_sha256=canonical_sha256(name_bundle), inventory_sha256=name_bundle["inventory_sha256"],
             source_registry_id=registry_id, reviewed_artifact={"bundle": name_bundle,
-                                                                  "resolved_refs": {"event:@new" if target_ref else "event:2": 3 if target_ref else 2}},
+                "resolved_refs": {"event:@new" if target_ref else "event:2": 3 if target_ref else 2},
+                "research_hashes": sorted(canonical_sha256(item) for item in research)},
             status="applied")).inserted_primary_key[0]
         if target_ref:
             conn.execute(KifuEvent.__table__.insert().values(id=3, canonical_name="Other event"))
@@ -180,6 +197,35 @@ def linked_name_proof(engine, *, target_ref=False):
         change_id = conn.execute(KifuNameChange.__table__.insert().values(
             batch_id=batch_id, sequence=2 if target_ref else 1, target_table="kifu_album_event_selections",
             target_row_id=1, before_image=before, after_image=after)).inserted_primary_key[0]
+        if real_names:
+            from katrain.web.kifu.name_batch import _candidate_evidence
+
+            research_by_hash = {canonical_sha256(item): item for item in research}
+            sequence = 3 if target_ref else 2
+            for candidate in candidates:
+                owner_id = 3 if target_ref else 2
+                evidence_values = _candidate_evidence(candidate, research_by_hash, registry_id, 1, owner_id)
+                evidence_id = conn.execute(KifuNameResearchEvidence.__table__.insert().values(
+                    **evidence_values)).inserted_primary_key[0]
+                evidence_image = _image(conn.execute(select(KifuNameResearchEvidence.__table__).where(
+                    KifuNameResearchEvidence.id == evidence_id)).mappings().one())
+                conn.execute(KifuNameChange.__table__.insert().values(
+                    batch_id=batch_id, sequence=sequence, target_table="kifu_name_research_evidence",
+                    target_row_id=evidence_id, before_image=None, after_image=evidence_image))
+                sequence += 1
+                name_id = conn.execute(KifuEventName.__table__.insert().values(
+                    event_id=owner_id, lang=candidate["lang"], display_name=candidate["display_name"],
+                    status="verified", decision_kind=candidate["decision_kind"],
+                    generation_rule_version=candidate["generation_rule_version"], revision=1,
+                    evidence_id=evidence_id,
+                    verified_at=datetime.fromisoformat(candidate["reviewed_at"].replace("Z", "+00:00"))
+                )).inserted_primary_key[0]
+                name_image = _image(conn.execute(select(KifuEventName.__table__).where(
+                    KifuEventName.id == name_id)).mappings().one())
+                conn.execute(KifuNameChange.__table__.insert().values(
+                    batch_id=batch_id, sequence=sequence, target_table="kifu_event_names",
+                    target_row_id=name_id, before_image=None, after_image=name_image))
+                sequence += 1
     return {"name_batch_id": batch_id, "change_id": change_id, "before": before,
             "after": after, "bundle": name_bundle}
 
@@ -204,6 +250,15 @@ def test_batch_shared_read_proves_one_exact_linked_selection(engine):
     assert inventory["event_selection"]["rows"][0][7] == 2
 
 
+def test_batch_shared_read_rejects_name_bundle_without_name_evidence_ledger(engine):
+    from katrain.web.kifu.event_selection import verified_selection_rows
+
+    linked_name_proof(engine, real_names=False)
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings())
+        assert verified_selection_rows(conn, rows) == {}
+
+
 def test_batch_shared_read_resolves_same_batch_new_event_ref(engine):
     from katrain.web.kifu.event_selection import verified_selection_rows
 
@@ -216,7 +271,10 @@ def test_batch_shared_read_resolves_same_batch_new_event_ref(engine):
 
 
 @pytest.mark.parametrize("tamper", ["fk", "source_column", "album_source", "before_image", "after_image",
-                                     "batch_hash", "member_hash", "candidate", "association", "target_resolution", "target_context",
+                                     "batch_hash", "member_hash", "candidate", "association", "raw_scope",
+                                     "target_resolution", "target_context", "target_period", "missing_name_change",
+                                     "name_row", "evidence_payload", "evidence_provenance", "registry_hash",
+                                     "research_hashes",
                                      "review_scope",
                                      "undone", "duplicate", "sgf"])
 def test_batch_shared_read_rejects_broken_link_proof(engine, tamper):
@@ -259,6 +317,17 @@ def test_batch_shared_read_rejects_broken_link_proof(engine, tamper):
             bundle_copy["link_set_sha256"] = canonical_sha256(bundle_copy["album_links"])
             conn.execute(batch.update().values(bundle_sha256=canonical_sha256(bundle_copy),
                 reviewed_artifact={"bundle": bundle_copy, "resolved_refs": {"event:2": 2}}))
+        elif tamper == "raw_scope":
+            bundle_copy = deepcopy(proof["bundle"])
+            link_copy = bundle_copy["album_links"][0]
+            link_copy["raw_scope_sha256"] = "0" * 64
+            link_copy["identity_review"]["scope_sha256"] = identity_scope_sha256(
+                bundle_copy, [link_copy], bundle_copy["owners"][0])
+            bundle_copy["link_set_sha256"] = canonical_sha256(bundle_copy["album_links"])
+            artifact = {"bundle": bundle_copy, "resolved_refs": {"event:2": 2},
+                        "research_hashes": sorted(row["research_sha256"] for row in bundle_copy["candidates"])}
+            conn.execute(batch.update().values(bundle_sha256=canonical_sha256(bundle_copy),
+                                               reviewed_artifact=artifact))
         elif tamper == "target_resolution":
             conn.execute(batch.update().values(reviewed_artifact={"bundle": proof["bundle"],
                                                                  "resolved_refs": {"event:2": 3}}))
@@ -272,6 +341,47 @@ def test_batch_shared_read_rejects_broken_link_proof(engine, tamper):
             bundle_copy["link_set_sha256"] = canonical_sha256(bundle_copy["album_links"])
             conn.execute(batch.update().values(bundle_sha256=canonical_sha256(bundle_copy),
                 reviewed_artifact={"bundle": bundle_copy, "resolved_refs": {"event:2": 2}}))
+        elif tamper == "target_period":
+            bundle_copy = deepcopy(proof["bundle"])
+            bundle_copy["owners"][0]["identity_context"]["start_date"] = "1935-01-01"
+            bundle_copy["owners"][0]["identity_context"]["end_date"] = "1935-12-31"
+            bundle_copy["owner_set_sha256"] = canonical_sha256(bundle_copy["owners"])
+            link_copy = bundle_copy["album_links"][0]
+            link_copy["identity_review"]["event_period"] = {
+                "start_date": "1935-01-01", "end_date": "1935-12-31"}
+            link_copy["identity_review"]["scope_sha256"] = identity_scope_sha256(
+                bundle_copy, [link_copy], bundle_copy["owners"][0])
+            bundle_copy["link_set_sha256"] = canonical_sha256(bundle_copy["album_links"])
+            artifact = {"bundle": bundle_copy, "resolved_refs": {"event:2": 2},
+                        "research_hashes": sorted(row["research_sha256"] for row in bundle_copy["candidates"])}
+            conn.execute(batch.update().values(bundle_sha256=canonical_sha256(bundle_copy),
+                                               reviewed_artifact=artifact))
+        elif tamper == "missing_name_change":
+            conn.execute(change.delete().where(change.c.target_table == "kifu_event_names",
+                                               change.c.sequence == 3))
+        elif tamper == "name_row":
+            conn.execute(KifuEventName.__table__.update().where(KifuEventName.lang == "en")
+                         .values(display_name="Wrong event"))
+        elif tamper == "evidence_payload":
+            conn.execute(KifuNameResearchEvidence.__table__.update().where(
+                KifuNameResearchEvidence.lang == "en").values(research_payload=None))
+        elif tamper == "evidence_provenance":
+            from katrain.web.kifu.event_selection import _image
+
+            evidence_id = conn.scalar(select(KifuNameResearchEvidence.id).where(
+                KifuNameResearchEvidence.lang == "en"))
+            conn.execute(KifuNameResearchEvidence.__table__.update().where(
+                KifuNameResearchEvidence.id == evidence_id).values(reviewer_model="different-model"))
+            changed_image = _image(conn.execute(select(KifuNameResearchEvidence.__table__).where(
+                KifuNameResearchEvidence.id == evidence_id)).mappings().one())
+            conn.execute(change.update().where(change.c.target_table == "kifu_name_research_evidence",
+                                               change.c.target_row_id == evidence_id)
+                         .values(after_image=changed_image))
+        elif tamper == "registry_hash":
+            conn.execute(KifuNameSourceRegistry.__table__.update().values(sha256="0" * 64))
+        elif tamper == "research_hashes":
+            conn.execute(batch.update().values(reviewed_artifact={"bundle": proof["bundle"],
+                "resolved_refs": {"event:2": 2}, "research_hashes": []}))
         elif tamper == "review_scope":
             bundle_copy = deepcopy(proof["bundle"])
             bundle_copy["album_links"][0]["identity_review"]["scope_sha256"] = "0" * 64

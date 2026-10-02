@@ -728,3 +728,319 @@ def test_strict_ambiguous_raw_translation_does_not_join_different_spellings(monk
     finally:
         db.close()
         engine.dispose()
+
+
+def _reviewed_composition(db, count=1, owner_refs=False):
+    """Store the importer schema, including immutable candidate/rule/scope bindings."""
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from katrain.web.kifu.name_composition import base_candidate_sha256
+
+    series = KifuEvent(canonical_name="Honinbo")
+    raw = KifuRawEventValue(raw_value="1st Honinbo", category="unclassified_pending", review_status="approved")
+    db.add_all([series, raw])
+    db.flush()
+    albums = [
+        KifuAlbum(
+            player_black="Black",
+            player_white="White",
+            event=raw.raw_value,
+            event_id=series.id,
+            sgf_content="(;B[aa])",
+            source_path=f"composed-{i}.sgf",
+        )
+        for i in range(count)
+    ]
+    db.add_all(albums)
+    db.flush()
+    series_owner = {"kind": "event", "ref": "honinbo"} if owner_refs else {"kind": "event", "id": series.id}
+    raw_owner = {"kind": "raw_event", "ref": "honinbo-1"} if owner_refs else {"kind": "raw_event", "id": raw.id}
+    for lang, base_display, display in (("cn", "本因坊战", "第1届本因坊战"), ("fr", "Honinbo", "1er Honinbo")):
+        base_candidate = {
+            "owner": series_owner,
+            "lang": lang,
+            "display_name": base_display,
+            "decision_kind": "conventional",
+        }
+        base_evidence = _evidence(db, "event", series.id, lang, base_display)
+        base_evidence.research_payload = {"candidate": base_candidate}
+        base_name = KifuEventName(
+            event_id=series.id,
+            lang=lang,
+            display_name=base_display,
+            status="verified",
+            decision_kind="conventional",
+            generation_rule_version="test-v1",
+            revision=1,
+            evidence_id=base_evidence.id,
+        )
+        db.add(base_name)
+        db.flush()
+        base_hash = base_candidate_sha256(base_candidate)
+        rule = {
+            "content": {
+                "series_owner": base_candidate["owner"],
+                "lang": lang,
+                "base_candidate_sha256": base_hash,
+                "style": "test-style",
+            },
+            "approval": {"status": "approved"},
+        }
+        scope_entry = {
+            "owner": raw_owner,
+            "raw_value": raw.raw_value,
+            "edition": 1,
+            "occurrence_album_ids": [album.id for album in albums],
+            "occurrence_sha256": canonical_sha256([album.id for album in albums]),
+            "raw_scope_sha256": canonical_sha256([[album.id, "event"] for album in albums]),
+        }
+        scope = {
+            "content": {"series_owner": base_candidate["owner"], "raws": [scope_entry]},
+            "approval": {"status": "approved"},
+        }
+        dependencies = {
+            "series_event_id": series.id,
+            "base_name_id": base_name.id,
+            "base_evidence_id": base_evidence.id,
+            "base_revision": 1,
+            "base_candidate_sha256": base_hash,
+            "composition_rule_sha256": canonical_sha256(rule),
+            "raw_scope_sha256": scope_entry["raw_scope_sha256"],
+            "scope_sha256": canonical_sha256(scope),
+        }
+        candidate = {
+            "owner": scope_entry["owner"],
+            "raw_value": raw.raw_value,
+            "lang": lang,
+            "display_name": display,
+            "decision_kind": "composed",
+            "series_owner": base_candidate["owner"],
+            "edition": 1,
+            "base_candidate_sha256": base_hash,
+            "composition_rule_sha256": dependencies["composition_rule_sha256"],
+            "raw_scope_sha256": dependencies["raw_scope_sha256"],
+        }
+        evidence = _evidence(db, "raw_event", raw.id, lang, display, decision="composed")
+        evidence.research_payload = {
+            "candidate": candidate,
+            "composition": {
+                "version": "honinbo-composition-v1",
+                "rule": rule,
+                "scope": scope,
+                "dependencies": dependencies,
+            },
+        }
+        db.add(
+            KifuRawEventName(
+                raw_event_id=raw.id,
+                lang=lang,
+                display_name=display,
+                status="verified",
+                decision_kind="composed",
+                generation_rule_version="test-v1",
+                revision=1,
+                evidence_id=evidence.id,
+            )
+        )
+    db.commit()
+    return series, raw, albums
+
+
+@pytest.mark.parametrize("owner_refs", [False, True])
+def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, owner_refs):
+    from katrain.web.kifu import name_composition
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    monkeypatch.setattr(name_composition, "render_edition", lambda *args: pytest.fail("request rendered a name"))
+    engine, db = _db()
+    try:
+        series, raw, albums = _reviewed_composition(db, count=20, owner_refs=owner_refs)
+        outside = KifuAlbum(
+            player_black="Black",
+            player_white="White",
+            event=raw.raw_value,
+            event_id=series.id,
+            sgf_content="(;B[aa])",
+            source_path="outside-scope.sgf",
+        )
+        wrong = KifuAlbum(
+            player_black="Black",
+            player_white="White",
+            event=raw.raw_value,
+            sgf_content="(;B[aa])",
+            source_path="unlinked.sgf",
+        )
+        db.add_all([outside, wrong])
+        db.commit()
+        statements = []
+
+        def record_sql(_connection, _cursor, statement, _parameters, _context, _executemany):
+            statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", record_sql)
+        try:
+            page = _list(db, "1er Honinbo", "cn")
+        finally:
+            event.remove(engine, "before_cursor_execute", record_sql)
+        assert page.total == 20
+        assert {item.id for item in page.items} == {album.id for album in albums}
+        assert all(item.display_event == "第1届本因坊战" for item in page.items)
+        assert len(statements) <= 18
+        assert not any("sgf_content" in statement for statement in statements)
+        assert (
+            asyncio.run(kifu.get_kifu_album(_request(), outside.id, lang="cn", db=db)).display_event == "赛事名称待核实"
+        )
+        assert (
+            asyncio.run(kifu.get_kifu_album(_request(), wrong.id, lang="cn", db=db)).display_event == "赛事名称待核实"
+        )
+    finally:
+        db.close()
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "drift",
+    [
+        "pending",
+        "raw_owner",
+        "raw_value",
+        "raw_evidence_owner",
+        "raw_revision",
+        "raw_evidence_revision",
+        "base_missing",
+        "base_pending",
+        "base_lang",
+        "base_name_id",
+        "base_evidence_id",
+        "base_revision",
+        "base_candidate",
+        "base_display",
+        "base_rule",
+        "series_link",
+        "series_dependency",
+        "rule_hash",
+        "rule_body",
+        "scope_hash",
+        "scope_body",
+        "raw_scope_hash",
+        "candidate_raw_scope",
+        "candidate_raw",
+        "candidate_lang",
+        "candidate_owner",
+        "candidate_series",
+        "scope_owner",
+        "version",
+        "raw_scope_slot",
+    ],
+)
+def test_strict_composed_dependency_drift_is_a_display_search_and_coverage_gap(monkeypatch, drift):
+    from copy import deepcopy
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        series, raw, albums = _reviewed_composition(db)
+        album = albums[0]
+        name = db.query(KifuRawEventName).filter_by(lang="fr").one()
+        evidence = db.get(KifuNameResearchEvidence, name.evidence_id)
+        base = db.query(KifuEventName).filter_by(lang="fr").one()
+        base_evidence = db.get(KifuNameResearchEvidence, base.evidence_id)
+        payload = deepcopy(evidence.research_payload)
+        dependency = payload["composition"]["dependencies"]
+        if drift == "pending":
+            evidence.review_status = "pending"
+        elif drift == "raw_owner":
+            raw.review_status = "pending"
+        elif drift == "raw_value":
+            raw.raw_value = "2nd Honinbo"
+        elif drift == "raw_evidence_owner":
+            other = KifuRawEventValue(raw_value="Other raw", category="unclassified_pending", review_status="approved")
+            db.add(other)
+            db.flush()
+            evidence.raw_event_id = other.id
+        elif drift == "raw_revision":
+            name.revision += 1
+        elif drift == "raw_evidence_revision":
+            evidence.revision += 1
+        elif drift == "base_missing":
+            db.delete(base)
+        elif drift == "base_pending":
+            base_evidence.review_status = "pending"
+        elif drift == "base_lang":
+            base.lang = "de"
+        elif drift in {"base_name_id", "base_evidence_id", "base_revision", "series_dependency"}:
+            dependency["series_event_id" if drift == "series_dependency" else drift] += 100
+        elif drift == "base_candidate":
+            base_evidence.research_payload = {"candidate": {"changed": True}}
+        elif drift == "base_display":
+            base.display_name = "Changed"
+        elif drift == "base_rule":
+            base.generation_rule_version = "changed"
+        elif drift == "series_link":
+            album.event_id = None
+        elif drift == "rule_hash":
+            dependency["composition_rule_sha256"] = "0" * 64
+        elif drift == "rule_body":
+            payload["composition"]["rule"]["content"]["style"] = "changed"
+        elif drift == "scope_hash":
+            dependency["scope_sha256"] = "0" * 64
+        elif drift == "scope_body":
+            payload["composition"]["scope"]["content"]["raws"][0]["edition"] = 2
+        elif drift == "raw_scope_hash":
+            dependency["raw_scope_sha256"] = "0" * 64
+        elif drift == "raw_scope_slot":
+            entry = payload["composition"]["scope"]["content"]["raws"][0]
+            entry["raw_scope_sha256"] = canonical_sha256([[album.id, "selected_event"]])
+            dependency["raw_scope_sha256"] = payload["candidate"]["raw_scope_sha256"] = entry["raw_scope_sha256"]
+            dependency["scope_sha256"] = canonical_sha256(payload["composition"]["scope"])
+        elif drift == "candidate_raw_scope":
+            payload["candidate"]["raw_scope_sha256"] = "0" * 64
+        elif drift == "candidate_raw":
+            payload["candidate"]["raw_value"] = "2nd Honinbo"
+        elif drift == "candidate_lang":
+            payload["candidate"]["lang"] = "cn"
+        elif drift == "candidate_owner":
+            payload["candidate"]["owner"] = {"kind": "raw_event", "id": 999}
+        elif drift == "candidate_series":
+            payload["candidate"]["series_owner"] = {"kind": "event", "id": 999}
+        elif drift == "scope_owner":
+            payload["composition"]["scope"]["content"]["raws"][0]["owner"]["id"] = 999
+        elif drift == "version":
+            payload["composition"]["version"] = "unknown"
+        evidence.research_payload = payload
+        db.commit()
+        detail = asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="fr", db=db))
+        assert detail.display_event == "Nom du tournoi non vérifié"
+        assert _list(db, "1er Honinbo", "cn").total == 0
+        assert identity.strict_slot_approvals(db, [album], "fr")[album.id][2] is None
+        coverage = coverage_report(engine, build_inventory(engine), languages=("fr",))
+        assert coverage["languages"]["fr"]["approved"] == 0
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_composed_direct_event_scope_cannot_approve_a_selected_event_slot():
+    engine, db = _db()
+    try:
+        series, raw, albums = _reviewed_composition(db)
+        album = albums[0]
+        selected = {album.id: (raw.raw_value, series.id)}
+        assert identity.strict_slot_approvals(db, [album], "cn", selected_events=selected)[album.id][2] is None
+        maps = identity.strict_display_maps(db, [album], "cn", selected_events=selected)
+        assert (
+            identity.resolve_strict_display(
+                album,
+                "cn",
+                maps[0],
+                maps[1],
+                maps[2],
+                maps[4],
+                maps[5],
+                selected_events=selected,
+            )[2]
+            == "赛事名称待核实"
+        )
+    finally:
+        db.close()
+        engine.dispose()

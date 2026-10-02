@@ -225,3 +225,45 @@ def test_selected_event_coverage_tracks_live_sgf_and_reports_drift():
             coverage_report(engine, inventory, languages=("cn",), batch_size=2)
     finally:
         engine.dispose()
+
+
+def test_composed_coverage_counts_only_live_dependencies_and_approved_scope():
+    from tests.web_ui.test_kifu_name_api import _reviewed_composition
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    try:
+        with Session(engine) as db:
+            series, raw, albums = _reviewed_composition(db, count=2)
+            db.add(
+                KifuAlbum(
+                    player_black="Black",
+                    player_white="White",
+                    event=raw.raw_value,
+                    event_id=series.id,
+                    sgf_content="(;B[aa])",
+                    source_path="outside-scope.sgf",
+                )
+            )
+            db.commit()
+            series_id = series.id
+        inventory = build_inventory(engine)
+        for batch_size in (1, 3):
+            result = coverage_report(engine, inventory, languages=("cn", "fr", "de"), batch_size=batch_size)
+            assert result["languages"]["cn"]["by_decision"] == {"composed": 2}
+            assert result["languages"]["fr"]["by_decision"] == {"composed": 2}
+            assert result["languages"]["de"]["approved"] == 0
+            assert {gap["display"] for gap in result["missing_examples"] if gap["slot"] == "event"} == {
+                "赛事名称待核实",
+                "Nom du tournoi non vérifié",
+                "Turniername ungeprüft",
+            }
+        with Session(engine) as db:
+            evidence = db.query(KifuNameResearchEvidence).filter_by(event_id=series_id, lang="cn").one()
+            evidence.review_status = "pending"
+            db.commit()
+        changed = coverage_report(engine, inventory, languages=("cn", "fr"))
+        assert changed["languages"]["cn"]["approved"] == 0
+        assert changed["languages"]["fr"]["by_decision"] == {"composed": 2}
+    finally:
+        engine.dispose()

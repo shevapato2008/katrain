@@ -21,6 +21,7 @@ from katrain.web.kifu.identity import (
     resolve_strict_display,
     strict_display_maps,
     strict_matching_names,
+    strict_raw_event_search_clause,
     strict_names_enabled,
     strict_selected_event_search_ids,
 )
@@ -165,7 +166,7 @@ async def list_kifu_albums(
                 if raw_players:
                     clauses.extend((KifuAlbum.player_black.in_(raw_players), KifuAlbum.player_white.in_(raw_players)))
                 if raw_events:
-                    clauses.append(KifuAlbum.event.in_(raw_events))
+                    clauses.append(strict_raw_event_search_clause(db, raw_events))
             needle = or_(*clauses)
             query = query.order_by(case((player_match, 0), else_=1))
         if selected_event_ids:

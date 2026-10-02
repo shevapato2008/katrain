@@ -74,7 +74,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
             KifuNameResearchEvidence.reviewer_id != KifuNameResearchEvidence.producer_id,
             model.revision == KifuNameResearchEvidence.revision,
             model.decision_kind == KifuNameResearchEvidence.decision_kind,
-            model.decision_kind.in_(_DECISIONS),
+            model.decision_kind.in_(_DECISIONS | {"composed"} if model is KifuRawEventName else _DECISIONS),
             model.generation_rule_version == KifuNameResearchEvidence.generation_rule_version,
             model.display_name == KifuNameResearchEvidence.candidate_name,
         )
@@ -84,6 +84,166 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
     if lang is not None:
         query = query.filter(model.lang == lang)
     return query
+
+
+def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None):
+    """Read complete names and their live base dependencies in at most two queries.
+
+    Composition is checked against stored approvals; no renderer or source lookup
+    runs here. Album membership and the live series link are checked by callers.
+    """
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
+
+    query = (
+        _approved_names(db, KifuRawEventName, "raw_event_id", lang=lang)
+        .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
+        .filter(KifuRawEventValue.review_status == "approved")
+    )
+    if values is not None:
+        query = query.filter(KifuRawEventValue.raw_value.in_(values))
+    if display is not None:
+        query = query.filter(
+            or_(KifuRawEventName.display_name == display, func.lower(KifuRawEventName.display_name) == display.lower())
+        )
+    rows = query.with_entities(KifuRawEventName, KifuRawEventValue.raw_value, KifuNameResearchEvidence).all()
+    composed = [row for row in rows if row[0].decision_kind == "composed"]
+    bases = {}
+    if composed:
+        base_ids = set()
+        for _, _, evidence in composed:
+            payload = evidence.research_payload
+            composition = payload.get("composition") if isinstance(payload, dict) else None
+            dependencies = composition.get("dependencies") if isinstance(composition, dict) else None
+            if isinstance(dependencies, dict) and type(dependencies.get("base_name_id")) is int:
+                base_ids.add(dependencies["base_name_id"])
+        bases = {
+            name.id: (name, evidence)
+            for name, evidence in _approved_names(db, KifuEventName, "event_id")
+            .filter(KifuEventName.id.in_(base_ids))
+            .with_entities(KifuEventName, KifuNameResearchEvidence)
+        }
+    result = []
+    for name, raw, evidence in rows:
+        if name.decision_kind != "composed":
+            result.append((name, raw, None))
+            continue
+        payload = evidence.research_payload
+        if not isinstance(payload, dict):
+            continue
+        composition, candidate = payload.get("composition"), payload.get("candidate")
+        if not isinstance(composition, dict) or not isinstance(candidate, dict):
+            continue
+        dependencies = composition.get("dependencies")
+        rule, scope = composition.get("rule"), composition.get("scope")
+        if not all(isinstance(value, dict) for value in (dependencies, rule, scope)):
+            continue
+        rule_content, scope_content = rule.get("content"), scope.get("content")
+        if not isinstance(rule_content, dict) or not isinstance(scope_content, dict):
+            continue
+        base_pair = bases.get(dependencies.get("base_name_id"))
+        if not base_pair:
+            continue
+        base, base_evidence = base_pair
+        base_payload = base_evidence.research_payload
+        base_candidate = base_payload.get("candidate") if isinstance(base_payload, dict) else None
+        raw_entries = scope_content.get("raws")
+        if not isinstance(base_candidate, dict) or not isinstance(raw_entries, list):
+            continue
+        entries = [entry for entry in raw_entries if isinstance(entry, dict) and entry.get("raw_value") == raw]
+        if len(entries) != 1:
+            continue
+        entry = entries[0]
+        owner = candidate.get("owner")
+        series_owner = candidate.get("series_owner")
+        ids = entry.get("occurrence_album_ids")
+        if not (
+            isinstance(owner, dict)
+            and owner.get("kind") == "raw_event"
+            and (owner.get("id") == name.raw_event_id or isinstance(owner.get("ref"), str))
+            and owner == entry.get("owner")
+            and isinstance(series_owner, dict)
+            and series_owner.get("kind") == "event"
+            and (series_owner.get("id") == base.event_id or isinstance(series_owner.get("ref"), str))
+            and series_owner
+            == scope_content.get("series_owner")
+            == rule_content.get("series_owner")
+            == base_candidate.get("owner")
+            and isinstance(ids, list)
+            and ids
+            and all(type(value) is int for value in ids)
+        ):
+            continue
+        if not (
+            composition.get("version") == COMPOSITION_VERSION
+            and candidate.get("raw_value") == raw
+            and candidate.get("lang") == name.lang
+            and candidate.get("display_name") == name.display_name
+            and candidate.get("decision_kind") == "composed"
+            and candidate.get("edition") == entry.get("edition") == HONINBO_EDITION.get(raw)
+            and dependencies.get("series_event_id") == base.event_id
+            and dependencies.get("base_evidence_id") == base.evidence_id
+            and dependencies.get("base_revision") == base.revision
+            and base.lang == name.lang == base_candidate.get("lang") == rule_content.get("lang")
+            and base.display_name == base_candidate.get("display_name")
+            and dependencies.get("base_candidate_sha256")
+            == base_candidate_sha256(base_candidate)
+            == candidate.get("base_candidate_sha256")
+            == rule_content.get("base_candidate_sha256")
+            and dependencies.get("composition_rule_sha256")
+            == canonical_sha256(rule)
+            == candidate.get("composition_rule_sha256")
+            and dependencies.get("scope_sha256") == canonical_sha256(scope)
+            and dependencies.get("raw_scope_sha256")
+            == entry.get("raw_scope_sha256")
+            == candidate.get("raw_scope_sha256")
+            and entry.get("occurrence_sha256") == canonical_sha256(ids)
+            and ids == sorted(set(ids))
+            and entry.get("raw_scope_sha256") == canonical_sha256([[album_id, "event"] for album_id in ids])
+        ):
+            continue
+        result.append((name, raw, composition))
+    return result
+
+
+def _raw_event_map(rows, albums, selected_events, *, approvals=False):
+    result = {}
+    for name, raw, composition in rows:
+        value = (name.decision_kind, name.evidence_id) if approvals else name.display_name
+        if composition is None:
+            result[raw] = value
+            continue
+        dependencies = composition["dependencies"]
+        entry = next(entry for entry in composition["scope"]["content"]["raws"] if entry["raw_value"] == raw)
+        ids = set(entry["occurrence_album_ids"])
+        for album in albums:
+            # The frozen Honinbo cohort contains direct event slots only.
+            if album.id in selected_events:
+                continue
+            current_raw, event_id = selected_events.get(album.id, (album.event, album.event_id))
+            if album.id in ids and current_raw == raw and event_id == dependencies["series_event_id"]:
+                result[(album.id, raw, event_id)] = value
+    return result
+
+
+def _raw_event_value(values, album_id, raw, event_id, default=None):
+    return values.get((album_id, raw, event_id), values.get(raw, default))
+
+
+def strict_raw_event_search_clause(db: Session, raw_values: set[str]):
+    """Restrict a composed translation match to its approved, currently linked games."""
+    clauses = []
+    for _, raw, composition in _approved_raw_event_names(db, values=raw_values):
+        if composition is None:
+            clauses.append(KifuAlbum.event == raw)
+        else:
+            entry = next(entry for entry in composition["scope"]["content"]["raws"] if entry["raw_value"] == raw)
+            clauses.append(
+                (KifuAlbum.event == raw)
+                & (KifuAlbum.event_id == composition["dependencies"]["series_event_id"])
+                & KifuAlbum.id.in_(entry["occurrence_album_ids"])
+            )
+    return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
 def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], set[str], set[str]]:
@@ -102,6 +262,15 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id"),
         (KifuRawEventName, KifuRawEventValue, "raw_event_id"),
     ):
+        if model is KifuRawEventName:
+            raw_matches.append(
+                {
+                    raw
+                    for name, raw, _ in _approved_raw_event_names(db, display=query)
+                    if normalize_alias(name.display_name) == needle
+                }
+            )
+            continue
         rows = (
             _approved_names(db, model, owner)
             .join(value_model, getattr(model, owner) == value_model.id)
@@ -143,18 +312,17 @@ def strict_selected_event_search_ids(
 ) -> set[int]:
     """Match reviewed selected events and validate the same live SGF hash as display."""
     raw_matches = set(raw_aliases)
-    raw_rows = (
-        _approved_names(db, KifuRawEventName, "raw_event_id")
-        .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
-        .join(KifuAlbumEventSelection, KifuAlbumEventSelection.selected_raw == KifuRawEventValue.raw_value)
-        .filter(
-            KifuRawEventValue.review_status == "approved",
-            KifuRawEventValue.raw_value.contains(query, autoescape=True),
-        )
-        .with_entities(KifuRawEventValue.raw_value)
-        .distinct()
-    )
-    raw_matches.update(row[0] for row in raw_rows)
+    selected_conditions = [KifuAlbumEventSelection.selected_raw.contains(query, autoescape=True)]
+    if raw_aliases:
+        selected_conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_aliases))
+    if event_ids:
+        selected_conditions.append(KifuAlbumEventSelection.event_id.in_(event_ids))
+    selected_raws = {
+        raw for (raw,) in db.query(KifuAlbumEventSelection.selected_raw).filter(or_(*selected_conditions)).distinct()
+    }
+    if not selected_raws:
+        return set()
+    raw_matches.update(raw for _, raw, _ in _approved_raw_event_names(db, values=selected_raws))
     conditions = []
     if raw_matches:
         conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_matches))
@@ -198,13 +366,8 @@ def strict_selected_event_search_ids(
     albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(composed_ids)).all()
     approved_ids = set(verified) - composed_ids
     composed_raws = {verified[album_id][0] for album_id in composed_ids}
-    name_languages = (
-        _approved_names(db, KifuRawEventName, "raw_event_id")
-        .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
-        .filter(KifuRawEventValue.review_status == "approved", KifuRawEventValue.raw_value.in_(composed_raws))
-        .with_entities(KifuRawEventName.lang).distinct()
-    )
-    for (lang,) in name_languages:
+    name_languages = {name.lang for name, _, _ in _approved_raw_event_names(db, values=composed_raws)}
+    for lang in name_languages:
         if lang not in LANGUAGES:
             continue
         approvals = strict_slot_approvals(db, albums, lang, obscured_event_ids=set(), selected_events=verified)
@@ -239,6 +402,11 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id", raw_players),
         (KifuRawEventName, KifuRawEventValue, "raw_event_id", raw_events),
     ):
+        if model is KifuRawEventName:
+            raw_maps.append(
+                _raw_event_map(_approved_raw_event_names(db, values=values, lang=lang), albums, selected_events)
+            )
+            continue
         rows = (
             _approved_names(db, model, owner, lang=lang)
             .join(value_model, getattr(model, owner) == value_model.id)
@@ -329,6 +497,13 @@ def strict_slot_approvals(
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id", raw_player_values),
         (KifuRawEventName, KifuRawEventValue, "raw_event_id", raw_event_values),
     ):
+        if model is KifuRawEventName:
+            raw_approvals.append(
+                _raw_event_map(
+                    _approved_raw_event_names(db, values=values, lang=lang), albums, selected_events, approvals=True
+                )
+            )
+            continue
         rows = (
             _approved_names(db, model, owner, lang=lang)
             .join(value_model, getattr(model, owner) == value_model.id)
@@ -348,11 +523,17 @@ def strict_slot_approvals(
             event_approval = events.get(event_id)
             if parse_event(event_raw, None).category == "formal_event_candidate":
                 event_approval = (
-                    raw_events.get(event_raw) if event_approval and canonical.get(event_id) == "Oteai" else None
+                    _raw_event_value(raw_events, album.id, event_raw, event_id)
+                    if event_approval and canonical.get(event_id) == "Oteai"
+                    else None
                 )
             elif event_approval:
-                event_approval = raw_events.get(
-                    event_raw, None if structure_event(event_raw or "")["components"] else event_approval
+                event_approval = _raw_event_value(
+                    raw_events,
+                    album.id,
+                    event_raw,
+                    event_id,
+                    None if structure_event(event_raw or "")["components"] else event_approval,
                 )
         else:
             event_approval = ("hidden", None) if _empty_event(event_raw) else raw_events.get(event_raw or "")
@@ -398,15 +579,23 @@ def resolve_strict_display(
     black = players.get(album.black_player_id) if album.black_player_id else raw_players.get(album.player_black)
     white = players.get(album.white_player_id) if album.white_player_id else raw_players.get(album.player_white)
     event_raw, event_id = (selected_events or {}).get(album.id, (album.event, album.event_id))
-    event_name = events.get(event_id) if event_id else raw_events.get(event_raw or "")
+    event_name = events.get(event_id) if event_id else _raw_event_value(raw_events, album.id, event_raw or "", event_id)
     if obscured_event_ids and album.id in obscured_event_ids:
         displayed_event = strict_unavailable_label(lang, "event")
     elif event_id and event_name is not None:
         if parse_event(event_raw, None).category == "formal_event_candidate":
-            displayed_event = raw_events.get(event_raw) if canonical_events.get(event_id) == "Oteai" else None
+            displayed_event = (
+                _raw_event_value(raw_events, album.id, event_raw, event_id)
+                if canonical_events.get(event_id) == "Oteai"
+                else None
+            )
         else:
-            displayed_event = raw_events.get(
-                event_raw, None if structure_event(event_raw or "")["components"] else event_name
+            displayed_event = _raw_event_value(
+                raw_events,
+                album.id,
+                event_raw,
+                event_id,
+                None if structure_event(event_raw or "")["components"] else event_name,
             )
     else:
         displayed_event = event_name

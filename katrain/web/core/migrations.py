@@ -53,6 +53,8 @@ KIFU_CATALOG_TABLES = {
     "kifu_name_research_evidence",
     "kifu_name_batches",
     "kifu_name_changes",
+    "kifu_event_selection_batches",
+    "kifu_album_event_selections",
 }
 PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE}
 
@@ -261,6 +263,7 @@ KIFU_NAME_TABLES = {
     "kifu_name_batches",
     "kifu_name_changes",
 }
+KIFU_EVENT_SELECTION_TABLES = {"kifu_event_selection_batches", "kifu_album_event_selections"}
 KIFU_LEGACY_NAME_COLUMNS = {
     "decision_kind": "VARCHAR(32)",
     "generation_rule_version": "VARCHAR(64)",
@@ -498,6 +501,54 @@ def verify_kifu_name_schema(engine) -> None:
                     or actual.get("referred_columns") != [target.name]
                 ):
                     raise RuntimeError(f"{table}.{column.name} foreign key missing or incorrect; run migrate_catalog")
+        expected_unique = {
+            tuple(column.name for column in constraint.columns)
+            for constraint in model_table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        }
+        actual_unique = {
+            tuple(constraint["column_names"]) for constraint in inspector.get_unique_constraints(table)
+        }
+        if not expected_unique.issubset(actual_unique):
+            raise RuntimeError(f"{table} unique constraint missing; run migrate_catalog")
+        expected_checks = {
+            constraint.name for constraint in model_table.constraints if isinstance(constraint, CheckConstraint)
+        }
+        actual_checks = {constraint["name"] for constraint in inspector.get_check_constraints(table)}
+        if not expected_checks.issubset(actual_checks):
+            raise RuntimeError(f"{table} check constraint missing; run migrate_catalog")
+
+
+def verify_kifu_event_selection_schema(engine) -> None:
+    """Reject absent or weakened selection tables before normal Web startup."""
+
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    missing = KIFU_EVENT_SELECTION_TABLES - tables
+    if missing:
+        raise RuntimeError(f"Missing {', '.join(sorted(missing))}; run migrate_catalog")
+    for table in sorted(KIFU_EVENT_SELECTION_TABLES):
+        model_table = models_db.Base.metadata.tables[table]
+        actual_columns = {column["name"]: column for column in inspector.get_columns(table)}
+        if not set(model_table.columns.keys()).issubset(actual_columns):
+            raise RuntimeError(f"Incomplete {table} selection schema; run migrate_catalog")
+        if set(inspector.get_pk_constraint(table)["constrained_columns"]) != {
+            column.name for column in model_table.primary_key.columns
+        }:
+            raise RuntimeError(f"{table} primary key missing; run migrate_catalog")
+        fks = _kifu_name_foreign_keys(inspector, table)
+        for column in model_table.columns:
+            if not column.nullable and actual_columns[column.name]["nullable"]:
+                raise RuntimeError(f"{table}.{column.name} NOT NULL missing; run migrate_catalog")
+            for expected_fk in column.foreign_keys:
+                actual = fks.get(column.name)
+                target = expected_fk.column
+                if (
+                    not actual
+                    or actual["referred_table"] != target.table.name
+                    or actual.get("referred_columns") != [target.name]
+                ):
+                    raise RuntimeError(f"{table}.{column.name} foreign key missing; run migrate_catalog")
         expected_unique = {
             tuple(column.name for column in constraint.columns)
             for constraint in model_table.constraints
@@ -952,8 +1003,8 @@ def add_missing_columns(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES:
-                # The explicit catalog CLI owns authoritative name table changes.
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
+                # The explicit catalog CLI owns authoritative name and selection tables.
                 continue
             existing_cols = {c["name"] for c in inspector.get_columns(table.name)}
             for col in table.columns:
@@ -1003,7 +1054,7 @@ def create_missing_indexes(engine) -> None:
         for table in models_db.Base.metadata.sorted_tables:
             if table.name not in existing_tables:
                 continue
-            if table.name in KIFU_NAME_TABLES:
+            if table.name in KIFU_NAME_TABLES | KIFU_EVENT_SELECTION_TABLES:
                 continue  # Explicit catalog CLI owns these indexes, including PostgreSQL CONCURRENTLY.
             existing_idx = {ix["name"] for ix in inspector.get_indexes(table.name)}
             for index in table.indexes:

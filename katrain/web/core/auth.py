@@ -127,7 +127,8 @@ class SQLAlchemyUserRepository(UserRepository):
         # is bootstrapped with its history triggers in one transaction.
         fresh_database = not inspect(engine).get_table_names()
         startup_tables = [
-            table for table in models_db.Base.metadata.sorted_tables if table.name not in migrations.KIFU_NAME_TABLES
+            table for table in models_db.Base.metadata.sorted_tables
+            if table.name not in migrations.KIFU_NAME_TABLES | migrations.KIFU_EVENT_SELECTION_TABLES
         ]
         if fresh_database:
             with engine.begin() as conn:
@@ -139,11 +140,13 @@ class SQLAlchemyUserRepository(UserRepository):
         else:
             # Refuse an unmigrated existing database before any startup DDL.
             migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_event_selection_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
             migrations.verify_kifu_name_indexes(engine)
             models_db.Base.metadata.create_all(bind=engine, tables=startup_tables)
         if fresh_database:
             migrations.verify_kifu_name_schema(engine)
+            migrations.verify_kifu_event_selection_schema(engine)
             migrations.verify_kifu_name_change_immutability(engine)
             migrations.verify_kifu_name_indexes(engine)
 

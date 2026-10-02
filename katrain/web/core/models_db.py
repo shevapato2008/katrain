@@ -1013,6 +1013,67 @@ class KifuAlbum(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+def _lower_sha256_check(column: str) -> str:
+    """Portable SQLite/PostgreSQL CHECK for a 64-character lowercase hex digest."""
+
+    remainder = column
+    for digit in "0123456789abcdef":
+        remainder = f"replace({remainder}, '{digit}', '')"
+    return f"length({column}) = 64 AND length({remainder}) = 0"
+
+
+class KifuEventSelectionBatch(Base):
+    """Auditable batch of reviewed per-album event selections."""
+
+    __tablename__ = "kifu_event_selection_batches"
+
+    id = Column(Integer, primary_key=True)
+    bundle_sha256 = Column(String(64), nullable=False)
+    member_set_sha256 = Column(String(64), nullable=False)
+    reviewed_artifact = Column(JSON, nullable=False)
+    producer_id = Column(String(128), nullable=False)
+    reviewer_id = Column(String(128), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=False)
+    status = Column(String(16), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    applied_at = Column(DateTime(timezone=True), nullable=True)
+    undone_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("bundle_sha256", name="uq_kifu_event_selection_batch_hash"),
+        CheckConstraint(_lower_sha256_check("bundle_sha256"), name="ck_kifu_event_selection_bundle_sha256"),
+        CheckConstraint(_lower_sha256_check("member_set_sha256"), name="ck_kifu_event_selection_member_sha256"),
+        CheckConstraint("producer_id <> reviewer_id", name="ck_kifu_event_selection_independent_review"),
+        CheckConstraint("status IN ('applied', 'undone')", name="ck_kifu_event_selection_batch_status"),
+    )
+
+
+class KifuAlbumEventSelection(Base):
+    """Reviewed event value chosen from one album's pinned SGF, leaving source fields intact."""
+
+    __tablename__ = "kifu_album_event_selections"
+
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True)
+    batch_id = Column(Integer, ForeignKey("kifu_event_selection_batches.id"), nullable=False)
+    selected_raw = Column(Text, nullable=False)
+    sgf_sha256 = Column(String(64), nullable=False)
+    property_name = Column(String(2), nullable=False)
+    property_index = Column(Integer, nullable=False)
+    status = Column(String(16), nullable=False)
+    rule_version = Column(String(64), nullable=False)
+    reviewer_id = Column(String(128), nullable=False)
+    reviewed_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("length(trim(selected_raw)) > 0", name="ck_kifu_album_event_selected_raw"),
+        CheckConstraint(_lower_sha256_check("sgf_sha256"), name="ck_kifu_album_event_sgf_sha256"),
+        CheckConstraint("property_name = 'GN' AND property_index = 1", name="ck_kifu_album_event_gn_index"),
+        CheckConstraint("status = 'approved'", name="ck_kifu_album_event_status"),
+    )
+
+
 class KifuAlbumSource(Base):
     __tablename__ = "kifu_album_sources"
 

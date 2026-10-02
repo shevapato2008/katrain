@@ -86,6 +86,97 @@ def _legacy_name_tables(engine, *, include_checks=True, include_unique=True):
         )
 
 
+def test_event_selection_schema_is_explicit_and_preserves_legacy_album(engine, monkeypatch):
+    _legacy_name_tables(engine)
+    migrations.migrate_kifu_name_schema(engine)
+    migrations.install_kifu_name_change_immutability(engine)
+    migrations.create_kifu_name_indexes(engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS kifu_album_event_selections"))
+        conn.execute(text("DROP TABLE IF EXISTS kifu_event_selection_batches"))
+    original = (
+        "吴清源 九段", "木谷实", "大手合 第3局",
+        "(;FF[4]PB[吴清源 九段]PW[木谷实]EV[大手合 第3局])", "old.sgf",
+    )
+    with engine.begin() as conn:
+        assert conn.execute(text(
+            "SELECT player_black, player_white, event, sgf_content, source_path "
+            "FROM kifu_albums WHERE id=5"
+        )).one() == original
+    assert "kifu_album_event_selections" not in inspect(engine).get_table_names()
+
+    with pytest.raises(RuntimeError, match="kifu_album_event_selections.*migrate_catalog"):
+        SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert "kifu_album_event_selections" not in inspect(engine).get_table_names()
+
+    monkeypatch.setattr(migrate_catalog, "engine", engine)
+    monkeypatch.setattr("sys.argv", ["migrate_catalog", "--validate"])
+    migrate_catalog.main()
+    SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    assert {"kifu_event_selection_batches", "kifu_album_event_selections"} <= set(inspect(engine).get_table_names())
+    with engine.begin() as conn:
+        assert conn.execute(text(
+            "SELECT player_black, player_white, event, sgf_content, source_path "
+            "FROM kifu_albums WHERE id=5"
+        )).one() == original
+        assert conn.execute(text(
+            "SELECT display_name, status, reference_url FROM kifu_player_names WHERE id=3"
+        )).one() == ("Go Seigen", "verified", "legacy-source")
+
+
+def test_event_selection_tables_enforce_reviewed_one_per_album_and_hashes(engine):
+    SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
+    selection_table = "kifu_album_event_selections"
+    batch_table = "kifu_event_selection_batches"
+    assert {fk["referred_table"] for fk in inspect(engine).get_foreign_keys(selection_table)} == {
+        "kifu_albums", "kifu_events", batch_table,
+    }
+    with engine.begin() as conn:
+        conn.execute(text(
+            "INSERT INTO kifu_albums (id, player_black, player_white, event, sgf_content, source_path) "
+            "VALUES (1, '甲', '乙', 'GNUGo3.8', '(;GN[GNUGo3.8]GN[棋赛])', 'a.sgf')"
+        ))
+        conn.execute(text("INSERT INTO kifu_events (id, canonical_name) VALUES (1, '棋赛')"))
+        conn.execute(text(
+            "INSERT INTO kifu_event_selection_batches "
+            "(id, bundle_sha256, member_set_sha256, reviewed_artifact, producer_id, reviewer_id, "
+            "reviewed_at, status) "
+            "VALUES (1, :hash, :hash, '{}', 'producer', 'reviewer', CURRENT_TIMESTAMP, 'applied')"
+        ), {"hash": "a" * 64})
+        conn.execute(text(
+            "INSERT INTO kifu_album_event_selections "
+            "(album_id, event_id, batch_id, selected_raw, sgf_sha256, property_name, "
+            "property_index, status, reviewer_id, reviewed_at, rule_version) "
+            "VALUES (1, 1, 1, '棋赛', :hash, 'GN', 1, 'approved', 'reviewer', "
+            "CURRENT_TIMESTAMP, 'gn-second-v1')"
+        ), {"hash": "b" * 64})
+
+    invalid = (
+        ("INSERT INTO kifu_event_selection_batches "
+         "(bundle_sha256, member_set_sha256, reviewed_artifact, producer_id, reviewer_id, reviewed_at, status) "
+         "VALUES (:hash, :hash, '{}', 'producer', 'reviewer', CURRENT_TIMESTAMP, 'applied')", {"hash": "a" * 64}),
+        ("UPDATE kifu_event_selection_batches SET member_set_sha256=:hash WHERE id=1", {"hash": "Z" * 64}),
+        ("UPDATE kifu_event_selection_batches SET reviewer_id='producer' WHERE id=1", {}),
+        ("UPDATE kifu_event_selection_batches SET status='pending' WHERE id=1", {}),
+        ("UPDATE kifu_album_event_selections SET selected_raw=' ' WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET sgf_sha256=:hash WHERE album_id=1", {"hash": "B" * 64}),
+        ("UPDATE kifu_album_event_selections SET sgf_sha256=:hash WHERE album_id=1", {"hash": "b" * 63}),
+        ("UPDATE kifu_album_event_selections SET sgf_sha256=:hash WHERE album_id=1", {"hash": "z" * 64}),
+        ("UPDATE kifu_album_event_selections SET status='pending' WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET event_id=999 WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET batch_id=999 WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET album_id=999 WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET property_index=0 WHERE album_id=1", {}),
+        ("UPDATE kifu_album_event_selections SET property_name='EV' WHERE album_id=1", {}),
+    )
+    for statement, params in invalid:
+        with pytest.raises(IntegrityError):
+            with engine.begin() as conn:
+                conn.execute(text(statement), params)
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT COUNT(*) FROM kifu_album_event_selections")).scalar_one() == 1
+
+
 def test_empty_db_creates_all_name_tables_and_real_constraints(engine):
     SQLAlchemyUserRepository(sessionmaker(bind=engine)).init_db()
     assert NEW_TABLES <= set(inspect(engine).get_table_names())

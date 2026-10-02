@@ -16,15 +16,18 @@ from katrain.web.core.migrations import (
     migrate_kifu_name_schema,
     validate_kifu_album_foreign_keys,
     validate_kifu_name_foreign_keys,
+    verify_kifu_event_selection_schema,
     verify_kifu_name_schema,
 )
 from katrain.web.core.models_db import (
+    KifuAlbumEventSelection,
     KifuAlbumSource,
     KifuDedupBatch,
     KifuDedupChange,
     KifuEvent,
     KifuEventAlias,
     KifuEventName,
+    KifuEventSelectionBatch,
     KifuNameBatch,
     KifuNameChange,
     KifuNameResearchEvidence,
@@ -56,6 +59,8 @@ CATALOG_TABLES = [
         KifuRawEventName,
         KifuNameBatch,
         KifuNameChange,
+        KifuEventSelectionBatch,
+        KifuAlbumEventSelection,
         KifuSource,
         KifuAlbumSource,
         KifuDedupBatch,
@@ -72,6 +77,7 @@ def main() -> None:
     migrate_kifu_catalog_schema(engine)
     migrate_kifu_name_schema(engine)
     verify_kifu_name_schema(engine)
+    verify_kifu_event_selection_schema(engine)
     create_kifu_name_indexes(engine)
     install_kifu_name_change_immutability(engine)
     create_kifu_album_identity_indexes(engine)

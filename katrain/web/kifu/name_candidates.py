@@ -9,6 +9,7 @@ also check that each raw ID resolves to the declared exact spelling in DB.
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from calendar import monthrange
 from datetime import date, datetime
 import hashlib
 import json
@@ -123,6 +124,41 @@ def _iso_date(value: object) -> date | None:
         return date.fromisoformat(value)
     except ValueError:
         return None
+
+
+def _played_date_bounds(value: object) -> tuple[date, date] | None:
+    """Return the full possible span of a supported raw SGF date."""
+    if not isinstance(value, str) or len(value) > 32:
+        return None
+    if re.fullmatch(r"\d{4}", value):
+        try:
+            year = int(value)
+            return date(year, 1, 1), date(year, 12, 31)
+        except ValueError:
+            return None
+    if re.fullmatch(r"\d{4}-\d{2}", value):
+        try:
+            year, month = map(int, value.split("-"))
+            return date(year, month, 1), date(year, month, monthrange(year, month)[1])
+        except ValueError:
+            return None
+    parts = value.split(",")
+    first = _iso_date(parts[0])
+    if first is None:
+        return None
+    days = [first]
+    for part in parts[1:]:
+        if re.fullmatch(r"\d{2}", part):
+            try:
+                days.append(date(first.year, first.month, int(part)))
+            except ValueError:
+                return None
+        else:
+            parsed = _iso_date(part)
+            if parsed is None:
+                return None
+            days.append(parsed)
+    return min(days), max(days)
 
 
 def canonical_sha256(value: object) -> str:
@@ -685,13 +721,23 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                 _require(review.get("event_region") == context["region"]
                          and _text(review.get("event_region_basis")),
                          "selected_event event_region differs from target context or lacks evidence")
-                played = album.get("date_played")
-                if isinstance(played, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", played):
-                    _require(context["start_date"] <= played <= context["end_date"],
-                             "selected_event period excludes album date")
+                played_bounds = _played_date_bounds(album.get("date_played"))
+                _require(played_bounds is not None,
+                         "selected_event album date is ambiguous or unsupported")
+                _require(_iso_date(context["start_date"]) <= played_bounds[0]
+                         and played_bounds[1] <= _iso_date(context["end_date"]),
+                         "selected_event period excludes album date")
             frozen_at = _time(review.get("scope_frozen_at"))
             _require(frozen_at and _time(review["reviewed_at"]) > frozen_at,
                      "link identity review must follow scope freeze")
+            if slot == "selected_event":
+                produced_at = _time(review["produced_at"])
+                _require(produced_at <= frozen_at,
+                         "selected_event evidence, production and freeze chronology invalid")
+                for check in checks:
+                    captured = _time(check.get("fetched_at"))
+                    _require(captured is not None and captured <= produced_at,
+                             "selected_event evidence, production and freeze chronology invalid")
             review_groups[(target_key, raw_value)].append((number, link))
             link_targets.add(target_key)
         except (AttributeError, KeyError, TypeError, CandidateError) as exc:

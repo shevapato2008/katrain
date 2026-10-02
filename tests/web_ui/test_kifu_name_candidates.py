@@ -807,6 +807,7 @@ def _selected_v4_case():
             "event_period_basis": "Contemporary record dates this tournament to 1934",
             "event_region_basis": "Contemporary record places it in Japan",
             "source_checks": [{"url": "https://example.org/event", "body_sha256": "f" * 64,
+                               "fetched_at": "2026-10-02T09:20:00Z",
                                "body_excerpt": "1934 Selected Cup in Japan",
                                "identity_match": "Same event and edition"}],
         },
@@ -950,6 +951,63 @@ def test_v4_selected_event_rejects_invalid_or_out_of_range_period():
         bad["owner_set_sha256"] = canonical_sha256(bad["owners"])
         report = validate_bundle(bad, registry(), inv, [])
         assert any("period" in error for error in report["errors"])
+
+
+def test_v4_selected_event_requires_evidence_and_production_before_scope_freeze():
+    inv, proposed = _selected_v4_case()
+    for field, value in (("produced_at", "2026-10-02T10:01:00Z"),
+                         ("produced_at", "2026-10-02T09:10:00Z"),
+                         ("scope_frozen_at", "2026-10-02T09:15:00Z")):
+        bad = deepcopy(proposed)
+        bad["album_links"][0]["identity_review"][field] = value
+        bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+        assert any("chronology" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+    for fetched in (None, "2026-10-02T09:35:00Z", "2026-10-02T10:01:00Z", "2026-10-02T09:20:00"):
+        bad = deepcopy(proposed)
+        if fetched is None:
+            del bad["album_links"][0]["identity_review"]["source_checks"][0]["fetched_at"]
+        else:
+            bad["album_links"][0]["identity_review"]["source_checks"][0]["fetched_at"] = fetched
+        bad["link_set_sha256"] = canonical_sha256(bad["album_links"])
+        assert any("chronology" in error for error in validate_bundle(bad, registry(), inv, [])["errors"])
+
+
+def test_v4_selected_event_checks_year_and_multi_day_album_dates():
+    inv, proposed = _selected_v4_case()
+    date_index = inv["association_columns"].index("date_played")
+    for played, allowed in (("1934", True), ("1973", False),
+                            ("1934-09-04,05", True), ("1934-09-04,05,07", True),
+                            ("1934-12-31,1935-01-01", False),
+                            ("1934-09-04,99", False), ("1934-09", True),
+                            ("circa 1934", False), (None, False)):
+        changed_inventory = deepcopy(inv)
+        changed_bundle = deepcopy(proposed)
+        changed_inventory["album_associations"][0][date_index] = played
+        album = dict(zip(changed_inventory["association_columns"], changed_inventory["album_associations"][0]))
+        link = changed_bundle["album_links"][0]
+        link["association_sha256"] = canonical_sha256(album)
+        link["expected"]["date_played"] = played
+        link["identity_review"]["scope_sha256"] = identity_scope_sha256(
+            changed_bundle, [link], changed_bundle["owners"][0])
+        changed_bundle["link_set_sha256"] = canonical_sha256([link])
+        report = validate_bundle(changed_bundle, registry(), changed_inventory, [])
+        assert any("album date" in error for error in report["errors"]) is not allowed, played
+    narrowed_inventory = deepcopy(inv)
+    narrowed_bundle = deepcopy(proposed)
+    narrowed_inventory["album_associations"][0][date_index] = "1934"
+    album = dict(zip(narrowed_inventory["association_columns"], narrowed_inventory["album_associations"][0]))
+    link = narrowed_bundle["album_links"][0]
+    link["association_sha256"] = canonical_sha256(album)
+    link["expected"]["date_played"] = "1934"
+    narrowed_bundle["owners"][0]["identity_context"]["start_date"] = "1934-09-01"
+    narrowed_bundle["owners"][0]["identity_context"]["end_date"] = "1934-09-30"
+    link["identity_review"]["event_period"] = {"start_date": "1934-09-01", "end_date": "1934-09-30"}
+    link["identity_review"]["scope_sha256"] = identity_scope_sha256(
+        narrowed_bundle, [link], narrowed_bundle["owners"][0])
+    narrowed_bundle["owner_set_sha256"] = canonical_sha256(narrowed_bundle["owners"])
+    narrowed_bundle["link_set_sha256"] = canonical_sha256([link])
+    report = validate_bundle(narrowed_bundle, registry(), narrowed_inventory, [])
+    assert any("period excludes album date" in error for error in report["errors"])
 
 
 def test_v4_selected_event_accepts_eleven_independently_reviewed_event_names():

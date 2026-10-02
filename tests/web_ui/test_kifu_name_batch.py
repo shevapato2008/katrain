@@ -365,6 +365,53 @@ def test_composed_undo_restores_complete_previous_composition_batch(engine, manu
         assert set(conn.scalars(select(KifuAlbum.event_id))) == {7}
 
 
+def test_composed_undo_three_batches_restores_active_dependencies_and_keeps_history(engine):
+    bundle, sources, inv, research = composition_bundle(engine)
+    first = apply_bundle(engine, bundle, sources, inv, research)
+    revised = deepcopy(bundle)
+    for candidate in revised["candidates"]:
+        set_fixture_preimage(candidate, name_preimage_sha256(engine, candidate["owner"], candidate["lang"]))
+    second = apply_bundle(engine, revised, sources, inv, research)
+    models = (KifuEventName, KifuRawEventName, KifuNameResearchEvidence)
+    with engine.connect() as conn:
+        before = {model: conn.execute(select(model.__table__).order_by(model.id)).mappings().all()
+                  for model in models}
+    latest = deepcopy(revised)
+    for candidate in latest["candidates"]:
+        set_fixture_preimage(candidate, name_preimage_sha256(engine, candidate["owner"], candidate["lang"]))
+    third = apply_bundle(engine, latest, sources, inv, research)
+    undone = undo_batch(engine, third["batch_id"])
+    assert undone["status"] == "undone" and undone["skipped"] == 0
+    assert undone["reverted"] == third["change_count"]
+    assert batch_status(engine, first["batch_id"])["status"] == "applied"
+    assert batch_status(engine, second["batch_id"])["status"] == "applied"
+    with engine.connect() as conn:
+        for model in models:
+            assert conn.execute(select(model.__table__).order_by(model.id)).mappings().all() == before[model]
+
+
+def test_composed_undo_preserves_historical_base_evidence_without_active_names(engine):
+    bundle, sources, inv, research = composition_bundle(engine)
+    applied = apply_bundle(engine, bundle, sources, inv, research)
+    with engine.begin() as conn:
+        # A later editor keeps the old evidence as audit history while withdrawing its name.
+        evidence_id = conn.scalar(select(KifuRawEventName.evidence_id).where(
+            KifuRawEventName.raw_event_id == 1, KifuRawEventName.lang == "ru"))
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__).where(
+            KifuNameResearchEvidence.id == evidence_id)).mappings().one()
+        dependencies = evidence["research_payload"]["composition"]["dependencies"]
+        conn.execute(KifuRawEventName.__table__.update().where(
+            KifuRawEventName.evidence_id == evidence_id).values(status="review"))
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == evidence_id).values(producer_model="retained audit edit"))
+    assert undo_batch(engine, applied["batch_id"])["status"] == "partial_undo"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuEventName.id).where(
+            KifuEventName.id == dependencies["base_name_id"])) is None
+        assert conn.scalar(select(KifuNameResearchEvidence.id).where(
+            KifuNameResearchEvidence.id == dependencies["base_evidence_id"])) is not None
+
+
 def selected_composition_bundle(engine):
     from tests.web_ui.test_kifu_name_candidates import _selected_v4_case
 

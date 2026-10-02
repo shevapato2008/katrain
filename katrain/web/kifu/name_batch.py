@@ -746,8 +746,14 @@ def _retained_composition_dependency(conn, table, row_id: int, before_image: dic
            KifuNameResearchEvidence.__tablename__: "base_evidence_id"}.get(table.name)
     if key is None:
         return False
-    payloads = conn.scalars(select(KifuNameResearchEvidence.research_payload).where(
-        KifuNameResearchEvidence.decision_kind == "composed"))
+    query = select(KifuNameResearchEvidence.research_payload).where(
+        KifuNameResearchEvidence.decision_kind == "composed")
+    if key == "base_name_id":
+        # Only current verified names constrain the live base version. Historical
+        # evidence still protects its base evidence row from deletion below.
+        query = query.where(KifuNameResearchEvidence.id.in_(select(KifuRawEventName.evidence_id).where(
+            KifuRawEventName.status == "verified")))
+    payloads = conn.scalars(query)
     for payload in payloads:
         if not isinstance(payload, dict):
             continue

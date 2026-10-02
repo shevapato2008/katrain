@@ -32,6 +32,7 @@ interface LiveBoardProps {
   nextColor?: 'B' | 'W'; // Color of the next stone to place (for hover preview)
   pvMoves?: string[] | null; // Principal variation moves to display as semi-transparent stones
   aiMarkers?: AiMoveMarker[] | null; // AI recommended moves to mark on board
+  aiMarkerLimit?: number; // Maximum AI markers to display (default 3)
   showAiMarkers?: boolean; // Whether to display AI markers (default true)
   showMoveNumbers?: boolean; // Whether to display move numbers on stones
   handicapCount?: number; // Number of leading setup stones to skip when numbering
@@ -313,6 +314,7 @@ export default function LiveBoard({
   nextColor,
   pvMoves,
   aiMarkers,
+  aiMarkerLimit = 3,
   showAiMarkers = true,
   showMoveNumbers = false,
   handicapCount = 0,
@@ -583,8 +585,7 @@ export default function LiveBoard({
     // Draw AI move markers (colored circles on empty intersections)
     if (showAiMarkers && aiMarkers && aiMarkers.length > 0 && !pvMoves) {
       // Only show AI markers when not hovering on PV (PV takes precedence)
-      // Limit to top 3 to match play module
-      const markersToShow = aiMarkers.slice(0, 3);
+      const markersToShow = aiMarkers.slice(0, aiMarkerLimit);
       for (const marker of markersToShow) {
         const coords = parseMove(marker.move);
         if (coords) {
@@ -600,11 +601,7 @@ export default function LiveBoard({
     // Draw PV (principal variation) stones if hovering
     if (pvMoves && pvMoves.length > 0) {
       // Determine the starting player for PV moves (opposite of last player)
-      let pvPlayer: 'B' | 'W' = lastPlayer === 'B' ? 'W' : 'B';
-      // If we're at move 0 (empty board), black plays first
-      if (currentMove === 0) {
-        pvPlayer = 'B';
-      }
+      let pvPlayer: 'B' | 'W' = nextColor ?? (currentMove === 0 ? 'B' : lastPlayer === 'B' ? 'W' : 'B');
 
       // Track positions already used by PV stones
       const pvOccupied = new Set<string>();
@@ -669,7 +666,7 @@ export default function LiveBoard({
       const interval = setInterval(renderBoard, 100); // ~10fps for pulse
       return () => clearInterval(interval);
     }
-  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {

@@ -144,7 +144,7 @@ function baseDetail() {
   };
 }
 
-/** 屏 20 默认展开的是「AI 推荐」—— 要看五个 tab 得先把「着手评价」点开。 */
+/** 分析按钮打开保留五页签的弹层。 */
 function openGrade() {
   fireEvent.click(screen.getByRole('button', { name: /着手评价/ }));
 }
@@ -296,15 +296,15 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     realHook.enabled = false;
   });
 
-  // 默认展开的是「AI 推荐」而不是曲线 —— 它是**逐手**的东西(翻到哪手看哪手),
-  // 而着手评价是整局的总结。两块同一时刻只开一块,理由是几何(体只有 216,两块要 380)。
-  it('默认开 AI 推荐、着手评价收起;点一下换过去,AI 推荐跟着收起', () => {
+  it('候选常驻，分析按钮打开弹层，关闭后仍保留候选', () => {
     renderPage();
-    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'true');
-    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'false');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const table = screen.getByTestId('report-detail-ai');
     openGrade();
-    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'true');
-    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByRole('dialog', { name: '着手评价 · 七档' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(table).toBeVisible();
   });
 
   it('AI 推荐表用的是 galaxy 那四个列名 —— 着点 / 推荐度 / 领先 / 胜率', () => {
@@ -314,6 +314,22 @@ describe('屏 20 · 着手评价的五个 tab', () => {
       expect(table.textContent).toContain(col);
     }
     expect(screen.getAllByTestId('ai-recommend-row').length).toBeGreaterThan(0);
+  });
+
+  it('旧报告无PSV时退回visits，分母仍包含全部候选', () => {
+    const top_moves = Array.from({ length: 10 }, (_, i) => ({ ...analysis.top_moves[0], move: `A${i + 1}`, psv: 0, visits: i === 0 ? 900 : 100 }));
+    detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, top_moves } } };
+    renderPage();
+    expect(screen.getAllByTestId('ai-recommend-row')[0]).toHaveTextContent('50%');
+  });
+
+  it('局面尚未算出时五个占位仍在，不编胜率或领先', () => {
+    detail = { ...baseDetail(), analysisByMove: {} };
+    renderPage();
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.getAllByTestId('ai-recommend-empty-row')).toHaveLength(5);
+    expect(screen.getByTestId('report-detail-scores')).toHaveTextContent('—');
+    expect(screen.getByTestId('report-detail-scores')).not.toHaveTextContent('0.0%');
   });
 
   it('走势 tab:曲线按逐手数据画,并且多画一条目差', () => {
@@ -428,13 +444,46 @@ describe('屏 20 · 盘上的交互', () => {
   // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
   // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
   // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
-  it('四个开关按 galaxy 的名字与顺序排,没有领地数据时「领地」按不了', () => {
+  it('领地、手数、支招与坐标共用开关行，领地无数据时禁用', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
     const row = screen.getByTestId('report-detail-toggles');
     expect([...row.querySelectorAll('button')].map((b) => b.textContent))
-      .toEqual(['试下', '领地', '手数', '支招']);
+      .toEqual(['领地', '手数', '支招', '坐标']);
+    expect(screen.getByTestId('report-detail-actions')).toHaveTextContent('试下');
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
+  });
+
+  it('坐标仅切换外壳文字，刻度带和盘的参数保留', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '坐标' }));
+    expect(screen.getByTestId('report-detail-board')).toHaveAttribute('data-coordinates', 'false');
+    expect(document.querySelectorAll('.kiosk-board__ruler')).toHaveLength(4);
+    expect(document.querySelectorAll('.kiosk-board__ruler--top span')).toHaveLength(19);
+    expect(boardProps.showCoordinates).toBe(false);
+  });
+
+  it('五行常驻，按SGF下一手白方转换候选，PSV分母含未展示的候选', () => {
+    const top_moves = Array.from({ length: 10 }, (_, i) => ({ ...analysis.top_moves[0], move: `A${i + 1}`, psv: 1, visits: i === 0 ? 900 : 1 }));
+    detail = { ...baseDetail(), game: { ...game, sgf_content: '(;SZ[19];B[pd];B[dd];W[qp])' }, analysisByMove: { 2: { ...analysis, top_moves } } };
+    renderPage();
+    const rows = screen.getAllByTestId('ai-recommend-row');
+    expect(rows).toHaveLength(5);
+    expect(rows[0]).toHaveTextContent('1 · A1');
+    expect(rows[0]).toHaveTextContent('10%');
+    expect(rows[0]).toHaveTextContent('−4.1');
+    expect(rows[0]).toHaveTextContent('36.0%');
+    fireEvent.click(rows[0]);
+    expect(boardProps.pvMoves).toEqual(['Q10', 'D10']);
+    fireEvent.click(screen.getByRole('button', { name: '清除变化' }));
+    expect(boardProps.pvMoves).toBeNull();
+  });
+
+  it('对局详情保留赛事、棋手段位、规则、贴目、状态及来源', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog');
+    for (const text of ['测试赛事', '9D', 'chinese', '7.5', '生成中', 'import', '日期', '结果']) expect(dialog).toHaveTextContent(text);
   });
 
   it('三个显示开关真的传到盘上', () => {

@@ -141,8 +141,8 @@ export default function TrendChart({
     // 改造前这里写死 420，320 档下整张图被缩到 0.79（轴标 11px 只剩 8.7px）。
     const width = dualWidth;
     const height = 180;
-    const leftPadding = 42;
-    const rightPadding = 42;
+    const leftPadding = 56;
+    const rightPadding = 56;
     const topPadding = 16;
     const bottomPadding = 12;
     const chartWidth = width - leftPadding - rightPadding;

@@ -53,6 +53,9 @@ interface AiAnalysisProps {
   analysis: Record<number, MoveAnalysis>;
   onMoveHover?: (pv: string[] | null) => void;
   topN?: number;  // Number of top moves to display (default 3)
+  reportMode?: boolean;
+  playerToMove?: 'B' | 'W';
+  actualMove?: string;
   // Touch (kiosk) variant: tap a row to toggle its variation. The parent owns
   // the active move (and derives the PV) so navigation auto-resets it. Galaxy
   // uses onMoveHover (mouse) instead and leaves these undefined.
@@ -81,6 +84,9 @@ export default function AiAnalysis({
   analysis,
   onMoveHover,
   topN = 3,  // Show top 3 + actual move if not in top 3
+  reportMode = false,
+  playerToMove,
+  actualMove: sgfActualMove,
   showHumanTendency = false,
   onMoveSelect,
   activeMove = null,
@@ -91,7 +97,7 @@ export default function AiAnalysis({
   // Determine who plays next (not who just moved)
   // At move 0 (empty board), Black plays next
   // At move N, the next player is Black if N is even, White if N is odd
-  const nextPlayer: 'B' | 'W' = currentMove % 2 === 0 ? 'B' : 'W';
+  const nextPlayer: 'B' | 'W' = playerToMove ?? (currentMove % 2 === 0 ? 'B' : 'W');
 
   // Build the display list with proper percentage calculation
   // Note: actual move comes from the NEXT position's analysis record
@@ -106,7 +112,18 @@ export default function AiAnalysis({
 
     const topMoves = currentAnalysis.top_moves.slice(0, topN);
     // Get the actual move from the next position's analysis (what was actually played from here)
-    const actualMove = nextAnalysis?.move;
+    const actualMove = sgfActualMove ?? nextAnalysis?.move;
+
+    if (reportMode) {
+      const allMoves = currentAnalysis.top_moves;
+      const totalPsv = allMoves.reduce((sum, m) => sum + (m.psv || 0), 0);
+      const totalVisits = allMoves.reduce((sum, m) => sum + (m.visits || 0), 0);
+      return topMoves.map((m) => ({
+        ...m,
+        isActualMove: actualMove === m.move,
+        percentage: totalPsv > 0 ? (m.psv || 0) / totalPsv * 100 : totalVisits > 0 ? (m.visits || 0) / totalVisits * 100 : 0,
+      }));
+    }
 
     // Check if actual move is in top N
     const actualMoveInTop = actualMove ? topMoves.findIndex(m => m.move === actualMove) : -1;
@@ -163,7 +180,13 @@ export default function AiAnalysis({
         ? ((m.psv || 0) / totalPsv) * 100
         : (totalVisits > 0 ? (m.visits / totalVisits) * 100 : 0),
     }));
-  }, [currentAnalysis, nextAnalysis, topN]);
+  }, [currentAnalysis, nextAnalysis, topN, reportMode, sgfActualMove]);
+
+  const actualMove = sgfActualMove ?? nextAnalysis?.move;
+  const actualCandidate = actualMove ? currentAnalysis?.top_moves.find((m) => m.move === actualMove) : undefined;
+  const actualOutsideTop = reportMode && actualMove && !displayMoves.some((m) => m.move === actualMove);
+  const actualLead = actualCandidate?.score_lead == null ? null : (nextPlayer === 'B' ? actualCandidate.score_lead : -actualCandidate.score_lead);
+  const actualWinrate = actualCandidate?.winrate == null ? null : (nextPlayer === 'B' ? actualCandidate.winrate : 1 - actualCandidate.winrate);
 
   // 表头要说清「这是谁的选择率」。档位来自数据本身（每个候选点都带 human_profile），
   // 不是前端写死的常量 —— 服务端换档之后，老报告的数字仍然自证是按哪一档算的。
@@ -196,11 +219,11 @@ export default function AiAnalysis({
   }
 
   return (
-    <Box sx={{ px: 1.5, py: 1 }}>
+    <Box sx={{ px: 1.5, py: reportMode ? 0.5 : 1, height: reportMode ? '100%' : 'auto', boxSizing: 'border-box' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="subtitle2" sx={{ fontSize: '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}</Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="subtitle2" sx={{ fontSize: reportMode ? 18 : '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}{reportMode ? ` · ${nextPlayer === 'B' ? t('review:black', '黑') : t('review:white', '白')}${t('report:to_play', '方待落子')}` : ''}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 18 : undefined }}>
           {t('live:after_move', 'After move')} {currentMove}
         </Typography>
       </Box>
@@ -219,8 +242,8 @@ export default function AiAnalysis({
           borderRadius: 1,
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 18 : '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
         {showHumanTendency && (
           <Tooltip title={humanHeaderHint}>
             <Typography
@@ -228,18 +251,18 @@ export default function AiAnalysis({
               variant="caption"
               color="text.secondary"
               noWrap
-              sx={{ textAlign: 'center', fontSize: '0.7rem', cursor: 'help' }}
+              sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem', cursor: 'help' }}
             >
               {humanHeader}
             </Typography>
           </Tooltip>
         )}
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
       </Box>
 
       {/* Move rows */}
-      <Box sx={{ height: 150, overflowY: 'auto' }}>
+      <Box sx={{ height: reportMode ? 'auto' : 150, overflowY: reportMode ? 'visible' : 'auto' }}>
         {displayMoves.map((move, index) => (
           <MoveRow
             key={move.move}
@@ -252,9 +275,14 @@ export default function AiAnalysis({
             showHumanTendency={showHumanTendency}
             isSelected={move.move === activeMove}
             onSelect={onMoveSelect ? () => onMoveSelect(move.move === activeMove ? null : move.move) : undefined}
+            reportMode={reportMode}
           />
         ))}
       </Box>
+      {actualOutsideTop && <Box data-testid="report-actual-move" sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 32, px: 1, borderTop: '1px solid', borderColor: 'divider', fontSize: 18 }}>
+        <span>{t('live:actual_move', '实战着点')} {actualMove}</span>
+        <span>{actualCandidate ? `${actualLead == null ? '—' : `${actualLead >= 0 ? '+' : ''}${actualLead.toFixed(1)} 目`} · ${actualWinrate == null ? '—' : `${(actualWinrate * 100).toFixed(1)}%`}` : t('report:no_candidate_data', '未列入候选，暂无评估')}</span>
+      </Box>}
     </Box>
   );
 }
@@ -269,9 +297,10 @@ interface MoveRowProps {
   onHover?: (hovering: boolean) => void;
   isSelected?: boolean;       // touch variant: this row's variation is active
   onSelect?: () => void;      // touch variant: tap to toggle the variation
+  reportMode?: boolean;
 }
 
-function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTendency, onHover, isSelected = false, onSelect }: MoveRowProps) {
+function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTendency, onHover, isSelected = false, onSelect, reportMode = false }: MoveRowProps) {
   const { t } = useTranslation();
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
@@ -290,10 +319,10 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
         display: 'grid',
         ...gridSx(showHumanTendency),
         gap: 0.5,
-        py: 0.5,
+        py: reportMode ? 0.25 : 0.5,
         px: 1,
-        minHeight: onSelect ? 48 : undefined,
-        mb: 0.25,
+        minHeight: reportMode ? 40 : onSelect ? 48 : undefined,
+        mb: reportMode ? 0 : 0.25,
         borderRadius: 1,
         cursor: onSelect || onHover ? 'pointer' : 'default',
         transition: 'background-color 0.15s',
@@ -319,7 +348,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
       {/* Move position with stone color indicator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         <StoneIndicator color={nextPlayer} size={14} />
-        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: '0.85rem' }}>
+        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: reportMode ? 18 : '0.85rem' }}>
           {move.move}
         </Typography>
         {isActualMove && (
@@ -348,7 +377,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             variant="body2"
             fontWeight="bold"
             color={rank === 1 ? 'primary.contrastText' : 'text.primary'}
-            sx={{ lineHeight: 1, fontSize: '0.8rem' }}
+            sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}
           >
             {percentage.toFixed(0)}%
           </Typography>
@@ -376,7 +405,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
           noWrap
           sx={{
             lineHeight: 1,
-            fontSize: '0.8rem',
+            fontSize: reportMode ? 18 : '0.8rem',
             fontVariantNumeric: 'tabular-nums',
             color: move.human_prior == null ? 'text.disabled' : 'text.primary',
           }}
@@ -416,7 +445,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
             {scoreLead >= 0 ? '+' : ''}{scoreLead.toFixed(1)}
           </Typography>
         </Box>
@@ -441,7 +470,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
             {(winrate * 100).toFixed(1)}
           </Typography>
         </Box>
@@ -462,7 +491,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
             {(opponentWinrate * 100).toFixed(1)}
           </Typography>
         </Box>

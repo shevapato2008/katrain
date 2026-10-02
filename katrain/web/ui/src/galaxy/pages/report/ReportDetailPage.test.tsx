@@ -179,24 +179,26 @@ describe('ReportDetailPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Black vs White')).toBeInTheDocument();
+      expect(screen.getByText('Black')).toBeInTheDocument();
+      expect(screen.getByText('White')).toBeInTheDocument();
     });
 
     expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
     expect(screen.getByTestId('mock-playback-bar')).toBeInTheDocument();
     expect(screen.getByTestId('mock-trend-chart')).toBeInTheDocument();
-    expect(screen.getByText('AI Recommendations')).toBeInTheDocument();
+    expect(screen.getByText(/AI Recommendations/)).toBeInTheDocument();
     // 显示开关改成复用直播页那一组共享件（工具格），所以文案走的是 live:* 而不是
     // 原来手抄的 report:*。十个共享 key 在 11 种语言里都齐，不构成 i18n 回归。
-    expect(screen.getByRole('button', { name: 'Try Move' })).toBeInTheDocument();
+    expect(screen.getByTestId('report-analysis-layout')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '试下' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Territory' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Move Numbers' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Hide Advice' })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '手数' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '支招' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Coordinates' })).toBeInTheDocument();
     expect(screen.queryByText('报告摘要')).not.toBeInTheDocument();
     expect(screen.queryByText('精彩手')).not.toBeInTheDocument();
     expect(screen.queryByText('失误手')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '进入研究' })).toBeInTheDocument();
     expect(mockUseReportDetail).toHaveBeenCalledWith('token', '7', true);
   });
 
@@ -218,8 +220,8 @@ describe('ReportDetailPage', () => {
       </GameNavigationProvider></MemoryRouter>,
     );
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Open in Research' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: '进入研究' })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: '进入研究' }));
     expect(await screen.findByText('research:game-1')).toBeInTheDocument();
   });
 
@@ -233,7 +235,7 @@ describe('ReportDetailPage', () => {
       </GameNavigationProvider></MemoryRouter>,
     );
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: '进入研究' })).toBeDisabled());
   });
 
   it('refreshes a progressive report while preserving a historical cursor', async () => {

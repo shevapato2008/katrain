@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css">
+  <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
+  <title>智星盒 · 分析报告设计预览</title>
+  <style>
+    :root { color-scheme: dark; font-family: "LXGW WenKai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --body:16px; --title:24px; --bg:#171a19; --panel:#262b29; --card:#303734; --line:#58645e; --text:#f4f7f4; --muted:#cad4cd; --accent:#7cd3a0; --wood:#d8ae69; }
+    * { box-sizing:border-box; }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#101311; color:var(--text); }
+    button, input { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible, input:focus-visible { outline:2px solid #b9f5ce; outline-offset:2px; }
+    .app { width:100vw; height:100dvh; margin:auto; display:grid; grid-template-columns:284px minmax(0,1fr) minmax(600px,35vw); grid-template-rows:56px minmax(0,1fr); background:var(--bg); font-size:var(--body); }
+    .top { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; padding:0 22px; border-bottom:1px solid #3d4641; background:#242927; min-width:0; }
+    .brand { display:flex; align-items:center; gap:10px; white-space:nowrap; font-size:var(--title); font-weight:600; letter-spacing:.02em; }
+    .brand span { font-family:"Galaxy Long Cang", "LXGW WenKai", sans-serif; font-weight:400; }
+    .brand img { width:32px; height:32px; object-fit:contain; }
+    .brand small { font-size:var(--body); font-weight:400; color:var(--muted); letter-spacing:0; }
+    .top-right { display:flex; align-items:center; gap:12px; color:var(--muted); }
+    .segmented { display:flex; padding:3px; border:1px solid var(--line); border-radius:8px; gap:2px; background:#1b201e; }
+    .segmented button { border:0; border-radius:5px; padding:5px 12px; color:var(--muted); background:transparent; min-height:34px; }
+    .segmented button[aria-pressed=true] { background:#3b5949; color:#f6fff8; }
+    .side { padding:22px 12px; border-right:1px solid #333b36; display:flex; flex-direction:column; gap:5px; background:#242927; min-height:0; }
+    .side a { text-decoration:none; color:#c8d1cb; display:flex; align-items:center; gap:13px; height:48px; padding:0 16px; border-radius:7px; }
+    .side a.active { color:#f5fff7; background:#365945; font-weight:600; }
+    .side a span:first-child { width:20px; text-align:center; color:var(--accent); }
+    .side .bottom { margin-top:auto; border-top:1px solid #48534b; padding-top:12px; }
+    .board-stage { min-width:0; min-height:0; display:grid; place-items:center; padding:16px; background:#191d1b; }
+    .board-frame { width:min(calc(100vw - 950px), calc(100dvh - 88px)); height:min(calc(100vw - 950px), calc(100dvh - 88px)); min-width:0; min-height:0; max-width:100%; max-height:100%; padding:13px; border:1px solid #ad7d43; border-radius:3px; background:linear-gradient(135deg,#e4c083,#d3a55f 48%,#bf8e4e); box-shadow:0 12px 32px #0007; }
+    #board { display:block; width:100%; height:100%; }
+    .rail { min-width:0; min-height:0; display:grid; grid-template-rows: 176px minmax(232px,24%) minmax(0,1fr) 154px; gap:9px; padding:12px; background:var(--panel); overflow:hidden; }
+    .slot { min-width:0; min-height:0; border:1px solid #4f5a53; border-radius:8px; background:var(--card); overflow:hidden; }
+    .meta { padding:12px 15px; display:grid; grid-template-rows:28px 32px 24px 22px; align-content:center; gap:5px; }
+    .meta-top { display:flex; align-items:center; gap:10px; min-width:0; }
+    .back { border:0; background:transparent; color:var(--text); width:36px; height:36px; flex:none; border-radius:6px; font-size:var(--title); }
+    .event-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+    .event-date { color:var(--muted); flex:none; white-space:nowrap; }
+    .details-trigger { width:28px; height:28px; flex:none; border:1px solid var(--line); border-radius:50%; background:#365243; color:var(--text); }
+    .details-overlay { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:#000b; }
+    .details-overlay[hidden] { display:none; }
+    .details-card { width:min(700px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; border:1px solid #769783; border-radius:9px; background:#2d3731; padding:18px; box-shadow:0 20px 50px #000a; }
+    .details-card header { display:flex; justify-content:space-between; align-items:center; font-size:var(--title); font-weight:600; margin-bottom:12px; }
+    .details-card header button { width:44px; height:44px; border:1px solid var(--line); border-radius:5px; background:#405348; color:#fff; }
+    .details-grid { display:grid; grid-template-columns:120px 1fr; gap:8px 16px; line-height:1.4; }
+    .details-grid span:nth-child(odd) { color:var(--muted); }
+    .players { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; font-size:var(--title); font-weight:600; }
+    .players span:last-child { text-align:right; }
+    .players .score { font-size:var(--body); }
+    .meta-foot { display:flex; align-items:center; justify-content:space-between; gap:9px; color:var(--muted); white-space:nowrap; }
+    .stone { display:inline-block; width:14px; height:14px; border-radius:50%; vertical-align:-1px; margin-right:6px; background:#090b0a; border:1px solid #b3c0b7; }
+    .stone.white { background:#fff; border-color:#fff; }
+    .winline { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; font-weight:400; }
+    .winline > span:first-child, .winline > span:last-child { flex:none; white-space:nowrap; }
+    .wintrack { flex:1; min-width:0; height:9px; border-radius:99px; background:#f7faf7; overflow:hidden; }
+    .wintrack i { display:block; width:32.9%; height:100%; background:#101411; }
+    .score { color:var(--accent); font-weight:600; white-space:nowrap; }
+    .recs { display:grid; grid-template-rows:36px 30px repeat(5,minmax(0,1fr)); }
+    .section-head { display:flex; align-items:center; justify-content:space-between; padding:0 16px; font-weight:600; border-bottom:1px solid var(--line); }
+    .section-head .hint { color:var(--muted); font-weight:400; }
+    .rec-head, .rec-row { display:grid; grid-template-columns:1.1fr .9fr .9fr 1fr; align-items:center; padding:0 15px; gap:8px; }
+    .rec-head { color:var(--muted); border-bottom:1px solid #4b564f; }
+    .rec-row { border:0; border-bottom:1px solid #48534b; border-radius:0; background:transparent; color:var(--text); text-align:left; min-height:0; }
+    .rec-row:last-child { border-bottom:0; }
+    .rec-row:hover, .rec-row[aria-pressed=true] { background:#3e5748; }
+    .rec-row b { font-weight:600; }
+    .rec-row .rank { color:var(--accent); margin-right:7px; }
+    .rec-row .pct { font-weight:600; }
+    .analysis { display:grid; grid-template-rows:48px minmax(0,1fr); position:relative; }
+    .tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); border-bottom:1px solid var(--line); }
+    .tabs button { border:0; background:transparent; color:var(--muted); padding:0 4px; white-space:nowrap; }
+    .tabs button[aria-selected=true] { color:#eaffef; font-weight:600; border-bottom:3px solid var(--accent); }
+    .tab-body { min-height:0; padding:10px 15px; display:none; }
+    .tab-body.active { display:flex; flex-direction:column; }
+    .tab-sub { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:34px; }
+    .tab-sub strong { font-weight:600; }
+    .help { border:1px solid #a8cbb4; width:28px; height:28px; background:#324c3b; border-radius:50%; color:#f5fff7; line-height:1; font-weight:600; }
+    .expand { border:1px solid #779683; min-width:44px; min-height:28px; border-radius:5px; color:#f6fff7; background:#344a3b; }
+    .chart-wrap { flex:1; min-height:0; position:relative; border-radius:5px; background:#202622; padding:8px 8px 4px; }
+    .chart-wrap svg { display:block; width:100%; height:100%; overflow:visible; }
+    .axis { position:absolute; color:var(--muted); line-height:1; pointer-events:none; }
+    .axis.top { top:18%; left:2%; } .axis.mid { top:49%; left:3%; } .axis.low { bottom:13%; left:4%; } .axis.start { bottom:3%; left:7%; } .axis.end { bottom:3%; right:2%; }
+    .chart-legend { display:flex; gap:18px; color:var(--muted); }
+    .key { display:inline-block; width:19px; height:4px; margin-right:7px; vertical-align:4px; border-radius:4px; background:#a8e3ec; }
+    .key.gold { background:#f2df8a; }
+    .grade-bars { flex:1; min-height:0; display:flex; align-items:end; gap:8px; padding:7px 2px; }
+    .grade-bars div { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:end; gap:4px; height:100%; color:var(--muted); text-align:center; }
+    .grade-bars i { display:block; width:min(38px,80%); min-height:2px; border-radius:3px 3px 0 0; background:#7cd3a0; }
+    .grade-bars div:nth-child(2) i { background:#b9df9c; } .grade-bars div:nth-child(3) i { background:#d7daa3; } .grade-bars div:nth-child(4) i { background:#dfbd88; } .grade-bars div:nth-child(5) i { background:#db967f; }
+    .grade-bars div:nth-child(6) i { background:#d47771; } .grade-bars div:nth-child(7) i { background:#ba5858; }
+    .analysis-filters { display:flex; align-items:center; gap:5px; min-height:38px; }
+    .analysis-filters button { min-height:32px; padding:0 9px; border:1px solid #55685a; border-radius:4px; background:#39483e; color:var(--text); }
+    .analysis-filters button[aria-pressed=true] { background:#527d5e; border-color:#8ccea0; }
+    .analysis-foot { color:var(--muted); line-height:1.3; }
+    .metric { display:flex; align-items:center; justify-content:center; flex:1; gap:16px; color:var(--muted); }
+    .metric strong { font-size:var(--title); color:var(--text); }
+    .note { position:absolute; right:12px; top:50px; z-index:3; width:min(380px,calc(100% - 24px)); background:#415047; color:#fff; padding:14px 16px; border:1px solid #91c9a0; border-radius:7px; box-shadow:0 14px 30px #0009; line-height:1.5; }
+    .note[hidden] { display:none; }
+    .modal-close { display:none; }
+    .kiosk-analysis-button { display:none; }
+    .controls { padding:5px 12px; display:grid; grid-template-rows:44px 42px 44px; gap:3px; }
+    .actionrow { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+    .app.personal .actionrow { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .actionrow button { border:1px solid #66756a; border-radius:6px; background:#38443c; color:#f2f7f2; min-width:0; min-height:42px; }
+    .actionrow button[hidden] { display:none; }
+    .toolrow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+    .toolrow button { border:1px solid #66756a; border-radius:6px; background:#2c3930; color:#f2f7f2; min-width:0; min-height:40px; }
+    .toolrow button[aria-pressed=true] { background:#4c8060; border-color:#a2dfb2; color:#fff; font-weight:600; }
+    .toolrow button::before { content:"○"; color:#9fb4a4; margin-right:6px; }
+    .toolrow button[aria-pressed=true]::before { content:"●"; color:#dfffe8; }
+    .playrow { display:flex; align-items:center; gap:10px; min-width:0; }
+    .playrow input[type=range] { flex:1; min-width:0; accent-color:var(--accent); }
+    .playrow button { width:38px; height:38px; flex:none; border:1px solid #66756a; border-radius:5px; background:#38443c; color:#fff; }
+    .playrow output { min-width:76px; text-align:right; white-space:nowrap; }
+    @media (max-width:1500px) and (min-width:1101px) { .app { grid-template-columns:80px minmax(0,1fr) minmax(560px,39vw); } .side a { justify-content:center; padding:0; } .side a .label { display:none; } .brand { font-size:var(--title); } .board-frame { width:min(calc(100vw - 680px), calc(100dvh - 88px)); height:min(calc(100vw - 680px), calc(100dvh - 88px)); } }
+    @media (max-width:1100px), (max-height:690px) {
+      :root { --body:16px; --title:20px; }
+      body { font-family:"SmartBox Sans", "SmartBox Kai", "LXGW WenKai", sans-serif; }
+      .app { width:1024px; height:600px; grid-template-columns:548px 476px; grid-template-rows:56px 544px; }
+      .top { padding:0 20px; }
+      .top-right { gap:8px; }
+      .segmented button { padding:3px 8px; min-height:32px; }
+      .side { display:none; }
+      .board-stage { padding:14px 16px; }
+      .board-frame { width:516px; height:516px; padding:7px; }
+      .rail { grid-column:2; grid-row:2; grid-template-rows:84px 260px 1fr; gap:7px; padding:14px 16px 14px 0; background:var(--bg); }
+      .slot { border-radius:6px; }
+      .meta { padding:3px 9px; grid-template-rows:20px 20px 20px 16px; align-content:start; gap:0; }
+      .meta-top { gap:4px; }
+      .back { width:26px; height:26px; }
+      .event-title, .event-date { line-height:20px; }
+      .players { font-size:var(--body); }
+      .players .score { font-size:var(--body); }
+      .winline { line-height:20px; gap:6px; }
+      .wintrack { height:7px; }
+      .meta-foot { line-height:16px; gap:4px; }
+      .recs { grid-template-rows:20px 20px repeat(5,44px); }
+      .section-head { padding:0 8px; }
+      .rec-head, .rec-row { grid-template-columns:1.1fr .8fr 1fr .9fr; padding:0 8px; gap:3px; }
+      .rec-row { min-height:44px; }
+      .analysis { display:none; }
+      .analysis.chart-expanded { display:grid; position:fixed; inset:56px 0 0 0; z-index:10; border-radius:0; grid-template-rows:44px minmax(0,1fr); box-shadow:0 0 0 999px #000b; }
+      .modal-close { display:block; position:absolute; top:2px; right:2px; z-index:11; width:40px; height:40px; border:1px solid var(--line); border-radius:4px; background:#344a3b; color:#fff; }
+      .kiosk-analysis-button { display:block; }
+      .tabs button { padding:0 1px; }
+      .tab-body { padding:2px 8px; }
+      .tab-sub { min-height:21px; }
+      .help { width:20px; height:20px; }
+      .chart-wrap { padding:2px 4px; }
+      .chart-wrap .axis { display:none; }
+      .analysis.chart-expanded .tab-body { padding:12px 20px; }
+      .analysis.chart-expanded .chart-wrap .axis { display:block; }
+      .analysis.chart-expanded .tab-sub { min-height:38px; }
+      .chart-legend { gap:9px; }
+      .grade-bars { padding:1px 0; }
+      .grade-bars div { gap:1px; }
+      .controls { padding:3px 6px; grid-template-rows:44px 40px 44px; gap:3px; }
+      .actionrow, .toolrow { gap:3px; }
+      .actionrow button { min-height:44px; }
+      .toolrow button { min-height:40px; }
+      .toolrow button::before { margin-right:2px; }
+      .playrow { gap:3px; }
+      .playrow button { width:44px; height:44px; }
+      .playrow output { min-width:57px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand"><img src="../../katrain/img/logo-white.png" alt=""><span>智星盒</span><small>StellaBox</small></div>
+      <div class="top-right"><span>分析报告 · 设计预览</span><div class="segmented" role="group" aria-label="报告类型"><button type="button" data-mode="kifu" aria-pressed="true">棋谱库 · 职业</button><button type="button" data-mode="personal" aria-pressed="false">复盘 · 个人</button></div></div>
+    </header>
+    <nav class="side" aria-label="主导航">
+      <a href="#"><span>⌂</span><span class="label">首页</span></a>
+      <a href="#"><span>◈</span><span class="label">对局</span></a>
+      <a href="#"><span>⚑</span><span class="label">研究</span></a>
+      <a href="#" id="reviewNav"><span>▥</span><span class="label">复盘</span></a>
+      <a href="#"><span>▣</span><span class="label">直播</span></a>
+      <a href="#" id="kifuNav" class="active"><span>▤</span><span class="label">棋谱库</span></a>
+      <div class="bottom"><a href="#"><span>⚙</span><span class="label">设置</span></a></div>
+    </nav>
+    <main class="board-stage" aria-label="棋盘"><div class="board-frame"><canvas id="board" aria-label="19路围棋棋盘"></canvas></div></main>
+    <aside class="rail" aria-label="逐手分析">
+      <section class="slot meta">
+        <div class="meta-top"><button class="back" type="button" aria-label="返回棋谱库">‹</button><div class="event-title" id="eventTitle">第 2 届衢州烂柯杯世界公开赛 48 强</div><span class="event-date" id="eventDate">2024-04-24</span><button class="details-trigger" type="button" aria-label="对局详情">i</button></div>
+        <div class="players"><span><i class="stone"></i><span id="blackName">酒井佑规</span></span><span class="score" id="scoreLead">白领先 0.9 目</span><span><span id="whiteName">张涛</span><i class="stone white" style="margin-left:6px;margin-right:0"></i></span></div>
+        <div class="winline"><span id="blackWin">黑 32.9%</span><span class="wintrack"><i id="winFill"></i></span><span id="whiteWin">白 67.1%</span></div>
+        <div class="meta-foot"><span id="resultText">白胜中盘</span><span>中国规则</span><span>贴目 7.5</span><span>每局面 2000 visits</span></div>
+      </section>
+      <section class="slot recs" aria-label="AI 推荐选点">
+        <div class="section-head"><span>AI 推荐 · 5 个选点</span><span class="hint" id="afterMove">第 11 手后</span></div>
+        <div class="rec-head"><span>推荐选点</span><span>推荐度</span><span>领先（目）</span><span>胜率</span></div>
+        <button class="rec-row" type="button" aria-pressed="true" data-move="D6"><span><b class="rank">1</b><b>D6</b></span><span class="pct">90%</span><span>+0.9</span><span>67.2%</span></button>
+        <button class="rec-row" type="button" aria-pressed="false" data-move="F4"><span><b class="rank">2</b><b>F4</b></span><span class="pct">5%</span><span>+0.8</span><span>65.4%</span></button>
+        <button class="rec-row" type="button" aria-pressed="false" data-move="E6"><span><b class="rank">3</b><b>E6</b></span><span class="pct">3%</span><span>+0.7</span><span>63.8%</span></button>
+        <button class="rec-row" type="button" aria-pressed="false" data-move="C8"><span><b class="rank">4</b><b>C8</b></span><span class="pct">1%</span><span>+0.5</span><span>62.1%</span></button>
+        <button class="rec-row" type="button" aria-pressed="false" data-move="Q10"><span><b class="rank">5</b><b>Q10</b></span><span class="pct">1%</span><span>+0.4</span><span>61.5%</span></button>
+      </section>
+      <section class="slot analysis" aria-label="比赛分析">
+        <button class="modal-close" type="button" aria-label="关闭分析">×</button>
+        <div class="tabs" role="tablist" aria-label="分析类别">
+          <button type="button" role="tab" aria-selected="true" data-tab="trend">走势</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="brilliant">妙手</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="mistakes">失误</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="grade">发挥水准</button>
+          <button type="button" role="tab" aria-selected="false" data-tab="match">AI 吻合度</button>
+        </div>
+        <div class="tab-body active" id="trend">
+          <div class="tab-sub"><div class="chart-legend"><span><i class="key"></i>黑胜率</span><span><i class="key gold"></i>黑领先目</span></div><button type="button" class="expand" aria-label="放大走势图" aria-pressed="false">放大</button><button type="button" class="help" aria-label="走势说明" data-help="走势图显示每手之后的黑方胜率与目数差；点曲线可跳到对应手数。">?</button></div>
+          <div class="chart-wrap"><svg viewBox="0 0 600 170" preserveAspectRatio="none" aria-label="胜率与目数走势图"><g stroke="#52615a" stroke-width="1"><path d="M34 18V145H586 M34 82H586 M34 18H586" fill="none"/></g><path d="M34 81 L80 84 L126 75 L172 82 L218 90 L264 99 L310 97 L356 112 L402 109 L448 122 L494 120 L540 128 L586 132" fill="none" stroke="#a8e3ec" stroke-width="3"/><path d="M34 81 L80 80 L126 85 L172 77 L218 83 L264 85 L310 90 L356 94 L402 90 L448 91 L494 93 L540 95 L586 99" fill="none" stroke="#f2df8a" stroke-width="3"/></svg><span class="axis top">100</span><span class="axis mid">50</span><span class="axis low">0</span><span class="axis start">0</span><span class="axis end">11 手</span></div>
+        </div>
+        <div class="tab-body" id="brilliant"><div class="tab-sub"><strong>妙手 · 1 手</strong><button type="button" class="help" aria-label="妙手说明" data-help="妙手是在局面中明显优于常见选择、改善胜率或目差的着手。">?</button></div><div class="metric"><strong>第 7 手</strong><span>点击跳转并查看这一手的分析</span></div></div>
+        <div class="tab-body" id="mistakes"><div class="tab-sub"><strong>失误 · 2 手</strong><button type="button" class="help" aria-label="失误说明" data-help="失误按该手造成的目损和胜率变化分级；等级是分析参考。">?</button></div><div class="metric"><strong>第 5、9 手</strong><span>点击跳转并对照 AI 建议</span></div></div>
+        <div class="tab-body" id="grade"><div class="tab-sub"><strong>双方着手分布 · 七档</strong><button type="button" class="help" aria-label="发挥水准说明" data-help="妙手、最佳、很好、尚可、小亏、失误、恶手依据目损分级。点击柱形可查看对应着手。">?</button></div><div class="analysis-filters" role="group" aria-label="评价筛选"><button type="button" aria-pressed="true">全盘</button><button type="button">布局</button><button type="button">中盘</button><button type="button">官子</button><button type="button">双方</button><button type="button">黑方</button><button type="button">白方</button></div><div class="grade-bars"><div><i style="height:32%"></i>妙手</div><div><i style="height:72%"></i>最佳</div><div><i style="height:60%"></i>很好</div><div><i style="height:35%"></i>尚可</div><div><i style="height:20%"></i>小亏</div><div><i style="height:15%"></i>失误</div><div><i style="height:9%"></i>恶手</div></div><div class="analysis-foot">黑 6 手 / 白 5 手已评级 · 0 手未评级　　妙手 / 最佳 / 很好 / 尚可 / 小亏 / 失误 / 恶手按目损分级</div></div>
+        <div class="tab-body" id="match"><div class="tab-sub"><strong>AI 吻合度</strong><button type="button" class="help" aria-label="AI 吻合度说明" data-help="AI 吻合度表示实战着手与分析引擎候选着手一致的比例；它不直接代表棋力。">?</button></div><div class="analysis-filters" role="group" aria-label="吻合度视图"><button type="button" aria-pressed="true">统计</button><button type="button">分布</button><button type="button">全盘</button><button type="button">布局</button><button type="button">中盘</button><button type="button">官子</button></div><div class="metric"><span>走中 AI 一选</span><strong>黑 43% · 白 54%</strong><span>进入前三</span><strong>黑 67% · 白 71%</strong></div><div class="analysis-foot">不在 AI 前十选：黑 1 手 / 白 0 手 · 可比对分母：黑 6 手 / 白 5 手。吻合率不可单独当作棋力或作弊的证据。</div></div>
+        <div id="note" class="note" role="dialog" aria-label="指标说明" hidden></div>
+      </section>
+      <section class="slot controls" aria-label="棋盘操作与进度">
+        <div class="actionrow"><button type="button">试下</button><button type="button" data-kifu>查看棋谱</button><button type="button" data-personal hidden>进入研究</button><button type="button" data-personal hidden>重算</button><button class="kiosk-analysis-button" type="button">分析</button></div>
+        <div class="toolrow" role="group" aria-label="显示选项">
+          <button type="button" aria-pressed="false">领地</button><button type="button" aria-pressed="false">手数</button><button type="button" aria-pressed="true">支招</button><button type="button" aria-pressed="true">坐标</button>
+        </div>
+        <div class="playrow"><button type="button" data-nav="first" aria-label="第一手">⏮</button><button type="button" data-nav="prev" aria-label="上一手">◀</button><button type="button" data-nav="next" aria-label="下一手">▶</button><button type="button" data-nav="last" aria-label="最后一手">⏭</button><input id="moveSlider" type="range" min="0" max="11" value="11" aria-label="手数进度"><output id="moveCounter">11 / 11 手</output></div>
+      </section>
+    </aside>
+  </div>
+  <div class="details-overlay" id="detailsOverlay" hidden><div class="details-card" role="dialog" aria-modal="true" aria-label="对局详情"><header><span>对局详情</span><button type="button" id="detailsClose" aria-label="关闭详情">×</button></header><div class="details-grid"><span>赛事／标题</span><span id="detailsEvent">第 2 届衢州烂柯杯世界公开赛 48 强</span><span>日期</span><span id="detailsDate">2024-04-24</span><span>棋手</span><span id="detailsPlayers">黑 酒井佑规 · 白 张涛</span><span>结果</span><span>白胜中盘</span><span>规则与贴目</span><span>中国规则 · 贴目 7.5</span><span>来源与报告</span><span id="detailsSource">棋谱库 · 职业棋局 · 深度报告 · 已完成</span><span>分析预算</span><span>每局面 2000 visits</span></div></div></div>
+  <script>
+    const canvas = document.getElementById('board');
+    const moves = [[15,2,'B'],[2,3,'W'],[15,3,'B'],[3,15,'W'],[15,4,'B'],[16,2,'W'],[5,16,'B'],[16,3,'W'],[15,15,'B'],[17,5,'W'],[2,13,'B']];
+    const boardTexture = new Image(), blackStone = new Image(), whiteStone = new Image();
+    boardTexture.src='../../katrain/img/board.png';
+    blackStone.src='../../katrain/img/B_stone.png';
+    whiteStone.src='../../katrain/img/W_stone.png';
+    [boardTexture,blackStone,whiteStone].forEach(img=>img.addEventListener('load',drawBoard));
+    let cursor = 11;
+    let selected = 'D6';
+    function drawBoard() {
+      const dpr = Math.max(1,window.devicePixelRatio || 1);
+      const size = Math.round(canvas.getBoundingClientRect().width);
+      if (!size) return;
+      canvas.width = size * dpr; canvas.height = size * dpr;
+      const c = canvas.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
+      const margin = Math.max(26,size * .065), step = (size - 2 * margin) / 18;
+      if(boardTexture.complete && boardTexture.naturalWidth) c.drawImage(boardTexture,0,0,size,size);
+      else { c.fillStyle='#d8ae69'; c.fillRect(0,0,size,size); }
+      c.strokeStyle='#604323'; c.lineWidth=1.2;
+      for(let i=0;i<19;i++){ let p=margin+i*step; c.beginPath(); c.moveTo(margin,p); c.lineTo(size-margin,p); c.moveTo(p,margin); c.lineTo(p,size-margin); c.stroke(); }
+      c.fillStyle='#4d3420'; for(const x of [3,9,15]) for(const y of [3,9,15]) {c.beginPath();c.arc(margin+x*step,margin+y*step,Math.max(2,step*.08),0,Math.PI*2);c.fill();}
+      const cols='ABCDEFGHJKLMNOPQRST';
+      c.font=getComputedStyle(document.body).getPropertyValue('--body')+' system-ui'; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#4b321c';
+      for(let i=0;i<19;i++){let p=margin+i*step;c.fillText(cols[i],p,margin*.42);c.fillText(cols[i],p,size-margin*.42);c.fillText(String(19-i),margin*.42,p);c.fillText(String(19-i),size-margin*.42,p);}
+      moves.slice(0,cursor).forEach((m,index)=>{const x=margin+m[0]*step,y=margin+m[1]*step,r=step*.51,img=m[2]==='B'?blackStone:whiteStone;if(img.complete&&img.naturalWidth)c.drawImage(img,x-r,y-r,r*2,r*2);else{c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=m[2]==='B'?'#171917':'#f9faf7';c.fill();}if(index===cursor-1){c.strokeStyle=m[2]==='B'?'#e7f4e8':'#1b2d20';c.lineWidth=2.5;c.beginPath();c.arc(x,y,r*.65,0,Math.PI*2);c.stroke();}});
+      if(document.querySelector('.toolrow button:nth-child(3)').getAttribute('aria-pressed')==='true') {
+        const marks=[['D6',3,13],['F4',5,15],['E6',4,13],['C8',2,11],['Q10',15,9]];
+        marks.forEach((m,i)=>{let x=margin+m[1]*step,y=margin+m[2]*step;c.beginPath();c.arc(x,y,step*.34,0,Math.PI*2);c.fillStyle=m[0]===selected?'rgba(47,124,73,.83)':'rgba(45,110,63,.53)';c.fill();c.fillStyle='#fff';c.font='600 '+getComputedStyle(document.body).getPropertyValue('--body')+' system-ui';c.fillText(String(i+1),x,y);});
+      }
+    }
+    new ResizeObserver(drawBoard).observe(canvas);
+    document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+      const personal=b.dataset.mode==='personal';
+      document.querySelector('.app').classList.toggle('personal',personal);
+      document.getElementById('eventTitle').textContent=personal?'个人对局':'第 2 届衢州烂柯杯世界公开赛 48 强';
+      document.getElementById('eventDate').textContent=personal?'2026-09-30':'2024-04-24';
+      document.getElementById('detailsEvent').textContent=personal?'个人对局':'第 2 届衢州烂柯杯世界公开赛 48 强';
+      document.getElementById('detailsDate').textContent=personal?'2026-09-30':'2024-04-24';
+      document.getElementById('detailsPlayers').textContent=personal?'黑 fan · 白 小智':'黑 酒井佑规 · 白 张涛';
+      document.getElementById('detailsSource').textContent=personal?'复盘 · 个人对局 · 深度报告 · 已完成':'棋谱库 · 职业棋局 · 深度报告 · 已完成';
+      document.getElementById('blackName').textContent=personal?'fan':'酒井佑规';
+      document.getElementById('whiteName').textContent=personal?'小智':'张涛';
+      document.querySelectorAll('[data-kifu]').forEach(x=>x.hidden=personal);
+      document.querySelectorAll('[data-personal]').forEach(x=>x.hidden=!personal);
+      document.getElementById('kifuNav').classList.toggle('active',!personal);
+      document.getElementById('reviewNav').classList.toggle('active',personal);
+    }));
+    document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
+      document.querySelectorAll('.tab-body').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
+      if(window.innerWidth>1100 && window.innerHeight>690) document.querySelector('.analysis').classList.remove('chart-expanded');
+      document.querySelector('.expand').textContent='放大';
+      document.querySelector('.expand').setAttribute('aria-pressed','false');
+      document.getElementById('note').hidden=true;
+    }));
+    document.querySelector('.expand').addEventListener('click',(event)=>{
+      const expanded=document.querySelector('.analysis').classList.toggle('chart-expanded');
+      event.currentTarget.textContent=expanded?'收起':'放大';
+      event.currentTarget.setAttribute('aria-pressed',String(expanded));
+      event.currentTarget.setAttribute('aria-label',expanded?'收起走势图':'放大走势图');
+    });
+    document.querySelector('.kiosk-analysis-button').addEventListener('click',()=>document.querySelector('.analysis').classList.add('chart-expanded'));
+    document.querySelector('.modal-close').addEventListener('click',()=>document.querySelector('.analysis').classList.remove('chart-expanded'));
+    document.querySelector('.details-trigger').addEventListener('click',()=>document.getElementById('detailsOverlay').hidden=false);
+    document.getElementById('detailsClose').addEventListener('click',()=>document.getElementById('detailsOverlay').hidden=true);
+    document.getElementById('detailsOverlay').addEventListener('click',event=>{if(event.target.id==='detailsOverlay')event.currentTarget.hidden=true;});
+    document.querySelectorAll('.analysis-filters').forEach(group=>group.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{group.querySelectorAll('button').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));})));
+    document.querySelectorAll('[data-help]').forEach(b=>b.addEventListener('click',()=>{
+      const note=document.getElementById('note'); const same=!note.hidden && note.textContent===b.dataset.help;
+      note.textContent=b.dataset.help;note.hidden=same;
+    }));
+    document.querySelectorAll('.rec-row').forEach(b=>b.addEventListener('click',()=>{
+      selected=b.dataset.move;document.querySelectorAll('.rec-row').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));drawBoard();
+    }));
+    document.querySelectorAll('.toolrow button').forEach(b=>b.addEventListener('click',()=>{b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));drawBoard();}));
+    const slider=document.getElementById('moveSlider');
+    function setMove(n){cursor=Math.max(0,Math.min(11,n));slider.value=String(cursor);document.getElementById('moveCounter').textContent=cursor+' / 11 手';document.getElementById('afterMove').textContent='第 '+cursor+' 手后';drawBoard();}
+    slider.addEventListener('input',()=>setMove(Number(slider.value)));
+    document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>setMove(b.dataset.nav==='first'?0:b.dataset.nav==='last'?11:cursor+(b.dataset.nav==='next'?1:-1))));
+    window.addEventListener('resize',drawBoard);drawBoard();
+  </script>
+</body>
+</html>

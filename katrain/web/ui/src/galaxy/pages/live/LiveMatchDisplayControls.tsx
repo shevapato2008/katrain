@@ -17,6 +17,7 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import MapIcon from '@mui/icons-material/Map';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
+import GridOnIcon from '@mui/icons-material/GridOn';
 import { Box, Button, Divider, Switch, Typography } from '@mui/material';
 
 import ToolGridButton from '../../components/board/ToolGridButton';
@@ -37,6 +38,7 @@ export interface LiveMatchDisplayControlsProps {
   onAiMarkersToggle: () => void;
   onCoordinatesToggle: () => void;
   onClearTryMoves: () => void;
+  reportMode?: boolean;
 }
 
 export default function LiveMatchDisplayControls({
@@ -53,10 +55,26 @@ export default function LiveMatchDisplayControls({
   onAiMarkersToggle,
   onCoordinatesToggle,
   onClearTryMoves,
+  reportMode = false,
 }: LiveMatchDisplayControlsProps) {
   const { t } = useTranslation();
   const territoryLabel = t('live:territory', 'Territory');
   const coordinatesLabel = t('Coordinates', 'Coordinates');
+
+  if (reportMode) return (
+    <Box data-testid="report-display-controls" sx={{ display: 'grid', gridTemplateRows: '40px 40px', gap: '6px', minHeight: 0 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: '6px' }}>
+        <ToolGridButton icon={<TouchAppIcon />} label={t('live:try', '试下')} toggle active={tryMoveMode} onClick={onTryMoveToggle} />
+        <ToolGridButton icon={<MapIcon />} label={territoryLabel} tooltip={ownershipAvailable ? territoryLabel : t('live:territory_needs_analysis', '领地需要分析结果')} toggle active={showTerritory} disabled={!ownershipAvailable} onClick={onTerritoryToggle} />
+        <ToolGridButton icon={<FormatListNumberedIcon />} label={t('live:move_numbers', '手数')} toggle active={showMoveNumbers} onClick={onMoveNumbersToggle} />
+        <Button disabled={tryMoves.length === 0} onClick={onClearTryMoves} sx={{ minHeight: 40, border: '1px solid', borderColor: 'divider', borderRadius: 1, fontSize: 16 }}>{t('live:clear', '清空')}</Button>
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '6px' }}>
+        <ToolGridButton icon={<TipsAndUpdatesIcon />} label={t('Advice', '支招')} toggle active={showAiMarkers} onClick={onAiMarkersToggle} />
+        <ToolGridButton icon={<GridOnIcon />} label={coordinatesLabel} toggle active={showCoordinates} onClick={onCoordinatesToggle} />
+      </Box>
+    </Box>
+  );
 
   return (
     <Box sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>

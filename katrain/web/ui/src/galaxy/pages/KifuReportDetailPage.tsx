@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
 
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
 import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
 import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { sgfToMoves } from '../../utils/sgfSerializer';
+import { reportPlayerToMove } from '../../utils/reportPlayer';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import AiAnalysis from '../../components/live/AiAnalysis';
 import PlaybackBar from '../../components/live/PlaybackBar';
 import TrendChart from '../../components/live/TrendChart';
 import BoardPageShell from '../components/board/BoardPageShell';
-import ModulePlate from '../components/layout/ModulePlate';
 import ReportMetaPanel from '../components/report/ReportMetaPanel';
+import ReportAnalysisLayout from '../components/report/ReportAnalysisLayout';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from './live/LiveMatchDisplayControls';
 
@@ -53,24 +54,29 @@ export default function KifuReportDetailPage() {
   const parsed = useMemo(() => album?.sgf_content ? sgfToMoves(album.sgf_content) : null, [album]);
   const totalMoves = parsed ? Math.max(0, parsed.moves.length - (parsed.setupCount ?? 0)) : 0;
   const at = Math.min(currentMove, totalMoves);
+  const boardCursor = at + (parsed?.setupCount ?? 0);
+  const playerToMove = reportPlayerToMove(parsed?.stoneColors, boardCursor, parsed?.setupCount);
   const analysis = analysisByMove[at] ?? null;
   const markers = useMemo((): AiMoveMarker[] | null => {
     if (!analysis?.top_moves?.length || !showAiMarkers) return null;
-    return analysis.top_moves.slice(0, 3).map((move, rank) => ({
+    return analysis.top_moves.slice(0, 5).map((move, rank) => ({
       move: move.move, rank: rank + 1, visits: move.visits,
-      winrate: move.winrate ?? 0, score_lead: move.score_lead ?? 0,
+      winrate: playerToMove === 'B' ? move.winrate ?? 0 : 1 - (move.winrate ?? 0), score_lead: playerToMove === 'B' ? move.score_lead ?? 0 : -(move.score_lead ?? 0),
     }));
-  }, [analysis, showAiMarkers]);
+  }, [analysis, showAiMarkers, playerToMove]);
   const status = kifuAnalysisStatus(detail, analysisError, t);
 
   return (
     <BoardPageShell
+      fixedRail
       onBoardSizeChange={setBoardEdge}
       board={parsed ? (
         <LiveBoard
           moves={parsed.moves} stoneColors={parsed.stoneColors}
-          currentMove={at + (parsed.setupCount ?? 0)} boardSize={parsed.metadata.boardSize || album?.board_size || 19}
+          currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19}
+          nextColor={playerToMove}
           pvMoves={pvMoves} aiMarkers={markers} showAiMarkers={showAiMarkers}
+          aiMarkerLimit={5}
           showMoveNumbers={showMoveNumbers} showTerritory={showTerritory}
           showCoordinates={coordinates.visible} ownership={showTerritory ? analysis?.ownership ?? null : null}
           tryMoves={tryMoveMode ? tryMoves : undefined}
@@ -78,17 +84,12 @@ export default function KifuReportDetailPage() {
           minimumCanvasSize={0} minContainerHeight={0}
         />
       ) : loadError || id === null ? <Alert severity="error">{t('kifu:report_load_failed', '职业棋局暂时无法读取')}</Alert> : <CircularProgress />}
-      modulePlate={(
-        <ModulePlate
-          title={album ? `${album.display_player_black ?? album.player_black} vs ${album.display_player_white ?? album.player_white}` : t('kifu:report_title', '职业棋局报告')}
-          subtitle={album ? `${at} / ${totalMoves} ${t('live:moves', '手')}` : undefined}
-          backTo={BACK_TO} backLabel={t('kifu:library', '棋谱库')}
-        />
-      )}
+      modulePlate={null}
       railBody={album ? (
-        <>
-          <ReportMetaPanel
+        <ReportAnalysisLayout
+          identity={<ReportMetaPanel
             professional
+            backTo={BACK_TO}
             game={{
               game_date: album.date_played, source: 'kifu_library', event: album.display_event ?? album.event,
               title: null, round_name: album.display_round_name ?? album.round_name,
@@ -98,17 +99,15 @@ export default function KifuReportDetailPage() {
               black_rank: album.display_black_rank ?? album.black_rank,
               white_rank: album.display_white_rank ?? album.white_rank, komi: album.komi ?? 0,
             }}
-            task={{ status: detail?.status ?? 'loading', report_type: 'deep' }}
+            task={{ status: detail?.status ?? 'loading', report_type: 'deep', requested_visits: detail?.requested_visits }}
             currentMove={at} currentAnalysis={analysis}
-          />
-          {detail?.status !== 'completed' && (
-            <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" fontWeight={600}>{t('kifu:report_visits_heading', '职业棋局 · 每局面 2000 visits')}</Typography>
-              <Typography variant="caption" color="text.secondary">{status}</Typography>
-              {detail?.status === 'failed' && detail.error_message && <Alert severity="error" sx={{ mt: 1 }}>{detail.error_message}</Alert>}
-            </Box>
-          )}
-          <LiveMatchDisplayControls
+          />}
+          recommendations={<>
+            {detail?.status !== 'completed' && <Box sx={{ px: 1, py: 0.5 }}><Typography sx={{ fontSize: 18 }}>{status}</Typography>{detail?.status === 'failed' && detail.error_message && <Alert severity="error">{detail.error_message}</Alert>}</Box>}
+            {analysis ? <AiAnalysis currentMove={at} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={parsed?.moves[boardCursor]} /> : <Alert severity="info">{detail?.status === 'running' ? t('kifu:report_no_position', '当前局面暂无分析结果') : status}</Alert>}
+          </>}
+          controls={<LiveMatchDisplayControls
+            reportMode
             tryMoveMode={tryMoveMode} showTerritory={showTerritory} showMoveNumbers={showMoveNumbers}
             showAiMarkers={showAiMarkers} showCoordinates={coordinates.visible}
             ownershipAvailable={analysis?.ownership != null} tryMoves={tryMoves}
@@ -117,23 +116,13 @@ export default function KifuReportDetailPage() {
             onMoveNumbersToggle={() => setShowMoveNumbers((value) => !value)}
             onAiMarkersToggle={() => setShowAiMarkers((value) => !value)}
             onCoordinatesToggle={coordinates.toggle} onClearTryMoves={() => setTryMoves([])}
-          />
-          {analysis ? (
-            <>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <AiAnalysis currentMove={at} analysis={analysisByMove} onMoveHover={setPvMoves} />
-              </Box>
-              <Box sx={{ flex: 'none' }}>
-                <TrendChart
-                  analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)}
-                  currentMove={at} onMoveClick={setCurrentMove}
-                />
-              </Box>
-            </>
-          ) : <Alert severity="info" sx={{ my: 2 }}>{detail?.status === 'running' ? t('kifu:report_no_position', '当前局面暂无分析结果') : status}</Alert>}
-        </>
+          />}
+          analysis={<TrendChart analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
+          entryActions={<Button component={RouterLink} to={BACK_TO} variant="outlined" fullWidth sx={{ minHeight: 40, fontSize: 18 }}>{t('kifu:view_kifu', '查看棋谱')}</Button>}
+          navigation={<PlaybackBar inline currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
+        />
       ) : null}
-      actions={album ? <PlaybackBar currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} /> : null}
+      actions={null}
     />
   );
 }

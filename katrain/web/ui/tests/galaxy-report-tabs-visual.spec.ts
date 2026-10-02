@@ -37,6 +37,24 @@ const translationFixture: Record<string, string> = {
   'live:move_number': '第',
   'live:points': '目',
   'live:points_unit': '目',
+  'live:moves': '手',
+  'live:ai_recommendations': 'AI 推荐',
+  'live:after_move': '第',
+  'live:suggested_move': '着点',
+  'live:recommendation': '推荐度',
+  'live:lead_pts': '领先',
+  'live:winrate': '胜率',
+  'live:territory': '领地',
+  'live:move_numbers': '手数',
+  'live:try': '试下',
+  'live:clear': '清空',
+  'Advice': '支招',
+  'Coordinates': '坐标',
+  'report:enter_research': '进入研究',
+  'review:recompute': '重算',
+  'report:chinese_rules': '中国规则',
+  'result:white_win': '白胜',
+  'result:time': '超时',
   'live:black': '黑',
   'live:white': '白',
   'live:black_winrate': '黑棋胜率',
@@ -205,7 +223,7 @@ const prepare = async (page: Page) => {
         rules: 'chinese',
         komi: 6.5,
         move_count: MOVES,
-        source: 'upload',
+        source: 'import',
         category: 'pro',
         game_type: null,
         event: null,
@@ -225,6 +243,21 @@ const TABS = [
   { index: 3, name: '发挥水准', file: '03-performance' },
   { index: 4, name: 'AI吻合度', file: '04-match-rate' },
 ] as const;
+
+test('Galaxy report fixed rail at 2048×1080', async ({ page }) => {
+  await page.setViewportSize({ width: 2048, height: 1080 });
+  await prepare(page);
+  await page.goto('/galaxy/report/1');
+  await expect(page.getByTestId('report-analysis-layout')).toBeVisible({ timeout: 15000 });
+  await page.screenshot({ path: `${OUT}/desktop-2048.png`, fullPage: false });
+  const rail = page.getByTestId('board-rail-scroll');
+  expect(await rail.evaluate((el) => ({ overflow: getComputedStyle(el).overflowY, hidden: el.scrollHeight - el.clientHeight }))).toEqual({ overflow: 'hidden', hidden: 0 });
+  const entry = await page.getByRole('button', { name: '进入研究' }).boundingBox();
+  const controls = await page.getByTestId('report-display-controls').boundingBox();
+  expect(entry && controls && entry.y + entry.height + 4 <= controls.y).toBe(true);
+  await expect(page.getByTestId('report-recommendations')).toBeVisible();
+  await expect(page.getByRole('button', { name: '展开分析' })).toBeVisible();
+});
 
 test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -274,44 +307,13 @@ test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
     await panel.screenshot({ path: `${OUT}/${tab.file}.png` });
   }
 
-  // 承重结构：**真浏览器量出来的那条链**，不是注释上写的那条。
-  // 实测（1440x900，失误 tab）：TrendChart 自己的 height:100% 没有确定高度的父级可依，
-  // 塌成内容高 1116px，它内部那层 overflow:auto 于是**从未生效**（scrollHeight == clientHeight）；
-  // 真正在滚的是右栏外壳（h 684 / scrollHeight 1787 / overflow-y:auto）。
-  // 加了棒棒糖图只是往这条已经在滚的壳里塞高度，链没有变 —— 但这句话只有量过才算数。
+  // 固定报告右栏不再靠整栏滚动读取分析详情。分析卡可原位放大，保留当前 tab。
   await tabs.getByRole('tab').nth(2).click();
-  await page.waitForTimeout(80);
-  const chain = await panel.evaluate((el) => {
-    const out: { h: number; sh: number; ch: number; canScroll: boolean }[] = [];
-    let n: HTMLElement | null = el as HTMLElement;
-    while (n && n !== document.documentElement) {
-      const cs = getComputedStyle(n);
-      out.push({
-        h: Math.round(n.getBoundingClientRect().height),
-        sh: n.scrollHeight,
-        ch: n.clientHeight,
-        canScroll: n.scrollHeight > n.clientHeight && /auto|scroll/.test(cs.overflowY),
-      });
-      n = n.parentElement;
-    }
-    return out;
-  });
-  // 关系式先写死：链上**必须有且只有一处**真正能滚的祖先，且它比自己的内容矮。
-  const scrollers = chain.filter((c) => c.canScroll);
-  expect(scrollers).toHaveLength(1);
-  expect(scrollers[0].sh).toBeGreaterThan(scrollers[0].ch);
-
-  // 而且要真的滚得动（能不能滚永远归真浏览器，不归 jsdom）。
-  const moved = await panel.evaluate((el) => {
-    let n = el.parentElement as HTMLElement | null;
-    while (n && !(n.scrollHeight > n.clientHeight && /auto|scroll/.test(getComputedStyle(n).overflowY))) {
-      n = n.parentElement;
-    }
-    if (!n) return -1;
-    n.scrollTop = 9999;
-    return n.scrollTop;
-  });
-  expect(moved).toBeGreaterThan(0);
+  const railScroll = page.getByTestId('board-rail-scroll');
+  expect(await railScroll.evaluate((el) => getComputedStyle(el).overflowY)).toBe('hidden');
+  await page.getByRole('button', { name: '展开分析' }).click();
+  await expect(page.getByRole('button', { name: '收起分析' })).toBeVisible();
+  await expect(tabs.getByRole('tab').nth(2)).toHaveAttribute('aria-selected', 'true');
 
   // 页面本身既不纵滚也不横滚。
   const docOverflow = await page.evaluate(() => ({

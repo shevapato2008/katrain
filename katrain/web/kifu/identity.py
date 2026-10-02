@@ -17,6 +17,7 @@ from katrain.web.core.models_db import (
     KifuEventName,
     KifuEventSelectionBatch,
     KifuNameResearchEvidence,
+    KifuNameBatch,
     KifuPlayerAlias,
     KifuPlayerName,
     KifuRawEventName,
@@ -74,7 +75,9 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
             KifuNameResearchEvidence.reviewer_id != KifuNameResearchEvidence.producer_id,
             model.revision == KifuNameResearchEvidence.revision,
             model.decision_kind == KifuNameResearchEvidence.decision_kind,
-            model.decision_kind.in_(_DECISIONS | {"composed"} if model is KifuRawEventName else _DECISIONS),
+            model.decision_kind.in_(
+                _DECISIONS | {"transliterated"} | ({"composed"} if model is KifuRawEventName else set())
+            ),
             model.generation_rule_version == KifuNameResearchEvidence.generation_rule_version,
             model.display_name == KifuNameResearchEvidence.candidate_name,
         )
@@ -84,6 +87,41 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
     if lang is not None:
         query = query.filter(model.lang == lang)
     return query
+
+
+def _qualified_name_rows(db, query, model, owner_column, *entities):
+    """Validate persisted transliteration proofs with one batch read per name query."""
+    from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
+
+    rows = query.with_entities(model, KifuNameResearchEvidence, *entities).all()
+    batch_ids = set()
+    for name, evidence, *_ in rows:
+        if name.decision_kind == "transliterated" and isinstance(evidence.research_payload, dict):
+            proof = evidence.research_payload.get("transliteration")
+            if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
+                batch_ids.add(proof["batch_id"])
+    batches = (
+        {batch.id: batch for batch in db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))}
+        if batch_ids
+        else {}
+    )
+    contexts = {key: persisted_batch_bindings(batch) for key, batch in batches.items()}
+    result = []
+    for row in rows:
+        name, evidence, *extra = row
+        if name.decision_kind != "transliterated":
+            result.append(row)
+            continue
+        proof = (
+            evidence.research_payload.get("transliteration") if isinstance(evidence.research_payload, dict) else None
+        )
+        batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
+        if type(batch_id) is not int or batch_id not in batches:
+            continue
+        raw = extra[0] if owner_column.startswith("raw_") and extra else None
+        if persisted_name_eligible(name, evidence, owner_column, raw, batches[batch_id], contexts[batch_id]):
+            result.append(row)
+    return result
 
 
 def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None, name_ids=None):
@@ -108,7 +146,12 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
         query = query.filter(
             or_(KifuRawEventName.display_name == display, func.lower(KifuRawEventName.display_name) == display.lower())
         )
-    rows = query.with_entities(KifuRawEventName, KifuRawEventValue.raw_value, KifuNameResearchEvidence).all()
+    rows = [
+        (name, raw, evidence)
+        for name, evidence, raw in _qualified_name_rows(
+            db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value
+        )
+    ]
     composed = [row for row in rows if row[0].decision_kind == "composed"]
     bases = {}
     if composed:
@@ -121,9 +164,12 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
                 base_ids.add(dependencies["base_name_id"])
         bases = {
             name.id: (name, evidence)
-            for name, evidence in _approved_names(db, KifuEventName, "event_id")
-            .filter(KifuEventName.id.in_(base_ids))
-            .with_entities(KifuEventName, KifuNameResearchEvidence)
+            for name, evidence in _qualified_name_rows(
+                db,
+                _approved_names(db, KifuEventName, "event_id").filter(KifuEventName.id.in_(base_ids)),
+                KifuEventName,
+                "event_id",
+            )
         }
     result = []
     for name, raw, evidence in rows:
@@ -260,7 +306,13 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
         rows = _approved_names(db, model, owner).filter(
             or_(model.display_name == query, func.lower(model.display_name) == query.lower())
         )
-        identity_matches.append({getattr(row, owner) for row in rows if normalize_alias(row.display_name) == needle})
+        identity_matches.append(
+            {
+                getattr(row, owner)
+                for row, _ in _qualified_name_rows(db, rows, model, owner)
+                if normalize_alias(row.display_name) == needle
+            }
+        )
     raw_matches = []
     raw_event_name_ids = set()
     for model, value_model, owner in (
@@ -283,9 +335,12 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
                 value_model.review_status == "approved",
                 or_(model.display_name == query, func.lower(model.display_name) == query.lower()),
             )
-            .with_entities(model.display_name, value_model.raw_value)
         )
-        matches = {raw for display, raw in rows if normalize_alias(display) == needle}
+        matches = {
+            raw
+            for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
+            if normalize_alias(name.display_name) == needle
+        }
         raw_matches.append(matches)
     matches_by_owner = (*identity_matches, *raw_matches)
     if sum(len(matches) for matches in matches_by_owner) != 1:
@@ -417,16 +472,22 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
     raw_events = {album.event or "" for album in albums}
     raw_events.update(raw for raw, _ in selected_events.values())
     players = {
-        row.player_id: row.display_name for row in _approved_names(db, KifuPlayerName, "player_id", player_ids, lang)
+        row.player_id: row.display_name
+        for row, _ in _qualified_name_rows(
+            db, _approved_names(db, KifuPlayerName, "player_id", player_ids, lang), KifuPlayerName, "player_id"
+        )
     }
-    event_rows = (
-        _approved_names(db, KifuEventName, "event_id", event_ids, lang)
-        .join(KifuEvent, KifuEventName.event_id == KifuEvent.id)
-        .with_entities(KifuEventName.event_id, KifuEventName.display_name, KifuEvent.canonical_name)
-        .all()
+    event_rows = _qualified_name_rows(
+        db,
+        _approved_names(db, KifuEventName, "event_id", event_ids, lang).join(
+            KifuEvent, KifuEventName.event_id == KifuEvent.id
+        ),
+        KifuEventName,
+        "event_id",
+        KifuEvent.canonical_name,
     )
-    events = {row.event_id: row.display_name for row in event_rows}
-    canonical = {row.event_id: row.canonical_name for row in event_rows}
+    events = {row.event_id: row.display_name for row, _, _ in event_rows}
+    canonical = {row.event_id: canonical for row, _, canonical in event_rows}
     raw_maps = []
     for model, value_model, owner, values in (
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id", raw_players),
@@ -441,9 +502,13 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
             _approved_names(db, model, owner, lang=lang)
             .join(value_model, getattr(model, owner) == value_model.id)
             .filter(value_model.review_status == "approved", value_model.raw_value.in_(values))
-            .with_entities(value_model.raw_value, model.display_name)
         )
-        raw_maps.append({raw: display for raw, display in rows})
+        raw_maps.append(
+            {
+                raw: name.display_name
+                for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
+            }
+        )
     album_ids = [album.id for album in albums]
     sources: dict[int, set[str]] = {album_id: set() for album_id in album_ids}
     if album_ids:
@@ -518,10 +583,8 @@ def strict_slot_approvals(
         (KifuPlayerName, "player_id", player_ids),
         (KifuEventName, "event_id", event_ids),
     ):
-        rows = _approved_names(db, model, owner, ids, lang).with_entities(
-            getattr(model, owner), model.decision_kind, model.evidence_id
-        )
-        entity_approvals.append({key: (decision, evidence_id) for key, decision, evidence_id in rows})
+        rows = _qualified_name_rows(db, _approved_names(db, model, owner, ids, lang), model, owner)
+        entity_approvals.append({getattr(name, owner): (name.decision_kind, name.evidence_id) for name, _ in rows})
     raw_approvals = []
     for model, value_model, owner, values in (
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id", raw_player_values),
@@ -538,9 +601,13 @@ def strict_slot_approvals(
             _approved_names(db, model, owner, lang=lang)
             .join(value_model, getattr(model, owner) == value_model.id)
             .filter(value_model.review_status == "approved", value_model.raw_value.in_(values))
-            .with_entities(value_model.raw_value, model.decision_kind, model.evidence_id)
         )
-        raw_approvals.append({raw: (decision, evidence_id) for raw, decision, evidence_id in rows})
+        raw_approvals.append(
+            {
+                raw: (name.decision_kind, name.evidence_id)
+                for name, _, raw in _qualified_name_rows(db, rows, model, owner, value_model.raw_value)
+            }
+        )
     canonical = dict(db.query(KifuEvent.id, KifuEvent.canonical_name).filter(KifuEvent.id.in_(event_ids)))
     players, events = entity_approvals
     raw_players, raw_events = raw_approvals

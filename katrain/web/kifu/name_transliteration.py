@@ -312,3 +312,103 @@ def validate_transliterated_candidate(row, bindings):
         not any(field in row for field in ("scope_status", "negative_closure", "absence_claim", "generated_review")),
         "transliterated candidate must not claim absence of conventional names",
     )
+
+
+def persisted_batch_bindings(batch):
+    """Read immutable batch approvals; requests never render or inspect live full snapshots."""
+    if batch.status != "applied" or not isinstance(batch.reviewed_artifact, dict):
+        return None
+    artifact = batch.reviewed_artifact
+    bundle = artifact.get("bundle")
+    if not isinstance(bundle, dict) or registry_sha256(bundle) != batch.bundle_sha256:
+        return None
+    section = bundle.get("transliteration")
+    snapshot = artifact.get("approved_name_snapshot")
+    if not isinstance(section, dict) or section.get("version") != VERSION or not isinstance(snapshot, list):
+        return None
+    try:
+        rules = {registry_sha256(rule): rule for rule in section["rules"]}
+        bindings = {}
+        for signed_batch in section["batches"]:
+            content = validate_transliteration_review(signed_batch, "approved_transliteration_batch")
+            rule = rules[content["rule_sha256"]]
+            rule_content = validate_transliteration_review(rule, "approved_transliteration_rule")
+            if content["approved_name_snapshot_sha256"] != registry_sha256(snapshot):
+                return None
+            if not all(
+                content[field] == rule_content[field]
+                for field in ("lang", "source_lang", "reading_system", "entity_kind")
+            ):
+                return None
+            for member in content["members"]:
+                key = owner_key(member["owner"], member["lang"])
+                if key in bindings:
+                    return None
+                bindings[key] = (signed_batch, member, rule)
+        candidates = {
+            owner_key(row["owner"], row["lang"]): row
+            for row in bundle["candidates"]
+            if row.get("decision_kind") == "transliterated"
+        }
+        if set(candidates) != set(bindings):
+            return None
+        return bindings, candidates, artifact
+    except (KeyError, TypeError, AttributeError, EvidenceError):
+        return None
+
+
+def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
+    """Verify the persisted candidate, source proof, and the actual name/evidence owner."""
+    if context is None or not isinstance(evidence.research_payload, dict):
+        return False
+    payload = evidence.research_payload
+    if payload.get("research") is not None:
+        return False
+    row, proof = payload.get("candidate"), payload.get("transliteration")
+    if not isinstance(row, dict) or not isinstance(proof, dict) or proof.get("batch_id") != batch.id:
+        return False
+    bindings, candidates, artifact = context
+    try:
+        key = owner_key(row["owner"], row["lang"])
+        if candidates.get(key) != row:
+            return False
+        validate_transliterated_candidate(row, bindings)
+        owner = row["owner"]
+        expected_id = owner.get("id")
+        if "ref" in owner:
+            expected_id = artifact.get("resolved_refs", {}).get(f"{owner['kind']}:@{owner['ref']}")
+        if owner["kind"] != owner_column.removesuffix("_id") or expected_id != getattr(name, owner_column):
+            return False
+        if (
+            row["lang"] != name.lang
+            or row["display_name"] != name.display_name
+            or row["generation_rule_version"] != name.generation_rule_version
+        ):
+            return False
+        if owner["kind"].startswith("raw_") and row.get("raw_value") != raw:
+            return False
+        anchor = proof.get("source_anchor")
+        if not isinstance(anchor, dict) or registry_sha256(anchor) != row["source_anchor_sha256"]:
+            return False
+        if row["source_anchor_sha256"] not in artifact.get("research_hashes", []):
+            return False
+        source = validate_transliteration_review(anchor, "approved_original_name_and_reading")
+        signed_batch = bindings[key][0]["content"]
+        if source["owner"] != owner or not all(
+            source[field] == signed_batch[field] for field in ("source_lang", "reading_system", "entity_kind")
+        ):
+            return False
+        if owner["kind"].startswith("raw_") and source.get("raw_value") != raw:
+            return False
+        for field in ("producer_id", "producer_model", "reviewer_id", "reviewer_model"):
+            if getattr(evidence, field) != row[field]:
+                return False
+        for field in ("produced_at", "reviewed_at"):
+            stored, expected = getattr(evidence, field), _time(row[field])
+            if stored.tzinfo is None:
+                expected = expected.replace(tzinfo=None)
+            if stored != expected:
+                return False
+        return True
+    except (KeyError, TypeError, AttributeError, EvidenceError):
+        return False

@@ -10,6 +10,7 @@ import re
 
 from sqlalchemy import DateTime, func, or_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
     KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEvent, KifuEventAlias, KifuEventName, KifuNameBatch,
@@ -91,6 +92,53 @@ def catalog_snapshot_sha(engine) -> str:
     """Produce the v2 catalog supplement hash using only SELECT statements."""
     with engine.connect() as conn:
         return _catalog_sha(conn)
+
+
+def _approved_name_snapshot(conn) -> list[dict]:
+    """Capture complete current approved-name/evidence images in the caller's transaction."""
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows, _approved_raw_event_names
+
+    def image(model, row):
+        return {
+            column.name: value.isoformat() if isinstance(value := getattr(row, column.name), datetime) else value
+            for column in model.__table__.columns
+        }
+
+    snapshot = []
+    with Session(bind=conn) as db:
+        for kind, (owner_model, name_model, owner_column) in _OWNER.items():
+            query = _approved_names(db, name_model, owner_column)
+            entities = ()
+            if kind.startswith("raw_"):
+                query = query.join(owner_model, getattr(name_model, owner_column) == owner_model.id).filter(
+                    owner_model.review_status == "approved"
+                )
+                entities = (owner_model.raw_value,)
+            rows = _qualified_name_rows(db, query, name_model, owner_column, *entities)
+            composed_ids = {name.id for name, _, *_ in rows if name.decision_kind == "composed"}
+            if composed_ids:
+                composed_ids = {name.id for name, _, _ in _approved_raw_event_names(db, name_ids=composed_ids)}
+            for name, evidence, *_ in rows:
+                if name.decision_kind == "composed" and name.id not in composed_ids:
+                    continue
+                snapshot.append(
+                    {
+                        "owner": {"kind": kind, "id": getattr(name, owner_column)},
+                        "lang": name.lang,
+                        "display_name": name.display_name,
+                        "decision_kind": name.decision_kind,
+                        "review_status": "approved",
+                        "name_sha256": canonical_sha256(image(name_model, name)),
+                        "evidence_sha256": canonical_sha256(image(KifuNameResearchEvidence, evidence)),
+                    }
+                )
+    return sorted(snapshot, key=lambda row: (row["owner"]["kind"], row["owner"]["id"], row["lang"]))
+
+
+def approved_name_snapshot(engine) -> list[dict]:
+    """Read the snapshot that finite transliteration reviewers must sign before apply."""
+    with engine.connect() as conn:
+        return _approved_name_snapshot(conn)
 
 
 @contextmanager
@@ -196,11 +244,15 @@ def _record_change(conn, batch_id: int, sequence: int, model, row_id: int,
         before_image=before, after_image=after))
 
 
-def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
+def _prevalidate(
+    bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict], *, approved_snapshot=None
+) -> dict:
     _fail(bundle.get("bundle_format") in {2, 3, 4} or not bundle.get("album_links"),
           "album identity links require bundle format 2, 3 or 4")
     try:
-        report = validate_bundle(bundle, registry, inventory, evidence_records)
+        report = validate_bundle(
+            bundle, registry, inventory, evidence_records, approved_name_snapshot=approved_snapshot
+        )
     except CandidateError as exc:
         raise BatchError(str(exc)) from exc
     _fail(report["ready"], "bundle has missing, unreviewed, rejected or conflicting name decisions: "
@@ -210,6 +262,16 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
     if bundle.get("bundle_format") == 4:
         referenced = sorted(row["research_sha256"] for row in bundle["candidates"]
                             if row.get("research_sha256"))
+        referenced.extend(
+            sorted(
+                {
+                    row["source_anchor_sha256"]
+                    for row in bundle["candidates"]
+                    if row.get("decision_kind") == "transliterated"
+                }
+            )
+        )
+        referenced.sort()
         supplied = sorted(canonical_sha256(row) for row in evidence_records)
         _fail(supplied == referenced, "unreferenced research or missing candidate evidence in v4 bundle")
     return report
@@ -394,8 +456,11 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
 
 
 def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
-    languages = {row["lang"] for row in candidates
-                 if row["decision_kind"] in {"conventional", "generated", "corrected", "composed"}}
+    languages = {
+        row["lang"]
+        for row in candidates
+        if row["decision_kind"] in {"conventional", "generated", "corrected", "composed", "transliterated"}
+    }
     if not languages:
         return
     existing_names = defaultdict(list)
@@ -406,7 +471,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
             existing_names[(existing["lang"], normalize_alias(existing["display_name"]))].append(
                 (kind, existing[owner_column], existing["evidence_id"]))
     for row in candidates:
-        if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed"}:
+        if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated"}:
             continue
         owner = row["owner"]
         own_kind, own_id = owner["kind"], owner.get("id")
@@ -417,16 +482,23 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
             previous = (evidence or {}).get("research_payload") or {}
             previous_candidate = previous.get("candidate", {}) if isinstance(previous, dict) else {}
-            _fail(row["decision_kind"] != "composed" and previous_candidate.get("decision_kind") != "composed"
-                  and row.get("collision_decision") == "distinct_people_confirmed"
-                  and row.get("collision_basis")
-                  and previous_candidate.get("collision_decision") == "distinct_people_confirmed"
-                  and previous_candidate.get("collision_basis"),
-                  f"cross-bundle normalized name collision: {row['lang']}:{name_key}")
+            _fail(
+                row["decision_kind"] not in {"composed", "transliterated"}
+                and previous_candidate.get("decision_kind") not in {"composed", "transliterated"}
+                and row.get("collision_decision") == "distinct_people_confirmed"
+                and row.get("collision_basis")
+                and previous_candidate.get("collision_decision") == "distinct_people_confirmed"
+                and previous_candidate.get("collision_basis"),
+                f"cross-bundle normalized name collision: {row['lang']}:{name_key}",
+            )
 
 
-def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
-    report = _prevalidate(bundle, registry, inventory, evidence_records)
+def _inspect(
+    conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict], *, approved_snapshot=None
+) -> dict:
+    if bundle.get("transliteration") is not None and approved_snapshot is None:
+        approved_snapshot = _approved_name_snapshot(conn)
+    report = _prevalidate(bundle, registry, inventory, evidence_records, approved_snapshot=approved_snapshot)
     selected_scope, selected_events = _check_snapshot(conn, inventory)
     _check_catalog(conn, bundle)
     if bundle["bundle_format"] in {2, 3, 4}:
@@ -488,14 +560,23 @@ def _composition_evidence(conn, row: dict, composition: dict, resolved: dict[str
     }
 
 
-def _candidate_evidence(row: dict, research_by_hash: dict[str, dict], registry_id: int,
-                        revision: int, owner_id: int, composition: dict | None = None) -> dict:
+def _candidate_evidence(
+    row: dict,
+    research_by_hash: dict[str, dict],
+    registry_id: int,
+    revision: int,
+    owner_id: int,
+    composition: dict | None = None,
+    transliteration: dict | None = None,
+) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
     reviewed_at = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
     payload = {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))}
     if composition is not None:
         payload["composition"] = composition
+    if transliteration is not None:
+        payload["transliteration"] = transliteration
     return {
         _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner_id, "lang": row["lang"], "revision": revision,
         "source_registry_id": registry_id, "candidate_name": row["display_name"],
@@ -525,9 +606,16 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
         evidence_table.c.lang == row["lang"]))
     revision = max(revision, int(latest or 0) + 1)
     composed = _composition_evidence(conn, row, composition, resolved) if row["decision_kind"] == "composed" else None
+    transliteration = (
+        {"batch_id": batch_id, "source_anchor": research_by_hash[row["source_anchor_sha256"]]}
+        if row["decision_kind"] == "transliterated"
+        else None
+    )
     evidence_id, evidence_after = _insert(
-        conn, KifuNameResearchEvidence, _candidate_evidence(
-            row, research_by_hash, registry_id, revision, owner_id, composed))
+        conn,
+        KifuNameResearchEvidence,
+        _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id, composed, transliteration),
+    )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
     desired = {"display_name": row["display_name"], "status": "verified",
@@ -592,7 +680,6 @@ def _apply_links(conn, bundle: dict, batch_id: int, sequence: int, resolved: dic
     return sequence
 
 
-
 def _check_applied_v4(conn, batch, bundle):
     from katrain.web.kifu.event_selection import verified_selection_rows
 
@@ -649,11 +736,29 @@ def _check_applied_v4(conn, batch, bundle):
         research_hash = candidate.get("research_sha256")
         _fail((canonical_sha256(research) == research_hash) if research_hash else research is None,
               "applied batch research differs from signed candidate")
+        transliteration = None
+        if candidate["decision_kind"] == "transliterated":
+            proof = payload.get("transliteration")
+            _fail(
+                isinstance(proof, dict)
+                and proof.get("batch_id") == batch["id"]
+                and canonical_sha256(proof.get("source_anchor")) == candidate["source_anchor_sha256"],
+                "applied transliteration source proof changed",
+            )
+            transliteration = {"batch_id": batch["id"], "source_anchor": proof["source_anchor"]}
         expected_evidence = _candidate_evidence(
-            candidate, {research_hash: research} if research_hash else {},
-            batch["source_registry_id"], name["revision"], owner_id,
-            _composition_evidence(conn, candidate, bundle["composition"], resolved)
-            if candidate["decision_kind"] == "composed" else None)
+            candidate,
+            {research_hash: research} if research_hash else {},
+            batch["source_registry_id"],
+            name["revision"],
+            owner_id,
+            (
+                _composition_evidence(conn, candidate, bundle["composition"], resolved)
+                if candidate["decision_kind"] == "composed"
+                else None
+            ),
+            transliteration,
+        )
         for key, value in expected_evidence.items():
             stored = evidence[key]
             if isinstance(value, datetime) and isinstance(stored, datetime) and stored.tzinfo is None:
@@ -678,23 +783,68 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
     """Apply exactly one reviewed finite bundle in one locked transaction."""
     _check_bundle_hash(bundle, expected_bundle_sha256)
     bundle_hash = canonical_sha256(bundle)
+    has_transliteration = bundle.get("transliteration") is not None
     with _locked_write(engine) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
             _fail(previous["status"] == "applied", "bundle was previously undone; issue a new reviewed revision")
+            if has_transliteration:
+                _prevalidate(
+                    bundle,
+                    registry,
+                    inventory,
+                    evidence_records,
+                    approved_snapshot=previous["reviewed_artifact"].get("approved_name_snapshot"),
+                )
+                _fail(
+                    previous["reviewed_artifact"].get("bundle") == bundle
+                    and previous["reviewed_artifact"].get("research_hashes")
+                    == sorted(canonical_sha256(record) for record in evidence_records),
+                    "applied transliteration artifact changed",
+                )
+                changes = (
+                    conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == previous["id"]))
+                    .mappings()
+                    .all()
+                )
+                _fail(
+                    changes
+                    and all(
+                        _image(conn, _UNDO_TABLES[change["target_table"]], change["target_row_id"])
+                        == change["after_image"]
+                        for change in changes
+                    ),
+                    "applied transliteration after-image changed",
+                )
+                _check_cross_bundle_collisions(conn, bundle["candidates"])
             if bundle["bundle_format"] == 4:
-                _prevalidate(bundle, registry, inventory, evidence_records)
+                _prevalidate(
+                    bundle,
+                    registry,
+                    inventory,
+                    evidence_records,
+                    approved_snapshot=previous["reviewed_artifact"].get("approved_name_snapshot"),
+                )
                 _check_applied_v4(conn, previous, bundle)
             return {"status": "already_applied", "batch_id": previous["id"], "change_count": 0}
-        report = _inspect(conn, bundle, registry, inventory, evidence_records)
+        approved_snapshot = _approved_name_snapshot(conn) if has_transliteration else None
+        report = _inspect(conn, bundle, registry, inventory, evidence_records, approved_snapshot=approved_snapshot)
         registry_id, _registry_after = _source_registry_for_batch(conn, registry, bundle)
-        batch_id, _ = _insert(conn, KifuNameBatch, {
-            "bundle_sha256": bundle_hash, "inventory_sha256": inventory["sha256"],
-            "source_registry_id": registry_id,
-            "reviewed_artifact": {"bundle": bundle, "research_hashes": sorted(
-                canonical_sha256(item) for item in evidence_records)},
-            "status": "pending",
-        })
+        batch_id, _ = _insert(
+            conn,
+            KifuNameBatch,
+            {
+                "bundle_sha256": bundle_hash,
+                "inventory_sha256": inventory["sha256"],
+                "source_registry_id": registry_id,
+                "reviewed_artifact": {
+                    "bundle": bundle,
+                    "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
+                    **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
+                },
+                "status": "pending",
+            },
+        )
         sequence = 1
         # Keep the immutable registry snapshot because the retained audit batch references it.
         resolved, sequence = _apply_owners(conn, bundle, batch_id, sequence)
@@ -708,8 +858,12 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:
-            artifact = {"bundle": bundle, "research_hashes": sorted(canonical_sha256(item)
-                         for item in evidence_records), "resolved_refs": resolved}
+            artifact = {
+                "bundle": bundle,
+                "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
+                "resolved_refs": resolved,
+                **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
+            }
             conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
                          .values(reviewed_artifact=artifact))
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(

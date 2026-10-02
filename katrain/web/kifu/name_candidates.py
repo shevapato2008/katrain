@@ -1016,8 +1016,6 @@ def validate_bundle(
                 errors.append(f"possible name collision: {lang}:{name} owners={owners}")
     statuses = Counter(row["review_status"] for row in decisions)
     write_errors = []
-    if has_transliteration:
-        write_errors.append("transliteration is offline-only until importer and runtime integration")
     for number, item in enumerate(candidates):
         if not isinstance(item, dict) or "name_preimage_sha256" not in item:
             write_errors.append(f"candidate[{number}]: name preimage missing")

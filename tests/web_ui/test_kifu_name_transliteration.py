@@ -159,7 +159,7 @@ def test_six_languages_accept_signed_finite_transliteration_without_negative_sea
     assert result["ready"] is True
     assert result["approved"] == 1
     assert result["write_ready"] is False
-    assert any("offline" in error for error in result["write_errors"])
+    assert any("preimage" in error for error in result["write_errors"])
 
 
 @pytest.mark.parametrize(

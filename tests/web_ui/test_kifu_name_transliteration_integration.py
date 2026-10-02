@@ -28,6 +28,7 @@ from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
 from tests.web_ui.test_kifu_name_api import _evidence, _request
+from tests.web_ui.test_kifu_name_batch import _v2_wrap
 from tests.web_ui.test_kifu_name_transliteration import refresh_bindings, registry, transliteration_bundle
 
 MODELS = {
@@ -138,6 +139,58 @@ def test_locked_apply_persists_batch_proof_repeats_without_changes_and_undoes(ki
             assert source_before == [
                 (album.id, album.sgf_content, album.player_black, album.event) for album in db.query(KifuAlbum)
             ]
+    finally:
+        engine.dispose()
+
+
+def test_v2_new_raw_owner_ref_exact_repeat_preserves_signed_candidates_and_proofs():
+    engine, proposed, anchors, _ = catalog("raw_player")
+    try:
+        with Session(engine) as db:
+            db.query(KifuRawPlayerValue).delete()
+            db.commit()
+        inventory = build_inventory(engine)
+        owner = {"kind": "raw_player", "ref": "li-yuanhe"}
+        row = proposed["candidates"][0]
+        row["owner"] = proposed["members"][0]["owner"] = anchors[0]["content"]["owner"] = owner
+        refresh_bindings(proposed, anchors)
+        binding = row.pop("preimage_binding")
+        binding["source_candidate_sha256"] = canonical_sha256(row)
+        row["preimage_binding"] = binding
+        declaration = {
+            "owner": owner,
+            "create": {"raw_value": "李元赫", "category": "readable_unlinked"},
+            "occurrence_album_ids": [1],
+            "occurrence_sha256": canonical_sha256([1]),
+            "category_review": {
+                "status": "approved",
+                "producer_id": "category-producer",
+                "producer_model": "gpt-6-luna",
+                "produced_at": "2026-10-03T10:00:00Z",
+                "reviewer_id": "category-reviewer",
+                "reviewer_model": "gpt-6-sol",
+                "reviewed_at": "2026-10-03T11:00:00Z",
+                "category_basis": "Original SGF player text is a readable unlinked name",
+            },
+        }
+        proposed.update(inventory_sha256=inventory["sha256"])
+        proposed = _v2_wrap(engine, inventory, proposed, [declaration], [])
+        signed = deepcopy(proposed)
+        applied = apply_bundle(engine, proposed, registry(), inventory, anchors)
+        with Session(engine) as db:
+            artifact = deepcopy(db.get(KifuNameBatch, applied["batch_id"]).reviewed_artifact)
+            evidence_payload = deepcopy(db.query(KifuNameResearchEvidence).one().research_payload)
+            owner_id = db.query(KifuRawPlayerValue).one().id
+        assert artifact["resolved_refs"] == {"raw_player:@li-yuanhe": owner_id}
+        repeated = apply_bundle(engine, proposed, registry(), inventory, anchors)
+        assert repeated == {"status": "already_applied", "batch_id": applied["batch_id"], "change_count": 0}
+        assert proposed == signed
+        with Session(engine) as db:
+            assert db.get(KifuNameBatch, applied["batch_id"]).reviewed_artifact == artifact
+            assert db.query(KifuNameResearchEvidence).one().research_payload == evidence_payload
+            assert evidence_payload["candidate"] == signed["candidates"][0]
+            assert db.query(KifuRawPlayerValue).one().id == owner_id
+            assert db.query(KifuRawPlayerName).count() == 1
     finally:
         engine.dispose()
 

@@ -455,7 +455,7 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
     return sorted(ids)
 
 
-def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
+def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_refs=None) -> None:
     languages = {
         row["lang"]
         for row in candidates
@@ -475,6 +475,9 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
             continue
         owner = row["owner"]
         own_kind, own_id = owner["kind"], owner.get("id")
+        if "ref" in owner and resolved_refs is not None:
+            own_id = resolved_refs.get(_owner_ref(owner))
+            _fail(type(own_id) is int and own_id > 0, "applied symbolic owner resolution is missing")
         name_key = normalize_alias(row["display_name"])
         for kind, existing_id, evidence_id in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
@@ -816,7 +819,9 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                     ),
                     "applied transliteration after-image changed",
                 )
-                _check_cross_bundle_collisions(conn, bundle["candidates"])
+                _check_cross_bundle_collisions(
+                    conn, bundle["candidates"], resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
+                )
             if bundle["bundle_format"] == 4:
                 _prevalidate(
                     bundle,

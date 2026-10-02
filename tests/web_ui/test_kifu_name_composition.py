@@ -157,7 +157,7 @@ def fixture(series=SERIES):
     scope_content = {
         "series_owner": series,
         "inventory_sha256": inventory["sha256"],
-        "catalog_sha256": None,
+        "catalog_sha256": "b" * 64,
         "raws": raws,
         "sources": [
             {
@@ -226,13 +226,28 @@ def fixture(series=SERIES):
             )
             candidates.append(row)
             members.append({"owner": raw["owner"], "raw_value": raw["raw_value"], "lang": lang})
+    declarations = [{"owner": series, "create" if "ref" in series else "preimage": {"canonical_name": "本因坊戦"}}]
+    declarations.extend(
+        {
+            "owner": raw["owner"],
+            "preimage": {"raw_value": raw["raw_value"]},
+            "occurrence_album_ids": raw["occurrence_album_ids"],
+            "occurrence_sha256": raw["occurrence_sha256"],
+        }
+        for raw in raws
+    )
     bundle = {
-        "bundle_format": 1,
+        "bundle_format": 2,
         "inventory_format": 2,
         "inventory_sha256": inventory["sha256"],
+        "catalog_sha256": "b" * 64,
         "registry_version": registry["version"],
         "registry_sha256": registry_sha256(registry),
         "rule_version": "candidate-v1",
+        "owners": declarations,
+        "owner_set_sha256": canonical_sha256(declarations),
+        "album_links": [],
+        "link_set_sha256": canonical_sha256([]),
         "members": members,
         "member_set_sha256": canonical_sha256(members),
         "candidates": candidates,
@@ -321,6 +336,55 @@ def test_symbolic_series_requires_reviewed_link_for_every_raw_occurrence():
     assert any("lacks matching reviewed series link" in error for error in result["errors"])
 
 
+def test_v1_bundle_cannot_claim_unvalidated_composition_link():
+    bundle, registry, inventory, research = fixture()
+    bundle["bundle_format"] = 1
+    inventory["album_associations"][0][6] = 8
+    bundle["album_links"] = [{"album_id": 1, "slot": "event", "target": SERIES}]
+    result = report(bundle, registry, inventory, research)
+    assert not result["ready"], result["errors"]
+    assert any("composition requires bundle format 2 or newer" in error for error in result["errors"])
+
+
+@pytest.mark.parametrize("mutation", ["source_url", "rule_language", "raw_value"])
+def test_malformed_composition_json_reports_validation_error(mutation):
+    bundle, registry, inventory, research = fixture()
+    scope = bundle["composition"]["scope"]
+    rule = bundle["composition"]["rules"][0]
+    if mutation == "source_url":
+        scope["content"]["sources"][0]["url"] = "https://["
+        scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    elif mutation == "rule_language":
+        rule["content"]["lang"] = []
+        rule["approval"]["content_sha256"] = canonical_sha256(rule["content"])
+    else:
+        scope["content"]["raws"][0]["raw_value"] = []
+        scope["approval"]["content_sha256"] = canonical_sha256(scope["content"])
+    result = report(bundle, registry, inventory, research)
+    assert not result["ready"], mutation
+    assert any(error.startswith("composition:") for error in result["errors"])
+
+
+def test_literal_locale_outputs_for_first_and_thirty_fourth_editions():
+    expected = {
+        "en": ("1st Honinbo", "34th Honinbo"),
+        "cn": ("第1期本因坊战", "第34期本因坊战"),
+        "tw": ("第1期本因坊戰", "第34期本因坊戰"),
+        "jp": ("第1期本因坊戦", "第34期本因坊戦"),
+        "ko": ("제1기 본인방전", "제34기 본인방전"),
+        "de": ("1. Hon’inbō", "34. Hon’inbō"),
+        "es": ("1.ª edición del Torneo Hon'inbō", "34.ª edición del Torneo Hon'inbō"),
+        "fr": ("1re édition du Tournoi Hon'inbō", "34e édition du Tournoi Hon'inbō"),
+        "ru": ("1-й турнир Хонинбо", "34-й турнир Хонинбо"),
+        "tr": ("1. Honinbo Turnuvası", "34. Honinbo Turnuvası"),
+        "ua": ("1-й турнір на звання Хон'імбо", "34-й турнір на звання Хон'імбо"),
+    }
+    bundle, _, _, _ = fixture()
+    for rule, base in zip(bundle["composition"]["rules"], BASES):
+        lang = rule["content"]["lang"]
+        assert (render_edition(rule["content"], base, 1), render_edition(rule["content"], base, 34)) == expected[lang]
+
+
 def test_exact_frozen_raws_and_grammatical_branches():
     assert len(HONINBO_RAWS) == 34
     assert HONINBO_RAWS[0] == "1st Honinbo" and HONINBO_RAWS[-1] == "34th Honinbo"
@@ -400,6 +464,8 @@ def test_composed_collision_cannot_use_distinct_people_waiver():
     bundle, registry, inventory, research = fixture()
     other_owner = {"kind": "event", "id": 8}
     inventory["album_associations"].append([35, "Black", "White", "Other", None, None, 8])
+    bundle["owners"].append({"owner": other_owner, "preimage": {"canonical_name": "Other"}})
+    bundle["owner_set_sha256"] = canonical_sha256(bundle["owners"])
     evidence = deepcopy(research[0])
     evidence["owner"] = other_owner
     evidence["candidate_name"] = "1st Honinbo"

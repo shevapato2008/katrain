@@ -64,7 +64,10 @@ def render_edition(rule: dict, base: str, edition: int) -> str:
         isinstance(rule, dict) and rule.get("renderer_version") == RENDERER_VERSION, "unknown composition renderer"
     )
     lang = rule.get("lang")
-    _require(lang in LANGUAGE_TAGS and rule.get("style") == lang, "unsupported locale composition style")
+    _require(
+        isinstance(lang, str) and lang in LANGUAGE_TAGS and rule.get("style") == lang,
+        "unsupported locale composition style",
+    )
     _require(
         type(edition) is int and 1 <= edition <= 34 and isinstance(base, str) and bool(base.strip()),
         "invalid Honinbo edition or base",
@@ -132,7 +135,10 @@ def _source_captures(sources: object, body_lang: str) -> list[str]:
     captures = []
     for source in sources:
         url = source.get("url") if isinstance(source, dict) else None
-        parsed = urlparse(url) if isinstance(url, str) else None
+        try:
+            parsed = urlparse(url) if isinstance(url, str) else None
+        except ValueError:
+            parsed = None
         _require(
             isinstance(source, dict)
             and {"url", "body_lang", "captured_at", "body_sha256", "excerpt", "basis"} <= set(source)
@@ -158,6 +164,7 @@ def validate_composition(
     composition: object, bundle: dict, inventory: dict, raw_games: dict, raw_slots: dict
 ) -> tuple[dict, dict, dict]:
     """Validate the whole finite scope and rule set before any composed decision."""
+    _require(bundle.get("bundle_format") in {2, 3, 4}, "composition requires bundle format 2 or newer")
     _require(
         isinstance(composition, dict)
         and composition.get("version") == COMPOSITION_VERSION
@@ -209,7 +216,8 @@ def validate_composition(
         )
         raw, edition, owner = entry["raw_value"], entry["edition"], entry["owner"]
         _require(
-            raw in HONINBO_EDITION
+            isinstance(raw, str)
+            and raw in HONINBO_EDITION
             and type(edition) is int
             and edition == HONINBO_EDITION[raw]
             and raw not in by_raw
@@ -253,7 +261,8 @@ def validate_composition(
         )
         lang = content.get("lang")
         _require(
-            lang in LANGUAGE_TAGS
+            isinstance(lang, str)
+            and lang in LANGUAGE_TAGS
             and lang not in by_lang
             and content.get("series_owner") == series
             and content.get("renderer_version") == RENDERER_VERSION

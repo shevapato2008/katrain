@@ -1,0 +1,30 @@
+# Honinbo editions 1–34: eleven-language composed candidates (pending)
+
+**Exact candidate freeze, not an approval or import authorization.** The protected packet contains 34 exact raw-event values, `1st Honinbo` through `34th Honinbo`, and **374 stored-name candidates** (`34 × 11`). Its source bundle's eleven independently approved series bases and 1,617 independently approved album identity links are copied unchanged. The 234 adjacent Honinbo-like raw strings and 1,704 associated albums remain outside this scope. The 1,617 selected event slots would require **17,787** approved language decisions for strict display; the two player slots are separate.
+
+The packet is stored at `/Users/fan/.local/share/kifu-name-audit/2026-10-03/honinbo-final-candidates-pending/` with directory mode `0700` and file mode `0600`. It contains a reproducible `build.py`, an independent mechanical `verify.py`, the full pending importer bundle, 374-row JSONL, manifest, verification receipt and validator receipt. Producer ID is `/root/honinbo_final_candidates`; the inherited runtime model is **unverified**, so the record says `inherited/unverified` and makes no exact model claim. The production timestamp is captured on first execution in `production-start-utc.txt` and reused on repeat builds.
+
+| Artifact | Byte SHA-256 |
+| --- | --- |
+| `honinbo-v2-composed-bundle.pending.json` | `1139c96d30c3c68d16df7dedda57aca4785672ef870f236a65a0a730750cb9d3` |
+| `honinbo-34x11-candidates.pending.jsonl` | `35fb4b9e37e0ae088f34f108bc4ef2ca5663697f8b73ae71957b6f74566ebfc8` |
+| `manifest.json` | `a293fa48fb4351cd662c73ee1e633211a7962afbbbff833a1b2a2122cd17d1f3` |
+| `mechanical-verification.json` | `563447ac5792d60d61f2807825b703be3b6209d1f1d8ae47b44f56d996bae24f` |
+| `validator.pending.json` | `c26f856e6cf3f25c29921f7b4e99260761f5f92f404e7ea792c9a21d288d660c` |
+| `build.py` | `3f928aa0a4e730ae6b11745a8a93205b2afabd0e7188253f54caf876b38f1d57` |
+| `verify.py` | `b461fc54ba3eedca57eb715fdaee8afec3cae35cd88173014bb96c18a65869d6` |
+| `production-start-utc.txt` | `213cc3486a15518823caad8c68894838b4f4113a2ca4d608122e36dacabea768` |
+
+Bundle canonical JSON SHA-256: `244aac018f9972939d894d1758908f88912729acaa944340dca73365ce311616`. The canonical `{locale: {edition: display}}` map SHA-256 is `ba6fbbe44090ba2ef0c9ea537aceb2c94d29c201ce59ce2f0317c334ed1da793`. Re-running `build.py` produced identical bundle, JSONL and manifest bytes.
+
+## Scope and dependencies
+
+Each of the 34 new `raw_event` owners has one exact spelling, integer edition, complete sorted occurrence album IDs, occurrence hash, and raw-slot hash from the frozen inventory (`66b8946d908468c5f9c8f0dc8ef4b4ceddb76d840ef42f5cff5122fc5744b3a3`). The scope binds the same series owner `event:@honinbo-series-2026-10-02`, catalog hash `37ab4773652e10e38cdcc49a6fc13e3f72ec734aeb30be548d2597c0660f7f09`, the retained CWI index, and all 1,617 approved links. Every composed row binds its raw owner/value, edition, series owner, approved base-candidate hash, pending importer-rule hash, raw-scope hash, renderer `honinbo-edition-v1`, and exact rendered display. `research_sha256` is empty because this is composition evidence, not a claim of a separately published full title. Existing rounds remain separate.
+
+The five `tw ko es fr tr` source-content hashes received independent review in [the corrected grammar decision](kifu-name-honinbo-five-grammar-v2-independent-review-astra-2026-10-03.md). [The seven-language content review](kifu-name-honinbo-seven-grammar-content-review-astra-2026-10-03.md) also accepts `ru ua` wording. `en cn jp de` have the [ordinal source research](kifu-name-honinbo-ordinal-source-research-2026-10-02.md) and [reviewed composition decision](kifu-name-honinbo-reviewed-composition-decision-astra-2026-10-02.md). The protected manifest retains the exact prior packet hashes and source URL/body hashes. The new importer-rule `content` objects have **different hashes** from the research proposal content because the schemas differ; prior content review is not silently treated as a signature on the new objects. The captured ordinal-research manifest lacks per-response fetch times, so its later manifest-update timestamp is recorded as a conservative capture-completion bound for `en cn jp de`; an independent reviewer must assess that provenance before signing those rules.
+
+## Validation and approval boundary
+
+`verify.py` passed: all 374 rows are unique by exact raw value and locale, match the allowlisted renderer byte for byte, have distinct normalized names within each locale, and preserve all signed base rows and identity links. Its report includes 1/17/34 samples in all eleven languages. `pytest -q tests/web_ui/test_kifu_name_composition.py` passed: **47 tests**. The importer validator returns `ready=false`, `write_ready=false` as intended for the unsigned packet. Its 783 reported errors are 34 missing independent raw-category reviews, one missing exact composition-scope approval, and 748 downstream member/candidate errors caused by those missing owner declarations. It separately reports 374 missing candidate preimage bindings. Once the scope is signed, the eleven rule records and every candidate still require their own independent approval; no validator success is claimed here.
+
+Before any database dry-run or isolated-clone apply, repeat and conditional undo, the exact 34 category declarations and scope need independent signatures, each importer-format locale rule needs independent review, the 374 candidates need review of the exact rendered set, and a fresh read-only catalog/name preimage capture must bind every row. A fresh production inventory/state check remains necessary. The previously documented [isolated clone rehearsal](kifu-name-honinbo-v2-clone-rehearsal-sol-2026-10-03.md) covered only the older base-name/identity bundle. This pending composition packet was not imported into a clone, test database or production database; no SGF, original event value or deployed service was changed.

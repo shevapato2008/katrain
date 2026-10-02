@@ -201,6 +201,14 @@ def test_selected_event_coverage_tracks_live_sgf_and_reports_drift():
         assert before["languages"]["cn"]["approved"] == 2
         assert before["event_selection_drift"] == 0
         with Session(engine) as db:
+            db.get(KifuAlbum, album_id).source = "changed raw source"
+            db.commit()
+        with pytest.raises(RuntimeError, match="snapshot drift"):
+            coverage_report(engine, inventory, languages=("cn",), batch_size=1)
+        with Session(engine) as db:
+            db.get(KifuAlbum, album_id).source = "https://19x19.com"
+            db.commit()
+        with Session(engine) as db:
             db.query(KifuAlbum).filter(KifuAlbum.id == album_id).one().sgf_content += " "
             db.commit()
         after = coverage_report(engine, inventory, languages=("cn",), batch_size=2)

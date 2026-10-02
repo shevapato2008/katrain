@@ -438,7 +438,7 @@ def _reviewed_name_links(conn, batch, raw_scope_cache: dict, source_batch_cache:
 
 
 def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, groups) -> bool:
-    """Check persisted approval and ledger proof; the historical inventory is not stored for full revalidation."""
+    """Check persisted approval and ledger proof; historical inventory is unavailable for replay."""
     registry_row = conn.execute(select(KifuNameSourceRegistry.__table__).where(
         KifuNameSourceRegistry.id == batch["source_registry_id"])).mappings().one_or_none()
     if registry_row is None:
@@ -462,6 +462,18 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
                         if change["target_table"] == KifuNameResearchEvidence.__tablename__}
     names = {row["id"]: row for row in conn.execute(select(KifuEventName.__table__).where(
         KifuEventName.id.in_(name_changes))).mappings()} if name_changes else {}
+    later_changes = list(conn.execute(select(KifuNameChange.__table__).where(
+        KifuNameChange.target_table == KifuEventName.__tablename__,
+        KifuNameChange.target_row_id.in_(name_changes),
+        KifuNameChange.batch_id != batch["id"])).mappings()) if name_changes else []
+    later_batch_ids = {change["batch_id"] for change in later_changes}
+    later_statuses = {row["id"]: row["status"] for row in conn.execute(select(
+        KifuNameBatch.id, KifuNameBatch.status).where(KifuNameBatch.id.in_(later_batch_ids))).mappings()}
+    name_history = {}
+    for change in later_changes:
+        original = name_changes[change["target_row_id"]]
+        if change["id"] > original["id"] and later_statuses.get(change["batch_id"]) == "applied":
+            name_history.setdefault(change["target_row_id"], []).append(change)
     evidence = {row["id"]: row for row in conn.execute(select(KifuNameResearchEvidence.__table__).where(
         KifuNameResearchEvidence.id.in_(evidence_changes))).mappings()} if evidence_changes else {}
     candidate_map = {(canonical_sha256(row["owner"]), row["lang"]): row for row in candidates}
@@ -470,6 +482,8 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
         owner = declarations[token]["owner"]
         owner_id = resolved.get(token)
         if type(owner_id) is not int or owner_id <= 0:
+            return False
+        if "id" in owner and owner_id != owner["id"]:
             return False
         for lang in LANGUAGES:
             candidate = candidate_map.get((canonical_sha256(owner), lang))
@@ -480,9 +494,16 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
                 return False
             name = matching_names[0]
             name_change = name_changes[name["id"]]
-            evidence_row = evidence.get(name["evidence_id"])
-            evidence_change = evidence_changes.get(name["evidence_id"])
-            if (name["status"] != "verified" or name_change["after_image"] != _image(name)
+            expected_name = name_change["after_image"]
+            for later in sorted(name_history.get(name["id"], ()), key=lambda item: item["id"]):
+                if later["before_image"] != expected_name:
+                    return False
+                expected_name = later["after_image"]
+            original_name = name_change["after_image"]
+            original_evidence_id = original_name.get("evidence_id") if isinstance(original_name, dict) else None
+            evidence_row = evidence.get(original_evidence_id)
+            evidence_change = evidence_changes.get(original_evidence_id)
+            if (expected_name != _image(name) or original_name.get("status") != "verified"
                     or evidence_row is None or evidence_change is None
                     or evidence_change["before_image"] is not None
                     or evidence_change["after_image"] != _image(evidence_row)
@@ -498,10 +519,11 @@ def _name_batch_targets_proved(conn, batch, bundle, declarations, candidates, gr
                     or not _same_review_time(evidence_row["reviewed_at"], candidate.get("reviewed_at"))
                     or evidence_row["decision_kind"] != candidate.get("decision_kind")
                     or evidence_row["generation_rule_version"] != candidate.get("generation_rule_version")
-                    or name["display_name"] != candidate.get("display_name")
-                    or name["decision_kind"] != candidate.get("decision_kind")
-                    or name["generation_rule_version"] != candidate.get("generation_rule_version")
-                    or name["revision"] != evidence_row["revision"]):
+                    or original_name.get("event_id") != owner_id or original_name.get("lang") != lang
+                    or original_name.get("display_name") != candidate.get("display_name")
+                    or original_name.get("decision_kind") != candidate.get("decision_kind")
+                    or original_name.get("generation_rule_version") != candidate.get("generation_rule_version")
+                    or original_name.get("revision") != evidence_row["revision"]):
                 return False
             payload = evidence_row["research_payload"]
             research = payload.get("research") if isinstance(payload, dict) else None

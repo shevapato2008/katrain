@@ -118,11 +118,29 @@ def counts(engine):
         )
 
 
-def linked_name_proof(engine, *, target_ref=False, real_names=True):
+def linked_name_proof(engine, *, target_ref=False, real_names=True, prior_names=False):
     """A finite reviewed name batch and exact selection transition for read-side tests."""
     applied = apply_reviewed(engine, bundle())
     from katrain.web.kifu.event_selection import _image
     owner = {"kind": "event", "ref": "new"} if target_ref else {"kind": "event", "id": 2}
+    if prior_names:
+        assert not target_ref and real_names
+        with engine.begin() as conn:
+            registry_id = conn.execute(KifuNameSourceRegistry.__table__.insert().values(
+                version="prior-fixture", sha256="a" * 64, registry={})).inserted_primary_key[0]
+            prior_batch_id = conn.execute(KifuNameBatch.__table__.insert().values(
+                bundle_sha256="b" * 64, inventory_sha256="c" * 64,
+                source_registry_id=registry_id, reviewed_artifact={}, status="applied",
+            )).inserted_primary_key[0]
+            for sequence, lang in enumerate(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"), 1):
+                name_id = conn.execute(KifuEventName.__table__.insert().values(
+                    event_id=2, lang=lang, display_name=f"Prior {lang}", status="review", revision=1,
+                )).inserted_primary_key[0]
+                prior_image = _image(conn.execute(select(KifuEventName.__table__).where(
+                    KifuEventName.id == name_id)).mappings().one())
+                conn.execute(KifuNameChange.__table__.insert().values(
+                    batch_id=prior_batch_id, sequence=sequence, target_table="kifu_event_names",
+                    target_row_id=name_id, before_image=None, after_image=prior_image))
     if real_names:
         from tests.web_ui.test_kifu_name_batch import _eleven_language_identity_fixture
         from katrain.web.kifu.name_inventory import build_inventory
@@ -204,7 +222,12 @@ def linked_name_proof(engine, *, target_ref=False, real_names=True):
             sequence = 3 if target_ref else 2
             for candidate in candidates:
                 owner_id = 3 if target_ref else 2
-                evidence_values = _candidate_evidence(candidate, research_by_hash, registry_id, 1, owner_id)
+                existing = conn.execute(select(KifuEventName.__table__).where(
+                    KifuEventName.event_id == owner_id, KifuEventName.lang == candidate["lang"]
+                )).mappings().one_or_none()
+                prior_image = _image(existing) if existing else None
+                revision = 2 if existing else 1
+                evidence_values = _candidate_evidence(candidate, research_by_hash, registry_id, revision, owner_id)
                 evidence_id = conn.execute(KifuNameResearchEvidence.__table__.insert().values(
                     **evidence_values)).inserted_primary_key[0]
                 evidence_image = _image(conn.execute(select(KifuNameResearchEvidence.__table__).where(
@@ -213,21 +236,26 @@ def linked_name_proof(engine, *, target_ref=False, real_names=True):
                     batch_id=batch_id, sequence=sequence, target_table="kifu_name_research_evidence",
                     target_row_id=evidence_id, before_image=None, after_image=evidence_image))
                 sequence += 1
-                name_id = conn.execute(KifuEventName.__table__.insert().values(
-                    event_id=owner_id, lang=candidate["lang"], display_name=candidate["display_name"],
-                    status="verified", decision_kind=candidate["decision_kind"],
-                    generation_rule_version=candidate["generation_rule_version"], revision=1,
-                    evidence_id=evidence_id,
-                    verified_at=datetime.fromisoformat(candidate["reviewed_at"].replace("Z", "+00:00"))
-                )).inserted_primary_key[0]
+                values = dict(display_name=candidate["display_name"], status="verified",
+                              decision_kind=candidate["decision_kind"],
+                              generation_rule_version=candidate["generation_rule_version"],
+                              revision=revision, evidence_id=evidence_id,
+                              verified_at=datetime.fromisoformat(candidate["reviewed_at"].replace("Z", "+00:00")))
+                if existing:
+                    name_id = existing["id"]
+                    conn.execute(KifuEventName.__table__.update().where(KifuEventName.id == name_id).values(**values))
+                else:
+                    name_id = conn.execute(KifuEventName.__table__.insert().values(
+                        event_id=owner_id, lang=candidate["lang"], **values)).inserted_primary_key[0]
                 name_image = _image(conn.execute(select(KifuEventName.__table__).where(
                     KifuEventName.id == name_id)).mappings().one())
                 conn.execute(KifuNameChange.__table__.insert().values(
                     batch_id=batch_id, sequence=sequence, target_table="kifu_event_names",
-                    target_row_id=name_id, before_image=None, after_image=name_image))
+                    target_row_id=name_id, before_image=prior_image, after_image=name_image))
                 sequence += 1
     return {"name_batch_id": batch_id, "change_id": change_id, "before": before,
-            "after": after, "bundle": name_bundle}
+            "after": after, "bundle": name_bundle, "research": research,
+            "registry_id": registry_id}
 
 
 def test_batch_shared_read_proves_one_exact_linked_selection(engine):
@@ -268,6 +296,63 @@ def test_batch_shared_read_resolves_same_batch_new_event_ref(engine):
         verified = verified_selection_rows(conn, rows)
     assert verified[1]["event_id"] == 3
     assert verified[1]["name_batch_id"] == proof["name_batch_id"]
+
+
+def test_batch_shared_read_does_not_redirect_signed_existing_event_id(engine):
+    from katrain.web.kifu.event_selection import _image, verified_selection_rows
+
+    proof = linked_name_proof(engine)
+    with engine.begin() as conn:
+        events = KifuEvent.__table__
+        selection = KifuAlbumEventSelection.__table__
+        changes = KifuNameChange.__table__
+        conn.execute(events.insert().values(id=3, canonical_name="Other event"))
+        conn.execute(selection.update().values(event_id=3))
+        current_selection = _image(conn.execute(select(selection)).mappings().one())
+        conn.execute(changes.update().where(changes.c.target_table == selection.name)
+                     .values(after_image=current_selection))
+        for model in (KifuEventName, KifuNameResearchEvidence):
+            table = model.__table__
+            conn.execute(table.update().values(event_id=3))
+            for row in conn.execute(select(table)).mappings():
+                conn.execute(changes.update().where(changes.c.target_table == table.name,
+                                                    changes.c.target_row_id == row["id"])
+                             .values(after_image=_image(row)))
+        artifact = {
+            "bundle": proof["bundle"], "resolved_refs": {"event:2": 3},
+            "research_hashes": sorted(candidate["research_sha256"] for candidate in proof["bundle"]["candidates"]),
+        }
+        conn.execute(KifuNameBatch.__table__.update().values(reviewed_artifact=artifact))
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings())
+        assert verified_selection_rows(conn, rows) == {}
+
+
+def test_batch_shared_read_keeps_identity_after_later_approved_name_revision(engine):
+    from katrain.web.kifu.event_selection import verified_selection_rows
+    from katrain.web.kifu.name_batch import _apply_candidate
+
+    proof = linked_name_proof(engine)
+    with engine.begin() as conn:
+        next_batch_id = conn.execute(KifuNameBatch.__table__.insert().values(
+            bundle_sha256="e" * 64, inventory_sha256="f" * 64,
+            source_registry_id=proof["registry_id"], reviewed_artifact={}, status="applied",
+        )).inserted_primary_key[0]
+        candidate = proof["bundle"]["candidates"][0]
+        research = {canonical_sha256(row): row for row in proof["research"]}
+        _apply_candidate(conn, candidate, research, proof["registry_id"], next_batch_id, 1, {"event:2": 2})
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings())
+        assert set(verified_selection_rows(conn, rows)) == {1}
+
+
+def test_batch_shared_read_accepts_target_with_prior_name_ledger(engine):
+    from katrain.web.kifu.event_selection import verified_selection_rows
+
+    linked_name_proof(engine, prior_names=True)
+    with engine.connect() as conn:
+        rows = list(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings())
+        assert set(verified_selection_rows(conn, rows)) == {1}
 
 
 @pytest.mark.parametrize("tamper", ["fk", "source_column", "album_source", "before_image", "after_image",

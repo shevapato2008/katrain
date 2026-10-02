@@ -9,11 +9,13 @@ from collections.abc import Iterable, Iterator, Mapping
 import re
 
 from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.name_candidates import _selection_rows
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.name_structure import structure_event
 
 
 RULE_VERSION = "name-match-v1"
+SELECTION_RULE_VERSION = "name-match-v2"
 
 
 def _alias_index(aliases: Mapping[str, Iterable[int]]) -> dict[str, set[int]]:
@@ -51,21 +53,40 @@ def propose_album_matches(
     a unique match remains pending review, because date, opponent and historical
     tournament identity can disambiguate otherwise identical spellings.
     """
-    columns = inventory["association_columns"]
+    columns = inventory.get("association_columns")
     required = {
         "id", "player_black", "player_white", "event", "round_name",
         "black_rank", "white_rank", "date_played",
         "black_player_id", "white_player_id", "event_id",
     }
-    if inventory.get("inventory_format") != 2 or not required.issubset(columns):
-        raise ValueError("inventory_format 2 with date, round and ranks is required")
+    inventory_format = inventory.get("inventory_format")
+    if inventory_format not in {2, 3} or not isinstance(columns, list) or not required.issubset(columns):
+        raise ValueError("inventory_format 2 or 3 with date, round and ranks is required")
     snapshot_hash = inventory.get("sha256", "")
     if not re.fullmatch(r"[0-9a-f]{64}", snapshot_hash):
         raise ValueError("inventory SHA-256 is required")
+    selections = {}
+    if inventory_format == 3:
+        if not re.fullmatch(r"[0-9a-f]{64}", inventory.get("base_sha256", "")):
+            raise ValueError("v3 base inventory SHA-256 is required")
+        selections = {row[0]: row[1] for row in _selection_rows(inventory)}
+        pending = set(selections)
+        for values in inventory["album_associations"]:
+            if not isinstance(values, list) or len(values) != len(columns):
+                raise ValueError("v3 album association is malformed")
+            album = dict(zip(columns, values))
+            album_id = album["id"]
+            if album_id in selections and album_id not in pending:
+                raise ValueError("v3 selected album association ID is duplicated")
+            if album_id in pending and (album["event"] != "GNUGo3.8" or album["event_id"] is not None):
+                raise ValueError("v3 event selection does not match an unlinked program label")
+            pending.discard(album_id)
+        if pending:
+            raise ValueError("v3 selected album is absent from inventory")
     provenance = {
-        "inventory_format": 2,
+        "inventory_format": inventory_format,
         "inventory_sha256": snapshot_hash,
-        "rule_version": RULE_VERSION,
+        "rule_version": RULE_VERSION if inventory_format == 2 else SELECTION_RULE_VERSION,
         "confidence_boundary": "candidate_only",
     }
     player_index = _alias_index(player_aliases)
@@ -97,7 +118,7 @@ def propose_album_matches(
                 "exceptions": list(parsed.exceptions),
             }
 
-        raw = album["event"]
+        raw = selections.get(album["id"], album["event"])
         parsed = parse_event(raw, None)
         structure = structure_event(raw or "")
         non_events = {"empty", "program_source_label", "generic_event_description", "game_description"}

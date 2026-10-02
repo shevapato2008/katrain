@@ -1,6 +1,7 @@
 """Identity matching produces review proposals, never unreviewed links."""
 
 from datetime import datetime, timezone
+import hashlib
 
 import pytest
 from sqlalchemy import create_engine
@@ -20,6 +21,7 @@ from katrain.web.core.models_db import (
     KifuRawPlayerValue,
 )
 from katrain.web.kifu.identity import strict_matching_names
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 from katrain.web.kifu.name_match import propose_album_matches
 
 
@@ -35,6 +37,86 @@ def _inventory(*rows):
         "inventory_format": 2, "sha256": "a" * 64,
         "association_columns": COLUMNS, "album_associations": list(rows),
     }
+
+
+def _v3_inventory(*rows, selections=()):
+    inventory = _inventory(*rows)
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    for row in selections:
+        _hash_row(digest, b"E", row)
+    inventory.update(
+        inventory_format=3,
+        base_sha256="b" * 64,
+        sha256="c" * 64,
+        event_selection={
+            "selection_format": 1,
+            "columns": list(SELECTION_COLUMNS),
+            "rows": [list(row) for row in selections],
+            "sha256": digest.hexdigest(),
+        },
+    )
+    return inventory
+
+
+def test_v3_player_proposals_and_reviewed_second_gn_event_use_exact_selected_spelling():
+    selected = [20, "Selected Cup", "d" * 64, "independent-reviewer", "2026-10-02T10:00:00+00:00", 3, "e" * 64]
+    inventory = _v3_inventory(
+        [20, None, "吴清源九段", "木谷实", "GNUGo3.8", None, None, None,
+         "1934-10-01", None, None, None, []],
+        selections=[selected],
+    )
+    proposals = list(propose_album_matches(
+        inventory,
+        player_aliases={"吴清源": {7}},
+        event_aliases={"Selected Cup": {9}, "GNUGo3.8": {99}},
+    ))
+    assert [item["side"] for item in proposals] == ["black", "white", "event"]
+    assert proposals[0]["candidate_ids"] == [7]
+    assert proposals[0]["status"] == "review_candidate"
+    assert proposals[0]["inventory_format"] == 3
+    assert proposals[0]["inventory_sha256"] == "c" * 64
+    assert proposals[2]["raw_value"] == "Selected Cup"
+    assert proposals[2]["lookup_name"] == "Selected Cup"
+    assert proposals[2]["candidate_ids"] == [9]
+    assert proposals[2]["status"] == "review_candidate"
+    assert proposals[2]["confidence_boundary"] == "candidate_only"
+
+
+def test_v3_without_valid_selection_keeps_program_label_out_of_event_identity():
+    inventory = _v3_inventory(
+        [20, None, "甲", "乙", "GNUGo3.8", None, None, None,
+         None, None, None, None, []],
+    )
+    proposals = list(propose_album_matches(
+        inventory, player_aliases={}, event_aliases={"GNUGo3.8": {99}},
+    ))
+    assert proposals[2]["raw_value"] == "GNUGo3.8"
+    assert proposals[2]["status"] == "non_identity"
+    assert proposals[2]["candidate_ids"] == []
+
+
+@pytest.mark.parametrize("damage", ["missing_supplement", "bad_base_hash", "bad_selection_hash",
+                                    "unknown_album", "wrong_original_event", "linked_original_event"])
+def test_v3_proposals_reject_unpinned_or_misapplied_event_selection(damage):
+    album = [20, None, "甲", "乙", "GNUGo3.8", None, None, None,
+             None, None, None, None, []]
+    selected = [20, "Selected Cup", "d" * 64, "reviewer", "2026-10-02T10:00:00+00:00", 3, "e" * 64]
+    inventory = _v3_inventory(album, selections=[selected])
+    if damage == "missing_supplement":
+        del inventory["event_selection"]
+    elif damage == "bad_base_hash":
+        inventory["base_sha256"] = "not-a-hash"
+    elif damage == "bad_selection_hash":
+        inventory["event_selection"]["sha256"] = "f" * 64
+    elif damage == "unknown_album":
+        inventory = _v3_inventory(album, selections=[[21, *selected[1:]]])
+    elif damage == "wrong_original_event":
+        inventory["album_associations"][0][COLUMNS.index("event")] = "Other Cup"
+    elif damage == "linked_original_event":
+        inventory["album_associations"][0][COLUMNS.index("event_id")] = 99
+    with pytest.raises(ValueError):
+        list(propose_album_matches(inventory, player_aliases={}, event_aliases={"Selected Cup": {9}}))
 
 
 def test_rank_suffix_and_cross_script_aliases_propose_the_same_identity():

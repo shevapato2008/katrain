@@ -40,6 +40,7 @@ def source_anchor(owner=None, original="李元赫", words=None):
                 "reading_text": " ".join(token for word in words for token in word),
                 "source_reading": "li yuan he",
                 "reading_normalization_basis": "Reviewed toneless Pinyin syllables and word boundaries",
+                "reading_normalization_version": "pinyin-source-v1",
                 "sources": [
                     {
                         "url": "https://example.org/player",
@@ -380,3 +381,48 @@ def test_reused_rule_version_cannot_name_two_different_signed_maps():
     proposed["transliteration"]["rules"].append(duplicate)
     result = check(proposed, anchors, snapshot)
     assert any("rule version" in error for error in result["errors"])
+
+
+def raw_transliteration_bundle():
+    proposed, anchors, snapshot = transliteration_bundle()
+    owner = {"kind": "raw_player", "id": 7}
+    proposed["members"][0].update(owner=owner, raw_value="李元赫")
+    proposed["candidates"][0].update(owner=owner, raw_value="李元赫")
+    anchors[0]["content"].update(owner=owner, raw_value="李元赫")
+    proposed["transliteration"]["batches"][0]["content"]["members"][0]["raw_value"] = "李元赫"
+    refresh_bindings(proposed, anchors)
+    inv = inventory()
+    inv["album_associations"][0][1] = "李元赫"
+    return proposed, anchors, snapshot, inv
+
+
+def test_raw_spelling_cannot_change_under_an_unchanged_signed_transliteration_batch():
+    proposed, anchors, snapshot, inv = raw_transliteration_bundle()
+    assert validate_bundle(proposed, registry(), inv, anchors, approved_name_snapshot=snapshot)["ready"] is True
+    proposed["members"][0]["raw_value"] = proposed["candidates"][0]["raw_value"] = "木谷实"
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    result = validate_bundle(proposed, registry(), inv, anchors, approved_name_snapshot=snapshot)
+    assert result["ready"] is False
+    assert any("raw" in error for error in result["errors"])
+
+
+@pytest.mark.parametrize("source_reading", ["李元赫", "zhang wei"])
+def test_signed_source_must_have_matching_phonetic_reading_not_just_original_name(source_reading):
+    proposed, anchors, snapshot = transliteration_bundle()
+    anchors[0]["content"]["source_reading"] = source_reading
+    anchors[0]["content"]["sources"][0]["body_excerpt"] = f"李元赫 {source_reading}"
+    refresh_bindings(proposed, anchors)
+    result = check(proposed, anchors, snapshot)
+    assert result["ready"] is False
+    assert any("phonetic" in error or "normalization" in error for error in result["errors"])
+
+
+@pytest.mark.parametrize("lang", ["ru", "ua"])
+def test_signed_maps_cannot_emit_cyrillic_letters_outside_target_alphabet(lang):
+    proposed, anchors, snapshot = transliteration_bundle(lang)
+    proposed["transliteration"]["rules"][0]["content"]["token_map"]["li"] = "Ӿӿ"
+    proposed["candidates"][0]["display_name"] = "Ӿӿ " + proposed["candidates"][0]["display_name"].split(" ", 1)[1]
+    refresh_bindings(proposed, anchors)
+    result = check(proposed, anchors, snapshot)
+    assert result["ready"] is False
+    assert any("token map invalid" in error for error in result["errors"])

@@ -1001,3 +1001,53 @@ def test_cli_validates_pending_jsonl_atomically(tmp_path):
     with pytest.raises(EvidenceError):
         main(["--registry", str(registry_path), "validate", "--input", str(source_path), "--output", str(output_path)])
     assert output_path.read_text(encoding="utf-8") == "existing"
+
+
+@pytest.mark.parametrize("reading", ["li yuan he", "lǐ yuán hè", "li3 yuan2 he4", "lǐ yuánhè"])
+def test_transliteration_anchor_accepts_reviewed_pinyin_normalization(reading):
+    from katrain.web.kifu.name_evidence import validate_transliteration_anchor
+    from tests.web_ui.test_kifu_name_transliteration import source_anchor
+
+    anchor = source_anchor()
+    anchor["content"]["source_reading"] = reading
+    anchor["content"]["sources"][0]["body_excerpt"] = f"李元赫 {reading}"
+    anchor["approval"]["content_sha256"] = registry_sha256(anchor["content"])
+    assert validate_transliteration_anchor(anchor) == anchor
+
+
+@pytest.mark.parametrize(
+    "source_lang,system,version,reading,words",
+    [
+        ("ja", "hepburn-syllables-v1", "hepburn-source-v1", "kitani minōru", [["ki", "ta", "ni"], ["mi", "no", "ru"]]),
+        ("ko", "rr-syllables-v1", "rr-source-v1", "lee chang-ho", [["lee"], ["chang", "ho"]]),
+    ],
+)
+def test_transliteration_anchor_accepts_only_its_declared_roman_reading_system(
+    source_lang, system, version, reading, words
+):
+    from katrain.web.kifu.name_evidence import validate_transliteration_anchor
+    from tests.web_ui.test_kifu_name_transliteration import source_anchor
+
+    anchor = source_anchor(words=words)
+    anchor["content"].update(
+        source_lang=source_lang, reading_system=system, source_reading=reading, reading_normalization_version=version
+    )
+    anchor["content"]["sources"][0].update(observed_lang=source_lang, body_excerpt=f"李元赫 {reading}")
+    anchor["approval"]["content_sha256"] = registry_sha256(anchor["content"])
+    assert validate_transliteration_anchor(anchor) == anchor
+    anchor["content"]["source_reading"] = "lǐ yuán hè"
+    anchor["content"]["sources"][0]["body_excerpt"] = "李元赫 lǐ yuán hè"
+    anchor["approval"]["content_sha256"] = registry_sha256(anchor["content"])
+    with pytest.raises(EvidenceError, match="phonetic"):
+        validate_transliteration_anchor(anchor)
+
+
+def test_transliteration_anchor_requires_a_signed_normalization_version():
+    from katrain.web.kifu.name_evidence import validate_transliteration_anchor
+    from tests.web_ui.test_kifu_name_transliteration import source_anchor
+
+    anchor = source_anchor()
+    anchor["content"].pop("reading_normalization_version")
+    anchor["approval"]["content_sha256"] = registry_sha256(anchor["content"])
+    with pytest.raises(EvidenceError, match="normalization version"):
+        validate_transliteration_anchor(anchor)

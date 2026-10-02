@@ -10,6 +10,7 @@ import json
 import re
 import hashlib
 import time
+import unicodedata
 from copy import deepcopy
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -30,6 +31,11 @@ TRANSCRIPTION_SYSTEMS = {
     "zh-Hant": "pinyin-syllables-v1",
     "ja": "hepburn-syllables-v1",
     "ko": "rr-syllables-v1",
+}
+READING_NORMALIZATION_VERSIONS = {
+    "pinyin-syllables-v1": "pinyin-source-v1",
+    "hepburn-syllables-v1": "hepburn-source-v1",
+    "rr-syllables-v1": "rr-source-v1",
 }
 SOURCE_PRIORITY = {"official": 0, "language_go": 1, "reference": 2,
                    "wikipedia_article": 3, "encyclopedia": 3, "discovery": 4}
@@ -166,6 +172,30 @@ def validate_transliteration_sources(sources: object, source_lang: str, reviewed
         )
 
 
+def _normalized_phonetic_reading(value: str, system: str) -> str:
+    """Remove only the declared roman system's separators and pronunciation marks."""
+    _require(len(value) <= 1024, "transliteration phonetic reading too long")
+    text = unicodedata.normalize("NFD", value.lower())
+    if system == "pinyin-syllables-v1":
+        text = text.replace("u\u0308", "ü").replace("u:", "ü").replace("v", "ü")
+        marks, tones = "\u0300\u0301\u0304\u030c", "12345"
+    elif system == "hepburn-syllables-v1":
+        marks, tones = "\u0304", ""
+    else:
+        marks, tones = "", ""
+    letters = []
+    for char in text:
+        if char in " -’'ʼ" or char in marks or char in tones:
+            continue
+        _require(
+            char in "abcdefghijklmnopqrstuvwxyz" or char == "ü" and system == "pinyin-syllables-v1",
+            "transliteration source reading must be phonetic in the declared roman system",
+        )
+        letters.append(char)
+    _require(bool(letters), "transliteration source reading needs phonetic letters")
+    return "".join(letters)
+
+
 def validate_transliteration_anchor(record: dict) -> dict:
     """Check a source-approved original and segmented reading, never infer it from Hanzi."""
     _require(
@@ -179,6 +209,10 @@ def validate_transliteration_anchor(record: dict) -> dict:
         kind in {"player", "event"} and content["owner"]["kind"] in {kind, "raw_" + kind},
         "transliteration source entity category differs from owner",
     )
+    if content["owner"]["kind"].startswith("raw_"):
+        _require(_text(content.get("raw_value")), "transliteration raw source anchor needs exact raw spelling")
+    else:
+        _require("raw_value" not in content, "transliteration entity anchor cannot claim raw spelling")
     source_lang = content.get("source_lang")
     _require(
         source_lang in TRANSCRIPTION_SYSTEMS and content.get("reading_system") == TRANSCRIPTION_SYSTEMS[source_lang],
@@ -207,6 +241,15 @@ def validate_transliteration_anchor(record: dict) -> dict:
         and _text(content.get("source_reading"))
         and _text(content.get("reading_normalization_basis")),
         "transliteration source reading and normalization basis required",
+    )
+    _require(
+        content.get("reading_normalization_version") == READING_NORMALIZATION_VERSIONS[content["reading_system"]],
+        "transliteration reading normalization version invalid",
+    )
+    _require(
+        _normalized_phonetic_reading(content["source_reading"], content["reading_system"])
+        == "".join(token for word in words for token in word),
+        "transliteration reviewed normalization differs from sourced phonetic reading",
     )
     sources = content.get("sources")
     validate_transliteration_sources(sources, source_lang, record["approval"]["reviewed_at"])

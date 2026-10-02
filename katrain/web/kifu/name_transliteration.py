@@ -18,6 +18,10 @@ from katrain.web.kifu.name_evidence import (
 )
 
 VERSION = "secondary-transliteration-v1"
+_CYRILLIC_ALPHABETS = {
+    "ru": frozenset("абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"),
+    "ua": frozenset("абвгґдеєжзиіїйклмнопрстуфхцчшщьюяАБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"),
+}
 
 
 def _require(condition, message):
@@ -33,12 +37,9 @@ def _target_text(value, lang):
     if not isinstance(value, str) or not value or len(value) > 1024:
         return False
     letters = [char for char in value if char not in " -’'ʼ"]
-    script = "CYRILLIC" if lang in {"ru", "ua"} else "LATIN"
-    if not letters or not all(unicodedata.name(char, "").startswith(script) and char.isalpha() for char in letters):
-        return False
-    if lang == "ua" and any(char in "ыэъёЫЭЪЁ" for char in value):
-        return False
-    if lang == "ru" and any(char in "іїєґІЇЄҐ" for char in value):
+    if lang in _CYRILLIC_ALPHABETS:
+        return bool(letters) and all(char in _CYRILLIC_ALPHABETS[lang] for char in letters)
+    if not letters or not all(unicodedata.name(char, "").startswith("LATIN") and char.isalpha() for char in letters):
         return False
     return True
 
@@ -192,12 +193,14 @@ def validate_transliteration(section, candidates, anchors, snapshot):
         _require(isinstance(members, list) and members, "transliteration needs complete nonempty batch members")
         used_rules.add(rule_hash)
         for member in members:
-            _require(
-                isinstance(member, dict)
-                and set(member) == {"owner", "lang", "display_name", "source_anchor_sha256", "rule_sha256"},
-                "transliteration member fields invalid",
-            )
+            _require(isinstance(member, dict), "transliteration member required")
             key = owner_key(member.get("owner"), member.get("lang"))
+            member_fields = {"owner", "lang", "display_name", "source_anchor_sha256", "rule_sha256"}
+            is_raw = member["owner"]["kind"].startswith("raw_")
+            _require(
+                set(member) == member_fields | ({"raw_value"} if is_raw else set()),
+                "transliteration member must sign exact raw spelling for raw owners",
+            )
             _require(
                 key not in bindings
                 and member.get("lang") == content["lang"]
@@ -208,6 +211,11 @@ def validate_transliteration(section, candidates, anchors, snapshot):
             _require(isinstance(anchor_hash, str) and anchor_hash in anchors, "transliteration source anchor missing")
             anchor = anchors[anchor_hash]
             source = anchor["content"]
+            if is_raw:
+                _require(
+                    member.get("raw_value") == source.get("raw_value"),
+                    "transliteration signed raw spelling differs from source anchor",
+                )
             _require(
                 source["owner"] == member["owner"]
                 and all(source[field] == content[field] for field in ("source_lang", "reading_system", "entity_kind")),
@@ -273,6 +281,11 @@ def validate_transliterated_candidate(row, bindings):
     key = owner_key(row.get("owner"), row.get("lang"))
     _require(key in bindings, "transliterated candidate lies outside signed batch")
     batch, member, rule = bindings[key]
+    if row["owner"]["kind"].startswith("raw_"):
+        _require(
+            row.get("raw_value") == member["raw_value"],
+            "transliterated candidate raw spelling differs from signed member",
+        )
     _require(
         row.get("research_sha256") == ""
         and all(row.get(field) == member[field] for field in member)

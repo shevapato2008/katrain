@@ -162,10 +162,15 @@ def _selected_event_rows(inventory: dict, original_events: dict[int, str | None]
     return selected
 
 
-def build_event_group_manifest(inventory: dict) -> dict:
+def build_event_group_manifest(inventory: dict, *, expected_artifact_sha256: str | None = None) -> dict:
     """Group every raw EV spelling for finite, separately reviewed batch manifests."""
     if inventory.get("inventory_format") not in {2, 3}:
         raise ValueError("inventory_format 2 or 3 is required")
+    if inventory["inventory_format"] == 3 or expected_artifact_sha256 is not None:
+        if not isinstance(expected_artifact_sha256, str) or not _SHA256.fullmatch(expected_artifact_sha256):
+            raise ValueError("external inventory artifact SHA-256 is required")
+        if _canonical_hash(inventory) != expected_artifact_sha256:
+            raise ValueError("inventory artifact SHA-256 differs from pinned checksum")
     if not _SHA256.fullmatch(str(inventory.get("sha256", ""))):
         raise ValueError("inventory SHA-256 is required")
     rows = inventory["scopes"]["all"]["values"]["event"]
@@ -241,6 +246,8 @@ def build_event_group_manifest(inventory: dict) -> dict:
     manifest = {
         "inventory_format": inventory["inventory_format"],
         "inventory_sha256": inventory["sha256"],
+        **({"inventory_artifact_sha256": expected_artifact_sha256}
+           if inventory["inventory_format"] == 3 else {}),
         **({"event_selection_sha256": inventory["event_selection"]["sha256"]}
            if inventory["inventory_format"] == 3 else {}),
         "rule_version": RULE_VERSION,

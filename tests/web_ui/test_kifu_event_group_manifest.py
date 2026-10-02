@@ -52,6 +52,11 @@ def _selection(album_id, raw):
     return [album_id, raw, "c" * 64, "independent-reviewer", "2026-10-02T10:00:00", 5, "d" * 64]
 
 
+def _artifact_sha(inventory):
+    canonical = json.dumps(inventory, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def test_group_manifest_binds_inventory_and_exact_raw_members_without_approval():
     rows = [
         {"value": "2026年世界围棋团体赛第2轮", "occurrences": 4, "affected_games": 4},
@@ -138,7 +143,7 @@ def test_v3_group_manifest_uses_selected_raw_by_album_and_keeps_groups_pending()
         {"value": "1st Meijin", "occurrences": 1, "affected_games": 1},
     ]
     inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo"), _selection(2, "29th Honinbo")])
-    manifest = build_event_group_manifest(inventory)
+    manifest = build_event_group_manifest(inventory, expected_artifact_sha256=_artifact_sha(inventory))
     assert manifest["inventory_format"] == 3
     assert manifest["inventory_sha256"] == inventory["sha256"]
     assert manifest["event_selection_sha256"] == inventory["event_selection"]["sha256"]
@@ -160,24 +165,42 @@ def test_v3_group_manifest_rejects_tampered_or_unbound_selection_rows():
     tampered = json.loads(json.dumps(inventory))
     tampered["event_selection"]["rows"][0][1] = "Other Event"
     with pytest.raises(ValueError, match="selection.*hash"):
-        build_event_group_manifest(tampered)
+        build_event_group_manifest(tampered, expected_artifact_sha256=_artifact_sha(tampered))
 
     for selected in ([_selection(3, "28th Honinbo")],
                      [_selection(1, "28th Honinbo"), _selection(1, "29th Honinbo")]):
         with pytest.raises(ValueError, match="selection"):
-            build_event_group_manifest(_selected_inventory(rows, selected))
+            invalid = _selected_inventory(rows, selected)
+            build_event_group_manifest(invalid, expected_artifact_sha256=_artifact_sha(invalid))
 
     truncated = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
     truncated["event_selection"]["rows"] = []
     with pytest.raises(ValueError, match="selection.*hash"):
-        build_event_group_manifest(truncated)
+        build_event_group_manifest(truncated, expected_artifact_sha256=_artifact_sha(truncated))
 
 
 def test_v3_group_manifest_rejects_selected_row_for_wrong_original_event():
     rows = [{"value": "1st Meijin", "occurrences": 1, "affected_games": 1}]
     inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
     with pytest.raises(ValueError, match="selection.*original"):
+        build_event_group_manifest(inventory, expected_artifact_sha256=_artifact_sha(inventory))
+
+
+def test_v3_manifest_requires_an_external_full_inventory_digest():
+    rows = [{"value": "GNUGo3.8", "occurrences": 1, "affected_games": 1}]
+    inventory = _selected_inventory(rows, [_selection(1, "28th Honinbo")])
+    pinned_sha = _artifact_sha(inventory)
+    with pytest.raises(ValueError, match="artifact SHA"):
         build_event_group_manifest(inventory)
+    assert build_event_group_manifest(inventory, expected_artifact_sha256=pinned_sha)["group_count"] == 1
+    changed = json.loads(json.dumps(inventory))
+    changed["event_selection"]["rows"][0][1] = "1st Meijin"
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    _hash_row(digest, b"E", changed["event_selection"]["rows"][0])
+    changed["event_selection"]["sha256"] = digest.hexdigest()
+    with pytest.raises(ValueError, match="artifact SHA"):
+        build_event_group_manifest(changed, expected_artifact_sha256=pinned_sha)
 
 
 def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):
@@ -190,6 +213,25 @@ def test_cli_writes_compressed_manifest_for_complete_inventory(tmp_path):
     with gzip.open(output, "rt", encoding="utf-8") as stream:
         result = json.load(stream)
     assert result == build_event_group_manifest(_inventory(rows))
+
+
+def test_cli_v3_requires_independently_pinned_inventory_artifact(tmp_path):
+    inventory_path = tmp_path / "inventory-v3.json.gz"
+    output = tmp_path / "groups-v3.json.gz"
+    inventory = _selected_inventory(
+        [{"value": "GNUGo3.8", "occurrences": 1, "affected_games": 1}],
+        [_selection(1, "28th Honinbo")],
+    )
+    with gzip.open(inventory_path, "wt", encoding="utf-8") as stream:
+        json.dump(inventory, stream)
+    args = ["--inventory", str(inventory_path), "--output", str(output)]
+    with pytest.raises(ValueError, match="artifact SHA"):
+        main(args)
+    assert not output.exists()
+    assert main([*args, "--expected-inventory-artifact-sha256", _artifact_sha(inventory)]) == 0
+    with gzip.open(output, "rt", encoding="utf-8") as stream:
+        manifest = json.load(stream)
+    assert manifest["inventory_artifact_sha256"] == _artifact_sha(inventory)
 
 
 def test_cli_runs_directly_from_repository_root():

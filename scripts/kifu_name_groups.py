@@ -22,9 +22,13 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--inventory", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--expected-inventory-artifact-sha256",
+                        help="independently pinned canonical JSON SHA-256; required for v3 inventories")
     args = parser.parse_args(argv)
     with _open_json(args.inventory, "r") as stream:
-        manifest = build_event_group_manifest(json.load(stream))
+        manifest = build_event_group_manifest(
+            json.load(stream), expected_artifact_sha256=args.expected_inventory_artifact_sha256,
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:

@@ -149,7 +149,9 @@ def validate_transliteration_review(record: dict, conclusion: str) -> dict:
     return content
 
 
-def validate_transliteration_sources(sources: object, source_lang: str, reviewed_at: str) -> None:
+def validate_transliteration_sources(
+    sources: object, source_lang: str, reviewed_at: str, *, allowed_languages: frozenset[str] | None = None
+) -> None:
     """Validate captured provenance, without fetching or making an absence claim."""
     _require(isinstance(sources, list) and bool(sources), "transliteration needs captured sources")
     review_time = datetime.fromisoformat(reviewed_at.replace("Z", "+00:00"))
@@ -163,7 +165,10 @@ def validate_transliteration_sources(sources: object, source_lang: str, reviewed
             and _text(source.get("body_excerpt"))
             and _text(source.get("identity_basis"))
             and source.get("language_basis") in LANGUAGE_BASIS
-            and _matches_target(str(source.get("observed_lang", "")), source_lang),
+            and any(
+                _matches_target(str(source.get("observed_lang", "")), lang)
+                for lang in (allowed_languages if allowed_languages is not None else (source_lang,))
+            ),
             "transliteration source provenance or language invalid",
         )
         _require(

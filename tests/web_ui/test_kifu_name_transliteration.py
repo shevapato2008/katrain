@@ -490,6 +490,45 @@ def test_explicit_roman_copy_rule_is_available_only_for_reviewed_roman_readings(
     assert check(proposed, anchors, snapshot)["ready"] is True
 
 
+@pytest.mark.parametrize("lang", ["de", "es", "fr", "tr"])
+def test_roman_copy_rule_accepts_truthfully_labeled_english_rule_source(lang):
+    proposed, anchors, snapshot = transliteration_bundle(lang)
+    rule = proposed["transliteration"]["rules"][0]
+    rule["content"].update(operation="copy_roman_words_v1")
+    rule["content"].pop("token_map")
+    rule["content"]["sources"][0]["observed_lang"] = "en"
+    rule["content"]["sources"][0]["identity_basis"] = "English Roman name copy guidance"
+    refresh_bindings(proposed, anchors)
+    assert check(proposed, anchors, snapshot)["ready"] is True
+
+
+def test_roman_copy_rule_accepts_reviewed_latin_guidance_without_forged_language():
+    proposed, anchors, snapshot = transliteration_bundle("de")
+    rule = proposed["transliteration"]["rules"][0]
+    rule["content"].update(operation="copy_roman_words_v1")
+    rule["content"].pop("token_map")
+    source = rule["content"]["sources"][0]
+    source["observed_lang"] = "en"
+    spanish = {**source, "url": "https://example.org/spanish-guidance", "observed_lang": "es"}
+    rule["content"]["sources"].append(spanish)
+    refresh_bindings(proposed, anchors)
+    assert check(proposed, anchors, snapshot)["ready"] is True
+    spanish["observed_lang"] = "ja"
+    refresh_bindings(proposed, anchors)
+    assert check(proposed, anchors, snapshot)["ready"] is False
+
+
+@pytest.mark.parametrize("lang", ["de", "ru", "ua"])
+def test_english_rule_source_does_not_authorize_syllable_transliteration(lang):
+    proposed, anchors, snapshot = transliteration_bundle(lang)
+    rule = proposed["transliteration"]["rules"][0]
+    rule["content"]["sources"][0]["observed_lang"] = "en"
+    refresh_bindings(proposed, anchors)
+    result = check(proposed, anchors, snapshot)
+    assert result["ready"] is False
+    assert any("source provenance or language invalid" in error for error in result["errors"])
+
+
 def test_two_signed_batches_cannot_hide_a_same_language_collision():
     proposed, anchors, snapshot = transliteration_bundle()
     other, other_anchors, _ = transliteration_bundle()

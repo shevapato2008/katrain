@@ -147,7 +147,11 @@ def validate_transliteration(section, candidates, anchors, snapshot):
                 "transliteration token map invalid",
             )
         target = "uk" if lang == "ua" else lang
-        validate_transliteration_sources(content.get("sources"), target, rule["approval"]["reviewed_at"])
+        rule_languages = frozenset({"en", "de", "es", "fr", "tr"}) if operation == "copy_roman_words_v1" else None
+        validate_transliteration_sources(
+            content.get("sources"), target, rule["approval"]["reviewed_at"],
+            allowed_languages=rule_languages,
+        )
         digest = registry_sha256(rule)
         _require(digest not in rules_by_hash, "duplicate transliteration rule")
         rules_by_hash[digest] = rule

@@ -10,9 +10,10 @@ from typing import Callable
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session, defer
 
-from katrain.web.core.models_db import KifuAlbum
+from katrain.web.core.models_db import KifuAlbum, KifuAlbumEventSelection
 from katrain.web.kifu.identity import (
     LANGUAGES,
+    live_event_selections,
     obscured_program_event_ids,
     resolve_strict_display,
     strict_display_maps,
@@ -61,8 +62,16 @@ def coverage_report(
     placeholder. The caller can stream every missing slot to a controlled file.
     """
 
-    if inventory.get("inventory_format") != 2 or len(str(inventory.get("sha256", ""))) != 64:
-        raise ValueError("inventory format 2 with SHA-256 required")
+    if inventory.get("inventory_format") not in {2, 3} or len(str(inventory.get("sha256", ""))) != 64:
+        raise ValueError("inventory format 2 or 3 with SHA-256 required")
+    pinned_selection = inventory.get("event_selection") if inventory["inventory_format"] == 3 else None
+    if inventory["inventory_format"] == 3 and not (
+        isinstance(pinned_selection, dict)
+        and pinned_selection.get("selection_format") == 1
+        and isinstance(pinned_selection.get("columns"), list)
+        and isinstance(pinned_selection.get("rows"), list)
+    ):
+        raise ValueError("inventory event selection supplement is incomplete")
     columns = inventory.get("association_columns")
     rows = inventory.get("album_associations")
     if not isinstance(columns, list) or not isinstance(rows, list) or not set((*_FIELDS, "sources")) <= set(columns):
@@ -80,6 +89,9 @@ def coverage_report(
     examples: list[dict] = []
     missing_hashes = {lang: sha256() for lang in languages}
     observed = 0
+    selection_drift = 0
+    selection_snapshot_sha256 = None
+    selection_sgf_sha256 = sha256()
 
     # PostgreSQL holds the full report in one REPEATABLE READ, READ ONLY view.
     connection = engine.connect().execution_options(
@@ -91,6 +103,37 @@ def coverage_report(
                 connection.execute(text("SET TRANSACTION READ ONLY"))
             db = Session(bind=connection)
             try:
+                from katrain.web.kifu.name_inventory import _selection_supplement
+
+                current_selection = _selection_supplement(connection)
+                pinned_columns = pinned_selection["columns"] if pinned_selection else []
+                pinned_rows = {
+                    dict(zip(pinned_columns, row))["album_id"]: row for row in pinned_selection["rows"]
+                } if pinned_selection else {}
+                live_columns = current_selection["columns"] if current_selection else []
+                live_rows = {
+                    dict(zip(live_columns, row))["album_id"]: row for row in current_selection["rows"]
+                } if current_selection else {}
+                all_selection_ids = set(db.scalars(db.query(KifuAlbumEventSelection.album_id).statement))
+                selection_drift = sum(
+                    pinned_rows.get(album_id) != live_rows.get(album_id) or album_id not in live_rows
+                    for album_id in set(pinned_rows) | set(live_rows) | all_selection_ids
+                )
+                selection_snapshot_sha256 = current_selection["sha256"] if current_selection else None
+                for album_id, raw, pinned_hash, content in (
+                    db.query(
+                        KifuAlbumEventSelection.album_id, KifuAlbumEventSelection.selected_raw,
+                        KifuAlbumEventSelection.sgf_sha256, KifuAlbum.sgf_content,
+                    )
+                    .join(KifuAlbum, KifuAlbum.id == KifuAlbumEventSelection.album_id)
+                    .order_by(KifuAlbumEventSelection.album_id)
+                ):
+                    selection_sgf_sha256.update(
+                        (json.dumps(
+                            [album_id, raw, pinned_hash, sha256(content.encode("utf-8")).hexdigest()],
+                            ensure_ascii=False, separators=(",", ":"),
+                        ) + "\n").encode("utf-8")
+                    )
                 if db.query(func.count(KifuAlbum.id)).scalar() != len(rows):
                     raise RuntimeError("snapshot drift: album count differs from inventory")
                 for start in range(0, len(rows), batch_size):
@@ -104,17 +147,20 @@ def coverage_report(
                     )
                     if len(albums) != len(expected):
                         raise RuntimeError("snapshot drift: inventory album ID is absent")
-                    obscured_event_ids = obscured_program_event_ids(db, albums)
+                    selected_events = live_event_selections(db, albums)
+                    obscured_event_ids = obscured_program_event_ids(db, albums, selected_events=selected_events)
                     for lang in languages:
-                        maps = strict_display_maps(db, albums, lang)
-                        approvals = strict_slot_approvals(db, albums, lang, obscured_event_ids=obscured_event_ids)
+                        maps = strict_display_maps(db, albums, lang, selected_events=selected_events)
+                        approvals = strict_slot_approvals(
+                            db, albums, lang, obscured_event_ids=obscured_event_ids, selected_events=selected_events
+                        )
                         sources = maps[3]
                         for album, item in zip(albums, expected):
                             if not _row_matches(album, item, sources.get(album.id, [])):
                                 raise RuntimeError(f"snapshot drift: album {item['id']} metadata or sources changed")
                             displayed = resolve_strict_display(
                                 album, lang, maps[0], maps[1], maps[2], maps[4], maps[5],
-                                obscured_event_ids=obscured_event_ids,
+                                obscured_event_ids=obscured_event_ids, selected_events=selected_events,
                             )
                             for slot, approval, value in zip(_SLOTS, approvals[album.id], displayed):
                                 aggregate = stats[lang]
@@ -168,5 +214,9 @@ def coverage_report(
             "".join(lang + ":" + missing_hashes[lang].hexdigest() + "\n" for lang in sorted(languages)).encode("utf-8")
         ).hexdigest(),
         "missing_examples": examples,
-        "complete": set(languages) == LANGUAGES and all(stats[lang]["missing"] == 0 for lang in languages),
+        "event_selection_drift": selection_drift,
+        "event_selection_scope_sha256": selection_snapshot_sha256,
+        "event_selection_sha256": selection_sgf_sha256.hexdigest(),
+        "complete": (set(languages) == LANGUAGES and selection_drift == 0
+                     and all(stats[lang]["missing"] == 0 for lang in languages)),
     }

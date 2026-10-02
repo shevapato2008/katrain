@@ -171,6 +171,43 @@ def test_retry_rejects_incomplete_batch_audit(engine):
         apply_bundle(engine, reviewed, expected_bundle_sha256=canonical_sha256(reviewed))
 
 
+def coordinated_selection_tamper(engine, batch_id):
+    with engine.begin() as conn:
+        batch = conn.execute(select(KifuEventSelectionBatch.__table__)).mappings().one()
+        audit = deepcopy(batch["reviewed_artifact"])
+        audit["after_images"][0]["selected_raw"] = "Tampered"
+        conn.execute(
+            KifuEventSelectionBatch.__table__.update()
+            .where(KifuEventSelectionBatch.id == batch_id)
+            .values(reviewed_artifact=audit)
+        )
+        conn.execute(
+            KifuAlbumEventSelection.__table__.update()
+            .where(KifuAlbumEventSelection.album_id == 1)
+            .values(selected_raw="Tampered")
+        )
+
+
+def test_retry_rejects_coordinated_audit_and_selection_edit(engine):
+    from katrain.web.kifu.event_selection import EventSelectionError
+
+    reviewed = bundle()
+    applied = apply_reviewed(engine, reviewed)
+    coordinated_selection_tamper(engine, applied["batch_id"])
+    with pytest.raises(EventSelectionError, match="audit"):
+        apply_reviewed(engine, reviewed)
+
+
+def test_undo_rejects_coordinated_audit_and_selection_edit(engine):
+    from katrain.web.kifu.event_selection import EventSelectionError, undo_batch
+
+    applied = apply_reviewed(engine, bundle())
+    coordinated_selection_tamper(engine, applied["batch_id"])
+    with pytest.raises(EventSelectionError, match="audit"):
+        undo_batch(engine, applied["batch_id"])
+    assert counts(engine) == (1, 1)
+
+
 def test_cli_dry_run_missing_sqlite_target_does_not_create_file(tmp_path, capsys):
     from scripts.kifu_event_selection import main
 

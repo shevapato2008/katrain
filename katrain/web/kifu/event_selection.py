@@ -221,6 +221,45 @@ def _image(row) -> dict:
     return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
 
 
+def _audit_images_match_review(batch) -> bool:
+    artifact = batch["reviewed_artifact"]
+    bundle = artifact["bundle"]
+    before = artifact["before_images"]
+    after = artifact["after_images"]
+    review = bundle["review"]
+    reviewed_at = _timestamp(review["reviewed_at"], "review time")
+    stored_reviewed_at = batch["reviewed_at"]
+    if stored_reviewed_at.tzinfo is None:
+        reviewed_at = reviewed_at.replace(tzinfo=None)
+    if not (
+        canonical_sha256(bundle) == batch["bundle_sha256"]
+        and canonical_sha256(before) == batch["member_set_sha256"]
+        and before == bundle["members"]
+        and len(before) == len(after)
+        and batch["producer_id"] == bundle["producer_id"]
+        and batch["reviewer_id"] == review["reviewer_id"]
+        and stored_reviewed_at == reviewed_at
+    ):
+        return False
+    for member, image in zip(before, after):
+        expected = {
+            "album_id": member["album_id"],
+            "event_id": None,
+            "batch_id": batch["id"],
+            "selected_raw": member["selected_raw"],
+            "sgf_sha256": member["sgf_sha256"],
+            "property_name": member["property_name"],
+            "property_index": member["property_index"],
+            "status": "approved",
+            "rule_version": member["rule_version"],
+            "reviewer_id": review["reviewer_id"],
+            "reviewed_at": stored_reviewed_at.isoformat(),
+        }
+        if any(image.get(key) != value for key, value in expected.items()):
+            return False
+    return True
+
+
 def _inspect(conn, bundle: dict) -> dict:
     result = validate_bundle(bundle)
     albums = KifuAlbum.__table__
@@ -296,13 +335,8 @@ def apply_bundle(engine, bundle: dict, *, expected_bundle_sha256: str | None = N
             artifact = prior["reviewed_artifact"]
             _require(
                 prior["status"] == "applied"
-                and canonical_sha256(artifact["bundle"]) == prior["bundle_sha256"]
                 and artifact["bundle"] == bundle
-                and canonical_sha256(artifact["before_images"]) == prior["member_set_sha256"]
-                and artifact["before_images"] == bundle["members"]
-                and len(artifact["after_images"]) == len(bundle["members"])
-                and [row["album_id"] for row in artifact["after_images"]]
-                == [member["album_id"] for member in bundle["members"]],
+                and _audit_images_match_review(prior),
                 "bundle was undone or its audit artifact changed",
             )
             for member in bundle["members"]:
@@ -404,13 +438,7 @@ def undo_batch(engine, batch_id: int) -> dict:
         artifact = batch["reviewed_artifact"]
         before = artifact["before_images"]
         after = artifact["after_images"]
-        _require(
-            canonical_sha256(artifact["bundle"]) == batch["bundle_sha256"]
-            and canonical_sha256(before) == batch["member_set_sha256"]
-            and before == artifact["bundle"]["members"]
-            and len(before) == len(after),
-            "batch audit images changed",
-        )
+        _require(_audit_images_match_review(batch), "batch audit images changed")
         for member, expected in zip(before, after):
             album = conn.execute(select(albums).where(albums.c.id == member["album_id"])).mappings().one_or_none()
             _require(album is not None, f"album {member['album_id']} changed since apply")

@@ -147,10 +147,11 @@ def _played_date_bounds(value: object) -> tuple[date, date] | None:
     if first is None:
         return None
     days = [first]
+    anchor = first
     for part in parts[1:]:
         if re.fullmatch(r"\d{2}", part):
             try:
-                days.append(date(first.year, first.month, int(part)))
+                days.append(date(anchor.year, anchor.month, int(part)))
             except ValueError:
                 return None
         else:
@@ -158,6 +159,7 @@ def _played_date_bounds(value: object) -> tuple[date, date] | None:
             if parsed is None:
                 return None
             days.append(parsed)
+            anchor = parsed
     return min(days), max(days)
 
 

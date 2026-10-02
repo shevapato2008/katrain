@@ -979,6 +979,7 @@ def test_v4_selected_event_checks_year_and_multi_day_album_dates():
                             ("1934-09-04,05", True), ("1934-09-04,05,07", True),
                             ("1934-12-31,1935-01-01", False),
                             ("1934-09-04,99", False), ("1934-09", True),
+                            ("1934-09-04,10-02", False),
                             ("circa 1934", False), (None, False)):
         changed_inventory = deepcopy(inv)
         changed_bundle = deepcopy(proposed)
@@ -1002,6 +1003,19 @@ def test_v4_selected_event_checks_year_and_multi_day_album_dates():
     narrowed_bundle["owners"][0]["identity_context"]["start_date"] = "1934-09-01"
     narrowed_bundle["owners"][0]["identity_context"]["end_date"] = "1934-09-30"
     link["identity_review"]["event_period"] = {"start_date": "1934-09-01", "end_date": "1934-09-30"}
+    link["identity_review"]["scope_sha256"] = identity_scope_sha256(
+        narrowed_bundle, [link], narrowed_bundle["owners"][0])
+    narrowed_bundle["owner_set_sha256"] = canonical_sha256(narrowed_bundle["owners"])
+    narrowed_bundle["link_set_sha256"] = canonical_sha256([link])
+    report = validate_bundle(narrowed_bundle, registry(), narrowed_inventory, [])
+    assert any("period excludes album date" in error for error in report["errors"])
+    narrowed_inventory["album_associations"][0][date_index] = "1934-09-04,1934-10-01,02"
+    album = dict(zip(narrowed_inventory["association_columns"], narrowed_inventory["album_associations"][0]))
+    link["association_sha256"] = canonical_sha256(album)
+    link["expected"]["date_played"] = album["date_played"]
+    narrowed_bundle["owners"][0]["identity_context"]["start_date"] = "1934-09-01"
+    narrowed_bundle["owners"][0]["identity_context"]["end_date"] = "1934-10-01"
+    link["identity_review"]["event_period"] = {"start_date": "1934-09-01", "end_date": "1934-10-01"}
     link["identity_review"]["scope_sha256"] = identity_scope_sha256(
         narrowed_bundle, [link], narrowed_bundle["owners"][0])
     narrowed_bundle["owner_set_sha256"] = canonical_sha256(narrowed_bundle["owners"])

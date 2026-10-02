@@ -25,10 +25,13 @@ from katrain.web.kifu.name_evidence import (
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, SELECTION_COLUMNS_V4, _hash_row
+from katrain.web.kifu.name_composition import (
+    CompositionError, HONINBO_RAWS, validate_composition, validate_composed_candidate,
+)
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
-DECISION_KINDS = frozenset(("conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected"))
+DECISION_KINDS = frozenset(("conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected", "composed"))
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _RANK_SUFFIX = re.compile(r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*(?:段|級|级|dan|kyu|[dkp])\Z", re.I)
 _RESULT = re.compile(r"(?:中盘|中盤|目半|resign|resignation|points?)\s*(?:胜|勝|win|won)?", re.I)
@@ -89,7 +92,7 @@ _RAW_CATEGORY_DECISIONS = {
         "generic_event_description": {"generic"}, "corrupt_data": {"error", "corrected"},
         "formal_event_candidate": {"conventional", "generated"},
         "game_description": {"conventional", "generated"},
-        "unclassified_pending": {"conventional", "generated"},
+        "unclassified_pending": {"conventional", "generated", "composed"},
     },
 }
 
@@ -323,7 +326,8 @@ def _research_for(row: dict, research: dict | None, registry: dict) -> dict:
 
 def _validate_candidate(row: dict, research: dict | None, registry: dict, inventory_values: dict,
                         *, declarations: dict[str, dict] | None = None,
-                        link_targets: set[str] | None = None) -> dict:
+                        link_targets: set[str] | None = None,
+                        composition_context: tuple[dict, dict, dict, dict] | None = None) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
     _check_owner_in_inventory(row, inventory_values, declarations=declarations, link_targets=link_targets)
@@ -340,7 +344,22 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
     else:
         _require(display == "", "hidden decision must have empty display")
 
-    if decision in {"conventional", "generated", "corrected"}:
+    if decision == "composed":
+        _require(row["owner"]["kind"] == "raw_event" and parse_event(row["raw_value"], None).category == "unclassified_pending",
+                 "composed name requires a pending raw event, never the Oteai branch")
+        _require(research is None and composition_context is not None,
+                 "composed candidate requires dedicated approved composition evidence")
+        raw_by_value, rule_by_lang, base_by_lang, scope = composition_context
+        raw = raw_by_value.get(row["raw_value"])
+        rule = rule_by_lang.get(row["lang"])
+        base = base_by_lang.get(row["lang"])
+        _require(raw is not None and rule is not None and base is not None,
+                 "composed candidate lacks exact raw, locale rule or approved base")
+        try:
+            validate_composed_candidate(row, raw, rule, base, scope)
+        except CompositionError as exc:
+            raise CandidateError(str(exc)) from exc
+    elif decision in {"conventional", "generated", "corrected"}:
         checked = _research_for(row, research, registry)
         if row["review_status"] == "approved":
             captures = []
@@ -832,6 +851,30 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     for key, hashes in research_keys.items():
         if len(hashes) > 1:
             errors.append(f"multiple research records for {key}; consolidate findings before approval")
+    composition_context = None
+    if bundle.get("composition") is not None or any(isinstance(item, dict) and item.get("decision_kind") == "composed"
+                                                    for item in candidates):
+        try:
+            _, event_games, _, event_slots = _occurrence_indexes(
+                {dict(zip(inventory["association_columns"], row))["id"]: dict(zip(inventory["association_columns"], row))
+                 for row in inventory["album_associations"]}, _selection_rows(inventory))
+            raw_by_value, rule_by_lang, scope = validate_composition(bundle.get("composition"), bundle, inventory,
+                                                                      event_games, event_slots)
+            series = bundle["composition"]["scope"]["content"]["series_owner"]
+            base_by_lang = {}
+            for item in candidates:
+                if (isinstance(item, dict) and item.get("owner") == series and item.get("lang") in LANGUAGES
+                        and item.get("decision_kind") in {"conventional", "generated"}):
+                    matched = evidence_by_hash.get(item.get("research_sha256"), [])
+                    _require(len(matched) == 1, "composed series base research missing or duplicate")
+                    _validate_candidate(item, matched[0], registry, values,
+                                        declarations=declarations, link_targets=link_targets)
+                    _require(item["review_status"] == "approved", "composed series base must be approved")
+                    base_by_lang[item["lang"]] = item
+            _require(set(base_by_lang) == LANGUAGES, "composition needs all eleven approved series bases")
+            composition_context = raw_by_value, rule_by_lang, base_by_lang, scope
+        except (AttributeError, KeyError, CandidateError, CompositionError) as exc:
+            errors.append(f"composition: {exc}")
     seen = set()
     decisions = []
     for number, item in enumerate(candidates):
@@ -851,13 +894,19 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             if len(evidence) > 1:
                 raise CandidateError("duplicate research record hash")
             checked = _validate_candidate(item, evidence[0] if evidence else None, registry, values,
-                                          declarations=declarations, link_targets=link_targets)
+                                          declarations=declarations, link_targets=link_targets,
+                                          composition_context=composition_context)
             decisions.append(checked)
         except (AttributeError, CandidateError) as exc:
             errors.append(f"candidate[{number}]: {exc}")
     missing = sorted(set(member_keys) - seen)
     for key in missing:
         errors.append(f"missing candidate: {key}")
+    if composition_context is not None:
+        expected = {(raw, lang) for raw in HONINBO_RAWS for lang in LANGUAGES}
+        actual = {(row["raw_value"], row["lang"]) for row in decisions if row["decision_kind"] == "composed"}
+        if actual != expected:
+            errors.append("composition requires exact 34 x 11 candidate set")
     if bundle["bundle_format"] in {2, 3, 4}:
         approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
                          if row["review_status"] == "approved"}
@@ -881,7 +930,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
                     errors.append(f"linked identity lacks all eleven approved language names: {token}")
     collisions = defaultdict(list)
     for row in decisions:
-        if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected"}:
+        if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected", "composed"}:
             collisions[(row["lang"], normalize_alias(row["display_name"]))].append(row["owner"])
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:

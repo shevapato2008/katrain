@@ -1,0 +1,29 @@
+# Japanese Tengen series: 11-language source memo
+
+Read-only source research, 2026-10-02. Scope is the Japanese Nihon Ki-in / Kansai Ki-in 天元戦 series. This memo records attestations only; it does not approve any registry or database value.
+
+## Identity anchor and disambiguation
+
+The [Nihon Ki-in archive page](https://archive.nihonkiin.or.jp/match/tengen/index.html) names the series 天元戦, identifies its organizers as the Newspaper Three Companies Alliance, Nihon Ki-in, and Kansai Ki-in, and says it was established in 1974. Its [English archive page](https://archive.nihonkiin.or.jp/match/tengen/index-e.html) calls it “Tengen Title.” The [current Nihon Ki-in page](https://www.nihonkiin.or.jp/match/tengen/049.html) likewise lists 棋戦名称 天元戦 and the Japanese organizers.
+
+Do not conflate this Japanese series with China’s Tianyuan (中国围棋天元战) or Korea’s Cheonwon (천원전 / Chunwon). Their similar translated stems do not identify the Japanese series unless the source explicitly says Japan/Japanese or ties the name to the Nihon Ki-in event. The Chinese-language page [天元战 (日本围棋)](https://zh.wikipedia.org/wiki/%E5%A4%A9%E5%85%83%E6%88%98_%28%E6%97%A5%E6%9C%AC%E5%9B%B4%E6%A3%8B%29) explicitly labels the Japanese series and distinguishes the China and Korea events; use as corroboration, not as the primary identity authority.
+
+## Language evidence
+
+| Language | Attested display name | Source and evidence | Scope assessment |
+|---|---|---|---|
+| en | Tengen Title | [Nihon Ki-in English archive](https://archive.nihonkiin.or.jp/match/tengen/index-e.html), field “Tournament name | Tengen Title.” | Exact series name; primary authority. |
+| cn | 天元战 (日本围棋) | [Chinese Wikipedia](https://zh.wikipedia.org/wiki/%E5%A4%A9%E5%85%83%E6%88%98_%28%E6%97%A5%E6%9C%AC%E5%9B%B4%E6%A3%8B%29) identifies it as a Japanese seven-major tournament and separates the Chinese and Korean events. Also [Baidu Baike 日本天元战](https://bkso.baidu.com/item/%E6%97%A5%E6%9C%AC%E5%A4%A9%E5%85%83%E6%88%98/6640830) explicitly identifies the Japanese event. | Exact series in the disambiguated form; 天元战 alone is only a shared title stem. Corroboration sources. |
+| tw | 日本天元戰 | [Traditional Chinese Wikipedia article](https://zh.wikipedia.org/zh-tw/%E5%A4%A9%E5%85%83%E6%88%98_%28%E6%97%A5%E6%9C%AC%E5%9B%B4%E6%A3%8B%29) title/intro uses 天元戰 for the Japanese event; page also distinguishes other countries’ events. | Exact series in the disambiguated form; 天元戰 alone is only a shared title stem. Corroboration source. |
+| jp | 天元戦 | [Nihon Ki-in current listing](https://www.nihonkiin.or.jp/match/tengen/049.html), “棋戦名称 天元戦”; also the [archive index](https://archive.nihonkiin.or.jp/match/tengen/index.html). | Exact series name; primary authority. |
+| ko | 천원전 (일본) | [Kifubara Korean tournament archive](https://kifubara.app/ko/tournaments/04aae463-9003-43bc-97d9-55a076b7c23f?edition=d7e382ee-a9a8-48fe-9ab5-987dd70a81e3) titles this “천원전 (일본)” and describes its origin as the Japanese Nihon Ki-in Championship successor. Compare the [Korean Baduk Association news page](https://m.baduk.or.kr/news/B01_view.asp?news_no=5725), which uses 천원전 for a Korean event. | Exact Japanese series only with the Japan qualifier; 천원전 alone is shared title stem and ambiguous. Kifubara is secondary, association source is for disambiguation. |
+| de | Tengen | [German Go organization magazine, DGoZ](https://www.dgob.de/wp-content/uploads/dgoz/pdf/2021/dgoz2021_2_high.pdf), uses “Tengen-Turnier”; [Kifubara German archive](https://kifubara.app/de/tournaments/04aae463-9003-43bc-97d9-55a076b7c23f?edition=e556b76a-b416-4ffd-9b2d-da4e5f94b1a8) labels the tournament “Tengen (jp).” | Title stem attested; the DGoZ excerpt alone does not establish series identity, while Kifubara explicitly marks Japan. “Tengen-Turnier” is a reasonable attested rendering, not an official Nihon Ki-in German name. |
+| es | Tengen | [Spanish Wikipedia](https://es.wikipedia.org/wiki/Tengen_%28Go%29) says it is a Japanese Go competition, run by Nihon Ki-In and Kansai Ki-In, and labels the section “Competición Tengen (天元戦).” | Exact series name in context; secondary corroboration. |
+| fr | Tengen | [French Wikipedia](https://fr.wikipedia.org/wiki/Tengen_%28go%29) calls Tengen a major Japanese Go tournament and says its equivalents include Chinese Tianyuan and Korean Chunwon. | Exact series name in context; secondary corroboration. |
+| ru | pending | No reliable Russian-language source located in this bounded search that attests a localized name specifically for the Japanese series. | Pending. Possible rule-based rendering: `Тэнгэн` (transliteration of Japanese Tengen); basis is the Nihon Ki-in’s English “Tengen” and Japanese reading てんげん. This is a candidate only, not an attestation or approval. |
+| tr | pending | No reliable Turkish-language source located in this bounded search that attests a localized name specifically for the Japanese series. | Pending. Possible rule-based rendering: `Tengen` (retain the proper name used by Nihon Ki-in English); basis is the primary English name. Candidate only, not approval. |
+| ua | pending | No reliable Ukrainian-language source located in this bounded search that attests a localized name specifically for the Japanese series. | Pending. Possible rule-based rendering: `Тенґен` (transliteration of Japanese Tengen); basis is the Nihon Ki-in English name and Japanese reading てんげん. Candidate only, not an attestation or approval. |
+
+## Limits
+
+The translated forms in cn/tw/ko require an explicit Japan qualifier because the title stem is also used for separate national tournaments. The German and Korean name suggestions rest on secondary archival evidence rather than a localized organizer page. ru/tr/ua remain unverified; do not turn the candidate renderings above into accepted display names without the relevant source review.

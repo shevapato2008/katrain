@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver the approved 1024 × 600 Golaxy lobby, player profile/invitation, account switching, and responsive spectator experience using verified Golaxy data and honest unavailable states.
+**Goal:** Deliver the approved 1024 × 600 Golaxy lobby, usable quick match/rooms/player invitation, account switching, and responsive spectator experience using verified Golaxy data and honest unavailable states.
 
 **Architecture:** Keep Golaxy credentials and third-party calls in the owner-bound server adapter. Discover minimal contracts, build isolated frontend runtime states, obtain same-viewport user visual approval, then integrate backend journeys. A server-owned Golaxy room subscription relays sanitized events to the browser; the authoritative room snapshot recovers after reconnect, with bounded polling labelled as a degraded fallback. Keep invitation writes disabled in both API and UI until invite, cancel, outcome, game handoff, and actual PvP moves are verified end to end with two accounts.
 
@@ -63,6 +63,15 @@
 - [ ] Add failing tests for owner-only submit/cancel/status, target, `inviteAble=false`, duplicates, upstream failure, timeout, stale account response, verified session handoff, and no upstream write on failed preconditions. Test UI screen/physical pregame, pending/cancel/error, and rejection without calling pending accepted.
 - [ ] Run focused pytest and UI test; expect failures. Implement narrow server-owned submit/cancel/status and game handoff only from captured contract. Keep API (`409`/`501` explicit unavailable reason) and UI inactive until **all** invite, cancel, result, handoff, and move gates pass. Kifu/follow remain unavailable unless separately verified.
 - [ ] Re-run tests and controlled two-account flow; expect accepted invite plus playable first move, and cancellation/rejection recovery. If accounts/protocol are unavailable, commit only verified read/profile and disabled state, mark this slice blocked, and report the exact gate. Commit enabled flow only after live acceptance.
+
+### Task 5b: Complete quick match and room start flows
+
+**Files:** Modify `katrain/web/platforms/golaxy/adapter.py`, `katrain/web/api/v1/endpoints/platforms.py`, `katrain/web/ui/src/api.ts`, `katrain/web/ui/src/kiosk/pages/GolaxyPregameSetupPage.tsx`, `katrain/web/ui/src/kiosk/pages/GolaxyPregameSetupPage.test.tsx`, `tests/web_ui/test_golaxy_lobby.py`, `katrain/web/platforms/golaxy/PROTOCOL.md`; reuse the verified PvP handoff from Task 5.
+
+- [ ] With the two test accounts, capture one quick-match request, pending status, cancellation, match event and playable first move; capture create-room, room-code join, both-player config/start, leave, and playable first move. Verify official request fields, accepted responses and reconnect behavior. Never treat a room reservation or join HTTP 200 as a started game.
+- [ ] Add failing focused tests for owner-only start/cancel/create/join, invalid room number, duplicate/stale requests, rejection and timeout, correct room/game identity, and session handoff. Test screen/physical preference reaches the started game, and failed actions leave the setup page retryable.
+- [ ] Run focused backend and `GolaxyPregameSetupPage.test.tsx` tests; expect new assertions to fail. Implement only verified Golaxy wire actions and their typed API calls; enable each submit button only after its own full path through a real first move is verified. Keep the other path explicitly disabled if evidence is incomplete.
+- [ ] Re-run focused tests and a controlled two-account quick-match and room game. Record which paths truly started a playable game. If any contract gate fails, leave that action disabled and report the unmet behavior instead of presenting a dead clickable flow. Commit `enable verified Golaxy quick match and rooms` only for verified paths.
 
 ## Chunk 4: Spectator vertical slice
 

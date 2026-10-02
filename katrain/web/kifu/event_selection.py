@@ -707,6 +707,7 @@ def _locked_write(engine):
         if engine.dialect.name == "postgresql":
             conn = conn.execution_options(isolation_level="READ COMMITTED")
             conn.begin()
+            conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261002,))
             conn.exec_driver_sql("SELECT pg_advisory_xact_lock(%s)", (720220261003,))
             conn.exec_driver_sql(
                 "LOCK TABLE kifu_albums, kifu_album_event_selections, "

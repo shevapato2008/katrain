@@ -119,38 +119,55 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
     return matches_by_owner
 
 
-def live_event_selections(db: Session, albums: list) -> dict[int, tuple[str, int | None]]:
+def live_event_selections(
+    db: Session, albums: list, *, album_ids: set[int] | None = None
+) -> dict[int, tuple[str, int | None]]:
     """Read current approved GN[1] choices for a page, rejecting changed SGF content."""
-    album_ids = [album.id for album in albums if album.event == "GNUGo3.8"]
+    from katrain.web.kifu.event_selection import (
+        audited_selection_images, selected_second_gn, selection_matches_audit,
+    )
+    from katrain.web.kifu.provenance import classify_source_path
+
+    if album_ids is None:
+        album_ids = {album.id for album in albums if album.event == "GNUGo3.8"}
     if not album_ids:
         return {}
-    rows = (
-        db.query(
-            KifuAlbumEventSelection.album_id,
-            KifuAlbumEventSelection.selected_raw,
-            KifuAlbumEventSelection.event_id,
-            KifuAlbumEventSelection.sgf_sha256,
-        )
-        .join(KifuEventSelectionBatch, KifuEventSelectionBatch.id == KifuAlbumEventSelection.batch_id)
-        .filter(
-            KifuAlbumEventSelection.album_id.in_(album_ids),
-            KifuAlbumEventSelection.status == "approved",
-            KifuEventSelectionBatch.status == "applied",
-        )
-    )
-    selected_rows = rows.all()
+    table = KifuAlbumEventSelection.__table__
+    selected_rows = db.execute(
+        table.select().where(table.c.album_id.in_(album_ids))
+    ).mappings().all()
     if not selected_rows:
         return {}
-    content_by_id = dict(
-        db.query(KifuAlbum.id, KifuAlbum.sgf_content)
-        .filter(KifuAlbum.id.in_([row.album_id for row in selected_rows]))
-    )
-    return {
-        album_id: (raw, event_id)
-        for album_id, raw, event_id, pinned_hash in selected_rows
-        if album_id in content_by_id
-        and hashlib.sha256(content_by_id[album_id].encode("utf-8")).hexdigest() == pinned_hash
+    batches = {
+        row["id"]: audited_selection_images(row)
+        for row in db.execute(
+            KifuEventSelectionBatch.__table__.select().where(
+                KifuEventSelectionBatch.id.in_({row["batch_id"] for row in selected_rows})
+            )
+        ).mappings()
     }
+    content_by_id = {
+        album_id: (content, path)
+        for album_id, content, path in (
+            db.query(KifuAlbum.id, KifuAlbum.sgf_content, KifuAlbum.source_path)
+            .filter(KifuAlbum.id.in_([row["album_id"] for row in selected_rows]))
+        )
+    }
+    result = {}
+    for row in selected_rows:
+        content_and_path = content_by_id.get(row["album_id"])
+        if not selection_matches_audit(row, batches.get(row["batch_id"])) or not content_and_path:
+            continue
+        content, path = content_and_path
+        if hashlib.sha256(content.encode("utf-8")).hexdigest() != row["sgf_sha256"]:
+            continue
+        try:
+            selected = selected_second_gn(SGF.parse_sgf(content), classify_source_path(path))
+        except Exception:
+            continue
+        if selected == row["selected_raw"]:
+            result[row["album_id"]] = (selected, row["event_id"])
+    return result
 
 
 def strict_selected_event_search_ids(
@@ -191,13 +208,16 @@ def strict_selected_event_search_ids(
     )
     if db.bind.dialect.name == "postgresql":
         live_hash = func.encode(func.sha256(func.convert_to(KifuAlbum.sgf_content, "UTF8")), "hex")
-        return {album_id for (album_id,) in selected.filter(live_hash == KifuAlbumEventSelection.sgf_sha256)
-                .with_entities(KifuAlbumEventSelection.album_id)}
-    rows = selected
-    return {
-        album_id for album_id, pinned_hash, content in rows
-        if hashlib.sha256(content.encode("utf-8")).hexdigest() == pinned_hash
-    }
+        candidate_ids = {
+            album_id for (album_id,) in selected.filter(live_hash == KifuAlbumEventSelection.sgf_sha256)
+            .with_entities(KifuAlbumEventSelection.album_id)
+        }
+    else:
+        candidate_ids = {
+            album_id for album_id, pinned_hash, content in selected
+            if hashlib.sha256(content.encode("utf-8")).hexdigest() == pinned_hash
+        }
+    return set(live_event_selections(db, [], album_ids=candidate_ids))
 
 
 def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events=None):

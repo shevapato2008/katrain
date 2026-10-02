@@ -28,6 +28,7 @@ from katrain.web.core.models_db import (
     KifuAlbumEventSelection,
     KifuEventSelectionBatch,
 )
+from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from katrain.web.kifu.provenance import sgf_sha256
 
 
@@ -101,18 +102,20 @@ def test_reviewed_second_gn_event_display_search_and_sgf_drift(monkeypatch):
         )
         db.add_all([selected, unselected])
         db.flush()
-        batch = KifuEventSelectionBatch(
-            bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
-            producer_id="producer", reviewer_id="reviewer", reviewed_at=datetime.now(timezone.utc),
-            status="applied",
+        db.commit()
+        apply_reviewed_selection(engine, selected.id)
+        fake = KifuEventSelectionBatch(
+            bundle_sha256="c" * 64, member_set_sha256="d" * 64, reviewed_artifact={},
+            producer_id="fake-producer", reviewer_id="fake-reviewer",
+            reviewed_at=datetime.now(timezone.utc), status="applied",
         )
-        db.add(batch)
+        db.add(fake)
         db.flush()
         db.add(KifuAlbumEventSelection(
-            album_id=selected.id, batch_id=batch.id, selected_raw=selected_raw,
+            album_id=unselected.id, batch_id=fake.id, selected_raw=selected_raw,
             sgf_sha256=sgf_sha256(sgf), property_name="GN", property_index=1,
             status="approved", rule_version="19x19-gnugo-second-gn-v1",
-            reviewer_id="reviewer", reviewed_at=datetime.now(timezone.utc),
+            reviewer_id="fake-reviewer", reviewed_at=datetime.now(timezone.utc),
         ))
         db.commit()
 

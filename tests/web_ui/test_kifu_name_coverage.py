@@ -9,8 +9,6 @@ from sqlalchemy.orm import Session
 from katrain.web.core.models_db import (
     Base,
     KifuAlbum,
-    KifuAlbumEventSelection,
-    KifuEventSelectionBatch,
     KifuNameResearchEvidence,
     KifuNameSourceRegistry,
     KifuPlayer,
@@ -20,7 +18,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
-from katrain.web.kifu.provenance import sgf_sha256
+from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 
 
 def _catalog():
@@ -155,20 +153,9 @@ def test_selected_event_coverage_tracks_live_sgf_and_reports_drift():
             )
             db.add(album)
             db.flush()
-            reviewed_at = datetime.now(timezone.utc)
-            batch = KifuEventSelectionBatch(
-                bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
-                producer_id="producer", reviewer_id="reviewer", reviewed_at=reviewed_at, status="applied",
-            )
-            db.add(batch)
-            db.flush()
-            db.add(KifuAlbumEventSelection(
-                album_id=album.id, batch_id=batch.id, selected_raw=raw, sgf_sha256=sgf_sha256(sgf),
-                property_name="GN", property_index=1, status="approved",
-                rule_version="19x19-gnugo-second-gn-v1", reviewer_id="reviewer", reviewed_at=reviewed_at,
-            ))
             db.commit()
             album_id = album.id
+        apply_reviewed_selection(engine, album_id)
         inventory = build_inventory(engine)
         assert inventory["inventory_format"] == 3
         before = coverage_report(engine, inventory, languages=("cn",), batch_size=1)

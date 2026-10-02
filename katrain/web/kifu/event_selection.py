@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 import re
 
 from sqlalchemy import select
@@ -237,6 +238,9 @@ def _inspect(conn, bundle: dict) -> dict:
 
 def dry_run_bundle(engine, bundle: dict) -> dict:
     """Read every live preimage without writing or migrating the catalog."""
+    validate_bundle(bundle)
+    if engine.dialect.name == "sqlite" and engine.url.database not in (None, ":memory:"):
+        _require(Path(engine.url.database).is_file(), "SQLite database does not exist for dry-run")
     with engine.connect() as conn:
         return _inspect(conn, bundle)
 
@@ -270,9 +274,16 @@ def _locked_write(engine):
         conn.close()
 
 
-def apply_bundle(engine, bundle: dict) -> dict:
+def apply_bundle(engine, bundle: dict, *, expected_bundle_sha256: str | None = None) -> dict:
     """Atomically add only the reviewed derived selections after live rechecks."""
     report = validate_bundle(bundle)
+    _require(expected_bundle_sha256 is not None, "trusted full bundle SHA-256 is required")
+    _require(
+        isinstance(expected_bundle_sha256, str)
+        and _SHA256.fullmatch(expected_bundle_sha256) is not None
+        and expected_bundle_sha256 == report["bundle_sha256"],
+        "trusted full bundle SHA-256 does not match",
+    )
     batches = KifuEventSelectionBatch.__table__
     selections = KifuAlbumEventSelection.__table__
     with _locked_write(engine) as conn:
@@ -282,8 +293,16 @@ def apply_bundle(engine, bundle: dict) -> dict:
             .one_or_none()
         )
         if prior is not None:
+            artifact = prior["reviewed_artifact"]
             _require(
-                prior["status"] == "applied" and prior["reviewed_artifact"]["bundle"] == bundle,
+                prior["status"] == "applied"
+                and canonical_sha256(artifact["bundle"]) == prior["bundle_sha256"]
+                and artifact["bundle"] == bundle
+                and canonical_sha256(artifact["before_images"]) == prior["member_set_sha256"]
+                and artifact["before_images"] == bundle["members"]
+                and len(artifact["after_images"]) == len(bundle["members"])
+                and [row["album_id"] for row in artifact["after_images"]]
+                == [member["album_id"] for member in bundle["members"]],
                 "bundle was undone or its audit artifact changed",
             )
             for member in bundle["members"]:
@@ -297,7 +316,7 @@ def apply_bundle(engine, bundle: dict) -> dict:
                     _album_preimage(album, member)
                 except EventSelectionError as exc:
                     raise EventSelectionError(f"album {member['album_id']} changed since apply") from exc
-            for expected in prior["reviewed_artifact"]["after_images"]:
+            for expected in artifact["after_images"]:
                 current = (
                     conn.execute(select(selections).where(selections.c.album_id == expected["album_id"]))
                     .mappings()

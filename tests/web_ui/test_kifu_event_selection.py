@@ -100,6 +100,12 @@ def bundle(*, members=None):
     }
 
 
+def apply_reviewed(engine, reviewed):
+    from katrain.web.kifu.event_selection import apply_bundle
+
+    return apply_bundle(engine, reviewed, expected_bundle_sha256=canonical_sha256(reviewed))
+
+
 def counts(engine):
     with engine.connect() as conn:
         return (
@@ -136,6 +142,46 @@ def test_validate_and_dry_run_do_not_write(engine):
     assert counts(engine) == before == (0, 0)
 
 
+def test_apply_requires_trusted_full_bundle_hash(engine):
+    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+
+    reviewed = bundle()
+    with pytest.raises(EventSelectionError, match="trusted|approved|expected"):
+        apply_bundle(engine, reviewed)
+    with pytest.raises(EventSelectionError, match="hash|SHA"):
+        apply_bundle(engine, reviewed, expected_bundle_sha256="0" * 64)
+    assert counts(engine) == (0, 0)
+
+
+def test_retry_rejects_incomplete_batch_audit(engine):
+    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+
+    reviewed = bundle()
+    applied = apply_bundle(engine, reviewed, expected_bundle_sha256=canonical_sha256(reviewed))
+    with engine.begin() as conn:
+        batch = conn.execute(select(KifuEventSelectionBatch.__table__)).mappings().one()
+        audit = deepcopy(batch["reviewed_artifact"])
+        audit["after_images"] = []
+        conn.execute(
+            KifuEventSelectionBatch.__table__.update()
+            .where(KifuEventSelectionBatch.id == applied["batch_id"])
+            .values(reviewed_artifact=audit)
+        )
+    with pytest.raises(EventSelectionError, match="audit"):
+        apply_bundle(engine, reviewed, expected_bundle_sha256=canonical_sha256(reviewed))
+
+
+def test_cli_dry_run_missing_sqlite_target_does_not_create_file(tmp_path, capsys):
+    from scripts.kifu_event_selection import main
+
+    artifact = tmp_path / "bundle.json"
+    artifact.write_text(json.dumps(bundle(), ensure_ascii=False), encoding="utf-8")
+    target = tmp_path / "missing.sqlite"
+    assert main(["dry-run", "--bundle", str(artifact), "--database-url", f"sqlite:///{target}"]) == 1
+    assert not target.exists()
+    assert json.loads(capsys.readouterr().out)["ready"] is False
+
+
 @pytest.mark.parametrize(
     "field,changed",
     [
@@ -150,13 +196,13 @@ def test_validate_and_dry_run_do_not_write(engine):
     ],
 )
 def test_live_preimage_drift_blocks_apply(engine, field, changed):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
     reviewed = bundle()
     with engine.begin() as conn:
         conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 1).values(**{field: changed}))
     with pytest.raises(EventSelectionError, match="preimage|SGF"):
-        apply_bundle(engine, reviewed)
+        apply_reviewed(engine, reviewed)
     assert counts(engine) == (0, 0)
 
 
@@ -170,12 +216,12 @@ def test_live_preimage_drift_blocks_apply(engine, field, changed):
     ],
 )
 def test_invalid_member_or_review_blocks_apply(engine, change):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
     reviewed = bundle()
     change(reviewed)
     with pytest.raises(EventSelectionError):
-        apply_bundle(engine, reviewed)
+        apply_reviewed(engine, reviewed)
     assert counts(engine) == (0, 0)
 
 
@@ -211,15 +257,15 @@ def test_missing_or_reversed_provenance_blocks_bundle(change):
 
 
 def test_atomic_apply_retry_and_undo_preserve_original_album(engine):
-    from katrain.web.kifu.event_selection import apply_bundle, batch_status, undo_batch
+    from katrain.web.kifu.event_selection import batch_status, undo_batch
 
     reviewed = bundle()
     with engine.connect() as conn:
         album_before = conn.execute(select(KifuAlbum.__table__).where(KifuAlbum.id == 1)).mappings().one()
-    applied = apply_bundle(engine, reviewed)
+    applied = apply_reviewed(engine, reviewed)
     assert applied["status"] == "applied"
     assert counts(engine) == (1, 1)
-    assert apply_bundle(engine, reviewed)["status"] == "already_applied"
+    assert apply_reviewed(engine, reviewed)["status"] == "already_applied"
     assert counts(engine) == (1, 1)
     with engine.connect() as conn:
         selection = conn.execute(select(KifuAlbumEventSelection.__table__)).mappings().one()
@@ -239,9 +285,9 @@ def test_atomic_apply_retry_and_undo_preserve_original_album(engine):
 
 
 def test_undo_refuses_later_selection_edit(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle, undo_batch
+    from katrain.web.kifu.event_selection import EventSelectionError, undo_batch
 
-    applied = apply_bundle(engine, bundle())
+    applied = apply_reviewed(engine, bundle())
     with engine.begin() as conn:
         conn.execute(
             KifuAlbumEventSelection.__table__.update()
@@ -254,9 +300,9 @@ def test_undo_refuses_later_selection_edit(engine):
 
 
 def test_undo_refuses_corrupt_batch_audit(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle, undo_batch
+    from katrain.web.kifu.event_selection import EventSelectionError, undo_batch
 
-    applied = apply_bundle(engine, bundle())
+    applied = apply_reviewed(engine, bundle())
     with engine.begin() as conn:
         conn.execute(
             KifuEventSelectionBatch.__table__.update()
@@ -269,21 +315,21 @@ def test_undo_refuses_corrupt_batch_audit(engine):
 
 
 def test_existing_selection_blocks_new_bundle(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
-    apply_bundle(engine, bundle())
+    apply_reviewed(engine, bundle())
     another = bundle()
     another["review"]["basis"] = "Separate review of same member"
     another["review"]["review_signature"] = canonical_sha256(
         {key: value for key, value in another["review"].items() if key != "review_signature"}
     )
     with pytest.raises(EventSelectionError, match="already selected"):
-        apply_bundle(engine, another)
+        apply_reviewed(engine, another)
     assert counts(engine) == (1, 1)
 
 
 def test_multi_member_stale_preimage_rolls_back_whole_batch(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
     second = {**member(), "album_id": 2, "old_source_path": "data/kifu-album/19x19/b.sgf"}
     with engine.begin() as conn:
@@ -302,15 +348,15 @@ def test_multi_member_stale_preimage_rolls_back_whole_batch(engine):
             )
         )
     with pytest.raises(EventSelectionError, match="preimage"):
-        apply_bundle(engine, bundle(members=[member(), second]))
+        apply_reviewed(engine, bundle(members=[member(), second]))
     assert counts(engine) == (0, 0)
 
 
 def test_retry_refuses_changed_selection_without_writing(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
     reviewed = bundle()
-    apply_bundle(engine, reviewed)
+    apply_reviewed(engine, reviewed)
     with engine.begin() as conn:
         conn.execute(
             KifuAlbumEventSelection.__table__.update()
@@ -318,19 +364,19 @@ def test_retry_refuses_changed_selection_without_writing(engine):
             .values(selected_raw="Later edit")
         )
     with pytest.raises(EventSelectionError, match="changed"):
-        apply_bundle(engine, reviewed)
+        apply_reviewed(engine, reviewed)
     assert counts(engine) == (1, 1)
 
 
 def test_retry_refuses_changed_source_album_without_writing(engine):
-    from katrain.web.kifu.event_selection import EventSelectionError, apply_bundle
+    from katrain.web.kifu.event_selection import EventSelectionError
 
     reviewed = bundle()
-    apply_bundle(engine, reviewed)
+    apply_reviewed(engine, reviewed)
     with engine.begin() as conn:
         conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 1).values(round_name="Later edit"))
     with pytest.raises(EventSelectionError, match="changed"):
-        apply_bundle(engine, reviewed)
+        apply_reviewed(engine, reviewed)
     assert counts(engine) == (1, 1)
 
 
@@ -387,7 +433,10 @@ def test_cli_dry_run_apply_status_and_undo(tmp_path, capsys):
 
     preview = run("dry-run", "--bundle", str(artifact), "--database-url", database_url)
     assert preview["status"] == "ready"
-    applied = run("apply", "--bundle", str(artifact), "--database-url", database_url)
+    applied = run(
+        "apply", "--bundle", str(artifact), "--database-url", database_url,
+        "--approved-bundle-sha256", canonical_sha256(bundle()),
+    )
     assert applied["change_count"] == 1
     batch_id = applied["batch_id"]
     assert run("status", "--batch-id", str(batch_id), "--database-url", database_url)["status"] == "applied"

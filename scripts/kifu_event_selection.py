@@ -1,7 +1,8 @@
 """Validate, preview, apply, inspect or undo reviewed per-album event selections.
 
 The schema must be migrated separately. ``validate`` needs no database;
-``dry-run`` only reads; ``apply`` and ``undo`` target the supplied database.
+``dry-run`` only reads; ``apply`` needs the full bundle SHA-256 from the
+independent review record; ``apply`` and ``undo`` target the supplied database.
 """
 
 from __future__ import annotations
@@ -33,6 +34,8 @@ def main(argv=None) -> int:
         sub.add_argument("--bundle", type=Path, required=True)
         if command != "validate":
             sub.add_argument("--database-url", required=True)
+        if command == "apply":
+            sub.add_argument("--approved-bundle-sha256", required=True)
     for command in ("status", "undo"):
         sub = commands.add_parser(command)
         sub.add_argument("--database-url", required=True)
@@ -46,8 +49,10 @@ def main(argv=None) -> int:
                 result = validate_bundle(bundle)
             else:
                 engine = create_engine(args.database_url)
-                action = dry_run_bundle if args.command == "dry-run" else apply_bundle
-                result = action(engine, bundle)
+                if args.command == "dry-run":
+                    result = dry_run_bundle(engine, bundle)
+                else:
+                    result = apply_bundle(engine, bundle, expected_bundle_sha256=args.approved_bundle_sha256)
         else:
             engine = create_engine(args.database_url)
             result = (batch_status if args.command == "status" else undo_batch)(engine, args.batch_id)

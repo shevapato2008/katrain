@@ -1,0 +1,24 @@
+{
+  "artifact_type": "pending_name_candidates",
+  "schema_version": 1,
+  "owner": {"kind": "player", "id": 54},
+  "registry_version": "2026-10-02.3",
+  "review_status": "pending",
+  "approval": null,
+  "production_write_authorized": false,
+  "candidate_basis": "Positive-name discovery leads only; raw target-page bodies/hashes and registry-bound research records are not complete. Do not import or treat these rows as approved validator candidates.",
+  "evidence_file": "kifu-name-park-junghwan-11lang-evidence-2026-10-02.json",
+  "candidates": [
+    {"lang":"cn","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"zh-Hans"},
+    {"lang":"tw","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"zh-Hant"},
+    {"lang":"en","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"en"},
+    {"lang":"jp","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"ja"},
+    {"lang":"ko","display_name":"박정환","decision_kind":"conventional","review_status":"pending","evidence_language":"ko"},
+    {"lang":"de","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"de"},
+    {"lang":"es","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"es"},
+    {"lang":"fr","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"fr"},
+    {"lang":"ru","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":"ru","reason":"Conflicting Russian forms: article title uses Пак Чонхван while its GoGameWorld reference is Пак Чжон Хван; requires adjudication."},
+    {"lang":"tr","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":null},
+    {"lang":"ua","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":null}
+  ]
+}

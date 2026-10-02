@@ -1,0 +1,32 @@
+{
+  "artifact_type": "research_evidence_leads",
+  "schema_version": 1,
+  "owner": {"kind": "player", "id": 54},
+  "identity": {
+    "canonical_name": "朴廷桓",
+    "original_name": "박정환",
+    "original_language": "ko",
+    "identity_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000457",
+    "identity_body_archive": "/Users/fan/.local/share/kifu-player-top100-20261002/five-player-source-index/bodies/park_junghwan_kba.md",
+    "identity_body_sha256": "0d1024775bcb8a8109dc5049aa0c90d9c52d648c36591de0278a6aff608f300e",
+    "identity_excerpt": "9단 박정환 (朴廷桓) · 생년월일 1993년 01월 11일 · 소속 한국"
+  },
+  "producer_id": "/root/park_11lang_luna",
+  "producer_model": "gpt-6",
+  "produced_at": "2026-10-02",
+  "review_status": "pending",
+  "evidence_capture_limit": "These are direct page observations returned by web search/open, recorded as discovery leads. Except the archived KBA identity page, page bodies were not locally captured or hashed in this task; none of these rows is validator-ready evidence or a negative-scope closure.",
+  "languages": [
+    {"lang":"cn","observed_lang":"zh-Hans","candidate_name":"朴廷桓","status":"found_lead","source":"Nihon Ki-in, World Go Championship 2017 Chinese-language page","url":"https://www.nihonkiin.or.jp/special/wgc/2017/zh_cn.html","excerpt":"朴廷桓 Park Jung-Hwan ... 1993年1月11日出生于首尔。2006年入段，2010年九段。","identity_basis":"Chinese page pairs the Hanja name with Park Jung-Hwan and gives the same 1993-01-11 birth date as KBA."},
+    {"lang":"tw","observed_lang":"zh-Hant","candidate_name":"朴廷桓","status":"found_lead","source":"Haifong Go Institute, profile/interview","url":"https://www.haifong.org/news/content/FB0057DC471A9DDB5CFD2DA6895572F9","excerpt":"韓國棋手朴廷桓 (박정환)... 朴廷桓 박정환，1993年1月11日生，出生於南韓首爾市","identity_basis":"Traditional Chinese Go institute gives Hangul and matching birth date."},
+    {"lang":"en","observed_lang":"en","candidate_name":"Park Junghwan","status":"found_lead","source":"Go Ratings player profile","url":"https://www.goratings.org/en/players/1090.html","excerpt":"# Park Junghwan ... Date of Birth | 1993-01-11","identity_basis":"English Go ratings profile gives the romanized name and matching KBA birth date; its data attribution includes Go4Go and KBA."},
+    {"lang":"jp","observed_lang":"ja","candidate_name":"朴廷桓","status":"found_lead","source":"Nihon Ki-in match report","url":"https://www.nihonkiin.or.jp/match_news/match_result/2019_1.html","excerpt":"結果は朴廷桓九段が柯潔九段を黒1目半で下し、優勝を飾った。","identity_basis":"Japanese professional Go association directly reports the player in the 2019 World Go Championship."},
+    {"lang":"ko","observed_lang":"ko","candidate_name":"박정환","status":"found_lead","source":"Korea Baduk Association official profile","url":"https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000457","excerpt":"9단 박정환 (朴廷桓) · 생년월일 1993년 01월 11일 · 소속 한국","identity_basis":"Primary association profile; archived body hash is in identity block."},
+    {"lang":"de","observed_lang":"de","candidate_name":"Park Junghwan","status":"found_lead","source":"Deutsche Go-Zeitung issue 2/2024","url":"https://www.dgob.de/wp-content/uploads/dgoz/pdf/2024/dgoz2024_2_low.pdf","excerpt":"Koreanische Baduk-Liga ... Team Wonik mit Park Junghwan 9p","identity_basis":"German Go publication identifies a Korean professional and uses the name; cross-match to KBA date/profile remains to be documented in captured PDF evidence."},
+    {"lang":"es","observed_lang":"es","candidate_name":"Park Junghwan","status":"found_lead","source":"Kifubara Spanish player page","url":"https://kifubara.app/es/players/a42b2257-fad2-4fc5-b978-b76b607239ee","excerpt":"Park Junghwan (9p) - KR jugador pro de Go","identity_basis":"Spanish-language Go player page identifies Korean professional Go context; separate identity corroboration should be captured before candidate approval."},
+    {"lang":"fr","observed_lang":"fr","candidate_name":"Park Junghwan","status":"found_lead","source":"French Go Federation game replay","url":"https://www.jeudego.org/_php/rejoue_partie.php?s=cidodmlphpjf","excerpt":"Park Junghwan (Blanc) a gagné de 1 point contre Ke Jie (Noir). Cette partie a été jouée le 24 avril 2016.","identity_basis":"French Go Federation page situates Park Junghwan in the 2016 Ing Cup professional game; KBA and Go4Go can supply separate identity corroboration."},
+    {"lang":"ru","observed_lang":"ru","candidate_name":"","observed_forms":["Пак Чонхван","Пак Чжон Хван"],"status":"conflicting_lead_unresolved","source":"Russian Wikipedia biography, surfaced with GoGameWorld cross-reference","url":"https://ru.wikipedia.org/wiki/Пак_Чонхван","excerpt":"Пак Чонхван (род. 11 января 1993 года) — корейский го-профессионал 9 дана; outbound GoGameWorld reference is rendered Пак Чжон Хван","identity_basis":"Russian-language biography gives matching birth date and Go rank; its linked GoGameWorld form differs. KBA independently anchors the Korean identity; a source-level spelling adjudication is required."},
+    {"lang":"tr","observed_lang":"","candidate_name":"","status":"unresolved","searched_queries":["\"Park Junghwan\" \"go\" \"oyuncusu\"","\"Park Junghwan\" \"Go\" Türkiye","\"Park Junghwan\" \"Baduk\" Turkish"],"basis":"No substantive Turkish-language Go source establishing this player's conventional name was found in the bounded web searches. This is not a completed negative closure; do not generate a transliteration candidate."},
+    {"lang":"ua","observed_lang":"","candidate_name":"","status":"unresolved","searched_queries":["\"Пак Чонхван\" ґо","\"Пак Чон Хван\" ґо","\"Park Junghwan\" site:uk.wikipedia.org"],"basis":"No substantive Ukrainian-language Go source establishing this player's conventional name was found in the bounded web searches. Russian-language spellings are not Ukrainian evidence; this is not a completed negative closure."}
+  ]
+}

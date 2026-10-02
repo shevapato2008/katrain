@@ -5,6 +5,7 @@ from copy import deepcopy
 import pytest
 
 from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
+from katrain.web.kifu.name_evidence import EvidenceError, validate_transliteration_anchor
 from tests.web_ui.test_kifu_name_candidates import bundle, candidate, inventory, member, registry
 
 
@@ -57,6 +58,148 @@ def source_anchor(owner=None, original="李元赫", words=None):
             "approved_original_name_and_reading",
         ),
     }
+
+
+def two_publisher_anchor():
+    anchor = source_anchor()
+    content = anchor["content"]
+    content.update(
+        anchor_format=2,
+        source_reading_kind="published_roman_name",
+        source_reading="Li Yuanhe",
+        source_link={
+            "method": "official_name_dob_to_localized_profile_id_v1",
+            "official_match_count": 1,
+            "official_scope_sha256": "a" * 64,
+            "unresolved_conflicts": [],
+            "review_basis": "One official record, matching full DOB and one GoRatings person ID",
+        },
+    )
+    shared = {
+        "fetched_at": "2026-10-03T09:00:00Z",
+        "http_status": 200,
+        "body_sha256": "b" * 64,
+        "language_basis": "reviewed_text",
+        "identity_basis": "Exact professional person record and full birth date",
+        "birthdate": "1971-01-24",
+    }
+    content["sources"] = [
+        {
+            **shared,
+            "role": "original",
+            "body_sha256": "a" * 64,
+            "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+            "body_excerpt": "CWA000001 李元赫 1971-01-24",
+            "observed_lang": "zh-Hans",
+            "publisher_id": "china_go_association",
+            "person_id_namespace": "cwa_player_no",
+            "person_id": "CWA000001",
+            "exact_name": "李元赫",
+            "record_locator": "playerNo=CWA000001",
+        },
+        {
+            **shared,
+            "role": "identity_bridge",
+            "url": "https://www.goratings.org/zh/players/123.html",
+            "body_excerpt": "李元赫 1971-01-24",
+            "observed_lang": "zh",
+            "publisher_id": "goratings",
+            "person_id_namespace": "goratings_player_id",
+            "person_id": "123",
+            "exact_name": "李元赫",
+            "record_locator": "profile heading and birthdate",
+        },
+        {
+            **shared,
+            "role": "reading",
+            "url": "https://www.goratings.org/en/players/123.html",
+            "body_excerpt": "Li Yuanhe 1971-01-24",
+            "observed_lang": "en",
+            "publisher_id": "goratings",
+            "person_id_namespace": "goratings_player_id",
+            "person_id": "123",
+            "exact_name": "Li Yuanhe",
+            "record_locator": "profile heading and birthdate",
+        },
+    ]
+    anchor["approval"]["content_sha256"] = canonical_sha256(content)
+    return anchor
+
+
+def test_two_publisher_anchor_preserves_real_source_languages_and_enters_six_language_bundle():
+    proposed, anchors, snapshot = transliteration_bundle()
+    anchors[:] = [two_publisher_anchor()]
+    refresh_bindings(proposed, anchors)
+    assert check(proposed, anchors, snapshot)["ready"] is True
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "missing_bridge", "different_dob", "different_profile_id", "wrong_namespace",
+        "duplicate_official_name", "reading_language_lie", "missing_person_excerpt",
+        "duplicate_role", "unresolved_conflict", "wrong_official_url", "changed_word_boundary",
+        "unknown_format", "boolean_format", "v2_fields_in_v1", "stale_signature",
+        "wrong_roster_hash", "invalid_birthdate", "traditional_language_lie",
+        "bridge_traditional_language_lie", "unicode_official_id", "unicode_profile_id",
+    ],
+)
+def test_two_publisher_anchor_rejects_unlinked_or_misrepresented_reading(mutation):
+    anchor = two_publisher_anchor()
+    content = anchor["content"]
+    original, bridge, reading = content["sources"]
+    if mutation == "missing_bridge":
+        content["sources"].pop(1)
+    elif mutation == "different_dob":
+        reading["birthdate"] = "1972-01-24"
+    elif mutation == "different_profile_id":
+        reading["person_id"] = "124"
+        reading["url"] = "https://www.goratings.org/en/players/124.html"
+    elif mutation == "wrong_namespace":
+        bridge["person_id_namespace"] = "cwa_player_no"
+    elif mutation == "duplicate_official_name":
+        content["source_link"]["official_match_count"] = 2
+    elif mutation == "reading_language_lie":
+        reading["observed_lang"] = "zh-Hans"
+    elif mutation == "missing_person_excerpt":
+        reading["body_excerpt"] = "Li Yuanhe"
+    elif mutation == "duplicate_role":
+        bridge["role"] = "original"
+    elif mutation == "unresolved_conflict":
+        content["source_link"]["unresolved_conflicts"] = ["DOB differs"]
+    elif mutation == "wrong_official_url":
+        original["url"] = "https://other.example.org/playerInfo/professional/list"
+    elif mutation == "changed_word_boundary":
+        content["reading_words"] = [["li", "yuan", "he"]]
+    elif mutation == "unknown_format":
+        content["anchor_format"] = 3
+    elif mutation == "boolean_format":
+        content["anchor_format"] = True
+    elif mutation == "v2_fields_in_v1":
+        content["anchor_format"] = 1
+    elif mutation == "wrong_roster_hash":
+        content["source_link"]["official_scope_sha256"] = "c" * 64
+    elif mutation == "invalid_birthdate":
+        reading["birthdate"] = "1971-02-30"
+    elif mutation == "traditional_language_lie":
+        original["observed_lang"] = "zh-Hant"
+    elif mutation == "bridge_traditional_language_lie":
+        bridge["observed_lang"] = "zh-Hant"
+    elif mutation == "unicode_official_id":
+        original["person_id"] = "CWA０００００１"
+        original["body_excerpt"] = "CWA０００００１ 李元赫 1971-01-24"
+    elif mutation == "unicode_profile_id":
+        for source, lang in ((bridge, "zh"), (reading, "en")):
+            source["person_id"] = "1２3"
+            source["url"] = f"https://www.goratings.org/{lang}/players/1２3.html"
+    elif mutation == "stale_signature":
+        content["source_link"]["review_basis"] = "Changed after approval"
+    else:
+        raise AssertionError(mutation)
+    if mutation != "stale_signature":
+        anchor["approval"]["content_sha256"] = canonical_sha256(content)
+    with pytest.raises(EvidenceError):
+        validate_transliteration_anchor(anchor)
 
 
 def transliteration_bundle(lang="ru", snapshot=None):

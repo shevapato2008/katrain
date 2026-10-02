@@ -12,7 +12,7 @@ import hashlib
 import time
 import unicodedata
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -196,6 +196,104 @@ def _normalized_phonetic_reading(value: str, system: str) -> str:
     return "".join(letters)
 
 
+def _validate_two_publisher_reading(content: dict, reviewed_at: str) -> None:
+    """Bind an official Han name to one bilingual professional profile and its reading."""
+    _require(
+        content.get("entity_kind") == "player"
+        and content["owner"]["kind"] == "player"
+        and content.get("source_lang") == "zh-Hans"
+        and content.get("source_reading_kind") == "published_roman_name",
+        "two-publisher reading supports only Chinese player profiles",
+    )
+    sources = content.get("sources")
+    _require(
+        isinstance(sources, list) and len(sources) == 3
+        and [source.get("role") for source in sources if isinstance(source, dict)]
+        == ["original", "identity_bridge", "reading"],
+        "two-publisher reading needs original, bridge and reading records",
+    )
+    original, bridge, reading = sources
+    for source, observed_language in ((original, "zh"), (bridge, "zh"), (reading, "en")):
+        validate_transliteration_sources([source], observed_language, reviewed_at)
+        if source is original:
+            _require(
+                _matches_target(source["observed_lang"], "zh-Hans"),
+                "two-publisher official source is not Simplified Chinese",
+            )
+        elif source is bridge:
+            _require(
+                source["observed_lang"].lower() == "zh"
+                or _matches_target(source["observed_lang"], "zh-Hans"),
+                "two-publisher bridge source is not Simplified Chinese",
+            )
+        _require(
+            all(_text(source.get(field)) for field in (
+                "publisher_id", "person_id_namespace", "person_id", "exact_name", "birthdate", "record_locator"
+            )),
+            "two-publisher source person facts missing",
+        )
+        birthdate = source["birthdate"]
+        try:
+            valid_birthdate = bool(re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", birthdate)) and date.fromisoformat(
+                birthdate
+            )
+        except ValueError:
+            valid_birthdate = False
+        _require(valid_birthdate, "two-publisher birth date invalid")
+        _require(
+            source["exact_name"] in source["body_excerpt"] and birthdate in source["body_excerpt"],
+            "two-publisher source excerpt does not identify the person and date",
+        )
+    _require(
+        original["publisher_id"] == "china_go_association"
+        and original["person_id_namespace"] == "cwa_player_no"
+        and bool(re.fullmatch(r"CWA[0-9]{6}", original["person_id"]))
+        and original["url"] == "https://wqapi.cwql.org.cn/playerInfo/professional/list"
+        and original["person_id"] in original["body_excerpt"],
+        "two-publisher official roster identity invalid",
+    )
+    for source, lang in ((bridge, "zh"), (reading, "en")):
+        _require(
+            source["publisher_id"] == "goratings"
+            and source["person_id_namespace"] == "goratings_player_id"
+            and bool(re.fullmatch(r"[1-9][0-9]*", source["person_id"]))
+            and source["url"] == f"https://www.goratings.org/{lang}/players/{source['person_id']}.html",
+            "two-publisher profile identity or language path invalid",
+        )
+    _require(
+        original["exact_name"] == bridge["exact_name"] == content["original_name"]
+        and reading["exact_name"] == content["source_reading"]
+        and original["birthdate"] == bridge["birthdate"] == reading["birthdate"]
+        and bridge["person_id"] == reading["person_id"],
+        "two-publisher name, birth date or profile ID mismatch",
+    )
+    link = content.get("source_link")
+    required_link_fields = {
+        "method", "official_match_count", "official_scope_sha256", "unresolved_conflicts", "review_basis"
+    }
+    _require(
+        isinstance(link, dict)
+        and set(link) == required_link_fields
+        and link["method"] == "official_name_dob_to_localized_profile_id_v1"
+        and type(link["official_match_count"]) is int and link["official_match_count"] == 1
+        and bool(_HEX_SHA256.fullmatch(str(link["official_scope_sha256"])))
+        and link["official_scope_sha256"] == original["body_sha256"]
+        and link["unresolved_conflicts"] == []
+        and _text(link["review_basis"]),
+        "two-publisher source link is unresolved or unbound",
+    )
+    published_words = content["source_reading"].split()
+    reviewed_words = content["reading_words"]
+    _require(
+        len(published_words) == len(reviewed_words)
+        and all(
+            _normalized_phonetic_reading(published, content["reading_system"]) == "".join(syllables)
+            for published, syllables in zip(published_words, reviewed_words)
+        ),
+        "two-publisher reading word boundaries differ from published name",
+    )
+
+
 def validate_transliteration_anchor(record: dict) -> dict:
     """Check a source-approved original and segmented reading, never infer it from Hanzi."""
     _require(
@@ -252,14 +350,23 @@ def validate_transliteration_anchor(record: dict) -> dict:
         "transliteration reviewed normalization differs from sourced phonetic reading",
     )
     sources = content.get("sources")
-    validate_transliteration_sources(sources, source_lang, record["approval"]["reviewed_at"])
-    _require(
-        any(
-            content["original_name"] in source["body_excerpt"] and content["source_reading"] in source["body_excerpt"]
-            for source in sources
-        ),
-        "transliteration exact original and sourced reading must occur in captured body",
-    )
+    anchor_format = content.get("anchor_format", 1)
+    _require(type(anchor_format) is int and anchor_format in {1, 2}, "transliteration anchor format invalid")
+    if anchor_format == 2:
+        _validate_two_publisher_reading(content, record["approval"]["reviewed_at"])
+    else:
+        _require(
+            "source_link" not in content and "source_reading_kind" not in content,
+            "two-publisher fields require anchor format 2",
+        )
+        validate_transliteration_sources(sources, source_lang, record["approval"]["reviewed_at"])
+        _require(
+            any(
+                content["original_name"] in source["body_excerpt"] and content["source_reading"] in source["body_excerpt"]
+                for source in sources
+            ),
+            "transliteration exact original and sourced reading must occur in captured body",
+        )
     _require(
         not any(key in content or key in record for key in ("scope_status", "negative_closure", "absence_claim")),
         "transliteration must not claim absence of conventional names",

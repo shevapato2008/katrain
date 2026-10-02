@@ -35,7 +35,7 @@
 ## 主要例外与来源/时期限制
 
 - **赛季不带年份：** `Oteai,AutumnSession`（45 盘）、`Oteai,SpringSession`（42 盘）来自 `19x19`，两者各含若干 `1900-01-01` 占位日期；`Oteai Spring Session`（14 盘）含一个无日期值。CWI 历史资料另有 `Oteai Autumn Session`、`Oteai First/Second Session`、拼接写法及跨期 `heldover` 标记。这些原文可能指向多个年代，暂不能组成一个确定赛季。
-- **关西支部及关西棋院不能混成一组：** `Kansai Ki-in Oteai` 26 盘和 `KansaiKi-inOteai` 7 盘的源路径分别在 `CWI_1950_1978/KK/KKOteai/...`；较早 `Kansai Branch Oteai`、`Kansai Branch Summer/Winter/Spring Oteai` 等来自 `CWI_History_Full` 的棋士个人目录，日期集中 1934–1940。后者的具体机构隶属/赛制边界需要历史赛程或棋院史料核验，不能只因英文标签含 Kansai 就指向独立后的关西棋院。
+- **关西支部及关西棋院不能混成一组：** `Kansai Ki-in Oteai` 26 盘来自 `CWI_1950_1978/KK/KKOteai/...`，而无空格的 `KansaiKi-inOteai` 7 盘来自 `19x19`，不能借用前者的目录证明。较早带空格的 `Kansai Branch Oteai`、`Kansai Branch Summer/Winter/Spring Oteai` 等来自 `CWI_History_Full` 的棋士个人目录；压缩写法 `KansaiBranchOteai` 3 盘、`KansaiBranchWinterOteai` 2 盘、`KansaiBetsuinOteai` 1 盘则来自 `19x19`。这些标签的具体机构隶属/赛制边界需要历史赛程或棋院史料核验，不能只因英文标签含 Kansai 就指向独立后的关西棋院。
 - **赞助/纪念/资格赛描述：** `1936AutumnOteaiWinners'PlayoffSeriessponsoredbyAsahiShinbun`、`AsahiShinbuntournamentfor1935AutumnOteaiwinners`、`Kansai Branch Oteai Select Tournament sponsored by Sunday Mainichi`、`Great relay game to commemorate 15 years of the Oteai`、`Special tournament to select participants in Oteai` 均可能是伴随赛、晋级/获奖者加赛或纪念对局，不能等同于常规大手合本体。几个 `playoff series` 值没有 `date_played`；另有 `1936Autumn...` 记录日期 `1900-01-01`。
 - **特殊/不确定批注：** `Oteai,7and8-danrankingtournament`、`Oteai 1949 Special`、`Oteai 1939, Later`、`Oteai{carriedoverfrom1942}`、`Oteai 1974?`、`Probably Oteai` 需保留问号、跨年、组别或来源不确定标记。日期字段中共有 34 盘为空、33 盘为 `1900-01-01` 占位、3 盘含问号；日期文本格式混合，不能据其计算制度年份边界。
 

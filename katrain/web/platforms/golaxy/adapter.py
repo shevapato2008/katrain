@@ -954,33 +954,55 @@ class GolaxyAdapter(PlatformAdapter):
         from sgfmill import boards
 
         board = boards.Board(19)
+        columns = "ABCDEFGHJKLMNOPQRST"
         ko_point = None
+        history = []
+
+        def position(number: int, last_move: dict | None) -> dict:
+            black_stones = []
+            white_stones = []
+            for row in range(19):
+                for col in range(19):
+                    color = board.get(row, col)
+                    if color == "b":
+                        black_stones.append(f"{columns[col]}{row + 1}")
+                    elif color == "w":
+                        white_stones.append(f"{columns[col]}{row + 1}")
+            return {
+                "black_stones": black_stones,
+                "white_stones": white_stones,
+                "move_number": number,
+                "last_move": last_move,
+            }
+
+        history.append(position(0, None))
         for turn, item in enumerate(moves):
             point = golaxy_to_katrain(int(item), 19)
+            color = "B" if turn % 2 == 0 else "W"
             if isinstance(point, Pass):
                 ko_point = None
+                history.append(position(turn + 1, {"color": color, "coordinate": None}))
                 continue
             if not isinstance(point, Move) or (point.row, point.col) == ko_point:
                 raise GolaxyLobbyError("Golaxy room history malformed")
-            color = "b" if turn % 2 == 0 else "w"
             try:
-                ko_point = board.play(point.row, point.col, color)
+                ko_point = board.play(point.row, point.col, color.lower())
             except ValueError as exc:
                 raise GolaxyLobbyError("Golaxy room history malformed") from exc
             # sgfmill handles captures but deliberately permits self-capture.
-            if board.get(point.row, point.col) != color:
+            if board.get(point.row, point.col) != color.lower():
                 raise GolaxyLobbyError("Golaxy room history malformed")
+            history.append(position(turn + 1, {"color": color, "coordinate": f"{columns[point.col]}{point.row + 1}"}))
 
-        columns = "ABCDEFGHJKLMNOPQRST"
-        black_stones = []
-        white_stones = []
-        for row in range(19):
-            for col in range(19):
-                color = board.get(row, col)
-                if color == "b":
-                    black_stones.append(f"{columns[col]}{row + 1}")
-                elif color == "w":
-                    white_stones.append(f"{columns[col]}{row + 1}")
+        raw_game_ids = (room.get("wsGameId"), meta.get("wsGameId"), state.get("wsGameId"))
+        meta_room_id = meta.get("gameroomId")
+        game_id = (
+            str(raw_game_ids[0])
+            if all(type(value) is int and value > 0 and value == raw_game_ids[0] for value in raw_game_ids)
+            and (meta_room_id is None or (type(meta_room_id) is int and meta_room_id == room["id"]))
+            else None
+        )
+        latest = history[-1]
 
         def player(color: str) -> dict | None:
             name = meta.get(f"{color}Nickname")
@@ -999,9 +1021,14 @@ class GolaxyAdapter(PlatformAdapter):
             "board_size": 19,
             "black": player("black"),
             "white": player("white"),
-            "black_stones": black_stones,
-            "white_stones": white_stones,
+            "black_stones": latest["black_stones"],
+            "white_stones": latest["white_stones"],
             "move_number": move_number,
+            "game_id": game_id,
+            "last_move": latest["last_move"],
+            "history": history,
+            "clocks": None,
+            "members": None,
             "phase": phase,
             "result": None,
         }

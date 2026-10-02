@@ -278,7 +278,7 @@ export interface GolaxySpectatorPosition {
   black_stones: string[];
   white_stones: string[];
   move_number: number;
-  last_move?: { color: 'B' | 'W'; coordinate: string | null } | null;
+  last_move: { color: 'B' | 'W'; coordinate: string | null } | null;
 }
 
 export interface GolaxySpectatorClock {
@@ -290,6 +290,7 @@ export interface GolaxySpectatorClock {
 /** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
 export interface GolaxySpectatorSnapshot {
   room_id: string;
+  game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
   room_number: string | null;
   board_size: 19;
   black: { username: string; rank: string | null } | null;
@@ -301,10 +302,10 @@ export interface GolaxySpectatorSnapshot {
   result: string | null;
   room_type: string | null;
   handicap: number | null;
-  last_move?: GolaxySpectatorPosition['last_move'];
-  history?: GolaxySpectatorPosition[] | null;
-  clocks?: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
-  members?: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
+  last_move: GolaxySpectatorPosition['last_move'];
+  history: GolaxySpectatorPosition[];
+  clocks: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
+  members: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
 }
 
 export interface PlatformChallenge {

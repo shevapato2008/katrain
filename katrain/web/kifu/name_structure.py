@@ -12,10 +12,12 @@ from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 
 
-RULE_VERSION = "event-components-v3"
+RULE_VERSION = "event-components-v4"
 _YEAR = re.compile(r"([12]\d{3})年(?:度)?\s*")
 _NUMBER = r"(?:[0-9]{1,3}|[一二三四五六七八九]|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
 _EDITION = re.compile(rf"(?:(?:第)?({_NUMBER})|首)(届|期)\s*")
+_INFIX_EDITION = re.compile(rf"第({_NUMBER}|[０-９]{{1,3}})(期|届)")
+_EXPLICIT_NUMBERED_FRAGMENT = re.compile(r"第[0-9０-９一二三四五六七八九十百]+[期届轮回局场]")
 _ROUND = re.compile(rf"\s*(?:第)?({_NUMBER})(轮|局)\s*\Z")
 _OTEAI_YEAR = re.compile(r"(Oteai)\s+([12]\d{3})\Z", re.IGNORECASE)
 _CWI = re.compile(r"(JapanPromotionTournament),([12]\d{3}),(Spring|Fall)\Z", re.IGNORECASE)
@@ -36,7 +38,7 @@ def _part(raw: str, kind: str, value: str, start: int, end: int) -> dict:
 
 
 def _result(raw: str, parts: list[dict], grammar: str, exceptions: list[str] | None = None) -> dict:
-    core = next(part["text"] for part in parts if part["kind"] == "core")
+    core = "".join(part["text"] for part in parts if part["kind"] == "core")
     return {
         "raw_value": raw,
         "core": core,
@@ -128,6 +130,20 @@ def structure_event(raw: str) -> dict:
     if suffix:
         unit = suffix.group(2)
         parts.append(_part(raw, "round" if unit == "轮" else "game", suffix.group(1) + unit, end, len(raw)))
+    if len(parts) == 1:
+        # Only previously unparsed values: one explicit interior edition marker.
+        # Multiple numbered fragments need series-specific semantic review.
+        edition = _INFIX_EDITION.search(raw)
+        if (
+            edition and edition.start() > 0 and edition.end() < len(raw)
+            and len(_EXPLICIT_NUMBERED_FRAGMENT.findall(raw)) == 1
+            and raw[:edition.start()].strip() and raw[edition.end():].strip()
+        ):
+            return _result(raw, [
+                _part(raw, "core", raw[:edition.start()], 0, edition.start()),
+                _part(raw, "edition", edition.group(1) + edition.group(2), edition.start(), edition.end()),
+                _part(raw, "core", raw[edition.end():], edition.end(), len(raw)),
+            ], "single_edition_fragment")
     return _result(raw, parts, "explicit_components" if len(parts) > 1 else "unparsed")
 
 

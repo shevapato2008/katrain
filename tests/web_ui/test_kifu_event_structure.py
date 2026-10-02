@@ -7,7 +7,7 @@ def test_explicit_year_edition_and_round_preserve_every_character():
     raw = "1934年第十二届日本大手合第3轮"
     item = structure_event(raw)
     assert item["status"] == "pending_review"
-    assert item["rule_version"] == "event-components-v3"
+    assert item["rule_version"] == "event-components-v4"
     assert item["core"] == "日本大手合"
     assert [(part["kind"], part["value"]) for part in item["components"]] == [
         ("year", "1934"), ("edition", "十二届"), ("round", "3轮")
@@ -91,10 +91,40 @@ def test_ordinal_suffix_and_joined_prefix_keep_qualifiers_and_exact_spans():
     )
     for raw, grammar, core, edition in examples:
         item = structure_event(raw)
-        assert item["rule_version"] == "event-components-v3"
+        assert item["rule_version"] == "event-components-v4"
         assert item["grammar"] == grammar
         assert item["core"] == core
         assert item["status"] == "pending_review"
         assert [(part["kind"], part["value"]) for part in item["components"]] == [("edition", edition)]
         assert "".join(part["text"] for part in item["parts"]) == raw
         assert all(raw[part["start"]:part["end"]] == part["text"] for part in item["parts"])
+
+
+def test_single_infix_edition_preserves_discontiguous_core_spans():
+    for raw, core, value in (
+        ("日本第11期龙星战", "日本龙星战", "11期"),
+        ("同里杯第31届中国天元战新浪网选", "同里杯中国天元战新浪网选", "31届"),
+        ("日本第１２期棋圣战", "日本棋圣战", "１２期"),
+        ("日本第十二期十段战", "日本十段战", "十二期"),
+    ):
+        item = structure_event(raw)
+        assert item["grammar"] == "single_edition_fragment"
+        assert item["core"] == core
+        assert item["status"] == "pending_review"
+        assert [(p["kind"], p["value"]) for p in item["components"]] == [("edition", value)]
+        assert "".join(p["text"] for p in item["parts"]) == raw
+        assert all(raw[p["start"]:p["end"]] == p["text"] for p in item["parts"])
+
+
+def test_ambiguous_or_unsupported_infix_edition_stays_raw():
+    for raw in (
+        "日本第11期龙星战第2轮", "日本第11期第12届龙星战", "日本第11期龙星战第1场",
+        "日本第廿五期本因坊战", "日本第11期", "日本第11.5期龙星战",
+        "日本11期龙星战", "日本第11回NHK杯", "日本第壹期龙星战",
+    ):
+        item = structure_event(raw)
+        if raw == "日本第11期龙星战第2轮":
+            assert item["core"] == "日本第11期龙星战"
+        else:
+            assert item["core"] == raw
+            assert item["components"] == []

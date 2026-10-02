@@ -2,6 +2,8 @@
 
 2026-10-02 从正式库 `katrain_prod_20260725` 只读导出 `player_black` 或 `player_white` **精确等于** `李昌镐` 的槽位。受控 CSV 位于 `/Users/fan/.local/share/kifu-name-audit/2026-10-02/lee-143-link-prep/exact-slots.csv`（目录 `0700`、文件 `0600`），SHA-256 为 `5c36cdcedf3303310b05bf68b4ad3cc45c6e5368c76c1fbe373e3ab388844f11`。导出列是棋局 ID、黑白槽位、原值、对手、日期、赛事、段位、来源路径和旧关联 ID；未导出 SGF 正文。
 
+同一精确范围另在只读查询中将 SGF 正文转为 UTF-8 字节和 base64，经 SSH 流送到本机内存计算 SHA-256；磁盘只保存 `album_id,sgf_sha256`，不落地 SGF 正文。2,140 个 ID 与槽位 CSV 数量一致，受控 `sgf-sha256.csv` 为 `0600`、SHA-256 `5ba5cbc90b0549db954122eb0a4d997f5a508c8e58550fb3ba53f8e392731496`。这两次查询并非同一个数据库快照；后续形成关联批次时仍须固定当时完整清单并在写入事务内重新比较 SGF 哈希。
+
 | 只读发现 | 数量 |
 |---|---:|
 | 精确原名槽位 / 棋局 | 2,140 / 2,140 |

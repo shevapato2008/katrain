@@ -124,12 +124,14 @@ const GolaxySpectatorPage = () => {
       const currentId = ++requestId;
       controller = new AbortController();
       let keepPolling = true;
+      let nextPollDelay = 2_000;
       setView(markRefreshing);
       API.platformRoomSnapshot(roomId!, token, controller.signal).then((snapshot) => {
         if (!active || currentId !== requestId) return;
         const error = snapshotError(snapshot, roomId!);
         if (error) {
           suppressNextSound = true;
+          nextPollDelay = 10_000;
           setView({ kind: 'error', message: error });
           return;
         }
@@ -148,6 +150,7 @@ const GolaxySpectatorPage = () => {
       }).catch((error: unknown) => {
         if (!active || currentId !== requestId) return;
         suppressNextSound = true;
+        nextPollDelay = 10_000;
         keepPolling = !(error instanceof ApiError && (error.status === 401 || error.status === 422));
         if (!keepPolling) connected = false;
         setView(error instanceof ApiError && error.status === 401
@@ -159,7 +162,7 @@ const GolaxySpectatorPage = () => {
         if (!active || currentId !== requestId) return;
         inFlight = false;
         controller = null;
-        if (keepPolling && !document.hidden) timer = setTimeout(sync, 2_000);
+        if (keepPolling && !document.hidden) timer = setTimeout(sync, nextPollDelay);
       });
     };
     const onVisibilityChange = () => {

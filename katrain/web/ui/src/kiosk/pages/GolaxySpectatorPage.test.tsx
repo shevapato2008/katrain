@@ -177,15 +177,19 @@ describe('Golaxy spectator', () => {
     expect(playSound).not.toHaveBeenCalled();
   });
 
-  it('does not replay a move first seen after a failed snapshot request', async () => {
+  it('slows polling after a failed snapshot and does not replay the recovered move', async () => {
     await openReadyWithFakeTimers();
     platformRoomSnapshot.mockRejectedValueOnce(new ApiError(502, 'offline'));
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(screen.getByText('没能同步星阵棋谱')).toBeInTheDocument();
     platformRoomSnapshot.mockResolvedValueOnce(nextSnapshot);
-    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    await act(async () => { vi.advanceTimersByTime(9_999); await Promise.resolve(); });
+    expect(platformRoomSnapshot).toHaveBeenCalledTimes(2);
+    await act(async () => { vi.advanceTimersByTime(1); await Promise.resolve(); });
     expect(screen.getByText(/最新：黑 Q4 · 第 5 手/)).toBeInTheDocument();
     expect(playSound).not.toHaveBeenCalled();
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(platformRoomSnapshot).toHaveBeenCalledTimes(4);
   });
 
   it('resets replay without sound when the game ID changes or move count regresses', async () => {

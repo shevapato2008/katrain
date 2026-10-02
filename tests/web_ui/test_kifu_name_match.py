@@ -314,12 +314,15 @@ def test_strict_translated_search_does_not_merge_entity_and_raw_owners(entity_ki
             expected[0 if entity_kind == "player" else 1] = {owners[0].id}
             assert strict_matching_names(db, "Общее имя") == tuple(expected)
 
-            # A unique raw translation still expands only its exact original spelling.
+            # A unique raw translation retains the exact approved name row.
             evidence_rows[1].review_status = "approved"
             evidence_rows[0].review_status = "pending"
             db.commit()
             expected = [set(), set(), set(), set()]
-            expected[2 if raw_kind == "raw_player" else 3] = {owners[1].raw_value}
+            expected[2 if raw_kind == "raw_player" else 3] = (
+                {owners[1].raw_value} if raw_kind == "raw_player"
+                else {db.query(KifuRawEventName.id).filter_by(raw_event_id=owners[1].id).scalar()}
+            )
             assert strict_matching_names(db, "Общее имя") == tuple(expected)
     finally:
         engine.dispose()

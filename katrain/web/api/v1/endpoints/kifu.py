@@ -126,16 +126,16 @@ async def list_kifu_albums(
     if q:
         strict = strict_names_enabled()
         if strict:
-            player_ids, event_ids, raw_players, raw_events = strict_matching_names(db, q)
-            selected_event_ids = strict_selected_event_search_ids(db, q, raw_events, event_ids)
+            player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(db, q)
+            selected_event_ids = strict_selected_event_search_ids(db, q, raw_event_name_ids, event_ids)
         else:
             player_ids, event_ids = matching_entity_ids(db, q, exact=True)
-            raw_players, raw_events = set(), set()
+            raw_players, raw_event_name_ids = set(), set()
             selected_event_ids = set()
-        if len(player_ids) == 1 and not event_ids and not raw_players and not raw_events:
+        if len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
-        elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_events:
+        elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_event_name_ids:
             needle = KifuAlbum.event_id == next(iter(event_ids))
         else:
             partial_players, partial_events = (set(), set()) if strict else matching_entity_ids(db, q, exact=False)
@@ -165,8 +165,8 @@ async def list_kifu_albums(
                     clauses.append(KifuAlbum.event_id.in_(event_ids))
                 if raw_players:
                     clauses.extend((KifuAlbum.player_black.in_(raw_players), KifuAlbum.player_white.in_(raw_players)))
-                if raw_events:
-                    clauses.append(strict_raw_event_search_clause(db, raw_events))
+                if raw_event_name_ids:
+                    clauses.append(strict_raw_event_search_clause(db, raw_event_name_ids))
             needle = or_(*clauses)
             query = query.order_by(case((player_match, 0), else_=1))
         if selected_event_ids:

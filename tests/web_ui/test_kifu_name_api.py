@@ -897,6 +897,62 @@ def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, own
         engine.dispose()
 
 
+def test_french_composed_search_keeps_its_own_approved_scope(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        series, raw, albums = _reviewed_composition(db)
+        chinese = db.query(KifuRawEventName).filter_by(lang="cn").one()
+        chinese.decision_kind = "conventional"
+        db.get(KifuNameResearchEvidence, chinese.evidence_id).decision_kind = "conventional"
+        outside = KifuAlbum(
+            player_black="Black", player_white="White", event=raw.raw_value,
+            event_id=series.id, sgf_content="(;B[bb])", source_path="outside-french-scope.sgf",
+        )
+        db.add(outside)
+        db.commit()
+
+        result = _list(db, "1er Honinbo", "cn")
+        assert [item.id for item in result.items] == [albums[0].id]
+        assert result.total == 1
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_composed_selected_event_without_identity_does_not_enter_search(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        _, raw, albums = _reviewed_composition(db)
+        chinese = db.query(KifuRawEventName).filter_by(lang="cn").one()
+        chinese.decision_kind = "conventional"
+        db.get(KifuNameResearchEvidence, chinese.evidence_id).decision_kind = "conventional"
+        sgf = (
+            "(;FF[4]SZ[19]SO[https://19x19.com]"
+            f"GN[GNUGo3.8]GN[{raw.raw_value}]GC[{raw.raw_value} | 194手];B[aa])"
+        )
+        selected = KifuAlbum(
+            player_black="Black", player_white="White", event="GNUGo3.8",
+            sgf_content=sgf, source="https://19x19.com",
+            source_path="data/kifu-album/19x19/composed-selected.sgf",
+        )
+        db.add(selected)
+        db.commit()
+        apply_reviewed_selection(engine, selected.id)
+        assert identity.live_event_selections(db, [selected])[selected.id] == (raw.raw_value, None)
+        assert asyncio.run(kifu.get_kifu_album(_request(), selected.id, lang="fr", db=db)).display_event == (
+            "Nom du tournoi non vérifié"
+        )
+
+        result = _list(db, "1er Honinbo", "fr")
+        assert [item.id for item in result.items] == [albums[0].id]
+        assert result.total == 1
+    finally:
+        db.close()
+        engine.dispose()
+
+
 @pytest.mark.parametrize(
     "drift",
     [
@@ -910,6 +966,7 @@ def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, own
         "base_pending",
         "base_lang",
         "base_name_id",
+        "base_name_id_list",
         "base_evidence_id",
         "base_revision",
         "base_candidate",
@@ -970,6 +1027,8 @@ def test_strict_composed_dependency_drift_is_a_display_search_and_coverage_gap(m
             base.lang = "de"
         elif drift in {"base_name_id", "base_evidence_id", "base_revision", "series_dependency"}:
             dependency["series_event_id" if drift == "series_dependency" else drift] += 100
+        elif drift == "base_name_id_list":
+            dependency["base_name_id"] = [base.id]
         elif drift == "base_candidate":
             base_evidence.research_payload = {"candidate": {"changed": True}}
         elif drift == "base_display":

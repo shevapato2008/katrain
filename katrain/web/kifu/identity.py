@@ -86,7 +86,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
     return query
 
 
-def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None):
+def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=None, name_ids=None):
     """Read complete names and their live base dependencies in at most two queries.
 
     Composition is checked against stored approvals; no renderer or source lookup
@@ -102,6 +102,8 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     )
     if values is not None:
         query = query.filter(KifuRawEventValue.raw_value.in_(values))
+    if name_ids is not None:
+        query = query.filter(KifuRawEventName.id.in_(name_ids))
     if display is not None:
         query = query.filter(
             or_(KifuRawEventName.display_name == display, func.lower(KifuRawEventName.display_name) == display.lower())
@@ -137,6 +139,8 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
         dependencies = composition.get("dependencies")
         rule, scope = composition.get("rule"), composition.get("scope")
         if not all(isinstance(value, dict) for value in (dependencies, rule, scope)):
+            continue
+        if type(dependencies.get("base_name_id")) is not int:
             continue
         rule_content, scope_content = rule.get("content"), scope.get("content")
         if not isinstance(rule_content, dict) or not isinstance(scope_content, dict):
@@ -230,10 +234,10 @@ def _raw_event_value(values, album_id, raw, event_id, default=None):
     return values.get((album_id, raw, event_id), values.get(raw, default))
 
 
-def strict_raw_event_search_clause(db: Session, raw_values: set[str]):
+def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     """Restrict a composed translation match to its approved, currently linked games."""
     clauses = []
-    for _, raw, composition in _approved_raw_event_names(db, values=raw_values):
+    for _, raw, composition in _approved_raw_event_names(db, name_ids=name_ids):
         if composition is None:
             clauses.append(KifuAlbum.event == raw)
         else:
@@ -246,7 +250,7 @@ def strict_raw_event_search_clause(db: Session, raw_values: set[str]):
     return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
-def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], set[str], set[str]]:
+def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], set[str], set[int]]:
     """Expand only a unique approved owner across identity and raw-name scopes."""
     needle = normalize_alias(query)
     if not needle:
@@ -258,18 +262,19 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
         )
         identity_matches.append({getattr(row, owner) for row in rows if normalize_alias(row.display_name) == needle})
     raw_matches = []
+    raw_event_name_ids = set()
     for model, value_model, owner in (
         (KifuRawPlayerName, KifuRawPlayerValue, "raw_player_id"),
         (KifuRawEventName, KifuRawEventValue, "raw_event_id"),
     ):
         if model is KifuRawEventName:
-            raw_matches.append(
-                {
-                    raw
-                    for name, raw, _ in _approved_raw_event_names(db, display=query)
-                    if normalize_alias(name.display_name) == needle
-                }
-            )
+            matched = [
+                (name, raw)
+                for name, raw, _ in _approved_raw_event_names(db, display=query)
+                if normalize_alias(name.display_name) == needle
+            ]
+            raw_matches.append({raw for _, raw in matched})
+            raw_event_name_ids = {name.id for name, _ in matched}
             continue
         rows = (
             _approved_names(db, model, owner)
@@ -285,7 +290,7 @@ def strict_matching_names(db: Session, query: str) -> tuple[set[int], set[int], 
     matches_by_owner = (*identity_matches, *raw_matches)
     if sum(len(matches) for matches in matches_by_owner) != 1:
         return set(), set(), set(), set()
-    return matches_by_owner
+    return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 
 
 def live_event_selections(
@@ -308,10 +313,11 @@ def live_event_selections(
 
 
 def strict_selected_event_search_ids(
-    db: Session, query: str, raw_aliases: set[str], event_ids: set[int]
+    db: Session, query: str, raw_name_ids: set[int], event_ids: set[int]
 ) -> set[int]:
     """Match reviewed selected events and validate the same live SGF hash as display."""
-    raw_matches = set(raw_aliases)
+    matched_names = _approved_raw_event_names(db, name_ids=raw_name_ids) if raw_name_ids else []
+    raw_aliases = {raw for _, raw, _ in matched_names}
     selected_conditions = [KifuAlbumEventSelection.selected_raw.contains(query, autoescape=True)]
     if raw_aliases:
         selected_conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_aliases))
@@ -322,7 +328,14 @@ def strict_selected_event_search_ids(
     }
     if not selected_raws:
         return set()
-    raw_matches.update(raw for _, raw, _ in _approved_raw_event_names(db, values=selected_raws))
+    names_by_raw = {}
+    for name, raw, _ in _approved_raw_event_names(db, values=selected_raws):
+        names_by_raw.setdefault(raw, []).append(name)
+    raw_matches = {
+        raw
+        for raw, names in names_by_raw.items()
+        if query.lower() in raw.lower() or any(name.id in raw_name_ids for name in names)
+    }
     conditions = []
     if raw_matches:
         conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_matches))
@@ -354,26 +367,43 @@ def strict_selected_event_search_ids(
             if hashlib.sha256(content.encode("utf-8")).hexdigest() == pinned_hash
         }
     verified = live_event_selections(db, [], album_ids=candidate_ids)
-    composed_ids = {
-        album_id for album_id, (raw, event_id) in verified.items()
-        if event_id and (structure_event(raw)["components"]
-                         or parse_event(raw, None).category == "formal_event_candidate")
+    if not verified:
+        return set()
+    albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(verified)).all()
+    candidate_names = {
+        album_id: [
+            name for name in names_by_raw.get(raw, [])
+            if query.lower() in raw.lower() or name.id in raw_name_ids
+        ]
+        for album_id, (raw, _) in verified.items()
     }
-    if not composed_ids:
-        return set(verified)
-    # A core identity match must still have an approved complete current event
-    # in a product language, using the same composition gate as display/coverage.
-    albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_(composed_ids)).all()
-    approved_ids = set(verified) - composed_ids
-    composed_raws = {verified[album_id][0] for album_id in composed_ids}
-    name_languages = {name.lang for name, _, _ in _approved_raw_event_names(db, values=composed_raws)}
-    for lang in name_languages:
-        if lang not in LANGUAGES:
+    languages = {name.lang for names in candidate_names.values() for name in names if name.lang in LANGUAGES}
+    # An identity match can use any complete current event approval. A raw-name
+    # match must retain the exact name evidence that matched the query.
+    if event_ids:
+        languages.update(name.lang for names in names_by_raw.values() for name in names if name.lang in LANGUAGES)
+    approvals_by_lang = {
+        lang: strict_slot_approvals(db, albums, lang, obscured_event_ids=set(), selected_events=verified)
+        for lang in languages
+    }
+    approved_ids = set()
+    for album_id, (raw, event_id) in verified.items():
+        structured = bool(structure_event(raw)["components"]) or (
+            parse_event(raw, None).category == "formal_event_candidate"
+        )
+        if event_id in event_ids and not structured:
+            approved_ids.add(album_id)
             continue
-        approvals = strict_slot_approvals(db, albums, lang, obscured_event_ids=set(), selected_events=verified)
-        approved_ids.update(album_id for album_id, slots in approvals.items() if slots[2] is not None)
-        if composed_ids <= approved_ids:
-            break
+        if event_id in event_ids and any(
+            approvals[album_id][2] is not None for approvals in approvals_by_lang.values()
+        ):
+            approved_ids.add(album_id)
+            continue
+        for name in candidate_names[album_id]:
+            approvals = approvals_by_lang.get(name.lang)
+            if approvals and approvals[album_id][2] == (name.decision_kind, name.evidence_id):
+                approved_ids.add(album_id)
+                break
     return approved_ids
 
 

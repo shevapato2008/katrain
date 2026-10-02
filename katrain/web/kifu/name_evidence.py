@@ -25,6 +25,12 @@ CHECK_STATUSES = {"found", "not_found", "incomplete", "unavailable"}
 SCOPE_STATUSES = {"found", "not_found_in_scope", "incomplete"}
 LANGUAGE_BASIS = {"html_lang", "http_header", "reviewed_text"}
 SECONDARY_LANGUAGES = {"de", "es", "fr", "ru", "tr", "ua"}
+TRANSCRIPTION_SYSTEMS = {
+    "zh-Hans": "pinyin-syllables-v1",
+    "zh-Hant": "pinyin-syllables-v1",
+    "ja": "hepburn-syllables-v1",
+    "ko": "rr-syllables-v1",
+}
 SOURCE_PRIORITY = {"official": 0, "language_go": 1, "reference": 2,
                    "wikipedia_article": 3, "encyclopedia": 3, "discovery": 4}
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -110,6 +116,112 @@ def registry_sha256(registry: dict) -> str:
     """Canonical content hash, independent of JSON whitespace and key order."""
     canonical = json.dumps(registry, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def validate_transliteration_review(record: dict, conclusion: str) -> dict:
+    """Require independent approval of one immutable source, rule, or finite batch."""
+    _require(isinstance(record, dict), "transliteration reviewed record required")
+    content, approval = record.get("content"), record.get("approval")
+    _require(isinstance(content, dict) and isinstance(approval, dict), "transliteration content and approval required")
+    _require(
+        approval.get("status") == "approved" and approval.get("content_sha256") == registry_sha256(content),
+        "transliteration content lacks exact approval",
+    )
+    _require(
+        all(_text(approval.get(field)) for field in ("producer_id", "producer_model", "reviewer_id", "reviewer_model"))
+        and approval["producer_id"] != approval["reviewer_id"]
+        and _aware_timestamp(approval.get("produced_at"))
+        and _aware_timestamp(approval.get("reviewed_at"))
+        and approval.get("conclusion") == conclusion,
+        "transliteration needs independent signed approval",
+    )
+    _require(
+        datetime.fromisoformat(approval["reviewed_at"].replace("Z", "+00:00"))
+        >= datetime.fromisoformat(approval["produced_at"].replace("Z", "+00:00")),
+        "transliteration review precedes production",
+    )
+    return content
+
+
+def validate_transliteration_sources(sources: object, source_lang: str, reviewed_at: str) -> None:
+    """Validate captured provenance, without fetching or making an absence claim."""
+    _require(isinstance(sources, list) and bool(sources), "transliteration needs captured sources")
+    review_time = datetime.fromisoformat(reviewed_at.replace("Z", "+00:00"))
+    for source in sources:
+        _require(
+            isinstance(source, dict)
+            and _https_url(source.get("url"))
+            and source.get("http_status") == 200
+            and _aware_timestamp(source.get("fetched_at"))
+            and bool(_HEX_SHA256.fullmatch(str(source.get("body_sha256", ""))))
+            and _text(source.get("body_excerpt"))
+            and _text(source.get("identity_basis"))
+            and source.get("language_basis") in LANGUAGE_BASIS
+            and _matches_target(str(source.get("observed_lang", "")), source_lang),
+            "transliteration source provenance or language invalid",
+        )
+        _require(
+            review_time >= datetime.fromisoformat(source["fetched_at"].replace("Z", "+00:00")),
+            "transliteration approval predates source capture",
+        )
+
+
+def validate_transliteration_anchor(record: dict) -> dict:
+    """Check a source-approved original and segmented reading, never infer it from Hanzi."""
+    _require(
+        isinstance(record, dict) and record.get("evidence_kind") == "transliteration_anchor",
+        "transliteration source anchor required",
+    )
+    content = validate_transliteration_review(record, "approved_original_name_and_reading")
+    owner_key(content.get("owner"), "source")
+    kind = content.get("entity_kind")
+    _require(
+        kind in {"player", "event"} and content["owner"]["kind"] in {kind, "raw_" + kind},
+        "transliteration source entity category differs from owner",
+    )
+    source_lang = content.get("source_lang")
+    _require(
+        source_lang in TRANSCRIPTION_SYSTEMS and content.get("reading_system") == TRANSCRIPTION_SYSTEMS[source_lang],
+        "transliteration source reading system invalid",
+    )
+    _require(
+        _text(content.get("original_name"))
+        and len(content["original_name"]) <= 1024
+        and not re.search(r"[\[\]\x00-\x1f]", content["original_name"]),
+        "transliteration original name invalid",
+    )
+    words = content.get("reading_words")
+    _require(
+        isinstance(words, list)
+        and 0 < len(words) <= 32
+        and all(
+            isinstance(word, list)
+            and 0 < len(word) <= 32
+            and all(isinstance(token, str) and re.fullmatch(r"[a-zü]{1,16}", token) for token in word)
+            for word in words
+        ),
+        "transliteration reading needs explicit normalized syllable words",
+    )
+    _require(
+        content.get("reading_text") == " ".join(token for word in words for token in word)
+        and _text(content.get("source_reading"))
+        and _text(content.get("reading_normalization_basis")),
+        "transliteration source reading and normalization basis required",
+    )
+    sources = content.get("sources")
+    validate_transliteration_sources(sources, source_lang, record["approval"]["reviewed_at"])
+    _require(
+        any(
+            content["original_name"] in source["body_excerpt"] and content["source_reading"] in source["body_excerpt"]
+            for source in sources
+        ),
+        "transliteration exact original and sourced reading must occur in captured body",
+    )
+    _require(
+        not any(key in content or key in record for key in ("scope_status", "negative_closure", "absence_claim")),
+        "transliteration must not claim absence of conventional names",
+    )
+    return deepcopy(record)
 
 
 def negative_closure_evidence_sha256(record: dict) -> str:

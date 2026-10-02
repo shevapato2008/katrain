@@ -21,6 +21,7 @@ from katrain.web.kifu.name_evidence import (
     registry_sha256,
     owner_key as evidence_owner_key,
     validate_research_record,
+    validate_transliteration_anchor,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.identity import normalize_alias
@@ -28,10 +29,23 @@ from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, SELECTION_COLUMNS
 from katrain.web.kifu.name_composition import (
     CompositionError, HONINBO_RAWS, validate_composition, validate_composed_candidate,
 )
+from katrain.web.kifu.name_transliteration import validate_transliteration, validate_transliterated_candidate
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
-DECISION_KINDS = frozenset(("conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected", "composed"))
+DECISION_KINDS = frozenset(
+    (
+        "conventional",
+        "generated",
+        "generic",
+        "hidden",
+        "placeholder",
+        "error",
+        "corrected",
+        "composed",
+        "transliterated",
+    )
+)
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 _RANK_SUFFIX = re.compile(r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*(?:段|級|级|dan|kyu|[dkp])\Z", re.I)
 _RESULT = re.compile(r"(?:中盘|中盤|目半|resign|resignation|points?)\s*(?:胜|勝|win|won)?", re.I)
@@ -84,15 +98,18 @@ _SCRIPT = {
 }
 _RAW_CATEGORY_DECISIONS = {
     "raw_player": {
-        "placeholder": {"placeholder"}, "corrupt_pending": {"error", "corrected"},
-        "readable_unlinked": {"conventional", "generated"},
+        "placeholder": {"placeholder"},
+        "corrupt_pending": {"error", "corrected"},
+        "readable_unlinked": {"conventional", "generated", "transliterated"},
     },
     "raw_event": {
-        "empty": {"hidden"}, "program_source_label": {"hidden"},
-        "generic_event_description": {"generic"}, "corrupt_data": {"error", "corrected"},
-        "formal_event_candidate": {"conventional", "generated"},
-        "game_description": {"conventional", "generated"},
-        "unclassified_pending": {"conventional", "generated", "composed"},
+        "empty": {"hidden"},
+        "program_source_label": {"hidden"},
+        "generic_event_description": {"generic"},
+        "corrupt_data": {"error", "corrected"},
+        "formal_event_candidate": {"conventional", "generated", "transliterated"},
+        "game_description": {"conventional", "generated", "transliterated"},
+        "unclassified_pending": {"conventional", "generated", "composed", "transliterated"},
     },
 }
 
@@ -324,10 +341,17 @@ def _research_for(row: dict, research: dict | None, registry: dict) -> dict:
     return checked
 
 
-def _validate_candidate(row: dict, research: dict | None, registry: dict, inventory_values: dict,
-                        *, declarations: dict[str, dict] | None = None,
-                        link_targets: set[str] | None = None,
-                        composition_context: tuple[dict, dict, dict, dict] | None = None) -> dict:
+def _validate_candidate(
+    row: dict,
+    research: dict | None,
+    registry: dict,
+    inventory_values: dict,
+    *,
+    declarations: dict[str, dict] | None = None,
+    link_targets: set[str] | None = None,
+    composition_context: tuple[dict, dict, dict, dict] | None = None,
+    transliteration_context: dict | None = None,
+) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
     _check_owner_in_inventory(row, inventory_values, declarations=declarations, link_targets=link_targets)
@@ -344,7 +368,13 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
     else:
         _require(display == "", "hidden decision must have empty display")
 
-    if decision == "composed":
+    if decision == "transliterated":
+        _require(research is None, "transliterated candidate uses dedicated original/reading evidence")
+        try:
+            validate_transliterated_candidate(row, transliteration_context)
+        except EvidenceError as exc:
+            raise CandidateError(str(exc)) from exc
+    elif decision == "composed":
         _require(row["owner"]["kind"] == "raw_event" and parse_event(row["raw_value"], None).category == "unclassified_pending",
                  "composed name requires a pending raw event, never the Oteai branch")
         _require(research is None and composition_context is not None,
@@ -497,7 +527,7 @@ def _validate_candidate(row: dict, research: dict | None, registry: dict, invent
     if row["owner"]["kind"] in {"player", "raw_player"} and decision not in {"error", "placeholder"}:
         _require(not _RANK_SUFFIX.search(display) and not _RESULT.search(display),
                  "player name contains a rank or result")
-    if row["owner"]["kind"] == "event" and decision in {"conventional", "generated"}:
+    if row["owner"]["kind"] == "event" and decision in {"conventional", "generated", "transliterated"}:
         _require(not re.search(r"\b[12]\d{3}\b", display), "event core name contains a year")
     return row
 
@@ -790,7 +820,14 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
     return declarations, link_targets, errors
 
 
-def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_records: list[dict]) -> dict:
+def validate_bundle(
+    bundle: dict,
+    registry: dict,
+    inventory: dict,
+    research_records: list[dict],
+    *,
+    approved_name_snapshot: list[dict] | None = None,
+) -> dict:
     """Report exact batch defects; ready means this finite bundle, not the whole catalog."""
     errors: list[str] = []
     _require(isinstance(bundle, dict), "bundle must be an object")
@@ -839,8 +876,15 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             errors.append(f"member[{number}]: {exc}")
     evidence_by_hash = defaultdict(list)
     research_keys = defaultdict(list)
+    anchors_by_hash = {}
     for number, record in enumerate(research_records):
         try:
+            if isinstance(record, dict) and record.get("evidence_kind") == "transliteration_anchor":
+                validate_transliteration_anchor(record)
+                digest = canonical_sha256(record)
+                _require(digest not in anchors_by_hash, "duplicate transliteration source anchor")
+                anchors_by_hash[digest] = record
+                continue
             key = _owner_key(record.get("owner"), record.get("lang"))
             validate_research_record(record, registry)
             digest = canonical_sha256(record)
@@ -851,6 +895,19 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     for key, hashes in research_keys.items():
         if len(hashes) > 1:
             errors.append(f"multiple research records for {key}; consolidate findings before approval")
+    transliteration_context = None
+    has_transliteration = bundle.get("transliteration") is not None or any(
+        isinstance(item, dict) and item.get("decision_kind") == "transliterated" for item in candidates
+    )
+    if has_transliteration:
+        try:
+            transliteration_context = validate_transliteration(
+                bundle.get("transliteration"), candidates, anchors_by_hash, approved_name_snapshot
+            )
+        except (AttributeError, KeyError, TypeError, EvidenceError) as exc:
+            errors.append(f"transliteration: {exc}")
+    elif anchors_by_hash:
+        errors.append("transliteration source anchors require a signed finite transliteration section")
     composition_context = None
     if bundle.get("composition") is not None or any(isinstance(item, dict) and item.get("decision_kind") == "composed"
                                                     for item in candidates):
@@ -893,9 +950,16 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
             evidence = evidence_by_hash.get(item.get("research_sha256"), [])
             if len(evidence) > 1:
                 raise CandidateError("duplicate research record hash")
-            checked = _validate_candidate(item, evidence[0] if evidence else None, registry, values,
-                                          declarations=declarations, link_targets=link_targets,
-                                          composition_context=composition_context)
+            checked = _validate_candidate(
+                item,
+                evidence[0] if evidence else None,
+                registry,
+                values,
+                declarations=declarations,
+                link_targets=link_targets,
+                composition_context=composition_context,
+                transliteration_context=transliteration_context,
+            )
             decisions.append(checked)
         except (AttributeError, CandidateError) as exc:
             errors.append(f"candidate[{number}]: {exc}")
@@ -930,19 +994,30 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
                     errors.append(f"linked identity lacks all eleven approved language names: {token}")
     collisions = defaultdict(list)
     for row in decisions:
-        if row["review_status"] == "approved" and row["decision_kind"] in {"conventional", "generated", "corrected", "composed"}:
+        if row["review_status"] == "approved" and row["decision_kind"] in {
+            "conventional",
+            "generated",
+            "corrected",
+            "composed",
+            "transliterated",
+        }:
             collisions[(row["lang"], normalize_alias(row["display_name"]))].append(row["owner"])
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang
                      and normalize_alias(row["display_name"]) == name]
-            if any(row["review_status"] == "approved" and row["decision_kind"] == "composed" for row in group) or not all(
+            if any(
+                row["review_status"] == "approved" and row["decision_kind"] in {"composed", "transliterated"}
+                for row in group
+            ) or not all(
                 row.get("collision_decision") == "distinct_people_confirmed" and _text(row.get("collision_basis"))
                 for row in group
             ):
                 errors.append(f"possible name collision: {lang}:{name} owners={owners}")
     statuses = Counter(row["review_status"] for row in decisions)
     write_errors = []
+    if has_transliteration:
+        write_errors.append("transliteration is offline-only until importer and runtime integration")
     for number, item in enumerate(candidates):
         if not isinstance(item, dict) or "name_preimage_sha256" not in item:
             write_errors.append(f"candidate[{number}]: name preimage missing")

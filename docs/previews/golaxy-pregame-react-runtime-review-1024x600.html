@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>星阵设置页 · React 1024 × 600 运行时核对</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;padding:24px;background:#0e1514;color:#edf4ef;font:14px/1.6 system-ui,sans-serif}h1{font-size:23px;margin:0 0 10px}h2{font-size:18px;margin:22px 0 8px}p{max-width:1000px;color:#b5c9ba}a{color:#99ddb0}button{min-height:44px;padding:0 16px;border:1px solid #54735c;border-radius:8px;background:#1e2b26;color:#edf4ef;cursor:pointer}button[aria-pressed=true]{background:#2b5039;border-color:#76c991}.switches{display:flex;gap:8px;margin:16px 0}.parallel{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:2062px}.parallel img{display:block;width:100%;height:auto;border:1px solid #34473c}.caption{color:#a8b8af;margin-bottom:6px}.overlay{position:relative;width:1024px;height:600px}.overlay img{position:absolute;inset:0;width:1024px;height:600px}.scroller{overflow:auto}input{vertical-align:middle;margin-left:14px}table{border-collapse:collapse;max-width:1200px}th,td{border:1px solid #34473c;padding:8px 12px;text-align:left}th{background:#1e2b26}.states{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:2062px}.states img{display:block;width:100%;height:auto}code{color:#c2ddc9}
+  </style>
+</head>
+<body>
+  <h1>星阵设置页 · React 1024 × 600 运行时核对</h1>
+  <p>两张批准稿与真实 React 截图均为 1024 × 600，未拉伸或裁切。并排视图等比缩放以便阅读；叠加视图保留原始尺寸。此页只展示验证截图，不发星阵请求。</p>
+  <p>用户已确认真实 React 1024 × 600 布局。截图与本页保存在同一目录，可离线打开核对，不依赖临时预览服务器。生产页面不注入模拟账号、房间或对局数据。</p>
+  <div class="switches"><button data-mode="quick" aria-pressed="true">快速匹配</button><button data-mode="room" aria-pressed="false">创建房间</button></div>
+  <div class="parallel"><div><div class="caption">已批准 HTML · 1024 × 600</div><img id="reference" src="golaxy-quick-match-1024x600.png" alt="批准的快速匹配参考图"></div><div><div class="caption">真实 React · 1024 × 600</div><img id="runtime" src="golaxy-pregame-quick-react-1024x600.png" alt="React 快速匹配截图"></div></div>
+  <h2>同尺寸叠加</h2><label>React 图层透明度<input id="opacity" type="range" min="0" max="100" value="50"></label>
+  <div class="scroller"><div class="overlay"><img id="overlay-reference" src="golaxy-quick-match-1024x600.png" alt="参考图层"><img id="overlay-runtime" style="opacity:.5" src="golaxy-pregame-quick-react-1024x600.png" alt="React 图层"></div></div>
+  <h2>核对记录与语义差异</h2>
+  <table><thead><tr><th>项目</th><th>核对结果</th></tr></thead><tbody>
+    <tr><td>构图与间距</td><td>双栏 y=173、高 420px；棋盘 356×356、y=194；用时卡片 y=258、高 79px；AI 区 y=337、高 54px，与批准稿一致。真实外壳没有审核稿设备描边，左右坐标有 0.5–1px 差异。</td></tr>
+    <tr><td>组件层级与交互</td><td>屏幕/实体盘 → 三档用时或房间三状态 → 说明 → 禁用提交。三档默认全选、独立切换，保留至少一档；房号切换后保留。</td></tr>
+    <tr><td>字体、颜色、材质</td><td>复用 SmartBox 字体和真实棋盘 SVG；页面面板、绿底选择态、木色及网格内距按批准稿对齐。真实 MUI 外壳的字体平滑使文字略细。</td></tr>
+    <tr><td>图标与素材</td><td>复用真实星阵标记和返回图标。棋盘采用项目 SVG 渲染器，交互稿采用 CSS 网格；实际格线绘制有亚像素差异。</td></tr>
+    <tr><td>顶栏与连接状态</td><td>真实共享顶栏显示“围棋”、访客和当前时间；不伪造交互稿的“已连接”。本切片没有新增连接状态请求。</td></tr>
+    <tr><td>AI fallback</td><td>交互稿中的临时开关可切换；React 默认关闭且明确禁用，说明“AI 对手暂不可用，当前只匹配棋友”。真实 fallback 尚未验证，不发送请求。</td></tr>
+    <tr><td>房间与开局状态</td><td>“我的房间”显示“尚未接通我的房间”，不造房间号。加入提醒可能是观战身份。所有写入按钮保持“暂不可用”，并补充当前不能开局的说明。</td></tr>
+  </tbody></table>
+  <h2>其余房间状态 · 真实 React 1024 × 600</h2><div class="states"><div><div class="caption">我的房间 · 尚未接通</div><img src="golaxy-pregame-mine-react-1024x600.png" alt="我的房间尚未接通状态"></div><div><div class="caption">加入房间 · 身份提醒与禁用提交</div><img src="golaxy-pregame-join-react-1024x600.png" alt="加入房间设置与观战身份提醒"></div></div>
+  <script>
+    const files={quick:'golaxy-quick-match-1024x600.png',room:'golaxy-room-menu-1024x600.png'};
+    document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{const mode=button.dataset.mode;document.querySelectorAll('[data-mode]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));for(const id of ['reference','overlay-reference'])document.getElementById(id).src=files[mode];for(const id of ['runtime','overlay-runtime'])document.getElementById(id).src=`golaxy-pregame-${mode}-react-1024x600.png`});
+    document.getElementById('opacity').oninput=event=>document.getElementById('overlay-runtime').style.opacity=event.target.value/100;
+  </script>
+</body>
+</html>

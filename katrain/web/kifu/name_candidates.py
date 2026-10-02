@@ -496,7 +496,8 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
             album = associations[album_id]
             _require(link.get("association_sha256") == canonical_sha256(album),
                      "link source/context association hash mismatch")
-            _require(bool(_HASH.fullmatch(str(link.get("production_sgf_sha256", "")))),
+            sgf_hash = link.get("production_sgf_sha256")
+            _require(isinstance(sgf_hash, str) and bool(_HASH.fullmatch(sgf_hash)),
                      "link requires a valid production SGF SHA-256 preimage")
             expected = link.get("expected")
             _require(isinstance(expected, dict) and set(expected) == required_context,

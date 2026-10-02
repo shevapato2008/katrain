@@ -742,7 +742,7 @@ def test_v2_identity_scope_rejects_reusing_review_after_payload_changes(engine, 
     assert any("scope hash mismatch" in error or "scope freeze" in error for error in result["errors"])
 
 
-@pytest.mark.parametrize("change", ["missing", "malformed", "changed"])
+@pytest.mark.parametrize("change", ["missing", "malformed", "integer", "changed"])
 def test_v2_link_requires_signed_production_sgf_preimage(engine, change):
     inv = build_inventory(engine)
     owner = {"kind": "player", "id": 17}
@@ -756,6 +756,8 @@ def test_v2_link_requires_signed_production_sgf_preimage(engine, change):
         del link["production_sgf_sha256"]
     elif change == "malformed":
         link["production_sgf_sha256"] = "invalid"
+    elif change == "integer":
+        link["production_sgf_sha256"] = int("1" * 64)
     else:
         link["production_sgf_sha256"] = "b" * 64
     if change != "changed":
@@ -764,6 +766,7 @@ def test_v2_link_requires_signed_production_sgf_preimage(engine, change):
 
     result = validate_bundle(bundle, source_registry, inv, research)
     assert not result["ready"]
+    assert not result["write_ready"]
     expected = "production SGF SHA-256" if change != "changed" else "scope hash mismatch"
     assert any(expected in error for error in result["errors"])
 

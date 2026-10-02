@@ -947,6 +947,78 @@ def test_v2_new_raw_category_must_match_parser_and_approved_decision(engine):
     assert counts(engine) == (0, 0, 0, 0, 0)
 
 
+def test_classification_v2_raw_bundle_apply_display_search_coverage_and_undo(engine, monkeypatch):
+    from tests.web_ui.test_kifu_name_candidates import v2_classification_candidate, V2_GENERIC_DISPLAYS
+    from tests.web_ui.test_kifu_name_api import _list
+    from katrain.web.core.models_db import KifuEventAlias
+    from katrain.web.kifu.name_coverage import coverage_report
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    raw = "段位赛"
+    sgf = f"(;PB[Alpha]PW[Beta]EV[{raw}])"
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="Alpha", player_white="Beta", event=raw,
+            sgf_content=sgf, source_path="generic.sgf"))
+    inv = build_inventory(engine, inventory_format=4)
+    owner = {"kind": "raw_event", "ref": "rank-event"}
+    declaration = {
+        "owner": owner, "create": {"raw_value": raw, "category": "generic_event_description"},
+        "occurrence_album_ids": [12], "occurrence_sha256": canonical_sha256([12]),
+        "category_review": {"status": "approved", "producer_id": "researcher-1",
+                            "producer_model": "gpt-6-luna", "produced_at": "2026-10-02T10:00:00Z",
+                            "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-luna",
+                            "reviewed_at": "2026-10-02T10:30:00Z",
+                            "category_basis": "Exact parser category: generic description without event identity"},
+    }
+    proposed = approved_bundle(inv)
+    proposed["inventory_format"] = 4
+    proposed["candidates"] = []
+    for lang in LANGS:
+        row = v2_classification_candidate(raw, lang, owner)
+        row["name_preimage_sha256"] = None
+        proposed["candidates"].append(bind_fixture_candidate(row))
+    proposed["members"] = [{"owner": owner, "lang": lang, "raw_value": raw} for lang in LANGS]
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    proposed = _v2_wrap(engine, inv, proposed, [declaration], [])
+    before = counts(engine)
+    assert dry_run_bundle(engine, proposed, registry(), inv, [])["ready"]
+    assert counts(engine) == before
+    missing_preimage = deepcopy(proposed)
+    del missing_preimage["candidates"][0]["name_preimage_sha256"]
+    with pytest.raises(BatchError, match="preimage"):
+        dry_run_bundle(engine, missing_preimage, registry(), inv, [])
+    applied = apply_bundle(engine, proposed, registry(), inv, [])
+    owner_id = applied["resolved_refs"]["raw_event:@rank-event"]
+    report = coverage_report(engine, inv, languages=LANGS)
+    with Session(engine) as db:
+        names = db.query(KifuRawEventName).filter_by(raw_event_id=owner_id).all()
+        assert {name.lang: name.display_name for name in names} == V2_GENERIC_DISPLAYS[raw]
+        assert {name.generation_rule_version for name in names} == {"classification-v2"}
+        assert db.query(KifuEvent).count() == db.query(KifuEventAlias).count() == 0
+        assert db.query(KifuAlbum).filter_by(id=12).one().event_id is None
+        assert db.query(KifuAlbum).filter_by(id=12).one().sgf_content == sgf
+        for lang, display in V2_GENERIC_DISPLAYS[raw].items():
+            assert {item.id: item.display_event for item in _list(db, lang=lang).items}[12] == display
+            assert [item.id for item in _list(db, q=display, lang=lang).items] == [12]
+            assert report["languages"][lang]["by_decision"] == {"generic": 1}
+        # Revocation uses the same persisted approval for display, search and coverage.
+        evidence = db.query(KifuNameResearchEvidence).filter_by(raw_event_id=owner_id, lang="en").one()
+        evidence.review_status = "pending"
+        db.commit()
+        assert {item.id: item.display_event for item in _list(db, lang="en").items}[12] == "Event name unverified"
+        assert _list(db, q="Dan-rank tournament", lang="en").items == []
+        assert coverage_report(engine, inv, languages=("en",))["languages"]["en"]["by_decision"] == {}
+        evidence.review_status = "approved"
+        db.commit()
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert db.query(KifuRawEventValue).filter_by(id=owner_id).first() is None
+        assert db.query(KifuRawEventName).filter_by(raw_event_id=owner_id).count() == 0
+        assert db.query(KifuAlbum).filter_by(id=12).one().sgf_content == sgf
+        assert db.query(KifuAlbum).filter_by(id=12).one().event_id is None
+
+
 def _eleven_language_identity_fixture(engine, inv, owners):
     source_registry = registry()
     source_registry["sources"] = [

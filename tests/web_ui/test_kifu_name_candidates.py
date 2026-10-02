@@ -8,6 +8,7 @@ import pytest
 
 from katrain.web.kifu.name_candidates import (
     CandidateError,
+    _CLASSIFICATION_TEMPLATES,
     canonical_sha256,
     classification_template_sha256,
     _occurrence_indexes,
@@ -24,6 +25,117 @@ from scripts.kifu_name_candidates import main
 
 
 LANGS = ("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua")
+
+V1_CLASSIFICATION_HASHES = {
+    "cn": "4b864b74926267422fe6e79deb1d5e07d8335f26b988572b5997c419b850a0f2",
+    "de": "9b83178cc2f5d276d60eeb0c29f36aa5a0725ca7147acc5fc07e7d5b7e616e67",
+    "en": "d2fe9f66756b2dce50f40a4720094400086609e46eca25fe39121e772dd0a3d8",
+    "es": "987c30b656d2b1eda6ae8443c10b75d69754269138b4ea8c51aac04169ac5d1b",
+    "fr": "9db6505579a02b8b148b0fb582b750e8dc5fc1cb1e8aa17dab371e6f4e318768",
+    "jp": "95ed2396c392776bb3d11396459b7b14db237317d04f81e6787922d0edc3ec93",
+    "ko": "113d6243d3d057e796a7368992738ca497dc4da3244a6fc659197754b0a980eb",
+    "ru": "208f36b8b066dcf27372527cfd59ac6f7d5fa80b09c7df58d9664495409d2bfa",
+    "tr": "d1278e77e3e1a6d211b538a4b6fab65876bd6490e4c61207736f7d37aa15de3e",
+    "tw": "b951e6c8a4394471ca3c6792b629c34fca75916b21aab5e4fca95b9b6b9dbf77",
+    "ua": "f13576de8ac5dc01e2feacbdb11f9b8b51a2a68df48eca597ef2bae0d9fbc5aa",
+}
+V2_GENERIC_DISPLAYS = {
+    "个人赛": dict(zip(LANGS, (
+        "Individual tournament", "个人赛", "個人賽", "個人戦", "개인전", "Einzelturnier",
+        "Torneo individual", "Tournoi individuel", "Индивидуальный турнир", "Bireysel turnuva",
+        "Індивідуальний турнір",
+    ))),
+    "段位赛": dict(zip(LANGS, (
+        "Dan-rank tournament", "段位赛", "段位賽", "段位戦", "단위(段位) 관련 대회", "Dan-Grad-Turnier",
+        "Torneo de grados dan", "Tournoi de grades dan", "Турнир по данам", "Dan derecesi turnuvası",
+        "Турнір за данами",
+    ))),
+}
+
+
+def v2_classification_candidate(raw, lang, owner=None):
+    row = candidate(owner=owner or {"kind": "raw_event", "id": 8}, lang=lang, raw_value=raw,
+                    display_name=V2_GENERIC_DISPLAYS[raw][lang], decision_kind="generic",
+                    research_sha256="", generation_rule_version="classification-v2")
+    templates = {**_CLASSIFICATION_TEMPLATES[lang],
+                 "rank_event": V2_GENERIC_DISPLAYS["段位赛"][lang],
+                 "individual_event": V2_GENERIC_DISPLAYS["个人赛"][lang]}
+    row["template_review"].update(version="classification-v2", sha256=canonical_sha256({
+        "version": "classification-v2", "lang": lang, "templates": templates,
+    }))
+    return row
+
+
+def v2_generic_bundle(raw="个人赛"):
+    inv = inventory()
+    inv["album_associations"].append([3, "Black", "White", raw, None, None, None])
+    owner = {"kind": "raw_event", "id": 8}
+    declaration = {"owner": owner, "preimage": {"id": 8, "raw_value": raw,
+                   "category": "generic_event_description", "review_status": "approved"},
+                   "occurrence_album_ids": [3], "occurrence_sha256": canonical_sha256([3])}
+    members = [member(owner, lang, raw) for lang in LANGS]
+    proposed = bundle(members=members, candidates=[v2_classification_candidate(raw, lang) for lang in LANGS],
+                      bundle_format=2, catalog_sha256="b" * 64, owners=[declaration],
+                      owner_set_sha256=canonical_sha256([declaration]), album_links=[],
+                      link_set_sha256=canonical_sha256([]))
+    return proposed, inv
+
+
+def test_classification_v1_template_hashes_remain_frozen():
+    assert {lang: classification_template_sha256(lang) for lang in LANGS} == V1_CLASSIFICATION_HASHES
+
+
+@pytest.mark.parametrize("raw", V2_GENERIC_DISPLAYS)
+@pytest.mark.parametrize("lang", LANGS)
+def test_classification_v2_accepts_exact_reviewed_generic_displays(raw, lang):
+    proposed, inv = v2_generic_bundle(raw)
+    row = next(row for row in proposed["candidates"] if row["lang"] == lang)
+    assert validate_candidate(row, None, registry(), inv) == row
+    assert classification_template_sha256(lang, version="classification-v2") == row["template_review"]["sha256"]
+    assert classification_template_sha256(lang) != row["template_review"]["sha256"]
+
+
+@pytest.mark.parametrize("raw,lang", [("个人赛", "en"), ("个人赛", "ru"), ("段位赛", "ko")])
+def test_classification_versions_reject_old_text_mixed_review_and_changed_hash(raw, lang):
+    proposed, inv = v2_generic_bundle(raw)
+    row = next(row for row in proposed["candidates"] if row["lang"] == lang)
+    key = "rank_event" if raw == "段位赛" else "individual_event"
+    for bad in (
+        {**row, "generation_rule_version": "classification-v1"},
+        {**row, "generation_rule_version": "classification-v3"},
+        {**row, "display_name": _CLASSIFICATION_TEMPLATES[lang][key]},
+        {**row, "template_review": {**row["template_review"], "version": "classification-v1"}},
+        {**row, "template_review": {**row["template_review"], "sha256": classification_template_sha256(lang)}},
+        {**row, "template_review": {**row["template_review"], "sha256": "c" * 64}},
+    ):
+        with pytest.raises(CandidateError):
+            validate_candidate(bad, None, registry(), inv)
+
+
+@pytest.mark.parametrize("raw", V2_GENERIC_DISPLAYS)
+def test_classification_v2_bundle_requires_all_eleven_approved_under_same_version(raw):
+    proposed, inv = v2_generic_bundle(raw)
+    assert validate_bundle(proposed, registry(), inv, [])["ready"]
+    for change in ("missing_language", "missing_candidate", "pending", "v1_language", "legacy_manifest"):
+        bad = deepcopy(proposed)
+        if change == "missing_language":
+            bad["members"].pop()
+            bad["candidates"].pop()
+            bad["member_set_sha256"] = canonical_sha256(bad["members"])
+        elif change == "missing_candidate":
+            bad["candidates"].pop()
+        elif change == "pending":
+            bad["candidates"][-1].update(review_status="pending", reviewer_id="", reviewer_model="",
+                                         reviewed_at="", review_conclusion="")
+        elif change == "v1_language":
+            # cn text is unchanged; its old approval is nevertheless a different protocol.
+            row = next(row for row in bad["candidates"] if row["lang"] == "cn")
+            row["generation_rule_version"] = "classification-v1"
+            row["template_review"].update(version="classification-v1", sha256=classification_template_sha256("cn"))
+        else:
+            bad["bundle_format"] = 1
+        report = validate_bundle(bad, registry(), inv, [])
+        assert not report["ready"], change
 
 
 def registry():

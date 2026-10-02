@@ -88,6 +88,24 @@ _CLASSIFICATION_TEMPLATES = {
            "event_error": "Помилка в даних турніру", "rank_event": "Турнір розрядів",
            "individual_event": "Особистий турнір"},
 }
+# Keep v1 and its default hash/fallback meaning frozen. Each version binds the
+# entire language template, including phrases unchanged by the new review.
+_CLASSIFICATION_TEMPLATES_V2 = {lang: dict(templates) for lang, templates in _CLASSIFICATION_TEMPLATES.items()}
+for _lang, _replacements in {
+    "en": {"individual_event": "Individual tournament", "rank_event": "Dan-rank tournament"},
+    "ko": {"rank_event": "단위(段位) 관련 대회"},
+    "de": {"rank_event": "Dan-Grad-Turnier"},
+    "es": {"rank_event": "Torneo de grados dan"},
+    "fr": {"rank_event": "Tournoi de grades dan"},
+    "ru": {"individual_event": "Индивидуальный турнир", "rank_event": "Турнир по данам"},
+    "tr": {"rank_event": "Dan derecesi turnuvası"},
+    "ua": {"individual_event": "Індивідуальний турнір", "rank_event": "Турнір за данами"},
+}.items():
+    _CLASSIFICATION_TEMPLATES_V2[_lang].update(_replacements)
+_CLASSIFICATION_TEMPLATE_VERSIONS = {
+    CLASSIFICATION_RULE_VERSION: _CLASSIFICATION_TEMPLATES,
+    "classification-v2": _CLASSIFICATION_TEMPLATES_V2,
+}
 _SCRIPT = {
     "en": re.compile(r"[A-Za-z]"), "de": re.compile(r"[A-Za-zÀ-ÿ]"),
     "es": re.compile(r"[A-Za-zÀ-ÿ]"), "fr": re.compile(r"[A-Za-zÀ-ÿ]"),
@@ -189,10 +207,11 @@ def canonical_sha256(value: object) -> str:
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
-def classification_template_sha256(lang: str) -> str:
+def classification_template_sha256(lang: str, version: str = CLASSIFICATION_RULE_VERSION) -> str:
     _require(lang in LANGUAGES, "unknown classification template language")
-    return canonical_sha256({"version": CLASSIFICATION_RULE_VERSION, "lang": lang,
-                             "templates": _CLASSIFICATION_TEMPLATES[lang]})
+    _require(version in _CLASSIFICATION_TEMPLATE_VERSIONS, "unknown classification template version")
+    return canonical_sha256({"version": version, "lang": lang,
+                             "templates": _CLASSIFICATION_TEMPLATE_VERSIONS[version][lang]})
 
 
 def _owner_key(owner: object, lang: object) -> str:
@@ -502,7 +521,8 @@ def _validate_candidate(
             _require((kind == "raw_player" and category == "corrupt_pending")
                      or (kind == "raw_event" and category == "corrupt_data"),
                      "error display requires a damaged raw value")
-        _require(row["generation_rule_version"] == CLASSIFICATION_RULE_VERSION,
+        version = row["generation_rule_version"]
+        _require(version in _CLASSIFICATION_TEMPLATE_VERSIONS,
                  "classification decision must bind the reviewed template version")
         template_key = (
             "placeholder" if decision == "placeholder"
@@ -511,14 +531,15 @@ def _validate_candidate(
             else "individual_event" if decision == "generic"
             else "hidden"
         )
-        expected = "" if template_key == "hidden" else _CLASSIFICATION_TEMPLATES[row["lang"]][template_key]
+        templates = _CLASSIFICATION_TEMPLATE_VERSIONS[version]
+        expected = "" if template_key == "hidden" else templates[row["lang"]][template_key]
         _require(display == expected, "classification display differs from versioned language template")
         if row["review_status"] == "approved":
             template_review = row.get("template_review")
             _require(isinstance(template_review, dict)
-                     and template_review.get("version") == CLASSIFICATION_RULE_VERSION
+                     and template_review.get("version") == version
                      and template_review.get("lang") == row["lang"]
-                     and template_review.get("sha256") == classification_template_sha256(row["lang"])
+                     and template_review.get("sha256") == classification_template_sha256(row["lang"], version)
                      and template_review.get("reviewer_id") == row.get("reviewer_id")
                      and template_review.get("reviewer_model") == row.get("reviewer_model")
                      and _time(template_review.get("reviewed_at"))
@@ -1009,6 +1030,18 @@ def validate_bundle(
         actual = {(row["raw_value"], row["lang"]) for row in decisions if row["decision_kind"] == "composed"}
         if actual != expected:
             errors.append("composition requires exact 34 x 11 candidate set")
+    generic_v2_owners = {_owner_token(row["owner"]): row["owner"] for row in decisions
+                         if row["decision_kind"] == "generic"
+                         and row["generation_rule_version"] == "classification-v2"}
+    for token, owner in generic_v2_owners.items():
+        if declarations is None or token not in declarations:
+            errors.append(f"classification-v2 generic owner requires pinned owner manifest: {token}")
+        rows = [row for row in decisions if _owner_token(row["owner"]) == token]
+        if (not all(_owner_key(owner, lang) in member_map for lang in LANGUAGES)
+                or len(rows) != len(LANGUAGES)
+                or any(row["review_status"] != "approved" or row["decision_kind"] != "generic"
+                       or row["generation_rule_version"] != "classification-v2" for row in rows)):
+            errors.append(f"classification-v2 generic owner requires all eleven approved language names: {token}")
     if bundle["bundle_format"] in {2, 3, 4}:
         approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
                          if row["review_status"] == "approved"}

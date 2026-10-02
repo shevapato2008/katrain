@@ -74,7 +74,14 @@ def bundle(*, members=None):
     scope_hash = canonical_sha256(members)
     review = {
         "reviewer_id": "independent-reviewer",
+        "reviewer_model": "gpt-6-astra",
         "reviewed_at": "2026-10-02T05:00:00Z",
+        "review_conclusion": "approved_second_gn_selection",
+        "evidence_scope": {
+            "member_set_sha256": scope_hash,
+            "album_count": len(members),
+            "reviewed_material": "Pinned album SGF GN and GC, SGF hash and source preimages",
+        },
         "status": "approved",
         "member_set_sha256": scope_hash,
         "basis": "Checked the frozen SGF and second GN against its GC value",
@@ -86,6 +93,9 @@ def bundle(*, members=None):
         "members": members,
         "member_set_sha256": scope_hash,
         "producer_id": "producer",
+        "producer_model": "gpt-6-luna",
+        "produced_at": "2026-10-02T04:00:00Z",
+        "scope_frozen_at": "2026-10-02T04:50:00Z",
         "review": review,
     }
 
@@ -169,6 +179,37 @@ def test_invalid_member_or_review_blocks_apply(engine, change):
     assert counts(engine) == (0, 0)
 
 
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda b: b.pop("producer_model"),
+        lambda b: b.update(producer_model=""),
+        lambda b: b.pop("produced_at"),
+        lambda b: b.update(produced_at="2026-10-02T04:00:00"),
+        lambda b: b.update(produced_at="2026-10-02T04:51:00Z"),
+        lambda b: b.pop("scope_frozen_at"),
+        lambda b: b.update(scope_frozen_at="2026-10-02T05:01:00Z"),
+        lambda b: b["review"].pop("reviewer_model"),
+        lambda b: b["review"].update(reviewer_model=""),
+        lambda b: b["review"].pop("review_conclusion"),
+        lambda b: b["review"].update(review_conclusion="pending"),
+        lambda b: b["review"].pop("evidence_scope"),
+        lambda b: b["review"]["evidence_scope"].update(album_count=2),
+        lambda b: b["review"]["evidence_scope"].update(member_set_sha256="0" * 64),
+    ],
+)
+def test_missing_or_reversed_provenance_blocks_bundle(change):
+    from katrain.web.kifu.event_selection import EventSelectionError, validate_bundle
+
+    reviewed = bundle()
+    change(reviewed)
+    reviewed["review"]["review_signature"] = canonical_sha256(
+        {key: value for key, value in reviewed["review"].items() if key != "review_signature"}
+    )
+    with pytest.raises(EventSelectionError):
+        validate_bundle(reviewed)
+
+
 def test_atomic_apply_retry_and_undo_preserve_original_album(engine):
     from katrain.web.kifu.event_selection import apply_bundle, batch_status, undo_batch
 
@@ -184,6 +225,11 @@ def test_atomic_apply_retry_and_undo_preserve_original_album(engine):
         selection = conn.execute(select(KifuAlbumEventSelection.__table__)).mappings().one()
         assert selection["selected_raw"] == member()["selected_raw"]
         assert selection["sgf_sha256"] == member()["sgf_sha256"]
+        audit = conn.execute(select(KifuEventSelectionBatch.__table__)).mappings().one()["reviewed_artifact"]["bundle"]
+        assert audit["producer_model"] == "gpt-6-luna"
+        assert audit["produced_at"] < audit["scope_frozen_at"] < audit["review"]["reviewed_at"]
+        assert audit["review"]["reviewer_model"] == "gpt-6-astra"
+        assert audit["review"]["evidence_scope"]["member_set_sha256"] == audit["member_set_sha256"]
         assert conn.execute(select(KifuAlbum.__table__).where(KifuAlbum.id == 1)).mappings().one() == album_before
     assert batch_status(engine, applied["batch_id"])["status"] == "applied"
     assert undo_batch(engine, applied["batch_id"])["status"] == "undone"

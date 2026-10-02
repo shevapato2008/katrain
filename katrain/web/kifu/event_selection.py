@@ -36,8 +36,29 @@ _MEMBER_KEYS = {
     "selected_raw",
     "rule_version",
 }
-_REVIEW_KEYS = {"reviewer_id", "reviewed_at", "status", "member_set_sha256", "basis", "review_signature"}
-_BUNDLE_KEYS = {"selection_format", "rule_version", "members", "member_set_sha256", "producer_id", "review"}
+_REVIEW_KEYS = {
+    "reviewer_id",
+    "reviewer_model",
+    "reviewed_at",
+    "review_conclusion",
+    "evidence_scope",
+    "status",
+    "member_set_sha256",
+    "basis",
+    "review_signature",
+}
+_BUNDLE_KEYS = {
+    "selection_format",
+    "rule_version",
+    "members",
+    "member_set_sha256",
+    "producer_id",
+    "producer_model",
+    "produced_at",
+    "scope_frozen_at",
+    "review",
+}
+_EVIDENCE_SCOPE_KEYS = {"member_set_sha256", "album_count", "reviewed_material"}
 _ALBUM_PREIMAGE = {
     "event": "old_event",
     "event_id": "old_event_id",
@@ -52,6 +73,16 @@ _ALBUM_PREIMAGE = {
 def _require(condition: bool, message: str) -> None:
     if not condition:
         raise EventSelectionError(message)
+
+
+def _timestamp(value: object, label: str) -> datetime:
+    _require(isinstance(value, str), f"{label} is required")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise EventSelectionError(f"{label} is invalid") from exc
+    _require(parsed.tzinfo is not None, f"{label} needs a timezone")
+    return parsed
 
 
 def selected_second_gn(root, source_folder: str) -> str | None:
@@ -85,6 +116,13 @@ def validate_bundle(bundle: dict) -> dict:
     _require(
         isinstance(bundle["producer_id"], str) and bool(bundle["producer_id"].strip()), "producer identity is required"
     )
+    _require(
+        isinstance(bundle["producer_model"], str) and bool(bundle["producer_model"].strip()),
+        "actual producer model is required",
+    )
+    produced_at = _timestamp(bundle["produced_at"], "production time")
+    frozen_at = _timestamp(bundle["scope_frozen_at"], "scope freeze time")
+    _require(produced_at <= frozen_at, "scope freeze precedes production")
     ids = []
     for index, member in enumerate(members):
         _require(isinstance(member, dict) and set(member) == _MEMBER_KEYS, f"member[{index}] fields differ")
@@ -133,13 +171,24 @@ def validate_bundle(bundle: dict) -> dict:
         and review["reviewer_id"] != bundle["producer_id"],
         "reviewer must differ from producer",
     )
+    _require(
+        isinstance(review["reviewer_model"], str) and bool(review["reviewer_model"].strip()),
+        "actual reviewer model is required",
+    )
+    _require(review["review_conclusion"] == "approved_second_gn_selection", "explicit review conclusion differs")
+    scope = review["evidence_scope"]
+    _require(
+        isinstance(scope, dict)
+        and set(scope) == _EVIDENCE_SCOPE_KEYS
+        and scope["member_set_sha256"] == member_hash
+        and scope["album_count"] == len(members)
+        and isinstance(scope["reviewed_material"], str)
+        and bool(scope["reviewed_material"].strip()),
+        "review evidence scope does not bind the frozen member set",
+    )
     _require(isinstance(review["basis"], str) and bool(review["basis"].strip()), "review basis is required")
-    _require(isinstance(review["reviewed_at"], str), "review time is required")
-    try:
-        reviewed_at = datetime.fromisoformat(review["reviewed_at"].replace("Z", "+00:00"))
-    except ValueError as exc:
-        raise EventSelectionError("review time is invalid") from exc
-    _require(reviewed_at.tzinfo is not None, "review time needs a timezone")
+    reviewed_at = _timestamp(review["reviewed_at"], "review time")
+    _require(reviewed_at > frozen_at, "review precedes or coincides with scope freeze")
     signed = {key: value for key, value in review.items() if key != "review_signature"}
     _require(review["review_signature"] == canonical_sha256(signed), "independent review signature mismatch")
     return {

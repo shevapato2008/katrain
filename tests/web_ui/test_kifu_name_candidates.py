@@ -710,6 +710,41 @@ def test_v2_occurrence_index_counts_one_game_but_both_slots_for_duplicate_raw_pl
     assert event_slots["Cup"] == [[11, "event"], [12, "event"]]
 
 
+def test_selected_event_is_a_v3_raw_scope_but_legacy_bundle_cannot_claim_it():
+    from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
+
+    inv = inventory()
+    rows = [[1, "Selected Cup", "a" * 64, "reviewer", "2026-10-02T10:00:00", 3, "b" * 64]]
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    for row in rows:
+        _hash_row(digest, b"E", row)
+    inv.update(inventory_format=3, event_selection={
+        "selection_format": 1, "columns": list(SELECTION_COLUMNS), "rows": rows, "sha256": digest.hexdigest(),
+    })
+    raw_owner = {"kind": "raw_event", "id": 9}
+    selected = candidate(owner=raw_owner, raw_value="Selected Cup", lang="ru", display_name="Кубок",
+                         research_sha256="")
+    source = check(owner=raw_owner, candidate_name="Кубок", body_excerpt="Кубок: Selected Cup")
+    evidence = research(owner=raw_owner, candidate_name="Кубок", source_checks=[source])
+    selected["research_sha256"] = canonical_sha256(evidence)
+    assert validate_candidate(selected, evidence, registry(), inv)["display_name"] == "Кубок"
+    for bad in ([], [[1, "Other Cup", *rows[0][2:]]]):
+        changed = deepcopy(inv)
+        changed["event_selection"]["rows"] = bad
+        digest = hashlib.sha256()
+        _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+        for row in bad:
+            _hash_row(digest, b"E", row)
+        changed["event_selection"]["sha256"] = digest.hexdigest()
+        with pytest.raises(CandidateError):
+            validate_candidate(selected, evidence, registry(), changed)
+    old = bundle(members=[member(raw_owner, raw_value="Selected Cup")], candidates=[selected])
+    old["member_set_sha256"] = canonical_sha256(old["members"])
+    with pytest.raises(CandidateError, match="format"):
+        validate_bundle(old, registry(), inv, [evidence])
+
+
 def test_v2_new_person_cannot_link_with_only_one_language_name():
     new_owner = {"kind": "player", "ref": "historical-player"}
     declaration = {"owner": new_owner, "create": {"canonical_name": "呉清源"}}

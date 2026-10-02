@@ -23,6 +23,7 @@ from katrain.web.kifu.name_evidence import (
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, _hash_row
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -134,22 +135,58 @@ def _owner_token(owner: dict) -> str:
     return _owner_key(owner, "en").rsplit(":", 1)[0]
 
 
+def _selection_rows(inventory: dict) -> list[list]:
+    if inventory.get("inventory_format") == 2:
+        _require("event_selection" not in inventory, "v2 inventory cannot include event selections")
+        return []
+    _require(inventory.get("inventory_format") == 3, "inventory format 2 or 3 required")
+    selection = inventory.get("event_selection")
+    _require(isinstance(selection, dict) and selection.get("selection_format") == 1
+             and selection.get("columns") == list(SELECTION_COLUMNS)
+             and isinstance(selection.get("rows"), list), "event selection supplement is incomplete")
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    previous_id = -1
+    for row in selection["rows"]:
+        _require(isinstance(row, list) and len(row) == len(SELECTION_COLUMNS),
+                 "event selection row is malformed")
+        album_id, raw, sgf_sha, reviewer, reviewed_at, batch_id, bundle_sha = row
+        _require(type(album_id) is int and album_id > previous_id and isinstance(raw, str) and bool(raw.strip())
+                 and isinstance(sgf_sha, str) and _HASH.fullmatch(sgf_sha)
+                 and isinstance(reviewer, str) and bool(reviewer)
+                 and isinstance(reviewed_at, str) and bool(reviewed_at)
+                 and type(batch_id) is int and batch_id > 0
+                 and isinstance(bundle_sha, str) and _HASH.fullmatch(bundle_sha),
+                 "event selection row is invalid or unsorted")
+        previous_id = album_id
+        _hash_row(digest, b"E", row)
+    _require(selection.get("sha256") == digest.hexdigest(), "event selection supplement hash mismatch")
+    return selection["rows"]
+
+
 def _inventory_values(inventory: dict) -> dict[str, set]:
-    _require(inventory.get("inventory_format") == 2 and bool(_HASH.fullmatch(str(inventory.get("sha256", "")))),
-             "inventory format 2 and SHA-256 required")
+    _require(inventory.get("inventory_format") in {2, 3}
+             and bool(_HASH.fullmatch(str(inventory.get("sha256", "")))),
+             "inventory format 2 or 3 and SHA-256 required")
     columns = inventory.get("association_columns")
     rows = inventory.get("album_associations")
     required = {"player_black", "player_white", "event", "black_player_id", "white_player_id", "event_id"}
     _require(isinstance(columns, list) and required.issubset(columns) and isinstance(rows, list),
              "inventory associations are incomplete")
     values = {kind: set() for kind in OWNER_KINDS}
+    album_ids = set()
     for row in rows:
         _require(isinstance(row, list) and len(row) == len(columns), "inventory association is malformed")
         album = dict(zip(columns, row))
+        album_ids.add(album["id"])
         values["raw_player"].update((album["player_black"], album["player_white"]))
         values["raw_event"].add(album["event"])
         values["player"].update((album["black_player_id"], album["white_player_id"]))
         values["event"].add(album["event_id"])
+    for album_id, raw, *_ in _selection_rows(inventory):
+        _require(album_id in album_ids,
+                 "event selection album absent from inventory")
+        values["raw_event"].add(raw)
     return values
 
 
@@ -373,8 +410,9 @@ def validate_candidate(row: dict, research: dict | None, registry: dict, invento
     return _validate_candidate(row, research, registry, _inventory_values(inventory))
 
 
-def _occurrence_indexes(associations: dict[int, dict]) -> tuple[dict[str, list[int]], dict[str, list[int]],
-                                                                    dict[str, list[list]], dict[str, list[list]]]:
+def _occurrence_indexes(associations: dict[int, dict], selection_rows: list[list] = ()) -> tuple[
+    dict[str, list[int]], dict[str, list[int]], dict[str, list[list]], dict[str, list[list]]
+]:
     """Build global exact-spelling scopes once, retaining black/white slot multiplicity."""
     player_games = defaultdict(set)
     event_games = defaultdict(set)
@@ -388,6 +426,9 @@ def _occurrence_indexes(associations: dict[int, dict]) -> tuple[dict[str, list[i
         event = album["event"]
         event_games[event].add(album_id)
         event_slots[event].append([album_id, "event"])
+    for album_id, raw, *_ in selection_rows:
+        event_games[raw].add(album_id)
+        event_slots[raw].append([album_id, "selected_event"])
     return ({raw: sorted(ids) for raw, ids in player_games.items()},
             {raw: sorted(ids) for raw, ids in event_games.items()},
             {raw: sorted(slots) for raw, slots in player_slots.items()},
@@ -437,7 +478,8 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
     columns = inventory["association_columns"]
     associations = {dict(zip(columns, row))["id"]: dict(zip(columns, row))
                     for row in inventory["album_associations"] if len(row) == len(columns)}
-    player_games, event_games, player_slots, event_slots = _occurrence_indexes(associations)
+    player_games, event_games, player_slots, event_slots = _occurrence_indexes(
+        associations, _selection_rows(inventory))
     raw_scope_hashes = {}
     declarations = {}
     for number, declaration in enumerate(owners):
@@ -568,7 +610,8 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     """Report exact batch defects; ready means this finite bundle, not the whole catalog."""
     errors: list[str] = []
     _require(isinstance(bundle, dict), "bundle must be an object")
-    _require(bundle.get("bundle_format") in {1, 2} and bundle.get("inventory_format") == 2,
+    _require((bundle.get("bundle_format"), bundle.get("inventory_format"), inventory.get("inventory_format"))
+             in {(1, 2, 2), (2, 2, 2), (3, 3, 3)},
              "bundle and inventory format mismatch")
     _require(bundle.get("inventory_sha256") == inventory.get("sha256")
              and bool(_HASH.fullmatch(str(bundle.get("inventory_sha256", "")))), "inventory hash mismatch")
@@ -582,7 +625,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     _require(set(registry["language_tags"]) == LANGUAGES, "source registry must define eleven product languages")
     values = _inventory_values(inventory)
     declarations = link_targets = None
-    if bundle["bundle_format"] == 2:
+    if bundle["bundle_format"] in {2, 3}:
         declarations, link_targets, v2_errors = _v2_scope(bundle, inventory)
         errors.extend(v2_errors)
     member_keys = []
@@ -643,7 +686,7 @@ def validate_bundle(bundle: dict, registry: dict, inventory: dict, research_reco
     missing = sorted(set(member_keys) - seen)
     for key in missing:
         errors.append(f"missing candidate: {key}")
-    if bundle["bundle_format"] == 2:
+    if bundle["bundle_format"] in {2, 3}:
         approved_keys = {_owner_key(row["owner"], row["lang"]) for row in decisions
                          if row["review_status"] == "approved"}
         decisions_by_owner = defaultdict(list)

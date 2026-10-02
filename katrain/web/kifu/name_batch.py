@@ -19,7 +19,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.identity import normalize_alias
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_bundle
-from katrain.web.kifu.name_inventory import ALBUM_COLUMNS, SOURCE_COLUMNS, _hash_row
+from katrain.web.kifu.name_inventory import ALBUM_COLUMNS, SOURCE_COLUMNS, _hash_row, _selection_supplement
 from katrain.web.kifu.name_parse import parse_event, parse_player
 
 
@@ -50,7 +50,7 @@ def _fail(condition: bool, message: str) -> None:
         raise BatchError(message)
 
 
-def _snapshot_sha(conn) -> str:
+def _snapshot_sha(conn) -> tuple[str, dict | None]:
     """Recompute the inventory's full album/source hash inside this transaction."""
     digest = hashlib.sha256()
     for row in conn.execute(select(*ALBUM_COLUMNS).order_by(KifuAlbum.id)):
@@ -60,7 +60,10 @@ def _snapshot_sha(conn) -> str:
                     .order_by(KifuAlbumSource.id))
     for row in conn.execute(source_query):
         _hash_row(digest, b"S", row)
-    return digest.hexdigest()
+    selection = _selection_supplement(conn)
+    if selection is not None:
+        _hash_row(digest, b"E", (selection["selection_format"], selection["sha256"]))
+    return digest.hexdigest(), selection
 
 
 def _catalog_sha(conn) -> str:
@@ -96,7 +99,8 @@ def _locked_write(engine):
                 "kifu_players, kifu_events, kifu_player_aliases, kifu_event_aliases, "
                 "kifu_raw_player_values, kifu_raw_event_values, "
                 "kifu_player_names, kifu_event_names, kifu_raw_player_names, kifu_raw_event_names, "
-                "kifu_name_research_evidence, kifu_name_source_registry IN SHARE ROW EXCLUSIVE MODE"
+                "kifu_name_research_evidence, kifu_name_source_registry, "
+                "kifu_album_event_selections, kifu_event_selection_batches IN SHARE ROW EXCLUSIVE MODE"
             )
         elif engine.dialect.name == "sqlite":
             # CLI engines do not share the application's connect hook. Undo relies
@@ -177,8 +181,8 @@ def _record_change(conn, batch_id: int, sequence: int, model, row_id: int,
 
 
 def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
-    _fail(bundle.get("bundle_format") == 2 or not bundle.get("album_links"),
-          "album identity links require bundle format 2")
+    _fail(bundle.get("bundle_format") in {2, 3} or not bundle.get("album_links"),
+          "album identity links require bundle format 2 or 3")
     try:
         report = validate_bundle(bundle, registry, inventory, evidence_records)
     except CandidateError as exc:
@@ -190,17 +194,25 @@ def _prevalidate(bundle: dict, registry: dict, inventory: dict, evidence_records
     return report
 
 
-def _check_snapshot(conn, inventory: dict) -> None:
-    _fail(inventory.get("inventory_format") == 2, "inventory format 2 required")
+def _check_snapshot(conn, inventory: dict) -> dict[str, set[int]]:
+    _fail(inventory.get("inventory_format") in {2, 3}, "inventory format 2 or 3 required")
     actual_database = conn.engine.url.render_as_string(hide_password=True)
     _fail(inventory.get("database_identifier") in {None, actual_database},
           "inventory database identifier differs from target database")
-    actual = _snapshot_sha(conn)
+    actual, selection = _snapshot_sha(conn)
+    _fail((selection is None and inventory["inventory_format"] == 2)
+          or (selection is not None and inventory["inventory_format"] == 3
+              and selection == inventory.get("event_selection")),
+          "event selection supplement changed")
     _fail(actual == inventory.get("sha256"), f"full database snapshot changed: expected {inventory.get('sha256')}, got {actual}")
+    selected_scope = defaultdict(set)
+    for album_id, raw, *_ in selection["rows"] if selection is not None else ():
+        selected_scope[raw].add(album_id)
+    return selected_scope
 
 
 def _check_catalog(conn, bundle: dict) -> None:
-    if bundle["bundle_format"] == 2:
+    if bundle["bundle_format"] in {2, 3}:
         actual = _catalog_sha(conn)
         _fail(actual == bundle["catalog_sha256"],
               f"catalog supplement snapshot changed: expected {bundle['catalog_sha256']}, got {actual}")
@@ -275,7 +287,8 @@ def _check_album_links(conn, bundle: dict) -> None:
               f"album link {link['album_id']} expected old ID differs from live row")
 
 
-def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None) -> None:
+def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
+                     selected_scope: dict[str, set[int]] | None = None) -> None:
     kind = row["owner"]["kind"]
     if "ref" in row["owner"]:
         if kind.startswith("raw_"):
@@ -295,7 +308,8 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None) -> N
                 KifuAlbum.player_black == row["raw_value"], KifuAlbum.player_white == row["raw_value"])).limit(1))
         else:
             raw_in_album = conn.scalar(select(KifuAlbum.id).where(KifuAlbum.event == row["raw_value"]).limit(1))
-        _fail(raw_in_album is not None, "raw spelling has no live album scope")
+        _fail(raw_in_album is not None or (kind == "raw_event" and bool((selected_scope or {}).get(row["raw_value"]))),
+              "raw spelling has no live album scope")
     elif kind == "player":
         linked = conn.scalar(select(KifuAlbum.id).where(or_(
             KifuAlbum.black_player_id == owner_id, KifuAlbum.white_player_id == owner_id)).limit(1))
@@ -307,7 +321,8 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None) -> N
               "event ID is not linked in the current album snapshot or approved links")
 
 
-def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = None) -> list[int]:
+def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = None,
+                     selected_scope: dict[str, set[int]] | None = None) -> list[int]:
     ids = set()
     for row in candidates:
         owner = row["owner"]
@@ -326,6 +341,8 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
         else:
             condition = KifuAlbum.event == row["raw_value"]
         ids.update(conn.scalars(select(KifuAlbum.id).where(condition)))
+        if kind == "raw_event":
+            ids.update((selected_scope or {}).get(row["raw_value"], ()))
     ids.update(link["album_id"] for link in links or ())
     return sorted(ids)
 
@@ -363,18 +380,18 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict]) -> None:
 
 def _inspect(conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict]) -> dict:
     report = _prevalidate(bundle, registry, inventory, evidence_records)
-    _check_snapshot(conn, inventory)
+    selected_scope = _check_snapshot(conn, inventory)
     _check_catalog(conn, bundle)
-    if bundle["bundle_format"] == 2:
+    if bundle["bundle_format"] in {2, 3}:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
     _check_name_preimages(conn, bundle["candidates"])
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
-        _check_raw_owner(conn, candidate, link_targets)
+        _check_raw_owner(conn, candidate, link_targets, selected_scope)
     _check_cross_bundle_collisions(conn, bundle["candidates"])
     return {**report, "bundle_sha256": canonical_sha256(bundle),
-            "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links")),
+            "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"), selected_scope),
             "estimated_undo_rows": len(bundle["candidates"]) * 2
             + len(bundle.get("album_links", ())) + sum("ref" in owner["owner"] for owner in bundle.get("owners", ()))}
 
@@ -504,8 +521,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         research_by_hash = {canonical_sha256(item): item for item in evidence_records}
         for candidate in bundle["candidates"]:
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
-                                        resolved if bundle["bundle_format"] == 2 else None)
-        if bundle["bundle_format"] == 2:
+                                        resolved if bundle["bundle_format"] in {2, 3} else None)
+        if bundle["bundle_format"] in {2, 3}:
             artifact = {"bundle": bundle, "research_hashes": sorted(canonical_sha256(item)
                          for item in evidence_records), "resolved_refs": resolved}
             conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)

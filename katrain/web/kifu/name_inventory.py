@@ -2,7 +2,8 @@
 
 The hash covers selected album columns and source-link columns in fixed order.
 Each row is a UTF-8 JSON array with explicit JSON nulls, prefixed by its row
-type. Neither SGF content nor files at source_path are read.
+type. SGF content is read only for albums with reviewed event selections;
+files at source_path are never read.
 """
 
 from collections import Counter, defaultdict
@@ -14,7 +15,9 @@ import unicodedata
 
 from sqlalchemy import select
 
-from katrain.web.core.models_db import KifuAlbum, KifuAlbumSource, KifuSource
+from katrain.web.core.models_db import (
+    KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuSource,
+)
 
 
 NAME_FIELDS = ("player_black", "player_white", "event", "round_name", "black_rank", "white_rank")
@@ -60,6 +63,9 @@ ASSOCIATION_COLUMNS = (
     "sources",
 )
 SOURCE_LINK_COLUMNS = ("id", "source_id", "source_key", "origin_path", "match_method")
+SELECTION_COLUMNS = (
+    "album_id", "selected_raw", "sgf_sha256", "reviewer_id", "reviewed_at", "batch_id", "bundle_sha256",
+)
 
 
 def _new_scope():
@@ -148,6 +154,56 @@ def _hash_row(hasher, prefix, values):
     hasher.update(b"\n")
 
 
+def _selection_supplement(conn):
+    """Return the approved live-SGF subset, retaining an empty v3 scope on drift."""
+    from katrain.core.sgf_parser import SGF, ParseError
+    from katrain.web.kifu.event_selection import RULE_VERSION, selected_second_gn
+    from katrain.web.kifu.provenance import classify_source_path
+
+    query = (
+        select(
+            KifuAlbumEventSelection.album_id, KifuAlbumEventSelection.selected_raw,
+            KifuAlbumEventSelection.sgf_sha256, KifuAlbumEventSelection.reviewer_id,
+            KifuAlbumEventSelection.reviewed_at, KifuAlbumEventSelection.status,
+            KifuAlbumEventSelection.property_name, KifuAlbumEventSelection.property_index,
+            KifuAlbumEventSelection.rule_version,
+            KifuAlbumEventSelection.batch_id, KifuEventSelectionBatch.bundle_sha256,
+            KifuEventSelectionBatch.reviewer_id, KifuEventSelectionBatch.reviewed_at,
+            KifuEventSelectionBatch.status, KifuAlbum.sgf_content, KifuAlbum.event, KifuAlbum.source_path,
+        )
+        .join(KifuEventSelectionBatch, KifuAlbumEventSelection.batch_id == KifuEventSelectionBatch.id)
+        .join(KifuAlbum, KifuAlbumEventSelection.album_id == KifuAlbum.id)
+        .order_by(KifuAlbumEventSelection.album_id)
+    )
+    rows = []
+    seen = False
+    for (album_id, raw, pinned_sha, reviewer, reviewed_at, status, prop, index, rule_version,
+         batch_id, bundle_sha, batch_reviewer, batch_reviewed_at, batch_status, sgf_content,
+         old_event, source_path) in conn.execute(query):
+        seen = True
+        if not (
+            status == "approved" and batch_status == "applied" and prop == "GN" and index == 1
+            and rule_version == RULE_VERSION and old_event == "GNUGo3.8"
+            and reviewer == batch_reviewer and reviewed_at == batch_reviewed_at
+            and isinstance(sgf_content, str) and hashlib.sha256(sgf_content.encode("utf-8")).hexdigest() == pinned_sha
+        ):
+            continue
+        try:
+            selected = selected_second_gn(SGF.parse_sgf(sgf_content), classify_source_path(source_path))
+        except (ParseError, ValueError, TypeError, AttributeError, IndexError):
+            continue
+        if selected != raw:
+            continue
+        rows.append([album_id, raw, pinned_sha, reviewer, reviewed_at.isoformat(), batch_id, bundle_sha])
+    if not seen:
+        return None
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (1, SELECTION_COLUMNS))
+    for row in rows:
+        _hash_row(digest, b"E", row)
+    return {"selection_format": 1, "columns": list(SELECTION_COLUMNS), "rows": rows, "sha256": digest.hexdigest()}
+
+
 def build_inventory(engine, *, batch_size=1000):
     """Scan one consistent database snapshot in ID order without writing data."""
     if batch_size < 1:
@@ -157,6 +213,7 @@ def build_inventory(engine, *, batch_size=1000):
     linked_ids = {name: set() for name in scopes}
     album_associations = {}
     hasher = hashlib.sha256()
+    selection = None
     with engine.connect() as conn:
         if engine.dialect.name == "postgresql":
             conn = conn.execution_options(isolation_level="REPEATABLE READ", postgresql_readonly=True)
@@ -216,6 +273,9 @@ def build_inventory(engine, *, batch_size=1000):
                             entry[1].add(album_id)
                             linked_ids[name].add(album_id)
                 last_id = rows[-1][0]
+            selection = _selection_supplement(conn)
+            if selection is not None:
+                _hash_row(hasher, b"E", (selection["selection_format"], selection["sha256"]))
         finally:
             conn.rollback()
             if engine.dialect.name == "sqlite":
@@ -223,7 +283,8 @@ def build_inventory(engine, *, batch_size=1000):
                 conn.rollback()
 
     return {
-        "inventory_format": 2,
+        "inventory_format": 3 if selection is not None else 2,
+        **({"event_selection": selection} if selection is not None else {}),
         "database_identifier": engine.url.render_as_string(hide_password=True),
         "snapshot_time": snapshot_time,
         "counts": {name: len(scope["album_ids"]) for name, scope in scopes.items()},

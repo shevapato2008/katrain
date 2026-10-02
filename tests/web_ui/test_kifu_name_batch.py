@@ -1,6 +1,7 @@
 """Reviewed name bundles apply atomically and undo only their own unchanged writes."""
 
 from copy import deepcopy
+from datetime import datetime, timezone
 import hashlib
 import json
 
@@ -8,7 +9,8 @@ import pytest
 from sqlalchemy import create_engine, event, func, select, text
 
 from katrain.web.core.models_db import (
-    Base, KifuAlbum, KifuEvent, KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
+    Base, KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventSelectionBatch,
+    KifuNameBatch, KifuNameChange, KifuNameResearchEvidence,
     KifuNameSourceRegistry, KifuPlayer, KifuPlayerName, KifuRawEventName, KifuRawEventValue,
 )
 from katrain.web.kifu.name_batch import (
@@ -18,6 +20,7 @@ from katrain.web.kifu.name_batch import (
 from katrain.web.kifu.name_candidates import canonical_sha256, classification_template_sha256, identity_scope_sha256, validate_bundle
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.name_inventory import build_inventory
+from katrain.web.kifu.name_parse import parse_event
 from scripts.kifu_name_batch import main
 
 
@@ -148,6 +151,75 @@ def test_dry_run_is_strictly_read_only_and_reports_scope(engine):
     assert report["ready"] and report["affected_albums"] == [11]
     assert report["candidate_count"] == 1
     assert counts(engine) == before == (0, 0, 0, 0, 0)
+
+
+def test_selected_only_raw_event_can_be_imported_and_live_scope_is_rechecked(engine):
+    raw = "Selected Cup"
+    sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
+           "GC[Selected Cup | 194 moves])")
+    reviewed_at = datetime(2026, 10, 2, 10, tzinfo=timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            sgf_content=sgf, source_path="data/kifu-album/19x19/a.sgf"))
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=9, raw_value=raw, category=parse_event(raw, None).category, review_status="approved"))
+        conn.execute(KifuEventSelectionBatch.__table__.insert().values(
+            id=3, bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
+            producer_id="producer", reviewer_id="reviewer", reviewed_at=reviewed_at, status="applied"))
+        conn.execute(KifuAlbumEventSelection.__table__.insert().values(
+            album_id=11, batch_id=3, selected_raw=raw, sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+            property_name="GN", property_index=1, status="approved",
+            rule_version="19x19-gnugo-second-gn-v1",
+            reviewer_id="reviewer", reviewed_at=reviewed_at))
+    inv = build_inventory(engine)
+    owner = {"kind": "raw_event", "id": 9}
+    base, records = player_bundle(inv)
+    member = {"owner": owner, "lang": "ru", "raw_value": raw}
+    base["members"] = [member]
+    base["member_set_sha256"] = canonical_sha256([member])
+    base["inventory_format"] = 3
+    base["candidates"][0].update(member, display_name="Кубок")
+    record = records[0]
+    record.update(owner=owner, candidate_name="Кубок", original_name=raw, reading=raw)
+    record["source_checks"][0].update(
+        owner=owner, candidate_name="Кубок", body_excerpt="Tournament profile: Кубок")
+    base["candidates"][0]["research_sha256"] = canonical_sha256(record)
+    declaration = {"owner": owner, "preimage": {"raw_value": raw},
+                   "occurrence_album_ids": [11], "occurrence_sha256": canonical_sha256([11])}
+    reviewed = _v2_wrap(engine, inv, base, [declaration], [])
+    reviewed["bundle_format"] = 3
+    assert dry_run_bundle(engine, reviewed, registry(), inv, records)["affected_albums"] == [11]
+    with engine.begin() as conn:
+        conn.execute(KifuAlbumEventSelection.__table__.update().where(KifuAlbumEventSelection.album_id == 11)
+                     .values(selected_raw="Changed Cup"))
+    with pytest.raises(BatchError, match="snapshot|selection"):
+        dry_run_bundle(engine, reviewed, registry(), inv, records)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbumEventSelection.__table__.update().where(KifuAlbumEventSelection.album_id == 11)
+                     .values(selected_raw=raw))
+        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == 3)
+                     .values(status="undone"))
+    with pytest.raises(BatchError, match="snapshot|selection"):
+        dry_run_bundle(engine, reviewed, registry(), inv, records)
+    with engine.begin() as conn:
+        conn.execute(KifuEventSelectionBatch.__table__.update().where(KifuEventSelectionBatch.id == 3)
+                     .values(status="applied"))
+        pinned = dict(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings().one())
+        conn.execute(KifuAlbumEventSelection.__table__.delete().where(KifuAlbumEventSelection.album_id == 11))
+    with pytest.raises(BatchError, match="snapshot|selection"):
+        dry_run_bundle(engine, reviewed, registry(), inv, records)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbumEventSelection.__table__.insert().values(**pinned))
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(sgf_content=sgf + "\n"))
+    with pytest.raises(BatchError, match="snapshot|selection"):
+        dry_run_bundle(engine, reviewed, registry(), inv, records)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(sgf_content=sgf))
+    assert apply_bundle(engine, reviewed, registry(), inv, records)["status"] == "applied"
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.display_name).where(KifuRawEventName.raw_event_id == 9)) == "Кубок"
+        assert conn.scalar(select(KifuAlbum.event).where(KifuAlbum.id == 11)) == "GNUGo3.8"
 
 
 def test_apply_is_atomic_audited_idempotent_and_preserves_sgf(engine):

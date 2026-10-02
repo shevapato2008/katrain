@@ -3,6 +3,7 @@
 import hashlib
 import json
 import sqlite3
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -10,7 +11,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from katrain.web.core.db import Base
-from katrain.web.core.models_db import KifuAlbum, KifuAlbumSource, KifuSource
+from katrain.web.core.models_db import (
+    KifuAlbum, KifuAlbumEventSelection, KifuAlbumSource, KifuEventSelectionBatch, KifuSource,
+)
 from katrain.web.kifu.name_inventory import _script_type, build_inventory
 from scripts.kifu_name_inventory import main
 
@@ -95,6 +98,50 @@ def test_inventory_hash_is_stable_and_sensitive_to_null_unicode_and_provenance(t
         db.query(KifuAlbumSource).one().origin_path = "b.sgf"
         db.commit()
     assert build_inventory(engine)["sha256"] != before_provenance_change
+
+
+def test_reviewed_second_gn_adds_hashed_selection_supplement_without_changing_legacy_album(tmp_path):
+    engine = _engine(tmp_path)
+    sgf = ("(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Selected Cup]"
+           "GC[Selected Cup | 194 moves])")
+    with Session(engine) as db:
+        db.add(_album(20, event="GNUGo3.8", sgf_content=sgf,
+                      source_path="data/kifu-album/19x19/a.sgf"))
+        db.commit()
+    original = build_inventory(engine)
+    assert original["inventory_format"] == 2
+    assert "event_selection" not in original
+    reviewed_at = datetime(2026, 10, 2, 10, tzinfo=timezone.utc)
+    with Session(engine) as db:
+        db.add(KifuEventSelectionBatch(
+            id=3, bundle_sha256="a" * 64, member_set_sha256="b" * 64, reviewed_artifact={},
+            producer_id="producer", reviewer_id="reviewer", reviewed_at=reviewed_at,
+            status="applied"))
+        db.add(KifuAlbumEventSelection(
+            album_id=20, batch_id=3, selected_raw="Selected Cup", sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+            property_name="GN", property_index=1, status="approved",
+            rule_version="19x19-gnugo-second-gn-v1",
+            reviewer_id="reviewer", reviewed_at=reviewed_at))
+        db.commit()
+    selected = build_inventory(engine)
+    assert selected["inventory_format"] == 3
+    assert selected["sha256"] != original["sha256"]
+    assert selected["album_associations"] == original["album_associations"]
+    assert selected["event_selection"]["rows"][0][0:3] == [20, "Selected Cup", hashlib.sha256(sgf.encode()).hexdigest()]
+    assert build_inventory(engine, batch_size=1)["sha256"] == selected["sha256"]
+    with Session(engine) as db:
+        db.get(KifuAlbumEventSelection, 20).selected_raw = "Other Cup"
+        db.commit()
+    assert build_inventory(engine)["event_selection"]["rows"] == []
+    with Session(engine) as db:
+        db.get(KifuAlbumEventSelection, 20).selected_raw = "Selected Cup"
+        db.commit()
+    with Session(engine) as db:
+        db.get(KifuAlbum, 20).sgf_content += "\n"
+        db.commit()
+    drifted = build_inventory(engine)
+    assert drifted["event_selection"]["rows"] == []
+    assert drifted["sha256"] != selected["sha256"]
 
 
 def test_album_associations_expose_identity_and_dataset_source_swaps(tmp_path):
@@ -212,6 +259,9 @@ def test_postgres_isolation_and_read_only_are_set_before_the_first_query():
 
         def all(self):
             return []
+
+        def __iter__(self):
+            return iter(())
 
     class Connection:
         def __enter__(self):

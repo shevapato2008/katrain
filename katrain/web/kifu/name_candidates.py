@@ -229,8 +229,8 @@ def _selection_rows(inventory: dict) -> list[list]:
                      and _text(image.get("created_at"))
                      and image_sha == canonical_sha256(image),
                      "event selection original after-image or hash invalid")
-            _require((name_batch_id is None and proof_sha is None) or
-                     (type(name_batch_id) is int and name_batch_id > 0
+            _require((event_id is None and name_batch_id is None and proof_sha is None) or
+                     (event_id is not None and type(name_batch_id) is int and name_batch_id > 0
                       and isinstance(proof_sha, str) and _HASH.fullmatch(proof_sha)),
                      "event selection name proof invalid")
         previous_id = album_id

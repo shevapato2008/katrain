@@ -914,6 +914,21 @@ def test_v4_selected_event_requires_original_base_and_exact_gn_rule():
         validate_bundle(proposed, registry(), bad_rule, [])
 
 
+def test_v4_inventory_linked_selection_requires_name_batch_proof():
+    from katrain.web.kifu.name_inventory import SELECTION_COLUMNS_V4, _hash_row
+    from katrain.web.kifu.name_candidates import _selection_rows
+
+    inv, _ = _selected_v4_case()
+    row = inv["event_selection"]["rows"][0]
+    row[7] = 3
+    digest = hashlib.sha256()
+    _hash_row(digest, b"E", (2, SELECTION_COLUMNS_V4))
+    _hash_row(digest, b"E", row)
+    inv["event_selection"]["sha256"] = digest.hexdigest()
+    with pytest.raises(CandidateError, match="name proof"):
+        _selection_rows(inv)
+
+
 def test_v4_selected_event_rejects_irrelevant_owner_and_non_event_member():
     inv, proposed = _selected_v4_case()
     unrelated = {"owner": {"kind": "event", "id": 19},

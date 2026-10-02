@@ -1,24 +1,121 @@
 {
   "artifact_type": "pending_name_candidates",
   "schema_version": 1,
-  "owner": {"kind": "player", "id": 54},
+  "owner": {
+    "kind": "player",
+    "id": 54
+  },
   "registry_version": "2026-10-02.3",
   "review_status": "pending",
   "approval": null,
   "production_write_authorized": false,
-  "candidate_basis": "Positive-name discovery leads only; raw target-page bodies/hashes and registry-bound research records are not complete. Do not import or treat these rows as approved validator candidates.",
+  "candidate_basis": "Seven positive languages now have raw source captures, registry-bound research records validated by scripts/kifu_name_research.py, and matching pending conventional candidate rows. No independent candidate approvals or production name preimages are present; no bundle is ready to write.",
   "evidence_file": "kifu-name-park-junghwan-11lang-evidence-2026-10-02.json",
   "candidates": [
-    {"lang":"cn","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"zh-Hans"},
-    {"lang":"tw","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"zh-Hant"},
-    {"lang":"en","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"en"},
-    {"lang":"jp","display_name":"朴廷桓","decision_kind":"conventional","review_status":"pending","evidence_language":"ja"},
-    {"lang":"ko","display_name":"박정환","decision_kind":"conventional","review_status":"pending","evidence_language":"ko"},
-    {"lang":"de","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"de"},
-    {"lang":"es","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"es"},
-    {"lang":"fr","display_name":"Park Junghwan","decision_kind":"conventional","review_status":"pending","evidence_language":"fr"},
-    {"lang":"ru","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":"ru","reason":"Conflicting Russian forms: article title uses Пак Чонхван while its GoGameWorld reference is Пак Чжон Хван; requires adjudication."},
-    {"lang":"tr","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":null},
-    {"lang":"ua","display_name":null,"decision_kind":null,"review_status":"unresolved","evidence_language":null}
-  ]
+    {
+      "lang": "cn",
+      "display_name": "朴廷桓",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "zh-Hans",
+      "research_sha256": "a3ae3f0441fddfb6361bdd0ae7bd3388987e1b0f669804f917128890cdee147e",
+      "source_check_id": "china-sport"
+    },
+    {
+      "lang": "tw",
+      "display_name": "朴廷桓",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "zh-tw",
+      "research_sha256": "0c0443f02748a943704de9cfd8f5313c4cb7ef6a932df5e57c4440fbde33e6b7",
+      "source_check_id": "haifong"
+    },
+    {
+      "lang": "en",
+      "display_name": "Park Junghwan",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "en",
+      "research_sha256": "f80d690d9c3e62722c49128788a9550101ca806bf20fdf3161367f340c05fa14",
+      "source_check_id": "wikipedia-en"
+    },
+    {
+      "lang": "jp",
+      "display_name": "朴廷桓",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "ja",
+      "research_sha256": "33d7f97eeba0a1a43807b0286388ec3f4683c741df79222396081e94ca2ac9aa",
+      "source_check_id": "nihon-kiin"
+    },
+    {
+      "lang": "ko",
+      "display_name": "박정환",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "ko",
+      "research_sha256": "cb674f10d0cc865133c6db2964150acbd5cc8eee792a43fdfc7afdc311e6daa0",
+      "source_check_id": "baduk-mobile"
+    },
+    {
+      "lang": "de",
+      "display_name": "Park Junghwan",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "de",
+      "research_sha256": "d409b3ae812e14fb886f553700c445c30442bd7ab82ca89faafa8eb947e122cc",
+      "source_check_id": "wikipedia-de"
+    },
+    {
+      "lang": "es",
+      "display_name": null,
+      "decision_kind": null,
+      "review_status": "unresolved",
+      "evidence_language": null,
+      "reason": "A captured Spanish Kifubara player page uses Park Junghwan (9p), but kifubara.app is not in registry 2026-10-02.3. The captured Spanish Wikipedia Go article has no mention. Await source-registry update and revalidation; no current-registry candidate row."
+    },
+    {
+      "lang": "fr",
+      "display_name": "Park Junghwan",
+      "decision_kind": "conventional",
+      "review_status": "pending",
+      "evidence_language": "fr",
+      "research_sha256": "c0dd36c26a114c55cf3e586a2cc4065940b992fe20043f91163217a3e4ac3228",
+      "source_check_id": "wikipedia-fr"
+    },
+    {
+      "lang": "ru",
+      "display_name": null,
+      "decision_kind": null,
+      "review_status": "unresolved",
+      "evidence_language": null,
+      "reason": "Conflicting Russian transliterations remain for Sol adjudication."
+    },
+    {
+      "lang": "tr",
+      "display_name": null,
+      "decision_kind": null,
+      "review_status": "unresolved",
+      "evidence_language": null,
+      "reason": "No registered Turkish target-language name source captured; no negative closure or generated transliteration."
+    },
+    {
+      "lang": "ua",
+      "display_name": null,
+      "decision_kind": null,
+      "review_status": "unresolved",
+      "evidence_language": null,
+      "reason": "No registered Ukrainian target-language name source captured; no negative closure or generated transliteration."
+    }
+  ],
+  "candidate_rows_archive": {
+    "file": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/candidates.jsonl",
+    "sha256": "de4240a9e20bb8b48ff1e538389fc51b2d0a8c4d6fd3cef76fed628d4c7349f5"
+  },
+  "research_records_archive": {
+    "file": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/research.jsonl",
+    "sha256": "9aa60cd246a38b895eba39d787b80b1f0bfce74251eaa1ac5bfd8bf00fddbac6",
+    "validated_output": "/Users/fan/.local/share/kifu-name-audit/2026-10-02/park-junghwan-player-54/research.validated.jsonl",
+    "validated_output_sha256": "5fb7d649bc03203a4e2b9f4f535bc6a90c4f1764e0cb152c4457760ca7792013"
+  }
 }

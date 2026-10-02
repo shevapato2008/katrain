@@ -2,6 +2,8 @@
 
 研究日期：2026-10-02。研究者：`/root/park_11lang_luna`，实际模型 `gpt-6`。此工件只记录正面来源线索和待审名字，不批准身份、语言候选、棋局关联或数据库写入。
 
+后续原文归档、注册表证据校验及候选状态已更新于[捕获补记](kifu-name-park-junghwan-capture-addendum-2026-10-02.md)；本页的搜索线索表不再是最新状态。
+
 ## 身份锚点
 
 韩国棋院（Korea Baduk Association / Hanguk Kiwon）[棋士资料](https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000457)显示 `9단 박정환 (朴廷桓)`、出生日期 `1993년 01월 11일`、韩国所属。五源索引已留存完整页面正文于 `/Users/fan/.local/share/kifu-player-top100-20261002/five-player-source-index/bodies/park_junghwan_kba.md`，SHA-256 `0d1024775bcb8a8109dc5049aa0c90d9c52d648c36591de0278a6aff608f300e`。本任务沿用既有锚点，未重新抓取该页。

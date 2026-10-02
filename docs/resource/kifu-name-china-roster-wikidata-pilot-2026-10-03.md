@@ -55,3 +55,9 @@
 全量原始 678 次搜索响应、13 批实体响应、逐名匹配与出生日期异常清单在 `~/.local/share/kifu-name-audit/2026-10-03/china-professional-roster/wikidata-all678/`（目录 `0700`、文件 `0600`）。`summary.json` SHA-256 为 `9979c7ffe29b1cb0032fab7e2ac523c76960234126496540d3cc709cab272090`；`entity-analysis.json` 为 `fa95bc05ff6cbe6fed3917dc45090febf211bd8f839d73e583b7e7d578a1dd17`；691 个原始响应文件的逐文件哈希清单 `response-manifest.json` 为 `77486f6b224ac6b01b006e7f96d0e077c390ad2678517e532dd93ae176833342`。
 
 下一步按 `唯一候选且日期一致`、`日期冲突`、`无候选`、`多候选` 四个互斥队列核对官方人物身份、五语来源及实际棋谱归属。前一队列是优先研究范围，**不是自动批准范围**。除已单独获批的行外，本轮正式库新增棋手译名和 FK 均为 0。
+
+## 繁体显示候选：一次批量转换与显式标签对照
+
+为处理 `zh-tw` 标签稀少的问题，将官方名册中的 678 个精确原文按固定次序分 7 批，提交给中文维基百科 `action=parse` 的 `variant=zh-tw` 转换器。完整请求结果逐条以编号还原；**678 个转换候选均已生成，463 个与原简体字符串不同**。受控文件在 `~/.local/share/kifu-name-audit/2026-10-03/china-professional-roster/traditional-conversion-pending/`，`candidates.pending.json` SHA-256 `1fc2c483cf8018787339e8bd30de8d9df4173563e2827b7ced4685d4b50fd709`，`manifest.json` SHA-256 `3b0c41fef16ad4f291de2a07ce0a8ec63b2965b4923140243f32b209ed4be8de`。每批响应的正文哈希和抓取时间在 manifest 中。
+
+与唯一 Wikidata 棋手候选中已有的 80 个明确 `zh-tw` 标签对照，**74 个相同、6 个不同**：孔杰 `孔傑/孔杰`、钟文靖 `鍾文靖/鐘文靖`、蔡竞 `蔡競/蔡竞`、秦悦欣 `秦悅欣/秦悦欣`、张东岳 `張東嶽/張東岳`、杨一(小) `楊一(小)/楊一`（左侧为转换候选）。其中有的是 Wikidata 标签仍含简体，有的可能涉及姓名用字或身份限定；**不能用 74/80 的一致率自动批准其余 598 个**。须保留这 6 项异常并对转换规则和全量候选作独立语言审核；身份限定 `(小)` 更不得由显示转换擅自消去。

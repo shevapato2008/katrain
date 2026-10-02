@@ -14,6 +14,8 @@ from datetime import date, datetime
 import hashlib
 import json
 import re
+from pathlib import Path
+from urllib.parse import urlparse
 
 from katrain.web.kifu.name_evidence import (
     EvidenceError,
@@ -45,6 +47,7 @@ DECISION_KINDS = frozenset(
         "corrected",
         "composed",
         "transliterated",
+        "archive_description",
     )
 )
 _HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -106,6 +109,16 @@ _CLASSIFICATION_TEMPLATE_VERSIONS = {
     CLASSIFICATION_RULE_VERSION: _CLASSIFICATION_TEMPLATES,
     "classification-v2": _CLASSIFICATION_TEMPLATES_V2,
 }
+ARCHIVE_DESCRIPTION_VERSION = "archive-description-v1"
+ARCHIVE_DESCRIPTION_RAW = "Hoensha game"
+ARCHIVE_DESCRIPTION_CATEGORY = "archive_source_description"
+_ARCHIVE_DESCRIPTION_TEMPLATES = {
+    "cn": "方圆社史料棋局", "tw": "方圓社史料棋局", "jp": "方円社の棋譜（史料）",
+    "ko": "호엔샤(方円社) 관련 옛 기보", "en": "Hoensha archive game",
+    "de": "Historische Partie aus dem Hoensha-Archiv", "es": "Partida histórica del archivo de Hoensha",
+    "fr": "Partie historique des archives de la Hoensha", "ru": "Историческая партия из архива Хоэнся",
+    "tr": "Hoensha arşivinden tarihî go partisi", "ua": "Історична партія з архіву Хоенся",
+}
 _SCRIPT = {
     "en": re.compile(r"[A-Za-z]"), "de": re.compile(r"[A-Za-zÀ-ÿ]"),
     "es": re.compile(r"[A-Za-zÀ-ÿ]"), "fr": re.compile(r"[A-Za-zÀ-ÿ]"),
@@ -122,6 +135,7 @@ _RAW_CATEGORY_DECISIONS = {
         "readable_unlinked": {"conventional", "generated", "transliterated"},
     },
     "raw_event": {
+        ARCHIVE_DESCRIPTION_CATEGORY: {"archive_description"},
         "empty": {"hidden"},
         "program_source_label": {"hidden"},
         "generic_event_description": {"generic"},
@@ -212,6 +226,122 @@ def classification_template_sha256(lang: str, version: str = CLASSIFICATION_RULE
     _require(version in _CLASSIFICATION_TEMPLATE_VERSIONS, "unknown classification template version")
     return canonical_sha256({"version": version, "lang": lang,
                              "templates": _CLASSIFICATION_TEMPLATE_VERSIONS[version][lang]})
+
+
+def archive_description_template_sha256(lang: str, version: str = ARCHIVE_DESCRIPTION_VERSION) -> str:
+    _require(lang in LANGUAGES and version == ARCHIVE_DESCRIPTION_VERSION,
+             "unknown archive description template language/version")
+    return canonical_sha256({"version": version, "lang": lang, "raw_value": ARCHIVE_DESCRIPTION_RAW,
+                             "category": ARCHIVE_DESCRIPTION_CATEGORY,
+                             "display_name": _ARCHIVE_DESCRIPTION_TEMPLATES[lang]})
+
+
+def archive_description_scope(inventory_sha256: str, declaration: dict) -> dict:
+    """Reuse the owner manifest's one finite membership list and signed category basis."""
+    return {"inventory_sha256": inventory_sha256, "declaration": declaration}
+
+
+def validate_archive_description_scope(scope: dict, *, registry=None, inventory=None, check_files=False) -> dict:
+    """Check the frozen archive proof; retained files are read only by offline validation."""
+    _require(isinstance(scope, dict) and _HASH.fullmatch(str(scope.get("inventory_sha256", ""))),
+             "archive description requires pinned inventory scope")
+    declaration = scope.get("declaration")
+    _require(isinstance(declaration, dict) and declaration.get("owner", {}).get("kind") == "raw_event",
+             "archive description requires raw_event declaration")
+    pinned = declaration.get("create") or declaration.get("preimage") or {}
+    _require(pinned.get("raw_value") == ARCHIVE_DESCRIPTION_RAW
+             and pinned.get("category") == ARCHIVE_DESCRIPTION_CATEGORY
+             and pinned.get("parser_version") == ARCHIVE_DESCRIPTION_VERSION,
+             "archive description requires exact raw, category and parser version; reclassification is not supported")
+    ids = declaration.get("occurrence_album_ids")
+    _require(isinstance(ids, list) and ids and all(type(value) is int and value > 0 for value in ids)
+             and ids == sorted(set(ids)) and declaration.get("occurrence_sha256") == canonical_sha256(ids),
+             "archive description occurrence scope is invalid")
+    review = declaration.get("category_review")
+    _require(isinstance(review, dict) and review.get("status") == "approved"
+             and _text(review.get("producer_id")) and _text(review.get("producer_model"))
+             and _time(review.get("produced_at")) and _text(review.get("reviewer_id"))
+             and review["reviewer_id"] != review["producer_id"] and _text(review.get("reviewer_model"))
+             and _time(review.get("reviewed_at")) and _time(review["reviewed_at"]) >= _time(review["produced_at"])
+             and _text(review.get("category_basis")), "archive description requires independent category approval")
+    basis = review.get("archive_basis")
+    _require(isinstance(basis, dict) and review.get("archive_basis_sha256") == canonical_sha256(basis),
+             "archive description category basis hash mismatch")
+    rows = basis.get("occurrence_rows")
+    _require(basis.get("version") == ARCHIVE_DESCRIPTION_VERSION and basis.get("raw_value") == ARCHIVE_DESCRIPTION_RAW
+             and basis.get("category") == ARCHIVE_DESCRIPTION_CATEGORY
+             and basis.get("inventory_sha256") == scope["inventory_sha256"]
+             and basis.get("occurrence_sha256") == declaration["occurrence_sha256"]
+             and isinstance(rows, list) and all(isinstance(row, dict) for row in rows)
+             and [row.get("id") for row in rows] == ids
+             and basis.get("occurrence_rows_sha256") == canonical_sha256(rows)
+             and _text(basis.get("source_context")), "archive description basis differs from signed occurrence scope")
+    for row in rows:
+        sources = row.get("sources")
+        _require(row.get("event") == ARCHIVE_DESCRIPTION_RAW and row.get("event_id") is None
+                 and isinstance(sources, list) and sources
+                 and all(isinstance(source, list) and len(source) == 5 and source[2] == "CWI"
+                         and isinstance(source[3], str)
+                         and re.search(r"(?:^|/)CWI_History_Full/Hoensha/[^/]+\.sgf\Z", source[3]) for source in sources),
+                 "archive description occurrence is outside reviewed CWI Hoensha source context")
+    if inventory is not None:
+        expected = [dict(zip(inventory["association_columns"], row)) for row in inventory["album_associations"]
+                    if row[0] in set(ids)]
+        _require(scope["inventory_sha256"] == inventory["sha256"] and rows == expected,
+                 "archive description complete occurrence rows differ from pinned inventory")
+        _require(not any(row[0] in set(ids) for row in _selection_rows(inventory)),
+                 "archive description cannot authorize selected events")
+    checks = basis.get("source_checks")
+    _require(isinstance(checks, list) and all(isinstance(check, dict) for check in checks)
+             and {"cwi-go", "nihon-kiin-archive-jp"} <= {check.get("source_id") for check in checks},
+             "archive description requires retained CWI and Nihon Ki-in history sources")
+    registered = {source["id"]: source for source in registry["sources"]} if registry is not None else None
+    for check in checks:
+        url = urlparse(str(check.get("url", "")))
+        _require(url.scheme == "https" and bool(url.hostname) and _time(check.get("fetched_at"))
+                 and _time(check["fetched_at"]) <= _time(review["produced_at"])
+                 and _HASH.fullmatch(str(check.get("body_sha256", "")))
+                 and _text(check.get("body_excerpt")) and _text(check.get("context_basis")),
+                 "archive description source capture or chronology is invalid")
+        if registered is not None:
+            source = registered.get(check.get("source_id"))
+            _require(source is not None and url.hostname == urlparse(source["home_url"]).hostname,
+                     "archive description source is absent from pinned registry or URL host differs")
+        if check_files:
+            _require(_text(check.get("body_path")), "archive description retained source body path required")
+            try:
+                body = Path(check["body_path"]).read_bytes()
+            except OSError as exc:
+                raise CandidateError("archive description retained source body unavailable") from exc
+            _require(hashlib.sha256(body).hexdigest() == check["body_sha256"],
+                     "archive description retained source body hash mismatch")
+            _require(check["body_excerpt"] in body.decode("utf-8", errors="replace"),
+                     "archive description source excerpt differs from retained body")
+    return scope
+
+
+def validate_archive_description_candidate(row: dict, scope: dict) -> None:
+    """Bind the editor's exact language approval to the independently reviewed archive scope."""
+    declaration = scope["declaration"]
+    review = declaration["category_review"]
+    _require(row["owner"] == declaration["owner"] and row.get("raw_value") == ARCHIVE_DESCRIPTION_RAW
+             and row.get("generation_rule_version") == ARCHIVE_DESCRIPTION_VERSION
+             and row.get("decision_kind") == "archive_description" and not row.get("research_sha256")
+             and row.get("archive_basis_sha256") == review["archive_basis_sha256"]
+             and row.get("archive_scope_sha256") == canonical_sha256(scope)
+             and row.get("display_name") == _ARCHIVE_DESCRIPTION_TEMPLATES[row["lang"]],
+             "archive description candidate differs from exact template or signed archive basis/scope")
+    _require(row.get("review_status") == "approved" and _time(row.get("reviewed_at"))
+             and _time(row["reviewed_at"]) >= _time(review["reviewed_at"]),
+             "archive description candidate requires approval after category review")
+    template = row.get("template_review")
+    _require(isinstance(template, dict) and template.get("version") == ARCHIVE_DESCRIPTION_VERSION
+             and template.get("lang") == row["lang"]
+             and template.get("sha256") == archive_description_template_sha256(row["lang"])
+             and template.get("reviewer_id") == row.get("reviewer_id")
+             and template.get("reviewer_model") == row.get("reviewer_model")
+             and _time(template.get("reviewed_at")) and _time(template["reviewed_at"]) <= _time(row["reviewed_at"])
+             and _text(template.get("conclusion")), "archive description needs signed exact language template review")
 
 
 def _owner_key(owner: object, lang: object) -> str:
@@ -378,6 +508,10 @@ def _validate_candidate(
     _check_signature(row)
     decision = row.get("decision_kind")
     _require(isinstance(decision, str) and decision in DECISION_KINDS, "decision kind invalid")
+    declaration = declarations.get(_owner_token(row["owner"])) if declarations is not None else None
+    pinned = ((declaration.get("create") or declaration.get("preimage")) if declaration else {})
+    if pinned.get("category") == ARCHIVE_DESCRIPTION_CATEGORY:
+        _require(decision == "archive_description", "archive description owner only permits archive_description decisions")
     display = row.get("display_name")
     _require(isinstance(display, str) and len(display) <= _MAX_NAME[row["owner"]["kind"]]
              and not _UNSAFE.search(display),
@@ -388,7 +522,13 @@ def _validate_candidate(
     else:
         _require(display == "", "hidden decision must have empty display")
 
-    if decision == "transliterated":
+    if decision == "archive_description":
+        _require(research is None and declaration is not None, "archive description requires pinned owner manifest, not name research")
+        basis = declaration.get("category_review", {}).get("archive_basis", {})
+        scope = archive_description_scope(basis.get("inventory_sha256"), declaration)
+        validate_archive_description_scope(scope, registry=registry)
+        validate_archive_description_candidate(row, scope)
+    elif decision == "transliterated":
         _require(research is None, "transliterated candidate uses dedicated original/reading evidence")
         try:
             validate_transliterated_candidate(row, transliteration_context)
@@ -622,7 +762,7 @@ def identity_scope_sha256(bundle: dict, links: list[dict], declaration: dict) ->
     })
 
 
-def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str], list[str]]:
+def _v2_scope(bundle: dict, inventory: dict, registry: dict) -> tuple[dict[str, dict], set[str], list[str]]:
     """Validate finite owner/link declarations without treating a ref as a DB ID."""
     errors = []
     _require(bool(_HASH.fullmatch(str(bundle.get("catalog_sha256", "")))),
@@ -669,6 +809,15 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                 _require(ids == actual_ids and bool(ids), "raw global occurrences differ from inventory")
                 _require(declaration.get("occurrence_sha256") == canonical_sha256(ids),
                          "raw global occurrence hash mismatch")
+                archive = (pinned.get("category") == ARCHIVE_DESCRIPTION_CATEGORY
+                           or pinned.get("parser_version") == ARCHIVE_DESCRIPTION_VERSION
+                           or "archive_basis" in declaration.get("category_review", {}))
+                if archive:
+                    _require(bundle["bundle_format"] == 2 and not links
+                             and all(item.get("owner", {}).get("kind") == "raw_event" for item in owners),
+                             "archive description bundle cannot write event identities or album links")
+                    validate_archive_description_scope(archive_description_scope(inventory["sha256"], declaration),
+                                                       registry=registry, inventory=inventory, check_files=True)
                 if owner["kind"] == "raw_player" and "raw_display_scope" in declaration:
                     contexts = {album_id: {field: album[field] for field in CONTEXT_FIELDS}
                                 for album_id, album in associations.items()}
@@ -676,7 +825,7 @@ def _v2_scope(bundle: dict, inventory: dict) -> tuple[dict[str, dict], set[str],
                              if contexts[album_id][f"{slot}_player_id"] is None}
                     validate_raw_player_scope(declaration["raw_display_scope"], inventory["sha256"], raw,
                                               slots, contexts)
-                if is_new:
+                if is_new and not archive:
                     parsed = parse_player(raw, None) if owner["kind"] == "raw_player" else parse_event(raw, None)
                     _require(pinned.get("category") == parsed.category,
                              "new raw category must match conservative parser; exceptions remain pending")
@@ -877,7 +1026,7 @@ def validate_bundle(
     values = _inventory_values(inventory)
     declarations = link_targets = None
     if bundle["bundle_format"] in {2, 3, 4}:
-        declarations, link_targets, v2_errors = _v2_scope(bundle, inventory)
+        declarations, link_targets, v2_errors = _v2_scope(bundle, inventory, registry)
         errors.extend(v2_errors)
     member_keys = []
     member_map = {}
@@ -1050,6 +1199,14 @@ def validate_bundle(
             decisions_by_owner[_owner_token(row["owner"])].append(row)
         for token, declaration in declarations.items():
             owner = declaration["owner"]
+            pinned = declaration.get("create") or declaration.get("preimage") or {}
+            if pinned.get("category") == ARCHIVE_DESCRIPTION_CATEGORY:
+                rows = decisions_by_owner[token]
+                if (len(rows) != len(LANGUAGES)
+                        or any(_owner_key(owner, lang) not in approved_keys for lang in LANGUAGES)
+                        or any(row["decision_kind"] != "archive_description"
+                               or row["generation_rule_version"] != ARCHIVE_DESCRIPTION_VERSION for row in rows)):
+                    errors.append(f"archive description owner requires all eleven approved language names: {token}")
             if "ref" in owner and owner["kind"].startswith("raw_"):
                 category = declaration["create"]["category"]
                 allowed = _RAW_CATEGORY_DECISIONS[owner["kind"]][category]

@@ -19,7 +19,10 @@ from katrain.web.core.models_db import (
     KifuRawPlayerName, KifuRawPlayerValue, KifuSource,
 )
 from katrain.web.kifu.identity import normalize_alias
-from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_bundle
+from katrain.web.kifu.name_candidates import (
+    ARCHIVE_DESCRIPTION_CATEGORY, ARCHIVE_DESCRIPTION_RAW, ARCHIVE_DESCRIPTION_VERSION,
+    CandidateError, archive_description_scope, canonical_sha256, validate_bundle,
+)
 from katrain.web.kifu.name_composition import base_candidate_sha256
 from katrain.web.kifu.name_inventory import ALBUM_COLUMNS, SOURCE_COLUMNS, _hash_row, _selection_supplement
 from katrain.web.kifu.name_parse import parse_event, parse_player
@@ -350,10 +353,14 @@ def _check_owner_manifest(conn, bundle: dict) -> None:
                 _fail(not (canonical_collision or alias_collision) or _reviewed_collision(declaration),
                       f"new identity alias collision needs independent review: {_owner_ref(owner)}")
             else:
-                _fail(set(created) == {"raw_value", "category"}, "new raw create fields not allowlisted")
+                archive = (kind == "raw_event" and created.get("raw_value") == ARCHIVE_DESCRIPTION_RAW
+                           and created.get("category") == ARCHIVE_DESCRIPTION_CATEGORY
+                           and created.get("parser_version") == ARCHIVE_DESCRIPTION_VERSION)
+                _fail(set(created) == ({"raw_value", "category", "parser_version"} if archive
+                                      else {"raw_value", "category"}), "new raw create fields not allowlisted")
                 parsed = (parse_player(created["raw_value"], None) if kind == "raw_player"
                           else parse_event(created["raw_value"], None))
-                _fail(created["category"] == parsed.category,
+                _fail(archive or created["category"] == parsed.category,
                       f"new raw category differs from conservative parser: {_owner_ref(owner)}")
                 existing = conn.scalar(select(model.id).where(model.raw_value == created["raw_value"]).limit(1))
                 _fail(existing is None, f"new raw value already exists: {_owner_ref(owner)}")
@@ -407,6 +414,11 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
     if kind.startswith("raw_"):
         _fail(owner_row["raw_value"] == row["raw_value"],
               f"raw ID {kind}:{owner_id} resolves to different spelling")
+        if kind == "raw_event" and (owner_row["category"] == ARCHIVE_DESCRIPTION_CATEGORY
+                                    or owner_row["parser_version"] == ARCHIVE_DESCRIPTION_VERSION):
+            _fail(row["decision_kind"] == "archive_description"
+                  and row["generation_rule_version"] == ARCHIVE_DESCRIPTION_VERSION,
+                  "archive owner permits only its dedicated description decision and version")
         if kind == "raw_player":
             raw_in_album = conn.scalar(select(KifuAlbum.id).where(or_(
                 KifuAlbum.player_black == row["raw_value"], KifuAlbum.player_white == row["raw_value"])).limit(1))
@@ -572,6 +584,7 @@ def _candidate_evidence(
     composition: dict | None = None,
     transliteration: dict | None = None,
     raw_display_scope: dict | None = None,
+    archive_description: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
@@ -583,6 +596,8 @@ def _candidate_evidence(
         payload["transliteration"] = transliteration
     if raw_display_scope is not None:
         payload["raw_display_scope"] = raw_display_scope
+    if archive_description is not None:
+        payload["archive_description"] = archive_description
     return {
         _OWNER_EVIDENCE_COLUMN[owner["kind"]]: owner_id, "lang": row["lang"], "revision": revision,
         "source_registry_id": registry_id, "candidate_name": row["display_name"],
@@ -597,7 +612,8 @@ def _candidate_evidence(
 
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
                      batch_id: int, sequence: int, resolved: dict[str, int] | None = None,
-                     composition: dict | None = None, raw_display_scope: dict | None = None) -> int:
+                     composition: dict | None = None, raw_display_scope: dict | None = None,
+                     archive_description: dict | None = None) -> int:
     owner = row["owner"]
     owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
@@ -622,7 +638,7 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
         KifuNameResearchEvidence,
         _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id, composed, transliteration,
                             {"batch_id": batch_id, "scope_sha256": canonical_sha256(raw_display_scope)}
-                            if raw_display_scope is not None else None),
+                            if raw_display_scope is not None else None, archive_description),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
@@ -866,9 +882,12 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
         for candidate in sorted(bundle["candidates"], key=lambda row: row["decision_kind"] == "composed"):
             raw_scope = next((declaration.get("raw_display_scope") for declaration in bundle.get("owners", ())
                               if declaration["owner"] == candidate["owner"]), None)
+            archive = (archive_description_scope(bundle["inventory_sha256"], next(
+                declaration for declaration in bundle["owners"] if declaration["owner"] == candidate["owner"]))
+                if candidate["decision_kind"] == "archive_description" else None)
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
                                         resolved if bundle["bundle_format"] in {2, 3, 4} else None,
-                                        bundle.get("composition"), raw_scope)
+                                        bundle.get("composition"), raw_scope, archive)
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:

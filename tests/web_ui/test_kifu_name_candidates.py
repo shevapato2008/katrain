@@ -1216,3 +1216,161 @@ def test_v2_new_person_cannot_link_with_only_one_language_name():
     report = validate_bundle(proposed, registry(), inventory(), [one_research])
     assert not report["ready"]
     assert any("eleven" in error or "link" in error for error in report["errors"])
+
+
+ARCHIVE_DISPLAYS = dict(zip(LANGS, (
+    "Hoensha archive game", "方圆社史料棋局", "方圓社史料棋局", "方円社の棋譜（史料）",
+    "호엔샤(方円社) 관련 옛 기보", "Historische Partie aus dem Hoensha-Archiv",
+    "Partida histórica del archivo de Hoensha", "Partie historique des archives de la Hoensha",
+    "Историческая партия из архива Хоэнся", "Hoensha arşivinden tarihî go partisi",
+    "Історична партія з архіву Хоенся",
+)))
+
+
+def archive_registry():
+    result = registry()
+    result["sources"].extend([
+        {"id": "cwi-go", "tier": "language_go", "home_url": "https://homepages.cwi.nl/~aeb/go/games/", "language": "en"},
+        {"id": "nihon-kiin-archive-jp", "tier": "official", "home_url": "https://archive.nihonkiin.or.jp/", "language": "ja"},
+    ])
+    return result
+
+
+def archive_declaration(inv, owner, tmp_path, ids=None):
+    ids = ids or [3]
+    rows = [dict(zip(inv["association_columns"], row)) for row in inv["album_associations"] if row[0] in ids]
+    checks = []
+    for source_id, url, body in (
+        ("cwi-go", "https://homepages.cwi.nl/~aeb/go/games/games/Hoensha/", b"Hoensha historical game collection"),
+        ("nihon-kiin-archive-jp", "https://archive.nihonkiin.or.jp/history/05.html", "方円社の歴史".encode()),
+    ):
+        path = tmp_path / f"{source_id}.body"
+        path.write_bytes(body)
+        checks.append({"source_id": source_id, "url": url, "fetched_at": "2026-10-02T09:00:00Z",
+                       "body_sha256": hashlib.sha256(body).hexdigest(), "body_path": str(path),
+                       "body_excerpt": body.decode(), "context_basis": "Historical organization and preserved games, no event identity"})
+    basis = {"version": "archive-description-v1", "raw_value": "Hoensha game", "category": "archive_source_description",
+             "inventory_sha256": inv["sha256"], "occurrence_rows": rows,
+             "occurrence_rows_sha256": canonical_sha256(rows), "occurrence_sha256": canonical_sha256(ids),
+             "source_context": "Reviewed CWI Hoensha corpus; archive is editorial source context", "source_checks": checks}
+    return {"owner": owner, "create": {"raw_value": "Hoensha game", "category": "archive_source_description",
+            "parser_version": "archive-description-v1"}, "occurrence_album_ids": ids,
+            "occurrence_sha256": canonical_sha256(ids), "category_review": {
+                "status": "approved", "producer_id": "researcher-1", "producer_model": "gpt-6-luna",
+                "produced_at": "2026-10-02T10:00:00Z", "reviewer_id": "category-reviewer-2",
+                "reviewer_model": "gpt-6-sol", "reviewed_at": "2026-10-02T10:30:00Z",
+                "category_basis": "Bounded historical CWI corpus, not a named event",
+                "archive_basis": basis, "archive_basis_sha256": canonical_sha256(basis)}}
+
+
+def archive_candidate(inv, declaration, lang):
+    row = candidate(owner=declaration["owner"], raw_value="Hoensha game", lang=lang,
+                    display_name=ARCHIVE_DISPLAYS[lang], decision_kind="archive_description",
+                    research_sha256="", generation_rule_version="archive-description-v1")
+    row["archive_basis_sha256"] = declaration["category_review"]["archive_basis_sha256"]
+    row["archive_scope_sha256"] = canonical_sha256({"inventory_sha256": inv["sha256"], "declaration": declaration})
+    row["template_review"] = {"version": "archive-description-v1", "lang": lang,
+                              "sha256": canonical_sha256({"version": "archive-description-v1", "lang": lang,
+                                  "raw_value": "Hoensha game", "category": "archive_source_description", "display_name": row["display_name"]}),
+                              "reviewer_id": row["reviewer_id"], "reviewer_model": row["reviewer_model"],
+                              "reviewed_at": row["reviewed_at"], "conclusion": "Reviewed exact editorial archive description"}
+    return row
+
+
+def archive_bundle(tmp_path):
+    inv = inventory()
+    inv["association_columns"].append("sources")
+    for row in inv["album_associations"]:
+        row.append([])
+    inv["album_associations"].append([3, "Black", "White", "Hoensha game", None, None, None,
+                                      [[3, 2, "CWI", "data/kifu-album/CWI_History_Full/Hoensha/A02-1.sgf", "source_path"]]])
+    owner = {"kind": "raw_event", "ref": "hoensha-archive"}
+    declaration = archive_declaration(inv, owner, tmp_path)
+    members = [member(owner, lang, "Hoensha game") for lang in LANGS]
+    proposed = bundle(members=members, candidates=[archive_candidate(inv, declaration, lang) for lang in LANGS],
+                      bundle_format=2, catalog_sha256="b" * 64, owners=[declaration],
+                      owner_set_sha256=canonical_sha256([declaration]), album_links=[],
+                      link_set_sha256=canonical_sha256([]), registry_sha256=registry_sha256(archive_registry()))
+    return proposed, inv
+
+
+def test_archive_description_accepts_exact_eleven_strings_without_changing_parser(tmp_path):
+    from katrain.web.kifu.name_parse import parse_event
+    proposed, inv = archive_bundle(tmp_path)
+    report = validate_bundle(proposed, archive_registry(), inv, [])
+    assert report["ready"], report["errors"]
+    assert report["approved"] == 11
+    assert parse_event("Hoensha game", None).category == "unclassified_pending"
+
+
+@pytest.mark.parametrize("change", ["owner", "raw", "version", "category", "parser_version", "basis_missing",
+    "body_hash", "body_content", "registry_source", "basis_signature", "non_independent", "early_review",
+    "scope_hash", "source_context", "source_path", "occurrence_row", "event_id", "template_text", "template_hash",
+    "missing_language", "pending", "legacy_format", "old_owner_category", "identity_owner"])
+def test_archive_description_rejects_unbound_or_wrong_scope(tmp_path, change):
+    proposed, inv = archive_bundle(tmp_path)
+    declaration = proposed["owners"][0]
+    review = declaration["category_review"]
+    basis = review["archive_basis"]
+    if change == "owner":
+        for item in [declaration, *proposed["members"], *proposed["candidates"]]:
+            item["owner"]["kind"] = "raw_player"
+    elif change == "raw":
+        declaration["create"]["raw_value"] = "Hoensha Game"
+    elif change in {"category", "parser_version"}:
+        declaration["create"][change] = "unclassified_pending" if change == "category" else "parser-v1"
+    elif change == "version":
+        proposed["candidates"][0]["generation_rule_version"] = "archive-description-v2"
+    elif change == "basis_missing":
+        del review["archive_basis"]
+    elif change == "body_hash":
+        basis["source_checks"][0]["body_sha256"] = "c" * 64
+    elif change == "body_content":
+        from pathlib import Path
+        Path(basis["source_checks"][0]["body_path"]).write_bytes(b"Changed capture")
+    elif change == "registry_source":
+        basis["source_checks"][0]["source_id"] = "unregistered"
+    elif change == "basis_signature":
+        review["archive_basis_sha256"] = "c" * 64
+    elif change == "non_independent":
+        review["reviewer_id"] = review["producer_id"]
+    elif change == "early_review":
+        review["reviewed_at"] = "2026-10-02T08:00:00Z"
+    elif change == "source_context":
+        basis["source_context"] = ""
+    elif change == "source_path":
+        basis["occurrence_rows"][0]["sources"][0][3] = "unreviewed/other.sgf"
+    elif change == "occurrence_row":
+        basis["occurrence_rows"][0]["player_black"] = "Wrong"
+    elif change == "event_id":
+        basis["occurrence_rows"][0]["event_id"] = 1
+    elif change == "template_text":
+        proposed["candidates"][0]["display_name"] = "Hoensha tournament"
+    elif change == "template_hash":
+        proposed["candidates"][0]["template_review"]["sha256"] = classification_template_sha256("en")
+    elif change == "missing_language":
+        proposed["members"].pop()
+        proposed["candidates"].pop()
+        proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    elif change == "pending":
+        proposed["candidates"][-1].update(review_status="pending", reviewer_id="", reviewer_model="", reviewed_at="", review_conclusion="")
+    elif change == "legacy_format":
+        proposed["bundle_format"] = 1
+    elif change == "old_owner_category":
+        declaration["preimage"] = declaration.pop("create") | {"id": 9, "category": "unclassified_pending"}
+        for item in [declaration, *proposed["members"], *proposed["candidates"]]:
+            item["owner"] = {"kind": "raw_event", "id": 9}
+    elif change == "identity_owner":
+        proposed["owners"].append({"owner": {"kind": "event", "id": 3}, "preimage": {"id": 3, "canonical_name": "Hoensha"}})
+    # Rebind unrelated hashes, so each rejection tests the changed evidence itself.
+    if change not in {"basis_missing", "basis_signature"}:
+        basis["occurrence_rows_sha256"] = canonical_sha256(basis["occurrence_rows"])
+        review["archive_basis_sha256"] = canonical_sha256(basis)
+    for row in proposed["candidates"]:
+        row["archive_basis_sha256"] = review["archive_basis_sha256"]
+        row["archive_scope_sha256"] = canonical_sha256({"inventory_sha256": inv["sha256"], "declaration": declaration})
+    if change == "scope_hash":
+        proposed["candidates"][0]["archive_scope_sha256"] = "c" * 64
+    proposed["owner_set_sha256"] = canonical_sha256(proposed["owners"])
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    assert not validate_bundle(proposed, archive_registry(), inv, [])["ready"], change

@@ -78,7 +78,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
             model.revision == KifuNameResearchEvidence.revision,
             model.decision_kind == KifuNameResearchEvidence.decision_kind,
             model.decision_kind.in_(
-                _DECISIONS | {"transliterated"} | ({"composed"} if model is KifuRawEventName else set())
+                _DECISIONS | {"transliterated"} | ({"composed", "archive_description"} if model is KifuRawEventName else set())
             ),
             model.generation_rule_version == KifuNameResearchEvidence.generation_rule_version,
             model.display_name == KifuNameResearchEvidence.candidate_name,
@@ -236,7 +236,10 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     Composition is checked against stored approvals; no renderer or source lookup
     runs here. Album membership and the live series link are checked by callers.
     """
-    from katrain.web.kifu.name_candidates import canonical_sha256
+    from katrain.web.kifu.name_candidates import (
+        ARCHIVE_DESCRIPTION_CATEGORY, ARCHIVE_DESCRIPTION_VERSION, CandidateError, _check_signature,
+        canonical_sha256, validate_archive_description_scope, validate_archive_description_candidate,
+    )
     from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
 
     query = (
@@ -253,16 +256,16 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
             or_(KifuRawEventName.display_name == display, func.lower(KifuRawEventName.display_name) == display.lower())
         )
     rows = [
-        (name, raw, evidence)
-        for name, evidence, raw in _qualified_name_rows(
-            db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value
+        (name, raw, evidence, raw_owner)
+        for name, evidence, raw, raw_owner in _qualified_name_rows(
+            db, query, KifuRawEventName, "raw_event_id", KifuRawEventValue.raw_value, KifuRawEventValue
         )
     ]
     composed = [row for row in rows if row[0].decision_kind == "composed"]
     bases = {}
     if composed:
         base_ids = set()
-        for _, _, evidence in composed:
+        for _, _, evidence, _ in composed:
             payload = evidence.research_payload
             composition = payload.get("composition") if isinstance(payload, dict) else None
             dependencies = composition.get("dependencies") if isinstance(composition, dict) else None
@@ -278,7 +281,34 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
             )
         }
     result = []
-    for name, raw, evidence in rows:
+    for name, raw, evidence, raw_owner in rows:
+        if (raw_owner.category == ARCHIVE_DESCRIPTION_CATEGORY
+                or raw_owner.parser_version == ARCHIVE_DESCRIPTION_VERSION) and name.decision_kind != "archive_description":
+            continue
+        if name.decision_kind == "archive_description":
+            payload = evidence.research_payload
+            if not isinstance(payload, dict) or payload.get("research") is not None:
+                continue
+            scope, candidate = payload.get("archive_description"), payload.get("candidate")
+            try:
+                validate_archive_description_scope(scope)
+                _check_signature(candidate)
+                validate_archive_description_candidate(candidate, scope)
+                owner = candidate["owner"]
+                if not (candidate["raw_value"] == raw and candidate["lang"] == name.lang
+                        and candidate["display_name"] == name.display_name
+                        and candidate["decision_kind"] == name.decision_kind == evidence.decision_kind == "archive_description"
+                        and candidate["generation_rule_version"] == name.generation_rule_version
+                        == evidence.generation_rule_version == ARCHIVE_DESCRIPTION_VERSION
+                        and (owner.get("id") == name.raw_event_id or isinstance(owner.get("ref"), str))
+                        and raw_owner.category == ARCHIVE_DESCRIPTION_CATEGORY
+                        and raw_owner.parser_version == ARCHIVE_DESCRIPTION_VERSION
+                        and raw_owner.review_metadata == scope["declaration"]["category_review"]):
+                    continue
+            except (CandidateError, KeyError, TypeError, AttributeError, ValueError):
+                continue
+            result.append((name, raw, scope))
+            continue
         if name.decision_kind != "composed":
             result.append((name, raw, None))
             continue
@@ -369,6 +399,13 @@ def _raw_event_map(rows, albums, selected_events, *, approvals=False):
         if composition is None:
             result[raw] = value
             continue
+        if name.decision_kind == "archive_description":
+            ids = set(composition["declaration"]["occurrence_album_ids"])
+            for album in albums:
+                if (album.id in ids and album.id not in selected_events
+                        and album.event == raw and album.event_id is None):
+                    result[(album.id, raw, None)] = value
+            continue
         dependencies = composition["dependencies"]
         entry = next(entry for entry in composition["scope"]["content"]["raws"] if entry["raw_value"] == raw)
         ids = set(entry["occurrence_album_ids"])
@@ -387,11 +424,14 @@ def _raw_event_value(values, album_id, raw, event_id, default=None):
 
 
 def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
-    """Restrict a composed translation match to its approved, currently linked games."""
+    """Restrict finite raw descriptions to their approved current direct event slots."""
     clauses = []
-    for _, raw, composition in _approved_raw_event_names(db, name_ids=name_ids):
+    for name, raw, composition in _approved_raw_event_names(db, name_ids=name_ids):
         if composition is None:
             clauses.append(KifuAlbum.event == raw)
+        elif name.decision_kind == "archive_description":
+            clauses.append((KifuAlbum.event == raw) & KifuAlbum.event_id.is_(None)
+                           & KifuAlbum.id.in_(composition["declaration"]["occurrence_album_ids"]))
         else:
             entry = next(entry for entry in composition["scope"]["content"]["raws"] if entry["raw_value"] == raw)
             clauses.append(
@@ -716,7 +756,8 @@ def strict_slot_approvals(
                     None if structure_event(event_raw or "")["components"] else event_approval,
                 )
         else:
-            event_approval = ("hidden", None) if _empty_event(event_raw) else raw_events.get(event_raw or "")
+            event_approval = (("hidden", None) if _empty_event(event_raw)
+                              else _raw_event_value(raw_events, album.id, event_raw or "", event_id))
         if album.id in obscured_event_ids:
             event_approval = None
         result[album.id] = black, white, event_approval

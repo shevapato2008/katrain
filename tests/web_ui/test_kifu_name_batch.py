@@ -1697,3 +1697,207 @@ def test_v4_undo_rejects_artifact_format_tamper_before_legacy_path(engine):
     with engine.connect() as conn:
         assert conn.scalar(select(KifuNameBatch.status).where(KifuNameBatch.id == applied["batch_id"])) == "applied"
         assert dict(conn.execute(select(KifuAlbumEventSelection.__table__)).mappings().one()) == before_selection
+
+
+def _archive_fixture_bundle(engine, tmp_path):
+    from tests.web_ui.test_kifu_name_candidates import archive_registry, archive_declaration, archive_candidate
+    from katrain.web.core.models_db import KifuSource, KifuAlbumSource
+
+    raw = "Hoensha game"
+    with engine.begin() as conn:
+        conn.execute(KifuSource.__table__.insert().values(id=2, source_key="CWI"))
+        for album_id in (12, 13):
+            path = f"data/kifu-album/CWI_History_Full/Hoensha/{album_id}.sgf"
+            conn.execute(KifuAlbum.__table__.insert().values(id=album_id, player_black="Alpha", player_white="Beta",
+                event=raw, date_played="1880-01-01", sgf_content=f"(;PB[Alpha]PW[Beta]EV[{raw}])", source_path=path))
+            conn.execute(KifuAlbumSource.__table__.insert().values(album_id=album_id, source_id=2,
+                origin_path=path, match_method="source_path"))
+    inv = build_inventory(engine, inventory_format=4)
+    owner = {"kind": "raw_event", "ref": "hoensha-archive"}
+    declaration = archive_declaration(inv, owner, tmp_path, ids=[12, 13])
+    proposed = approved_bundle(inv)
+    proposed.update(inventory_format=4, registry_sha256=registry_sha256(archive_registry()))
+    proposed["candidates"] = []
+    for lang in LANGS:
+        row = archive_candidate(inv, declaration, lang)
+        row["name_preimage_sha256"] = None
+        proposed["candidates"].append(bind_fixture_candidate(row))
+    proposed["members"] = [{"owner": owner, "lang": lang, "raw_value": raw} for lang in LANGS]
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    proposed = _v2_wrap(engine, inv, proposed, [declaration], [])
+    return inv, proposed, declaration
+
+
+def test_archive_description_finite_scope_display_search_coverage_evidence_and_undo(engine, tmp_path, monkeypatch):
+    from tests.web_ui.test_kifu_name_candidates import archive_registry, ARCHIVE_DISPLAYS
+    from tests.web_ui.test_kifu_name_api import _list
+    from katrain.web.core.models_db import KifuEventAlias
+    from katrain.web.kifu.name_coverage import coverage_report
+    from katrain.web.kifu.identity import strict_display_maps, strict_slot_approvals, resolve_strict_display
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    raw = "Hoensha game"
+    inv, proposed, declaration = _archive_fixture_bundle(engine, tmp_path)
+    before = counts(engine)
+    assert dry_run_bundle(engine, proposed, archive_registry(), inv, [])["ready"]
+    assert counts(engine) == before
+    applied = apply_bundle(engine, proposed, archive_registry(), inv, [])
+    owner_id = applied["resolved_refs"]["raw_event:@hoensha-archive"]
+    report = coverage_report(engine, inv, languages=LANGS)
+    with Session(engine) as db:
+        assert {name.lang: name.display_name for name in db.query(KifuRawEventName).filter_by(raw_event_id=owner_id)} == ARCHIVE_DISPLAYS
+        assert db.query(KifuEvent).count() == db.query(KifuEventAlias).count() == 0
+        assert db.query(KifuAlbum).filter(KifuAlbum.id.in_([12, 13]), KifuAlbum.event_id.isnot(None)).count() == 0
+        evidence = db.query(KifuNameResearchEvidence).filter_by(raw_event_id=owner_id, lang="en").one()
+        proof = evidence.research_payload["archive_description"]
+        assert proof == {"inventory_sha256": inv["sha256"], "declaration": declaration}
+        for lang, display in ARCHIVE_DISPLAYS.items():
+            assert {item.id: item.display_event for item in _list(db, lang=lang).items}[12] == display
+            assert [item.id for item in _list(db, q=display, lang=lang).items] == [13, 12]
+            assert report["languages"][lang]["by_decision"] == {"archive_description": 2}
+        # Runtime is portable: retained capture paths are never opened for display.
+        for check in declaration["category_review"]["archive_basis"]["source_checks"]:
+            from pathlib import Path
+            Path(check["body_path"]).unlink()
+        assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [13, 12]
+        # New same-spelling rows, changed raw, linked events and selected events are outside approval.
+        db.add(KifuAlbum(id=14, player_black="Alpha", player_white="Beta", event=raw,
+                         sgf_content=f"(;EV[{raw}])", source_path="later.sgf"))
+        db.commit()
+        assert {item.id: item.display_event for item in _list(db, lang="en").items}[14] == "Event name unverified"
+        assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [13, 12]
+        later_inv = build_inventory(engine, inventory_format=4)
+        assert coverage_report(engine, later_inv, languages=("en",))["languages"]["en"]["by_decision"] == {"archive_description": 2}
+        album = db.query(KifuAlbum).filter_by(id=13).one()
+        album.event = "Hoensha Game"
+        db.commit()
+        assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [12]
+        changed_inv = build_inventory(engine, inventory_format=4)
+        assert coverage_report(engine, changed_inv, languages=("en",))["languages"]["en"]["by_decision"] == {"archive_description": 1}
+        album.event = raw
+        db.add(KifuEvent(id=91, canonical_name="Other"))
+        db.commit()
+        album.event_id = 91
+        db.commit()
+        assert {item.id: item.display_event for item in _list(db, lang="en").items}[13] == "Event name unverified"
+        assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [12]
+        linked_inv = build_inventory(engine, inventory_format=4)
+        assert coverage_report(engine, linked_inv, languages=("en",))["languages"]["en"]["by_decision"] == {"archive_description": 1}
+        album.event_id = None
+        db.commit()
+        selected = {13: ("Other selected event", None)}
+        maps = strict_display_maps(db, [album], "en", selected_events=selected)
+        assert resolve_strict_display(album, "en", maps[0], maps[1], maps[2], maps[4], maps[5], selected_events=selected)[2] == "Event name unverified"
+        assert strict_slot_approvals(db, [album], "en", selected_events=selected)[13][2] is None
+        # Revoked or damaged archive evidence loses display, search and coverage together.
+        original = deepcopy(evidence.research_payload)
+        for damaged in (None, "review", "body_hash", "scope_member"):
+            if damaged is None:
+                evidence.review_status = "pending"
+            else:
+                payload = deepcopy(original)
+                if damaged == "review":
+                    payload["archive_description"]["declaration"]["category_review"]["status"] = "pending"
+                elif damaged == "body_hash":
+                    payload["archive_description"]["declaration"]["category_review"]["archive_basis"]["source_checks"][0]["body_sha256"] = "c" * 64
+                else:
+                    payload["archive_description"]["declaration"]["occurrence_album_ids"].append(14)
+                evidence.research_payload = payload
+            db.commit()
+            assert {item.id: item.display_event for item in _list(db, lang="en").items}[12] == "Event name unverified"
+            assert _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items == []
+            assert coverage_report(engine, later_inv, languages=("en",))["languages"]["en"]["by_decision"] == {}
+            evidence.review_status = "approved"
+            evidence.research_payload = deepcopy(original)
+            db.commit()
+        db.delete(db.query(KifuAlbum).filter_by(id=14).one())
+        db.delete(db.query(KifuEvent).filter_by(id=91).one())
+        db.commit()
+    assert undo_batch(engine, applied["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert db.query(KifuRawEventValue).filter_by(id=owner_id).first() is None
+        assert db.query(KifuRawEventName).filter_by(raw_event_id=owner_id).count() == 0
+        assert db.query(KifuNameResearchEvidence).filter_by(raw_event_id=owner_id).count() == 0
+        assert db.query(KifuEvent).count() == db.query(KifuEventAlias).count() == 0
+        assert db.query(KifuAlbum).filter(KifuAlbum.id.in_([12, 13]), KifuAlbum.event_id.isnot(None)).count() == 0
+
+
+@pytest.mark.parametrize("bundle_format", [1, 2])
+def test_archive_owner_rejects_conventional_replacement_without_category_manifest(engine, tmp_path, bundle_format):
+    from tests.web_ui.test_kifu_name_candidates import archive_registry, ARCHIVE_DISPLAYS
+    from katrain.web.kifu.name_batch import _image
+
+    inv, original, _ = _archive_fixture_bundle(engine, tmp_path)
+    applied = apply_bundle(engine, original, archive_registry(), inv, [])
+    owner = {"kind": "raw_event", "id": applied["resolved_refs"]["raw_event:@hoensha-archive"]}
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(id=14, player_black="Alpha", player_white="Beta", event="Hoensha game", source_path="unreviewed.sgf", sgf_content="(;EV[Hoensha game])"))
+    inv = build_inventory(engine, inventory_format=4)
+    replacement, records = player_bundle(inv, display=ARCHIVE_DISPLAYS["ru"])
+    replacement["inventory_format"] = 4
+    replacement["members"][0].update(owner=owner, raw_value="Hoensha game")
+    record = records[0]
+    record["owner"] = owner
+    record["source_checks"][0]["owner"] = owner
+    record["original_name"] = "Hoensha game"
+    row = replacement["candidates"][0]
+    row.update(owner=owner, raw_value="Hoensha game", research_sha256=canonical_sha256(record),
+               name_preimage_sha256=name_preimage_sha256(engine, owner, "ru"))
+    del row["preimage_binding"]
+    bind_fixture_candidate(row)
+    replacement["member_set_sha256"] = canonical_sha256(replacement["members"])
+    if bundle_format == 2:
+        # Deliberately omit category/parser_version from this existing owner's manifest.
+        declaration = {"owner": owner, "preimage": {"id": owner["id"], "raw_value": "Hoensha game"},
+                       "occurrence_album_ids": [12, 13, 14], "occurrence_sha256": canonical_sha256([12, 13, 14])}
+        replacement = _v2_wrap(engine, inv, replacement, [declaration], [])
+    before = counts(engine)
+    with engine.connect() as conn:
+        name = conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == owner["id"], KifuRawEventName.lang == "ru"))
+        before_name = _image(conn, KifuRawEventName.__table__, name)
+        before_evidence = _image(conn, KifuNameResearchEvidence.__table__, before_name["evidence_id"])
+    for operation in (dry_run_bundle, apply_bundle):
+        with pytest.raises(BatchError, match="archive"):
+            operation(engine, replacement, registry(), inv, records)
+        assert counts(engine) == before
+        with engine.connect() as conn:
+            assert _image(conn, KifuRawEventName.__table__, name) == before_name
+            assert _image(conn, KifuNameResearchEvidence.__table__, before_name["evidence_id"]) == before_evidence
+
+
+@pytest.mark.parametrize("damage", ["conventional", "unknown_version"])
+def test_archive_runtime_rejects_incompatible_persisted_decision_or_version(engine, tmp_path, monkeypatch, damage):
+    from tests.web_ui.test_kifu_name_candidates import archive_registry, ARCHIVE_DISPLAYS
+    from tests.web_ui.test_kifu_name_api import _list
+    from katrain.web.kifu.identity import strict_slot_approvals
+    from katrain.web.kifu.name_coverage import coverage_report
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    inv, original, _ = _archive_fixture_bundle(engine, tmp_path)
+    applied = apply_bundle(engine, original, archive_registry(), inv, [])
+    owner_id = applied["resolved_refs"]["raw_event:@hoensha-archive"]
+    with Session(engine) as db:
+        db.add(KifuAlbum(id=14, player_black="Alpha", player_white="Beta", event="Hoensha game", source_path="unreviewed.sgf", sgf_content="(;EV[Hoensha game])"))
+        db.commit()
+        inv = build_inventory(engine, inventory_format=4)
+        name = db.query(KifuRawEventName).filter_by(raw_event_id=owner_id, lang="en").one()
+        evidence = db.query(KifuNameResearchEvidence).filter_by(id=name.evidence_id).one()
+        assert {item.id: item.display_event for item in _list(db, lang="en").items}[12] == ARCHIVE_DISPLAYS["en"]
+        assert {item.id: item.display_event for item in _list(db, lang="en").items}[14] == "Event name unverified"
+        if damage == "conventional":
+            name.decision_kind = evidence.decision_kind = "conventional"
+            name.generation_rule_version = evidence.generation_rule_version = "none"
+        else:
+            name.generation_rule_version = evidence.generation_rule_version = "archive-description-v999"
+        db.commit()
+        displayed = {item.id: item.display_event for item in _list(db, lang="en").items}
+        assert displayed[12] == displayed[14] == "Event name unverified"
+        assert _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items == []
+        albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_([12, 13, 14])).all()
+        assert all(slots[2] is None for slots in strict_slot_approvals(db, albums, "en").values())
+        assert coverage_report(engine, inv, languages=("en",))["languages"]["en"]["by_decision"] == {}
+        name.decision_kind = evidence.decision_kind = "archive_description"
+        name.generation_rule_version = evidence.generation_rule_version = "archive-description-v1"
+        db.commit()
+        assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [13, 12]
+        assert coverage_report(engine, inv, languages=("en",))["languages"]["en"]["by_decision"] == {"archive_description": 2}

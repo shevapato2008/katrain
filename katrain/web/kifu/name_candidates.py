@@ -1097,7 +1097,7 @@ def validate_bundle(
         if len(hashes) > 1:
             errors.append(f"multiple research records for {key}; consolidate findings before approval")
     if bundle["bundle_format"] == 1 and (
-        any(record["content"].get("anchor_format") == 3 for record in anchors_by_hash.values())
+        any(record["content"].get("anchor_format") in {3, 4} for record in anchors_by_hash.values())
         or any(isinstance(item, dict) and "raw_display_scope_sha256" in item for item in candidates)
     ):
         errors.append("raw-player display scope requires a validated v2 owner declaration")
@@ -1173,7 +1173,7 @@ def validate_bundle(
                 anchor = anchors_by_hash.get(item.get("source_anchor_sha256"))
                 _require(
                     binding is not None and anchor is not None
-                    and anchor["content"].get("anchor_format") == 3
+                    and anchor["content"].get("anchor_format") in {3, 4}
                     and anchor["content"].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"]
                     and binding[1].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"],
                     "scoped raw-player transliteration requires one matching format-3 source and signed member",

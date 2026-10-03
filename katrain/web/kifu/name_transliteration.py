@@ -205,7 +205,7 @@ def validate_transliteration(section, candidates, anchors, snapshot):
             is_scoped_raw = False
             anchor_hash = member.get("source_anchor_sha256")
             if isinstance(anchor_hash, str) and anchor_hash in anchors:
-                is_scoped_raw = is_raw and anchors[anchor_hash]["content"].get("anchor_format") == 3
+                is_scoped_raw = is_raw and anchors[anchor_hash]["content"].get("anchor_format") in {3, 4}
             _require(
                 set(member) == member_fields | ({"raw_value"} if is_raw else set())
                 | ({"raw_display_scope_sha256"} if is_scoped_raw else set()),
@@ -405,7 +405,7 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         if row["source_anchor_sha256"] not in artifact.get("research_hashes", []):
             return False
         source = validate_transliteration_review(anchor, "approved_original_name_and_reading")
-        validate_transliteration_anchor(anchor)
+        validate_transliteration_anchor(anchor, verify_captured_body=False)
         signed_batch = bindings[key][0]["content"]
         if source["owner"] != owner or not all(
             source[field] == signed_batch[field] for field in ("source_lang", "reading_system", "entity_kind")
@@ -414,7 +414,7 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         if owner["kind"].startswith("raw_") and source.get("raw_value") != raw:
             return False
         scope_hash = row.get("raw_display_scope_sha256")
-        if (source.get("anchor_format") == 3) != (scope_hash is not None):
+        if (source.get("anchor_format") in {3, 4}) != (scope_hash is not None):
             return False
         if scope_hash is not None and (
             source.get("raw_display_scope_sha256") != scope_hash

@@ -299,7 +299,132 @@ def _validate_two_publisher_reading(content: dict, reviewed_at: str) -> None:
     )
 
 
-def validate_transliteration_anchor(record: dict) -> dict:
+def _validate_localized_raw_reading(content: dict, reviewed_at: str, verify_captured_body: bool) -> None:
+    """Bind a finite raw reading to captured GoRatings localized person records."""
+    _require(
+        content["entity_kind"] == "player"
+        and content["owner"]["kind"] == "raw_player"
+        and content.get("source_reading_kind") == "published_roman_name",
+        "localized reading requires a raw player",
+    )
+    link = content.get("source_link")
+    _require(
+        isinstance(link, dict)
+        and set(link) == {"method", "unresolved_conflicts", "review_basis"}
+        and link["method"] == "localized_name_dob_to_profile_id_v1"
+        and link["unresolved_conflicts"] == []
+        and _text(link["review_basis"]),
+        "localized source link unresolved or invalid",
+    )
+    sources = content.get("sources")
+    different = content["raw_value"] != content["original_name"]
+    roles = ["original", "reading"] + (["raw_spelling"] if different else [])
+    _require(
+        isinstance(sources, list)
+        and len(sources) == len(roles)
+        and all(isinstance(source, dict) for source in sources)
+        and [source.get("role") for source in sources] == roles,
+        "localized reading needs exact localized person records",
+    )
+    lang_path = {"zh-Hans": "zh", "zh-Hant": "zh", "ja": "ja", "ko": "ko"}
+    for source in sources:
+        role = source["role"]
+        lang = "en" if role == "reading" else content["source_lang"]
+        if role == "raw_spelling":
+            lang = source.get("observed_lang")
+            _require(lang in {"zh", "zh-Hans", "zh-Hant", "ja", "ko"}, "raw spelling language invalid")
+        validate_transliteration_sources(
+            [source],
+            lang,
+            reviewed_at,
+            allowed_languages=frozenset({lang, "zh"}) if lang in {"zh-Hans", "zh-Hant"} else None,
+        )
+        path_lang = "zh" if lang == "zh" else lang_path.get(lang, lang)
+        _require(
+            source.get("publisher_id") == "goratings"
+            and source.get("person_id_namespace") == "goratings_player_id"
+            and bool(re.fullmatch(r"[1-9][0-9]*", str(source.get("person_id", ""))))
+            and source["url"] == f"https://www.goratings.org/{path_lang}/players/{source['person_id']}.html"
+            and _text(source.get("record_locator")),
+            "localized profile identity or language path invalid",
+        )
+        dob = source.get("birthdate", "")
+        try:
+            valid_dob = (
+                isinstance(dob, str)
+                and bool(re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", dob))
+                and date.fromisoformat(dob)
+            )
+        except ValueError:
+            valid_dob = False
+        _require(valid_dob, "localized birth date invalid")
+        expected = (
+            content["source_reading"]
+            if role == "reading"
+            else content["raw_value"] if role == "raw_spelling" else content["original_name"]
+        )
+        _require(source.get("exact_name") == expected, "localized exact name mismatch")
+        try:
+            _require(
+                _text(source.get("body_path")) and source.get("body_encoding") == "utf-8",
+                "localized captured body path or encoding invalid",
+            )
+            if verify_captured_body:
+                raw = Path(source["body_path"]).read_bytes()
+                body = raw.decode(source["body_encoding"])
+            else:
+                body = " " * source["record_span"][0] + source["body_excerpt"]
+        except (OSError, UnicodeError) as exc:
+            raise EvidenceError("localized captured body unavailable") from exc
+        if verify_captured_body:
+            _require(hashlib.sha256(raw).hexdigest() == source["body_sha256"], "localized captured body hash mismatch")
+        spans = []
+        for field in ("record_span", "name_span", "birthdate_span"):
+            span = source.get(field)
+            _require(
+                isinstance(span, list)
+                and len(span) == 2
+                and all(type(value) is int for value in span)
+                and 0 <= span[0] < span[1] <= len(body),
+                "localized captured span invalid",
+            )
+            spans.append(span)
+        record, name, birth = spans
+        _require(
+            all(record[0] <= span[0] < span[1] <= record[1] for span in (name, birth))
+            and body[name[0] : name[1]] == expected
+            and body[birth[0] : birth[1]] == dob
+            and source["body_excerpt"] == body[record[0] : record[1]],
+            "localized name and birth date must belong to the captured record",
+        )
+    _require(
+        len({source["person_id"] for source in sources}) == 1 and len({source["birthdate"] for source in sources}) == 1,
+        "localized profile ID or birth date mismatch",
+    )
+    if different:
+        mapping = content.get("raw_original_mapping")
+        _require(
+            isinstance(mapping, dict)
+            and set(mapping) == {"raw_value", "original_name", "review_basis"}
+            and mapping["raw_value"] == content["raw_value"]
+            and mapping["original_name"] == content["original_name"]
+            and _text(mapping["review_basis"]),
+            "localized raw spelling requires exact reviewed mapping",
+        )
+    else:
+        _require("raw_original_mapping" not in content, "unexpected localized raw spelling mapping")
+    published = content["source_reading"].split()
+    _require(
+        len(published) == len(content["reading_words"])
+        and all(
+            _normalized_phonetic_reading(word, content["reading_system"]) == "".join(tokens)
+            for word, tokens in zip(published, content["reading_words"])
+        ),
+        "localized reading word boundaries differ from published name",
+    )
+
+
+def validate_transliteration_anchor(record: dict, *, verify_captured_body: bool = True) -> dict:
     """Check a source-approved original and segmented reading, never infer it from Hanzi."""
     _require(
         isinstance(record, dict) and record.get("evidence_kind") == "transliteration_anchor",
@@ -356,18 +481,29 @@ def validate_transliteration_anchor(record: dict) -> dict:
     )
     sources = content.get("sources")
     anchor_format = content.get("anchor_format", 1)
-    _require(type(anchor_format) is int and anchor_format in {1, 2, 3}, "transliteration anchor format invalid")
-    if anchor_format == 3:
+    _require(type(anchor_format) is int and anchor_format in {1, 2, 3, 4}, "transliteration anchor format invalid")
+    if anchor_format in {3, 4}:
         _require(
             content["owner"]["kind"] == "raw_player"
-            and content.get("raw_value") == content["original_name"]
+            and (anchor_format == 4 or content.get("raw_value") == content["original_name"])
             and bool(_HEX_SHA256.fullmatch(str(content.get("raw_display_scope_sha256", ""))))
-            and all(_text(content.get(field)) for field in (
-                "original_language_basis", "reading_applicability_basis", "spelling_exceptions_basis"
-            )),
+            and all(
+                _text(content.get(field))
+                for field in ("original_language_basis", "reading_applicability_basis", "spelling_exceptions_basis")
+            ),
             "raw transliteration anchor requires exact spelling, finite scope and reviewed applicability",
         )
-    if anchor_format in {2, 3}:
+    if anchor_format == 4:
+        _validate_localized_raw_reading(content, record["approval"]["reviewed_at"], verify_captured_body)
+        _require(
+            all(
+                datetime.fromisoformat(record["approval"]["produced_at"].replace("Z", "+00:00"))
+                >= datetime.fromisoformat(source["fetched_at"].replace("Z", "+00:00"))
+                for source in sources
+            ),
+            "localized production predates source capture",
+        )
+    elif anchor_format in {2, 3}:
         _validate_two_publisher_reading(content, record["approval"]["reviewed_at"])
     else:
         _require(
@@ -377,7 +513,8 @@ def validate_transliteration_anchor(record: dict) -> dict:
         validate_transliteration_sources(sources, source_lang, record["approval"]["reviewed_at"])
         _require(
             any(
-                content["original_name"] in source["body_excerpt"] and content["source_reading"] in source["body_excerpt"]
+                content["original_name"] in source["body_excerpt"]
+                and content["source_reading"] in source["body_excerpt"]
                 for source in sources
             ),
             "transliteration exact original and sourced reading must occur in captured body",

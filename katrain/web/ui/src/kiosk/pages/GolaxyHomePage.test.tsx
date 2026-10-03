@@ -75,6 +75,8 @@ describe('Golaxy home', () => {
     renderPage();
     expect(await screen.findByText('昵称未获取')).toBeInTheDocument();
     expect(screen.queryByText('当前星阵账号')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /当前账号/ }));
+    expect(screen.getByText('星阵账号 · 昵称未获取')).toBeInTheDocument();
   });
 
   it('shows the invitation preference when the upstream presence is unknown', async () => {

@@ -254,22 +254,43 @@ export interface GolaxyOnlinePlayer {
   username: string;
   rank: string | null;
   status: string | null;
+  // Verified display projections; malformed or missing values remain null.
+  wins?: number | null;
+  losses?: number | null;
+  invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
+  avatar_url?: string | null;
 }
 
 export interface GolaxyRoom {
   room_id: string;
   room_number: string | null;
-  room_type: string | null;
+  room_type: string | null; // Verified game category (自由战 / 升降战), not gameroomType.
   handicap: number | null;
   black: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   phase: string | null;
-  spectator_count: number | null;
+  spectator_count: number | null; // No verified spectator membership count; currently null.
+  move_number?: number | null;
+  room_user_count?: number | null; // All room users, including players.
+}
+
+export interface GolaxySpectatorPosition {
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  last_move: { color: 'B' | 'W'; coordinate: string | null } | null;
+}
+
+export interface GolaxySpectatorClock {
+  remaining_seconds: number;
+  period_seconds?: number | null;
+  periods_remaining?: number | null;
 }
 
 /** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
 export interface GolaxySpectatorSnapshot {
   room_id: string;
+  game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
   room_number: string | null;
   board_size: 19;
   black: { username: string; rank: string | null } | null;
@@ -281,6 +302,10 @@ export interface GolaxySpectatorSnapshot {
   result: string | null;
   room_type: string | null;
   handicap: number | null;
+  last_move: GolaxySpectatorPosition['last_move'];
+  history: GolaxySpectatorPosition[];
+  clocks: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
+  members: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
 }
 
 export interface PlatformChallenge {
@@ -740,12 +765,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string | null | undefined) => {
+  platformLogout: async (platform: string, token: string | null | undefined): Promise<{ status: string; platform: string }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status, `Logout failed: ${response.status}`);
     return response.json();
   },
   platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {

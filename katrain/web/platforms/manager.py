@@ -167,7 +167,7 @@ class PlatformManager:
                     user_id,
                     PlatformCredentials(platform=platform, username=credentials.username, auth_data=auth_to_save),
                 )
-                logger.info(f"Connected to {platform} as {credentials.username}")
+                logger.info("Connected to %s", platform)
             return success
 
     async def disconnect_platform(self, platform: str, user_id: int) -> None:

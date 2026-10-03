@@ -72,6 +72,25 @@ def test_snapshot_uses_meta_board_fields_and_bottom_up_go_coordinates():
         "black_stones": ["Q16"],
         "white_stones": ["Q4"],
         "move_number": 2,
+        "game_id": None,
+        "last_move": {"color": "W", "coordinate": "Q4"},
+        "history": [
+            {"black_stones": [], "white_stones": [], "move_number": 0, "last_move": None},
+            {
+                "black_stones": ["Q16"],
+                "white_stones": [],
+                "move_number": 1,
+                "last_move": {"color": "B", "coordinate": "Q16"},
+            },
+            {
+                "black_stones": ["Q16"],
+                "white_stones": ["Q4"],
+                "move_number": 2,
+                "last_move": {"color": "W", "coordinate": "Q4"},
+            },
+        ],
+        "clocks": None,
+        "members": None,
         "phase": "进行中",
         "result": None,
     }
@@ -93,10 +112,127 @@ def test_snapshot_replays_capture_and_pass_without_leaving_captured_stone():
     assert set(response.json()["black_stones"]) == {"Q16", "Q4"}
     assert set(response.json()["white_stones"]) == {"A2", "B1", "C2", "B3"}
     assert response.json()["move_number"] == 8
+    history = response.json()["history"]
+    assert [position["move_number"] for position in history] == list(range(9))
+    assert history[7]["black_stones"] == history[6]["black_stones"]
+    assert history[7]["white_stones"] == history[6]["white_stones"]
+    assert history[7]["last_move"] == {"color": "B", "coordinate": None}
+    assert history[8]["last_move"] == {"color": "W", "coordinate": "B3"}
+    assert "B2" in history[6]["black_stones"]
+    assert "B2" not in history[8]["black_stones"]
+    assert response.json()["last_move"] == history[8]["last_move"]
+
+
+def test_matching_game_ids_change_when_a_room_is_reused():
+    def room_for_game(game_id):
+        return {
+            **ROOM,
+            "wsGameId": game_id,
+            "gameMetaDto": {
+                **ROOM["gameMetaDto"],
+                "wsGameId": game_id,
+                "gameroomId": ROOM["id"],
+                "gameState": {**ROOM["gameMetaDto"]["gameState"], "wsGameId": game_id},
+            },
+        }
+
+    first = _read(room_for_game(441))
+    reused = _read(room_for_game(442))
+
+    assert first.status_code == reused.status_code == 200
+    assert first.json()["room_id"] == reused.json()["room_id"]
+    assert first.json()["game_id"] == "441"
+    assert reused.json()["game_id"] == "442"
 
 
 @pytest.mark.parametrize(
-    "field,value", [("boardSize", 13), ("handicap", 2), ("startMoveNum", 1), ("gameType", "99"), ("rule", "japanese")]
+    "game_ids",
+    [
+        (None, 441, 441),
+        (441, None, 441),
+        (441, 441, None),
+        (441, 442, 441),
+        (441, 441, 442),
+        (True, 441, 441),
+        (0, 0, 0),
+        ("441", "441", "441"),
+    ],
+)
+def test_missing_or_mismatched_game_id_is_unknown(game_ids):
+    room_id, meta_id, state_id = game_ids
+    room = {
+        **ROOM,
+        "wsGameId": room_id,
+        "gameMetaDto": {
+            **ROOM["gameMetaDto"],
+            "wsGameId": meta_id,
+            "gameroomId": ROOM["id"],
+            "gameState": {**ROOM["gameMetaDto"]["gameState"], "wsGameId": state_id},
+        },
+    }
+    response = _read(room)
+    assert response.status_code == 200
+    assert response.json()["game_id"] is None
+
+
+def test_clock_shaped_fields_and_room_user_count_do_not_imply_timers_or_roster():
+    state = {
+        **ROOM["gameMetaDto"]["gameState"],
+        "blackRemainTime": 10000,
+        "whiteRemainTime": 20000,
+        "blackCountdownTimestamp": 1700000000000,
+        "whiteCountdownTimestamp": 1700000000000,
+    }
+    room = {
+        **ROOM,
+        "gameroomStateDto": {"onlineUserCount": 9},
+        "gameMetaDto": {**ROOM["gameMetaDto"], "mainTime": 2400000, "gameState": state},
+    }
+    response = _read(room)
+    assert response.status_code == 200
+    assert response.json()["clocks"] is None
+    assert response.json()["members"] is None
+
+
+def test_empty_game_and_latest_pass_have_honest_last_move():
+    meta = ROOM["gameMetaDto"]
+    empty = _read({**ROOM, "gameMetaDto": {**meta, "moveNum": 0, "gameState": {"situation": "", "moveNum": 0}}})
+    passed = _read({**ROOM, "gameMetaDto": {**meta, "gameState": {"situation": "72,-1", "moveNum": 2}}})
+
+    assert empty.status_code == passed.status_code == 200
+    assert empty.json()["history"] == [{"black_stones": [], "white_stones": [], "move_number": 0, "last_move": None}]
+    assert empty.json()["last_move"] is None
+    assert passed.json()["history"][-1]["black_stones"] == ["Q16"]
+    assert passed.json()["last_move"] == {"color": "W", "coordinate": None}
+
+
+@pytest.mark.parametrize("meta_room_id", [True, 10078688, "10078687"])
+def test_game_identity_is_unknown_when_meta_room_binding_is_invalid(meta_room_id):
+    room = {
+        **ROOM,
+        "wsGameId": 441,
+        "gameMetaDto": {
+            **ROOM["gameMetaDto"],
+            "gameroomId": meta_room_id,
+            "wsGameId": 441,
+            "gameState": {**ROOM["gameMetaDto"]["gameState"], "wsGameId": 441},
+        },
+    }
+    response = _read(room)
+    assert response.status_code == 200
+    assert response.json()["game_id"] is None
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("boardSize", 13),
+        ("handicap", 2),
+        ("startMoveNum", 1),
+        ("gameType", "80"),
+        ("gameType", "99"),
+        ("rule", "japanese"),
+    ],
 )
 def test_unverified_game_setups_are_rejected(field, value):
     room = {**ROOM, "gameMetaDto": {**ROOM["gameMetaDto"], field: value}}

@@ -1,75 +1,185 @@
-.golaxy-home__title { display: inline-flex; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
-.golaxy-home__title img { width: 30px; height: 30px; border-radius: 8px; object-fit: cover; }
-.golaxy-home__title strong { flex: none; font: inherit; }
-.golaxy-home__title small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); font: 400 11px var(--font-sans); }
-.golaxy-home .kiosk-pagebar__status { color: var(--accent); }
-.golaxy-home .kiosk-pagebar__status::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; }
-.golaxy-home__scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #486c58 transparent; padding-right: 2px; }
-.golaxy-home__section { margin-top: 18px; }
-.golaxy-home__section .kiosk-seclabel { margin-bottom: 6px; }
-.golaxy-home__cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.golaxy-home__cards .kiosk-card { width: 100%; }
-.golaxy-home__empty, .golaxy-home__state { border: 1px solid var(--hair); border-radius: 10px; background: var(--raise); color: var(--dim); }
-.golaxy-home__empty { min-height: 64px; display: flex; align-items: center; padding: 0 16px; font-size: 12px; }
-.golaxy-home__state { min-height: 120px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; padding: 20px; }
-.golaxy-home__state p { margin: 0; }
-.golaxy-home__state button { min-height: 44px; padding: 0 16px; border: 1px solid var(--hair); border-radius: 10px; background: var(--panel); color: var(--text); }
-
-.golaxy-home__section:first-child { margin-top: 1px; }
-.golaxy-home__cards .kiosk-card { height: 76px; min-height: 76px; padding: 0 14px; }
-.golaxy-home__lobby { height:305px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--hair); border-radius:12px; background:#151d1b; }
-.golaxy-home__list-head { display:flex; flex:none; align-items:center; justify-content:space-between; height:44px; padding:3px 8px; border-bottom:1px solid var(--hair); }
-.golaxy-home__list-head>span { font-size:10px; color:var(--dim); }
-.golaxy-home__list-head>span[role='status'] { color:var(--accent); font-size:11px; }
+.golaxy-home__account-trigger {display:flex; align-items:center; gap:7px; height:44px; max-width:218px; padding:0 12px; border:1px solid #496b54; border-radius:9px; background:#1c3024; font-size:12px; }
+.golaxy-home__account-trigger b {overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+.golaxy-home__account-trigger svg {flex:none; width:12px; }
+.golaxy-home__lobby {height:330px; display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--hair); border-radius:11px; background:#141e1b; }
+.golaxy-home__list-head {display:flex; align-items:center; gap:8px; flex:none; height:48px; padding:2px 7px; border-bottom:1px solid var(--hair); }
+.golaxy-home__list-head button {height:44px; min-width:114px; padding:0 13px; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:12px; }
+.golaxy-home__list-head button[aria-selected="true"] {background:#2b4836; color:#d8f4dd; font-weight:700; }
+.golaxy-home__list-body {flex:1; min-height:0; overflow-y:auto; padding:7px; scrollbar-color:#577462 transparent; scrollbar-width:thin; }
+.golaxy-home__room-grid,.golaxy-home__room-grid {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.golaxy-home__room {height:90px; min-width:0; padding:7px 10px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); text-align:left; }
+.golaxy-home__room-top {display:flex; align-items:center; gap:6px; height:20px; white-space:nowrap; }
+.golaxy-home__room-top b {font-size:13px; }
+.golaxy-home__tag {padding:2px 6px; border:1px solid #5a634c; border-radius:5px; color:#ebcc8b; font-size:11px; line-height:1.1; }
+.golaxy-home__tag--quiet {border-color:#41614b; color:#bedfc3; }
+.golaxy-home__viewers {margin-left:auto; color:#b2c6b7; font-size:12px; font-variant-numeric:tabular-nums; }
+.golaxy-home__room-body {display:grid; grid-template-columns:minmax(0,1fr) 62px minmax(0,1fr); gap:5px; align-items:center; height:51px; }
+.golaxy-home__seat {display:flex; align-items:center; gap:7px; min-width:0; }
+.golaxy-home__seat--white {flex-direction:row-reverse; text-align:right; }
+.golaxy-home__seat-name {min-width:0; }
+.golaxy-home__seat-name b {display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; }
+.golaxy-home__seat-name small {display:block; margin-top:2px; color:#91d9a4; font-size:12px; }
+.golaxy-home__avatar {position:relative; display:grid; place-items:center; width:34px; height:34px; flex:none; border:1px solid #526e58; border-radius:7px; background:#31483a; color:#e5f3e6; font-size:13px; }
+.golaxy-home img.golaxy-home__avatar {display:block; object-fit:cover; }
+.golaxy-home__avatar--circle {border-radius:50%; }
+.golaxy-home__seat .golaxy-home__avatar::after {content:""; position:absolute; right:-3px; bottom:-3px; width:10px; height:10px; border:1px solid #91a79a; border-radius:50%; background:#101715; }
+.golaxy-home__seat--white .golaxy-home__avatar::after {right:auto; left:-3px; background:#fffdf4; }
+.golaxy-home__mini-board {position:relative; display:block; width:28px; height:28px; margin:auto; border:1px solid #a67a42; border-radius:3px; background:#d7a35f; background-image:linear-gradient(#986b3f 1px,transparent 1px),linear-gradient(90deg,#986b3f 1px,transparent 1px); background-size:6px 6px; background-position:2px 2px; }
+.golaxy-home__mini-board::after {content:""; position:absolute; left:8px; top:8px; width:7px; height:7px; border-radius:50%; background:#101615; box-shadow:7px 7px 0 #fbf8eb; }
+.golaxy-home__phase {color:#b7c4b8; text-align:center; font-size:11px; }
+.golaxy-home__player-filters {display:flex; gap:8px; align-items:center; height:50px; padding-bottom:6px; }
+.golaxy-home__player-filters button {height:44px; min-width:80px; padding:0 10px; border:1px solid var(--hair); border-radius:7px; background:#17241e; color:var(--dim); font-size:11px; }
+.golaxy-home__player-filters button[aria-pressed="true"] {background:#2c4b37; border-color:#73bd86; color:#eaf9ec; }
+.golaxy-home__player-filters small {margin-left:auto; color:#9fb4a5; font-size:10px; }
+.golaxy-home__player {display:flex; align-items:center; gap:9px; height:55px; min-width:0; width:100%; padding:5px 10px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); text-align:left; }
+.golaxy-home__player .golaxy-home__avatar {width:35px; height:35px; }
+.golaxy-home__player-name {min-width:0; flex:1; }
+.golaxy-home__player-name b {display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.golaxy-home__player-name small {display:block; margin-top:2px; color:#9fd8ad; font-size:11px; }
+.golaxy-home__player .golaxy-home__record {flex:none; color:#c0d0c4; font-size:12px; font-variant-numeric:tabular-nums; }
+.golaxy-home__player-state {flex:none; min-width:42px; padding:3px 5px; border:1px solid #456e50; border-radius:5px; color:#82d99a; text-align:center; font-size:11px; }
+.golaxy-home__player-state.is-busy {border-color:#84654b; color:#e8c487; }
+.golaxy-home__player-state.is-muted {border-color:#526057; color:#c1c9c1; }
+.golaxy-home__account-menu {position:absolute; z-index:10; top:60px; right:16px; width:276px; padding:14px; border:1px solid #6da77a; border-radius:10px; background:#20342a; box-shadow:0 14px 32px #0008; }
+.golaxy-home__account-menu h3 {margin:0 0 4px; font-size:14px; }
+.golaxy-home__account-menu p {margin:0 0 12px; color:#b4c7b9; font-size:11px; line-height:1.45; }
+.golaxy-home__account-actions {display:flex; gap:8px; }
+.golaxy-home__account-actions button {height:44px; flex:1; padding:0 6px; border:1px solid #6aa279; border-radius:8px; background:#294737; font-size:12px; }
+.golaxy-home__account-actions button:last-child {border-color:#8f7060; background:#3a302b; }
+.golaxy-home__account-confirm {margin-top:10px; padding:9px; border:1px solid #6d885f; border-radius:8px; background:#18271f; }
+.golaxy-home__account-confirm [role='alert'] {color:#ffd0bc; }
+.golaxy-home__account-confirm button {height:44px; padding:0 10px; border:1px solid #79bf8e; border-radius:7px; background:#31583b; font-size:11px; }
+.golaxy-home__account-confirm button + button {margin-left:5px; background:transparent; border-color:#53705b; }
+.golaxy-home__profile-layer {position:absolute; z-index:20; inset:0; display:grid; place-items:center; background:#050a08ba; }
+.golaxy-home__profile-dialog {display:flex; flex-direction:column; width:524px; max-height:510px; overflow:hidden; border:1px solid #78aa83; border-radius:13px; background:#1b2922; box-shadow:0 22px 60px #000a; }
+.golaxy-home__profile-head {display:flex; align-items:center; gap:10px; min-height:50px; padding:0 14px; border-bottom:1px solid var(--hair); }
+.golaxy-home__profile-head strong {font:600 17px var(--font-serif); }
+.golaxy-home__profile-head small {color:#b6c9ba; font-size:11px; }
+.golaxy-home__profile-head button {width:44px; height:44px; margin-left:auto; border:0; border-radius:7px; background:transparent; font-size:23px; }
+.golaxy-home__profile-body {min-height:0; overflow:auto; padding:14px; }
+.golaxy-home__profile-hero {display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--hair); border-radius:9px; background:#24362b; }
+.golaxy-home__profile-hero .golaxy-home__avatar {width:54px; height:54px; font-size:22px; }
+.golaxy-home__profile-hero>div {min-width:0; flex:1; }
+.golaxy-home__profile-hero>div b {display:block; font-size:18px; }
+.golaxy-home__profile-hero>div span {display:block; margin-top:4px; color:#acd8b2; font-size:12px; }
+.golaxy-home__profile-hero .golaxy-home__player-state {padding:5px 8px; font-size:12px; }
+.golaxy-home__profile-facts {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+.golaxy-home__profile-facts>div {min-height:62px; padding:9px 11px; border:1px solid var(--hair); border-radius:8px; background:#203027; }
+.golaxy-home__profile-facts>div small {display:block; color:#aabdaf; font-size:11px; }
+.golaxy-home__profile-facts>div b {display:block; margin-top:5px; font-size:13px; font-variant-numeric:tabular-nums; }
+.golaxy-home__profile-foot {display:flex; gap:8px; padding:12px 14px; border-top:1px solid var(--hair); }
+.golaxy-home__profile-foot button {flex:1; }
+.golaxy-home__profile-foot button:disabled {border-color:#435349; background:#26312a; color:#8f9c92; cursor:default; }
+.golaxy-home__profile-subtitle {margin:0 0 12px; color:#d8e6d9; font-size:14px; line-height:1.45; }
+.golaxy-home__invite-peer {display:flex; align-items:center; gap:9px; min-height:50px; padding:8px 10px; border:1px solid var(--hair); border-radius:8px; background:#26372d; font-size:13px; }
+.golaxy-home__invite-peer .golaxy-home__avatar {width:32px; height:32px; }
+.golaxy-home__invite-peer small {margin-left:auto; color:#a9d7b1; font-size:11px; }
+.golaxy-home__invite-label {margin:14px 0 7px; font-size:12px; color:#bbcebf; }
+.golaxy-home__invite-modes {display:flex; gap:8px; }
+.golaxy-home__invite-modes button {flex:1; background:#202e25; }
+.golaxy-home__invite-modes button[aria-pressed="true"] {border-color:#82d397; background:#345840; color:#f0fff1; font-weight:700; }
+.golaxy-home__invite-note {margin:13px 0 0; color:#aabdaf; font-size:11px; line-height:1.55; }
+.golaxy-home__invite-pending {display:grid; justify-items:center; gap:9px; padding:18px 8px; text-align:center; }
+.golaxy-home__invite-ring {display:grid; place-items:center; width:44px; height:44px; border:2px solid #6baf7b; border-radius:50%; color:#b8edc1; font-size:22px; }
+.golaxy-home__invite-pending strong {font-size:16px; }
+.golaxy-home__invite-pending p {margin:0; max-width:360px; color:#bacabd; font-size:12px; line-height:1.5; }
+.golaxy-home { position:relative; margin-top:-4px; height:calc(100% + 4px); gap:0; flex-shrink:0; }
+.golaxy-home button { color:var(--text); touch-action:manipulation; }
+.golaxy-home button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.golaxy-home button:disabled { opacity:.55; cursor:default; }
+.golaxy-home__pagebar { display:flex; align-items:center; gap:10px; height:48px; flex:none; }
+.golaxy-home__pagebar .kiosk-pagebar { flex:1; height:48px; gap:10px; min-width:0; }
+.golaxy-home .kiosk-pagebar__back { height:44px; min-width:108px; padding:0 12px; gap:4px; font-size:13px; }
+.golaxy-home .kiosk-pagebar__back svg { width:14px; height:14px; }
+.golaxy-home .kiosk-pagebar__status { color:var(--accent); font-size:12px; }
+.golaxy-home .kiosk-pagebar__status::before { content:''; width:7px; height:7px; margin-right:6px; border-radius:50%; background:currentColor; }
+.golaxy-home__title { display:inline-flex; align-items:center; gap:10px; }
+.golaxy-home__title img { width:30px; height:30px; border-radius:7px; }
+.golaxy-home__title strong { font:600 17px var(--font-serif); }
+.golaxy-home__scroll { flex:1; min-height:0; overflow-y:auto; scrollbar-width:thin; }
+.golaxy-home__section { margin-top:8px; }
+.golaxy-home__section .kiosk-seclabel { height:19px; margin:0 0 6px; }
+.golaxy-home__cards { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.golaxy-home__cards .kiosk-card { width:100%; height:68px; min-height:68px; padding:0 13px; gap:11px; }
+.golaxy-home__cards .kiosk-card__tile { width:38px; height:38px; }
+.golaxy-home__cards .kiosk-card__t b { font-size:15px; }
+.golaxy-home__cards .kiosk-card__t em { font-size:11px; }
+.golaxy-home__empty,.golaxy-home__state { padding:20px; color:var(--dim); font-size:13px; }
+.golaxy-home__state p { margin:0 0 12px; }
+.golaxy-home__state button { min-height:44px; padding:0 16px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); color:var(--text); }
 .golaxy-home__tabs { display:flex; gap:5px; }
-.golaxy-home__tabs button { min-width:120px; min-height:36px; padding:0 12px; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:12px; }
-.golaxy-home__tabs button[aria-selected='true'] { background:var(--raise); color:var(--accent); font-weight:600; }
-.golaxy-home__list-body { flex:1; min-height:0; overflow-y:auto; padding:5px 7px; scrollbar-width:thin; scrollbar-color:#486c58 transparent; }
-.golaxy-home__room-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-.golaxy-home__room,.golaxy-home__player { min-width:0; height:87px; padding:7px 10px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); color:var(--text); text-align:left; }
-.golaxy-home__room:hover { border-color:var(--accent); }
-.golaxy-home__room-top { display:flex; align-items:center; gap:8px; height:17px; font-size:11px; white-space:nowrap; }
-.golaxy-home__room-top b { font-size:12px; }
-.golaxy-home__room-top>small { margin-left:auto; color:var(--dim); font-size:10px; }
-.golaxy-home__room-body { display:grid; grid-template-columns:minmax(0,1fr) 48px minmax(0,1fr); align-items:center; gap:6px; height:54px; }
-.golaxy-home__seat { min-width:0; display:flex; gap:7px; align-items:center; }
+.golaxy-home__list-head>span { margin-left:auto; color:var(--dim); font-size:11px; }
+.golaxy-home__list-head .golaxy-home__tabs button { height:44px; min-width:114px; }
+.golaxy-home__room-top>span { padding:2px 6px; border:1px solid #5a634c; border-radius:5px; color:#ebcc8b; font-size:11px; line-height:1.1; }
+.golaxy-home__room-top>span:nth-child(3) { border-color:#41614b; color:#bedfc3; }
+.golaxy-home__room-top>small { margin-left:auto; color:#b2c6b7; font-size:12px; }
 .golaxy-home__seat>span:last-child { min-width:0; }
-.golaxy-home__seat b,.golaxy-home__player b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:550; }
-.golaxy-home__seat small,.golaxy-home__player small { display:block; margin-top:2px; color:var(--accent); font-size:10px; }
-.golaxy-home__seat--white { flex-direction:row-reverse; text-align:right; }
-.golaxy-home__avatar { position:relative; flex:none; display:grid; place-items:center; width:35px; height:35px; border:1px solid #3c5f49; border-radius:7px; background:#26332f; color:#c8e8d0; font-size:13px; }
-.golaxy-home__seat .golaxy-home__avatar::after { content:''; position:absolute; right:-3px; bottom:-3px; width:10px; height:10px; border:1px solid #82968b; border-radius:50%; background:#101513; }
-.golaxy-home__seat--white .golaxy-home__avatar::after { right:auto; left:-3px; background:#f4f4ee; }
-.golaxy-home__phase { display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--dim); font-size:10px; }
-.golaxy-home__mini-board { width:25px; height:25px; border:1px solid #a8793c; border-radius:3px; background-color:#d79b4a; background-image:linear-gradient(#9a6b35 1px,transparent 1px),linear-gradient(90deg,#9a6b35 1px,transparent 1px); background-size:6px 6px; background-position:2px 2px; }
-.golaxy-home__mini-board::before,.golaxy-home__mini-board::after { content:''; position:relative; display:block; width:6px; height:6px; border-radius:50%; }
-.golaxy-home__mini-board::before { top:5px; left:5px; background:#181a17; }
-.golaxy-home__mini-board::after { top:10px; left:14px; background:#f1eee4; }
-.golaxy-home__player { display:flex; align-items:center; gap:9px; }
-.golaxy-home__player .golaxy-home__avatar { border-radius:50%; }
-.golaxy-home__player em { margin-left:auto; color:var(--accent); font-size:11px; font-style:normal; }
-.golaxy-pregame__page-title { display:inline-flex; align-items:center; gap:10px; }
+.golaxy-home__seat b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:600; }
+.golaxy-home__seat small { display:block; margin-top:2px; color:#91d9a4; font-size:12px; }
+.golaxy-home__phase { display:flex; flex-direction:column; align-items:center; gap:2px; font-size:11px; color:var(--dim); }
+.golaxy-home__player .golaxy-home__avatar,.golaxy-home__profile-hero .golaxy-home__avatar,.golaxy-home__invite-peer .golaxy-home__avatar { border-radius:50%; }
+.golaxy-home__account-menu { top:54px; right:0; }
+.golaxy-home__account-menu>div { display:flex; gap:8px; }
+.golaxy-home__account-menu>div button { height:44px; flex:1; border:1px solid #6aa279; border-radius:8px; background:#294737; color:var(--text); font-size:12px; }
+.golaxy-home__account-menu>div.golaxy-home__account-confirm { display:block; }
+.golaxy-home__profile-layer { position:fixed; inset:0; }
+.golaxy-home__profile-hero>div { min-width:0; flex:1; }
+.golaxy-home__profile-hero>div b { display:block; font-size:18px; }
+.golaxy-home__profile-hero>div span { display:block; margin-top:4px; color:#acd8b2; font-size:12px; }
+.golaxy-home__profile-foot .primary { border-color:#81d19a; background:#377b4e; color:#fff; font-weight:700; }
+.kiosk-content:has(.golaxy-pregame) { padding-top:10px; padding-bottom:6px; }
+.golaxy-pregame { --panel:#17211f; --raise:#1e2b26; --hair:#34473c; --dim:#a8b8af; --accent:#76c991; gap:0; }
+.golaxy-pregame .kiosk-pagebar { height:48px; gap:11px; }
+.golaxy-pregame .kiosk-pagebar__back { height:44px; min-width:108px; padding:0 12px; border-radius:9px; font:13px var(--font-sans); }
+.golaxy-pregame .kiosk-pagebar__title { font-size:17px; }
+.golaxy-pregame__page-title { display:inline-flex; align-items:center; gap:11px; }
 .golaxy-pregame__page-title img { width:30px; height:30px; border-radius:8px; object-fit:cover; }
-.golaxy-pregame__heading { margin:4px 0 -1px; font:600 22px var(--font-serif); }
+.golaxy-pregame__heading { margin:3px 0 12px; font:600 21px var(--font-serif); }
 .golaxy-pregame__heading small { display:block; margin-top:4px; color:var(--dim); font:12px var(--font-sans); }
-.golaxy-pregame__layout { display:grid; grid-template-columns:1.15fr 1fr; gap:16px; height:404px; }
-.golaxy-pregame__board { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; border:1px solid var(--hair); border-radius:12px; background:#18211d; }
-.golaxy-pregame__board .kiosk-board { width:342px; height:342px; flex:none; grid-template-columns:1fr; grid-template-rows:1fr; border:14px solid #a67335; border-radius:5px; box-shadow:0 8px 20px #0005; }
+.golaxy-pregame__layout { display:grid; grid-template-columns:1fr 1fr; gap:14px; height:420px; flex:none; }
+.golaxy-pregame__board { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; min-width:0; border:1px solid var(--hair); border-radius:11px; background:var(--panel); }
+.golaxy-pregame__board .kiosk-board { --gb-light:#d3a365; --gb-dark:#d3a365; --gb-line:#815c35; width:356px; height:356px; flex:none; grid-template-columns:1fr; grid-template-rows:1fr; border:13px solid #ac793e; border-radius:5px; background:#d3a365; box-shadow:0 7px 20px #0006; }
 .golaxy-pregame__board .kiosk-board__ruler { display:none; }
-.golaxy-pregame__board .kiosk-board__play { grid-area:1 / 1; }
-.golaxy-pregame__board>small { color:var(--dim); font-size:11px; }
-.golaxy-pregame__panel { position:relative; display:flex; flex-direction:column; gap:11px; min-width:0; padding:17px; border:1px solid var(--hair); border-radius:12px; background:var(--panel); }
-.golaxy-pregame__input { display:flex; align-items:center; gap:12px; }
-.golaxy-pregame__input>span { flex:none; width:48px; color:var(--dim); font-size:12px; }
-.golaxy-pregame__input>div { display:flex; flex:1; height:46px; padding:3px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); }
-.golaxy-pregame__input button { flex:1; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:14px; }
-.golaxy-pregame__input button[aria-pressed='true'] { background:var(--panel); color:var(--accent); font-weight:600; }
+.golaxy-pregame__board .kiosk-board__play { grid-area:1 / 1; margin:10px; }
+.golaxy-pregame__board>small { color:var(--dim); font-size:11px; line-height:13px; }
+.golaxy-pregame__panel { position:relative; display:flex; flex-direction:column; gap:10px; min-width:0; padding:14px 16px; border:1px solid var(--hair); border-radius:11px; background:var(--panel); }
+.golaxy-pregame__input { display:flex; align-items:center; gap:10px; }
+.golaxy-pregame__input>span { flex:none; width:52px; color:var(--dim); font-size:12px; }
+.golaxy-pregame__input>div { display:flex; flex:1; height:44px; padding:3px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); }
+.golaxy-pregame__input button { flex:1; border:0; border-radius:7px; background:transparent; color:var(--dim); font:13px var(--font-sans); }
+.golaxy-pregame__input button[aria-pressed='true'] { background:#294638; color:#dff9e6; font-weight:700; }
 .golaxy-pregame__input button:disabled { opacity:.45; }
+.golaxy-pregame__quick { display:flex; flex-direction:column; }
+.golaxy-pregame__section-head { display:flex; align-items:center; gap:8px; margin-top:1px; font-size:12px; line-height:15px; }
+.golaxy-pregame__section-head:after { content:""; flex:1; height:1px; background:var(--hair); }
+.golaxy-pregame__times { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+.golaxy-pregame__time { position:relative; min-width:0; min-height:79px; padding:9px 10px; border:1px solid #436149; border-radius:9px; background:#22332a; color:var(--text); text-align:left; font-family:var(--font-sans); }
+.golaxy-pregame__time[aria-pressed='true'] { border-color:#77c78d; background:#2b5039; }
+.golaxy-pregame__time b,.golaxy-pregame__time small { display:block; }
+.golaxy-pregame__time b { font-size:14px; }
+.golaxy-pregame__time small { margin-top:5px; color:#b5c9b7; font-size:11px; white-space:nowrap; }
+.golaxy-pregame__time>span { position:absolute; top:10px; right:9px; width:16px; height:16px; border:1px solid #83ac8a; border-radius:4px; background:#12251a; text-align:center; font-size:12px; line-height:14px; }
+.golaxy-pregame__time[aria-pressed='true']>span { background:#70bd86; color:#0f2115; }
+.golaxy-pregame__ai { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:54px; padding:8px 11px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); }
+.golaxy-pregame__ai>div { font-size:12px; line-height:normal; }
+.golaxy-pregame__ai span { font-size:12px; }
+.golaxy-pregame__ai small { display:block; margin-top:3px; color:var(--dim); font-size:10px; }
+.golaxy-pregame__ai button { position:relative; width:39px; height:23px; flex:none; padding:0; border:0; background:transparent; opacity:.55; cursor:default; }
+.golaxy-pregame__ai button:before { content:""; position:absolute; inset:0; border:1px solid #819e86; border-radius:20px; background:#2a4c35; }
+.golaxy-pregame__ai button:after { content:""; position:absolute; top:3px; left:3px; width:17px; height:17px; border-radius:50%; background:#e9f3eb; }
+.golaxy-pregame__room-content { display:flex; flex-direction:column; gap:9px; min-height:143px; padding:11px 12px; border:1px solid var(--hair); border-radius:9px; background:#1c2a23; }
+.golaxy-pregame__room-content h2 { margin:0; font-size:14px; line-height:normal; }
+.golaxy-pregame__room-content .golaxy-pregame__role { padding:7px; border-radius:6px; background:#2c352d; color:#dfc994; }
+.golaxy-pregame__my-empty { display:grid; place-items:center; height:57px; border:1px dashed #536758; border-radius:7px; color:var(--dim); font-size:12px; }
 .golaxy-pregame__field { display:flex; flex-direction:column; gap:7px; color:var(--dim); font-size:12px; }
-.golaxy-pregame__field>div { padding:10px 12px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); color:var(--text); font-size:13px; }
-.golaxy-pregame__panel p { margin:0; color:var(--dim); font-size:11px; line-height:1.5; }
-.golaxy-pregame__panel input { width:100%; height:44px; padding:0 12px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); color:var(--text); font:inherit; }
-.golaxy-pregame__tabs { display:flex; gap:8px; }
-.golaxy-pregame__tabs button { flex:1; min-height:44px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); color:var(--dim); }
-.golaxy-pregame__tabs button[aria-selected='true'] { border-color:var(--accent); color:var(--accent); }
-.golaxy-pregame__submit { width:100%; min-height:48px; margin-top:auto; border:0; border-radius:10px; background:var(--accent); color:#102018; font-size:15px; font-weight:700; opacity:.5; }
+.golaxy-pregame__panel p { margin:0; color:var(--dim); font-size:11px; line-height:1.45; }
+.golaxy-pregame__panel input { width:100%; height:44px; padding:0 12px; border:1px solid #597260; border-radius:7px; background:#102019; color:var(--text); font:inherit; }
+.golaxy-pregame__tabs { display:flex; gap:6px; }
+.golaxy-pregame__tabs button { flex:1; min-height:44px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); color:var(--dim); font:12px var(--font-sans); }
+.golaxy-pregame__tabs button[aria-selected='true'] { border-color:var(--accent); background:#2b4e38; color:#e4fae8; font-weight:700; }
+.golaxy-pregame__notes { display:flex; flex-direction:column; gap:4px; }
+.golaxy-pregame__submit { width:100%; min-height:47px; margin-top:auto; border:0; border-radius:9px; background:#607d69; color:#d5e5d8; font:700 14px var(--font-sans); cursor:default; }
+.golaxy-pregame button:focus-visible,.golaxy-pregame input:focus-visible { outline:2px solid #b3efc0; outline-offset:2px; }
+
+.golaxy-home__profile-foot button,.golaxy-home__invite-modes button { min-height:44px; border:1px solid #58765f; border-radius:8px; background:#294434; font-size:12px; }
+.golaxy-home__profile-foot button:disabled { border-color:#435349; background:#26312a; color:#8f9c92; }

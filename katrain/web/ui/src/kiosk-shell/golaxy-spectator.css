@@ -1,26 +1,59 @@
-.golaxy-spectator__page-title { display:inline-flex; align-items:center; gap:10px; }
-.golaxy-spectator__page-title img { width:30px; height:30px; border-radius:8px; object-fit:cover; }
-.golaxy-spectator .kiosk-pagebar__status { color:var(--accent); }
-.golaxy-spectator .kiosk-pagebar__status::before { content:''; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:currentColor; }
-.golaxy-spectator .kiosk-pagebar__back { min-height:44px; padding:0 12px; gap:4px; }
+.golaxy-spectator__avatar {position:relative; display:grid; place-items:center; width:34px; height:34px; flex:none; border:1px solid #526e58; border-radius:7px; background:#31483a; color:#e5f3e6; font-size:13px; }
+.golaxy-spectator__avatar {border-radius:50%; }
+.golaxy-spectator__watch-head {display:flex; align-items:center; gap:7px; min-height:24px; font-size:11px; }
+.golaxy-spectator__watch-head b {font-size:14px; }
+.golaxy-spectator__sync {display:inline-flex; align-items:center; gap:5px; margin-left:auto; padding:3px 7px; border:1px solid #70ba83; border-radius:4px; color:#a6edb5; font-size:10px; font-weight:700; letter-spacing:.03em; }
+.golaxy-spectator__sync::before {content:""; width:6px; height:6px; border-radius:50%; background:#7fe39b; }
+.golaxy-spectator__clocks {display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.golaxy-spectator__clock-card {height:97px; padding:9px; border:1px solid #50614e; border-radius:9px; background:#223029; }
+.golaxy-spectator__clock-card.is-turn {border-color:#76cd8d; box-shadow:inset 0 0 0 1px #76cd8d; }
+.golaxy-spectator__clock-name {display:flex; align-items:center; gap:6px; min-width:0; font-size:12px; }
+.golaxy-spectator__clock-name b {overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.golaxy-spectator__stone {display:inline-block; width:12px; height:12px; flex:none; border:1px solid #99ad9d; border-radius:50%; background:#111715; }
+.golaxy-spectator__stone--white {background:#f5f3e9; }
+.golaxy-spectator__clock-card strong {display:block; margin:4px 0 1px; font-size:27px; line-height:1; font-variant-numeric:tabular-nums; }
+.golaxy-spectator__clock-card.is-turn strong {color:#a9edb7; }
+.golaxy-spectator__clock-card small {color:#c2d0c3; font-size:11px; }
+.golaxy-spectator__latest {display:flex; align-items:center; gap:8px; min-height:45px; padding:7px 10px; border:1px solid #80684c; border-radius:8px; background:#302d24; }
+.golaxy-spectator__latest-dot {display:grid; place-items:center; width:25px; height:25px; border:1px solid #d8c29a; border-radius:50%; background:#141918; color:#fa725e; font-size:17px; }
+.golaxy-spectator__latest b {display:block; font-size:12px; }
+.golaxy-spectator__latest small {display:block; color:#cfcbba; font-size:11px; }
+.golaxy-spectator__members-head {display:flex; align-items:center; gap:8px; min-height:22px; color:#c8d9ca; font-size:12px; }
+.golaxy-spectator__members-head strong {font-size:13px; }
+.golaxy-spectator__members-head span {margin-left:auto; color:#a9bbac; font-size:11px; }
+.golaxy-spectator__members {display:grid; gap:5px; flex:1; min-height:0; overflow-y:auto; scrollbar-color:#577462 transparent; scrollbar-width:thin; }
+.golaxy-spectator__member {display:flex; align-items:center; gap:8px; min-height:34px; padding:4px 8px; border:1px solid #304239; border-radius:7px; background:#1e2b25; }
+.golaxy-spectator__member .golaxy-spectator__avatar {width:25px; height:25px; font-size:10px; }
+.golaxy-spectator__member b {overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:600; }
+.golaxy-spectator__member small {margin-left:auto; color:#9ac8a3; font-size:10px; }
+.golaxy-spectator__footer {display:flex; gap:8px; min-height:44px; }
+.golaxy-spectator__footer button {min-height:44px; padding:0 10px; border:1px solid #4f7157; border-radius:8px; background:#223a2a; font-size:11px; white-space:nowrap; }
+.golaxy-spectator__footer .golaxy-spectator__return-live {flex:1; background:#34784c; border-color:#72c887; color:#fff; font-weight:700; }
+.golaxy-spectator__footer .golaxy-spectator__return-live:disabled {color:#c7dfcc; background:#284938; opacity:.75; cursor:default; }
+.golaxy-spectator { margin-top:-4px; height:calc(100% + 4px); gap:0; flex-shrink:0; }
+.golaxy-spectator button { color:var(--text); touch-action:manipulation; }
+.golaxy-spectator button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.golaxy-spectator .kiosk-pagebar { height:48px; min-height:48px; gap:10px; }
+.golaxy-spectator .kiosk-pagebar__back { height:44px; min-width:108px; padding:0 12px; gap:4px; font-size:13px; }
 .golaxy-spectator .kiosk-pagebar__back svg { width:14px; height:14px; }
-.golaxy-spectator__heading { margin:4px 0 -1px; font:600 22px/1.1 var(--font-serif); }
-.golaxy-spectator__heading small { display:block; margin-top:4px; color:var(--dim); font:12px/1.25 var(--font-sans); }
-.golaxy-spectator__layout { display:grid; grid-template-columns:1.15fr 1fr; gap:16px; min-height:0; height:404px; }
-.golaxy-spectator__board-shell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; min-width:0; border:1px solid var(--hair); border-radius:12px; background:#18211d; }
-.golaxy-spectator__board { box-sizing:border-box; width:342px; height:342px; border:14px solid #a67335; border-radius:5px; box-shadow:0 8px 20px #0005; }
-.golaxy-spectator__board-shell>small { color:var(--dim); font-size:11px; }
-.golaxy-spectator__board-state { display:grid; place-items:center; width:342px; height:342px; padding:22px; border:1px solid var(--hair); border-radius:10px; background:var(--raise); color:var(--dim); font-size:14px; text-align:center; }
-.golaxy-spectator__panel { display:flex; flex-direction:column; gap:11px; min-width:0; padding:17px; border:1px solid var(--hair); border-radius:12px; background:var(--panel); }
-.golaxy-spectator__label { color:var(--dim); font-size:12px; }
-.golaxy-spectator__value { display:flex; align-items:center; min-height:39px; padding:9px 12px; border:1px solid var(--hair); border-radius:9px; background:var(--raise); color:var(--text); font-size:13px; }
-.golaxy-spectator__players { gap:20px; overflow:hidden; }
-.golaxy-spectator__player { display:inline-flex; align-items:center; gap:5px; min-width:0; white-space:nowrap; }
-.golaxy-spectator__player>span:nth-child(2) { overflow:hidden; text-overflow:ellipsis; }
-.golaxy-spectator__stone { display:inline-block; flex:none; width:11px; height:11px; border-radius:50%; }
-.golaxy-spectator__stone--black { background:#161818; box-shadow:inset 0 0 0 1px #d4ddd5; }
-.golaxy-spectator__stone--white { background:#f3f3ed; box-shadow:inset 0 0 0 1px #8c9d92; }
-.golaxy-spectator__note,.golaxy-spectator__error-actions p { margin:0; color:var(--dim); font-size:11px; line-height:1.5; }
-.golaxy-spectator__error-actions { display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
-.golaxy-spectator__error-actions button { min-height:44px; padding:0 18px; border:1px solid var(--accent); border-radius:9px; background:var(--raise); color:var(--accent); font-size:13px; }
-.golaxy-spectator__return { width:100%; min-height:48px; margin-top:auto; border:0; border-radius:10px; background:var(--accent); color:#102018; font-size:15px; font-weight:700; }
+.golaxy-spectator__page-title { display:inline-flex; align-items:center; gap:10px; font:600 17px var(--font-serif); }
+.golaxy-spectator__page-title img { width:30px; height:30px; border-radius:7px; }
+.golaxy-spectator .kiosk-pagebar__status { gap:10px; }
+.golaxy-spectator__info { color:var(--dim); font-size:10px; }
+.golaxy-spectator__layout { display:grid; grid-template-columns:474px minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:12px; height:474px; min-height:0; }
+.golaxy-spectator__board-shell,.golaxy-spectator__panel { min-width:0; border:1px solid var(--hair); border-radius:11px; background:var(--panel); }
+.golaxy-spectator__board-shell { display:grid; place-items:center; padding:3px; }
+.golaxy-spectator__board { position:relative; width:466px; height:466px; padding:16px; border:7px solid #a77840; border-radius:5px; box-shadow:0 8px 20px #0007; background:#d6a060; }
+.golaxy-spectator__board .gob .mark { fill:#ed604f; stroke:#ffe3ce; stroke-width:5; }
+.golaxy-spectator__ruler { position:absolute; display:grid; color:#5f4327; font:10px var(--font-sans); text-align:center; }
+.golaxy-spectator__ruler--top { left:16px; right:16px; top:1px; grid-template-columns:repeat(19,1fr); }
+.golaxy-spectator__ruler--left { top:16px; bottom:16px; left:0; width:16px; grid-template-rows:repeat(19,1fr); align-items:center; }
+.golaxy-spectator__board-state { display:grid; place-items:center; width:100%; height:100%; padding:24px; color:var(--dim); text-align:center; }
+.golaxy-spectator__panel { display:flex; flex-direction:column; gap:8px; padding:10px; }
+.golaxy-spectator__clock-name>span { margin-left:auto; }
+.golaxy-spectator__note { margin:0; color:var(--dim); font-size:11px; line-height:1.5; }
+.golaxy-spectator__footer button:disabled { opacity:.6; cursor:default; }
+.golaxy-spectator__error-actions button { min-height:44px; padding:0 18px; border:1px solid var(--accent); border-radius:8px; background:var(--raise); }
+.golaxy-spectator__sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+.golaxy-spectator__latest,.golaxy-spectator__clock-card { line-height:normal; }

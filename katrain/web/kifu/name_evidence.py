@@ -299,7 +299,7 @@ def _validate_two_publisher_reading(content: dict, reviewed_at: str) -> None:
     )
 
 
-def _validate_localized_raw_reading(content: dict, reviewed_at: str, verify_captured_body: bool) -> None:
+def _validate_localized_raw_reading(content: dict, reviewed_at: str, produced_at: str, verify_captured_body: bool) -> None:
     """Bind a finite raw reading to captured GoRatings localized person records."""
     _require(
         content["entity_kind"] == "player"
@@ -416,7 +416,7 @@ def _validate_localized_raw_reading(content: dict, reviewed_at: str, verify_capt
                 and _https_url(mapping_content["research_record_url"])
                 and _text(mapping_content["review_basis"])
                 and datetime.fromisoformat(mapping["approval"]["reviewed_at"].replace("Z", "+00:00"))
-                    <= datetime.fromisoformat(reviewed_at.replace("Z", "+00:00")),
+                    <= datetime.fromisoformat(produced_at.replace("Z", "+00:00")),
                 "localized prior mapping requires exact signed scope and research provenance",
             )
         else:
@@ -511,7 +511,9 @@ def validate_transliteration_anchor(record: dict, *, verify_captured_body: bool 
             "raw transliteration anchor requires exact spelling, finite scope and reviewed applicability",
         )
     if anchor_format == 4:
-        _validate_localized_raw_reading(content, record["approval"]["reviewed_at"], verify_captured_body)
+        _validate_localized_raw_reading(
+            content, record["approval"]["reviewed_at"], record["approval"]["produced_at"], verify_captured_body
+        )
         _require(
             all(
                 datetime.fromisoformat(record["approval"]["produced_at"].replace("Z", "+00:00"))

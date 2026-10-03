@@ -203,6 +203,9 @@ def prior_mapping_anchor(tmp_path):
         "review_basis": "Reuse independently approved exact spelling correspondence",
     }
     content["raw_original_mapping"] = signed(mapping, "approved_exact_raw_original_mapping")
+    content["raw_original_mapping"]["approval"].update(
+        produced_at="2026-10-03T08:00:00Z", reviewed_at="2026-10-03T09:00:00Z"
+    )
     anchor["approval"]["content_sha256"] = canonical_sha256(content)
     return anchor
 
@@ -245,6 +248,14 @@ def test_format4_two_page_mapping_requires_prior_independent_signature(tmp_path,
         mapping["approval"]["reviewed_at"] = "2026-10-03T12:00:00Z"
     if fault == "unsigned":
         anchor["content"]["raw_original_mapping"] = mapping["content"]
+    anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
+    with pytest.raises(EvidenceError):
+        validate_transliteration_anchor(anchor)
+
+
+def test_format4_prior_mapping_review_must_precede_anchor_production(tmp_path):
+    anchor = prior_mapping_anchor(tmp_path)
+    anchor["content"]["raw_original_mapping"]["approval"]["reviewed_at"] = "2026-10-03T10:30:00Z"
     anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
     with pytest.raises(EvidenceError):
         validate_transliteration_anchor(anchor)

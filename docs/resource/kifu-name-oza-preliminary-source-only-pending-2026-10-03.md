@@ -11,7 +11,7 @@
 - edition unit includes `期` and one `届` (`第62届…`); round forms are 14期/15期第3轮 and 20期第2轮.
 - parsed editions: 2, 8–10, 13–15, 20–21, 23, 28, 33, 38, 44, 46, 50, 52–55, 58–73. Parsed edition/round proves the string grammar only, not edition-to-year or each SGF's identity.
 
-Current grouping reports `日本王座战预选` as a component-backed core (725/725), while the older 2026-10-02 audit scope had 723 games/37 members and must not be reused as occurrence scope. See [event-core v4](kifu-name-event-core-priority-v4-2026-10-03.md) and [current Oza bounded scope](kifu-name-oza-series-preliminary-scope-2026-10-03.md).
+A protected source-only subset scope, containing exactly these 39 rows and their occurrence IDs, is at `~/.local/share/kifu-name-audit/2026-10-03/oza-preliminary-source-only-pending-luna/scope.pending.json`, SHA-256 `07e6562691dc1a333a03f5e711b16ddd9afe41e618e2e923b2c98499e858cb0c` (directory 0700, file 0600). Current grouping reports `日本王座战预选` as a component-backed core (725/725), while the older 2026-10-02 audit scope had 723 games/37 members and must not be reused as occurrence scope. See [event-core v4](kifu-name-event-core-priority-v4-2026-10-03.md) and [current Oza bounded scope](kifu-name-oza-series-preliminary-scope-2026-10-03.md).
 
 ## 身份与阶段来源核查
 

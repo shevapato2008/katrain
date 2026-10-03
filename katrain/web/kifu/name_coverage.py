@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, defer
 from katrain.web.core.models_db import KifuAlbum, KifuAlbumEventSelection
 from katrain.web.kifu.identity import (
     LANGUAGES,
+    PRIMARY_NAME_LANGUAGES,
     live_event_selections,
     obscured_program_event_ids,
     resolve_strict_display,
@@ -51,7 +52,7 @@ def coverage_report(
     engine,
     inventory: dict,
     *,
-    languages: tuple[str, ...] = tuple(sorted(LANGUAGES)),
+    languages: tuple[str, ...] = tuple(sorted(PRIMARY_NAME_LANGUAGES)),
     batch_size: int = 500,
     missing_sink: Callable[[dict], None] | None = None,
     max_examples: int = 50,
@@ -229,6 +230,6 @@ def coverage_report(
         "event_selection_drift": selection_drift,
         "event_selection_scope_sha256": selection_snapshot_sha256,
         "event_selection_sha256": selection_sgf_sha256.hexdigest(),
-        "complete": (set(languages) == LANGUAGES and selection_drift == 0
+        "complete": (PRIMARY_NAME_LANGUAGES <= set(languages) and selection_drift == 0
                      and all(stats[lang]["missing"] == 0 for lang in languages)),
     }

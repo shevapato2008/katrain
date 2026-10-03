@@ -26,7 +26,7 @@ from katrain.web.kifu.name_evidence import (
     validate_transliteration_anchor,
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
-from katrain.web.kifu.identity import normalize_alias
+from katrain.web.kifu.identity import PRIMARY_NAME_LANGUAGES, normalize_alias
 from katrain.web.kifu.name_inventory import SELECTION_COLUMNS, SELECTION_COLUMNS_V4, _hash_row
 from katrain.web.kifu.name_composition import (
     CompositionError, HONINBO_RAWS, validate_composition, validate_composed_candidate,
@@ -1283,8 +1283,8 @@ def validate_bundle(
                 if token not in link_targets:
                     errors.append(f"new identity lacks approved album link: {token}")
             if owner["kind"] in {"player", "event"} and ("ref" in owner or token in link_targets):
-                if any(_owner_key(owner, lang) not in approved_keys for lang in LANGUAGES):
-                    errors.append(f"linked identity lacks all eleven approved language names: {token}")
+                if any(_owner_key(owner, lang) not in approved_keys for lang in PRIMARY_NAME_LANGUAGES):
+                    errors.append(f"linked identity lacks all five approved language names: {token}")
     collisions = defaultdict(list)
     for row in decisions:
         if row["review_status"] == "approved" and row["decision_kind"] in {

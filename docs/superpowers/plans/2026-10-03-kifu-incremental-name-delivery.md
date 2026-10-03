@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 每完成一个棋手或赛事的十一语言译名，即分别写入 TEST 和 PROD，并在每次写入后公布实际数据库的实体和棋局覆盖进度。
+**Scope update (2026-10-03):** 用户将本轮交付缩减为简体中文、繁体中文、日文、韩文、英文五种经核实名称。德、西、法、俄、土、乌界面中的棋谱棋手与赛事名称显示英文；以后再评估是否补齐六种译名。新入库棋手或赛事只需五种名称获批，旧的十一语已批准数据保留。下文提到的十一语目标和批次规模均由本段五语范围取代。
+
+**Goal:** 每完成一个棋手或赛事的五语言译名，即分别写入 TEST 和 PROD，并在每次写入后公布实际数据库的实体和棋局覆盖进度。
 
 **Architecture:** 继续使用现有来源、独立审核、不可变清单、前像绑定、事务导入和条件撤销机制。全局严格模式保持关闭；普通 API 对已批准对象使用与严格模式相同的证据/槽位解析，对其余对象维持既有显示。每次只提交一个对象的完整十一语及必要的精确原文作用域；下一对象根据上一次写入后的新快照重绑。独立实体与未归一的 raw-name 对象分别统计。
 

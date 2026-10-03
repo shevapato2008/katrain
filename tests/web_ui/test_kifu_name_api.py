@@ -73,6 +73,43 @@ def _list(db, q=None, lang="cn"):
     return asyncio.run(kifu.list_kifu_albums(_request(), q=q, page=1, page_size=20, lang=lang, db=db))
 
 
+def _preserve_stored_locale(monkeypatch):
+    """Exercise historical 11-language approval rules below the new UI fallback."""
+    monkeypatch.setattr(kifu, "name_display_language", lambda lang: lang)
+
+
+def test_nonprimary_ui_language_displays_english_kifu_names(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, db = _db()
+    try:
+        player = KifuPlayer(canonical_name="Go Seigen")
+        db.add(player)
+        db.flush()
+        for lang, display in (("en", "Go Seigen"), ("ko", "우칭위안"), ("ru", "Го Сэйгэн")):
+            evidence = _evidence(db, "player", player.id, lang, display)
+            db.add(KifuPlayerName(
+                player_id=player.id, lang=lang, display_name=display, status="verified",
+                decision_kind="conventional", generation_rule_version="test-v1", revision=1,
+                evidence_id=evidence.id,
+            ))
+        album = KifuAlbum(
+            player_black="Go Seigen", player_white="Opponent", black_player_id=player.id,
+            round_name="Final", sgf_content="(;B[aa])", source_path="go.sgf",
+        )
+        db.add(album)
+        db.commit()
+        assert _list(db, lang="ko").items[0].display_player_black == "우칭위안"
+        for lang in ("de", "es", "fr", "ru", "tr", "ua"):
+            assert _list(db, lang=lang).items[0].display_player_black == "Go Seigen"
+            assert asyncio.run(kifu.get_kifu_album(_request(), album.id, lang=lang, db=db)).display_player_black == (
+                "Go Seigen"
+            )
+        assert _list(db, lang="ru").items[0].display_round_name == "Финал"
+    finally:
+        db.close()
+        engine.dispose()
+
+
 def test_reviewed_second_gn_event_display_search_and_sgf_drift(monkeypatch):
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     engine, db = _db()
@@ -224,6 +261,7 @@ def test_strict_display_checks_exact_evidence_and_never_leaks_raw(monkeypatch):
 
 
 def test_strict_raw_name_is_scoped_to_exact_spelling_and_searchable(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     engine, db = _db()
     try:
@@ -413,6 +451,7 @@ def test_strict_cwi_wrong_link_never_returns_raw_event(monkeypatch):
 
 
 def test_strict_page_batches_twenty_albums_in_all_languages(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     engine, db = _db()
     try:
@@ -921,6 +960,7 @@ def test_french_composed_search_keeps_its_own_approved_scope(monkeypatch):
 
 
 def test_composed_selected_event_without_identity_does_not_enter_search(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     engine, db = _db()
     try:
@@ -990,6 +1030,7 @@ def test_composed_selected_event_without_identity_does_not_enter_search(monkeypa
     ],
 )
 def test_strict_composed_dependency_drift_is_a_display_search_and_coverage_gap(monkeypatch, drift):
+    _preserve_stored_locale(monkeypatch)
     from copy import deepcopy
     from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -1106,6 +1147,7 @@ def test_composed_direct_event_scope_cannot_approve_a_selected_event_slot():
 
 
 def test_normal_mode_progressively_displays_and_searches_reviewed_raw_names(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
     engine, db = _db()
     try:
@@ -1146,6 +1188,7 @@ def test_normal_mode_progressively_displays_and_searches_reviewed_raw_names(monk
 
 
 def test_normal_mode_composed_names_keep_exact_reviewed_album_scope(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
     engine, db = _db()
     try:
@@ -1171,6 +1214,7 @@ def test_normal_mode_composed_names_keep_exact_reviewed_album_scope(monkeypatch)
 
 
 def test_normal_mode_does_not_fallback_to_revoked_canonical_name(monkeypatch):
+    _preserve_stored_locale(monkeypatch)
     monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
     engine, db = _db()
     try:

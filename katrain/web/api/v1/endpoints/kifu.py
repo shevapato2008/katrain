@@ -13,6 +13,7 @@ from katrain.web.core.models_db import KifuAlbum
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
     LANGUAGES,
+    name_display_language,
     display_event_name,
     display_maps,
     live_event_selections,
@@ -119,6 +120,8 @@ async def list_kifu_albums(
         return await _from_dispatcher(
             lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
         )
+    requested_lang = lang
+    lang = name_display_language(lang)
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
     query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
@@ -203,6 +206,7 @@ async def list_kifu_albums(
                 event_canonical_names,
                 sources,
                 lang,
+                round_lang=requested_lang,
                 raw_players=raw_players,
                 raw_events=raw_events,
                 obscured_event_ids=obscured_event_ids,
@@ -231,6 +235,8 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         if not result:
             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
         return result
+    requested_lang = lang
+    lang = name_display_language(lang)
 
     record = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
     if not record:
@@ -250,6 +256,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         event_canonical_names,
         sources,
         lang,
+        round_lang=requested_lang,
         raw_players=raw_players,
         raw_events=raw_events,
         obscured_event_ids=obscured_event_ids,
@@ -269,6 +276,7 @@ def _summary(
     sources: dict[int, list[str]],
     lang: str,
     *,
+    round_lang: str | None = None,
     raw_players: dict[str, str] | None = None,
     raw_events: dict[str, str] | None = None,
     obscured_event_ids: set[int] | None = None,
@@ -315,7 +323,7 @@ def _summary(
             "display_black_rank": black.display_rank,
             "display_white_rank": white.display_rank,
             "display_event": displayed_event,
-            "display_round_name": display_round_name(record.round_name, lang),
+            "display_round_name": display_round_name(record.round_name, round_lang or lang),
             "sources": sources.get(record.id, []),
         }
     )

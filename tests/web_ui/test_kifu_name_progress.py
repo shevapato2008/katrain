@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from katrain.web.core.models_db import (
     KifuAlbum, KifuNameResearchEvidence, KifuPlayerName, KifuRawPlayerName, KifuRawPlayerValue,
 )
-from katrain.web.kifu.identity import LANGUAGES
+from katrain.web.kifu.identity import PRIMARY_NAME_LANGUAGES
 from scripts.kifu_name_progress import progress_delta, progress_report
 from tests.web_ui.test_kifu_name_coverage import _catalog
 
@@ -22,17 +22,17 @@ def test_progress_excludes_legacy_and_partial_names_and_counts_raw_separately():
             db.query(KifuAlbum).update({KifuAlbum.event: ""})
             db.commit()
         report = progress_report(engine, batch_size=1)
-        assert len(report["languages"]) == 11
+        assert len(report["languages"]) == 5
         assert report["players"]["total"] == 1
-        assert report["players"]["complete_11"] == 0
+        assert report["players"]["complete_5"] == 0
         assert report["players"]["by_language"]["cn"] == 1
         assert report["players"]["by_language"]["en"] == 0
         assert report["albums"]["total"] == 1
-        assert report["albums"]["complete_11"] == 0
-        assert report["albums"]["by_slot_complete_11"] == {"black": 0, "white": 0, "event": 1}
+        assert report["albums"]["complete_5"] == 0
+        assert report["albums"]["by_slot_complete_5"] == {"black": 0, "white": 0, "event": 1}
         assert report["unlinked_raw_values"]["players"] == {
-            "total": 1, "complete_11": 0, "complete_11_ratio": 0.0,
-            "complete_11_all_occurrences": 0,
+            "total": 1, "complete_5": 0, "complete_5_ratio": 0.0,
+            "complete_5_all_occurrences": 0,
         }
         assert report["unlinked_raw_values"]["events"]["total"] == 0
         assert progress_report(engine, batch_size=20)["albums"] == report["albums"]
@@ -49,7 +49,7 @@ def test_progress_excludes_legacy_and_partial_names_and_counts_raw_separately():
         engine.dispose()
 
 
-def test_completed_player_and_both_sides_only_count_after_all_eleven_approved_names():
+def test_completed_player_and_both_sides_only_count_after_five_approved_names():
     engine = _catalog()
     try:
         with Session(engine) as db:
@@ -59,7 +59,7 @@ def test_completed_player_and_both_sides_only_count_after_all_eleven_approved_na
             album.white_player_id = player_id
             album.player_white = "Go Seigen"
             album.event = ""
-            for lang in sorted(LANGUAGES - {"cn"}):
+            for lang in sorted(PRIMARY_NAME_LANGUAGES - {"cn"}):
                 display = f"Go Seigen {lang}"
                 evidence = KifuNameResearchEvidence(
                     player_id=player_id, lang=lang, revision=1, source_registry_id=registry_id,
@@ -77,23 +77,23 @@ def test_completed_player_and_both_sides_only_count_after_all_eleven_approved_na
                 ))
             db.commit()
         report = progress_report(engine)
-        assert report["players"]["complete_11"] == 1
-        assert report["players"]["complete_11_ratio"] == 1.0
-        assert report["albums"]["both_players_complete_11"] == 1
-        assert report["albums"]["complete_11"] == 1
-        assert report["albums"]["complete_11_ratio"] == 1.0
+        assert report["players"]["complete_5"] == 1
+        assert report["players"]["complete_5_ratio"] == 1.0
+        assert report["albums"]["both_players_complete_5"] == 1
+        assert report["albums"]["complete_5"] == 1
+        assert report["albums"]["complete_5_ratio"] == 1.0
         with Session(engine) as db:
-            name = db.query(KifuPlayerName).filter_by(lang="ua").one()
+            name = db.query(KifuPlayerName).filter_by(lang="jp").one()
             db.get(KifuNameResearchEvidence, name.evidence_id).review_status = "pending"
             db.commit()
         revoked = progress_report(engine)
-        assert revoked["players"]["complete_11"] == 0
-        assert revoked["albums"]["complete_11"] == 0
+        assert revoked["players"]["complete_5"] == 0
+        assert revoked["albums"]["complete_5"] == 0
     finally:
         engine.dispose()
 
 
-def test_unlinked_raw_name_object_counts_only_all_eleven_qualified_rows():
+def test_unlinked_raw_name_object_counts_only_all_five_qualified_rows():
     engine = _catalog()
     try:
         with Session(engine) as db:
@@ -101,7 +101,7 @@ def test_unlinked_raw_name_object_counts_only_all_eleven_qualified_rows():
             raw = KifuRawPlayerValue(raw_value="Unlinked White", category="readable", review_status="approved")
             db.add(raw)
             db.flush()
-            for lang in sorted(LANGUAGES):
+            for lang in sorted(PRIMARY_NAME_LANGUAGES):
                 display = f"White {lang}"
                 evidence = KifuNameResearchEvidence(
                     raw_player_id=raw.id, lang=lang, revision=1, source_registry_id=registry_id,
@@ -119,12 +119,12 @@ def test_unlinked_raw_name_object_counts_only_all_eleven_qualified_rows():
                 ))
             db.commit()
         report = progress_report(engine)
-        assert report["unlinked_raw_values"]["players"]["complete_11"] == 1
-        assert report["unlinked_raw_values"]["players"]["complete_11_all_occurrences"] == 1
+        assert report["unlinked_raw_values"]["players"]["complete_5"] == 1
+        assert report["unlinked_raw_values"]["players"]["complete_5_all_occurrences"] == 1
         with Session(engine) as db:
-            row = db.query(KifuRawPlayerName).filter_by(lang="ua").one()
+            row = db.query(KifuRawPlayerName).filter_by(lang="jp").one()
             db.get(KifuNameResearchEvidence, row.evidence_id).review_status = "pending"
             db.commit()
-        assert progress_report(engine)["unlinked_raw_values"]["players"]["complete_11"] == 0
+        assert progress_report(engine)["unlinked_raw_values"]["players"]["complete_5"] == 0
     finally:
         engine.dispose()

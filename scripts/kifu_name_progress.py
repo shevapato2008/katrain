@@ -1,4 +1,4 @@
-"""Read-only current eleven-language progress; run after each approved DB update.
+"""Read-only current five-language progress; run after each approved DB update.
 
 Entity totals count canonical catalog identities, including currently unused ones.
 Album totals include every stored album (including duplicate_of_id rows), matching
@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.models_db import KifuAlbum, KifuEvent, KifuEventName, KifuNameBatch, KifuPlayer, KifuPlayerName
 from katrain.web.kifu.identity import (
-    LANGUAGES,
+    PRIMARY_NAME_LANGUAGES,
     _approved_names,
     _approved_raw_event_names,
     _approved_raw_player_names,
@@ -36,9 +36,9 @@ def progress_report(engine, *, environment="local", batch_id=None, batch_size=50
     """Use production approval resolution in one consistent, read-only snapshot."""
     if batch_size < 1:
         raise ValueError("batch_size must be positive")
-    languages = sorted(LANGUAGES)
+    languages = sorted(PRIMARY_NAME_LANGUAGES)
     report = {
-        "format": 1,
+        "format": 2,
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "environment": environment,
         "database_identity": f"{engine.url.host or ''}:{engine.url.port or ''}/{engine.url.database or ''}",
@@ -68,18 +68,18 @@ def progress_report(engine, *, environment="local", batch_id=None, batch_size=50
                         db, _approved_names(db, name_model, owner), name_model, owner
                     )
                     for name, _ in rows:
-                        if name.lang in LANGUAGES:
+                        if name.lang in PRIMARY_NAME_LANGUAGES:
                             approved[getattr(name, owner)].add(name.lang)
                     report[key] = {
                         "total": len(ids),
-                        "complete_11": sum(langs == LANGUAGES for langs in approved.values()),
+                        "complete_5": sum(langs == PRIMARY_NAME_LANGUAGES for langs in approved.values()),
                         "by_language": {lang: sum(lang in langs for langs in approved.values()) for lang in languages},
                     }
                 slots = ("black", "white", "event")
                 album_stats = {
-                    "total": 0, "complete_11": 0,
-                    "by_slot_complete_11": dict.fromkeys(slots, 0),
-                    "both_players_complete_11": 0,
+                    "total": 0, "complete_5": 0,
+                    "by_slot_complete_5": dict.fromkeys(slots, 0),
+                    "both_players_complete_5": 0,
                     "by_language": {lang: {"all_slots": 0, **dict.fromkeys(slots, 0)} for lang in languages},
                 }
                 raw_slots = {"players": {}, "events": {}}
@@ -116,10 +116,10 @@ def progress_report(engine, *, environment="local", batch_id=None, batch_size=50
                                 raw_slots[kind][raw] = raw_slots[kind].get(raw, True) and complete
                     for count in counts.values():
                         complete = [value == len(languages) for value in count]
-                        album_stats["complete_11"] += all(complete)
-                        album_stats["both_players_complete_11"] += all(complete[:2])
+                        album_stats["complete_5"] += all(complete)
+                        album_stats["both_players_complete_5"] += all(complete[:2])
                         for slot, value in zip(slots, complete):
-                            album_stats["by_slot_complete_11"][slot] += value
+                            album_stats["by_slot_complete_5"][slot] += value
                     album_stats["total"] += len(albums)
                     last_id = albums[-1].id
                 report["albums"] = album_stats
@@ -133,16 +133,16 @@ def progress_report(engine, *, environment="local", batch_id=None, batch_size=50
                             approved_languages[raw].add(name.lang)
                     report["unlinked_raw_values"][key] = {
                         "total": len(values),
-                        "complete_11": sum(approved_languages[raw] == LANGUAGES for raw in values),
-                        "complete_11_all_occurrences": sum(values.values()),
+                        "complete_5": sum(approved_languages[raw] >= PRIMARY_NAME_LANGUAGES for raw in values),
+                        "complete_5_all_occurrences": sum(values.values()),
                     }
     finally:
         connection.close()
     for key in ("players", "events", "albums"):
         values = report[key]
-        values["complete_11_ratio"] = values["complete_11"] / values["total"] if values["total"] else None
+        values["complete_5_ratio"] = values["complete_5"] / values["total"] if values["total"] else None
     for values in report["unlinked_raw_values"].values():
-        values["complete_11_ratio"] = values["complete_11"] / values["total"] if values["total"] else None
+        values["complete_5_ratio"] = values["complete_5"] / values["total"] if values["total"] else None
     return report
 
 
@@ -154,7 +154,7 @@ def progress_delta(current, previous):
 
     def subtract(new, old):
         return {key: subtract(value, old[key]) if isinstance(value, dict) else value - old[key]
-                for key, value in new.items() if key != "complete_11_ratio"}
+                for key, value in new.items() if key != "complete_5_ratio"}
 
     return {
         key: subtract(current[key], previous[key])

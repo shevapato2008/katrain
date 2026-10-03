@@ -32,6 +32,12 @@ from katrain.web.kifu.name_raw_player_scope import prepare_raw_player_scope, raw
 from katrain.web.kifu.name_evidence import EvidenceError
 
 LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"})
+PRIMARY_NAME_LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko"})
+
+
+def name_display_language(lang: str) -> str:
+    """Use English kifu metadata for UI locales outside the five name languages."""
+    return lang if lang in PRIMARY_NAME_LANGUAGES else "en"
 _DECISIONS = frozenset({"conventional", "generated", "generic", "hidden", "placeholder", "error", "corrected"})
 _UNAVAILABLE_LABELS = {
     "en": ("Player name unverified", "Event name unverified"),

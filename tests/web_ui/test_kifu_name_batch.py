@@ -948,6 +948,8 @@ def test_v2_new_raw_category_must_match_parser_and_approved_decision(engine):
 
 
 def test_classification_v2_raw_bundle_apply_display_search_coverage_and_undo(engine, monkeypatch):
+    from katrain.web.api.v1.endpoints import kifu
+    monkeypatch.setattr(kifu, "name_display_language", lambda lang: lang)
     from tests.web_ui.test_kifu_name_candidates import v2_classification_candidate, V2_GENERIC_DISPLAYS
     from tests.web_ui.test_kifu_name_api import _list
     from katrain.web.core.models_db import KifuEventAlias
@@ -1019,7 +1021,7 @@ def test_classification_v2_raw_bundle_apply_display_search_coverage_and_undo(eng
         assert db.query(KifuAlbum).filter_by(id=12).one().event_id is None
 
 
-def _eleven_language_identity_fixture(engine, inv, owners):
+def _eleven_language_identity_fixture(engine, inv, owners, *, languages=LANGS):
     source_registry = registry()
     source_registry["sources"] = [
         {"id": f"go-{lang}", "tier": "official", "home_url": "https://example.org/",
@@ -1031,7 +1033,7 @@ def _eleven_language_identity_fixture(engine, inv, owners):
     }
     members, candidates, research = [], [], []
     for owner in owners:
-        for lang in LANGS:
+        for lang in languages:
             display = f"Example {owner['kind']} {lang.upper()}"
             member = {"owner": owner, "lang": lang}
             check = {"owner": owner, "source_id": f"go-{lang}", "query": "Example Person",
@@ -1076,8 +1078,8 @@ def test_v2_existing_player_link_rejects_one_language_without_writes(engine):
                       [_identity_link(engine, inv, 11, "white", owner)])
     result = validate_bundle(bundle, registry(), inv, research)
     assert not result["ready"]
-    assert any("all eleven approved language names" in error for error in result["errors"])
-    with pytest.raises(BatchError, match="all eleven approved language names"):
+    assert any("all five approved language names" in error for error in result["errors"])
+    with pytest.raises(BatchError, match="all five approved language names"):
         dry_run_bundle(engine, bundle, registry(), inv, research)
     with pytest.raises(BatchError):
         apply_bundle(engine, bundle, registry(), inv, research)
@@ -1196,6 +1198,24 @@ def test_v2_new_player_link_requires_and_writes_all_eleven_reviewed_names(engine
     with engine.connect() as conn:
         assert conn.scalar(select(KifuAlbum.white_player_id).where(KifuAlbum.id == 11)) is None
         assert conn.scalar(select(KifuPlayer.id).where(KifuPlayer.id == player_id)) is None
+
+
+def test_v2_new_player_link_accepts_five_reviewed_names(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(player_white="Example Person"))
+    inv = build_inventory(engine)
+    owner = {"kind": "player", "ref": "example-person"}
+    declaration = {"owner": owner, "create": {"canonical_name": "Example Person"}}
+    base, research, source_registry = _eleven_language_identity_fixture(
+        engine, inv, [owner], languages=("en", "cn", "tw", "jp", "ko")
+    )
+    bundle = _v2_wrap(engine, inv, base, [declaration], [_identity_link(engine, inv, 11, "white", owner)])
+    assert dry_run_bundle(engine, bundle, source_registry, inv, research)["ready"]
+    applied = apply_bundle(engine, bundle, source_registry, inv, research)
+    with engine.connect() as conn:
+        player_id = applied["resolved_refs"]["player:@example-person"]
+        names = conn.execute(select(KifuPlayerName).where(KifuPlayerName.player_id == player_id)).mappings().all()
+        assert {name["lang"] for name in names} == {"en", "cn", "tw", "jp", "ko"}
 
 
 @pytest.mark.parametrize("change", ["expand", "remove", "target", "context", "evidence", "freeze"])
@@ -1729,6 +1749,8 @@ def _archive_fixture_bundle(engine, tmp_path):
 
 
 def test_archive_description_finite_scope_display_search_coverage_evidence_and_undo(engine, tmp_path, monkeypatch):
+    from katrain.web.api.v1.endpoints import kifu
+    monkeypatch.setattr(kifu, "name_display_language", lambda lang: lang)
     from tests.web_ui.test_kifu_name_candidates import archive_registry, ARCHIVE_DISPLAYS
     from tests.web_ui.test_kifu_name_api import _list
     from katrain.web.core.models_db import KifuEventAlias

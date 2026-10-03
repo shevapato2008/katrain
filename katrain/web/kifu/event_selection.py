@@ -19,6 +19,7 @@ from katrain.web.kifu.name_candidates import (
     canonical_sha256, identity_scope_sha256,
 )
 from katrain.web.kifu.name_evidence import registry_sha256
+from katrain.web.kifu.identity import PRIMARY_NAME_LANGUAGES
 from katrain.web.kifu.name_parse import parse_event
 from katrain.web.kifu.provenance import classify_source_path, sgf_sha256
 
@@ -442,7 +443,7 @@ def _reviewed_name_links(
                 return None
             target = group[0]["target"]
             if any(member_key(item) not in member_map for item in (
-                    {"owner": target, "lang": lang} for lang in LANGUAGES)):
+                    {"owner": target, "lang": lang} for lang in PRIMARY_NAME_LANGUAGES)):
                 return None
         if not _name_batch_targets_proved(target_data, batch, bundle, declarations, candidates, groups):
             return None
@@ -561,7 +562,7 @@ def _name_batch_targets_proved(target_data, batch, bundle, declarations, candida
             return False
         if "id" in owner and owner_id != owner["id"]:
             return False
-        for lang in LANGUAGES:
+        for lang in PRIMARY_NAME_LANGUAGES:
             candidate = candidate_map.get((canonical_sha256(owner), lang))
             if candidate is None or candidate.get("review_status") != "approved":
                 return False

@@ -1,4 +1,4 @@
-"""Audit all eleven kifu display languages against a pinned, read-only inventory."""
+"""Audit the five required kifu name languages against a pinned, read-only inventory."""
 
 import argparse
 import gzip

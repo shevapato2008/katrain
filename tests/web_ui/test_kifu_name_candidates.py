@@ -940,7 +940,7 @@ def test_v4_selected_event_scope_accepts_exact_source_proof_and_requires_all_eve
     inv, proposed = _selected_v4_case()
     report = validate_bundle(proposed, registry(), inv, [])
     assert not report["ready"]
-    assert report["errors"] == ["missing candidate: event:3:ru", "linked identity lacks all eleven approved language names: event:3"]
+    assert report["errors"] == ["missing candidate: event:3:ru", "linked identity lacks all five approved language names: event:3"]
 
 
 def test_v4_selected_event_scope_signature_changes_with_source_batch_and_after_image():

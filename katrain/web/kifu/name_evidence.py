@@ -318,7 +318,8 @@ def _validate_localized_raw_reading(content: dict, reviewed_at: str, verify_capt
     )
     sources = content.get("sources")
     different = content["raw_value"] != content["original_name"]
-    roles = ["original", "reading"] + (["raw_spelling"] if different else [])
+    has_raw_page = different and isinstance(sources, list) and len(sources) == 3
+    roles = ["original", "reading"] + (["raw_spelling"] if has_raw_page else [])
     _require(
         isinstance(sources, list)
         and len(sources) == len(roles)
@@ -403,14 +404,30 @@ def _validate_localized_raw_reading(content: dict, reviewed_at: str, verify_capt
     )
     if different:
         mapping = content.get("raw_original_mapping")
-        _require(
-            isinstance(mapping, dict)
-            and set(mapping) == {"raw_value", "original_name", "review_basis"}
-            and mapping["raw_value"] == content["raw_value"]
-            and mapping["original_name"] == content["original_name"]
-            and _text(mapping["review_basis"]),
-            "localized raw spelling requires exact reviewed mapping",
-        )
+        if not has_raw_page or isinstance(mapping, dict) and "content" in mapping:
+            mapping_content = validate_transliteration_review(mapping, "approved_exact_raw_original_mapping")
+            _require(
+                set(mapping_content) == {"raw_value", "original_name", "source_lang", "raw_display_scope_sha256",
+                                         "method", "research_record_sha256", "research_record_url", "review_basis"}
+                and all(mapping_content.get(field) == content[field] for field in
+                        ("raw_value", "original_name", "source_lang", "raw_display_scope_sha256"))
+                and mapping_content["method"] == "prior_reviewed_exact_raw_mapping_v1"
+                and bool(_HEX_SHA256.fullmatch(str(mapping_content["research_record_sha256"])))
+                and _https_url(mapping_content["research_record_url"])
+                and _text(mapping_content["review_basis"])
+                and datetime.fromisoformat(mapping["approval"]["reviewed_at"].replace("Z", "+00:00"))
+                    <= datetime.fromisoformat(reviewed_at.replace("Z", "+00:00")),
+                "localized prior mapping requires exact signed scope and research provenance",
+            )
+        else:
+            _require(
+                isinstance(mapping, dict)
+                and set(mapping) == {"raw_value", "original_name", "review_basis"}
+                and mapping["raw_value"] == content["raw_value"]
+                and mapping["original_name"] == content["original_name"]
+                and _text(mapping["review_basis"]),
+                "localized raw spelling requires exact reviewed mapping",
+            )
     else:
         _require("raw_original_mapping" not in content, "unexpected localized raw spelling mapping")
     published = content["source_reading"].split()

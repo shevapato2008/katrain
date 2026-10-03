@@ -148,7 +148,7 @@ def test_format4_capture_must_precede_production(tmp_path):
         validate_transliteration_anchor(anchor)
 
 
-def test_format4_requires_third_record_and_exact_mapping_for_raw_variant(tmp_path):
+def test_format4_verifies_optional_third_record_and_exact_mapping_for_raw_variant(tmp_path):
     anchor = localized_anchor(tmp_path)
     content = anchor["content"]
     content["raw_value"] = "李元赫別"
@@ -173,9 +173,78 @@ def test_format4_requires_third_record_and_exact_mapping_for_raw_variant(tmp_pat
     }
     anchor["approval"]["content_sha256"] = canonical_sha256(content)
     validate_transliteration_anchor(anchor)
+    wrong_page = deepcopy(anchor)
+    wrong_page["content"]["sources"][2]["person_id"] = "124"
+    wrong_page["approval"]["content_sha256"] = canonical_sha256(wrong_page["content"])
+    with pytest.raises(EvidenceError):
+        validate_transliteration_anchor(wrong_page)
     for field in ("raw_original_mapping",):
         bad = deepcopy(anchor)
         bad["content"].pop(field)
         bad["approval"]["content_sha256"] = canonical_sha256(bad["content"])
         with pytest.raises(EvidenceError):
             validate_transliteration_anchor(bad)
+
+
+def prior_mapping_anchor(tmp_path):
+    from tests.web_ui.test_kifu_name_transliteration import signed
+
+    anchor = localized_anchor(tmp_path)
+    content = anchor["content"]
+    content["raw_value"] = "李元赫別"
+    mapping = {
+        "raw_value": content["raw_value"],
+        "original_name": content["original_name"],
+        "source_lang": content["source_lang"],
+        "raw_display_scope_sha256": content["raw_display_scope_sha256"],
+        "method": "prior_reviewed_exact_raw_mapping_v1",
+        "research_record_sha256": "c" * 64,
+        "research_record_url": "https://example.org/review/exact-mapping",
+        "review_basis": "Reuse independently approved exact spelling correspondence",
+    }
+    content["raw_original_mapping"] = signed(mapping, "approved_exact_raw_original_mapping")
+    anchor["approval"]["content_sha256"] = canonical_sha256(content)
+    return anchor
+
+
+def test_format4_accepts_two_pages_with_prior_signed_exact_mapping(tmp_path):
+    validate_transliteration_anchor(prior_mapping_anchor(tmp_path))
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "raw_value",
+        "original_name",
+        "source_lang",
+        "raw_display_scope_sha256",
+        "research_record_sha256",
+        "research_record_url",
+    ],
+)
+def test_format4_prior_mapping_must_bind_exact_scope_and_provenance(tmp_path, field):
+    anchor = prior_mapping_anchor(tmp_path)
+    anchor["content"]["raw_original_mapping"]["content"][field] = "wrong"
+    anchor["content"]["raw_original_mapping"]["approval"]["content_sha256"] = canonical_sha256(
+        anchor["content"]["raw_original_mapping"]["content"]
+    )
+    anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
+    with pytest.raises(EvidenceError):
+        validate_transliteration_anchor(anchor)
+
+
+@pytest.mark.parametrize("fault", ["stale", "same_reviewer", "late", "unsigned"])
+def test_format4_two_page_mapping_requires_prior_independent_signature(tmp_path, fault):
+    anchor = prior_mapping_anchor(tmp_path)
+    mapping = anchor["content"]["raw_original_mapping"]
+    if fault == "stale":
+        mapping["content"]["review_basis"] = "changed"
+    if fault == "same_reviewer":
+        mapping["approval"]["reviewer_id"] = mapping["approval"]["producer_id"]
+    if fault == "late":
+        mapping["approval"]["reviewed_at"] = "2026-10-03T12:00:00Z"
+    if fault == "unsigned":
+        anchor["content"]["raw_original_mapping"] = mapping["content"]
+    anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
+    with pytest.raises(EvidenceError):
+        validate_transliteration_anchor(anchor)

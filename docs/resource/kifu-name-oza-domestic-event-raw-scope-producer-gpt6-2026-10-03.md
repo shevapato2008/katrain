@@ -1,0 +1,22 @@
+# Domestic Japanese Ōza: bounded event identity and raw applicability proposal
+
+2026-10-03; producer `/root/event_oza_scope_producer`. **Pending independent review.** This packet does not approve an event owner, alias, language display, album FK, or database write.
+
+The frozen `event-components-v4` preliminary scope contains exactly **103 Oza raw values / 2,061 album rows**. Its 102 numbered values cover 2,058 rows; the bare `Oza` value covers three. This corrects the handoff request's provisional “100 variants” count: the actual grammar counts are 24 spaced ordinal, 45 joined ordinal, 33 suffix ordinal, and one unparsed bare value. The packet gives a finite decision for **all 102 numbered values** (99 candidate, 3 HOLD) plus the bare HOLD. No values remain unexamined. The three numbered holds and bare hold cover 46 album rows; 99 candidate values cover 2,015 rows.
+
+The target identity is the Japanese professional [王座戦](https://archive.nihonkiin.or.jp/match/oza/) / [Oza Title](https://archive.nihonkiin.or.jp/match/oza/index-e.html), founded in 1952 and organized by the Nihon Keizai Shimbun, Nihon Ki-in, and Kansai Ki-in. The organizer's historical table pairs editions 1, 26, 28, 45 and 48 with 1953, 1978, 1980, 1997 and 2000. The separately named [Toyota & Denso Cup World Go Oza](https://archive.nihonkiin.or.jp/match/toyota/index-e.html), founded in 2001, and [World Student Go Oza](https://www.nihonkiin.or.jp/news/release/post_977.html) are distinct competitions. Shogi 王座 likewise cannot be inferred from an unqualified “Oza”; these frozen records are Go album sources. These external facts establish a target and exclusion boundaries, not automatic membership for every album.
+
+For each exact raw value, `scope.pending.json` retains the parsed edition, grammar, all frozen album IDs, dates, rounds, source IDs/labels/paths, existing `event_id` and duplicate flags, source-family counts, and explicit anomaly records. Every numbered value was checked against the edition year window (year before title through title year), and every CWI `/Oza/N/` path was compared with parsed edition N. All `event_id` values are null and all `duplicate_of_id` values are null in the selected scope. CWI numbered rows include preliminary rounds; those remain row-level `round_name` facts, not separate event identities. The 19x19 rows have numeric SGF paths and generally no round; their contiguous edition/date progression corroborates the proposal but is weaker than a direct organizer or SGF event declaration.
+
+## Explicit holds
+
+| Raw value | Rows | Reason |
+| --- | ---: | --- |
+| `28th Oza` | 17 | All are CWI `/Oza/26/P01.sgf`–`P17.sgf`, dated 1977-12-15–1978-05-11 with `3rd Preliminary`. Both path and timing point to the 26th cycle while raw event says 28th. No automatic correction is proposed. |
+| `45thOza` | 5 | Four dates fit 1996–97; album 54534 is dated 1998-02-06, outside the edition 45 window. Hold the entire raw value until row-level SGF context resolves it. |
+| `48thOza` | 21 | Twenty dates fit 2000; album 85420 is dated 1998-09-01, outside the edition 48 window. Hold the entire raw value until row-level SGF context resolves it. |
+| `Oza` | 3 | Albums 121167, 130235, 131924 have 1985, 1971 and 1985 dates but no edition, round or organizer in the frozen scope. Date alone cannot bind them to this professional series. |
+
+`CANDIDATE` means only that this finite source/date check found no conflict. An independent reviewer must check applicability and the held SGFs before any strict display or owner binding. The 39 Chinese `日本王座战预选` strings (725 albums) in the preliminary scope remain a separate pending cohort; this packet neither includes nor merges them.
+
+Protected packet: `~/.local/share/kifu-name-audit/2026-10-03/oza-domestic-event-scope-producer-gpt6/`. `scope.pending.json` SHA-256: `7aa3d86e381f68cd6803c7fe3ea82f7aa4fa344fe7fafe3aaa137965de682cd9`. Its input preliminary scope SHA-256 is `8a94c6104227324bfb21bc781b4b5ba85c4247f4648a1465204862936acd0413`; frozen inventory SHA-256 is `66b8946d908468c5f9c8f0dc8ef4b4ceddb76d840ef42f5cff5122fc5744b3a3`, and v4 group file SHA-256 is `ae483b833c73879cf9b5544060d3857f1898806fddb76c93c2e6e0bda6716d05`. Source-body hashes and capture times for the organizer's English page and five-language facts remain in `oza-core-source-root/manifest.json` (SHA-256 `526ae318af928084a8cf82fafe8eeaf42173bdbd27a45b55ad3e6ce4260d7c95`). The packet's `protected-files.sha256` binds its scope and this memo.

@@ -21,7 +21,9 @@ type ProfileStage = 'main' | 'invite' | 'pending' | 'error';
 const playerRecord = (player: GolaxyOnlinePlayer) =>
   Number.isSafeInteger(player.wins) && Number.isSafeInteger(player.losses)
     ? `${player.wins} 胜 · ${player.losses} 负` : null;
-const statusClass = (status: string | null) => status === '空闲' ? '' : status === '拒绝' ? ' is-muted' : ' is-busy';
+const invitationPreference = (player: GolaxyOnlinePlayer) => player.invite_able === true ? '允许邀请' : player.invite_able === false ? '拒绝邀请' : null;
+const playerStatus = (player: GolaxyOnlinePlayer) => player.status || invitationPreference(player) || '状态未返回';
+const statusClass = (status: string) => status === '空闲' || status === '允许邀请' ? '' : status === '拒绝' || status === '拒绝邀请' || status === '状态未返回' ? ' is-muted' : ' is-busy';
 const PlayerAvatar = ({ player }: { player: GolaxyOnlinePlayer }) => player.avatar_url
   ? <img className="golaxy-home__avatar" src={player.avatar_url} alt="" />
   : <span className="golaxy-home__avatar">{player.username.slice(-1)}</span>;
@@ -58,11 +60,11 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
       <div className="golaxy-home__profile-head"><strong id="golaxy-profile-title">棋友资料</strong><small>{title}</small><button ref={closeButton} onClick={onClose} aria-label="关闭棋友资料">×</button></div>
       <div className="golaxy-home__profile-body">
         {stage === 'main' ? <>
-          <div className="golaxy-home__profile-hero"><PlayerAvatar player={player} /><div><b>{player.username}</b>{player.rank && <span>{player.rank}</span>}</div>{player.status && <span className={`golaxy-home__player-state${statusClass(player.status)}`}>{player.status}</span>}</div>
+          <div className="golaxy-home__profile-hero"><PlayerAvatar player={player} /><div><b>{player.username}</b>{player.rank && <span>{player.rank}</span>}</div>{playerStatus(player) && <span className={`golaxy-home__player-state${statusClass(playerStatus(player))}`}>{playerStatus(player)}</span>}</div>
           <div className="golaxy-home__profile-facts">
             <div><small>星阵号</small><b>{player.user_id}</b></div>
             {record && <div><small>对弈战绩</small><b>{record}</b></div>}
-            {player.invite_able != null && <div><small>邀请状态</small><b>{player.invite_able ? '星阵允许邀请' : '星阵拒绝邀请'}</b></div>}
+            {player.invite_able != null && <div><small>邀请偏好</small><b>{invitationPreference(player)}</b></div>}
           </div>
         </> : stage === 'invite' ? <>
           <p className="golaxy-home__profile-subtitle">邀请这位棋友进行星阵人人对弈</p>
@@ -228,7 +230,7 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
         </span>}
         status={connected ? t('platform:connected', '已连接') : undefined}
       />
-      {connected && <button className="golaxy-home__account-trigger" aria-haspopup="true" aria-expanded={accountMenu} disabled={accountBusy} onClick={() => { setAccountMenu(!accountMenu); setAccountIntent(null); setAccountError(false); }}><span>当前账号</span><b>{currentConnection.kind === 'connected' && (currentConnection.account.saved_username || '当前星阵账号')}</b><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" /></svg></button>}
+      {connected && <button className="golaxy-home__account-trigger" aria-haspopup="true" aria-expanded={accountMenu} disabled={accountBusy} onClick={() => { setAccountMenu(!accountMenu); setAccountIntent(null); setAccountError(false); }}><span>当前账号</span><b>{currentConnection.kind === 'connected' && (currentConnection.account.saved_username?.trim() || '昵称未获取')}</b><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" /></svg></button>}
       </div>
       {accountMenu && connected && <div className="golaxy-home__account-menu"><h3>星阵账号 · {currentConnection.kind === 'connected' && currentConnection.account.saved_username}</h3><p>当前账号已连接。切换账号会先断开当前星阵连接，再进入星阵登录页。</p><div><button disabled={accountBusy} onClick={() => { setAccountIntent('switch'); setAccountError(false); }}>切换账号</button><button disabled={accountBusy} onClick={() => { setAccountIntent('logout'); setAccountError(false); }}>退出星阵</button></div>{accountIntent && <div className="golaxy-home__account-confirm"><p>确认{accountIntent === 'switch' ? '断开当前账号并切换' : '退出当前星阵账号'}？</p>{accountError && <p role="alert">没能断开星阵账号，请重试。</p>}<button disabled={accountBusy} onClick={disconnectAccount}>{accountError ? '重试断开' : accountBusy ? '正在断开' : '确认'}</button><button disabled={accountBusy} onClick={() => setAccountIntent(null)}>取消</button></div>}</div>}
 
@@ -286,7 +288,7 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
                     <span className="golaxy-home__phase"><span aria-hidden="true" className="golaxy-home__mini-board" />{room.move_number != null ? `${room.move_number} 手` : room.phase}</span>
                     <span className="golaxy-home__seat golaxy-home__seat--white"><span className="golaxy-home__avatar">{room.white?.username.slice(-1) || '—'}</span><span><b>{room.white?.username || t('platform:unknown_player', '棋手信息待返回')}</b>{room.white?.rank && <small>{room.white.rank}</small>}</span></span>
                   </span>
-                </button>) : users.map((user) => <button key={user.user_id} className="golaxy-home__player" onClick={() => setSelectedPlayer(user)} aria-label={`查看${user.username}的个人资料`}><PlayerAvatar player={user} /><span className="golaxy-home__player-name"><b>{user.username}</b>{user.rank && <small>{user.rank}</small>}</span>{playerRecord(user) && <span className="golaxy-home__record">{playerRecord(user)}</span>}{user.status && <span className={`golaxy-home__player-state${statusClass(user.status)}`}>{user.status}</span>}</button>)}
+                </button>) : users.map((user) => <button key={user.user_id} className="golaxy-home__player" onClick={() => setSelectedPlayer(user)} aria-label={`查看${user.username}的个人资料`}><PlayerAvatar player={user} /><span className="golaxy-home__player-name"><b>{user.username}</b>{user.rank && <small>{user.rank}</small>}</span>{playerRecord(user) && <span className="golaxy-home__record">{playerRecord(user)}</span>}{playerStatus(user) && <span className={`golaxy-home__player-state${statusClass(playerStatus(user))}`}>{playerStatus(user)}</span>}</button>)}
               </div>}
               </div>
               </div>

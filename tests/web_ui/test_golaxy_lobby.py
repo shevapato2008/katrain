@@ -198,6 +198,12 @@ async def test_room_category_uses_game_type_and_never_room_source_enum(game_type
     [
         (2500, "7段"),
         ("2600", "准8段"),
+        (1700, "3段"),
+        ("1300", "1段"),
+        (300, "10级"),
+        (150, "25级"),
+        (0, None),
+        (2700, None),
         (25, None),
         (29, None),
         (2550, None),

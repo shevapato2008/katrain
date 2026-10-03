@@ -863,6 +863,7 @@ class TestScanConfirmOwnership:
         assert body["display_name"] == "阿范"
         assert len(manager.connect_calls) == 1
         assert manager.connect_calls[0][2] == 1
+        assert manager.connect_calls[0][1].auth_data["display_name"] == "阿范"
 
 
 class TestScanConfirmIdempotency:

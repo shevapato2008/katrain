@@ -59,8 +59,11 @@ class GolaxySnapshotUnsupported(GolaxyLobbyError):
     """This room uses a board setup not yet verified for spectating."""
 
 
-# Exact official display entries verified in PROTOCOL.md; do not extrapolate ranks.
-_LOBBY_RANKS = {"2500": "7段", "2600": "准8段"}
+# Exact `computerLevel` Elo-to-label rows in the official client (PROTOCOL.md).
+# Its 1–18 级 rows match our already captured AI table; the human list extends
+# through 25 级. Missing Elo values such as 2700 deliberately stay unknown.
+_LOBBY_RANKS = {str(row["elo_score"]): row["level_name"] for row in engine_client.GOLAXY_AI_LEVELS}
+_LOBBY_RANKS.update({"210": "19级", "200": "20级", "190": "21级", "180": "22级", "170": "23级", "160": "24级", "150": "25级"})
 _LOBBY_GAME_TYPES = {"80": "自由战", "82": "升降战"}
 _LOBBY_PRESENCE = {
     "-1": "拒绝",

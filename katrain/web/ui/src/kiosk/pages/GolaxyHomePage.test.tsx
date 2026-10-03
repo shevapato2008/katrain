@@ -70,6 +70,25 @@ describe('Golaxy home', () => {
     expect(navigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/golaxy');
   });
 
+  it('does not label a connected scan account as 当前星阵账号 when its nickname is missing', async () => {
+    platformStatus.mockResolvedValue(connected());
+    renderPage();
+    expect(await screen.findByText('昵称未获取')).toBeInTheDocument();
+    expect(screen.queryByText('当前星阵账号')).not.toBeInTheDocument();
+  });
+
+  it('shows the invitation preference when the upstream presence is unknown', async () => {
+    platformUsers.mockResolvedValue({ users: [
+      { user_id: 'u1', username: '棋友甲', rank: '3段', status: null, invite_able: true },
+      { user_id: 'u2', username: '棋友乙', rank: '2段', status: null, invite_able: false },
+    ] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    expect(await screen.findByRole('button', { name: '查看棋友甲的个人资料' })).toHaveTextContent('允许邀请');
+    expect(screen.getByRole('button', { name: '查看棋友乙的个人资料' })).toHaveTextContent('拒绝邀请');
+  });
+
   it('shows a login route when the account is disconnected', async () => {
     platformStatus.mockResolvedValue({ platforms: [{ platform: 'golaxy', connected: false }] });
     renderPage();
@@ -119,6 +138,7 @@ describe('Golaxy home', () => {
     expect(await screen.findByText('8 人在房间')).toBeInTheDocument();
     expect(screen.queryByText(/人观战/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    expect(await screen.findByRole('button', { name: '查看棋友甲的个人资料' })).toHaveTextContent('状态未返回');
     await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
     const dialog = screen.getByRole('dialog');
     expect(dialog.querySelector('img[src="https://assets.19x19.com/photo/one.png"]')).not.toBeNull();

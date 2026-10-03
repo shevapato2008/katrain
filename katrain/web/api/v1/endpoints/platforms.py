@@ -353,6 +353,11 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
     saved = {p["platform"]: p["username"] for p in pm._credential_store.list_platforms(user.id)}
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
+        if p["platform"] == "golaxy" and p["connected"]:
+            credentials = pm._credential_store.load_credentials(user.id, "golaxy")
+            display_name = credentials.auth_data.get("display_name") if credentials else None
+            if isinstance(display_name, str) and display_name.strip():
+                p["saved_username"] = display_name.strip()
     return {"platforms": platforms}
 
 
@@ -580,7 +585,11 @@ async def scan_confirm(
             logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
 
         pm = request.app.state.platform_manager
-        credentials = PlatformCredentials(platform=platform, username="", auth_data={"scan_uuid": session.golaxy_uuid})
+        credentials = PlatformCredentials(
+            platform=platform,
+            username="",
+            auth_data={"scan_uuid": session.golaxy_uuid, "display_name": display_name},
+        )
         try:
             success = await pm.connect_platform(platform, credentials, user.id)
         except PlatformBusyError as exc:

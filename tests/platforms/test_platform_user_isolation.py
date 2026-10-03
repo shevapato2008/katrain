@@ -300,6 +300,20 @@ async def test_user2_does_not_see_user1_connection(client, user1_token, user2_to
 
 
 @pytest.mark.asyncio
+async def test_golaxy_status_uses_saved_scan_nickname_without_exposing_it_to_other_user(
+    client, user1_token, user2_token, connected_golaxy_for_user1, credential_store, user1_id,
+):
+    credential_store.save_credentials(
+        user1_id,
+        PlatformCredentials(platform="golaxy", username="", auth_data={"display_name": "shuang"}),
+    )
+    own = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user1_token}"})
+    other = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user2_token}"})
+    assert next(p for p in own.json()["platforms"] if p["platform"] == "golaxy")["saved_username"] == "shuang"
+    assert not next(p for p in other.json()["platforms"] if p["platform"] == "golaxy")["saved_username"]
+
+
+@pytest.mark.asyncio
 async def test_user2_cannot_disconnect_user1(client, user1_token, user2_token, connected_golaxy_for_user1):
     r = await client.delete("/api/v1/platforms/golaxy/logout", headers={"Authorization": f"Bearer {user2_token}"})
     assert r.status_code in (403, 404), f"用户 2 把用户 1 断开了(HTTP {r.status_code})"

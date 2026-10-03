@@ -12,4 +12,6 @@
 
 **导入批准仍为 0/612。** 实际姓名行前像、证据与独立签名绑定、目录碰撞及导入门禁尚待完成。14,920 为原待审包中的潜在姓名槽位，不能当作已关联棋局或实际显示覆盖。无繁中、六种次要语言、读音规则或棋局人物 FK 批准；本次未写数据库、修改生产代码、提交或推送。
 
+后续繁中缺口的只读交集：以精确 `(raw_name, roster_player_no)` 匹配这 153 人与既有[繁中来源审核](kifu-name-china-roster-tw-character-review-2026-10-03.md)，其中 **40 人／4,814 个原始姓名槽位**有专业正文支持的候选；另外 **77 人**仅落在已完成字形检查的有限集合，尚无发布批准；余 **36 人／4,031 槽位**两种集合都未命中。来源与字形集合重叠 25 人，候选字面无冲突。该交集只用于安排繁中研究，不补足身份对应、候选签名或数据库覆盖。输入范围哈希分别为 `d9d746d2cf2eb9aed58a9afcf70a9bf396c16a2a5668c5854a6f2d762a5878c7` 与 `249d00adab708b9e86dc0bbd26ab173ca16f7d021d93dc80a632690e00c2ad85`。
+
 受保护复核目录：`~/.local/share/kifu-name-audit/2026-10-03/china-professional-roster/four-primary-153-independent-review-sol/`（目录 `0700`，文件 `0600`）。复核 manifest SHA-256：`7026ac8b607304e345cc2fc00f05424d6cfa125ffab50f641c775609d300c089`。其中 `rows.reviewed.json` 保存逐人逐格结果，`body-template-inspection.json` 保存模板与拼写差异，`recheck.py` 保存机械复核步骤，`memo.md` 说明完整审核边界。

@@ -519,3 +519,155 @@ def test_orthographic_anchor_production_follows_all_dependencies(defect):
     anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
     with pytest.raises(EvidenceError):
         validate_primary_orthographic_anchor(anchor)
+
+
+def test_orthographic_candidates_cannot_override_collisions():
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        bundle["candidates"][0].update(
+            collision_decision="distinct_people_confirmed", collision_basis="Distinct people"
+        )
+        assert not validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])["ready"]
+    finally:
+        engine.dispose()
+
+
+def test_later_conventional_candidate_cannot_override_existing_orthographic_name():
+    from katrain.web.kifu.name_batch import _check_cross_bundle_collisions
+
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            evidence = db.query(KifuNameResearchEvidence).one()
+            payload = deepcopy(evidence.research_payload)
+            payload["candidate"].update(
+                collision_decision="distinct_people_confirmed", collision_basis="Distinct people"
+            )
+            evidence.research_payload = payload
+            db.commit()
+        incoming = {
+            "owner": {"kind": "player", "id": 99},
+            "lang": "tw",
+            "display_name": "劉元赫",
+            "decision_kind": "conventional",
+            "generation_rule_version": "none",
+            "collision_decision": "distinct_people_confirmed",
+            "collision_basis": "Distinct people",
+        }
+        with engine.connect() as conn, pytest.raises(BatchError, match="cross-bundle normalized name collision"):
+            _check_cross_bundle_collisions(conn, [incoming])
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("count", [100, 300])
+def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, count):
+    from types import SimpleNamespace
+    from datetime import datetime
+    from katrain.web.kifu import name_orthographic as orthographic
+
+    engine, bundle, anchors, _ = fixture()
+    engine.dispose()
+    section = bundle["primary_orthographic"]
+    rule, batch = section["rules"][0], section["batches"][0]
+    rows, sources, members = [], [], []
+    # Distinct complete Han names, each with a genuine 100 KB captured fixture body.
+    clean_suffixes = [
+        chr(code)
+        for code in range(0x4E00, 0x5100)
+        if chr(code) not in orthographic.EXCLUDED_CHARACTERS | set(rule["content"]["excluded_characters"])
+    ]
+    for number in range(count):
+        suffix = clean_suffixes[number]
+        original, output = "刘元赫" + suffix, "劉元赫" + suffix
+        owner = {"kind": "player", "id": 1000 + number}
+        source = deepcopy(anchors[0])
+        source["content"].update(owner=owner, original_name=original)
+        source["content"]["binding"]["owner"] = owner
+        body = "CWA000001 " + original + " " + "x" * 100000
+        capture = source["content"]["sources"][0]
+        capture.update(body_text=body, body_excerpt=body[:80], body_sha256=hashlib.sha256(body.encode()).hexdigest())
+        source["approval"]["content_sha256"] = canonical_sha256(source["content"])
+        sources.append(source)
+        member = deepcopy(batch["content"]["members"][0])
+        member.update(
+            owner=owner, original_name=original, display_name=output, source_anchor_sha256=canonical_sha256(source)
+        )
+        member["codepoint_changes"].append(
+            {"position": 3, "input": f"U+{ord(suffix):04X}", "output": f"U+{ord(suffix):04X}"}
+        )
+        members.append(member)
+        row = deepcopy(bundle["candidates"][0])
+        row.update(member)
+        rows.append(row)
+        if suffix not in "刘元赫":
+            rule["content"]["mappings"].append({**rule["content"]["mappings"][1], "input": suffix, "output": suffix})
+    rule["approval"]["content_sha256"] = canonical_sha256(rule["content"])
+    rule_hash = canonical_sha256(rule)
+    # Known exceptional characters are irrelevant to measuring this clean batch.
+    for member, row in zip(members, rows):
+        member["rule_sha256"] = row["rule_sha256"] = rule_hash
+    batch["content"].update(
+        rule_sha256=rule_hash,
+        members=members,
+        members_sha256=canonical_sha256(members),
+        complete_name_review=deepcopy(members),
+        sampled_members=[canonical_sha256(m) for m in members[:20]],
+    )
+    batch["approval"]["content_sha256"] = canonical_sha256(batch["content"])
+    batch_hash = canonical_sha256(batch)
+    for row in rows:
+        row["orthographic_batch_sha256"] = batch_hash
+    bundle["candidates"] = rows
+    artifact = {
+        "bundle": bundle,
+        "approved_name_snapshot": [],
+        "orthographic_anchors": sources,
+        "orthographic_anchor_hashes": sorted(canonical_sha256(a) for a in sources),
+        "research_hashes": sorted(canonical_sha256(a) for a in sources),
+    }
+    persisted = SimpleNamespace(
+        id=1, status="applied", bundle_sha256=canonical_sha256(bundle), reviewed_artifact=artifact
+    )
+    hashes = []
+    source_ids = {id(source) for source in sources}
+    source_hashes = []
+    actual_hash = orthographic.registry_sha256
+
+    def counted(value):
+        if value is batch:
+            hashes.append(value)
+        if id(value) in source_ids:
+            source_hashes.append(id(value))
+        return actual_hash(value)
+
+    monkeypatch.setattr(orthographic, "registry_sha256", counted)
+    context = orthographic.persisted_batch_bindings(persisted)
+    assert context is not None
+    assert len(hashes) == 1
+    assert len(source_hashes) == count and set(source_hashes) == source_ids
+    for row, source in zip(rows, sources):
+        name = SimpleNamespace(
+            player_id=row["owner"]["id"],
+            lang="tw",
+            display_name=row["display_name"],
+            decision_kind="generated",
+            generation_rule_version="primary-orthographic-v1",
+        )
+        evidence = SimpleNamespace(
+            decision_kind="generated",
+            research_payload={
+                "candidate": row,
+                "research": None,
+                "primary_orthographic": {"batch_id": 1, "source_anchor": source},
+            },
+            **{key: row[key] for key in ("producer_id", "producer_model", "reviewer_id", "reviewer_model")},
+            produced_at=datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00")),
+            reviewed_at=datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00")),
+        )
+        assert orthographic.persisted_name_eligible(name, evidence, "player_id", None, persisted, context)
+    assert len(hashes) == 1
+    assert len(source_hashes) == count
+    sources[0]["content"]["sources"][0]["body_text"] += " tampered after the first read"
+    assert orthographic.persisted_batch_bindings(persisted) is None

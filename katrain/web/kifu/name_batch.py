@@ -510,6 +510,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
                 row["decision_kind"] not in {"composed", "transliterated"}
                 and row.get("generation_rule_version") != "primary-orthographic-v1"
                 and previous_candidate.get("decision_kind") not in {"composed", "transliterated"}
+                and previous_candidate.get("generation_rule_version") != "primary-orthographic-v1"
                 and row.get("collision_decision") == "distinct_people_confirmed"
                 and row.get("collision_basis")
                 and previous_candidate.get("collision_decision") == "distinct_people_confirmed"

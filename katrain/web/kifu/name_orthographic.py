@@ -189,6 +189,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             _time(batch["approval"]["produced_at"]) >= _time(rule["approval"]["reviewed_at"]),
             "orthographic member freeze predates rule approval",
         )
+        batch_digest = registry_sha256(batch)
         for member in members:
             _require(isinstance(member, dict), "orthographic member required")
             owner = member.get("owner")
@@ -285,7 +286,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     alias["owner"] == owner or _normalize(alias["name"]) != normalized[1],
                     "orthographic known alias collision",
                 )
-            bindings[key] = (batch, member, rule)
+            bindings[key] = (batch, member, rule, batch_digest)
             outputs[normalized] = owner
             used_anchors.add(anchor_hash)
             used_rules.add(rule_hash)
@@ -314,11 +315,11 @@ def validate_orthographic_candidate(row, bindings):
     )
     key = owner_key(row.get("owner"), row.get("lang"))
     _require(key in bindings, "orthographic candidate outside frozen scope")
-    batch, member, _ = bindings[key]
+    batch, member, _, batch_digest = bindings[key]
     _require(
         row.get("research_sha256") == ""
         and all(row.get(k) == v for k, v in member.items())
-        and row.get("orthographic_batch_sha256") == registry_sha256(batch),
+        and row.get("orthographic_batch_sha256") == batch_digest,
         "orthographic candidate signed dependency mismatch",
     )
     _require(
@@ -330,8 +331,19 @@ def validate_orthographic_candidate(row, bindings):
         "orthographic full-name independent review mismatch",
     )
     _require(
-        not any(k in row for k in ("reading", "scope_status", "negative_closure", "absence_claim", "generated_review")),
-        "orthographic candidate cannot claim reading or negative search",
+        not any(
+            k in row
+            for k in (
+                "reading",
+                "scope_status",
+                "negative_closure",
+                "absence_claim",
+                "generated_review",
+                "collision_decision",
+                "collision_basis",
+            )
+        ),
+        "orthographic candidate cannot claim reading, negative search or collision overrides",
     )
     binder = row.get("preimage_binding")
     _require(
@@ -356,11 +368,13 @@ def persisted_batch_bindings(batch):
         return None
     try:
         anchors = artifact.get("orthographic_anchors")
-        if not isinstance(anchors, list) or sorted(registry_sha256(a) for a in anchors) != artifact.get(
+        if not isinstance(anchors, list):
+            return None
+        anchors_by_hash = {registry_sha256(a): a for a in anchors}
+        if len(anchors_by_hash) != len(anchors) or sorted(anchors_by_hash) != artifact.get(
             "orthographic_anchor_hashes"
         ):
             return None
-        anchors_by_hash = {registry_sha256(a): a for a in anchors}
         if not set(anchors_by_hash) <= set(artifact["research_hashes"]):
             return None
         bindings = validate_orthographic(
@@ -394,7 +408,8 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         expected = candidates.get(key)
         if row != expected or proof.get("source_anchor") != anchors_by_hash[row["source_anchor_sha256"]]:
             return False
-        validate_orthographic_candidate(row, bindings)
+        # The context already validated every frozen candidate. Equality above binds
+        # this untrusted payload to that checked value without hashing the whole batch again.
         owner = row["owner"]
         expected_id = (
             owner.get("id")

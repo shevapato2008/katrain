@@ -138,6 +138,15 @@ def _approved_name_snapshot(conn) -> list[dict]:
     return sorted(snapshot, key=lambda row: (row["owner"]["kind"], row["owner"]["id"], row["lang"]))
 
 
+def orthographic_alias_snapshot(conn):
+    """Exact existing player aliases, for collision review; no alias writes."""
+    table = KifuPlayerAlias.__table__
+    return [
+        {"owner": {"kind": "player", "id": row["player_id"]}, "name": row["alias"]}
+        for row in conn.execute(select(table).order_by(table.c.id)).mappings()
+    ]
+
+
 def approved_name_snapshot(engine) -> list[dict]:
     """Read the snapshot that finite transliteration reviewers must sign before apply."""
     with engine.connect() as conn:
@@ -304,7 +313,7 @@ def _check_snapshot(conn, inventory: dict) -> tuple[dict[str, set[int]], dict[in
 
 
 def _check_catalog(conn, bundle: dict) -> None:
-    if bundle["bundle_format"] in {2, 3, 4}:
+    if bundle["bundle_format"] in {2, 3, 4} or bundle.get("primary_orthographic") is not None:
         actual = _catalog_sha(conn)
         _fail(actual == bundle["catalog_sha256"],
               f"catalog supplement snapshot changed: expected {bundle['catalog_sha256']}, got {actual}")
@@ -499,6 +508,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
             previous_candidate = previous.get("candidate", {}) if isinstance(previous, dict) else {}
             _fail(
                 row["decision_kind"] not in {"composed", "transliterated"}
+                and row.get("generation_rule_version") != "primary-orthographic-v1"
                 and previous_candidate.get("decision_kind") not in {"composed", "transliterated"}
                 and row.get("collision_decision") == "distinct_people_confirmed"
                 and row.get("collision_basis")
@@ -511,11 +521,17 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
 def _inspect(
     conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict], *, approved_snapshot=None
 ) -> dict:
-    if bundle.get("transliteration") is not None and approved_snapshot is None:
+    if (
+        bundle.get("transliteration") is not None or bundle.get("primary_orthographic") is not None
+    ) and approved_snapshot is None:
         approved_snapshot = _approved_name_snapshot(conn)
     report = _prevalidate(bundle, registry, inventory, evidence_records, approved_snapshot=approved_snapshot)
     selected_scope, selected_events = _check_snapshot(conn, inventory)
     _check_catalog(conn, bundle)
+    if bundle.get("primary_orthographic") is not None:
+        aliases = orthographic_alias_snapshot(conn)
+        for signed in bundle["primary_orthographic"]["batches"]:
+            _fail(signed["content"]["known_aliases"] == aliases, "orthographic known alias snapshot changed")
     if bundle["bundle_format"] in {2, 3, 4}:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
@@ -585,11 +601,14 @@ def _candidate_evidence(
     transliteration: dict | None = None,
     raw_display_scope: dict | None = None,
     archive_description: dict | None = None,
+    primary_orthographic: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
     reviewed_at = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
     payload = {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))}
+    if primary_orthographic is not None:
+        payload["primary_orthographic"] = primary_orthographic
     if composition is not None:
         payload["composition"] = composition
     if transliteration is not None:
@@ -636,9 +655,26 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
     evidence_id, evidence_after = _insert(
         conn,
         KifuNameResearchEvidence,
-        _candidate_evidence(row, research_by_hash, registry_id, revision, owner_id, composed, transliteration,
-                            {"batch_id": batch_id, "scope_sha256": canonical_sha256(raw_display_scope)}
-                            if raw_display_scope is not None else None, archive_description),
+        _candidate_evidence(
+            row,
+            research_by_hash,
+            registry_id,
+            revision,
+            owner_id,
+            composed,
+            transliteration,
+            (
+                {"batch_id": batch_id, "scope_sha256": canonical_sha256(raw_display_scope)}
+                if raw_display_scope is not None
+                else None
+            ),
+            archive_description,
+            (
+                {"batch_id": batch_id, "source_anchor": research_by_hash[row["source_anchor_sha256"]]}
+                if row.get("generation_rule_version") == "primary-orthographic-v1"
+                else None
+            ),
+        ),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
     sequence += 1
@@ -809,7 +845,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
     """Apply exactly one reviewed finite bundle in one locked transaction."""
     _check_bundle_hash(bundle, expected_bundle_sha256)
     bundle_hash = canonical_sha256(bundle)
-    has_transliteration = bundle.get("transliteration") is not None
+    has_transliteration = bundle.get("transliteration") is not None or bundle.get("primary_orthographic") is not None
     with _locked_write(engine) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
@@ -869,6 +905,20 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                     "bundle": bundle,
                     "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
                     **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
+                    **(
+                        {
+                            "orthographic_anchors": [
+                                item for item in evidence_records if item.get("evidence_kind") == "primary_orthographic"
+                            ],
+                            "orthographic_anchor_hashes": sorted(
+                                canonical_sha256(item)
+                                for item in evidence_records
+                                if item.get("evidence_kind") == "primary_orthographic"
+                            ),
+                        }
+                        if bundle.get("primary_orthographic") is not None
+                        else {}
+                    ),
                 },
                 "status": "pending",
             },
@@ -896,11 +946,29 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
                 "resolved_refs": resolved,
                 **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
+                **(
+                    {
+                        "orthographic_anchors": [
+                            item for item in evidence_records if item.get("evidence_kind") == "primary_orthographic"
+                        ],
+                        "orthographic_anchor_hashes": sorted(
+                            canonical_sha256(item)
+                            for item in evidence_records
+                            if item.get("evidence_kind") == "primary_orthographic"
+                        ),
+                    }
+                    if bundle.get("primary_orthographic") is not None
+                    else {}
+                ),
             }
-            conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id)
-                         .values(reviewed_artifact=artifact))
-        conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(
-            status="applied", applied_at=datetime.now(timezone.utc)))
+            conn.execute(
+                KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(reviewed_artifact=artifact)
+            )
+        conn.execute(
+            KifuNameBatch.__table__.update()
+            .where(KifuNameBatch.id == batch_id)
+            .values(status="applied", applied_at=datetime.now(timezone.utc))
+        )
         return {"status": "applied", "batch_id": batch_id, "change_count": sequence - 1,
                 "affected_albums": report["affected_albums"], "resolved_refs": resolved}
 

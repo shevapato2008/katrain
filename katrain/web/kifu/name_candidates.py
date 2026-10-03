@@ -32,6 +32,8 @@ from katrain.web.kifu.name_composition import (
     CompositionError, HONINBO_RAWS, validate_composition, validate_composed_candidate,
 )
 from katrain.web.kifu.name_transliteration import validate_transliteration, validate_transliterated_candidate
+from katrain.web.kifu.name_orthographic import is_orthographic, validate_orthographic, validate_orthographic_candidate
+from katrain.web.kifu.name_evidence import validate_primary_orthographic_anchor
 from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, validate_raw_player_scope
 
 
@@ -524,6 +526,7 @@ def _validate_candidate(
     link_targets: set[str] | None = None,
     composition_context: tuple[dict, dict, dict, dict] | None = None,
     transliteration_context: dict | None = None,
+    orthographic_context: dict | None = None,
 ) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
@@ -551,6 +554,12 @@ def _validate_candidate(
         scope = archive_description_scope(basis.get("inventory_sha256"), declaration)
         validate_archive_description_scope(scope, registry=registry)
         validate_archive_description_candidate(row, scope)
+    elif is_orthographic(row):
+        _require(research is None, "orthographic candidate uses dedicated original evidence")
+        try:
+            validate_orthographic_candidate(row, orthographic_context)
+        except EvidenceError as exc:
+            raise CandidateError(str(exc)) from exc
     elif decision == "transliterated":
         _require(research is None, "transliterated candidate uses dedicated original/reading evidence")
         try:
@@ -1078,8 +1087,15 @@ def validate_bundle(
     evidence_by_hash = defaultdict(list)
     research_keys = defaultdict(list)
     anchors_by_hash = {}
+    orthographic_anchors = {}
     for number, record in enumerate(research_records):
         try:
+            if isinstance(record, dict) and record.get("evidence_kind") == "primary_orthographic":
+                validate_primary_orthographic_anchor(record)
+                digest = canonical_sha256(record)
+                _require(digest not in orthographic_anchors, "duplicate orthographic source anchor")
+                orthographic_anchors[digest] = record
+                continue
             if isinstance(record, dict) and record.get("evidence_kind") == "transliteration_anchor":
                 validate_transliteration_anchor(record)
                 digest = canonical_sha256(record)
@@ -1114,6 +1130,22 @@ def validate_bundle(
             errors.append(f"transliteration: {exc}")
     elif anchors_by_hash:
         errors.append("transliteration source anchors require a signed finite transliteration section")
+    orthographic_context = None
+    if bundle.get("primary_orthographic") is not None or any(
+        isinstance(row, dict) and is_orthographic(row) for row in candidates
+    ):
+        try:
+            orthographic_context = validate_orthographic(
+                bundle.get("primary_orthographic"),
+                candidates,
+                orthographic_anchors,
+                approved_name_snapshot,
+                bundle.get("catalog_sha256"),
+            )
+        except (AttributeError, KeyError, TypeError, EvidenceError) as exc:
+            errors.append(f"orthographic: {exc}")
+    elif orthographic_anchors:
+        errors.append("orthographic source anchors require a signed finite section")
     composition_context = None
     if bundle.get("composition") is not None or any(isinstance(item, dict) and item.get("decision_kind") == "composed"
                                                     for item in candidates):
@@ -1160,7 +1192,7 @@ def validate_bundle(
                     scope_hash = canonical_sha256(scope)
                     _require(item.get("raw_display_scope_sha256") == scope_hash,
                              "raw-player candidate differs from signed display scope")
-                    if item.get("decision_kind") != "transliterated":
+                    if item.get("decision_kind") != "transliterated" and not is_orthographic(item):
                         research = evidence_by_hash.get(item.get("research_sha256"), [])
                         _require(len(research) == 1 and research[0].get("raw_display_scope_sha256") == scope_hash,
                                  "raw-player research differs from signed display scope")
@@ -1178,6 +1210,15 @@ def validate_bundle(
                     and binding[1].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"],
                     "scoped raw-player transliteration requires one matching format-3 source and signed member",
                 )
+            if is_orthographic(item) and item["owner"]["kind"] == "raw_player":
+                anchor = orthographic_anchors.get(item.get("source_anchor_sha256"))
+                _require(
+                    bundle["bundle_format"] != 1
+                    and isinstance(anchor, dict)
+                    and "raw_display_scope_sha256" in item
+                    and anchor["content"].get("raw_display_scope_sha256") == item["raw_display_scope_sha256"],
+                    "orthographic raw-player requires exact declared finite scope",
+                )
             evidence = evidence_by_hash.get(item.get("research_sha256"), [])
             if len(evidence) > 1:
                 raise CandidateError("duplicate research record hash")
@@ -1190,6 +1231,7 @@ def validate_bundle(
                 link_targets=link_targets,
                 composition_context=composition_context,
                 transliteration_context=transliteration_context,
+                orthographic_context=orthographic_context,
             )
             decisions.append(checked)
         except (AttributeError, CandidateError) as exc:
@@ -1255,10 +1297,10 @@ def validate_bundle(
             collisions[(row["lang"], normalize_alias(row["display_name"]))].append(row["owner"])
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
-            group = [row for row in decisions if row["lang"] == lang
-                     and normalize_alias(row["display_name"]) == name]
+            group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
             if any(
-                row["review_status"] == "approved" and row["decision_kind"] in {"composed", "transliterated"}
+                row["review_status"] == "approved"
+                and (row["decision_kind"] in {"composed", "transliterated"} or is_orthographic(row))
                 for row in group
             ) or not all(
                 row.get("collision_decision") == "distinct_people_confirmed" and _text(row.get("collision_basis"))

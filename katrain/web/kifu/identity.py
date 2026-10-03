@@ -92,14 +92,32 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
 
 
 def _qualified_name_rows(db, query, model, owner_column, *entities):
-    """Validate persisted transliteration proofs with one batch read per name query."""
+    """Validate persisted finite generation proofs with one batch read per name query."""
     from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
 
+    from katrain.web.kifu import name_orthographic
+
     rows = query.with_entities(model, KifuNameResearchEvidence, *entities).all()
+
+    def orthographic_proof(name, evidence):
+        payload = evidence.research_payload
+        candidate = payload.get("candidate") if isinstance(payload, dict) else None
+        return (
+            name.generation_rule_version == name_orthographic.VERSION
+            or isinstance(payload, dict)
+            and "primary_orthographic" in payload
+            or isinstance(candidate, dict)
+            and candidate.get("generation_rule_version") == name_orthographic.VERSION
+        )
+
     batch_ids = set()
     for name, evidence, *_ in rows:
-        if name.decision_kind == "transliterated" and isinstance(evidence.research_payload, dict):
-            proof = evidence.research_payload.get("transliteration")
+        if (name.decision_kind == "transliterated" or orthographic_proof(name, evidence)) and isinstance(
+            evidence.research_payload, dict
+        ):
+            proof = evidence.research_payload.get(
+                "primary_orthographic" if orthographic_proof(name, evidence) else "transliteration"
+            )
             if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
                 batch_ids.add(proof["batch_id"])
     batches = (
@@ -108,20 +126,26 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
         else {}
     )
     contexts = {key: persisted_batch_bindings(batch) for key, batch in batches.items()}
+    orthographic_contexts = {key: name_orthographic.persisted_batch_bindings(batch) for key, batch in batches.items()}
     result = []
     for row in rows:
         name, evidence, *extra = row
-        if name.decision_kind != "transliterated":
+        orthographic = orthographic_proof(name, evidence)
+        if name.decision_kind != "transliterated" and not orthographic:
             result.append(row)
             continue
         proof = (
-            evidence.research_payload.get("transliteration") if isinstance(evidence.research_payload, dict) else None
+            evidence.research_payload.get("primary_orthographic" if orthographic else "transliteration")
+            if isinstance(evidence.research_payload, dict)
+            else None
         )
         batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
         if type(batch_id) is not int or batch_id not in batches:
             continue
         raw = extra[0] if owner_column.startswith("raw_") and extra else None
-        if persisted_name_eligible(name, evidence, owner_column, raw, batches[batch_id], contexts[batch_id]):
+        eligible = name_orthographic.persisted_name_eligible if orthographic else persisted_name_eligible
+        context = orthographic_contexts[batch_id] if orthographic else contexts[batch_id]
+        if eligible(name, evidence, owner_column, raw, batches[batch_id], context):
             result.append(row)
     return result
 
@@ -130,9 +154,11 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None):
     """Return approved raw names with a verified finite scope when one was signed."""
     from katrain.web.kifu.name_candidates import canonical_sha256
 
-    query = (_approved_names(db, KifuRawPlayerName, "raw_player_id", lang=lang)
-             .join(KifuRawPlayerValue, KifuRawPlayerName.raw_player_id == KifuRawPlayerValue.id)
-             .filter(KifuRawPlayerValue.review_status == "approved"))
+    query = (
+        _approved_names(db, KifuRawPlayerName, "raw_player_id", lang=lang)
+        .join(KifuRawPlayerValue, KifuRawPlayerName.raw_player_id == KifuRawPlayerValue.id)
+        .filter(KifuRawPlayerValue.review_status == "approved")
+    )
     if values is not None:
         query = query.filter(KifuRawPlayerValue.raw_value.in_(values))
     if display is not None:
@@ -189,7 +215,7 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None):
                 or content.get("inventory_sha256") != bundle.get("inventory_sha256")):
             continue
         research = payload.get("research")
-        if name.decision_kind != "transliterated" and (
+        if name.decision_kind != "transliterated" and name.generation_rule_version != "primary-orthographic-v1" and (
                 not isinstance(research, dict)
                 or research.get("raw_display_scope_sha256") != proof["scope_sha256"]):
             continue

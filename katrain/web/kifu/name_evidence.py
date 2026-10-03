@@ -1218,3 +1218,72 @@ def capture_source_check(
                 return check
         sleep(min(2 ** attempt, 8))
     return check
+
+
+def validate_primary_orthographic_anchor(record: dict) -> dict:
+    """Approve only an exact Chinese original bound to one reviewed player scope."""
+    _require(isinstance(record, dict) and record.get("evidence_kind") == "primary_orthographic"
+             and type(record.get("version")) is int and record["version"] == 1
+             and set(record) == {"evidence_kind", "version", "content", "approval"},
+             "primary orthographic evidence kind/version invalid")
+    content = validate_transliteration_review(record, "approved_orthographic_original")
+    owner = content.get("owner")
+    owner_key(owner, "tw")
+    _require(owner["kind"] in {"player", "raw_player"}, "orthographic names only permit players")
+    required = {"owner", "original_name", "source_lang", "source_script", "chinese_origin", "binding", "sources"}
+    if owner["kind"] == "raw_player":
+        required |= {"raw_value", "raw_display_scope_sha256"}
+    _require(set(content) == required, "orthographic original fields invalid; no reading or absence claims")
+    original = content.get("original_name")
+    _require(isinstance(original, str) and 2 <= len(original) <= 16
+             and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
+             "orthographic original must be a complete Han person name")
+    _require(content.get("chinese_origin") is True
+             and content.get("source_lang") in {"zh-Hans", "zh-Hant"}
+             and content.get("source_script") == {"zh-Hans": "Hans", "zh-Hant": "Hant"}[content["source_lang"]],
+             "orthographic original requires reviewed Chinese origin/script")
+    binding = content.get("binding")
+    _require(isinstance(binding, dict) and binding.get("owner") == owner
+             and _text(binding.get("identity_basis")), "orthographic original owner binding missing")
+    if owner["kind"] == "player":
+        _require(set(binding) == {"kind", "person_id_namespace", "person_id", "owner", "identity_basis"}
+                 and binding.get("kind") == "official_person"
+                 and _text(binding.get("person_id_namespace")) and _text(binding.get("person_id")),
+                 "orthographic original requires official person binding")
+    else:
+        _require(set(binding) == {"kind", "owner", "identity_basis", "mapping"}
+                 and binding.get("kind") == "finite_raw_scope"
+                 and content.get("raw_value") == original
+                 and bool(_HEX_SHA256.fullmatch(str(content.get("raw_display_scope_sha256", "")))),
+                 "orthographic raw name requires exact finite approved scope")
+        mapping = validate_transliteration_review(binding.get("mapping"), "approved_exact_raw_original_mapping")
+        _require(mapping.get("owner") == owner and mapping.get("raw_value") == original
+                 and mapping.get("original_name") == original
+                 and mapping.get("raw_display_scope_sha256") == content["raw_display_scope_sha256"],
+                 "orthographic raw mapping differs from original/scope")
+        _require(
+            datetime.fromisoformat(record["approval"]["reviewed_at"].replace("Z", "+00:00"))
+            >= datetime.fromisoformat(binding["mapping"]["approval"]["reviewed_at"].replace("Z", "+00:00")),
+            "orthographic original approval predates raw mapping",
+        )
+    sources = content.get("sources")
+    validate_transliteration_sources(sources, content["source_lang"], record["approval"]["reviewed_at"])
+    for source in sources:
+        body = source.get("body_text")
+        _require(
+            isinstance(body, str)
+            and hashlib.sha256(body.encode("utf-8")).hexdigest() == source["body_sha256"]
+            and source["body_excerpt"] in body
+            and original in source["body_excerpt"]
+            and _text(source.get("record_locator")),
+            "orthographic captured body/name/locator mismatch",
+        )
+    if owner["kind"] == "player":
+        _require(
+            any(
+                source.get("tier") == "official" and binding["person_id"] in source["body_excerpt"]
+                for source in sources
+            ),
+            "orthographic original needs official name and person-ID body",
+        )
+    return content

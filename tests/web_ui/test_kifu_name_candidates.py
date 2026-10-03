@@ -1303,6 +1303,47 @@ def test_archive_description_accepts_exact_eleven_strings_without_changing_parse
     assert parse_event("Hoensha game", None).category == "unclassified_pending"
 
 
+def _rebind_archive_scope(proposed):
+    declaration = proposed["owners"][0]
+    review = declaration["category_review"]
+    basis = review["archive_basis"]
+    basis["occurrence_rows_sha256"] = canonical_sha256(basis["occurrence_rows"])
+    review["archive_basis_sha256"] = canonical_sha256(basis)
+    for row in proposed["candidates"]:
+        row["archive_basis_sha256"] = review["archive_basis_sha256"]
+        row["archive_scope_sha256"] = canonical_sha256({"inventory_sha256": basis["inventory_sha256"],
+                                                         "declaration": declaration})
+    proposed["owner_set_sha256"] = canonical_sha256(proposed["owners"])
+
+
+def test_archive_description_accepts_only_reviewed_honinbo_shuho_path(tmp_path):
+    for prefix, filename, expected in (
+        ("data/kifu-album/", "206.sgf", True),
+        ("data/kifu-album/", "999.sgf", False),
+        ("other/", "206.sgf", False),
+    ):
+        proposed, inv = archive_bundle(tmp_path)
+        inv["album_associations"][-1][-1][0][3] = (
+            f"{prefix}CWI_History_Full/ancient/Honinbo_Shuho/{filename}"
+        )
+        _rebind_archive_scope(proposed)
+        report = validate_bundle(proposed, archive_registry(), inv, [])
+        assert report["ready"] is expected, report["errors"]
+
+
+def test_archive_description_checks_shift_jis_retained_excerpt(tmp_path):
+    proposed, inv = archive_bundle(tmp_path)
+    check = proposed["owners"][0]["category_review"]["archive_basis"]["source_checks"][1]
+    body = "方円社の歴史".encode("shift_jis")
+    from pathlib import Path
+    Path(check["body_path"]).write_bytes(body)
+    check["body_sha256"] = hashlib.sha256(body).hexdigest()
+    check["body_excerpt"] = "方円社の歴史"
+    _rebind_archive_scope(proposed)
+    report = validate_bundle(proposed, archive_registry(), inv, [])
+    assert report["ready"], report["errors"]
+
+
 @pytest.mark.parametrize("change", ["owner", "raw", "version", "category", "parser_version", "basis_missing",
     "body_hash", "body_content", "registry_source", "basis_signature", "non_independent", "early_review",
     "scope_hash", "source_context", "source_path", "occurrence_row", "event_id", "template_text", "template_hash",

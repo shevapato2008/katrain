@@ -112,6 +112,11 @@ _CLASSIFICATION_TEMPLATE_VERSIONS = {
 ARCHIVE_DESCRIPTION_VERSION = "archive-description-v1"
 ARCHIVE_DESCRIPTION_RAW = "Hoensha game"
 ARCHIVE_DESCRIPTION_CATEGORY = "archive_source_description"
+_ARCHIVE_HONINBO_SHUHO_FILES = frozenset({
+    "206.sgf", "208.sgf", "211.sgf", "212.sgf", "214.sgf", "215.sgf", "218.sgf",
+    "219.sgf", "221.sgf", "222.sgf", "223.sgf", "238.sgf", "252.sgf", "275.sgf",
+    "283.sgf", "300.sgf", "328.sgf",
+})
 _ARCHIVE_DESCRIPTION_TEMPLATES = {
     "cn": "方圆社史料棋局", "tw": "方圓社史料棋局", "jp": "方円社の棋譜（史料）",
     "ko": "호엔샤(方円社) 관련 옛 기보", "en": "Hoensha archive game",
@@ -241,6 +246,24 @@ def archive_description_scope(inventory_sha256: str, declaration: dict) -> dict:
     return {"inventory_sha256": inventory_sha256, "declaration": declaration}
 
 
+def _archive_source_path_matches(path: str) -> bool:
+    if re.search(r"(?:^|/)CWI_History_Full/Hoensha/[^/]+\.sgf\Z", path):
+        return True
+    prefix = "data/kifu-album/CWI_History_Full/ancient/Honinbo_Shuho/"
+    return path.startswith(prefix) and path[len(prefix):] in _ARCHIVE_HONINBO_SHUHO_FILES
+
+
+def _archive_excerpt_matches(body: bytes, excerpt: str, source_id: str) -> bool:
+    encodings = ("utf-8", "shift_jis") if source_id == "nihon-kiin-archive-jp" else ("utf-8",)
+    for encoding in encodings:
+        try:
+            if excerpt in body.decode(encoding):
+                return True
+        except UnicodeDecodeError:
+            continue
+    return False
+
+
 def validate_archive_description_scope(scope: dict, *, registry=None, inventory=None, check_files=False) -> dict:
     """Check the frozen archive proof; retained files are read only by offline validation."""
     _require(isinstance(scope, dict) and _HASH.fullmatch(str(scope.get("inventory_sha256", ""))),
@@ -282,7 +305,7 @@ def validate_archive_description_scope(scope: dict, *, registry=None, inventory=
                  and isinstance(sources, list) and sources
                  and all(isinstance(source, list) and len(source) == 5 and source[2] == "CWI"
                          and isinstance(source[3], str)
-                         and re.search(r"(?:^|/)CWI_History_Full/Hoensha/[^/]+\.sgf\Z", source[3]) for source in sources),
+                         and _archive_source_path_matches(source[3]) for source in sources),
                  "archive description occurrence is outside reviewed CWI Hoensha source context")
     if inventory is not None:
         expected = [dict(zip(inventory["association_columns"], row)) for row in inventory["album_associations"]
@@ -315,7 +338,7 @@ def validate_archive_description_scope(scope: dict, *, registry=None, inventory=
                 raise CandidateError("archive description retained source body unavailable") from exc
             _require(hashlib.sha256(body).hexdigest() == check["body_sha256"],
                      "archive description retained source body hash mismatch")
-            _require(check["body_excerpt"] in body.decode("utf-8", errors="replace"),
+            _require(_archive_excerpt_matches(body, check["body_excerpt"], check["source_id"]),
                      "archive description source excerpt differs from retained body")
     return scope
 

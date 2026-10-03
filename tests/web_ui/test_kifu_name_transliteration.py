@@ -1,11 +1,13 @@
 """Finite six-language transliteration is checked offline without absence claims."""
 
 from copy import deepcopy
+import json
 
 import pytest
 
 from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
 from katrain.web.kifu.name_evidence import EvidenceError, validate_transliteration_anchor
+from scripts.kifu_name_batch import main as batch_cli_main
 from tests.web_ui.test_kifu_name_candidates import bundle, candidate, inventory, member, registry
 
 
@@ -293,6 +295,25 @@ def transliteration_bundle(lang="ru", snapshot=None):
 
 def check(proposed, anchors, snapshot):
     return validate_bundle(proposed, registry(), inventory(), anchors, approved_name_snapshot=snapshot)
+
+
+def test_cli_validate_accepts_explicit_approved_name_snapshot(tmp_path, capsys):
+    proposed, anchors, snapshot = transliteration_bundle()
+    paths = {key: tmp_path / f"{key}.json" for key in ("bundle", "registry", "inventory", "snapshot")}
+    for key, value in (("bundle", proposed), ("registry", registry()), ("inventory", inventory()),
+                       ("snapshot", snapshot)):
+        paths[key].write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+    evidence = tmp_path / "evidence.jsonl"
+    evidence.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in anchors), encoding="utf-8")
+    args = ["validate", "--bundle", str(paths["bundle"]), "--registry", str(paths["registry"]),
+            "--inventory", str(paths["inventory"]), "--evidence", str(evidence)]
+    assert batch_cli_main(args) == 1
+    assert "explicit approved name snapshot" in " ".join(json.loads(capsys.readouterr().out)["errors"])
+    assert batch_cli_main([*args, "--approved-name-snapshot", str(paths["snapshot"])]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["ready"] is True
+    assert report["write_ready"] is False
+    assert not report["errors"]
 
 
 @pytest.mark.parametrize("lang", ["de", "es", "fr", "ru", "tr", "ua"])

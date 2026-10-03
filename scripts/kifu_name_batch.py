@@ -52,7 +52,9 @@ def main(argv=None) -> int:
         sub.add_argument("--registry", type=Path, required=True)
         sub.add_argument("--inventory", type=Path, required=True)
         sub.add_argument("--evidence", type=Path, required=True)
-        if command != "validate":
+        if command == "validate":
+            sub.add_argument("--approved-name-snapshot", type=Path)
+        else:
             sub.add_argument("--database-url", required=True)
             sub.add_argument("--expected-bundle-sha256")
     for command in ("status", "undo"):
@@ -68,7 +70,9 @@ def main(argv=None) -> int:
             bundle = _json(args.bundle)
             evidence_records = list(_jsonl(args.evidence))
             if args.command == "validate":
-                result = validate_bundle(bundle, registry, inventory, evidence_records)
+                snapshot = _json(args.approved_name_snapshot) if args.approved_name_snapshot else None
+                result = validate_bundle(bundle, registry, inventory, evidence_records,
+                                         approved_name_snapshot=snapshot)
             else:
                 engine = create_engine(args.database_url)
                 result = (dry_run_bundle if args.command == "dry-run" else apply_bundle)(

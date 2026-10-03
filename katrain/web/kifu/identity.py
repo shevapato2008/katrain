@@ -821,14 +821,19 @@ def resolve_strict_display(
     *,
     obscured_event_ids: set[int] | None = None,
     selected_events: dict[int, tuple[str, int | None]] | None = None,
+    fallback_names: tuple[str, str, str] | None = None,
 ) -> tuple[str, str, str]:
-    """Resolve the three visible name slots from the same maps used by coverage checks."""
-    black = players.get(album.black_player_id) if album.black_player_id else _raw_player_slot(raw_players, album, "black")
-    white = players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
+    """Resolve approved slots; optional existing names support progressive display outside strict mode."""
+    black = (
+        players.get(album.black_player_id) if album.black_player_id else _raw_player_slot(raw_players, album, "black")
+    )
+    white = (
+        players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
+    )
     event_raw, event_id = (selected_events or {}).get(album.id, (album.event, album.event_id))
     event_name = events.get(event_id) if event_id else _raw_event_value(raw_events, album.id, event_raw or "", event_id)
     if obscured_event_ids and album.id in obscured_event_ids:
-        displayed_event = strict_unavailable_label(lang, "event")
+        displayed_event = None if fallback_names else strict_unavailable_label(lang, "event")
     elif event_id and event_name is not None:
         if parse_event(event_raw, None).category == "formal_event_candidate":
             displayed_event = (
@@ -847,9 +852,15 @@ def resolve_strict_display(
     else:
         displayed_event = event_name
     return (
-        black if black is not None else strict_fallback(album.player_black, lang, "player"),
-        white if white is not None else strict_fallback(album.player_white, lang, "player"),
-        displayed_event if displayed_event is not None else strict_fallback(event_raw, lang, "event"),
+        black
+        if black is not None
+        else (fallback_names[0] if fallback_names else strict_fallback(album.player_black, lang, "player")),
+        white
+        if white is not None
+        else (fallback_names[1] if fallback_names else strict_fallback(album.player_white, lang, "player")),
+        displayed_event
+        if displayed_event is not None
+        else (fallback_names[2] if fallback_names else strict_fallback(event_raw, lang, "event")),
     )
 
 
@@ -928,7 +939,7 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
 def display_maps(
     db: Session, albums: list, lang: str
 ) -> tuple[dict[int, str], dict[int, str], dict[int, str], dict[int, list[str]]]:
-    """Load one page's verified names and provenance in three batched queries."""
+    """Load pre-evidence legacy names for the non-strict display fallback."""
     player_ids = {value for album in albums for value in (album.black_player_id, album.white_player_id) if value}
     event_ids = {album.event_id for album in albums if album.event_id}
     album_ids = [album.id for album in albums]
@@ -943,6 +954,10 @@ def display_maps(
                 KifuPlayerName.player_id.in_(player_ids),
                 KifuPlayerName.lang == lang,
                 KifuPlayerName.status == "verified",
+                KifuPlayerName.evidence_id.is_(None),
+                KifuPlayerName.decision_kind.is_(None),
+                KifuPlayerName.generation_rule_version.is_(None),
+                KifuPlayerName.revision.is_(None),
             )
         }
     if event_ids:
@@ -953,6 +968,10 @@ def display_maps(
                 KifuEventName.event_id.in_(event_ids),
                 KifuEventName.lang == lang,
                 KifuEventName.status == "verified",
+                KifuEventName.evidence_id.is_(None),
+                KifuEventName.decision_kind.is_(None),
+                KifuEventName.generation_rule_version.is_(None),
+                KifuEventName.revision.is_(None),
             )
             .all()
         )

@@ -1103,3 +1103,98 @@ def test_composed_direct_event_scope_cannot_approve_a_selected_event_slot():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_normal_mode_progressively_displays_and_searches_reviewed_raw_names(monkeypatch):
+    monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
+    engine, db = _db()
+    try:
+        raw = KifuRawPlayerValue(raw_value="Reviewed A", category="readable", review_status="approved")
+        event_raw = KifuRawEventValue(raw_value="Reviewed Match", category="game_description", review_status="approved")
+        db.add_all([raw, event_raw])
+        db.flush()
+        for owner, owner_id, model, display in (
+            ("raw_player", raw.id, KifuRawPlayerName, "Игрок А"),
+            ("raw_event", event_raw.id, KifuRawEventName, "Матч А"),
+        ):
+            evidence = _evidence(db, owner, owner_id, "ru", display)
+            db.add(model(**{f"{owner}_id": owner_id}, lang="ru", display_name=display,
+                         status="verified", decision_kind="conventional", generation_rule_version="test-v1",
+                         revision=1, evidence_id=evidence.id))
+        approved = KifuAlbum(player_black="Reviewed A", player_white="Untouched B", event="Reviewed Match",
+                             sgf_content="(;B[aa])", source_path="approved.sgf")
+        untouched = KifuAlbum(player_black="Untouched A", player_white="Untouched B", event="Other Match",
+                              sgf_content="(;B[bb])", source_path="untouched.sgf")
+        db.add_all([approved, untouched])
+        db.commit()
+        result = {item.id: item for item in _list(db, lang="ru").items}
+        assert result[approved.id].display_player_black == "Игрок А"
+        assert result[approved.id].display_event == "Матч А"
+        assert result[untouched.id].display_player_black == "Untouched A"
+        detail = asyncio.run(kifu.get_kifu_album(_request(), approved.id, lang="ru", db=db))
+        assert detail.display_event == "Матч А"
+        for query in ("Игрок А", "Матч А"):
+            assert [item.id for item in _list(db, query, "cn").items] == [approved.id]
+        # A verified row without its exact approved evidence must never become an approved overlay.
+        evidence.review_status = "pending"
+        db.commit()
+        assert _list(db, "Матч А").total == 0
+        assert asyncio.run(kifu.get_kifu_album(_request(), approved.id, lang="ru", db=db)).display_event != "Матч А"
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_normal_mode_composed_names_keep_exact_reviewed_album_scope(monkeypatch):
+    monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
+    engine, db = _db()
+    try:
+        series, raw, albums = _reviewed_composition(db)
+        outside = KifuAlbum(player_black="Black", player_white="White", event=raw.raw_value,
+                            event_id=series.id, sgf_content="(;B[bb])", source_path="outside-normal.sgf")
+        db.add(outside)
+        db.commit()
+        result = {item.id: item for item in _list(db, lang="fr").items}
+        assert result[albums[0].id].display_event == "1er Honinbo"
+        assert result[outside.id].display_event != "1er Honinbo"
+        assert [item.id for item in _list(db, "1er Honinbo", "cn").items] == [albums[0].id]
+        name = db.query(KifuRawEventName).filter_by(lang="fr").one()
+        name.evidence_id = db.query(KifuEventName).filter_by(lang="fr").one().evidence_id
+        db.commit()
+        assert _list(db, "1er Honinbo", "cn").total == 0
+        detail = asyncio.run(kifu.get_kifu_album(_request(), albums[0].id, lang="fr", db=db))
+        assert detail.display_event != "1er Honinbo"
+        assert detail.display_event != "Nom du tournoi non vérifié"
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_normal_mode_does_not_fallback_to_revoked_canonical_name(monkeypatch):
+    monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)
+    engine, db = _db()
+    try:
+        player = KifuPlayer(canonical_name="Original Player")
+        db.add(player)
+        db.flush()
+        evidence = _evidence(db, "player", player.id, "ru", "Новый игрок")
+        db.add(KifuPlayerName(
+            player_id=player.id, lang="ru", display_name="Новый игрок", status="verified",
+            decision_kind="conventional", generation_rule_version="test-v1", revision=1,
+            evidence_id=evidence.id,
+        ))
+        album = KifuAlbum(
+            player_black="Original Player", player_white="Other Player", black_player_id=player.id,
+            event="", sgf_content="(;B[aa])", source_path="revoked-canonical.sgf",
+        )
+        db.add(album)
+        db.commit()
+        assert asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="ru", db=db)).display_player_black == "Новый игрок"
+        evidence.review_status = "pending"
+        db.commit()
+        detail = asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="ru", db=db))
+        assert detail.display_player_black == "Original Player"
+        assert _list(db, "Новый игрок", "ru").total == 0
+    finally:
+        db.close()
+        engine.dispose()

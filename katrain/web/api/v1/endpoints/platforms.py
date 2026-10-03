@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import random
+import re
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -16,6 +18,48 @@ from katrain.web.models import User
 logger = logging.getLogger("katrain_web")
 
 router = APIRouter()
+
+
+def _golaxy_nickname(value: object) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+    name = value.strip()
+    # Older scan logins stored /scan/username (the phone principal) as a nickname.
+    return name if name and not re.fullmatch(r"(?:00[1-9]\d{0,3}-)?\+?\d[\d -]{6,}", name) else None
+
+
+async def _refresh_golaxy_identity(pm, user_id: int) -> Optional[str]:
+    """Resolve the connected owner's nickname and repair previously saved scan credentials."""
+    from katrain.web.platforms.manager import PlatformManager
+    from katrain.web.platforms.models import PlatformCredentials
+
+    if not isinstance(pm, PlatformManager):
+        return None
+    async with pm._locks.setdefault("golaxy", asyncio.Lock()):
+        if pm.owner_of("golaxy") != user_id:
+            return None
+        adapter = pm.get_adapter("golaxy")
+        if adapter is None or not adapter.is_connected:
+            return None
+        try:
+            identity = await adapter.get_account_identity()
+        except Exception:
+            logger.warning("Could not resolve Golaxy account nickname")
+            return None
+        nickname = _golaxy_nickname(identity.get("nickname"))
+        principal = identity.get("username")
+        if not nickname or not isinstance(principal, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", principal):
+            return None
+        saved = pm._credential_store.load_credentials(user_id, "golaxy")
+        if saved is None:
+            return None
+        auth_data = dict(saved.auth_data)
+        auth_data["display_name"] = nickname
+        pm._credential_store.save_credentials(
+            user_id,
+            PlatformCredentials(platform="golaxy", username=principal, auth_data=auth_data),
+        )
+        return nickname
 
 
 def require_platform_owner(platform: str, request: Request, user: User = Depends(get_current_user)) -> User:
@@ -353,11 +397,14 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
     saved = {p["platform"]: p["username"] for p in pm._credential_store.list_platforms(user.id)}
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
-        if p["platform"] == "golaxy" and p["connected"]:
+        if p["platform"] == "golaxy":
             credentials = pm._credential_store.load_credentials(user.id, "golaxy")
-            display_name = credentials.auth_data.get("display_name") if credentials else None
-            if isinstance(display_name, str) and display_name.strip():
-                p["saved_username"] = display_name.strip()
+            display_name = _golaxy_nickname(credentials.auth_data.get("display_name")) if credentials else None
+            p["saved_username"] = display_name or (
+                await _refresh_golaxy_identity(pm, user.id)
+                if p["connected"]
+                else "已保存的星阵账号" if credentials else None
+            )
     return {"platforms": platforms}
 
 
@@ -533,14 +580,8 @@ async def scan_confirm(
     no visible cause). Checking `consumed` first would let TTL never fire for
     a session that ever succeeded.
 
-    Uses `username=""` (R-29, task-6a-brief.md): `/scan/username` only gives
-    the display nickname, not the `0086-{phone}` login principal that
-    `/items/{username}` (道具 badges) needs — and there's no verified response
-    field with that principal on this path. Guessing `0086-{昵称}` would make
-    item-count lookups silently hit the wrong (or a nonexistent) account, so
-    this deliberately leaves it blank; `PlatformCredentials.username == ""`
-    makes `GolaxyRestClient.set_username` a no-op (see adapter.py), which is
-    exactly what makes `fetch_item_counts()` degrade honestly instead.
+    `/scan/username` returns the phone login principal. The actual nickname
+    comes from `/oauth/check_token` after the scan token has been exchanged.
     """
     from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
     from katrain.web.platforms.manager import PlatformBusyError
@@ -576,19 +617,21 @@ async def scan_confirm(
         if session.state != ScanState.CONFIRMED:
             raise HTTPException(status_code=409, detail="还没在手机上确认")
 
-        display_name = ""
+        principal = ""
         try:
-            display_name = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
+            principal = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
                 session.golaxy_uuid
             )
         except Exception:
-            logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
+            logger.warning("scan/confirm: could not fetch Golaxy login principal (non-fatal)")
+        if not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", principal):
+            principal = ""
 
         pm = request.app.state.platform_manager
         credentials = PlatformCredentials(
             platform=platform,
-            username="",
-            auth_data={"scan_uuid": session.golaxy_uuid, "display_name": display_name},
+            username=principal,
+            auth_data={"scan_uuid": session.golaxy_uuid},
         )
         try:
             success = await pm.connect_platform(platform, credentials, user.id)
@@ -608,7 +651,7 @@ async def scan_confirm(
         if not success:
             raise HTTPException(status_code=401, detail="扫码登录失败")
 
-        session.result = {"connected": True, "display_name": display_name}
+        session.result = {"connected": True, "display_name": await _refresh_golaxy_identity(pm, user.id) or ""}
         session.consumed = True
     return session.result
 

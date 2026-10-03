@@ -11,11 +11,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
-from katrain.web.platforms.golaxy.adapter import GolaxyAdapter
+from katrain.web.platforms.golaxy.adapter import GolaxyAdapter, GolaxyLobbyAuthError
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import OnlineUser, PlatformCredentials
 from katrain.web.server import create_app
-
 
 ROOM = {
     "id": 10078687,
@@ -138,6 +137,68 @@ def test_user_endpoint_fetches_golaxy_list_and_projects_only_verified_fields():
             },
         ]
     }
+
+
+async def test_live_user_fields_supply_presence_and_numeric_invitation_preference():
+    rows = [
+        {
+            "userCode": "u1",
+            "nickname": "A",
+            "webConnectionStatus": 1,
+            "appConnectionStatus": 0,
+            "webUserStatus": 20,
+            "appUserStatus": 0,
+            "inviteAble": 1,
+        },
+        {
+            "userCode": "u2",
+            "nickname": "B",
+            "webConnectionStatus": 0,
+            "appConnectionStatus": 1,
+            "webUserStatus": 0,
+            "appUserStatus": 30,
+            "inviteAble": 0,
+        },
+        {
+            "userCode": "u3",
+            "nickname": "C",
+            "webConnectionStatus": 0,
+            "appConnectionStatus": 0,
+            "webUserStatus": 20,
+            "appUserStatus": 20,
+            "inviteAble": 1,
+        },
+    ]
+    users = await _adapter(lambda request: httpx.Response(200, json={"code": "0", "data": rows})).get_online_users()
+    assert [(u["status"], u["invite_able"]) for u in users] == [
+        ("空闲", True),
+        ("拒绝", False),
+        ("离线", True),
+    ]
+
+
+async def test_account_identity_comes_from_active_token_not_scan_username():
+    def handler(request):
+        assert request.url.path == "/api/auth/oauth/check_token"
+        assert request.method == "POST"
+        assert request.headers["Authorization"].startswith("Basic ")
+        assert request.content == b"token=old-token"
+        return httpx.Response(200, json={"active": True, "username": "0086-13116158612", "nickname": "棋友甲"})
+
+    adapter = _adapter(handler)
+    assert await adapter.get_account_identity() == {
+        "username": "0086-13116158612",
+        "nickname": "棋友甲",
+    }
+    assert adapter._rest._username == "0086-13116158612"
+
+
+async def test_inactive_token_cannot_supply_a_display_name():
+    def handler(request):
+        return httpx.Response(200, json={"active": False, "username": "0086-13116158612", "nickname": "棋友甲"})
+
+    with pytest.raises(GolaxyLobbyAuthError, match="expired"):
+        await _adapter(handler).get_account_identity()
 
 
 def test_golaxy_user_query_filters_current_page_by_username_prefix():

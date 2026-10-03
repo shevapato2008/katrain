@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -301,7 +302,12 @@ async def test_user2_does_not_see_user1_connection(client, user1_token, user2_to
 
 @pytest.mark.asyncio
 async def test_golaxy_status_uses_saved_scan_nickname_without_exposing_it_to_other_user(
-    client, user1_token, user2_token, connected_golaxy_for_user1, credential_store, user1_id,
+    client,
+    user1_token,
+    user2_token,
+    connected_golaxy_for_user1,
+    credential_store,
+    user1_id,
 ):
     credential_store.save_credentials(
         user1_id,
@@ -311,6 +317,56 @@ async def test_golaxy_status_uses_saved_scan_nickname_without_exposing_it_to_oth
     other = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user2_token}"})
     assert next(p for p in own.json()["platforms"] if p["platform"] == "golaxy")["saved_username"] == "shuang"
     assert not next(p for p in other.json()["platforms"] if p["platform"] == "golaxy")["saved_username"]
+
+
+@pytest.mark.asyncio
+async def test_golaxy_status_repairs_legacy_scan_phone_with_verified_nickname(
+    client,
+    user1_token,
+    user2_token,
+    connected_golaxy_for_user1,
+    credential_store,
+    user1_id,
+):
+    principal = "0086-13116158612"
+    credential_store.save_credentials(
+        user1_id,
+        PlatformCredentials(
+            platform="golaxy", username="", auth_data={"display_name": principal, "access_token": "OLD"}
+        ),
+    )
+    connected_golaxy_for_user1.get_account_identity = AsyncMock(
+        return_value={"username": principal, "nickname": "棋友甲"}
+    )
+    other = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user2_token}"})
+    own = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user1_token}"})
+    assert not next(p for p in other.json()["platforms"] if p["platform"] == "golaxy")["saved_username"]
+    assert next(p for p in own.json()["platforms"] if p["platform"] == "golaxy")["saved_username"] == "棋友甲"
+    saved = credential_store.load_credentials(user1_id, "golaxy")
+    assert saved.username == principal
+    assert saved.auth_data["display_name"] == "棋友甲"
+    connected_golaxy_for_user1.get_account_identity.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_golaxy_status_never_exposes_a_saved_phone_as_display_name(
+    client,
+    user1_token,
+    connected_golaxy_for_user1,
+    credential_store,
+    user1_id,
+):
+    connected_golaxy_for_user1._connected = False
+    credential_store.save_credentials(
+        user1_id,
+        PlatformCredentials(
+            platform="golaxy", username="0086-13116158612", auth_data={"display_name": "0086-13116158612"}
+        ),
+    )
+    response = await client.get("/api/v1/platforms/status", headers={"Authorization": f"Bearer {user1_token}"})
+    account = next(p for p in response.json()["platforms"] if p["platform"] == "golaxy")
+    assert account["connected"] is False
+    assert account["saved_username"] == "已保存的星阵账号"
 
 
 @pytest.mark.asyncio

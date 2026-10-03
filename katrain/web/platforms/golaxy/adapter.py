@@ -79,6 +79,7 @@ _LOBBY_PRESENCE = {
     "AI_ANALYSIS": "研究中",
     "AI_GAME": "对弈",
 }
+_LOBBY_STATUS_PRIORITY = {"0": 0, "10": 0, "20": 1, "30": 2, "40": 3, "50": 0, "90": 0}
 
 
 def _lobby_label(value, labels: dict[str, str]) -> Optional[str]:
@@ -91,18 +92,28 @@ def _lobby_count(value) -> Optional[int]:
 
 def _lobby_presence(row: dict) -> Optional[str]:
     connection = _lobby_label(row.get("connectionStatus"), {"0": "closed", "1": "open"})
+    web = _lobby_label(row.get("webConnectionStatus"), {"0": "closed", "1": "open"})
+    app = _lobby_label(row.get("appConnectionStatus"), {"0": "closed", "1": "open"})
+    if connection is None:
+        connection = "open" if "open" in (web, app) else "closed" if web == app == "closed" else None
     if connection == "closed":
         return "离线"
     if connection != "open":
         return None
-    if row.get("inviteAble") is False:
+    if row.get("inviteAble") in (False, 0, "0"):
         return "拒绝"
-    detail = None
     for device in ("web", "app"):
         if _lobby_label(row.get(f"{device}ConnectionStatus"), {"1": "open"}) and row.get(f"{device}UserStatusDetail"):
-            detail = row[f"{device}UserStatusDetail"]
-            break
-    return _lobby_label(detail, _LOBBY_PRESENCE) or _lobby_label(row.get("userStatus"), _LOBBY_PRESENCE)
+            label = _lobby_label(row[f"{device}UserStatusDetail"], _LOBBY_PRESENCE)
+            if label:
+                return label
+    statuses = [row.get(f"{device}UserStatus") for device, state in (("web", web), ("app", app)) if state == "open"]
+    statuses = [value for value in statuses if _lobby_label(value, _LOBBY_PRESENCE)]
+    if statuses:
+        return _lobby_label(
+            max(statuses, key=lambda value: _LOBBY_STATUS_PRIORITY.get(str(value), -1)), _LOBBY_PRESENCE
+        )
+    return _lobby_label(row.get("userStatus"), _LOBBY_PRESENCE)
 
 
 def _lobby_avatar(row: dict) -> Optional[str]:
@@ -549,6 +560,30 @@ class GolaxyRestClient:
     def get_auth_data(self) -> dict:
         return {"access_token": self._access_token, "refresh_token": self._refresh_token, "user_code": self._user_code}
 
+    async def get_account_identity(self) -> dict[str, str]:
+        """Read the nickname and login principal attached to the current token."""
+        if not self._access_token:
+            raise GolaxyLobbyAuthError("Golaxy login required")
+        client = await self._ensure_client()
+        response = await client.post(
+            "/api/auth/oauth/check_token",
+            data={"token": self._access_token},
+            headers={"Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}"},
+            timeout=8.0,
+        )
+        response.raise_for_status()
+        body = response.json()
+        if not isinstance(body, dict) or body.get("active") is not True:
+            raise GolaxyLobbyAuthError("Golaxy login expired")
+        nickname = body.get("nickname")
+        username = body.get("username")
+        if not isinstance(nickname, str) or not nickname.strip():
+            raise GolaxyLobbyError("Golaxy nickname unavailable")
+        if not isinstance(username, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", username):
+            raise GolaxyLobbyError("Golaxy login principal unavailable")
+        self.set_username(username)
+        return {"nickname": nickname.strip(), "username": username}
+
     @property
     def is_authenticated(self) -> bool:
         return self._access_token is not None
@@ -823,16 +858,10 @@ class GolaxyAdapter(PlatformAdapter):
                 logger.info("Golaxy connected via SMS")
                 return True
 
-            # Scan-login: the confirmed uuid IS the credential, there is no
-            # phone number at this layer (R-29, task-6a-brief.md). Callers
-            # pass `credentials.username = ""` for this path on purpose. The
-            # `clear_username()` call above (not `set_username`'s no-op — see
-            # F1, task-6a review) is what actually makes this leave `_username`
-            # unset, which is what makes `fetch_item_counts()` degrade
-            # honestly (raises `Fatal` instead of guessing a `0086-{昵称}`
-            # principal, or — before F1 was fixed — silently reusing whoever
-            # was connected before this scan login) until this user separately
-            # links a real phone-based login.
+            # Scan-login uses the confirmed uuid to obtain tokens. The caller
+            # may supply the verified phone principal from /scan/username;
+            # clear_username above prevents an older account's principal from
+            # surviving when that lookup fails.
             scan_uuid = auth_data.get("scan_uuid")
             if scan_uuid:
                 await self._rest.login_scan_code(scan_uuid)
@@ -882,6 +911,9 @@ class GolaxyAdapter(PlatformAdapter):
         can reconnect without a fresh SMS login.
         """
         return self._rest.get_auth_data()
+
+    async def get_account_identity(self) -> dict[str, str]:
+        return await self._rest.get_account_identity()
 
     async def get_rooms(self) -> list[dict]:
         rows = await self._rest.list_gamerooms()
@@ -1052,7 +1084,11 @@ class GolaxyAdapter(PlatformAdapter):
                     "status": _lobby_presence(row),
                     "wins": _lobby_count(row.get("winNum")),
                     "losses": _lobby_count(row.get("loseNum")),
-                    "invite_able": row.get("inviteAble") if type(row.get("inviteAble")) is bool else None,
+                    "invite_able": (
+                        row["inviteAble"] in (True, 1, "1")
+                        if row.get("inviteAble") in (True, False, 0, 1, "0", "1")
+                        else None
+                    ),
                     "avatar_url": _lobby_avatar(row),
                 }
             )

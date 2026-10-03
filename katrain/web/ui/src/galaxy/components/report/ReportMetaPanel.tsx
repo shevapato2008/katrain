@@ -59,9 +59,9 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
         <IconButton onClick={() => setDetailsOpen(true)} aria-label={t('report:game_details', '对局详情')} size="small" sx={{ width: 32, height: 32, color: 'text.primary' }}><InfoOutlinedIcon fontSize="small" /></IconButton>
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, gap: 0.75 }}><Box sx={stone(false)} /><Typography noWrap sx={{ fontSize: 24, fontWeight: 600 }}>{black}</Typography></Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, gap: 0.75 }}><Box sx={stone(false)} /><Typography noWrap sx={{ fontSize: 18, fontWeight: 600 }}>{black}</Typography></Box>
         <Typography sx={{ ...text, fontWeight: 600, color: '#8fdfad', whiteSpace: 'nowrap' }}>{leadText}</Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, justifyContent: 'flex-end', gap: 0.75 }}><Typography noWrap sx={{ fontSize: 24, fontWeight: 600 }}>{white}</Typography><Box sx={stone(true)} /></Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, justifyContent: 'flex-end', gap: 0.75 }}><Typography noWrap sx={{ fontSize: 18, fontWeight: 600 }}>{white}</Typography><Box sx={stone(true)} /></Box>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography sx={{ ...text, whiteSpace: 'nowrap' }}>{t('review:black', '黑')} {blackRate == null ? '—' : `${blackRate.toFixed(1)}%`}</Typography>

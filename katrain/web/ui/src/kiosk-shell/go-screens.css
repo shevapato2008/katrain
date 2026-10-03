@@ -2306,13 +2306,13 @@ button.kiosk-row.figrow { flex: none; }
   .kiosk-attention-marker { animation: none; }
 }
 
-/* Reports share the actual 460 × 516 rail. Exceptional notices may scroll the
-   rail; candidates and controls retain their touch targets and stay reachable. */
+/* Reports share the actual 460 × 516 rail. Keep its six rows fixed; transient
+   notices sit above the rail content instead of pushing playback offscreen. */
 .report-analysis-layout { position: relative; }
 .report-analysis-layout [data-coordinates="false"] .kiosk-board__ruler span { visibility: hidden; }
-.report-analysis-rail { gap: 3px; height: 516px; min-height: 0; overflow-y: auto; }
+.report-analysis-rail { position: relative; gap: 3px; width: 460px; height: 516px; min-height: 0; overflow: hidden; }
 .report-analysis-rail__head {
-  flex: 1 0 80px; min-height: 80px; box-sizing: border-box; padding: 4px 8px;
+  flex: none; height: 80px; box-sizing: border-box; padding: 4px 8px;
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   border: 1px solid var(--hair); border-radius: 8px; background: var(--panel);
 }
@@ -2328,7 +2328,13 @@ button.kiosk-row.figrow { flex: none; }
 .report-analysis-rail__win em { display: block; height: 100%; background: #101411; }
 .report-analysis-rail__status { display: flex; justify-content: space-between; gap: 4px; min-width: 0; font-size: 16px; color: #d4e2d7; }
 .report-analysis-rail__status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.report-analysis-rail__candidates { flex: none; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; }
+.report-analysis-rail__notices:empty { display: none; }
+.report-analysis-rail__notices:not(:empty) {
+  position: absolute; z-index: 5; top: 130px; left: 0; right: 0;
+  max-height: 132px; overflow-y: auto;
+}
+.report-analysis-rail__notices .rverr { margin: 0 0 3px; background: var(--panel); box-shadow: 0 5px 16px #0009; }
+.report-analysis-rail__candidates { flex: none; height: 244px; box-sizing: border-box; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; }
 .report-analysis-rail__columns, .report-analysis-rail__candidate {
   display: grid; grid-template-columns: 1.15fr 1fr 1fr 1fr; align-items: center; text-align: center;
 }
@@ -2353,10 +2359,13 @@ button.kiosk-row.figrow { flex: none; }
 .report-analysis-rail__actions button:disabled { opacity: .5; }
 .report-analysis-rail__toggles.gtoggles { flex: none; height: 44px; }
 .report-analysis-rail__toggles.gtoggles button { height: 44px; min-height: 44px; font-size: 16px; }
+.report-analysis-rail__toggles .kiosk-icon { display: none; }
+.report-analysis-rail__toggles button[aria-pressed="true"] .kiosk-icon { display: inline-flex; }
 .report-analysis-rail .kiosk-movenav { flex: none; height: 44px; }
 .report-analysis-rail .kiosk-movenav button { min-height: 44px; }
 .report-analysis-rail .report-playback { display: grid; grid-template-columns: repeat(5,44px) minmax(0,1fr) 70px; gap: 3px; align-items: center; }
 .report-analysis-rail .report-playback button { width: 44px; height: 44px; padding: 0; font-size: 20px; }
+.report-analysis-rail .report-playback .kiosk-icon svg { width: 21px; height: 21px; }
 .report-analysis-rail .report-playback input[type="range"] { width: 100%; min-width: 0; height: 44px; accent-color: var(--accent); }
 .report-analysis-rail .report-playback output { font-size: 16px; text-align: right; white-space: nowrap; }
 .report-analysis-rail .rverr { flex: none; height: auto; margin: 0; overflow-wrap: anywhere; }

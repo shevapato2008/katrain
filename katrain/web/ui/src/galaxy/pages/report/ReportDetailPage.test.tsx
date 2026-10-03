@@ -192,9 +192,9 @@ describe('ReportDetailPage', () => {
     expect(screen.getByTestId('report-analysis-layout')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '试下' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Territory' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '手数' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '手数' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '支招' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Coordinates' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Coordinates' })).toBeInTheDocument();
     expect(screen.queryByText('报告摘要')).not.toBeInTheDocument();
     expect(screen.queryByText('精彩手')).not.toBeInTheDocument();
     expect(screen.queryByText('失误手')).not.toBeInTheDocument();

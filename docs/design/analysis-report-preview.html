@@ -6,311 +6,462 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../../katrain/web/ui/src/galaxy/assets/fonts/galaxy-fonts.css">
   <link rel="stylesheet" href="../../katrain/web/ui/src/kiosk-shell/fonts.css">
-  <title>智星盒 · 分析报告设计预览</title>
+  <title>分析报告 · 组件细节预览</title>
   <style>
-    :root { color-scheme: dark; font-family: "LXGW WenKai", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --body:16px; --title:24px; --bg:#171a19; --panel:#262b29; --card:#303734; --line:#58645e; --text:#f4f7f4; --muted:#cad4cd; --accent:#7cd3a0; --wood:#d8ae69; }
+    :root { color-scheme:dark; --page:#0f0f0f; --paper:#252525; --ink:#1a1a1a; --line:rgba(255,255,255,.10); --strong:#f5f3f0; --muted:#b8b5b0; --jade:#4a6b5c; --jade-dark:#2f4539; --good:#8fdfad; --amber:#ff9800; --bad:#e16b5c; font-family:'LXGW WenKai',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
     * { box-sizing:border-box; }
-    html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#101311; color:var(--text); }
-    button, input { font:inherit; }
-    button { cursor:pointer; }
-    button:focus-visible, input:focus-visible { outline:2px solid #b9f5ce; outline-offset:2px; }
-    .app { width:100vw; height:100dvh; margin:auto; display:grid; grid-template-columns:284px minmax(0,1fr) minmax(600px,35vw); grid-template-rows:56px minmax(0,1fr); background:var(--bg); font-size:var(--body); }
-    .top { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; padding:0 22px; border-bottom:1px solid #3d4641; background:#242927; min-width:0; }
-    .brand { display:flex; align-items:center; gap:10px; white-space:nowrap; font-size:var(--title); font-weight:600; letter-spacing:.02em; }
-    .brand span { font-family:"Galaxy Long Cang", "LXGW WenKai", sans-serif; font-weight:400; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--page); color:var(--strong); }
+    button,input { font:inherit; } button { cursor:pointer; } button:disabled { cursor:default; opacity:.38; }
+    button:focus-visible,input:focus-visible { outline:2px solid var(--good); outline-offset:2px; }
+    .icon-defs { position:absolute; width:0; height:0; overflow:hidden; }
+    .icon { width:21px; height:21px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .app { --rail-floor:320px; display:grid; grid-template-columns:240px minmax(0,1fr) clamp(var(--rail-floor),calc(100vw - 260px - min(1200px,100dvh - 72px)),900px); grid-template-rows:52px minmax(0,1fr); width:100vw; height:100dvh; overflow:hidden; background:var(--page); }
+    @media (min-width:1200px) { .app { --rail-floor:360px; } }
+    @media (min-width:1536px) { .app { --rail-floor:420px; } }
+    @media (min-width:1920px) { .app { --rail-floor:520px; } }
+    .top { grid-column:1/-1; grid-row:1; display:flex; align-items:center; justify-content:space-between; padding:0 22px; border-bottom:1px solid #343434; background:var(--paper); font-size:18px; }
+    .brand { display:flex; align-items:center; gap:9px; white-space:nowrap; font-weight:600; }
     .brand img { width:32px; height:32px; object-fit:contain; }
-    .brand small { font-size:var(--body); font-weight:400; color:var(--muted); letter-spacing:0; }
-    .top-right { display:flex; align-items:center; gap:12px; color:var(--muted); }
-    .segmented { display:flex; padding:3px; border:1px solid var(--line); border-radius:8px; gap:2px; background:#1b201e; }
-    .segmented button { border:0; border-radius:5px; padding:5px 12px; color:var(--muted); background:transparent; min-height:34px; }
-    .segmented button[aria-pressed=true] { background:#3b5949; color:#f6fff8; }
-    .side { padding:22px 12px; border-right:1px solid #333b36; display:flex; flex-direction:column; gap:5px; background:#242927; min-height:0; }
-    .side a { text-decoration:none; color:#c8d1cb; display:flex; align-items:center; gap:13px; height:48px; padding:0 16px; border-radius:7px; }
-    .side a.active { color:#f5fff7; background:#365945; font-weight:600; }
-    .side a span:first-child { width:20px; text-align:center; color:var(--accent); }
-    .side .bottom { margin-top:auto; border-top:1px solid #48534b; padding-top:12px; }
-    .board-stage { min-width:0; min-height:0; display:grid; place-items:center; padding:16px; background:#191d1b; }
-    .board-frame { width:min(calc(100vw - 950px), calc(100dvh - 88px)); height:min(calc(100vw - 950px), calc(100dvh - 88px)); min-width:0; min-height:0; max-width:100%; max-height:100%; padding:13px; border:1px solid #ad7d43; border-radius:3px; background:linear-gradient(135deg,#e4c083,#d3a55f 48%,#bf8e4e); box-shadow:0 12px 32px #0007; }
-    #board { display:block; width:100%; height:100%; }
-    .rail { min-width:0; min-height:0; display:grid; grid-template-rows: 176px minmax(232px,24%) minmax(0,1fr) 154px; gap:9px; padding:12px; background:var(--panel); overflow:hidden; }
-    .slot { min-width:0; min-height:0; border:1px solid #4f5a53; border-radius:8px; background:var(--card); overflow:hidden; }
-    .meta { padding:12px 15px; display:grid; grid-template-rows:28px 32px 24px 22px; align-content:center; gap:5px; }
-    .meta-top { display:flex; align-items:center; gap:10px; min-width:0; }
-    .back { border:0; background:transparent; color:var(--text); width:36px; height:36px; flex:none; border-radius:6px; font-size:var(--title); }
-    .event-title { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
-    .event-date { color:var(--muted); flex:none; white-space:nowrap; }
-    .details-trigger { width:28px; height:28px; flex:none; border:1px solid var(--line); border-radius:50%; background:#365243; color:var(--text); }
-    .details-overlay { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:#000b; }
-    .details-overlay[hidden] { display:none; }
-    .details-card { width:min(700px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; border:1px solid #769783; border-radius:9px; background:#2d3731; padding:18px; box-shadow:0 20px 50px #000a; }
-    .details-card header { display:flex; justify-content:space-between; align-items:center; font-size:var(--title); font-weight:600; margin-bottom:12px; }
-    .details-card header button { width:44px; height:44px; border:1px solid var(--line); border-radius:5px; background:#405348; color:#fff; }
-    .details-grid { display:grid; grid-template-columns:120px 1fr; gap:8px 16px; line-height:1.4; }
-    .details-grid span:nth-child(odd) { color:var(--muted); }
-    .players { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; font-size:var(--title); font-weight:600; }
-    .players span:last-child { text-align:right; }
-    .players .score { font-size:var(--body); }
-    .meta-foot { display:flex; align-items:center; justify-content:space-between; gap:9px; color:var(--muted); white-space:nowrap; }
-    .stone { display:inline-block; width:14px; height:14px; border-radius:50%; vertical-align:-1px; margin-right:6px; background:#090b0a; border:1px solid #b3c0b7; }
-    .stone.white { background:#fff; border-color:#fff; }
-    .winline { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; font-weight:400; }
-    .winline > span:first-child, .winline > span:last-child { flex:none; white-space:nowrap; }
-    .wintrack { flex:1; min-width:0; height:9px; border-radius:99px; background:#f7faf7; overflow:hidden; }
-    .wintrack i { display:block; width:32.9%; height:100%; background:#101411; }
-    .score { color:var(--accent); font-weight:600; white-space:nowrap; }
-    .recs { display:grid; grid-template-rows:36px 30px repeat(5,minmax(0,1fr)); }
-    .section-head { display:flex; align-items:center; justify-content:space-between; padding:0 16px; font-weight:600; border-bottom:1px solid var(--line); }
-    .section-head .hint { color:var(--muted); font-weight:400; }
-    .rec-head, .rec-row { display:grid; grid-template-columns:1.1fr .9fr .9fr 1fr; align-items:center; padding:0 15px; gap:8px; }
-    .rec-head { color:var(--muted); border-bottom:1px solid #4b564f; }
-    .rec-row { border:0; border-bottom:1px solid #48534b; border-radius:0; background:transparent; color:var(--text); text-align:left; min-height:0; }
-    .rec-row:last-child { border-bottom:0; }
-    .rec-row:hover, .rec-row[aria-pressed=true] { background:#3e5748; }
-    .rec-row b { font-weight:600; }
-    .rec-row .rank { color:var(--accent); margin-right:7px; }
-    .rec-row .pct { font-weight:600; }
-    .analysis { display:grid; grid-template-rows:48px minmax(0,1fr); position:relative; }
-    .tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); border-bottom:1px solid var(--line); }
-    .tabs button { border:0; background:transparent; color:var(--muted); padding:0 4px; white-space:nowrap; }
-    .tabs button[aria-selected=true] { color:#eaffef; font-weight:600; border-bottom:3px solid var(--accent); }
-    .tab-body { min-height:0; padding:10px 15px; display:none; }
-    .tab-body.active { display:flex; flex-direction:column; }
-    .tab-sub { display:flex; justify-content:space-between; align-items:center; gap:12px; min-height:34px; }
-    .tab-sub strong { font-weight:600; }
-    .help { border:1px solid #a8cbb4; width:28px; height:28px; background:#324c3b; border-radius:50%; color:#f5fff7; line-height:1; font-weight:600; }
-    .expand { border:1px solid #779683; min-width:44px; min-height:28px; border-radius:5px; color:#f6fff7; background:#344a3b; }
-    .chart-wrap { flex:1; min-height:0; position:relative; border-radius:5px; background:#202622; padding:8px 8px 4px; }
-    .chart-wrap svg { display:block; width:100%; height:100%; overflow:visible; }
-    .axis { position:absolute; color:var(--muted); line-height:1; pointer-events:none; }
-    .axis.top { top:18%; left:2%; } .axis.mid { top:49%; left:3%; } .axis.low { bottom:13%; left:4%; } .axis.start { bottom:3%; left:7%; } .axis.end { bottom:3%; right:2%; }
-    .chart-legend { display:flex; gap:18px; color:var(--muted); }
-    .key { display:inline-block; width:19px; height:4px; margin-right:7px; vertical-align:4px; border-radius:4px; background:#a8e3ec; }
-    .key.gold { background:#f2df8a; }
-    .grade-bars { flex:1; min-height:0; display:flex; align-items:end; gap:8px; padding:7px 2px; }
-    .grade-bars div { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:end; gap:4px; height:100%; color:var(--muted); text-align:center; }
-    .grade-bars i { display:block; width:min(38px,80%); min-height:2px; border-radius:3px 3px 0 0; background:#7cd3a0; }
-    .grade-bars div:nth-child(2) i { background:#b9df9c; } .grade-bars div:nth-child(3) i { background:#d7daa3; } .grade-bars div:nth-child(4) i { background:#dfbd88; } .grade-bars div:nth-child(5) i { background:#db967f; }
-    .grade-bars div:nth-child(6) i { background:#d47771; } .grade-bars div:nth-child(7) i { background:#ba5858; }
-    .analysis-filters { display:flex; align-items:center; gap:5px; min-height:38px; }
-    .analysis-filters button { min-height:32px; padding:0 9px; border:1px solid #55685a; border-radius:4px; background:#39483e; color:var(--text); }
-    .analysis-filters button[aria-pressed=true] { background:#527d5e; border-color:#8ccea0; }
-    .analysis-foot { color:var(--muted); line-height:1.3; }
-    .metric { display:flex; align-items:center; justify-content:center; flex:1; gap:16px; color:var(--muted); }
-    .metric strong { font-size:var(--title); color:var(--text); }
-    .note { position:absolute; right:12px; top:50px; z-index:3; width:min(380px,calc(100% - 24px)); background:#415047; color:#fff; padding:14px 16px; border:1px solid #91c9a0; border-radius:7px; box-shadow:0 14px 30px #0009; line-height:1.5; }
-    .note[hidden] { display:none; }
-    .modal-close { display:none; }
-    .kiosk-analysis-button { display:none; }
-    .controls { padding:5px 12px; display:grid; grid-template-rows:44px 42px 44px; gap:3px; }
-    .actionrow { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
-    .app.personal .actionrow { grid-template-columns:repeat(4,minmax(0,1fr)); }
-    .actionrow button { border:1px solid #66756a; border-radius:6px; background:#38443c; color:#f2f7f2; min-width:0; min-height:42px; }
-    .actionrow button[hidden] { display:none; }
-    .toolrow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
-    .toolrow button { border:1px solid #66756a; border-radius:6px; background:#2c3930; color:#f2f7f2; min-width:0; min-height:40px; }
-    .toolrow button[aria-pressed=true] { background:#4c8060; border-color:#a2dfb2; color:#fff; font-weight:600; }
-    .toolrow button::before { content:"○"; color:#9fb4a4; margin-right:6px; }
-    .toolrow button[aria-pressed=true]::before { content:"●"; color:#dfffe8; }
-    .playrow { display:flex; align-items:center; gap:10px; min-width:0; }
-    .playrow input[type=range] { flex:1; min-width:0; accent-color:var(--accent); }
-    .playrow button { width:38px; height:38px; flex:none; border:1px solid #66756a; border-radius:5px; background:#38443c; color:#fff; }
-    .playrow output { min-width:76px; text-align:right; white-space:nowrap; }
-    @media (max-width:1500px) and (min-width:1101px) { .app { grid-template-columns:80px minmax(0,1fr) minmax(560px,39vw); } .side a { justify-content:center; padding:0; } .side a .label { display:none; } .brand { font-size:var(--title); } .board-frame { width:min(calc(100vw - 680px), calc(100dvh - 88px)); height:min(calc(100vw - 680px), calc(100dvh - 88px)); } }
-    @media (max-width:1100px), (max-height:690px) {
-      :root { --body:16px; --title:20px; }
-      body { font-family:"SmartBox Sans", "SmartBox Kai", "LXGW WenKai", sans-serif; }
-      .app { width:1024px; height:600px; grid-template-columns:548px 476px; grid-template-rows:56px 544px; }
-      .top { padding:0 20px; }
-      .top-right { gap:8px; }
-      .segmented button { padding:3px 8px; min-height:32px; }
-      .side { display:none; }
-      .board-stage { padding:14px 16px; }
-      .board-frame { width:516px; height:516px; padding:7px; }
-      .rail { grid-column:2; grid-row:2; grid-template-rows:84px 260px 1fr; gap:7px; padding:14px 16px 14px 0; background:var(--bg); }
-      .slot { border-radius:6px; }
-      .meta { padding:3px 9px; grid-template-rows:20px 20px 20px 16px; align-content:start; gap:0; }
-      .meta-top { gap:4px; }
-      .back { width:26px; height:26px; }
-      .event-title, .event-date { line-height:20px; }
-      .players { font-size:var(--body); }
-      .players .score { font-size:var(--body); }
-      .winline { line-height:20px; gap:6px; }
-      .wintrack { height:7px; }
-      .meta-foot { line-height:16px; gap:4px; }
-      .recs { grid-template-rows:20px 20px repeat(5,44px); }
-      .section-head { padding:0 8px; }
-      .rec-head, .rec-row { grid-template-columns:1.1fr .8fr 1fr .9fr; padding:0 8px; gap:3px; }
-      .rec-row { min-height:44px; }
-      .analysis { display:none; }
-      .analysis.chart-expanded { display:grid; position:fixed; inset:56px 0 0 0; z-index:10; border-radius:0; grid-template-rows:44px minmax(0,1fr); box-shadow:0 0 0 999px #000b; }
-      .modal-close { display:block; position:absolute; top:2px; right:2px; z-index:11; width:40px; height:40px; border:1px solid var(--line); border-radius:4px; background:#344a3b; color:#fff; }
-      .kiosk-analysis-button { display:block; }
-      .tabs button { padding:0 1px; }
-      .tab-body { padding:2px 8px; }
-      .tab-sub { min-height:21px; }
-      .help { width:20px; height:20px; }
-      .chart-wrap { padding:2px 4px; }
-      .chart-wrap .axis { display:none; }
-      .analysis.chart-expanded .tab-body { padding:12px 20px; }
-      .analysis.chart-expanded .chart-wrap .axis { display:block; }
-      .analysis.chart-expanded .tab-sub { min-height:38px; }
-      .chart-legend { gap:9px; }
-      .grade-bars { padding:1px 0; }
-      .grade-bars div { gap:1px; }
-      .controls { padding:3px 6px; grid-template-rows:44px 40px 44px; gap:3px; }
-      .actionrow, .toolrow { gap:3px; }
-      .actionrow button { min-height:44px; }
-      .toolrow button { min-height:40px; }
-      .toolrow button::before { margin-right:2px; }
-      .playrow { gap:3px; }
-      .playrow button { width:44px; height:44px; }
-      .playrow output { min-width:57px; }
+    .brand .cn { font-size:22px; font-weight:600; } .brand small { color:var(--strong); font-size:16px; font-weight:600; }
+    .kiosk-top-extra { display:none; }
+    .preview-tools { display:none; gap:5px; align-items:center; font-size:14px; }
+    body[data-preview="true"] .preview-tools { display:flex; }
+    .preview-tools button { border:1px solid #59645d; border-radius:5px; background:#26342b; color:#e8f4ea; padding:4px 9px; }
+    .preview-tools button[aria-pressed="true"] { background:var(--jade); }
+    .side { grid-column:1; grid-row:2; display:flex; flex-direction:column; gap:1px; padding:7px 8px 14px; border-right:1px solid #333; background:var(--paper); font-size:18px; }
+    .side a { height:51px; display:flex; align-items:center; gap:16px; padding:0 17px; color:#aaa; text-decoration:none; border-radius:6px; }
+    .side a.active { background:#2f4539; color:#f3faf4; font-weight:600; }
+    .side a .icon { width:24px; height:24px; }
+    .side-spacer { flex:1; } .side-rule { border-top:1px solid #363636; margin:0 -8px 10px; }
+    .profile { display:flex; align-items:center; gap:10px; margin:7px 8px 0; min-height:78px; padding:10px; border-radius:12px; background:#111; color:#eee; }
+    .avatar { width:36px; height:36px; border-radius:50%; background:#4a6b5c; display:grid; place-items:center; color:#111; font-weight:700; font-size:14px; }
+    .profile div:nth-child(2) { flex:1; font-size:16px; } .profile small { display:block; margin-top:2px; color:#58866c; font-size:14px; }
+    .stage { grid-column:2; grid-row:2; min-width:0; min-height:0; display:grid; place-items:center; padding:10px; overflow:hidden; background:#101010; }
+    .board-frame { position:relative; width:min(100%,calc(100dvh - 72px)); height:auto; aspect-ratio:1; background:#d7ad65; }
+    #board { display:block; width:100%; height:100%; cursor:crosshair; }
+    .ruler { display:none; }
+    .desktop-rail { grid-column:3; grid-row:2; display:grid; grid-template-rows:154px 250px minmax(0,1fr) 140px 58px; gap:8px; min-width:0; min-height:0; padding:8px 20px; background:var(--paper); overflow:hidden; }
+    body[data-mode="professional"] .desktop-rail { grid-template-rows:154px 250px minmax(0,1fr) 86px 58px; }
+    .panel { min-width:0; min-height:0; overflow:hidden; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+    .meta { display:grid; grid-template-rows:28px 38px 32px 24px; gap:4px; padding:9px 12px; font-size:18px; }
+    .meta-title { display:flex; align-items:center; gap:8px; min-width:0; }
+    .plain-icon { width:32px; height:32px; border:0; background:transparent; color:var(--strong); display:grid; place-items:center; padding:3px; }
+    .meta-title strong { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+    .meta-title time { white-space:nowrap; color:var(--muted); }
+    .player-line { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); gap:12px; align-items:center; }
+    .player-line .player { display:flex; align-items:center; gap:7px; min-width:0; font-size:18px; font-weight:600; white-space:nowrap; }
+    .player-line .player:last-child { justify-content:flex-end; } .player-line .player span { overflow:hidden; text-overflow:ellipsis; }
+    .stone-key { display:inline-block; flex:none; width:17px; height:17px; border-radius:50%; background:#090b0a; border:1px solid #b6c1b8; vertical-align:-2px; }
+    .stone-key.white { background:#fafafa; border-color:#fff; }
+    .lead { color:var(--good); font-size:18px; font-weight:600; white-space:nowrap; }
+    .win-line { display:flex; align-items:center; gap:9px; white-space:nowrap; }
+    .win-track { flex:1; height:9px; min-width:0; border-radius:99px; overflow:hidden; background:#f4f7f4; }
+    .win-track i { display:block; height:100%; width:32.9%; background:#101411; }
+    .meta-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--muted); white-space:nowrap; overflow:hidden; }
+    .recs { padding:4px 12px; font-size:18px; }
+    .rec-title { display:flex; justify-content:space-between; align-items:center; height:30px; }
+    .rec-title .secondary { color:var(--muted); }
+    .rec-grid { display:grid; grid-template-columns:minmax(58px,1.15fr) minmax(46px,.85fr) minmax(48px,.9fr) minmax(80px,1.4fr); gap:4px; align-items:center; text-align:center; }
+    .rec-grid > :first-child { text-align:left; }
+    .rec-header { min-height:32px; padding:0 8px; border-radius:7px; color:var(--muted); background:rgba(255,255,255,.05); }
+    .rec-row { width:100%; min-height:40px; padding:2px 8px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--strong); }
+    #desktopCandidates { height:144px; min-height:144px; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#5f6d62 transparent; }
+    #desktopCandidates .rec-row { height:36px; min-height:36px; }
+    .rec-row:hover { background:#333; } .rec-row.actual { background:rgba(76,175,80,.15); border-color:#4caf50; }
+    .rec-move { display:flex; align-items:center; gap:6px; font-weight:700; }
+    .rec-move .stone-key { width:14px; height:14px; border:0; } .rec-move .stone-key.white { border:1px solid #666; }
+    .actual-check { width:15px; height:15px; color:#66c284; }
+    .chip { display:inline-block; min-width:48px; padding:2px 7px; border-radius:6px; background:rgba(255,255,255,.1); font-weight:700; line-height:20px; }
+    .rec-row:first-child .chip { background:var(--jade); color:#fff; }
+    .score-chip { display:inline-block; padding:0 5px; border-radius:5px; background:#141414; font-weight:700; }
+    .win-chips { display:flex; justify-content:center; gap:4px; white-space:nowrap; }
+    .win-chips b { padding:0 4px; border-radius:5px; background:#111; }
+    .win-chips b.other { background:#f4f4f4; color:#151515; }
+    .actual-comparison { display:none; min-height:32px; align-items:center; gap:8px; padding:0 8px; border-top:1px solid var(--line); white-space:nowrap; }
+    .actual-comparison.visible { display:flex; }
+    .analysis { position:relative; display:flex; flex-direction:column; }
+    .tabs { flex:none; display:flex; height:40px; align-items:stretch; gap:0; padding-right:48px; border-bottom:1px solid var(--line); }
+    .tabs button { min-width:88px; flex:1; padding:0 4px; border:0; border-bottom:2px solid transparent; color:var(--muted); background:transparent; font-size:18px; white-space:nowrap; }
+    .tabs button[aria-selected="true"] { color:var(--good); border-bottom-color:var(--jade); }
+    .expand-analysis { position:absolute; z-index:2; right:8px; top:4px; width:36px; height:36px; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:6px; color:var(--strong); background:var(--jade-dark); }
+    .expand-analysis .icon { width:21px; height:21px; }
+    .analysis-body { flex:1; min-height:0; overflow:auto; padding:8px 12px; font-size:18px; }
+    .analysis-expanded { position:fixed!important; z-index:21; inset:6vh 6vw; box-shadow:0 20px 50px #000a; }
+    .analysis-backdrop { display:none; position:fixed; z-index:20; inset:0; background:#000b; }
+    .analysis-backdrop.visible { display:block; }
+    .chart-readout { display:flex; justify-content:space-between; gap:8px; margin:2px 4px 4px; font-weight:600; }
+    .chart-readout .wr { color:#4caf50; }.chart-readout .pts { color:var(--amber); }
+    .chart-box { background:var(--page); border-radius:8px; padding:5px; }
+    .trend-svg,.grade-svg,.lollipop-svg,.match-svg { display:block; width:100%; }
+    .trend-svg { height:clamp(140px,calc(100dvh - 740px),260px); }
+    .trend-svg,.lollipop-svg { cursor:crosshair; }
+    .filter-line { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .seg { display:inline-flex; padding:2px; border-radius:7px; background:#343434; gap:2px; }
+    .seg button { min-height:32px; border:0; padding:0 10px; border-radius:5px; background:transparent; color:var(--muted); white-space:nowrap; }
+    .seg button[aria-pressed="true"] { color:var(--strong); background:#4a6b5c; }
+    .chart-defs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 12px; margin-top:10px; color:var(--muted); }
+    .chart-defs div { display:flex; align-items:baseline; gap:6px; min-width:0; }
+    .chart-defs i { width:13px; height:3px; flex:none; border-radius:2px; }
+    .chart-defs b { color:var(--strong); font-weight:500; white-space:nowrap; }
+    .note-line { margin:8px 0 0; color:var(--muted); line-height:1.45; }
+    .caveat { color:#e0ad5a; }
+    .entry { display:grid; grid-template-rows:48px 86px; gap:6px; min-height:0; }
+    body[data-mode="professional"] .entry { grid-template-rows:86px; }
+    body[data-mode="professional"] .entry-top { display:none; }
+    .entry-top { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .entry-top.pro { grid-template-columns:1fr; }
+    .control-rows { display:grid; grid-template-rows:40px 40px; gap:6px; }
+    .control-row { display:grid; gap:6px; }
+    .control-row.four { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .control-row.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .tool-btn { min-width:0; min-height:40px; display:flex; align-items:center; justify-content:center; gap:8px; padding:0 8px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--muted); font-size:18px; white-space:nowrap; }
+    .tool-btn .icon { width:20px; height:20px; }
+    .control-rows .tool-btn .icon { fill:currentColor; stroke:none; }
+    .control-rows .tool-btn[data-action="clear"] .icon { fill:none; stroke:currentColor; }
+    .tool-btn[aria-pressed="true"] { border-color:var(--jade); color:var(--strong); background:var(--jade-dark); }
+    .entry-top .tool-btn { min-height:48px; } .tool-btn:disabled { opacity:.32; }
+    .playback { display:flex; align-items:center; gap:6px; min-width:0; padding:0 8px; }
+    .playback .nav { flex:none; display:flex; align-items:center; gap:2px; }
+    .playback .nav button { width:40px; height:40px; border:0; border-radius:50%; background:transparent; color:var(--strong); display:grid; place-items:center; padding:4px; }
+    .playback .nav button:disabled { opacity:.25; }
+    .playback .nav button.play { width:50px; height:50px; margin:0 2px; border-radius:50%; background:var(--jade); color:#fff; }
+    .playback .nav button .icon { width:25px; height:25px; }
+    .playback .nav button .icon,.k-playback button .icon { fill:currentColor; stroke:none; }
+    .control-row.switches { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .switch-control { min-width:0; height:40px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 10px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--strong); font-size:18px; }
+    .switch-control .switch-label { display:flex; align-items:center; gap:8px; }
+    .switch-control .switch-label .icon { width:20px; height:20px; }
+    .switch-track { flex:none; width:38px; height:22px; padding:2px; border-radius:11px; background:#595b59; transition:background .15s; }
+    .switch-track i { display:block; width:18px; height:18px; border-radius:50%; background:#f5f3f0; box-shadow:0 1px 3px #0006; transition:transform .15s; }
+    .switch-control[aria-checked="true"] .switch-track { background:var(--jade); }
+    .switch-control[aria-checked="true"] .switch-track i { transform:translateX(16px); }
+    .playback input[type="range"] { flex:1; min-width:0; accent-color:#5a9b79; }
+    .playback output { min-width:96px; text-align:right; white-space:nowrap; color:var(--muted); font-size:18px; }
+    .kiosk-rail { display:none; }
+    .dialog-backdrop { position:fixed; z-index:40; inset:0; display:none; place-items:center; background:#000b; }
+    .dialog-backdrop.open { display:grid; }
+    .detail-dialog { width:min(600px,calc(100vw - 32px)); max-height:calc(100vh - 40px); display:flex; flex-direction:column; border:1px solid var(--line); border-radius:12px; background:var(--paper); box-shadow:0 18px 48px #000a; }
+    .dialog-header { display:flex; justify-content:space-between; align-items:center; padding:14px 20px; font-size:24px; font-weight:600; }
+    .dialog-header button { width:40px; height:40px; border:0; background:transparent; color:var(--strong); }
+    .detail-dialog dl { margin:0; padding:10px 20px 18px; overflow:auto; border-top:1px solid var(--line); }
+    .detail-dialog dl div { display:grid; grid-template-columns:108px minmax(0,1fr); gap:16px; padding:6px 0; font-size:18px; }
+    .detail-dialog dt { color:var(--muted); } .detail-dialog dd { margin:0; }
+    .brand .cn { font-family:'SmartBox Brand LongCang','LXGW WenKai',sans-serif; font-weight:400; font-synthesis:none; }
+    .brand small { font-family:'SmartBox Serif',serif; font-style:italic; font-weight:400; }
+    .rec-row .rec-move { font-size:18px; }
+    .rec-row .score-chip { min-width:48px; }
+    .rec-row .win-chips b { min-width:42px; }
+    .analysis-body .help-btn { width:30px; height:30px; border:1px solid var(--line); border-radius:50%; background:transparent; color:var(--strong); }
+    .match-grid { display:grid; grid-template-columns:2fr 1fr 1fr; align-items:center; gap:10px; padding:16px; }
+    .match-grid > div { color:var(--muted); }
+    .match-grid b { text-align:right; color:var(--strong); }
+    .grade-help { position:relative; margin-left:auto; }
+    .grade-help summary { list-style:none; width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--line); border-radius:50%; color:var(--strong); cursor:pointer; }
+    .grade-help summary::-webkit-details-marker { display:none; }
+    .grade-help-panel { position:absolute; z-index:7; right:0; top:38px; width:260px; padding:10px 12px; border:1px solid #5b8265; border-radius:8px; background:#1a2820; box-shadow:0 10px 30px #000a; }
+    .grade-help-panel p { margin:3px 0; white-space:nowrap; font-size:16px; }
+    .grade-help-panel i,.ribbon-legend i { display:inline-block; width:12px; height:4px; margin-right:5px; vertical-align:middle; }
+    .match-stats { display:grid; gap:8px; margin-top:8px; }
+    .match-stat-row { display:grid; grid-template-columns:minmax(0,1.5fr) 1fr 1fr; gap:8px; align-items:center; min-height:50px; padding:0 8px; border:1px solid var(--line); border-radius:7px; }
+    .match-unit { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+    .match-unit .stone-key { width:12px; height:12px; }
+    .match-track { flex:1; min-width:15px; height:8px; overflow:hidden; border-radius:5px; background:#344339; }
+    .match-track b { display:block; height:100%; }
+    .match-ribbons { display:grid; gap:12px; padding:18px 6px 8px; }
+    .match-ribbons>div:not(.ribbon-scale) { display:flex; align-items:center; gap:10px; }
+    .ribbon { display:flex; flex:1; gap:2px; min-width:0; height:22px; }
+    .ribbon b { flex:1; }
+    .top1 { background:#59b57b; }.top3 { background:#72cbb1; }.off { background:#e79b4b; }
+    .ribbon-scale { display:flex; justify-content:space-between; margin-left:28px; color:var(--muted); }
+    .gempty { display:grid; min-height:180px; place-items:center; margin:0; color:var(--muted); }
+    .analysis-dialog { display:flex; flex-direction:column; overflow:hidden; }
+    .analysis-dialog .tabs { padding-right:0; }
+    .report-notice { display:none; align-items:center; justify-content:space-between; gap:8px; min-height:44px; padding:3px 8px; border:1px solid var(--line); border-radius:8px; color:var(--strong); background:var(--paper); font-size:16px; }
+    .report-notice.visible { display:flex; }
+    .report-notice button { flex:none; min-height:38px; border:1px solid var(--line); border-radius:8px; background:var(--ink); color:var(--strong); }
+    @media(max-width:1100px) {
+      :root { font-family:'SmartBox Sans','SmartBox Kai',sans-serif; --page:#0f1416; --paper:#18211f; --ink:#1d2725; --line:#2b3a35; --strong:#eef3f1; --muted:#93a49d; --jade:#4a8a68; --jade-dark:#28483a; }
+      .app { grid-template-columns:548px 476px; grid-template-rows:56px 544px; width:1024px; height:600px; }
+      .top { height:56px; padding:0 20px; border-bottom-color:#27382f; background:#1c2521; font-size:16px; }
+      .brand .cn { font-size:20px; }
+      .brand small { font-size:14px; }
+      .kiosk-top-extra { display:flex; align-items:center; justify-content:space-between; flex:1; gap:14px; min-width:0; margin-left:28px; }
+      .kiosk-topic { color:#55bd80; white-space:nowrap; }
+      .kiosk-engine { min-width:0; max-width:360px; flex:1; height:34px; display:grid; place-items:center; border:1px solid #34483b; border-radius:9px; color:#f0b858; font-size:12px; white-space:nowrap; overflow:hidden; }
+      .kiosk-user { white-space:nowrap; display:flex; align-items:center; gap:9px; }
+      .kiosk-user i { width:25px; height:25px; border-radius:50%; display:grid; place-items:center; background:#5fbd82; color:#1c2a20; font-size:12px; font-style:normal; }
+      .side,.desktop-rail { display:none; }
+      .stage { grid-column:1; grid-row:2; display:block; padding:14px 16px; }
+      .board-frame { width:516px; height:516px; border-radius:8px; background:#67492e; overflow:hidden; }
+      .board-surface { position:absolute; inset:28px; width:460px; height:460px; }
+      .ruler { display:grid; position:absolute; z-index:2; color:#cbae80; font-size:12px; font-weight:600; pointer-events:none; }
+      .ruler.top,.ruler.bottom { left:28px; right:28px; height:28px; grid-template-columns:repeat(19,1fr); text-align:center; align-items:center; }
+      .ruler.top { top:0; }.ruler.bottom { bottom:0; }
+      .ruler.left,.ruler.right { top:28px; bottom:28px; width:28px; grid-template-rows:repeat(19,1fr); align-items:center; text-align:center; }
+      .ruler.left { left:0; }.ruler.right { right:0; }
+      .kiosk-rail { grid-column:2; grid-row:2; display:flex; flex-direction:column; gap:3px; width:460px; height:516px; margin:14px 16px 0 0; overflow:hidden; }
+      .k-pagebar { flex:none; height:44px; display:flex; align-items:center; gap:8px; min-width:0; font-size:16px; }
+      .k-pagebar .back { flex:none; min-width:80px; height:38px; border:1px solid var(--line); border-radius:9px; background:var(--paper); color:var(--strong); }
+      .k-pagebar .title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+      .k-pagebar .sub { margin-left:0; white-space:nowrap; color:var(--muted); font-family:'SmartBox Serif',serif; font-style:italic; font-size:14px; }
+      .k-head { flex:none; height:80px; padding:5px 8px; border:1px solid var(--line); border-radius:8px; background:var(--paper); display:flex; flex-direction:column; justify-content:center; gap:2px; }
+      .k-head .names { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:4px; font-size:20px; }
+      .k-head .names strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+      .k-head .names strong:last-child { text-align:right; }
+      .k-head .names b { color:var(--good); font-size:16px; white-space:nowrap; }
+      .k-head .win-line { font-size:16px; gap:4px; }
+      .k-head .win-track { height:6px; }
+      .k-status { display:flex; justify-content:space-between; gap:6px; font-size:16px; color:var(--muted); white-space:nowrap; }
+      .k-rec { flex:none; height:244px; overflow:hidden; border:1px solid var(--line); border-radius:8px; }
+      .k-rec-head,.k-row { display:grid; grid-template-columns:1.15fr 1fr 1fr 1fr; align-items:center; text-align:center; }
+      .k-rec-head { height:22px; font-size:16px; color:var(--muted); background:var(--paper); }
+      .k-row { display:grid; width:100%; height:44px; border:0; border-top:1px solid var(--line); border-radius:0; background:#23312a; color:var(--strong); font-size:16px; }
+      .k-row:first-of-type { color:#5fc98a; } .k-row[aria-pressed="true"] { background:#385643; }
+      .k-row .stone-key { display:none; }
+      .k-status { font-size:16px; }
+      .k-head .names b { color:#58b57a; }
+      .k-actions .icon,.k-toggles .icon { display:none; }
+      .k-toggles button[aria-pressed="true"] .icon { display:block; width:16px; height:16px; }
+      .k-rec-head { color:#b8c6bd; }
+      .k-row > :first-child { padding-left:16px; text-align:left; }
+      .k-row b { font-weight:500; }
+      .k-playback output { padding-right:4px; }
+      .analysis-dialog .tabs { height:44px; margin:0 12px; padding:0; border:1px solid var(--line); border-radius:8px; background:var(--ink); }
+      .analysis-dialog .tabs button { min-width:0; margin:3px; border:0; border-radius:6px; font-size:16px; }
+      .analysis-dialog .tabs button[aria-selected="true"] { color:#58b57a; background:#21312a; }
+      .analysis-dialog .analysis-body { font-size:16px; overflow:auto; padding:5px 12px 8px; }
+      .analysis-dialog .dialog-header { flex:none; height:66px; font-family:'SmartBox Kai',serif; }
+      .analysis-dialog .dialog-header button { width:58px; flex:none; font-family:'SmartBox Sans',sans-serif; }
+      .analysis-dialog .chart-box { padding:0; background:transparent; }
+      .analysis-dialog .trend-svg { height:354px; }
+      .k-actions,.k-toggles,.k-playback { flex:none; height:44px; display:flex; gap:4px; }
+      .k-actions button,.k-toggles button,.k-playback button { min-width:44px; height:44px; border:1px solid var(--line); border-radius:8px; background:var(--paper); color:var(--strong); font-size:16px; }
+      .k-actions button,.k-toggles button { flex:1; }
+      .k-actions button,.k-toggles button,.k-row { font-weight:400; }
+      .k-actions button:disabled,.k-toggles button:disabled,.k-playback button:disabled { opacity:.45; }
+      .k-toggles button[aria-pressed="true"] { color:#5fc98a; border-color:#5fc98a; background:#1b2d23; }
+      .k-playback { display:grid; grid-template-columns:repeat(5,44px) minmax(0,1fr) 70px; gap:3px; align-items:center; }
+      .k-playback button { width:44px; padding:0; font-size:20px; }
+      .k-playback .icon { width:21px; height:21px; }
+      .k-playback input { width:100%; min-width:0; height:44px; accent-color:#64b889; }
+      .k-playback output { white-space:nowrap; text-align:right; font-size:16px; }
+      .dialog-backdrop { position:absolute; left:548px; top:56px; width:476px; height:544px; background:#0009; }
+      .detail-dialog,.analysis-dialog { position:absolute; top:32px; right:16px; width:460px; height:480px; max-height:none; border:1px solid #5fc98a; border-radius:12px; background:var(--paper); }
+      .dialog-header { padding:8px 12px; font-size:20px; }
+      .dialog-header button { width:44px; height:44px; border:1px solid var(--line); border-radius:8px; background:#26342c; font-size:16px; }
+      .detail-dialog dl { padding:0 16px 16px; }
+      .detail-dialog dl div { grid-template-columns:60px 1fr; gap:12px; padding:9px 0; font-size:16px; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="top">
-      <div class="brand"><img src="../../katrain/img/logo-white.png" alt=""><span>智星盒</span><small>StellaBox</small></div>
-      <div class="top-right"><span>分析报告 · 设计预览</span><div class="segmented" role="group" aria-label="报告类型"><button type="button" data-mode="kifu" aria-pressed="true">棋谱库 · 职业</button><button type="button" data-mode="personal" aria-pressed="false">复盘 · 个人</button></div></div>
-    </header>
-    <nav class="side" aria-label="主导航">
-      <a href="#"><span>⌂</span><span class="label">首页</span></a>
-      <a href="#"><span>◈</span><span class="label">对局</span></a>
-      <a href="#"><span>⚑</span><span class="label">研究</span></a>
-      <a href="#" id="reviewNav"><span>▥</span><span class="label">复盘</span></a>
-      <a href="#"><span>▣</span><span class="label">直播</span></a>
-      <a href="#" id="kifuNav" class="active"><span>▤</span><span class="label">棋谱库</span></a>
-      <div class="bottom"><a href="#"><span>⚙</span><span class="label">设置</span></a></div>
-    </nav>
-    <main class="board-stage" aria-label="棋盘"><div class="board-frame"><canvas id="board" aria-label="19路围棋棋盘"></canvas></div></main>
-    <aside class="rail" aria-label="逐手分析">
-      <section class="slot meta">
-        <div class="meta-top"><button class="back" type="button" aria-label="返回棋谱库">‹</button><div class="event-title" id="eventTitle">第 2 届衢州烂柯杯世界公开赛 48 强</div><span class="event-date" id="eventDate">2024-04-24</span><button class="details-trigger" type="button" aria-label="对局详情">i</button></div>
-        <div class="players"><span><i class="stone"></i><span id="blackName">酒井佑规</span></span><span class="score" id="scoreLead">白领先 0.9 目</span><span><span id="whiteName">张涛</span><i class="stone white" style="margin-left:6px;margin-right:0"></i></span></div>
-        <div class="winline"><span id="blackWin">黑 32.9%</span><span class="wintrack"><i id="winFill"></i></span><span id="whiteWin">白 67.1%</span></div>
-        <div class="meta-foot"><span id="resultText">白胜中盘</span><span>中国规则</span><span>贴目 7.5</span><span>每局面 2000 visits</span></div>
-      </section>
-      <section class="slot recs" aria-label="AI 推荐选点">
-        <div class="section-head"><span>AI 推荐 · 5 个选点</span><span class="hint" id="afterMove">第 11 手后</span></div>
-        <div class="rec-head"><span>推荐选点</span><span>推荐度</span><span>领先（目）</span><span>胜率</span></div>
-        <button class="rec-row" type="button" aria-pressed="true" data-move="D6"><span><b class="rank">1</b><b>D6</b></span><span class="pct">90%</span><span>+0.9</span><span>67.2%</span></button>
-        <button class="rec-row" type="button" aria-pressed="false" data-move="F4"><span><b class="rank">2</b><b>F4</b></span><span class="pct">5%</span><span>+0.8</span><span>65.4%</span></button>
-        <button class="rec-row" type="button" aria-pressed="false" data-move="E6"><span><b class="rank">3</b><b>E6</b></span><span class="pct">3%</span><span>+0.7</span><span>63.8%</span></button>
-        <button class="rec-row" type="button" aria-pressed="false" data-move="C8"><span><b class="rank">4</b><b>C8</b></span><span class="pct">1%</span><span>+0.5</span><span>62.1%</span></button>
-        <button class="rec-row" type="button" aria-pressed="false" data-move="Q10"><span><b class="rank">5</b><b>Q10</b></span><span class="pct">1%</span><span>+0.4</span><span>61.5%</span></button>
-      </section>
-      <section class="slot analysis" aria-label="比赛分析">
-        <button class="modal-close" type="button" aria-label="关闭分析">×</button>
-        <div class="tabs" role="tablist" aria-label="分析类别">
-          <button type="button" role="tab" aria-selected="true" data-tab="trend">走势</button>
-          <button type="button" role="tab" aria-selected="false" data-tab="brilliant">妙手</button>
-          <button type="button" role="tab" aria-selected="false" data-tab="mistakes">失误</button>
-          <button type="button" role="tab" aria-selected="false" data-tab="grade">发挥水准</button>
-          <button type="button" role="tab" aria-selected="false" data-tab="match">AI 吻合度</button>
-        </div>
-        <div class="tab-body active" id="trend">
-          <div class="tab-sub"><div class="chart-legend"><span><i class="key"></i>黑胜率</span><span><i class="key gold"></i>黑领先目</span></div><button type="button" class="expand" aria-label="放大走势图" aria-pressed="false">放大</button><button type="button" class="help" aria-label="走势说明" data-help="走势图显示每手之后的黑方胜率与目数差；点曲线可跳到对应手数。">?</button></div>
-          <div class="chart-wrap"><svg viewBox="0 0 600 170" preserveAspectRatio="none" aria-label="胜率与目数走势图"><g stroke="#52615a" stroke-width="1"><path d="M34 18V145H586 M34 82H586 M34 18H586" fill="none"/></g><path d="M34 81 L80 84 L126 75 L172 82 L218 90 L264 99 L310 97 L356 112 L402 109 L448 122 L494 120 L540 128 L586 132" fill="none" stroke="#a8e3ec" stroke-width="3"/><path d="M34 81 L80 80 L126 85 L172 77 L218 83 L264 85 L310 90 L356 94 L402 90 L448 91 L494 93 L540 95 L586 99" fill="none" stroke="#f2df8a" stroke-width="3"/></svg><span class="axis top">100</span><span class="axis mid">50</span><span class="axis low">0</span><span class="axis start">0</span><span class="axis end">11 手</span></div>
-        </div>
-        <div class="tab-body" id="brilliant"><div class="tab-sub"><strong>妙手 · 1 手</strong><button type="button" class="help" aria-label="妙手说明" data-help="妙手是在局面中明显优于常见选择、改善胜率或目差的着手。">?</button></div><div class="metric"><strong>第 7 手</strong><span>点击跳转并查看这一手的分析</span></div></div>
-        <div class="tab-body" id="mistakes"><div class="tab-sub"><strong>失误 · 2 手</strong><button type="button" class="help" aria-label="失误说明" data-help="失误按该手造成的目损和胜率变化分级；等级是分析参考。">?</button></div><div class="metric"><strong>第 5、9 手</strong><span>点击跳转并对照 AI 建议</span></div></div>
-        <div class="tab-body" id="grade"><div class="tab-sub"><strong>双方着手分布 · 七档</strong><button type="button" class="help" aria-label="发挥水准说明" data-help="妙手、最佳、很好、尚可、小亏、失误、恶手依据目损分级。点击柱形可查看对应着手。">?</button></div><div class="analysis-filters" role="group" aria-label="评价筛选"><button type="button" aria-pressed="true">全盘</button><button type="button">布局</button><button type="button">中盘</button><button type="button">官子</button><button type="button">双方</button><button type="button">黑方</button><button type="button">白方</button></div><div class="grade-bars"><div><i style="height:32%"></i>妙手</div><div><i style="height:72%"></i>最佳</div><div><i style="height:60%"></i>很好</div><div><i style="height:35%"></i>尚可</div><div><i style="height:20%"></i>小亏</div><div><i style="height:15%"></i>失误</div><div><i style="height:9%"></i>恶手</div></div><div class="analysis-foot">黑 6 手 / 白 5 手已评级 · 0 手未评级　　妙手 / 最佳 / 很好 / 尚可 / 小亏 / 失误 / 恶手按目损分级</div></div>
-        <div class="tab-body" id="match"><div class="tab-sub"><strong>AI 吻合度</strong><button type="button" class="help" aria-label="AI 吻合度说明" data-help="AI 吻合度表示实战着手与分析引擎候选着手一致的比例；它不直接代表棋力。">?</button></div><div class="analysis-filters" role="group" aria-label="吻合度视图"><button type="button" aria-pressed="true">统计</button><button type="button">分布</button><button type="button">全盘</button><button type="button">布局</button><button type="button">中盘</button><button type="button">官子</button></div><div class="metric"><span>走中 AI 一选</span><strong>黑 43% · 白 54%</strong><span>进入前三</span><strong>黑 67% · 白 71%</strong></div><div class="analysis-foot">不在 AI 前十选：黑 1 手 / 白 0 手 · 可比对分母：黑 6 手 / 白 5 手。吻合率不可单独当作棋力或作弊的证据。</div></div>
-        <div id="note" class="note" role="dialog" aria-label="指标说明" hidden></div>
-      </section>
-      <section class="slot controls" aria-label="棋盘操作与进度">
-        <div class="actionrow"><button type="button">试下</button><button type="button" data-kifu>查看棋谱</button><button type="button" data-personal hidden>进入研究</button><button type="button" data-personal hidden>重算</button><button class="kiosk-analysis-button" type="button">分析</button></div>
-        <div class="toolrow" role="group" aria-label="显示选项">
-          <button type="button" aria-pressed="false">领地</button><button type="button" aria-pressed="false">手数</button><button type="button" aria-pressed="true">支招</button><button type="button" aria-pressed="true">坐标</button>
-        </div>
-        <div class="playrow"><button type="button" data-nav="first" aria-label="第一手">⏮</button><button type="button" data-nav="prev" aria-label="上一手">◀</button><button type="button" data-nav="next" aria-label="下一手">▶</button><button type="button" data-nav="last" aria-label="最后一手">⏭</button><input id="moveSlider" type="range" min="0" max="11" value="11" aria-label="手数进度"><output id="moveCounter">11 / 11 手</output></div>
-      </section>
-    </aside>
-  </div>
-  <div class="details-overlay" id="detailsOverlay" hidden><div class="details-card" role="dialog" aria-modal="true" aria-label="对局详情"><header><span>对局详情</span><button type="button" id="detailsClose" aria-label="关闭详情">×</button></header><div class="details-grid"><span>赛事／标题</span><span id="detailsEvent">第 2 届衢州烂柯杯世界公开赛 48 强</span><span>日期</span><span id="detailsDate">2024-04-24</span><span>棋手</span><span id="detailsPlayers">黑 酒井佑规 · 白 张涛</span><span>结果</span><span>白胜中盘</span><span>规则与贴目</span><span>中国规则 · 贴目 7.5</span><span>来源与报告</span><span id="detailsSource">棋谱库 · 职业棋局 · 深度报告 · 已完成</span><span>分析预算</span><span>每局面 2000 visits</span></div></div></div>
-  <script>
-    const canvas = document.getElementById('board');
-    const moves = [[15,2,'B'],[2,3,'W'],[15,3,'B'],[3,15,'W'],[15,4,'B'],[16,2,'W'],[5,16,'B'],[16,3,'W'],[15,15,'B'],[17,5,'W'],[2,13,'B']];
-    const boardTexture = new Image(), blackStone = new Image(), whiteStone = new Image();
-    boardTexture.src='../../katrain/img/board.png';
-    blackStone.src='../../katrain/img/B_stone.png';
-    whiteStone.src='../../katrain/img/W_stone.png';
-    [boardTexture,blackStone,whiteStone].forEach(img=>img.addEventListener('load',drawBoard));
-    let cursor = 11;
-    let selected = 'D6';
-    function drawBoard() {
-      const dpr = Math.max(1,window.devicePixelRatio || 1);
-      const size = Math.round(canvas.getBoundingClientRect().width);
-      if (!size) return;
-      canvas.width = size * dpr; canvas.height = size * dpr;
-      const c = canvas.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0);
-      const margin = Math.max(26,size * .065), step = (size - 2 * margin) / 18;
-      if(boardTexture.complete && boardTexture.naturalWidth) c.drawImage(boardTexture,0,0,size,size);
-      else { c.fillStyle='#d8ae69'; c.fillRect(0,0,size,size); }
-      c.strokeStyle='#604323'; c.lineWidth=1.2;
-      for(let i=0;i<19;i++){ let p=margin+i*step; c.beginPath(); c.moveTo(margin,p); c.lineTo(size-margin,p); c.moveTo(p,margin); c.lineTo(p,size-margin); c.stroke(); }
-      c.fillStyle='#4d3420'; for(const x of [3,9,15]) for(const y of [3,9,15]) {c.beginPath();c.arc(margin+x*step,margin+y*step,Math.max(2,step*.08),0,Math.PI*2);c.fill();}
-      const cols='ABCDEFGHJKLMNOPQRST';
-      c.font=getComputedStyle(document.body).getPropertyValue('--body')+' system-ui'; c.textAlign='center'; c.textBaseline='middle'; c.fillStyle='#4b321c';
-      for(let i=0;i<19;i++){let p=margin+i*step;c.fillText(cols[i],p,margin*.42);c.fillText(cols[i],p,size-margin*.42);c.fillText(String(19-i),margin*.42,p);c.fillText(String(19-i),size-margin*.42,p);}
-      moves.slice(0,cursor).forEach((m,index)=>{const x=margin+m[0]*step,y=margin+m[1]*step,r=step*.51,img=m[2]==='B'?blackStone:whiteStone;if(img.complete&&img.naturalWidth)c.drawImage(img,x-r,y-r,r*2,r*2);else{c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=m[2]==='B'?'#171917':'#f9faf7';c.fill();}if(index===cursor-1){c.strokeStyle=m[2]==='B'?'#e7f4e8':'#1b2d20';c.lineWidth=2.5;c.beginPath();c.arc(x,y,r*.65,0,Math.PI*2);c.stroke();}});
-      if(document.querySelector('.toolrow button:nth-child(3)').getAttribute('aria-pressed')==='true') {
-        const marks=[['D6',3,13],['F4',5,15],['E6',4,13],['C8',2,11],['Q10',15,9]];
-        marks.forEach((m,i)=>{let x=margin+m[1]*step,y=margin+m[2]*step;c.beginPath();c.arc(x,y,step*.34,0,Math.PI*2);c.fillStyle=m[0]===selected?'rgba(47,124,73,.83)':'rgba(45,110,63,.53)';c.fill();c.fillStyle='#fff';c.font='600 '+getComputedStyle(document.body).getPropertyValue('--body')+' system-ui';c.fillText(String(i+1),x,y);});
-      }
-    }
-    new ResizeObserver(drawBoard).observe(canvas);
-    document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{
-      document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-      const personal=b.dataset.mode==='personal';
-      document.querySelector('.app').classList.toggle('personal',personal);
-      document.getElementById('eventTitle').textContent=personal?'个人对局':'第 2 届衢州烂柯杯世界公开赛 48 强';
-      document.getElementById('eventDate').textContent=personal?'2026-09-30':'2024-04-24';
-      document.getElementById('detailsEvent').textContent=personal?'个人对局':'第 2 届衢州烂柯杯世界公开赛 48 强';
-      document.getElementById('detailsDate').textContent=personal?'2026-09-30':'2024-04-24';
-      document.getElementById('detailsPlayers').textContent=personal?'黑 fan · 白 小智':'黑 酒井佑规 · 白 张涛';
-      document.getElementById('detailsSource').textContent=personal?'复盘 · 个人对局 · 深度报告 · 已完成':'棋谱库 · 职业棋局 · 深度报告 · 已完成';
-      document.getElementById('blackName').textContent=personal?'fan':'酒井佑规';
-      document.getElementById('whiteName').textContent=personal?'小智':'张涛';
-      document.querySelectorAll('[data-kifu]').forEach(x=>x.hidden=personal);
-      document.querySelectorAll('[data-personal]').forEach(x=>x.hidden=!personal);
-      document.getElementById('kifuNav').classList.toggle('active',!personal);
-      document.getElementById('reviewNav').classList.toggle('active',personal);
-    }));
-    document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
-      document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',String(x===b)));
-      document.querySelectorAll('.tab-body').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));
-      if(window.innerWidth>1100 && window.innerHeight>690) document.querySelector('.analysis').classList.remove('chart-expanded');
-      document.querySelector('.expand').textContent='放大';
-      document.querySelector('.expand').setAttribute('aria-pressed','false');
-      document.getElementById('note').hidden=true;
-    }));
-    document.querySelector('.expand').addEventListener('click',(event)=>{
-      const expanded=document.querySelector('.analysis').classList.toggle('chart-expanded');
-      event.currentTarget.textContent=expanded?'收起':'放大';
-      event.currentTarget.setAttribute('aria-pressed',String(expanded));
-      event.currentTarget.setAttribute('aria-label',expanded?'收起走势图':'放大走势图');
-    });
-    document.querySelector('.kiosk-analysis-button').addEventListener('click',()=>document.querySelector('.analysis').classList.add('chart-expanded'));
-    document.querySelector('.modal-close').addEventListener('click',()=>document.querySelector('.analysis').classList.remove('chart-expanded'));
-    document.querySelector('.details-trigger').addEventListener('click',()=>document.getElementById('detailsOverlay').hidden=false);
-    document.getElementById('detailsClose').addEventListener('click',()=>document.getElementById('detailsOverlay').hidden=true);
-    document.getElementById('detailsOverlay').addEventListener('click',event=>{if(event.target.id==='detailsOverlay')event.currentTarget.hidden=true;});
-    document.querySelectorAll('.analysis-filters').forEach(group=>group.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{group.querySelectorAll('button').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));})));
-    document.querySelectorAll('[data-help]').forEach(b=>b.addEventListener('click',()=>{
-      const note=document.getElementById('note'); const same=!note.hidden && note.textContent===b.dataset.help;
-      note.textContent=b.dataset.help;note.hidden=same;
-    }));
-    document.querySelectorAll('.rec-row').forEach(b=>b.addEventListener('click',()=>{
-      selected=b.dataset.move;document.querySelectorAll('.rec-row').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));drawBoard();
-    }));
-    document.querySelectorAll('.toolrow button').forEach(b=>b.addEventListener('click',()=>{b.setAttribute('aria-pressed',String(b.getAttribute('aria-pressed')!=='true'));drawBoard();}));
-    const slider=document.getElementById('moveSlider');
-    function setMove(n){cursor=Math.max(0,Math.min(11,n));slider.value=String(cursor);document.getElementById('moveCounter').textContent=cursor+' / 11 手';document.getElementById('afterMove').textContent='第 '+cursor+' 手后';drawBoard();}
-    slider.addEventListener('input',()=>setMove(Number(slider.value)));
-    document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>setMove(b.dataset.nav==='first'?0:b.dataset.nav==='last'?11:cursor+(b.dataset.nav==='next'?1:-1))));
-    window.addEventListener('resize',drawBoard);drawBoard();
-  </script>
+<svg class="icon-defs" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/></symbol>
+  <symbol id="i-game" viewBox="0 0 24 24"><path d="M7 6h10a4 4 0 0 1 4 3l1 8a2 2 0 0 1-3 2l-3-3H8l-3 3a2 2 0 0 1-3-2l1-8a4 4 0 0 1 4-3Z M7 10v5m-2.5-2.5h5M16 11h.01M19 13h.01"/></symbol>
+  <symbol id="i-research" viewBox="0 0 24 24"><path d="M8 3h8M10 3v7L4 20h16l-6-10V3M8 15h8"/></symbol>
+  <symbol id="i-review" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-live" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="m10 9 6 4-6 4zM8 2h8"/></symbol>
+  <symbol id="i-library" viewBox="0 0 24 24"><rect x="5" y="3" width="15" height="17" rx="2"/><path d="M2 7v14h15M9 8h7M9 12h7M9 16h5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C9 3 5 3 2 4v16c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v16"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.6 2.3 2 .9 2.1-1.2 2.8 2.8-1.2 2.1.9 2L23 11v3l-2.3.6-.9 2 1.2 2.1-2.8 2.8-2.1-1.2-2 .9L14 23h-4l-.6-2.3-2-.9-2.1 1.2-2.8-2.8 1.2-2.1-.9-2L1 14v-3l2.3-.6.9-2L3 6.3l2.8-2.8 2.1 1.2 2-.9z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7M8 12h13"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .8-1.5 1.2-1.5 2.5M12 17h.01"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11.24V7.5C9 6.12 10.12 5 11.5 5S14 6.12 14 7.5v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74m9.84 4.63-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74c-3.6-.76-3.54-.75-3.67-.75-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38"/></symbol>
+  <symbol id="i-territory" viewBox="0 0 24 24"><path d="m20.5 3-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5M15 19l-6-2.11V5l6 2.11z"/></symbol>
+  <symbol id="i-numbers" viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2zm1-9h1V4H2v1h1zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2zm5-6v2h14V5zm0 14h14v-2H7zm0-6h14v-2H7z"/></symbol>
+  <symbol id="i-advice" viewBox="0 0 24 24"><path d="M7 20h4c0 1.1-.9 2-2 2s-2-.9-2-2m-2-1h8v-2H5zm11.5-9.5c0 3.82-2.66 5.86-3.77 6.5H5.27c-1.11-.64-3.77-2.68-3.77-6.5C1.5 5.36 4.86 2 9 2s7.5 3.36 7.5 7.5m4.87-2.13L20 8l1.37.63L22 10l.63-1.37L24 8l-1.37-.63L22 6zM19 6l.94-2.06L22 3l-2.06-.94L19 0l-.94 2.06L16 3l2.06.94z"/></symbol>
+  <symbol id="i-coord" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2M8 20H4v-4h4zm0-6H4v-4h4zm0-6H4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4zm6 12h-4v-4h4zm0-6h-4v-4h4zm0-6h-4V4h4z"/></symbol>
+  <symbol id="i-first" viewBox="0 0 24 24"><path d="M17.59 18 19 16.59 14.42 12 19 7.41 17.59 6l-6 6zM11 18l1.41-1.41L7.83 12l4.58-4.59L11 6l-6 6z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></symbol>
+  <symbol id="i-last" viewBox="0 0 24 24"><path d="M6.41 6 5 7.41 9.58 12 5 16.59 6.41 18l6-6zM13 6l-1.41 1.41L16.17 12l-4.58 4.59L13 18l6-6z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M9 3H3v6M3 3l7 7M15 21h6v-6m0 6-7-7"/></symbol>
+  <symbol id="i-collapse" viewBox="0 0 24 24"><path d="M3 9h6V3M9 9 3 3M21 15h-6v6m0-6 6 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-7M3 3v6h6"/></symbol>
+</svg>
+<div class="app">
+  <header class="top">
+    <div class="brand"><img src="../../katrain/img/logo-white.png" alt="智星盒"><span class="cn">智星盒</span><small>StellaBox</small></div>
+    <div class="kiosk-top-extra"><span class="kiosk-topic">围棋</span><span class="kiosk-engine">AI 引擎准备中，可先使用棋谱、课程等功能</span><span class="kiosk-user"><i>黑</i>黑棋手　02:01</span></div>
+    <div class="preview-tools"><span>设计预览</span><button data-mode="professional">棋谱库 · 职业</button><button data-mode="personal">复盘 · 个人</button></div>
+  </header>
+  <nav class="side" aria-label="主导航">
+    <a href="#"><svg class="icon"><use href="#i-home"/></svg>首页</a>
+    <a href="#"><svg class="icon"><use href="#i-game"/></svg>对局</a>
+    <a href="#"><svg class="icon"><use href="#i-research"/></svg>研究</a>
+    <a href="#" data-personal-nav><svg class="icon"><use href="#i-review"/></svg>复盘</a>
+    <a href="#"><svg class="icon"><use href="#i-live"/></svg>直播</a>
+    <a href="#" data-professional-nav><svg class="icon"><use href="#i-library"/></svg>棋谱库</a>
+    <a href="#"><svg class="icon"><use href="#i-book"/></svg>教程</a>
+    <div class="side-spacer"></div><div class="side-rule"></div>
+    <a href="#"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
+    <div class="profile"><div class="avatar">?</div><div>fan<small>无级别</small></div><svg class="icon"><use href="#i-back"/></svg></div>
+  </nav>
+  <main class="stage" aria-label="棋盘">
+    <div class="board-frame"><div class="board-surface"><canvas id="board" aria-label="围棋棋盘"></canvas></div><div class="ruler top"></div><div class="ruler bottom"></div><div class="ruler left"></div><div class="ruler right"></div></div>
+  </main>
+  <aside class="desktop-rail" aria-label="桌面分析报告">
+    <section class="panel meta">
+      <div class="meta-title"><button class="plain-icon" title="返回列表"><svg class="icon"><use href="#i-back"/></svg></button><strong data-title>酒井佑规 vs 张涛</strong><time data-date>2024-04-24</time><button class="plain-icon" data-action="details" title="对局详情"><svg class="icon"><use href="#i-help"/></svg></button></div>
+      <div class="player-line"><div class="player"><i class="stone-key"></i><span data-black-name>酒井佑规</span></div><div class="lead" data-lead>白领先 0.9 目</div><div class="player"><span data-white-name>张涛</span><i class="stone-key white"></i></div></div>
+      <div class="win-line"><span data-black-rate>黑 32.9%</span><span class="win-track"><i data-win-fill></i></span><span data-white-rate>白 67.1%</span></div>
+      <div class="meta-foot"><span data-result>白胜中盘</span><span data-rule>中国规则 · 贴目 7.5</span></div>
+    </section>
+    <section class="panel recs"><div class="rec-title"><strong data-rec-title>AI 推荐 · 黑方待落子</strong><span class="secondary" data-rec-after>第 11 手后</span></div><div class="rec-grid rec-header"><span>着点</span><span>推荐度</span><span>领先</span><span>胜率</span></div><div id="desktopCandidates"></div><div class="actual-comparison" id="actualComparison"></div></section>
+    <section class="panel analysis" id="desktopAnalysis"><div class="tabs" id="desktopTabs"></div><button class="expand-analysis" id="expandAnalysis" title="展开分析" aria-label="展开分析"><svg class="icon"><use href="#i-expand"/></svg></button><div class="analysis-body" id="desktopAnalysisBody"></div></section>
+    <section class="entry"><div class="entry-top" id="desktopEntry"></div><div class="control-rows"><div class="control-row four" id="desktopControlsA"></div><div class="control-row two" id="desktopControlsB"></div></div></section>
+    <section class="panel playback" id="desktopPlayback"></section>
+  </aside>
+  <aside class="kiosk-rail" aria-label="盒端分析报告">
+    <div class="k-pagebar"><button class="back" id="kBack">← 棋谱</button><span class="title" data-k-title>赛事甲</span><span class="sub" data-k-date>2026-10-01 · 4 / 4 手</span></div>
+    <section class="k-head"><div class="names"><strong data-k-black>● 酒井佑规</strong><b data-k-lead>白领先 0.9 目</b><strong data-k-white>张涛 ○</strong></div><div class="win-line"><span data-k-black-rate>黑 32.9%</span><span class="win-track"><i data-k-win-fill></i></span><span data-k-white-rate>白 67.1%</span></div><div class="k-status"><span data-k-result>白胜中盘</span><span data-k-rule>中国规则 · 贴目 7.5</span></div></section><div class="report-notice" id="reportNotice"></div>
+    <section class="k-rec"><div class="k-rec-head"><span data-k-rec-color>黑 · 着点</span><span>推荐度</span><span>领先</span><span>胜率</span></div><div id="kioskCandidates"></div></section>
+    <div class="k-actions" id="kioskActions"></div><div class="k-toggles" id="kioskToggles"></div><div class="k-playback" id="kioskPlayback"></div>
+  </aside>
+</div>
+<div class="analysis-backdrop" id="analysisBackdrop"></div>
+<div class="dialog-backdrop" id="dialogBackdrop">
+  <section class="detail-dialog" id="detailsDialog" role="dialog" aria-modal="true" aria-label="对局详情"><div class="dialog-header">对局详情<button data-close-dialog>关闭</button></div><dl id="detailsRows"></dl></section>
+  <section class="detail-dialog analysis-dialog" id="analysisDialog" role="dialog" aria-modal="true" aria-label="着手评价 · 七档" style="display:none"><div class="dialog-header">着手评价 · 七档<button data-close-dialog>关闭</button></div><div class="tabs" id="kioskTabs"></div><div class="analysis-body" id="kioskAnalysisBody"></div></section>
+</div>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const isKiosk = () => matchMedia('(max-width:1100px)').matches;
+  const initialTotal=isKiosk()?4:11;
+  const requestedMove=q.has('move')?Number(q.get('move')):initialTotal;
+  const state = { mode:q.get('mode') === 'personal' ? 'personal' : 'professional', cursor:Number.isFinite(requestedMove)?Math.max(0,Math.min(initialTotal,requestedMove)):initialTotal, playing:false, tab:'trend', phase:'all', view:'stats', coordinates:true, numbers:isKiosk(), territory:false, advice:q.get('mode')!=='personal', try:false, pv:null, tryMoves:[] };
+  if(q.get('controls') === '1') document.body.dataset.preview = 'true';
+  const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+  const icon = id => `<svg class="icon" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  const desktopMoves = [[15,3],[3,3],[15,4],[5,16],[15,5],[3,16],[15,6],[4,17],[14,6],[3,2],[3,13]];
+  const kioskMoves = [[15,3],[3,3],[16,15],[3,15]];
+  let moves = isKiosk()?kioskMoves:desktopMoves;
+  let names = isKiosk()?{professional:['黑棋手','白棋手'],personal:['黑棋手','白棋手']}:{professional:['酒井佑规','张涛'],personal:['王星昊','杨鼎新']};
+  const boardImg = new Image(), blackImg = new Image(), whiteImg = new Image();
+  boardImg.src='../../katrain/img/board.png'; blackImg.src='../../katrain/img/B_stone.png'; whiteImg.src='../../katrain/img/W_stone.png';
+  [boardImg,blackImg,whiteImg].forEach(x=>x.onload=()=>drawBoard());
+  const letters='ABCDEFGHJKLMNOPQRST';
+  const desktopFive=[['D6',90,'+0.9',67.2,32.8,1800],['F4',5,'+0.8',65.4,34.6,105],['E6',3,'+0.7',63.8,36.2,59],['C8',1,'+0.5',62.1,37.9,22],['Q10',1,'+0.4',61.5,38.5,14]];
+  const kioskFive=[['Q10',10,'+4.1',64,36,100],['D10',10,'+4.1',64,36,100],['C3',10,'+4.1',64,36,100],['R6',10,'+4.1',64,36,100],['K10',10,'+4.1',64,36,100]];
+  let topFive=isKiosk()?kioskFive:desktopFive;
+  const tabs=[['trend','走势'],['brilliant','妙手'],['mistake','失误'],['grade','发挥水准'],['match','AI吻合度']];
+  const button=(label,action,ic,extra='')=>`<button class="tool-btn" data-action="${action}" ${extra}>${icon(ic)}<span>${label}</span></button>`;
+  const setText=(sel,s)=>$$(sel).forEach(el=>el.textContent=s);
+  function candidateHtml(kiosk=false){
+    return topFive.map((r,i)=>kiosk
+      ? `<button class="k-row" data-candidate="${i}" aria-pressed="${state.pv===i}"><span>${i+1} · ${r[0]}</span><b>${r[1]}%</b><b>${r[2]}</b><b>${r[3].toFixed(1)}%</b></button>`
+      : `<button class="rec-grid rec-row" data-candidate="${i}"><span class="rec-move"><i class="stone-key ${state.cursor%2===0?'':'white'}"></i>${r[0]}</span><span><b class="chip">${r[1]}%</b></span><span><b class="score-chip">${r[2]}</b></span><span class="win-chips"><b>${r[3].toFixed(1)}</b><b class="other">${r[4].toFixed(1)}</b></span></button>`).join('');
+  }
+  function seg(items,selected,kind){ return `<span class="seg">${items.map(([value,label])=>`<button data-${kind}="${value}" aria-pressed="${selected===value}">${label}</button>`).join('')}</span>`; }
+  function trendSvg(){
+    if(isKiosk()) return `<div class="chart-box"><svg class="trend-svg" data-trend-chart viewBox="0 0 430 354" role="img" aria-label="黑白胜率和领先目走势，点击曲线跳转手数"><rect x="74" y="3" width="314" height="351" rx="7" fill="#111917" stroke="#34453b"/><path d="M74 178H388" stroke="#64746a" stroke-dasharray="3 4" opacity=".65"/><path d="M74 84H388" stroke="#c7974a" stroke-width="7" opacity=".95"/><path d="M74 136H388" stroke="#63b989" stroke-width="8" opacity=".95"/><g font-size="16" fill="#a0aca4"><text x="11" y="21">黑 100</text><text x="43" y="184">50</text><text x="11" y="343">白 100</text></g><g fill="#d8982f" font-size="16" text-anchor="end"><text x="425" y="20">+6</text><text x="425" y="184">0</text><text x="425" y="345">-6</text></g></svg></div>`;
+    const v=[51,53,50,56,55,48,46,39,40,31,33], p=[.1,.2,-.4,.9,.5,.7,.2,-.3,.1,-.7,-.9];
+    const pt=(a,f)=>a.map((n,i)=>`${34+i*54},${f(n)}`).join(' ');
+    return `<div class="chart-readout"><span class="wr">黑胜率 ${state.cursor? (v[state.cursor-1]||33).toFixed(1):'50.0'}%</span><span class="pts">黑目差 ${(p[state.cursor-1]||0).toFixed(1)} 目</span></div><div class="chart-box"><svg class="trend-svg" data-trend-chart viewBox="0 0 610 215" role="img" aria-label="黑胜率和黑领先目走势"><g stroke="#607267" stroke-width="1" opacity=".4"><path d="M34 14H595M34 105H595M34 196H595"/></g><g fill="#c7d6c9" font-size="16"><text x="0" y="20">100</text><text x="8" y="111">50</text><text x="16" y="201">0</text></g><g fill="#ff9800" font-size="16" text-anchor="end"><text x="610" y="20">+10</text><text x="610" y="111">0</text><text x="610" y="201">−10</text></g><polyline points="${pt(v,n=>196-n*1.82)}" fill="none" stroke="#4caf50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="${pt(p,n=>105-n*30)}" fill="none" stroke="#ff9800" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="${34+Math.max(0,state.cursor-1)*54}" y1="14" x2="${34+Math.max(0,state.cursor-1)*54}" y2="196" stroke="#eee" stroke-width="1" opacity=".6"/></svg></div>`;
+  }
+  function lollipop(kind){
+    const brilliant=kind==='brilliant', title=brilliant?'妙手':'失误', unit=brilliant?'妙度 1–5':'目损 · 目';
+    const filter=`<div class="filter-line">${seg([['all','全盘'],['opening','布局'],['middle','中盘'],['end','官子']],state.phase,'phase')}<span>${unit}</span></div>`;
+    if(isKiosk()) return `${filter}<p class="gempty">${brilliant?'暂无妙手':'暂无失误'}</p>`;
+    const pts=brilliant?[[2,4,'B'],[5,3,'W'],[9,2,'B']]:[[3,5,'B'],[7,3,'W'],[11,4,'W']];
+    const color=brilliant?'#32abe2':'#e27b24';
+    return `${filter}<div class="chart-box"><svg class="lollipop-svg" viewBox="0 0 610 220" role="img" aria-label="${unit}，黑方在轴上方、白方在下方，横轴是手数"><path d="M52 110H590" stroke="#74857a"/><g fill="#b8c4ba" font-size="16"><text x="7" y="38">黑</text><text x="7" y="194">白</text><text x="46" y="208">1</text><text x="555" y="208">${moves.length} 手</text></g>${pts.map(([m,v,side])=>{const x=52+(m-1)/(moves.length-1)*530,y=side==='B'?110-v*16:110+v*16;return `<g data-move="${m}" style="cursor:pointer"><path d="M${x} 110V${y}" stroke="${color}" stroke-width="3"/><circle cx="${x}" cy="${y}" r="7" fill="${color}"/><circle cx="${x}" cy="${y}" r="17" fill="transparent"/></g>`;}).join('')}</svg></div><p class="note-line" id="gradeSelection">本阶段共 ${pts.length} 处 —— 点图上任一手看详情</p>`;
+  }
+  function grade(){
+    const labels=['妙手','最佳','很好','尚可','小亏','失误','恶手'];
+    const colors=['#32abe2','#27a35c','#61c76e','#a9b933','#f3bb29','#e27b24','#d83f43'];
+    const counts=isKiosk()?[[0,0],[2,2],[0,0],[0,0],[0,0],[0,0],[0,0]]:[[1,0],[1,1],[0,4],[0,0],[0,0],[0,0],[0,0]];
+    const black=counts.reduce((n,x)=>n+x[0],0),white=counts.reduce((n,x)=>n+x[1],0);
+    const defs=['出乎 AI 预料且走中首选','引擎首选','目损 < 0.5 目','目损 < 1.5 目','目损 < 3 目','目损 < 6 目','目损 ≥ 6 目'];
+    const help=`<details class="grade-help"><summary aria-label="评级说明">?</summary><div class="grade-help-panel">${labels.map((l,i)=>`<p><i style="background:${colors[i]}"></i><b>${l}</b>　${defs[i]}</p>`).join('')}</div></details>`;
+    const bars=labels.map((l,i)=>{const x=58+i*79,a=black?counts[i][0]/black*132:0,b=white?counts[i][1]/white*132:0;return `<rect x="${x}" y="${188-a}" width="20" height="${a}" fill="none" stroke="#fff" stroke-width="2"/><rect x="${x+23}" y="${188-b}" width="20" height="${b}" fill="#fff"/><text x="${x+8}" y="${Math.max(18,182-a)}" fill="#fff" font-size="14">${counts[i][0]||''}</text><text x="${x+29}" y="${Math.max(18,182-b)}" fill="#fff" font-size="14">${counts[i][1]||''}</text><text x="${x+1}" y="215" fill="#d4e2d7" font-size="15">${l}</text><path d="M${x} 224h42" stroke="${colors[i]}" stroke-width="3"/>`;}).join('');
+    return `<div class="filter-line">${seg([['all','全盘'],['opening','布局'],['middle','中盘'],['end','官子']],state.phase,'phase')}${help}</div><div class="chart-box"><svg class="grade-svg" viewBox="0 0 610 245" role="img" aria-label="黑白双方七档着手评级"><g stroke="#48524b"><path d="M42 188H604M42 137H604M42 86H604M42 35H604"/></g><g fill="#9ca9a0" font-size="15"><text x="5" y="193">0%</text><text x="5" y="142">20%</text><text x="5" y="91">40%</text><text x="5" y="40">60%</text></g>${bars}</svg></div><p class="note-line">黑 ${black} 手 / 白 ${white} 手已评级</p>`;
+  }
+  function match(){
+    const filters=`<div class="filter-line">${seg([['all','全盘'],['opening','布局'],['middle','中盘'],['end','官子']],state.phase,'phase')}${seg([['stats','统计'],['distribution','分布']],state.view,'view')}</div>`;
+    const rows=[['走中 AI 一选',33,40,'#59b57b'],['走进 AI 前三',50,60,'#72cbb1'],['不在 AI 前十选',17,0,'#e79b4b']];
+    const stats=`<div class="match-stats">${rows.map(([label,b,w,color])=>`<div class="match-stat-row"><span>${label}</span><span class="match-unit"><i class="stone-key"></i><i class="match-track"><b style="width:${b}%;background:${color}"></b></i>${b}%</span><span class="match-unit"><i class="stone-key white"></i><i class="match-track"><b style="width:${w}%;background:${color}"></b></i>${w}%</span></div>`).join('')}</div>`;
+    const dist=`<div class="match-ribbons"><div><span>黑</span><i class="ribbon">${['top1','top3','top3','off','top1','top3'].map(x=>`<b class="${x}"></b>`).join('')}</i></div><div><span>白</span><i class="ribbon">${['top3','top1','top3','top1','top1'].map(x=>`<b class="${x}"></b>`).join('')}</i></div><div class="ribbon-scale"><span>1</span><span>手数</span><span>${moves.length}</span></div></div><p class="note-line ribbon-legend"><i class="top1"></i>走中 AI 一选　<i class="top3"></i>走进 AI 前三　<i class="off"></i>其他</p><p class="note-line">白 第 8–11 手连续 2 手中一选</p>`;
+    return `${filters}${state.view==='stats'?stats:dist}<p class="note-line">分母是能与 AI 比对的手数：黑 ${isKiosk()?2:6} 手 / 白 ${isKiosk()?2:5} 手</p><p class="note-line caveat">一致率高低取决于局面难度，不能单独当作棋力或作弊的证据。</p>`;
+  }
+  function analysisHtml(){return state.tab==='trend'?trendSvg():state.tab==='brilliant'?lollipop('brilliant'):state.tab==='mistake'?lollipop('mistake'):state.tab==='grade'?grade():match();}
+  function renderAnalysis(){['desktop','kiosk'].forEach(place=>{const t=$(`#${place}Tabs`),b=$(`#${place}AnalysisBody`);t.innerHTML=tabs.map(([key,label])=>`<button data-tab="${key}" aria-selected="${state.tab===key}">${label}</button>`).join('');b.innerHTML=analysisHtml();});}
+  function switchButton(label,action,ic,active){return `<button class="switch-control" type="button" role="switch" data-action="${action}" aria-checked="${active}" aria-label="${label}"><span class="switch-label">${icon(ic)}${label}</span><span class="switch-track"><i></i></span></button>`;}
+  function renderControls(){
+    const en=$('#desktopEntry');
+    en.innerHTML=state.mode==='professional'?'':button('进入研究','research','research')+button('重算','recalc','reset');
+    $('#desktopControlsA').innerHTML=button('试下','try','hand',`aria-pressed="${state.try}"`)+button('领地','territory','territory',`aria-pressed="${state.territory}" ${state.mode==='personal'?'disabled':''}`)+button('支招','advice','advice',`aria-pressed="${state.advice}"`)+button('清空','clear','close',state.tryMoves.length?'':'disabled');
+    $('#desktopControlsB').classList.add('switches');
+    $('#desktopControlsB').innerHTML=switchButton('手数','numbers','numbers',state.numbers)+switchButton('坐标','coordinates','coord',state.coordinates);
+    $('#kioskActions').innerHTML=state.mode==='professional'?button('查看棋谱','openKifu','library')+button('试下','try','hand')+button('分析','openAnalysis','research')+button('对局详情','details','review'):button('去研究','research','research')+button('重算','recalc','reset')+button('试下','try','hand')+button('分析','openAnalysis','research')+button('对局详情','details','review');
+    $('#kioskToggles').innerHTML=button('领地','territory','territory',`aria-pressed="${state.territory}" ${state.mode==='personal'?'disabled':''}`)+button('手数','numbers','numbers',`aria-pressed="${state.numbers}"`)+button('支招','advice','advice',`aria-pressed="${state.advice}"`)+button('坐标','coordinates','coord',`aria-pressed="${state.coordinates}"`);
+  }
+  function navButtons(){return [['first','first'],['prev','prev'],[state.playing?'pause':'play','play'],['next','next'],['last','last']].map(([ic,act])=>`<button class="${act==='play'?'play':''}" data-action="${act}" ${act==='first'||act==='prev'?state.cursor===0?'disabled':'':act==='next'||act==='last'?state.cursor===moves.length?'disabled':'':''} title="${{first:'到第一手',prev:'上一手',play:'播放',pause:'暂停',next:'下一手',last:'到最后一手'}[act]}" aria-label="${{first:'到第一手',prev:'上一手',play:state.playing?'暂停':'播放',next:'下一手',last:'到最后一手'}[act]}">${icon(ic)}</button>`).join('');}
+  function renderPlayback(){const common=`<input type="range" min="0" max="${moves.length}" value="${state.cursor}" data-slider aria-label="手数进度"><output>${state.cursor} / ${moves.length} 手</output>`;$('#desktopPlayback').innerHTML=`<div class="nav">${navButtons()}</div>${common}`;$('#kioskPlayback').innerHTML=navButtons()+common;}
+  function renderMeta(){
+    const n=names[state.mode],k=isKiosk();
+    setText('[data-title]',k?'赛事甲':state.mode==='professional'?'第 2 届衢州烂柯杯世界公开赛 48 强':'2026 世界围棋团体赛热身赛');
+    setText('[data-date]',k?'2026-10-01':'2024-04-24');
+    setText('[data-k-title]',state.mode==='professional'?'赛事甲':'导入的棋谱 · 真实报告');
+    setText('[data-k-date]',state.mode==='professional'?`2026-10-01 · ${state.cursor} / ${moves.length} 手`:`白中盘胜 · ${state.cursor} 手 · 前天`);
+    setText('[data-black-name]',n[0]);setText('[data-white-name]',n[1]);
+    setText('[data-k-black]',`● ${n[0]}`);setText('[data-k-white]',`${n[1]} ○`);
+    const br=k?(state.cursor===0?50:62):(state.cursor===0?50:Math.max(32.9,50-state.cursor*1.55));
+    const wr=100-br,lead=k?'黑领先 3.2 目':state.cursor===0?'双方持平':state.cursor<4?'黑领先 0.2 目':`白领先 ${(state.cursor*.08).toFixed(1)} 目`;
+    setText('[data-lead],[data-k-lead]',lead);
+    setText('[data-black-rate],[data-k-black-rate]',`黑 ${br.toFixed(1)}%`);
+    setText('[data-white-rate],[data-k-white-rate]',`白 ${wr.toFixed(1)}%`);
+    $$('[data-win-fill],[data-k-win-fill]').forEach(x=>x.style.width=`${br}%`);
+    setText('[data-result]',state.mode==='professional'?'白胜中盘':'白胜 2.5 目');
+    setText('[data-rule]','中国规则 · 贴目 7.5');
+    setText('[data-k-result]',state.mode==='professional'?'分析已完成':'已完成 · 深度报告');
+    setText('[data-k-rule]',state.mode==='professional'?`2000 visits · ${moves.length} 手`:`每手算 1000 次`);
+    setText('[data-rec-title]',`AI 推荐 · ${state.cursor%2===0?'黑':'白'}方待落子`);
+    setText('[data-rec-after]',`第 ${state.cursor} 手后`);
+    setText('[data-k-rec-color]',`${state.cursor%2===0?'黑':'白'} · 着点`);
+    $('#kBack').textContent=state.mode==='professional'?'← 棋谱':'← 复盘';
+    $$('[data-professional-nav]').forEach(x=>x.classList.toggle('active',state.mode==='professional'));
+    $$('[data-personal-nav]').forEach(x=>x.classList.toggle('active',state.mode==='personal'));
+    $$('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',state.mode===x.dataset.mode));
+  }
+  function renderCandidates(){const list=$('#desktopCandidates'),scrollTop=list.scrollTop;list.innerHTML=candidateHtml();list.scrollTop=scrollTop;$('#kioskCandidates').innerHTML=candidateHtml(true);const actual=$('#actualComparison');actual.classList.toggle('visible',state.cursor>0&&state.cursor!==11);actual.innerHTML=`<b>实战着手</b><span>${state.cursor>0?`${letters[moves[state.cursor-1][0]]}${19-moves[state.cursor-1][1]}`:''}</span><span>与 AI 首选对比</span>`;}
+  function renderDetails(){const n=names[state.mode],k=isKiosk();let rows=[['黑方',`${n[0]} · ${k?'9p':'九段'}`],['白方',`${n[1]} · ${k?'8p':'九段'}`],['赛事',k?'赛事甲 · 决赛':'第 2 届衢州烂柯杯世界公开赛 48 强'],['日期',k?'2026-10-01':'2024-04-24'],['结果','白胜中盘'],['规则','中国规则'],['贴目','7.5 目'],['状态','分析已完成'],['来源',state.mode==='professional'?'棋谱库':'导入棋谱'],['分析',state.mode==='professional'?'每局面 2000 visits':'每局面 1000 visits']];if(state.cursor<moves.length)rows.push(['实战着点',`${letters[moves[state.cursor][0]]}${19-moves[state.cursor][1]} · 未进入候选，暂无评估`]);$('#detailsRows').innerHTML=rows.map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');}
+  function renderNotice(){const notice=$('#reportNotice');if(state.pv!==null){notice.classList.add('visible');notice.innerHTML=`<span>变化预览 · 点击棋盘关闭</span><button data-action="clearPv">清除变化</button>`;}else if(state.tryMoves.length){notice.classList.add('visible');notice.innerHTML=`<span>试下：${state.tryMoves.map(([x,y])=>`${letters[x]}${19-y}`).join(' → ')}</span><button data-action="clear">清空</button>`;}else{notice.classList.remove('visible');notice.innerHTML='';}}
+  function render(){document.body.dataset.mode=state.mode;renderMeta();renderCandidates();renderControls();renderPlayback();renderAnalysis();renderDetails();renderNotice();$$('.ruler span').forEach(x=>x.style.visibility=state.coordinates?'visible':'hidden');drawBoard();}
+  let timer=null;
+  function setCursor(n){state.cursor=Math.max(0,Math.min(moves.length,n));state.pv=null;state.tryMoves=[];if(state.cursor===moves.length&&state.playing){clearInterval(timer);timer=null;state.playing=false;}render();}
+  function togglePlay(){if(state.playing){clearInterval(timer);timer=null;state.playing=false;renderPlayback();return;}if(state.cursor===moves.length)state.cursor=0;state.playing=true;timer=setInterval(()=>setCursor(state.cursor+1),750);render();}
+  function openDialog(which){$('#dialogBackdrop').classList.add('open');$('#detailsDialog').style.display=which==='details'?'flex':'none';$('#analysisDialog').style.display=which==='analysis'?'flex':'none';}
+  function closeDialog(){$('#dialogBackdrop').classList.remove('open');}
+  document.addEventListener('click',e=>{const mode=e.target.closest('[data-mode]');if(mode){state.mode=mode.dataset.mode;state.cursor=moves.length;state.pv=null;state.tryMoves=[];state.territory=false;state.numbers=isKiosk();state.advice=state.mode==='professional';render();return;}const tab=e.target.closest('[data-tab]');if(tab){state.tab=tab.dataset.tab;renderAnalysis();return;}const phase=e.target.closest('[data-phase]');if(phase){state.phase=phase.dataset.phase;renderAnalysis();return;}const view=e.target.closest('[data-view]');if(view){state.view=view.dataset.view;renderAnalysis();return;}const cand=e.target.closest('[data-candidate]');if(cand){const i=Number(cand.dataset.candidate);state.pv=state.pv===i?null:i;state.try=false;state.tryMoves=[];render();return;}if(e.target.closest('[data-close-dialog]')){closeDialog();return;}if(e.target===$('#dialogBackdrop')){closeDialog();return;}if(e.target===$('#analysisBackdrop')||e.target===$('#expandAnalysis')){const expanded=$('#desktopAnalysis').classList.toggle('analysis-expanded');$('#analysisBackdrop').classList.toggle('visible',expanded);$('#expandAnalysis').innerHTML=icon(expanded?'collapse':'expand');$('#expandAnalysis').setAttribute('aria-label',expanded?'收起分析':'展开分析');$('#expandAnalysis').title=expanded?'收起分析':'展开分析';return;}const a=e.target.closest('[data-action]');if(!a)return;switch(a.dataset.action){case'first':setCursor(0);break;case'prev':setCursor(state.cursor-1);break;case'next':setCursor(state.cursor+1);break;case'last':setCursor(moves.length);break;case'play':togglePlay();break;case'territory':case'numbers':case'advice':case'coordinates':case'try':state[a.dataset.action]=!state[a.dataset.action];if(a.dataset.action==='try'){state.pv=null;state.tryMoves=[];}render();break;case'clearPv':state.pv=null;render();break;case'clear':state.pv=null;state.tryMoves=[];render();break;case'openAnalysis':openDialog('analysis');break;case'details':case'help':openDialog('details');break;case'openKifu':case'research':case'recalc':alert('设计预览：此按钮在正式页面中连接对应功能。');break;}});
+  document.addEventListener('input',e=>{if(e.target.matches('[data-slider]'))setCursor(Number(e.target.value));});
+  document.addEventListener('click',e=>{const chart=e.target.closest('[data-trend-chart]');if(!chart)return;const r=chart.getBoundingClientRect(),fraction=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));setCursor(Math.max(1,Math.round(fraction*moves.length)));});
+  document.addEventListener('click',e=>{const p=e.target.closest('[data-move]');if(p)setCursor(Number(p.dataset.move));});
+  document.addEventListener('mouseover',e=>{const c=e.target.closest('.desktop-rail [data-candidate]');if(c){state.pv=Number(c.dataset.candidate);drawBoard();}});
+  document.addEventListener('mouseout',e=>{if(e.target.closest('.desktop-rail [data-candidate]')){state.pv=null;drawBoard();}});
+  $('#board').addEventListener('click',e=>{if(state.pv!==null){state.pv=null;render();return;}if(!state.try)return;const rect=e.currentTarget.getBoundingClientRect(),s=rect.width,step=isKiosk()?s/19:s/21,grid0=(s-step*18)/2,x=Math.round((e.clientX-rect.left-grid0)/step),y=Math.round((e.clientY-rect.top-grid0)/step);if(x>=0&&x<19&&y>=0&&y<19&&!moves.slice(0,state.cursor).some(p=>p[0]===x&&p[1]===y)){state.tryMoves.push([x,y]);render();}});
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDialog();$('#desktopAnalysis').classList.remove('analysis-expanded');$('#analysisBackdrop').classList.remove('visible');}if(e.key==='ArrowLeft')setCursor(state.cursor-1);if(e.key==='ArrowRight')setCursor(state.cursor+1);});
+  function drawBoard(){const canvas=$('#board');if(!canvas)return;const box=canvas.getBoundingClientRect(),size=Math.min(box.width,box.height);if(!size)return;const dpr=devicePixelRatio||1;canvas.width=Math.round(size*dpr);canvas.height=Math.round(size*dpr);const c=canvas.getContext('2d');c.scale(dpr,dpr);const kiosk=matchMedia('(max-width:1100px)').matches;const margin=kiosk?.5:1.5,step=kiosk?size/19:size/21,outer=(size-step*18)/2,grid0=outer,grid1=outer+step*18;
+    if(boardImg.complete&&boardImg.naturalWidth)c.drawImage(boardImg,0,0,size,size);else{c.fillStyle='#d9ad66';c.fillRect(0,0,size,size);}c.strokeStyle='rgba(0,0,0,.7)';c.lineWidth=1.2;
+    for(let i=0;i<19;i++){const p=grid0+i*step;c.beginPath();c.moveTo(grid0,p);c.lineTo(grid1,p);c.moveTo(p,grid0);c.lineTo(p,grid1);c.stroke();}
+    c.fillStyle='rgba(0,0,0,.85)';for(let x of [3,9,15])for(let y of [3,9,15]){c.beginPath();c.arc(grid0+x*step,grid0+y*step,step*.11,0,Math.PI*2);c.fill();}
+    if(!kiosk&&state.coordinates){c.fillStyle='rgba(0,0,0,.65)';c.font=`${Math.max(12,step*.45)}px "IBM Plex Mono",monospace`;c.textAlign='center';c.textBaseline='middle';for(let i=0;i<19;i++){let p=grid0+i*step;c.fillText(letters[i],p,grid0-step*.66);c.fillText(letters[i],p,grid1+step*.66);c.fillText(String(19-i),grid0-step*.66,p);c.fillText(String(19-i),grid1+step*.66,p);}}
+    if(state.territory){c.fillStyle='rgba(72,162,115,.22)';[[3,3],[5,16],[15,3],[15,6]].forEach(([x,y])=>{c.beginPath();c.arc(grid0+x*step,grid0+y*step,step*1.5,0,Math.PI*2);c.fill();});}
+    for(let i=0;i<state.cursor;i++){const [x,y]=moves[i],px=grid0+x*step,py=grid0+y*step,im=i%2===0?blackImg:whiteImg,r=step*.505;if(im.complete&&im.naturalWidth)c.drawImage(im,px-r,py-r,r*2,r*2);else{c.beginPath();c.arc(px,py,r,0,Math.PI*2);c.fillStyle=i%2===0?'#090909':'#fff';c.fill();}if(state.numbers){c.fillStyle=i%2===0?'#fff':'#111';c.font=`bold ${step*.45}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(i+1),px,py);}}
+    if(state.cursor){const [x,y]=moves[state.cursor-1],px=grid0+x*step,py=grid0+y*step;c.beginPath();c.arc(px,py,step*.35,0,Math.PI*2);c.lineWidth=3;c.strokeStyle=state.cursor%2===1?'#eee':'#141414';c.shadowColor='#0009';c.shadowBlur=4;c.stroke();c.shadowBlur=0;if(state.numbers){c.fillStyle=state.cursor%2===1?'#fff':'#111';c.font=`bold ${step*.45}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(String(state.cursor),px,py);}}
+    if(state.advice){const list=state.pv===null?topFive:topFive.slice(state.pv,state.pv+1);list.forEach((r,i)=>{const x=letters.indexOf(r[0][0]),y=19-Number(r[0].slice(1)),px=grid0+x*step,py=grid0+y*step,rad=step*.43,g=c.createRadialGradient(px,py,0,px,py,rad);g.addColorStop(0,'rgba(105,194,124,.78)');g.addColorStop(1,'rgba(58,127,70,.55)');c.beginPath();c.arc(px,py,rad,0,Math.PI*2);c.fillStyle=g;c.fill();if(i===0){c.beginPath();c.arc(px,py,rad*.93,0,Math.PI*2);c.lineWidth=2;c.strokeStyle='#e4f6e7';c.stroke();}c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.font=`bold ${Math.max(10,step*.27)}px sans-serif`;c.fillText(`${r[3].toFixed(1)}%`,px,py-step*.13);c.font=`${Math.max(9,step*.23)}px sans-serif`;c.fillText(r[5]>=1000?`${(r[5]/1000).toFixed(1)}k`:String(r[5]),px,py+step*.18);});}
+    const variations=state.pv!==null?[topFive[state.pv][0],state.pv===0?'C12':'Q10']:[];
+    variations.forEach((coord,i)=>{const x=letters.indexOf(coord[0]),y=19-Number(coord.slice(1)),px=grid0+x*step,py=grid0+y*step,r=step*.5;c.globalAlpha=.6;c.drawImage((state.cursor+i)%2===0?blackImg:whiteImg,px-r,py-r,r*2,r*2);c.globalAlpha=1;c.fillStyle=(state.cursor+i)%2===0?'#fff':'#111';c.textAlign='center';c.textBaseline='middle';c.font=`bold ${step*.48}px sans-serif`;c.fillText(String(i+1),px,py);});
+    state.tryMoves.forEach(([x,y],i)=>{const px=grid0+x*step,py=grid0+y*step,r=step*.5;c.globalAlpha=.78;c.drawImage((state.cursor+i)%2===0?blackImg:whiteImg,px-r,py-r,r*2,r*2);c.globalAlpha=1;c.fillStyle=(state.cursor+i)%2===0?'#fff':'#111';c.textAlign='center';c.textBaseline='middle';c.font=`bold ${step*.48}px sans-serif`;c.fillText(String(i+1),px,py);});
+  }
+  function rulers(){for(let side of ['top','bottom','left','right']){$(`.ruler.${side}`).innerHTML=(side==='top'||side==='bottom'?letters.split(''):Array.from({length:19},(_,i)=>19-i)).map(n=>`<span>${n}</span>`).join('');}}
+  function syncDevice(){const k=isKiosk();if((k?4:11)!==moves.length){moves=k?kioskMoves:desktopMoves;names=k?{professional:['黑棋手','白棋手'],personal:['黑棋手','白棋手']}:{professional:['酒井佑规','张涛'],personal:['王星昊','杨鼎新']};topFive=k?kioskFive:desktopFive;state.cursor=moves.length;state.numbers=k;state.territory=false;state.advice=state.mode==='professional';state.pv=null;state.tryMoves=[];render();}else drawBoard();}
+  rulers();render();new ResizeObserver(drawBoard).observe($('#board'));window.addEventListener('resize',syncDevice);
+})();
+</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
-import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material';
+import { useParams } from 'react-router-dom';
+import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
@@ -118,7 +118,6 @@ export default function KifuReportDetailPage() {
             onCoordinatesToggle={coordinates.toggle} onClearTryMoves={() => setTryMoves([])}
           />}
           analysis={<TrendChart analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
-          entryActions={<Button component={RouterLink} to={BACK_TO} variant="outlined" fullWidth sx={{ minHeight: 40, fontSize: 18 }}>{t('kifu:view_kifu', '查看棋谱')}</Button>}
           navigation={<PlaybackBar inline currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
         />
       ) : null}

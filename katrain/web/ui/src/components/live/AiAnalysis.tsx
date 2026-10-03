@@ -221,7 +221,7 @@ export default function AiAnalysis({
   return (
     <Box sx={{ px: 1.5, py: reportMode ? 0.5 : 1, height: reportMode ? '100%' : 'auto', boxSizing: 'border-box' }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: reportMode ? 30 : 'auto', mb: reportMode ? 0 : 0.5 }}>
         <Typography variant="subtitle2" sx={{ fontSize: reportMode ? 18 : '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}{reportMode ? ` · ${nextPlayer === 'B' ? t('review:black', '黑') : t('review:white', '白')}${t('report:to_play', '方待落子')}` : ''}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 18 : undefined }}>
           {t('live:after_move', 'After move')} {currentMove}
@@ -235,9 +235,10 @@ export default function AiAnalysis({
           display: 'grid',
           ...gridSx(showHumanTendency),
           gap: 0.5,
-          mb: 0.25,
+          mb: reportMode ? 0 : 0.25,
           px: 1,
-          py: 0.25,
+          py: reportMode ? 0 : 0.25,
+          height: reportMode ? 32 : 'auto',
           bgcolor: 'rgba(255,255,255,0.05)',
           borderRadius: 1,
         }}
@@ -262,7 +263,7 @@ export default function AiAnalysis({
       </Box>
 
       {/* Move rows */}
-      <Box sx={{ height: reportMode ? 'auto' : 150, overflowY: reportMode ? 'visible' : 'auto' }}>
+      <Box data-testid={reportMode ? 'report-candidate-list' : undefined} sx={{ height: reportMode ? 144 : 150, overflowY: 'auto', scrollbarWidth: 'thin' }}>
         {displayMoves.map((move, index) => (
           <MoveRow
             key={move.move}
@@ -319,9 +320,9 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
         display: 'grid',
         ...gridSx(showHumanTendency),
         gap: 0.5,
-        py: reportMode ? 0.25 : 0.5,
+        py: reportMode ? 0 : 0.5,
         px: 1,
-        minHeight: reportMode ? 40 : onSelect ? 48 : undefined,
+        minHeight: reportMode ? 36 : onSelect ? 48 : undefined,
         mb: reportMode ? 0 : 0.25,
         borderRadius: 1,
         cursor: onSelect || onHover ? 'pointer' : 'default',

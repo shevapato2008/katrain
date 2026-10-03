@@ -103,6 +103,8 @@ describe('职业报告固定右栏', () => {
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
     await loaded();
     await waitFor(() => expect(mocks.getAlbum).toHaveBeenCalledTimes(2));
+    expect(screen.getByTestId('kifu-report-detail-shell').querySelector('.report-analysis-rail__notices [role="status"]')).toHaveTextContent('分析状态暂时无法读取');
+    expect(screen.getByTestId('kifu-report-detail-shell').querySelector('.report-playback button[aria-label="播放"]')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
     expect(mocks.navigate).toHaveBeenCalledWith(0);
   });

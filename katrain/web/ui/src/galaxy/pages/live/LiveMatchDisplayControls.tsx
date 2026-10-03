@@ -66,12 +66,18 @@ export default function LiveMatchDisplayControls({
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: '6px' }}>
         <ToolGridButton icon={<TouchAppIcon />} label={t('live:try', '试下')} toggle active={tryMoveMode} onClick={onTryMoveToggle} />
         <ToolGridButton icon={<MapIcon />} label={territoryLabel} tooltip={ownershipAvailable ? territoryLabel : t('live:territory_needs_analysis', '领地需要分析结果')} toggle active={showTerritory} disabled={!ownershipAvailable} onClick={onTerritoryToggle} />
-        <ToolGridButton icon={<FormatListNumberedIcon />} label={t('live:move_numbers', '手数')} toggle active={showMoveNumbers} onClick={onMoveNumbersToggle} />
+        <ToolGridButton icon={<TipsAndUpdatesIcon />} label={t('Advice', '支招')} toggle active={showAiMarkers} onClick={onAiMarkersToggle} />
         <Button disabled={tryMoves.length === 0} onClick={onClearTryMoves} sx={{ minHeight: 40, border: '1px solid', borderColor: 'divider', borderRadius: 1, fontSize: 16 }}>{t('live:clear', '清空')}</Button>
       </Box>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '6px' }}>
-        <ToolGridButton icon={<TipsAndUpdatesIcon />} label={t('Advice', '支招')} toggle active={showAiMarkers} onClick={onAiMarkersToggle} />
-        <ToolGridButton icon={<GridOnIcon />} label={coordinatesLabel} toggle active={showCoordinates} onClick={onCoordinatesToggle} />
+        <Box component="label" sx={{ minWidth: 0, height: 40, display: 'flex', alignItems: 'center', gap: 1, px: 1, border: 1, borderColor: 'divider', borderRadius: 1, cursor: 'pointer' }}>
+          <FormatListNumberedIcon fontSize="small" /><Typography component="span" sx={{ flex: 1, fontSize: 18 }}>{t('live:move_numbers', '手数')}</Typography>
+          <Switch size="small" checked={showMoveNumbers} onChange={onMoveNumbersToggle} slotProps={{ input: { role: 'switch', 'aria-label': t('live:move_numbers', '手数') } }} />
+        </Box>
+        <Box component="label" sx={{ minWidth: 0, height: 40, display: 'flex', alignItems: 'center', gap: 1, px: 1, border: 1, borderColor: 'divider', borderRadius: 1, cursor: 'pointer' }}>
+          <GridOnIcon fontSize="small" /><Typography component="span" sx={{ flex: 1, fontSize: 18 }}>{coordinatesLabel}</Typography>
+          <Switch size="small" checked={showCoordinates} onChange={onCoordinatesToggle} slotProps={{ input: { role: 'switch', 'aria-label': coordinatesLabel } }} />
+        </Box>
       </Box>
     </Box>
   );

@@ -169,10 +169,10 @@ export default function KifuReportDetailPage() {
             <button type="button" aria-pressed={tryMoveMode} onClick={() => { setTryMoveMode((value) => !value); setTryMoves([]); setVariation(null); }}>{t('report:try', '试下')}</button>
           </>)}
           toggles={(<div className="gtoggles gtoggles--icon report-analysis-rail__toggles" role="group" aria-label={t('review:toggles', '显示')} data-testid="kifu-report-toggles">
-            <button type="button" aria-pressed={showTerritory} disabled={!currentAnalysis?.ownership} onClick={() => setShowTerritory((value) => !value)}>{t('report:territory', '领地')}</button>
-            <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}>{t('report:move_numbers', '手数')}</button>
+            <button type="button" aria-pressed={showTerritory} disabled={!currentAnalysis?.ownership} onClick={() => setShowTerritory((value) => !value)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
+            <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
             <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((value) => !value)}><Icon name="lightbulb" />{t('Advice', '支招')}</button>
-            <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((value) => !value)}>{t('Coordinates', '坐标')}</button>
+            <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((value) => !value)}><Icon name="corners-out" />{t('Coordinates', '坐标')}</button>
           </div>)}
           notices={(<>
             {analysisError && <p className="rverr" role="status">{t('kifu:analysis_read_error', '分析状态暂时无法读取')}<button type="button" onClick={() => navigate(0)}>{t('report:retry_load', '重试加载')}</button></p>}

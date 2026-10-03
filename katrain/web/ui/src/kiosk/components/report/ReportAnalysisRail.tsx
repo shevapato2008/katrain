@@ -31,7 +31,7 @@ interface Props {
   notices?: ReactNode;
 }
 
-/** Fixed five-row report rail; full-game analysis stays in a bounded, scrollable modal. */
+/** Fixed five-row report rail; full-game analysis stays in a bounded modal. */
 export function ReportAnalysisRail(props: Props) {
   const { t } = useTranslation();
   const [panel, setPanel] = useState<'analysis' | 'details' | null>(null);
@@ -61,7 +61,7 @@ export function ReportAnalysisRail(props: Props) {
         </div>
         {props.status}
       </div>
-      {props.notices}
+      <div className="report-analysis-rail__notices">{props.notices}</div>
       <section className="report-analysis-rail__candidates" data-testid={`${props.testId}-ai`}>
         <div className="report-analysis-rail__columns">
           <span>{props.playerToMove === 'B' ? black : white} · {t('live:suggested_move', '着点')}</span>

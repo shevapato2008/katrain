@@ -461,7 +461,7 @@ export default function ReportDetailPage() {
             <Icon name="lightbulb" />{t('Advice', '支招')}
           </button>
           <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((v) => !v)}>
-            {t('Coordinates', '坐标')}
+            <Icon name="corners-out" />{t('Coordinates', '坐标')}
           </button>
         </div>)}
         notices={(<>{(error || retryError) && (

@@ -6,6 +6,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Text,
     Enum,
     CheckConstraint,
@@ -722,13 +723,53 @@ class KifuPlayer(Base):
 
 
 class KifuEvent(Base):
-    """A tournament identity; rounds and rules are not events."""
+    """A competition type; editions, rounds, and rules have separate identities."""
 
     __tablename__ = "kifu_events"
 
     id = Column(Integer, primary_key=True)
     canonical_name = Column(String(256), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KifuEventEdition(Base):
+    """One verified edition of a competition type."""
+
+    __tablename__ = "kifu_event_editions"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=False)
+    edition_number = Column(Integer, nullable=True)
+    edition_label = Column(String(128), nullable=True)
+    year = Column(Integer, nullable=True)
+    season = Column(String(64), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("edition_number IS NOT NULL OR edition_label IS NOT NULL OR year IS NOT NULL",
+                        name="ck_kifu_event_edition_key"),
+        CheckConstraint("edition_number IS NULL OR edition_number > 0", name="ck_kifu_event_edition_number"),
+        UniqueConstraint("event_id", "edition_number", name="uq_kifu_event_edition_number"),
+        UniqueConstraint("event_id", "edition_label", name="uq_kifu_event_edition_label"),
+        Index("uq_kifu_event_edition_id_event", "id", "event_id", unique=True),
+        Index(
+            "uq_kifu_event_edition_year_only", "event_id", "year", unique=True,
+            sqlite_where=text(
+                "year IS NOT NULL AND season IS NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+            postgresql_where=text(
+                "year IS NOT NULL AND season IS NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+        ),
+        Index(
+            "uq_kifu_event_edition_year_season", "event_id", "year", "season", unique=True,
+            sqlite_where=text(
+                "year IS NOT NULL AND season IS NOT NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+            postgresql_where=text(
+                "year IS NOT NULL AND season IS NOT NULL AND edition_number IS NULL AND edition_label IS NULL"
+            ),
+        ),
+    )
 
 
 class KifuPlayerAlias(Base):
@@ -988,7 +1029,15 @@ class KifuAlbum(Base):
     black_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
     white_player_id = Column(Integer, ForeignKey("kifu_players.id"), nullable=True, index=True)
     event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True, index=True)
+    event_edition_id = Column(Integer, ForeignKey("kifu_event_editions.id"), nullable=True)
     duplicate_of_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True, index=True)
+    __table_args__ = (
+        CheckConstraint("event_edition_id IS NULL OR event_id IS NOT NULL",
+                        name="ck_kifu_album_edition_requires_event"),
+        ForeignKeyConstraint(["event_edition_id", "event_id"],
+                             ["kifu_event_editions.id", "kifu_event_editions.event_id"],
+                             name="fk_kifu_albums_event_edition_type"),
+    )
     player_black = Column(String(512), nullable=False, index=True)
     player_white = Column(String(512), nullable=False, index=True)
     black_rank = Column(String(64), nullable=True)

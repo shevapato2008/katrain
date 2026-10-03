@@ -37,6 +37,7 @@ KIFU_CATALOG_TABLES = {
     "kifu_albums",
     "kifu_players",
     "kifu_events",
+    "kifu_event_editions",
     "kifu_player_aliases",
     "kifu_event_aliases",
     "kifu_player_names",
@@ -215,6 +216,104 @@ def _assert_kifu_album_fk_targets(fks: dict[str, dict]) -> None:
             raise RuntimeError(f"kifu_albums.{column} must reference {target}.id")
 
 
+def postgres_kifu_album_edition_constraint_statements(
+    *, existing_fks: set[str], existing_checks: set[str]
+) -> list[str]:
+    """Add pair consistency without validating legacy album rows at startup."""
+
+    statements = []
+    if "ck_kifu_album_edition_requires_event" not in existing_checks:
+        statements.append(
+            'ALTER TABLE "kifu_albums" ADD CONSTRAINT "ck_kifu_album_edition_requires_event" '
+            'CHECK ("event_edition_id" IS NULL OR "event_id" IS NOT NULL) NOT VALID'
+        )
+    if "fk_kifu_albums_event_edition_type" not in existing_fks:
+        statements.append(
+            'ALTER TABLE "kifu_albums" ADD CONSTRAINT "fk_kifu_albums_event_edition_type" '
+            'FOREIGN KEY ("event_edition_id", "event_id") '
+            'REFERENCES "kifu_event_editions" (id, event_id) NOT VALID'
+        )
+    return statements
+
+
+def migrate_kifu_event_editions_schema(engine) -> None:
+    """Create competition editions and add a nullable album FK without assigning old rows."""
+
+    inspector = inspect(engine)
+    if "kifu_events" not in inspector.get_table_names():
+        return
+    models_db.KifuEventEdition.__table__.create(bind=engine, checkfirst=True)
+    for index in models_db.KifuEventEdition.__table__.indexes:
+        index.create(bind=engine, checkfirst=True)
+    if "kifu_albums" not in inspector.get_table_names():
+        return
+
+    column = "event_edition_id"
+    columns = {item["name"] for item in inspector.get_columns("kifu_albums")}
+    fk = _kifu_album_foreign_keys(inspector).get(column)
+    if fk and (fk["referred_table"] != "kifu_event_editions" or fk.get("referred_columns") != ["id"]):
+        raise RuntimeError("kifu_albums.event_edition_id must reference kifu_event_editions.id")
+    if column in columns:
+        with engine.connect() as conn:
+            mismatch = conn.scalar(text(
+                'SELECT 1 FROM "kifu_albums" AS album '
+                'LEFT JOIN "kifu_event_editions" AS edition ON edition.id = album.event_edition_id '
+                'WHERE album.event_edition_id IS NOT NULL '
+                'AND (album.event_id IS NULL OR edition.id IS NULL OR edition.event_id <> album.event_id) LIMIT 1'
+            ))
+        if mismatch is not None:
+            raise RuntimeError("Existing kifu_albums.event_edition_id conflicts with competition type")
+    if engine.dialect.name == "sqlite":
+        if column in columns and fk is None:
+            raise RuntimeError("kifu_albums.event_edition_id has no foreign key; SQLite cannot repair it in place")
+        with engine.begin() as conn:
+            if column not in columns:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD COLUMN "event_edition_id" '
+                                  'INTEGER REFERENCES "kifu_event_editions"(id)'))
+            for action, trigger in (("INSERT", "trg_kifu_album_edition_insert"),
+                                    ("UPDATE OF event_id, event_edition_id", "trg_kifu_album_edition_update")):
+                conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+                conn.execute(text(
+                    f'CREATE TRIGGER "{trigger}" BEFORE {action} ON "kifu_albums" '
+                    'FOR EACH ROW WHEN NEW.event_edition_id IS NOT NULL AND '
+                    '(NEW.event_id IS NULL OR NOT EXISTS '
+                    '(SELECT 1 FROM "kifu_event_editions" WHERE id = NEW.event_edition_id '
+                    'AND event_id = NEW.event_id)) '
+                    "BEGIN SELECT RAISE(ABORT, 'album event edition mismatch'); END"
+                ))
+            trigger = "trg_kifu_event_edition_type_update"
+            conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+            conn.execute(text(
+                f'CREATE TRIGGER "{trigger}" BEFORE UPDATE OF event_id ON "kifu_event_editions" '
+                'FOR EACH ROW WHEN EXISTS (SELECT 1 FROM "kifu_albums" '
+                'WHERE event_edition_id = OLD.id AND event_id <> NEW.event_id) '
+                "BEGIN SELECT RAISE(ABORT, 'album event edition mismatch'); END"
+            ))
+    elif engine.dialect.name == "postgresql":
+        album_fks = inspector.get_foreign_keys("kifu_albums")
+        for item in album_fks:
+            if (item.get("name") == "fk_kifu_albums_event_edition_type" or
+                    item.get("constrained_columns") == ["event_edition_id", "event_id"]):
+                if (item.get("constrained_columns") != ["event_edition_id", "event_id"] or
+                        item.get("referred_table") != "kifu_event_editions" or
+                        item.get("referred_columns") != ["id", "event_id"]):
+                    raise RuntimeError("kifu_albums edition/type foreign key has the wrong target")
+        composite_fks = {item["name"] for item in album_fks if item.get("name")}
+        checks = {item["name"] for item in inspector.get_check_constraints("kifu_albums") if item.get("name")}
+        with engine.begin() as conn:
+            if column not in columns:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD COLUMN IF NOT EXISTS "event_edition_id" INTEGER'))
+            if fk is None:
+                conn.execute(text('ALTER TABLE "kifu_albums" ADD CONSTRAINT "fk_kifu_albums_event_edition_id" '
+                                  'FOREIGN KEY ("event_edition_id") REFERENCES "kifu_event_editions" (id) NOT VALID'))
+            for statement in postgres_kifu_album_edition_constraint_statements(
+                existing_fks=composite_fks, existing_checks=checks
+            ):
+                conn.execute(text(statement))
+    else:
+        raise RuntimeError(f"Kifu event edition migration unsupported for {engine.dialect.name}")
+
+
 def migrate_kifu_catalog_schema(engine) -> None:
     """Add nullable catalog FKs to existing albums without rewriting SGFs or rows.
 
@@ -225,6 +324,7 @@ def migrate_kifu_catalog_schema(engine) -> None:
 
     inspector = inspect(engine)
     if "kifu_albums" not in inspector.get_table_names():
+        migrate_kifu_event_editions_schema(engine)
         return
     columns = {column["name"] for column in inspector.get_columns("kifu_albums")}
     fks = _kifu_album_foreign_keys(inspector)
@@ -249,6 +349,7 @@ def migrate_kifu_catalog_schema(engine) -> None:
                 conn.execute(text(statement))
     else:
         raise RuntimeError(f"Kifu catalog migration unsupported for {engine.dialect.name}")
+    migrate_kifu_event_editions_schema(engine)
 
 
 KIFU_NAME_TABLES = {
@@ -1010,7 +1111,7 @@ def add_missing_columns(engine) -> None:
             for col in table.columns:
                 if col.name in existing_cols:
                     continue
-                if table.name == "kifu_albums" and col.name in KIFU_ALBUM_FKS:
+                if table.name == "kifu_albums" and (col.name in KIFU_ALBUM_FKS or col.name == "event_edition_id"):
                     raise RuntimeError("Run migrate_kifu_catalog_schema before adding kifu album columns")
                 col_type = col.type.compile(engine.dialect)
                 ddl = f'ALTER TABLE "{table.name}" ADD COLUMN "{col.name}" {col_type}'

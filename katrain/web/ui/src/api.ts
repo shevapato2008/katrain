@@ -261,6 +261,19 @@ export interface GolaxyOnlinePlayer {
   avatar_url?: string | null;
 }
 
+export interface GolaxyPlayerProfile extends Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank' | 'wins' | 'losses'> {
+  followed: boolean | null;
+}
+
+export interface GolaxyPlayerGame {
+  game_id: string;
+  black: string | null;
+  white: string | null;
+  move_number: number | null;
+  result: string | null;
+  board_size: number | null;
+}
+
 export interface GolaxyRoom {
   room_id: string;
   room_number: string | null;
@@ -786,6 +799,28 @@ export const API = {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new ApiError(response.status, `Failed to get users (${response.status})`);
+    return response.json();
+  },
+  platformPlayerProfile: async (platform: string, peerCode: string, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/profile`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player profile (${response.status})`);
+    return response.json();
+  },
+  platformPlayerGames: async (platform: string, peerCode: string, token: string | null | undefined, page = 0): Promise<{ total: number | null; games: GolaxyPlayerGame[] }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/games?page=${page}`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player games (${response.status})`);
+    return response.json();
+  },
+  platformFollowPlayer: async (platform: string, peerCode: string, follow: boolean, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/follow`, {
+      method: follow ? 'POST' : 'DELETE',
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to change player follow (${response.status})`);
     return response.json();
   },
   platformRooms: async (platform: string, token: string | null | undefined): Promise<{ rooms: GolaxyRoom[] }> => {

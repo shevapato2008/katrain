@@ -71,6 +71,12 @@
 .golaxy-home__profile-foot button {flex:1; }
 .golaxy-home__profile-foot button:disabled {border-color:#435349; background:#26312a; color:#8f9c92; cursor:default; }
 .golaxy-home__profile-subtitle {margin:0 0 12px; color:#d8e6d9; font-size:14px; line-height:1.45; }
+.golaxy-home__profile-feedback {margin:10px 0 0; color:#efc9a2; font-size:12px; }
+.golaxy-home__kifu-list {display:grid; gap:8px; max-height:288px; overflow:auto; }
+.golaxy-home__kifu-item {display:flex; flex-direction:column; gap:4px; padding:10px 12px; border:1px solid var(--hair); border-radius:8px; background:#24362b; }
+.golaxy-home__kifu-item b {font-size:13px; }
+.golaxy-home__kifu-item small {color:#b1c6b5; font-size:11px; }
+.golaxy-home__kifu-more {display:block; width:100%; margin-top:8px; }
 .golaxy-home__invite-peer {display:flex; align-items:center; gap:9px; min-height:50px; padding:8px 10px; border:1px solid var(--hair); border-radius:8px; background:#26372d; font-size:13px; }
 .golaxy-home__invite-peer .golaxy-home__avatar {width:32px; height:32px; }
 .golaxy-home__invite-peer small {margin-left:auto; color:#a9d7b1; font-size:11px; }

@@ -5,14 +5,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { ApiError } from '../../api';
 import GolaxyHomePage from './GolaxyHomePage';
 
-const { platformStatus, platformRooms, platformUsers, platformLogout, navigate, vision, auth } = vi.hoisted(() => ({
+const { platformStatus, platformRooms, platformUsers, platformLogout, platformPlayerProfile, platformPlayerGames, platformFollowPlayer, navigate, vision, auth } = vi.hoisted(() => ({
   platformStatus: vi.fn(),
   platformRooms: vi.fn(), platformUsers: vi.fn(), platformLogout: vi.fn(),
+  platformPlayerProfile: vi.fn(), platformPlayerGames: vi.fn(), platformFollowPlayer: vi.fn(),
   navigate: vi.fn(),
   vision: { enabled: true },
   auth: { token: 'token', isAuthenticated: true },
 }));
-vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers, platformLogout } }));
+vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers, platformLogout, platformPlayerProfile, platformPlayerGames, platformFollowPlayer } }));
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => auth,
 }));
@@ -50,6 +51,9 @@ beforeEach(() => {
   platformRooms.mockResolvedValue({ rooms: [] });
   platformUsers.mockResolvedValue({ users: [] });
   platformLogout.mockResolvedValue({ status: 'disconnected', platform: 'golaxy' });
+  platformPlayerProfile.mockResolvedValue({ profile: { followed: null } });
+  platformPlayerGames.mockResolvedValue({ total: 0, games: [] });
+  platformFollowPlayer.mockResolvedValue({ profile: { followed: true } });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -149,6 +153,67 @@ describe('Golaxy home', () => {
     expect(screen.queryByText('对弈战绩')).not.toBeInTheDocument();
     expect(screen.queryByText('邀请状态')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '邀请对局' })).toBeDisabled();
+  });
+
+  it('opens verified player history and shows the empty state or returned games', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲', invite_able: true }] });
+    platformPlayerGames.mockResolvedValue({ total: 1, games: [{ game_id: '314', black: '黑棋甲', white: '白棋乙', move_number: 145, result: 'B+R', board_size: 19 }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
+    expect(platformPlayerGames).toHaveBeenCalledWith('golaxy', 'u1', 'token', 0);
+    expect(await screen.findByText(/黑棋甲.*白棋乙/)).toBeInTheDocument();
+    expect(screen.getByText(/145 手/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '返回资料' }));
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
+  });
+
+  it('loads older history pages when the verified total exceeds the first page', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲' }] });
+    const firstPage = Array.from({ length: 10 }, (_, index) => ({ game_id: String(index), black: `黑方${index}`, white: '白方', move_number: 10, result: null, board_size: 19 }));
+    platformPlayerGames.mockResolvedValueOnce({ total: 11, games: firstPage })
+      .mockResolvedValueOnce({ total: 11, games: [{ game_id: '10', black: '末页黑方', white: '白方', move_number: 11, result: null, board_size: 19 }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
+    await userEvent.click(await screen.findByRole('button', { name: '加载更多' }));
+    expect(platformPlayerGames).toHaveBeenLastCalledWith('golaxy', 'u1', 'token', 1);
+    expect(await screen.findByText(/末页黑方/)).toBeInTheDocument();
+    expect(screen.getByText(/黑方0/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '加载更多' })).not.toBeInTheDocument();
+  });
+
+  it('confirms follow state from Golaxy and changes it through the selected owner', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲', invite_able: true }] });
+    platformPlayerProfile.mockResolvedValue({ profile: { followed: false } });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(await screen.findByRole('button', { name: '添加关注' }));
+    expect(platformFollowPlayer).toHaveBeenCalledWith('golaxy', 'u1', true, 'token');
+    expect(await screen.findByRole('button', { name: '取消关注' })).toBeInTheDocument();
+  });
+
+  it('re-reads follow state after an ambiguous write failure instead of repeating the write', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲' }] });
+    platformPlayerProfile.mockResolvedValueOnce({ profile: { followed: false } })
+      .mockResolvedValueOnce({ profile: { followed: true } });
+    platformFollowPlayer.mockRejectedValueOnce(new Error('confirmation lost'));
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(await screen.findByRole('button', { name: '添加关注' }));
+    expect(await screen.findByRole('button', { name: '重新读取关注状态' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '添加关注' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: '重新读取关注状态' }));
+    expect(await screen.findByRole('button', { name: '取消关注' })).toBeEnabled();
+    expect(platformFollowPlayer).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the selected player through a refresh and updates only that identity', async () => {

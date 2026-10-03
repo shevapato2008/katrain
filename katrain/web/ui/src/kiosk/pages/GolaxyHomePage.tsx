@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API, ApiError, type PlatformInfo, type GolaxyRoom, type GolaxyOnlinePlayer } from '../../api';
+import { API, ApiError, type PlatformInfo, type GolaxyRoom, type GolaxyOnlinePlayer, type GolaxyPlayerGame } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
@@ -16,7 +16,7 @@ type Connection =
   | { kind: 'disconnected' }
   | { kind: 'connected'; account: PlatformInfo; token: string | null | undefined };
 
-type ProfileStage = 'main' | 'invite' | 'pending' | 'error';
+type ProfileStage = 'main' | 'invite' | 'pending' | 'error' | 'kifu';
 
 const playerRecord = (player: GolaxyOnlinePlayer) =>
   Number.isSafeInteger(player.wins) && Number.isSafeInteger(player.losses)
@@ -28,12 +28,20 @@ const PlayerAvatar = ({ player }: { player: GolaxyOnlinePlayer }) => player.avat
   ? <img className="golaxy-home__avatar" src={player.avatar_url} alt="" />
   : <span className="golaxy-home__avatar">{player.username.slice(-1)}</span>;
 
-// Reusable view for the verified player identity. No invitation write is wired yet.
-export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: {
-  player: GolaxyOnlinePlayer; onClose: () => void; initialStage?: ProfileStage;
+// Reusable view for the verified player identity. Invitation writes remain gated.
+export function GolaxyPlayerProfile({ player, token, onClose, initialStage = 'main' }: {
+  player: GolaxyOnlinePlayer; token: string | null | undefined; onClose: () => void; initialStage?: ProfileStage;
 }) {
   const [stage, setStage] = useState<ProfileStage>(initialStage);
   const [mode, setMode] = useState<'screen' | 'physical'>('screen');
+  const [followed, setFollowed] = useState<boolean | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followError, setFollowError] = useState(false);
+  const [games, setGames] = useState<GolaxyPlayerGame[]>([]);
+  const [gamesTotal, setGamesTotal] = useState<number | null>(null);
+  const [gamesPage, setGamesPage] = useState(0);
+  const [gamesStatus, setGamesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [gamesRetry, setGamesRetry] = useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
   const closeAction = useRef(onClose);
   useEffect(() => { closeAction.current = onClose; }, [onClose]);
@@ -45,9 +53,47 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
     document.addEventListener('keydown', closeOnEscape);
     return () => { document.removeEventListener('keydown', closeOnEscape); previousFocus?.focus(); };
   }, []);
+  useEffect(() => {
+    let active = true;
+    API.platformPlayerProfile('golaxy', player.user_id, token)
+      .then(({ profile }) => { if (active) setFollowed(profile.followed); })
+      .catch(() => { if (active) setFollowError(true); });
+    return () => { active = false; };
+  }, [player.user_id, token]);
+  const reloadFollow = async () => {
+    setFollowBusy(true);
+    setFollowError(false);
+    try {
+      const { profile } = await API.platformPlayerProfile('golaxy', player.user_id, token);
+      setFollowed(profile.followed);
+    } catch {
+      setFollowed(null);
+      setFollowError(true);
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (stage !== 'kifu') return;
+    let active = true;
+    setGamesStatus('loading');
+    API.platformPlayerGames('golaxy', player.user_id, token, gamesPage)
+      .then(({ games: rows, total }) => { if (active) { setGames((current) => gamesPage === 0 ? rows : [...current, ...rows]); setGamesTotal(total); setGamesStatus('ready'); } })
+      .catch(() => { if (active) setGamesStatus('error'); });
+    return () => { active = false; };
+  }, [stage, player.user_id, token, gamesPage, gamesRetry]);
+  const changeFollow = async () => {
+    if (followed === null || followBusy) return;
+    setFollowBusy(true); setFollowError(false);
+    try {
+      const { profile } = await API.platformFollowPlayer('golaxy', player.user_id, !followed, token);
+      setFollowed(profile.followed);
+    } catch { setFollowed(null); setFollowError(true); }
+    finally { setFollowBusy(false); }
+  };
   const record = playerRecord(player);
   const canConfigureInvite = player.invite_able === true;
-  const title = { main: '星阵在线棋友', invite: '发送对局邀请', pending: '等待对方回应', error: '邀请未发送' }[stage];
+  const title = { main: '星阵在线棋友', invite: '发送对局邀请', pending: '等待对方回应', error: '邀请未发送', kifu: '历史棋谱' }[stage];
   return <div className="golaxy-home__profile-layer" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="golaxy-home__profile-dialog" role="dialog" aria-modal="true" aria-labelledby="golaxy-profile-title"
       onKeyDown={(event) => {
@@ -66,11 +112,21 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
             {record && <div><small>对弈战绩</small><b>{record}</b></div>}
             {player.invite_able != null && <div><small>邀请偏好</small><b>{invitationPreference(player)}</b></div>}
           </div>
+          {followError && <p className="golaxy-home__profile-feedback" role="alert">关注结果尚未确认。<button disabled={followBusy} onClick={reloadFollow}>重新读取关注状态</button></p>}
         </> : stage === 'invite' ? <>
           <p className="golaxy-home__profile-subtitle">邀请这位棋友进行星阵人人对弈</p>
           <div className="golaxy-home__invite-peer"><PlayerAvatar player={player} /><b>{player.username}</b><small>{[player.rank, player.status].filter(Boolean).join(' · ')}</small></div>
           <div className="golaxy-home__invite-label">本机落子方式</div><div className="golaxy-home__invite-modes"><button aria-pressed={mode === 'screen'} onClick={() => setMode('screen')}>屏幕落子</button><button aria-pressed={mode === 'physical'} onClick={() => setMode('physical')}>实体棋盘</button></div>
           <p className="golaxy-home__invite-note">邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。</p>
+        </> : stage === 'kifu' ? <>
+          <p className="golaxy-home__profile-subtitle">{player.username}的星阵人人对弈棋谱</p>
+          {gamesStatus === 'loading' ? <p role="status">正在读取棋谱…</p>
+            : gamesStatus === 'error' ? <div role="alert">棋谱暂时无法读取。<button onClick={() => setGamesRetry((value) => value + 1)}>重试</button></div>
+              : games.length === 0 ? <p>暂无人人对弈棋谱</p>
+                : <><div className="golaxy-home__kifu-list">{games.map((game) => <div className="golaxy-home__kifu-item" key={game.game_id}>
+                  <b>{game.black || '黑方'} · {game.white || '白方'}</b>
+                  <small>{[game.board_size ? `${game.board_size} 路` : null, game.move_number != null ? `${game.move_number} 手` : null, game.result].filter(Boolean).join(' · ')}</small>
+                </div>)}</div>{gamesTotal !== null && games.length < gamesTotal && <button className="golaxy-home__kifu-more" onClick={() => setGamesPage((value) => value + 1)}>加载更多</button>}</>}
         </> : <div className="golaxy-home__invite-pending" role={stage === 'error' ? 'alert' : 'status'}>
           <span className="golaxy-home__invite-ring">{stage === 'pending' ? '⋯' : '!'}</span>
           <strong>{stage === 'pending' ? `邀请已发送 · 等待${player.username}回应` : '没能发送对局邀请'}</strong>
@@ -78,7 +134,7 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
         </div>}
       </div>
       <div className="golaxy-home__profile-foot">
-        {stage === 'main' ? <><button className="primary" disabled={!canConfigureInvite} onClick={() => setStage('invite')}>邀请对局</button><button disabled title="棋谱接口尚未接通">查看棋谱</button><button disabled title="关注接口尚未接通">添加关注</button></>
+        {stage === 'main' ? <><button className="primary" disabled={!canConfigureInvite} onClick={() => setStage('invite')}>邀请对局</button><button onClick={() => { setGamesPage(0); setGames([]); setStage('kifu'); }}>查看棋谱</button><button disabled={followed === null || followBusy} onClick={changeFollow}>{followBusy ? '正在更新' : followed ? '取消关注' : '添加关注'}</button></>
           : stage === 'invite' ? <><button onClick={() => setStage('main')}>返回资料</button><button className="primary" disabled title="邀请对局暂不可用">发送邀请</button></>
             : stage === 'pending' ? <button disabled title="取消邀请尚未接通">取消邀请</button> : <button onClick={() => setStage('main')}>返回资料</button>}
       </div>
@@ -296,7 +352,7 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
           </>
         )}
       </div>
-      {profilePlayer && connected && <GolaxyPlayerProfile key={profilePlayer.user_id} player={profilePlayer} initialStage={profileInitialStage} onClose={() => setSelectedPlayer(null)} />}
+      {profilePlayer && connected && <GolaxyPlayerProfile key={profilePlayer.user_id} player={profilePlayer} token={token} initialStage={profileInitialStage} onClose={() => setSelectedPlayer(null)} />}
     </div>
   );
 };

@@ -6,4 +6,6 @@
 
 受保护分类记录：`~/.local/share/kifu-name-audit/2026-10-03/hoensha-archive-description-v1-category-review-root/category-review.approved.json`，SHA-256 `0d3ebc32f292630b9964a5d3998099894a90f4bef3935ea48d9553f3e2b64872`；完整 manifest SHA-256 `0585403708f5fb87259f27b7b625d171f82e14b470ec5b1573b039dfdd255c95`；已审 scope 规范哈希 `d10c54be5c4e0bfe13f1f6fa9480549c0f29c2fa55ed36e222f45b114d820b44`。原生产者包字节哈希仍为 `c64379e014a2c7d3958812d29e7133ad6642fc3c810101101df46d2f32b45076`。
 
-此次只批准分类与精确 595 行范围。十一语模板、名称候选、目标库当前前像和最终导入包仍需后续绑定、独立复核及隔离演练；正式和测试数据库均未写入。
+分类审核只批准精确 595 行范围。名称候选、目标库当前前像和最终导入包仍需后续绑定、独立复核及隔离演练；正式和测试数据库均未写入。
+
+随后按[三类标签十一语言审核](kifu-name-generic-three-event-11lang-independent-review-sol-2026-10-03.md)确认修订后的 11 个固定描述字符串，逐项对照当前 `archive-description-v1` 模板及其 SHA-256，形成独立模板审核记录。受控 `hoensha-archive-description-v1-template-review-root/template-reviews.11.approved.json` 字节哈希 `157101a54793ea32993fa6883be44ef41aba0b17a3fbc24cc9f14eeab7d89b8e`，manifest 哈希 `d5a7a65c8749f17f62b616f8d2ec6db76737a92deb8709634b5f0477669816c5`。这只批准模板措辞；11 条名称候选仍须在前像绑定后独立签署，未导入数据库。

@@ -254,7 +254,7 @@ def test_reject_orthographic_scope_or_proof(mutation):
 
 @pytest.mark.parametrize("lang", ["cn", "tw"])
 @pytest.mark.parametrize(
-    "drift", ["source", "name", "rule", "member", "artifact", "proof", "owner", "signature", "version"]
+    "drift", ["source", "name", "rule", "member", "artifact", "proof", "owner", "signature", "version", "decision"]
 )
 def test_import_display_search_coverage_and_tampering(monkeypatch, lang, drift):
     monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
@@ -279,6 +279,9 @@ def test_import_display_search_coverage_and_tampering(monkeypatch, lang, drift):
                 payload["candidate"]["owner"] = {"kind": "player", "id": 999}
             elif drift == "signature":
                 evidence.reviewer_id = "changed-reviewer"
+            elif drift == "decision":
+                db.query(KifuPlayerName).update({"decision_kind": "conventional"})
+                evidence.decision_kind = "conventional"
             elif drift == "version":
                 db.query(KifuPlayerName).update({"generation_rule_version": "none"})
                 evidence.generation_rule_version = "none"
@@ -399,6 +402,8 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
             raw_display_scope_sha256=scope_hash,
             binding={
                 "kind": "finite_raw_scope",
+                "person_id_namespace": "cwa_player_no",
+                "person_id": "CWA000001",
                 "owner": owner,
                 "identity_basis": "Finite independently approved raw spelling and scope",
                 "mapping": signed(
@@ -413,6 +418,7 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
                 ),
             },
         )
+        anchors[0]["approval"].update(produced_at="2026-10-03T11:15:00Z", reviewed_at="2026-10-03T11:30:00Z")
         member = bundle["primary_orthographic"]["batches"][0]["content"]["members"][0]
         member.update(owner=owner, raw_value="刘元赫", raw_display_scope_sha256=scope_hash)
         declaration = {
@@ -445,3 +451,71 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
             assert db.query(KifuAlbum).filter(KifuAlbum.black_player_id.isnot(None)).count() == 0
     finally:
         engine.dispose()
+
+
+def raw_anchor_for_review():
+    engine, _, anchors, _ = fixture()
+    engine.dispose()
+    anchor = anchors[0]
+    source = anchor["content"]
+    owner = {"kind": "raw_player", "id": 7}
+    source.update(owner=owner, raw_value=source["original_name"], raw_display_scope_sha256="d" * 64)
+    source["binding"] = {
+        "kind": "finite_raw_scope",
+        "person_id_namespace": "cwa_player_no",
+        "person_id": "CWA000001",
+        "owner": owner,
+        "identity_basis": "Reviewed exact raw scope",
+        "mapping": signed(
+            {
+                "owner": owner,
+                "raw_value": source["original_name"],
+                "original_name": source["original_name"],
+                "raw_display_scope_sha256": "d" * 64,
+            },
+            "approved_exact_raw_original_mapping",
+        ),
+    }
+    source["binding"]["mapping"]["approval"]["reviewed_at"] = "2026-10-03T09:30:00Z"
+    source["binding"]["mapping"]["approval"]["produced_at"] = "2026-10-03T09:00:00Z"
+    anchor["approval"]["content_sha256"] = canonical_sha256(source)
+    return anchor
+
+
+@pytest.mark.parametrize("defect", ["missing_key", "non_official", "missing_person_in_body"])
+def test_raw_original_requires_official_person_body_even_with_approved_scope(defect):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_primary_orthographic_anchor
+
+    anchor = raw_anchor_for_review()
+    content = anchor["content"]
+    if defect == "missing_key":
+        content["binding"].pop("person_id")
+    if defect == "non_official":
+        content["sources"][0]["tier"] = "language_go"
+    elif defect == "missing_person_in_body":
+        source = content["sources"][0]
+        source["body_text"] = source["body_excerpt"] = "刘元赫 professional player"
+        source["body_sha256"] = hashlib.sha256(source["body_text"].encode()).hexdigest()
+    anchor["approval"]["content_sha256"] = canonical_sha256(content)
+    with pytest.raises(EvidenceError):
+        validate_primary_orthographic_anchor(anchor)
+
+
+@pytest.mark.parametrize("defect", ["source_after_production", "mapping_after_production", "review_at_production"])
+def test_orthographic_anchor_production_follows_all_dependencies(defect):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_primary_orthographic_anchor
+
+    if defect == "mapping_after_production":
+        anchor = raw_anchor_for_review()
+        anchor["content"]["binding"]["mapping"]["approval"]["reviewed_at"] = "2026-10-03T10:30:00Z"
+    else:
+        engine, _, anchors, _ = fixture()
+        engine.dispose()
+        anchor = anchors[0]
+        if defect == "source_after_production":
+            anchor["content"]["sources"][0]["fetched_at"] = "2026-10-03T10:30:00Z"
+        else:
+            anchor["approval"]["reviewed_at"] = anchor["approval"]["produced_at"]
+    anchor["approval"]["content_sha256"] = canonical_sha256(anchor["content"])
+    with pytest.raises(EvidenceError):
+        validate_primary_orthographic_anchor(anchor)

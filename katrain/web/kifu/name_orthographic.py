@@ -404,7 +404,9 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         if owner["kind"] != owner_column.removesuffix("_id") or expected_id != getattr(name, owner_column):
             return False
         if (
-            row["lang"] != name.lang
+            row["decision_kind"] != name.decision_kind
+            or row["decision_kind"] != evidence.decision_kind
+            or row["lang"] != name.lang
             or row["display_name"] != name.display_name
             or row["generation_rule_version"] != name.generation_rule_version
         ):

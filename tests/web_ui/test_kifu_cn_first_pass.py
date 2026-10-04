@@ -24,6 +24,7 @@ def test_event_core_translation_keeps_edition_and_year():
     assert translated_event_core("TaiwanPromotionTournament,2000", "TaiwanPromotionTournament,2000", glossary) == "2000年台湾升段赛"
     assert translated_event_core("4th Nihon Saikyo Final", "Nihon Saikyo", glossary) is None
     assert translated_event_core("GNUGo3.8", None, glossary) is None
+    assert ("4th Nihon Saikyo", None) in first_pass_cn.search_raw_names("日本最强战")[1]
 
 
 def test_cn_fallback_uses_linked_canonical_and_exact_raw_without_changing_source(monkeypatch):

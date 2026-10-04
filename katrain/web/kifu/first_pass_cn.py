@@ -61,12 +61,13 @@ def _display_event_candidate(raw: str | None, candidate: str) -> str:
 
 
 def search_raw_names(chinese_name: str) -> tuple[set[str], set[tuple[str, str | None]], set[int]]:
-    """Expand exact Chinese display searches to a small set of romanized SGF spellings."""
+    """Expand Chinese display searches to a bounded set of romanized SGF spellings."""
     players, events, overrides = _hints()
     player_raws = {raw for raw, display in players.items() if display == chinese_name}
     event_keys = {
         (raw, canonical) for (raw, canonical), display in events.items()
-        if _display_event_candidate(raw, display) == chinese_name
+        if (chinese_name == _display_event_candidate(raw, display)
+            or (len(chinese_name) >= 3 and chinese_name in _display_event_candidate(raw, display)))
         and raw and not any("\u3400" <= ch <= "\u9fff" for ch in raw)
     }
     album_ids = {album_id for album_id, (_, _, display) in overrides.items() if display == chinese_name}

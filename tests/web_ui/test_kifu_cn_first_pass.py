@@ -10,10 +10,20 @@ from sqlalchemy.orm import sessionmaker
 from katrain.web.api.v1.endpoints import kifu
 from katrain.web.core.models_db import Base, KifuAlbum, KifuEvent, KifuEventName, KifuPlayer
 from katrain.web.kifu import first_pass_cn
+from scripts.build_kifu_cn_first_pass_asset import translated_event_core
 
 
 def _request():
     return SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+
+
+def test_event_core_translation_keeps_edition_and_year():
+    glossary = {"Nihon Saikyo": {"zh": "日本最强战", "unit": "期"},
+                "TaiwanPromotionTournament,2000": {"zh": "台湾升段赛"}}
+    assert translated_event_core("4th Nihon Saikyo", "Nihon Saikyo", glossary) == "第4期日本最强战"
+    assert translated_event_core("TaiwanPromotionTournament,2000", "TaiwanPromotionTournament,2000", glossary) == "2000年台湾升段赛"
+    assert translated_event_core("4th Nihon Saikyo Final", "Nihon Saikyo", glossary) is None
+    assert translated_event_core("GNUGo3.8", None, glossary) is None
 
 
 def test_cn_fallback_uses_linked_canonical_and_exact_raw_without_changing_source(monkeypatch):

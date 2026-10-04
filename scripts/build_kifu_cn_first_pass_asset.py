@@ -14,6 +14,46 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RESOURCE = ROOT / "docs/resource"
 OUTPUT = ROOT / "katrain/web/kifu/data/cn_first_pass_2026-10-05.json.gz"
+EVENT_GLOSSARY = ROOT / "katrain/web/kifu/data/cn_event_core_glossary_2026-10-05.json"
+PLAYER_GLOSSARY = ROOT / "katrain/web/kifu/data/cn_player_raw_glossary_2026-10-05.json"
+
+# These are descriptions of a game format, not tournament identities. Render
+# them literally and retain the original EV value for later catalog review.
+EVENT_DESCRIPTIONS = {
+    "21-game match": "二十一番棋",
+    "30-game match": "三十番棋",
+    "Teaching game": "指导棋",
+    "Teaching Game": "指导棋",
+    "Teachinggame": "指导棋",
+    "Shusai's Retirement Game": "秀哉引退棋",
+    "Honinbo Shusai's Retirement Game": "本因坊秀哉引退棋",
+    "Win and Continue": "胜者续战",
+    "Challenge match": "挑战对局",
+    "9-game match": "九番棋",
+    "1-game match": "单局对抗赛",
+    "2-game match": "两局对抗赛",
+    "3-game match": "三局对抗赛",
+    "4-game match": "四局对抗赛",
+    "Three-game match": "三局对抗赛",
+    "Special game": "特别对局",
+    "Special Game": "特别对局",
+    "Game": "对局",
+    "Special teaching game": "特别指导棋",
+    "Teacher-pupil game": "师徒对局",
+    "Televised game": "电视转播对局",
+    "Radio game": "广播对局",
+    "Consultation game": "商议棋",
+    "Second consultation game": "第二局商议棋",
+    "New Year Relay Game": "新年联棋",
+    "New Year's relay game": "新年联棋",
+    "Japan-China Go Exchange": "中日围棋交流赛",
+    "Japan-ChinaGoExchange": "中日围棋交流赛",
+    "East-West Japan Match": "日本东西对抗赛",
+    "East-West match": "东西对抗赛",
+    "Special Invitation Match": "特别邀请对局",
+    "Pro qualification game": "职业资格赛对局",
+    "9x9 game": "九路棋对局",
+}
 
 # These exact romanized spellings have identifiable Chinese Wikipedia pages.
 # A short list is enough to clear the weighted 95% player-slot threshold.
@@ -41,7 +81,31 @@ def safe_chinese_event(value: str | None) -> bool:
     return True
 
 
+def translated_event_core(raw: str, core: str | None, glossary: dict) -> str | None:
+    """Render only exact, simple edition/year forms of a reviewed event core."""
+    entry = glossary.get(core)
+    if not entry:
+        return None
+    translated = entry["zh"]
+    if raw == core:
+        years = re.findall(r"(?<!\d)((?:18|19|20)\d{2})(?!\d)", core)
+        if len(years) == 1 and years[0] not in translated:
+            return f"{years[0]}年{translated}"
+        return translated
+    ordinal = r"([1-9]\d{0,2})(?:st|nd|rd|th)"
+    prefix = re.fullmatch(rf"{ordinal}\s*{re.escape(core)}", raw, flags=re.IGNORECASE)
+    suffix = re.fullmatch(rf"{re.escape(core)},\s*{ordinal}", raw, flags=re.IGNORECASE)
+    if prefix or suffix:
+        return f"第{(prefix or suffix).group(1)}{entry.get('unit', '届')}{translated}"
+    year = re.fullmatch(rf"{re.escape(core)},\s*((?:18|19|20)\d{{2}})", raw, flags=re.IGNORECASE)
+    if year:
+        return f"{year.group(1)}年{translated}"
+    return None
+
+
 def load_candidates(environment: str):
+    glossary = json.loads(EVENT_GLOSSARY.read_text(encoding="utf-8"))
+    glossary = {**{name: {"zh": display} for name, display in EVENT_DESCRIPTIONS.items()}, **glossary}
     canonical = {
         int(event_id): name for event_id, name in json.loads(
             (RESOURCE / f"kifu-cn-first-pass-event-canonical-{environment}-2026-10-05.json").read_text()
@@ -58,6 +122,11 @@ def load_candidates(environment: str):
                 tier = row["candidate_kind"]
                 raw = row["raw"]
                 if row["event_id"] is None and raw:
+                    if row["category"] == "unclassified_pending":
+                        translated = translated_event_core(raw, row.get("core"), glossary)
+                        if translated and safe_chinese_event(translated):
+                            raw_map[(raw, None)] = translated
+                            continue
                     oteai = re.fullmatch(r"JapanPromotionTournament,([12]\d{3}),(Spring|Fall)", raw)
                     if oteai:
                         season = "春季" if oteai.group(2) == "Spring" else "秋季"
@@ -94,10 +163,17 @@ def build() -> dict:
     if prod_overrides != test_overrides:
         raise ValueError("Exact album SGF display overrides differ between environments")
     merged = {**prod_map, **test_map}
+    players = {raw: {"display": name, "source": source} for raw, (name, source) in PLAYER_NAMES.items()}
+    player_glossary = json.loads(PLAYER_GLOSSARY.read_text(encoding="utf-8"))
+    for raw, entry in player_glossary.items():
+        existing = players.get(raw)
+        if existing and existing["display"] != entry["zh"]:
+            raise ValueError(f"Conflicting Chinese player display for {raw!r}")
+        players[raw] = {"display": entry["zh"], "source": entry["source"]}
     return {
         "format": "kifu-cn-first-pass-v1",
         "generated_date": "2026-10-05",
-        "player_raw": {raw: {"display": name, "source": source} for raw, (name, source) in PLAYER_NAMES.items()},
+        "player_raw": players,
         "event_raw_canonical": [[raw, canonical, value] for (raw, canonical), value in sorted(
             merged.items(), key=lambda item: (item[0][0], item[0][1] or "")
         )],

@@ -19,6 +19,7 @@ from katrain.web.core.models_db import (
     KifuNameResearchEvidence,
     KifuNameBatch,
     KifuPlayerAlias,
+    KifuPlayer,
     KifuPlayerName,
     KifuRawEventName,
     KifuRawEventValue,
@@ -942,10 +943,8 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
     return {row[0] for row in player_query.distinct()}, {row[0] for row in event_query.distinct()}
 
 
-def display_maps(
-    db: Session, albums: list, lang: str
-) -> tuple[dict[int, str], dict[int, str], dict[int, str], dict[int, list[str]]]:
-    """Load pre-evidence legacy names for the non-strict display fallback."""
+def display_maps(db: Session, albums: list, lang: str, *, selected_events=None):
+    """Load legacy names and provisional Chinese hints for non-strict display."""
     player_ids = {value for album in albums for value in (album.black_player_id, album.white_player_id) if value}
     event_ids = {album.event_id for album in albums if album.event_id}
     album_ids = [album.id for album in albums]
@@ -966,6 +965,12 @@ def display_maps(
                 KifuPlayerName.revision.is_(None),
             )
         }
+        if lang == "cn":
+            for player_id, canonical in db.query(KifuPlayer.id, KifuPlayer.canonical_name).filter(
+                KifuPlayer.id.in_(player_ids)
+            ):
+                if any("\u3400" <= char <= "\u9fff" for char in canonical):
+                    players.setdefault(player_id, canonical)
     if event_ids:
         event_rows = (
             db.query(KifuEventName.event_id, KifuEventName.display_name, KifuEvent.canonical_name)
@@ -983,6 +988,11 @@ def display_maps(
         )
         events = {row.event_id: row.display_name for row in event_rows}
         event_canonical_names = {row.event_id: row.canonical_name for row in event_rows}
+        if lang == "cn":
+            for event_id, canonical in db.query(KifuEvent.id, KifuEvent.canonical_name).filter(
+                KifuEvent.id.in_(event_ids)
+            ):
+                event_canonical_names[event_id] = canonical
     if album_ids:
         for album_id, source_key in (
             db.query(KifuAlbumSource.album_id, KifuSource.source_key)
@@ -990,4 +1000,9 @@ def display_maps(
             .filter(KifuAlbumSource.album_id.in_(album_ids))
         ):
             sources[album_id].add(source_key)
-    return players, events, event_canonical_names, {album_id: sorted(keys) for album_id, keys in sources.items()}
+    hints = {}
+    if lang == "cn":
+        from katrain.web.kifu.first_pass_cn import event_hints
+
+        hints = event_hints(db, albums, event_canonical_names, selected_events=selected_events)
+    return players, events, event_canonical_names, {album_id: sorted(keys) for album_id, keys in sources.items()}, hints

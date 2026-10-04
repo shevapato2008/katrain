@@ -9,7 +9,7 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import KifuAlbum
+from katrain.web.core.models_db import KifuAlbum, KifuAlbumEventSelection, KifuEvent
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
     LANGUAGES,
@@ -177,6 +177,28 @@ async def list_kifu_albums(
             query = query.order_by(case((player_match, 0), else_=1))
         if selected_event_ids:
             needle = or_(needle, KifuAlbum.id.in_(selected_event_ids))
+        if not strict and lang == "cn":
+            from katrain.web.kifu.first_pass_cn import search_raw_names, valid_override_search_ids
+
+            provisional_players, provisional_events, provisional_albums = search_raw_names(q)
+            if provisional_players:
+                needle = or_(needle, KifuAlbum.player_black.in_(provisional_players),
+                             KifuAlbum.player_white.in_(provisional_players))
+            if provisional_events:
+                no_selection = ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id))
+                unlinked_raws = {raw for raw, canonical in provisional_events if canonical is None}
+                if unlinked_raws:
+                    needle = or_(needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked_raws)
+                                 & no_selection)
+                for canonical in {canonical for _, canonical in provisional_events if canonical is not None}:
+                    raws = {raw for raw, name in provisional_events if name == canonical}
+                    matching_ids = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
+                    needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(matching_ids)
+                                 & no_selection)
+            if provisional_albums:
+                verified_albums = valid_override_search_ids(db, provisional_albums)
+                if verified_albums:
+                    needle = or_(needle, KifuAlbum.id.in_(verified_albums))
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 
@@ -190,9 +212,9 @@ async def list_kifu_albums(
     total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
-    strict = strict_names_enabled()
-    fallback_maps = None if strict else display_maps(db, records, lang)
     selected_events = live_event_selections(db, records)
+    strict = strict_names_enabled()
+    fallback_maps = None if strict else display_maps(db, records, lang, selected_events=selected_events)
     obscured_event_ids = obscured_program_event_ids(db, records, selected_events=selected_events)
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
         db, records, lang, selected_events=selected_events
@@ -242,9 +264,9 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
     if not record:
         raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
 
-    strict = strict_names_enabled()
-    fallback_maps = None if strict else display_maps(db, [record], lang)
     selected_events = live_event_selections(db, [record])
+    strict = strict_names_enabled()
+    fallback_maps = None if strict else display_maps(db, [record], lang, selected_events=selected_events)
     obscured_event_ids = obscured_program_event_ids(db, [record], selected_events=selected_events)
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
         db, [record], lang, selected_events=selected_events
@@ -289,16 +311,28 @@ def _summary(
     strict = raw_players is not None and raw_events is not None
     fallback_names = None
     if fallback_maps is not None:
-        fallback_players, fallback_events, fallback_canonical, _ = fallback_maps
+        fallback_players, fallback_events, fallback_canonical, _, event_hints = fallback_maps
+        if lang == "cn":
+            from katrain.web.kifu.first_pass_cn import player_name
+
+            black_raw_hint = player_name(record.player_black)
+            white_raw_hint = player_name(record.player_white)
+        else:
+            black_raw_hint = white_raw_hint = None
+        linked_canonical = fallback_canonical.get(record.event_id)
+        if record.event_id in fallback_events:
+            fallback_event = display_event_name(
+                record.event, fallback_events[record.event_id], lang, linked_canonical_name=linked_canonical
+            )
+        else:
+            fallback_event = event_hints.get(record.id) or display_event_name(
+                record.event, linked_canonical if lang == "cn" else None, lang,
+                linked_canonical_name=linked_canonical,
+            )
         fallback_names = (
-            fallback_players.get(record.black_player_id, black.name),
-            fallback_players.get(record.white_player_id, white.name),
-            display_event_name(
-                record.event,
-                fallback_events.get(record.event_id),
-                lang,
-                linked_canonical_name=fallback_canonical.get(record.event_id),
-            ),
+            fallback_players.get(record.black_player_id) or black_raw_hint or black.name,
+            fallback_players.get(record.white_player_id) or white_raw_hint or white.name,
+            fallback_event,
         )
     if strict:
         black_name, white_name, displayed_event = resolve_strict_display(

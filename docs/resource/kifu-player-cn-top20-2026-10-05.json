@@ -1,0 +1,140 @@
+{
+  "generated_date": "2026-10-05",
+  "selection": "Top 20 non-Han raw labels by PROD slots with no linked player FK; excludes Unknown/Black/White",
+  "items": [
+    {
+      "raw": "Iwamoto Kaoru",
+      "chinese": "岩本薰",
+      "source_url": "https://zh.wikipedia.org/wiki/岩本薰",
+      "slots": 384
+    },
+    {
+      "raw": "Maeda Nobuaki",
+      "chinese": "前田陈尔",
+      "source_url": "https://ja.wikipedia.org/wiki/前田陳爾",
+      "slots": 367,
+      "note": "中文名据日文名汉字转写；简繁可规范化"
+    },
+    {
+      "raw": "Fujisawa Hosai",
+      "chinese": "藤泽朋斋",
+      "source_url": "https://en.wikipedia.org/wiki/Hosai_Fujisawa",
+      "slots": 354,
+      "note": "中文名按日文汉字转写；与藤泽秀行不同"
+    },
+    {
+      "raw": "Yoshida Yoichi",
+      "chinese": "吉田与一",
+      "source_url": "https://ja.wikipedia.org/wiki/吉田与一",
+      "slots": 311,
+      "note": " uncertain: romanized label alone may collide; verify identity before canonical linking"
+    },
+    {
+      "raw": "Ito Tomoe",
+      "chinese": "伊藤友惠",
+      "source_url": "https://zh.wikipedia.org/wiki/中日围棋对抗赛",
+      "slots": 301,
+      "note": "页面提及伊藤友惠；音译/汉字有异体风险"
+    },
+    {
+      "raw": "Okubo Ichigen",
+      "chinese": "大久保一元",
+      "source_url": "https://ja.wikipedia.org/wiki/大久保一元",
+      "slots": 268,
+      "note": "日文汉字转写，中文权威页面未核得"
+    },
+    {
+      "raw": "Kano Yoshinori",
+      "chinese": "加纳嘉德",
+      "source_url": "https://ja.wikipedia.org/wiki/加納嘉德",
+      "slots": 256,
+      "note": "日文汉字转写，简繁转换"
+    },
+    {
+      "raw": "Iwata Tatsuaki",
+      "chinese": "岩田达明",
+      "source_url": "https://bkso.baidu.com/item/岩田达明/4348777",
+      "slots": 255
+    },
+    {
+      "raw": "Sumino Tsunehiro",
+      "chinese": "住野常弘",
+      "source_url": "https://ja.wikipedia.org/wiki/住野常弘",
+      "slots": 252,
+      "note": " uncertain: source/title needs identity confirmation"
+    },
+    {
+      "raw": "Rin Kaiho",
+      "chinese": "林海峰",
+      "source_url": "https://zh.wikipedia.org/wiki/林海峰",
+      "slots": 251
+    },
+    {
+      "raw": "ChoChikun",
+      "chinese": "赵治勋",
+      "source_url": "https://zh.wikipedia.org/wiki/赵治勋",
+      "slots": 246,
+      "note": "same person as “Cho Chikun”; duplicate raw labels"
+    },
+    {
+      "raw": "Kodama Kunio",
+      "chinese": "儿玉国雄",
+      "source_url": "https://ja.wikipedia.org/wiki/児玉国雄",
+      "slots": 242,
+      "note": "uncertain: reading/kanji mapping not independently confirmed"
+    },
+    {
+      "raw": "Takemiya Masaki",
+      "chinese": "武宫正树",
+      "source_url": "https://zh.wikipedia.org/wiki/武宫正树",
+      "slots": 234
+    },
+    {
+      "raw": "Takahashi Toshimitsu",
+      "chinese": "高桥俊光",
+      "source_url": "https://bkso.baidu.com/item/高桥重行/8065618",
+      "slots": 233,
+      "note": "source says 高桥重行 later改名俊光; historical alias ambiguity"
+    },
+    {
+      "raw": "Cho Chikun",
+      "chinese": "赵治勋",
+      "source_url": "https://zh.wikipedia.org/wiki/赵治勋",
+      "slots": 223,
+      "note": "same person as “ChoChikun”; duplicate raw labels"
+    },
+    {
+      "raw": "Tsujii Ryotaro",
+      "chinese": "辻井良太郎",
+      "source_url": "https://ja.wikipedia.org/wiki/辻井良太郎",
+      "slots": 216,
+      "note": "Chinese display is Japanese name characters; simplified forms may be normalized"
+    },
+    {
+      "raw": "Takagawa Shukaku",
+      "chinese": "高川格",
+      "source_url": "https://zh.wikipedia.org/wiki/高川格",
+      "slots": 206
+    },
+    {
+      "raw": "Tsuchiya Shuwa",
+      "chinese": "土屋秀和",
+      "source_url": "https://ja.wikipedia.org/wiki/土屋秀和",
+      "slots": 200,
+      "note": "Chinese display is Japanese name characters; identity needs romanization match"
+    },
+    {
+      "raw": "Kobayashi Koichi",
+      "chinese": "小林光一",
+      "source_url": "https://zh.wikipedia.org/wiki/小林光一",
+      "slots": 191
+    },
+    {
+      "raw": "Sakai Takeshi",
+      "chinese": "酒井猛",
+      "source_url": "https://igo-kifu.com/player/29",
+      "slots": 184,
+      "note": "Chinese display from Japanese name characters; source identifies professional go player"
+    }
+  ]
+}

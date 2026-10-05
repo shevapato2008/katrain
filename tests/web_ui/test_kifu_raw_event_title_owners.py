@@ -1,4 +1,4 @@
-"""The first-24 raw owner approval changes categories without changing games."""
+"""Finite raw owner approvals change review status without changing games."""
 
 from copy import deepcopy
 
@@ -42,6 +42,7 @@ def test_first24_owner_plan_is_cas_scoped_and_undoable(engine):
     plan = prepare_plan(engine, manifest, "TEST", registry(), producer_id="producer-1",
                         producer_model="gpt-6-sol", reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
                         review_conclusion="Reviewed each literal raw title without event identity claims")
+    assert "profile" not in plan
     with engine.connect() as conn:
         assert inspect_plan(conn, plan, registry(), canonical_sha256(manifest))["albums"] == 493
     tampered = deepcopy(plan)
@@ -65,3 +66,87 @@ def test_first24_owner_plan_is_cas_scoped_and_undoable(engine):
     undo_batch(engine, applied["batch_id"])
     with engine.connect() as conn:
         assert conn.scalar(select(KifuRawEventValue.review_status).where(KifuRawEventValue.id == 100)) == "pending"
+
+
+AGON_RAWS = (
+    "第11届阿含桐山杯本选第1轮", "第11届阿含桐山杯本选第2轮", "第11届阿含桐山杯本选第3轮",
+    "第11届阿含桐山杯本选第4轮", "第11届阿含桐山杯本选第一轮", "第12届阿含桐山杯本选第一轮",
+    "第12届阿含桐山杯本选第二轮", "第16届阿含桐山杯本选第2轮", "第16届阿含桐山杯本选第3轮",
+    "第十届阿含桐山杯本选第一轮",
+)
+CMB_RAWS = ("第9届招商银行杯第3轮", "第9届招商银行杯第一轮")
+
+
+def finite_fixture(engine, raws, counts):
+    records, members = [], []
+    next_album = 2000
+    with engine.begin() as conn:
+        for index, (raw, count) in enumerate(zip(raws, counts)):
+            owner_id = 200 + index
+            ids = list(range(next_album, next_album + count))
+            next_album += count
+            conn.execute(KifuRawEventValue.__table__.insert().values(
+                id=owner_id, raw_value=raw, category="unclassified_pending", parser_version="original-parser",
+                parsed_data={"raw": raw}, review_status="pending"))
+            conn.execute(KifuAlbum.__table__.insert(), [
+                {"id": album_id, "player_black": "A", "player_white": "B", "event": raw,
+                 "sgf_content": f"(;EV[{raw}])", "source_path": f"{album_id}.sgf"}
+                for album_id in ids
+            ])
+            before = _image(conn, KifuRawEventValue.__table__, owner_id)
+            records.append({"raw_value": raw, "owners": {"TEST": {"raw_event_id": owner_id, "preimage": before}}})
+            members.append({"raw_value": raw, "album_ids": ids})
+    return {"records": records, "member_manifest": {"TEST": {"members": members}}}
+
+
+@pytest.mark.parametrize("profile,raws,counts,total", [
+    ("agon10", AGON_RAWS, (49, 24, 14, 7, 5, 60, 25, 1, 1, 19), 205),
+    ("cmb2", CMB_RAWS, (1, 1), 2),
+])
+def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
+    manifest = finite_fixture(engine, raws, counts)
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact literal raw titles"}
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), **kwargs)
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="arbitrary", **kwargs)
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile=profile, **kwargs)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile=profile) == {
+            "ready": True, "raw_owners": len(raws), "albums": total, "name_writes": 0, "fk_writes": 0}
+        with pytest.raises(BatchError):
+            inspect_plan(conn, plan, registry(), canonical_sha256(manifest))
+    wrong_raw = deepcopy(manifest)
+    wrong_raw["records"][0]["raw_value"] += "X"
+    with pytest.raises(BatchError):
+        prepare_plan(engine, wrong_raw, "TEST", registry(), profile=profile, **kwargs)
+    wrong_count = deepcopy(manifest)
+    wrong_count["records"].pop()
+    with pytest.raises(BatchError):
+        prepare_plan(engine, wrong_count, "TEST", registry(), profile=profile, **kwargs)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(black_rank="2d"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile=profile)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(black_rank=None))
+    applied = apply_plan(engine, plan, registry(), canonical_sha256(manifest), canonical_sha256(plan), profile=profile)
+    assert applied["change_count"] == len(raws)
+    undo_batch(engine, applied["batch_id"])
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventValue.review_status).where(KifuRawEventValue.id == 200)) == "pending"
+
+
+@pytest.mark.parametrize("profile,raws,counts", [
+    ("agon10", AGON_RAWS, (48, 24, 14, 7, 5, 60, 25, 1, 1, 19)),
+    ("cmb2", CMB_RAWS, (1, 2)),
+])
+def test_finite_profile_rejects_changed_game_total(engine, profile, raws, counts):
+    manifest = finite_fixture(engine, raws, counts)
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile=profile,
+                     producer_id="producer-1", producer_model="gpt-6-sol",
+                     reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
+                     review_conclusion="Reviewed exact literal raw titles")

@@ -1,4 +1,4 @@
-"""Approve only the first 24 reviewed raw event titles, preserving every SGF and FK.
+"""Approve finite reviewed raw event titles, preserving every SGF and FK.
 
 Prepare is read-only. Apply requires the reviewed plan hash and the research
 manifest hash supplied out of band. The ordinary name-batch journal handles undo.
@@ -36,6 +36,18 @@ RAW_VALUES = (
 )
 OPERATION = "raw-event-title-owner-review-v1"
 _RAW_SET_SHA256 = "60334be3560437f13c50afc7cf3b3324ad2f93a33ec5666b91e5f74b24ff6116"
+PROFILE_LIMITS = {
+    "first24": {"raw_set_sha256": _RAW_SET_SHA256, "raw_count": 24, "game_total": 493},
+    "agon10": {"raw_set_sha256": "2d3598c64fa103cfa1914e9942352151e81dabe76b865b546ba99341a2547a81",
+               "raw_count": 10, "game_total": 205},
+    "cmb2": {"raw_set_sha256": "9e3ee2d49f318e2a7495ad4040e996d7dffee7a96d838642366d592a2864ee9d",
+             "raw_count": 2, "game_total": 2},
+}
+
+
+def _profile_limits(profile):
+    _fail(profile in PROFILE_LIMITS, "unknown finite raw title owner profile")
+    return PROFILE_LIMITS[profile]
 
 
 def _scope_rows(conn, raw):
@@ -58,19 +70,26 @@ def _scope_rows(conn, raw):
 
 
 def prepare_plan(engine, manifest, environment, registry, *, producer_id, producer_model,
-                 reviewer_id, reviewer_model, review_conclusion, produced_at=None, reviewed_at=None):
+                 reviewer_id, reviewer_model, review_conclusion, produced_at=None, reviewed_at=None,
+                 profile="first24"):
     """Build the exact signed after-images after an independent category review."""
     _fail(environment in {"TEST", "PROD"}, "unknown target environment")
+    limits = _profile_limits(profile)
     records = manifest.get("records")
-    _fail(isinstance(records, list) and len(records) == 24
-          and canonical_sha256(sorted(record["raw_value"] for record in records)) == _RAW_SET_SHA256,
-          "research manifest is outside the reviewed first 24 owners")
+    _fail(isinstance(records, list) and len(records) == limits["raw_count"]
+          and canonical_sha256(sorted(record["raw_value"] for record in records)) == limits["raw_set_sha256"],
+          "research manifest is outside the selected finite owners")
     members = manifest["member_manifest"][environment]["members"]
     by_raw = {member["raw_value"]: member for member in members}
-    _fail(set(by_raw) == set(RAW_VALUES), "research member manifest has different raw owners")
-    _fail(sum(len(by_raw[raw]["album_ids"]) for raw in RAW_VALUES[:7]) == 271
-          and sum(len(by_raw[raw]["album_ids"]) for raw in RAW_VALUES[7:]) == 222,
-          "research first-24 group totals changed")
+    _fail(len(by_raw) == len(members) == limits["raw_count"]
+          and set(by_raw) == {record["raw_value"] for record in records},
+          "research member manifest has different raw owners")
+    _fail(sum(len(member["album_ids"]) for member in members) == limits["game_total"],
+          "research finite owner album total changed")
+    if profile == "first24":
+        _fail(sum(len(by_raw[raw]["album_ids"]) for raw in RAW_VALUES[:7]) == 271
+              and sum(len(by_raw[raw]["album_ids"]) for raw in RAW_VALUES[7:]) == 222,
+              "research first-24 group totals changed")
     now = datetime.now(timezone.utc).isoformat()
     signature = {"producer_id": producer_id, "producer_model": producer_model,
                  "produced_at": produced_at or now, "review_status": "approved",
@@ -82,9 +101,11 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
         inventory_sha, _, _ = _snapshot_parts(conn, inventory_format=4)
         plan = {**signature, "operation": OPERATION, "bundle_format": 2,
                 "environment": environment, "research_manifest_sha256": digest,
-                "raw_set_sha256": _RAW_SET_SHA256, "inventory_sha256": inventory_sha,
+                "raw_set_sha256": limits["raw_set_sha256"], "inventory_sha256": inventory_sha,
                 "catalog_sha256": _catalog_sha(conn), "registry_sha256": registry_sha256(registry),
                 "changes": []}
+        if profile != "first24":
+            plan["profile"] = profile
         for record in records:
             raw = record["raw_value"]
             source_owner = record["owners"][environment]
@@ -105,20 +126,23 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
         return plan
 
 
-def inspect_plan(conn, plan, registry, expected_manifest_sha256):
+def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="first24"):
+    limits = _profile_limits(profile)
     try:
         _check_signature(plan)
     except CandidateError as exc:
         raise BatchError(str(exc)) from exc
-    _fail(plan.get("review_status") == "approved" and plan.get("operation") == OPERATION
+    _fail(plan.get("profile", "first24") == profile
+          and plan.get("review_status") == "approved" and plan.get("operation") == OPERATION
           and plan.get("bundle_format") == 2 and plan.get("environment") in {"TEST", "PROD"},
           "raw title owner plan is not approved")
     _fail(plan.get("research_manifest_sha256") == expected_manifest_sha256
           and plan.get("registry_sha256") == registry_sha256(registry), "research or registry hash differs")
     changes = plan.get("changes")
-    _fail(isinstance(changes, list) and len(changes) == 24
-          and canonical_sha256(sorted(change["before"]["raw_value"] for change in changes)) == _RAW_SET_SHA256
-          and plan.get("raw_set_sha256") == _RAW_SET_SHA256, "plan exceeds the reviewed first 24 owners")
+    _fail(isinstance(changes, list) and len(changes) == limits["raw_count"]
+          and canonical_sha256(sorted(change["before"]["raw_value"] for change in changes)) == limits["raw_set_sha256"]
+          and plan.get("raw_set_sha256") == limits["raw_set_sha256"],
+          "plan exceeds the selected finite owners")
     _fail(_catalog_sha(conn) == plan["catalog_sha256"], "catalog preimage changed")
     current_inventory, _, _ = _snapshot_parts(conn, inventory_format=4)
     _fail(current_inventory == plan["inventory_sha256"], "album/source inventory changed")
@@ -151,13 +175,18 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256):
                   "reviewer_model", "reviewed_at", "review_conclusion")),
               "raw owner independent review differs from signed scope")
         count += len(scope)
-        group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)
-    _fail(count == 493, "first 24 owner album total changed")
-    _fail(group_counts == [271, 222], "first 24 owner group totals changed")
-    return {"ready": True, "raw_owners": 24, "albums": count, "name_writes": 0, "fk_writes": 0}
+        if profile == "first24":
+            group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)
+    _fail(count == limits["game_total"], "finite owner album total changed")
+    if profile == "first24":
+        _fail(group_counts == [271, 222], "first 24 owner group totals changed")
+    return {"ready": True, "raw_owners": limits["raw_count"], "albums": count,
+            "name_writes": 0, "fk_writes": 0}
 
 
-def apply_plan(engine, plan, registry, expected_manifest_sha256, expected_plan_sha256):
+def apply_plan(engine, plan, registry, expected_manifest_sha256, expected_plan_sha256, *, profile="first24"):
+    _profile_limits(profile)
+    _fail(plan.get("profile", "first24") == profile, "raw title owner profile differs")
     digest = canonical_sha256(plan)
     _fail(digest == expected_plan_sha256, "owner plan hash differs from independently reviewed bytes")
     with _locked_write(engine) as conn:
@@ -168,7 +197,7 @@ def apply_plan(engine, plan, registry, expected_manifest_sha256, expected_plan_s
                   and all(_image(conn, KifuRawEventValue.__table__, change["after"]["id"]) == change["after"]
                           for change in plan["changes"]), "prior raw owner approval changed")
             return {"status": "already_applied", "batch_id": previous["id"], "change_count": 0}
-        report = inspect_plan(conn, plan, registry, expected_manifest_sha256)
+        report = inspect_plan(conn, plan, registry, expected_manifest_sha256, profile=profile)
         registry_id, _ = _source_registry_for_batch(conn, registry, plan)
         batch_id, _ = _insert(conn, KifuNameBatch, {
             "bundle_sha256": digest, "inventory_sha256": plan["inventory_sha256"],
@@ -183,7 +212,7 @@ def apply_plan(engine, plan, registry, expected_manifest_sha256, expected_plan_s
             _record_change(conn, batch_id, sequence, KifuRawEventValue, before["id"], before, after)
         conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == batch_id).values(
             status="applied", applied_at=datetime.now(timezone.utc)))
-        return dict(report, status="applied", batch_id=batch_id, change_count=24)
+        return dict(report, status="applied", batch_id=batch_id, change_count=len(plan["changes"]))
 
 
 if __name__ == "__main__":
@@ -193,6 +222,7 @@ if __name__ == "__main__":
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--environment", choices=("TEST", "PROD"))
+    parser.add_argument("--profile", choices=tuple(PROFILE_LIMITS), default="first24")
     parser.add_argument("--producer-id")
     parser.add_argument("--producer-model")
     parser.add_argument("--reviewer-id")
@@ -209,13 +239,13 @@ if __name__ == "__main__":
         result = prepare_plan(engine, manifest, args.environment, registry,
                               producer_id=args.producer_id, producer_model=args.producer_model,
                               reviewer_id=args.reviewer_id, reviewer_model=args.reviewer_model,
-                              review_conclusion=args.review_conclusion)
+                              review_conclusion=args.review_conclusion, profile=args.profile)
     else:
         result = json.loads(args.plan.read_text())
         if args.mode == "dry-run":
             with engine.connect() as conn:
-                result = inspect_plan(conn, result, registry, args.expected_manifest_sha256)
+                result = inspect_plan(conn, result, registry, args.expected_manifest_sha256, profile=args.profile)
         else:
             result = apply_plan(engine, result, registry, args.expected_manifest_sha256,
-                                args.expected_plan_sha256)
+                                args.expected_plan_sha256, profile=args.profile)
     print(json.dumps(result, ensure_ascii=False))

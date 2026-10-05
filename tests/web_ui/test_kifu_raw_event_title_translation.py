@@ -304,7 +304,8 @@ def test_legacy_exact_raw_search_refuses_ambiguous_other_name_owners(engine, col
 
 
 @pytest.mark.parametrize("damage", ["owner", "raw", "hash", "signature", "pending", "source",
-                                    "owner_review", "rule"])
+                                    "owner_review", "rule", "empty_reviewer_id", "empty_reviewer_model",
+                                    "blank_conclusion", "owner_blank_conclusion", "owner_blank_basis"])
 def test_persisted_literal_title_rejects_changed_approval_or_evidence(engine, damage):
     proposed, inv, research = reviewed_bundle(engine)
     apply_bundle(engine, proposed, registry(), inv, research)
@@ -319,10 +320,21 @@ def test_persisted_literal_title_rejects_changed_approval_or_evidence(engine, da
             payload["candidate"]["research_sha256"] = "0" * 64
         elif damage == "signature":
             payload["candidate"]["reviewer_id"] = payload["candidate"]["producer_id"]
+        elif damage in {"empty_reviewer_id", "empty_reviewer_model"}:
+            field = "reviewer_id" if damage == "empty_reviewer_id" else "reviewer_model"
+            payload["candidate"][field] = ""
+            conn.execute(KifuNameResearchEvidence.__table__.update().values(**{field: ""}))
+        elif damage == "blank_conclusion":
+            payload["candidate"]["review_conclusion"] = "   "
         elif damage == "pending":
             conn.execute(KifuNameResearchEvidence.__table__.update().values(review_status="pending"))
         elif damage == "owner_review":
             conn.execute(KifuRawEventValue.__table__.update().values(review_metadata=None))
+        elif damage in {"owner_blank_conclusion", "owner_blank_basis"}:
+            field = "review_conclusion" if damage == "owner_blank_conclusion" else "category_basis"
+            review = owner_review(8, payload["candidate"]["raw_value"])
+            review[field] = "   "
+            conn.execute(KifuRawEventValue.__table__.update().values(review_metadata=review))
         elif damage == "rule":
             payload["candidate"]["generation_rule_version"] = "forged-rule"
             conn.execute(KifuRawEventName.__table__.update().values(generation_rule_version="forged-rule"))
@@ -330,7 +342,7 @@ def test_persisted_literal_title_rejects_changed_approval_or_evidence(engine, da
         else:
             payload["research"]["source_checks"][0]["candidate_name"] = "Wrong core"
             payload["candidate"]["research_sha256"] = canonical_sha256(payload["research"])
-        if damage not in {"pending", "owner_review"}:
+        if damage not in {"pending", "owner_review", "owner_blank_conclusion", "owner_blank_basis"}:
             conn.execute(KifuNameResearchEvidence.__table__.update().values(research_payload=payload))
     with Session(engine) as db:
         album = db.get(KifuAlbum, 11)

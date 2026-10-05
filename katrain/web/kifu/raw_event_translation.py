@@ -144,12 +144,12 @@ def eligible_raw_title_owner(raw_owner):
                     and review["raw_value"] == raw_owner["raw_value"]
                     and _SHA.fullmatch(review["scope_sha256"])
                     and _SHA.fullmatch(review["research_manifest_sha256"])
-                    and review["producer_id"] and review["producer_model"]
-                    and review["reviewer_id"] and review["reviewer_model"]
+                    and _text(review["producer_id"]) and _text(review["producer_model"])
+                    and _text(review["reviewer_id"]) and _text(review["reviewer_model"])
                     and review["producer_id"] != review["reviewer_id"]
                     and _time(review["produced_at"]) and _time(review["reviewed_at"])
                     and _time(review["reviewed_at"]) >= _time(review["produced_at"])
-                    and review["review_conclusion"] and review["category_basis"])
+                    and _text(review["review_conclusion"]) and _text(review["category_basis"]))
     except (KeyError, TypeError, AttributeError, ValueError):
         return False
 
@@ -188,14 +188,16 @@ def eligible_literal_raw_name(name, evidence, raw_owner):
                 and research.get("review_status") == "pending"
                 and candidate.get("review_status") == "approved"):
             return False
-        if not (candidate.get("producer_id") == research.get("producer_id") == evidence["producer_id"]
+        if not (_text(candidate.get("producer_id")) and _text(candidate.get("producer_model"))
+                and _text(candidate.get("reviewer_id")) and _text(candidate.get("reviewer_model"))
+                and _text(candidate.get("review_conclusion"))
+                and candidate.get("producer_id") == research.get("producer_id") == evidence["producer_id"]
                 and candidate.get("producer_model") == research.get("producer_model") == evidence["producer_model"]
                 and candidate.get("reviewer_id") == evidence["reviewer_id"]
                 and candidate.get("reviewer_model") == evidence["reviewer_model"]
                 and _time(candidate.get("produced_at")) == _stored_time(evidence.get("produced_at"))
                 and _time(candidate.get("reviewed_at")) == _stored_time(evidence.get("reviewed_at"))
                 and candidate.get("reviewer_id") != candidate.get("producer_id")
-                and candidate.get("review_conclusion")
                 and _time(candidate.get("produced_at"))
                 and _time(candidate.get("reviewed_at"))
                 and _time(candidate["reviewed_at"]) >= _time(candidate["produced_at"])):

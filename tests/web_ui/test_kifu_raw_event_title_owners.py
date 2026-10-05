@@ -8,6 +8,7 @@ from sqlalchemy import select
 from katrain.web.core.models_db import KifuAlbum, KifuRawEventValue
 from katrain.web.kifu.name_batch import BatchError, _image, undo_batch
 from katrain.web.kifu.name_candidates import canonical_sha256
+from katrain.web.kifu.raw_event_translation import GEOGRAPHIC39_RAW_VALUES
 from scripts.kifu_raw_event_title_owners import RAW_VALUES, apply_plan, inspect_plan, prepare_plan
 from tests.web_ui.test_kifu_name_batch import engine  # noqa: F401
 from tests.web_ui.test_kifu_name_candidates import registry
@@ -126,6 +127,47 @@ GENERIC49 = (
     ("升段赛", 125),
     ("2002年升段赛", 1),
 )
+GEOGRAPHIC39 = (
+    ("2001年中国围棋段位赛", 69),
+    ("2007年中国围棋段位赛第一轮", 35),
+    ("2007年中国围棋段位赛第12轮", 32),
+    ("2007年中国围棋段位赛第六轮", 32),
+    ("2005年中国围棋段位赛", 26),
+    ("2013年中国围棋段位赛", 19),
+    ("2002年中国围棋段位赛", 12),
+    ("2007年中国围棋段位赛第二轮", 10),
+    ("2007年中国围棋段位赛第九轮", 5),
+    ("2004年中国围棋段位赛", 4),
+    ("2007年中国围棋段位赛第11轮", 4),
+    ("2007年中国围棋段位赛第七轮", 4),
+    ("2007年中国围棋段位赛第三轮", 3),
+    ("2007年中国围棋段位赛第五轮", 3),
+    ("2007年中国围棋段位赛第八轮", 3),
+    ("2007年中国围棋段位赛第十轮", 3),
+    ("2007年中国围棋段位赛第四轮", 2),
+    ("2008年中国围棋段位赛第12轮", 2),
+    ("2008年中国围棋段位赛第三轮", 2),
+    ("2008年中国围棋段位赛第五轮", 2),
+    ("2008年中国围棋段位赛第八轮", 2),
+    ("2008年中国围棋段位赛第六轮", 2),
+    ("2008年中国围棋段位赛第四轮", 2),
+    ("2004年中国围棋段位赛第10轮", 1),
+    ("2004年中国围棋段位赛第11轮", 1),
+    ("2004年中国围棋段位赛第12轮", 1),
+    ("2004年中国围棋段位赛第4轮", 1),
+    ("2004年中国围棋段位赛第5轮", 1),
+    ("2004年中国围棋段位赛第6轮", 1),
+    ("2004年中国围棋段位赛第7轮", 1),
+    ("2004年中国围棋段位赛第8轮", 1),
+    ("2004年中国围棋段位赛第9轮", 1),
+    ("2007年中国围棋段位赛第10轮", 1),
+    ("2008年中国围棋段位赛第11轮", 1),
+    ("2008年中国围棋段位赛第一轮", 1),
+    ("2008年中国围棋段位赛第七轮", 1),
+    ("2008年中国围棋段位赛第九轮", 1),
+    ("2008年中国围棋段位赛第二轮", 1),
+    ("2008年中国围棋段位赛第十轮", 1),
+)
 
 
 def finite_fixture(engine, raws, counts):
@@ -154,10 +196,13 @@ def finite_fixture(engine, raws, counts):
     ("agon10", AGON_RAWS, (49, 24, 14, 7, 5, 60, 25, 1, 1, 19), 205),
     ("cmb2", CMB_RAWS, (1, 1), 2),
     ("generic49", tuple(raw for raw, _ in GENERIC49), tuple(count for _, count in GENERIC49), 557),
+    ("geographic39", tuple(raw for raw, _ in GEOGRAPHIC39), tuple(count for _, count in GEOGRAPHIC39), 294),
 ])
 def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
     if profile == "generic49":
         assert "团体赛" not in raws
+    if profile == "geographic39":
+        assert set(raws) == GEOGRAPHIC39_RAW_VALUES
     manifest = finite_fixture(engine, raws, counts)
     kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
               "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
@@ -174,7 +219,9 @@ def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, co
             inspect_plan(conn, plan, registry(), canonical_sha256(manifest))
     wrong_raw = deepcopy(manifest)
     wrong_raw["records"][0]["raw_value"] = (
-        "团体赛" if profile == "generic49" else wrong_raw["records"][0]["raw_value"] + "X")
+        "团体赛" if profile == "generic49" else
+        "2007年中华围棋段位赛第一轮" if profile == "geographic39" else
+        wrong_raw["records"][0]["raw_value"] + "X")
     with pytest.raises(BatchError):
         prepare_plan(engine, wrong_raw, "TEST", registry(), profile=profile, **kwargs)
     wrong_count = deepcopy(manifest)
@@ -199,6 +246,8 @@ def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, co
     ("cmb2", CMB_RAWS, (1, 2)),
     ("generic49", tuple(raw for raw, _ in GENERIC49),
      tuple(count - 1 if index == 0 else count for index, (_, count) in enumerate(GENERIC49))),
+    ("geographic39", tuple(raw for raw, _ in GEOGRAPHIC39),
+     tuple(count - 1 if index == 0 else count for index, (_, count) in enumerate(GEOGRAPHIC39))),
 ])
 def test_finite_profile_rejects_changed_game_total(engine, profile, raws, counts):
     manifest = finite_fixture(engine, raws, counts)

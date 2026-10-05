@@ -21,6 +21,7 @@ from katrain.web.kifu.name_batch import _image, apply_bundle, dry_run_bundle, un
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_candidate
 from katrain.web.kifu.name_evidence import EvidenceError, registry_sha256, validate_research_record
 from katrain.web.kifu.name_inventory import build_inventory
+from katrain.web.kifu.raw_event_translation import GEOGRAPHIC39_RAW_VALUES, validate_raw_title_research
 from tests.web_ui.test_kifu_name_batch import _v2_wrap, bind_fixture_candidate, engine  # noqa: F401
 from tests.web_ui.test_kifu_name_candidates import candidate, check, inventory, registry
 
@@ -87,6 +88,57 @@ def test_raw_title_candidate_binds_research_hash_and_raw_spelling():
                    {"generation_rule_version": "event-title-translation-v1"}):
         with pytest.raises(CandidateError):
             validate_candidate({**row, **change}, research, registry(), inv)
+
+
+def geographic_research(raw="2007年中国围棋段位赛第一轮"):
+    _, research = literal(raw=raw, display="China Go Rank Tournament, Round 1")
+    year, _, round_text = raw.partition("中国围棋段位赛")
+    research["raw_parts"] = ([{"kind": "year", "text": year}] if year else []) + [
+        {"kind": "geographic_qualifier", "text": "中国"}, {"kind": "core", "text": "围棋段位赛"},
+    ] + ([{"kind": "round", "text": round_text}] if round_text else [])
+    research["original_name"] = "围棋段位赛"
+    research["original_language_basis_url"] = "https://www.sport.gov.cn/n14471/n14482/n14519/c737737/content.html"
+    research["source_checks"][0].update(
+        source_id="sport-go-rank-promotion-2016", query="围棋段位赛",
+        url=research["original_language_basis_url"], candidate_name="围棋段位赛",
+        body_sha256="d64bd42d177f1c81ca3b467a1eac5da36154923223fbd2863b96e8f216cd16ca",
+        body_excerpt="全国围棋段位赛诞生于1982年",
+        identity_basis="The captured article contains the exact core 围棋段位赛; year and round come from EV")
+    return research
+
+
+def test_geographic_qualifier_accepts_exact_source_core_and_lossless_parts():
+    assert len(GEOGRAPHIC39_RAW_VALUES) == 39
+    assert canonical_sha256(sorted(GEOGRAPHIC39_RAW_VALUES)) == (
+        "996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315")
+    assert all(validate_raw_title_research(geographic_research(raw)) for raw in GEOGRAPHIC39_RAW_VALUES)
+    sources = registry()
+    sources["sources"].append({"id": "sport-go-rank-promotion-2016", "tier": "official",
+                               "home_url": "https://www.sport.gov.cn/", "language": "zh-Hans"})
+    research = geographic_research()
+    research["registry_sha256"] = registry_sha256(sources)
+    assert validate_research_record(research, sources)["owner"] == research["owner"]
+    row, _ = literal(raw=research["raw_value"], display=research["candidate_name"])
+    row["research_sha256"] = canonical_sha256(research)
+    inv = inventory()
+    inv["album_associations"].append([3, "Black", "White", research["raw_value"], None, None, None])
+    assert validate_candidate(row, research, sources, inv) == row
+
+
+@pytest.mark.parametrize("raw,parts", [
+    ("2006年中国围棋段位赛第一轮", None),
+    ("2007年中华围棋段位赛第一轮", ["year", "geographic_qualifier", "core", "round"]),
+    ("2007年围棋段位赛中国第一轮", ["year", "core", "geographic_qualifier", "round"]),
+])
+def test_geographic_qualifier_rejects_outside_scope_or_wrong_text_or_position(raw, parts):
+    research = geographic_research(raw)
+    if parts:
+        texts = ["2007年", "中华" if "中华" in raw else "中国", "围棋段位赛", "第一轮"]
+        if parts[1] == "core":
+            texts = ["2007年", "围棋段位赛", "中国", "第一轮"]
+        research["raw_parts"] = [{"kind": kind, "text": text} for kind, text in zip(parts, texts)]
+    with pytest.raises(ValueError):
+        validate_raw_title_research(research)
 
 
 def reviewed_bundle(engine):

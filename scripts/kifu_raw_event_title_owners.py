@@ -44,6 +44,8 @@ PROFILE_LIMITS = {
              "raw_count": 2, "game_total": 2},
     "generic49": {"raw_set_sha256": "17b041004df08a99aa9845060e0d6009f103e612110673e48a6260e2bd1395ab",
                   "raw_count": 49, "game_total": 557},
+    "geographic39": {"raw_set_sha256": "996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315",
+                     "raw_count": 39, "game_total": 294},
 }
 
 

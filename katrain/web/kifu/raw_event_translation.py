@@ -10,6 +10,47 @@ from urllib.parse import urlparse
 VERSION = "raw-event-title-translation-v1"
 OWNER_REVIEW_VERSION = "raw-event-title-owner-review-v1"
 PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
+GEOGRAPHIC39_RAW_VALUES = frozenset({
+    "2001年中国围棋段位赛",
+    "2007年中国围棋段位赛第一轮",
+    "2007年中国围棋段位赛第12轮",
+    "2007年中国围棋段位赛第六轮",
+    "2005年中国围棋段位赛",
+    "2013年中国围棋段位赛",
+    "2002年中国围棋段位赛",
+    "2007年中国围棋段位赛第二轮",
+    "2007年中国围棋段位赛第九轮",
+    "2004年中国围棋段位赛",
+    "2007年中国围棋段位赛第11轮",
+    "2007年中国围棋段位赛第七轮",
+    "2007年中国围棋段位赛第三轮",
+    "2007年中国围棋段位赛第五轮",
+    "2007年中国围棋段位赛第八轮",
+    "2007年中国围棋段位赛第十轮",
+    "2007年中国围棋段位赛第四轮",
+    "2008年中国围棋段位赛第12轮",
+    "2008年中国围棋段位赛第三轮",
+    "2008年中国围棋段位赛第五轮",
+    "2008年中国围棋段位赛第八轮",
+    "2008年中国围棋段位赛第六轮",
+    "2008年中国围棋段位赛第四轮",
+    "2004年中国围棋段位赛第10轮",
+    "2004年中国围棋段位赛第11轮",
+    "2004年中国围棋段位赛第12轮",
+    "2004年中国围棋段位赛第4轮",
+    "2004年中国围棋段位赛第5轮",
+    "2004年中国围棋段位赛第6轮",
+    "2004年中国围棋段位赛第7轮",
+    "2004年中国围棋段位赛第8轮",
+    "2004年中国围棋段位赛第9轮",
+    "2007年中国围棋段位赛第10轮",
+    "2008年中国围棋段位赛第11轮",
+    "2008年中国围棋段位赛第一轮",
+    "2008年中国围棋段位赛第七轮",
+    "2008年中国围棋段位赛第九轮",
+    "2008年中国围棋段位赛第二轮",
+    "2008年中国围棋段位赛第十轮",
+})
 _ORDINAL = re.compile(r"第[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|轮|輪)\Z")
 _YEAR = re.compile(r"(?:18|19|20)\d{2}年\Z")
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
@@ -105,13 +146,21 @@ def validate_raw_title_research(record):
     cores = [part["text"] for part in parts if part["kind"] == "core"]
     if len(cores) != 1 or cores[0] != record.get("original_name"):
         raise ValueError("literal raw title must have one sourced core")
-    if any(part["kind"] not in {"core", "year", "edition", "round"}
+    if any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
            or part["kind"] in {"edition", "round"} and not _ORDINAL.fullmatch(part["text"])
            or part["kind"] == "year" and not _YEAR.fullmatch(part["text"])
            for part in parts):
         raise ValueError("literal raw title has an unsupported year or ordinal")
     if len({part["kind"] for part in parts}) != len(parts):
         raise ValueError("literal raw title repeats a component")
+    geographic = [(index, part) for index, part in enumerate(parts) if part["kind"] == "geographic_qualifier"]
+    if raw in GEOGRAPHIC39_RAW_VALUES:
+        if (len(geographic) != 1 or geographic[0][1]["text"] != "中国"
+                or geographic[0][0] + 1 >= len(parts)
+                or parts[geographic[0][0] + 1] != {"kind": "core", "text": "围棋段位赛"}):
+            raise ValueError("fixed geographic title needs 中国 immediately before its sourced core")
+    elif geographic:
+        raise ValueError("geographic qualifier is outside the fixed raw title scope")
     checks = record.get("source_checks")
     if not isinstance(checks, list) or not checks:
         raise ValueError("literal raw title core lacks captured source evidence")

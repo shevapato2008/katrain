@@ -105,6 +105,8 @@
 
 最新两库真实捕获为 11 原文／175 盘（旧摘要 167 已废弃），raw-set SHA `c5303d78e042bbb83c3e6c666abfd74e0d14127e32dbd52b38b4b9fc02685a1d`。CWI 实际原文写 Tokyo Shinbun Cup (東京新聞盃)，并列 1–11 届；Kifudepot 日文棋谱标题佐证。只翻译 exact title/edition，不改变身份、parser 或 FK；Final 等其他四 raw 留下一批。
 
-- [ ] 固定 profile 复用现有参数化 fixture；同时纯 validator 只放行 exact 1st–11th Tokyo Shinbun Cup 的两段无损 edition＋core，不泛化其他英文比赛或 Final。原 Chinese ordinal gate 保留。RED 11 fail／5 pass → GREEN 两文件 64 passed；独立 Astra 审查后提交，并把同一纯文件在当前线上镜像上最小覆盖发布。当前云端基底已是 kifu-library-fast，保留其 endpoint／identity／性能和前端文件。
-- [ ] producer 交付标准 CLI-valid 55 条 unsigned 研究与实际 owner scope；root 核对来源、数字和五语译文，按 TEST→PROD owner→name 入库。
-- [ ] 线上显示／搜索／英语回退与原始数据不变核验；报告真实覆盖、HTML、归档。棋手批次并行，确认同人重复不计新棋手，不绕过碰撞。
+- [x] 固定 profile 复用现有参数化 fixture；同时纯 validator 只放行 exact 1st–11th Tokyo Shinbun Cup 的两段无损 edition＋core，不泛化其他英文比赛或 Final。原 Chinese ordinal gate 保留。RED 11 fail／5 pass → GREEN 两文件 64 passed；独立 Astra 审查后提交，并把同一纯文件在当前线上镜像上最小覆盖发布。当前云端基底已是 kifu-library-fast，保留其 endpoint／identity／性能和前端文件。
+- [x] producer 交付标准 CLI-valid 55 条 unsigned 研究与实际 owner scope；root 核对来源、数字和五语译文，按 TEST→PROD owner→name 入库。
+- [x] 线上显示／搜索／英语回退与原始数据不变核验；报告真实覆盖、HTML、归档。棋手批次并行，确认同人重复不计新棋手，不绕过碰撞。
+
+实际交付：代码 9b3d8532 经独立 Astra APPROVE，source packet 55 条通过全部纯校验，owner 133／name 134 两库实际写入核验 11／175／55。两端仅共享纯 validator 新镜像发布；健康、hash、旧 4 项及新 11 项 HTTP 均通过。CWI 主要来源已存 evidence research_payload，Kifudepot 补充核查页保存在 immutable manifest/归档，未宣称所有补充页面都已进 DB。实际原文标题覆盖 4,897、完整展示 51,675；两类来源存储位置如实区分。

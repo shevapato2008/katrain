@@ -1,0 +1,13 @@
+{
+  "committed": true,
+  "created_player_ids": [],
+  "linked_by_raw": {
+    "中小野田智己": 210,
+    "桥本雄二郎": 104,
+    "高梨圣健": 93
+  },
+  "linked_slots": 407,
+  "plan_sha256": "22238d591eb15b4c9fb34347087f8792ad860b31c4371a9e342c045fc53f53ff",
+  "postimage_sha256": "0b0b1e30c08df90610df5493bc268dd1151eafd577522fc073bf7514d763415e",
+  "raw_review_rows": 3
+}

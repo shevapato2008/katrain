@@ -1,0 +1,294 @@
+{
+  "completed_at": "2026-10-05T09:50:21.990369+00:00",
+  "reviewer_id": "/root/event10_review_apply",
+  "reviewer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "scope": {
+    "event_ids": [
+      24,
+      25
+    ],
+    "languages": [
+      "cn",
+      "tw",
+      "jp",
+      "ko",
+      "en"
+    ],
+    "name_cells_per_environment": 10,
+    "album_link_changes": 0,
+    "owner_changes": 0
+  },
+  "environments": {
+    "TEST": {
+      "dry_run": {
+        "approved": 10,
+        "bundle_sha256": "82fb0631a9626c6294f0921af1bf68b4425506b7216e62a3b953b59124e2bfdd",
+        "candidate_count": 10,
+        "errors": [],
+        "estimated_undo_rows": 20,
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 10,
+        "missing": 0,
+        "pending": 0,
+        "ready": true,
+        "rejected": 0,
+        "write_errors": [],
+        "write_ready": true,
+        "affected_album_count": 10065,
+        "affected_album_ids_sha256": "cad908e2eaa7078b5e706bd60ffd3a3f1ec0545e95fc5b59e5c6be7d5342dc11"
+      },
+      "apply": {
+        "batch_id": 11,
+        "change_count": 20,
+        "resolved_refs": {
+          "event:24": 24,
+          "event:25": 25
+        },
+        "status": "applied",
+        "affected_album_count": 10065,
+        "affected_album_ids_sha256": "cad908e2eaa7078b5e706bd60ffd3a3f1ec0545e95fc5b59e5c6be7d5342dc11"
+      },
+      "verification": {
+        "batch_id": 11,
+        "bundle_sha256": "82fb0631a9626c6294f0921af1bf68b4425506b7216e62a3b953b59124e2bfdd",
+        "catalog_unchanged": true,
+        "change_count": 20,
+        "changed_tables": {
+          "kifu_event_names": 10,
+          "kifu_name_research_evidence": 10
+        },
+        "covered_unique_games_union": 10065,
+        "eligible_name_count": 10,
+        "events": [
+          {
+            "event_id": 24,
+            "rows": 5638,
+            "unique_games": 5638,
+            "verified_selection_albums": 0,
+            "visible_unique_games": 5638
+          },
+          {
+            "event_id": 25,
+            "rows": 4427,
+            "unique_games": 4427,
+            "verified_selection_albums": 0,
+            "visible_unique_games": 4427
+          }
+        ],
+        "names": [
+          {
+            "display_name": "Honinbo",
+            "event_id": 24,
+            "evidence_id": 122,
+            "lang": "en",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊战",
+            "event_id": 24,
+            "evidence_id": 123,
+            "lang": "cn",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊戰",
+            "event_id": 24,
+            "evidence_id": 124,
+            "lang": "tw",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊戦",
+            "event_id": 24,
+            "evidence_id": 125,
+            "lang": "jp",
+            "status": "verified"
+          },
+          {
+            "display_name": "본인방전",
+            "event_id": 24,
+            "evidence_id": 126,
+            "lang": "ko",
+            "status": "verified"
+          },
+          {
+            "display_name": "Judan",
+            "event_id": 25,
+            "evidence_id": 127,
+            "lang": "en",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段战",
+            "event_id": 25,
+            "evidence_id": 128,
+            "lang": "cn",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段戰",
+            "event_id": 25,
+            "evidence_id": 129,
+            "lang": "tw",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段戦",
+            "event_id": 25,
+            "evidence_id": 130,
+            "lang": "jp",
+            "status": "verified"
+          },
+          {
+            "display_name": "일본십단전",
+            "event_id": 25,
+            "evidence_id": 131,
+            "lang": "ko",
+            "status": "verified"
+          }
+        ],
+        "status": "applied",
+        "target": "TEST",
+        "verified_at": "2026-10-05T09:44:06.745207+00:00"
+      },
+      "packet_directory": "/tmp/kifu-event24-25-reviewed-20261005",
+      "verified_receipt_file_sha256": "70c261299f94c732cdf0002a026d343621569e650537628e2f33e5eb3b7c413b"
+    },
+    "PROD": {
+      "dry_run": {
+        "approved": 10,
+        "bundle_sha256": "6b20a16be3aef9f3a6105e1f7da74f075bba0b16b22304bbc7d1d2f357b97e93",
+        "candidate_count": 10,
+        "errors": [],
+        "estimated_undo_rows": 20,
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 10,
+        "missing": 0,
+        "pending": 0,
+        "ready": true,
+        "rejected": 0,
+        "write_errors": [],
+        "write_ready": true,
+        "affected_album_count": 10065,
+        "affected_album_ids_sha256": "cad908e2eaa7078b5e706bd60ffd3a3f1ec0545e95fc5b59e5c6be7d5342dc11"
+      },
+      "apply": {
+        "batch_id": 11,
+        "change_count": 20,
+        "resolved_refs": {
+          "event:24": 24,
+          "event:25": 25
+        },
+        "status": "applied",
+        "affected_album_count": 10065,
+        "affected_album_ids_sha256": "cad908e2eaa7078b5e706bd60ffd3a3f1ec0545e95fc5b59e5c6be7d5342dc11"
+      },
+      "verification": {
+        "batch_id": 11,
+        "bundle_sha256": "6b20a16be3aef9f3a6105e1f7da74f075bba0b16b22304bbc7d1d2f357b97e93",
+        "catalog_unchanged": true,
+        "change_count": 20,
+        "changed_tables": {
+          "kifu_event_names": 10,
+          "kifu_name_research_evidence": 10
+        },
+        "covered_unique_games_union": 10065,
+        "eligible_name_count": 10,
+        "events": [
+          {
+            "event_id": 24,
+            "rows": 5638,
+            "unique_games": 5638,
+            "verified_selection_albums": 0,
+            "visible_unique_games": 5638
+          },
+          {
+            "event_id": 25,
+            "rows": 4427,
+            "unique_games": 4427,
+            "verified_selection_albums": 0,
+            "visible_unique_games": 4427
+          }
+        ],
+        "names": [
+          {
+            "display_name": "Honinbo",
+            "event_id": 24,
+            "evidence_id": 122,
+            "lang": "en",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊战",
+            "event_id": 24,
+            "evidence_id": 123,
+            "lang": "cn",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊戰",
+            "event_id": 24,
+            "evidence_id": 124,
+            "lang": "tw",
+            "status": "verified"
+          },
+          {
+            "display_name": "本因坊戦",
+            "event_id": 24,
+            "evidence_id": 125,
+            "lang": "jp",
+            "status": "verified"
+          },
+          {
+            "display_name": "본인방전",
+            "event_id": 24,
+            "evidence_id": 126,
+            "lang": "ko",
+            "status": "verified"
+          },
+          {
+            "display_name": "Judan",
+            "event_id": 25,
+            "evidence_id": 127,
+            "lang": "en",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段战",
+            "event_id": 25,
+            "evidence_id": 128,
+            "lang": "cn",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段戰",
+            "event_id": 25,
+            "evidence_id": 129,
+            "lang": "tw",
+            "status": "verified"
+          },
+          {
+            "display_name": "十段戦",
+            "event_id": 25,
+            "evidence_id": 130,
+            "lang": "jp",
+            "status": "verified"
+          },
+          {
+            "display_name": "일본십단전",
+            "event_id": 25,
+            "evidence_id": 131,
+            "lang": "ko",
+            "status": "verified"
+          }
+        ],
+        "status": "applied",
+        "target": "PROD",
+        "verified_at": "2026-10-05T09:49:20.414851+00:00"
+      },
+      "packet_directory": "/tmp/kifu-event24-25-reviewed-20261005",
+      "verified_receipt_file_sha256": "9c8a91fc7ff02dc8a3747792d9183efc0f9e337c1f01b75024b85a642caaf7a9"
+    }
+  }
+}

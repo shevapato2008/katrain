@@ -1,0 +1,53 @@
+{
+  "created_at_utc": "2026-10-05T01:45:16.551076+00:00",
+  "database_writes_performed_by_reviewer": 0,
+  "decision": "APPROVE_EXACT_FINAL_PLAN_BYTES_FOR_DRY_AND_CONDITIONAL_APPLY",
+  "environments": {
+    "prod": {
+      "approved_compressed_plan_sha256": "22238d591eb15b4c9fb34347087f8792ad860b31c4371a9e342c045fc53f53ff",
+      "approved_slot_count": 407,
+      "approved_snapshot_sha256": "23bdb84b698259be6fa3b550dba06d17e03ee2a89001f5f9ec59753d21023fed",
+      "canonical_final_payload_sha256": "5876ae7aa4fc15ffd097d9c51bca8a43f936349724d5bd871b4ef7e479075aac",
+      "changed_album_columns": 407,
+      "changed_raw_review_rows": 3,
+      "draft_json_difference_only_review_sha256": true,
+      "expected_postimage_sha256": "0b0b1e30c08df90610df5493bc268dd1151eafd577522fc073bf7514d763415e",
+      "plan": "docs/resource/kifu-player-existing3-PROD-final-plan-2026-10-05.json.gz"
+    },
+    "test": {
+      "approved_compressed_plan_sha256": "cda8f5406db26a8ec280ccd47e2ed5f6e371bcc22dce2ff0af4face202355d93",
+      "approved_slot_count": 407,
+      "approved_snapshot_sha256": "3056621791ccbf4fe068284b46dc2e15f7dc8c4679b2e3ccf9cfc4a3c4892bb2",
+      "canonical_final_payload_sha256": "0b4b61c873c9fd20db9ccb3bff49ee1bd0474b10a6266f69c5a835d49184a022",
+      "changed_album_columns": 407,
+      "changed_raw_review_rows": 3,
+      "draft_json_difference_only_review_sha256": true,
+      "expected_postimage_sha256": "13e095e27b0cc811a824885fbf4fe5d59227306601cdb4a42d328d1bc3394ce8",
+      "plan": "docs/resource/kifu-player-existing3-TEST-final-plan-2026-10-05.json.gz"
+    }
+  },
+  "execution_conditions": [
+    "The CLI executor and CLI byte hashes must remain equal to the hashes here.",
+    "Run each final plan with the same identity-decision review file and review SHA. Use the approved compressed plan SHA identically for --plan-sha256 and --approved-plan-sha256.",
+    "Perform each environment actual PostgreSQL dry transaction with rollback before its apply. Confirm its full post-dry scope equals the frozen preimage.",
+    "Apply TEST first, independently verify exact expected postimage, then apply PROD after its own dry and live preimage gate. No additional user approval is required by this review.",
+    "On any changed preimage, different final byte SHA or unexpected dry/postimage result, stop that execution and review the discrepancy.",
+    "After apply, preserve the excluded truncated-owner 9 slots and all language-name rows; this attestation authorizes no merge or name/rank correction."
+  ],
+  "format": "kifu-player-existing3-final-plan-sha-attestation-v1",
+  "identity_decision": "docs/resource/kifu-player-existing3-independent-decision-astra-2026-10-05.json",
+  "identity_decision_sha256": "37dc016ed4233e3b234d3a85ebb35b448bf9dc6ff2a94c8d3066bea5665ec988",
+  "reviewed_code_sha256": {
+    "katrain/web/kifu/player_existing3_exact.py": "696a5fa8509d858e664e2927db4e15b362233447632ab854192cb3d8d6235c8b",
+    "scripts/kifu_player_existing3_exact.py": "9d452f216eb8f478992593803f1054d89a8343f5d206f02e315930471fc493e6",
+    "tests/web_ui/test_player_existing3_exact.py": "e706dbcc7378bfe20fd29aa490b8547bd99a65963863520d4007a3fa09833804"
+  },
+  "reviewer": "independent review agent /root/link407_review_astra",
+  "verification_performed": [
+    "Recomputed both compressed file hashes from disk.",
+    "Parsed each final and compared exact JSON to the reviewed draft with only review_sha256 replaced.",
+    "Validated exact enumerated membership and per-environment IDs.",
+    "Independently compared computed preimage/postimage: only 407 enumerated album FK columns and three raw review status/metadata rows differ.",
+    "Confirmed reviewed executor/CLI/test file hashes unchanged."
+  ]
+}

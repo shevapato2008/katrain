@@ -27,6 +27,12 @@
 
 韩文 `오시로고` 可直接保留。[TYGEM 韩文专栏](https://www.tygem.com/column/pastcolumn/viewpage.php?gubun=C006&pagec=2&seq=492) 实际使用 `오시로고(御城棋)` 并解释其围棋含义，为此次有限词义复核提供直接佐证。无需替换为新造的韩文描述，也无需把这次补充词义核对扩张为新的研究流程。
 
+本次网页工具实际返回的正文片段：
+
+> 오시로고(御城棋)는 어전시합을 의미한다.
+
+摘录与出处另存 `/tmp/kifu-castle1-tygem-review-excerpt-20261006.txt`。它保存本次已取得的网页工具正文摘录；未另下载完整 HTTP 响应字节，也未改动冻结研究包。
+
 以上结论适用于这个 raw 字符串的历史围棋显示语义。材料没有把 539 局绑定为同一届、同一具体赛事身份；继续采用 `translated_from_original` / `literal_event_title`，不增加 identity link，也不将这些译法标成五语官方专名。
 
 ## 最小充分验证

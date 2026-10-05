@@ -1,5 +1,7 @@
 # 棋谱棋手与赛事十一语言全量本地化 Implementation Plan
 
+**2026-10-05 赛事直译补充：** 已有赛事实体的五语直译授权与必要正证要求见 [逐实体交付计划](2026-10-03-kifu-incremental-name-delivery.md) 的“赛事直译授权”；棋手规则不变。
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让正式库每盘可见棋谱的黑白棋手及赛事，在 `en cn tw jp ko de es fr ru tr ua` 下都有经过来源查证的正确显示决策、可追溯译名和跨语言检索；全库十一语言覆盖率达到 100% 才交付。

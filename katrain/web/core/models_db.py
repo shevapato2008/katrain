@@ -719,6 +719,7 @@ class KifuPlayer(Base):
 
     id = Column(Integer, primary_key=True)
     canonical_name = Column(String(512), nullable=False)
+    authoritative_pages = Column(JSON, nullable=False, default=list, server_default=text("'[]'"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

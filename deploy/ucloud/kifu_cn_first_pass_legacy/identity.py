@@ -114,8 +114,28 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
               AND (n.display_name = :query OR lower(n.display_name) = lower(:query))
         """), {"query": query}).all()
         reviewed = {player_id for player_id, name in rows if normalize_alias(name) == needle}
-        if len(reviewed) == 1 and not event_ids and (not player_ids or player_ids == reviewed):
+        event_rows = db.execute(text("""
+            SELECT DISTINCT n.event_id, n.display_name
+            FROM kifu_event_names AS n
+            JOIN kifu_name_research_evidence AS e ON e.id = n.evidence_id
+            WHERE n.status = 'verified'
+              AND e.review_status = 'approved'
+              AND n.event_id = e.event_id AND n.lang = e.lang
+              AND n.display_name = e.candidate_name
+              AND n.revision = e.revision
+              AND n.decision_kind = e.decision_kind
+              AND n.generation_rule_version = e.generation_rule_version
+              AND n.decision_kind IN ('conventional', 'translated')
+              AND e.producer_model IS NOT NULL AND e.reviewer_model IS NOT NULL
+              AND e.reviewer_id IS NOT NULL AND e.reviewed_at IS NOT NULL
+              AND e.reviewer_id <> e.producer_id
+              AND (n.display_name = :query OR lower(n.display_name) = lower(:query))
+        """), {"query": query}).all()
+        reviewed_events = {event_id for event_id, name in event_rows if normalize_alias(name) == needle}
+        if len(reviewed) == 1 and not event_ids and not reviewed_events and (not player_ids or player_ids == reviewed):
             player_ids.update(reviewed)
+        if len(reviewed_events) == 1 and not player_ids and not reviewed and (not event_ids or event_ids == reviewed_events):
+            event_ids.update(reviewed_events)
     return player_ids, event_ids
 
 

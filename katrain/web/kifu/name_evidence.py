@@ -23,7 +23,7 @@ from urllib.request import Request, urlopen
 DEFAULT_REGISTRY = Path(__file__).resolve().parents[3] / "docs/resource/kifu-name-source-registry.json"
 OWNER_KINDS = {"player", "event", "raw_player", "raw_event"}
 CHECK_STATUSES = {"found", "not_found", "incomplete", "unavailable"}
-SCOPE_STATUSES = {"found", "not_found_in_scope", "incomplete"}
+SCOPE_STATUSES = {"found", "not_found_in_scope", "incomplete", "translated_from_original"}
 LANGUAGE_BASIS = {"html_lang", "http_header", "reviewed_text"}
 SECONDARY_LANGUAGES = {"de", "es", "fr", "ru", "tr", "ua"}
 TRANSCRIPTION_SYSTEMS = {
@@ -1061,17 +1061,33 @@ def validate_research_record(record: dict, registry: dict) -> dict:
                  "completed research needs original-language source URL")
         if _text(record.get("reading")):
             _require(_https_url(record.get("reading_basis_url")), "reading needs source URL")
+    if scope_status == "translated_from_original":
+        _require(owner["kind"] == "event" and "id" in owner,
+                 "title translation requires an existing event ID")
+        _require(lang in {"cn", "tw", "jp", "ko", "en"}, "title translation supports the five primary languages")
+        _require(record.get("translation_method") == "literal_event_title", "title translation method required")
+        _require(_text(record.get("candidate_name")), "title translation needs a target candidate")
+        target = record["original_language"]
+        _require(target in registry["language_tags"].values(), "title translation needs a concrete original language")
     checks = record.get("source_checks")
     _require(isinstance(checks, list) and bool(checks), "source checks required")
     sources = {source["id"]: source for source in registry["sources"]}
     for check in checks:
         _validate_check(check, owner, target, sources, finite_negative="negative_closure" in record)
+        if scope_status == "translated_from_original":
+            _require(check["status"] == "found" and check["candidate_name"] == record["original_name"]
+                     and sources[check["source_id"]]["tier"] in {
+                         "official", "language_go", "wikipedia_article", "encyclopedia"
+                     }, "title translation needs positive identity evidence for the original name")
         if check["status"] == "found" and sources[check["source_id"]]["tier"] in {
             "wikipedia_article", "encyclopedia"
         }:
             _require(_text(record.get("original_name")), "article identity needs original name")
             _validate_article_evidence(check, sources, record["original_name"])
-    if scope_status == "found":
+    if scope_status == "translated_from_original":
+        _require(any(check["url"] == record["original_language_basis_url"] for check in checks),
+                 "title translation original-language source must be a captured identity source")
+    elif scope_status == "found":
         candidate = record.get("candidate_name")
         _require(_text(candidate), "found record needs candidate name")
         _require(any(check["status"] == "found" and check["candidate_name"] == candidate for check in checks),

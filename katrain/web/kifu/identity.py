@@ -85,7 +85,9 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
             model.revision == KifuNameResearchEvidence.revision,
             model.decision_kind == KifuNameResearchEvidence.decision_kind,
             model.decision_kind.in_(
-                _DECISIONS | {"transliterated"} | ({"composed", "archive_description"} if model is KifuRawEventName else set())
+                _DECISIONS | {"transliterated"}
+                | ({"translated"} if model is KifuEventName else set())
+                | ({"composed", "archive_description"} if model is KifuRawEventName else set())
             ),
             model.generation_rule_version == KifuNameResearchEvidence.generation_rule_version,
             model.display_name == KifuNameResearchEvidence.candidate_name,
@@ -849,12 +851,16 @@ def resolve_strict_display(
                 else None
             )
         else:
+            # Progressive display can use the approved series title; strict
+            # display still requires an exact approval for structured raw text.
             displayed_event = _raw_event_value(
                 raw_events,
                 album.id,
                 event_raw,
                 event_id,
-                None if structure_event(event_raw or "")["components"] else event_name,
+                None
+                if fallback_names is None and structure_event(event_raw or "")["components"]
+                else event_name,
             )
     else:
         displayed_event = event_name

@@ -1146,6 +1146,68 @@ def test_composed_direct_event_scope_cannot_approve_a_selected_event_slot():
         engine.dispose()
 
 
+@pytest.mark.parametrize("strict", [False, True])
+def test_translated_event_title_is_progressive_fallback_but_exact_raw_stays_first(monkeypatch, strict):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1" if strict else "0")
+    engine, db = _db()
+    raw_spelling = "48届韩国名人战决赛3番棋2局0-1"
+    display = "한국 명인전"
+    try:
+        tournament = KifuEvent(canonical_name="韩国名人战")
+        db.add(tournament)
+        db.flush()
+        core = _evidence(db, "event", tournament.id, "ko", display, decision="translated")
+        core.generation_rule_version = "event-title-translation-v1"
+        db.add(KifuEventName(
+            event_id=tournament.id, lang="ko", display_name=display, status="verified",
+            decision_kind="translated", generation_rule_version=core.generation_rule_version,
+            revision=1, evidence_id=core.id,
+        ))
+        album = KifuAlbum(
+            player_black="Black", player_white="White", event=raw_spelling, event_id=tournament.id,
+            sgf_content="(;B[aa])", source_path="progressive-event-title.sgf",
+        )
+        db.add(album)
+        db.commit()
+
+        result = _list(db, display, "ko")
+        assert result.total == 1 and [item.id for item in result.items] == [album.id]
+        expected = "대회 이름 미확인" if strict else display
+        assert result.items[0].display_event == expected
+        assert result.items[0].event == raw_spelling
+        assert asyncio.run(kifu.get_kifu_album(_request(), album.id, lang="ko", db=db)).display_event == expected
+        assert identity.strict_slot_approvals(db, [album], "ko")[album.id][2] is None
+
+        raw_display = "제48기 한국 명인전 결승 3번기 제2국 (0-1)"
+        raw = KifuRawEventValue(raw_value=raw_spelling, category="game_description", review_status="approved")
+        db.add(raw)
+        db.flush()
+        proof = _evidence(db, "raw_event", raw.id, "ko", raw_display)
+        db.add(KifuRawEventName(
+            raw_event_id=raw.id, lang="ko", display_name=raw_display, status="verified",
+            decision_kind="conventional", generation_rule_version="test-v1", revision=1, evidence_id=proof.id,
+        ))
+        db.commit()
+        assert _list(db, display, "ko").items[0].display_event == raw_display
+        assert identity.strict_slot_approvals(db, [album], "ko")[album.id][2] == ("conventional", proof.id)
+    finally:
+        db.close()
+        engine.dispose()
+
+
+@pytest.mark.parametrize("raw_spelling,obscured", [
+    ("JapanPromotionTournament,1934,Fall", False), ("GNUGo3.8", True),
+])
+def test_progressive_event_title_keeps_formal_and_obscured_guards(raw_spelling, obscured):
+    album = SimpleNamespace(id=1, event=raw_spelling, event_id=3, black_player_id=None,
+                            white_player_id=None, player_black="Black", player_white="White")
+    resolved = identity.resolve_strict_display(
+        album, "en", {}, {3: "Approved event title"}, {3: "Oteai"}, {}, {},
+        obscured_event_ids={1} if obscured else set(), fallback_names=("Black", "White", raw_spelling),
+    )
+    assert resolved[2] == raw_spelling
+
+
 def test_normal_mode_progressively_displays_and_searches_reviewed_raw_names(monkeypatch):
     _preserve_stored_locale(monkeypatch)
     monkeypatch.delenv("KIFU_STRICT_NAMES", raising=False)

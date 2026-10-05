@@ -42,6 +42,7 @@ DECISION_KINDS = frozenset(
     (
         "conventional",
         "generated",
+        "translated",
         "generic",
         "hidden",
         "placeholder",
@@ -581,7 +582,7 @@ def _validate_candidate(
             validate_composed_candidate(row, raw, rule, base, scope)
         except CompositionError as exc:
             raise CandidateError(str(exc)) from exc
-    elif decision in {"conventional", "generated", "corrected"}:
+    elif decision in {"conventional", "generated", "corrected", "translated"}:
         checked = _research_for(row, research, registry)
         if row["review_status"] == "approved":
             captures = []
@@ -593,7 +594,14 @@ def _validate_candidate(
                         captures.append(nested["fetched_at"])
             _require(all(_time(row["reviewed_at"]) >= _time(captured_at) for captured_at in captures),
                      "candidate approval predates a source capture")
-        if decision == "generated":
+        if decision == "translated":
+            _require(checked["scope_status"] == "translated_from_original" and display == checked["candidate_name"],
+                     "translated event name must match the researched translation")
+            _require(row.get("translation_method") == checked["translation_method"] == "literal_event_title"
+                     and row["generation_rule_version"] == "event-title-translation-v1",
+                     "translated event name needs its explicit title translation method and rule")
+            _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
+        elif decision == "generated":
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
             _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
                      "generated name needs sourced original reading")
@@ -721,7 +729,7 @@ def _validate_candidate(
     if row["owner"]["kind"] in {"player", "raw_player"} and decision not in {"error", "placeholder"}:
         _require(not _RANK_SUFFIX.search(display) and not _RESULT.search(display),
                  "player name contains a rank or result")
-    if row["owner"]["kind"] == "event" and decision in {"conventional", "generated", "transliterated"}:
+    if row["owner"]["kind"] == "event" and decision in {"conventional", "generated", "transliterated", "translated"}:
         _require(not re.search(r"\b[12]\d{3}\b", display), "event core name contains a year")
     return row
 
@@ -1290,6 +1298,7 @@ def validate_bundle(
         if row["review_status"] == "approved" and row["decision_kind"] in {
             "conventional",
             "generated",
+            "translated",
             "corrected",
             "composed",
             "transliterated",

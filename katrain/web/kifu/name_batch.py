@@ -83,7 +83,10 @@ def _catalog_sha(conn) -> str:
     for model in (KifuPlayer, KifuEvent, KifuPlayerAlias, KifuEventAlias,
                   KifuRawPlayerValue, KifuRawEventValue):
         table = model.__table__
-        for row in conn.execute(select(table).order_by(table.c.id)).mappings():
+        # Preserve the pre-pages catalog hash used by already signed bundles.
+        # Append-only biography sources are not part of a player's identity.
+        columns = (table.c.id, table.c.canonical_name, table.c.created_at) if model is KifuPlayer else (table,)
+        for row in conn.execute(select(*columns).order_by(table.c.id)).mappings():
             image = {key: value.isoformat() if isinstance(value, datetime) else value
                      for key, value in row.items()}
             digest.update(model.__tablename__.encode("utf-8") + b":")
@@ -480,7 +483,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
     languages = {
         row["lang"]
         for row in candidates
-        if row["decision_kind"] in {"conventional", "generated", "corrected", "composed", "transliterated"}
+        if row["decision_kind"] in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}
     }
     if not languages:
         return
@@ -492,7 +495,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
             existing_names[(existing["lang"], normalize_alias(existing["display_name"]))].append(
                 (kind, existing[owner_column], existing["evidence_id"]))
     for row in candidates:
-        if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated"}:
+        if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}:
             continue
         owner = row["owner"]
         own_kind, own_id = owner["kind"], owner.get("id")

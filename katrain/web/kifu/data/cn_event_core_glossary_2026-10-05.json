@@ -264,11 +264,6 @@
     "source": "literal-translation",
     "confidence": "high"
   },
-  "1998NationalTeamTournament": {
-    "zh": "1998年国家队选拔赛",
-    "source": "literal-translation",
-    "confidence": "medium"
-  },
   "1998NorthAmericanMastersTournament": {
     "zh": "1998年北美名人赛",
     "source": "literal-translation",
@@ -329,6 +324,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "2001BadukTVNewStar": {
+    "zh": "2001年围棋TV新星赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "2001NorthAmericanMastersTournament": {
     "zh": "2001年北美大师赛",
     "source": "literal-translation",
@@ -351,6 +351,11 @@
   },
   "2003DreamLeague": {
     "zh": "2003年梦想联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "2003KATCup": {
+    "zh": "2003年KAT杯",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -634,6 +639,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "ACOMCup": {
+    "zh": "ACOM杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "AgonKiriyamaCup": {
     "zh": "阿含·桐山杯",
     "source": "literal-translation",
@@ -779,6 +789,11 @@
     "source": "https://foxwq.com/news/listid/id/12328.html",
     "confidence": "high"
   },
+  "Baedalwang,8,Korea,": {
+    "zh": "第8届韩国倍达王战",
+    "source": "https://book.kongfz.com/257558/6107110352/",
+    "confidence": "high"
+  },
   "BaotongbaoCupVeterans'InvitationTournament": {
     "zh": "宝通宝杯元老邀请赛",
     "source": "literal-translation",
@@ -786,6 +801,11 @@
   },
   "Baseball Go": {
     "zh": "棒球围棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Bawang": {
+    "zh": "霸王战",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1034,6 +1054,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Chunwon(Tengen)": {
+    "zh": "韩国天元战",
+    "source": "https://en.wikipedia.org/wiki/Chunwon",
+    "confidence": "high"
+  },
   "CitiesLeague,DivisionA": {
     "zh": "城市联赛甲级",
     "source": "literal-translation",
@@ -1046,6 +1071,16 @@
   },
   "Consultation 4-stone game": {
     "zh": "让四子商议棋",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "CostsenOpen,2002": {
+    "zh": "2002年Costsen公开赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Daguoshou": {
+    "zh": "大国手战",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1134,6 +1169,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "EtlandCup,KingofKings": {
+    "zh": "电子兰德杯王中王战",
+    "source": "https://sports.sohu.com/20070928/n252408190.shtml",
+    "confidence": "high"
+  },
   "European Go Congress": {
     "zh": "欧洲围棋大会",
     "source": "literal-translation",
@@ -1201,6 +1241,11 @@
   },
   "First of three trial games for grading in Japan": {
     "zh": "日本段位评定三局试赛第一局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "FiveBest": {
+    "zh": "五强赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1304,8 +1349,53 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Game to mark anniversary of death of Kita Fumiko 7d": {
+    "zh": "喜多文子七段忌辰纪念对局",
+    "source": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list10.html",
+    "confidence": "high"
+  },
+  "Game to mark award of government honour to Hashimoto Utaro 9-dan": {
+    "zh": "纪念桥本宇太郎九段获政府荣誉的棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Game to mark honouring of Go as Daguoshou": {
+    "zh": "吴清源获授“大国手”称号纪念对局",
+    "source": "https://archive.nihonkiin.or.jp/profile/2014/12/post_31.html",
+    "confidence": "high"
+  },
+  "Game to send off the spirit of Honinbo Shusai": {
+    "zh": "本因坊秀哉灵前告别棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Game with the 4th Kansai Ki-in First Place winner": {
+    "zh": "与第4届关西棋院第一位赛冠军对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Game with the Kansai Ki-in Championship winner": {
     "zh": "对阵关西棋院锦标赛冠军",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Game with the Kansai Ki-in High Dans Winner": {
+    "zh": "与关西棋院高段赛冠军对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Game with the Meijin": {
+    "zh": "与名人对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Game with winner of Kansai Ki-in championship": {
+    "zh": "与关西棋院冠军对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Games of Go versus New 7-dans": {
+    "zh": "吴清源对新晋七段系列赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1319,8 +1409,48 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "GamewithMeijinforwinnerof7thNationalElemen": {
+    "zh": "第7届全国小学赛冠军与名人对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "GamewithYoungKoreansponsoredbyKido": {
+    "zh": "与韩国青年棋手对局（《棋道》赞助）",
+    "source": "https://www.nihonkiin.or.jp/special/100anniversary/",
+    "confidence": "high"
+  },
+  "General Mobilisation of Serving 7-dans for Teaching Games": {
+    "zh": "在任七段棋手指导棋总动员",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Gentlemen'sCup": {
+    "zh": "绅士杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Gentlemen'sCupFinal": {
+    "zh": "绅士杯决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Go 9-dan versus Promising Newcomers": {
     "zh": "吴清源九段对新锐棋手赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Go Championship": {
+    "zh": "围棋锦标赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Go Seigen vs. 10 High dan players": {
+    "zh": "吴清源对十位高段棋手",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Go Seigen vs. Consecutive Winners Champion": {
+    "zh": "吴清源对连胜冠军",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1344,6 +1474,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Go versus New 7-dans": {
+    "zh": "吴清源对新晋七段赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Go versus New Stars Challenge": {
     "zh": "吴清源对新锐挑战赛",
     "source": "literal-translation",
@@ -1359,8 +1494,18 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "GoProdigiesCup": {
+    "zh": "围棋神童杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "GoWeeklyMini-go": {
     "zh": "《围棋周刊》迷你围棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Gosei Title": {
+    "zh": "碁圣头衔战",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1369,15 +1514,60 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "GoseiTitle": {
+    "zh": "碁圣头衔战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Goseititle": {
+    "zh": "碁圣头衔战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Govs.7and8-dansSeries,sponsoredbyYomiuriShinbun": {
+    "zh": "吴清源对七段、八段系列赛（读卖新闻赞助）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Govs.8-and7-dansSeries,sponsoredbyYomiuri": {
+    "zh": "吴清源对八段、七段系列赛（读卖新闻赞助）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Great relay game to commemorate 15 years of the Oteai": {
+    "zh": "纪念手合赛创办15周年大型接力赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Guoshou": {
+    "zh": "国手战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Hashimoto vs 6-dans": {
+    "zh": "桥本对六段棋手",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Hayago Championship": {
     "confidence": "high",
     "source": "https://archive.nihonkiin.or.jp/profile/enkaku/index.html",
     "zh": "快棋锦标赛"
   },
+  "Hayago Championship sponsored by Miyako Shinbun": {
+    "zh": "《都新闻》赞助快棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Hayago Meijin": {
     "confidence": "high",
     "source": "https://archive.nihonkiin.or.jp/profile/enkaku/index.html",
     "zh": "快棋名人战"
+  },
+  "Hayago Meijin Final": {
+    "zh": "快棋名人战决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "Hayago Tournament": {
     "zh": "速棋赛",
@@ -1399,8 +1589,38 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "High Dan Players Win & Continue": {
+    "zh": "高段棋手胜者续战赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "High-dan Players Tournament": {
+    "zh": "高段棋手赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "High-dan Win & Continue tournament sponsored by Chubu Nippon Shinbun": {
+    "zh": "中部日本新闻赞助高段胜者续战赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Hikaru no Go chapter 70": {
+    "zh": "《棋魂》第70话",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Hochi East-West Japan Match": {
     "zh": "报知东西日本对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Hochi Shinbun Champions win-and-continue tournament": {
+    "zh": "《报知新闻》冠军胜者续战赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Hochi Shinbun win-and-continue tournament": {
+    "zh": "《报知新闻》胜者续战赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1414,8 +1634,23 @@
     "source": "established-title-translation",
     "confidence": "medium"
   },
+  "Hoensha game, published in the Osaka Asahi Shinbun": {
+    "zh": "方圆社棋局（刊于《大阪朝日新闻》）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Hoensha relay game": {
     "zh": "方圆社接力棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "HoenshaJoshikiTeai": {
+    "zh": "方圆社定式手合赛",
+    "source": "https://search.showakan.go.jp/search/book/detail.php?material_cord=000047144",
+    "confidence": "high"
+  },
+  "Hoenshameeting": {
+    "zh": "方圆社例会",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1429,6 +1664,11 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Honinbo School Win & Continue Tournament sponsored by Jiji Shinpo": {
+    "zh": "本因坊塾胜者续战赛（时事新报赞助）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Honinbo Title": {
     "confidence": "high",
     "source": "https://www.nihonkiin.or.jp/match/",
@@ -1439,8 +1679,43 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Honinbo win & continue games": {
+    "zh": "本因坊胜者续战赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Honinbo,29,Japan,Mainichi": {
+    "zh": "本因坊战（第29届，日本，每日新闻）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Honinboand8dansTournament,1952": {
+    "zh": "1952年本因坊与八段棋手赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Honinboleague": {
+    "zh": "本因坊联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Honinbosand8-dansTournamentFinal": {
     "zh": "本因坊与八段赛决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Honinbovs.FivePlayers,sponsoredbyKyodoTsush": {
+    "zh": "本因坊对五人赛（共同通信社赞助）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Honinbovs.FiveYoungPlayers": {
+    "zh": "本因坊对五位青年棋手",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Horai Club meeting": {
+    "zh": "蓬莱俱乐部例会",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1449,8 +1724,23 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "IgoAsiaCSKCup": {
+    "zh": "亚洲围棋CSK杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Imperial Army Victory Memorial Go Party": {
+    "zh": "纪念皇军胜利围棋会",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "In memory of Honinbo Shuho": {
     "zh": "悼念本因坊秀甫棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "IngCup": {
+    "zh": "应氏杯",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1458,6 +1748,16 @@
     "confidence": "medium",
     "source": "https://www.nihonkiin.or.jp/",
     "zh": "院生联赛"
+  },
+  "Inseigame": {
+    "zh": "院生对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Inseitraininggame": {
+    "zh": "院生训练棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "Invitation Tournament for Nihon Ki-in Established Players v. New Stars": {
     "zh": "日本棋院资深棋手对新锐邀请赛",
@@ -1471,6 +1771,31 @@
   },
   "InvitationTournament,1980": {
     "zh": "1980年邀请赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "InvitationTournament,1982": {
+    "zh": "1982年邀请赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "InvitationTournament,1985": {
+    "zh": "1985年邀请赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "InvitationTournament,1990": {
+    "zh": "1990年邀请赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JTCup": {
+    "zh": "JT杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JTSeizaCup": {
+    "zh": "JT星座杯",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1509,8 +1834,38 @@
     "source": "literal-translation",
     "confidence": "high"
   },
+  "Japan-KoreaGoodwillExchange,4-boardmatch": {
+    "zh": "日韩友好交流赛（四台对抗）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Japan-KoreaNewStarsExchange": {
+    "zh": "日韩新星交流赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Japan-Taiwan relay game": {
+    "zh": "日台接力赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JapanInseiTouranment,1965": {
+    "zh": "1965年日本院生赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JapanInseiTournament,1965": {
+    "zh": "1965年日本院生赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "JapanStrongestPlayer": {
     "zh": "日本最强棋士战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JapaneseAgonCup,preliminary": {
+    "zh": "日本阿含桐山杯预选赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1518,6 +1873,11 @@
     "confidence": "medium",
     "source": "https://www.nihonkiin.or.jp/match/",
     "zh": "日本女子棋圣战"
+  },
+  "JapaneseFemaleMeijin,league": {
+    "zh": "日本女子名人战联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "JapaneseGosei": {
     "zh": "日本碁圣战",
@@ -1558,6 +1918,16 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "JapaneseNECCup": {
+    "zh": "日本NEC杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JapaneseOza": {
+    "zh": "日本王座战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "JapaneseRyusei": {
     "confidence": "high",
     "source": "https://www.nihonkiin.or.jp/match/",
@@ -1565,6 +1935,11 @@
   },
   "JapaneseShinjinO": {
     "zh": "日本新人王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JapaneseShinjinO,round1": {
+    "zh": "日本新人王战第一轮",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1584,6 +1959,21 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "JijiShinpowin&continueseries": {
+    "zh": "时事新报胜者续战系列赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "JinroCup": {
+    "zh": "真露杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Joshiki Teai": {
+    "zh": "定式手合赛",
+    "source": "https://search.showakan.go.jp/search/book/detail.php?material_cord=000047144",
+    "confidence": "high"
+  },
   "Jubango": {
     "zh": "十番棋",
     "source": "literal-translation",
@@ -1593,6 +1983,61 @@
     "zh": "十段战",
     "source": "literal-translation",
     "confidence": "medium"
+  },
+  "KATCup": {
+    "zh": "KAT杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KATSystemsCup,WorldCupCitiesCompetition": {
+    "zh": "KAT Systems杯（世界杯城市对抗赛）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KBSBadukWang": {
+    "zh": "KBS围棋王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KBSCup": {
+    "zh": "KBS杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KBSCup-BadukWang": {
+    "zh": "KBS杯围棋王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KBSCupFinal": {
+    "zh": "KBS杯决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KTCup": {
+    "zh": "KT杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KTFCup": {
+    "zh": "KTF杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KTMastersCup": {
+    "zh": "KT大师赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kakusei": {
+    "zh": "鹤圣战",
+    "source": "https://archive.nihonkiin.or.jp/match/kakusei/index.html",
+    "confidence": "high"
+  },
+  "KakuseiLeague": {
+    "zh": "鹤圣战循环圈",
+    "source": "https://archive.nihonkiin.or.jp/match/kakusei/index.html",
+    "confidence": "high"
   },
   "Kansai Branch Oteai": {
     "zh": "关西分院手合赛",
@@ -1604,6 +2049,16 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Kansai Branch Spring Oteai": {
+    "zh": "日本棋院关西支部春季大手合赛",
+    "source": "https://www.ritsumei.ac.jp/ir/isaru/assets/file/journal/31-3_01Ka.pdf",
+    "confidence": "high"
+  },
+  "Kansai Branch Study Group": {
+    "zh": "日本棋院关西支部研究会",
+    "source": "https://www.ritsumei.ac.jp/ir/isaru/assets/file/journal/31-3_01Ka.pdf",
+    "confidence": "high"
+  },
   "Kansai Branch Summer Oteai": {
     "zh": "关西分院夏季手合赛",
     "source": "literal-translation",
@@ -1614,8 +2069,18 @@
     "source": "literal-translation",
     "confidence": "high"
   },
+  "Kansai Ki-in 9-dan League": {
+    "zh": "关西棋院九段联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Kansai Ki-in Championship": {
     "zh": "关西棋院锦标赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kansai Ki-in Championship Final": {
+    "zh": "关西棋院锦标赛决赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1631,6 +2096,11 @@
   },
   "Kansai Ki-in Hayago Meijin Final": {
     "zh": "关西棋院早棋名人战决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kansai Ki-in Hayago Meijin vs. Hashimoto": {
+    "zh": "关西棋院快棋名人对桥本",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1662,6 +2132,11 @@
   "Kansai Twelve New Faces Tournament": {
     "zh": "关西十二新秀赛",
     "source": "literal-translation",
+    "confidence": "high"
+  },
+  "KansaiBranchOteai": {
+    "zh": "日本棋院关西支部大手合赛",
+    "source": "https://www.ritsumei.ac.jp/ir/isaru/assets/file/journal/31-3_01Ka.pdf",
     "confidence": "high"
   },
   "KansaiBranchOteaisponsoredbyKobeShinbun": {
@@ -1704,8 +2179,23 @@
     "source": "literal-translation",
     "confidence": "high"
   },
+  "Keiinsha game": {
+    "zh": "琼韵社对局",
+    "source": "https://note.com/nihonkiin/n/nef10dcb06493",
+    "confidence": "high"
+  },
+  "Kido Championship (W&C)": {
+    "zh": "《棋道》锦标赛（胜者续战）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Kido Cup Pro-Ama Open": {
     "zh": "棋道杯职业业余公开赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KirinCup": {
+    "zh": "麒麟杯",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1714,8 +2204,18 @@
     "source": "established-title-translation",
     "confidence": "high"
   },
+  "Kisei Accession Ceremony": {
+    "zh": "棋圣就位仪式",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Kisei Title": {
     "zh": "棋圣战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kisei5-DanTournament": {
+    "zh": "棋圣战五段赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1724,10 +2224,60 @@
     "source": "established-title-translation",
     "confidence": "high"
   },
+  "KiseongFinal": {
+    "zh": "棋圣战决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KiseongLeague": {
+    "zh": "棋圣战联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KisungTitle": {
+    "zh": "棋圣头衔战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KitaniDojoGirlsSeriessponsoredbyKido": {
+    "zh": "木谷道场女子系列赛（《棋道》赞助）",
+    "source": "https://www.nihonkiin.or.jp/special/100anniversary/",
+    "confidence": "high"
+  },
+  "Kiwang": {
+    "zh": "棋王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KiwangLeague": {
+    "zh": "棋王战联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Kobe Go Study Group": {
     "zh": "神户围棋研究会",
     "source": "literal-translation",
     "confidence": "high"
+  },
+  "Kobe Study Group": {
+    "zh": "神户研究会",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KobeShinbungame": {
+    "zh": "《神户新闻》棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Korea-ChinaKingoftheNewStarsMatch": {
+    "zh": "中韩新星王对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Korea-ChinaNewStarsTeamMatch": {
+    "zh": "中韩新星团体赛",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "Korea-JapanComputerGoTournament": {
     "zh": "日韩电脑围棋赛",
@@ -1736,6 +2286,26 @@
   },
   "Korea-JapanMatch": {
     "zh": "韩日对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Korea-JapanProExchange": {
+    "zh": "日韩职业棋手交流赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Korea-JapanQuickplayMatch": {
+    "zh": "日韩快棋对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Korea-JapanSummitTVtournament": {
+    "zh": "日韩峰会电视赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KoreaDreamLeague": {
+    "zh": "韩国梦想联赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1809,10 +2379,30 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "KoreanKingofKings": {
+    "zh": "韩国王中王赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "KoreanLeague,2004": {
     "zh": "2004年韩国围棋联赛",
     "source": "literal-translation",
     "confidence": "high"
+  },
+  "KoreanMaximCup": {
+    "zh": "韩国麦馨杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KoreanMeijintitle": {
+    "zh": "韩国名人战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "KoreanPricesInformationCup": {
+    "zh": "韩国物价信息杯",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "KoreanPromotionTournament": {
     "zh": "韩国升段赛",
@@ -1834,6 +2424,26 @@
     "source": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4419",
     "zh": "国棋战决赛"
   },
+  "KukgiLeague": {
+    "zh": "国棋联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kuksu,41th": {
+    "zh": "第41届国手战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kyodo News East-West Japan Match": {
+    "zh": "共同通信社东西日本对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Kyoto Hinode Shinbun W&C tournament": {
+    "zh": "《京都日出新闻》胜者续战赛",
+    "source": "https://www.meitan.j.u-tokyo.ac.jp/detail/637",
+    "confidence": "high"
+  },
   "LGRefinedOilsCup": {
     "confidence": "medium",
     "source": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000155",
@@ -1844,8 +2454,23 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "LebaishiCup": {
+    "zh": "乐百氏杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "LianDianCupFinal": {
+    "zh": "联电杯决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "LightningGoMeijin": {
     "zh": "闪电棋王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "LightningGoMeijin,3th": {
+    "zh": "第3届闪电围棋名人赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1864,8 +2489,28 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "MBCKorea-Japantvgame": {
+    "zh": "MBC日韩电视对局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "MBCQuickplay": {
+    "zh": "MBC快棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "MBCTVJapan-KoreaMatch": {
+    "zh": "MBC电视台日韩对抗赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "MaximCup": {
     "zh": "麦心杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Meijin": {
+    "zh": "名人战",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1905,6 +2550,21 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Myeong-in": {
+    "zh": "名人战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Myeongin": {
+    "zh": "名人战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "MyeonginLeague": {
+    "zh": "名人赛联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "NECCup": {
     "zh": "NEC杯",
     "source": "https://www.nihonkiin.or.jp/match/",
@@ -1914,6 +2574,21 @@
     "zh": "NEC杯决赛",
     "source": "literal-translation",
     "confidence": "medium"
+  },
+  "NECNewStars(Shun'ei)": {
+    "zh": "NEC俊英赛",
+    "source": "https://www.nihonkiin.or.jp/player/htm/ki000305_9.html",
+    "confidence": "high"
+  },
+  "NECShun'ei": {
+    "zh": "NEC俊英赛",
+    "source": "https://www.nihonkiin.or.jp/player/htm/ki000305_9.html",
+    "confidence": "high"
+  },
+  "NECShunei": {
+    "zh": "NEC俊英赛",
+    "source": "https://www.nihonkiin.or.jp/player/htm/ki000305_9.html",
+    "confidence": "high"
   },
   "NHK Cup": {
     "zh": "NHK杯围棋赛",
@@ -1930,8 +2605,23 @@
     "source": "https://archive.nihonkiin.or.jp/profile/enkaku/index.html",
     "zh": "日本电视台女子名人战"
   },
+  "NanfangSecuritiesCupforVeterans": {
+    "zh": "南方证券杯元老赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "NationalDailyWangjwaFinal": {
     "zh": "《国民日报》王座赛决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "NationalElementarySchoolChampionshipFinal": {
+    "zh": "全国小学赛决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "NationalGamesTeamTournament": {
+    "zh": "全国运动会团体赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1955,6 +2645,16 @@
     "source": "literal-translation",
     "confidence": "high"
   },
+  "NewPhysicalEducationCup": {
+    "zh": "新体育杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "NewStars(Shin'ei)": {
+    "zh": "新锐战",
+    "source": "https://www.nihonkiin.or.jp/player/htm/ki000305_9.html",
+    "confidence": "high"
+  },
   "Nihon Ki-in #1 Title": {
     "zh": "日本棋院第一位头衔赛",
     "source": "literal-translation",
@@ -1965,13 +2665,38 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Nihon Ki-in Champions Tournament": {
+    "zh": "日本棋院冠军赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Nihon Ki-in Championship Final": {
     "zh": "日本棋院锦标赛决赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Nihon Ki-in Championship?": {
+    "zh": "日本棋院锦标赛（存疑）",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Nihon Ki-in First Place Championship Final": {
+    "zh": "日本棋院第一位赛决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Nihon Ki-in Great Relay Game": {
+    "zh": "日本棋院大型接力赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Nihon Ki-in Highest Dans Tournament": {
     "zh": "日本棋院最高段位战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Nihon Ki-in Highest Dans Tournament Final": {
+    "zh": "日本棋院高段赛决赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -1987,6 +2712,16 @@
   },
   "Nihon Ki-in Professionals Invitation Games": {
     "zh": "日本棋院职业棋手邀请赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Nihon Ki-in Special Games": {
+    "zh": "日本棋院特别棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Nihon Ki-in Special Invitation Tournament": {
+    "zh": "日本棋院特别邀请赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2064,6 +2799,31 @@
     "confidence": "medium",
     "unit": "期"
   },
+  "Nissei Quick Go Gonin-nuki": {
+    "zh": "日生快棋五人拔擂台赛",
+    "source": "https://if2.info/geinou/data/detail/%E5%9D%82%E7%94%B0%E6%A0%84%E7%94%B7",
+    "confidence": "high"
+  },
+  "NorthAmericanMastersTournament": {
+    "zh": "北美大师赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Okan": {
+    "zh": "王冠战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Okan tournament": {
+    "zh": "王冠战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "OkanFinal": {
+    "zh": "王冠战决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Old Meijin Final": {
     "zh": "旧名人赛决赛",
     "source": "literal-translation",
@@ -2089,13 +2849,33 @@
     "source": "literal-translation",
     "confidence": "high"
   },
+  "Osaka-Kobe W&C match": {
+    "zh": "大阪—神户胜者续战赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Oteai Spring Session playoff final": {
+    "zh": "手合赛春季场附加赛决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Oteai Spring Session playoff series": {
     "zh": "手合春季赛加赛系列",
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Oteai winners' playoff series": {
+    "zh": "手合赛优胜者附加赛系列赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Oteai, playoff series": {
     "zh": "御手合升段赛附加赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Oteai, playoff series final": {
+    "zh": "手合赛附加赛系列决赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2114,11 +2894,26 @@
     "source": "https://www.nihonkiin.or.jp/match/oza/",
     "confidence": "high"
   },
+  "Oza exhibition game": {
+    "zh": "王座战表演赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "OzaFinal": {
     "confidence": "high",
     "source": "https://www.nihonkiin.or.jp/match/",
     "zh": "王座战决赛",
     "unit": "期"
+  },
+  "OzaPreliminary": {
+    "zh": "王座战预选赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "OzaTitleMatch": {
+    "zh": "王座战头衔赛",
+    "source": "literal-translation",
+    "confidence": "medium"
   },
   "Ozatitle": {
     "confidence": "high",
@@ -2131,6 +2926,11 @@
     "source": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4419",
     "zh": "霸王战"
   },
+  "P'aewang,Challengers'Final": {
+    "zh": "霸王战挑战者决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "P'aewangFinal": {
     "zh": "霸王战决赛",
     "source": "literal-translation",
@@ -2138,6 +2938,11 @@
   },
   "P'aewangLeague": {
     "zh": "霸王战联赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Pae'wang": {
+    "zh": "霸王战",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2156,13 +2961,38 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Prime Minister's Cup": {
+    "zh": "首相杯争夺高段者赛",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Minister/",
+    "confidence": "high"
+  },
   "PrimeMinister'sCup": {
-    "zh": "国务总理杯",
-    "source": "literal-translation",
-    "confidence": "medium"
+    "zh": "日本首相杯高段棋手赛",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Minister/",
+    "confidence": "high"
+  },
+  "PrimeMinister'sCup,16,Japan,": {
+    "zh": "日本第16届首相杯争夺高段者赛",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Minister/",
+    "confidence": "high"
+  },
+  "PrimeMinister'sCupFinal": {
+    "zh": "首相杯争夺高段者赛决赛",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Minister/",
+    "confidence": "high"
   },
   "PrimeMinistersCup": {
-    "zh": "国务总理杯",
+    "zh": "日本首相杯高段棋手赛",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Minister/",
+    "confidence": "high"
+  },
+  "Pro Ten Best": {
+    "zh": "职业十杰战",
+    "source": "https://www.nihonkiin.or.jp/special/100anniversary/",
+    "confidence": "high"
+  },
+  "Pro-Ama 2-stones games sponsored by Igo": {
+    "zh": "《围棋》赞助职业业余让二子赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2176,8 +3006,18 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Pro-Ama Meijin Game": {
+    "zh": "职业业余名人战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Pro-am 3-stone games": {
     "zh": "职业业余让三子棋局",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Pro-ama 2-stone series sponsored by Kido": {
+    "zh": "《棋道》赞助职业业余让二子系列赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2196,13 +3036,48 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Public quick game": {
+    "zh": "公开快棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Public quickplay teaching game": {
+    "zh": "公开快棋指导棋",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Qisheng": {
+    "zh": "棋圣战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Qiwang": {
+    "zh": "棋王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Quickplay Game": {
+    "zh": "快棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Readers' Award 3-Game Match": {
     "zh": "读者奖三番棋",
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "Reimeikai meeting": {
+    "zh": "黎明会例会",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "Rengo": {
     "zh": "联棋赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "RicoCupPairGo": {
+    "zh": "理光双人围棋赛",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2215,6 +3090,16 @@
     "zh": "新锐赛",
     "source": "literal-translation",
     "confidence": "medium"
+  },
+  "SBSCup": {
+    "zh": "SBS杯",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "SKNewProStarsBest10,4,Korea,SKGas": {
+    "zh": "第4届SK燃气杯新锐十杰战",
+    "source": "https://www.khan.co.kr/article/201603161126011",
+    "confidence": "high"
   },
   "Saikoi": {
     "confidence": "high",
@@ -2229,6 +3114,11 @@
   },
   "Saikoi Title": {
     "zh": "日本最高位战",
+    "source": "https://homepages.cwi.nl/~aeb/go/games/games/Saikoi/",
+    "confidence": "high"
+  },
+  "SaikoiFinal": {
+    "zh": "日本最高位战决赛",
     "source": "https://homepages.cwi.nl/~aeb/go/games/games/Saikoi/",
     "confidence": "high"
   },
@@ -2268,6 +3158,16 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "ShininWang": {
+    "zh": "新人王战",
+    "source": "https://sports.sohu.com/20120516/n343349602.shtml",
+    "confidence": "high"
+  },
+  "ShininWang(BCCard)": {
+    "zh": "BC卡杯新人王战",
+    "source": "https://sports.sohu.com/20120516/n343349602.shtml",
+    "confidence": "high"
+  },
   "Shinjin-O": {
     "zh": "新人王战",
     "source": "literal-translation",
@@ -2275,6 +3175,11 @@
   },
   "ShinjinO": {
     "zh": "新人王战",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
+  "Shishokai Meeting": {
+    "zh": "四象会例会",
     "source": "literal-translation",
     "confidence": "medium"
   },
@@ -2459,10 +3364,20 @@
     "source": "literal-translation",
     "confidence": "medium"
   },
+  "WangjwaFinal": {
+    "zh": "王座战决赛",
+    "source": "literal-translation",
+    "confidence": "medium"
+  },
   "WangjwaLeague": {
     "zh": "王座战循环圈",
     "source": "literal-translation",
     "confidence": "medium"
+  },
+  "Wangwei(FiveCowsCup)": {
+    "zh": "五牛杯王位战",
+    "source": "https://cn.govopendata.com/renminribao/1995/10/13/8/",
+    "confidence": "high"
   },
   "Win and Continue": {
     "confidence": "high",

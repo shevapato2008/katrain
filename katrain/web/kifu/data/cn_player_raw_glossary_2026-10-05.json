@@ -39,6 +39,10 @@
     "zh": "石井新藏",
     "source": "https://kansaikiin.jp/wp/taikyokukanri/?t_search_btn=%E6%A4%9C%E7%B4%A2&taikyokusya01=14&taikyokusya01_name=%E7%9F%B3%E4%BA%95%E6%96%B0%E8%94%B5%EF%BC%88%E3%81%84%E3%81%97%E3%81%84%E3%81%97%E3%82%93%E3%81%9E%E3%81%86%EF%BC%89"
   },
+  "Ito Tomoe": {
+    "zh": "伊藤友惠",
+    "source": "https://kotobank.jp/word/伊藤友恵-1055196"
+  },
   "Iwamoto Kaoru": {
     "zh": "岩本薰",
     "source": "https://www.nihonkiin.or.jp/player/htm/ki001002.htm"
@@ -51,6 +55,10 @@
     "zh": "加纳嘉德",
     "source": "https://www.igorating.com/players/yoshinori-kano"
   },
+  "Kitani Reiko": {
+    "zh": "木谷礼子",
+    "source": "https://igorating.com/en/players/reiko-kitani"
+  },
   "Kobayashi Koichi": {
     "zh": "小林光一",
     "source": "https://archive.nihonkiin.or.jp/player/htm/ki000001.htm"
@@ -58,6 +66,10 @@
   "Kobayashi Reiko": {
     "zh": "小林礼子",
     "source": "https://www.nihonkiin.or.jp/player/htm/ki000112.htm"
+  },
+  "Kodama Kunio": {
+    "zh": "儿玉国夫",
+    "source": "https://www.nihonkiin.or.jp/player/htm/ki000102.htm"
   },
   "Kubouchi Shuchi": {
     "zh": "洼内秀知",
@@ -107,6 +119,10 @@
     "zh": "徐奉洙",
     "source": "https://www.goratings.org/zh/players/49.html"
   },
+  "Shuwa": {
+    "zh": "本因坊秀和",
+    "source": "https://en.wikipedia.org/wiki/Hon%27inb%C5%8D_Sh%C5%ABwa"
+  },
   "SoYokoku": {
     "zh": "苏耀国",
     "source": "https://www.nihonkiin.or.jp/player/htm/ki000330.html"
@@ -115,9 +131,29 @@
     "zh": "杉内寿子",
     "source": "https://www.nihonkiin.or.jp/player_news/retired/post_537.html"
   },
+  "Sumino Takeshi": {
+    "zh": "炭野恒广",
+    "source": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+  },
+  "Sumino Tsunehiro": {
+    "zh": "炭野恒广",
+    "source": "https://igorating.com/players/tsunehiro-sumino"
+  },
   "Takagawa Shukaku": {
     "zh": "高川格",
     "source": "https://zh.wikipedia.org/wiki/高川格"
+  },
+  "Takahashi Shigeyuki": {
+    "zh": "高桥重行",
+    "source": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+  },
+  "Takahashi Toshimitsu": {
+    "zh": "高桥重行",
+    "source": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+  },
+  "TakahashiShigeyuki": {
+    "zh": "高桥重行",
+    "source": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
   },
   "Takemiya Masaki": {
     "zh": "武宫正树",

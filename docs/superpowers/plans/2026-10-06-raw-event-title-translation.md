@@ -58,10 +58,28 @@
 
 独立 GPT-6 Astra max 已检查九份研究包，建议先处理阿含桐山杯本选 10 原文／205 局及招商银行杯 2 原文／2 局；详情归档于 `docs/resource/kifu-raw-title-next-finite-decision-2026-10-06.md`。沿用已有字面语法和审核协议，不新增身份或 FK。
 
-- [x] 在现有 owner 工具追加显式 `agon10`、`cmb2` profile；分别固定原文集合 SHA、数量和成员总数，首批 first24 校验不变。仅允许这三个 profile，默认仍为 first24。
+- [x] 在现有 owner 工具追加显式 `agon10`、`cmb2` profile；分别固定原文集合 SHA、数量和成员总数，首批 first24 校验不变。新增 profile 均固定范围，默认仍为 first24。
 - [x] 聚焦验证 profile 选择、错误原文／数量／范围拒绝；保留完整前镜像 CAS、现有锁、签名和账本。独立代码审核通过后提交。
-- [ ] 研究 agent 将既有草稿规范成现有 manifest；阿含核心采用已捕获正文标题的真实连续片段，招商核心采用已捕获 2006 年正文。届次／轮次来自原 EV，不宣称来源核实了每个届次。
-- [ ] root 分别核对两库 live 精确前镜像及范围，TEST→PROD 批准 owner，再由独立 producer 绑定新 catalog／前镜像，审核并写入五语言名称。刷新实际统计及 HTML。
-- [ ] 并行获取团体赛、十番棋、中国围棋段位赛、全国围棋个人赛、升段赛的核心正向来源；源和候选完整后另批交付。不扩张当前 profile 到任意 manifest。
+- [x] 研究 agent 将既有草稿规范成现有 manifest；阿含核心采用已捕获正文标题的真实连续片段，招商核心采用已捕获 2006 年正文。届次／轮次来自原 EV，不宣称来源核实了每个届次。
+- [x] root 分别核对两库 live 精确前镜像及范围，TEST→PROD 批准 owner，再由独立 producer 绑定新 catalog／前镜像，审核并写入五语言名称。刷新实际统计及 HTML。
+- [x] 并行获取团体赛、十番棋、中国围棋段位赛、全国围棋个人赛、升段赛的核心正向来源；源和候选完整后另批交付。不扩张当前 profile 到任意 manifest。
 
 后续 CMB17／43 的六种阶段后缀待该批来源及候选齐备时单独实施；本轮不引入该语法。
+
+## Continuation 2: 通用说明与明确地理限定语
+
+两项独立 Astra 决定见 `docs/resource/kifu-generic-core-and-agon-decision-2026-10-06.md` 和 `docs/resource/kifu-generic-team-mixed-scope-decision-2026-10-06.md`。
+
+- [ ] 先交付纯 unlinked 的 `generic49`：49 原文／557 盘，原文集合 SHA `17b041004df08a99aa9845060e0d6009f103e612110673e48a6260e2bd1395ab`。仅追加有限 owner profile 与聚焦成功／错误 scope 检查，不改变原 reader 或任何旧 profile。
+- [ ] 独立 producer 从已核实 generic50 资料派生这 49 项，绑定真实 HTTPS 体育总局与 World Go 字节，保留届次、年份、轮次。两库真实 owner 审核、名称写入、查询和报告继续采用同一协议。
+- [ ] 随后为固定 `geographic39`：39 原文／294 盘，集合 SHA `996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315`，只允许一次 `geographic_qualifier:中国` 紧邻 `core:围棋段位赛`。限定语来自原 EV，核心由真实 HTTPS 2016 体育总局正文支持；研究 parts 无损，不修改 DB parser 或原 EV。测试一次成功及越界原文／错误限定语／位置拒绝；独立代码审核后才写入并发布纯检查模块。
+- [ ] 团体赛另批处理：现 324 个 raw occurrences 中 294 盘 unlinked，30 盘有 event_id。先只读冻结全部 324 个 ID／字段及 30 个完整 linked 镜像，有限 signed owner metadata 明确 eligible／excluded。仅在固定 owner 73686 的小范围例外中允许既有 linked 记录；保留原 FK，excluded event_id 即使换成另一个非 NULL 也须 CAS 拒绝。format2 owner occurrence 必须为全部 324，members 仅五语言名称单元；展示／搜索及新增覆盖只计 294。不改变 `_v2_scope` 或两 reader；旧纯 unlinked 路径不变。未有完整捕获前不批准该批，独立审核所有涉及生产数据边界的代码。
+
+各小批独立提交，已可交付部分不等待团体赛特例；棋手来源与五人入库继续并行。
+
+### 已完成代码及当前数据状态（2026-10-06 04:19 CST）
+
+- `generic49` 代码经独立 Astra 审查 APPROVE，实际源码只新增固定 profile；研究及两库只读 owner 方案已完整，数据尚未写入。
+- `geographic39` 代码提交 `af4bc201`（独立实现 `13c288bc`）经独立 Astra APPROVE；44 项聚焦测试通过。39／294 的研究资料和全部 parts 已验证，运行时纯模块镜像已构建，未发布；owner/name 尚未写入。
+- Agon owner 103／name 106、CMB owner 104／name 107，已在两库实际写入并核对；HTTP 分别每环境 16／11 项通过。实际统计及归档完成。
+- 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码继续独立实现，未批准写库。

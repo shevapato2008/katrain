@@ -1,5 +1,5 @@
 import { Box, Stack, Tab, Tabs, Typography, useTheme } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth';
 import Segmented from './Segmented';
@@ -33,6 +33,7 @@ interface TrendChartProps {
   totalMoves: number;
   currentMove: number;
   onMoveClick?: (move: number) => void;
+  reportMode?: boolean;
 }
 
 /**
@@ -81,10 +82,23 @@ export default function TrendChart({
   totalMoves,
   currentMove,
   onMoveClick,
+  reportMode = false,
 }: TrendChartProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const [tab, setTab] = useState(0);
+  const trendPlotRef = useRef<HTMLDivElement>(null);
+  const [trendHeight, setTrendHeight] = useState(180);
+
+  useEffect(() => {
+    const plot = trendPlotRef.current;
+    if (!reportMode || !plot) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setTrendHeight(Math.max(80, Math.floor(entry.contentRect.height)));
+    });
+    observer.observe(plot);
+    return () => observer.disconnect();
+  }, [reportMode, tab]);
 
   // 两张图各要一份实测宽度。**不能共用一个**：它们分属不同 tab，同一时刻只有一个挂载，
   // 共用的话 callback ref 会在切 tab 时被后挂载的那个覆盖，先挂的那张再也收不到尺寸变化。
@@ -140,7 +154,7 @@ export default function TrendChart({
     // viewBox 宽 == 容器实测 CSS 宽 ⇒ 缩放比恒为 1：绘图区随右栏伸缩，字号不跟着缩。
     // 改造前这里写死 420，320 档下整张图被缩到 0.79（轴标 11px 只剩 8.7px）。
     const width = dualWidth;
-    const height = 180;
+    const height = reportMode ? trendHeight : 180;
     const leftPadding = 56;
     const rightPadding = 56;
     const topPadding = 16;
@@ -886,7 +900,7 @@ export default function TrendChart({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       {/* 五个 tab：**不带括号计数、等宽、左对齐**（Fan 2026-09-01）。
           去掉计数的理由不只是整齐 —— 计数会随阶段/棋手筛选变，标签跟着变宽，
           整条 tab 会在用户点筛选时抖动。数量改到各 tab 自己的说明行里报。
@@ -900,8 +914,8 @@ export default function TrendChart({
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
-        variant="scrollable"
-        scrollButtons="auto"
+        variant={reportMode ? 'standard' : 'scrollable'}
+        scrollButtons={reportMode ? false : 'auto'}
         allowScrollButtonsMobile
         sx={{
           borderBottom: 1,
@@ -911,7 +925,8 @@ export default function TrendChart({
           bgcolor: 'background.paper',
           '& .MuiTab-root': {
             minHeight: 40,
-            minWidth: 88,
+            minWidth: reportMode ? 0 : 88,
+            ...(reportMode ? { flex: '1 1 auto' } : {}),
             py: 0,
             px: 0.5,
             fontSize: '0.84rem',
@@ -928,9 +943,9 @@ export default function TrendChart({
       </Tabs>
 
       {/* Scrollable content area */}
-      <Box sx={{ px: 1.5, py: 1, flex: 1, overflow: 'auto' }}>
+      <Box sx={{ px: 1.5, py: 1, flex: 1, minHeight: 0, overflow: 'auto' }}>
         {tab === 0 && (
-          <Box>
+          <Box sx={reportMode ? { height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' } : undefined}>
             {/* Values display above chart */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, px: 0.5 }}>
               <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
@@ -940,7 +955,7 @@ export default function TrendChart({
                 {t('live:black_lead', 'Black Lead')}: {currentScoreLead >= 0 ? '+' : ''}{currentScoreLead.toFixed(1)} {t('live:points_unit', 'pts')}
               </Typography>
             </Box>
-            <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5 }}>
+            <Box ref={trendPlotRef} sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5, ...(reportMode ? { flex: 1, minHeight: 0 } : {}) }}>
               {renderDualChart()}
             </Box>
           </Box>

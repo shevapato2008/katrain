@@ -120,7 +120,7 @@ export default function KifuReportDetailPage() {
             onAiMarkersToggle={() => setShowAiMarkers((value) => !value)}
             onCoordinatesToggle={coordinates.toggle} on3dToggle={() => setView3d((value) => !value)} onClearTryMoves={() => setTryMoves([])}
           />}
-          analysis={<TrendChart analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
+          analysis={<TrendChart reportMode analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
           navigation={<PlaybackBar inline currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
         />
       ) : null}

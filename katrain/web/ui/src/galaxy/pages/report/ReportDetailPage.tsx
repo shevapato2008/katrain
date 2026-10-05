@@ -218,7 +218,7 @@ export default function ReportDetailPage() {
             {task?.status !== 'completed' && <Alert severity={task?.status === 'failed' ? 'error' : 'info'} sx={{ py: 0, '& .MuiAlert-message': { fontSize: 18 } }}>{task?.status === 'running' ? `${t('report:generating', '分析中')} · ${task.analyzed_moves} / ${task.total_moves} ${t('live:moves', '手')}` : task?.status === 'failed' ? t('report:failed', '分析失败') : t('report:queuing', '等待分析')}</Alert>}
             <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={previewData?.moves[boardCursor]} />
           </>}
-          analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={setCurrentMove} /></Box>}
+          analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart reportMode analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={setCurrentMove} /></Box>}
           controls={<LiveMatchDisplayControls
             reportMode
             tryMoveMode={tryMoveMode}

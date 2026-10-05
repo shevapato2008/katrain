@@ -90,5 +90,13 @@
 下一批 `league20` 固定为已捕获的 20 原文／214 盘，原文集合 SHA `a56431132255fce798e22d0b8a0869f677f9ec8784fad6bba0a72babe615de9a`。全部使用既有 year＋core＋round 语法；官方正文连续出现「围棋甲级联赛」作为字面核心依据，不从该依据推导赛事身份或新增「全国」限定语。
 
 - [x] 在既有 owner 工具添加一个固定 profile，并复用现有参数化成功／错误 raw／数量／scope 检查；不改变 reader、语法或 FK。RED unknown profile → GREEN 11 项通过，独立 Astra APPROVE；报告 `docs/resource/kifu-league20-code-review-2026-10-06.md`。
-- [ ] 独立研究 producer 交付实际官方网页字节、五语言完整标题、两库精确前镜像和成员 ID。root 核对来源及集合，按 TEST→PROD 完成 owner 审核；随后重新绑定实际 catalog，再写入 100 个名称单元。
-- [ ] 核对完整 scope 不变、实际显示／精确搜索与英语回退，更新实际覆盖与 HTML；不重复构建或重启未变的网页服务。棋手五人批次持续并行。
+- [x] 独立研究 producer 交付实际官方网页字节、五语言完整标题、两库精确前镜像和成员 ID。root 核对来源及集合；两库 owner 125／名称 126 已实际写入核验 100 格，214 盘原始字段及 FK 不变。名称阶段使用独立完整 registry，保留已应用 owner registry；首次 registry 格式拒绝发生在零名称写入前，修正后真实 CLI dry-run 通过。
+- [x] 两端各 11 项实际显示／精确搜索／英语回退 HTTP 通过，完整两阶段 receipts 已归档。CE 棋手批次 127 后实际统计为 430／3,698 位棋手、64／85 赛事、完整五语言展示 50,933／173,025 盘；原文标题五语言覆盖 4,183 盘。未重启未变的网页服务。
+
+## Continuation 4: Castle Game 历史对局标题
+
+仅为原文字面翻译：固定 raw 69273／539 盘，raw-set SHA `85b73b82847777deefd627ce637ee3870725385cdfd76916202b4c23574f5f7c`。BGA Journal 134 实际 PDF 的 printed p.8／PDF p.9 支持历史围棋 Castle Game 用语，日本棋院历史页支持日文御城碁。不推导具体届次、比赛身份或 FK。
+
+- [x] 最小新增 `castle1` 固定 profile（1 原文／539 盘），复用已有参数化 exact raw／数量／scope 检查；RED unknown profile → GREEN 12 passed；独立 Astra APPROVE，报告 `docs/resource/kifu-castle1-code-review-2026-10-06.md`。TYGEM 韩文实文另证 `오시로고(御城棋)`；译名不是五语官方专名声明。
+- [ ] root 核对原始 PDF、日本棋院正文、五语言字面译法和完整 CLI registry；五人包 CE／CF 写入完成后，TEST→PROD owner→名称，绑定实际 catalog。
+- [ ] 核验全部原始字段及 FK 不变、五语言显示／搜索和其他语言英语回退；更新真实统计、HTML 和 receipts。继续并行处理高频棋手及下一赛事，不重启未变的网页服务。

@@ -251,6 +251,7 @@ def finite_fixture(engine, raws, counts):
     ("generic49", tuple(raw for raw, _ in GENERIC49), tuple(count for _, count in GENERIC49), 557),
     ("geographic39", tuple(raw for raw, _ in GEOGRAPHIC39), tuple(count for _, count in GEOGRAPHIC39), 294),
     ("league20", tuple(raw for raw, _ in LEAGUE20), tuple(count for _, count in LEAGUE20), 214),
+    ("castle1", ("Castle Game",), (539,), 539),
 ])
 def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
     if profile == "generic49":

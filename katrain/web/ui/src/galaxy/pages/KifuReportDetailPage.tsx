@@ -18,6 +18,7 @@ import ReportMetaPanel from '../components/report/ReportMetaPanel';
 import ReportAnalysisLayout from '../components/report/ReportAnalysisLayout';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from './live/LiveMatchDisplayControls';
+import ReplayBoard3D from '../components/board/ReplayBoard3D';
 
 const BACK_TO = '/galaxy/kifu';
 
@@ -31,6 +32,7 @@ export default function KifuReportDetailPage() {
   const [boardEdge, setBoardEdge] = useState(0);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
+  const [view3d, setView3d] = useState(false);
   const [showTerritory, setShowTerritory] = useState(false);
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
@@ -71,7 +73,7 @@ export default function KifuReportDetailPage() {
       fixedRail
       onBoardSizeChange={setBoardEdge}
       board={parsed ? (
-        <LiveBoard
+        view3d ? <ReplayBoard3D moves={parsed.moves} stoneColors={parsed.stoneColors} currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19} handicapCount={parsed.setupCount ?? 0} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={markers} showTerritory={showTerritory} ownership={showTerritory ? analysis?.ownership ?? null : null} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined} /> : <LiveBoard
           moves={parsed.moves} stoneColors={parsed.stoneColors}
           currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19}
           nextColor={playerToMove}
@@ -110,12 +112,13 @@ export default function KifuReportDetailPage() {
             reportMode
             tryMoveMode={tryMoveMode} showTerritory={showTerritory} showMoveNumbers={showMoveNumbers}
             showAiMarkers={showAiMarkers} showCoordinates={coordinates.visible}
+            view3d={view3d}
             ownershipAvailable={analysis?.ownership != null} tryMoves={tryMoves}
             onTryMoveToggle={() => { setTryMoveMode((value) => !value); setTryMoves([]); }}
             onTerritoryToggle={() => setShowTerritory((value) => !value)}
             onMoveNumbersToggle={() => setShowMoveNumbers((value) => !value)}
             onAiMarkersToggle={() => setShowAiMarkers((value) => !value)}
-            onCoordinatesToggle={coordinates.toggle} onClearTryMoves={() => setTryMoves([])}
+            onCoordinatesToggle={coordinates.toggle} on3dToggle={() => setView3d((value) => !value)} onClearTryMoves={() => setTryMoves([])}
           />}
           analysis={<TrendChart analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
           navigation={<PlaybackBar inline currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}

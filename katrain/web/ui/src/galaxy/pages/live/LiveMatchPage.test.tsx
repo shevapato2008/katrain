@@ -35,6 +35,10 @@ vi.mock('../../../components/live/LiveBoard', () => ({
   },
 }));
 
+vi.mock('../../components/board/ReplayBoard3D', () => ({
+  default: () => <div data-testid="mock-3d-board">3D Board</div>,
+}));
+
 type ResizeCallback = ConstructorParameters<typeof ResizeObserver>[0];
 class ResizeObserverMock {
   static callback: ResizeCallback | undefined;
@@ -90,6 +94,17 @@ describe('LiveMatchPage', () => {
     };
   });
 
+  it('switches between 2D and 3D from the shared board display group', () => {
+    renderPage();
+    const toggle = screen.getByRole('button', { name: '3D' });
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('mock-3d-board')).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
+  });
+
   it('composes real match data and panels into the shared shell without an old board header', () => {
     renderPage();
 
@@ -111,7 +126,7 @@ describe('LiveMatchPage', () => {
     expect(controls).toBeInTheDocument();
     // 工具格是四列一行的四个键；坐标不在格子里，是格子下面单独一行的开关。
     expect(within(controls).getAllByRole('button')).toHaveLength(4);
-    expect(within(rail).getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: '坐标' })).toBeInTheDocument();
     expect(trend).toHaveStyle({ flex: 'none' });
     expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
@@ -138,7 +153,7 @@ describe('LiveMatchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try Move' }));
     act(() => (boardProps.onTryMove as (move: string) => void)('K10'));
     expect(boardProps.tryMoves).toEqual(['K10']);
-    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    fireEvent.click(screen.getByRole('button', { name: '清空' }));
     expect(boardProps.tryMoves).toEqual([]);
 
     act(() => ResizeObserverMock.callback?.(
@@ -147,7 +162,7 @@ describe('LiveMatchPage', () => {
     ));
     expect(boardProps.showCoordinates).toBe(true);
     // 坐标已从工具格挪成单独一行的开关（与死活题页对齐），role 从 button 变成 checkbox。
-    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeChecked();
+    expect(screen.getByRole('button', { name: '坐标' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('keeps the playback move counter as one measurable action-region item', () => {

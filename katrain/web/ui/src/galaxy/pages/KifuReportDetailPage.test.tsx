@@ -39,7 +39,8 @@ it('shows the professional report in the shared fixed rail without a duplicate k
   expect(within(rail).getByTestId('report-meta-panel')).toHaveTextContent('赛事甲');
   expect(within(rail).getByTestId('report-candidate-list').children).toHaveLength(5);
   expect(within(rail).queryByRole('button', { name: '查看棋谱' })).not.toBeInTheDocument();
-  expect(within(rail).getByRole('switch', { name: '手数' })).toBeInTheDocument();
-  expect(within(rail).getByRole('switch', { name: 'Coordinates' })).toBeInTheDocument();
+  expect(within(rail).getByRole('button', { name: '手数' })).toHaveAttribute('aria-pressed', 'false');
+  expect(within(rail).getByRole('button', { name: '坐标' })).toHaveAttribute('aria-pressed', 'false');
+  expect(within(rail).getByRole('button', { name: '3D' })).toBeInTheDocument();
   expect(within(rail).getByRole('button', { name: '展开分析' })).toBeInTheDocument();
 });

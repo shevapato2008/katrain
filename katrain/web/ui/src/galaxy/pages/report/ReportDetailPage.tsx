@@ -16,7 +16,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ScienceIcon from '@mui/icons-material/Science';
 import { Alert, Box, Button, CircularProgress, Skeleton } from '@mui/material';
 
 import LiveBoard, { type AiMoveMarker } from '../../../components/live/LiveBoard';
@@ -26,7 +25,6 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { sgfToMoves } from '../../../utils/sgfSerializer';
 import { reportPlayerToMove } from '../../../utils/reportPlayer';
 import { useReportDetail } from '../../../features/report/useReportDetail';
-import { ReportsAPI } from '../../../api/reportApi';
 import AiAnalysis from '../../../components/live/AiAnalysis';
 import PlaybackBar from '../../../components/live/PlaybackBar';
 import TrendChart from '../../../components/live/TrendChart';
@@ -36,6 +34,7 @@ import BoardPageShell from '../../components/board/BoardPageShell';
 import ModulePlate from '../../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from '../live/LiveMatchDisplayControls';
+import ReplayBoard3D from '../../components/board/ReplayBoard3D';
 
 const BACK_TO = '/galaxy/report';
 
@@ -71,10 +70,8 @@ export default function ReportDetailPage() {
     setCurrentMove,
     loading,
     error,
-    refresh,
   } = useReportDetail(token, taskId, isAuthenticated);
-  const [retrying, setRetrying] = useState(false);
-  const [retryError, setRetryError] = useState(false);
+  const [view3d, setView3d] = useState(false);
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
@@ -183,40 +180,11 @@ export default function ReportDetailPage() {
     );
   }
 
-  /* 「进入研究室」带着这一局走。改版前它是 `navigate('/galaxy/research')` —— 不带任何
-     棋局参数，点进去是一张空棋盘（冻结稿 V2 的注释：「现状漏了棋局参数，改版补上」）。
-     Fan 2026-08-22 点头补上。
-
-     参数用 `user_game_id`（`user_games` 那套 uuid），不是 `kifu_id` —— 研究页原有的
-     `?kifu_id=` 走的是棋谱库 `KifuAPI.getAlbum`，是**另一个 id 空间**；把报告的
-     game id 塞进去只会加载到一局无关的棋，比不跳转更坏。
-
-     不带 `&analyze=1`：这一局报告页已经分析过一遍，进研究室是为了摆变化；而全盘扫描
-     是计费动作，不该由一次导航悄悄触发。要分析就在研究页按「开始研究」。 */
-  const researchHref = game?.id
-    ? `/galaxy/research?user_game_id=${encodeURIComponent(game.id)}`
-    : null;
-
-  const retry = async () => {
-    const id = Number(taskId);
-    if (!Number.isSafeInteger(id) || id <= 0 || retrying) return;
-    setRetrying(true);
-    setRetryError(false);
-    try {
-      await ReportsAPI.retry(token, id);
-      await refresh();
-    } catch {
-      setRetryError(true);
-    } finally {
-      setRetrying(false);
-    }
-  };
-
   return (
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
       board={previewData ? (
-        <LiveBoard
+        view3d ? <ReplayBoard3D moves={previewData.moves} stoneColors={previewData.stoneColors} currentMove={boardCursor} boardSize={boardSize} handicapCount={setupCount} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((prev) => [...prev, move]) : undefined} /> : <LiveBoard
           moves={previewData.moves}
           stoneColors={previewData.stoneColors}
           currentMove={boardCursor}
@@ -247,7 +215,7 @@ export default function ReportDetailPage() {
         <ReportAnalysisLayout
           identity={<ReportMetaPanel game={game} task={task} currentMove={currentMove} currentAnalysis={currentAnalysis} backTo={BACK_TO} />}
           recommendations={<>
-            {task?.status !== 'completed' && <Alert severity={task?.status === 'failed' || retryError ? 'error' : 'info'} sx={{ py: 0, '& .MuiAlert-message': { fontSize: 18 } }}>{retryError ? t('review:recompute_failed', '重算没成') : task?.status === 'running' ? `${t('report:generating', '分析中')} · ${task.analyzed_moves} / ${task.total_moves} ${t('live:moves', '手')}` : task?.status === 'failed' ? t('report:failed', '分析失败，可重算') : t('report:queuing', '等待分析')}</Alert>}
+            {task?.status !== 'completed' && <Alert severity={task?.status === 'failed' ? 'error' : 'info'} sx={{ py: 0, '& .MuiAlert-message': { fontSize: 18 } }}>{task?.status === 'running' ? `${t('report:generating', '分析中')} · ${task.analyzed_moves} / ${task.total_moves} ${t('live:moves', '手')}` : task?.status === 'failed' ? t('report:failed', '分析失败') : t('report:queuing', '等待分析')}</Alert>}
             <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={previewData?.moves[boardCursor]} />
           </>}
           analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={setCurrentMove} /></Box>}
@@ -258,6 +226,7 @@ export default function ReportDetailPage() {
             showMoveNumbers={showMoveNumbers}
             showAiMarkers={showAiMarkers}
             showCoordinates={coordinates.visible}
+            view3d={view3d}
             ownershipAvailable={currentAnalysis?.ownership != null}
             tryMoves={tryMoves}
             onTryMoveToggle={() => {
@@ -268,9 +237,9 @@ export default function ReportDetailPage() {
             onMoveNumbersToggle={() => setShowMoveNumbers((visible) => !visible)}
             onAiMarkersToggle={() => setShowAiMarkers((visible) => !visible)}
             onCoordinatesToggle={coordinates.toggle}
+            on3dToggle={() => setView3d((value) => !value)}
             onClearTryMoves={() => setTryMoves([])}
           />}
-          entryActions={<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}><Button fullWidth variant="outlined" startIcon={<ScienceIcon />} disabled={!researchHref} onClick={() => { if (researchHref) navigate(researchHref); }} sx={{ textTransform: 'none', minHeight: 40, fontSize: 18 }}>{t('report:enter_research', '进入研究')}</Button><Button fullWidth variant="outlined" disabled={!task || retrying} onClick={() => void retry()} sx={{ textTransform: 'none', minHeight: 40, fontSize: 18 }}>{retrying ? t('report:retrying', '重算中') : t('review:recompute', '重算')}</Button></Box>}
           navigation={<PlaybackBar inline currentMove={currentMove} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
         />
       )}

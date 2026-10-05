@@ -22,7 +22,7 @@ export interface AiMoveMarker {
   score_lead: number;
 }
 
-interface LiveBoardProps {
+export interface LiveBoardProps {
   moves: string[]; // Array of moves in display format (e.g., "Q16", "D4")
   stoneColors?: ('B' | 'W')[]; // Parallel array of stone colors; if absent, alternates B/W
   currentMove: number; // Which move to display up to
@@ -54,7 +54,9 @@ interface LiveBoardProps {
 }
 
 // Convert display coordinate (e.g., "Q16") to board indices
-function parseMove(move: string): [number, number] | null {
+// Shared with the 3D replay adapter; pure board logic does not retain component state.
+// eslint-disable-next-line react-refresh/only-export-components
+export function parseMove(move: string): [number, number] | null {
   if (!move || move.length < 2) return null;
   if (move.toLowerCase() === 'pass') return null;
 
@@ -175,6 +177,28 @@ function removeCaptures(
     }
   }
   return captured;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildReplayBoardState(moves: string[], currentMove: number, boardSize: number, stoneColors?: ('B' | 'W')[], handicapCount = 0) {
+  const board: (string | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+  const moveNumbers: (number | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+  let lastMove: [number, number] | null = null;
+  let lastPlayer: 'B' | 'W' = 'B';
+  for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
+    const coords = parseMove(moves[i]);
+    if (!coords) continue;
+    const [x, y] = coords;
+    if (x >= boardSize || y >= boardSize) continue;
+    const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
+    board[y][x] = player;
+    moveNumbers[y][x] = i < handicapCount ? null : i + 1 - handicapCount;
+    const captured = removeCaptures(board, x, y, boardSize);
+    for (const [cx, cy] of captured) moveNumbers[cy][cx] = null;
+    lastMove = coords;
+    lastPlayer = player;
+  }
+  return { board, moveNumbers, lastMove, lastPlayer };
 }
 
 // Jade green color for AI markers (matching play module style)
@@ -386,43 +410,7 @@ export default function LiveBoard({
   }, [minimumCanvasSize]);
 
   // Build board state from moves (with capture handling)
-  const buildBoardState = () => {
-    const board: (string | null)[][] = Array(boardSize)
-      .fill(null)
-      .map(() => Array(boardSize).fill(null));
-    // Track move numbers for each position
-    const moveNumbers: (number | null)[][] = Array(boardSize)
-      .fill(null)
-      .map(() => Array(boardSize).fill(null));
-
-    let lastMove: [number, number] | null = null;
-    let lastPlayer: 'B' | 'W' = 'B';
-
-    for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
-      const coords = parseMove(moves[i]);
-      if (coords) {
-        const [x, y] = coords;
-        if (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
-          const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
-          board[y][x] = player;
-          // Handicap setup stones (indices 0..handicapCount-1) get no number.
-          // Game moves are numbered starting from 1.
-          moveNumbers[y][x] = i < handicapCount ? null : (i + 1 - handicapCount);
-
-          // Remove captured opponent stones (also clear their move numbers)
-          const capturedPositions = removeCaptures(board, x, y, boardSize);
-          for (const pos of capturedPositions) {
-            moveNumbers[pos[1]][pos[0]] = null;
-          }
-
-          lastMove = coords;
-          lastPlayer = player;
-        }
-      }
-    }
-
-    return { board, moveNumbers, lastMove, lastPlayer };
-  };
+  const buildBoardState = () => buildReplayBoardState(moves, currentMove, boardSize, stoneColors, handicapCount);
 
   // Render board function
   const renderBoard = () => {

@@ -252,9 +252,11 @@ test('Galaxy report fixed rail at 2048×1080', async ({ page }) => {
   await page.screenshot({ path: `${OUT}/desktop-2048.png`, fullPage: false });
   const rail = page.getByTestId('board-rail-scroll');
   expect(await rail.evaluate((el) => ({ overflow: getComputedStyle(el).overflowY, hidden: el.scrollHeight - el.clientHeight }))).toEqual({ overflow: 'hidden', hidden: 0 });
-  const entry = await page.getByRole('button', { name: '进入研究' }).boundingBox();
-  const controls = await page.getByTestId('report-display-controls').boundingBox();
-  expect(entry && controls && entry.y + entry.height + 4 <= controls.y).toBe(true);
+  await expect(page.getByRole('button', { name: '进入研究' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '重算' })).toHaveCount(0);
+  const controls = page.getByTestId('board-display-controls');
+  await expect(controls.getByRole('button')).toHaveCount(3);
+  await expect(controls.getByRole('button', { name: '3D' })).toBeVisible();
   await expect(page.getByTestId('report-recommendations')).toBeVisible();
   await expect(page.getByRole('button', { name: '展开分析' })).toBeVisible();
 });

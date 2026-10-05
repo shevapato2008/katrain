@@ -98,5 +98,13 @@
 仅为原文字面翻译：固定 raw 69273／539 盘，raw-set SHA `85b73b82847777deefd627ce637ee3870725385cdfd76916202b4c23574f5f7c`。BGA Journal 134 实际 PDF 的 printed p.8／PDF p.9 支持历史围棋 Castle Game 用语，日本棋院历史页支持日文御城碁。不推导具体届次、比赛身份或 FK。
 
 - [x] 最小新增 `castle1` 固定 profile（1 原文／539 盘），复用已有参数化 exact raw／数量／scope 检查；RED unknown profile → GREEN 12 passed；独立 Astra APPROVE，报告 `docs/resource/kifu-castle1-code-review-2026-10-06.md`。TYGEM 韩文实文另证 `오시로고(御城棋)`；译名不是五语官方专名声明。
-- [ ] root 核对原始 PDF、日本棋院正文、五语言字面译法和完整 CLI registry；五人包 CE／CF 写入完成后，TEST→PROD owner→名称，绑定实际 catalog。
-- [ ] 核验全部原始字段及 FK 不变、五语言显示／搜索和其他语言英语回退；更新真实统计、HTML 和 receipts。继续并行处理高频棋手及下一赛事，不重启未变的网页服务。
+- [x] root 核对原始 PDF、日本棋院及新增 TYGEM 实际字节正文、五语译法和完整 CLI registry。CE／CF 完成后，两库 owner 129／名称 130 实际写入核验 5 格／539 盘；owner manifest 不变，名称阶段独立 registry/research 保存新增韩文来源。
+- [x] 两端各 6 项 HTTP 通过，539 盘原始字段和 FK 不变，两种 reader 一致。实际统计、HTML 和 receipts 已更新；原始标题五语覆盖 4,722 盘，完整展示仍 51,186 盘（双方棋手尚未同时齐全）。未重启网页服务。
+
+## Continuation 5: 东京新闻杯届次标题
+
+最新两库真实捕获为 11 原文／175 盘（旧摘要 167 已废弃），raw-set SHA `c5303d78e042bbb83c3e6c666abfd74e0d14127e32dbd52b38b4b9fc02685a1d`。CWI 实际原文写 Tokyo Shinbun Cup (東京新聞盃)，并列 1–11 届；Kifudepot 日文棋谱标题佐证。只翻译 exact title/edition，不改变身份、parser 或 FK；Final 等其他四 raw 留下一批。
+
+- [ ] 复用固定 profile 和现有参数化 fixture，RED→GREEN 后独立 Astra 审查；只新增精确 hash／数量。
+- [ ] producer 交付标准 CLI-valid 55 条 unsigned 研究与实际 owner scope；root 核对来源、数字和五语译文，按 TEST→PROD owner→name 入库。
+- [ ] 线上显示／搜索／英语回退与原始数据不变核验；报告真实覆盖、HTML、归档。棋手批次并行，确认同人重复不计新棋手，不绕过碰撞。

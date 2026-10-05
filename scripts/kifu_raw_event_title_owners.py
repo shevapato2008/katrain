@@ -52,6 +52,8 @@ PROFILE_LIMITS = {
                  "raw_count": 20, "game_total": 214},
     "castle1": {"raw_set_sha256": "85b73b82847777deefd627ce637ee3870725385cdfd76916202b4c23574f5f7c",
                 "raw_count": 1, "game_total": 539},
+    "tokyo11": {"raw_set_sha256": "c5303d78e042bbb83c3e6c666abfd74e0d14127e32dbd52b38b4b9fc02685a1d",
+                "raw_count": 11, "game_total": 175},
 }
 
 

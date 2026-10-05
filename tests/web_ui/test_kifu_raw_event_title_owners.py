@@ -223,6 +223,14 @@ GEOGRAPHIC39 = (
 )
 
 
+TOKYO11 = (
+    ("10th Tokyo Shinbun Cup", 57), ("7th Tokyo Shinbun Cup", 40), ("9th Tokyo Shinbun Cup", 20),
+    ("11th Tokyo Shinbun Cup", 17), ("5th Tokyo Shinbun Cup", 9), ("8th Tokyo Shinbun Cup", 9),
+    ("6th Tokyo Shinbun Cup", 8), ("3rd Tokyo Shinbun Cup", 7), ("1st Tokyo Shinbun Cup", 4),
+    ("2nd Tokyo Shinbun Cup", 2), ("4th Tokyo Shinbun Cup", 2),
+)
+
+
 def finite_fixture(engine, raws, counts):
     records, members = [], []
     next_album = 2000
@@ -252,6 +260,7 @@ def finite_fixture(engine, raws, counts):
     ("geographic39", tuple(raw for raw, _ in GEOGRAPHIC39), tuple(count for _, count in GEOGRAPHIC39), 294),
     ("league20", tuple(raw for raw, _ in LEAGUE20), tuple(count for _, count in LEAGUE20), 214),
     ("castle1", ("Castle Game",), (539,), 539),
+    ("tokyo11", tuple(raw for raw, _ in TOKYO11), tuple(count for _, count in TOKYO11), 175),
 ])
 def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
     if profile == "generic49":

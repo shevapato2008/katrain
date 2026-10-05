@@ -80,6 +80,34 @@ def test_raw_title_research_requires_existing_exact_lossless_owner(change):
         validate_research_record(research, registry())
 
 
+def tokyo_research(ordinal="10th", core="Tokyo Shinbun Cup", kind="edition"):
+    raw = f"{ordinal} {core}"
+    _, research = literal(raw=raw, display=raw)
+    research.update(original_name=core, original_language="en", raw_parts=[
+        {"kind": kind, "text": ordinal + " "}, {"kind": "core", "text": core},
+    ])
+    research["source_checks"][0].update(
+        query=core, observed_lang="en", candidate_name=core, body_excerpt=core + " (東京新聞盃)")
+    return research
+
+
+@pytest.mark.parametrize("ordinal", ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th"])
+def test_tokyo_titles_accept_exact_lossless_english_editions(ordinal):
+    assert validate_raw_title_research(tokyo_research(ordinal))
+
+
+@pytest.mark.parametrize("ordinal,core,kind", [
+    ("12th", "Tokyo Shinbun Cup", "edition"),
+    ("1th", "Tokyo Shinbun Cup", "edition"),
+    ("10th", "Tokyo Shimbun Cup", "edition"),
+    ("10th", "Another Cup", "edition"),
+    ("10th", "Tokyo Shinbun Cup", "round"),
+])
+def test_tokyo_titles_reject_other_editions_spelling_or_round(ordinal, core, kind):
+    with pytest.raises(ValueError, match="unsupported year or ordinal"):
+        validate_raw_title_research(tokyo_research(ordinal, core, kind))
+
+
 def test_raw_title_candidate_binds_research_hash_and_raw_spelling():
     row, research = literal()
     inv = inventory()

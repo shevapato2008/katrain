@@ -10,6 +10,10 @@ from urllib.parse import urlparse
 VERSION = "raw-event-title-translation-v1"
 OWNER_REVIEW_VERSION = "raw-event-title-owner-review-v1"
 PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
+TOKYO11_RAW_VALUES = frozenset(
+    f"{ordinal} Tokyo Shinbun Cup"
+    for ordinal in ("1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th")
+)
 GEOGRAPHIC39_RAW_VALUES = frozenset({
     "2001年中国围棋段位赛",
     "2007年中国围棋段位赛第一轮",
@@ -146,8 +150,13 @@ def validate_raw_title_research(record):
     cores = [part["text"] for part in parts if part["kind"] == "core"]
     if len(cores) != 1 or cores[0] != record.get("original_name"):
         raise ValueError("literal raw title must have one sourced core")
+    tokyo_edition = raw in TOKYO11_RAW_VALUES and parts == [
+        {"kind": "edition", "text": raw.removesuffix("Tokyo Shinbun Cup")},
+        {"kind": "core", "text": "Tokyo Shinbun Cup"},
+    ]
     if any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
            or part["kind"] in {"edition", "round"} and not _ORDINAL.fullmatch(part["text"])
+           and not (part["kind"] == "edition" and tokyo_edition)
            or part["kind"] == "year" and not _YEAR.fullmatch(part["text"])
            for part in parts):
         raise ValueError("literal raw title has an unsupported year or ordinal")

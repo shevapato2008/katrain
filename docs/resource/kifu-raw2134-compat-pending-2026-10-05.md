@@ -28,7 +28,7 @@
 实际运行时已只读捕获到 `/tmp/kifu-raw2134-20261005/runtime-prod/`，before hash 在 `hashes.json`。生成输出 `/tmp/kifu-raw2134-20261005/overlay-prod/manifest.json` 固定 before/after：
 
 1. `identity.py` 的 `display_maps` 返回前新增三行：加载 raw helper、将合格多语 raw 名称并入现有逐局 hints。
-2. `endpoints/kifu.py` 搜索过滤前新增四行：没有唯一实体命中时，并入已审 raw 精确名称范围；原列表隐藏、分页和其它路径保留。
+2. `endpoints/kifu.py` 搜索过滤前新增六行：没有唯一实体命中时，以唯一已审 raw 的精确范围作为搜索条件；未命中 raw 时保持原有模糊搜索。原列表隐藏、分页和其它路径保留。
 3. 新增两个小 helper 文件：`legacy_raw_events.py` 与从当前规则打包的 `legacy_raw_event_rules.py`。
 
 TEST 已有 strict/progressive raw 读取路径，无须部署这份 legacy overlay。两库共享名称/CAS 工具仍使用兼容 importer image。
@@ -58,6 +58,7 @@ CAS 命令只从环境变量读 `KATRAIN_DATABASE_URL`，不输出凭据。容�
 
 ## 验证
 
-- 新增 6 个聚焦测试 + 原有 6 个相关分类/archive 测试：**12 passed，86 deselected**。覆盖十一语显示/搜索，证据撤销、revision 错配，Hoensha 未批准新增同名局、已关联、selected event 排除；CAS dry-run 零写、3项 apply、replay 零改动、原 undo 恢复；source context 改动和未签名拒绝。
+- 初版新增 6 个聚焦测试及原有 6 个分类/archive 测试通过。独立审核发现精确搜索仍 OR 入模糊条件；修复后新增一个生成 endpoint 查询的代表性测试，两份改动测试文件 **7 passed**。覆盖十一语显示/搜索，证据撤销、revision 错配，Hoensha 未批准新增同名局、已关联、selected event 排除；CAS dry-run 零写、3项 apply、replay 零改动、原 undo 恢复；source context 改动和未签名拒绝。精确「个人赛」排除标题仅包含该词的范围外棋局，其他输入保持模糊搜索。
+- 独立 `gpt-6-astra` 审查修复后通过，无未解决 critical/important；另从实际生成的 PROD overlay 提取真实列表函数做 SQLite 隔离复现，精确范围及分页 total 均正确。审查报告见 `kifu-raw2134-independent-code-review-2026-10-05.md`。数据审批和部署仍待主线程执行。
 - 实际 PROD 一次性 Python 进程纯内存导入全部 4 个 prospective overlay 模块成功：旧 models 保留，数据库查询 0，文件写入 0。没有替换运行中的应用。
 - 未改 importer、主工作区业务代码、任一数据库或任何部署状态。

@@ -164,7 +164,7 @@ def reviewed_raw_event_search_clause(db, query):
     """Use complete approved names; exact raw scope is shared with display."""
     rows = _approved_rows(db, display=query)
     if len({row["raw_event_id"] for row, _ in rows}) != 1:
-        return KifuAlbum.id.in_([])
+        return None
     clauses = []
     for row, ids in rows:
         clause = and_(KifuAlbum.event == row["raw_value"], KifuAlbum.event_id.is_(None), _NO_SELECTION)

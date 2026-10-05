@@ -74,7 +74,9 @@ def build(runtime, output):
         "        query = query.filter(needle)\n        count_query = count_query.filter(needle)",
         "        if not player_ids and not event_ids:\n"
         "            from katrain.web.kifu.legacy_raw_events import reviewed_raw_event_search_clause\n\n"
-        "            needle = or_(needle, reviewed_raw_event_search_clause(db, q))\n"
+        "            raw_clause = reviewed_raw_event_search_clause(db, q)\n"
+        "            if raw_clause is not None:\n"
+        "                needle = raw_clause\n"
         "        query = query.filter(needle)\n        count_query = count_query.filter(needle)",
     )
     helper = (

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import importlib.util
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
@@ -31,7 +31,7 @@ from tests.web_ui.test_kifu_name_batch import (
     registry,
 )
 from tests.web_ui.test_kifu_name_candidates import archive_registry, v2_classification_candidate, V2_GENERIC_DISPLAYS
-from scripts.build_kifu_raw2134_overlay import rules_source
+from scripts.build_kifu_raw2134_overlay import build, rules_source
 
 
 def generic_bundle(engine, raw):
@@ -197,3 +197,39 @@ def test_packaged_rules_are_current_pure_validators(tmp_path):
     assert rules._ARCHIVE_HONINBO_SHUHO_FILES == current._ARCHIVE_HONINBO_SHUHO_FILES
     with pytest.raises(rules.CandidateError):
         rules.validate_archive_description_scope({})
+
+
+def test_generated_legacy_endpoint_keeps_exact_raw_scope(engine, tmp_path):
+    inv, bundle = generic_bundle(engine, "个人赛")
+    apply_bundle(engine, bundle, registry(), inv, [])
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=13, player_black="Gamma", player_white="Delta", event="2022全国个人赛1轮",
+            sgf_content="(;)", source_path="other.sgf",
+        ))
+    runtime, output = tmp_path / "runtime", tmp_path / "output"
+    identity_path = runtime / "katrain/web/kifu/identity.py"
+    endpoint_path = runtime / "katrain/web/api/v1/endpoints/kifu.py"
+    identity_path.parent.mkdir(parents=True)
+    endpoint_path.parent.mkdir(parents=True)
+    identity_path.write_text(
+        "def display_maps(db, albums, lang):\n"
+        "    players, events, sources, hints = {}, {}, {}, {}\n"
+        "    return players, events, {album_id: sorted(keys) for album_id, keys in sources.items()}, hints\n"
+    )
+    endpoint_path.write_text(
+        "def search(db, q):\n"
+        "    query, count_query = db.query(KifuAlbum), db.query(KifuAlbum)\n"
+        "    player_ids, event_ids = [], []\n"
+        "    if q:\n"
+        "        needle = or_(KifuAlbum.event.ilike('%' + q + '%'), KifuAlbum.player_black.ilike('%' + q + '%'))\n"
+        "        query = query.filter(needle)\n"
+        "        count_query = count_query.filter(needle)\n"
+        "    return [a.id for a in query.order_by(KifuAlbum.id)], count_query.count()\n"
+    )
+    build(runtime, output)
+    namespace = {"KifuAlbum": KifuAlbum, "or_": or_}
+    exec((output / "katrain/web/api/v1/endpoints/kifu.py").read_text(), namespace)
+    with Session(engine) as db:
+        assert namespace["search"](db, "个人赛") == ([12], 1)
+        assert namespace["search"](db, "2022全国") == ([13], 1)

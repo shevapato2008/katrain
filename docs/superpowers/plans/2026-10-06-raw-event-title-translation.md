@@ -84,3 +84,11 @@
 - Agon owner 103／name 106、CMB owner 104／name 107，已在两库实际写入并核对；HTTP 分别每环境 16／11 项通过。实际统计及归档完成。
 - 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码 493fe0d1（独立实现 443403b9）经 Astra APPROVE，45 项聚焦测试通过；owner 112／名称 118 两库实际写入核验五格，原 324 行及 FK 不变，新增展示只计 294 盘。每端 18 项真实 HTTP 通过，包含 30 盘既有赛事译名与段位展示保持不变。
 - 棋手来源研究与实际五人入库一直并行；已到 CB／数据库批次 122，PROD 415／3,698 位完整棋手，完整五语言展示 49,879／173,025 盘。继续推进下一批，不把资料草稿计入完成。
+
+## Continuation 3: 2004 年围棋甲级联赛轮次标题
+
+下一批 `league20` 固定为已捕获的 20 原文／214 盘，原文集合 SHA `a56431132255fce798e22d0b8a0869f677f9ec8784fad6bba0a72babe615de9a`。全部使用既有 year＋core＋round 语法；官方正文连续出现「围棋甲级联赛」作为字面核心依据，不从该依据推导赛事身份或新增「全国」限定语。
+
+- [x] 在既有 owner 工具添加一个固定 profile，并复用现有参数化成功／错误 raw／数量／scope 检查；不改变 reader、语法或 FK。RED unknown profile → GREEN 11 项通过，独立 Astra APPROVE；报告 `docs/resource/kifu-league20-code-review-2026-10-06.md`。
+- [ ] 独立研究 producer 交付实际官方网页字节、五语言完整标题、两库精确前镜像和成员 ID。root 核对来源及集合，按 TEST→PROD 完成 owner 审核；随后重新绑定实际 catalog，再写入 100 个名称单元。
+- [ ] 核对完整 scope 不变、实际显示／精确搜索与英语回退，更新实际覆盖与 HTML；不重复构建或重启未变的网页服务。棋手五人批次持续并行。

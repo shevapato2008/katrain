@@ -48,6 +48,8 @@ PROFILE_LIMITS = {
                      "raw_count": 39, "game_total": 294},
     "team1": {"raw_set_sha256": "6fac391a238c31cdff80bad25d6f2452e9d30f898301a0815af4b3c556cdebfa",
               "raw_count": 1, "game_total": 324},
+    "league20": {"raw_set_sha256": "a56431132255fce798e22d0b8a0869f677f9ec8784fad6bba0a72babe615de9a",
+                 "raw_count": 20, "game_total": 214},
 }
 
 

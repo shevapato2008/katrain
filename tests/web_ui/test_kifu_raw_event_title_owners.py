@@ -107,6 +107,28 @@ AGON_RAWS = (
     "第十届阿含桐山杯本选第一轮",
 )
 CMB_RAWS = ("第9届招商银行杯第3轮", "第9届招商银行杯第一轮")
+LEAGUE20 = (
+    ("2004年围棋甲级联赛第18轮", 19),
+    ("2004年围棋甲级联赛第14轮", 15),
+    ("2004年围棋甲级联赛第20轮", 15),
+    ("2004年围棋甲级联赛第11轮", 14),
+    ("2004年围棋甲级联赛第16轮", 14),
+    ("2004年围棋甲级联赛第二轮", 13),
+    ("2004年围棋甲级联赛第22轮", 12),
+    ("2004年围棋甲级联赛第九轮", 11),
+    ("2004年围棋甲级联赛第七轮", 10),
+    ("2004年围棋甲级联赛第六轮", 10),
+    ("2004年围棋甲级联赛第十轮", 10),
+    ("2004年围棋甲级联赛第15轮", 9),
+    ("2004年围棋甲级联赛第三轮", 9),
+    ("2004年围棋甲级联赛第13轮", 8),
+    ("2004年围棋甲级联赛第17轮", 8),
+    ("2004年围棋甲级联赛第19轮", 8),
+    ("2004年围棋甲级联赛第21轮", 8),
+    ("2004年围棋甲级联赛第四轮", 8),
+    ("2004年围棋甲级联赛第12轮", 7),
+    ("2004年围棋甲级联赛第一轮", 6),
+)
 GENERIC49 = (
     ("10-game match", 245),
     ("2000年全国围棋个人赛", 15),
@@ -228,6 +250,7 @@ def finite_fixture(engine, raws, counts):
     ("cmb2", CMB_RAWS, (1, 1), 2),
     ("generic49", tuple(raw for raw, _ in GENERIC49), tuple(count for _, count in GENERIC49), 557),
     ("geographic39", tuple(raw for raw, _ in GEOGRAPHIC39), tuple(count for _, count in GEOGRAPHIC39), 294),
+    ("league20", tuple(raw for raw, _ in LEAGUE20), tuple(count for _, count in LEAGUE20), 214),
 ])
 def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
     if profile == "generic49":

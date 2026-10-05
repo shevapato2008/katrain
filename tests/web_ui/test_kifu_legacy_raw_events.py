@@ -120,6 +120,42 @@ def test_generic_eleven_languages_and_revocation(engine, raw):
         assert reviewed_raw_event_hints(db, db.query(KifuAlbum).all(), "en") == {}
 
 
+@pytest.mark.parametrize("strict", [False, True])
+def test_exact_approved_raw_event_search_keeps_scope_and_ordinary_query_stays_fuzzy(engine, monkeypatch, strict):
+    from katrain.web.kifu import first_pass_cn
+    from tests.web_ui.test_kifu_name_api import _list
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1" if strict else "0")
+    inv, bundle = generic_bundle(engine, "段位赛")
+    apply_bundle(engine, bundle, registry(), inv, [])
+    with engine.begin() as conn:
+        conn.execute(
+            KifuAlbum.__table__.insert().values(
+                id=13,
+                player_black="Gamma",
+                player_white="Delta",
+                event="2022全国段位赛",
+                search_text="gamma delta 2022全国段位赛",
+                sgf_content="(;)",
+                source_path="other-rank.sgf",
+            )
+        )
+    fallback_queries = []
+
+    def provisional_search(q):
+        fallback_queries.append(q)
+        return (set(), {("2022全国段位赛", None)}, set()) if q == "段位赛" else (set(), set(), set())
+
+    monkeypatch.setattr(first_pass_cn, "search_raw_names", provisional_search)
+    with Session(engine) as db:
+        exact = _list(db, q="段位赛", lang="cn")
+        assert exact.total == 1
+        assert {item.id for item in exact.items} == {12}
+        assert "段位赛" not in fallback_queries
+        fuzzy = _list(db, q="2022全国", lang="cn")
+        assert fuzzy.total == 1
+        assert {item.id for item in fuzzy.items} == {13}
+
 def test_archive_uses_existing_rules_and_live_scope(engine, tmp_path):
     from tests.web_ui.test_kifu_name_candidates import ARCHIVE_DISPLAYS
 

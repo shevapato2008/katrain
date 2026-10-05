@@ -139,11 +139,14 @@ async def list_kifu_albums(
             legacy_players, legacy_events = matching_entity_ids(db, q, exact=True)
             player_ids |= legacy_players
             event_ids |= legacy_events
+        exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players
         if len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
         elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_event_name_ids:
             needle = KifuAlbum.event_id == next(iter(event_ids))
+        elif exact_raw_event:
+            needle = strict_raw_event_search_clause(db, raw_event_name_ids)
         else:
             partial_players, partial_events = (set(), set()) if strict else matching_entity_ids(db, q, exact=False)
             terms = (
@@ -178,7 +181,7 @@ async def list_kifu_albums(
             query = query.order_by(case((player_match, 0), else_=1))
         if selected_event_ids:
             needle = or_(needle, KifuAlbum.id.in_(selected_event_ids))
-        if not strict and lang == "cn":
+        if not strict and lang == "cn" and not exact_raw_event:
             from katrain.web.kifu.first_pass_cn import search_raw_names, valid_override_search_ids
 
             provisional_players, provisional_events, provisional_albums = search_raw_names(q)

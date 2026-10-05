@@ -75,6 +75,57 @@ AGON_RAWS = (
     "第十届阿含桐山杯本选第一轮",
 )
 CMB_RAWS = ("第9届招商银行杯第3轮", "第9届招商银行杯第一轮")
+GENERIC49 = (
+    ("10-game match", 245),
+    ("2000年全国围棋个人赛", 15),
+    ("全国围棋个人赛", 10),
+    ("1981年全国围棋个人赛", 9),
+    ("1984年全国围棋个人赛", 9),
+    ("2001年全国围棋个人赛第三轮", 9),
+    ("2001年全国围棋个人赛第五轮", 9),
+    ("1980年全国围棋个人赛", 8),
+    ("2001年全国围棋个人赛第七轮", 8),
+    ("1974年全国围棋个人赛", 7),
+    ("1978年全国围棋个人赛", 7),
+    ("2001年全国围棋个人赛第一轮", 7),
+    ("2001年全国围棋个人赛第九轮", 7),
+    ("2001年全国围棋个人赛第六轮", 7),
+    ("1982年全国围棋个人赛", 6),
+    ("2001年全国围棋个人赛第二轮", 6),
+    ("2001年全国围棋个人赛第八轮", 6),
+    ("1977年全国围棋个人赛", 5),
+    ("1983年全国围棋个人赛", 4),
+    ("2001年全国围棋个人赛", 4),
+    ("2001年全国围棋个人赛第四轮", 4),
+    ("2002年全国围棋个人赛第一轮", 3),
+    ("2006年全国围棋个人赛第四轮", 3),
+    ("2002年全国围棋个人赛第六轮", 2),
+    ("2004年全国围棋个人赛第一轮", 2),
+    ("2004年全国围棋个人赛第七轮", 2),
+    ("2004年全国围棋个人赛第九轮", 2),
+    ("2004年全国围棋个人赛第二轮", 2),
+    ("2004年全国围棋个人赛第六轮", 2),
+    ("2006年全国围棋个人赛第七轮", 2),
+    ("2006年全国围棋个人赛第九轮", 2),
+    ("2006年全国围棋个人赛第八轮", 2),
+    ("2001年全国围棋个人赛第十轮", 1),
+    ("2002年全国围棋个人赛第九轮", 1),
+    ("2002年全国围棋个人赛第五轮", 1),
+    ("2002年全国围棋个人赛第四轮", 1),
+    ("2004年全国围棋个人赛第三轮", 1),
+    ("2004年全国围棋个人赛第五轮", 1),
+    ("2004年全国围棋个人赛第八轮", 1),
+    ("2004年全国围棋个人赛第四轮", 1),
+    ("2005年全国围棋个人赛第八轮", 1),
+    ("2006年全国围棋个人赛第一轮", 1),
+    ("2006年全国围棋个人赛第三轮", 1),
+    ("2006年全国围棋个人赛第二轮", 1),
+    ("2006年全国围棋个人赛第五轮", 1),
+    ("2006年全国围棋个人赛第六轮", 1),
+    ("全国围棋个人赛第1轮", 1),
+    ("升段赛", 125),
+    ("2002年升段赛", 1),
+)
 
 
 def finite_fixture(engine, raws, counts):
@@ -102,8 +153,11 @@ def finite_fixture(engine, raws, counts):
 @pytest.mark.parametrize("profile,raws,counts,total", [
     ("agon10", AGON_RAWS, (49, 24, 14, 7, 5, 60, 25, 1, 1, 19), 205),
     ("cmb2", CMB_RAWS, (1, 1), 2),
+    ("generic49", tuple(raw for raw, _ in GENERIC49), tuple(count for _, count in GENERIC49), 557),
 ])
 def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, counts, total):
+    if profile == "generic49":
+        assert "团体赛" not in raws
     manifest = finite_fixture(engine, raws, counts)
     kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
               "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
@@ -119,7 +173,8 @@ def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, co
         with pytest.raises(BatchError):
             inspect_plan(conn, plan, registry(), canonical_sha256(manifest))
     wrong_raw = deepcopy(manifest)
-    wrong_raw["records"][0]["raw_value"] += "X"
+    wrong_raw["records"][0]["raw_value"] = (
+        "团体赛" if profile == "generic49" else wrong_raw["records"][0]["raw_value"] + "X")
     with pytest.raises(BatchError):
         prepare_plan(engine, wrong_raw, "TEST", registry(), profile=profile, **kwargs)
     wrong_count = deepcopy(manifest)
@@ -142,6 +197,8 @@ def test_next_finite_profiles_pin_raws_and_game_totals(engine, profile, raws, co
 @pytest.mark.parametrize("profile,raws,counts", [
     ("agon10", AGON_RAWS, (48, 24, 14, 7, 5, 60, 25, 1, 1, 19)),
     ("cmb2", CMB_RAWS, (1, 2)),
+    ("generic49", tuple(raw for raw, _ in GENERIC49),
+     tuple(count - 1 if index == 0 else count for index, (_, count) in enumerate(GENERIC49))),
 ])
 def test_finite_profile_rejects_changed_game_total(engine, profile, raws, counts):
     manifest = finite_fixture(engine, raws, counts)

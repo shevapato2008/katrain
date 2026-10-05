@@ -87,7 +87,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
             model.decision_kind.in_(
                 _DECISIONS | {"transliterated"}
                 | ({"translated"} if model is KifuEventName else set())
-                | ({"composed", "archive_description"} if model is KifuRawEventName else set())
+                | ({"composed", "archive_description", "translated"} if model is KifuRawEventName else set())
             ),
             model.generation_rule_version == KifuNameResearchEvidence.generation_rule_version,
             model.display_name == KifuNameResearchEvidence.candidate_name,
@@ -276,6 +276,7 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
         canonical_sha256, validate_archive_description_scope, validate_archive_description_candidate,
     )
     from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
+    from katrain.web.kifu.raw_event_translation import eligible_literal_raw_name
 
     query = (
         _approved_names(db, KifuRawEventName, "raw_event_id", lang=lang)
@@ -317,6 +318,10 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
         }
     result = []
     for name, raw, evidence, raw_owner in rows:
+        if name.decision_kind == "translated":
+            if eligible_literal_raw_name(vars(name), vars(evidence), vars(raw_owner)):
+                result.append((name, raw, None))
+            continue
         if (raw_owner.category == ARCHIVE_DESCRIPTION_CATEGORY
                 or raw_owner.parser_version == ARCHIVE_DESCRIPTION_VERSION) and name.decision_kind != "archive_description":
             continue
@@ -427,10 +432,17 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     return result
 
 
-def _raw_event_map(rows, albums, selected_events, *, approvals=False):
+def _raw_event_map(rows, albums, selected_events, *, approvals=False, selected_ids=frozenset()):
     result = {}
     for name, raw, composition in rows:
         value = (name.decision_kind, name.evidence_id) if approvals else name.display_name
+        if name.decision_kind == "translated":
+            for album in albums:
+                if (album.id not in selected_events and album.id not in selected_ids
+                        and album.event == raw and album.event_id is None
+                        and album.duplicate_of_id is None and album.list_hidden_reason is None):
+                    result[(album.id, raw, None)] = value
+            continue
         if composition is None:
             result[raw] = value
             continue
@@ -462,7 +474,11 @@ def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     """Restrict finite raw descriptions to their approved current direct event slots."""
     clauses = []
     for name, raw, composition in _approved_raw_event_names(db, name_ids=name_ids):
-        if composition is None:
+        if name.decision_kind == "translated":
+            clauses.append((KifuAlbum.event == raw) & KifuAlbum.event_id.is_(None)
+                           & KifuAlbum.duplicate_of_id.is_(None) & KifuAlbum.list_hidden_reason.is_(None)
+                           & ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id)))
+        elif composition is None:
             clauses.append(KifuAlbum.event == raw)
         elif name.decision_kind == "archive_description":
             clauses.append((KifuAlbum.event == raw) & KifuAlbum.event_id.is_(None)
@@ -519,7 +535,10 @@ def strict_matching_names(db: Session, query: str, *, raw_name_rows=None) -> tup
         }
         raw_matches.append(matches)
     matches_by_owner = (*identity_matches, *raw_matches)
-    if sum(len(matches) for matches in matches_by_owner) != 1:
+    raw_title_group = (not any(identity_matches) and not raw_matches[0]
+                       and len(raw_matches[1]) > 1
+                       and all(name.decision_kind == "translated" for name, _ in matched))
+    if sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group:
         return set(), set(), set(), set()
     return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 
@@ -548,7 +567,7 @@ def strict_selected_event_search_ids(
 ) -> set[int]:
     """Match reviewed selected events and validate the same live SGF hash as display."""
     matched_names = _approved_raw_event_names(db, name_ids=raw_name_ids) if raw_name_ids else []
-    raw_aliases = {raw for _, raw, _ in matched_names}
+    raw_aliases = {raw for name, raw, _ in matched_names if name.decision_kind != "translated"}
     selected_conditions = [KifuAlbumEventSelection.selected_raw.contains(query, autoescape=True)]
     if raw_aliases:
         selected_conditions.append(KifuAlbumEventSelection.selected_raw.in_(raw_aliases))
@@ -561,6 +580,8 @@ def strict_selected_event_search_ids(
         return set()
     names_by_raw = {}
     for name, raw, _ in _approved_raw_event_names(db, values=selected_raws):
+        if name.decision_kind == "translated":
+            continue
         names_by_raw.setdefault(raw, []).append(name)
     raw_matches = {
         raw
@@ -670,8 +691,12 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
         (KifuRawEventName, KifuRawEventValue, "raw_event_id", raw_events),
     ):
         if model is KifuRawEventName:
+            rows = _approved_raw_event_names(db, values=values, lang=lang)
+            selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
+                KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
+                if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
             raw_maps.append(
-                _raw_event_map(_approved_raw_event_names(db, values=values, lang=lang), albums, selected_events)
+                _raw_event_map(rows, albums, selected_events, selected_ids=selected_ids)
             )
             continue
         raw_maps.append({raw: (name.display_name, scope)
@@ -758,10 +783,12 @@ def strict_slot_approvals(
         (KifuRawEventName, KifuRawEventValue, "raw_event_id", raw_event_values),
     ):
         if model is KifuRawEventName:
+            rows = _approved_raw_event_names(db, values=values, lang=lang)
+            selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
+                KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
+                if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
             raw_approvals.append(
-                _raw_event_map(
-                    _approved_raw_event_names(db, values=values, lang=lang), albums, selected_events, approvals=True
-                )
+                _raw_event_map(rows, albums, selected_events, approvals=True, selected_ids=selected_ids)
             )
             continue
         raw_approvals.append({raw: ((name.decision_kind, name.evidence_id), scope)

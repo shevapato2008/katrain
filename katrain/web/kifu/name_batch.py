@@ -426,6 +426,21 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
     if kind.startswith("raw_"):
         _fail(owner_row["raw_value"] == row["raw_value"],
               f"raw ID {kind}:{owner_id} resolves to different spelling")
+        if kind == "raw_event" and row["decision_kind"] == "translated":
+            from katrain.web.kifu.raw_event_translation import eligible_raw_title_owner
+
+            _fail(eligible_raw_title_owner(owner_row),
+                  "literal raw title needs an approved readable raw owner")
+            direct = conn.execute(select(KifuAlbum.id, KifuAlbum.event_id,
+                                         KifuAlbum.duplicate_of_id, KifuAlbum.list_hidden_reason)
+                                  .where(KifuAlbum.event == row["raw_value"])).all()
+            _fail(bool(direct) and all(event_id is None and duplicate_id is None and hidden is None
+                                       for _, event_id, duplicate_id, hidden in direct),
+                  "literal raw title needs only public unlinked direct albums")
+            _fail(not (selected_scope or {}).get(row["raw_value"])
+                  and conn.scalar(select(KifuAlbumEventSelection.album_id).where(
+                      KifuAlbumEventSelection.album_id.in_([album_id for album_id, *_ in direct])).limit(1)) is None,
+                  "literal raw title cannot include selected event scope")
         if kind == "raw_event" and (owner_row["category"] == ARCHIVE_DESCRIPTION_CATEGORY
                                     or owner_row["parser_version"] == ARCHIVE_DESCRIPTION_VERSION):
             _fail(row["decision_kind"] == "archive_description"
@@ -480,6 +495,7 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
 
 
 def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_refs=None) -> None:
+    from katrain.web.kifu.raw_event_translation import VERSION as RAW_TITLE_VERSION, eligible_literal_raw_name
     languages = {
         row["lang"]
         for row in candidates
@@ -493,7 +509,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
                                                                  name_model.status == "verified")).mappings()
         for existing in names:
             existing_names[(existing["lang"], normalize_alias(existing["display_name"]))].append(
-                (kind, existing[owner_column], existing["evidence_id"]))
+                (kind, existing[owner_column], existing["evidence_id"], dict(existing)))
     for row in candidates:
         if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}:
             continue
@@ -503,10 +519,16 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
             own_id = resolved_refs.get(_owner_ref(owner))
             _fail(type(own_id) is int and own_id > 0, "applied symbolic owner resolution is missing")
         name_key = normalize_alias(row["display_name"])
-        for kind, existing_id, evidence_id in existing_names[(row["lang"], name_key)]:
+        for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
                 continue
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
+            if (own_kind == kind == "raw_event" and row["decision_kind"] == "translated"
+                    and row["generation_rule_version"] == RAW_TITLE_VERSION
+                    and row["review_status"] == "approved" and "id" in owner
+                    and eligible_literal_raw_name(existing_name, evidence or {},
+                                                  _image(conn, KifuRawEventValue.__table__, existing_id) or {})):
+                continue
             previous = (evidence or {}).get("research_payload") or {}
             previous_candidate = previous.get("candidate", {}) if isinstance(previous, dict) else {}
             _fail(

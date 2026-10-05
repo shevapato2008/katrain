@@ -91,6 +91,8 @@ def build(runtime, output):
         endpoint_path: endpoint,
         Path("katrain/web/kifu/legacy_raw_events.py"): helper,
         Path("katrain/web/kifu/legacy_raw_event_rules.py"): rules_source(),
+        Path("katrain/web/kifu/raw_event_translation.py"):
+            (ROOT / "katrain/web/kifu/raw_event_translation.py").read_text(),
     }
     hashes = {}
     for path, body in payloads.items():

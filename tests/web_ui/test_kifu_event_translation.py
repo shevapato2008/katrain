@@ -47,14 +47,16 @@ def test_translated_event_accepts_original_language_identity_and_target_script(l
         validate_candidate(row, evidence, registry(), inventory())
 
 
-@pytest.mark.parametrize("owner", [
-    {"kind": "player", "id": 17}, {"kind": "raw_event", "id": 3}, {"kind": "event", "ref": "new-event"},
+@pytest.mark.parametrize("owner,message", [
+    ({"kind": "player", "id": 17}, "existing event"),
+    ({"kind": "raw_event", "id": 3}, "exact raw text and parts"),
+    ({"kind": "event", "ref": "new-event"}, "existing event"),
 ])
-def test_translation_rejects_players_raw_owners_and_new_identity_refs(owner):
+def test_translation_rejects_players_unscoped_raw_owners_and_new_identity_refs(owner, message):
     row, evidence = translated()
     evidence["owner"] = evidence["source_checks"][0]["owner"] = row["owner"] = owner
     row["research_sha256"] = canonical_sha256(evidence)
-    with pytest.raises(EvidenceError, match="existing event"):
+    with pytest.raises(EvidenceError, match=message):
         validate_research_record(evidence, registry())
     with pytest.raises(CandidateError):
         validate_candidate(row, evidence, registry(), inventory())

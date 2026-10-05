@@ -19,6 +19,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urljoin, urlparse
 from urllib.request import Request, urlopen
 
+from katrain.web.kifu.raw_event_translation import validate_raw_title_research
+
 
 DEFAULT_REGISTRY = Path(__file__).resolve().parents[3] / "docs/resource/kifu-name-source-registry.json"
 OWNER_KINDS = {"player", "event", "raw_player", "raw_event"}
@@ -1062,8 +1064,13 @@ def validate_research_record(record: dict, registry: dict) -> dict:
         if _text(record.get("reading")):
             _require(_https_url(record.get("reading_basis_url")), "reading needs source URL")
     if scope_status == "translated_from_original":
-        _require(owner["kind"] == "event" and "id" in owner,
-                 "title translation requires an existing event ID")
+        _require(owner["kind"] in {"event", "raw_event"} and "id" in owner,
+                 "title translation requires an existing event or raw event ID")
+        if owner["kind"] == "raw_event":
+            try:
+                validate_raw_title_research(record)
+            except ValueError as exc:
+                raise EvidenceError(str(exc)) from exc
         _require(lang in {"cn", "tw", "jp", "ko", "en"}, "title translation supports the five primary languages")
         _require(record.get("translation_method") == "literal_event_title", "title translation method required")
         _require(_text(record.get("candidate_name")), "title translation needs a target candidate")

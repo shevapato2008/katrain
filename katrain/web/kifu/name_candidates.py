@@ -35,6 +35,7 @@ from katrain.web.kifu.name_transliteration import validate_transliteration, vali
 from katrain.web.kifu.name_orthographic import is_orthographic, validate_orthographic, validate_orthographic_candidate
 from katrain.web.kifu.name_evidence import validate_primary_orthographic_anchor
 from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, validate_raw_player_scope
+from katrain.web.kifu.raw_event_translation import VERSION as RAW_TITLE_VERSION
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -597,9 +598,12 @@ def _validate_candidate(
         if decision == "translated":
             _require(checked["scope_status"] == "translated_from_original" and display == checked["candidate_name"],
                      "translated event name must match the researched translation")
+            rule = RAW_TITLE_VERSION if row["owner"]["kind"] == "raw_event" else "event-title-translation-v1"
             _require(row.get("translation_method") == checked["translation_method"] == "literal_event_title"
-                     and row["generation_rule_version"] == "event-title-translation-v1",
+                     and row["generation_rule_version"] == rule,
                      "translated event name needs its explicit title translation method and rule")
+            if row["owner"]["kind"] == "raw_event":
+                _require(row["raw_value"] == checked["raw_value"], "translated raw event spelling differs from research")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
         elif decision == "generated":
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
@@ -1061,6 +1065,17 @@ def validate_bundle(
     members = bundle.get("members")
     candidates = bundle.get("candidates")
     _require(isinstance(members, list) and members and isinstance(candidates, list), "finite members and candidates required")
+    if any(isinstance(item, dict) and isinstance(item.get("owner"), dict)
+           and item["owner"].get("kind") == "raw_event"
+           and item.get("decision_kind") == "translated" for item in candidates):
+        _require(bundle["bundle_format"] == 2 and bundle["inventory_format"] == 4
+                 and bundle.get("album_links") == []
+                 and all(isinstance(item, dict) and isinstance(item.get("owner"), dict)
+                         and item["owner"].get("kind") == "raw_event" and "id" in item["owner"]
+                         for item in bundle.get("owners") or ())
+                 and all(isinstance(item, dict) and isinstance(item.get("owner"), dict)
+                         and item["owner"].get("kind") == "raw_event" for item in candidates),
+                 "literal raw titles require format-2/4 existing raw owners and no album links")
     _require(bundle.get("member_set_sha256") == canonical_sha256(members), "member set hash mismatch")
     _require(set(registry["language_tags"]) == LANGUAGES, "source registry must define eleven product languages")
     values = _inventory_values(inventory)
@@ -1307,6 +1322,10 @@ def validate_bundle(
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
+            if all(row["owner"]["kind"] == "raw_event" and row["decision_kind"] == "translated"
+                   and row["generation_rule_version"] == RAW_TITLE_VERSION
+                   and row["review_status"] == "approved" for row in group):
+                continue
             if any(
                 row["review_status"] == "approved"
                 and (row["decision_kind"] in {"composed", "transliterated"} or is_orthographic(row))

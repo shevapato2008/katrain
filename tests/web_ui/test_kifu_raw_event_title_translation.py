@@ -428,3 +428,167 @@ def test_persisted_literal_title_rejects_changed_approval_or_evidence(engine, da
         album = db.get(KifuAlbum, 11)
         assert reviewed_raw_event_hints(db, [album], "en") == {}
         assert _approved_raw_event_names(db, values={album.event}, lang="en") == []
+
+
+def sgf_literal(raw="2020中国国家队积分大循环第1轮"):
+    row, research = literal(raw=raw, display="2020 China National Go Team Points Round-Robin Tournament, Round 1")
+    core, separator, round_number = raw.partition("第")
+    research.update(source_basis="sgf_literal_v1", original_language_basis="reviewed_sgf_gn",
+                    original_name=core if separator else raw, source_checks=[])
+    research.pop("original_language_basis_url")
+    research["raw_parts"] = [{"kind": "core", "text": research["original_name"]}]
+    if separator:
+        research["raw_parts"].append({"kind": "round", "text": separator + round_number})
+    scope = [{"id": 11, "event": raw, "event_id": None, "round_name": None,
+              "date_played": "2020-01-01", "black_rank": "1p", "white_rank": "1p",
+              "source_path": "national.sgf", "sgf_sha256": "3" * 64}]
+    research["sgf_literal_evidence"] = {"captured_at": "2026-10-02T10:00:00Z",
+                                        "scope_sha256": canonical_sha256(scope),
+                                        "scope_file": "TEST/owner-plan.approved.json", "scope_rows": scope}
+    research["original_sgf_refs"] = [{"album_id": 11, "source_path": "national.sgf",
+                                      "sgf_sha256": "3" * 64, "ev_values": [],
+                                      "gn_values": [raw, raw + " (timeout)"]}]
+    row["research_sha256"] = canonical_sha256(research)
+    return row, research
+
+
+@pytest.mark.parametrize("raw", ["2020中国国家队积分大循环第1轮", "2013职业棋手精英赛",
+                                  "2014日本国家队新浪网络训练赛"])
+def test_national15_sgf_literal_accepts_three_true_title_shapes(raw):
+    _, research = sgf_literal(raw)
+    assert validate_raw_title_research(research)
+    assert validate_research_record(research, registry())["raw_value"] == raw
+    assert "".join(part["text"] for part in research["raw_parts"]) == raw
+
+
+@pytest.mark.parametrize("damage", ["other_raw", "event", "player", "raw_player", "scope_hash",
+                                     "raw_reference", "sgf_hash", "reference_missing", "fake_ev_basis"])
+def test_sgf_literal_rejects_scope_or_reference_misuse(damage):
+    _, research = sgf_literal()
+    if damage == "other_raw":
+        research["raw_value"] = "2021中国国家队积分大循环第1轮"
+        research["raw_parts"][0]["text"] = research["original_name"] = "2021中国国家队积分大循环"
+    elif damage in {"event", "player", "raw_player"}:
+        research["owner"]["kind"] = damage
+    elif damage == "scope_hash":
+        research["sgf_literal_evidence"]["scope_sha256"] = "0" * 64
+    elif damage == "raw_reference":
+        research["original_sgf_refs"][0]["gn_values"][0] = "Different title"
+    elif damage == "sgf_hash":
+        research["original_sgf_refs"][0]["sgf_sha256"] = "4" * 64
+    elif damage == "reference_missing":
+        research["original_sgf_refs"] = []
+    else:
+        research["original_language_basis"] = "reviewed_sgf_ev"
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+def test_sgf_marker_absent_keeps_external_source_gate():
+    _, research = sgf_literal()
+    research.pop("source_basis")
+    with pytest.raises(EvidenceError, match="source URL"):
+        validate_research_record(research, registry())
+    _, research = literal()
+    research["source_checks"] = []
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+def sgf_reviewed_bundle(engine):
+    proposed, inv, _ = reviewed_bundle(engine)
+    row, research = sgf_literal()
+    raw = research["raw_value"]
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            event=raw, sgf_content=f"(;GN[{raw}]GN[{raw} (timeout)])"))
+        from scripts.kifu_raw_event_title_owners import _scope_rows
+        scope = _scope_rows(conn, raw)
+        review = owner_review(8, raw)
+        review["scope_sha256"] = canonical_sha256(scope)
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(
+            raw_value=raw, review_metadata=review))
+    research["sgf_literal_evidence"]["scope_rows"] = scope
+    research["sgf_literal_evidence"]["scope_sha256"] = canonical_sha256(scope)
+    research["original_sgf_refs"][0].update(source_path=scope[0]["source_path"], sgf_sha256=scope[0]["sgf_sha256"])
+    row["research_sha256"] = canonical_sha256(research)
+    row["name_preimage_sha256"] = None
+    bind_fixture_candidate(row)
+    inv = build_inventory(engine, inventory_format=4)
+    with engine.connect() as conn:
+        before = _image(conn, KifuRawEventValue.__table__, 8)
+    declaration = {"owner": row["owner"], "preimage": before, "occurrence_album_ids": [11],
+                   "occurrence_sha256": canonical_sha256([11])}
+    proposed["inventory_sha256"] = inv["sha256"]
+    proposed["members"][0]["raw_value"] = raw
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    proposed["candidates"] = [row]
+    return _v2_wrap(engine, inv, proposed, [declaration], []), inv, [research]
+
+
+def test_sgf_candidate_requires_approved_owner_scope_hash(engine):
+    proposed, inv, research = sgf_reviewed_bundle(engine)
+    assert dry_run_bundle(engine, proposed, registry(), inv, research)["approved"] == 1
+    proposed["owners"][0]["preimage"]["review_metadata"]["scope_sha256"] = "0" * 64
+    proposed["owner_set_sha256"] = canonical_sha256(proposed["owners"])
+    from katrain.web.kifu.name_candidates import validate_bundle
+    report = validate_bundle(proposed, registry(), inv, research)
+    assert any("SGF literal owner scope" in error for error in report["errors"])
+
+
+@pytest.mark.parametrize("capture", ["sgf", "support"])
+def test_sgf_name_approval_must_follow_used_captures(engine, capture):
+    proposed, inv, research = sgf_reviewed_bundle(engine)
+    r = research[0]
+    if capture == "sgf":
+        r["sgf_literal_evidence"]["captured_at"] = "2026-10-02T12:00:00Z"
+    else:
+        r["translation_support"] = [{"source_id": "article", "url": "https://example.org/concept",
+                                     "body_excerpt": "国家队积分大循环", "body_sha256": "5" * 64,
+                                     "fetched_at": "2026-10-02T12:00:00Z", "http_status": 200,
+                                     "observed_lang": "zh-Hans", "purpose": "Tournament concept vocabulary only",
+                                     "archive_file": "sources/article.html"}]
+    proposed["candidates"][0]["research_sha256"] = canonical_sha256(r)
+    from katrain.web.kifu.name_candidates import validate_bundle
+    report = validate_bundle(proposed, registry(), inv, research)
+    assert any("predates a source capture" in error for error in report["errors"])
+
+
+@pytest.mark.parametrize("damage", ["owner_scope", "research_signature", "late_sgf", "late_support"])
+def test_sgf_persisted_readers_recheck_scope_signature_and_capture_times(engine, damage):
+    proposed, inv, research = sgf_reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert reviewed_raw_event_hints(db, [album], "en") == {11: proposed["candidates"][0]["display_name"]}
+        assert _approved_raw_event_names(db, values={album.event}, lang="en")
+    with engine.begin() as conn:
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__)).mappings().one()
+        payload = deepcopy(evidence["research_payload"])
+        if damage == "owner_scope":
+            review = deepcopy(proposed["owners"][0]["preimage"]["review_metadata"])
+            review["scope_sha256"] = "0" * 64
+            conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(review_metadata=review))
+        elif damage == "research_signature":
+            payload["research"]["producer_id"] = "forged-producer"
+        elif damage == "late_sgf":
+            payload["research"]["sgf_literal_evidence"]["captured_at"] = "2026-10-02T12:00:00Z"
+        else:
+            payload["research"]["translation_support"] = [{"source_id": "article", "url": "https://example.org/concept",
+                "body_excerpt": "国家队积分大循环", "body_sha256": "5" * 64, "fetched_at": "2026-10-02T12:00:00Z",
+                "http_status": 200, "observed_lang": "zh-Hans", "purpose": "Concept only", "archive_file": "article.html"}]
+        if damage != "owner_scope":
+            payload["candidate"]["research_sha256"] = canonical_sha256(payload["research"])
+            conn.execute(KifuNameResearchEvidence.__table__.update().values(research_payload=payload))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert reviewed_raw_event_hints(db, [album], "en") == {}
+        assert _approved_raw_event_names(db, values={album.event}, lang="en") == []
+
+
+def test_sgf_national_title_preserves_existing_core_and_round_parts():
+    _, research = sgf_literal()
+    research["raw_parts"] = [{"kind": "core", "text": research["raw_value"]}]
+    research["original_name"] = research["raw_value"]
+    with pytest.raises(EvidenceError, match="fixed title parts"):
+        validate_research_record(research, registry())

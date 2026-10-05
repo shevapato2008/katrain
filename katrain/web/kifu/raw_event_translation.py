@@ -10,6 +10,11 @@ from urllib.parse import urlparse
 VERSION = "raw-event-title-translation-v1"
 OWNER_REVIEW_VERSION = "raw-event-title-owner-review-v1"
 PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
+SGF_LITERAL_BASIS = "sgf_literal_v1"
+NATIONAL15_RAW_VALUES = frozenset({
+    *(f"2020中国国家队积分大循环第{number}轮" for number in range(1, 14)),
+    "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛",
+})
 TOKYO11_RAW_VALUES = frozenset(
     f"{ordinal} Tokyo Shinbun Cup"
     for ordinal in ("1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th")
@@ -124,6 +129,9 @@ def validate_raw_title_research(record):
     lang = record.get("lang")
     display = record.get("candidate_name")
     original_language = record.get("original_language")
+    sgf_literal = record.get("source_basis") == SGF_LITERAL_BASIS
+    if record.get("source_basis") not in {None, SGF_LITERAL_BASIS}:
+        raise ValueError("unsupported literal raw title source basis")
     if (lang not in PRIMARY_LANGUAGES or not _text(display) or len(display) > 4096
             or _UNSAFE.search(display) or not _DISPLAY_SCRIPT[lang].search(display)):
         raise ValueError("literal raw title needs a valid primary-language display")
@@ -136,7 +144,7 @@ def validate_raw_title_research(record):
             or any(record.get(key) for key in ("reviewer_id", "reviewer_model", "reviewed_at"))):
         raise ValueError("literal raw title research provenance is incomplete")
     if (not _text(original_language) or not _LANGUAGE.fullmatch(original_language)
-            or not _https_url(record.get("original_language_basis_url"))):
+            or not sgf_literal and not _https_url(record.get("original_language_basis_url"))):
         raise ValueError("literal raw title needs an original language and captured source URL")
     raw = record.get("raw_value")
     parts = record.get("raw_parts")
@@ -170,6 +178,57 @@ def validate_raw_title_research(record):
             raise ValueError("fixed geographic title needs 中国 immediately before its sourced core")
     elif geographic:
         raise ValueError("geographic qualifier is outside the fixed raw title scope")
+    if sgf_literal:
+        if (raw not in NATIONAL15_RAW_VALUES or original_language != "zh-Hans"
+                or record.get("original_language_basis") != "reviewed_sgf_gn"
+                or record.get("source_checks") != []):
+            raise ValueError("SGF literal evidence is limited to the fixed Chinese GN titles")
+        core, separator, round_text = raw.partition("第")
+        expected_parts = [{"kind": "core", "text": core}] + (
+            [{"kind": "round", "text": separator + round_text}] if separator else [])
+        if parts != expected_parts:
+            raise ValueError("SGF literal evidence must preserve the fixed title parts")
+        evidence = record.get("sgf_literal_evidence")
+        if (not isinstance(evidence, dict) or not _time(evidence.get("captured_at"))
+                or not _text(evidence.get("scope_file"))):
+            raise ValueError("SGF literal evidence needs a captured archived scope")
+        rows = evidence.get("scope_rows")
+        if (not isinstance(rows, list) or not rows
+                or not _SHA.fullmatch(str(evidence.get("scope_sha256", "")))
+                or evidence["scope_sha256"] != _hash(rows)):
+            raise ValueError("SGF literal scope hash differs from its complete rows")
+        ids = []
+        for row in rows:
+            if (not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] <= 0
+                    or row.get("event") != raw or "event_id" not in row or row["event_id"] is not None
+                    or not _text(row.get("source_path"))
+                    or not _SHA.fullmatch(str(row.get("sgf_sha256", "")))):
+                raise ValueError("SGF literal scope needs exact raw, album, source and SGF hashes")
+            ids.append(row["id"])
+        refs = record.get("original_sgf_refs")
+        if (ids != sorted(set(ids)) or not isinstance(refs, list) or len(refs) != len(rows)):
+            raise ValueError("SGF literal references must cover the complete unique scope")
+        for row, ref in zip(rows, refs):
+            if (not isinstance(ref, dict) or type(ref.get("album_id")) is not int or ref["album_id"] != row["id"]
+                    or ref.get("source_path") != row["source_path"] or ref.get("sgf_sha256") != row["sgf_sha256"]
+                    or ref.get("ev_values") != [] or not isinstance(ref.get("gn_values"), list)
+                    or not ref["gn_values"] or ref["gn_values"][0] != raw
+                    or any(not isinstance(value, str) for value in ref["gn_values"])):
+                raise ValueError("SGF literal GN reference differs from its exact captured scope")
+        support = record.get("translation_support", [])
+        if not isinstance(support, list):
+            raise ValueError("translation support must be captured page records")
+        for page in support:
+            if (not isinstance(page, dict) or not _text(page.get("source_id"))
+                    or not _https_url(page.get("url")) or not _text(page.get("body_excerpt"))
+                    or not _SHA.fullmatch(str(page.get("body_sha256", "")))
+                    or not _time(page.get("fetched_at")) or type(page.get("http_status")) is not int
+                    or page["http_status"] != 200 or not _text(page.get("observed_lang"))
+                    or not _LANGUAGE.fullmatch(page["observed_lang"])
+                    or page["observed_lang"] in {"mul", "und", "auto", "fallback"}
+                    or not _text(page.get("purpose")) or not _text(page.get("archive_file"))):
+                raise ValueError("translation support capture is incomplete")
+        return True
     checks = record.get("source_checks")
     if not isinstance(checks, list) or not checks:
         raise ValueError("literal raw title core lacks captured source evidence")
@@ -263,6 +322,14 @@ def eligible_literal_raw_name(name, evidence, raw_owner):
         if any(_time(check.get("fetched_at")) is None or _time(candidate["reviewed_at"]) < _time(check["fetched_at"])
                for check in research.get("source_checks", [])):
             return False
+        if research.get("source_basis") == SGF_LITERAL_BASIS:
+            literal = research["sgf_literal_evidence"]
+            if literal["scope_sha256"] != raw_owner["review_metadata"]["scope_sha256"]:
+                return False
+            captures = [literal["captured_at"], *(page["fetched_at"] for page in research.get("translation_support", []))]
+            if any(_time(captured) is None or _time(candidate["reviewed_at"]) < _time(captured)
+                   for captured in captures):
+                return False
         return validate_raw_title_research(research)
     except (KeyError, TypeError, AttributeError, ValueError):
         return False

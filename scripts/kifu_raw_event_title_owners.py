@@ -54,6 +54,8 @@ PROFILE_LIMITS = {
                 "raw_count": 1, "game_total": 539},
     "tokyo11": {"raw_set_sha256": "c5303d78e042bbb83c3e6c666abfd74e0d14127e32dbd52b38b4b9fc02685a1d",
                 "raw_count": 11, "game_total": 175},
+    "national15": {"raw_set_sha256": "a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d",
+                   "raw_count": 15, "game_total": None},
 }
 
 
@@ -96,7 +98,9 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
     _fail(len(by_raw) == len(members) == limits["raw_count"]
           and set(by_raw) == {record["raw_value"] for record in records},
           "research member manifest has different raw owners")
-    _fail(sum(len(member["album_ids"]) for member in members) == limits["game_total"],
+    game_total = manifest.get("current_null_games") if profile == "national15" else limits["game_total"]
+    _fail(type(game_total) is int and game_total > 0, "fresh finite owner album total required")
+    _fail(sum(len(member["album_ids"]) for member in members) == game_total,
           "research finite owner album total changed")
     if profile == "first24":
         _fail(sum(len(by_raw[raw]["album_ids"]) for raw in RAW_VALUES[:7]) == 271
@@ -118,6 +122,8 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
                 "changes": []}
         if profile != "first24":
             plan["profile"] = profile
+        if profile == "national15":
+            plan["game_total"] = game_total
         for record in records:
             raw = record["raw_value"]
             source_owner = record["owners"][environment]
@@ -158,6 +164,8 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
           and plan.get("review_status") == "approved" and plan.get("operation") == OPERATION
           and plan.get("bundle_format") == 2 and plan.get("environment") in {"TEST", "PROD"},
           "raw title owner plan is not approved")
+    game_total = plan.get("game_total") if profile == "national15" else limits["game_total"]
+    _fail(type(game_total) is int and game_total > 0, "fresh finite owner album total required")
     _fail(plan.get("research_manifest_sha256") == expected_manifest_sha256
           and plan.get("registry_sha256") == registry_sha256(registry), "research or registry hash differs")
     changes = plan.get("changes")
@@ -208,7 +216,7 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
         count += len(scope)
         if profile == "first24":
             group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)
-    _fail(count == limits["game_total"], "finite owner album total changed")
+    _fail(count == game_total, "finite owner album total changed")
     if profile == "first24":
         _fail(group_counts == [271, 222], "first 24 owner group totals changed")
     return {"ready": True, "raw_owners": limits["raw_count"], "albums": count,

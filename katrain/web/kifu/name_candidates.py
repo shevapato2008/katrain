@@ -35,7 +35,7 @@ from katrain.web.kifu.name_transliteration import validate_transliteration, vali
 from katrain.web.kifu.name_orthographic import is_orthographic, validate_orthographic, validate_orthographic_candidate
 from katrain.web.kifu.name_evidence import validate_primary_orthographic_anchor
 from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, validate_raw_player_scope
-from katrain.web.kifu.raw_event_translation import VERSION as RAW_TITLE_VERSION
+from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, eligible_raw_title_owner, VERSION as RAW_TITLE_VERSION
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -587,6 +587,9 @@ def _validate_candidate(
         checked = _research_for(row, research, registry)
         if row["review_status"] == "approved":
             captures = []
+            if checked.get("source_basis") == SGF_LITERAL_BASIS:
+                captures.append(checked["sgf_literal_evidence"]["captured_at"])
+                captures.extend(page["fetched_at"] for page in checked.get("translation_support", []))
             for source_check in checked["source_checks"]:
                 captures.append(source_check["fetched_at"])
                 for nested_key in ("identity_corroboration", "label_evidence"):
@@ -604,6 +607,12 @@ def _validate_candidate(
                      "translated event name needs its explicit title translation method and rule")
             if row["owner"]["kind"] == "raw_event":
                 _require(row["raw_value"] == checked["raw_value"], "translated raw event spelling differs from research")
+                if checked.get("source_basis") == SGF_LITERAL_BASIS:
+                    literal = checked["sgf_literal_evidence"]
+                    _require(eligible_raw_title_owner(pinned)
+                             and literal["scope_sha256"] == pinned["review_metadata"]["scope_sha256"]
+                             and [item["id"] for item in literal["scope_rows"]] == declaration["occurrence_album_ids"],
+                             "SGF literal owner scope differs from approved complete preimage")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
         elif decision == "generated":
             _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")

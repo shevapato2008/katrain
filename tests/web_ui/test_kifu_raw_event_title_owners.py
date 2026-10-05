@@ -421,3 +421,22 @@ def test_team1_exact_mixed_scope_approval_name_gate_and_undo(engine):
     with engine.connect() as conn:
         assert conn.scalar(select(KifuRawEventValue.review_status).where(KifuRawEventValue.id == 73686)) == "pending"
         assert conn.scalar(select(KifuAlbum.event_id).where(KifuAlbum.id == linked_id)) == 73
+
+
+def test_national15_owner_profile_uses_fresh_complete_scope_total(engine):
+    raws = tuple(f"2020中国国家队积分大循环第{n}轮" for n in range(1, 14)) + (
+        "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛")
+    assert canonical_sha256(sorted(raws)) == "a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d"
+    manifest = finite_fixture(engine, raws, (3,) + (1,) * 14)
+    manifest["current_null_games"] = 17
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed complete SGF literal GN scopes"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="national15", **kwargs)
+    assert plan["game_total"] == 17
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile="national15")["albums"] == 17
+    bad = deepcopy(manifest)
+    bad["current_null_games"] = 16
+    with pytest.raises(BatchError, match="album total"):
+        prepare_plan(engine, bad, "TEST", registry(), profile="national15", **kwargs)

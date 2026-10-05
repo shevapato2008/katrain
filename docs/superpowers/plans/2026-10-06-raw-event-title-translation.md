@@ -117,6 +117,7 @@
 Independent Astra decision: [scope and source policy](../../resource/kifu-next-event-throughput-decision-2026-10-06.md). User permits literal event translations; no external exact-title requirement or event identity assertion.
 
 - [x] Actual read-only TEST/PROD capture: 15 raw / 486 whole-scope albums, raw-set SHA `a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d`. All original SGFs have empty EV and their first GN equals the raw title; two second GN values retain time-loss annotations. Preserve this actual provenance.
-- [ ] Minimal fixed-scope `sgf_literal_v1` branch with original GN/source/SGF hashes and approved-owner scope binding in candidate and reader; retain strict previous sources and identity rules.
+- [x] Minimal fixed-scope `sgf_literal_v1` branch with original GN/source/SGF hashes and approved-owner scope binding in candidate and reader; retain strict previous sources and identity rules.
 - [ ] Independent pending producer: 75 names; TW 輪 / JP ラウンド; actual supplementary source links and honest limitations inside signed research.
-- [ ] Focused code review and necessary tests; then TEST owner/names dry-run/apply/verify and PROD, actual reader deployment/HTTP checks, counts and archives.
+- [x] Focused code review APPROVE: [independent review](../../resource/kifu-national15-code-review-2026-10-06.md). Red checks fail before implementation; final relevant modules 86 passed in 6.92 s.
+- [ ] TEST owner/names dry-run/apply/verify and PROD, actual reader deployment/HTTP checks, counts and archives.

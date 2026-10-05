@@ -6,7 +6,7 @@
 
 **批准将国家队 13 项与两个高频单项合成一个标准包：15 raw / 486 历史盘数 / 75 个五语名称，按 SGF 原文字面翻译继续标准化。** 不再寻找逐字包含年份、冠名及整个 parser core 的网页。先前本文件把外部 exact-core 来源设为入包前提的要求撤销；该要求超出了用户本次授权的显示翻译需求。
 
-原始 SGF EV 与已有 raw owner 证明“待翻译的原文是什么”；网页可辅助解释赛事概念和术语。两者都不证明所有原文属于同一赛事实体。`2013职业棋手精英赛` 也允许直接翻译，明确记录没有外部赛事证实，不改为别的已知精英赛、不填写伪造来源。当前代码仍需下面的有限证据分支，且未有 fresh scope，所以本决策不把草稿标为 apply-ready。
+原始 SGF 的首个 **GN** 与已有 raw owner 证明“待翻译的原文是什么”；网页可辅助解释赛事概念和术语。两者都不证明所有原文属于同一赛事实体。`2013职业棋手精英赛` 也允许直接翻译，明确记录没有外部赛事证实，不改为别的已知精英赛、不填写伪造来源。后续 TEST/PROD fresh capture 已各核对 15 raw / 486 盘：全部没有 EV，首个 GN 均精确等于 raw；两盘第二个 GN 的超时注释原样保留。此处纠正此前 EV 假设，代码审查见 `kifu-national15-code-review-2026-10-06.md`；数据仍须正常绑定、签署与入库，不因本决策自动成为 apply-ready。
 
 候选原文集合 SHA-256：`a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d`。486 是旧捕获的目标覆盖量；写入范围以新捕获为准。不要为了凑该数量排除异常 occurrence。
 
@@ -33,7 +33,7 @@ CMB 已完成的两个 raw 为 `第9届招商银行杯第3轮`、`第9届招商�
 ## 最小代码调整与执行范围
 
 1. **保留真实 parts，不改年份语法。** 国家队仍是上表两段，两个 singleton 仍是完整单 core；年份在 core 内不妨碍离线生成完整译文。研究说明可指出原文开头的 `2020`/`2013`/`2014` 是年份，不能伪造 `raw_parts.text = 2020年`。无需改 parser、parsed_data、裸年份正则或创建通用 qualifiers。
-2. **增加一个显式 SGF 字面证据分支，仅允许本文件固定 15 raw。** 例如 `source_basis=sgf_literal_v1`，仍用 existing raw_event、`translated_from_original`、`literal_event_title` 和现有 raw generation rule。研究内保存原文语言依据与原始范围引用：exact owner/raw、实际 capture 时间、owner 审核采用的完整 `scope_sha256`、可追溯的 album/source_path/SGF hash 引用。复用已归档 owner plan 的 scope rows，不另建证据库；原文实际 EV 应在捕获/审核时核对。外部 `source_checks=[]` 可诚实为空，`original_language_basis_url` 可缺省；三页实文进入 `translation_support`，不填写假 HTTP/URL、假 `found` 或拼接 exact-core excerpt。其他 raw 与 entity/player 不得进入这个分支。
+2. **增加一个显式 SGF 字面证据分支，仅允许本文件固定 15 raw。** 例如 `source_basis=sgf_literal_v1`，仍用 existing raw_event、`translated_from_original`、`literal_event_title` 和现有 raw generation rule。研究内保存原文语言依据与原始范围引用：exact owner/raw、实际 capture 时间、owner 审核采用的完整 `scope_sha256`、可追溯的 album/source_path/SGF hash 引用。复用已归档 owner plan 的 scope rows，不另建证据库；本批核对真实 `ev_values=[]`、`gn_values[0] == raw`，保留全部后续 GN 值及原始 SGF hash，不改写超时注释。外部 `source_checks=[]` 可诚实为空，`original_language_basis_url` 可缺省；三页实文进入 `translation_support`，不填写假 HTTP/URL、假 `found` 或拼接 exact-core excerpt。其他 raw 与 entity/player 不得进入这个分支。
 3. **同步修改两个实际闸门。** `raw_event_translation.validate_raw_title_research` 对该显式分支保留 owner/raw、完整唯一 core、lossless parts、原文语种、五主语言和 provenance 检查，替换“必须有外部 HTTPS exact-core source”这一项。`name_evidence.validate_research_record` 也须针对同一分支调整其前置 URL 要求、非空 checks 及 `candidate_name == original_name` 的重复门禁；只改 pure 文件会继续被外层拒绝。旧无 marker 的外部来源分支及原 `event`/人物规则保持原样。
 4. **沿用现有绑定，补最小一致性检查。** `name_candidates._validate_candidate` 可从既有 owner declaration 的批准前镜像核对研究 scope hash；`eligible_literal_raw_name` 核对同一 hash 等于实际 raw owner 的 `review_metadata.scope_sha256`。原文范围必须绑定本批现有 owner，不能只接受一个任意格式正确的 SHA。原始捕获及实际用到的辅助捕获时间都不得晚于独立审核时间；candidate→research hash、producer/reviewer、raw/lang/display/version 的检查保留。现有 writer 的 owner preimage、inventory/CAS、锁、ledger/undo 继续复用，不增加新的审批阶段。
 5. **一个 `national15` profile，一次有限代码审查。** 固定上述 raw-set SHA 与 fresh 实际总量；补覆盖三个标题形态、范围外 raw/玩家或实体误用、raw/scope/hash 或签名不匹配、旧来源分支的聚焦检查即可。共享 pure 模块需同步到实际双 reader 运行时；无需改 reader 查询、schema、身份碰撞或 FK 规则。

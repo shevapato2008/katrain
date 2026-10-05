@@ -19,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urljoin, urlparse
 from urllib.request import Request, urlopen
 
-from katrain.web.kifu.raw_event_translation import validate_raw_title_research
+from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, validate_raw_title_research
 
 
 DEFAULT_REGISTRY = Path(__file__).resolve().parents[3] / "docs/resource/kifu-name-source-registry.json"
@@ -1053,13 +1053,16 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     _require(_text(record.get("producer_id")) and _text(record.get("producer_model")),
              "actual producer identity/model required")
     scope_status = record.get("scope_status")
+    sgf_literal = record.get("source_basis") == SGF_LITERAL_BASIS
+    _require(not sgf_literal or owner["kind"] == "raw_event" and scope_status == "translated_from_original",
+             "SGF literal evidence requires a translated existing raw event")
     _require(scope_status in SCOPE_STATUSES, "invalid scope status")
     _require("negative_closure" not in record or scope_status == "not_found_in_scope",
              "negative closure applies only to a negative scope")
     if scope_status != "incomplete":
         _require(_text(record.get("original_name")) and _text(record.get("original_language")),
                  "completed research needs original name and language")
-        _require(_https_url(record.get("original_language_basis_url")),
+        _require(sgf_literal or _https_url(record.get("original_language_basis_url")),
                  "completed research needs original-language source URL")
         if _text(record.get("reading")):
             _require(_https_url(record.get("reading_basis_url")), "reading needs source URL")
@@ -1077,6 +1080,10 @@ def validate_research_record(record: dict, registry: dict) -> dict:
         target = record["original_language"]
         _require(target in registry["language_tags"].values(), "title translation needs a concrete original language")
     checks = record.get("source_checks")
+    if sgf_literal:
+        result = deepcopy(record)
+        result["owner_key"] = exact_owner_key
+        return result
     _require(isinstance(checks, list) and bool(checks), "source checks required")
     sources = {source["id"]: source for source in registry["sources"]}
     for check in checks:

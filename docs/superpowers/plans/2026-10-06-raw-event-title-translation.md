@@ -118,6 +118,16 @@ Independent Astra decision: [scope and source policy](../../resource/kifu-next-e
 
 - [x] Actual read-only TEST/PROD capture: 15 raw / 486 whole-scope albums, raw-set SHA `a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d`. All original SGFs have empty EV and their first GN equals the raw title; two second GN values retain time-loss annotations. Preserve this actual provenance.
 - [x] Minimal fixed-scope `sgf_literal_v1` branch with original GN/source/SGF hashes and approved-owner scope binding in candidate and reader; retain strict previous sources and identity rules.
-- [ ] Independent pending producer: 75 names; TW 輪 / JP ラウンド; actual supplementary source links and honest limitations inside signed research.
+- [x] Independent pending producer: 75 names; TW 輪 / JP ラウンド; actual supplementary source links and honest limitations inside signed research.
 - [x] Focused code review APPROVE: [independent review](../../resource/kifu-national15-code-review-2026-10-06.md). Red checks fail before implementation; final relevant modules 86 passed in 6.92 s.
-- [ ] TEST owner/names dry-run/apply/verify and PROD, actual reader deployment/HTTP checks, counts and archives.
+- [x] TEST owner/names dry-run/apply/verify and PROD, actual reader deployment/HTTP checks, counts and archives.
+
+Actual national15 completion: owner 139/name 140 on both databases; 486 unchanged albums/75 names, no FK change. Runtime TEST/PROD health and file hashes, four old HTTP cases and sixteen new language/search/fallback cases passed. Source GN and all applied/runtime receipts archived. After CM141, actual PROD five-language players470/3,698; events64/85; complete display53,570/173,025.
+
+## Continuation 7 — manifest-bound Chinese SGF bulk
+
+Independent Astra [bulk decision](../../resource/kifu-next-literal-event-bulk-decision-2026-10-06.md) freezes a research candidate batch150 raw/4,104 albums/750 names. Implement one bounded manifest-driven Chinese SGF profile and approved parser-parts hash in existing owner metadata, preserving national15 compatibility and all identity/CAS/collision gates. Literal event translation uses original GN; future same-shape batches require reviewed data, not per-title runtime changes.
+
+- [ ] Minimal implementation and focused checks, then independent code review.
+- [ ] Independent source producer, actual complete TEST/PROD scope and five-language collision checks; re-freeze any held entries before approval.
+- [ ] Actual TEST→PROD owner/name writes, one needed runtime update, representative real HTTP, honest counts and archives.

@@ -6,12 +6,43 @@ import pytest
 from sqlalchemy import select
 
 from katrain.web.core.models_db import KifuAlbum, KifuRawEventValue
+from katrain.web.core.models_db import KifuAlbumSource, KifuEvent, KifuSource
 from katrain.web.kifu.name_batch import BatchError, _image, undo_batch
+from katrain.web.kifu.name_batch import _affected_albums, _check_raw_owner, _team_raw_scope
 from katrain.web.kifu.name_candidates import canonical_sha256
 from katrain.web.kifu.raw_event_translation import GEOGRAPHIC39_RAW_VALUES
 from scripts.kifu_raw_event_title_owners import RAW_VALUES, apply_plan, inspect_plan, prepare_plan
 from tests.web_ui.test_kifu_name_batch import engine  # noqa: F401
 from tests.web_ui.test_kifu_name_candidates import registry
+
+
+TEAM_ALL_IDS = tuple(map(int, """
+    36589 36611 36612 36663 36668 36677 36678 36684 36708 36709 36710 36714 36715 36716 36731 36732
+    36733 36734 36745 36746 36747 36748 36753 36754 40302 40303 40304 40305 40306 40312 40313 40314
+    40315 40316 40317 40334 40335 40337 40338 40339 40346 40347 40348 40349 40350 40351 40352 40353
+    40354 40363 40364 40365 40366 40367 40368 40369 41993 42002 42007 42407 42434 42441 42454 42457
+    42476 42481 42482 43200 43204 46945 56988 56990 56995 57008 57010 57733 58190 58192 58193 58304
+    58305 58321 58322 58508 58514 59044 59062 59083 59085 59087 59088 59090 59101 59105 60015 60017
+    60143 60150 60158 60162 60210 60276 60288 60306 60320 60406 60413 60427 60433 60445 60451 61503
+    61508 61708 61753 61798 62076 62103 62105 62113 62114 65293 66378 66387 68471 68473 68475 69860
+    70308 70720 71946 75865 76551 76691 76696 76711 76713 76721 76808 77213 77368 77379 77783 77785
+    78257 78259 78260 78267 83000 83045 83080 83081 83088 89940 89941 89947 90989 90990 90994 94974
+    97078 97099 97100 97101 97106 100392 100393 100915 100916 100917 103375 103379 103658 104091 104092 104239
+    105445 105446 105621 105622 105636 105637 105638 105640 105641 105643 105644 105748 105756 106155 106157 106158
+    106161 106163 106166 106168 106170 106171 106172 106174 106646 106648 106649 106650 106651 106738 106739 111950
+    111951 111996 112005 112006 112007 112009 112010 112014 112055 112199 112201 112202 112213 112714 112716 112753
+    112760 112764 112766 112771 112780 112782 114910 114915 114916 115488 115489 115490 115491 115500 115501 115502
+    115506 115508 115510 115513 116012 116447 116448 116450 117603 117958 118974 123871 125707 125897 125989 126809
+    126812 126813 126816 130696 130710 130726 130727 130741 130799 130800 130808 130815 130817 130818 131296 131297
+    133500 133501 133502 133505 133511 134314 134316 134319 137115 137116 137121 137127 137128 137130 137131 137267
+    137268 137342 137624 137626 137753 137767 137768 137789 138139 138148 138150 139165 139202 139882 139944 139951
+    139952 139953 141092 141104 142877 144471 144474 144482 144483 144955 145385 145552 145773 146611 146615 146855
+    146856 146862 146863 146889
+""".split()))
+TEAM_EXCLUDED_IDS = frozenset(map(int, """
+    36663 36668 36708 36709 36710 40334 40335 42407 42481 42482 46945 56988 60017 69860 76808 77213
+    83045 83088 90990 94974 100915 100916 100917 112014 118974 126816 130741 137116 137626 139944
+""".split()))
 
 
 def owner_fixture(engine):
@@ -256,3 +287,104 @@ def test_finite_profile_rejects_changed_game_total(engine, profile, raws, counts
                      producer_id="producer-1", producer_model="gpt-6-sol",
                      reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
                      review_conclusion="Reviewed exact literal raw titles")
+
+
+def team_fixture(engine):
+    assert len(TEAM_ALL_IDS) == 324 and len(TEAM_EXCLUDED_IDS) == 30
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert(), [
+            {"id": 73, "canonical_name": "Existing event"},
+            {"id": 74, "canonical_name": "Different event"},
+        ])
+        conn.execute(KifuSource.__table__.insert().values(id=1, source_key="historic", display_name="Historic"))
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=73686, raw_value="团体赛", category="unclassified_pending", parser_version="original-parser",
+            parsed_data={"raw": "团体赛"}, review_status="pending"))
+        conn.execute(KifuAlbum.__table__.insert(), [
+            {"id": album_id, "player_black": "A", "player_white": "B", "event": "团体赛",
+             "event_id": 73 if album_id in TEAM_EXCLUDED_IDS else None,
+             "sgf_content": f"(;EV[团体赛]C[{album_id}])", "source_path": f"{album_id}.sgf",
+             "black_rank": "1d"}
+            for album_id in TEAM_ALL_IDS
+        ])
+        conn.execute(KifuAlbumSource.__table__.insert(), [
+            {"album_id": album_id, "source_id": 1, "origin_path": f"{album_id}.sgf",
+             "match_method": "source_path"}
+            for album_id in TEAM_ALL_IDS
+        ])
+        before = _image(conn, KifuRawEventValue.__table__, 73686)
+        scope = _team_raw_scope(conn)
+    manifest = {"records": [{"raw_value": "团体赛", "owners": {"TEST": {
+        "raw_event_id": 73686, "preimage": before, "album_scope_preimage": scope["rows"]}}}],
+        "member_manifest": {"TEST": {"members": [{"raw_value": "团体赛", "album_ids": list(TEAM_ALL_IDS)}]}}}
+    return manifest
+
+
+def test_team1_exact_mixed_scope_approval_name_gate_and_undo(engine):
+    manifest = team_fixture(engine)
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact 324 album mixed scope"}
+    missing_linked = deepcopy(manifest)
+    missing_linked["member_manifest"]["TEST"]["members"][0]["album_ids"] = [
+        album_id for album_id in TEAM_ALL_IDS if album_id not in TEAM_EXCLUDED_IDS]
+    with pytest.raises(BatchError):
+        prepare_plan(engine, missing_linked, "TEST", registry(), profile="team1", **kwargs)
+    stale_capture = deepcopy(manifest)
+    stale_capture["records"][0]["owners"]["TEST"]["album_scope_preimage"][0]["album"]["sgf_content"] = "changed"
+    with pytest.raises(BatchError):
+        prepare_plan(engine, stale_capture, "TEST", registry(), profile="team1", **kwargs)
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="team1", **kwargs)
+    change = plan["changes"][0]
+    assert len(change["occurrence_album_ids"]) == 324
+    assert change["after"]["review_metadata"]["team_scope"]["eligible_count"] == 294
+    assert "album_scope_preimage" not in change["after"]["review_metadata"]
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile="team1")["albums"] == 324
+    forged = deepcopy(plan)
+    forged["changes"][0]["after"]["review_metadata"]["team_scope"]["eligible_count"] = 295
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, forged, registry(), canonical_sha256(manifest), profile="team1")
+    first_id = TEAM_ALL_IDS[0]
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == first_id).values(sgf_content="changed"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile="team1")
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == first_id).values(
+            sgf_content=f"(;EV[团体赛]C[{first_id}])"))
+    applied = apply_plan(engine, plan, registry(), canonical_sha256(manifest), canonical_sha256(plan), profile="team1")
+    assert applied["change_count"] == 1
+    candidate = {"owner": {"kind": "raw_event", "id": 73686}, "raw_value": "团体赛",
+                 "decision_kind": "translated"}
+    with engine.connect() as conn:
+        _check_raw_owner(conn, candidate)
+        assert _affected_albums(conn, [candidate]) == list(TEAM_ALL_IDS)
+    without_scope = deepcopy(change["after"]["review_metadata"])
+    without_scope.pop("team_scope")
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 73686).values(
+            review_metadata=without_scope))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        _check_raw_owner(conn, candidate)
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 73686).values(
+            review_metadata=change["after"]["review_metadata"]))
+    linked_id = min(TEAM_EXCLUDED_IDS)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == linked_id).values(event_id=74))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        _check_raw_owner(conn, candidate)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == linked_id).values(event_id=73))
+        conn.execute(KifuAlbumSource.__table__.update().where(KifuAlbumSource.album_id == first_id).values(
+            origin_path="changed.sgf"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        _check_raw_owner(conn, candidate)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbumSource.__table__.update().where(KifuAlbumSource.album_id == first_id).values(
+            origin_path=f"{first_id}.sgf"))
+    undo_batch(engine, applied["batch_id"])
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventValue.review_status).where(KifuRawEventValue.id == 73686)) == "pending"
+        assert conn.scalar(select(KifuAlbum.event_id).where(KifuAlbum.id == linked_id)) == 73

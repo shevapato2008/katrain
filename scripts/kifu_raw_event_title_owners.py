@@ -18,7 +18,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.name_batch import (
     BatchError, _catalog_sha, _fail, _image, _insert, _locked_write, _record_change,
-    _snapshot_parts, _source_registry_for_batch, _values_for_table,
+    _snapshot_parts, _source_registry_for_batch, _team_raw_scope, _TEAM_OWNER_ID, _TEAM_RAW, _values_for_table,
 )
 from katrain.web.kifu.name_candidates import CandidateError, _check_signature, canonical_sha256
 from katrain.web.kifu.name_evidence import registry_sha256
@@ -46,6 +46,8 @@ PROFILE_LIMITS = {
                   "raw_count": 49, "game_total": 557},
     "geographic39": {"raw_set_sha256": "996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315",
                      "raw_count": 39, "game_total": 294},
+    "team1": {"raw_set_sha256": "6fac391a238c31cdff80bad25d6f2452e9d30f898301a0815af4b3c556cdebfa",
+              "raw_count": 1, "game_total": 324},
 }
 
 
@@ -116,14 +118,24 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
             before = _image(conn, KifuRawEventValue.__table__, source_owner["raw_event_id"])
             _fail(before == source_owner["preimage"] and before["raw_value"] == raw,
                   f"research owner preimage changed for {raw}")
-            scope = _scope_rows(conn, raw)
-            ids = [row["id"] for row in scope]
+            if profile == "team1":
+                _fail(raw == _TEAM_RAW and before["id"] == _TEAM_OWNER_ID,
+                      "team profile requires the fixed existing raw owner")
+                team = _team_raw_scope(conn)
+                scope, ids = team["rows"], team["all_ids"]
+                _fail(source_owner.get("album_scope_preimage") == scope,
+                      "team complete album/source preimage differs from reviewed capture")
+            else:
+                scope = _scope_rows(conn, raw)
+                ids = [row["id"] for row in scope]
             _fail(ids == by_raw[raw]["album_ids"], f"research album scope changed for {raw}")
             review = {**signature, "status": "approved", "version": OPERATION,
                       "raw_value": raw, "raw_event_id": before["id"],
                       "scope_sha256": canonical_sha256(scope),
                       "research_manifest_sha256": digest,
                       "category_basis": "Readable literal raw event title; no event identity or link approved"}
+            if profile == "team1":
+                review["team_scope"] = team["review_scope"]
             after = {**before, "review_status": "approved", "review_metadata": review}
             plan["changes"].append({"before": before, "after": after,
                                     "scope_rows": scope, "occurrence_album_ids": ids})
@@ -164,10 +176,16 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
               "raw owner complete preimage changed")
         _fail(conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
               is None, "raw owner already has names")
-        scope = _scope_rows(conn, before["raw_value"])
-        _fail(scope == change["scope_rows"]
-              and [row["id"] for row in scope] == change["occurrence_album_ids"],
-              "raw event EV, SGF, rank, or album scope changed")
+        if profile == "team1":
+            _fail(before["id"] == _TEAM_OWNER_ID and before["raw_value"] == _TEAM_RAW,
+                  "team profile owner differs")
+            team = _team_raw_scope(conn)
+            scope, ids = team["rows"], team["all_ids"]
+        else:
+            scope = _scope_rows(conn, before["raw_value"])
+            ids = [row["id"] for row in scope]
+        _fail(scope == change["scope_rows"] and ids == change["occurrence_album_ids"],
+              "raw event EV, SGF, rank, source link, or album scope changed")
         review = after["review_metadata"]
         _fail(isinstance(review, dict) and review.get("status") == review.get("review_status") == "approved"
               and review.get("version") == OPERATION and review.get("raw_value") == before["raw_value"]
@@ -178,6 +196,9 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
                   "producer_id", "producer_model", "produced_at", "reviewer_id",
                   "reviewer_model", "reviewed_at", "review_conclusion")),
               "raw owner independent review differs from signed scope")
+        if profile == "team1":
+            _fail(review.get("team_scope") == team["review_scope"],
+                  "team fixed eligible/linked partition differs from signed review")
         count += len(scope)
         if profile == "first24":
             group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)

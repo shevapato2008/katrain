@@ -48,6 +48,11 @@ _UNDO_TABLES = {model.__tablename__: model.__table__ for model in (
 )}
 _ADVISORY_LOCK_KEY = 720220261002
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_TEAM_RAW = "团体赛"
+_TEAM_OWNER_ID = 73686
+_TEAM_ALL_IDS_SHA256 = "39fee6c73115534d2c206b0eaa4fc834cb6bc624dafdf147a3955fb09a9ea967"
+_TEAM_ELIGIBLE_IDS_SHA256 = "8dc603a8278797dd57a271b76f2316cca40c49ed36465001c8d5d9e77f9605bb"
+_TEAM_EXCLUDED_IDS_SHA256 = "84e87533c0b750f6bbae1d9dc2df2b738f1075f9e937e65dce7c82cf91ad074b"
 
 
 def _fail(condition: bool, message: str) -> None:
@@ -200,6 +205,42 @@ def _image(conn, table, row_id: int) -> dict | None:
     if row is None:
         return None
     return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
+
+
+def _team_raw_scope(conn) -> dict:
+    """Freeze the one approved mixed raw scope, including complete album and source-link images."""
+    def image(row):
+        return {key: value.isoformat() if isinstance(value, datetime) else value for key, value in row.items()}
+
+    albums = [image(row) for row in conn.execute(select(KifuAlbum.__table__).where(
+        KifuAlbum.event == _TEAM_RAW).order_by(KifuAlbum.id)).mappings()]
+    all_ids = [album["id"] for album in albums]
+    eligible_ids = [album["id"] for album in albums if album["event_id"] is None]
+    excluded_ids = [album["id"] for album in albums if album["event_id"] == 73]
+    _fail(len(all_ids) == 324 and canonical_sha256(all_ids) == _TEAM_ALL_IDS_SHA256
+          and len(eligible_ids) == 294 and canonical_sha256(eligible_ids) == _TEAM_ELIGIBLE_IDS_SHA256
+          and len(excluded_ids) == 30 and canonical_sha256(excluded_ids) == _TEAM_EXCLUDED_IDS_SHA256
+          and len(eligible_ids) + len(excluded_ids) == len(all_ids)
+          and all(album["duplicate_of_id"] is None and album["list_hidden_reason"] is None for album in albums),
+          "team raw title partition differs from the fixed 324/294/30 scope")
+    selected = conn.scalar(select(KifuAlbumEventSelection.album_id).where(or_(
+        KifuAlbumEventSelection.album_id.in_(all_ids),
+        KifuAlbumEventSelection.selected_raw == _TEAM_RAW)).limit(1))
+    _fail(selected is None, "team raw title gained selected event scope")
+    links = [image(row) for row in conn.execute(select(KifuAlbumSource.__table__).where(
+        KifuAlbumSource.album_id.in_(all_ids)).order_by(KifuAlbumSource.album_id, KifuAlbumSource.id)).mappings()]
+    by_album = defaultdict(list)
+    for link in links:
+        by_album[link["album_id"]].append(link)
+    _fail(len(links) == len(by_album) == 324, "team raw title source links differ from captured scope")
+    rows = [{"album": album, "source_links": by_album[album["id"]]} for album in albums]
+    review_scope = {"version": "team1-fixed-mixed-scope-v1", "all_count": 324, "eligible_count": 294,
+                    "excluded_linked_count": 30, "excluded_event_id": 73,
+                    "all_ids_sha256": _TEAM_ALL_IDS_SHA256,
+                    "eligible_ids_sha256": _TEAM_ELIGIBLE_IDS_SHA256,
+                    "excluded_linked_ids_sha256": _TEAM_EXCLUDED_IDS_SHA256,
+                    "album_scope_sha256": canonical_sha256(rows)}
+    return {"rows": rows, "all_ids": all_ids, "review_scope": review_scope}
 
 
 def _name_preimage_sha256(conn, owner: dict, lang: str) -> str | None:
@@ -434,9 +475,16 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
             direct = conn.execute(select(KifuAlbum.id, KifuAlbum.event_id,
                                          KifuAlbum.duplicate_of_id, KifuAlbum.list_hidden_reason)
                                   .where(KifuAlbum.event == row["raw_value"])).all()
-            _fail(bool(direct) and all(event_id is None and duplicate_id is None and hidden is None
-                                       for _, event_id, duplicate_id, hidden in direct),
-                  "literal raw title needs only public unlinked direct albums")
+            review = owner_row["review_metadata"] or {}
+            if owner_id == _TEAM_OWNER_ID and row["raw_value"] == _TEAM_RAW and review.get("team_scope"):
+                team = _team_raw_scope(conn)
+                _fail(review["team_scope"] == team["review_scope"]
+                      and review["scope_sha256"] == team["review_scope"]["album_scope_sha256"],
+                      "team raw title signed album scope changed")
+            else:
+                _fail(bool(direct) and all(event_id is None and duplicate_id is None and hidden is None
+                                           for _, event_id, duplicate_id, hidden in direct),
+                      "literal raw title needs only public unlinked direct albums")
             _fail(not (selected_scope or {}).get(row["raw_value"])
                   and conn.scalar(select(KifuAlbumEventSelection.album_id).where(
                       KifuAlbumEventSelection.album_id.in_([album_id for album_id, *_ in direct])).limit(1)) is None,

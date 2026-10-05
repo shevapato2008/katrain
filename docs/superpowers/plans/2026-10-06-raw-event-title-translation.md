@@ -77,9 +77,9 @@
 
 各小批独立提交，已可交付部分不等待团体赛特例；棋手来源与五人入库继续并行。
 
-### 已完成代码及当前数据状态（2026-10-06 04:19 CST）
+### 已完成代码及当前数据状态（2026-10-06 04:38 CST）
 
-- `generic49` 代码经独立 Astra 审查 APPROVE，实际源码只新增固定 profile；研究及两库只读 owner 方案已完整，数据尚未写入。
-- `geographic39` 代码提交 `af4bc201`（独立实现 `13c288bc`）经独立 Astra APPROVE；44 项聚焦测试通过。39／294 的研究资料和全部 parts 已验证，运行时纯模块镜像已构建，未发布；owner/name 尚未写入。
+- `generic49` 代码经独立 Astra 审查 APPROVE，实际源码只新增固定 profile；研究及两库 owner 110 已实际写入核验，名称待最终 catalog 重新绑定后写入。
+- `geographic39` 代码提交 `af4bc201`（独立实现 `13c288bc`）经独立 Astra APPROVE；44 项聚焦测试通过。39／294 的研究资料和全部 parts 已验证，运行时纯模块已发布两环境，健康、实际文件 hash 及各四项 HTTP 回归通过；owner 111 已在两库实际写入核验，name 尚未写入。
 - Agon owner 103／name 106、CMB owner 104／name 107，已在两库实际写入并核对；HTTP 分别每环境 16／11 项通过。实际统计及归档完成。
-- 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码继续独立实现，未批准写库。
+- 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码 493fe0d1（独立实现 443403b9）经 Astra APPROVE，45 项聚焦测试通过；两库独立 transient importer 已构建，待实际数据包批准及写入。

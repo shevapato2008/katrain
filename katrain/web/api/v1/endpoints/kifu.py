@@ -20,6 +20,7 @@ from katrain.web.kifu.identity import (
     split_player_rank,
 )
 from katrain.web.kifu.round_names import display_round_name
+from katrain.web.kifu.library import report_availability
 
 router = APIRouter()
 KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
@@ -75,6 +76,7 @@ class KifuAlbumSummary(BaseModel):
     display_event: Optional[str] = None
     display_round_name: Optional[str] = None
     sources: List[str] = Field(default_factory=list)
+    has_analysis: bool = False
 
 
 class KifuAlbumDetail(KifuAlbumSummary):
@@ -93,6 +95,7 @@ class KifuAlbumListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    preview: Optional[KifuAlbumDetail] = None
 
 
 @router.get("/albums/{album_id}/analysis")
@@ -127,24 +130,42 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
         )
         .first()
     )
-    moves = [] if job is None else (
-        db.query(KifuAnalysisMove)
-        .filter(KifuAnalysisMove.job_id == job.id, KifuAnalysisMove.root_visits >= KIFU_VISITS)
-        .order_by(KifuAnalysisMove.move_number)
-        .all()
+    moves = (
+        []
+        if job is None
+        else (
+            db.query(KifuAnalysisMove)
+            .filter(KifuAnalysisMove.job_id == job.id, KifuAnalysisMove.root_visits >= KIFU_VISITS)
+            .order_by(KifuAnalysisMove.move_number)
+            .all()
+        )
     )
-    complete = bool(job and len(moves) == job.total_moves + 1 and all(
-        row.move_number == number for number, row in enumerate(moves)
-    ))
+    complete = bool(
+        job and len(moves) == job.total_moves + 1 and all(row.move_number == number for number, row in enumerate(moves))
+    )
     status = job.status if job else "unavailable"
     error_message = job.error_message if job else None
     if status == "completed" and not complete:
         status = "failed"
         error_message = "Stored analysis is incomplete"
     fields = (
-        "move_number", "actual_move", "actual_player", "winrate", "score_lead", "visits", "root_visits",
-        "top_moves", "ownership", "delta_score", "delta_winrate", "grade", "points_lost",
-        "points_lost_source", "is_top_move", "top_prior", "brilliance",
+        "move_number",
+        "actual_move",
+        "actual_player",
+        "winrate",
+        "score_lead",
+        "visits",
+        "root_visits",
+        "top_moves",
+        "ownership",
+        "delta_score",
+        "delta_winrate",
+        "grade",
+        "points_lost",
+        "points_lost_source",
+        "is_top_move",
+        "top_prior",
+        "brilliance",
     )
     return {
         "album_id": album_id,
@@ -179,7 +200,7 @@ async def list_kifu_albums(
             lambda: dispatcher.kifu_list_albums(q, page, page_size, lang), "Kifu albums not found"
         )
 
-    query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
+    query = db.query(KifuAlbum).options(defer(KifuAlbum.search_text))
     query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
     count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
 
@@ -223,8 +244,26 @@ async def list_kifu_albums(
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
     players, events, sources = display_maps(db, records, lang)
+    availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
+    items = [
+        _summary(r, players, events, sources, lang).model_copy(update={"has_analysis": availability[r.id]})
+        for r in records
+    ]
+    preview = (
+        None
+        if not records
+        else KifuAlbumDetail.model_validate(
+            {
+                **items[0].model_dump(),
+                "place": records[0].place,
+                "source": records[0].source,
+                "sgf_content": records[0].sgf_content,
+            }
+        )
+    )
     return KifuAlbumListResponse(
-        items=[_summary(r, players, events, sources, lang) for r in records],
+        items=items,
+        preview=preview,
         total=total,
         page=page,
         page_size=page_size,
@@ -252,6 +291,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
 
     players, events, sources = display_maps(db, [record], lang)
     values = _summary(record, players, events, sources, lang).model_dump()
+    values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
     )

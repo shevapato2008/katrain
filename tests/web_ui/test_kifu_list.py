@@ -112,6 +112,55 @@ def test_count_and_page_stay_consistent_without_query(db_with_albums):
     assert len(result.items) == 3
 
 
+def test_page_includes_only_first_game_preview_and_honest_report_flag(db_with_albums):
+    result = _list_albums(db_with_albums, page_size=2)
+    assert len(result.items) == 2
+    assert result.preview.id == result.items[0].id
+    assert result.preview.sgf_content == "(;B[dp])"
+    assert all(item.has_analysis is False for item in result.items)
+    assert all("sgf_content" not in item.model_dump() for item in result.items)
+    assert _list_albums(db_with_albums, page=3, page_size=2).preview is None
+
+
+def test_report_flag_requires_current_identity_and_all_deep_positions(db_with_albums):
+    import hashlib
+
+    album = db_with_albums.query(models_db.KifuAlbum).first()
+    album.move_count = 1
+    job = models_db.KifuAnalysisJob(
+        album_id=album.id,
+        sgf_sha256=hashlib.sha256(album.sgf_content.encode()).hexdigest(),
+        model_sha256=kifu.KIFU_MODEL_SHA256,
+        requested_visits=2000,
+        status="completed",
+        total_moves=1,
+        analyzed_moves=1,
+    )
+    db_with_albums.add(job)
+    db_with_albums.flush()
+
+    def available():
+        return next(item for item in _list_albums(db_with_albums).items if item.id == album.id).has_analysis
+
+    assert not available()
+    for number in (0, 1):
+        db_with_albums.add(models_db.KifuAnalysisMove(job_id=job.id, move_number=number, root_visits=2001))
+    db_with_albums.commit()
+    assert available()
+    row = db_with_albums.query(models_db.KifuAnalysisMove).first()
+    row.root_visits = 1999
+    db_with_albums.commit()
+    assert not available()
+    row.root_visits = 2001
+    job.model_sha256 = "0" * 64
+    db_with_albums.commit()
+    assert not available()
+    job.model_sha256 = kifu.KIFU_MODEL_SHA256
+    album.sgf_content += "C[edited]"
+    db_with_albums.commit()
+    assert not available()
+
+
 def test_count_respects_the_same_filter_as_the_page(db_with_albums):
     """拆成两条查询之后最容易坏的地方：过滤条件只加在其中一条上。"""
     result = _list_albums(db_with_albums, q="丁浩")

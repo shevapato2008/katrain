@@ -22,7 +22,7 @@ import ReplayBoard3D from '../components/board/ReplayBoard3D';
 
 const BACK_TO = '/galaxy/kifu';
 
-export default function KifuReportDetailPage() {
+export default function KifuReportDetailPage({ replayOnly = false }: { replayOnly?: boolean }) {
   const { albumId } = useParams<{ albumId: string }>();
   const id = albumId && /^\d+$/.test(albumId) ? Number(albumId) : null;
   const { t, lang } = useTranslation();
@@ -38,9 +38,9 @@ export default function KifuReportDetailPage() {
   const [tryMoves, setTryMoves] = useState<string[]>([]);
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const coordinates = useBoardCoordinates(boardEdge);
-  const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(id);
+  const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(replayOnly ? null : id);
   const frontier = Math.max(0, ...Object.keys(analysisByMove).map(Number));
-  const currentMove = selectedPosition?.id === id ? selectedPosition.move : frontier;
+  const currentMove = selectedPosition?.id === id ? selectedPosition.move : replayOnly && loaded?.id === id ? loaded.album.move_count : frontier;
   const setCurrentMove = (move: number) => { if (id !== null) setSelectedPosition({ id, move }); };
 
   useEffect(() => {
@@ -101,10 +101,10 @@ export default function KifuReportDetailPage() {
               black_rank: album.display_black_rank ?? album.black_rank,
               white_rank: album.display_white_rank ?? album.white_rank, komi: album.komi ?? 0,
             }}
-            task={{ status: detail?.status ?? 'loading', report_type: 'deep', requested_visits: detail?.requested_visits }}
+            task={replayOnly ? null : { status: detail?.status ?? 'loading', report_type: 'deep', requested_visits: detail?.requested_visits }}
             currentMove={at} currentAnalysis={analysis}
           />}
-          recommendations={<>
+          recommendations={replayOnly ? <Typography sx={{ p: 1 }}>{t('kifu:replay', '逐手回放')} · {totalMoves} {t('kifu:moves_unit', '手')}</Typography> : <>
             {detail?.status !== 'completed' && <Box sx={{ px: 1, py: 0.5 }}><Typography sx={{ fontSize: 18 }}>{status}</Typography>{detail?.status === 'failed' && detail.error_message && <Alert severity="error">{detail.error_message}</Alert>}</Box>}
             {analysis ? <AiAnalysis currentMove={at} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={parsed?.moves[boardCursor]} /> : <Alert severity="info">{detail?.status === 'running' ? t('kifu:report_no_position', '当前局面暂无分析结果') : status}</Alert>}
           </>}
@@ -120,7 +120,7 @@ export default function KifuReportDetailPage() {
             onAiMarkersToggle={() => setShowAiMarkers((value) => !value)}
             onCoordinatesToggle={coordinates.toggle} on3dToggle={() => setView3d((value) => !value)} onClearTryMoves={() => setTryMoves([])}
           />}
-          analysis={<TrendChart reportMode analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
+          analysis={replayOnly || !Object.keys(analysisByMove).length ? null : <TrendChart reportMode analysis={analysisByMove} totalMoves={detail?.status === 'completed' ? totalMoves : Math.max(...Object.keys(analysisByMove).map(Number), 0)} currentMove={at} onMoveClick={setCurrentMove} />}
           navigation={<PlaybackBar inline currentMove={at} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
         />
       ) : null}

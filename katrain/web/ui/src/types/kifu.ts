@@ -22,6 +22,7 @@ export interface KifuAlbumSummary {
   display_event?: string | null;
   display_round_name?: string | null;
   sources?: string[];
+  has_analysis?: boolean;
 }
 
 export interface KifuAlbumDetail extends KifuAlbumSummary {
@@ -35,6 +36,7 @@ export interface KifuAlbumListResponse {
   total: number;
   page: number;
   page_size: number;
+  preview?: KifuAlbumDetail | null;
 }
 
 /** Analysis belongs to the canonical professional game, independently of user reports. */

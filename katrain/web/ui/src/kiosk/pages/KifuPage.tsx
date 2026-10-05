@@ -18,8 +18,8 @@ import type { KifuAlbumSummary } from '../../types/kifu';
 import { whenLabel } from '../utils/whenLabel';
 
 const DEBOUNCE_MS = 350;
-/** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
-const PAGE_SIZE = 6;
+/** Fetch only the current 20 records; the existing list owns its scroll area. */
+const PAGE_SIZE = 20;
 
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
@@ -268,7 +268,7 @@ const KifuPage = () => {
                       type="button"
                       className="kifu-record"
                       key={a.id}
-                      onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
+                      onClick={() => navigate(`/kiosk/kifu/${a.id}${a.has_analysis ? '' : '/replay'}`)}
                       style={a.sources?.length ? { height: 'auto', minHeight: 64, gridTemplateRows: '18px 25px auto' } : undefined}
                     >
                       <span className="kifu-record__head">

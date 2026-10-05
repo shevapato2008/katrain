@@ -10,20 +10,21 @@ export function useKifuAnalysis(albumId: number | null) {
   useEffect(() => {
     if (albumId === null) return;
     let cancelled = false;
+    let timer: number | undefined;
     const fetchAnalysis = async () => {
       try {
         const detail = await KifuAPI.getAnalysis(albumId);
-        if (!cancelled) { setLoaded({ id: albumId, detail }); setFailedId(null); }
+        if (cancelled) return;
+        setLoaded({ id: albumId, detail });
+        setFailedId(null);
+        if (['pending', 'running'].includes(detail.status)) timer = window.setTimeout(fetchAnalysis, 5000);
       } catch {
         if (!cancelled) setFailedId(albumId);
       }
     };
     void fetchAnalysis();
-    const timer = window.setInterval(() => {
-      if (loaded?.id === albumId && ['pending', 'running'].includes(loaded.detail.status)) void fetchAnalysis();
-    }, 5000);
-    return () => { cancelled = true; window.clearInterval(timer); };
-  }, [albumId, loaded?.id, loaded?.detail.status]);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [albumId]);
 
   const detail = loaded?.id === albumId ? loaded.detail : null;
   const error = failedId === albumId;

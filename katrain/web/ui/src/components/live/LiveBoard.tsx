@@ -415,7 +415,7 @@ export default function LiveBoard({
   // Render board function
   const renderBoard = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !imagesLoaded) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -643,7 +643,6 @@ export default function LiveBoard({
 
   // Render on state change; animate only when AI markers need pulsing
   useEffect(() => {
-    if (!imagesLoaded) return;
     renderBoard();
 
     const needsAnimation =

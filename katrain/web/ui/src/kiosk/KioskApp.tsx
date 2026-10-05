@@ -23,7 +23,7 @@ import '../kiosk-shell/card.css';
 import '../kiosk-shell/status.css';
 import '../kiosk-shell/go-screens.css';
 
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
@@ -40,35 +40,35 @@ import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
-import PlayPage from './pages/PlayPage';
-import AiSetupPage from './pages/AiSetupPage';
-import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
-import GamePage from './pages/GamePage';
-import GrowthPage from './pages/GrowthPage';
-import TsumegoPage from './pages/TsumegoPage';
-import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
-import TsumegoUnitsPage from './pages/TsumegoUnitsPage';
-import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
-import TsumegoProblemPage from './pages/TsumegoProblemPage';
-import ResearchPage from './pages/ResearchPage';
+const PlayPage = lazy(() => import('./pages/PlayPage'));
+const AiSetupPage = lazy(() => import('./pages/AiSetupPage'));
+const PvpLocalSetupPage = lazy(() => import('./pages/PvpLocalSetupPage'));
+const GamePage = lazy(() => import('./pages/GamePage'));
+const GrowthPage = lazy(() => import('./pages/GrowthPage'));
+const TsumegoPage = lazy(() => import('./pages/TsumegoPage'));
+const TsumegoCategoriesPage = lazy(() => import('./pages/TsumegoCategoriesPage'));
+const TsumegoUnitsPage = lazy(() => import('./pages/TsumegoUnitsPage'));
+const TsumegoUnitListPage = lazy(() => import('./pages/TsumegoUnitListPage'));
+const TsumegoProblemPage = lazy(() => import('./pages/TsumegoProblemPage'));
+const ResearchPage = lazy(() => import('./pages/ResearchPage'));
 import KifuPage from './pages/KifuPage';
-import KifuDetailPage from './pages/KifuDetailPage';
-import KifuReportDetailPage from './pages/KifuReportDetailPage';
-import BaipuSessionRoute from './pages/BaipuSessionRoute';
-import LobbyPage from './pages/LobbyPage';
-import SettingsPage from './pages/SettingsPage';
-import ReportsPage from './pages/ReportsPage';
-import ReportDetailPage from './pages/ReportDetailPage';
-import VisionSetupPage from './pages/VisionSetupPage';
-import PlatformLoginPage from './pages/PlatformLoginPage';
-import PlatformLobbyPage from './pages/PlatformLobbyPage';
-import GolaxyHomePage from './pages/GolaxyHomePage';
-import GolaxyPregameSetupPage from './pages/GolaxyPregameSetupPage';
-import GolaxySpectatorPage from './pages/GolaxySpectatorPage';
-import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
-import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
-import TutorialBooksPage from './pages/TutorialBooksPage';
-import TutorialSectionPage from './pages/TutorialSectionPage';
+const KifuDetailPage = lazy(() => import('./pages/KifuDetailPage'));
+const KifuReportDetailPage = lazy(() => import('./pages/KifuReportDetailPage'));
+const BaipuSessionRoute = lazy(() => import('./pages/BaipuSessionRoute'));
+const LobbyPage = lazy(() => import('./pages/LobbyPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'));
+const VisionSetupPage = lazy(() => import('./pages/VisionSetupPage'));
+const PlatformLoginPage = lazy(() => import('./pages/PlatformLoginPage'));
+const PlatformLobbyPage = lazy(() => import('./pages/PlatformLobbyPage'));
+const GolaxyHomePage = lazy(() => import('./pages/GolaxyHomePage'));
+const GolaxyPregameSetupPage = lazy(() => import('./pages/GolaxyPregameSetupPage'));
+const GolaxySpectatorPage = lazy(() => import('./pages/GolaxySpectatorPage'));
+const PlatformEngineSetupPage = lazy(() => import('./pages/PlatformEngineSetupPage'));
+const TutorialCategoriesPage = lazy(() => import('./pages/TutorialCategoriesPage'));
+const TutorialBooksPage = lazy(() => import('./pages/TutorialBooksPage'));
+const TutorialSectionPage = lazy(() => import('./pages/TutorialSectionPage'));
 
 const LegacyPlatformLobbyRedirect = () => {
   const { search } = useLocation();
@@ -84,7 +84,7 @@ export const KioskRoutes = () => {
   const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
-    <Routes>
+    <Suspense fallback={null}><Routes>
       {/* Public */}
       <Route path="login" element={<LoginPage />} />
 
@@ -189,7 +189,7 @@ export const KioskRoutes = () => {
             (守卫会先把整棵子树换成 `<Navigate to="/kiosk/login">`),屏上是白的。 */}
         <Route path="*" element={<Navigate to="play" replace />} />
       </Route>
-    </Routes>
+    </Routes></Suspense>
   );
 };
 

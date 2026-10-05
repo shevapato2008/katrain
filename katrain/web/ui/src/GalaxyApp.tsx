@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { Box, ThemeProvider } from '@mui/material';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
@@ -6,28 +6,28 @@ import { useSettings } from './context/SettingsContext';
 import { createGalaxyTheme } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import MainLayout from './galaxy/components/layout/MainLayout';
-import Dashboard from './galaxy/pages/Dashboard';
-import ResearchPage from './galaxy/pages/ResearchPage';
-import PlayMenu from './galaxy/pages/PlayMenu';
-import AiSetupPage from './galaxy/pages/AiSetupPage';
-import GamePage from './galaxy/pages/GamePage';
-import HvHLobbyPage from './galaxy/pages/HvHLobbyPage';
-import GameRoomPage from './galaxy/pages/GameRoomPage';
+const Dashboard = lazy(() => import('./galaxy/pages/Dashboard'));
+const ResearchPage = lazy(() => import('./galaxy/pages/ResearchPage'));
+const PlayMenu = lazy(() => import('./galaxy/pages/PlayMenu'));
+const AiSetupPage = lazy(() => import('./galaxy/pages/AiSetupPage'));
+const GamePage = lazy(() => import('./galaxy/pages/GamePage'));
+const HvHLobbyPage = lazy(() => import('./galaxy/pages/HvHLobbyPage'));
+const GameRoomPage = lazy(() => import('./galaxy/pages/GameRoomPage'));
 import KifuLibraryPage from './galaxy/pages/KifuLibraryPage';
-import KifuReportDetailPage from './galaxy/pages/KifuReportDetailPage';
-import LivePage from './galaxy/pages/live/LivePage';
-import LiveMatchPage from './galaxy/pages/live/LiveMatchPage';
-import TsumegoLevelsPage from './galaxy/pages/TsumegoLevelsPage';
-import TsumegoCategoriesPage from './galaxy/pages/TsumegoCategoriesPage';
-import TsumegoListPage from './galaxy/pages/TsumegoListPage';
-import TsumegoUnitsPage from './galaxy/pages/TsumegoUnitsPage';
-import TsumegoProblemPage from './galaxy/pages/TsumegoProblemPage';
-import TutorialLandingPage from './galaxy/pages/tutorials/TutorialLandingPage';
-import TutorialBooksPage from './galaxy/pages/tutorials/TutorialBooksPage';
-import TutorialBookDetailPage from './galaxy/pages/tutorials/TutorialBookDetailPage';
-import TutorialFigurePage from './galaxy/pages/tutorials/TutorialFigurePage';
-import ReportsPage from './galaxy/pages/report/ReportsPage';
-import ReportDetailPage from './galaxy/pages/report/ReportDetailPage';
+const KifuReportDetailPage = lazy(() => import('./galaxy/pages/KifuReportDetailPage'));
+const LivePage = lazy(() => import('./galaxy/pages/live/LivePage'));
+const LiveMatchPage = lazy(() => import('./galaxy/pages/live/LiveMatchPage'));
+const TsumegoLevelsPage = lazy(() => import('./galaxy/pages/TsumegoLevelsPage'));
+const TsumegoCategoriesPage = lazy(() => import('./galaxy/pages/TsumegoCategoriesPage'));
+const TsumegoListPage = lazy(() => import('./galaxy/pages/TsumegoListPage'));
+const TsumegoUnitsPage = lazy(() => import('./galaxy/pages/TsumegoUnitsPage'));
+const TsumegoProblemPage = lazy(() => import('./galaxy/pages/TsumegoProblemPage'));
+const TutorialLandingPage = lazy(() => import('./galaxy/pages/tutorials/TutorialLandingPage'));
+const TutorialBooksPage = lazy(() => import('./galaxy/pages/tutorials/TutorialBooksPage'));
+const TutorialBookDetailPage = lazy(() => import('./galaxy/pages/tutorials/TutorialBookDetailPage'));
+const TutorialFigurePage = lazy(() => import('./galaxy/pages/tutorials/TutorialFigurePage'));
+const ReportsPage = lazy(() => import('./galaxy/pages/report/ReportsPage'));
+const ReportDetailPage = lazy(() => import('./galaxy/pages/report/ReportDetailPage'));
 
 const GalaxyApp = () => {
   const { language } = useSettings();
@@ -58,7 +58,7 @@ const GalaxyApp = () => {
         }}
       >
         <TsumegoProgressProvider>
-          <Routes>
+          <Suspense fallback={null}><Routes>
           <Route element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="play" element={<PlayMenu />} />
@@ -70,6 +70,7 @@ const GalaxyApp = () => {
             <Route path="report" element={<ReportsPage />} />
             <Route path="report/:taskId" element={<ReportDetailPage />} />
             <Route path="kifu" element={<KifuLibraryPage />} />
+            <Route path="kifu/:albumId/replay" element={<KifuReportDetailPage replayOnly />} />
             <Route path="kifu/:albumId/report" element={<KifuReportDetailPage />} />
             <Route path="live" element={<LivePage />} />
             <Route path="live/:matchId" element={<LiveMatchPage />} />
@@ -84,7 +85,7 @@ const GalaxyApp = () => {
             <Route path="tutorials/section/:sectionId" element={<TutorialFigurePage />} />
             <Route path="*" element={<Navigate to="/galaxy" replace />} />
           </Route>
-          </Routes>
+          </Routes></Suspense>
         </TsumegoProgressProvider>
       </Box>
     </ThemeProvider>

@@ -118,7 +118,7 @@ export default function PlaybackBar({
     handleManualNavigation(value as number);
   };
 
-  const counter = <Typography data-testid="playback-move-counter" variant="body2" color="text.secondary" noWrap sx={{ minWidth: inline ? 96 : 87, textAlign: inline ? 'right' : undefined, fontSize: inline ? 18 : undefined, [NARROW]: { minWidth: 0, fontSize: inline ? 16 : '0.72rem', ml: 0.5 } }}>{currentMove} / {totalMoves} {t('live:moves')}</Typography>;
+  const counter = <Typography data-testid="playback-move-counter" variant="body2" color="text.secondary" noWrap sx={{ minWidth: inline ? 96 : 87, textAlign: inline ? 'right' : undefined, fontSize: inline ? 18 : undefined, [NARROW]: { minWidth: 0, fontSize: inline ? 16 : '0.72rem', ml: 0.5 } }}>{currentMove} / {totalMoves} {t('live:moves', '手')}</Typography>;
 
   return (
     <Box sx={inline ? { height: '100%', minHeight: 0, display: 'flex', alignItems: 'center', gap: 1, px: 1, border: 1, borderColor: 'divider', borderRadius: 1.5, bgcolor: 'background.paper' } : { pt: 1, pb: 1.5, px: 1, borderTop: 1, borderColor: 'divider' }}>

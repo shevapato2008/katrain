@@ -117,6 +117,17 @@ afterEach(() => {
 });
 
 describe('LiveBoard responsive sizing', () => {
+  it('draws the real position while material images are still loading', () => {
+    class PendingImage {
+      set src(_value: string) {}
+    }
+    vi.stubGlobal('Image', PendingImage);
+
+    render(<LiveBoard moves={['D4']} currentMove={1} boardSize={9} showCoordinates={false} showMoveNumbers />);
+
+    expect(fillText.mock.calls.map(([text]) => text)).toContain('1');
+  });
+
   it('retains the existing 400px canvas minimum by default', () => {
     const { container } = render(<LiveBoard moves={[]} currentMove={0} />);
 
@@ -154,9 +165,14 @@ describe('LiveBoard responsive sizing', () => {
     ['opt-in responsive floor', { minimumCanvasSize: 0, minContainerHeight: 0 }],
   ])('lets showCoordinates control labels on all four sides in %s mode', async (_name, props) => {
     const { rerender } = render(<LiveBoard moves={[]} currentMove={0} boardSize={9} {...props} />);
+    await act(async () => {});
     notifySize();
 
-    await waitFor(() => expect(fillText).toHaveBeenCalledTimes(9 * 4));
+    await waitFor(() => expect(fillText.mock.calls.length).toBeGreaterThanOrEqual(9 * 4));
+    const labels = fillText.mock.calls.slice(-9 * 4).map(([text]) => text);
+    for (const label of ['A', 'J', '1', '9']) {
+      expect(labels.filter(text => text === label)).toHaveLength(2);
+    }
 
     fillText.mockClear();
     rerender(<LiveBoard moves={[]} currentMove={0} boardSize={9} showCoordinates={false} {...props} />);

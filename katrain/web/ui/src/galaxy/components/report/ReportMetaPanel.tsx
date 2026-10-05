@@ -44,9 +44,11 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
     [t('report:rules', '规则'), rules],
     [t('report:komi_label', '贴目'), game?.komi ?? '—'],
     [t('report:source', '来源'), source],
-    [t('report:report_type', '报告类型'), task?.report_type === 'deep' ? t('report:deep', '深度报告') : t('report:normal', '普通报告')],
-    [t('report:status', '状态'), status],
-    [t('report:visits_per_position', '每局面 visits'), task?.requested_visits ?? '—'],
+    ...(task ? [
+      [t('report:report_type', '报告类型'), task.report_type === 'deep' ? t('report:deep', '深度报告') : t('report:normal', '普通报告')],
+      [t('report:status', '状态'), status],
+      [t('report:visits_per_position', '每局面 visits'), task.requested_visits ?? '—'],
+    ] : []),
   ] as const;
   const text = { fontSize: 18, lineHeight: 1.25 };
 
@@ -65,7 +67,7 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Typography sx={{ ...text, whiteSpace: 'nowrap' }}>{t('review:black', '黑')} {blackRate == null ? '—' : `${blackRate.toFixed(1)}%`}</Typography>
-        <Box role="img" aria-label={t('report:winrate_bar', '黑白胜率')} sx={{ height: 9, flex: 1, minWidth: 0, borderRadius: 9, bgcolor: '#f4f7f4', overflow: 'hidden' }}><Box sx={{ height: '100%', width: `${blackRate ?? 50}%`, bgcolor: '#101411' }} /></Box>
+        <Box role="img" aria-label={blackRate == null ? t('report:winrate_unavailable', '暂无胜率数据') : t('report:winrate_bar', '黑白胜率')} sx={{ height: 9, flex: 1, minWidth: 0, borderRadius: 9, bgcolor: blackRate == null ? 'divider' : '#f4f7f4', overflow: 'hidden' }}>{blackRate != null && <Box sx={{ height: '100%', width: `${blackRate}%`, bgcolor: '#101411' }} />}</Box>
         <Typography sx={{ ...text, whiteSpace: 'nowrap' }}>{t('review:white', '白')} {whiteRate == null ? '—' : `${whiteRate.toFixed(1)}%`}</Typography>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, color: 'text.secondary', overflow: 'hidden' }}>

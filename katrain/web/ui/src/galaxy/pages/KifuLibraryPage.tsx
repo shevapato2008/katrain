@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -353,13 +354,17 @@ export default function KifuLibraryPage() {
     return () => { request.cancelled = true; };
   }, [selectedId, fetchSelected, previewReload]);
 
+  useEffect(() => {
+    if (selectedId === null && items[0]) handleCardClick(items[0]);
+  }, [items, selectedId, handleCardClick]);
+
   const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
 
   const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
-      navigate(`/galaxy/kifu/${selectedId}/report`);
+      navigate(`/galaxy/kifu/${selectedId}/${visibleSelectedAlbum?.has_analysis ? 'report' : 'replay'}`);
     }
-  }, [selectedId, navigate]);
+  }, [selectedId, visibleSelectedAlbum?.has_analysis, navigate]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const movesUnit = t('kifu:moves_unit', '手');
@@ -548,12 +553,12 @@ export default function KifuLibraryPage() {
             <Button
               fullWidth
               variant="contained"
-              startIcon={<AssessmentIcon />}
-              disabled={!selectedAlbum}
+              startIcon={visibleSelectedAlbum?.has_analysis ? <AssessmentIcon /> : <LibraryBooksIcon />}
+              disabled={!hasPreview}
               onClick={handleViewReport}
               sx={{ textTransform: 'none', minHeight: 40, borderRadius: '8px' }}
             >
-              {t('kifu:view_analysis_report', '查看分析报告')}
+              {visibleSelectedAlbum?.has_analysis ? t('kifu:view_analysis_report', '查看分析报告') : t('kifu:view_kifu', '查看棋谱')}
             </Button>
           </Box>
         </>

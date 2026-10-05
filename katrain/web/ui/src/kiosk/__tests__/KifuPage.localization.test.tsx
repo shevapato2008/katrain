@@ -30,7 +30,7 @@ const record = (lang: string) => ({
   date_played: '2026-01-01', result: 'B+R', rules: 'chinese', komi: 7.5,
   handicap: 0, board_size: 19, move_count: 101,
 });
-const response = (lang: string, total = 9) => ({ items: [record(lang)], total, page: 1, page_size: 6 });
+const response = (lang: string, total = 25) => ({ items: [record(lang)], total, page: 1, page_size: 20 });
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });
@@ -87,7 +87,7 @@ describe('棋谱 kiosk 语言展示', () => {
   });
 
   it('译名为空时显示原文', async () => {
-    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), display_player_black: null, display_player_white: null, display_event: null, display_round_name: null }], total: 1, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), display_player_black: null, display_player_white: null, display_event: null, display_round_name: null }], total: 1, page: 1, page_size: 20 });
     renderPage();
     const row = await screen.findByRole('button', { name: /原赛事.*原轮次.*原黑.*原白/ });
     expect(row).toBeInTheDocument();

@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 
 VERSION = "raw-event-title-translation-v1"
@@ -12,6 +13,40 @@ PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
 _ORDINAL = re.compile(r"第[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|轮|輪)\Z")
 _YEAR = re.compile(r"(?:18|19|20)\d{2}年\Z")
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
+_LANGUAGE = re.compile(r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\Z")
+_UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
+_DISPLAY_SCRIPT = {
+    "en": re.compile(r"[A-Za-z]"),
+    "cn": re.compile(r"[\u3400-\u9fff]"),
+    "tw": re.compile(r"[\u3400-\u9fff]"),
+    "jp": re.compile(r"[\u3400-\u9fff\u3040-\u30ff]"),
+    "ko": re.compile(r"[\u3400-\u9fff\uac00-\ud7af]"),
+}
+
+
+def _text(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _https_url(value):
+    if not _text(value):
+        return False
+    parsed = urlparse(value)
+    return parsed.scheme == "https" and bool(parsed.hostname) and not parsed.username and not parsed.password
+
+
+def _matches_language(observed, target):
+    if not _text(observed) or not _text(target):
+        return False
+    observed = observed.lower().replace("_", "-")
+    target = target.lower()
+    if observed in {"mul", "und", "auto", "fallback"}:
+        return False
+    if target == "zh-hans":
+        return observed == "zh-hans" or observed.startswith("zh-hans-") or observed in {"zh-cn", "zh-sg"}
+    if target == "zh-hant":
+        return observed == "zh-hant" or observed.startswith("zh-hant-") or observed in {"zh-tw", "zh-hk", "zh-mo"}
+    return observed == target or observed.startswith(target + "-")
 
 
 def _hash(value):
@@ -38,8 +73,26 @@ def _stored_time(value):
 def validate_raw_title_research(record):
     """Bind the sourced core to every exact, losslessly parsed raw component."""
     owner = record.get("owner")
-    if not isinstance(owner, dict) or set(owner) != {"kind", "id"} or owner["kind"] != "raw_event":
+    if (not isinstance(owner, dict) or set(owner) != {"kind", "id"} or owner["kind"] != "raw_event"
+            or type(owner["id"]) is not int or owner["id"] <= 0):
         raise ValueError("literal raw title needs an existing raw event ID")
+    lang = record.get("lang")
+    display = record.get("candidate_name")
+    original_language = record.get("original_language")
+    if (lang not in PRIMARY_LANGUAGES or not _text(display) or len(display) > 4096
+            or _UNSAFE.search(display) or not _DISPLAY_SCRIPT[lang].search(display)):
+        raise ValueError("literal raw title needs a valid primary-language display")
+    if (record.get("scope_status") != "translated_from_original"
+            or record.get("translation_method") != "literal_event_title"
+            or not _text(record.get("registry_version"))
+            or not _SHA.fullmatch(str(record.get("registry_sha256", "")))
+            or not _text(record.get("producer_id")) or not _text(record.get("producer_model"))
+            or record.get("review_status") != "pending"
+            or any(record.get(key) for key in ("reviewer_id", "reviewer_model", "reviewed_at"))):
+        raise ValueError("literal raw title research provenance is incomplete")
+    if (not _text(original_language) or not _LANGUAGE.fullmatch(original_language)
+            or not _https_url(record.get("original_language_basis_url"))):
+        raise ValueError("literal raw title needs an original language and captured source URL")
     raw = record.get("raw_value")
     parts = record.get("raw_parts")
     if not isinstance(raw, str) or not isinstance(parts, list) or not parts:
@@ -60,14 +113,23 @@ def validate_raw_title_research(record):
     if len({part["kind"] for part in parts}) != len(parts):
         raise ValueError("literal raw title repeats a component")
     checks = record.get("source_checks")
-    if not isinstance(checks, list) or not any(
-        isinstance(check, dict) and check.get("owner") == owner and check.get("status") == "found"
-        and check.get("candidate_name") == cores[0] and cores[0] in str(check.get("body_excerpt", ""))
-        and check.get("url") == record.get("original_language_basis_url")
-        and _SHA.fullmatch(str(check.get("body_sha256", "")))
-        for check in checks
-    ):
+    if not isinstance(checks, list) or not checks:
         raise ValueError("literal raw title core lacks captured source evidence")
+    for check in checks:
+        if (not isinstance(check, dict) or check.get("owner") != owner or check.get("status") != "found"
+                or check.get("candidate_name") != cores[0] or not _text(check.get("query"))
+                or not _text(check.get("source_id")) or not _text(check.get("identity_basis"))
+                or not _https_url(check.get("url")) or not _time(check.get("fetched_at"))
+                or check.get("http_status") != 200
+                or not _SHA.fullmatch(str(check.get("body_sha256", "")))
+                or not _text(check.get("body_excerpt")) or cores[0] not in check["body_excerpt"]
+                or check.get("language_basis") not in {"html_lang", "http_header", "reviewed_text"}
+                or not _matches_language(check.get("observed_lang"), original_language)
+                or check.get("fallback")
+                or check.get("returned_lang") and not _matches_language(check["returned_lang"], original_language)):
+            raise ValueError("literal raw title source capture or identity evidence is incomplete")
+    if not any(check["url"] == record["original_language_basis_url"] for check in checks):
+        raise ValueError("literal raw title original-language source was not captured")
     return True
 
 

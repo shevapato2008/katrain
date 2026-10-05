@@ -5,6 +5,7 @@ unchanged pure validators from name_candidates; it does not replace the models.
 """
 
 import json
+import unicodedata
 
 from sqlalchemy import and_, bindparam, or_, text
 
@@ -23,10 +24,52 @@ from katrain.web.kifu.name_candidates import (
 from katrain.web.kifu.raw_event_translation import PRIMARY_LANGUAGES, eligible_literal_raw_name
 
 _NO_SELECTION = text("NOT EXISTS (SELECT 1 FROM kifu_album_event_selections AS s WHERE s.album_id = kifu_albums.id)")
+_PUBLIC = text("kifu_albums.list_hidden_reason IS NULL")
 
 
 def _json(value):
     return json.loads(value) if isinstance(value, str) else value
+
+
+def _normalized(value):
+    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+
+def _other_exact_name_exists(db, query):
+    """Keep a raw title from expanding over an ambiguous reviewed identity or raw player."""
+    needle = _normalized(query)
+    if not needle:
+        return False
+    aliases = db.execute(text("""
+        SELECT 1 FROM kifu_player_aliases WHERE normalized_alias = :needle
+        UNION ALL SELECT 1 FROM kifu_event_aliases WHERE normalized_alias = :needle
+        LIMIT 1
+    """), {"needle": needle}).first()
+    if aliases:
+        return True
+    for table, owner_column, raw_owner_join in (
+        ("kifu_player_names", "player_id", ""),
+        ("kifu_event_names", "event_id", ""),
+        ("kifu_raw_player_names", "raw_player_id",
+         "JOIN kifu_raw_player_values AS r ON r.id = n.raw_player_id AND r.review_status = 'approved'"),
+    ):
+        rows = db.execute(text(f"""
+            SELECT n.display_name FROM {table} AS n
+            JOIN kifu_name_research_evidence AS e ON e.id = n.evidence_id
+            {raw_owner_join}
+            WHERE n.status = 'verified' AND e.review_status = 'approved'
+              AND n.{owner_column} = e.{owner_column} AND n.lang = e.lang
+              AND n.display_name = e.candidate_name AND n.revision = e.revision
+              AND n.decision_kind = e.decision_kind
+              AND n.generation_rule_version = e.generation_rule_version
+              AND e.producer_model IS NOT NULL AND e.reviewer_model IS NOT NULL
+              AND e.reviewer_id IS NOT NULL AND e.reviewed_at IS NOT NULL
+              AND e.reviewer_id <> e.producer_id
+              AND (n.display_name = :query OR lower(n.display_name) = lower(:query))
+        """), {"query": query}).scalars()
+        if any(_normalized(name) == needle for name in rows):
+            return True
+    return False
 
 
 def _eligible(row):
@@ -167,11 +210,17 @@ def _approved_rows(db, *, values=None, lang=None, display=None):
 
 def reviewed_raw_event_hints(db, albums, lang):
     """One bounded name read and one selected-slot exclusion per result page."""
-    eligible_albums = [a for a in albums if a.event_id is None and a.event
-                       and a.duplicate_of_id is None and a.list_hidden_reason is None]
+    eligible_albums = [a for a in albums if a.event_id is None and a.event and a.duplicate_of_id is None]
     if not eligible_albums:
         return {}
     ids = [a.id for a in eligible_albums]
+    public_ids = set(db.execute(
+        text("SELECT id FROM kifu_albums WHERE id IN :ids AND list_hidden_reason IS NULL")
+        .bindparams(bindparam("ids", expanding=True)), {"ids": ids}).scalars())
+    eligible_albums = [album for album in eligible_albums if album.id in public_ids]
+    if not eligible_albums:
+        return {}
+    ids = [album.id for album in eligible_albums]
     selected = set(
         db.execute(
             text("SELECT album_id FROM kifu_album_event_selections WHERE album_id IN :ids").bindparams(
@@ -201,10 +250,12 @@ def reviewed_raw_event_search_clause(db, query):
     if not rows or (len({row["raw_event_id"] for row, _ in rows}) != 1
                     and not all(row["decision_kind"] == "translated" for row, _ in rows)):
         return None
+    if any(row["decision_kind"] == "translated" for row, _ in rows) and _other_exact_name_exists(db, query):
+        return None
     clauses = []
     for row, ids in rows:
         clause = and_(KifuAlbum.event == row["raw_value"], KifuAlbum.event_id.is_(None),
-                      KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None), _NO_SELECTION)
+                      KifuAlbum.duplicate_of_id.is_(None), _PUBLIC, _NO_SELECTION)
         if ids is not None:
             clause = and_(clause, KifuAlbum.id.in_(ids))
         clauses.append(clause)

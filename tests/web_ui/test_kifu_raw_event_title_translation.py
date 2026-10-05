@@ -1,18 +1,22 @@
 """Literal raw event titles have exact owner and source scope."""
 
 from copy import deepcopy
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuEventAlias, KifuNameResearchEvidence, KifuRawEventName, KifuRawEventValue,
+    KifuAlbum, KifuEventAlias, KifuNameResearchEvidence, KifuPlayer, KifuPlayerName,
+    KifuRawEventName, KifuRawEventValue, KifuRawPlayerName, KifuRawPlayerValue,
 )
 from katrain.web.kifu.identity import (
     _approved_raw_event_names, strict_display_maps, strict_matching_names, strict_raw_event_search_clause,
 )
 from katrain.web.kifu.legacy_raw_events import reviewed_raw_event_hints, reviewed_raw_event_search_clause
+from katrain.web.kifu import legacy_raw_events
 from katrain.web.kifu.name_batch import _image, apply_bundle, dry_run_bundle, undo_batch
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_candidate
 from katrain.web.kifu.name_evidence import EvidenceError, registry_sha256, validate_research_record
@@ -222,6 +226,81 @@ def test_five_primary_titles_and_secondary_english_fallback(engine):
             assert reviewed_raw_event_hints(db, [album], lang) == {11: display}
         for lang in ("de", "es", "fr", "ru", "tr", "ua"):
             assert reviewed_raw_event_hints(db, [album], lang) == {11: "Friendship Cup, Round 1"}
+
+
+def test_legacy_bridge_works_with_old_album_orm_without_hidden_attribute(engine, monkeypatch):
+    proposed, inv, research = reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    old_model = SimpleNamespace(id=KifuAlbum.id, event=KifuAlbum.event,
+                                event_id=KifuAlbum.event_id, duplicate_of_id=KifuAlbum.duplicate_of_id)
+    monkeypatch.setattr(legacy_raw_events, "KifuAlbum", old_model)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        old_album = SimpleNamespace(id=album.id, event=album.event,
+                                    event_id=album.event_id, duplicate_of_id=album.duplicate_of_id)
+        assert reviewed_raw_event_hints(db, [old_album], "en") == {11: "Friendship Cup, Round 1"}
+        clause = reviewed_raw_event_search_clause(db, "Friendship Cup, Round 1")
+        assert list(db.scalars(select(KifuAlbum.id).where(clause))) == [11]
+
+
+@pytest.mark.parametrize("missing", ["original_language", "identity_basis", "source_id", "http_status", "display"])
+def test_persisted_literal_title_requires_complete_source_and_display(engine, missing):
+    proposed, inv, research = reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with engine.begin() as conn:
+        evidence = conn.execute(select(KifuNameResearchEvidence.__table__)).mappings().one()
+        payload = deepcopy(evidence["research_payload"])
+        record = payload["research"]
+        if missing == "display":
+            payload["candidate"]["display_name"] = record["candidate_name"] = ""
+            conn.execute(KifuRawEventName.__table__.update().values(display_name=""))
+            conn.execute(KifuNameResearchEvidence.__table__.update().values(candidate_name=""))
+        elif missing in {"identity_basis", "source_id", "http_status"}:
+            record["source_checks"][0].pop(missing)
+        else:
+            record.pop(missing)
+        payload["candidate"]["research_sha256"] = canonical_sha256(record)
+        conn.execute(KifuNameResearchEvidence.__table__.update().values(research_payload=payload))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert _approved_raw_event_names(db, values={album.event}, lang="en") == []
+        assert reviewed_raw_event_hints(db, [album], "en") == {}
+
+
+@pytest.mark.parametrize("collision", ["two_players", "raw_player"])
+def test_legacy_exact_raw_search_refuses_ambiguous_other_name_owners(engine, collision):
+    proposed, inv, research = reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    display = "Friendship Cup, Round 1"
+    with engine.begin() as conn:
+        registry_id = conn.scalar(select(KifuNameResearchEvidence.source_registry_id).limit(1))
+        if collision == "two_players":
+            conn.execute(KifuPlayer.__table__.insert().values(id=18, canonical_name="Other player"))
+            owners = [(17, KifuPlayerName, "player_id"), (18, KifuPlayerName, "player_id")]
+        else:
+            conn.execute(KifuRawPlayerValue.__table__.insert().values(
+                id=99, raw_value="Other raw player", category="readable_unlinked", review_status="approved"))
+            owners = [(99, KifuRawPlayerName, "raw_player_id")]
+        for owner_id, model, owner_column in owners:
+            evidence_id = conn.execute(KifuNameResearchEvidence.__table__.insert().values(
+                **{owner_column: owner_id}, lang="en", revision=1, source_registry_id=registry_id,
+                candidate_name=display, decision_kind="conventional", generation_rule_version="test-rule",
+                research_payload={"candidate": {}}, producer_id="producer-1", producer_model="gpt-6-sol",
+                reviewed_at=datetime.now(timezone.utc), reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
+                review_status="approved")).inserted_primary_key[0]
+            conn.execute(model.__table__.insert().values(
+                **{owner_column: owner_id}, lang="en", revision=1, display_name=display,
+                status="verified", evidence_id=evidence_id, decision_kind="conventional",
+                generation_rule_version="test-rule"))
+    with Session(engine) as db:
+        assert reviewed_raw_event_search_clause(db, display) is None
+    with engine.begin() as conn:
+        owner_field = (KifuNameResearchEvidence.player_id if collision == "two_players"
+                       else KifuNameResearchEvidence.raw_player_id)
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(owner_field.is_not(None)).values(
+            review_status="pending"))
+    with Session(engine) as db:
+        assert reviewed_raw_event_search_clause(db, display) is not None
 
 
 @pytest.mark.parametrize("damage", ["owner", "raw", "hash", "signature", "pending", "source",

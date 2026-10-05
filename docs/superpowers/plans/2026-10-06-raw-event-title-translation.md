@@ -110,3 +110,13 @@
 - [x] 线上显示／搜索／英语回退与原始数据不变核验；报告真实覆盖、HTML、归档。棋手批次并行，确认同人重复不计新棋手，不绕过碰撞。
 
 实际交付：代码 9b3d8532 经独立 Astra APPROVE，source packet 55 条通过全部纯校验，owner 133／name 134 两库实际写入核验 11／175／55。两端仅共享纯 validator 新镜像发布；健康、hash、旧 4 项及新 11 项 HTTP 均通过。CWI 主要来源已存 evidence research_payload，Kifudepot 补充核查页保存在 immutable manifest/归档，未宣称所有补充页面都已进 DB。实际原文标题覆盖 4,897、完整展示 51,675；两类来源存储位置如实区分。
+
+
+## Continuation 6 — national15 literal SGF titles
+
+Independent Astra decision: [scope and source policy](../../resource/kifu-next-event-throughput-decision-2026-10-06.md). User permits literal event translations; no external exact-title requirement or event identity assertion.
+
+- [x] Actual read-only TEST/PROD capture: 15 raw / 486 whole-scope albums, raw-set SHA `a1c386f0d6b606f2ed588d8b98bfd39398cec584bba683ab07e0dc7f9dede77d`. All original SGFs have empty EV and their first GN equals the raw title; two second GN values retain time-loss annotations. Preserve this actual provenance.
+- [ ] Minimal fixed-scope `sgf_literal_v1` branch with original GN/source/SGF hashes and approved-owner scope binding in candidate and reader; retain strict previous sources and identity rules.
+- [ ] Independent pending producer: 75 names; TW 輪 / JP ラウンド; actual supplementary source links and honest limitations inside signed research.
+- [ ] Focused code review and necessary tests; then TEST owner/names dry-run/apply/verify and PROD, actual reader deployment/HTTP checks, counts and archives.

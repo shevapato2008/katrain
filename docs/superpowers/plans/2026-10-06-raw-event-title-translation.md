@@ -128,6 +128,6 @@ Actual national15 completion: owner 139/name 140 on both databases; 486 unchange
 
 Independent Astra [bulk decision](../../resource/kifu-next-literal-event-bulk-decision-2026-10-06.md) freezes a research candidate batch150 raw/4,104 albums/750 names. Implement one bounded manifest-driven Chinese SGF profile and approved parser-parts hash in existing owner metadata, preserving national15 compatibility and all identity/CAS/collision gates. Literal event translation uses original GN; future same-shape batches require reviewed data, not per-title runtime changes.
 
-- [ ] Minimal implementation and focused checks, then independent code review.
+- [x] Minimal implementation and focused checks, then independent code review. New manifest-driven Chinese SGF branch: 108 focused cases pass; independent Astra review identified one manifest replay binding gap, fixed with RED2 failures → GREEN2 cases. Final review APPROVE; no broad repeat tests.
 - [ ] Independent source producer, actual complete TEST/PROD scope and five-language collision checks; re-freeze any held entries before approval.
 - [ ] Actual TEST→PROD owner/name writes, one needed runtime update, representative real HTTP, honest counts and archives.

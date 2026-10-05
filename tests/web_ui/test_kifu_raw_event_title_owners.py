@@ -440,3 +440,77 @@ def test_national15_owner_profile_uses_fresh_complete_scope_total(engine):
     bad["current_null_games"] = 16
     with pytest.raises(BatchError, match="album total"):
         prepare_plan(engine, bad, "TEST", registry(), profile="national15", **kwargs)
+
+
+def chinese_manifest_fixture(engine, raws):
+    from scripts.kifu_raw_event_title_owners import _scope_rows
+    from katrain.web.kifu.name_structure import structure_event
+    manifest = finite_fixture(engine, raws, (1,) * len(raws))
+    manifest.update(raw_value_count=len(raws), raw_value_set_sha256=canonical_sha256(sorted(raws)),
+                    current_null_games=len(raws))
+    with engine.begin() as conn:
+        for record, member in zip(manifest["records"], manifest["member_manifest"]["TEST"]["members"]):
+            raw = record["raw_value"]
+            owner = record["owners"]["TEST"]
+            parsed = {"structure": structure_event(raw)}
+            conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == owner["raw_event_id"]).values(parsed_data=parsed))
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.event == raw).values(sgf_content=f"(;GN[{raw}])"))
+            owner["preimage"] = _image(conn, KifuRawEventValue.__table__, owner["raw_event_id"])
+            member["scope_rows"] = _scope_rows(conn, raw)
+    return manifest
+
+
+@pytest.mark.parametrize("raws", [("全运会",), ("第4届台湾碁圣战分组循环赛", "2012韩国网站联赛第3轮")])
+def test_sgf_chinese_profile_reuses_two_exact_manifests(engine, raws):
+    manifest = chinese_manifest_fixture(engine, raws)
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra", "review_conclusion": "Reviewed finite Chinese GN titles"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese", **kwargs)
+    assert plan["raw_count"] == len(raws) and plan["game_total"] == len(raws)
+    for change in plan["changes"]:
+        parts = [{"kind": p["kind"], "text": p["text"]} for p in change["before"]["parsed_data"]["structure"]["parts"]]
+        assert change["after"]["review_metadata"]["sgf_literal"]["raw_parts_sha256"] == canonical_sha256(parts)
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese", manifest=manifest)["albums"] == len(raws)
+        with pytest.raises(BatchError):
+            inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese")
+        bad = deepcopy(manifest)
+        bad["current_null_games"] += 1
+        with pytest.raises(BatchError):
+            inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese", manifest=bad)
+        bad_plan = deepcopy(plan)
+        bad_plan["changes"][0]["after"]["review_metadata"]["sgf_literal"]["raw_parts_sha256"] = "0" * 64
+        with pytest.raises(BatchError):
+            inspect_plan(conn, bad_plan, registry(), digest, profile="sgf_chinese", manifest=manifest)
+    result = apply_plan(engine, plan, registry(), digest, canonical_sha256(plan), profile="sgf_chinese", manifest=manifest)
+    assert result["change_count"] == len(raws)
+    replay = apply_plan(engine, plan, registry(), digest, canonical_sha256(plan), profile="sgf_chinese", manifest=manifest)
+    assert replay["status"] == "already_applied" and replay["change_count"] == 0
+    other_manifest = deepcopy(manifest)
+    other_manifest["decision_note"] = "different frozen artifact"
+    with pytest.raises(BatchError, match="signed owner plan"):
+        apply_plan(engine, plan, registry(), canonical_sha256(other_manifest), canonical_sha256(plan),
+                   profile="sgf_chinese", manifest=other_manifest)
+    undo_batch(engine, result["batch_id"])
+
+
+@pytest.mark.parametrize("damage", ["limit", "raw_hash", "member", "scope", "non_chinese"])
+def test_sgf_chinese_profile_rejects_changed_or_unbounded_manifest(engine, damage):
+    manifest = chinese_manifest_fixture(engine, ("全运会",))
+    if damage == "limit":
+        manifest["records"] *= 151
+        manifest["raw_value_count"] = 151
+    elif damage == "raw_hash":
+        manifest["raw_value_set_sha256"] = "0" * 64
+    elif damage == "member":
+        manifest["member_manifest"]["TEST"]["members"][0]["album_ids"] = [999]
+    elif damage == "scope":
+        manifest["member_manifest"]["TEST"]["members"][0]["scope_rows"][0]["sgf_sha256"] = "0" * 64
+    else:
+        manifest["records"][0]["raw_value"] = "Cup"
+        manifest["raw_value_set_sha256"] = canonical_sha256(["Cup"])
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese", producer_id="producer-1",
+                     producer_model="gpt-6-sol", reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
+                     review_conclusion="Reviewed finite Chinese GN titles")

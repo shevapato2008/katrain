@@ -35,7 +35,7 @@ from katrain.web.kifu.name_transliteration import validate_transliteration, vali
 from katrain.web.kifu.name_orthographic import is_orthographic, validate_orthographic, validate_orthographic_candidate
 from katrain.web.kifu.name_evidence import validate_primary_orthographic_anchor
 from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, validate_raw_player_scope
-from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, eligible_raw_title_owner, VERSION as RAW_TITLE_VERSION
+from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, sgf_literal_owner_matches, VERSION as RAW_TITLE_VERSION
 
 
 LANGUAGES = frozenset(("en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"))
@@ -609,8 +609,7 @@ def _validate_candidate(
                 _require(row["raw_value"] == checked["raw_value"], "translated raw event spelling differs from research")
                 if checked.get("source_basis") == SGF_LITERAL_BASIS:
                     literal = checked["sgf_literal_evidence"]
-                    _require(eligible_raw_title_owner(pinned)
-                             and literal["scope_sha256"] == pinned["review_metadata"]["scope_sha256"]
+                    _require(sgf_literal_owner_matches(checked, pinned, check_parser=True)
                              and [item["id"] for item in literal["scope_rows"]] == declaration["occurrence_album_ids"],
                              "SGF literal owner scope differs from approved complete preimage")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")

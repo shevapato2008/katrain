@@ -11,6 +11,7 @@ VERSION = "raw-event-title-translation-v1"
 OWNER_REVIEW_VERSION = "raw-event-title-owner-review-v1"
 PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
 SGF_LITERAL_BASIS = "sgf_literal_v1"
+SGF_CHINESE_PROFILE = "sgf_chinese"
 NATIONAL15_RAW_VALUES = frozenset({
     *(f"2020中国国家队积分大循环第{number}轮" for number in range(1, 14)),
     "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛",
@@ -65,6 +66,7 @@ _YEAR = re.compile(r"(?:18|19|20)\d{2}年\Z")
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _LANGUAGE = re.compile(r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\Z")
 _UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
+_CHINESE_LITERAL = re.compile(r"[\u3400-\u9fff0-9０-９ ，、。·：:（）()「」『』“”‘’《》〈〉—–-]+\Z")
 _DISPLAY_SCRIPT = {
     "en": re.compile(r"[A-Za-z]"),
     "cn": re.compile(r"[\u3400-\u9fff]"),
@@ -120,6 +122,22 @@ def _stored_time(value):
         return None
 
 
+def validate_chinese_literal_parts(raw, parts):
+    """Check the existing Chinese grammar without deriving or changing parser parts."""
+    if (not isinstance(raw, str) or not _CHINESE_LITERAL.fullmatch(raw)
+            or not re.search(r"[\u3400-\u9fff]", raw)
+            or not isinstance(parts, list) or not parts
+            or any(not isinstance(part, dict) or set(part) != {"kind", "text"}
+                   or not _text(part["text"]) or part["kind"] not in {"core", "year", "edition", "round"}
+                   or part["kind"] in {"edition", "round"} and not _ORDINAL.fullmatch(part["text"])
+                   or part["kind"] == "year" and not _YEAR.fullmatch(part["text"]) for part in parts)
+            or "".join(part["text"] for part in parts) != raw
+            or len({part["kind"] for part in parts}) != len(parts)
+            or sum(part["kind"] == "core" for part in parts) != 1):
+        raise ValueError("SGF Chinese title needs readable Chinese and exact existing parts")
+    return True
+
+
 def validate_raw_title_research(record):
     """Bind the sourced core to every exact, losslessly parsed raw component."""
     owner = record.get("owner")
@@ -171,7 +189,7 @@ def validate_raw_title_research(record):
     if len({part["kind"] for part in parts}) != len(parts):
         raise ValueError("literal raw title repeats a component")
     geographic = [(index, part) for index, part in enumerate(parts) if part["kind"] == "geographic_qualifier"]
-    if raw in GEOGRAPHIC39_RAW_VALUES:
+    if not sgf_literal and raw in GEOGRAPHIC39_RAW_VALUES:
         if (len(geographic) != 1 or geographic[0][1]["text"] != "中国"
                 or geographic[0][0] + 1 >= len(parts)
                 or parts[geographic[0][0] + 1] != {"kind": "core", "text": "围棋段位赛"}):
@@ -179,19 +197,26 @@ def validate_raw_title_research(record):
     elif geographic:
         raise ValueError("geographic qualifier is outside the fixed raw title scope")
     if sgf_literal:
-        if (raw not in NATIONAL15_RAW_VALUES or original_language != "zh-Hans"
+        if (original_language != "zh-Hans"
                 or record.get("original_language_basis") != "reviewed_sgf_gn"
                 or record.get("source_checks") != []):
-            raise ValueError("SGF literal evidence is limited to the fixed Chinese GN titles")
-        core, separator, round_text = raw.partition("第")
-        expected_parts = [{"kind": "core", "text": core}] + (
-            [{"kind": "round", "text": separator + round_text}] if separator else [])
-        if parts != expected_parts:
-            raise ValueError("SGF literal evidence must preserve the fixed title parts")
+            raise ValueError("SGF literal evidence requires Chinese GN titles")
         evidence = record.get("sgf_literal_evidence")
         if (not isinstance(evidence, dict) or not _time(evidence.get("captured_at"))
                 or not _text(evidence.get("scope_file"))):
             raise ValueError("SGF literal evidence needs a captured archived scope")
+        if evidence.get("owner_profile") == SGF_CHINESE_PROFILE:
+            validate_chinese_literal_parts(raw, parts)
+            if evidence.get("raw_parts_sha256") != _hash(parts):
+                raise ValueError("SGF Chinese title parts hash differs from its captured parts")
+        else:
+            if ("owner_profile" in evidence or "raw_parts_sha256" in evidence or raw not in NATIONAL15_RAW_VALUES):
+                raise ValueError("SGF literal evidence lacks its manifest owner profile")
+            core, separator, round_text = raw.partition("第")
+            expected_parts = [{"kind": "core", "text": core}] + (
+                [{"kind": "round", "text": separator + round_text}] if separator else [])
+            if parts != expected_parts:
+                raise ValueError("SGF literal evidence must preserve the fixed title parts")
         rows = evidence.get("scope_rows")
         if (not isinstance(rows, list) or not rows
                 or not _SHA.fullmatch(str(evidence.get("scope_sha256", "")))
@@ -271,6 +296,31 @@ def eligible_raw_title_owner(raw_owner):
         return False
 
 
+def sgf_literal_owner_matches(research, raw_owner, *, check_parser=False):
+    """Bind new manifest titles to approved parts; retain the completed national15 path."""
+    try:
+        literal = research["sgf_literal_evidence"]
+        review = raw_owner["review_metadata"]
+        if not eligible_raw_title_owner(raw_owner) or literal["scope_sha256"] != review["scope_sha256"]:
+            return False
+        if literal.get("owner_profile") == SGF_CHINESE_PROFILE:
+            parts = research["raw_parts"]
+            digest = _hash(parts)
+            if (literal.get("raw_parts_sha256") != digest or review.get("sgf_literal") != {
+                    "source_basis": SGF_LITERAL_BASIS, "profile": SGF_CHINESE_PROFILE, "raw_parts_sha256": digest}):
+                return False
+            if check_parser:
+                captured_parts = [{"kind": part["kind"], "text": part["text"]}
+                                  for part in raw_owner["parsed_data"]["structure"]["parts"]]
+                if captured_parts != parts:
+                    return False
+            return True
+        return ("owner_profile" not in literal and "raw_parts_sha256" not in literal
+                and "sgf_literal" not in review and raw_owner["raw_value"] in NATIONAL15_RAW_VALUES)
+    except (KeyError, TypeError, AttributeError, ValueError):
+        return False
+
+
 def eligible_literal_raw_name(name, evidence, raw_owner):
     """Recheck the same persisted owner, candidate, source, and approval on every reader."""
     try:
@@ -324,7 +374,7 @@ def eligible_literal_raw_name(name, evidence, raw_owner):
             return False
         if research.get("source_basis") == SGF_LITERAL_BASIS:
             literal = research["sgf_literal_evidence"]
-            if literal["scope_sha256"] != raw_owner["review_metadata"]["scope_sha256"]:
+            if not sgf_literal_owner_matches(research, raw_owner):
                 return False
             captures = [literal["captured_at"], *(page["fetched_at"] for page in research.get("translation_support", []))]
             if any(_time(captured) is None or _time(candidate["reviewed_at"]) < _time(captured)

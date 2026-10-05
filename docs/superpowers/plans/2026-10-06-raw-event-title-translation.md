@@ -70,16 +70,17 @@
 
 两项独立 Astra 决定见 `docs/resource/kifu-generic-core-and-agon-decision-2026-10-06.md` 和 `docs/resource/kifu-generic-team-mixed-scope-decision-2026-10-06.md`。
 
-- [ ] 先交付纯 unlinked 的 `generic49`：49 原文／557 盘，原文集合 SHA `17b041004df08a99aa9845060e0d6009f103e612110673e48a6260e2bd1395ab`。仅追加有限 owner profile 与聚焦成功／错误 scope 检查，不改变原 reader 或任何旧 profile。
-- [ ] 独立 producer 从已核实 generic50 资料派生这 49 项，绑定真实 HTTPS 体育总局与 World Go 字节，保留届次、年份、轮次。两库真实 owner 审核、名称写入、查询和报告继续采用同一协议。
-- [ ] 随后为固定 `geographic39`：39 原文／294 盘，集合 SHA `996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315`，只允许一次 `geographic_qualifier:中国` 紧邻 `core:围棋段位赛`。限定语来自原 EV，核心由真实 HTTPS 2016 体育总局正文支持；研究 parts 无损，不修改 DB parser 或原 EV。测试一次成功及越界原文／错误限定语／位置拒绝；独立代码审核后才写入并发布纯检查模块。
-- [ ] 团体赛另批处理：现 324 个 raw occurrences 中 294 盘 unlinked，30 盘有 event_id。先只读冻结全部 324 个 ID／字段及 30 个完整 linked 镜像，有限 signed owner metadata 明确 eligible／excluded。仅在固定 owner 73686 的小范围例外中允许既有 linked 记录；保留原 FK，excluded event_id 即使换成另一个非 NULL 也须 CAS 拒绝。format2 owner occurrence 必须为全部 324，members 仅五语言名称单元；展示／搜索及新增覆盖只计 294。不改变 `_v2_scope` 或两 reader；旧纯 unlinked 路径不变。未有完整捕获前不批准该批，独立审核所有涉及生产数据边界的代码。
+- [x] 先审核纯 unlinked 的 `generic49`：49 原文／557 盘，原文集合 SHA `17b041004df08a99aa9845060e0d6009f103e612110673e48a6260e2bd1395ab`。仅追加有限 owner profile 与聚焦成功／错误 scope 检查，不改变原 reader 或任何旧 profile。
+- [x] 独立 producer 从已核实 generic50 资料派生这 49 项，绑定真实 HTTPS 体育总局与 World Go 字节，保留届次、年份、轮次。两库真实 owner 审核、名称写入、查询和报告继续采用同一协议；原始字段 72432 的五格与既有核实赛事实体 72 碰撞，独立审核后将其 10 盘保留待审，实际交付其余 48 项／547 盘。
+- [x] 随后为固定 `geographic39`：39 原文／294 盘，集合 SHA `996b55aae2bacf4b5b1273d14fb75e5f4c95d1d5bc0451f3759606a1fd4da315`，只允许一次 `geographic_qualifier:中国` 紧邻 `core:围棋段位赛`。限定语来自原 EV，核心由真实 HTTPS 2016 体育总局正文支持；研究 parts 无损，不修改 DB parser 或原 EV。测试一次成功及越界原文／错误限定语／位置拒绝；独立代码审核后才写入并发布纯检查模块。
+- [x] 团体赛另批处理：现 324 个 raw occurrences 中 294 盘 unlinked，30 盘有 event_id。先只读冻结全部 324 个 ID／字段及 30 个完整 linked 镜像，有限 signed owner metadata 明确 eligible／excluded。仅在固定 owner 73686 的小范围例外中允许既有 linked 记录；保留原 FK，excluded event_id 即使换成另一个非 NULL 也须 CAS 拒绝。format2 owner occurrence 必须为全部 324，members 仅五语言名称单元；展示／搜索及新增覆盖只计 294。不改变 `_v2_scope` 或两 reader；旧纯 unlinked 路径不变。未有完整捕获前不批准该批，独立审核所有涉及生产数据边界的代码。
 
 各小批独立提交，已可交付部分不等待团体赛特例；棋手来源与五人入库继续并行。
 
-### 已完成代码及当前数据状态（2026-10-06 04:38 CST）
+### 已完成代码及当前数据状态（2026-10-06 05:13 CST）
 
-- `generic49` 代码经独立 Astra 审查 APPROVE，实际源码只新增固定 profile；研究及两库 owner 110 已实际写入核验，名称待最终 catalog 重新绑定后写入。
-- `geographic39` 代码提交 `af4bc201`（独立实现 `13c288bc`）经独立 Astra APPROVE；44 项聚焦测试通过。39／294 的研究资料和全部 parts 已验证，运行时纯模块已发布两环境，健康、实际文件 hash 及各四项 HTTP 回归通过；owner 111 已在两库实际写入核验，name 尚未写入。
+- `generic49` 代码经独立 Astra 审查 APPROVE，实际源码只新增固定 profile；研究及两库 owner 110 已实际写入核验。依独立碰撞决定，两库名称 119 实际写入核验 48 项／547 盘、240 格；其余五格原始字段 72432／10 盘待审。两端各 16 项真实 HTTP 通过，未增加身份碰撞例外。
+- `geographic39` 代码提交 `af4bc201`（独立实现 `13c288bc`）经独立 Astra APPROVE；44 项聚焦测试通过。39／294 的研究资料和全部 parts 已验证，运行时纯模块已发布两环境，健康、实际文件 hash 及各四项 HTTP 回归通过；owner 111／名称 115 已在两库实际写入核验 195 格，各 16 项实际显示／搜索／英语回退 HTTP 通过。
 - Agon owner 103／name 106、CMB owner 104／name 107，已在两库实际写入并核对；HTTP 分别每环境 16／11 项通过。实际统计及归档完成。
-- 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码 493fe0d1（独立实现 443403b9）经 Astra APPROVE，45 项聚焦测试通过；两库独立 transient importer 已构建，待实际数据包批准及写入。
+- 团体赛 TEST／PROD 全 324 行已只读完整捕获，294 unlinked＋30 event_id=73；完整 IDs 与 inventory4 一致。固定特例代码 493fe0d1（独立实现 443403b9）经 Astra APPROVE，45 项聚焦测试通过；owner 112／名称 118 两库实际写入核验五格，原 324 行及 FK 不变，新增展示只计 294 盘。每端 18 项真实 HTTP 通过，包含 30 盘既有赛事译名与段位展示保持不变。
+- 棋手来源研究与实际五人入库一直并行；已到 CB／数据库批次 122，PROD 415／3,698 位完整棋手，完整五语言展示 49,879／173,025 盘。继续推进下一批，不把资料草稿计入完成。

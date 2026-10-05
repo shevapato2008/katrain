@@ -1031,6 +1031,8 @@ class KifuAlbum(Base):
     event_id = Column(Integer, ForeignKey("kifu_events.id"), nullable=True, index=True)
     event_edition_id = Column(Integer, ForeignKey("kifu_event_editions.id"), nullable=True)
     duplicate_of_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=True, index=True)
+    # NULL keeps the game in the public library; a reason preserves excluded records for review.
+    list_hidden_reason = Column(String(64), nullable=True)
     __table_args__ = (
         CheckConstraint("event_edition_id IS NULL OR event_id IS NOT NULL",
                         name="ck_kifu_album_edition_requires_event"),

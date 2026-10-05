@@ -124,8 +124,9 @@ async def list_kifu_albums(
     lang = name_display_language(lang)
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
-    query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
-    count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
+    visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
+    query = query.filter(*visible)
+    count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
 
     if q:
         strict = strict_names_enabled()

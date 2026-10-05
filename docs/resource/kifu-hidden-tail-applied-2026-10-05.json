@@ -1,0 +1,52 @@
+{
+  "test": {
+    "apply": {
+      "environment": "test",
+      "committed": true,
+      "hidden_games": 250,
+      "retained_sgf_overrides": 10,
+      "reason": "unresolved_event_tail_2026_10_05"
+    },
+    "api": {
+      "health": "ok",
+      "hidden_detail": {
+        "id": 24188,
+        "sgf_retained": true
+      },
+      "list": 172766,
+      "protected_detail": {
+        "id": 32943,
+        "sgf_retained": true
+      },
+      "search": {
+        "target_absent": true,
+        "total": 0
+      }
+    }
+  },
+  "prod": {
+    "apply": {
+      "environment": "prod",
+      "committed": true,
+      "hidden_games": 250,
+      "retained_sgf_overrides": 10,
+      "reason": "unresolved_event_tail_2026_10_05"
+    },
+    "api": {
+      "health": "ok",
+      "hidden_detail": {
+        "id": 24188,
+        "sgf_retained": true
+      },
+      "list": 172766,
+      "protected_detail": {
+        "id": 32943,
+        "sgf_retained": true
+      },
+      "search": {
+        "target_absent": true,
+        "total": 0
+      }
+    }
+  }
+}

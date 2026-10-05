@@ -183,8 +183,11 @@ async def list_kifu_albums(
     lang = lang if lang in {"en", "cn", "tw", "jp", "ko"} else "en"
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
-    query = query.filter(KifuAlbum.duplicate_of_id.is_(None))
-    count_query = db.query(func.count(KifuAlbum.id)).filter(KifuAlbum.duplicate_of_id.is_(None))
+    # The production overlay still imports the legacy model; the nullable column
+    # is installed by the tagging batch before this endpoint is deployed.
+    visible = (KifuAlbum.duplicate_of_id.is_(None), text("kifu_albums.list_hidden_reason IS NULL"))
+    query = query.filter(*visible)
+    count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
 
     if q:
         player_ids, event_ids = matching_entity_ids(db, q, exact=True)

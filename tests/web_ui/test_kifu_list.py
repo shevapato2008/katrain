@@ -126,6 +126,26 @@ def test_count_is_zero_when_nothing_matches(db_with_albums):
     assert result.items == []
 
 
+def test_hidden_album_is_excluded_from_list_and_search_but_detail_remains(db_with_albums):
+    hidden = db_with_albums.query(models_db.KifuAlbum).filter_by(player_black="李钦诚").one()
+    hidden.list_hidden_reason = "unresolved_event_low_frequency"
+    db_with_albums.commit()
+
+    listing = _list_albums(db_with_albums)
+    assert listing.total == 2
+    assert hidden.id not in {item.id for item in listing.items}
+    shared_search = _list_albums(db_with_albums, q="丁浩")
+    assert shared_search.total == 1
+    assert [item.player_black for item in shared_search.items] == ["丁浩"]
+    hidden_search = _list_albums(db_with_albums, q="李钦诚")
+    assert hidden_search.total == 0
+    assert hidden_search.items == []
+
+    detail = asyncio.run(kifu.get_kifu_album(_request_without_dispatcher(), hidden.id, db=db_with_albums))
+    assert detail.id == hidden.id
+    assert detail.sgf_content == "(;B[dp])"
+
+
 def test_historical_player_alias_precedes_newer_tournament_name(db_with_albums):
     db_with_albums.add_all(
         [

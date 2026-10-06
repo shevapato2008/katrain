@@ -80,11 +80,43 @@ def _validate_evidence(evidence, sgf_sha256):
     return _rules(evidence.get("rules")), _komi(evidence.get("komi"))
 
 
+def _validate_corrections(evidence, raw, explicit, effective):
+    """Authorize each contradiction against exact raw SGF values and reviewed targets.
+
+    corrections maps KM/RU to {original_value: raw string, verified_value:
+    numeric komi/canonical rules, reason: nonempty string}. The existing evidence
+    SGF hash, references, reviewer and timestamp apply to every correction.
+    """
+    corrections = evidence.get("corrections", {})
+    if not isinstance(corrections, dict) or set(corrections) - {"KM", "RU"}:
+        raise ParameterError("invalid_correction", "Corrections must be an object containing only KM and/or RU")
+    conflicts = {key for key in raw if raw[key] is not None and explicit[key] != effective[key]}
+    for key, record in corrections.items():
+        if (
+            not isinstance(record, dict)
+            or set(record) != {"original_value", "verified_value", "reason"}
+            or not isinstance(record["reason"], str)
+            or not record["reason"].strip()
+            or not isinstance(record["original_value"], str)
+            or record["original_value"] != raw[key]
+            or key not in conflicts
+            or (key == "KM" and type(record["verified_value"]) not in (int, float))
+            or (key == "RU" and not isinstance(record["verified_value"], str))
+            or record["verified_value"] != effective[key]
+        ):
+            raise ParameterError(
+                "invalid_correction", f"{key} correction must match exact raw/effective values and state a reason"
+            )
+    if conflicts - set(corrections):
+        raise ParameterError("evidence_conflict", "Each conflicting SGF field requires an explicit reviewed correction")
+    return bool(corrections)
+
+
 def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
     """Resolve explicit root RU/KM or exact reviewed evidence, without rewriting SGF.
 
-    Ambiguous/unsupported SGF assertions and conflicting evidence are rejected.
-    Evidence fills absent fields; it cannot silently overrule contradictory data.
+    Evidence fills absent fields. Contradictory values require field-specific
+    reviewed corrections; ambiguous/unsupported SGF assertions remain rejected.
     """
     nodes = _main_line_nodes(sgf)
     root = nodes[0] if nodes else {}
@@ -96,10 +128,15 @@ def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
     komi = _komi(raw_komi) if raw_komi is not None else None
     sgf_sha256 = hashlib.sha256(sgf.encode("utf-8")).hexdigest()
     provenance = {"source": "sgf", "raw_rules": raw_rules, "raw_komi": raw_komi}
+    corrected = False
     if evidence is not None:
         evidence_rules, evidence_komi = _validate_evidence(evidence, sgf_sha256)
-        if (rules is not None and rules != evidence_rules) or (komi is not None and komi != evidence_komi):
-            raise ParameterError("evidence_conflict", "Reviewed evidence and explicit SGF parameters conflict")
+        corrected = _validate_corrections(
+            evidence,
+            {"RU": raw_rules, "KM": raw_komi},
+            {"RU": rules, "KM": komi},
+            {"RU": evidence_rules, "KM": evidence_komi},
+        )
         rules, komi = evidence_rules, evidence_komi
         provenance = {**provenance, "source": "verified_evidence", "evidence": deepcopy(evidence)}
     if rules is None:
@@ -107,7 +144,7 @@ def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
     if komi is None:
         raise ParameterError("missing_komi", "SGF KM is missing; exact-game/event evidence is required")
     body = {
-        "version": 1,
+        "version": 2 if corrected else 1,
         "verified": True,
         "sgf_sha256": sgf_sha256,
         "rules": rules,

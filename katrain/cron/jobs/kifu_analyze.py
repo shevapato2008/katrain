@@ -3,6 +3,7 @@
 import hashlib
 import logging
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from katrain.cron import config
 from katrain.cron.clients.katago import KataGoClient
@@ -105,7 +106,10 @@ class KifuAnalyzeJob(BaseJob):
             job.error_message = None
             db.commit()
 
-        request_id = f"kifu_{job_id}_{move_number}"
+        # A timed-out engine search can finish after a retry or parameter reset.
+        # The wrapper routes by ID, so each attempt needs its own identity even
+        # when job/position are reused. validate_result checks the echoed ID.
+        request_id = f"kifu_{job_id}_{move_number}_{uuid4().hex}"
         try:
             response = await self.client.analyze(
                 request_id=request_id,

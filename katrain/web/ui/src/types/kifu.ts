@@ -61,7 +61,7 @@ export interface KifuAnalysisMove {
 }
 
 export interface VerifiedAnalysisParameters {
-  version: 1;
+  version: 1 | 2;
   verified: true;
   rules: string;
   komi: number;

@@ -111,8 +111,8 @@ describe('职业报告固定右栏', () => {
     expect(mocks.navigate).toHaveBeenCalledWith(0);
   });
 
-  it('已核验参数覆盖原始规则，详情分别保留 SGF 值和零贴目', async () => {
-    analysisParameters = { version: 1, verified: true, rules: 'japanese', komi: 0,
+  it('version 2 已审纠正参数覆盖原始规则，详情分别保留 SGF 值和零贴目', async () => {
+    analysisParameters = { version: 2, verified: true, rules: 'japanese', komi: 0,
       sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
     renderPage(); await loaded();

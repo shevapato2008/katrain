@@ -19,9 +19,9 @@ it('keeps missing rules unresolved and shows raw komi without an invented winrat
   expect(dialog).toHaveStyle({ fontFamily: createGalaxyTheme('cn').typography.fontFamily });
 });
 
-it('uses verified engine parameters for the report and preserves raw SGF values in details', () => {
+it('uses version 2 corrected parameters for the report and preserves raw SGF values in details', () => {
   render(<ThemeProvider theme={createGalaxyTheme('cn')}><ReportMetaPanel professional game={{ ...game, rules: 'chinese' }}
-    analysisParameters={{ version: 1, verified: true, rules: 'japanese', komi: 0, sgf_sha256: 'sgf', parameter_sha256: 'params', provenance: {} }}
+    analysisParameters={{ version: 2, verified: true, rules: 'japanese', komi: 0, sgf_sha256: 'sgf', parameter_sha256: 'params', provenance: {} }}
     task={{ status: 'completed', report_type: 'deep' }} currentMove={0} currentAnalysis={null} /></ThemeProvider>);
   expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('日本规则');
   expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('分析贴目 0');

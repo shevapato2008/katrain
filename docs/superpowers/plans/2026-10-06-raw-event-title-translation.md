@@ -138,5 +138,14 @@ Independent Astra [bulk decision](../../resource/kifu-next-literal-event-bulk-de
 Reuse the reviewed and deployed `sgf_chinese` profile; no code, schema or runtime change is needed. Independently captured148 raw/2,063 games/740 names; raw-set SHA `81b2f40a5ad7694cc1ea7a4b785f29169428064c829a24bbd6188b074f080354`, frozen source manifest `9c7e2b3909259b813daa5ea51aa64c35b4ef596559d82989fb8c6f3e2cbe00d1`. Actual producer `/root/national15_sources_sol`. Hold placeholder省略 and verified-entity collision中国围棋霸王赛,14 albums each; do not hide or infer an identity. Root reviewed120 reusable core translations and corrected three stage/sponsor phrases before freezing. Post147 actual740-key collision checks are zero in both databases.
 
 - [x] Actual source, whole scope, existing owner preimages and five-language matrix review; two unsigned owner plans prepared and independently approved.
-- [ ] TEST→PROD owner apply/verify, bind740 names to actual afterimages, review and sequential name writes. Existing frozen player packets finish first to avoid unnecessary recaptures.
-- [ ] Representative16 actual HTTP cases per environment, including the natural fourth-edition Lebaishi title union and English fallback; stats, HTML and receipts. No broad retests or service restart.
+- [x] TEST→PROD owner152/name153 actual apply/verify; bind740 names to actual afterimages, root review and sequential writes. Frozen player CT/CU finish before owner capture to avoid unnecessary rebinding.
+- [x] Representative16 actual HTTP cases per environment, including the natural fourth-edition Lebaishi title union and English fallback; actual stats/HTML/receipts. Raw display11,391; complete display58,747/173,025 (33.9529%). No broad retests or service restart.
+
+
+## Continuation 9 — next149 data-only literal batch
+
+Reuse the reviewed deployed profile without product code or schema changes. Actual unsigned source packet149 raw/1,465 games/745 names, raw-set SHA `5228f491778baf03dc21269b394198e3cba166d544cb37b06a50416dd4735ab7`; manifest `0d70b8488342ea72c528811f0fe2c6afc6a45c8e6b3c6f0cdc8bbd9f3247f618`. Root read106 core translations, corrected second-stage wording and unified Guksu Cup spelling. After bulk148 actual names, both environments745-key collision checks returned zero. Contradictory 女男子组 remains held; no hide/identity inference.
+
+- [x] Actual whole-scope source capture and frozen unsigned five-language evidence, pending owner plans.
+- [ ] Independent exact owner review; TEST→PROD owner writes; bind745 names to actual afterimages, root review, sequential name writes.
+- [ ] Representative actual HTTP, actual coverage/report, exact receipts and source archives.

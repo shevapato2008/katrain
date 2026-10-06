@@ -116,13 +116,18 @@ export function ReportAnalysisRail(props: Props) {
             {panel === 'analysis' ? (
               <MoveGradePanel
                 analysis={props.analysisByMove} totalMoves={props.totalMoves} onMoveClick={props.onMoveClick}
-                trend={<div className="evalpad"><ReviewWinratePlot
+                trend={<div className="report-trend">
+                  <div className="tline"><span className="wr">{t('live:black_winrate', '黑方胜率')} <b>{percentage(props.analysis?.winrate)}</b></span><span className="sl">{t('live:black_lead', '黑方领先')} <b>{leadLabel(props.analysis?.score_lead)}</b> {t('live:points_unit', '目')}</span></div>
+                  <div className="evalpad"><ReviewWinratePlot
                   points={props.points} lead={props.lead}
                   empty={props.points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
                   axisTop={`${black} 100`} axisMid="50" axisBottom={`${white} 100`}
                   label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
                   cursor={props.currentMove} onPick={props.onMoveClick}
-                /></div>}
+                  totalMoves={props.totalMoves}
+                /></div>
+                  <div className="report-trend__scale"><div>{[0, .25, .5, .75, 1].map(f => <span key={f}>{Math.round(props.totalMoves * f)}</span>)}</div><span>{t('grade:axis_move_number', '手数')}</span></div>
+                </div>}
               />
             ) : (
               <>

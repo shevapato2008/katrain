@@ -61,11 +61,12 @@ export default function Segmented<T extends string>({
           left: '3px',
           width: vertical ? 'calc(100% - 6px)' : `calc((100% - 6px) / ${options.length})`,
           borderRadius: '6px',
+          boxSizing: 'border-box',
           bgcolor: 'primary.dark',
           border: '1px solid',
           borderColor: 'primary.main',
           transform: `translate${vertical ? 'Y' : 'X'}(${index * 100}%)`,
-          transition: 'transform 180ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: vertical ? 'none' : 'transform 180ms cubic-bezier(0.4, 0, 0.2, 1)',
           '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
         }}
       />

@@ -249,6 +249,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 2048, height: 108
       await help.getByRole('button', { name: '关闭' }).click();
       await root.getByRole(kiosk ? 'button' : 'radio', { name: '分布', exact: true }).click();
       await page.screenshot({ path: `/tmp/report-v2-playwright/${tag}-distribution.png` });
+      expect(await rail.evaluate(el => el.scrollLeft)).toBe(0);
       expect(await board.boundingBox()).toEqual(before);
       expect(await page.evaluate(() => (window as any).__stonePlays)).toBe(1);
     });

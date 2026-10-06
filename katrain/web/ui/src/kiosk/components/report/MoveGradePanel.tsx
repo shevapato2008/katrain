@@ -305,7 +305,7 @@ export default function MoveGradePanel({
     const guide = maxRate;
     return (
       <>
-
+        <div className="grade-chart-legend"><span><Stone black />{t('review:black', '黑')}</span><span><Stone black={false} />{t('review:white', '白')}</span></div>
         <div className="hist">
           <div className="hyaxis">
             <i>{`${Math.round(guide * 100)}%`}</i>
@@ -320,7 +320,6 @@ export default function MoveGradePanel({
                     { v: cell.white, rate: cell.whiteRate, black: false },
                   ] as const).map((b) => (
                     <span className="hb" key={b.black ? 'b' : 'w'}>
-                      <u>{b.v}</u>
                       {/* `.hbt` 是柱子百分比高度的**参照物**。不能把 `<b>` 直接挂在
                           `.hb` 下：那一层的高度是内容撑出来的，百分比会解析成 auto ⇒ 恒 0。
                           详见 `go-screens.css` 里 `.hbt` 头上那段。 */}
@@ -332,7 +331,7 @@ export default function MoveGradePanel({
                             background: b.black ? STONE_BLACK : STONE_WHITE,
                             boxShadow: `inset 0 0 0 1.4px ${b.black ? STONE_BLACK_RIM : STONE_WHITE_RIM}`,
                           }}
-                        />
+                        ><u>{b.v}</u></b>
                       </span>
                     </span>
                   ))}

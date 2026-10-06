@@ -115,7 +115,7 @@ export default function TrendChart({
     const leftPadding = 56;
     const rightPadding = 56;
     const topPadding = 16;
-    const bottomPadding = 12;
+    const bottomPadding = reportMode ? 34 : 12;
     const chartWidth = width - leftPadding - rightPadding;
     const chartHeight = height - topPadding - bottomPadding;
 
@@ -216,6 +216,14 @@ export default function TrendChart({
           stroke="rgba(255,255,255,0.5)"
           strokeWidth="1"
         />
+
+        {reportMode && <g fill={theme.palette.text.secondary} fontSize={12}>
+          {[0, 0.25, 0.5, 0.75, 1].map(fraction => <text key={fraction}
+            x={leftPadding + chartWidth * fraction} y={height - 18} textAnchor="middle">
+            {Math.round(totalMoves * fraction)}
+          </text>)}
+          <text x={leftPadding + chartWidth / 2} y={height - 3} textAnchor="middle">{t('grade:axis_move_number', '手数')}</text>
+        </g>}
 
         {/* Click area */}
         <rect
@@ -393,7 +401,7 @@ export default function TrendChart({
     const height = reportMode ? workspaceHeight : 250;
     const padL = 34;
     const padR = 10;
-    const padT = 40;
+    const padT = reportMode ? 56 : 40;
     const padB = 62;
     const plot = height - padT - padB;
     const groupW = (width - padL - padR) / histogram.cells.length;
@@ -544,11 +552,11 @@ export default function TrendChart({
 
   /** 统计视图：三行比率，每行黑白各一条。行前的棋子标记就是「这条是谁的」。 */
   const renderMatchStats = () => (
-    <Box sx={reportMode ? { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-around' } : undefined}>
+    <Box sx={reportMode ? { height: '100%', display: 'grid', gridTemplateRows: 'repeat(3, minmax(0,1fr))', gap: '6px' } : undefined}>
       {matchRate.rows.map((row) => (
-        <Box key={row.id} sx={{ mb: reportMode ? 0 : 1.75 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: 0.75 }}>
-            <Typography variant="body2" sx={{ color: 'text.primary' }}>
+        <Box key={row.id} sx={{ mb: reportMode ? 0 : 1.75, ...(reportMode ? { minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly' } : {}) }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1, mb: reportMode ? 0 : 0.75 }}>
+            <Typography variant="body2" sx={{ color: 'text.primary', ...(reportMode ? { fontSize: 14, lineHeight: '20px' } : {}) }}>
               {t(row.i18nKey, row.zh)}
             </Typography>
             <Typography
@@ -565,7 +573,7 @@ export default function TrendChart({
             { rate: row.blackRate, black: true },
             { rate: row.whiteRate, black: false },
           ] as const).map((b, i) => (
-            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: reportMode ? 0 : 0.5, ...(reportMode ? { height: 20, flexShrink: 0 } : {}) }}>
               <StoneDot black={b.black} />
               <Box sx={{ flex: 1, height: 9, bgcolor: 'action.hover', borderRadius: '5px', overflow: 'hidden', minWidth: 0 }}>
                 <Box
@@ -581,7 +589,7 @@ export default function TrendChart({
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ width: 34, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
+                sx={{ width: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums', ...(reportMode ? { fontSize: 13, lineHeight: '18px' } : {}) }}
               >
                 {Math.round(b.rate * 100)}%
               </Typography>

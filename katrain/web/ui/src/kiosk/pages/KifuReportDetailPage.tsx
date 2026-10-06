@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
 import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
-import { kifuRulesLabel } from '../../features/kifu/kifuRules';
+import { kifuEventRules, kifuRulesLabel } from '../../features/kifu/kifuRules';
 import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
@@ -57,6 +57,7 @@ export default function KifuReportDetailPage() {
   }, [id, lang, reload]);
 
   const album = loaded?.id === id && loaded.lang === lang ? loaded.album : null;
+  const eventRules = kifuEventRules(analysisParameters, album?.rules);
   const parsed = useMemo(() => {
     try { return album?.sgf_content ? sgfToMoves(album.sgf_content) : null; } catch { return null; }
   }, [album]);
@@ -162,7 +163,7 @@ export default function KifuReportDetailPage() {
           statusVisible={detail?.status !== 'completed' || !detail.parameters_verified || !detail.analysis_parameters?.verified || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
             <span>{album.result ? translateResult(album.result, t, analysisParameters?.rules ?? album.rules) : '—'}</span>
-            <span>{kifuRulesLabel(analysisParameters?.rules ?? album.rules, t)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
+            <span>{kifuRulesLabel(eventRules, t)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
             [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
@@ -170,7 +171,7 @@ export default function KifuReportDetailPage() {
             [t('report:event', '赛事'), [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ')],
             [t('report:date', '日期'), album.date_played],
             [t('report:result', '结果'), album.result],
-            [t('report:rules', '规则'), kifuRulesLabel(analysisParameters?.rules ?? album.rules, t)],
+            [t('report:rules', '规则'), kifuRulesLabel(eventRules, t)],
             [t('report:sgf_rules', 'SGF 规则'), album.rules],
             [t('report:sgf_komi', 'SGF 贴目'), album.komi],
             [t('report:analysis_rules', '分析规则（已核验）'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t) : '—'],

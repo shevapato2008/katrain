@@ -39,3 +39,16 @@ it.each([['new zealand', '新西兰规则'], ['aga-button', 'AGA Button 规则']
   expect(screen.getByTestId('report-meta-panel')).toHaveTextContent(label);
   expect(screen.getByTestId('report-meta-panel')).not.toHaveTextContent('规则待核验');
 });
+
+it('shows the verified event rule in metadata and details while retaining the wire and SGF rules', () => {
+  render(<ThemeProvider theme={createGalaxyTheme('cn')}><ReportMetaPanel professional game={{ ...game, rules: 'japanese' }}
+    analysisParameters={{ version: 1, verified: true, rules: 'japanese', komi: 6.5, sgf_sha256: 'sgf', parameter_sha256: 'params',
+      provenance: { source: 'verified_evidence', evidence: { event_rules: 'korean' } } }}
+    task={{ status: 'completed', report_type: 'deep' }} currentMove={0} currentAnalysis={null} /></ThemeProvider>);
+  expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('韩国规则');
+  fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+  const dialog = screen.getByRole('dialog');
+  expect(within(dialog).getByText('规则', { exact: true }).parentElement).toHaveTextContent('韩国规则');
+  expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('japanese');
+  expect(within(dialog).getByText('分析规则（已核验）').parentElement).toHaveTextContent('日本规则');
+});

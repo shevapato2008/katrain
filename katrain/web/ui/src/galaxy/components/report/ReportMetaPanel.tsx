@@ -9,7 +9,7 @@ import { translateResult } from '../../../utils/resultTranslation';
 import { formatRank } from '../../../utils/rank';
 import type { MoveAnalysis } from '../../../types/live';
 import type { VerifiedAnalysisParameters } from '../../../types/kifu';
-import { kifuRulesLabel } from '../../../features/kifu/kifuRules';
+import { kifuEventRules, kifuRulesLabel } from '../../../features/kifu/kifuRules';
 import type { UserGameDetail } from '../../../api/userGamesApi';
 
 interface Props {
@@ -30,7 +30,7 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
   const theme = useTheme();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const effectiveRules = professional ? analysisParameters?.rules ?? game?.rules : game?.rules;
-  const rules = professional ? kifuRulesLabel(effectiveRules, t) : game?.rules === 'japanese' ? t('report:japanese_rules', '日本规则') : game?.rules === 'korean' ? t('report:korean_rules', '韩国规则') : t('report:chinese_rules', '中国规则');
+  const rules = professional ? kifuRulesLabel(kifuEventRules(analysisParameters, game?.rules), t) : game?.rules === 'japanese' ? t('report:japanese_rules', '日本规则') : game?.rules === 'korean' ? t('report:korean_rules', '韩国规则') : t('report:chinese_rules', '中国规则');
   const event = [game?.event || game?.title || t('report:unnamed_game', '未命名对局'), game?.round_name].filter(Boolean).join(' · ');
   const black = game?.player_black || t('report:black', '黑');
   const white = game?.player_white || t('report:white', '白');

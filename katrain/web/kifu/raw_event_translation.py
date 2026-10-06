@@ -12,6 +12,7 @@ OWNER_REVIEW_VERSION = "raw-event-title-owner-review-v1"
 PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
 SGF_LITERAL_BASIS = "sgf_literal_v1"
 SGF_CHINESE_PROFILE = "sgf_chinese"
+SGF_CHINESE_MIXED_PROFILE = "sgf_chinese_mixed"
 NATIONAL15_RAW_VALUES = frozenset({
     *(f"2020中国国家队积分大循环第{number}轮" for number in range(1, 14)),
     "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛",
@@ -62,11 +63,13 @@ GEOGRAPHIC39_RAW_VALUES = frozenset({
     "2008年中国围棋段位赛第十轮",
 })
 _ORDINAL = re.compile(r"第[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|轮|輪)\Z")
+_MIXED_EDITION = re.compile(r"第?[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|期)\Z")
 _YEAR = re.compile(r"(?:18|19|20)\d{2}年\Z")
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _LANGUAGE = re.compile(r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\Z")
 _UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
 _CHINESE_LITERAL = re.compile(r"[\u3400-\u9fff0-9０-９ ，、。·：:（）()「」『』“”‘’《》〈〉—–-]+\Z")
+_CHINESE_MIXED_LITERAL = re.compile(r"[\u3400-\u9fffA-Za-z0-9０-９ ，、。·：:（）()「」『』“”‘’《》〈〉—–-]+\Z")
 _DISPLAY_SCRIPT = {
     "en": re.compile(r"[A-Za-z]"),
     "cn": re.compile(r"[\u3400-\u9fff]"),
@@ -124,12 +127,24 @@ def _stored_time(value):
 
 def validate_chinese_literal_parts(raw, parts):
     """Check the existing Chinese grammar without deriving or changing parser parts."""
-    if (not isinstance(raw, str) or not _CHINESE_LITERAL.fullmatch(raw)
+    return _validate_chinese_literal_parts(raw, parts, mixed=False)
+
+
+def validate_chinese_mixed_literal_parts(raw, parts):
+    """Check the selected mixed Chinese grammar against unchanged parser parts."""
+    return _validate_chinese_literal_parts(raw, parts, mixed=True)
+
+
+def _validate_chinese_literal_parts(raw, parts, *, mixed):
+    characters = _CHINESE_MIXED_LITERAL if mixed else _CHINESE_LITERAL
+    if (not isinstance(raw, str) or not characters.fullmatch(raw)
             or not re.search(r"[\u3400-\u9fff]", raw)
             or not isinstance(parts, list) or not parts
             or any(not isinstance(part, dict) or set(part) != {"kind", "text"}
                    or not _text(part["text"]) or part["kind"] not in {"core", "year", "edition", "round"}
-                   or part["kind"] in {"edition", "round"} and not _ORDINAL.fullmatch(part["text"])
+                   or part["kind"] == "edition" and not (
+                       _MIXED_EDITION if mixed else _ORDINAL).fullmatch(part["text"])
+                   or part["kind"] == "round" and not _ORDINAL.fullmatch(part["text"])
                    or part["kind"] == "year" and not _YEAR.fullmatch(part["text"]) for part in parts)
             or "".join(part["text"] for part in parts) != raw
             or len({part["kind"] for part in parts}) != len(parts)
@@ -180,9 +195,13 @@ def validate_raw_title_research(record):
         {"kind": "edition", "text": raw.removesuffix("Tokyo Shinbun Cup")},
         {"kind": "core", "text": "Tokyo Shinbun Cup"},
     ]
+    mixed_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
+                 and record["sgf_literal_evidence"].get("owner_profile") == SGF_CHINESE_MIXED_PROFILE)
     if any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
-           or part["kind"] in {"edition", "round"} and not _ORDINAL.fullmatch(part["text"])
+           or part["kind"] == "edition" and not (
+               _MIXED_EDITION if mixed_sgf else _ORDINAL).fullmatch(part["text"])
            and not (part["kind"] == "edition" and tokyo_edition)
+           or part["kind"] == "round" and not _ORDINAL.fullmatch(part["text"])
            or part["kind"] == "year" and not _YEAR.fullmatch(part["text"])
            for part in parts):
         raise ValueError("literal raw title has an unsupported year or ordinal")
@@ -209,6 +228,10 @@ def validate_raw_title_research(record):
             validate_chinese_literal_parts(raw, parts)
             if evidence.get("raw_parts_sha256") != _hash(parts):
                 raise ValueError("SGF Chinese title parts hash differs from its captured parts")
+        elif evidence.get("owner_profile") == SGF_CHINESE_MIXED_PROFILE:
+            validate_chinese_mixed_literal_parts(raw, parts)
+            if evidence.get("raw_parts_sha256") != _hash(parts):
+                raise ValueError("SGF Chinese mixed title parts hash differs from its captured parts")
         else:
             if ("owner_profile" in evidence or "raw_parts_sha256" in evidence or raw not in NATIONAL15_RAW_VALUES):
                 raise ValueError("SGF literal evidence lacks its manifest owner profile")
@@ -303,11 +326,12 @@ def sgf_literal_owner_matches(research, raw_owner, *, check_parser=False):
         review = raw_owner["review_metadata"]
         if not eligible_raw_title_owner(raw_owner) or literal["scope_sha256"] != review["scope_sha256"]:
             return False
-        if literal.get("owner_profile") == SGF_CHINESE_PROFILE:
+        if literal.get("owner_profile") in {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE}:
+            profile = literal["owner_profile"]
             parts = research["raw_parts"]
             digest = _hash(parts)
             if (literal.get("raw_parts_sha256") != digest or review.get("sgf_literal") != {
-                    "source_basis": SGF_LITERAL_BASIS, "profile": SGF_CHINESE_PROFILE, "raw_parts_sha256": digest}):
+                    "source_basis": SGF_LITERAL_BASIS, "profile": profile, "raw_parts_sha256": digest}):
                 return False
             if check_parser:
                 captured_parts = [{"kind": part["kind"], "text": part["text"]}

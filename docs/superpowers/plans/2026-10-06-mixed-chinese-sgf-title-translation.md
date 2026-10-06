@@ -1,6 +1,6 @@
 # 有限中文混合赛事标题 Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 复用既有可追溯入库流程，安全支持含ASCII品牌字母和期／无第届次的中文赛事原文，扩大五語真实覆盖。
 
@@ -20,9 +20,9 @@
 - Modify: `tests/web_ui/test_kifu_raw_event_title_translation.py`
 - Modify: `tests/web_ui/test_kifu_raw_event_title_owners.py`
 
-- [ ] 用现有fixture添加明确新profile的真实标题形态：`KB国民银行杯2012韩国围乙联赛`、`第2期日本幽玄杯精锐循环赛`、`3届韩国最强棋手战循环圈`。parts采用捕获原文的现存形态，而不是为测试重写业务解析。
-- [ ] 证明新profile尚不能通过，记录一次RED命令／结果。
-- [ ] 小组拒绝用例覆盖旧profile仍拒绝新形态、纯Latin、未知或跨profile marker、重复kind／多core、非lossless／改变parts hash。复用已有缺成员、已有名／链接／选择及重放检查，不增加新的审计框架。
+- [x] 用现有fixture添加明确新profile的真实标题形态：`KB国民银行杯2012韩国围乙联赛`、`第2期日本幽玄杯精锐循环赛`、`3届韩国最强棋手战循环圈`。parts采用捕获原文的现存形态，而不是为测试重写业务解析。
+- [x] 证明新profile尚不能通过，记录一次RED命令／结果。
+- [x] 小组拒绝用例覆盖旧profile仍拒绝新形态、纯Latin、未知或跨profile marker、重复kind／多core、非lossless／改变parts hash。复用已有缺成员、已有名／链接／选择及重放检查，不增加新的审计框架。
 
 Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_title_translation.py tests/web_ui/test_kifu_raw_event_title_owners.py -q`。
 
@@ -32,13 +32,13 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 - Modify: `katrain/web/kifu/raw_event_translation.py`
 - Modify: `scripts/kifu_raw_event_title_owners.py`
 
-- [ ] 添加 `SGF_CHINESE_MIXED_PROFILE = "sgf_chinese_mixed"` 与独立窄校验器；保留现有中文字符集合并增加 `[A-Za-z]`，必须含汉字。仅edition增加原有 `第?N(?:届|屆|期)`；round仍使用旧规则。一个core、唯一kind、原parts完全拼回raw。
-- [ ] 纯research validator的共同ordinal检查在已明确的SGF新profile内选择对应规则；其余旧入口保持旧语法。新profile research绑定真实完整scope/source/first-GN及原parts hash。
-- [ ] `sgf_literal_owner_matches` 要求research.profile与批准owner marker.profile准确一致，并校验原parts；未知profile、缺marker及旧／新互换必须拒绝。
-- [ ] Owner脚本扩展显式profile选项，复用原最多150条、唯一raw/set hash、完整未命名公共NULL scope、preimage/hash、审批身份、dry/apply/verify和重放规则；marker记录实际选择的profile。没有fresh manifest不能执行。
-- [ ] 运行上述两个测试文件至GREEN。只处理本次行为及最可能回归，原profile与national15兼容也由这组既有用例证明。
-- [ ] 独立代码review（实施者之外），修正实际问题至通过。无需无关全库测试或新基础设施。
-- [ ] root按准确改动路径commit，记录测试／review；不把其他未跟踪文件混入提交。
+- [x] 添加 `SGF_CHINESE_MIXED_PROFILE = "sgf_chinese_mixed"` 与独立窄校验器；保留现有中文字符集合并增加 `[A-Za-z]`，必须含汉字。仅edition增加原有 `第?N(?:届|屆|期)`；round仍使用旧规则。一个core、唯一kind、原parts完全拼回raw。
+- [x] 纯research validator的共同ordinal检查在已明确的SGF新profile内选择对应规则；其余旧入口保持旧语法。新profile research绑定真实完整scope/source/first-GN及原parts hash。
+- [x] `sgf_literal_owner_matches` 要求research.profile与批准owner marker.profile准确一致，并校验原parts；未知profile、缺marker及旧／新互换必须拒绝。
+- [x] Owner脚本扩展显式profile选项，复用原最多150条、唯一raw/set hash、完整未命名公共NULL scope、preimage/hash、审批身份、dry/apply/verify和重放规则；marker记录实际选择的profile。没有fresh manifest不能执行。
+- [x] 运行上述两个测试文件至GREEN。只处理本次行为及最可能回归，原profile与national15兼容也由这组既有用例证明。
+- [x] 独立代码review（实施者之外），修正实际问题至通过。无需无关全库测试或新基础设施。
+- [x] root按准确改动路径commit，记录测试／review；不把其他未跟踪文件混入提交。
 
 ## Chunk 2: 真实来源、部署与入库
 
@@ -66,3 +66,7 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 ## 工作分配与持续推进
 
 两名Luna继续棋手资料批次，Sol实施这一小补丁及后续来源包，root负责审核和串行实际数据库写入。独立Astra按用户授权确认设计／计划（至多2轮），再审查代码边界。g／DK／DL在途包先完成，不因新profile设计停下。翻译主语言仅五种；保持来源角色与实际完成统计诚实。
+
+## 实际实现与审核记录
+
+2026-10-06：Sol实际RED 10 failed / 113 passed；GREEN 127 passed in 10.22s。独立Astra第1轮代码审核APPROVE，无must-fix，并独立运行127 passed in 10.31s。审核记录见[独立代码审核](../../resource/kifu-mixed-title-code-review-2026-10-06.md)。root核对四文件diff SHA与审核记录一致；当前提交仅完成Chunk1，新profile尚未部署、候选未计为完成。

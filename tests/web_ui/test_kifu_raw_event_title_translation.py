@@ -615,6 +615,46 @@ def bulk_sgf_literal(raw=BULK_PARTS[0][0], parts=None):
     return row, research
 
 
+MIXED_PARTS = (
+    ("KB国民银行杯2012韩国围乙联赛", [{"kind": "core", "text": "KB国民银行杯2012韩国围乙联赛"}]),
+    ("第2期日本幽玄杯精锐循环赛", [{"kind": "edition", "text": "第2期"},
+        {"kind": "core", "text": "日本幽玄杯精锐循环赛"}]),
+    ("3届韩国最强棋手战循环圈", [{"kind": "edition", "text": "3届"},
+        {"kind": "core", "text": "韩国最强棋手战循环圈"}]),
+)
+
+
+@pytest.mark.parametrize("raw,parts", MIXED_PARTS)
+def test_sgf_chinese_mixed_research_accepts_exact_existing_parts(raw, parts):
+    _, research = bulk_sgf_literal(raw, parts)
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_chinese_mixed"
+    assert validate_research_record(research, registry())["raw_parts"] == parts
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_chinese"
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+@pytest.mark.parametrize("damage", ["pure_latin", "duplicate_core", "duplicate_kind", "non_lossless", "parts_hash"])
+def test_sgf_chinese_mixed_research_rejects_invalid_parts(damage):
+    _, research = bulk_sgf_literal(*MIXED_PARTS[1])
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_chinese_mixed"
+    if damage == "pure_latin":
+        research["raw_value"] = research["original_name"] = "KB Cup"
+        research["raw_parts"] = [{"kind": "core", "text": "KB Cup"}]
+    elif damage == "duplicate_core":
+        research["raw_parts"] = [{"kind": "core", "text": "第2期"},
+                                 {"kind": "core", "text": "日本幽玄杯精锐循环赛"}]
+    elif damage == "duplicate_kind":
+        research["raw_parts"] = [{"kind": "edition", "text": "第"}, {"kind": "edition", "text": "2期"},
+                                 {"kind": "core", "text": "日本幽玄杯精锐循环赛"}]
+    elif damage == "non_lossless":
+        research["raw_parts"][0]["text"] = "2期"
+    else:
+        research["sgf_literal_evidence"]["raw_parts_sha256"] = "0" * 64
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
 @pytest.mark.parametrize("raw,parts", BULK_PARTS)
 def test_sgf_chinese_research_accepts_four_actual_parser_shapes(raw, parts):
     _, research = bulk_sgf_literal(raw, parts)
@@ -628,9 +668,10 @@ def test_sgf_chinese_rejects_non_chinese_or_control_text(raw):
         validate_research_record(research, registry())
 
 
-def bulk_reviewed_bundle(engine):
+def bulk_reviewed_bundle(engine, raw=BULK_PARTS[0][0], parts=None, profile="sgf_chinese"):
     proposed, _, _ = sgf_reviewed_bundle(engine)
-    row, research = bulk_sgf_literal()
+    row, research = bulk_sgf_literal(raw, parts)
+    research["sgf_literal_evidence"]["owner_profile"] = profile
     raw, parts = research["raw_value"], research["raw_parts"]
     with engine.begin() as conn:
         conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
@@ -639,7 +680,7 @@ def bulk_reviewed_bundle(engine):
         scope = _scope_rows(conn, raw)
         review = owner_review(8, raw)
         review["scope_sha256"] = canonical_sha256(scope)
-        review["sgf_literal"] = {"source_basis": "sgf_literal_v1", "profile": "sgf_chinese",
+        review["sgf_literal"] = {"source_basis": "sgf_literal_v1", "profile": profile,
                                  "raw_parts_sha256": canonical_sha256(parts)}
         conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(
             raw_value=raw, parsed_data={"structure": {"parts": [{**p, "value": p["text"]} for p in parts]}},
@@ -691,6 +732,29 @@ def test_sgf_chinese_persisted_readers_require_new_parts_marker(engine, damage):
             review.pop("sgf_literal")
         else:
             review["sgf_literal"]["raw_parts_sha256"] = "0" * 64
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(review_metadata=review))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert reviewed_raw_event_hints(db, [album], "en") == {}
+        assert _approved_raw_event_names(db, values={album.event}, lang="en") == []
+
+
+@pytest.mark.parametrize("damage", ("missing_marker", "wrong_profile", "unknown_profile"))
+def test_sgf_chinese_mixed_candidate_and_reader_require_matching_profile(engine, damage):
+    from katrain.web.kifu.name_candidates import validate_bundle
+    raw, parts = MIXED_PARTS[0]
+    proposed, inv, research = bulk_reviewed_bundle(engine, raw, parts, profile="sgf_chinese_mixed")
+    assert validate_bundle(proposed, registry(), inv, research)["ready"]
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert reviewed_raw_event_hints(db, [album], "en")
+    with engine.begin() as conn:
+        review = deepcopy(proposed["owners"][0]["preimage"]["review_metadata"])
+        if damage == "missing_marker":
+            review.pop("sgf_literal")
+        else:
+            review["sgf_literal"]["profile"] = "sgf_chinese" if damage == "wrong_profile" else "unlisted"
         conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(review_metadata=review))
     with Session(engine) as db:
         album = db.get(KifuAlbum, 11)

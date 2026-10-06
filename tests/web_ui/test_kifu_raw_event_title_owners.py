@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 from sqlalchemy import select
 
-from katrain.web.core.models_db import KifuAlbum, KifuRawEventValue
+from katrain.web.core.models_db import KifuAlbum, KifuRawEventName, KifuRawEventValue
 from katrain.web.core.models_db import KifuAlbumSource, KifuEvent, KifuSource
 from katrain.web.kifu.name_batch import BatchError, _image, undo_batch
 from katrain.web.kifu.name_batch import _affected_albums, _check_raw_owner, _team_raw_scope
@@ -514,3 +514,58 @@ def test_sgf_chinese_profile_rejects_changed_or_unbounded_manifest(engine, damag
         prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese", producer_id="producer-1",
                      producer_model="gpt-6-sol", reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
                      review_conclusion="Reviewed finite Chinese GN titles")
+
+
+@pytest.mark.parametrize("raw", ("KB国民银行杯2012韩国围乙联赛", "第2期日本幽玄杯精锐循环赛",
+                                     "3届韩国最强棋手战循环圈"))
+def test_sgf_chinese_mixed_owner_uses_actual_parser_parts(engine, raw):
+    manifest = chinese_manifest_fixture(engine, (raw,))
+    manifest["profile"] = "sgf_chinese_mixed"
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact mixed Chinese GN title"}
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese", **kwargs)
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese_mixed", **kwargs)
+    parts = [{"kind": part["kind"], "text": part["text"]}
+             for part in plan["changes"][0]["before"]["parsed_data"]["structure"]["parts"]]
+    assert plan["changes"][0]["after"]["review_metadata"]["sgf_literal"] == {
+        "source_basis": "sgf_literal_v1", "profile": "sgf_chinese_mixed",
+        "raw_parts_sha256": canonical_sha256(parts),
+    }
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese_mixed", manifest=manifest)["albums"] == 1
+        with pytest.raises(BatchError):
+            inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese", manifest=manifest)
+
+
+@pytest.mark.parametrize("damage", ("scope", "existing_name", "changed_manifest", "wrong_marker"))
+def test_sgf_chinese_mixed_owner_keeps_complete_scope_and_manifest_gates(engine, damage):
+    manifest = chinese_manifest_fixture(engine, ("KB国民银行杯2012韩国围乙联赛",))
+    manifest["profile"] = "sgf_chinese_mixed"
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese_mixed",
+                        producer_id="producer-1", producer_model="gpt-6-sol", reviewer_id="reviewer-2",
+                        reviewer_model="gpt-6-astra", review_conclusion="Reviewed exact mixed Chinese GN title")
+    digest = canonical_sha256(manifest)
+    if damage == "scope":
+        plan["changes"][0]["scope_rows"][0]["sgf_sha256"] = "0" * 64
+    elif damage == "existing_name":
+        with engine.begin() as conn:
+            conn.execute(KifuRawEventName.__table__.insert().values(
+                raw_event_id=plan["changes"][0]["before"]["id"], lang="en", display_name="Existing name"))
+    elif damage == "changed_manifest":
+        manifest["decision_note"] = "changed after review"
+    else:
+        plan["changes"][0]["after"]["review_metadata"]["sgf_literal"]["profile"] = "sgf_chinese"
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese_mixed", manifest=manifest)
+
+
+def test_sgf_chinese_mixed_rejects_cross_profile_manifest(engine):
+    manifest = chinese_manifest_fixture(engine, ("KB国民银行杯2012韩国围乙联赛",))
+    manifest["profile"] = "sgf_chinese"
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese_mixed",
+                     producer_id="producer-1", producer_model="gpt-6-sol", reviewer_id="reviewer-2",
+                     reviewer_model="gpt-6-astra", review_conclusion="Reviewed exact mixed Chinese GN title")

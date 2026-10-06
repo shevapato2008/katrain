@@ -12,10 +12,11 @@ from scripts import kifu_batch_transfer as batch
 from katrain.cron.db import Base
 from katrain.cron.models import KifuAlbumDB as Album, KifuAnalysisJobDB as Job, KifuAnalysisMoveDB as Move, ReportTaskDB
 from katrain.cron.report_position import position_snapshot
+from katrain.cron.kifu_parameters import resolve_parameters
 
 
 def game(number, moves=1):
-    sgf = f"(;GM[1]SZ[9]KM[7.5]C[game {number}]" + ";" + ";".join(["B[aa]", "W[bb]", "B[cc]"][:moves]) + ")"
+    sgf = f"(;GM[1]SZ[9]RU[Chinese]KM[7.5]C[game {number}]" + ";" + ";".join(["B[aa]", "W[bb]", "B[cc]"][:moves]) + ")"
     return {
         "album_id": number,
         "date_sort": "2026-10-05",
@@ -23,13 +24,15 @@ def game(number, moves=1):
         "sgf_content": sgf,
         "sgf_sha256": batch.sgf_hash(sgf),
         "total_moves": moves,
+        "analysis_parameters": resolve_parameters(sgf),
     }
 
 
 @pytest.fixture
 def manifest():
     body = {
-        "format": "kifu-batch-manifest-v1",
+        "format": "kifu-batch-manifest-v2",
+        "selection": "latest50",
         "created_at": "2026-10-06T00:00:00+00:00",
         "model_sha256": batch.MODEL_SHA256,
         "requested_visits": 2000,
@@ -83,13 +86,16 @@ def result_for(game):
     for number in range(game["total_moves"] + 1):
         snapshot = position_snapshot(response("fixture", number), parsed, number, previous)
         snapshot.pop("status")
-        moves.append({"move_number": number, **snapshot})
+        moves.append(
+            {"move_number": number, "parameter_sha256": game["analysis_parameters"]["parameter_sha256"], **snapshot}
+        )
         previous = SimpleNamespace(**snapshot)
     start = datetime(2026, 10, 6, tzinfo=timezone.utc)
     return {
         "album_id": game["album_id"],
         "sgf_sha256": game["sgf_sha256"],
         "total_moves": game["total_moves"],
+        "analysis_parameters": game["analysis_parameters"],
         "started_at": start.isoformat(),
         "completed_at": (start + timedelta(seconds=len(moves) * 3)).isoformat(),
         "moves": moves,
@@ -100,7 +106,7 @@ def bundles_for(manifest):
     bundles = []
     for worker, games in enumerate(batch.partitions(manifest)):
         body = {
-            "format": "kifu-batch-results-v1",
+            "format": "kifu-batch-results-v2",
             "manifest_sha256": manifest["manifest_sha256"],
             "worker_id": f"gpu{worker}",
             "model_sha256": batch.MODEL_SHA256,
@@ -138,6 +144,7 @@ def test_snapshot_selects_latest_exactly_50_excluding_completed_bytes_and_aliase
                     total_moves=1,
                     analyzed_moves=1,
                     status="completed",
+                    analysis_parameters=games[number - 1]["analysis_parameters"],
                 )
             )
     manifest = batch.export_manifest(database)
@@ -269,6 +276,7 @@ def test_import_rechecks_canonical_sgf_and_rejects_inconsistent_partial(database
             total_moves=1,
             analyzed_moves=0,
             status="running",
+            analysis_parameters=selected["analysis_parameters"],
         )
         db.add(job)
         db.flush()

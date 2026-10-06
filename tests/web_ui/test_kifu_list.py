@@ -126,6 +126,9 @@ def test_report_flag_requires_current_identity_and_all_deep_positions(db_with_al
     import hashlib
 
     album = db_with_albums.query(models_db.KifuAlbum).first()
+    from katrain.cron.kifu_parameters import resolve_parameters
+
+    album.sgf_content = "(;SZ[19]RU[Chinese]KM[7.5];B[pd])"
     album.move_count = 1
     job = models_db.KifuAnalysisJob(
         album_id=album.id,
@@ -135,6 +138,7 @@ def test_report_flag_requires_current_identity_and_all_deep_positions(db_with_al
         status="completed",
         total_moves=1,
         analyzed_moves=1,
+        analysis_parameters=resolve_parameters(album.sgf_content),
     )
     db_with_albums.add(job)
     db_with_albums.flush()
@@ -144,7 +148,14 @@ def test_report_flag_requires_current_identity_and_all_deep_positions(db_with_al
 
     assert not available()
     for number in (0, 1):
-        db_with_albums.add(models_db.KifuAnalysisMove(job_id=job.id, move_number=number, root_visits=2001))
+        db_with_albums.add(
+            models_db.KifuAnalysisMove(
+                job_id=job.id,
+                move_number=number,
+                root_visits=2001,
+                parameter_sha256=job.analysis_parameters["parameter_sha256"],
+            )
+        )
     db_with_albums.commit()
     assert available()
     row = db_with_albums.query(models_db.KifuAnalysisMove).first()

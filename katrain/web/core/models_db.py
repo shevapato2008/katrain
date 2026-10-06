@@ -849,6 +849,8 @@ class KifuAnalysisJob(Base):
     sgf_sha256 = Column(String(64), nullable=False)
     model_sha256 = Column(String(64), nullable=False)
     requested_visits = Column(Integer, nullable=False)
+    # NULL is intentionally unverified for pre-migration jobs, even with explicit RU/KM.
+    analysis_parameters = Column(JSON, nullable=True)
     status = Column(String(16), nullable=False, default="pending")
     total_moves = Column(Integer, nullable=False)
     analyzed_moves = Column(Integer, nullable=False, default=0)
@@ -875,6 +877,7 @@ class KifuAnalysisMove(Base):
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey("kifu_analysis_jobs.id"), nullable=False, index=True)
     move_number = Column(Integer, nullable=False)
+    parameter_sha256 = Column(String(64), nullable=True)
     root_visits = Column(Integer, nullable=False)
     visits = Column(Integer)
     winrate = Column(Float)

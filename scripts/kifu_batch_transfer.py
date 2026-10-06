@@ -1,4 +1,4 @@
-"""Frozen 50-game professional batch: production export -> two home workers -> production import.
+"""Frozen professional batch: production export -> two home workers -> production import.
 
 Run as ``python -m scripts.kifu_batch_transfer --help``. Production commands read
 KATRAIN_DATABASE_URL from the environment; it is never included in artifacts.
@@ -26,6 +26,7 @@ from sqlalchemy import column, create_engine, event, func, inspect, select, tabl
 from sqlalchemy.orm import Session, sessionmaker
 
 from katrain.cron.sgf import parse_game
+from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
 
 
 MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
@@ -34,6 +35,7 @@ BATCH_SIZE = 50
 ROOT = Path(__file__).resolve().parents[1]
 MOVE_FIELDS = (
     "move_number",
+    "parameter_sha256",
     "root_visits",
     "visits",
     "winrate",
@@ -160,8 +162,18 @@ def parsed_game(sgf):
     return parsed
 
 
+def game_parameters(game):
+    try:
+        return validate_parameters(game["sgf_content"], game.get("analysis_parameters"))
+    except ParameterError as exc:
+        raise BatchError(f"Analysis parameters rejected: {exc}") from exc
+
+
 def validate_manifest(manifest):
-    require(manifest.get("format") == "kifu-batch-manifest-v1", "Unsupported manifest format")
+    require(
+        manifest.get("format") == "kifu-batch-manifest-v2",
+        "Unsupported manifest format; regenerate with verified parameters",
+    )
     require(
         manifest.get("model_sha256") == MODEL_SHA256 and manifest.get("requested_visits") == VISITS,
         "Manifest model/visits mismatch",
@@ -169,17 +181,24 @@ def validate_manifest(manifest):
     body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
     require(manifest.get("manifest_sha256") == digest(body), "Manifest checksum mismatch")
     games = manifest.get("games", [])
-    require(len(games) == BATCH_SIZE, "Manifest must contain exactly 50 games")
-    require(len({g["album_id"] for g in games}) == BATCH_SIZE, "Repeated album ID")
-    require(len({g["sgf_sha256"] for g in games}) == BATCH_SIZE, "Repeated exact SGF")
+    if manifest.get("selection") == "explicit":
+        require(1 <= len(games) <= 60, "Explicit manifest must contain 1–60 games")
+    else:
+        require(
+            manifest.get("selection") == "latest50" and len(games) == BATCH_SIZE,
+            "Manifest must contain exactly 50 games",
+        )
+    require(len({g["album_id"] for g in games}) == len(games), "Repeated album ID")
+    require(len({g["sgf_sha256"] for g in games}) == len(games), "Repeated exact SGF")
     for game in games:
         require(type(game["album_id"]) is int and game["album_id"] > 0, "Invalid album ID")
         require(sgf_hash(game["sgf_content"]) == game["sgf_sha256"], "Frozen SGF checksum mismatch")
         require(len(parsed_game(game["sgf_content"]).moves) == game["total_moves"], "Frozen SGF move count mismatch")
+        game_parameters(game)
     return games
 
 
-def export_manifest(engine):
+def export_manifest(engine, album_ids=None, evidence_by_sha=None):
     from katrain.cron.models import KifuAnalysisJobDB as Job
 
     # The cron album mapper intentionally has no date_sort/date_played columns.
@@ -187,9 +206,12 @@ def export_manifest(engine):
         "kifu_albums", *(column(name) for name in ("id", "duplicate_of_id", "date_sort", "date_played", "sgf_content"))
     )
     games = []
+    if album_ids is not None:
+        require(1 <= len(album_ids) <= 60 and len(set(album_ids)) == len(album_ids), "Select 1–60 unique album IDs")
+    evidence_by_sha = evidence_by_sha or {}
     with read_snapshot(engine) as conn:
         completed = conn.execute(
-            select(Job.sgf_sha256, albums.c.sgf_content)
+            select(Job.sgf_sha256, albums.c.sgf_content, Job.analysis_parameters)
             .join(albums, albums.c.id == Job.album_id)
             .where(
                 Job.status == "completed",
@@ -198,12 +220,22 @@ def export_manifest(engine):
             )
         )
         # Compare actual bytes too; changed source content is not a completed identity.
-        seen = {sgf for sha, sgf in completed if sgf_hash(sgf) == sha}
+        seen = set()
+        verified_existing = {}
+        for sha, sgf, parameters in completed:
+            try:
+                verified_existing[sha] = validate_parameters(sgf, parameters)
+            except ParameterError:
+                continue
+            if sgf_hash(sgf) == sha and album_ids is None:
+                seen.add(sgf)
         query = (
             select(albums)
             .where(albums.c.duplicate_of_id.is_(None))
             .order_by(albums.c.date_sort.desc().nulls_last(), albums.c.id.desc())
         )
+        if album_ids is not None:
+            query = query.where(albums.c.id.in_(album_ids))
         with conn.execute(query.execution_options(stream_results=True)).yield_per(128) as rows:
             for album in rows.mappings():
                 sgf = album["sgf_content"]
@@ -211,7 +243,14 @@ def export_manifest(engine):
                     continue
                 try:
                     parsed = parsed_game(sgf)
-                except BatchError:
+                    sha = sgf_hash(sgf)
+                    evidence = evidence_by_sha.get(sha)
+                    parameters = (verified_existing.get(sha) if evidence is None else None) or resolve_parameters(
+                        sgf, evidence
+                    )
+                except (BatchError, ParameterError) as exc:
+                    if album_ids is not None:
+                        raise BatchError(f"{album['id']}: unresolved: {exc}") from exc
                     continue
                 seen.add(sgf)
                 games.append(
@@ -222,13 +261,21 @@ def export_manifest(engine):
                         "sgf_content": sgf,
                         "sgf_sha256": sgf_hash(sgf),
                         "total_moves": len(parsed.moves),
+                        "analysis_parameters": parameters,
                     }
                 )
-                if len(games) == BATCH_SIZE:
+                if album_ids is None and len(games) == BATCH_SIZE:
                     break
-    require(len(games) == BATCH_SIZE, "Fewer than 50 eligible unanalysed SGFs")
+    if album_ids is None:
+        require(len(games) == BATCH_SIZE, "Fewer than 50 eligible unanalysed SGFs")
+    else:
+        require(
+            {g["album_id"] for g in games} == set(album_ids),
+            "Explicit selection includes missing/duplicate/noncanonical games",
+        )
     body = {
-        "format": "kifu-batch-manifest-v1",
+        "format": "kifu-batch-manifest-v2",
+        "selection": "explicit" if album_ids is not None else "latest50",
         "created_at": iso(utcnow()),
         "model_sha256": MODEL_SHA256,
         "requested_visits": VISITS,
@@ -298,6 +345,7 @@ def check_worker_db(db, games, *, admitted=True):
             and job.total_moves == game["total_moves"],
             "Worker job identity mismatch",
         )
+        require(job.analysis_parameters == game_parameters(game), "Worker parameters mismatch")
     if admitted:
         require({j.album_id for j in jobs} == set(expected), "Admission skipped one or more selected games")
 
@@ -314,6 +362,13 @@ def init_workers(manifest, directory):
         if not frozen.exists():
             require(not any(directory.glob("gpu*.sqlite3")), "Unidentified worker databases already exist")
         write_artifact(frozen, manifest)
+        evidence = [
+            g["analysis_parameters"]["provenance"]["evidence"]
+            for g in manifest["games"]
+            if g["analysis_parameters"]["provenance"]["source"] == "verified_evidence"
+        ]
+        if evidence:
+            write_artifact(directory / "evidence.json", evidence)
         for worker, games in enumerate(groups):
             path = directory / f"gpu{worker}.sqlite3"
             existing = path.exists()
@@ -344,6 +399,8 @@ def init_workers(manifest, directory):
                         "--apply",
                         *(str(g["album_id"]) for g in games[start : start + 20]),
                     ]
+                    if evidence:
+                        command += ["--evidence-json", str(directory / "evidence.json")]
                     result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
                     require(result.returncode == 0, f"gpu{worker} admission process failed")
                 with Session(engine) as db:
@@ -364,10 +421,12 @@ def validate_moves(game, moves, *, complete=True):
     from katrain.cron.clients.katago import KataGoClient
 
     parsed = parsed_game(game["sgf_content"])
+    parameters = game_parameters(game)
     maximum = len(parsed.moves) + 1
     require(len(moves) == maximum if complete else len(moves) <= maximum, "Wrong position count")
     for number, row in enumerate(moves):
         require(set(row) == set(MOVE_FIELDS), "Unexpected move fields")
+        require(row["parameter_sha256"] == parameters["parameter_sha256"], "Stored position parameter mismatch")
         require(type(row["move_number"]) is int and row["move_number"] == number, "Noncontiguous positions")
         expected_player, expected_move = parsed.moves[number - 1] if number else (None, None)
         require((row["actual_player"], row["actual_move"]) == (expected_player, expected_move), "SGF position mismatch")
@@ -540,13 +599,14 @@ def export_results(manifest, worker_index, engine):
                     "album_id": game["album_id"],
                     "sgf_sha256": game["sgf_sha256"],
                     "total_moves": game["total_moves"],
+                    "analysis_parameters": job.analysis_parameters,
                     "started_at": start,
                     "completed_at": end,
                     "moves": moves,
                 }
             )
     body = {
-        "format": "kifu-batch-results-v1",
+        "format": "kifu-batch-results-v2",
         "manifest_sha256": manifest["manifest_sha256"],
         "worker_id": f"gpu{worker_index}",
         "model_sha256": MODEL_SHA256,
@@ -566,7 +626,7 @@ def validate_results(manifest, bundles):
     results = {}
     for bundle in bundles:
         require(
-            bundle.get("format") == "kifu-batch-results-v1"
+            bundle.get("format") == "kifu-batch-results-v2"
             and bundle.get("manifest_sha256") == manifest["manifest_sha256"]
             and bundle.get("model_sha256") == MODEL_SHA256
             and bundle.get("requested_visits") == VISITS,
@@ -589,6 +649,7 @@ def validate_results(manifest, bundles):
                 "Result SGF mismatch",
             )
             require(timestamp(result["completed_at"]) >= timestamp(result["started_at"]), "Invalid job timing")
+            require(result.get("analysis_parameters") == game_parameters(game), "Result parameters mismatch")
             validate_moves(game, result["moves"])
             results[game["album_id"]] = result
     return results
@@ -596,6 +657,14 @@ def validate_results(manifest, bundles):
 
 def import_game(sessions, game, result, *, apply=False):
     from katrain.cron.models import KifuAlbumDB as Album, KifuAnalysisJobDB as Job, KifuAnalysisMoveDB as Move
+
+    parameters = game_parameters(game)
+    require(result.get("analysis_parameters") == parameters, "Result parameters mismatch")
+    require(
+        all(result.get(k) == game[k] for k in ("album_id", "sgf_sha256", "total_moves")), "Result identity mismatch"
+    )
+    require(timestamp(result["completed_at"]) >= timestamp(result["started_at"]), "Invalid job timing")
+    validate_moves(game, result["moves"])
 
     # Each call owns its connection/transaction. Lock album before checking identity
     # so concurrent catalog edits cannot change the canonical SGF during import.
@@ -614,6 +683,10 @@ def import_game(sessions, game, result, *, apply=False):
         job = (query.with_for_update() if apply else query).first()
         existing = []
         if job:
+            require(
+                job.analysis_parameters == parameters,
+                "Existing job parameters mismatch; back up and reset before import",
+            )
             require(job.total_moves == game["total_moves"], "Existing job move count mismatch")
             existing = [move_payload(row) for row in db.query(Move).filter_by(job_id=job.id).order_by(Move.move_number)]
             require(job.analyzed_moves == max(0, len(existing) - 1), "Existing progress is inconsistent")
@@ -624,7 +697,13 @@ def import_game(sessions, game, result, *, apply=False):
         action = "complete_partial" if job else "insert"
         if apply:
             if job is None:
-                job = Job(**identity, total_moves=game["total_moves"], analyzed_moves=0, status="pending")
+                job = Job(
+                    **identity,
+                    analysis_parameters=parameters,
+                    total_moves=game["total_moves"],
+                    analyzed_moves=0,
+                    status="pending",
+                )
                 db.add(job)
                 db.flush()
             db.add_all(Move(job_id=job.id, **row) for row in result["moves"][len(existing) :])
@@ -664,6 +743,8 @@ def main(argv=None):
     commands = parser.add_subparsers(dest="command", required=True)
     export = commands.add_parser("export-manifest", help="Read-only production snapshot; freeze exactly 50 games")
     export.add_argument("--output", required=True)
+    export.add_argument("--album-ids", type=int, nargs="+", help="Explicit 1–60 canonical games, including reanalysis")
+    export.add_argument("--evidence-json", help="Reviewed exact-SGF evidence assertions (JSON list)")
     initialize = commands.add_parser(
         "init-workers", help="Create/admit two isolated SQLite workers; never contact KataGo"
     )
@@ -687,9 +768,11 @@ def main(argv=None):
             engine = production_engine()
             try:
                 if args.command == "export-manifest":
-                    manifest = export_manifest(engine)
+                    from scripts.backfill_kifu_analysis import load_evidence
+
+                    manifest = export_manifest(engine, args.album_ids, load_evidence(args.evidence_json))
                     write_artifact(args.output, manifest)
-                    print(json.dumps({"manifest_sha256": manifest["manifest_sha256"], "games": BATCH_SIZE}))
+                    print(json.dumps({"manifest_sha256": manifest["manifest_sha256"], "games": len(manifest["games"])}))
                 else:
                     outcomes = import_results(
                         engine, read_artifact(args.manifest), [read_artifact(p) for p in args.results], apply=args.apply

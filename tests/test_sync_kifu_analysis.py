@@ -11,7 +11,7 @@ from tests.test_kifu_batch_transfer import database, game, put_catalog, result_f
 
 def reports(games):
     body = {
-        "format": "kifu-report-sync-v1",
+        "format": "kifu-report-sync-v2",
         "model_sha256": batch.MODEL_SHA256,
         "requested_visits": batch.VISITS,
         "games": [{**g, **result_for(g)} for g in games],

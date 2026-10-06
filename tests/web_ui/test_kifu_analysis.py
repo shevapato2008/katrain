@@ -13,9 +13,10 @@ from katrain.web.core.db import Base as WebBase
 from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob, KifuAnalysisMove
 from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256, get_kifu_analysis
 from katrain.web.core.repository import RemoteServiceUnavailableError
+from katrain.cron.kifu_parameters import resolve_parameters
 
 
-SGF = "(;GM[1]SZ[19]KM[7.5]PB[Black]PW[White];B[pd])"
+SGF = "(;GM[1]SZ[19]RU[Chinese]KM[7.5]PB[Black]PW[White];B[pd])"
 
 
 def _db():
@@ -31,14 +32,31 @@ async def test_kifu_analysis_separate_store_duplicate_and_obsolete_sgf():
         db.add(KifuAlbum(id=1, player_black="Black", player_white="White", source_path="a.sgf", sgf_content=SGF, move_count=1))
         db.add(KifuAlbum(id=2, player_black="Black", player_white="White", source_path="b.sgf", sgf_content=SGF, duplicate_of_id=1, move_count=1))
         db.flush()
-        job = KifuAnalysisJob(album_id=1, sgf_sha256=hashlib.sha256(SGF.encode()).hexdigest(),
-                              model_sha256=KIFU_MODEL_SHA256, requested_visits=2000,
-                              status="completed", total_moves=1, analyzed_moves=1)
+        job = KifuAnalysisJob(
+            album_id=1,
+            sgf_sha256=hashlib.sha256(SGF.encode()).hexdigest(),
+            model_sha256=KIFU_MODEL_SHA256,
+            requested_visits=2000,
+            status="completed",
+            total_moves=1,
+            analyzed_moves=1,
+            analysis_parameters=resolve_parameters(SGF),
+        )
         db.add(job)
         db.flush()
         for number in (0, 1):
-            db.add(KifuAnalysisMove(job_id=job.id, move_number=number, root_visits=2003,
-                                    winrate=0.5, score_lead=0, top_moves=[], ownership=[]))
+            db.add(
+                KifuAnalysisMove(
+                    job_id=job.id,
+                    move_number=number,
+                    root_visits=2003,
+                    parameter_sha256=resolve_parameters(SGF)["parameter_sha256"],
+                    winrate=0.5,
+                    score_lead=0,
+                    top_moves=[],
+                    ownership=[],
+                )
+            )
         db.commit()
         db.add(KifuAnalysisJob(album_id=1, sgf_sha256=hashlib.sha256(SGF.encode()).hexdigest(),
                                model_sha256=KIFU_MODEL_SHA256, requested_visits=2000,
@@ -89,9 +107,18 @@ async def test_kifu_worker_commits_only_depth_verified_positions():
     sessions = sessionmaker(bind=engine)
     with sessions() as db:
         db.add(KifuAlbumDB(id=1, sgf_content=SGF))
-        db.add(KifuAnalysisJobDB(album_id=1, sgf_sha256=hashlib.sha256(SGF.encode()).hexdigest(),
-                                 model_sha256=KIFU_MODEL_SHA256, requested_visits=2000,
-                                 status="pending", total_moves=1, analyzed_moves=0))
+        db.add(
+            KifuAnalysisJobDB(
+                album_id=1,
+                sgf_sha256=hashlib.sha256(SGF.encode()).hexdigest(),
+                model_sha256=KIFU_MODEL_SHA256,
+                requested_visits=2000,
+                status="pending",
+                total_moves=1,
+                analyzed_moves=0,
+                analysis_parameters=resolve_parameters(SGF),
+            )
+        )
         db.commit()
 
     def response(request_id, turn, visits):

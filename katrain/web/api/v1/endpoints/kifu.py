@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
+from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
 
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob, KifuAnalysisMove
@@ -100,7 +101,12 @@ class KifuAlbumListResponse(BaseModel):
 
 @router.get("/albums/{album_id}/analysis")
 async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depends(get_db)):
-    """Read only the current pinned analysis; duplicate SGFs share their canonical job."""
+    """Read the current pinned analysis; exact duplicates share their canonical job.
+
+    analysis_parameters is the verified stored engine-input snapshot, never the
+    album's raw metadata. Invalid/missing proof returns rules_unresolved, an
+    actionable parameter_error and no moves. Album/SGF reading remains available.
+    """
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
         return await _from_dispatcher(
@@ -130,21 +136,44 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
         )
         .first()
     )
+    parameters = None
+    parameter_error = None
+    try:
+        if job is not None:
+            parameters = validate_parameters(canonical.sgf_content, job.analysis_parameters)
+        else:
+            # Can explain missing metadata before admission, but only a stored
+            # engine-input snapshot may be presented as report parameters.
+            resolve_parameters(canonical.sgf_content)
+    except ParameterError as exc:
+        parameter_error = exc.as_dict()
     moves = (
         []
-        if job is None
+        if job is None or parameter_error
         else (
             db.query(KifuAnalysisMove)
-            .filter(KifuAnalysisMove.job_id == job.id, KifuAnalysisMove.root_visits >= KIFU_VISITS)
+            .filter(KifuAnalysisMove.job_id == job.id)
             .order_by(KifuAnalysisMove.move_number)
             .all()
         )
     )
+    if parameters and any(row.parameter_sha256 != parameters["parameter_sha256"] for row in moves):
+        parameter_error = {
+            "code": "parameter_mismatch",
+            "message": "Stored positions use stale or unverified parameters",
+        }
+        parameters = None
+        moves = []
     complete = bool(
-        job and len(moves) == job.total_moves + 1 and all(row.move_number == number for number, row in enumerate(moves))
+        job
+        and len(moves) == job.total_moves + 1
+        and all(row.move_number == number and row.root_visits >= KIFU_VISITS for number, row in enumerate(moves))
     )
     status = job.status if job else "unavailable"
     error_message = job.error_message if job else None
+    if parameter_error:
+        status = "rules_unresolved"
+        error_message = parameter_error["message"]
     if status == "completed" and not complete:
         status = "failed"
         error_message = "Stored analysis is incomplete"
@@ -174,10 +203,13 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
         "model_sha256": KIFU_MODEL_SHA256,
         "requested_visits": KIFU_VISITS,
         "status": status,
+        "analysis_parameters": parameters,
+        "parameters_verified": parameters is not None,
+        "parameter_error": parameter_error,
         "total_moves": job.total_moves if job else canonical.move_count,
-        "analyzed_moves": job.analyzed_moves if job else 0,
+        "analyzed_moves": job.analyzed_moves if job and not parameter_error else 0,
         "error_message": error_message,
-        "moves": [{field: getattr(row, field) for field in fields} for row in moves],
+        "moves": [{field: getattr(row, field) for field in fields} for row in moves if row.root_visits >= KIFU_VISITS],
     }
 
 

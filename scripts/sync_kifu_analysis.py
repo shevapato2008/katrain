@@ -34,7 +34,9 @@ def validate_games(games):
 
 
 def validate_reports(artifact):
-    batch.require(artifact.get("format") == "kifu-report-sync-v1", "Unsupported report sync format")
+    batch.require(
+        artifact.get("format") == "kifu-report-sync-v2", "Unsupported report sync format; re-export verified parameters"
+    )
     batch.require(
         artifact.get("model_sha256") == batch.MODEL_SHA256 and artifact.get("requested_visits") == batch.VISITS,
         "Report model/visits mismatch",
@@ -75,6 +77,7 @@ def export_reports(engine, album_ids):
                     "sgf_content": album.sgf_content,
                     "sgf_sha256": sgf_sha256,
                     "total_moves": job.total_moves,
+                    "analysis_parameters": job.analysis_parameters,
                     "started_at": batch.iso(job.started_at),
                     "completed_at": batch.iso(job.completed_at),
                     "moves": [
@@ -85,7 +88,7 @@ def export_reports(engine, album_ids):
             )
     validate_games(games)
     body = {
-        "format": "kifu-report-sync-v1",
+        "format": "kifu-report-sync-v2",
         "model_sha256": batch.MODEL_SHA256,
         "requested_visits": batch.VISITS,
         "games": games,

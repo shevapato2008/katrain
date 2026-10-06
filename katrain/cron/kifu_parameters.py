@@ -42,11 +42,13 @@ def _komi(value):
         if isinstance(value, bool) or not isinstance(value, (str, int, float)):
             raise ValueError()
         number = float(value)
-        if not math.isfinite(number):
+        if not math.isfinite(number) or not -400 <= number <= 400 or not (number * 2).is_integer():
             raise ValueError()
         return 0.0 if number == 0 else number
     except (ValueError, TypeError, OverflowError):
-        raise ParameterError("invalid_komi", "An explicit finite komi is required") from None
+        raise ParameterError(
+            "invalid_komi", "An explicit finite komi from -400 to 400 in increments of 0.5 is required"
+        ) from None
 
 
 def _validate_evidence(evidence, sgf_sha256):

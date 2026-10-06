@@ -72,6 +72,26 @@ def test_supported_explicit_pair_and_zero_komi_preserve_raw_metadata():
     assert sgf_module.parse_game("(;SZ[19];B[pd])").rules == "chinese"
 
 
+@pytest.mark.parametrize("source", ["sgf", "evidence"])
+@pytest.mark.parametrize("komi", [-400, -399.5, 0, 6.5, 7.5, 399.5, 400])
+def test_komi_accepts_engine_boundaries_and_half_integer_values(source, komi):
+    sgf = f"(;RU[Japanese]{f'KM[{komi}]' if source == 'sgf' else ''};B[pd])"
+    params = resolve(sgf, evidence(sgf, komi=komi) if source == "evidence" else None)
+    assert params["komi"] == komi
+
+
+@pytest.mark.parametrize("source", ["sgf", "evidence"])
+@pytest.mark.parametrize("komi", [-400.5, 400.5, -0.25, 6.25, float("nan"), float("inf"), -float("inf")])
+def test_komi_rejects_out_of_range_fractional_and_nonfinite_values(source, komi):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = f"(;RU[Japanese]{f'KM[{komi}]' if source == 'sgf' else ''};B[pd])"
+    with pytest.raises(ParameterError) as error:
+        resolve(sgf, evidence(sgf, komi=komi) if source == "evidence" else None)
+    assert error.value.code == "invalid_komi"
+    assert "-400 to 400" in error.value.message and "increments of 0.5" in error.value.message
+
+
 def test_exact_evidence_can_fill_missing_rules_but_cannot_hide_conflict():
     from katrain.cron.kifu_parameters import ParameterError, validate_parameters
 

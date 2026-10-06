@@ -2434,7 +2434,7 @@ button.kiosk-row.figrow { flex: none; }
 .report-analysis-modal .selline { flex: none; height: auto; font-size: 12px; line-height: 1.5; }
 .report-analysis-modal__body:has(.gradebody) { overflow: hidden; }
 .report-analysis-modal__details { margin: 0; padding: 0 16px 16px; }
-.report-analysis-modal__details > div { display: grid; grid-template-columns: 60px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); }
+.report-analysis-modal__details > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); }
 .report-analysis-modal__details dt { color: var(--dim); }
 .report-analysis-modal__details dd { margin: 0; overflow-wrap: anywhere; }
 .report-analysis-rail .kiosk-pagebar { font-size: 16px; }

@@ -19,43 +19,45 @@
 
 Files: `docs/design/analysis-report-v2.html`, `report-v2-preview.css`, `report-v2-preview.js`, review notes and screenshots.
 
-- [ ] Preserve existing theme fonts, materials, board/sidebar/rail geometry, labels and chart statistics.
-- [ ] Four equal action columns; board display row uses the same width/height, three buttons Galaxy, no 3D kiosk.
-- [ ] Top five candidates; append actual move as sixth row when outside five. Use actual candidate metrics if available, otherwise honest em dashes. Remove the separate actual-move footer.
-- [ ] Vertical left subtab/filter groups, responsive plots filling remaining width and height, smaller independent chart labels.
-- [ ] Help beside chart tabs: delayed hover and click; touch click; outside/Escape close; full explanations/count limitations retained in popover.
-- [ ] Inspect five tabs plus match distribution, actual-sixth row, help and detail popup at 2048x1080, 1440x900 and kiosk1024x600. No whole-rail scroll.
-- [ ] Run ui-ux-pro-max after initial Claude Design HTML; fix concrete contrast/interaction findings.
-- [ ] Independent gpt-6-astra max visually reviews rendered screenshots, revises until approved. Record approval.
+- [x] Preserve existing theme fonts, materials, board/sidebar/rail geometry, labels and chart statistics.
+- [x] Four equal action columns; board display row uses the same width/height, three buttons Galaxy, no 3D kiosk.
+- [x] Top five candidates; append actual move as sixth row when outside five. Use actual candidate metrics if available, otherwise honest em dashes. Remove the separate actual-move footer.
+- [x] Vertical left subtab/filter groups, responsive plots filling remaining width and height, smaller independent chart labels.
+- [x] Help beside chart tabs: delayed hover and click; touch click; outside/Escape close; full explanations/count limitations retained in popover.
+- [x] Inspect five tabs plus match distribution, actual-sixth row, help and detail popup at 2048x1080, 1440x900 and kiosk1024x600. No whole-rail scroll.
+- [x] Run ui-ux-pro-max after initial Claude Design HTML; fix concrete contrast/interaction findings.
+- [x] Independent gpt-6-astra max visually reviews rendered screenshots, revises until approved. Record approval.
 
 ## Task 2 — Verify rules and make parameter admission honest
 
 Files: `katrain/cron/sgf.py`, `katrain/cron/jobs/kifu_analyze.py`, `katrain/web/kifu/provenance.py`, `identity.py`, relevant DB models/migration, `scripts/backfill_kifu_analysis.py`, `scripts/kifu_batch_transfer.py`, `scripts/sync_kifu_analysis.py`, `katrain/web/api/v1/endpoints/kifu.py`, focused pytest files.
 
-- [ ] Audit already analyzed professional albums, raw RU/KM, duplicate records, current effective parameters and source evidence. Do not infer Japan/Korea from6.5 or China from7.5.
-- [ ] Define minimal resolver: supported explicit SGF rule + finite explicit komi, or verified exact-game/event policy with recorded evidence. Unknown/unsupported/conflicting metadata is unresolved, not an implicit Chinese default.
-- [ ] Preserve raw metadata; store effective rules/komi and verification provenance with jobs. Workers and import/export validate the same immutable parameters; changing parameters cannot reuse earlier position rows.
-- [ ] Existing unverified results are not advertised as verified reports. Admission/execution rejects unresolved parameters with actionable status; personal/live explicit choices keep existing behavior.
-- [ ] Write focused failing regression tests for missingRU, unsupportedRU, explicit valid pairs, zero komi, evidence override conflicts, worker guard and transfer parameter mismatch; implement and run targeted tests.
-- [ ] Verify formal competition evidence when possible. If actual parameters cannot be established, keep that game unresolved and report the limitation; an agent decision is not a substitute for evidence.
+- [x] Audit already analyzed professional albums, raw RU/KM, duplicate records, current effective parameters and source evidence. Do not infer Japan/Korea from6.5 or China from7.5.
+- [x] Define minimal resolver: supported explicit SGF rule + finite explicit komi, or verified exact-game/event policy with recorded evidence. Unknown/unsupported/conflicting metadata is unresolved, not an implicit Chinese default.
+- [x] Preserve raw metadata; store effective rules/komi and verification provenance with jobs. Workers and import/export validate the same immutable parameters; changing parameters cannot reuse earlier position rows.
+- [x] Existing unverified results are not advertised as verified reports. Admission/execution rejects unresolved parameters with actionable status; personal/live explicit choices keep existing behavior.
+- [x] Write focused failing regression tests for missingRU, unsupportedRU, explicit valid pairs, zero komi, evidence override conflicts, worker guard and transfer parameter mismatch; implement and run targeted tests.
+- [x] Verify formal competition evidence when possible. If actual parameters cannot be established, keep that game unresolved and report the limitation; an agent decision is not a substitute for evidence.
 
 ## Task 3 — Product presentation and sound
 
 Files: `galaxy/components/report/ReportAnalysisLayout.tsx`, `ReportMetaPanel.tsx`, `galaxy/components/board/BoardDisplayControls.tsx`, `components/live/AiAnalysis.tsx`, `TrendChart.tsx`, `kiosk/components/report/ReportAnalysisRail.tsx`, `MoveGradePanel.tsx`, `kiosk-shell/go-screens.css`, report detail pages/hooks, localization.
 
-- [ ] After visual approval, implement artifact geometry using existing components; share icons/labels/dimensions with game/live/report.
-- [ ] Replace forced18px SVG text override with appropriate12–14px chart text; measure chart area across all tabs.
-- [ ] Render actual sixth row and no redundant footer without inventing winrate/score/prior.
-- [ ] Restore sound through existing audio utility after tracing regression. Do not play on initial asynchronous report load, same-position updates, missing/pass coordinates, or theme/filter changes; respect sound preference/browser unlocking. Preserve existing try/replay behavior.
-- [ ] Detail dialog explicitly consumes current theme font; known/unknown rule labels agree with backend verification status.
-- [ ] Focused frontend behavior regressions, typecheck and standard/kiosk2D builds; kiosk build must exclude3D. Runtime sound test after user gesture and screenshot all affected charts.
+- [x] After visual approval, implement artifact geometry using existing components; share icons/labels/dimensions with game/live/report.
+- [x] Replace forced18px SVG text override with appropriate12–14px chart text; measure chart area across all tabs.
+- [x] Render actual sixth row and no redundant footer without inventing winrate/score/prior.
+- [x] Restore sound through existing audio utility after tracing regression. Do not play on initial asynchronous report load, same-position updates, missing/pass coordinates, or theme/filter changes; respect sound preference/browser unlocking. Preserve existing try/replay behavior.
+- [x] Detail dialog explicitly consumes current theme font; known/unknown rule labels agree with backend verification status.
+- [x] Focused frontend behavior regressions, typecheck and standard/kiosk2D builds; kiosk build must exclude3D. Runtime sound test after user gesture and screenshot all affected charts.
 
 ## Task 4 — Review and deployment
 
-- [ ] Independent gpt-6-astra code review focuses actual-move semantics, audio triggers, rule provenance, worker/transfer integrity and deployment risks. Fix concrete defects.
-- [ ] Preserve deployed concurrent title/search patches and environment settings. Do not restart Postgres/MinIO/KataGo or unrelated services.
-- [ ] Deploy web/cron changed code and frontend assets to home first, verify API and visual runtime including kiosk. Deploy same reviewed changes to ucloud and visually verify public URLs.
-- [ ] Backup affected existing job/move rows before marking for reanalysis; do not overwrite rawSGF or unverified source parameters.
-- [ ] On home use isolated workers on both3090, correct pinned b11c768 model and2000visits. No production GPU batch work. Rerun existing reports whose rules/komi are verified; keep unresolved games withheld with reasons.
-- [ ] Track per-game timing/completion, verify contiguous root+move positions and >=2000rootvisits, effective parameter/model metadata. Sync to ucloud transactionally with parameter validation.
-- [ ] Verify report/list availability and same metrics on both servers; document completed/unresolved counts, timing, source evidence, deployment image/asset hashes and screenshots. Remove all temporary product fixtures.
+- [x] Independent gpt-6-astra code review focuses actual-move semantics, audio triggers, rule provenance, worker/transfer integrity and deployment risks. Fix concrete defects.
+- [x] Preserve deployed concurrent title/search patches and environment settings. Do not restart Postgres/MinIO/KataGo or unrelated services.
+- [x] Deploy web/cron changed code and frontend assets to home first, verify API and visual runtime including kiosk. Deploy same reviewed changes to ucloud and visually verify public URLs.
+- [x] Backup affected existing job/move rows before marking for reanalysis; do not overwrite rawSGF or unverified source parameters.
+- [x] On home use isolated workers on both3090, correct pinned b11c768 model and2000visits. No production GPU batch work. Rerun existing reports whose rules/komi are verified; keep unresolved games withheld with reasons.
+- [x] Track per-game timing/completion, verify contiguous root+move positions and >=2000rootvisits, effective parameter/model metadata. Sync to ucloud transactionally with parameter validation.
+- [x] Verify report/list availability and same metrics on both servers; document completed/unresolved counts, timing, source evidence, deployment image/asset hashes and screenshots. Remove all temporary product fixtures.
+
+Delivery: `docs/operations/report-rules-and-ui-release-20261007.md`; 53 verified reports / 10,966 positions synchronized to both databases, 11 genuinely unresolved games withheld. Full source/home/prod result checksums match. Per-game measurements: `docs/operations/kifu-verified-53-timings-20261007.csv`.

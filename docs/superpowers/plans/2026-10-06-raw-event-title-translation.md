@@ -158,3 +158,12 @@ Reuse the same reviewed/deployed `sgf_chinese` profile. Actual post149 scope150 
 - [x] Independent actual full-scope source/collision capture, root literal matrix review and unsigned frozen research750.
 - [x] Exact owner review and TEST→PROD owner161 writes after CX/CY/CZ completed; bind750 names to actual verified afterimages, root exact review and name162 writes.
 - [x] Each environment16 actual HTTP checks including48-member Korean literal union; two readers agree,1,201 original albums/ranks/SGFs/FKs unchanged. Raw display14,057 and complete display61,427 (35.5018%). Actual receipts and source/hash provenance archived. No runtime change or broad retests.
+
+
+## Continuation 11 — next150c data-only literal batch
+
+Actual150 raw/959 games/750 names, raw-set SHA `61b35cb04f7394019b2557f63ed0d12da20b4d36017bdfd9d4421288c104c009`, frozen manifest `8bc73067196e692f218870008b8e5662f6ee4480c7e22d0c3ca9395d841345be`. Root read77 cores (70 reused and7 new). KBA actual direct report supports mixed veteran-and-women wording for Daeju; the full URL/excerpt/time/SHA is in25 related research records, without claiming exact GN year or event identity. Six prior literal name matches across two old owners are legal member unions; exact old10+10 public NULL scopes are captured and hashed. No entity collision or hidden/duplicate row inclusion.
+
+- [x] Independent source, actual complete scope/collision captures and root literal matrix review; preserve frozen source and explicit KBA semantic support.
+- [ ] TEST→PROD owner review/writes, actual afterimage binding750 and root-reviewed name writes.
+- [ ] Representative real HTTP including both old/new name unions and English fallback, actual counts/HTML/archives. No runtime/schema/product-code changes.

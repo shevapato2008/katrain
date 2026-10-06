@@ -165,5 +165,15 @@ Reuse the same reviewed/deployed `sgf_chinese` profile. Actual post149 scope150 
 Actual150 raw/959 games/750 names, raw-set SHA `61b35cb04f7394019b2557f63ed0d12da20b4d36017bdfd9d4421288c104c009`, frozen manifest `8bc73067196e692f218870008b8e5662f6ee4480c7e22d0c3ca9395d841345be`. Root read77 cores (70 reused and7 new). KBA actual direct report supports mixed veteran-and-women wording for Daeju; the full URL/excerpt/time/SHA is in25 related research records, without claiming exact GN year or event identity. Six prior literal name matches across two old owners are legal member unions; exact old10+10 public NULL scopes are captured and hashed. No entity collision or hidden/duplicate row inclusion.
 
 - [x] Independent source, actual complete scope/collision captures and root literal matrix review; preserve frozen source and explicit KBA semantic support.
-- [ ] TEST→PROD owner review/writes, actual afterimage binding750 and root-reviewed name writes.
-- [ ] Representative real HTTP including both old/new name unions and English fallback, actual counts/HTML/archives. No runtime/schema/product-code changes.
+- [x] TEST→PROD owner165 and name166 actual writes/verify,750 bound to actual approved afterimages and root-reviewed.
+- [x] Each environment16 actual HTTP cases including both prior-literal unions and English fallback passed;959 original albums/SGFs/ranks/FKs unchanged, both readers agree. Raw display15,016 and complete display62,289 (36.00%). Source/KBA HTML and actual receipts archived; no runtime/schema/product-code changes.
+
+
+## Continuation 12 — next150d data-only literal batch
+
+Actual 150 raw /1,014 games /750 names /120 cores. Frozen source manifest `162556e566a3fdd69c001c03a07032847ca528f796e304b6218be231f0341b85`, raw-set `dd71b8e41e3c52d4d6f8a885489d1aabc1dca7f3f2aaa43de7819c08c97f0db4`. Root reads all120 literal core translations and lossless years/rounds matrix. Both real whole public NULL scopes and all750 display collision keys are captured; zero persisted-name/entity-alias matches. Exclude truncated team/sponsor titles and known identity collisions instead of inventing expansions. Five actual KBA semantic support records concern veteran-and-women wording, not raw year/event identity.
+
+- [x] Independent actual source/full-scope captures and root bounded literal review; same deployed sgf_chinese profile, no runtime/schema changes.
+- [ ] Complete already-captured player batches, then exact TEST→PROD owner approval/apply/verify; preserve no-FK inventory.
+- [ ] Independent producer binds750 pending names to actual approved owner afterimages; root exact review, TEST→PROD writes and two-reader verification.
+- [ ] Sixteen representative HTTP cases per environment including English fallback, actual stats/HTML/source/receipts archive.

@@ -174,6 +174,28 @@ Actual150 raw/959 games/750 names, raw-set SHA `61b35cb04f7394019b2557f63ed0d12d
 Actual 150 raw /1,014 games /750 names /120 cores. Frozen source manifest `162556e566a3fdd69c001c03a07032847ca528f796e304b6218be231f0341b85`, raw-set `dd71b8e41e3c52d4d6f8a885489d1aabc1dca7f3f2aaa43de7819c08c97f0db4`. Root reads all120 literal core translations and lossless years/rounds matrix. Both real whole public NULL scopes and all750 display collision keys are captured; zero persisted-name/entity-alias matches. Exclude truncated team/sponsor titles and known identity collisions instead of inventing expansions. Five actual KBA semantic support records concern veteran-and-women wording, not raw year/event identity.
 
 - [x] Independent actual source/full-scope captures and root bounded literal review; same deployed sgf_chinese profile, no runtime/schema changes.
-- [ ] Complete already-captured player batches, then exact TEST→PROD owner approval/apply/verify; preserve no-FK inventory.
-- [ ] Independent producer binds750 pending names to actual approved owner afterimages; root exact review, TEST→PROD writes and two-reader verification.
-- [ ] Sixteen representative HTTP cases per environment including English fallback, actual stats/HTML/source/receipts archive.
+- [x] Complete captured player batches through DC170, then exact TEST→PROD owner171 approval/apply/verify; preserve no-FK inventory.
+- [x] Independent producer binds750 pending names to actual approved owner afterimages; root exact review, TEST→PROD name172 writes and two-reader verification.
+- [x] Sixteen actual HTTP cases per environment including English fallback, actual stats/HTML/source/receipts archive. Raw display16,030; complete display63,785 (36.8646%).
+
+
+## Continuation 13 — next150e data-only literal batch
+
+Actual150 raw /822 games /750 names /112 literal cores. Frozen manifest `bc8b0074fa093844875baf8184c1a470fc1865f96012d223dcf95ccfbe8075a6`, raw-set `78051499d73b22b082d019775eeacb29c6c949087bf123791cb0ec4cea7454fc`. Root reads all112 core translations; Korean Yumeijian sponsor uses recorded transliteration, original Chuanyi wording is preserved. No external authority webpage capture or verified official event-name claim. Four prior literal display matches are legal exact unions: owner62363 EN and owner62364 JP/KO/EN, each old9-member public NULL scope captured and hashed.
+
+- [x] Independent actual post171 scope and post172 collision capture, root bounded literal matrix review; same deployed sgf_chinese profile.
+- [x] DI173/DH174 completed; exact TEST→PROD owner175 approval/apply/verify, all822 original albums/SGFs/ranks/FKs unchanged.
+- [x] Actual independent source producer binds750 pending names to approved afterimages; root exact review and TEST→PROD name176 apply/verify, two readers agree.
+- [x] Each environment16 actual HTTP cases including both prior-literal unions/English fallback pass. Actual raw display16,852 games; complete display64,812/173,025 (37.4582%). Stats/HTML and immutable source/receipts archived.
+
+Discovery must use whole-library grouped frequency, then hydrate only selected≤150 complete parser/SGF scopes. A previous1,500-row discovery window cannot establish remaining inventory. The one auxiliary5_plus double accumulation has been fixed; both readonly survey sums match actual grouped rows (48,986raw/152,357 occurrences) and independent5+ discovery sums (6,473raw/89,056 occurrences). These are source-owner classifications, not extra completed/display counts or verified foreign-language identities. No new product parser or language-gate expansion in this slice.
+
+
+## Continuation 14 — next150f data-only literal batch
+
+Actual150 raw /750 games /750 names /122 cores; frozen source manifest `c27134520c884b65cf67e952425fdc7972d9dba9871fd881beb4bb671953a836`, raw-set `e9bdc32bd41f95b70b365e4e11ea8dd3e84cbed324c5f0eedcc87d24b4daa410`. Root reads literal core matrix and actual China Sports authority HTML distinguishing 阿含本选决赛 from 本赛; webpage URL/excerpt/time/SHA are semantic support, not a claim about an undated raw SGF identity/year. Existing sgf_chinese runtime, no code/schema changes. Post176 actual750-key collisions are zero in both databases.
+
+- [x] Independent frozen source, whole public NULL first-GN/EV-empty source/hash scopes and actual zero-collision capture; root review of122 cores and five supplementary semantic research rows.
+- [ ] Finish captured DJ/DK player packages, then root exact owner plans and TEST→PROD owner apply/verify.
+- [ ] Actual producer binds750 names to verified afterimages; root bounded review, TEST→PROD names and two readers verify unchanged750 albums.
+- [ ] Representative16 actual HTTP cases per environment, actual stats/HTML/source/supplementary HTML/receipts archive.

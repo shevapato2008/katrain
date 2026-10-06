@@ -56,7 +56,7 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 
 ### Task 4: 必要部署与真实验收
 
-- [ ] 对现有TEST镜像保留endpoint、identity、缓存及配置，仅更新必要纯验证器／importer代码；核对运行文件SHA与健康。读取并遵循现有server-deploy流程，不无故重建无关服务。
+- [x] 对现有TEST镜像保留endpoint、identity、缓存及配置，仅更新必要纯验证器／importer代码；核对运行文件SHA与健康。读取并遵循现有server-deploy流程，不无故重建无关服务。
 - [ ] TEST准确owner dry-run→apply→verify；由实际独立producer捕获批准afterimage，绑定pending五語names；root签审后names dry-run→apply→verify。
 - [ ] 确认两种reader对整个实际scope一致、原SGF／段位／FK／identity零改动；代表性的品牌字母、期／届两种分段实际五語显示／精确搜索及英语回退。一次旧profile代表性真实查询证明旧数据仍可读取；无需全状态重拍。
 - [ ] TEST通过后发布相同审核代码到PROD，走同样精确owner／names流程与实际验收；不只凭测试成功宣布上线。
@@ -70,3 +70,5 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 ## 实际实现与审核记录
 
 2026-10-06：Sol实际RED 10 failed / 113 passed；GREEN 127 passed in 10.22s。独立Astra第1轮代码审核APPROVE，无must-fix，并独立运行127 passed in 10.31s。审核记录见[独立代码审核](../../resource/kifu-mixed-title-code-review-2026-10-06.md)。root核对四文件diff SHA与审核记录一致；当前提交仅完成Chunk1，新profile尚未部署、候选未计为完成。
+
+2026-10-06实际部署准备：两库importer已构建并检查显式profile导入；TEST→PROD web仅COPY共享pure一文件，运行SHA `616796e1b51b9f5afed877a3365d24e5c53d1a48abcc4100254cd41f2dafd70d`，保留实际15/16层Compose与原env路径。两端健康且既有g profile各16 HTTP通过。PROD使用原有sudo -n读取受保护env路径，未打印/改动env。新profile尚无新数据获批或激活，因此不计五语覆盖；混合来源、TEST→PROD owner/name及新数据HTTP仍待后续。报表两reader的内嵌pure同步到相同已审且已部署字节，避免新profile未来漏计。

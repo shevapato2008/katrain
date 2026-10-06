@@ -30,6 +30,7 @@ export function useKifuAnalysis(albumId: number | null) {
   const error = failedId === albumId;
   const analysisByMove = useMemo((): Record<number, MoveAnalysis> => {
     const map: Record<number, MoveAnalysis> = {};
+    if (!detail?.parameters_verified || !detail.analysis_parameters?.verified || detail.status === 'rules_unresolved') return map;
     for (const row of detail?.moves ?? []) {
       if (row.winrate == null || row.score_lead == null) continue;
       const deltaScore = row.delta_score ?? 0;

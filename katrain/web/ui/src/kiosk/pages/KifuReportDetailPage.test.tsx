@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { KifuAlbumDetail } from '../../types/kifu';
+import type { KifuAlbumDetail, VerifiedAnalysisParameters } from '../../types/kifu';
 import type { MoveAnalysis } from '../../types/live';
 import KifuReportDetailPage from './KifuReportDetailPage';
 
@@ -15,8 +15,10 @@ const analysis: MoveAnalysis = {
   is_brilliant: false, is_mistake: false, is_questionable: false, delta_score: 0, delta_winrate: 0,
 };
 let analysisFailed = false;
+let analysisParameters: VerifiedAnalysisParameters | null = null;
 vi.mock('../../features/kifu/useKifuAnalysis', () => ({ useKifuAnalysis: () => ({
-  detail: { status: 'running', analyzed_moves: 0, total_moves: 2, requested_visits: 1500, moves: [] },
+  detail: { status: 'running', analyzed_moves: 0, total_moves: 2, requested_visits: 1500, moves: [],
+    analysis_parameters: analysisParameters, parameters_verified: analysisParameters !== null },
   analysisByMove: { 0: analysis }, error: analysisFailed,
 }) }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: (props: Record<string, unknown>) => {
@@ -37,12 +39,13 @@ function renderPage() {
 async function loaded() { await screen.findByTestId('kifu-report-ai'); }
 
 describe('职业报告固定右栏', () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisFailed = false; });
+  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisFailed = false; analysisParameters = null; });
 
   it('让子局按SGF白方视角显示五行，PSV分母包含全部十条候选', async () => {
     renderPage(); await loaded();
     const rows = screen.getAllByTestId('ai-recommend-row');
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(6);
+    expect(rows[5]).toHaveTextContent('实战 · D4');
     expect(rows[0]).toHaveTextContent('10%');
     expect(rows[0]).toHaveTextContent('−4.1');
     expect(rows[0]).toHaveTextContent('36.0%');
@@ -90,7 +93,6 @@ describe('职业报告固定右栏', () => {
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog');
     for (const value of ['赛事甲', '2026-10-01', 'W+R', '9p', '8p', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
-    fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }));
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/kifu/7/replay');
   });
@@ -107,5 +109,22 @@ describe('职业报告固定右栏', () => {
     expect(screen.getByTestId('kifu-report-detail-shell').querySelector('.report-playback button[aria-label="播放"]')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
     expect(mocks.navigate).toHaveBeenCalledWith(0);
+  });
+
+  it('已核验参数覆盖原始规则，详情分别保留 SGF 值和零贴目', async () => {
+    analysisParameters = { version: 1, verified: true, rules: 'japanese', komi: 0,
+      sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
+    mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
+    renderPage(); await loaded();
+    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent('日本规则 · 分析贴目 0');
+    expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
+    expect([...screen.getByTestId('kifu-report-actions').querySelectorAll('button')].map(button => button.textContent)).toEqual(['试下', '领地', '支招', '分析']);
+    expect([...screen.getByTestId('kifu-report-toggles').querySelectorAll('button')].map(button => button.textContent)).toEqual(['手数', '坐标', '清空', '详情']);
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('日本规则');
+    expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
+    expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
+    expect(within(dialog).getByText('分析贴目（已核验）').parentElement).toHaveTextContent('0');
   });
 });

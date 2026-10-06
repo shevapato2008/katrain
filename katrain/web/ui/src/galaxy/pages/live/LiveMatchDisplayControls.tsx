@@ -14,7 +14,7 @@ import { Box, Typography } from '@mui/material';
 import ToolGridButton from '../../components/board/ToolGridButton';
 import BoardDisplayControls from '../../components/board/BoardDisplayControls';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { toolGridSx } from '../../../components/railStyles';
+import { boardControlGridSx } from '../../../components/railStyles';
 
 export interface LiveMatchDisplayControlsProps {
   tryMoveMode: boolean;
@@ -58,8 +58,8 @@ export default function LiveMatchDisplayControls({
   const displayControls = <BoardDisplayControls numbers={showMoveNumbers} coordinates={showCoordinates} view3d={view3d} onNumbers={onMoveNumbersToggle} onCoordinates={onCoordinatesToggle} on3d={on3dToggle} />;
 
   if (reportMode) return (
-    <Box data-testid="report-display-controls" sx={{ display: 'grid', gridTemplateRows: '40px 40px', gap: '6px', minHeight: 0 }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: '6px' }}>
+    <Box data-testid="report-display-controls" sx={{ display: 'grid', gridTemplateRows: '40px 40px', gap: '14px', minHeight: 0 }}>
+      <Box sx={boardControlGridSx}>
         <ToolGridButton icon={<TouchAppIcon />} label={t('live:try', '试下')} toggle active={tryMoveMode} onClick={onTryMoveToggle} />
         <ToolGridButton icon={<MapIcon />} label={territoryLabel} tooltip={ownershipAvailable ? territoryLabel : t('live:territory_needs_analysis', '领地需要分析结果')} toggle active={showTerritory} disabled={!ownershipAvailable} onClick={onTerritoryToggle} />
         <ToolGridButton icon={<TipsAndUpdatesIcon />} label={t('Advice', '支招')} toggle active={showAiMarkers} onClick={onAiMarkersToggle} />
@@ -73,7 +73,7 @@ export default function LiveMatchDisplayControls({
     <Box sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
       <Box
         data-testid="live-match-display-controls-grid"
-        sx={toolGridSx}
+        sx={boardControlGridSx}
       >
         <ToolGridButton
           icon={<TouchAppIcon />}

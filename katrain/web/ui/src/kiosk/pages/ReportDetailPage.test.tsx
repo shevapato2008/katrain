@@ -148,6 +148,9 @@ function baseDetail() {
 function openGrade() {
   fireEvent.click(screen.getByRole('button', { name: /着手评价/ }));
 }
+function openDetails() {
+  fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+}
 /** 切到某个 tab。tab 条是 `.kiosk-optseg` 里的一排按钮。 */
 function pickTab(name: string) {
   fireEvent.click(screen.getByRole('button', { name }));
@@ -229,6 +232,7 @@ describe('屏 20 · 题头与状态', () => {
       },
     };
     renderPage();
+    openDetails();
     expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 用了 6分12秒');
   });
 
@@ -245,6 +249,7 @@ describe('屏 20 · 题头与状态', () => {
       task: { ...task, analyzed_moves: 3, ...patch } as ReportTaskSummary,
     };
     renderPage();
+    openDetails();
     expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 3 手');
     expect(screen.getByTestId('report-detail-progress').textContent).not.toContain('用了');
   });
@@ -265,6 +270,7 @@ describe('屏 20 · 题头与状态', () => {
   ] as const)('%s 也照样把盘画出来 —— 轮询归共享钩子管', (status, label) => {
     detail = { ...baseDetail(), task: { ...task, status } };
     renderPage();
+    if (status === 'completed') openDetails();
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent(label);
     expect(screen.getByTestId('live-board')).toBeVisible();
   });
@@ -360,7 +366,8 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     pickTab('失误');
     expect(screen.getByTestId('grade-lollipop')).toBeInTheDocument();
     // 默认那一态说的是计数与截断 —— 截断了必须说。
-    expect(screen.getByTestId('grade-selline')).toHaveAttribute('data-state', 'hint');
+    fireEvent.click(screen.getByRole('button', { name: '失误 · 说明' }));
+    expect(screen.getByText(/本阶段共/)).toBeInTheDocument();
   });
 
   // Fan 2026-09-02:「点击图表上每个点的时候下方会有具体解释文字」。
@@ -402,10 +409,14 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     openGrade();
     pickTab('AI吻合度');
     expect(screen.getByTestId('grade-match-stats')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI吻合度 · 说明' }));
     expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('dialog', { name: 'AI吻合度 · 说明' }).querySelector('button')!);
     pickTab('分布');
     expect(screen.getByTestId('grade-match-dist')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI吻合度 · 说明' }));
     expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('dialog', { name: 'AI吻合度 · 说明' }).querySelector('button')!);
   });
 
   it('一手都评不出来时照实说,不摆一张空图', () => {
@@ -444,13 +455,14 @@ describe('屏 20 · 盘上的交互', () => {
   // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
   // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
   // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
-  it('领地、手数、支招与坐标共用开关行，领地无数据时禁用', () => {
+  it('两行四列保持批准的动作顺序，领地无数据时禁用', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
     const row = screen.getByTestId('report-detail-toggles');
     expect([...row.querySelectorAll('button')].map((b) => b.textContent))
-      .toEqual(['领地', '手数', '支招', '坐标']);
-    expect(screen.getByTestId('report-detail-actions')).toHaveTextContent('试下');
+      .toEqual(['手数', '坐标', '清空', '详情']);
+    expect([...screen.getByTestId('report-detail-actions').querySelectorAll('button')].map(b => b.textContent))
+      .toEqual(['试下', '领地', '支招', '分析']);
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
   });
 
@@ -468,7 +480,7 @@ describe('屏 20 · 盘上的交互', () => {
     detail = { ...baseDetail(), game: { ...game, sgf_content: '(;SZ[19];B[pd];B[dd];W[qp])' }, analysisByMove: { 2: { ...analysis, top_moves } } };
     renderPage();
     const rows = screen.getAllByTestId('ai-recommend-row');
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(6);
     expect(rows[0]).toHaveTextContent('1 · A1');
     expect(rows[0]).toHaveTextContent('10%');
     expect(rows[0]).toHaveTextContent('−4.1');
@@ -666,16 +678,16 @@ describe('屏 20 · 翻手、出口与出错', () => {
    */
   it('「去研究」带着这一局的编号和出处过去,编号照原样编码', () => {
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '去研究' }));
     expect(navigate).toHaveBeenCalledWith(
       '/kiosk/research?user_game_id=game+id%2F%E6%B1%89%E5%AD%97&from=report&task=42',
     );
   });
 
-  // 稿子把「重算」和「去研究」并排画在题头,不是只在失败时才出现 ——
-  // 它的用处正是「跑完了但想换个深度再跑一遍」。
-  it('「重算」常驻,点了先刷新再重跑', async () => {
+  it('「重算」在详情中可达，点了先刷新再重跑', async () => {
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     await waitFor(() => expect(retry).toHaveBeenCalledWith('token', 42));
     expect(refresh).toHaveBeenCalled();
@@ -684,6 +696,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   it('重算失败时话说出来(不印原文),盘和数据还在;重试加载能把那条错清掉', async () => {
     retry.mockRejectedValueOnce(Object.assign(new Error('Request failed 503: {"detail":"x"}'), { status: 503 }));
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(await screen.findByText('重算没成 · 云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
@@ -757,6 +770,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByText('place try'));
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(await screen.findByText('重算没成')).toBeVisible();
 
@@ -797,6 +811,7 @@ describe('屏 20 · 接真钩子的轮询', () => {
 
     renderPage();
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(getReport).toHaveBeenCalledTimes(2);
     expect(retry).not.toHaveBeenCalled();
@@ -811,6 +826,7 @@ describe('屏 20 · 接真钩子的轮询', () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(getReport).toHaveBeenCalledTimes(4);
+    openDetails();
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent('已完成');
   });
 

@@ -2,6 +2,7 @@ import { Box, Typography, Tooltip } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { MoveAnalysis, TopMove } from '../../types/live';
 import { useMemo } from 'react';
+import { reportCandidates, type ReportCandidate } from '../../features/analysis/reportCandidates';
 import { useTranslation } from '../../hooks/useTranslation';
 import {
   dominantProfile,
@@ -106,24 +107,10 @@ export default function AiAnalysis({
   const nextAnalysis = analysis[currentMove + 1];
 
   const displayMoves = useMemo(() => {
-    if (!currentAnalysis || !currentAnalysis.top_moves || currentAnalysis.top_moves.length === 0) {
-      return [];
-    }
-
-    const topMoves = currentAnalysis.top_moves.slice(0, topN);
-    // Get the actual move from the next position's analysis (what was actually played from here)
     const actualMove = sgfActualMove ?? nextAnalysis?.move;
-
-    if (reportMode) {
-      const allMoves = currentAnalysis.top_moves;
-      const totalPsv = allMoves.reduce((sum, m) => sum + (m.psv || 0), 0);
-      const totalVisits = allMoves.reduce((sum, m) => sum + (m.visits || 0), 0);
-      return topMoves.map((m) => ({
-        ...m,
-        isActualMove: actualMove === m.move,
-        percentage: totalPsv > 0 ? (m.psv || 0) / totalPsv * 100 : totalVisits > 0 ? (m.visits || 0) / totalVisits * 100 : 0,
-      }));
-    }
+    if (reportMode) return reportCandidates(currentAnalysis?.top_moves ?? [], actualMove, topN);
+    if (!currentAnalysis?.top_moves?.length) return [];
+    const topMoves = currentAnalysis.top_moves.slice(0, topN);
 
     // Check if actual move is in top N
     const actualMoveInTop = actualMove ? topMoves.findIndex(m => m.move === actualMove) : -1;
@@ -181,12 +168,6 @@ export default function AiAnalysis({
         : (totalVisits > 0 ? (m.visits / totalVisits) * 100 : 0),
     }));
   }, [currentAnalysis, nextAnalysis, topN, reportMode, sgfActualMove]);
-
-  const actualMove = sgfActualMove ?? nextAnalysis?.move;
-  const actualCandidate = actualMove ? currentAnalysis?.top_moves.find((m) => m.move === actualMove) : undefined;
-  const actualOutsideTop = reportMode && actualMove && !displayMoves.some((m) => m.move === actualMove);
-  const actualLead = actualCandidate?.score_lead == null ? null : (nextPlayer === 'B' ? actualCandidate.score_lead : -actualCandidate.score_lead);
-  const actualWinrate = actualCandidate?.winrate == null ? null : (nextPlayer === 'B' ? actualCandidate.winrate : 1 - actualCandidate.winrate);
 
   // 表头要说清「这是谁的选择率」。档位来自数据本身（每个候选点都带 human_profile），
   // 不是前端写死的常量 —— 服务端换档之后，老报告的数字仍然自证是按哪一档算的。
@@ -263,7 +244,7 @@ export default function AiAnalysis({
       </Box>
 
       {/* Move rows */}
-      <Box data-testid={reportMode ? 'report-candidate-list' : undefined} sx={{ height: reportMode ? 144 : 150, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+      <Box data-testid={reportMode ? 'report-candidate-list' : undefined} sx={{ height: reportMode ? 128 : 150, overflowY: 'auto', scrollbarWidth: 'thin' }}>
         {displayMoves.map((move, index) => (
           <MoveRow
             key={move.move}
@@ -280,19 +261,16 @@ export default function AiAnalysis({
           />
         ))}
       </Box>
-      {actualOutsideTop && <Box data-testid="report-actual-move" sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 32, px: 1, borderTop: '1px solid', borderColor: 'divider', fontSize: 18 }}>
-        <span>{t('live:actual_move', '实战着点')} {actualMove}</span>
-        <span>{actualCandidate ? `${actualLead == null ? '—' : `${actualLead >= 0 ? '+' : ''}${actualLead.toFixed(1)} 目`} · ${actualWinrate == null ? '—' : `${(actualWinrate * 100).toFixed(1)}%`}` : t('report:no_candidate_data', '未列入候选，暂无评估')}</span>
-      </Box>}
+
     </Box>
   );
 }
 
 interface MoveRowProps {
-  move: TopMove;
+  move: Pick<ReportCandidate, 'move' | 'pv'> & Partial<TopMove>;
   showHumanTendency: boolean;
   rank: number;
-  percentage: number;
+  percentage: number | null;
   isActualMove: boolean;
   nextPlayer: 'B' | 'W';
   onHover?: (hovering: boolean) => void;
@@ -306,23 +284,25 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
   // If next player is White, we negate it
-  const rawScoreLead = move.score_lead ?? 0;
-  const scoreLead = nextPlayer === 'B' ? rawScoreLead : -rawScoreLead;
+  const rawScoreLead = move.score_lead;
+  const scoreLead = rawScoreLead == null ? null : nextPlayer === 'B' ? rawScoreLead : -rawScoreLead;
 
   // Winrate from next player's perspective
-  const rawWinrate = move.winrate ?? 0.5;
-  const winrate = nextPlayer === 'B' ? rawWinrate : 1 - rawWinrate;
-  const opponentWinrate = 1 - winrate;
+  const rawWinrate = move.winrate;
+  const winrate = rawWinrate == null ? null : nextPlayer === 'B' ? rawWinrate : 1 - rawWinrate;
+  const opponentWinrate = winrate == null ? null : 1 - winrate;
 
   return (
     <Box
+      data-actual={isActualMove || undefined}
       sx={{
         display: 'grid',
+        alignItems: 'center',
         ...gridSx(showHumanTendency),
         gap: 0.5,
         py: reportMode ? 0 : 0.5,
         px: 1,
-        minHeight: reportMode ? 36 : onSelect ? 48 : undefined,
+        minHeight: reportMode ? 32 : onSelect ? 48 : undefined,
         mb: reportMode ? 0 : 0.25,
         borderRadius: 1,
         cursor: onSelect || onHover ? 'pointer' : 'default',
@@ -352,7 +332,8 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
         <Typography variant="body2" fontWeight="bold" sx={{ fontSize: reportMode ? 18 : '0.85rem' }}>
           {move.move}
         </Typography>
-        {isActualMove && (
+        {reportMode && isActualMove && rank > 5 && <Typography sx={{ fontSize: 12, whiteSpace: 'nowrap', color: 'success.light' }}>{t('report:actual_move_short', '实战')}</Typography>}
+        {isActualMove && !(reportMode && rank > 5) && (
           <Tooltip title={t('live:actual_move', 'Actual move played')}>
             <CheckCircleIcon sx={{ fontSize: 14, color: 'success.main' }} />
           </Tooltip>
@@ -380,7 +361,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             color={rank === 1 ? 'primary.contrastText' : 'text.primary'}
             sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}
           >
-            {percentage.toFixed(0)}%
+            {percentage == null ? '—' : `${percentage.toFixed(0)}%`}
           </Typography>
         </Box>
       </Box>
@@ -447,7 +428,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
           }}
         >
           <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
-            {scoreLead >= 0 ? '+' : ''}{scoreLead.toFixed(1)}
+            {scoreLead == null ? '—' : `${scoreLead >= 0 ? '+' : ''}${scoreLead.toFixed(1)}`}
           </Typography>
         </Box>
       </Box>
@@ -457,7 +438,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
         {/* Current player winrate - on colored background */}
         <Box
           sx={{
-            minWidth: 36,
+            minWidth: winrate == null ? 0 : 36,
             height: 24,
             px: 0.5,
             display: 'flex',
@@ -472,13 +453,13 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
           }}
         >
           <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
-            {(winrate * 100).toFixed(1)}
+            {winrate == null ? '—' : (winrate * 100).toFixed(1)}
           </Typography>
         </Box>
         {/* Opponent winrate - on opposite colored background */}
         <Box
           sx={{
-            minWidth: 36,
+            minWidth: winrate == null ? 0 : 36,
             height: 24,
             px: 0.5,
             display: 'flex',
@@ -493,7 +474,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
           }}
         >
           <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
-            {(opponentWinrate * 100).toFixed(1)}
+            {opponentWinrate == null ? '' : (opponentWinrate * 100).toFixed(1)}
           </Typography>
         </Box>
       </Box>

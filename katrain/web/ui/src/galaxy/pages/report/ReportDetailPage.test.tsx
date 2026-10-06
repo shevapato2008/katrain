@@ -11,6 +11,7 @@ import { GameNavigationProvider } from '../../context/GameNavigationContext';
 
 import ReportDetailPage from './ReportDetailPage';
 
+const playSound = vi.hoisted(() => vi.fn());
 const mockSetCurrentMove = vi.fn();
 const mockDetailRefresh = vi.fn();
 let reportDetailFixture: UseReportDetailResult;
@@ -33,7 +34,7 @@ vi.mock('../../../features/report/useReportDetail', () => ({
 }));
 
 vi.mock('../../../hooks/useSound', () => ({
-  useSound: () => ({ play: vi.fn() }),
+  useSound: () => ({ play: playSound }),
 }));
 
 vi.mock('../../../components/live/LiveBoard', () => ({
@@ -55,6 +56,7 @@ vi.mock('../../../components/live/TrendChart', () => ({
 
 describe('ReportDetailPage', () => {
   beforeEach(() => {
+    playSound.mockClear();
     mockSetCurrentMove.mockReset();
     mockDetailRefresh.mockReset();
     mockUseReportDetail.mockClear();
@@ -101,6 +103,21 @@ describe('ReportDetailPage', () => {
       error: null,
       refresh: mockDetailRefresh,
     };
+  });
+
+  it('keeps asynchronous first load silent, then sounds exactly once for a replay cursor change', () => {
+    const loaded = reportDetailFixture;
+    reportDetailFixture = { ...loaded, game: null, task: null, currentMove: 0, loading: true };
+    const page = () => <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider><Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+    const view = render(page());
+    reportDetailFixture = loaded;
+    view.rerender(page());
+    expect(playSound).not.toHaveBeenCalled();
+    reportDetailFixture = { ...loaded, currentMove: 1 };
+    view.rerender(page());
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    view.rerender(page());
+    expect(playSound).toHaveBeenCalledTimes(1);
   });
 
   /**

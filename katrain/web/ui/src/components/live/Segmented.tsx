@@ -24,11 +24,13 @@ export default function Segmented<T extends string>({
   value,
   onChange,
   ariaLabel,
+  vertical = false,
 }: {
   options: readonly SegmentedOption<T>[];
   value: T;
   onChange: (v: T) => void;
   ariaLabel: string;
+  vertical?: boolean;
 }) {
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   return (
@@ -38,7 +40,9 @@ export default function Segmented<T extends string>({
       sx={{
         position: 'relative',
         display: 'inline-grid',
-        gridAutoFlow: 'column',
+        gridAutoFlow: vertical ? 'row' : 'column',
+        width: vertical ? '100%' : undefined,
+        boxSizing: 'border-box',
         gridAutoColumns: '1fr',
         bgcolor: 'rgba(255,255,255,0.06)',
         borderRadius: '8px',
@@ -52,14 +56,15 @@ export default function Segmented<T extends string>({
         sx={{
           position: 'absolute',
           top: '3px',
-          bottom: '3px',
+          bottom: vertical ? undefined : '3px',
+          height: vertical ? `calc((100% - 6px) / ${options.length})` : undefined,
           left: '3px',
-          width: `calc((100% - 6px) / ${options.length})`,
+          width: vertical ? 'calc(100% - 6px)' : `calc((100% - 6px) / ${options.length})`,
           borderRadius: '6px',
           bgcolor: 'primary.dark',
           border: '1px solid',
           borderColor: 'primary.main',
-          transform: `translateX(${index * 100}%)`,
+          transform: `translate${vertical ? 'Y' : 'X'}(${index * 100}%)`,
           transition: 'transform 180ms cubic-bezier(0.4, 0, 0.2, 1)',
           '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
         }}
@@ -85,8 +90,9 @@ export default function Segmented<T extends string>({
               fontWeight: on ? 600 : 400,
               color: on ? 'text.primary' : 'text.secondary',
               /* 32px = 规范 §4.4 的小按钮档。分段控件是筛选不是行动，用最小的那一档。 */
-              height: 32,
-              px: 1.5,
+              height: vertical ? 30 : 32,
+              '@media (pointer: coarse)': { minHeight: 44 },
+              px: vertical ? 0.5 : 1.5,
               borderRadius: '6px',
               whiteSpace: 'nowrap',
               transition: 'color 150ms',

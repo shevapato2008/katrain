@@ -60,13 +60,26 @@ export interface KifuAnalysisMove {
   brilliance: number | null;
 }
 
+export interface VerifiedAnalysisParameters {
+  version: 1;
+  verified: true;
+  rules: string;
+  komi: number;
+  sgf_sha256: string;
+  parameter_sha256: string;
+  provenance: Record<string, unknown>;
+}
+
 export interface KifuAnalysisDetail {
   album_id: number;
   canonical_album_id: number;
   sgf_sha256: string;
   model_sha256: string;
   requested_visits: number;
-  status: 'unavailable' | 'pending' | 'running' | 'completed' | 'failed';
+  status: 'unavailable' | 'pending' | 'running' | 'completed' | 'failed' | 'rules_unresolved';
+  analysis_parameters: VerifiedAnalysisParameters | null;
+  parameters_verified: boolean;
+  parameter_error: { code: string; message: string } | null;
   total_moves: number;
   analyzed_moves: number;
   error_message: string | null;

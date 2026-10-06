@@ -4,10 +4,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
 import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
+import { kifuRulesLabel } from '../../features/kifu/kifuRules';
 import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
 import { sgfToMoves } from '../../utils/sgfSerializer';
+import { translateResult } from '../../utils/resultTranslation';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
@@ -35,6 +38,7 @@ export default function KifuReportDetailPage() {
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
   const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(id);
+  const analysisParameters = detail?.parameters_verified ? detail.analysis_parameters : null;
   const frontier = Math.max(0, ...Object.keys(analysisByMove).map(Number));
   const cursor = selectedPosition?.id === id ? selectedPosition.move : frontier;
   const selectMove = (move: number) => {
@@ -60,6 +64,8 @@ export default function KifuReportDetailPage() {
   const totalMoves = parsed ? Math.max(0, parsed.moves.length - (parsed.setupCount ?? 0)) : 0;
   const at = Math.min(cursor, totalMoves);
   const boardCursor = at + (parsed?.setupCount ?? 0);
+  useReplayStoneSound({ identity: id, cursor: at, move: parsed?.moves[boardCursor - 1],
+    ready: !!parsed && !!detail, selected: selectedPosition?.id === id });
   const playerToMove = reportPlayerToMove(parsed?.stoneColors, boardCursor, parsed?.setupCount);
   const currentAnalysis = analysisByMove[at] ?? null;
   const markers = useMemo((): AiMoveMarker[] | null => {
@@ -70,14 +76,14 @@ export default function KifuReportDetailPage() {
     }));
   }, [currentAnalysis, showAiMarkers, playerToMove]);
   const grades = useMemo(() => gradedMoves(analysisByMove), [analysisByMove]);
-  const points = useMemo((): WinratePoint[] => (detail?.moves ?? []).filter((row) => row.winrate != null).map((row) => ({
+  const points = useMemo((): WinratePoint[] => (detail?.moves ?? []).filter((row) => row.winrate != null && analysisByMove[row.move_number]).map((row) => ({
     moveNumber: row.move_number, winrate: row.winrate!,
     player: row.actual_player === 'B' || row.actual_player === 'W' ? row.actual_player : null,
     bad: grades.some((grade) => grade.move_number === row.move_number && isBad(grade)),
-  })), [detail, grades]);
-  const leadPoints = useMemo(() => (detail?.moves ?? []).filter((row) => row.score_lead != null).map((row) => ({
+  })), [detail, grades, analysisByMove]);
+  const leadPoints = useMemo(() => (detail?.moves ?? []).filter((row) => row.score_lead != null && analysisByMove[row.move_number]).map((row) => ({
     moveNumber: row.move_number, scoreLead: row.score_lead!,
-  })), [detail]);
+  })), [detail, analysisByMove]);
   const activeMove = variation?.id === id && variation.position === at
     && currentAnalysis?.top_moves.some((move) => move.move === variation.move) ? variation.move : null;
   const pvMoves = currentAnalysis?.top_moves.find((move) => move.move === activeMove)?.pv ?? null;
@@ -153,31 +159,40 @@ export default function KifuReportDetailPage() {
             <span>{status}</span>
             <span>{detail?.requested_visits != null ? `${detail.requested_visits} visits · ${album.move_count} ${t('kifu:moves_unit', '手')}` : '—'}</span>
           </div>)}
+          statusVisible={detail?.status !== 'completed' || !detail.parameters_verified || !detail.analysis_parameters?.verified || detail.moves.length === 0 || analysisError}
+          metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
+            <span>{album.result ? translateResult(album.result, t, analysisParameters?.rules ?? album.rules) : '—'}</span>
+            <span>{kifuRulesLabel(analysisParameters?.rules ?? album.rules, t)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
+          </div>)}
           details={[
             [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
             [t('review:white', '白'), [album.display_player_white ?? album.player_white, album.display_white_rank ?? album.white_rank].filter(Boolean).join(' · ')],
             [t('report:event', '赛事'), [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ')],
             [t('report:date', '日期'), album.date_played],
             [t('report:result', '结果'), album.result],
-            [t('report:rules', '规则'), album.rules],
-            [t('report:komi', '贴目'), album.komi],
+            [t('report:rules', '规则'), kifuRulesLabel(analysisParameters?.rules ?? album.rules, t)],
+            [t('report:sgf_rules', 'SGF 规则'), album.rules],
+            [t('report:sgf_komi', 'SGF 贴目'), album.komi],
+            [t('report:analysis_rules', '分析规则（已核验）'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t) : '—'],
+            [t('report:analysis_komi', '分析贴目（已核验）'), analysisParameters?.komi],
             [t('report:status', '状态'), status],
             [t('report:source', '来源'), album.sources?.join(' · ') || album.source],
           ]}
+          detailActions={<button type="button" onClick={() => navigate(`/kiosk/kifu/${id}/replay`)}>{t('kifu:view_kifu', '查看棋谱')}</button>}
           actions={(<>
-            <button type="button" onClick={() => navigate(`/kiosk/kifu/${id}/replay`)}>{t('kifu:view_kifu', '查看棋谱')}</button>
             <button type="button" aria-pressed={tryMoveMode} onClick={() => { setTryMoveMode((value) => !value); setTryMoves([]); setVariation(null); }}>{t('report:try', '试下')}</button>
-          </>)}
-          toggles={(<div className="gtoggles gtoggles--icon report-analysis-rail__toggles" role="group" aria-label={t('review:toggles', '显示')} data-testid="kifu-report-toggles">
             <button type="button" aria-pressed={showTerritory} disabled={!currentAnalysis?.ownership} onClick={() => setShowTerritory((value) => !value)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
-            <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
             <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((value) => !value)}><Icon name="lightbulb" />{t('Advice', '支招')}</button>
+          </>)}
+          toggles={(<>
+            <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
             <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((value) => !value)}><Icon name="corners-out" />{t('Coordinates', '坐标')}</button>
-          </div>)}
+            <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryMoves([]); setVariation(null); }}>{t('report:clear', '清空')}</button>
+          </>)}
           notices={(<>
             {analysisError && <p className="rverr" role="status">{t('kifu:analysis_read_error', '分析状态暂时无法读取')}<button type="button" onClick={() => navigate(0)}>{t('report:retry_load', '重试加载')}</button></p>}
-            {detail?.status === 'failed' && <p className="rverr" role="status">{detail.error_message || t('kifu:analysis_failed', '分析未完成')}</p>}
-            {tryMoveMode && tryMoves.length > 0 && <p className="rverr" role="status" data-testid="kifu-report-try">{tryMoves.join(' → ')}<button type="button" onClick={() => setTryMoves([])}>{t('report:clear', '清空')}</button></p>}
+            {(detail?.status === 'failed' || detail?.status === 'rules_unresolved') && <p className="rverr" role="status">{detail.parameter_error?.message || detail.error_message || status}</p>}
+            {tryMoveMode && tryMoves.length > 0 && <p className="rverr" role="status" data-testid="kifu-report-try">{tryMoves.join(' → ')}</p>}
             {activeMove && <p className="rverr" role="status" data-testid="kifu-report-variation">{t('report:variation_preview', '变化预览 · 点击棋盘关闭')}<button type="button" onClick={() => setVariation(null)}>{t('report:clear_variation', '清除变化')}</button></p>}
           </>)}
           navigation={<KioskReportPlayback testId="kifu-report-movenav" currentMove={at} totalMoves={totalMoves} onMoveChange={selectMove} />}

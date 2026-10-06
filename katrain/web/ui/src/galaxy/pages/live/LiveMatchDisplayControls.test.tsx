@@ -133,29 +133,17 @@ describe('LiveMatchDisplayControls', () => {
     expect(screen.getByRole('button', { name: 'translated:live:clear:清空' })).toBeDisabled();
   });
 
-  /* 工具格栅格必须来自共用常量 `railStyles.toolGridSx`，不是本页自己写一份。
-     2026-09-01 键改成「图标左、文字右」之后列数分了两档：窄档 2×2、宽档 1×4 ——
-     横排一格要装下「图标 + 间隙 + 两字」，四列在 320 档只剩 67px，装不下。
-     这条测试原来钉的是字面量 `repeat(4, minmax(0, 1fr))`：断言的对象变了，不是坏了，
-     所以改写成两档各断言一次，而不是删掉——删掉等于这条栅格从此没人守。
-     变异验证：把 `toolGridSx` 的 RAIL_WIDE 那一支删掉，下面第二条红；
-     把基础值改回 `repeat(4, ...)`，第一条红。 */
-  it('uses the shared tool grid: 2 columns narrow, 4 columns on a wide rail', () => {
+  it('keeps action and display buttons in the same four-column geometry', () => {
     renderControls();
-    expect(screen.getByTestId('live-match-display-controls-grid')).toHaveStyle({
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    });
-    const css = Array.from(document.querySelectorAll('style')).map((n) => n.textContent ?? '').join('\n');
-    expect(css).toMatch(
-      /@container board-rail \(min-width: 460px\)\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/,
-    );
+    for (const id of ['live-match-display-controls-grid', 'board-display-controls']) {
+      expect(screen.getByTestId(id)).toHaveStyle({ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' });
+    }
   });
 
   it('keeps the three board display actions in their own equal-width group', () => {
     renderControls();
     const group = screen.getByTestId('board-display-controls');
-    expect(group).toHaveStyle({ gridTemplateColumns: 'repeat(3,minmax(0,1fr))' });
+    expect(group).toHaveStyle({ gridTemplateColumns: 'repeat(4,minmax(0,1fr))' });
     expect(group.querySelectorAll('button')).toHaveLength(3);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import type { MoveAnalysis } from '../../types/live';
 import AiAnalysis from './AiAnalysis';
 
@@ -59,7 +59,7 @@ describe('AiAnalysis candidate limit', () => {
     expect(withActualMove[10].top_moves).toHaveLength(6);
   });
 
-  it('keeps report recommendations to five, with a stable top-ten denominator and separate actual move', () => {
+  it('appends the actual sixth row using its own metrics and the full candidate denominator', () => {
     const candidatesWithSixth = candidates.map((candidate, index) => ({ ...move(candidate, [candidate]), psv: index === 5 ? 500 : 100 }));
     const report = {
       10: { ...analysis[10], top_moves: candidatesWithSixth },
@@ -67,7 +67,13 @@ describe('AiAnalysis candidate limit', () => {
     };
     render(<AiAnalysis currentMove={10} analysis={report} topN={5} reportMode playerToMove="W" />);
     expect(screen.getAllByText('10%')).toHaveLength(5);
-    expect(screen.getByTestId('report-actual-move')).toHaveTextContent('K10');
+    const list = screen.getByTestId('report-candidate-list');
+    expect(list.children).toHaveLength(6);
+    const actual = list.children[5] as HTMLElement;
+    expect(actual).toHaveTextContent('K10');
+    expect(actual).toHaveTextContent('50%');
+    expect(actual).toHaveTextContent('-2.0');
+    expect(screen.queryByTestId('report-actual-move')).not.toBeInTheDocument();
     expect(screen.getByText(/白方待落子/)).toBeInTheDocument();
     expect(report[10].top_moves).toHaveLength(6);
   });
@@ -75,13 +81,15 @@ describe('AiAnalysis candidate limit', () => {
   it('does not invent an evaluation when the played move was outside stored candidates', () => {
     const report = { 10: analysis[10], 11: { ...analysis[10], move_number: 11, move: 'T18' } };
     render(<AiAnalysis currentMove={10} analysis={report} topN={5} reportMode />);
-    expect(screen.getByTestId('report-actual-move')).toHaveTextContent('暂无评估');
+    const actual = screen.getByTestId('report-candidate-list').lastElementChild as HTMLElement;
+    expect(actual).toHaveTextContent('T18');
+    expect(within(actual).getAllByText('—')).toHaveLength(3);
+    expect(actual).not.toHaveTextContent('55');
   });
 
   it('shows the SGF move when the following position has no analysis row', () => {
     render(<AiAnalysis currentMove={10} analysis={analysis} topN={5} reportMode actualMove="T18" />);
-    expect(screen.getByTestId('report-actual-move')).toHaveTextContent('T18');
-    expect(screen.getByTestId('report-actual-move')).toHaveTextContent('暂无评估');
+    expect(screen.getByTestId('report-candidate-list').lastElementChild).toHaveTextContent('T18');
   });
 });
 

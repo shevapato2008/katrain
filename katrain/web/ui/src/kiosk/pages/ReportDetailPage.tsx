@@ -10,6 +10,8 @@ import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { requestFailureKind } from '../../utils/requestFailure';
 import { sgfToMoves } from '../../utils/sgfSerializer';
+import { translateResult } from '../../utils/resultTranslation';
+import { kifuRulesLabel } from '../../features/kifu/kifuRules';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
 import { ReportAnalysisRail } from '../components/report/ReportAnalysisRail';
 import KioskReportPlayback from '../components/report/KioskReportPlayback';
@@ -424,6 +426,11 @@ export default function ReportDetailPage() {
           <span data-testid="report-detail-status">{taskStatusLabel(task?.status, t)} · {reportTypeLabel(task?.report_type, t)}</span>
           <span data-testid="report-detail-progress">{headMetaLine(task, totalMoves, t)}</span>
         </div>)}
+        statusVisible={task?.status !== 'completed'}
+        metadata={(<div className="report-analysis-rail__status" data-testid="report-detail-metadata">
+          <span>{game.result ? translateResult(game.result, t, game.rules) : '—'}</span>
+          <span>{kifuRulesLabel(game.rules, t)} · {t('report:komi_label', '贴目')} {game.komi ?? '—'}</span>
+        </div>)}
         details={[
           [t('review:black', '黑'), [game.player_black, game.black_rank].filter(Boolean).join(' · ')],
           [t('review:white', '白'), [game.player_white, game.white_rank].filter(Boolean).join(' · ')],
@@ -435,7 +442,7 @@ export default function ReportDetailPage() {
           [t('report:status', '状态'), taskStatusLabel(task?.status, t)],
           [t('report:source', '来源'), game.source],
         ]}
-        actions={(<><button
+        detailActions={(<><button
               type="button"
               className="kiosk-btn kiosk-btn--pill"
               onClick={() => navigate(`/kiosk/research?${new URLSearchParams({ user_game_id: game.id, from: 'report', task: String(taskId) }).toString()}`)}
@@ -450,20 +457,23 @@ export default function ReportDetailPage() {
             >
               {retrying ? t('report:retrying', '正在重试…') : t('review:recompute', '重算')}
             </button>
+          </>)}
+        actions={(<>
           <button type="button" aria-pressed={tryMoveMode} onClick={handleTryToggle}>
             <Icon name="hand-pointing" />{t('report:try', '试下')}
           </button>
-          </>)}
-        toggles={(<div className="gtoggles gtoggles--icon report-analysis-rail__toggles" role="group" aria-label={t('review:toggles', '显示')} data-testid="report-detail-toggles">
           <button type="button" aria-pressed={showTerritory} disabled={!ownership} onClick={() => setShowTerritory((v) => !v)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
-          <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
           <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
             <Icon name="lightbulb" />{t('Advice', '支招')}
           </button>
+          </>)}
+        toggles={(<>
+          <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
           <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((v) => !v)}>
             <Icon name="corners-out" />{t('Coordinates', '坐标')}
           </button>
-        </div>)}
+          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryState(null); setActiveVariation(null); }}>{t('report:clear', '清空')}</button>
+        </>)}
         notices={(<>{(error || retryError) && (
           <p className="rverr" role="status" data-testid="report-detail-alert">
             {retryError ?? failureLine(t('review:refresh_failed', '没刷新成功'), errorKind ?? 'other', t)}
@@ -474,9 +484,6 @@ export default function ReportDetailPage() {
         )}{tryMoveMode && tryMoves.length > 0 && (
           <p className="rverr" role="status" data-testid="report-detail-try">
             {t('report:try', '试下')}: {tryMoves.join(' → ')}
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setTryState(null)}>
-              {t('report:clear', '清空')}
-            </button>
           </p>
         )}
         {activeMove && (

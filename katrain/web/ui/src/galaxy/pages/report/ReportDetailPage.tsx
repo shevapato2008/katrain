@@ -83,14 +83,8 @@ export default function ReportDetailPage() {
 
   // Sound on move navigation
   const { play: playSound } = useSound();
-  const prevMoveRef = useRef<number | null>(null);
+  const prevMoveRef = useRef<{ identity: string; move: number } | null>(null);
 
-  useEffect(() => {
-    if (currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
-      playSound('stone');
-    }
-    prevMoveRef.current = currentMove;
-  }, [currentMove, playSound]);
 
   const previewData = useMemo(() => {
     if (!game?.sgf_content) return null;
@@ -101,6 +95,16 @@ export default function ReportDetailPage() {
   const setupCount = previewData?.setupCount ?? 0;
   const boardCursor = currentMove + setupCount;
   const playerToMove = reportPlayerToMove(previewData?.stoneColors, boardCursor, setupCount);
+  useEffect(() => {
+    if (loading || !game || !previewData) { prevMoveRef.current = null; return; }
+    const identity = `${taskId}:${game.id}`;
+    const previous = prevMoveRef.current;
+    const move = previewData.moves[boardCursor - 1];
+    if (previous?.identity === identity && previous.move !== currentMove && currentMove > 0
+      && move && /^[A-HJ-Z][1-9]\d*$/i.test(move)) playSound('stone');
+    prevMoveRef.current = { identity, move: currentMove };
+  }, [loading, game, previewData, taskId, currentMove, boardCursor, playSound]);
+
 
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
     if (!showAiMarkers || !currentAnalysis?.top_moves?.length) return null;

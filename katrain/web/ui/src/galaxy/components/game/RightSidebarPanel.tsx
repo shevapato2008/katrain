@@ -23,7 +23,7 @@ import { type GameState, API } from '../../../api';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleGroupSx, toolGridSx } from '../../../components/railStyles';
+import { railToggleGroupSx, boardControlGridSx } from '../../../components/railStyles';
 
 /** 右栏中段的一节：统一的内边距 + 一条分隔线。取代原来散落的 `<Divider/>`。 */
 /* 横向内距由 `BoardPageShell` 的 `RAIL_GUTTER` 统一供给，这里只留纵向 ——
@@ -217,7 +217,7 @@ const RightSidebarPanel = ({
 
                 {/* 工具格 + 离开对局 */}
                 <Box sx={sectionSx}>
-                    <Box sx={toolGridSx}>
+                    <Box sx={boardControlGridSx}>
                         <ToolGridButton
                             icon={<MapIcon />}
                             label={t('Territory', 'Territory')}

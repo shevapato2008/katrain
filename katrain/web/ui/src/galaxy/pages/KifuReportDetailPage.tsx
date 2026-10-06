@@ -8,6 +8,7 @@ import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
 import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import AiAnalysis from '../../components/live/AiAnalysis';
@@ -57,6 +58,8 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
   const totalMoves = parsed ? Math.max(0, parsed.moves.length - (parsed.setupCount ?? 0)) : 0;
   const at = Math.min(currentMove, totalMoves);
   const boardCursor = at + (parsed?.setupCount ?? 0);
+  useReplayStoneSound({ identity: id, cursor: at, move: parsed?.moves[boardCursor - 1],
+    ready: !!parsed && (replayOnly || !!detail), selected: selectedPosition?.id === id });
   const playerToMove = reportPlayerToMove(parsed?.stoneColors, boardCursor, parsed?.setupCount);
   const analysis = analysisByMove[at] ?? null;
   const markers = useMemo((): AiMoveMarker[] | null => {
@@ -91,21 +94,23 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
         <ReportAnalysisLayout
           identity={<ReportMetaPanel
             professional
+            statusLabel={replayOnly ? undefined : status}
+            analysisParameters={detail?.parameters_verified ? detail.analysis_parameters : null}
             backTo={BACK_TO}
             game={{
               game_date: album.date_played, source: 'kifu_library', event: album.display_event ?? album.event,
               title: null, round_name: album.display_round_name ?? album.round_name,
-              result: album.result, rules: album.rules ?? 'chinese',
+              result: album.result, rules: album.rules,
               player_black: album.display_player_black ?? album.player_black,
               player_white: album.display_player_white ?? album.player_white,
               black_rank: album.display_black_rank ?? album.black_rank,
-              white_rank: album.display_white_rank ?? album.white_rank, komi: album.komi ?? 0,
+              white_rank: album.display_white_rank ?? album.white_rank, komi: album.komi,
             }}
             task={replayOnly ? null : { status: detail?.status ?? 'loading', report_type: 'deep', requested_visits: detail?.requested_visits }}
             currentMove={at} currentAnalysis={analysis}
           />}
           recommendations={replayOnly ? <Typography sx={{ p: 1 }}>{t('kifu:replay', '逐手回放')} · {totalMoves} {t('kifu:moves_unit', '手')}</Typography> : <>
-            {detail?.status !== 'completed' && <Box sx={{ px: 1, py: 0.5 }}><Typography sx={{ fontSize: 18 }}>{status}</Typography>{detail?.status === 'failed' && detail.error_message && <Alert severity="error">{detail.error_message}</Alert>}</Box>}
+            {detail?.status !== 'completed' && <Box sx={{ px: 1, py: 0.5 }}><Typography sx={{ fontSize: 18 }}>{status}</Typography>{(detail?.status === 'failed' || detail?.status === 'rules_unresolved') && <Alert severity="error">{detail.parameter_error?.message || detail.error_message || status}</Alert>}</Box>}
             {analysis ? <AiAnalysis currentMove={at} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={parsed?.moves[boardCursor]} /> : <Alert severity="info">{detail?.status === 'running' ? t('kifu:report_no_position', '当前局面暂无分析结果') : status}</Alert>}
           </>}
           controls={<LiveMatchDisplayControls

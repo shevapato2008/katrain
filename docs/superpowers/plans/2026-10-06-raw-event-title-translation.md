@@ -206,6 +206,8 @@ Actual150 raw /750 games /750 names /122 cores; frozen source manifest `c2713452
 Actual150 raw /605 games /750 names /92 cores. Frozen source manifest `f054f246c3e37d2ed6121dec7ef2eb80564e33621286dd0135d2f17e34fbea81`, raw-set `c1003b51985c7b0f5b437fbd4a351e3ef7a3d33465eb1e6b3f757f55e1f8c9c1`. Whole-library4+ grouped selection reuses reviewed cores; raw Korean Women Guksu with event93 collision remains held, replaced by1984 National Go Promotion Tournament. Root reads92 literal cores and revised Korean Yumeijian/Promotion terms. No extra authority webpage or identity claim. Three old raw54202 JP/KO/EN matches use captured old10+new4=14 exact public NULL union.
 
 - [x] Independent actual complete source scope and post179 collision captures, root literal matrix review, no product code/runtime/schema changes.
-- [ ] Finish captured DK/DL player names; exact TEST→PROD owner approval/apply/verify.
-- [ ] Actual producer binds750 names to verified afterimages; root approval and TEST→PROD names/readers verify unchanged605 albums.
-- [ ] Sixteen representative actual HTTP per environment including14-member old literal union and English fallback; actual stats/HTML/source/receipts archive.
+- [x] Captured DL180/DK181 player names finished; exact TEST→PROD owner182 approval/apply/verify150/605.
+- [x] Actual producer binds750 names to verified afterimages; root approval and TEST→PROD name183/readers verify750 names and unchanged605 albums.
+- [x] Sixteen representative actual HTTP per environment including14-member old literal union and English fallback; actual stats/HTML/source/receipts archive.
+
+ActualPROD after183:590 players/3698 (15.9546%),64events/85 (75.2941%),1514 rawtitles/18207 raw display games;complete66259/173025 (38.2945%). Runtime/data archives saved; this batch adds no new event entity.

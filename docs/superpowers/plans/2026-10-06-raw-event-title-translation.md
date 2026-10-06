@@ -196,6 +196,16 @@ Discovery must use whole-library grouped frequency, then hydrate only selected�
 Actual150 raw /750 games /750 names /122 cores; frozen source manifest `c27134520c884b65cf67e952425fdc7972d9dba9871fd881beb4bb671953a836`, raw-set `e9bdc32bd41f95b70b365e4e11ea8dd3e84cbed324c5f0eedcc87d24b4daa410`. Root reads literal core matrix and actual China Sports authority HTML distinguishing 阿含本选决赛 from 本赛; webpage URL/excerpt/time/SHA are semantic support, not a claim about an undated raw SGF identity/year. Existing sgf_chinese runtime, no code/schema changes. Post176 actual750-key collisions are zero in both databases.
 
 - [x] Independent frozen source, whole public NULL first-GN/EV-empty source/hash scopes and actual zero-collision capture; root review of122 cores and five supplementary semantic research rows.
-- [ ] Finish captured DJ/DK player packages, then root exact owner plans and TEST→PROD owner apply/verify.
-- [ ] Actual producer binds750 names to verified afterimages; root bounded review, TEST→PROD names and two readers verify unchanged750 albums.
-- [ ] Representative16 actual HTTP cases per environment, actual stats/HTML/source/supplementary HTML/receipts archive.
+- [x] DJ177 completed; DK/DL source-only packets receive the post178 pin. Root exact owner plans and TEST→PROD owner178 verified150/750 without FK changes.
+- [x] Actual source producer binds750 names; root bounded review, TEST→PROD name179 verified all750 names and unchanged750 albums, two readers agree.
+- [x] Representative16 actual HTTP cases per environment pass, source/China-Sports HTML/actual receipts archived. Raw display17,602 and complete display65,479/173,025 (37.8437%). Stats/HTML reflect actual production writes.
+
+
+## Continuation 15 — next150g data-only literal batch
+
+Actual150 raw /605 games /750 names /92 cores. Frozen source manifest `f054f246c3e37d2ed6121dec7ef2eb80564e33621286dd0135d2f17e34fbea81`, raw-set `c1003b51985c7b0f5b437fbd4a351e3ef7a3d33465eb1e6b3f757f55e1f8c9c1`. Whole-library4+ grouped selection reuses reviewed cores; raw Korean Women Guksu with event93 collision remains held, replaced by1984 National Go Promotion Tournament. Root reads92 literal cores and revised Korean Yumeijian/Promotion terms. No extra authority webpage or identity claim. Three old raw54202 JP/KO/EN matches use captured old10+new4=14 exact public NULL union.
+
+- [x] Independent actual complete source scope and post179 collision captures, root literal matrix review, no product code/runtime/schema changes.
+- [ ] Finish captured DK/DL player names; exact TEST→PROD owner approval/apply/verify.
+- [ ] Actual producer binds750 names to verified afterimages; root approval and TEST→PROD names/readers verify unchanged605 albums.
+- [ ] Sixteen representative actual HTTP per environment including14-member old literal union and English fallback; actual stats/HTML/source/receipts archive.

@@ -45,3 +45,24 @@
 使用 `/tmp/kifu-player-next-ranked-live-20261006.json`，再排除 `/tmp/kifu-player-completed-prod-owner-ids-live.json` 的 615 个已完成 owner，当前文件剩 2,700 条。前十名为：筱原正美 469、林有太郎 459、曲励起 457、中村勇太郎 445、久井敬史 417、中川新之 397、户泽昭宣 397、影山利郎 393、榊原章二 380、染谷一雄 376，合计 **4,190 姓名槽位**；平均每人 419，约为每人 50–80 槽位现代棋手的 **5.2–8.4 倍**。完成 3 人试批后才按相同办法扩到这十人；复杂身份或无读音者跳过。
 
 1,159 或 4,190 不能直接加到 both-players 或 full-five games：一局可能命中两名候选，且另一棋手／赛事尚未完成。root 提供的实时基准是 615/3,698 人、both players 92,694/173,025（53.57%）、full five 70,038（40.48%）；最终增量只取实际入库后报告。此次新增批准姓名数及新增完成数均为 **0**。
+
+
+## 2026-10-06 13:05 CST 来源补充决策：久井、户泽可走已发表名称采纳
+
+**结论：前两人的 KO 已有足以准备既有 `source-adopted / conventional` 候选的正面来源，不再要求负面检索，不走 generated。** 此处批准来源适用性与准备路径，不签具体 candidate、不批准数据库写入。石井卫 KO 继续 HOLD；不能以规范生成的 `이시` 覆盖尚未解决的 Wikidata `이시이` 线索。
+
+已读取 `/tmp/kifu-player-retired-pilot3-20261006/pilot-research.json`、source-index，实际解析 Namu、CiNii 及两位日本棋院本人资料 HTML，并核对这四份 HTML 的 SHA256 均与各自 metadata 一致。
+
+### 已核对的正面正文和身份桥
+
+- **久井敬史，3813：** Namu 镜像《제30회 혼인보전》实际韩语正文在“1975 年／最终预选／第 2 组”的参赛表中写有 `히사이 게이시`；不是搜索回显或页面导航。本人日本棋院 `ki001006.html` 实际给出 `久井　敬史`、`ヒサイ　ケイシ / HISAI, Keishi`、1920-05-13、职业经历及 1985 年退役。独立官方原名与完整读音、日本职业围棋及时代背景共同支持此处韩文指向该 owner。此同人判断是对两来源的交叉核对；不能写成 Namu 本身刊载了生日或日文汉字。对这条具体的已发表拼法，现有百科加独立官方身份佐证已经够用，无需再为同名格寻找另一个韩文来源。
+- **户泽昭宣，4736：** 同一 Namu 韩语正文最终预选第 1 组写有 `도자와 아키노부`。CiNii `BA63657659` 同一书目实际列出韩文作者责任说明 `도자와 아키노부 지음`、日文作者 `戸沢, 昭宣 / トザワ, アキノブ`，以及 1991 年、首尔、韩国出版／正文语言代码 `kor`、原文语言 `jpn`、围棋死活题书与馆藏。本人日本棋院 `ki000027.html` 又给出 `戸沢　昭宣 / トザワ　アキノブ / TOZAWA, Akinobu` 和本人围棋著书背景。CiNii 这条已发表韩文作者署名及同页日文作者对应，是直接、具体的额外正面依据；无需增加“未找到惯用名”的检索。
+
+### 诚实的 tier、role 和语种记录
+
+1. Namu 来源登记为 **`tier=encyclopedia`**，role 明确是 **`community_encyclopedia_mirror / tournament_participant_mention`**，实际 host 为 `namu.moe`；不得称为 Wikipedia、官方棋院、专业围棋机构或已审核的本人传记。正文自己标注镜像并链接 Namu 编辑页。这里只批准这份捕获页面和这两个人名的有限用途，不给 Namu 全站名称自动背书。
+2. Namu HTML 没有 `html lang` 属性，使用 **`observed_lang=ko, language_basis=reviewed_text`**；不要伪造 `html_lang`。`article_evidence` 保存真实标题、包含候选的完整表格片段及 passage SHA、抓取时间和 archive SHA。可把正文可见“最近修改时间 2026-08-03 00:11:51”及本次 2026-10-06 抓取快照写入 **edition**；没有取得真实 revision ID 就不填伪 ID。官方 `identity_corroboration` 使用两位各自日本棋院原正文和原始语言 `ja`，原名保留来源中的空格，再将展示空白整理与身份桥说明清楚。
+3. CiNii 在现有枚举里保持 **`tier=reference`**，role 为 **`institutional_bibliographic_record / published_author_statement`**；它是机构书目证据，不为通过门禁改称百科或围棋机构。保留 **page/UI language=ja、field language=ko**、字段定位“書誌事項／著者責任表示”、书目 ID、出版年及原始 body hash。KO source check 的 `observed_lang=ko` 只指该实际检查的韩文作者字段，`language_basis=reviewed_text`，并显式附 `page_observed_lang=ja`、`evidence_scope=bibliographic_author_field` 等真实范围说明；绝不能把整页 html_lang 改成 ko。
+4. **现有代码的实际限制：** `name_candidates.py` 不接受仅 reference tier 作为 conventional 的唯一正面来源。这不降低 CiNii 的证据价值，也无需为此改代码：本包已有 Namu 的合格 encyclopedia check，并各自带日本棋院独立身份佐证；CiNii 作为户泽的第二条 reference 正面 check／补充佐证即可。这样同时符合现有校验和真实来源角色。两人的 Wikidata 仅留 discovery 角色，不拿它代替已发表正文。
+
+root 只需完成有限 registry 新来源登记、真实 article／identity 字段组装和候选常规独立签审，随后现有两库 dry-run→apply→verify；没有新增负面检索、新转写规则或代码扩展的必要。两人的其他 8 个语言格仍须按同批实际来源与当前 preimage 审核，不能用本段替代候选签名。此补充不阻塞正在执行的 C198 或其他已批准写入。

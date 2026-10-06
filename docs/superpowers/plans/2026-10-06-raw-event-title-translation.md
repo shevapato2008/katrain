@@ -147,5 +147,14 @@ Reuse the reviewed and deployed `sgf_chinese` profile; no code, schema or runtim
 Reuse the reviewed deployed profile without product code or schema changes. Actual unsigned source packet149 raw/1,465 games/745 names, raw-set SHA `5228f491778baf03dc21269b394198e3cba166d544cb37b06a50416dd4735ab7`; manifest `0d70b8488342ea72c528811f0fe2c6afc6a45c8e6b3c6f0cdc8bbd9f3247f618`. Root read106 core translations, corrected second-stage wording and unified Guksu Cup spelling. After bulk148 actual names, both environments745-key collision checks returned zero. Contradictory 女男子组 remains held; no hide/identity inference.
 
 - [x] Actual whole-scope source capture and frozen unsigned five-language evidence, pending owner plans.
-- [ ] Independent exact owner review; TEST→PROD owner writes; bind745 names to actual afterimages, root review, sequential name writes.
-- [ ] Representative actual HTTP, actual coverage/report, exact receipts and source archives.
+- [x] Root exact owner review; TEST→PROD owner156/name157 actual writes; bind745 names to verified afterimages, root review, sequential name writes.
+- [x] Sixteen representative actual HTTP cases per environment; actual stats/HTML and exact source/receipts archived. Raw display12,856, complete display60,058 (34.7106%).
+
+
+## Continuation 10 — next150b data-only literal batch
+
+Reuse the same reviewed/deployed `sgf_chinese` profile. Actual post149 scope150 raw/1,201 games/750 names; raw-set SHA `39e7bcf9c9619e1334f21f82b0fd561ad31bf85b0549b871de1ae7e6e42ddf91`, frozen source manifest `6831eaacd736b6ef4e99c4c39def0d91023dba944a6b012e539f0799bde7549a`. Root read115 core translations; preserve all years/sponsors/rounds and former Taiwan Rookie King qualifier distinction. Post157 dual-environment collision check has zero blocked/entity-alias matches; the one natural Korean raw-name union is legal literal display. Existing owner61551 (40 albums) + new owner61564 (8) must produce48-member HTTP union; both actual scopes captured, disjoint, and hashed. No event identity/alias/FK inference.
+
+- [x] Independent actual full-scope source/collision capture, root literal matrix review and unsigned frozen research750.
+- [ ] Exact owner review and TEST→PROD writes; finish currently captured player packets before changing catalog; then actual afterimage binding750 and reviewed name writes.
+- [ ] Representative real HTTP including cross-batch48-member union, actual coverage/HTML and archives. No runtime change or broad retests.

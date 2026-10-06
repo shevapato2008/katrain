@@ -50,18 +50,18 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 - Update report: `docs/resource/kifu-five-language-progress-2026-10-05.html`
 - Archive actual evidence/receipts: `docs/resource/kifu-incremental-applied-2026-10-05/`
 
-- [ ] 独立producer从全库grouped frequency高→低选≤150候选，仅实际public NULL／nonhidden／nonduplicate／unselected／unnamed；跳过疑似损坏原文与实体碰撞，不修改译词绕过。
-- [ ] 读取两环境当前owner、原parts、全部SGF first GN／EV／source／SHA及完整scope，冻结raw set／matrix／research／registry。一个core仅翻译一次并复用年份轮次；采用来源URL／摘录／时间／body SHA随evidence入库，literal SGF不声明外部权威核实。
-- [ ] root读core与实际scope／来源，批准准确有限owner计划。来源producer与root reviewer保持分离；root唯一数据库writer。
+- [x] 独立producer从全库grouped frequency高→低选≤150候选，仅实际public NULL／nonhidden／nonduplicate／unselected／unnamed；跳过疑似损坏原文与实体碰撞，不修改译词绕过。
+- [x] 读取两环境当前owner、原parts、全部SGF first GN／EV／source／SHA及完整scope，冻结raw set／matrix／research／registry。一个core仅翻译一次并复用年份轮次；采用来源URL／摘录／时间／body SHA随evidence入库，literal SGF不声明外部权威核实。
+- [x] root读core与实际scope／来源，批准准确有限owner计划。来源producer与root reviewer保持分离；root唯一数据库writer。
 
 ### Task 4: 必要部署与真实验收
 
 - [x] 对现有TEST镜像保留endpoint、identity、缓存及配置，仅更新必要纯验证器／importer代码；核对运行文件SHA与健康。读取并遵循现有server-deploy流程，不无故重建无关服务。
-- [ ] TEST准确owner dry-run→apply→verify；由实际独立producer捕获批准afterimage，绑定pending五語names；root签审后names dry-run→apply→verify。
-- [ ] 确认两种reader对整个实际scope一致、原SGF／段位／FK／identity零改动；代表性的品牌字母、期／届两种分段实际五語显示／精确搜索及英语回退。一次旧profile代表性真实查询证明旧数据仍可读取；无需全状态重拍。
-- [ ] TEST通过后发布相同审核代码到PROD，走同样精确owner／names流程与实际验收；不只凭测试成功宣布上线。
-- [ ] 读取真实PROD覆盖率、更新HTML／完成名单／每批报告；保存冻结source、审批、afterimages、两库真实receipts并git commit/push。2,979候选上限或重复scope不得当作新增完成。
-- [ ] 如需要放宽到多core、纯Latin或通用parser，删除对应候选并继续本有限范围；不扩大本切片。
+- [x] TEST准确owner dry-run→apply→verify；由实际独立producer捕获批准afterimage，绑定pending五語names；root签审后names dry-run→apply→verify。
+- [x] 确认两种reader对整个实际scope一致、原SGF／段位／FK／identity零改动；代表性的品牌字母、期／届两种分段实际五語显示／精确搜索及英语回退。一次旧profile代表性真实查询证明旧数据仍可读取；无需全状态重拍。
+- [x] TEST通过后发布相同审核代码到PROD，走同样精确owner／names流程与实际验收；不只凭测试成功宣布上线。
+- [x] 读取真实PROD覆盖率、更新HTML／完成名单／每批报告；保存冻结source、审批、afterimages、两库真实receipts并git commit/push。2,979候选上限或重复scope不得当作新增完成。
+- [x] 如需要放宽到多core、纯Latin或通用parser，删除对应候选并继续本有限范围；不扩大本切片。
 
 ## 工作分配与持续推进
 
@@ -72,3 +72,5 @@ Run: `PYTHONPATH=. .venv/bin/python -m pytest tests/web_ui/test_kifu_raw_event_t
 2026-10-06：Sol实际RED 10 failed / 113 passed；GREEN 127 passed in 10.22s。独立Astra第1轮代码审核APPROVE，无must-fix，并独立运行127 passed in 10.31s。审核记录见[独立代码审核](../../resource/kifu-mixed-title-code-review-2026-10-06.md)。root核对四文件diff SHA与审核记录一致；当前提交仅完成Chunk1，新profile尚未部署、候选未计为完成。
 
 2026-10-06实际部署准备：两库importer已构建并检查显式profile导入；TEST→PROD web仅COPY共享pure一文件，运行SHA `616796e1b51b9f5afed877a3365d24e5c53d1a48abcc4100254cd41f2dafd70d`，保留实际15/16层Compose与原env路径。两端健康且既有g profile各16 HTTP通过。PROD使用原有sudo -n读取受保护env路径，未打印/改动env。新profile尚无新数据获批或激活，因此不计五语覆盖；混合来源、TEST→PROD owner/name及新数据HTTP仍待后续。报表两reader的内嵌pure同步到相同已审且已部署字节，避免新profile未来漏计。
+
+2026-10-06实际完成 mixed150a：97core、150原始赛事/2948盘/750名称；rawset `f75f4ca94ed0c98d16f6cea57302e19c3fdbea51a00d780aefeded58541c2ff3`。两库owner186、names187均dry/apply/verify通过，750名称、2948原棋局不变、两reader一致、FK0；各26项真实HTTP通过，包括OllehKT/Kt27盘自然同名union及俄语英语回退。nTV混合元老/女子语义以真实KBA抓取支持，不声明2013赛事身份；原scope/source/firstGN/hash和全文support已归档。PROD实际完整展示68606/173025=39.6509%，新增1653。上述先前阶段状态均为当时记录；此处标记实际最终完成。

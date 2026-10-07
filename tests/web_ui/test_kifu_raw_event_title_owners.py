@@ -540,6 +540,28 @@ def test_sgf_chinese_mixed_owner_uses_actual_parser_parts(engine, raw):
             inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese", manifest=manifest)
 
 
+@pytest.mark.parametrize("raw", (
+    "2016惠山古镇杯中国围乙1轮",
+    "18届韩国GG拍卖杯绅士淑女擂台赛2局",
+    "2022年弈城中韩冠军争霸赛32强战2番棋第2局",
+))
+def test_sgf_chinese_mixed_game_round_owner_uses_actual_parser(engine, raw):
+    manifest = chinese_manifest_fixture(engine, (raw,))
+    manifest["profile"] = "sgf_chinese_mixed"
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact mixed Chinese GN game/round title"}
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese", **kwargs)
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese_mixed", **kwargs)
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_chinese_mixed", manifest=manifest)["albums"] == 1
+    result = apply_plan(engine, plan, registry(), digest, canonical_sha256(plan),
+                        profile="sgf_chinese_mixed", manifest=manifest)
+    assert result["change_count"] == 1
+
+
 @pytest.mark.parametrize("damage", ("scope", "existing_name", "changed_manifest", "wrong_marker"))
 def test_sgf_chinese_mixed_owner_keeps_complete_scope_and_manifest_gates(engine, damage):
     manifest = chinese_manifest_fixture(engine, ("KB国民银行杯2012韩国围乙联赛",))

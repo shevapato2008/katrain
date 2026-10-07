@@ -64,6 +64,12 @@ GEOGRAPHIC39_RAW_VALUES = frozenset({
 })
 _ORDINAL = re.compile(r"第[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|轮|輪)\Z")
 _MIXED_EDITION = re.compile(r"第?[一二三四五六七八九十百千万0-9０-９]+(?:届|屆|期)\Z")
+_POSITIVE_NUMBER = (
+    r"(?:[1-9][0-9]{0,2}|0[1-9][0-9]?|00[1-9]|[一二三四五六七八九]"
+    r"|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?)"
+)
+_MIXED_ROUND = re.compile(rf"{_POSITIVE_NUMBER}轮\Z")
+_MIXED_GAME = re.compile(rf"第?{_POSITIVE_NUMBER}局\Z")
 _YEAR = re.compile(r"(?:18|19|20)\d{2}年\Z")
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _LANGUAGE = re.compile(r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\Z")
@@ -141,10 +147,14 @@ def _validate_chinese_literal_parts(raw, parts, *, mixed):
             or not re.search(r"[\u3400-\u9fff]", raw)
             or not isinstance(parts, list) or not parts
             or any(not isinstance(part, dict) or set(part) != {"kind", "text"}
-                   or not _text(part["text"]) or part["kind"] not in {"core", "year", "edition", "round"}
+                   or not _text(part["text"])
+                   or part["kind"] not in {"core", "year", "edition", "round"}
+                   and not (mixed and part["kind"] == "game")
                    or part["kind"] == "edition" and not (
                        _MIXED_EDITION if mixed else _ORDINAL).fullmatch(part["text"])
-                   or part["kind"] == "round" and not _ORDINAL.fullmatch(part["text"])
+                   or part["kind"] == "round" and not (
+                       _ORDINAL.fullmatch(part["text"]) or mixed and _MIXED_ROUND.fullmatch(part["text"]))
+                   or part["kind"] == "game" and not (mixed and _MIXED_GAME.fullmatch(part["text"]))
                    or part["kind"] == "year" and not _YEAR.fullmatch(part["text"]) for part in parts)
             or "".join(part["text"] for part in parts) != raw
             or len({part["kind"] for part in parts}) != len(parts)
@@ -198,10 +208,13 @@ def validate_raw_title_research(record):
     mixed_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
                  and record["sgf_literal_evidence"].get("owner_profile") == SGF_CHINESE_MIXED_PROFILE)
     if any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
+           and not (mixed_sgf and part["kind"] == "game")
            or part["kind"] == "edition" and not (
                _MIXED_EDITION if mixed_sgf else _ORDINAL).fullmatch(part["text"])
            and not (part["kind"] == "edition" and tokyo_edition)
-           or part["kind"] == "round" and not _ORDINAL.fullmatch(part["text"])
+           or part["kind"] == "round" and not (
+               _ORDINAL.fullmatch(part["text"]) or mixed_sgf and _MIXED_ROUND.fullmatch(part["text"]))
+           or part["kind"] == "game" and not (mixed_sgf and _MIXED_GAME.fullmatch(part["text"]))
            or part["kind"] == "year" and not _YEAR.fullmatch(part["text"])
            for part in parts):
         raise ValueError("literal raw title has an unsupported year or ordinal")

@@ -1038,6 +1038,124 @@ def _validate_check(check: dict, owner: dict, target: str, sources: dict[str, di
                  "not-found requires documented complete search scope")
 
 
+POSITIVE_SOURCE_BASIS = "normative_ja_ko_v1"
+POSITIVE_SCOPE = "generated_from_original"
+POSITIVE_RULE = "nikl-ja-ko-personal-name-v1"
+_POSITIVE_RULE_PAGES = {"personal_names": "P000146", "kana_table": "P000108", "japanese_details": "P000129"}
+
+
+def positive_ja_ko_captures(record: dict) -> list[dict]:
+    positive = record["positive_generation"]
+    return [positive["identity"]["capture"], positive["reading"]["capture"],
+            *[item["capture"] for item in positive["rules"]],
+            *[item["capture"] for item in positive["conflict_queries"]]]
+
+
+def _validate_positive_capture(capture: dict) -> None:
+    fields = {"url", "http_status", "fetched_at", "body_text", "body_sha256", "body_excerpt",
+              "locator", "source_role", "observed_lang"}
+    _require(isinstance(capture, dict) and set(capture) == fields, "positive capture fields invalid")
+    _require(_https_url(capture["url"]) and capture["http_status"] == 200
+             and _aware_timestamp(capture["fetched_at"]), "positive capture requires actual usable HTTP 200")
+    _require(all(_text(capture[key]) for key in ("body_text", "body_excerpt", "locator", "source_role", "observed_lang")),
+             "positive capture needs actual body, excerpt, locator and source role")
+    _require(capture["body_sha256"] == hashlib.sha256(capture["body_text"].encode("utf-8")).hexdigest()
+             and capture["body_excerpt"] in capture["body_text"], "positive capture body hash/excerpt mismatch")
+
+
+def _validate_positive_ja_ko(record: dict) -> None:
+    _require(record.get("source_basis") == POSITIVE_SOURCE_BASIS
+             and record.get("scope_status") == POSITIVE_SCOPE
+             and record.get("generation_rule_version") == POSITIVE_RULE
+             and record["owner"]["kind"] == "player" and set(record["owner"]) == {"kind", "id"}
+             and record["lang"] == "ko" and record.get("original_language") == "ja",
+             "positive generation is restricted to existing player ja-to-ko and its exact rule")
+    _require("negative_closure" not in record, "positive generation cannot claim negative closure")
+    positive = record.get("positive_generation")
+    _require(isinstance(positive, dict) and set(positive) == {
+        "version", "identity", "reading", "rules", "explanation", "conflict_queries", "unresolved_conflicts"
+    } and positive["version"] == 1, "positive generation fields invalid")
+    identity, reading = positive["identity"], positive["reading"]
+    _require(isinstance(identity, dict) and set(identity) == {
+        "owner", "original_name", "reading", "status", "method", "basis", "capture"
+    } and identity["owner"] == record["owner"] and identity["original_name"] == record["original_name"]
+             and identity["reading"] == record["reading"] and identity["status"] == "verified"
+             and identity["method"] == "reviewed_owner_binding" and _text(identity["basis"]),
+             "positive identity must bind the verified exact owner, original name and reading")
+    _require(isinstance(reading, dict) and set(reading) == {"surname", "given", "capture"}
+             and all(_text(reading[key]) and re.fullmatch(r"[\u3041-\u3096\u30a1-\u30faー]+", reading[key])
+                     for key in ("surname", "given"))
+             and record["reading"] == reading["surname"] + " " + reading["given"],
+             "positive reading requires full kana with exact surname/given boundaries")
+    rules, queries = positive["rules"], positive["conflict_queries"]
+    _require(isinstance(rules, list) and len(rules) == 3
+             and all(isinstance(item, dict) and set(item) == {"role", "capture"} for item in rules)
+             and {item["role"] for item in rules} == set(_POSITIVE_RULE_PAGES), "positive generation needs three NIKL rule pages")
+    _require(isinstance(queries, list) and len(queries) == 2
+             and all(isinstance(item, dict) and set(item) == {
+                 "role", "query", "capture", "relevant_results", "conclusion"
+             } for item in queries)
+             and {item["role"] for item in queries} == {"original_go", "candidate_go"},
+             "positive generation needs two actual usable conflict queries")
+    for capture in positive_ja_ko_captures(record):
+        _validate_positive_capture(capture)
+    for capture, url in ((identity["capture"], record["original_language_basis_url"]),
+                         (reading["capture"], record["reading_basis_url"])):
+        visible = _VisibleHTML()
+        visible.feed(capture["body_excerpt"])
+        text = re.sub(r"\s+", "", "".join(visible.parts))
+        _require(capture["url"] == url and capture["observed_lang"] == "ja"
+                 and capture["source_role"] in {
+                     "official_person_page", "professional_go_rating_archive", "professional_go_history_compilation",
+                     "biographical_dictionary", "professional_archive", "official_profile"
+                 } and record["original_name"] in text and reading["surname"] + reading["given"] in text,
+                 "positive identity/reading must occur together in actual Japanese source")
+    for item in rules:
+        capture = item["capture"]
+        parsed = urlparse(capture["url"])
+        parameters = parse_qs(parsed.query)
+        _require(parsed.hostname in {"www.korean.go.kr", "korean.go.kr"}
+                 and parsed.path == "/front/page/pageView.do" and parameters == {
+                     "mn_id": ["97"], "page_id": [_POSITIVE_RULE_PAGES[item["role"]]]
+                 } and capture["observed_lang"] == "ko" and capture["source_role"] == "normative_rule",
+                 "positive rules require the exact official NIKL pages")
+    explanation = positive["explanation"]
+    _require(isinstance(explanation, dict) and set(explanation) == {"surname", "given", "output", "rule_applications"}
+             and all(_text(explanation[key]) for key in ("surname", "given", "output"))
+             and explanation["output"] == record["candidate_name"] == explanation["surname"] + " " + explanation["given"]
+             and re.fullmatch(r"[가-힣]+ [가-힣]+", explanation["output"]), "positive output must exactly match reviewed surname/given")
+    applications = explanation["rule_applications"]
+    _require(isinstance(applications, list) and bool(applications)
+             and all(isinstance(item, dict) and set(item) == {"rule_role", "locator", "input", "output", "reason"}
+                     and item["rule_role"] in _POSITIVE_RULE_PAGES
+                     and all(_text(item[key]) for key in ("locator", "input", "output", "reason"))
+                     and item["locator"] == next(rule["capture"]["locator"] for rule in rules
+                                                if rule["role"] == item["rule_role"])
+                     for item in applications)
+             and {item["rule_role"] for item in applications} == set(_POSITIVE_RULE_PAGES),
+             "positive generation needs complete per-name rule explanations")
+    _require(positive["unresolved_conflicts"] == [], "positive generation has unresolved conflicts")
+    for item in queries:
+        query = item["query"]
+        _require(_text(query) and "바둑" in query
+                 and (record["original_name"] if item["role"] == "original_go" else record["candidate_name"]) in query
+                 and item["capture"]["source_role"] == "search_results"
+                 and item["conclusion"] == "no_unresolved_conflict", "positive query tokens or conclusion invalid")
+        results = item["relevant_results"]
+        _require(isinstance(results, list) and all(
+            isinstance(result, dict) and set(result) == {"url", "text", "resolution"}
+            and _https_url(result["url"]) and _text(result["text"]) and _text(result["resolution"])
+            and result["text"] in item["capture"]["body_text"] for result in results),
+            "positive queries require captured relevant results and resolved explanations")
+    for check in record["source_checks"]:
+        _require(check["status"] == "found" and check["candidate_name"] == record["original_name"],
+                 "positive source checks support original Japanese identity, not published Korean usage")
+    _require(any(check["url"] == identity["capture"]["url"]
+                 and check["body_sha256"] == identity["capture"]["body_sha256"]
+                 and check["body_excerpt"] in identity["capture"]["body_text"] for check in record["source_checks"]),
+             "positive source check must bind actual identity capture")
+
+
 def validate_research_record(record: dict, registry: dict) -> dict:
     """Validate one candidate or negative search claim, always returning pending status."""
     _require(isinstance(record, dict), "research record must be an object")
@@ -1053,10 +1171,18 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     _require(_text(record.get("producer_id")) and _text(record.get("producer_model")),
              "actual producer identity/model required")
     scope_status = record.get("scope_status")
+    positive = any((record.get("source_basis") == POSITIVE_SOURCE_BASIS, scope_status == POSITIVE_SCOPE,
+                    record.get("generation_rule_version") == POSITIVE_RULE, "positive_generation" in record))
+    if positive:
+        try:
+            _validate_positive_ja_ko(record)
+        except (KeyError, TypeError, StopIteration) as exc:
+            raise EvidenceError("positive generation has missing or malformed evidence fields") from exc
+        target = "ja"
     sgf_literal = record.get("source_basis") == SGF_LITERAL_BASIS
     _require(not sgf_literal or owner["kind"] == "raw_event" and scope_status == "translated_from_original",
              "SGF literal evidence requires a translated existing raw event")
-    _require(scope_status in SCOPE_STATUSES, "invalid scope status")
+    _require(scope_status in SCOPE_STATUSES or positive, "invalid scope status")
     _require("negative_closure" not in record or scope_status == "not_found_in_scope",
              "negative closure applies only to a negative scope")
     if scope_status != "incomplete":
@@ -1088,6 +1214,10 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     sources = {source["id"]: source for source in registry["sources"]}
     for check in checks:
         _validate_check(check, owner, target, sources, finite_negative="negative_closure" in record)
+        if positive:
+            _require(sources[check["source_id"]]["tier"] in {
+                "official", "language_go", "encyclopedia", "wikipedia_article"
+            }, "positive original identity requires a substantive source, not discovery labels")
         if scope_status == "translated_from_original":
             _require(check["status"] == "found" and check["candidate_name"] == record["original_name"]
                      and sources[check["source_id"]]["tier"] in {
@@ -1098,7 +1228,9 @@ def validate_research_record(record: dict, registry: dict) -> dict:
         }:
             _require(_text(record.get("original_name")), "article identity needs original name")
             _validate_article_evidence(check, sources, record["original_name"])
-    if scope_status == "translated_from_original":
+    if positive:
+        pass
+    elif scope_status == "translated_from_original":
         _require(any(check["url"] == record["original_language_basis_url"] for check in checks),
                  "title translation original-language source must be a captured identity source")
     elif scope_status == "found":
@@ -1405,3 +1537,114 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             "orthographic original needs official name and person-ID body",
         )
     return content
+
+
+def is_positive_ja_ko(candidate: dict | None = None, payload: dict | None = None, rule: str | None = None) -> bool:
+    """Recognize every retained discriminator so partial proof tampering cannot bypass the gate."""
+    candidate = candidate if isinstance(candidate, dict) else {}
+    payload = payload if isinstance(payload, dict) else {}
+    research = payload.get("research")
+    return (rule == POSITIVE_RULE or candidate.get("generation_rule_version") == POSITIVE_RULE
+            or "normative_ja_ko" in payload
+            or isinstance(research, dict) and (research.get("source_basis") == POSITIVE_SOURCE_BASIS
+                or research.get("scope_status") == POSITIVE_SCOPE or "positive_generation" in research))
+
+
+def _positive_content_sha256(value):
+    data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+
+
+def persisted_positive_ja_ko_eligible(name: dict, evidence: dict, batch: dict, registry: dict,
+                                     changes: list[dict]) -> bool:
+    """Pure applied-proof gate shared by ORM and bounded SQL readers; never trusts status alone."""
+    canonical_sha256 = _positive_content_sha256
+
+    try:
+        artifact = batch["reviewed_artifact"]
+        bundle = artifact["bundle"]
+        payload = evidence["research_payload"]
+        row, research, proof = payload["candidate"], payload["research"], payload["normative_ja_ko"]
+        if (batch["status"] != "applied" or canonical_sha256(bundle) != batch["bundle_sha256"]
+                or bundle["registry_sha256"] != registry_sha256(registry)
+                or bundle["registry_version"] != registry["version"]
+                or evidence["source_registry_id"] != batch["source_registry_id"]
+                or not isinstance(proof, dict) or set(proof) != {"batch_id", "research_sha256", "candidate_sha256"}
+                or proof != {"batch_id": batch["id"], "research_sha256": canonical_sha256(research),
+                            "candidate_sha256": canonical_sha256(row)}
+                or row["research_sha256"] != proof["research_sha256"]
+                or proof["research_sha256"] not in artifact["research_hashes"]
+                or [item for item in artifact["normative_research"]
+                    if canonical_sha256(item) == proof["research_sha256"]] != [research]
+                or [item for item in bundle["candidates"] if item["owner"] == row["owner"]
+                    and item["lang"] == row["lang"]] != [row]
+                or [item for item in bundle["members"] if item["owner"] == row["owner"]
+                    and item["lang"] == row["lang"]] != [{"owner": row["owner"], "lang": row["lang"]}]
+                or canonical_sha256(bundle["members"]) != bundle["member_set_sha256"]
+                or row["review_status"] != "approved" or row["decision_kind"] != "generated"
+                or row["generation_rule_version"] != POSITIVE_RULE
+                or research["source_basis"] != POSITIVE_SOURCE_BASIS
+                or row["owner"] != {"kind": "player", "id": name["player_id"]}
+                or name["player_id"] != evidence["player_id"] or name["lang"] != evidence["lang"]
+                or name["lang"] != "ko" or row["lang"] != "ko"
+                or name["status"] != "verified" or evidence["review_status"] != "approved"
+                or name["evidence_id"] != evidence["id"] or name["revision"] != evidence["revision"]
+                or name["display_name"] != row["display_name"] or evidence["candidate_name"] != row["display_name"]
+                or name["decision_kind"] != row["decision_kind"] or evidence["decision_kind"] != row["decision_kind"]
+                or name["generation_rule_version"] != POSITIVE_RULE or evidence["generation_rule_version"] != POSITIVE_RULE):
+            return False
+        name_changes = [change for change in changes if change["target_table"] == "kifu_player_names"
+                        and change["target_row_id"] == name["id"]]
+        evidence_changes = [change for change in changes if change["target_table"] == "kifu_name_research_evidence"
+                            and change["target_row_id"] == evidence["id"]]
+        if (len(name_changes) != 1 or len(evidence_changes) != 1
+                or name_changes[0]["batch_id"] != batch["id"] or evidence_changes[0]["batch_id"] != batch["id"]
+                or name_changes[0]["after_image"] != name or evidence_changes[0]["after_image"] != evidence
+                or evidence_changes[0]["before_image"] is not None
+                or row["name_preimage_sha256"] != (canonical_sha256(name_changes[0]["before_image"])
+                    if name_changes[0]["before_image"] is not None else None)):
+            return False
+        validate_positive_ja_ko_candidate(row, research, registry)
+        return True
+    except (KeyError, TypeError, ValueError, AttributeError, StopIteration):
+        return False
+
+
+def validate_positive_ja_ko_candidate(row, research, registry):
+    """Same finite positive input and exact review contract, without importer/ORM imports."""
+    checked = validate_research_record(research, registry)
+    _require(row['research_sha256'] == _positive_content_sha256(research)
+             and row['owner'] == checked['owner'] and row['lang'] == checked['lang']
+             and row['display_name'] == checked['candidate_name']
+             and row['generation_rule_version'] == POSITIVE_RULE
+             and row['review_status'] == 'approved' and row['decision_kind'] == 'generated',
+             'positive candidate differs from exact research')
+    for key in ('producer_id', 'producer_model'):
+        _require(row[key] == checked[key], 'positive producer differs from research')
+    for key in ('producer_id', 'producer_model', 'reviewer_id', 'reviewer_model', 'review_conclusion'):
+        _require(_text(row[key]), 'positive review metadata missing')
+    _require(row['producer_id'] != row['reviewer_id'], 'positive review must be independent')
+    for key in ('produced_at', 'reviewed_at'):
+        _require(_aware_timestamp(row[key]), 'positive review timestamp invalid')
+    reviewed = datetime.fromisoformat(row['reviewed_at'].replace('Z', '+00:00'))
+    _require(reviewed >= datetime.fromisoformat(row['produced_at'].replace('Z', '+00:00')),
+             'positive review predates production')
+    captures = positive_ja_ko_captures(checked)
+    captures += checked['source_checks']
+    for check in checked['source_checks']:
+        for key in ('identity_corroboration', 'label_evidence'):
+            if isinstance(check.get(key), dict):
+                captures.append(check[key])
+    _require(all(reviewed >= datetime.fromisoformat(c['fetched_at'].replace('Z', '+00:00')) for c in captures),
+             'positive review predates capture')
+    review = row['generated_review']
+    _require(row['review_conclusion'] == 'approved_generated_display_and_rule'
+             and review['decision'] == 'approve_generated' and _text(review['reason'])
+             and review['positive_generation_sha256'] == _positive_content_sha256(checked['positive_generation'])
+             and all(review[key] == 'approved' for key in ('identity_input_review', 'rule_review', 'output_review')),
+             'positive exact input/rule/output review missing')
+    for key in ('display_name', 'owner', 'lang', 'generation_rule_version', 'research_sha256',
+                'reviewer_id', 'reviewer_model', 'reviewed_at'):
+        _require(review[key] == row[key], 'positive exact candidate review mismatch')
+    for key in ('original_name', 'reading', 'reading_basis_url'):
+        _require(review[key] == checked[key], 'positive exact reading review mismatch')

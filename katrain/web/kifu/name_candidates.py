@@ -614,7 +614,21 @@ def _validate_candidate(
                              "SGF literal owner scope differs from approved complete preimage")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
         elif decision == "generated":
-            _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
+            from katrain.web.kifu.name_evidence import POSITIVE_SOURCE_BASIS, POSITIVE_RULE
+            positive = checked.get("source_basis") == POSITIVE_SOURCE_BASIS
+            if positive:
+                _require(row["generation_rule_version"] == POSITIVE_RULE and display == checked["candidate_name"],
+                         "positive generated candidate differs from exact rule/output")
+                if row["review_status"] == "approved":
+                    from katrain.web.kifu.name_evidence import validate_positive_ja_ko_candidate
+                    try:
+                        validate_positive_ja_ko_candidate(row, research, registry)
+                    except EvidenceError as exc:
+                        raise CandidateError(str(exc)) from exc
+            else:
+                _require(row["generation_rule_version"] != POSITIVE_RULE,
+                         "positive generated rule requires its exact research basis")
+                _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
             _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
                      "generated name needs sourced original reading")
             if row["review_status"] == "approved":

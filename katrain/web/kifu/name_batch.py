@@ -676,11 +676,14 @@ def _candidate_evidence(
     raw_display_scope: dict | None = None,
     archive_description: dict | None = None,
     primary_orthographic: dict | None = None,
+    normative_ja_ko: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
     reviewed_at = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
     payload = {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))}
+    if normative_ja_ko is not None:
+        payload["normative_ja_ko"] = normative_ja_ko
     if primary_orthographic is not None:
         payload["primary_orthographic"] = primary_orthographic
     if composition is not None:
@@ -748,6 +751,9 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
                 if row.get("generation_rule_version") == "primary-orthographic-v1"
                 else None
             ),
+            ({"batch_id": batch_id, "research_sha256": row["research_sha256"],
+              "candidate_sha256": canonical_sha256(row)}
+             if row.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1" else None),
         ),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
@@ -894,6 +900,9 @@ def _check_applied_v4(conn, batch, bundle):
             transliteration,
             ({"batch_id": batch["id"], "scope_sha256": candidate["raw_display_scope_sha256"]}
              if "raw_display_scope_sha256" in candidate else None),
+            normative_ja_ko=({"batch_id": batch["id"], "research_sha256": research_hash,
+                              "candidate_sha256": canonical_sha256(candidate)}
+                             if candidate.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1" else None),
         )
         for key, value in expected_evidence.items():
             stored = evidence[key]
@@ -920,11 +929,15 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
     _check_bundle_hash(bundle, expected_bundle_sha256)
     bundle_hash = canonical_sha256(bundle)
     has_transliteration = bundle.get("transliteration") is not None or bundle.get("primary_orthographic") is not None
+    has_positive = any(row.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1"
+                       for row in bundle["candidates"])
+    normative_research = [record for record in evidence_records
+                          if record.get("source_basis") == "normative_ja_ko_v1"]
     with _locked_write(engine) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
             _fail(previous["status"] == "applied", "bundle was previously undone; issue a new reviewed revision")
-            if has_transliteration:
+            if has_transliteration or has_positive:
                 _prevalidate(
                     bundle,
                     registry,
@@ -938,6 +951,9 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                     == sorted(canonical_sha256(record) for record in evidence_records),
                     "applied transliteration artifact changed",
                 )
+                if has_positive:
+                    _fail(previous["reviewed_artifact"].get("normative_research") == normative_research,
+                          "applied positive generation research changed")
                 changes = (
                     conn.execute(select(KifuNameChange).where(KifuNameChange.batch_id == previous["id"]))
                     .mappings()
@@ -978,6 +994,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 "reviewed_artifact": {
                     "bundle": bundle,
                     "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
+                    **({"normative_research": normative_research} if has_positive else {}),
                     **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
                     **(
                         {
@@ -1018,6 +1035,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
             artifact = {
                 "bundle": bundle,
                 "research_hashes": sorted(canonical_sha256(item) for item in evidence_records),
+                **({"normative_research": normative_research} if has_positive else {}),
                 "resolved_refs": resolved,
                 **({"approved_name_snapshot": approved_snapshot} if has_transliteration else {}),
                 **(

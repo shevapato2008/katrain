@@ -1923,3 +1923,94 @@ def test_archive_runtime_rejects_incompatible_persisted_decision_or_version(engi
         db.commit()
         assert [item.id for item in _list(db, q=ARCHIVE_DISPLAYS["en"], lang="en").items] == [13, 12]
         assert coverage_report(engine, inv, languages=("en",))["languages"]["en"]["by_decision"] == {"archive_description": 2}
+
+
+def positive_ja_ko_bundle(inv):
+    from tests.web_ui.test_kifu_name_candidates import positive_ja_ko_fixture
+    evidence, row = positive_ja_ko_fixture()
+    evidence["registry_sha256"] = registry_sha256(registry())
+    row["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"]["research_sha256"] = row["research_sha256"]
+    row["name_preimage_sha256"] = None
+    bind_fixture_candidate(row)
+    proposed, _ = player_bundle(inv)
+    member = {"owner": row["owner"], "lang": row["lang"]}
+    proposed.update(members=[member], member_set_sha256=canonical_sha256([member]), candidates=[row])
+    return proposed, [evidence]
+
+
+def test_positive_ja_ko_importer_reader_requires_exact_applied_ledger(engine):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
+    inv = build_inventory(engine)
+    proposed, evidence = positive_ja_ko_bundle(inv)
+    receipt = apply_bundle(engine, proposed, registry(), inv, evidence)
+    with Session(engine) as db:
+        def eligible():
+            return _qualified_name_rows(db, _approved_names(db, KifuPlayerName, "player_id", [17], "ko"),
+                                        KifuPlayerName, "player_id")
+        assert len(eligible()) == 1
+        name = db.query(KifuPlayerName).one()
+        proof = db.query(KifuNameResearchEvidence).one()
+        assert proof.research_payload.get("normative_ja_ko", {}).get("batch_id") == receipt["batch_id"]
+        batch = db.get(KifuNameBatch, receipt["batch_id"])
+        batch.status = "pending"
+        db.flush()
+        assert eligible() == []
+        batch.status = "applied"
+        original_payload = deepcopy(proof.research_payload)
+        proof.research_payload = {**original_payload, "normative_ja_ko": {"batch_id": receipt["batch_id"] + 1}}
+        db.flush()
+        assert eligible() == []
+        for malformed_id in ([], True):
+            altered = deepcopy(original_payload)
+            altered['normative_ja_ko']['batch_id'] = malformed_id
+            proof.research_payload = altered
+            db.flush()
+            assert eligible() == []
+        for key in ("normative_ja_ko", "research"):
+            altered = deepcopy(original_payload)
+            altered.pop(key)
+            proof.research_payload = altered
+            db.flush()
+            assert eligible() == []
+        altered = deepcopy(original_payload)
+        altered["research"]["reading"] = "ご べつじん"
+        proof.research_payload = altered
+        db.flush()
+        assert eligible() == []
+        proof.research_payload = {"candidate": {}, "research": {}}
+        name.generation_rule_version = "legacy-generated-v1"
+        proof.generation_rule_version = "legacy-generated-v1"
+        db.flush()
+        assert eligible() == []
+        name.generation_rule_version = "nikl-ja-ko-personal-name-v1"
+        proof.generation_rule_version = "nikl-ja-ko-personal-name-v1"
+        proof.research_payload = original_payload
+        name.revision += 1
+        proof.revision += 1
+        db.flush()
+        assert eligible() == []
+        db.rollback()
+    assert apply_bundle(engine, proposed, registry(), inv, evidence)["status"] == "already_applied"
+    with engine.begin() as conn:
+        conn.execute(KifuPlayerName.__table__.update().values(display_name="바뀐 이름"))
+    with pytest.raises(BatchError): apply_bundle(engine, proposed, registry(), inv, evidence)
+
+
+def test_positive_ja_ko_persisted_gate_has_no_importer_dependency(engine, monkeypatch):
+    import sys
+    from katrain.web.kifu.name_evidence import persisted_positive_ja_ko_eligible
+    from katrain.web.kifu.name_batch import _image
+    inv = build_inventory(engine)
+    proposed, evidence = positive_ja_ko_bundle(inv)
+    receipt = apply_bundle(engine, proposed, registry(), inv, evidence)
+    with engine.connect() as conn:
+        name_id = conn.scalar(select(KifuPlayerName.id))
+        evidence_id = conn.scalar(select(KifuNameResearchEvidence.id))
+        name = _image(conn, KifuPlayerName.__table__, name_id)
+        stored = _image(conn, KifuNameResearchEvidence.__table__, evidence_id)
+        batch = _image(conn, KifuNameBatch.__table__, receipt['batch_id'])
+        changes = [_image(conn, KifuNameChange.__table__, change_id)
+                   for change_id in conn.scalars(select(KifuNameChange.id))]
+    monkeypatch.setitem(sys.modules, 'katrain.web.kifu.name_candidates', None)
+    assert persisted_positive_ja_ko_eligible(name, stored, batch, registry(), changes)

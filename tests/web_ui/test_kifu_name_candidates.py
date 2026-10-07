@@ -1415,3 +1415,96 @@ def test_archive_description_rejects_unbound_or_wrong_scope(tmp_path, change):
     proposed["owner_set_sha256"] = canonical_sha256(proposed["owners"])
     proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
     assert not validate_bundle(proposed, archive_registry(), inv, [])["ready"], change
+
+
+def positive_ja_ko_fixture():
+    """Synthetic captured bodies for the narrowly scoped normative evidence contract."""
+    def capture(url, body, role, lang="ja"):
+        return {"url": url, "http_status": 200, "fetched_at": "2026-10-02T10:00:00Z",
+                "body_text": body, "body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                "body_excerpt": body, "locator": "synthetic fixture paragraph", "source_role": role,
+                "observed_lang": lang}
+    reading_capture = capture("https://example.org/go", "呉清源 ご せいげん Professional Go player", "professional_archive")
+    roles = {"personal_names": "P000146", "kana_table": "P000108", "japanese_details": "P000129"}
+    positive = {
+        "version": 1,
+        "identity": {"owner": {"kind": "player", "id": 17}, "original_name": "呉清源",
+                     "reading": "ご せいげん", "status": "verified", "method": "reviewed_owner_binding",
+                     "basis": "Historical profile matched the existing physical owner", "capture": reading_capture},
+        "reading": {"surname": "ご", "given": "せいげん", "capture": reading_capture},
+        "rules": [{"role": role, "capture": capture(
+            f"https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id={page}",
+            f"{page} 실제 일본어 인명 표기 규정", "normative_rule", "ko")} for role, page in roles.items()],
+        "explanation": {"surname": "고", "given": "세이겐", "output": "고 세이겐",
+                        "rule_applications": [{"rule_role": role, "locator": "synthetic fixture paragraph",
+                                              "input": "ご せいげん", "output": "고 세이겐",
+                                              "reason": "Reviewed surname/given, initial/medial and applicable kana"}
+                                             for role in roles]},
+        "conflict_queries": [{"role": role, "query": query,
+                              "capture": capture(f"https://example.org/search?q={role}",
+                                                 "Usable search results for " + query, "search_results", "ko"),
+                              "relevant_results": [], "conclusion": "no_unresolved_conflict"}
+                             for role, query in [("original_go", "呉清源 바둑"),
+                                                 ("candidate_go", "고 세이겐 바둑")]],
+        "unresolved_conflicts": [],
+    }
+    evidence = research(lang="ko", source_basis="normative_ja_ko_v1", scope_status="generated_from_original",
+                        generation_rule_version="nikl-ja-ko-personal-name-v1", candidate_name="고 세이겐",
+                        positive_generation=positive,
+                        source_checks=[check(observed_lang="ja", candidate_name="呉清源",
+                                             body_excerpt=reading_capture["body_excerpt"],
+                                             body_sha256=reading_capture["body_sha256"])])
+    row = approved_generated(candidate(lang="ko", display_name="고 세이겐", decision_kind="generated",
+                                       research_sha256=canonical_sha256(evidence),
+                                       generation_rule_version="nikl-ja-ko-personal-name-v1"), evidence)
+    row["generated_review"].update(positive_generation_sha256=canonical_sha256(positive),
+                                   identity_input_review="approved", rule_review="approved", output_review="approved")
+    return evidence, row
+
+
+def test_positive_ja_ko_research_and_pending_then_exact_approved_candidate():
+    from katrain.web.kifu.name_evidence import validate_research_record
+    evidence, row = positive_ja_ko_fixture()
+    assert validate_research_record(evidence, registry())["scope_status"] == "generated_from_original"
+    pending = {**row, "review_status": "pending", "reviewer_id": "", "reviewer_model": "", "reviewed_at": "", "review_conclusion": ""}
+    assert validate_candidate(pending, evidence, registry(), inventory())["decision_kind"] == "generated"
+    assert validate_candidate(row, evidence, registry(), inventory()) == row
+
+
+@pytest.mark.parametrize("change", [
+    "wrong_owner_kind", "wrong_target", "wrong_source", "wrong_rule", "hash", "reading",
+    "rule_page", "failed_query", "wrong_query_tokens", "unresolved", "unknown_field", "negative_closure",
+])
+def test_positive_ja_ko_rejects_invalid_evidence_boundaries(change):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _ = positive_ja_ko_fixture()
+    positive = evidence["positive_generation"]
+    if change == "wrong_owner_kind": evidence["owner"]["kind"] = "event"
+    elif change == "wrong_target": evidence["lang"] = "jp"
+    elif change == "wrong_source": evidence["original_language"] = "ko"
+    elif change == "wrong_rule": evidence["generation_rule_version"] = "arbitrary-v1"
+    elif change == "hash": positive["reading"]["capture"]["body_sha256"] = "b" * 64
+    elif change == "reading": positive["reading"]["given"] = "guess"
+    elif change == "rule_page": positive["rules"][0]["capture"]["url"] = "https://www.korean.go.kr/other"
+    elif change == "failed_query": positive["conflict_queries"][0]["capture"]["http_status"] = 403
+    elif change == "wrong_query_tokens": positive["conflict_queries"][1]["query"] = "something else"
+    elif change == "unresolved": positive["unresolved_conflicts"] = ["Different sourced reading"]
+    elif change == "unknown_field": positive["invented"] = True
+    elif change == "negative_closure": evidence["negative_closure"] = {}
+    with pytest.raises(EvidenceError): validate_research_record(evidence, registry())
+
+
+@pytest.mark.parametrize("change", ["early_review", "output", "research_hash", "review_hash", "input_review", "rule"])
+def test_positive_ja_ko_rejects_inexact_or_early_review(change):
+    evidence, row = positive_ja_ko_fixture()
+    if change == "early_review":
+        evidence["positive_generation"]["rules"][0]["capture"]["fetched_at"] = "2026-10-02T12:00:00Z"
+        row["research_sha256"] = canonical_sha256(evidence)
+        row["generated_review"].update(research_sha256=row["research_sha256"],
+            positive_generation_sha256=canonical_sha256(evidence["positive_generation"]))
+    elif change == "output": row["display_name"] = "다른 이름"
+    elif change == "research_hash": row["research_sha256"] = "b" * 64
+    elif change == "review_hash": row["generated_review"]["positive_generation_sha256"] = "b" * 64
+    elif change == "input_review": row["generated_review"]["identity_input_review"] = "pending"
+    elif change == "rule": row["generation_rule_version"] = "arbitrary-v1"
+    with pytest.raises(CandidateError): validate_candidate(row, evidence, registry(), inventory())

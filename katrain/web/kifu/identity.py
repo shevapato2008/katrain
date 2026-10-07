@@ -105,8 +105,34 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
     from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
 
     from katrain.web.kifu import name_orthographic
+    from katrain.web.kifu.name_evidence import is_positive_ja_ko, persisted_positive_ja_ko_eligible
+    from katrain.web.core.models_db import KifuNameChange, KifuNameSourceRegistry
+
+    def image(row):
+        return {column.name: (value.isoformat() if hasattr(value, "isoformat") else value)
+                for column in row.__table__.columns for value in [getattr(row, column.name)]}
+
+    def positive_proof(name, evidence):
+        payload = evidence.research_payload
+        candidate = payload.get("candidate") if isinstance(payload, dict) else None
+        return (evidence.id in positive_ledger_ids or is_positive_ja_ko(candidate, payload, name.generation_rule_version)
+                or evidence.generation_rule_version == "nikl-ja-ko-personal-name-v1")
 
     rows = query.with_entities(model, KifuNameResearchEvidence, *entities).all()
+    # The creation ledger retains the original method even if every mutable
+    # discriminator was removed. Bound this lookup to evidence already returned.
+    evidence_ids = {evidence.id for _, evidence, *_ in rows}
+    positive_ledger_ids = set()
+    if evidence_ids:
+        for change in db.query(KifuNameChange).filter(
+            KifuNameChange.target_table == "kifu_name_research_evidence",
+            KifuNameChange.target_row_id.in_(evidence_ids),
+        ):
+            after = change.after_image
+            if isinstance(after, dict) and is_positive_ja_ko(
+                payload=after.get("research_payload"), rule=after.get("generation_rule_version")
+            ):
+                positive_ledger_ids.add(change.target_row_id)
 
     def orthographic_proof(name, evidence):
         payload = evidence.research_payload
@@ -121,11 +147,12 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
 
     batch_ids = set()
     for name, evidence, *_ in rows:
-        if (name.decision_kind == "transliterated" or orthographic_proof(name, evidence)) and isinstance(
+        if (name.decision_kind == "transliterated" or orthographic_proof(name, evidence) or positive_proof(name, evidence)) and isinstance(
             evidence.research_payload, dict
         ):
             proof = evidence.research_payload.get(
-                "primary_orthographic" if orthographic_proof(name, evidence) else "transliteration"
+                "normative_ja_ko" if positive_proof(name, evidence)
+                else "primary_orthographic" if orthographic_proof(name, evidence) else "transliteration"
             )
             if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
                 batch_ids.add(proof["batch_id"])
@@ -136,9 +163,33 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
     )
     contexts = {key: persisted_batch_bindings(batch) for key, batch in batches.items()}
     orthographic_contexts = {key: name_orthographic.persisted_batch_bindings(batch) for key, batch in batches.items()}
+    positive_batch_ids = {evidence.research_payload.get("normative_ja_ko", {}).get("batch_id")
+                          for name, evidence, *_ in rows if positive_proof(name, evidence)
+                          and isinstance(evidence.research_payload, dict)
+                          and isinstance(evidence.research_payload.get("normative_ja_ko"), dict)
+                          and type(evidence.research_payload["normative_ja_ko"].get("batch_id")) is int}
+    positive_batch_ids = {key for key in positive_batch_ids if type(key) is int and key in batches}
+    registry_ids = {batches[key].source_registry_id for key in positive_batch_ids}
+    registries = {row.id: row.registry for row in db.query(KifuNameSourceRegistry).filter(
+        KifuNameSourceRegistry.id.in_(registry_ids))} if registry_ids else {}
+    positive_changes = {key: [] for key in positive_batch_ids}
+    if positive_batch_ids:
+        for change in db.query(KifuNameChange).filter(KifuNameChange.batch_id.in_(positive_batch_ids)):
+            positive_changes[change.batch_id].append(image(change))
     result = []
     for row in rows:
         name, evidence, *extra = row
+        if positive_proof(name, evidence):
+            payload = evidence.research_payload
+            proof = payload.get("normative_ja_ko") if isinstance(payload, dict) else None
+            batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
+            if type(batch_id) is int and batch_id in positive_batch_ids:
+                batch = batches[batch_id]
+                registry = registries.get(batch.source_registry_id)
+                if persisted_positive_ja_ko_eligible(image(name), image(evidence), image(batch), registry,
+                                                    positive_changes[batch_id]):
+                    result.append(row)
+            continue
         orthographic = orthographic_proof(name, evidence)
         if name.decision_kind != "transliterated" and not orthographic:
             result.append(row)

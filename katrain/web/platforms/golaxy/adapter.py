@@ -12,6 +12,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from typing import Optional
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -56,6 +57,83 @@ class GolaxyLobbyAuthError(GolaxyLobbyError):
 
 class GolaxySnapshotUnsupported(GolaxyLobbyError):
     """This room uses a board setup not yet verified for spectating."""
+
+
+# Exact `computerLevel` Elo-to-label rows in the official client (PROTOCOL.md).
+# Its 1–18 级 rows match our already captured AI table; the human list extends
+# through 25 级. Missing Elo values such as 2700 deliberately stay unknown.
+_LOBBY_RANKS = {str(row["elo_score"]): row["level_name"] for row in engine_client.GOLAXY_AI_LEVELS}
+_LOBBY_RANKS.update({"210": "19级", "200": "20级", "190": "21级", "180": "22级", "170": "23级", "160": "24级", "150": "25级"})
+_LOBBY_GAME_TYPES = {"80": "自由战", "82": "升降战"}
+_LOBBY_PRESENCE = {
+    "-1": "拒绝",
+    "0": "创建",
+    "10": "登录",
+    "20": "空闲",
+    "30": "忙碌",
+    "40": "对弈",
+    "50": "离线",
+    "90": "退出",
+    "WSGAME_WATCH": "观战",
+    "AI_LIFE_DEATH": "AI解题中",
+    "AI_ANALYSIS": "研究中",
+    "AI_GAME": "对弈",
+}
+_LOBBY_STATUS_PRIORITY = {"0": 0, "10": 0, "20": 1, "30": 2, "40": 3, "50": 0, "90": 0}
+
+
+def _lobby_label(value, labels: dict[str, str]) -> Optional[str]:
+    return labels.get(str(value)) if type(value) in (int, str) else None
+
+
+def _lobby_count(value) -> Optional[int]:
+    return value if type(value) is int and value >= 0 else None
+
+
+def _lobby_presence(row: dict) -> Optional[str]:
+    connection = _lobby_label(row.get("connectionStatus"), {"0": "closed", "1": "open"})
+    web = _lobby_label(row.get("webConnectionStatus"), {"0": "closed", "1": "open"})
+    app = _lobby_label(row.get("appConnectionStatus"), {"0": "closed", "1": "open"})
+    if connection is None:
+        connection = "open" if "open" in (web, app) else "closed" if web == app == "closed" else None
+    if connection == "closed":
+        return "离线"
+    if connection != "open":
+        return None
+    if row.get("inviteAble") in (False, 0, "0"):
+        return "拒绝"
+    for device in ("web", "app"):
+        if _lobby_label(row.get(f"{device}ConnectionStatus"), {"1": "open"}) and row.get(f"{device}UserStatusDetail"):
+            label = _lobby_label(row[f"{device}UserStatusDetail"], _LOBBY_PRESENCE)
+            if label:
+                return label
+    statuses = [row.get(f"{device}UserStatus") for device, state in (("web", web), ("app", app)) if state == "open"]
+    statuses = [value for value in statuses if _lobby_label(value, _LOBBY_PRESENCE)]
+    if statuses:
+        return _lobby_label(
+            max(statuses, key=lambda value: _LOBBY_STATUS_PRIORITY.get(str(value), -1)), _LOBBY_PRESENCE
+        )
+    return _lobby_label(row.get("userStatus"), _LOBBY_PRESENCE)
+
+
+def _lobby_avatar(row: dict) -> Optional[str]:
+    """Keep verified official HTTPS assets; filename resolution is not verified."""
+    value = row.get("photoFile") or row.get("photo")
+    if not isinstance(value, str) or any(char.isspace() for char in value) or "\\" in value:
+        return None
+    try:
+        url = urlsplit(value)
+        if (
+            url.scheme == "https"
+            and url.hostname == "assets.19x19.com"
+            and url.port in (None, 443)
+            and url.username is None
+            and url.password is None
+        ):
+            return value
+    except ValueError:
+        pass
+    return None
 
 
 def _handicap_stones(n: int, board_size: int = 19) -> list[int]:
@@ -292,6 +370,10 @@ class GolaxyEngineTerminal(Exception):
     """
 
 
+class GolaxySelfFollowError(GolaxyLobbyError):
+    """The authenticated account cannot follow itself."""
+
+
 class GolaxyRestClient:
     """HTTP client for Golaxy REST API."""
 
@@ -329,6 +411,7 @@ class GolaxyRestClient:
         # because a user re-logging in WITHOUT an intervening disconnect
         # never reaches this method.
         self._username = None
+        self._user_code = None
 
     # --- Auth ---
 
@@ -452,6 +535,8 @@ class GolaxyRestClient:
         return data
 
     def set_tokens(self, access_token: str, refresh_token: str) -> None:
+        if access_token != self._access_token:
+            self._user_code = None
         self._access_token = access_token
         self._refresh_token = refresh_token
 
@@ -478,9 +563,104 @@ class GolaxyRestClient:
         instance before it (`GolaxyAdapter` is a per-platform singleton that
         outlives any one katrain user's session — see F1, task-6a review)."""
         self._username = None
+        self._user_code = None
 
     def get_auth_data(self) -> dict:
         return {"access_token": self._access_token, "refresh_token": self._refresh_token, "user_code": self._user_code}
+
+    async def get_account_identity(self) -> dict[str, str]:
+        """Read the nickname and login principal attached to the current token."""
+        if not self._access_token:
+            raise GolaxyLobbyAuthError("Golaxy login required")
+        client = await self._ensure_client()
+        try:
+            response = await client.post(
+                "/api/auth/oauth/check_token",
+                data={"token": self._access_token},
+                headers={"Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}"},
+                timeout=8.0,
+            )
+            if response.status_code in (401, 403):
+                raise GolaxyLobbyAuthError("Golaxy login expired")
+            response.raise_for_status()
+            body = response.json()
+        except GolaxyLobbyError:
+            raise
+        except (httpx.HTTPError, ValueError) as exc:
+            raise GolaxyLobbyError("Golaxy account unavailable") from exc
+        if not isinstance(body, dict) or body.get("active") is not True:
+            raise GolaxyLobbyAuthError("Golaxy login expired")
+        nickname = body.get("nickname")
+        username = body.get("username")
+        if not isinstance(nickname, str) or not nickname.strip():
+            raise GolaxyLobbyError("Golaxy nickname unavailable")
+        if not isinstance(username, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", username):
+            raise GolaxyLobbyError("Golaxy login principal unavailable")
+        self.set_username(username)
+        user_code = body.get("usercode")
+        if isinstance(user_code, (str, int)) and not isinstance(user_code, bool) and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", str(user_code)):
+            self._user_code = str(user_code)
+        return {"nickname": nickname.strip(), "username": username}
+
+    async def _get_user_code(self) -> str:
+        if self._user_code is None:
+            await self.get_account_identity()
+        if self._user_code is None:
+            raise GolaxyLobbyError("Golaxy user code unavailable")
+        return self._user_code
+
+    async def _enveloped_data(self, method: str, path: str, *, params: Optional[dict] = None, payload: Optional[dict] = None) -> object:
+        client = await self._ensure_client()
+        try:
+            response = await client.request(
+                method, path, params=params, json=payload, headers=self._auth_headers(), timeout=10.0,
+            )
+            if response.status_code in (401, 403):
+                raise GolaxyLobbyAuthError("Golaxy login expired")
+            response.raise_for_status()
+            body = response.json()
+        except GolaxyLobbyError:
+            raise
+        except (httpx.HTTPError, ValueError) as exc:
+            raise GolaxyLobbyError("Golaxy request unavailable") from exc
+        if not isinstance(body, dict):
+            raise GolaxyLobbyError("Golaxy response malformed")
+        if str(body.get("code")) == "6003":
+            raise GolaxyLobbyAuthError("Golaxy login expired")
+        if str(body.get("code")) != "0":
+            raise GolaxyLobbyError("Golaxy request failed")
+        return body.get("data")
+
+    async def get_player_profile(self, peer_code: str) -> dict:
+        caller_code = await self._get_user_code()
+        data = await self._enveloped_data(
+            "GET",
+            f"/api/social/follow/user/info/user_code/{caller_code}",
+            params={"peer_user_code": peer_code},
+        )
+        if not isinstance(data, dict) or str(data.get("userCode")) != peer_code:
+            raise GolaxyLobbyError("Golaxy profile malformed")
+        return data
+
+    async def get_player_games(self, peer_code: str, page: int = 0) -> dict:
+        data = await self._enveloped_data(
+            "GET",
+            f"/api/engine/games/user_code/{peer_code}",
+            params={"game_type": 8, "page": page, "size": 10},
+        )
+        if not isinstance(data, dict) or not isinstance(data.get("gameMetaList"), list):
+            raise GolaxyLobbyError("Golaxy game history malformed")
+        return data
+
+    async def change_player_follow(self, peer_code: str, follow: bool) -> None:
+        caller_code = await self._get_user_code()
+        if peer_code == caller_code:
+            raise GolaxySelfFollowError("Cannot follow yourself")
+        action = "follow" if follow else "unfollow"
+        key = "followee_user_code" if follow else "peer_user_code"
+        await self._enveloped_data(
+            "POST", f"/api/social/follow/{action}/user_code/{caller_code}", payload={key: peer_code},
+        )
 
     @property
     def is_authenticated(self) -> bool:
@@ -563,11 +743,25 @@ class GolaxyRestClient:
             raise GolaxyLobbyError("Golaxy lobby response malformed")
         return body["data"]
 
-    async def list_gamerooms(self) -> list[dict]:
-        return await self._lobby_list("/api/social/gameroom/list", {"page": 0, "size": 15})
+    async def list_gamerooms(self, page: int = 0) -> list[dict]:
+        return await self._lobby_list("/api/social/gameroom/list", {"page": page, "size": 16})
 
-    async def list_gamezone_users(self) -> list[dict]:
-        return await self._lobby_list("/api/social/gamezone/user/list", {"page": 0, "size": 15, "level": -1})
+    async def list_gamezone_users(self, page: int = 0, filter_name: str = "all") -> list[dict]:
+        params = {"page": page, "size": 20}
+        if filter_name == "following":
+            return await self._lobby_list("/api/social/gamezone/user/follow/list", params)
+        level = -1
+        if filter_name == "same_level":
+            caller = await self._get_user_code()
+            profile = await self.get_player_profile(caller)
+            raw_level = profile.get("level")
+            level = _lobby_count(raw_level)
+            if type(raw_level) is str and raw_level.isascii() and raw_level.isdecimal():
+                level = int(raw_level)
+            if level is None:
+                raise GolaxyLobbyError("Golaxy account level unavailable")
+        params["level"] = level
+        return await self._lobby_list("/api/social/gamezone/user/list", params)
 
     async def get_gameroom_info(self, room_id: str) -> dict:
         """Read one authenticated room, without forwarding upstream response bodies on errors."""
@@ -756,16 +950,10 @@ class GolaxyAdapter(PlatformAdapter):
                 logger.info("Golaxy connected via SMS")
                 return True
 
-            # Scan-login: the confirmed uuid IS the credential, there is no
-            # phone number at this layer (R-29, task-6a-brief.md). Callers
-            # pass `credentials.username = ""` for this path on purpose. The
-            # `clear_username()` call above (not `set_username`'s no-op — see
-            # F1, task-6a review) is what actually makes this leave `_username`
-            # unset, which is what makes `fetch_item_counts()` degrade
-            # honestly (raises `Fatal` instead of guessing a `0086-{昵称}`
-            # principal, or — before F1 was fixed — silently reusing whoever
-            # was connected before this scan login) until this user separately
-            # links a real phone-based login.
+            # Scan-login uses the confirmed uuid to obtain tokens. The caller
+            # may supply the verified phone principal from /scan/username;
+            # clear_username above prevents an older account's principal from
+            # surviving when that lookup fails.
             scan_uuid = auth_data.get("scan_uuid")
             if scan_uuid:
                 await self._rest.login_scan_code(scan_uuid)
@@ -816,8 +1004,48 @@ class GolaxyAdapter(PlatformAdapter):
         """
         return self._rest.get_auth_data()
 
-    async def get_rooms(self) -> list[dict]:
-        rows = await self._rest.list_gamerooms()
+    async def get_account_identity(self) -> dict[str, str]:
+        return await self._rest.get_account_identity()
+
+    async def get_player_profile(self, peer_code: str) -> dict:
+        row = await self._rest.get_player_profile(peer_code)
+        name = row.get("followAlias") or row.get("nickname")
+        if not isinstance(name, str) or not name.strip():
+            raise GolaxyLobbyError("Golaxy profile malformed")
+        follow_type = row.get("followType")
+        return {
+            "user_id": peer_code,
+            "is_self": peer_code == await self._rest._get_user_code(),
+            "username": name.strip(),
+            "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
+            "wins": _lobby_count(row.get("winNum")),
+            "losses": _lobby_count(row.get("loseNum")),
+            "followed": follow_type in (1, 3) if follow_type in (0, 1, 2, 3) else None,
+        }
+
+    async def get_player_games(self, peer_code: str, page: int = 0) -> dict:
+        data = await self._rest.get_player_games(peer_code, page=page)
+        total = _lobby_count(data.get("total"))
+        games = []
+        for row in data["gameMetaList"]:
+            if not isinstance(row, dict) or not isinstance(row.get("id"), (str, int)):
+                raise GolaxyLobbyError("Golaxy game history malformed")
+            games.append({
+                "game_id": str(row["id"]),
+                "black": row.get("pb") if isinstance(row.get("pb"), str) else None,
+                "white": row.get("pw") if isinstance(row.get("pw"), str) else None,
+                "move_number": _lobby_count(row.get("moveNum")),
+                "result": row.get("gameResult") if isinstance(row.get("gameResult"), str) else None,
+                "board_size": row.get("boardSize") if row.get("boardSize") in (9, 13, 19) else None,
+            })
+        return {"total": total, "games": games}
+
+    async def change_player_follow(self, peer_code: str, follow: bool) -> dict:
+        await self._rest.change_player_follow(peer_code, follow)
+        return await self.get_player_profile(peer_code)
+
+    async def get_rooms(self, page: int = 0) -> list[dict]:
+        rows = await self._rest.list_gamerooms(page=page)
         rooms = []
         for row in rows:
             room_id = row.get("id")
@@ -825,23 +1053,30 @@ class GolaxyAdapter(PlatformAdapter):
                 raise GolaxyLobbyError("Golaxy room response malformed")
             meta = row.get("gameMetaDto") if isinstance(row.get("gameMetaDto"), dict) else {}
             state = meta.get("gameState") if isinstance(meta.get("gameState"), dict) else {}
-            move_num = state.get("moveNum")
+            move_num = _lobby_count(state.get("moveNum"))
+            room_state = row.get("gameroomStateDto") if isinstance(row.get("gameroomStateDto"), dict) else {}
 
             def player(color: str):
                 code, name = meta.get(f"{color}UserCode"), meta.get(f"{color}Nickname")
                 if not code or not name:
                     return None
-                return {"user_id": str(code), "username": str(name), "rank": None}
+                return {
+                    "user_id": str(code),
+                    "username": str(name),
+                    "rank": _lobby_label(meta.get(f"{color}Level"), _LOBBY_RANKS),
+                }
 
             rooms.append(
                 {
                     "room_id": str(room_id),
                     "room_number": str(row["gameroomCode"]) if row.get("gameroomCode") is not None else None,
-                    "room_type": None,
+                    "room_type": _lobby_label(meta.get("gameType"), _LOBBY_GAME_TYPES),
                     "handicap": meta.get("handicap") if type(meta.get("handicap")) is int else None,
                     "black": player("black"),
                     "white": player("white"),
-                    "phase": f"{move_num}手" if type(move_num) is int and move_num >= 0 else None,
+                    "phase": f"{move_num}手" if move_num is not None else None,
+                    "move_number": move_num,
+                    "room_user_count": _lobby_count(room_state.get("onlineUserCount")),
                     "spectator_count": None,
                 }
             )
@@ -883,33 +1118,55 @@ class GolaxyAdapter(PlatformAdapter):
         from sgfmill import boards
 
         board = boards.Board(19)
+        columns = "ABCDEFGHJKLMNOPQRST"
         ko_point = None
+        history = []
+
+        def position(number: int, last_move: dict | None) -> dict:
+            black_stones = []
+            white_stones = []
+            for row in range(19):
+                for col in range(19):
+                    color = board.get(row, col)
+                    if color == "b":
+                        black_stones.append(f"{columns[col]}{row + 1}")
+                    elif color == "w":
+                        white_stones.append(f"{columns[col]}{row + 1}")
+            return {
+                "black_stones": black_stones,
+                "white_stones": white_stones,
+                "move_number": number,
+                "last_move": last_move,
+            }
+
+        history.append(position(0, None))
         for turn, item in enumerate(moves):
             point = golaxy_to_katrain(int(item), 19)
+            color = "B" if turn % 2 == 0 else "W"
             if isinstance(point, Pass):
                 ko_point = None
+                history.append(position(turn + 1, {"color": color, "coordinate": None}))
                 continue
             if not isinstance(point, Move) or (point.row, point.col) == ko_point:
                 raise GolaxyLobbyError("Golaxy room history malformed")
-            color = "b" if turn % 2 == 0 else "w"
             try:
-                ko_point = board.play(point.row, point.col, color)
+                ko_point = board.play(point.row, point.col, color.lower())
             except ValueError as exc:
                 raise GolaxyLobbyError("Golaxy room history malformed") from exc
             # sgfmill handles captures but deliberately permits self-capture.
-            if board.get(point.row, point.col) != color:
+            if board.get(point.row, point.col) != color.lower():
                 raise GolaxyLobbyError("Golaxy room history malformed")
+            history.append(position(turn + 1, {"color": color, "coordinate": f"{columns[point.col]}{point.row + 1}"}))
 
-        columns = "ABCDEFGHJKLMNOPQRST"
-        black_stones = []
-        white_stones = []
-        for row in range(19):
-            for col in range(19):
-                color = board.get(row, col)
-                if color == "b":
-                    black_stones.append(f"{columns[col]}{row + 1}")
-                elif color == "w":
-                    white_stones.append(f"{columns[col]}{row + 1}")
+        raw_game_ids = (room.get("wsGameId"), meta.get("wsGameId"), state.get("wsGameId"))
+        meta_room_id = meta.get("gameroomId")
+        game_id = (
+            str(raw_game_ids[0])
+            if all(type(value) is int and value > 0 and value == raw_game_ids[0] for value in raw_game_ids)
+            and (meta_room_id is None or (type(meta_room_id) is int and meta_room_id == room["id"]))
+            else None
+        )
+        latest = history[-1]
 
         def player(color: str) -> dict | None:
             name = meta.get(f"{color}Nickname")
@@ -928,22 +1185,44 @@ class GolaxyAdapter(PlatformAdapter):
             "board_size": 19,
             "black": player("black"),
             "white": player("white"),
-            "black_stones": black_stones,
-            "white_stones": white_stones,
+            "black_stones": latest["black_stones"],
+            "white_stones": latest["white_stones"],
             "move_number": move_number,
+            "game_id": game_id,
+            "last_move": latest["last_move"],
+            "history": history,
+            "clocks": None,
+            "members": None,
             "phase": phase,
             "result": None,
         }
 
-    async def get_online_users(self, room: Optional[str] = None) -> list[dict]:
-        rows = await self._rest.list_gamezone_users()
+    async def get_online_users(self, room: Optional[str] = None, *, page: int = 0, filter_name: str = "all") -> list[dict]:
+        caller = await self._rest._get_user_code()
+        rows = await self._rest.list_gamezone_users(page=page, filter_name=filter_name)
         users = []
         for row in rows:
             code = row.get("userCode")
             name = row.get("followAlias") or row.get("nickname")
             if not code or not name:
                 raise GolaxyLobbyError("Golaxy user response malformed")
-            users.append({"user_id": str(code), "username": str(name), "rank": None, "status": None})
+            users.append(
+                {
+                    "user_id": str(code),
+                    "is_self": str(code) == caller,
+                    "username": str(name),
+                    "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
+                    "status": _lobby_presence(row),
+                    "wins": _lobby_count(row.get("winNum")),
+                    "losses": _lobby_count(row.get("loseNum")),
+                    "invite_able": (
+                        row["inviteAble"] in (True, 1, "1")
+                        if row.get("inviteAble") in (True, False, 0, 1, "0", "1")
+                        else None
+                    ),
+                    "avatar_url": _lobby_avatar(row),
+                }
+            )
         return users
 
     async def submit_move(self, game_id: str, col: int, row: int) -> bool:

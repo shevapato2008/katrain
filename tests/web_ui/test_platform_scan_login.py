@@ -191,9 +191,9 @@ class TestGolaxyScanLoginPoll:
 
 
 class TestGolaxyScanLoginUsername:
-    async def test_username_returns_the_nickname_string(self):
-        client = make_client(json_handler("/api/auth/scan/username", {"code": "0", "data": "阿范"}))
-        assert await GolaxyScanLogin(client=client).username("abc-123") == "阿范"
+    async def test_username_returns_the_phone_principal(self):
+        client = make_client(json_handler("/api/auth/scan/username", {"code": "0", "data": "0086-13116158612"}))
+        assert await GolaxyScanLogin(client=client).username("abc-123") == "0086-13116158612"
 
 
 # --------------------------------------------------------------------------- #
@@ -826,7 +826,7 @@ class TestScanConfirmOwnership:
         import katrain.web.platforms.golaxy.scan_login as scan_login_mod
 
         async def fake_username(self, uuid):
-            return "阿范"
+            return "0086-13116158612"
 
         monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "username", fake_username)
 
@@ -860,9 +860,11 @@ class TestScanConfirmOwnership:
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["connected"] is True
-        assert body["display_name"] == "阿范"
+        assert body["display_name"] == ""  # FakeManager has no authenticated identity reader.
         assert len(manager.connect_calls) == 1
         assert manager.connect_calls[0][2] == 1
+        assert manager.connect_calls[0][1].username == "0086-13116158612"
+        assert "display_name" not in manager.connect_calls[0][1].auth_data
 
 
 class TestScanConfirmIdempotency:

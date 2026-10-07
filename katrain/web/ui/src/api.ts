@@ -254,22 +254,57 @@ export interface GolaxyOnlinePlayer {
   username: string;
   rank: string | null;
   status: string | null;
+  // Verified display projections; malformed or missing values remain null.
+  wins?: number | null;
+  losses?: number | null;
+  is_self?: boolean; // Compared with the caller usercode verified by check_token.
+  invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
+  avatar_url?: string | null;
+}
+
+export interface GolaxyPlayerProfile extends Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank' | 'wins' | 'losses' | 'is_self'> {
+  followed: boolean | null;
+}
+
+export interface GolaxyPlayerGame {
+  game_id: string;
+  black: string | null;
+  white: string | null;
+  move_number: number | null;
+  result: string | null;
+  board_size: number | null;
 }
 
 export interface GolaxyRoom {
   room_id: string;
   room_number: string | null;
-  room_type: string | null;
+  room_type: string | null; // Verified game category (自由战 / 升降战), not gameroomType.
   handicap: number | null;
   black: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   white: Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank'> | null;
   phase: string | null;
-  spectator_count: number | null;
+  spectator_count: number | null; // No verified spectator membership count; currently null.
+  move_number?: number | null;
+  room_user_count?: number | null; // All room users, including players.
+}
+
+export interface GolaxySpectatorPosition {
+  black_stones: string[];
+  white_stones: string[];
+  move_number: number;
+  last_move: { color: 'B' | 'W'; coordinate: string | null } | null;
+}
+
+export interface GolaxySpectatorClock {
+  remaining_seconds: number;
+  period_seconds?: number | null;
+  periods_remaining?: number | null;
 }
 
 /** One read-only, server-authoritative board position. Coordinates use Go notation such as Q16. */
 export interface GolaxySpectatorSnapshot {
   room_id: string;
+  game_id: string | null; // Null until matching upstream room/meta/state IDs establish identity.
   room_number: string | null;
   board_size: 19;
   black: { username: string; rank: string | null } | null;
@@ -281,6 +316,10 @@ export interface GolaxySpectatorSnapshot {
   result: string | null;
   room_type: string | null;
   handicap: number | null;
+  last_move: GolaxySpectatorPosition['last_move'];
+  history: GolaxySpectatorPosition[];
+  clocks: { black: GolaxySpectatorClock; white: GolaxySpectatorClock; active_color?: 'B' | 'W' | null } | null;
+  members: { user_id: string; username: string; role: 'black' | 'white' | 'spectator' | null }[] | null;
 }
 
 export interface PlatformChallenge {
@@ -740,12 +779,12 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string | null | undefined) => {
+  platformLogout: async (platform: string, token: string | null | undefined): Promise<{ status: string; platform: string }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
       headers: authHeaders(token),
     });
-    if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
+    if (!response.ok) throw new ApiError(response.status, `Logout failed: ${response.status}`);
     return response.json();
   },
   platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {
@@ -755,16 +794,42 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string): Promise<{ users: T[] }> => {
-    const params = query ? `?q=${encodeURIComponent(query)}` : '';
+  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string, lobby?: { page: number; filter: 'all' | 'same_level' | 'following' }): Promise<{ users: T[] }> => {
+    const search = new URLSearchParams();
+    if (query) search.set('q', query);
+    if (lobby) { search.set('page', String(lobby.page)); search.set('filter', lobby.filter); }
+    const params = search.size ? `?${search}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new ApiError(response.status, `Failed to get users (${response.status})`);
     return response.json();
   },
-  platformRooms: async (platform: string, token: string | null | undefined): Promise<{ rooms: GolaxyRoom[] }> => {
-    const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
+  platformPlayerProfile: async (platform: string, peerCode: string, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/profile`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player profile (${response.status})`);
+    return response.json();
+  },
+  platformPlayerGames: async (platform: string, peerCode: string, token: string | null | undefined, page = 0): Promise<{ total: number | null; games: GolaxyPlayerGame[] }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/games?page=${page}`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to get player games (${response.status})`);
+    return response.json();
+  },
+  platformFollowPlayer: async (platform: string, peerCode: string, follow: boolean, token: string | null | undefined): Promise<{ profile: GolaxyPlayerProfile }> => {
+    const response = await fetch(`/api/v1/platforms/${platform}/users/${encodeURIComponent(peerCode)}/follow`, {
+      method: follow ? 'POST' : 'DELETE',
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new ApiError(response.status, `Failed to change player follow (${response.status})`);
+    return response.json();
+  },
+  platformRooms: async (platform: string, token: string | null | undefined, page?: number): Promise<{ rooms: GolaxyRoom[] }> => {
+    const params = page === undefined ? '' : `?page=${page}`;
+    const response = await fetch(`/api/v1/platforms/${platform}/rooms${params}`, {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new ApiError(response.status, `Failed to get rooms (${response.status})`);

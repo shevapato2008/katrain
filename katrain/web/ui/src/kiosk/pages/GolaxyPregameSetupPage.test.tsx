@@ -17,9 +17,9 @@ describe('Golaxy pregame setup', () => {
     renderPage(mode);
     expect(screen.getByTestId('golaxy-pregame-page')).toHaveAttribute('data-mode', mode);
     expect(screen.getByTestId('kiosk-setup-board')).toBeInTheDocument();
-    expect(screen.getByText('19 路 · 开局预览')).toBeInTheDocument();
+    expect(screen.getByText('19 路 · 空盘预览')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /暂不可用/ })).toBeDisabled();
-    expect(screen.getByText('星阵匹配与房间协议尚未确认，暂不能开局。')).toBeInTheDocument();
+    expect(screen.getByText('星阵开局功能暂不可用，请稍后再试。')).toBeInTheDocument();
   });
   it('persists screen and physical input choices', async () => {
     renderPage();
@@ -34,6 +34,33 @@ describe('Golaxy pregame setup', () => {
     expect(screen.getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '实体盘' })).toBeDisabled();
   });
+  it('offers three independent time choices while keeping at least one selected', async () => {
+    renderPage();
+    const fast = screen.getByRole('button', { name: /快棋.*1 分.*15 秒/ });
+    const normal = screen.getByRole('button', { name: /普通.*10 分.*30 秒/ });
+    const slow = screen.getByRole('button', { name: /慢棋.*30 分.*40 秒/ });
+    for (const choice of [fast, normal, slow]) expect(choice).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(fast);
+    await userEvent.click(normal);
+    expect(fast).toHaveAttribute('aria-pressed', 'false');
+    expect(normal).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(slow);
+    expect(slow).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(normal);
+    expect(normal).toHaveAttribute('aria-pressed', 'true');
+  });
+  it('keeps unverified AI fallback off and cannot issue a match request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    renderPage();
+    const ai = screen.getByRole('switch', { name: '允许匹配 AI 对手' });
+    expect(ai).toHaveAttribute('aria-checked', 'false');
+    expect(ai).toBeDisabled();
+    await userEvent.click(ai);
+    await userEvent.click(screen.getByRole('button', { name: '开始匹配 · 暂不可用' }));
+    expect(ai).toHaveAttribute('aria-checked', 'false');
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
   it('switches create and join room settings without issuing requests', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     renderPage('room');
@@ -42,6 +69,13 @@ describe('Golaxy pregame setup', () => {
     expect(screen.getByRole('button', { name: '加入房间 · 暂不可用' })).toBeDisabled();
     await userEvent.click(screen.getByRole('tab', { name: '创建房间' }));
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: '我的房间' }));
+    expect(screen.getByText('尚未接通我的房间')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '打开我的房间 · 暂不可用' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: '打开我的房间 · 暂不可用' }));
+    await userEvent.click(screen.getByRole('tab', { name: '加入房间' }));
+    expect(screen.getByRole('textbox', { name: '房间号' })).toHaveValue('1234');
+    expect(screen.getByText('按房号进入可能是观战身份，仍需确认可对弈席位。')).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });

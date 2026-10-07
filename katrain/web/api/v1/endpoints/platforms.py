@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
 import random
+import re
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, field_validator
 
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
@@ -16,6 +18,48 @@ from katrain.web.models import User
 logger = logging.getLogger("katrain_web")
 
 router = APIRouter()
+
+
+def _golaxy_nickname(value: object) -> Optional[str]:
+    if not isinstance(value, str):
+        return None
+    name = value.strip()
+    # Older scan logins stored /scan/username (the phone principal) as a nickname.
+    return name if name and not re.fullmatch(r"(?:00[1-9]\d{0,3}-)?\+?\d[\d -]{6,}", name) else None
+
+
+async def _refresh_golaxy_identity(pm, user_id: int) -> Optional[str]:
+    """Resolve the connected owner's nickname and repair previously saved scan credentials."""
+    from katrain.web.platforms.manager import PlatformManager
+    from katrain.web.platforms.models import PlatformCredentials
+
+    if not isinstance(pm, PlatformManager):
+        return None
+    async with pm._locks.setdefault("golaxy", asyncio.Lock()):
+        if pm.owner_of("golaxy") != user_id:
+            return None
+        adapter = pm.get_adapter("golaxy")
+        if adapter is None or not adapter.is_connected:
+            return None
+        try:
+            identity = await adapter.get_account_identity()
+        except Exception:
+            logger.warning("Could not resolve Golaxy account nickname")
+            return None
+        nickname = _golaxy_nickname(identity.get("nickname"))
+        principal = identity.get("username")
+        if not nickname or not isinstance(principal, str) or not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", principal):
+            return None
+        saved = pm._credential_store.load_credentials(user_id, "golaxy")
+        if saved is None:
+            return None
+        auth_data = dict(saved.auth_data)
+        auth_data["display_name"] = nickname
+        pm._credential_store.save_credentials(
+            user_id,
+            PlatformCredentials(platform="golaxy", username=principal, auth_data=auth_data),
+        )
+        return nickname
 
 
 def require_platform_owner(platform: str, request: Request, user: User = Depends(get_current_user)) -> User:
@@ -353,6 +397,14 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
     saved = {p["platform"]: p["username"] for p in pm._credential_store.list_platforms(user.id)}
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
+        if p["platform"] == "golaxy":
+            credentials = pm._credential_store.load_credentials(user.id, "golaxy")
+            display_name = _golaxy_nickname(credentials.auth_data.get("display_name")) if credentials else None
+            p["saved_username"] = display_name or (
+                await _refresh_golaxy_identity(pm, user.id)
+                if p["connected"]
+                else "已保存的星阵账号" if credentials else None
+            )
     return {"platforms": platforms}
 
 
@@ -528,14 +580,8 @@ async def scan_confirm(
     no visible cause). Checking `consumed` first would let TTL never fire for
     a session that ever succeeded.
 
-    Uses `username=""` (R-29, task-6a-brief.md): `/scan/username` only gives
-    the display nickname, not the `0086-{phone}` login principal that
-    `/items/{username}` (道具 badges) needs — and there's no verified response
-    field with that principal on this path. Guessing `0086-{昵称}` would make
-    item-count lookups silently hit the wrong (or a nonexistent) account, so
-    this deliberately leaves it blank; `PlatformCredentials.username == ""`
-    makes `GolaxyRestClient.set_username` a no-op (see adapter.py), which is
-    exactly what makes `fetch_item_counts()` degrade honestly instead.
+    `/scan/username` returns the phone login principal. The actual nickname
+    comes from `/oauth/check_token` after the scan token has been exchanged.
     """
     from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
     from katrain.web.platforms.manager import PlatformBusyError
@@ -571,16 +617,22 @@ async def scan_confirm(
         if session.state != ScanState.CONFIRMED:
             raise HTTPException(status_code=409, detail="还没在手机上确认")
 
-        display_name = ""
+        principal = ""
         try:
-            display_name = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
+            principal = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
                 session.golaxy_uuid
             )
         except Exception:
-            logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
+            logger.warning("scan/confirm: could not fetch Golaxy login principal (non-fatal)")
+        if not re.fullmatch(r"00[1-9]\d{0,3}-\d{4,15}", principal):
+            principal = ""
 
         pm = request.app.state.platform_manager
-        credentials = PlatformCredentials(platform=platform, username="", auth_data={"scan_uuid": session.golaxy_uuid})
+        credentials = PlatformCredentials(
+            platform=platform,
+            username=principal,
+            auth_data={"scan_uuid": session.golaxy_uuid},
+        )
         try:
             success = await pm.connect_platform(platform, credentials, user.id)
         except PlatformBusyError as exc:
@@ -599,7 +651,7 @@ async def scan_confirm(
         if not success:
             raise HTTPException(status_code=401, detail="扫码登录失败")
 
-        session.result = {"connected": True, "display_name": display_name}
+        session.result = {"connected": True, "display_name": await _refresh_golaxy_identity(pm, user.id) or ""}
         session.consumed = True
     return session.result
 
@@ -774,11 +826,93 @@ async def engine_items(platform: str, request: Request, user: User = Depends(req
 # --- Lobby ---
 
 
+def _connected_golaxy_player(platform: str, peer_code: str, request: Request):
+    if platform != "golaxy":
+        raise HTTPException(status_code=404, detail="Unknown platform")
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", peer_code) is None:
+        raise HTTPException(status_code=400, detail="Invalid Golaxy player")
+    adapter = request.app.state.platform_manager.get_adapter(platform)
+    if adapter is None or not adapter.is_connected:
+        raise HTTPException(status_code=400, detail="Not connected to golaxy")
+    return adapter
+
+
+@router.get("/{platform}/users/{peer_code}/profile")
+async def platform_player_profile(
+    platform: str, peer_code: str, request: Request, user: User = Depends(require_platform_owner),
+):
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+    pm = request.app.state.platform_manager
+    async with pm._locks.setdefault(platform, asyncio.Lock()):
+        require_platform_owner(platform, request, user)
+        adapter = _connected_golaxy_player(platform, peer_code, request)
+        try:
+            profile = await adapter.get_player_profile(peer_code)
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to load Golaxy player") from exc
+        return {"profile": profile}
+
+
+@router.get("/{platform}/users/{peer_code}/games")
+async def platform_player_games(
+    platform: str, peer_code: str, request: Request, page: int = Query(default=0, ge=0, le=10000),
+    user: User = Depends(require_platform_owner),
+):
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+
+    adapter = _connected_golaxy_player(platform, peer_code, request)
+    try:
+        games = await adapter.get_player_games(peer_code, page=page)
+    except GolaxyLobbyAuthError as exc:
+        raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+    except GolaxyLobbyError as exc:
+        raise HTTPException(status_code=502, detail="Unable to load Golaxy games") from exc
+    require_platform_owner(platform, request, user)
+    return games
+
+
+async def _change_player_follow(platform: str, peer_code: str, follow: bool, request: Request, user: User):
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError, GolaxySelfFollowError
+
+    pm = request.app.state.platform_manager
+    async with pm._locks.setdefault(platform, asyncio.Lock()):
+        require_platform_owner(platform, request, user)
+        adapter = _connected_golaxy_player(platform, peer_code, request)
+        try:
+            profile = await adapter.change_player_follow(peer_code, follow)
+        except GolaxySelfFollowError as exc:
+            raise HTTPException(status_code=400, detail="Cannot follow yourself") from exc
+        except GolaxyLobbyAuthError as exc:
+            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+        except GolaxyLobbyError as exc:
+            raise HTTPException(status_code=502, detail="Unable to update Golaxy follow") from exc
+        return {"profile": profile}
+
+
+@router.post("/{platform}/users/{peer_code}/follow")
+async def platform_follow_player(
+    platform: str, peer_code: str, request: Request, user: User = Depends(require_platform_owner),
+):
+    return await _change_player_follow(platform, peer_code, True, request, user)
+
+
+@router.delete("/{platform}/users/{peer_code}/follow")
+async def platform_unfollow_player(
+    platform: str, peer_code: str, request: Request, user: User = Depends(require_platform_owner),
+):
+    return await _change_player_follow(platform, peer_code, False, request, user)
+
+
 @router.get("/{platform}/users")
 async def platform_users(
     platform: str,
     q: Optional[str] = None,
     room: Optional[str] = None,
+    page: int = Query(default=0, ge=0, le=10000),
+    filter: Literal["all", "same_level", "following"] = "all",
     request: Request = None,
     user: User = Depends(require_platform_owner),
 ):
@@ -795,14 +929,15 @@ async def platform_users(
     if platform == "golaxy":
         from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
 
-        require_platform_owner(platform, request, user)
-        try:
-            users = await adapter.get_online_users()
-        except GolaxyLobbyAuthError as exc:
-            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
-        except GolaxyLobbyError as exc:
-            raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
-        require_platform_owner(platform, request, user)
+        async with pm._locks.setdefault(platform, asyncio.Lock()):
+            require_platform_owner(platform, request, user)
+            try:
+                users = await adapter.get_online_users(page=page, filter_name=filter)
+            except GolaxyLobbyAuthError as exc:
+                raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+            except GolaxyLobbyError as exc:
+                raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
+            require_platform_owner(platform, request, user)
         if q:
             prefix = q.casefold()
             users = [entry for entry in users if entry["username"].casefold().startswith(prefix)]
@@ -828,7 +963,10 @@ async def platform_users(
 
 
 @router.get("/{platform}/rooms")
-async def platform_rooms(platform: str, request: Request, user: User = Depends(require_platform_owner)):
+async def platform_rooms(
+    platform: str, request: Request, user: User = Depends(require_platform_owner),
+    page: int = Query(default=0, ge=0, le=10000),
+):
     """List rooms/channels on a platform (Fox, KGS)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -839,14 +977,15 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(r
     if platform == "golaxy":
         from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
 
-        require_platform_owner(platform, request, user)
-        try:
-            rooms = await adapter.get_rooms()
-        except GolaxyLobbyAuthError as exc:
-            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
-        except GolaxyLobbyError as exc:
-            raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
-        require_platform_owner(platform, request, user)
+        async with pm._locks.setdefault(platform, asyncio.Lock()):
+            require_platform_owner(platform, request, user)
+            try:
+                rooms = await adapter.get_rooms(page=page)
+            except GolaxyLobbyAuthError as exc:
+                raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+            except GolaxyLobbyError as exc:
+                raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
+            require_platform_owner(platform, request, user)
     else:
         rooms = await adapter.get_rooms()
     return {"rooms": rooms}

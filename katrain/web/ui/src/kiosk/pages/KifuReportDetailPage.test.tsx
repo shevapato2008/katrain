@@ -16,9 +16,11 @@ const analysis: MoveAnalysis = {
 };
 let analysisFailed = false;
 let analysisParameters: VerifiedAnalysisParameters | null = null;
+let parametersValid: boolean | undefined;
+let analysisCompleted = false;
 vi.mock('../../features/kifu/useKifuAnalysis', () => ({ useKifuAnalysis: () => ({
-  detail: { status: 'running', analyzed_moves: 0, total_moves: 2, requested_visits: 1500, moves: [],
-    analysis_parameters: analysisParameters, parameters_verified: analysisParameters !== null },
+  detail: { status: analysisCompleted ? 'completed' : 'running', analyzed_moves: 0, total_moves: 2, requested_visits: 1500, moves: analysisCompleted ? [analysis] : [],
+    analysis_parameters: analysisParameters, parameters_valid: parametersValid, parameters_verified: analysisParameters?.verified === true },
   analysisByMove: { 0: analysis }, error: analysisFailed,
 }) }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: (props: Record<string, unknown>) => {
@@ -39,7 +41,7 @@ function renderPage() {
 async function loaded() { await screen.findByTestId('kifu-report-ai'); }
 
 describe('职业报告固定右栏', () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisFailed = false; analysisParameters = null; });
+  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisFailed = false; analysisParameters = null; parametersValid = undefined; analysisCompleted = false; });
 
   it('让子局按SGF白方视角显示五行，PSV分母包含全部十条候选', async () => {
     renderPage(); await loaded();
@@ -93,6 +95,7 @@ describe('职业报告固定右栏', () => {
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
     const dialog = screen.getByRole('dialog');
     for (const value of ['赛事甲', '2026-10-01', 'W+R', '9p', '8p', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
+    expect(dialog).not.toHaveTextContent('已核验');
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/kifu/7/replay');
   });
@@ -126,5 +129,27 @@ describe('职业报告固定右栏', () => {
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
     expect(within(dialog).getByText('分析贴目（已核验）').parentElement).toHaveTextContent('0');
+  });
+
+  it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as const)('valid default %s reports show completion and explain the source in details', async (rules, komi, label) => {
+    analysisParameters = { version: 3, verified: false, rules, komi,
+      sgf_sha256: 'sgf', parameter_sha256: 'parameters',
+      provenance: { source: 'komi_default', raw_rules: null, raw_komi: String(komi), policy: 'komi-default-v1' } };
+    parametersValid = true;
+    analysisCompleted = true;
+    mocks.getAlbum.mockResolvedValue({ ...album, rules: 'japanese', komi });
+    renderPage(); await loaded();
+    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent(`${label}（默认） · 分析贴目 ${komi}`);
+    expect(screen.queryByTestId('kifu-report-head')).toBeNull();
+    expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('分析已完成');
+    expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
+    expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));
+    expect(within(dialog).getByText('分析规则', { exact: true }).parentElement).toHaveTextContent(`${label}（默认）`);
+    expect(within(dialog).getByText('分析贴目', { exact: true }).parentElement).toHaveTextContent(String(komi));
+    expect(within(dialog).getByText('规则来源').parentElement).toHaveTextContent(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
+    expect(dialog).not.toHaveTextContent('已核验');
   });
 });

@@ -1,4 +1,4 @@
-"""Fail-closed professional analysis parameters, shared by web/cron/transfer.
+"""Traceable professional analysis parameters, shared by web/cron/transfer.
 
 Only stdlib and cron imports: Dockerfile.cron ships no other katrain packages.
 Personal/live parse_game defaults deliberately do not establish verification.
@@ -17,8 +17,10 @@ from katrain.cron.sgf import _main_line_nodes
 
 
 # Conservative exact presets already supported by the application's KataGo wire
-# contract. Never infer a preset from players, country, event name or komi.
+# contract. Do not infer a preset from players, country or event names.
 SUPPORTED_RULES = frozenset({"chinese", "japanese", "korean", "aga", "aga-button", "new zealand", "tromp-taylor"})
+DEFAULT_RULES_BY_KOMI = {6.5: "japanese", 7.5: "chinese"}
+DEFAULT_RULES_POLICY = "komi-default-v1"
 
 
 class ParameterError(ValueError):
@@ -115,7 +117,7 @@ def _validate_corrections(evidence, raw, explicit, effective):
 
 
 def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
-    """Resolve explicit root RU/KM or exact reviewed evidence, without rewriting SGF.
+    """Resolve root RU/KM, reviewed evidence, or an explicitly labelled default.
 
     Evidence fills absent fields. Contradictory values require field-specific
     reviewed corrections; ambiguous/unsupported SGF assertions remain rejected.
@@ -141,13 +143,16 @@ def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
         )
         rules, komi = evidence_rules, evidence_komi
         provenance = {**provenance, "source": "verified_evidence", "evidence": deepcopy(evidence)}
+    elif rules is None and komi in DEFAULT_RULES_BY_KOMI:
+        rules = DEFAULT_RULES_BY_KOMI[komi]
+        provenance = {**provenance, "source": "komi_default", "policy": DEFAULT_RULES_POLICY}
     if rules is None:
-        raise ParameterError("missing_rules", "SGF RU is missing; exact-game/event evidence is required")
+        raise ParameterError("missing_rules", "SGF RU is missing and komi has no default; exact-game/event evidence is required")
     if komi is None:
         raise ParameterError("missing_komi", "SGF KM is missing; exact-game/event evidence is required")
     body = {
-        "version": 2 if corrected else 1,
-        "verified": True,
+        "version": 3 if provenance["source"] == "komi_default" else 2 if corrected else 1,
+        "verified": provenance["source"] != "komi_default",
         "sgf_sha256": sgf_sha256,
         "rules": rules,
         "komi": komi,
@@ -161,8 +166,16 @@ def resolve_parameters(sgf: str, evidence: dict | None = None) -> dict:
 
 
 def validate_parameters(sgf: str, stored: dict | None) -> dict:
-    """Revalidate persisted provenance and identity; never bless legacy results."""
-    if not isinstance(stored, dict) or stored.get("verified") is not True:
+    """Revalidate persisted provenance and identity, including labelled defaults."""
+    if not isinstance(stored, dict) or not (
+        stored.get("verified") is True
+        or (
+            stored.get("verified") is False
+            and stored.get("version") == 3
+            and isinstance(stored.get("provenance"), dict)
+            and stored["provenance"].get("source") == "komi_default"
+        )
+    ):
         raise ParameterError("unverified_parameters", "Stored engine parameters are unverified; reanalysis is required")
     provenance = stored.get("provenance")
     if not isinstance(provenance, dict):

@@ -1,15 +1,18 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, expect, it, vi } from 'vitest';
 
-import type { KifuAlbumDetail } from '../../types/kifu';
+import type { KifuAlbumDetail, VerifiedAnalysisParameters } from '../../types/kifu';
 import type { MoveAnalysis } from '../../types/live';
 import KifuReportDetailPage from './KifuReportDetailPage';
 
 const mocks = vi.hoisted(() => ({ getAlbum: vi.fn() }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum: mocks.getAlbum } }));
+let analysisParameters: VerifiedAnalysisParameters | null = null;
+let parametersValid: boolean | undefined;
 vi.mock('../../features/kifu/useKifuAnalysis', () => ({ useKifuAnalysis: () => ({
-  detail: { status: 'completed', requested_visits: 2000, total_moves: 2, analyzed_moves: 2 },
+  detail: { status: 'completed', requested_visits: 2000, total_moves: 2, analyzed_moves: 2, moves: [analysis],
+    analysis_parameters: analysisParameters, parameters_valid: parametersValid, parameters_verified: analysisParameters?.verified === true },
   analysisByMove: { 2: analysis }, error: false,
 }) }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: () => <div data-testid="board" /> }));
@@ -28,7 +31,7 @@ const album: KifuAlbumDetail = {
   sources: ['archive'], sgf_content: '(;SZ[19]PB[黑棋手]PW[白棋手];B[pd];W[dp])',
 };
 
-beforeEach(() => { mocks.getAlbum.mockReset().mockResolvedValue(album); });
+beforeEach(() => { mocks.getAlbum.mockReset().mockResolvedValue(album); analysisParameters = null; parametersValid = undefined; });
 
 it('shows the professional report in the shared fixed rail without a duplicate kifu entry', async () => {
   render(<MemoryRouter initialEntries={['/galaxy/kifu/7/report']}><Routes>
@@ -43,4 +46,24 @@ it('shows the professional report in the shared fixed rail without a duplicate k
   expect(within(rail).getByRole('button', { name: '坐标' })).toHaveAttribute('aria-pressed', 'false');
   expect(within(rail).getByRole('button', { name: '3D' })).toBeInTheDocument();
   expect(within(rail).getByRole('button', { name: '展开分析' })).toBeInTheDocument();
+});
+
+it('passes valid default parameters to metadata and keeps report analysis available', async () => {
+  analysisParameters = { version: 3, verified: false, rules: 'japanese', komi: 6.5,
+    sgf_sha256: 'sgf', parameter_sha256: 'parameters',
+    provenance: { source: 'komi_default', raw_rules: null, raw_komi: '6.5', policy: 'komi-default-v1' } };
+  parametersValid = true;
+  mocks.getAlbum.mockResolvedValue({ ...album, rules: null, komi: 6.5 });
+  render(<MemoryRouter initialEntries={['/galaxy/kifu/7/report']}><Routes>
+    <Route path="/galaxy/kifu/:albumId/report" element={<KifuReportDetailPage />} />
+  </Routes></MemoryRouter>);
+  const rail = await screen.findByTestId('report-analysis-layout');
+  expect(within(rail).getByTestId('report-meta-panel')).toHaveTextContent('日本规则（默认）');
+  expect(within(rail).getByTestId('report-candidate-list').children).toHaveLength(5);
+  expect(screen.getByTestId('trend')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+  const dialog = screen.getByRole('dialog');
+  expect(dialog).toHaveTextContent('未核验赛事实际规则');
+  expect(dialog).toHaveTextContent('分析已完成');
+  expect(dialog).not.toHaveTextContent('已核验');
 });

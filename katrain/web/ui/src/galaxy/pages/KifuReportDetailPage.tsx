@@ -5,7 +5,7 @@ import { Alert, Box, CircularProgress, Typography } from '@mui/material';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
 import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
-import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
+import { kifuAnalysisParametersValid, kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
@@ -40,6 +40,7 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const coordinates = useBoardCoordinates(boardEdge);
   const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(replayOnly ? null : id);
+  const analysisParameters = detail && kifuAnalysisParametersValid(detail) ? detail.analysis_parameters : null;
   const frontier = Math.max(0, ...Object.keys(analysisByMove).map(Number));
   const currentMove = selectedPosition?.id === id ? selectedPosition.move : replayOnly && loaded?.id === id ? loaded.album.move_count : frontier;
   const setCurrentMove = (move: number) => { if (id !== null) setSelectedPosition({ id, move }); };
@@ -95,7 +96,7 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
           identity={<ReportMetaPanel
             professional
             statusLabel={replayOnly ? undefined : status}
-            analysisParameters={detail?.parameters_verified ? detail.analysis_parameters : null}
+            analysisParameters={analysisParameters}
             backTo={BACK_TO}
             game={{
               game_date: album.date_played, source: 'kifu_library', event: album.display_event ?? album.event,

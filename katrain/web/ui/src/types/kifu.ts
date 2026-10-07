@@ -61,8 +61,8 @@ export interface KifuAnalysisMove {
 }
 
 export interface VerifiedAnalysisParameters {
-  version: 1 | 2;
-  verified: true;
+  version: 1 | 2 | 3;
+  verified: boolean;
   rules: string;
   komi: number;
   sgf_sha256: string;
@@ -78,6 +78,7 @@ export interface KifuAnalysisDetail {
   requested_visits: number;
   status: 'unavailable' | 'pending' | 'running' | 'completed' | 'failed' | 'rules_unresolved';
   analysis_parameters: VerifiedAnalysisParameters | null;
+  parameters_valid?: boolean;
   parameters_verified: boolean;
   parameter_error: { code: string; message: string } | null;
   total_moves: number;

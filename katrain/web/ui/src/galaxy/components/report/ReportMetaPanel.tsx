@@ -9,7 +9,7 @@ import { translateResult } from '../../../utils/resultTranslation';
 import { formatRank } from '../../../utils/rank';
 import type { MoveAnalysis } from '../../../types/live';
 import type { VerifiedAnalysisParameters } from '../../../types/kifu';
-import { kifuEventRules, kifuRulesLabel } from '../../../features/kifu/kifuRules';
+import { kifuDefaultRulesSource, kifuEventRules, kifuRulesLabel } from '../../../features/kifu/kifuRules';
 import type { UserGameDetail } from '../../../api/userGamesApi';
 
 interface Props {
@@ -30,7 +30,8 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
   const theme = useTheme();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const effectiveRules = professional ? analysisParameters?.rules ?? game?.rules : game?.rules;
-  const rules = professional ? kifuRulesLabel(kifuEventRules(analysisParameters, game?.rules), t) : game?.rules === 'japanese' ? t('report:japanese_rules', '日本规则') : game?.rules === 'korean' ? t('report:korean_rules', '韩国规则') : t('report:chinese_rules', '中国规则');
+  const rules = professional ? kifuRulesLabel(kifuEventRules(analysisParameters, game?.rules), t, analysisParameters) : game?.rules === 'japanese' ? t('report:japanese_rules', '日本规则') : game?.rules === 'korean' ? t('report:korean_rules', '韩国规则') : t('report:chinese_rules', '中国规则');
+  const defaultRulesSource = professional ? kifuDefaultRulesSource(analysisParameters, t) : null;
   const event = [game?.event || game?.title || t('report:unnamed_game', '未命名对局'), game?.round_name].filter(Boolean).join(' · ');
   const black = game?.player_black || t('report:black', '黑');
   const white = game?.player_white || t('report:white', '白');
@@ -50,9 +51,10 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
     [t('report:rules', '规则'), rules],
     [professional ? t('report:sgf_komi', 'SGF 贴目') : t('report:komi_label', '贴目'), game?.komi ?? '—'],
     ...(professional ? [
-      [t('report:sgf_rules', 'SGF 规则'), game?.rules || '—'],
-      [t('report:analysis_rules', '分析规则（已核验）'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t) : '—'],
-      [t('report:analysis_komi', '分析贴目（已核验）'), analysisParameters?.komi ?? '—'],
+      [t('report:sgf_rules', 'SGF 规则'), defaultRulesSource ? '—' : game?.rules || '—'],
+      [analysisParameters?.verified === true ? t('report:analysis_rules', '分析规则（已核验）') : t('report:analysis_rules_unverified', '分析规则'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t, analysisParameters) : '—'],
+      [analysisParameters?.verified === true ? t('report:analysis_komi', '分析贴目（已核验）') : t('report:analysis_komi_short', '分析贴目'), analysisParameters?.komi ?? '—'],
+      ...(defaultRulesSource ? [[t('kifu:rules_source', '规则来源'), defaultRulesSource]] : []),
     ] : []),
     [t('report:source', '来源'), source],
     ...(task ? [

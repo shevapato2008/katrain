@@ -103,7 +103,7 @@ class KifuAlbumListResponse(BaseModel):
 async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depends(get_db)):
     """Read the current pinned analysis; exact duplicates share their canonical job.
 
-    analysis_parameters is the verified stored engine-input snapshot, never the
+    analysis_parameters is the validated stored engine-input snapshot, never the
     album's raw metadata. Invalid/missing proof returns rules_unresolved, an
     actionable parameter_error and no moves. Album/SGF reading remains available.
     """
@@ -204,7 +204,8 @@ async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depen
         "requested_visits": KIFU_VISITS,
         "status": status,
         "analysis_parameters": parameters,
-        "parameters_verified": parameters is not None,
+        "parameters_valid": parameters is not None,
+        "parameters_verified": bool(parameters and parameters["verified"]),
         "parameter_error": parameter_error,
         "total_moves": job.total_moves if job else canonical.move_count,
         "analyzed_moves": job.analyzed_moves if job and not parameter_error else 0,

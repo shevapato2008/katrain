@@ -4,8 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumDetail } from '../../types/kifu';
 import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
-import { kifuEventRules, kifuRulesLabel } from '../../features/kifu/kifuRules';
-import { kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
+import { kifuDefaultRulesSource, kifuEventRules, kifuRulesLabel } from '../../features/kifu/kifuRules';
+import { kifuAnalysisParametersValid, kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
 import { sgfToMoves } from '../../utils/sgfSerializer';
@@ -38,7 +38,8 @@ export default function KifuReportDetailPage() {
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
   const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(id);
-  const analysisParameters = detail?.parameters_verified ? detail.analysis_parameters : null;
+  const analysisParameters = detail && kifuAnalysisParametersValid(detail) ? detail.analysis_parameters : null;
+  const defaultRulesSource = kifuDefaultRulesSource(analysisParameters, t);
   const frontier = Math.max(0, ...Object.keys(analysisByMove).map(Number));
   const cursor = selectedPosition?.id === id ? selectedPosition.move : frontier;
   const selectMove = (move: number) => {
@@ -160,10 +161,10 @@ export default function KifuReportDetailPage() {
             <span>{status}</span>
             <span>{detail?.requested_visits != null ? `${detail.requested_visits} visits · ${album.move_count} ${t('kifu:moves_unit', '手')}` : '—'}</span>
           </div>)}
-          statusVisible={detail?.status !== 'completed' || !detail.parameters_verified || !detail.analysis_parameters?.verified || detail.moves.length === 0 || analysisError}
+          statusVisible={detail?.status !== 'completed' || !kifuAnalysisParametersValid(detail) || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
             <span>{album.result ? translateResult(album.result, t, analysisParameters?.rules ?? album.rules) : '—'}</span>
-            <span>{kifuRulesLabel(eventRules, t)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
+            <span>{kifuRulesLabel(eventRules, t, analysisParameters)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
             [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
@@ -171,11 +172,12 @@ export default function KifuReportDetailPage() {
             [t('report:event', '赛事'), [album.display_event ?? album.event, album.display_round_name ?? album.round_name].filter(Boolean).join(' · ')],
             [t('report:date', '日期'), album.date_played],
             [t('report:result', '结果'), album.result],
-            [t('report:rules', '规则'), kifuRulesLabel(eventRules, t)],
-            [t('report:sgf_rules', 'SGF 规则'), album.rules],
+            [t('report:rules', '规则'), kifuRulesLabel(eventRules, t, analysisParameters)],
+            [t('report:sgf_rules', 'SGF 规则'), defaultRulesSource ? null : album.rules],
             [t('report:sgf_komi', 'SGF 贴目'), album.komi],
-            [t('report:analysis_rules', '分析规则（已核验）'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t) : '—'],
-            [t('report:analysis_komi', '分析贴目（已核验）'), analysisParameters?.komi],
+            [analysisParameters?.verified === true ? t('report:analysis_rules', '分析规则（已核验）') : t('report:analysis_rules_unverified', '分析规则'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t, analysisParameters) : '—'],
+            [analysisParameters?.verified === true ? t('report:analysis_komi', '分析贴目（已核验）') : t('report:analysis_komi_short', '分析贴目'), analysisParameters?.komi],
+            ...(defaultRulesSource ? [[t('kifu:rules_source', '规则来源'), defaultRulesSource] as const] : []),
             [t('report:status', '状态'), status],
             [t('report:source', '来源'), album.sources?.join(' · ') || album.source],
           ]}

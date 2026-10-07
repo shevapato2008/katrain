@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, it } from 'vitest';
 import type { VerifiedAnalysisParameters } from '../../types/kifu';
-import { kifuEventRules, kifuRulesLabel } from './kifuRules';
+import { kifuDefaultRulesSource, kifuEventRules, kifuRulesLabel } from './kifuRules';
 
 const parameters: VerifiedAnalysisParameters = {
   version: 1, verified: true, rules: 'japanese', komi: 6.5,
@@ -39,10 +39,22 @@ it('accepts only supported event rules from verified evidence with an equivalent
   ]) {
     expect(kifuEventRules({ ...parameters, provenance }, 'chinese')).toBe('japanese');
   }
-  expect(kifuEventRules({ ...parameters, verified: false as true }, 'chinese')).toBe('japanese');
+  expect(kifuEventRules({ ...parameters, verified: false }, 'chinese')).toBe('japanese');
   expect(kifuEventRules({ ...parameters, rules: 'chinese' }, null)).toBe('chinese');
   expect(kifuEventRules({ ...parameters, rules: 'korean' }, null)).toBe('korean');
   expect(kifuEventRules({ ...parameters, rules: 'korean', provenance: { source: 'verified_evidence', evidence: { event_rules: 'japanese' } } }, null)).toBe('japanese');
   expect(kifuEventRules(null, 'aga-button')).toBe('aga-button');
   expect(kifuRulesLabel(kifuEventRules(null, null), (_key, fallback) => fallback)).toBe('规则待核验');
+});
+
+it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as const)('labels default %s and explains its komi source without event verification', (rules, komi, label) => {
+  const snapshot: VerifiedAnalysisParameters = { ...parameters, version: 3, verified: false, rules, komi,
+    provenance: { source: 'komi_default', raw_rules: null, raw_komi: String(komi), policy: 'komi-default-v1', evidence: { event_rules: 'korean' } } };
+  const before = JSON.stringify(snapshot);
+  expect(kifuRulesLabel(kifuEventRules(snapshot, null), (_key, fallback) => fallback, snapshot)).toBe(`${label}（默认）`);
+  expect(kifuDefaultRulesSource(snapshot, (_key, fallback) => fallback)).toBe(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
+  expect(snapshot.provenance.raw_rules).toBeNull();
+  expect(snapshot.provenance.policy).toBe('komi-default-v1');
+  expect(JSON.stringify(snapshot)).toBe(before);
+  expect(kifuDefaultRulesSource(parameters, (_key, fallback) => fallback)).toBeNull();
 });

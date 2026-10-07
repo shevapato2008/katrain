@@ -6849,3 +6849,6 @@ msgstr "分析未完成"
 
 msgid "kifu:analysis_completed"
 msgstr "分析已完成"
+
+msgid "report:score_difference"
+msgstr "目差"

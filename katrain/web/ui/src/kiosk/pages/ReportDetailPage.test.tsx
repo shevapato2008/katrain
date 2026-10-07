@@ -316,7 +316,7 @@ describe('屏 20 · 着手评价的五个 tab', () => {
   it('AI 推荐表用的是 galaxy 那四个列名 —— 着点 / 推荐度 / 领先 / 胜率', () => {
     renderPage();
     const table = screen.getByTestId('report-detail-ai');
-    for (const col of ['着点', '推荐度', '领先', '胜率']) {
+    for (const col of ['着点', '推荐度', '目差', '胜率']) {
       expect(table.textContent).toContain(col);
     }
     expect(screen.getAllByTestId('ai-recommend-row').length).toBeGreaterThan(0);

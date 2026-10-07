@@ -7172,3 +7172,6 @@ msgstr "Не удалось подтвердить вход"
 
 msgid "vision:not_a_stone"
 msgstr "Это не камень"
+
+msgid "report:score_difference"
+msgstr "Разница в очках"

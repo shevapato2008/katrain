@@ -7291,3 +7291,6 @@ msgstr "Échec de la confirmation de connexion"
 
 msgid "vision:not_a_stone"
 msgstr "Ce n'est pas une pierre"
+
+msgid "report:score_difference"
+msgstr "Écart de points"

@@ -28,12 +28,8 @@ function isDefaultRules(parameters: VerifiedAnalysisParameters | null | undefine
   return parameters?.version === 3 && parameters.verified === false && parameters.provenance.source === 'komi_default';
 }
 
-export function kifuRulesLabel(rules: string | null | undefined, t: (key: string, fallback: string) => string, parameters?: VerifiedAnalysisParameters | null): string {
+export function kifuRulesLabel(rules: string | null | undefined, t: (key: string, fallback: string) => string, _parameters?: VerifiedAnalysisParameters | null): string {
   const key = rules?.trim().toLowerCase() ?? '';
-  if (isDefaultRules(parameters)) {
-    if (key === 'japanese' || key === 'jp') return t('kifu:japanese_rules_default', '日本规则（默认）');
-    if (key === 'chinese' || key === 'cn') return t('kifu:chinese_rules_default', '中国规则（默认）');
-  }
   const label = Object.hasOwn(known, key) ? known[key] : undefined;
   return label ? t(...label) : t('kifu:rules_unresolved', '规则待核验');
 }

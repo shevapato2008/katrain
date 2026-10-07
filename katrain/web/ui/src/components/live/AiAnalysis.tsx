@@ -203,8 +203,8 @@ export default function AiAnalysis({
     <Box sx={{ px: 1.5, py: reportMode ? 0.5 : 1, height: reportMode ? '100%' : 'auto', boxSizing: 'border-box' }}>
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: reportMode ? 30 : 'auto', mb: reportMode ? 0 : 0.5 }}>
-        <Typography variant="subtitle2" sx={{ fontSize: reportMode ? 18 : '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}{reportMode ? ` · ${nextPlayer === 'B' ? t('review:black', '黑') : t('review:white', '白')}${t('report:to_play', '方待落子')}` : ''}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 18 : undefined }}>
+        <Typography variant="subtitle2" sx={{ fontSize: reportMode ? 16 : '0.8rem' }}>{t('live:ai_recommendations', 'AI Recommendations')}{reportMode ? ` · ${nextPlayer === 'B' ? t('review:black', '黑') : t('review:white', '白')}${t('report:to_play', '方待落子')}` : ''}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 16 : undefined }}>
           {t('live:after_move', 'After move')} {currentMove}
         </Typography>
       </Box>
@@ -224,8 +224,8 @@ export default function AiAnalysis({
           borderRadius: 1,
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 18 : '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: reportMode ? 16 : '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 16 : '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
         {showHumanTendency && (
           <Tooltip title={humanHeaderHint}>
             <Typography
@@ -233,14 +233,14 @@ export default function AiAnalysis({
               variant="caption"
               color="text.secondary"
               noWrap
-              sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem', cursor: 'help' }}
+              sx={{ textAlign: 'center', fontSize: reportMode ? 16 : '0.7rem', cursor: 'help' }}
             >
               {humanHeader}
             </Typography>
           </Tooltip>
         )}
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 18 : '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 16 : '0.7rem' }}>{reportMode ? t('report:score_difference', '目差') : t('live:lead_pts', 'Lead')}</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: reportMode ? 16 : '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
       </Box>
 
       {/* Move rows */}
@@ -329,7 +329,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
       {/* Move position with stone color indicator */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
         <StoneIndicator color={nextPlayer} size={14} />
-        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: reportMode ? 18 : '0.85rem' }}>
+        <Typography variant="body2" fontWeight="bold" sx={{ fontSize: reportMode ? 16 : '0.85rem' }}>
           {move.move}
         </Typography>
         {reportMode && isActualMove && rank > 5 && <Typography sx={{ fontSize: 12, whiteSpace: 'nowrap', color: 'success.light' }}>{t('report:actual_move_short', '实战')}</Typography>}
@@ -359,7 +359,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             variant="body2"
             fontWeight="bold"
             color={rank === 1 ? 'primary.contrastText' : 'text.primary'}
-            sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}
+            sx={{ lineHeight: 1, fontSize: reportMode ? 16 : '0.8rem' }}
           >
             {percentage == null ? '—' : `${percentage.toFixed(0)}%`}
           </Typography>
@@ -387,7 +387,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
           noWrap
           sx={{
             lineHeight: 1,
-            fontSize: reportMode ? 18 : '0.8rem',
+            fontSize: reportMode ? 16 : '0.8rem',
             fontVariantNumeric: 'tabular-nums',
             color: move.human_prior == null ? 'text.disabled' : 'text.primary',
           }}
@@ -427,7 +427,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 16 : '0.8rem' }}>
             {scoreLead == null ? '—' : `${scoreLead >= 0 ? '+' : ''}${scoreLead.toFixed(1)}`}
           </Typography>
         </Box>
@@ -452,7 +452,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 16 : '0.8rem' }}>
             {winrate == null ? '—' : (winrate * 100).toFixed(1)}
           </Typography>
         </Box>
@@ -473,7 +473,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTe
             boxSizing: 'border-box',
           }}
         >
-          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 18 : '0.8rem' }}>
+          <Typography variant="body2" fontWeight="bold" sx={{ lineHeight: 1, fontSize: reportMode ? 16 : '0.8rem' }}>
             {opponentWinrate == null ? '' : (opponentWinrate * 100).toFixed(1)}
           </Typography>
         </Box>

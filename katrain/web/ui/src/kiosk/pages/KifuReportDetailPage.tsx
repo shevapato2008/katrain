@@ -164,7 +164,7 @@ export default function KifuReportDetailPage() {
           statusVisible={detail?.status !== 'completed' || !kifuAnalysisParametersValid(detail) || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
             <span>{album.result ? translateResult(album.result, t, analysisParameters?.rules ?? album.rules) : '—'}</span>
-            <span>{kifuRulesLabel(eventRules, t, analysisParameters)} · {analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
+            <span>{kifuRulesLabel(eventRules, t, analysisParameters)} · {t('report:komi_label', '贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
             [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
@@ -176,7 +176,7 @@ export default function KifuReportDetailPage() {
             [t('report:sgf_rules', 'SGF 规则'), defaultRulesSource ? null : album.rules],
             [t('report:sgf_komi', 'SGF 贴目'), album.komi],
             [analysisParameters?.verified === true ? t('report:analysis_rules', '分析规则（已核验）') : t('report:analysis_rules_unverified', '分析规则'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t, analysisParameters) : '—'],
-            [analysisParameters?.verified === true ? t('report:analysis_komi', '分析贴目（已核验）') : t('report:analysis_komi_short', '分析贴目'), analysisParameters?.komi],
+            [t('report:komi_label', '贴目'), analysisParameters?.komi],
             ...(defaultRulesSource ? [[t('kifu:rules_source', '规则来源'), defaultRulesSource] as const] : []),
             [t('report:status', '状态'), status],
             [t('report:source', '来源'), album.sources?.join(' · ') || album.source],

@@ -47,11 +47,11 @@ it('accepts only supported event rules from verified evidence with an equivalent
   expect(kifuRulesLabel(kifuEventRules(null, null), (_key, fallback) => fallback)).toBe('规则待核验');
 });
 
-it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as const)('labels default %s and explains its komi source without event verification', (rules, komi, label) => {
+it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as const)('shows plain %s while retaining its komi source and verification state', (rules, komi, label) => {
   const snapshot: VerifiedAnalysisParameters = { ...parameters, version: 3, verified: false, rules, komi,
     provenance: { source: 'komi_default', raw_rules: null, raw_komi: String(komi), policy: 'komi-default-v1', evidence: { event_rules: 'korean' } } };
   const before = JSON.stringify(snapshot);
-  expect(kifuRulesLabel(kifuEventRules(snapshot, null), (_key, fallback) => fallback, snapshot)).toBe(`${label}（默认）`);
+  expect(kifuRulesLabel(kifuEventRules(snapshot, null), (_key, fallback) => fallback, snapshot)).toBe(label);
   expect(kifuDefaultRulesSource(snapshot, (_key, fallback) => fallback)).toBe(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
   expect(snapshot.provenance.raw_rules).toBeNull();
   expect(snapshot.provenance.policy).toBe('komi-default-v1');

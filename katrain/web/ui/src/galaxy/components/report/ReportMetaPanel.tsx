@@ -53,7 +53,7 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
     ...(professional ? [
       [t('report:sgf_rules', 'SGF 规则'), defaultRulesSource ? '—' : game?.rules || '—'],
       [analysisParameters?.verified === true ? t('report:analysis_rules', '分析规则（已核验）') : t('report:analysis_rules_unverified', '分析规则'), analysisParameters ? kifuRulesLabel(analysisParameters.rules, t, analysisParameters) : '—'],
-      [analysisParameters?.verified === true ? t('report:analysis_komi', '分析贴目（已核验）') : t('report:analysis_komi_short', '分析贴目'), analysisParameters?.komi ?? '—'],
+      [t('report:komi_label', '贴目'), analysisParameters?.komi ?? '—'],
       ...(defaultRulesSource ? [[t('kifu:rules_source', '规则来源'), defaultRulesSource]] : []),
     ] : []),
     [t('report:source', '来源'), source],
@@ -84,7 +84,7 @@ export default function ReportMetaPanel({ game, task, currentMove, currentAnalys
         <Typography sx={{ ...text, whiteSpace: 'nowrap' }}>{t('review:white', '白')} {whiteRate == null ? '—' : `${whiteRate.toFixed(1)}%`}</Typography>
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, color: 'text.secondary', overflow: 'hidden' }}>
-        <Typography noWrap title={result} sx={{ ...text, flex: '1 1 0', minWidth: 0 }}>{result}</Typography><Typography noWrap sx={{ ...text, flexShrink: 0 }}>{rules}</Typography><Typography noWrap sx={{ ...text, flexShrink: 0 }}>{professional ? analysisParameters ? t('report:analysis_komi_short', '分析贴目') : t('report:sgf_komi', 'SGF 贴目') : t('report:komi_label', '贴目')} {analysisParameters?.komi ?? game?.komi ?? '—'}</Typography>
+        <Typography noWrap title={result} sx={{ ...text, flex: '1 1 0', minWidth: 0 }}>{result}</Typography><Typography noWrap sx={{ ...text, flexShrink: 0 }}>{rules}</Typography><Typography noWrap sx={{ ...text, flexShrink: 0 }}>{t('report:komi_label', '贴目')} {analysisParameters?.komi ?? game?.komi ?? '—'}</Typography>
       </Box>
     </Box>
     <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="sm" fullWidth aria-labelledby="report-details-title" slotProps={{ paper: { sx: { fontFamily: theme.typography.fontFamily, '& .MuiTypography-root': { fontFamily: theme.typography.fontFamily } } } }}>

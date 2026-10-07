@@ -10,7 +10,6 @@ import {
 } from '../../api/baipuApi';
 import { translateResult } from '../../utils/resultTranslation';
 import { formatRank } from '../../utils/rank';
-import { kifuSourceLabel } from '../../utils/kifuSource';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { Icon } from '../shell/icons';
@@ -269,7 +268,6 @@ const KifuPage = () => {
                       className="kifu-record"
                       key={a.id}
                       onClick={() => navigate(`/kiosk/kifu/${a.id}${a.has_analysis ? '' : '/replay'}`)}
-                      style={a.sources?.length ? { height: 'auto', minHeight: 64, gridTemplateRows: '18px 25px auto' } : undefined}
                     >
                       <span className="kifu-record__head">
                         <span className="kifu-record__event" title={[event, round].filter(Boolean).join(' · ')}>
@@ -296,14 +294,6 @@ const KifuPage = () => {
                           <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
                         </span>
                       </span>
-                      {!!a.sources?.length && (
-                        <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4, minWidth: 0, marginTop: 5, fontSize: 10, color: '#9eadab' }}>
-                          <span>{t('kifu:source', '来源')}</span>
-                          {a.sources.map((source) => (
-                            <span key={source} style={{ maxWidth: '100%', overflowWrap: 'anywhere', border: '1px solid currentColor', borderRadius: 4, padding: '1px 5px' }}>{kifuSourceLabel(source, t, lang)}</span>
-                          ))}
-                        </span>
-                      )}
                     </button>
                   );
                 })}

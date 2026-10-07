@@ -89,10 +89,7 @@ describe('Galaxy 棋谱库语言展示', () => {
     fireEvent.click(await screen.findByText('cn-black'));
     await waitFor(() => expect(getAlbum).toHaveBeenCalledWith(9, 'cn'));
     expect(screen.getByText(/cn-black vs cn-white/)).toBeInTheDocument();
-    expect(screen.getByText('星阵')).toBeInTheDocument();
-    expect(screen.getByText('CWI')).toBeInTheDocument();
-    expect(screen.getByText('19x19')).toBeInTheDocument();
-    expect(screen.getByText('来源待核实')).toBeInTheDocument();
+    expect(screen.queryByText('来源待核实')).not.toBeInTheDocument();
 
     for (const lang of ['en', 'jp']) {
       language.current = lang;
@@ -101,7 +98,7 @@ describe('Galaxy 棋谱库语言展示', () => {
       await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(9, lang));
       expect(await screen.findByText(`${lang}-black`)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`${lang}-black vs ${lang}-white`))).toBeInTheDocument();
-      expect(screen.getByText('GoLaxy')).toBeInTheDocument();
+      expect(screen.queryByText('GoLaxy')).not.toBeInTheDocument();
       expect(screen.getByRole('textbox')).toHaveValue('原黑');
     }
   });

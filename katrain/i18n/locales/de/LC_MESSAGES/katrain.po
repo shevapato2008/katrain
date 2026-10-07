@@ -7314,3 +7314,6 @@ msgstr "Anmeldung konnte nicht bestätigt werden"
 
 msgid "vision:not_a_stone"
 msgstr "Kein Stein"
+
+msgid "report:score_difference"
+msgstr "Punktedifferenz"

@@ -68,7 +68,7 @@ export function ReportAnalysisRail(props: Props) {
         <div className="report-analysis-rail__columns">
           <span>{props.playerToMove === 'B' ? black : white} · {t('live:suggested_move', '着点')}</span>
           <span>{t('live:recommendation', '推荐度')}</span>
-          <span>{t('live:lead_pts', '领先')}</span>
+          <span>{t('report:score_difference', '目差')}</span>
           <span>{t('live:winrate', '胜率')}</span>
         </div>
         <div className="report-analysis-rail__candidate-list" data-testid="report-candidate-list">

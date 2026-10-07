@@ -25,12 +25,12 @@ it('uses version 2 corrected parameters for the report and preserves raw SGF val
     analysisParameters={{ version: 2, verified: true, rules: 'japanese', komi: 0, sgf_sha256: 'sgf', parameter_sha256: 'params', provenance: {} }}
     task={{ status: 'completed', report_type: 'deep' }} currentMove={0} currentAnalysis={null} /></ThemeProvider>);
   expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('日本规则');
-  expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('分析贴目 0');
+  expect(screen.getByTestId('report-meta-panel')).toHaveTextContent('贴目 0');
   fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
   const dialog = screen.getByRole('dialog');
   expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
   expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
-  expect(within(dialog).getByText('分析贴目（已核验）').parentElement).toHaveTextContent('0');
+  expect(within(dialog).getByText('贴目').parentElement).toHaveTextContent('0');
 });
 
 it.each([['new zealand', '新西兰规则'], ['aga-button', 'AGA Button 规则']])('labels verified %s without a rule fallback', (rules, label) => {
@@ -59,13 +59,13 @@ it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as
     analysisParameters={{ version: 3, verified: false, rules, komi, sgf_sha256: 'sgf', parameter_sha256: 'params',
       provenance: { source: 'komi_default', raw_rules: null, raw_komi: String(komi), policy: 'komi-default-v1' } }}
     task={{ status: 'completed', report_type: 'deep' }} currentMove={0} currentAnalysis={null} /></ThemeProvider>);
-  expect(screen.getByTestId('report-meta-panel')).toHaveTextContent(`${label}（默认）`);
+  expect(screen.getByTestId('report-meta-panel')).toHaveTextContent(`${label}`);
   fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
   const dialog = screen.getByRole('dialog');
   expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
   expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));
-  expect(within(dialog).getByText('分析规则', { exact: true }).parentElement).toHaveTextContent(`${label}（默认）`);
-  expect(within(dialog).getByText('分析贴目', { exact: true }).parentElement).toHaveTextContent(String(komi));
+  expect(within(dialog).getByText('分析规则', { exact: true }).parentElement).toHaveTextContent(`${label}`);
+  expect(within(dialog).getByText('贴目', { exact: true }).parentElement).toHaveTextContent(String(komi));
   expect(within(dialog).getByText('规则来源').parentElement).toHaveTextContent(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
   expect(dialog).not.toHaveTextContent('已核验');
 });

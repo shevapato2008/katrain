@@ -46,17 +46,12 @@ beforeEach(() => {
 });
 
 describe('棋谱 kiosk 语言展示', () => {
-  it('cn→en→jp 重取同页并同步显示译名、结果、段位与全部来源', async () => {
+  it('cn→en→jp 重取同页并同步显示译名、结果、段位，隐藏来源', async () => {
     const view = renderPage();
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
     expect(row).toHaveTextContent('9段');
     expect(row).toHaveTextContent('黑胜中盘');
-    expect(within(row).getByText('星阵')).toBeInTheDocument();
-    expect(within(row).getByText('CWI')).toBeInTheDocument();
-    expect(within(row).getByText('19x19')).toBeInTheDocument();
-    expect(within(row).getByText('来源待核实')).toBeInTheDocument();
-    expect(row).toHaveTextContent('来源');
-    expect(row).toHaveStyle({ height: 'auto', gridTemplateRows: '18px 25px auto' });
+    expect(within(row).queryByText('来源')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, lang: 'cn' })));
@@ -67,9 +62,9 @@ describe('棋谱 kiosk 语言展示', () => {
     expect(enRow).toHaveTextContent('en-round');
     expect(enRow).toHaveTextContent('9dan');
     expect(enRow).toHaveTextContent('B+R');
-    expect(enRow).toHaveTextContent('Source');
-    expect(enRow).toHaveTextContent('GoLaxy');
-    expect(enRow).toHaveTextContent('Source unverified');
+    expect(enRow).not.toHaveTextContent('Source');
+    expect(enRow).not.toHaveTextContent('GoLaxy');
+    expect(enRow).not.toHaveTextContent('Source unverified');
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '原黑' } });
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '原黑', page: 1, lang: 'en' })), { timeout: 1500 });
@@ -80,9 +75,9 @@ describe('棋谱 kiosk 语言展示', () => {
     expect(jpRow).toHaveTextContent('jp-round');
     expect(jpRow).toHaveTextContent('9段');
     expect(jpRow).toHaveTextContent('黒勝中押し');
-    expect(jpRow).toHaveTextContent('出典');
-    expect(jpRow).toHaveTextContent('GoLaxy');
-    expect(jpRow).toHaveTextContent('出典未確認');
+    expect(jpRow).not.toHaveTextContent('出典');
+    expect(jpRow).not.toHaveTextContent('GoLaxy');
+    expect(jpRow).not.toHaveTextContent('出典未確認');
     expect(screen.getByRole('searchbox')).toHaveValue('原黑');
   });
 

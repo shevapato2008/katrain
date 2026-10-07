@@ -7265,3 +7265,6 @@ msgstr "Giriş onaylanamadı"
 
 msgid "vision:not_a_stone"
 msgstr "Bu bir taş değil"
+
+msgid "report:score_difference"
+msgstr "Puan farkı"

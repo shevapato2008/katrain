@@ -58,7 +58,7 @@ it('passes valid default parameters to metadata and keeps report analysis availa
     <Route path="/galaxy/kifu/:albumId/report" element={<KifuReportDetailPage />} />
   </Routes></MemoryRouter>);
   const rail = await screen.findByTestId('report-analysis-layout');
-  expect(within(rail).getByTestId('report-meta-panel')).toHaveTextContent('日本规则（默认）');
+  expect(within(rail).getByTestId('report-meta-panel')).toHaveTextContent('日本规则');
   expect(within(rail).getByTestId('report-candidate-list').children).toHaveLength(5);
   expect(screen.getByTestId('trend')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: '对局详情' }));

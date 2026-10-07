@@ -7281,3 +7281,6 @@ msgstr "Analysis incomplete"
 
 msgid "kifu:analysis_completed"
 msgstr "Analysis completed"
+
+msgid "report:score_difference"
+msgstr "Score difference"

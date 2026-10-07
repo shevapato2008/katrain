@@ -119,7 +119,7 @@ describe('职业报告固定右栏', () => {
       sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
     renderPage(); await loaded();
-    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent('日本规则 · 分析贴目 0');
+    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent('日本规则 · 贴目 0');
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
     expect([...screen.getByTestId('kifu-report-actions').querySelectorAll('button')].map(button => button.textContent)).toEqual(['试下', '领地', '支招', '分析']);
     expect([...screen.getByTestId('kifu-report-toggles').querySelectorAll('button')].map(button => button.textContent)).toEqual(['手数', '坐标', '清空', '详情']);
@@ -128,7 +128,7 @@ describe('职业报告固定右栏', () => {
     expect(dialog).toHaveTextContent('日本规则');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
-    expect(within(dialog).getByText('分析贴目（已核验）').parentElement).toHaveTextContent('0');
+    expect(within(dialog).getByText('贴目').parentElement).toHaveTextContent('0');
   });
 
   it.each([['japanese', 6.5, '日本规则'], ['chinese', 7.5, '中国规则']] as const)('valid default %s reports show completion and explain the source in details', async (rules, komi, label) => {
@@ -139,7 +139,7 @@ describe('职业报告固定右栏', () => {
     analysisCompleted = true;
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'japanese', komi });
     renderPage(); await loaded();
-    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent(`${label}（默认） · 分析贴目 ${komi}`);
+    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent(`${label} · 贴目 ${komi}`);
     expect(screen.queryByTestId('kifu-report-head')).toBeNull();
     expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
@@ -147,8 +147,8 @@ describe('职业报告固定右栏', () => {
     expect(dialog).toHaveTextContent('分析已完成');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));
-    expect(within(dialog).getByText('分析规则', { exact: true }).parentElement).toHaveTextContent(`${label}（默认）`);
-    expect(within(dialog).getByText('分析贴目', { exact: true }).parentElement).toHaveTextContent(String(komi));
+    expect(within(dialog).getByText('分析规则', { exact: true }).parentElement).toHaveTextContent(`${label}`);
+    expect(within(dialog).getByText('贴目', { exact: true }).parentElement).toHaveTextContent(String(komi));
     expect(within(dialog).getByText('规则来源').parentElement).toHaveTextContent(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
     expect(dialog).not.toHaveTextContent('已核验');
   });

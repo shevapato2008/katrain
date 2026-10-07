@@ -44,7 +44,6 @@ import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 import { formatRank } from '../../utils/rank';
-import { kifuSourceLabel } from '../../utils/kifuSource';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -121,14 +120,12 @@ function GameRecordCard({
   onClick,
   tMovesUnit,
   t,
-  lang,
   selected,
 }: {
   album: KifuAlbumSummary;
   onClick: () => void;
   tMovesUnit: string;
   t: (key: string, fallback?: string) => string;
-  lang: string;
   selected?: boolean;
 }) {
   const r = album.result || '';
@@ -229,16 +226,6 @@ function GameRecordCard({
             }} />
           </Box>
         </Box>
-        {!!album.sources?.length && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, minWidth: 0, mt: 0.6 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ ...railMetaSx, mr: 0.2 }}>
-              {t('kifu:source', '来源')}
-            </Typography>
-            {album.sources.map((source) => (
-              <Chip key={source} label={kifuSourceLabel(source, t, lang)} size="small" variant="outlined" sx={{ height: 19, maxWidth: '100%', fontSize: '0.63rem', '& .MuiChip-label': { px: 0.65, overflow: 'hidden', textOverflow: 'ellipsis' } }} />
-            ))}
-          </Box>
-        )}
       </CardActionArea>
     </Card>
   );
@@ -504,7 +491,6 @@ export default function KifuLibraryPage() {
                         onClick={() => handleCardClick(album)}
                         tMovesUnit={movesUnit}
                         t={t}
-                        lang={lang}
                         selected={selectedId === album.id}
                       />
                     </Box>

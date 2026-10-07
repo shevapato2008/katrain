@@ -6942,3 +6942,6 @@ msgstr "確認登入失敗"
 
 msgid "vision:not_a_stone"
 msgstr "不是落子"
+
+msgid "report:score_difference"
+msgstr "目差"

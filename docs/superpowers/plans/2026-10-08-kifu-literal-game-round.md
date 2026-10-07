@@ -31,9 +31,9 @@
 - [ ] 提交并push具体代码、测试及计划，不纳入其他未跟踪文件。
 - [x] 读取TEST/PROD实际运行镜像和文件SHA，保留其他会话最新发布的配置、env、挂载与静态前端；为TEST/PROD读端分别创建含新模块SHA的不可变镜像并按实际Compose服务持久发布，保留旧标签回退；只发布共享校验模块的必要差异，不整体覆盖项目或重启GPU/RK服务。
 - [x] 创建新独立importer标签及build receipt，保留旧标签/历史receipt。核对TEST/PROD读端与新importer使用相同规则，健康及文件SHA通过。
-- [ ] 首包fresh capture BC8+GG候选145raw/211games，实际记录若变化重新冻结。source actor、真实UTC、逐盘GN/EV/SGF哈希、独立binding、显示名和来源均保存；无FK/SGF/段位/展示标签变更。
-- [ ] TEST dry-run→apply→verify，然后PROD同序；网络不明先查journal，不重复SQL。每批完成后报实际棋手/赛事实体/棋局覆盖率，刷新HTML阶段成果。
-- [ ] 原150raw/156games包与棋手五人流水线继续。此补充不暂停清晰数据交付；完成后继续高频到低频翻译。
+- [x] 首包fresh capture BC8+GG候选145raw/211games，实际记录若变化重新冻结。source actor、真实UTC、逐盘GN/EV/SGF哈希、真实source/binder及root独立审核、显示名和来源均保存；无FK/SGF/段位/展示标签变更。
+- [x] TEST dry-run→apply→verify，然后PROD同序；网络不明先查journal，不重复SQL。每批完成后报实际棋手/赛事实体/棋局覆盖率，刷新HTML阶段成果。
+- [x] 原150raw/156games包与棋手五人流水线继续。此补充不暂停清晰数据交付；完成后继续高频到低频翻译。
 
 ### 独立计划审查记录
 
@@ -44,3 +44,5 @@
 - 初版9项规则回归真实RED；Astra第1轮要求收窄新增数字后，4项非法数字真实RED。第2版主窗口两份suite实际 `152 passed in 9.62s`，`git diff --check` PASS；独立Astra第2轮15个纯函数边界PASS，无阻塞。模块SHA `e9122f7fe70260a97e813cb8be9529fe2759750a71311c437ae61474dcf19fc4`。两轮审核见 `docs/resource/kifu-literal-game-round-code-review-astra-2026-10-08.md`；发布和真实新grammar数据仍待Chunk2。
 
 - Chunk2 reader/importer已按实际收据发布，记录见 `docs/resource/kifu-literal-game-round-deployed-2026-10-08.md`。GitHub两种传输均超时，commit已完成但push待重试；新grammar数据首包仍未写入，不计完成。
+
+- Chunk2首包BC8＋GG owner493/name494两库实际应用，725严格译名与211不变SGF/FK核验，各10真实HTTP通过。进度读脚本旧616796模块漏计已更新为已发布e912，只读重算新增178盘整卡，未重跑SQL；棋手ret85／495也已两库入库，各6真实HTTP通过。最新正式库1500/3698棋手、64/85赛事实体、112603/173025整卡。后续翻译继续，不计作全库完成。

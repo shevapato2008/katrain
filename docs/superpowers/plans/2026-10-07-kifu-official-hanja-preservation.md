@@ -56,3 +56,5 @@
 ## Implementation checkpoint
 
 2026-10-07：3文件最小实现；orthographic/evidence实际172项、candidate/batch实际190项通过，包含SQLite importer与identity保持兼容字码点的真实读取测试。独立FH reviewer按spec符合性→代码质量/数据完整性顺序实读方案、diff及三份KBA真实desktop页，两阶段PASS，无Critical/Important；未重复全套测试。严格本人页格式变化会拒绝处理，属于预期边界。真实ret66及webreader/importer发布尚未执行，不计本批入库完成。
+
+2026-10-07 后续实际执行：862d7272实现及825cb03a TEST精确搜索修正已提交并推送。有限reader/importer已发布两库，retired66首次25名称453及retired67–71五批均通过真实入库、读取和来源同步。TESTr2与PRODr1镜像ID和实际兼容字形HTTP记录见runtime GZ；精确官方本人source、前像、请求／批准proof和25-name收据已归档。当前1450完整棋手，完整五语展示110548/173025。初始checkpoint的待发布状态仅描述当时时点，已被本段实际结果更新。

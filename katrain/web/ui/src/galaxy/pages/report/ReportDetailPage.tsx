@@ -16,7 +16,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ScienceIcon from '@mui/icons-material/Science';
 import { Alert, Box, Button, CircularProgress, Skeleton } from '@mui/material';
 
 import LiveBoard, { type AiMoveMarker } from '../../../components/live/LiveBoard';
@@ -24,15 +23,18 @@ import { useAuth } from '../../../context/AuthContext';
 import { useSound } from '../../../hooks/useSound';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { sgfToMoves } from '../../../utils/sgfSerializer';
+import { reportPlayerToMove } from '../../../utils/reportPlayer';
 import { useReportDetail } from '../../../features/report/useReportDetail';
 import AiAnalysis from '../../../components/live/AiAnalysis';
 import PlaybackBar from '../../../components/live/PlaybackBar';
 import TrendChart from '../../../components/live/TrendChart';
 import ReportMetaPanel from '../../components/report/ReportMetaPanel';
+import ReportAnalysisLayout from '../../components/report/ReportAnalysisLayout';
 import BoardPageShell from '../../components/board/BoardPageShell';
 import ModulePlate from '../../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../../components/board/useBoardCoordinates';
 import LiveMatchDisplayControls from '../live/LiveMatchDisplayControls';
+import ReplayBoard3D from '../../components/board/ReplayBoard3D';
 
 const BACK_TO = '/galaxy/report';
 
@@ -69,6 +71,7 @@ export default function ReportDetailPage() {
     loading,
     error,
   } = useReportDetail(token, taskId, isAuthenticated);
+  const [view3d, setView3d] = useState(false);
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
@@ -80,14 +83,8 @@ export default function ReportDetailPage() {
 
   // Sound on move navigation
   const { play: playSound } = useSound();
-  const prevMoveRef = useRef<number | null>(null);
+  const prevMoveRef = useRef<{ identity: string; move: number } | null>(null);
 
-  useEffect(() => {
-    if (currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
-      playSound('stone');
-    }
-    prevMoveRef.current = currentMove;
-  }, [currentMove, playSound]);
 
   const previewData = useMemo(() => {
     if (!game?.sgf_content) return null;
@@ -95,23 +92,34 @@ export default function ReportDetailPage() {
   }, [game]);
 
   const currentAnalysis = analysisByMove[currentMove] || null;
+  const setupCount = previewData?.setupCount ?? 0;
+  const boardCursor = currentMove + setupCount;
+  const playerToMove = reportPlayerToMove(previewData?.stoneColors, boardCursor, setupCount);
+  useEffect(() => {
+    if (loading || !game || !previewData) { prevMoveRef.current = null; return; }
+    const identity = `${taskId}:${game.id}`;
+    const previous = prevMoveRef.current;
+    const move = previewData.moves[boardCursor - 1];
+    if (previous?.identity === identity && previous.move !== currentMove && currentMove > 0
+      && move && /^[A-HJ-Z][1-9]\d*$/i.test(move)) playSound('stone');
+    prevMoveRef.current = { identity, move: currentMove };
+  }, [loading, game, previewData, taskId, currentMove, boardCursor, playSound]);
+
 
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
     if (!showAiMarkers || !currentAnalysis?.top_moves?.length) return null;
-    return currentAnalysis.top_moves.slice(0, 3).map((topMove, index) => ({
+    return currentAnalysis.top_moves.slice(0, 5).map((topMove, index) => ({
       move: topMove.move,
       rank: index + 1,
       visits: topMove.visits,
-      winrate: topMove.winrate ?? 0,
-      score_lead: topMove.score_lead ?? 0,
+      winrate: playerToMove === 'B' ? topMove.winrate ?? 0 : 1 - (topMove.winrate ?? 0),
+      score_lead: playerToMove === 'B' ? topMove.score_lead ?? 0 : -(topMove.score_lead ?? 0),
     }));
-  }, [currentAnalysis, showAiMarkers]);
+  }, [currentAnalysis, showAiMarkers, playerToMove]);
 
   const ownership = showTerritory ? currentAnalysis?.ownership || null : null;
   const boardSize = previewData?.metadata.boardSize || game?.board_size || 19;
   // 让子局:`moves` 开头是摆子,报告的 move_number 只数着手。见 kiosk 同名页那段注释。
-  const setupCount = previewData?.setupCount ?? 0;
-  const boardCursor = currentMove + setupCount;
   const totalMoves = previewData ? Math.max(0, previewData.moves.length - setupCount) : 0;
 
   if (!isAuthenticated) {
@@ -176,34 +184,19 @@ export default function ReportDetailPage() {
     );
   }
 
-  const black = game?.player_black || t('report:black', 'Black');
-  const white = game?.player_white || t('report:white', 'White');
-
-  /* 「进入研究室」带着这一局走。改版前它是 `navigate('/galaxy/research')` —— 不带任何
-     棋局参数，点进去是一张空棋盘（冻结稿 V2 的注释：「现状漏了棋局参数，改版补上」）。
-     Fan 2026-08-22 点头补上。
-
-     参数用 `user_game_id`（`user_games` 那套 uuid），不是 `kifu_id` —— 研究页原有的
-     `?kifu_id=` 走的是棋谱库 `KifuAPI.getAlbum`，是**另一个 id 空间**；把报告的
-     game id 塞进去只会加载到一局无关的棋，比不跳转更坏。
-
-     不带 `&analyze=1`：这一局报告页已经分析过一遍，进研究室是为了摆变化；而全盘扫描
-     是计费动作，不该由一次导航悄悄触发。要分析就在研究页按「开始研究」。 */
-  const researchHref = game?.id
-    ? `/galaxy/research?user_game_id=${encodeURIComponent(game.id)}`
-    : null;
-
   return (
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
       board={previewData ? (
-        <LiveBoard
+        view3d ? <ReplayBoard3D moves={previewData.moves} stoneColors={previewData.stoneColors} currentMove={boardCursor} boardSize={boardSize} handicapCount={setupCount} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((prev) => [...prev, move]) : undefined} /> : <LiveBoard
           moves={previewData.moves}
           stoneColors={previewData.stoneColors}
           currentMove={boardCursor}
+          nextColor={playerToMove}
           pvMoves={pvMoves}
           boardSize={boardSize}
           aiMarkers={aiMarkers}
+          aiMarkerLimit={5}
           showAiMarkers={showAiMarkers}
           showMoveNumbers={showMoveNumbers}
           showTerritory={showTerritory}
@@ -220,40 +213,24 @@ export default function ReportDetailPage() {
       ) : (
         <Alert severity="info">{t('report:no_sgf', 'No SGF data available for review.')}</Alert>
       )}
-      modulePlate={(
-        <ModulePlate
-          title={`${black} vs ${white}`}
-          subtitle={`${currentMove} / ${totalMoves} ${t('live:moves', '手')}`}
-          /* 返回键在右栏左上角（Fan 2026-08-22 裁定，见 ModulePlate 的注释）。
-             `backLabel` 不上屏，只把无障碍名做成「返回复盘」。
-             报告状态/类型仍留在右栏的 ReportMetaPanel 里 —— 规范 §2.4「chip 一律不进
-             页头」那半句没有被这次裁定推翻，继续有效。 */
-          backTo={BACK_TO}
-          backLabel={t('report:review', '复盘')}
-        />
-      )}
+      fixedRail
+      modulePlate={null}
       railBody={(
-        <>
-          <ReportMetaPanel
-            game={game}
-            task={task}
-            currentMove={currentMove}
-            currentAnalysis={currentAnalysis}
-          />
-          {/* 显示开关紧跟在对局信息之后，而不是 shell 的 `displayControls` 槽。
-              冻结稿 V2 把它放在中段最末，但那是按稿子里那份**很短**的假数据排的；
-              真数据下（250 手的报告，AI 推荐 3 行 + 失误 24 条）它会掉到折线以下
-              208px（1440×900）/ 389px（1024×768），要滚一屏才够得着 —— 迁版式前它
-              就在对局信息下面、一直可见。稿子的意图是「不用滚就能看见」（参考图里
-              它是露着的），真数据下只有放在这里才成立。
-              顺序也与死活题页一致：身份块（本题 / 对局信息）→ 工具格 → 其余内容。
-              **直播页可能有同样的问题，但本机没有直播数据量不到，记进待议。** */}
-          <LiveMatchDisplayControls
+        <ReportAnalysisLayout
+          identity={<ReportMetaPanel game={game} task={task} currentMove={currentMove} currentAnalysis={currentAnalysis} backTo={BACK_TO} />}
+          recommendations={<>
+            {task?.status !== 'completed' && <Alert severity={task?.status === 'failed' ? 'error' : 'info'} sx={{ py: 0, '& .MuiAlert-message': { fontSize: 18 } }}>{task?.status === 'running' ? `${t('report:generating', '分析中')} · ${task.analyzed_moves} / ${task.total_moves} ${t('live:moves', '手')}` : task?.status === 'failed' ? t('report:failed', '分析失败') : t('report:queuing', '等待分析')}</Alert>}
+            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={previewData?.moves[boardCursor]} />
+          </>}
+          analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart reportMode analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={setCurrentMove} /></Box>}
+          controls={<LiveMatchDisplayControls
+            reportMode
             tryMoveMode={tryMoveMode}
             showTerritory={showTerritory}
             showMoveNumbers={showMoveNumbers}
             showAiMarkers={showAiMarkers}
             showCoordinates={coordinates.visible}
+            view3d={view3d}
             ownershipAvailable={currentAnalysis?.ownership != null}
             tryMoves={tryMoves}
             onTryMoveToggle={() => {
@@ -264,53 +241,13 @@ export default function ReportDetailPage() {
             onMoveNumbersToggle={() => setShowMoveNumbers((visible) => !visible)}
             onAiMarkersToggle={() => setShowAiMarkers((visible) => !visible)}
             onCoordinatesToggle={coordinates.toggle}
+            on3dToggle={() => setView3d((value) => !value)}
             onClearTryMoves={() => setTryMoves([])}
-          />
-
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            {/* 人类倾向那一列**有意不开**。2026-09-01 Fan 裁定「先不加了，规则不统一，
-                没有很好的产品价值」—— 依据是同一手在 rank_5k 下 86.3%、rank_5d 下 27.4%
-                （实测第 98 手 H9，五档对照见当日会话），固定一个档位对职业棋谱和对新手
-                都不贴切，那个数没法自证该信谁。
-                组件侧的实现与测试保留（`AiAnalysis` 的 `showHumanTendency` 默认 false），
-                将来若按「跟看的人走」重做参照系，把这个 prop 加回来即可。 */}
-            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} />
-          </Box>
-          {/* TrendChart 自带 `height:100%` + 内部 `flex:1; overflow:auto` 的滚动壳。
-              中段是唯一可滚的那一段，所以这里必须给它 `flex:'none'` 让它按内容占高，
-              否则要么内部那个滚动条形同虚设，要么变成中段里再套一个中段。
-              照 `LiveMatchPage.tsx:176` 的同一层包装，别省。 */}
-          <Box data-testid="report-trend-region" sx={{ flex: 'none' }}>
-            <TrendChart
-              analysis={analysisByMove}
-              totalMoves={totalMoves}
-              currentMove={currentMove}
-              onMoveClick={setCurrentMove}
-            />
-          </Box>
-          {/* 「进入研究室」是一次性的跳出动作，不是随手拨的开关，所以按冻结稿 V2 落在
-              中段最末一节而不是动作区 —— 动作区留给播放条，跟直播页一致。 */}
-          <Box sx={{ py: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<ScienceIcon />}
-              disabled={!researchHref}
-              onClick={() => { if (researchHref) navigate(researchHref); }}
-              sx={{ textTransform: 'none', minHeight: 40 }}
-            >
-              {t('report:enter_research', 'Open in Research')}
-            </Button>
-          </Box>
-        </>
-      )}
-      actions={(
-        <PlaybackBar
-          currentMove={currentMove}
-          totalMoves={totalMoves}
-          onMoveChange={setCurrentMove}
+          />}
+          navigation={<PlaybackBar inline currentMove={currentMove} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
         />
       )}
+      actions={null}
     />
   );
 }

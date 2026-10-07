@@ -16,6 +16,7 @@ interface PlaybackBarProps {
   onMoveChange: (move: number) => void;
   isLive?: boolean;
   touchSized?: boolean;
+  inline?: boolean;
 }
 
 export default function PlaybackBar({
@@ -24,6 +25,7 @@ export default function PlaybackBar({
   onMoveChange,
   isLive = false,
   touchSized = false,
+  inline = false,
 }: PlaybackBarProps) {
   const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -116,10 +118,12 @@ export default function PlaybackBar({
     handleManualNavigation(value as number);
   };
 
+  const counter = <Typography data-testid="playback-move-counter" variant="body2" color="text.secondary" noWrap sx={{ minWidth: inline ? 96 : 87, textAlign: inline ? 'right' : undefined, fontSize: inline ? 18 : undefined, [NARROW]: { minWidth: 0, fontSize: inline ? 16 : '0.72rem', ml: 0.5 } }}>{currentMove} / {totalMoves} {t('live:moves', '手')}</Typography>;
+
   return (
-    <Box sx={{ pt: 1, pb: 1.5, px: 1, borderTop: 1, borderColor: 'divider' }}>
+    <Box sx={inline ? { height: '100%', minHeight: 0, display: 'flex', alignItems: 'center', gap: 1, px: 1, border: 1, borderColor: 'divider', borderRadius: 1.5, bgcolor: 'background.paper' } : { pt: 1, pb: 1.5, px: 1, borderTop: 1, borderColor: 'divider' }}>
       {/* Slider */}
-      <Box sx={{ px: 1, mb: 0.5 }}>
+      <Box sx={inline ? { order: 2, flex: 1, minWidth: 40, px: 1, mb: 0 } : { px: 1, mb: 0.5 }}>
         <Slider
           value={currentMove}
           min={0}
@@ -166,6 +170,7 @@ export default function PlaybackBar({
           justifyContent: 'center',
           gap: 0.25,
           flexWrap: 'nowrap',
+          ...(inline ? { order: 1, flexShrink: 0 } : {}),
         }}
       >
         <Tooltip title={t('live:first_move')}>
@@ -237,25 +242,9 @@ export default function PlaybackBar({
           </Tooltip>
         )}
 
-        {/* Move counter - inline with controls */}
-        <Typography
-          data-testid="playback-move-counter"
-          variant="body2"
-          color="text.secondary"
-          noWrap
-          sx={{
-            minWidth: 87,
-            [NARROW]: {
-              /* 不再另起一行，跟控件同行；只把字号和保底宽度收掉 */
-              minWidth: 0,
-              fontSize: '0.72rem',
-              ml: 0.5,
-            },
-          }}
-        >
-          {currentMove} / {totalMoves} {t('live:moves')}
-        </Typography>
+        {!inline && counter}
       </Box>
+      {inline && <Box sx={{ order: 3, flexShrink: 0 }}>{counter}</Box>}
     </Box>
   );
 }

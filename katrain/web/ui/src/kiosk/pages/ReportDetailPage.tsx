@@ -4,20 +4,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ReportsAPI, type ReportTaskSummary } from '../../api/reportApi';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { useAuth } from '../../context/AuthContext';
-import { gradedMoves, isBad, isBrilliant } from '../../features/analysis/moveGrade';
 import { winrateSeries } from '../../features/report/reportStats';
 import { useReportDetail } from '../../features/report/useReportDetail';
 import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { requestFailureKind } from '../../utils/requestFailure';
 import { sgfToMoves } from '../../utils/sgfSerializer';
-import { AiRecommendRows } from '../components/report/AiRecommendRows';
-import MoveGradePanel from '../components/report/MoveGradePanel';
-import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
+import { translateResult } from '../../utils/resultTranslation';
+import { kifuRulesLabel } from '../../features/kifu/kifuRules';
+import { reportPlayerToMove } from '../../utils/reportPlayer';
+import { ReportAnalysisRail } from '../components/report/ReportAnalysisRail';
+import KioskReportPlayback from '../components/report/KioskReportPlayback';
 import { failureLine, failureReason, outcomeLine, rowTitle, yourColor } from '../components/report/reviewPresentation';
 import { colsFor, GO_COLS, rowsFor } from '../shell/goBoard';
 import { Icon } from '../shell/icons';
-import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { durationLabel, elapsedSeconds } from '../utils/durationLabel';
 import { interpolate } from '../utils/interpolate';
@@ -124,8 +124,7 @@ export default function ReportDetailPage() {
     task, game, moves, analysisByMove, currentMove, setCurrentMove, loading, error, errorKind, refresh,
   } = useReportDetail(token, taskId, isAuthenticated);
 
-  /** 右栏里同一时刻只开一块 —— 见下面那两个 `KioskFold` 上的说明。 */
-  const [openFold, setOpenFold] = useState<'ai' | 'grade'>('ai');
+  const [showCoordinates, setShowCoordinates] = useState(true);
   const [showAiMarkers, setShowAiMarkers] = useState(false);
   const [showMoveNumbers, setShowMoveNumbers] = useState(true);
   const [showTerritory, setShowTerritory] = useState(true);
@@ -210,6 +209,7 @@ export default function ReportDetailPage() {
    */
   const setupCount = previewData?.setupCount ?? 0;
   const boardCursor = currentMove + setupCount;
+  const playerToMove = reportPlayerToMove(previewData?.stoneColors, boardCursor, setupCount);
   const totalMoves = previewData
     ? Math.max(0, previewData.moves.length - setupCount)
     : (game?.move_count || 0);
@@ -217,14 +217,14 @@ export default function ReportDetailPage() {
 
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
     if (!currentAnalysis?.top_moves?.length) return null;
-    return currentAnalysis.top_moves.slice(0, 3).map((move, index) => ({
+    return currentAnalysis.top_moves.slice(0, 5).map((move, index) => ({
       move: move.move,
       rank: index + 1,
       visits: move.visits,
-      winrate: move.winrate ?? 0,
-      score_lead: move.score_lead ?? 0,
+      winrate: playerToMove === 'B' ? move.winrate ?? 0 : 1 - (move.winrate ?? 0),
+      score_lead: playerToMove === 'B' ? move.score_lead ?? 0 : -(move.score_lead ?? 0),
     }));
-  }, [currentAnalysis]);
+  }, [currentAnalysis, playerToMove]);
 
   const pvMoves = useMemo(() => {
     if (!activeMove) return null;
@@ -240,22 +240,6 @@ export default function ReportDetailPage() {
       .map((m) => ({ moveNumber: m.move_number, scoreLead: m.score_lead as number })),
     [moves],
   );
-
-  /** AI 推荐表的行 —— 和屏 21 研究同一个画法(`AiRecommendRows`)。 */
-  const aiRows = useMemo(() => (currentAnalysis?.top_moves ?? []).slice(0, 10).map((m) => ({
-    move: m.move,
-    share: (m.visits / Math.max(1, (currentAnalysis?.top_moves ?? []).reduce((n, x) => n + x.visits, 0))) * 100,
-    scoreLead: m.score_lead ?? 0,
-    winrate: m.winrate ?? 0,
-  })), [currentAnalysis]);
-
-  /** 折叠头右端那个**结论**:妙手几手、坏手几手(收起后仍然显示,规范第 2 条)。 */
-  const gradeSummary = useMemo(() => {
-    const graded = gradedMoves(analysisByMove);
-    const good = graded.filter(isBrilliant).length;
-    const bad = graded.filter(isBad).length;
-    return interpolate(t('grade:summary', '妙 {a} · 坏 {b}'), { a: good, b: bad });
-  }, [analysisByMove, t]);
 
   const handleMoveChange = useCallback((move: number) => {
     setActiveVariation(null);
@@ -366,10 +350,10 @@ export default function ReportDetailPage() {
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="kiosk-layout-a" data-testid="report-detail-page">
+    <div className="kiosk-layout-a report-analysis-layout" data-testid="report-detail-page">
       {/* 四条刻度带由**外壳**画(四棋类同一套几何),盘自己那一圈坐标因此关掉 ——
           两边都画就是两套坐标,字号字色还不是同一套。 */}
-      <div className="kiosk-board" data-testid="report-detail-board">
+      <div className="kiosk-board" data-coordinates={showCoordinates} data-testid="report-detail-board">
         <div className="kiosk-board__ruler kiosk-board__ruler--top">
           {colsFor(boardSize).map((c) => <span key={`t${c}`}>{c}</span>)}
         </div>
@@ -381,10 +365,12 @@ export default function ReportDetailPage() {
             moves={previewData.moves}
             stoneColors={previewData.stoneColors}
             currentMove={boardCursor}
+            nextColor={playerToMove}
             boardSize={boardSize}
             showCoordinates={false}
             pvMoves={pvMoves}
             aiMarkers={aiMarkers}
+            aiMarkerLimit={5}
             showAiMarkers={showAiMarkers}
             showMoveNumbers={showMoveNumbers}
             showTerritory={showTerritory}
@@ -401,12 +387,7 @@ export default function ReportDetailPage() {
                 move,
               ],
             })) : undefined}
-            /**
-             * 稿子这一屏**没有候选着法表** —— 那张表在研究屏(`.aitab`)。
-             * 可「点一条推荐看它的后续」这件事不能跟着表一起没:
-             * 打开「AI 推荐」之后盘上有三个标记,**点标记就是选它**,再点别处收起。
-             * 这比原来那张表少占一整块高度,手势还更直接。
-             */
+            // 盘上的标记与候选行都可打开变化，点其它位置关闭。
             onIntersectionClick={!tryMoveMode ? (x, y) => {
               const coord = coordAt(x, y);
               const hit = showAiMarkers && aiMarkers?.some((m) => m.move === coord);
@@ -422,25 +403,46 @@ export default function ReportDetailPage() {
         </div>
       </div>
 
-      <div className="kiosk-rail">
-        <KioskPagebar
+      <ReportAnalysisRail
+        key={reportIdentity}
+        testId="report-detail"
+        players={[game.player_black || t('review:black', '黑'), game.player_white || t('review:white', '白')]}
+        pagebar={(<KioskPagebar
           testId="report-detail-pagebar"
           backLabel={t('review:back_review', '复盘')}
           onBack={() => navigate(BACK_PATH)}
           title={title}
           sub={sub}
-        />
-
-        <div className="rhead" data-testid="report-detail-rhead">
-          <div>
-            <h4 data-testid="report-detail-status">
-              {taskStatusLabel(task?.status, t)} · {reportTypeLabel(task?.report_type, t)}
-            </h4>
-            {/* 三种局面三句话,判据见 `headMetaLine`。 */}
-            <p data-testid="report-detail-progress">{headMetaLine(task, totalMoves, t)}</p>
-          </div>
-          <div className="end">
-            <button
+        />)}
+        analysis={currentAnalysis} analysisByMove={analysisByMove}
+        playerToMove={playerToMove} actualMove={previewData.moves[boardCursor]}
+        currentMove={currentMove} totalMoves={totalMoves} points={points} lead={leadPoints}
+        onMoveClick={handleMoveChange} activeMove={activeMove}
+        onCandidateClick={(move) => {
+          setTryModeState(null); setTryState(null);
+          setActiveVariation(activeMove === move ? null : { identity: reportIdentity, position: currentMove, move });
+        }}
+        status={(<div className="report-analysis-rail__status" data-testid="report-detail-rhead">
+          <span data-testid="report-detail-status">{taskStatusLabel(task?.status, t)} · {reportTypeLabel(task?.report_type, t)}</span>
+          <span data-testid="report-detail-progress">{headMetaLine(task, totalMoves, t)}</span>
+        </div>)}
+        statusVisible={task?.status !== 'completed'}
+        metadata={(<div className="report-analysis-rail__status" data-testid="report-detail-metadata">
+          <span>{game.result ? translateResult(game.result, t, game.rules) : '—'}</span>
+          <span>{kifuRulesLabel(game.rules, t)} · {t('report:komi_label', '贴目')} {game.komi ?? '—'}</span>
+        </div>)}
+        details={[
+          [t('review:black', '黑'), [game.player_black, game.black_rank].filter(Boolean).join(' · ')],
+          [t('review:white', '白'), [game.player_white, game.white_rank].filter(Boolean).join(' · ')],
+          [t('report:event', '赛事'), [game.event, game.round_name].filter(Boolean).join(' · ')],
+          [t('report:date', '日期'), game.game_date || game.created_at],
+          [t('report:result', '结果'), game.result],
+          [t('report:rules', '规则'), game.rules],
+          [t('report:komi', '贴目'), game.komi],
+          [t('report:status', '状态'), taskStatusLabel(task?.status, t)],
+          [t('report:source', '来源'), game.source],
+        ]}
+        detailActions={(<><button
               type="button"
               className="kiosk-btn kiosk-btn--pill"
               onClick={() => navigate(`/kiosk/research?${new URLSearchParams({ user_game_id: game.id, from: 'report', task: String(taskId) }).toString()}`)}
@@ -455,125 +457,33 @@ export default function ReportDetailPage() {
             >
               {retrying ? t('report:retrying', '正在重试…') : t('review:recompute', '重算')}
             </button>
-          </div>
-        </div>
-
-        {(error || retryError) && (
+          </>)}
+        actions={(<>
+          <button type="button" aria-pressed={tryMoveMode} onClick={handleTryToggle}>
+            <Icon name="hand-pointing" />{t('report:try', '试下')}
+          </button>
+          <button type="button" aria-pressed={showTerritory} disabled={!ownership} onClick={() => setShowTerritory((v) => !v)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
+          <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
+            <Icon name="lightbulb" />{t('Advice', '支招')}
+          </button>
+          </>)}
+        toggles={(<>
+          <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
+          <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((v) => !v)}>
+            <Icon name="corners-out" />{t('Coordinates', '坐标')}
+          </button>
+          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryState(null); setActiveVariation(null); }}>{t('report:clear', '清空')}</button>
+        </>)}
+        notices={(<>{(error || retryError) && (
           <p className="rverr" role="status" data-testid="report-detail-alert">
             {retryError ?? failureLine(t('review:refresh_failed', '没刷新成功'), errorKind ?? 'other', t)}
             <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => void handleRefresh()}>
               {t('report:retry_load', '重试加载')}
             </button>
           </p>
-        )}
-
-        {/* 「AI 推荐」和「着手评价」**同一时刻只开一块**(单开手风琴)。不是风格,是几何:
-            44(页控条)+ 60(状态区)+ 2×30(两个折叠头)+ 40(显示开关)+ 36(翻手条)
-            + 5×12(rail-gap)= 300 ⇒ 展开那块的体只剩 216,而两块都展开要 380。
-            默认开 AI 推荐:它是**逐手**的东西(翻到哪手看哪手),而着手评价是整局的总结,
-            两者用在不同的时刻。 */}
-        <KioskFold
-          fold="ai"
-          grow={openFold === 'ai'}
-          open={openFold === 'ai'}
-          onToggle={() => setOpenFold(openFold === 'ai' ? 'grade' : 'ai')}
-          /* 表里十个候选而视口露不下 —— 没有条子,后面几行在触摸屏上就是不存在的。 */
-          scrollbar
-          bodyClassName="aitab"
-          testId="report-detail-ai"
-          title={interpolate(t('research:ai_after_move', 'AI 推荐 · 第 {n} 手之后'), { n: currentMove })}
-          value={currentAnalysis ? `${t('review:black', '黑')} ${(currentAnalysis.winrate * 100).toFixed(1)}%` : undefined}
-        >
-          <AiRecommendRows rows={aiRows} />
-        </KioskFold>
-
-        <KioskFold
-          fold="grade"
-          grow={openFold === 'grade'}
-          open={openFold === 'grade'}
-          onToggle={() => setOpenFold(openFold === 'grade' ? 'ai' : 'grade')}
-          testId="report-detail-grade"
-          /* 另铸一个键:`grade:tabs` 是**分段控件的读屏组名**
-             (`MoveGradePanel.tsx:491` 在用,念「着手评价」),这里要的是**折叠块标题**,
-             带「· 七档」那个限定。同一个 msgid 兼管两件事的话,`t()` 翻译表赢,
-             两处必然有一处被另一处的文案覆盖。 */
-          title={t('grade:fold_title', '着手评价 · 七档')}
-          value={gradeSummary}
-        >
-          <MoveGradePanel
-            analysis={analysisByMove}
-            totalMoves={totalMoves}
-            onMoveClick={handleMoveChange}
-            trend={(
-              <>
-                <p className="tline">
-                  <span className="wr">
-                    {t('review:black_winrate', '黑胜率')}{' '}
-                    <b>{currentAnalysis ? `${(currentAnalysis.winrate * 100).toFixed(1)}%` : '—'}</b>
-                  </span>
-                  <span className="sl">
-                    {t('review:black_lead', '黑领先')}{' '}
-                    <b>
-                      {currentAnalysis
-                        ? `${currentAnalysis.score_lead >= 0 ? '+' : '\u2212'}${Math.abs(currentAnalysis.score_lead).toFixed(1)} ${t('report:points_unit', '目')}`
-                        : '—'}
-                    </b>
-                  </span>
-                </p>
-                <div className="evalpad">
-                  <ReviewWinratePlot
-                    points={points}
-                    lead={leadPoints}
-                    empty={points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
-                    axisTop={`${t('review:black', '黑')} 100`}
-                    axisMid="50"
-                    axisBottom={`${t('review:white', '白')} 100`}
-                    label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
-                    cursor={currentMove}
-                    onPick={handleMoveChange}
-                  />
-                </div>
-              </>
-            )}
-          />
-        </KioskFold>
-
-        {/* 名字、顺序、图标逐个对上 galaxy 的 `LiveMatchDisplayControls`
-            (Fan 2026-09-01:「几个按钮的 icon 还有名称也和 galaxy 界面中的不一致,
-            这是不能接受的」)。三处改动:
-              · 顺序 领地/手数/AI 推荐/试下 → **试下/领地/手数/支招**(galaxy 的顺序);
-              · 「AI 推荐」改叫**「支招」**(galaxy 的 `Advice`)—— 同一件事两个名字,
-                而「AI 推荐」这四个字在这一屏上还是那张表的名字,一屏两义;
-              · 加图标,`.gtoggles--icon`。⚠️ **这一条推翻了 `go-screens.css` 里
-                「开关本来就没有图标」那条**(2026-08-24 屏 18 重画时立的)——
-                那条解决的是「安个图标像按下去有后果」,这里要解决的是跨端认不出是同一件事,
-                后者更贵。是**修饰类不是改 `.gtoggles`**,别的屏不受影响。
-            galaxy 那排还有一个**坐标**开关,盒上没有:盒上那圈坐标由外壳的四条刻度带画,
-            是布局 A 几何的一部分,关掉棋盘会变尺寸,撞规范 §5 防跳铁律。⇒ 盒上坐标恒开。 */}
-        <div className="gtoggles gtoggles--icon" role="group" aria-label={t('review:toggles', '显示')} data-testid="report-detail-toggles">
-          <button type="button" aria-pressed={tryMoveMode} onClick={handleTryToggle}>
-            <Icon name="hand-pointing" />{t('report:try', '试下')}
-          </button>
-          <button
-            type="button" aria-pressed={showTerritory} disabled={!ownership}
-            onClick={() => setShowTerritory((v) => !v)}
-          >
-            <Icon name="map-trifold" />{t('report:territory', '领地')}
-          </button>
-          <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}>
-            <Icon name="list-numbers" />{t('report:move_numbers', '手数')}
-          </button>
-          <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
-            <Icon name="lightbulb" />{t('Advice', '支招')}
-          </button>
-        </div>
-
-        {tryMoveMode && tryMoves.length > 0 && (
+        )}{tryMoveMode && tryMoves.length > 0 && (
           <p className="rverr" role="status" data-testid="report-detail-try">
             {t('report:try', '试下')}: {tryMoves.join(' → ')}
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setTryState(null)}>
-              {t('report:clear', '清空')}
-            </button>
           </p>
         )}
         {activeMove && (
@@ -583,35 +493,9 @@ export default function ReportDetailPage() {
               {t('report:clear_variation', '清除变化')}
             </button>
           </p>
-        )}
-
-        <div className="kiosk-movenav" data-testid="report-detail-movenav">
-          <button
-            type="button" aria-label={t('kifu:to_start', '回到开局')}
-            disabled={currentMove === 0} onClick={() => handleMoveChange(0)}
-          >
-            <Icon name="caret-double-left" />
-          </button>
-          <button
-            type="button" aria-label={t('kifu:prev_move', '上一手')}
-            disabled={currentMove === 0} onClick={() => handleMoveChange(Math.max(0, currentMove - 1))}
-          >
-            <Icon name="caret-left" />
-          </button>
-          <button
-            type="button" aria-label={t('kifu:next_move', '下一手')}
-            disabled={currentMove >= totalMoves} onClick={() => handleMoveChange(Math.min(totalMoves, currentMove + 1))}
-          >
-            <Icon name="caret-right" />
-          </button>
-          <button
-            type="button" aria-label={t('kifu:to_end', '跳到最后')}
-            disabled={currentMove >= totalMoves} onClick={() => handleMoveChange(totalMoves)}
-          >
-            <Icon name="caret-double-right" />
-          </button>
-        </div>
-      </div>
+        )}</>)}
+        navigation={<KioskReportPlayback testId="report-detail-movenav" currentMove={currentMove} totalMoves={totalMoves} onMoveChange={handleMoveChange} />}
+      />
     </div>
   );
 }

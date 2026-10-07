@@ -1,7 +1,7 @@
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOARD_ASSETS } from '../board/boardUtils';
-import LiveBoard from './LiveBoard';
+import LiveBoard, { type AiMoveMarker } from './LiveBoard';
 
 type ResizeCallback = ConstructorParameters<typeof ResizeObserver>[0];
 
@@ -35,7 +35,7 @@ class ImageMock {
 
 const fillText = vi.fn();
 const context = new Proxy(
-  { fillText },
+  { fillText, createRadialGradient: () => ({ addColorStop: vi.fn() }) },
   {
     get(target, property) {
       if (property in target) return target[property as keyof typeof target];
@@ -75,12 +75,59 @@ beforeEach(() => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context);
 });
 
+describe('LiveBoard AI marker limit', () => {
+  const markers: AiMoveMarker[] = ['Q16', 'D4', 'C3', 'R14', 'F6', 'K10'].map((move, index) => ({
+    move, rank: index + 1, visits: 100 + index, winrate: 0.51 + index / 100, score_lead: 2,
+  }));
+
+  it.each([
+    ['default', undefined, 3],
+    ['report', 5, 5],
+  ])('uses the %s marker limit', async (_name, aiMarkerLimit, count) => {
+    render(
+      <LiveBoard moves={[]} currentMove={0} showCoordinates={false} aiMarkers={markers} aiMarkerLimit={aiMarkerLimit} />,
+    );
+
+    await waitFor(() => expect(fillText).toHaveBeenCalled());
+    const displayed = fillText.mock.calls.map(([text]) => text);
+    markers.forEach((marker, index) => {
+      const winrate = (marker.winrate * 100).toFixed(1);
+      if (index < count) expect(displayed).toContain(winrate);
+      else expect(displayed).not.toContain(winrate);
+    });
+    expect(markers).toHaveLength(6);
+  });
+
+  it('redraws when the marker limit changes', async () => {
+    const props = { moves: [], currentMove: 0, showCoordinates: false, aiMarkers: markers };
+    const { rerender } = render(<LiveBoard {...props} />);
+    await waitFor(() => expect(fillText).toHaveBeenCalled());
+    fillText.mockClear();
+
+    rerender(<LiveBoard {...props} aiMarkerLimit={5} />);
+
+    expect(fillText.mock.calls.map(([text]) => text)).toContain('55.0');
+    expect(fillText.mock.calls.map(([text]) => text)).not.toContain('56.0');
+  });
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('LiveBoard responsive sizing', () => {
+  it('draws the real position while material images are still loading', () => {
+    class PendingImage {
+      set src(_value: string) {}
+    }
+    vi.stubGlobal('Image', PendingImage);
+
+    render(<LiveBoard moves={['D4']} currentMove={1} boardSize={9} showCoordinates={false} showMoveNumbers />);
+
+    expect(fillText.mock.calls.map(([text]) => text)).toContain('1');
+  });
+
   it('retains the existing 400px canvas minimum by default', () => {
     const { container } = render(<LiveBoard moves={[]} currentMove={0} />);
 
@@ -118,9 +165,14 @@ describe('LiveBoard responsive sizing', () => {
     ['opt-in responsive floor', { minimumCanvasSize: 0, minContainerHeight: 0 }],
   ])('lets showCoordinates control labels on all four sides in %s mode', async (_name, props) => {
     const { rerender } = render(<LiveBoard moves={[]} currentMove={0} boardSize={9} {...props} />);
+    await act(async () => {});
     notifySize();
 
-    await waitFor(() => expect(fillText).toHaveBeenCalledTimes(9 * 4));
+    await waitFor(() => expect(fillText.mock.calls.length).toBeGreaterThanOrEqual(9 * 4));
+    const labels = fillText.mock.calls.slice(-9 * 4).map(([text]) => text);
+    for (const label of ['A', 'J', '1', '9']) {
+      expect(labels.filter(text => text === label)).toHaveLength(2);
+    }
 
     fillText.mockClear();
     rerender(<LiveBoard moves={[]} currentMove={0} boardSize={9} showCoordinates={false} {...props} />);

@@ -144,9 +144,12 @@ function baseDetail() {
   };
 }
 
-/** 屏 20 默认展开的是「AI 推荐」—— 要看五个 tab 得先把「着手评价」点开。 */
+/** 分析按钮打开保留五页签的弹层。 */
 function openGrade() {
   fireEvent.click(screen.getByRole('button', { name: /着手评价/ }));
+}
+function openDetails() {
+  fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
 }
 /** 切到某个 tab。tab 条是 `.kiosk-optseg` 里的一排按钮。 */
 function pickTab(name: string) {
@@ -229,6 +232,7 @@ describe('屏 20 · 题头与状态', () => {
       },
     };
     renderPage();
+    openDetails();
     expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 用了 6分12秒');
   });
 
@@ -245,6 +249,7 @@ describe('屏 20 · 题头与状态', () => {
       task: { ...task, analyzed_moves: 3, ...patch } as ReportTaskSummary,
     };
     renderPage();
+    openDetails();
     expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 3 手');
     expect(screen.getByTestId('report-detail-progress').textContent).not.toContain('用了');
   });
@@ -265,6 +270,7 @@ describe('屏 20 · 题头与状态', () => {
   ] as const)('%s 也照样把盘画出来 —— 轮询归共享钩子管', (status, label) => {
     detail = { ...baseDetail(), task: { ...task, status } };
     renderPage();
+    if (status === 'completed') openDetails();
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent(label);
     expect(screen.getByTestId('live-board')).toBeVisible();
   });
@@ -296,24 +302,40 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     realHook.enabled = false;
   });
 
-  // 默认展开的是「AI 推荐」而不是曲线 —— 它是**逐手**的东西(翻到哪手看哪手),
-  // 而着手评价是整局的总结。两块同一时刻只开一块,理由是几何(体只有 216,两块要 380)。
-  it('默认开 AI 推荐、着手评价收起;点一下换过去,AI 推荐跟着收起', () => {
+  it('候选常驻，分析按钮打开弹层，关闭后仍保留候选', () => {
     renderPage();
-    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'true');
-    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'false');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const table = screen.getByTestId('report-detail-ai');
     openGrade();
-    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'true');
-    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'false');
+    expect(screen.getByRole('dialog', { name: '着手评价 · 七档' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(table).toBeVisible();
   });
 
   it('AI 推荐表用的是 galaxy 那四个列名 —— 着点 / 推荐度 / 领先 / 胜率', () => {
     renderPage();
     const table = screen.getByTestId('report-detail-ai');
-    for (const col of ['着点', '推荐度', '领先', '胜率']) {
+    for (const col of ['着点', '推荐度', '目差', '胜率']) {
       expect(table.textContent).toContain(col);
     }
     expect(screen.getAllByTestId('ai-recommend-row').length).toBeGreaterThan(0);
+  });
+
+  it('旧报告无PSV时退回visits，分母仍包含全部候选', () => {
+    const top_moves = Array.from({ length: 10 }, (_, i) => ({ ...analysis.top_moves[0], move: `A${i + 1}`, psv: 0, visits: i === 0 ? 900 : 100 }));
+    detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, top_moves } } };
+    renderPage();
+    expect(screen.getAllByTestId('ai-recommend-row')[0]).toHaveTextContent('50%');
+  });
+
+  it('局面尚未算出时五个占位仍在，不编胜率或领先', () => {
+    detail = { ...baseDetail(), analysisByMove: {} };
+    renderPage();
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.getAllByTestId('ai-recommend-empty-row')).toHaveLength(5);
+    expect(screen.getByTestId('report-detail-scores')).toHaveTextContent('—');
+    expect(screen.getByTestId('report-detail-scores')).not.toHaveTextContent('0.0%');
   });
 
   it('走势 tab:曲线按逐手数据画,并且多画一条目差', () => {
@@ -344,7 +366,8 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     pickTab('失误');
     expect(screen.getByTestId('grade-lollipop')).toBeInTheDocument();
     // 默认那一态说的是计数与截断 —— 截断了必须说。
-    expect(screen.getByTestId('grade-selline')).toHaveAttribute('data-state', 'hint');
+    fireEvent.click(screen.getByRole('button', { name: '失误 · 说明' }));
+    expect(screen.getByText(/本阶段共/)).toBeInTheDocument();
   });
 
   // Fan 2026-09-02:「点击图表上每个点的时候下方会有具体解释文字」。
@@ -386,10 +409,14 @@ describe('屏 20 · 着手评价的五个 tab', () => {
     openGrade();
     pickTab('AI吻合度');
     expect(screen.getByTestId('grade-match-stats')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI吻合度 · 说明' }));
     expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('dialog', { name: 'AI吻合度 · 说明' }).querySelector('button')!);
     pickTab('分布');
     expect(screen.getByTestId('grade-match-dist')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'AI吻合度 · 说明' }));
     expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('dialog', { name: 'AI吻合度 · 说明' }).querySelector('button')!);
   });
 
   it('一手都评不出来时照实说,不摆一张空图', () => {
@@ -428,13 +455,47 @@ describe('屏 20 · 盘上的交互', () => {
   // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
   // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
   // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
-  it('四个开关按 galaxy 的名字与顺序排,没有领地数据时「领地」按不了', () => {
+  it('两行四列保持批准的动作顺序，领地无数据时禁用', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
     const row = screen.getByTestId('report-detail-toggles');
     expect([...row.querySelectorAll('button')].map((b) => b.textContent))
-      .toEqual(['试下', '领地', '手数', '支招']);
+      .toEqual(['手数', '坐标', '清空', '详情']);
+    expect([...screen.getByTestId('report-detail-actions').querySelectorAll('button')].map(b => b.textContent))
+      .toEqual(['试下', '领地', '支招', '分析']);
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
+  });
+
+  it('坐标仅切换外壳文字，刻度带和盘的参数保留', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '坐标' }));
+    expect(screen.getByTestId('report-detail-board')).toHaveAttribute('data-coordinates', 'false');
+    expect(document.querySelectorAll('.kiosk-board__ruler')).toHaveLength(4);
+    expect(document.querySelectorAll('.kiosk-board__ruler--top span')).toHaveLength(19);
+    expect(boardProps.showCoordinates).toBe(false);
+  });
+
+  it('五行常驻，按SGF下一手白方转换候选，PSV分母含未展示的候选', () => {
+    const top_moves = Array.from({ length: 10 }, (_, i) => ({ ...analysis.top_moves[0], move: `A${i + 1}`, psv: 1, visits: i === 0 ? 900 : 1 }));
+    detail = { ...baseDetail(), game: { ...game, sgf_content: '(;SZ[19];B[pd];B[dd];W[qp])' }, analysisByMove: { 2: { ...analysis, top_moves } } };
+    renderPage();
+    const rows = screen.getAllByTestId('ai-recommend-row');
+    expect(rows).toHaveLength(6);
+    expect(rows[0]).toHaveTextContent('1 · A1');
+    expect(rows[0]).toHaveTextContent('10%');
+    expect(rows[0]).toHaveTextContent('−4.1');
+    expect(rows[0]).toHaveTextContent('36.0%');
+    fireEvent.click(rows[0]);
+    expect(boardProps.pvMoves).toEqual(['Q10', 'D10']);
+    fireEvent.click(screen.getByRole('button', { name: '清除变化' }));
+    expect(boardProps.pvMoves).toBeNull();
+  });
+
+  it('对局详情保留赛事、棋手段位、规则、贴目、状态及来源', () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    const dialog = screen.getByRole('dialog');
+    for (const text of ['测试赛事', '9D', 'chinese', '7.5', '生成中', 'import', '日期', '结果']) expect(dialog).toHaveTextContent(text);
   });
 
   it('三个显示开关真的传到盘上', () => {
@@ -617,16 +678,16 @@ describe('屏 20 · 翻手、出口与出错', () => {
    */
   it('「去研究」带着这一局的编号和出处过去,编号照原样编码', () => {
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '去研究' }));
     expect(navigate).toHaveBeenCalledWith(
       '/kiosk/research?user_game_id=game+id%2F%E6%B1%89%E5%AD%97&from=report&task=42',
     );
   });
 
-  // 稿子把「重算」和「去研究」并排画在题头,不是只在失败时才出现 ——
-  // 它的用处正是「跑完了但想换个深度再跑一遍」。
-  it('「重算」常驻,点了先刷新再重跑', async () => {
+  it('「重算」在详情中可达，点了先刷新再重跑', async () => {
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     await waitFor(() => expect(retry).toHaveBeenCalledWith('token', 42));
     expect(refresh).toHaveBeenCalled();
@@ -635,6 +696,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   it('重算失败时话说出来(不印原文),盘和数据还在;重试加载能把那条错清掉', async () => {
     retry.mockRejectedValueOnce(Object.assign(new Error('Request failed 503: {"detail":"x"}'), { status: 503 }));
     renderPage();
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(await screen.findByText('重算没成 · 云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
@@ -708,6 +770,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByText('place try'));
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(await screen.findByText('重算没成')).toBeVisible();
 
@@ -748,6 +811,7 @@ describe('屏 20 · 接真钩子的轮询', () => {
 
     renderPage();
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    openDetails();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
     expect(getReport).toHaveBeenCalledTimes(2);
     expect(retry).not.toHaveBeenCalled();
@@ -762,6 +826,7 @@ describe('屏 20 · 接真钩子的轮询', () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
     expect(getReport).toHaveBeenCalledTimes(4);
+    openDetails();
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent('已完成');
   });
 

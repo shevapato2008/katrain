@@ -138,6 +138,9 @@ class RemoteKifuRepository:
     async def get_album(self, album_id: int, lang: str = "cn") -> Dict:
         return await self._client.get_kifu(album_id, lang=lang)
 
+    async def get_analysis(self, album_id: int) -> Dict:
+        return await self._client.get_kifu_analysis(album_id)
+
 
 class RemoteUserGameRepository:
     """User game data access via remote API."""
@@ -248,6 +251,9 @@ class RepositoryDispatcher:
 
     async def kifu_get_album(self, album_id, lang="cn"):
         return await self._remote_only(lambda: self.remote_kifu.get_album(album_id, lang), "Remote kifu service unavailable")
+
+    async def kifu_get_analysis(self, album_id):
+        return await self._remote_only(lambda: self.remote_kifu.get_analysis(album_id), "Remote kifu service unavailable")
 
     # ── User Games (online→remote, offline→local+sync) ──
 

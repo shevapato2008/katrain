@@ -39,7 +39,7 @@ export function AiRecommendRows({ rows }: { rows: readonly AiRow[] }) {
     <>
       <span className="hd">{t('live:suggested_move', '着点')}</span>
       <span className="hd">{t('live:recommendation', '推荐度')}</span>
-      <span className="hd">{t('live:lead_pts', '领先')}</span>
+      <span className="hd">{t('report:score_difference', '目差')}</span>
       <span className="hd">{t('live:winrate', '胜率')}</span>
       {/* 有几行画几行,**下面留白,不补空行也不补占位** —— `.aitab` 的
           `align-content:start` 就是为这个写的。留白是真话:AI 只给出了这么多候选。 */}

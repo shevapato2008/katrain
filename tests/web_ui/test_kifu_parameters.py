@@ -1,0 +1,583 @@
+"""Professional parameters must be explicit, evidenced and bound to engine input."""
+
+import copy
+import hashlib
+import json
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
+
+import pytest
+from sqlalchemy.orm import Session, sessionmaker
+
+from katrain.cron import sgf as sgf_module
+from katrain.cron.jobs import kifu_analyze
+from katrain.cron.models import KifuAlbumDB as Album, KifuAnalysisJobDB as Job, KifuAnalysisMoveDB as Move
+from katrain.web.api.v1.endpoints.kifu import KIFU_MODEL_SHA256, get_kifu_analysis
+from katrain.web.core.models_db import KifuAlbum, KifuAnalysisJob, KifuAnalysisMove
+from katrain.web.kifu.library import report_availability
+from tests.web_ui.test_kifu_analysis import _db
+from tests.test_kifu_batch_transfer import database
+
+
+def resolve(sgf, evidence=None):
+    from katrain.cron.kifu_parameters import resolve_parameters
+
+    return resolve_parameters(sgf, evidence)
+
+
+def evidence(sgf, rules="japanese", komi=6.5):
+    # Synthetic test evidence, never a production assertion.
+    return {
+        "sgf_sha256": hashlib.sha256(sgf.encode()).hexdigest(),
+        "rules": rules,
+        "komi": komi,
+        "verified": True,
+        "scope": "exact_game",
+        "reference_urls": ["https://example.test/fixture-game-rules"],
+        "scope_description": "Synthetic fixture game only",
+        "verified_by": "test-fixture",
+        "verified_at": "2026-10-07T00:00:00+00:00",
+    }
+
+
+@pytest.mark.parametrize(
+    "props,code",
+    [
+        ("KM[5.5]", "missing_rules"),
+        ("RU[Japanese]", "missing_komi"),
+        ("RU[unknown]KM[6.5]", "unsupported_rules"),
+        ("RU[Japanese]KM[NaN]", "invalid_komi"),
+        ("RU[Japanese]KM[Infinity]", "invalid_komi"),
+        ("RU[Japanese]KM[]", "invalid_komi"),
+        ("RU[Japanese]KM[6.5]KM[7.5]", "conflicting_metadata"),
+        ("RU[Japanese][Chinese]KM[6.5]", "conflicting_metadata"),
+        ("RU[Japanese]KM[6.5];B[aa]RU[Chinese]", "conflicting_metadata"),
+    ],
+)
+def test_unresolved_metadata_never_uses_personal_defaults(props, code):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    with pytest.raises(ParameterError) as error:
+        resolve(f"(;SZ[19]{props};B[pd])")
+    assert error.value.code == code
+
+
+def test_supported_explicit_pair_and_zero_komi_preserve_raw_metadata():
+    sgf = "(;SZ[19]RU[ Japanese ]KM[0];B[pd])"
+    params = resolve(sgf)
+    assert (params["rules"], params["komi"], params["verified"]) == ("japanese", 0.0, True)
+    assert params["provenance"] == {"source": "sgf", "raw_rules": " Japanese ", "raw_komi": "0"}
+    assert params["sgf_sha256"] == hashlib.sha256(sgf.encode()).hexdigest()
+    # Existing personal/live policies still have their explicit default path.
+    assert sgf_module.parse_game("(;SZ[19];B[pd])").rules == "chinese"
+
+
+@pytest.mark.parametrize("komi,rules", [(6.5, "japanese"), (7.5, "chinese")])
+def test_missing_rules_uses_transparent_komi_default(komi, rules):
+    from katrain.cron.kifu_parameters import validate_parameters
+
+    sgf = f"(;SZ[19]KM[{komi}];B[pd])"
+    params = resolve(sgf)
+    assert (params["version"], params["verified"], params["rules"], params["komi"]) == (3, False, rules, komi)
+    assert params["provenance"] == {
+        "source": "komi_default", "raw_rules": None, "raw_komi": str(komi), "policy": "komi-default-v1",
+    }
+    assert params["sgf_sha256"] == hashlib.sha256(sgf.encode()).hexdigest()
+    assert validate_parameters(sgf, params) == params
+    explicit = resolve(sgf.replace("KM", "RU[Chinese]KM"))
+    assert explicit["verified"] is True and explicit["rules"] == "chinese"
+    reviewed = resolve(sgf, evidence(sgf, rules="korean", komi=komi))
+    assert reviewed["verified"] is True and reviewed["provenance"]["source"] == "verified_evidence"
+    assert params["parameter_sha256"] != reviewed["parameter_sha256"]
+
+
+@pytest.mark.parametrize("field,value", [("verified", True), ("version", 1), ("rules", "chinese")])
+def test_default_snapshot_cannot_be_relabelled_or_tampered(field, value):
+    from katrain.cron.kifu_parameters import ParameterError, validate_parameters
+
+    sgf = "(;KM[6.5];B[pd])"
+    params = resolve(sgf)
+    params[field] = value
+    with pytest.raises(ParameterError):
+        validate_parameters(sgf, params)
+
+
+@pytest.mark.parametrize("source", ["sgf", "evidence"])
+@pytest.mark.parametrize("komi", [-400, -399.5, 0, 6.5, 7.5, 399.5, 400])
+def test_komi_accepts_engine_boundaries_and_half_integer_values(source, komi):
+    sgf = f"(;RU[Japanese]{f'KM[{komi}]' if source == 'sgf' else ''};B[pd])"
+    params = resolve(sgf, evidence(sgf, komi=komi) if source == "evidence" else None)
+    assert params["komi"] == komi
+
+
+@pytest.mark.parametrize("source", ["sgf", "evidence"])
+@pytest.mark.parametrize("komi", [-400.5, 400.5, -0.25, 6.25, float("nan"), float("inf"), -float("inf")])
+def test_komi_rejects_out_of_range_fractional_and_nonfinite_values(source, komi):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = f"(;RU[Japanese]{f'KM[{komi}]' if source == 'sgf' else ''};B[pd])"
+    with pytest.raises(ParameterError) as error:
+        resolve(sgf, evidence(sgf, komi=komi) if source == "evidence" else None)
+    assert error.value.code == "invalid_komi"
+    assert "-400 to 400" in error.value.message and "increments of 0.5" in error.value.message
+
+
+def test_exact_evidence_can_fill_missing_rules_but_cannot_hide_conflict():
+    from katrain.cron.kifu_parameters import ParameterError, validate_parameters
+
+    sgf = "(;SZ[19]KM[6.5];B[pd])"
+    params = resolve(sgf, evidence(sgf))
+    assert params["rules"] == "japanese" and validate_parameters(sgf, params) == params
+    for override in (evidence(sgf, komi=7.5), evidence(sgf + " "), {**evidence(sgf), "verified": False}):
+        with pytest.raises(ParameterError):
+            resolve(sgf, override)
+    explicit = sgf.replace("KM", "RU[Chinese]KM")
+    with pytest.raises(ParameterError, match="conflict"):
+        resolve(explicit, evidence(explicit))
+    changed = copy.deepcopy(params)
+    changed["komi"] = 0
+    with pytest.raises(ParameterError):
+        validate_parameters(sgf, changed)
+
+
+def correction(original, verified):
+    return {"original_value": original, "verified_value": verified, "reason": "Synthetic fixture source correction"}
+
+
+@pytest.mark.parametrize("fields", [{"KM"}, {"RU"}, {"KM", "RU"}])
+def test_reviewed_field_corrections_keep_raw_values_and_change_parameter_identity(fields):
+    from katrain.cron.kifu_parameters import ParameterError, validate_parameters
+
+    sgf = "(;SZ[19]RU[ Japanese ]KM[6.5];B[pd])"
+    before = resolve(sgf)
+    proof = evidence(sgf, rules="chinese" if "RU" in fields else "japanese", komi=7.5 if "KM" in fields else 6.5)
+    proof["corrections"] = {
+        name: correction(raw, verified)
+        for name, raw, verified in (("KM", "6.5", proof["komi"]), ("RU", " Japanese ", proof["rules"]))
+        if name in fields
+    }
+    unchanged_proof = copy.deepcopy(proof)
+    params = resolve(sgf, proof)
+    assert params["version"] == 2 and before["version"] == 1
+    assert (params["rules"], params["komi"]) == (proof["rules"], proof["komi"])
+    assert params["parameter_sha256"] != before["parameter_sha256"]
+    assert params["sgf_sha256"] == before["sgf_sha256"]
+    assert params["provenance"]["raw_rules"] == " Japanese " and params["provenance"]["raw_komi"] == "6.5"
+    assert params["provenance"]["evidence"] == proof == unchanged_proof
+    assert validate_parameters(sgf, params) == params
+    proof["corrections"][next(iter(fields))]["reason"] += " revised explanation"
+    assert resolve(sgf, proof)["parameter_sha256"] != params["parameter_sha256"]
+    assert params["provenance"]["evidence"] == unchanged_proof
+    changed = copy.deepcopy(params)
+    changed["provenance"]["evidence"]["corrections"][next(iter(fields))]["reason"] += " tampered"
+    with pytest.raises(ParameterError, match="parameter_mismatch"):
+        validate_parameters(sgf, changed)
+
+
+@pytest.mark.parametrize(
+    "corrections",
+    [
+        None,
+        [],
+        "KM",
+        {"komi": correction("6.5", 7.5)},
+        {"KM": None},
+        {"KM": {}},
+        {"KM": correction("7.5", 7.5)},
+        {"KM": correction(6.5, 7.5)},
+        {"KM": correction("6.5", "7.5")},
+        {"KM": correction("6.5", 6.5)},
+        {"KM": correction("6.5", True)},
+        {"KM": correction("6.5", float("inf"))},
+        {"KM": {"original_value": "6.5", "verified_value": 7.5}},
+        {"KM": {**correction("6.5", 7.5), "reason": "  "}},
+        {"KM": {**correction("6.5", 7.5), "guess": True}},
+    ],
+)
+def test_correction_rejects_malformed_or_inexact_authorization(corrections):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = "(;RU[Japanese]KM[6.5];B[pd])"
+    proof = {**evidence(sgf, komi=7.5), "corrections": corrections}
+    with pytest.raises(ParameterError) as error:
+        resolve(sgf, proof)
+    assert error.value.code == "invalid_correction"
+
+
+@pytest.mark.parametrize("corrections", [{"HA": correction("0", 2)}, {"RU": correction("Japanese", "japanese")}])
+def test_correction_cannot_authorize_unknown_or_nonconflicting_fields(corrections):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = "(;RU[Japanese]KM[6.5];B[pd])"
+    with pytest.raises(ParameterError, match="invalid_correction"):
+        resolve(sgf, {**evidence(sgf), "corrections": corrections})
+
+
+def test_each_conflicting_field_requires_its_own_correction():
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = "(;RU[Japanese]KM[6.5];B[pd])"
+    proof = evidence(sgf, rules="chinese", komi=7.5)
+    for corrections in ({}, {"KM": correction("6.5", 7.5)}):
+        with pytest.raises(ParameterError, match="evidence_conflict"):
+            resolve(sgf, {**proof, "corrections": corrections})
+
+
+@pytest.mark.parametrize("invalid", [{"scope": []}, {"reference_urls": ["https://["]}, {"note": float("nan")}])
+def test_malformed_stored_evidence_is_unresolved(invalid):
+    from katrain.cron.kifu_parameters import ParameterError
+
+    sgf = "(;SZ[19]KM[6.5];B[pd])"
+    with pytest.raises(ParameterError):
+        resolve(sgf, {**evidence(sgf), **invalid})
+
+
+@pytest.mark.asyncio
+async def test_legacy_completed_job_is_unresolved_and_not_advertised():
+    sgf = "(;SZ[19]KM[6.5];B[pd])"
+    with _db() as db:
+        album = KifuAlbum(id=1, player_black="B", player_white="W", source_path="a.sgf", sgf_content=sgf, move_count=1)
+        db.add(album)
+        db.flush()
+        job = KifuAnalysisJob(
+            album_id=1,
+            sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+            model_sha256=KIFU_MODEL_SHA256,
+            requested_visits=2000,
+            status="completed",
+            total_moves=1,
+            analyzed_moves=1,
+        )
+        db.add(job)
+        db.flush()
+        db.add_all(KifuAnalysisMove(job_id=job.id, move_number=n, root_visits=2000) for n in (0, 1))
+        db.commit()
+        request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+        payload = await get_kifu_analysis(request, 1, db)
+        assert payload["status"] == "rules_unresolved"
+        assert payload["moves"] == [] and payload["parameters_verified"] is False
+        assert payload["parameter_error"]["code"] == "unverified_parameters"
+        assert report_availability(db, [album], KIFU_MODEL_SHA256, 2000) == {1: False}
+
+
+@pytest.mark.asyncio
+async def test_default_report_is_available_without_claiming_verified_rules():
+    sgf = "(;SZ[19]KM[6.5];B[pd])"
+    params = resolve(sgf)
+    with _db() as db:
+        album = KifuAlbum(id=1, player_black="B", player_white="W", source_path="a.sgf", sgf_content=sgf, move_count=1)
+        db.add(album)
+        db.flush()
+        job = KifuAnalysisJob(album_id=1, sgf_sha256=params["sgf_sha256"], model_sha256=KIFU_MODEL_SHA256,
+                              requested_visits=2000, status="completed", total_moves=1, analyzed_moves=1,
+                              analysis_parameters=params)
+        db.add(job)
+        db.flush()
+        db.add_all(KifuAnalysisMove(job_id=job.id, move_number=n, root_visits=2000,
+                                   parameter_sha256=params["parameter_sha256"], winrate=0.5, score_lead=0)
+                   for n in (0, 1))
+        db.commit()
+        payload = await get_kifu_analysis(SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace())), 1, db)
+        assert payload["status"] == "completed" and len(payload["moves"]) == 2
+        assert payload["parameters_valid"] is True and payload["parameters_verified"] is False
+        assert payload["analysis_parameters"] == params and payload["parameter_error"] is None
+        assert report_availability(db, [album], KIFU_MODEL_SHA256, 2000) == {1: True}
+
+
+@pytest.mark.asyncio
+async def test_worker_refuses_legacy_unverified_job_before_contacting_engine(database, monkeypatch):
+    sgf = "(;SZ[19]KM[6.5];B[pd])"
+    with Session(database) as db, db.begin():
+        db.add(Album(id=1, sgf_content=sgf))
+        db.add(
+            Job(
+                album_id=1,
+                sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+                model_sha256=KIFU_MODEL_SHA256,
+                requested_visits=2000,
+                total_moves=1,
+            )
+        )
+    monkeypatch.setattr(kifu_analyze, "SessionLocal", sessionmaker(bind=database))
+    monkeypatch.setattr(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256)
+    worker = kifu_analyze.KifuAnalyzeJob()
+    worker.client.analyze = AsyncMock()
+    await worker.run()
+    worker.client.analyze.assert_not_called()
+    with Session(database) as db:
+        assert db.query(Job).one().status == "failed"
+        assert "unverified_parameters" in db.query(Job).one().error_message
+        assert db.query(Move).count() == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "defect", ["legacy_position", "stale_position", "changed_during_request", "stale_during_request", "zero_komi", "default_rules"]
+)
+async def test_worker_binds_positions_and_inflight_response_to_parameters(database, monkeypatch, defect):
+    from tests.test_kifu_batch_transfer import response
+
+    sgf = "(;SZ[9]KM[6.5];B[aa])" if defect == "default_rules" else "(;SZ[9]KM[0];B[aa])"
+    params = resolve(sgf) if defect == "default_rules" else resolve(sgf, evidence(sgf, komi=0))
+    with Session(database) as db, db.begin():
+        db.add(Album(id=1, sgf_content=sgf))
+        job = Job(
+            album_id=1,
+            sgf_sha256=hashlib.sha256(sgf.encode()).hexdigest(),
+            model_sha256=KIFU_MODEL_SHA256,
+            requested_visits=2000,
+            total_moves=1,
+            analysis_parameters=params,
+        )
+        db.add(job)
+        db.flush()
+        if defect.endswith("position"):
+            db.add(
+                Move(
+                    job_id=job.id,
+                    move_number=0,
+                    root_visits=2000,
+                    parameter_sha256=None if defect == "legacy_position" else "0" * 64,
+                )
+            )
+    monkeypatch.setattr(kifu_analyze, "SessionLocal", sessionmaker(bind=database))
+    monkeypatch.setattr(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256)
+    worker = kifu_analyze.KifuAnalyzeJob()
+
+    async def analyze(**kwargs):
+        assert (kwargs["rules"], kwargs["komi"]) == ("japanese", 6.5 if defect == "default_rules" else 0.0)
+        if defect == "changed_during_request":
+            with Session(database) as db, db.begin():
+                db.query(Job).one().analysis_parameters = resolve(sgf, evidence(sgf, rules="chinese", komi=0))
+        if defect == "stale_during_request":
+            with Session(database) as db, db.begin():
+                db.add(Move(job_id=db.query(Job).one().id, move_number=0, root_visits=2000, parameter_sha256="0" * 64))
+        return response(kwargs["request_id"], kwargs["analyze_turns"][0])
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    await worker.run()
+    with Session(database) as db:
+        if defect.endswith("position"):
+            worker.client.analyze.assert_not_called()
+            assert db.query(Job).one().status == "failed"
+        elif defect == "changed_during_request":
+            assert db.query(Move).count() == 0
+        elif defect == "stale_during_request":
+            assert db.query(Job).one().status == "failed"
+        else:
+            assert db.query(Move).one().parameter_sha256 == params["parameter_sha256"]
+
+
+def test_admission_rejects_unresolved_and_reset_cannot_reuse_old_positions(database):
+    from scripts.backfill_kifu_analysis import admit_album
+
+    sgf = "(;SZ[19]KM[5.5];B[pd])"
+    with Session(database) as db:
+        album = Album(id=1, sgf_content=sgf)
+        db.add(album)
+        db.commit()
+        from katrain.cron.kifu_parameters import ParameterError
+
+        with pytest.raises(ParameterError, match="missing_rules"):
+            admit_album(db, album, KIFU_MODEL_SHA256, apply=True)
+        assert db.query(Job).count() == 0
+        proof = evidence(sgf, komi=5.5)
+        admit_album(db, album, KIFU_MODEL_SHA256, evidence=proof, apply=True)
+        job = db.query(Job).one()
+        db.add(
+            Move(
+                job_id=job.id,
+                move_number=0,
+                root_visits=2000,
+                parameter_sha256=job.analysis_parameters["parameter_sha256"],
+            )
+        )
+        db.commit()
+        changed = evidence(sgf, rules="korean", komi=5.5)
+        with pytest.raises(ParameterError, match="parameter_mismatch"):
+            admit_album(db, album, KIFU_MODEL_SHA256, evidence=changed, apply=True)
+        admit_album(db, album, KIFU_MODEL_SHA256, evidence=changed, reanalyze=True)
+        assert db.query(Move).count() == 1  # dry run
+        admit_album(db, album, KIFU_MODEL_SHA256, evidence=changed, reanalyze=True, apply=True)
+        assert db.query(Move).count() == 0
+        assert db.query(Job).one().analysis_parameters["rules"] == "korean"
+        assert db.get(Album, 1).sgf_content == sgf
+
+
+def test_transfer_rejects_parameter_mismatch_even_with_recomputed_outer_checksum(database):
+    from scripts import kifu_batch_transfer as batch, sync_kifu_analysis as sync
+    from tests.test_kifu_batch_transfer import game, put_catalog, result_for
+    from tests.test_sync_kifu_analysis import reports
+
+    selected = game(1)
+    put_catalog(database, [selected])
+    result = result_for(selected)
+    sessions = sessionmaker(bind=database)
+    changed = copy.deepcopy(result)
+    changed["analysis_parameters"]["komi"] = 6.5
+    with pytest.raises(batch.BatchError, match="parameter"):
+        batch.import_game(sessions, selected, changed, apply=True)
+    artifact = reports([selected])
+    artifact["games"][0]["analysis_parameters"] = {**selected["analysis_parameters"], "komi": 6.5}
+    artifact["reports_sha256"] = batch.digest({k: v for k, v in artifact.items() if k != "reports_sha256"})
+    with pytest.raises(batch.BatchError, match="parameter"):
+        sync.validate_reports(artifact)
+    changed = copy.deepcopy(result)
+    changed["moves"][0]["parameter_sha256"] = "0" * 64
+    with pytest.raises(batch.BatchError, match="parameter"):
+        batch.import_game(sessions, selected, changed, apply=True)
+    batch.import_game(sessions, selected, result, apply=True)
+    with Session(database) as db, db.begin():
+        db.query(Job).one().analysis_parameters = None
+    with pytest.raises(batch.BatchError, match="parameter"):
+        batch.import_game(sessions, selected, result, apply=True)
+    with pytest.raises(batch.BatchError, match="parameter"):
+        sync.export_reports(database, [1])
+
+
+def test_default_reports_keep_provenance_through_transfer(database):
+    from scripts import kifu_batch_transfer as batch, sync_kifu_analysis as sync
+    from tests.test_kifu_batch_transfer import game, put_catalog, result_for
+
+    selected = game(1)
+    selected["sgf_content"] = selected["sgf_content"].replace("RU[Chinese]KM[7.5]", "KM[6.5]")
+    selected["analysis_parameters"] = resolve(selected["sgf_content"])
+    selected["sgf_sha256"] = selected["analysis_parameters"]["sgf_sha256"]
+    put_catalog(database, [selected])
+    batch.import_game(sessionmaker(bind=database), selected, result_for(selected), apply=True)
+    artifact = sync.export_reports(database, [1])
+    sync.validate_reports(artifact)
+    assert artifact["games"][0]["analysis_parameters"] == selected["analysis_parameters"]
+    assert artifact["games"][0]["analysis_parameters"]["verified"] is False
+
+
+def test_parameter_migration_is_dry_idempotent_and_keeps_legacy_rows_unverified(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+    from scripts.migrate_kifu_parameters import migrate
+
+    engine = create_engine("sqlite:///" + str(tmp_path / "old.sqlite3"))
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE kifu_analysis_jobs (id INTEGER PRIMARY KEY, status TEXT)"))
+        conn.execute(text("CREATE TABLE kifu_analysis_moves (id INTEGER PRIMARY KEY, job_id INTEGER)"))
+        conn.execute(text("INSERT INTO kifu_analysis_jobs VALUES (1, 'completed')"))
+        conn.execute(text("INSERT INTO kifu_analysis_moves VALUES (1, 1)"))
+    assert len(migrate(engine)) == 2
+    assert "analysis_parameters" not in {c["name"] for c in inspect(engine).get_columns("kifu_analysis_jobs")}
+    assert len(migrate(engine, apply=True)) == 2
+    assert migrate(engine, apply=True) == []
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT status, analysis_parameters FROM kifu_analysis_jobs")).one() == (
+            "completed",
+            None,
+        )
+        assert conn.execute(text("SELECT job_id, parameter_sha256 FROM kifu_analysis_moves")).one() == (1, None)
+    engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_api_withholds_all_moves_if_even_a_shallow_extra_row_has_stale_parameters():
+    from tests.web_ui.test_kifu_analysis import SGF
+
+    params = resolve(SGF)
+    with _db() as db:
+        db.add(KifuAlbum(id=1, player_black="B", player_white="W", source_path="a.sgf", sgf_content=SGF, move_count=1))
+        db.flush()
+        job = KifuAnalysisJob(
+            album_id=1,
+            sgf_sha256=params["sgf_sha256"],
+            model_sha256=KIFU_MODEL_SHA256,
+            requested_visits=2000,
+            status="completed",
+            total_moves=1,
+            analyzed_moves=1,
+            analysis_parameters=params,
+        )
+        db.add(job)
+        db.flush()
+        db.add_all(
+            KifuAnalysisMove(
+                job_id=job.id, move_number=n, root_visits=2000, parameter_sha256=params["parameter_sha256"]
+            )
+            for n in (0, 1)
+        )
+        db.add(KifuAnalysisMove(job_id=job.id, move_number=2, root_visits=1, parameter_sha256="0" * 64))
+        db.commit()
+        request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace()))
+        payload = await get_kifu_analysis(request, 1, db)
+        assert payload["status"] == "rules_unresolved" and payload["moves"] == []
+        assert payload["parameter_error"]["code"] == "parameter_mismatch"
+
+
+def test_explicit_reanalysis_manifest_preserves_evidence_and_requires_resolved_selection(database, tmp_path):
+    from scripts import kifu_batch_transfer as batch
+    from tests.test_kifu_batch_transfer import game, put_catalog
+
+    selected = game(1)
+    selected["sgf_content"] = selected["sgf_content"].replace("RU[Chinese]", "")
+    selected["sgf_sha256"] = batch.sgf_hash(selected["sgf_content"])
+    put_catalog(database, [selected])
+    default_manifest = batch.export_manifest(database, [1])
+    default_params = default_manifest["games"][0]["analysis_parameters"]
+    assert default_params["rules"] == "chinese" and default_params["verified"] is False
+    proof = evidence(selected["sgf_content"], komi=7.5)
+    manifest = batch.export_manifest(database, [1], {selected["sgf_sha256"]: proof})
+    assert len(batch.validate_manifest(manifest)) == 1
+    batch.init_workers(manifest, tmp_path / "workers")
+    engine = batch.sqlite_engine(tmp_path / "workers" / "gpu0.sqlite3")
+    with Session(engine) as db:
+        job = db.query(Job).one()
+        assert job.analysis_parameters == manifest["games"][0]["analysis_parameters"]
+        assert job.analysis_parameters["provenance"]["evidence"] == proof
+        assert db.query(Album).one().sgf_content == selected["sgf_content"]
+    engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_corrected_komi_reaches_engine_and_survives_report_export_import(database, monkeypatch):
+    from katrain.cron.kifu_parameters import ParameterError
+    from scripts.backfill_kifu_analysis import admit_album
+    from scripts import sync_kifu_analysis as sync
+    from tests.test_kifu_batch_transfer import response
+
+    sgf = "(;SZ[9]RU[Chinese]KM[6.5];B[aa])"
+    proof = {**evidence(sgf, rules="chinese", komi=7.5), "corrections": {"KM": correction("6.5", 7.5)}}
+    with Session(database) as db:
+        album = Album(id=1, sgf_content=sgf)
+        db.add(album)
+        db.commit()
+        admit_album(db, album, KIFU_MODEL_SHA256, apply=True)
+        job = db.query(Job).one()
+        old_hash = job.analysis_parameters["parameter_sha256"]
+        job_id = job.id
+        db.add(Move(job_id=job_id, move_number=0, root_visits=2000, score_lead=-12.5, parameter_sha256=old_hash))
+        db.commit()
+        with pytest.raises(ParameterError, match="parameter_mismatch"):
+            admit_album(db, album, KIFU_MODEL_SHA256, evidence=proof, apply=True)
+        admit_album(db, album, KIFU_MODEL_SHA256, evidence=proof, reanalyze=True, apply=True)
+        assert db.query(Move).count() == 0 and db.query(Job).one().id == job_id
+    monkeypatch.setattr(kifu_analyze, "SessionLocal", sessionmaker(bind=database))
+    monkeypatch.setattr(kifu_analyze.config, "KATAGO_EXPECTED_MODEL_SHA256", KIFU_MODEL_SHA256)
+    worker = kifu_analyze.KifuAnalyzeJob()
+
+    async def analyze(**kwargs):
+        assert (kwargs["rules"], kwargs["komi"]) == ("chinese", 7.5)
+        return response(kwargs["request_id"], kwargs["analyze_turns"][0])
+
+    worker.client.analyze = AsyncMock(side_effect=analyze)
+    await worker.run()
+    await worker.run()
+    artifact = json.loads(json.dumps(sync.export_reports(database, [1])))
+    exported = sync.validate_reports(artifact)[0]
+    parameters = exported["analysis_parameters"]
+    assert exported["sgf_content"] == sgf
+    assert parameters["version"] == 2 and parameters["komi"] == 7.5
+    assert parameters["provenance"]["raw_komi"] == "6.5"
+    assert parameters["provenance"]["evidence"]["corrections"] == proof["corrections"]
+    assert all(row["parameter_sha256"] == parameters["parameter_sha256"] != old_hash for row in exported["moves"])
+    with Session(database) as db:
+        admit_album(db, db.get(Album, 1), KIFU_MODEL_SHA256, evidence=proof, reanalyze=True, apply=True)
+    sync.import_reports(database, [exported], apply=True)
+    with Session(database) as db:
+        assert db.query(Job).one().analysis_parameters == parameters
+        assert db.query(Job).one().status == "completed"
+        assert db.get(Album, 1).sgf_content == sgf

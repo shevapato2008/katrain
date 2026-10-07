@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import type { MoveAnalysis } from '../../types/live';
 import AiAnalysis from './AiAnalysis';
 
@@ -24,6 +24,74 @@ const analysis: Record<number, MoveAnalysis> = {
     delta_winrate: 0,
   },
 };
+
+describe('AiAnalysis candidate limit', () => {
+  const candidates = ['Q16', 'R14', 'D4', 'C3', 'F6', 'K10'];
+  const sixCandidateAnalysis = {
+    10: { ...analysis[10], top_moves: candidates.map((candidate) => move(candidate, [candidate, 'T19'])) },
+  };
+
+  it.each([
+    ['default', undefined, 3],
+    ['report', 5, 5],
+  ])('renders the %s candidate count', (_name, topN, count) => {
+    render(<AiAnalysis currentMove={10} analysis={sixCandidateAnalysis} topN={topN} />);
+
+    candidates.forEach((candidate, index) => {
+      if (index < count) expect(screen.getByText(candidate)).toBeInTheDocument();
+      else expect(screen.queryByText(candidate)).not.toBeInTheDocument();
+    });
+    expect(sixCandidateAnalysis[10].top_moves).toHaveLength(6);
+  });
+
+  it('keeps the sixth actual move available for comparison and PV hover', () => {
+    const onMoveHover = vi.fn();
+    const withActualMove = {
+      ...sixCandidateAnalysis,
+      11: { ...analysis[10], move_number: 11, move: 'K10' },
+    };
+    render(<AiAnalysis currentMove={10} analysis={withActualMove} topN={5} onMoveHover={onMoveHover} />);
+
+    candidates.forEach((candidate) => expect(screen.getByText(candidate)).toBeInTheDocument());
+    const row = screen.getByText('K10').closest('div')!.parentElement!;
+    fireEvent.mouseEnter(row);
+    expect(onMoveHover).toHaveBeenCalledWith(['K10', 'T19']);
+    expect(withActualMove[10].top_moves).toHaveLength(6);
+  });
+
+  it('appends the actual sixth row using its own metrics and the full candidate denominator', () => {
+    const candidatesWithSixth = candidates.map((candidate, index) => ({ ...move(candidate, [candidate]), psv: index === 5 ? 500 : 100 }));
+    const report = {
+      10: { ...analysis[10], top_moves: candidatesWithSixth },
+      11: { ...analysis[10], move_number: 11, move: 'K10' },
+    };
+    render(<AiAnalysis currentMove={10} analysis={report} topN={5} reportMode playerToMove="W" />);
+    expect(screen.getAllByText('10%')).toHaveLength(5);
+    const list = screen.getByTestId('report-candidate-list');
+    expect(list.children).toHaveLength(6);
+    const actual = list.children[5] as HTMLElement;
+    expect(actual).toHaveTextContent('K10');
+    expect(actual).toHaveTextContent('50%');
+    expect(actual).toHaveTextContent('-2.0');
+    expect(screen.queryByTestId('report-actual-move')).not.toBeInTheDocument();
+    expect(screen.getByText(/白方待落子/)).toBeInTheDocument();
+    expect(report[10].top_moves).toHaveLength(6);
+  });
+
+  it('does not invent an evaluation when the played move was outside stored candidates', () => {
+    const report = { 10: analysis[10], 11: { ...analysis[10], move_number: 11, move: 'T18' } };
+    render(<AiAnalysis currentMove={10} analysis={report} topN={5} reportMode />);
+    const actual = screen.getByTestId('report-candidate-list').lastElementChild as HTMLElement;
+    expect(actual).toHaveTextContent('T18');
+    expect(within(actual).getAllByText('—')).toHaveLength(3);
+    expect(actual).not.toHaveTextContent('55');
+  });
+
+  it('shows the SGF move when the following position has no analysis row', () => {
+    render(<AiAnalysis currentMove={10} analysis={analysis} topN={5} reportMode actualMove="T18" />);
+    expect(screen.getByTestId('report-candidate-list').lastElementChild).toHaveTextContent('T18');
+  });
+});
 
 describe('AiAnalysis — touch onMoveSelect', () => {
   it('exposes touch rows as translated, keyboard-focusable 48px buttons', () => {

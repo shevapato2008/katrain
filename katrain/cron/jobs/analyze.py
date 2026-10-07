@@ -175,6 +175,7 @@ class AnalyzeJob(BaseJob):
                 score_lead=parsed["score_lead"],
                 top_moves=parsed["top_moves"],
                 ownership=parsed.get("ownership"),
+                model_sha256=config.KATAGO_EXPECTED_MODEL_SHA256 or None,
             )
 
             # Compute delta classification

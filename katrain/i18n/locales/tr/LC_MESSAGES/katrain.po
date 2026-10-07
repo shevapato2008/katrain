@@ -3438,7 +3438,7 @@ msgstr ""
 " kendi içinde normalleştirildi"
 
 msgid "grade:def_brilliant"
-msgstr "Motorun sezgisinin bile kaçırdığı en iyi hamlesi (ön olasılık < %10)"
+msgstr "Yapay zekânın derin hesaplama sonrasındaki ilk tercihi oynandı ve hamlenin ilk seçim olasılığı %10'un altında (oyunun son bölümünde %6'nın altında)"
 
 msgid "grade:def_best"
 msgstr "Motorun en iyi hamlesi oynandı"
@@ -3455,9 +3455,17 @@ msgstr ""
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Üçü birden gerekir: motorun en iyi hamlesi oynandı, o hamlenin politika ön "
-"olasılığı %10'un altındaydı (motorun sezgisi bile kaçırdı) ve oyun henüz "
-"belirlenmemişti."
+"Parlak bir hamle için tüm koşullar sağlanmalıdır: oyunda yapay zekânın "
+"derin hesaplama sonrasındaki ilk tercihi oynanmış olmalı; bu hamle için "
+"yapay zekânın ilk seçim olasılığı %10'un altında (oyunun son bölümünde "
+"%6'nın altında) olmalı; oyunun sonucu henüz kesinleşmemiş olmalı."
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"Yapay zekânın ilk seçim olasılığı, derin hesaplamaya başlamadan önce bu "
+"hamleyi seçme olasılığıdır. Kazanma olasılığı veya bir insanın bu hamleyi "
+"oynama olasılığı değildir. İlk seçim olasılığı çok düşük olan bir hamle de"
+" derin hesaplama sonrasında ilk tercih hâline gelebilir."
 
 msgid "grade:match_timeline_legend"
 msgstr "Tam dolu = en iyi hamle, yarım açık ton = ilk 3'te, arka plan = diğer"
@@ -4045,8 +4053,8 @@ msgstr "Hamle {n} {m} · {s} · {g} · {x} puan kayıp"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"Hamle {n} {m} · {s} · parlaklık {k} — motorun kendi ilk tercihi, ama ona "
-"yalnızca %{p} öncül verdi (ne kadar düşükse o kadar parlak)"
+"Hamle {n} {m} · {s} · parlaklık {k} — yapay zekânın ilk seçim olasılığı "
+"yalnızca %{p}; derin hesaplama sonrasında ilk tercih oldu"
 
 msgid "grade:truncated_plot"
 msgstr "Her taraf için en çok {k} tanesi çizilir; {n} tanesi gösterilmez"
@@ -7257,3 +7265,6 @@ msgstr "Giriş onaylanamadı"
 
 msgid "vision:not_a_stone"
 msgstr "Bu bir taş değil"
+
+msgid "report:score_difference"
+msgstr "Puan farkı"

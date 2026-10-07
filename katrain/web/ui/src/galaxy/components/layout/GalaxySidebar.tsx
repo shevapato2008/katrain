@@ -159,7 +159,7 @@ const GalaxySidebar = ({
           width: 44,
           height: 44,
           position: 'absolute',
-          left: dockedWidth,
+          left: Math.max(0, dockedWidth - 22),
           top: '50%',
           transform: 'translateY(-50%)',
         }}

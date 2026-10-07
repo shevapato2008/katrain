@@ -3561,13 +3561,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
     async def serve_galaxy_app(full_path: str = None):
-        return str(static_root / "index.html")
+        return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
 
     # SPA Routing for Kiosk UI
     @app.get("/kiosk", response_class=FileResponse)
     @app.get("/kiosk/{full_path:path}", response_class=FileResponse)
     async def serve_kiosk_app(full_path: str = None):
-        return str(static_root / "index.html")
+        return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
 
     # SPA Routing for Video Recorder
     @app.get("/record", response_class=FileResponse)

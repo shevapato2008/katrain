@@ -21,7 +21,7 @@ import {
  *
  * 几条**判据落在哪儿**值得写明:
  *  · 列表默认摊开(2026-09-23 Fan)—— 断言落在 `getAlbums` 的调用次数与参数形状上:
- *    进来只有一发,就是第一页六局。
+ *    进来只有一发,就是第一页20局。
  *  · 「已摆完」那三条(有 total / 没 total / k < total)是**同一条口径的三个方向**:
  *    旧进度里没有 `total`,读到 `undefined` 的正确反应是不下结论。
  */
@@ -77,7 +77,7 @@ beforeEach(() => {
   localStorage.clear();
   __resetKioskActivityStorageForTests();
   setKioskIdentity(TEST_UUID, false);
-  getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 6 });
+  getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 20 });
 });
 
 describe('屏 15 棋谱 · 问候与列表头', () => {
@@ -109,7 +109,7 @@ describe('屏 15 棋谱 · 问候与列表头', () => {
 });
 
 describe('屏 15 棋谱 · 名局列表默认摊开', () => {
-  it('进来就拉第一页六局并铺出行 —— 不先探一个数、不等谁按开关', async () => {
+  it('进来就拉第一页20局并铺出行 —— 不先探一个数、不等谁按开关', async () => {
     renderPage();
     const rows = await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
     expect(rows).toHaveLength(2);
@@ -119,11 +119,11 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     expect(rows[0]).toHaveTextContent('B+R');
     // 判据落在请求形状上:只有一发,就是列表本身。旧写法挂载时先发一发 page_size: 1 探总数。
     expect(getAlbums).toHaveBeenCalledTimes(1);
-    expect(getAlbums).toHaveBeenCalledWith({ q: undefined, page: 1, page_size: 6, lang: i18n.lang });
+    expect(getAlbums).toHaveBeenCalledWith({ q: undefined, page: 1, page_size: 20, lang: i18n.lang });
   });
 
   it('组标题右端写的是真数据「共 N 局」', async () => {
-    getAlbums.mockResolvedValue({ items: [album(1)], total: 1234, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 1234, page: 1, page_size: 20 });
     renderPage();
     expect(await screen.findByText('共 1,234 局')).toBeInTheDocument();
     expect(screen.queryByText('按棋手 / 赛事 / 日期搜')).not.toBeInTheDocument();
@@ -133,34 +133,41 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     renderPage();
     const rows = await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
     fireEvent.click(rows[0]);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1/replay');
   });
 
   it('没搜的时候库是空的:说「未找到棋谱」,不说「换棋手名再试」', async () => {
-    getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20 });
     renderPage();
     expect(await screen.findByText('未找到棋谱')).toBeInTheDocument();
     expect(screen.queryByText('没有对得上的谱')).toBeNull();
     expect(screen.queryByText('换棋手名、赛事名或者年份再试。')).toBeNull();
   });
 
+  it('有完整报告才进入报告路由', async () => {
+    getAlbums.mockResolvedValue({ items: [album(1, { has_analysis: true })], total: 1, page: 1, page_size: 20 });
+    renderPage();
+    fireEvent.click((await screen.findAllByRole('button', { name: /第 29 届三星杯/ }))[0]);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
+  });
+
   it('搜了对不上:说「没有对得上的谱」并给换词的提示', async () => {
     renderPage();
     await screen.findAllByRole('button', { name: /第 29 届三星杯.*柯洁.*申真谞/ });
-    getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20 });
     fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '不存在' } });
     expect(await screen.findByText('没有对得上的谱')).toBeInTheDocument();
     expect(screen.getByText('换棋手名、赛事名或者年份再试。')).toBeInTheDocument();
-    expect(getAlbums).toHaveBeenLastCalledWith({ q: '不存在', page: 1, page_size: 6, lang: i18n.lang });
+    expect(getAlbums).toHaveBeenLastCalledWith({ q: '不存在', page: 1, page_size: 20, lang: i18n.lang });
   });
 
   it('翻页:第 1 页「上一页」是灰的;「下一页」发第 2 页', async () => {
-    getAlbums.mockResolvedValue({ items: [album(1)], total: 20, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 80, page: 1, page_size: 20 });
     renderPage();
     await screen.findByText('1 / 4');
     expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
-    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 6, lang: i18n.lang }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 20, lang: i18n.lang }));
   });
 
   // 搜索防抖原先挂载时也跑一次:350ms 后 setQuery('') + setPage(1)。列表藏在开关后面时没人能在
@@ -169,7 +176,7 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     // 全假时钟:点击一定落在挂载后 350ms 以内(`findBy*` 会让真时间流过去,点击可能晚于那一下)。
     vi.useFakeTimers();
     try {
-      getAlbums.mockResolvedValue({ items: [album(1)], total: 20, page: 1, page_size: 6 });
+      getAlbums.mockResolvedValue({ items: [album(1)], total: 80, page: 1, page_size: 20 });
       renderPage();
       await act(async () => { await vi.advanceTimersByTimeAsync(0); });
       expect(screen.getByText('1 / 4')).toBeInTheDocument();
@@ -178,14 +185,14 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
       expect(screen.getByText('2 / 4')).toBeInTheDocument();
       await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
       expect(screen.getByText('2 / 4')).toBeInTheDocument();
-      expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 6, lang: i18n.lang });
+      expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 20, lang: i18n.lang });
     } finally {
       vi.useRealTimers();
     }
   });
 
   it('在第 3 页改搜索词,结果回第 1 页', async () => {
-    getAlbums.mockResolvedValue({ items: [album(1)], total: 30, page: 1, page_size: 6 });
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 100, page: 1, page_size: 20 });
     renderPage();
     await screen.findByText('1 / 5');
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
@@ -193,7 +200,7 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
     await screen.findByText('3 / 5');
     fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '柯洁' } });
-    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '柯洁', page: 1, page_size: 6, lang: i18n.lang }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '柯洁', page: 1, page_size: 20, lang: i18n.lang }));
   });
 
   it('库读不到时如实报错并给重试 —— 重试真的会再发一次请求', async () => {

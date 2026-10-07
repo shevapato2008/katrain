@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
-import { MemoryRouter } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KifuPage from '../pages/KifuPage';
 import { kioskTheme } from '../theme';
@@ -38,15 +38,53 @@ const deferred = <T,>() => {
   return { promise, resolve };
 };
 const renderPage = () => render(<ThemeProvider theme={kioskTheme}><MemoryRouter><KifuPage /></MemoryRouter></ThemeProvider>);
+const TestSettings = () => {
+  const navigate = useNavigate();
+  return <button onClick={() => { language.current = 'en'; navigate('/kiosk/kifu'); }}>English</button>;
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   language.current = 'cn';
   getAlbums.mockImplementation(({ lang }: { lang: string }) => Promise.resolve(response(lang)));
 });
 
 describe('棋谱 kiosk 语言展示', () => {
+  it('keeps a searched second page through Settings and reloads it in English', async () => {
+    getAlbums.mockImplementation(({ lang, page }: { lang: string; page: number }) =>
+      Promise.resolve(response(`${lang}-page${page}`)));
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/kifu']}>
+          <Link to="/kiosk/settings">Settings</Link>
+          <Routes>
+            <Route path="/kiosk/kifu" element={<KifuPage />} />
+            <Route path="/kiosk/settings" element={<TestSettings />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '吴清源' } });
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(
+      expect.objectContaining({ q: '吴清源', page: 1, lang: 'cn' }),
+    ));
+    await screen.findByRole('button', { name: /cn-page1-event.*cn-page1-black/ });
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await screen.findByRole('button', { name: /cn-page2-event.*cn-page2-black/ });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Settings' }));
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+
+    expect(screen.getByRole('searchbox')).toHaveValue('吴清源');
+    expect(await screen.findByRole('button', { name: /en-page2-event.*en-page2-black/ })).toBeInTheDocument();
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '吴清源', page: 2, lang: 'en' }));
+  });
+
   it('cn→en→jp 重取同页并同步显示译名、结果、段位与全部来源', async () => {
     const view = renderPage();
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });

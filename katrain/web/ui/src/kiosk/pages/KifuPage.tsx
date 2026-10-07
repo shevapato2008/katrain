@@ -20,6 +20,15 @@ import { whenLabel } from '../utils/whenLabel';
 const DEBOUNCE_MS = 350;
 /** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
 const PAGE_SIZE = 6;
+const SEARCH_SESSION_KEY = 'katrain_kiosk_kifu_search';
+
+const readSearchSession = (): { query: string; page: number } => {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SEARCH_SESSION_KEY) ?? 'null');
+    if (typeof saved?.query === 'string' && Number.isInteger(saved.page) && saved.page >= 1) return saved;
+  } catch { /* Session storage may be unavailable. */ }
+  return { query: '', page: 1 };
+};
 
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
@@ -73,10 +82,11 @@ const KifuPage = () => {
   const [recent, setRecent] = useState<RecentItem[]>(readRecent);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // ── 名局棋谱:一进来就是第一页 ──
-  const [searchInput, setSearchInput] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(1);
+  // ── 名局棋谱:离开设置页再回来时保留本次浏览的搜索 ──
+  const [initialSearch] = useState(readSearchSession);
+  const [searchInput, setSearchInput] = useState(initialSearch.query);
+  const [query, setQuery] = useState(initialSearch.query);
+  const [page, setPage] = useState(initialSearch.page);
   const [albums, setAlbums] = useState<KifuAlbumSummary[] | null>(null);
   const [albumsLang, setAlbumsLang] = useState<string | null>(null);
   const [total, setTotal] = useState<number | null>(null);
@@ -84,6 +94,12 @@ const KifuPage = () => {
   /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
   const [listOffline, setListOffline] = useState(false);
   const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SEARCH_SESSION_KEY, JSON.stringify({ query, page }));
+    } catch { /* Keep searching even if session storage is unavailable. */ }
+  }, [query, page]);
 
   // 只在输入**真变了**时才起表。挂载时 `'' === ''` 也起表的话,350ms 后那一下 `setPage(1)`
   // 会把进屏就翻的页弹回第 1 页 —— 列表藏在开关后面时没人碰得到,默认摊开后就碰得到了。

@@ -3174,7 +3174,7 @@ msgid "grade:histogram_aria"
 msgstr "七档发挥水准分布，黑柱为黑方、白柱为白方，各自归一"
 
 msgid "grade:def_brilliant"
-msgstr "走出引擎首选，且连引擎自己都没想到（先验 < 10%）"
+msgstr "走出AI深入计算后的首选，且AI初选概率低于10%（官子低于6%）"
 
 msgid "grade:def_best"
 msgstr "走出引擎首选"
@@ -3189,7 +3189,10 @@ msgid "grade:def_unrated"
 msgstr "上一手没分析或搜索量不足，判不了"
 
 msgid "grade:brilliance_entry"
-msgstr "入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。"
+msgstr "妙手需满足：实战走出AI深入计算后的首选；AI初选概率低于10%（官子低于6%）；局面胜负尚未确定。"
+
+msgid "grade:initial_probability_help"
+msgstr "AI初选概率指AI深入计算前对这步棋的选择概率，不是胜率，也不是人类落子概率。初选概率很低的招法，也可能在深入计算后成为首选。"
 
 msgid "grade:match_timeline_legend"
 msgstr "满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他"
@@ -3748,7 +3751,7 @@ msgid "grade:sel_bad"
 msgstr "第 {n} 手 {m} · {s} · {g} · 目损 {x} 目"
 
 msgid "grade:sel_brilliant"
-msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— 走的就是引擎首选，而引擎自己只给了 {p}% 先验（越低越妙）"
+msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— AI初选概率仅为 {p}%，深入计算后成为首选"
 
 msgid "grade:truncated_plot"
 msgstr "图上每方最多画 {k} 条，另有 {n} 处未画出"

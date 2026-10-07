@@ -2387,9 +2387,9 @@ button.kiosk-row.figrow { flex: none; }
 /* The plot owns remaining space; explanations are in the adjacent tab help. */
 .report-analysis-modal .gradebody { min-height: 0; height: 100%; display: flex; flex-direction: column; padding: 0 12px 12px; gap: 8px; }
 .report-analysis-modal .gseg5 { display: flex; flex: none; height: 44px; min-height: 44px; padding: 0; }
-.report-analysis-modal .grade-tab { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; }
-.report-analysis-modal .grade-tab > button { min-width: 0; flex: 1; height: 44px; padding: 0 3px; font-size: 14px; }
-.report-analysis-modal .grade-tab > .chart-tab-help { flex: 0 0 44px; width: 44px; }
+.report-analysis-modal .grade-tab { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; justify-content: center; }
+.report-analysis-modal .grade-tab > button:not(.chart-tab-help) { min-width: 44px; flex: 0 1 auto; height: 44px; padding: 0 3px; font-size: 14px; }
+.report-analysis-modal .grade-tab > .chart-tab-help { flex: 0 0 44px; width: 44px; padding: 0 0 0 4px; justify-content: flex-start; }
 .report-analysis-modal .grade-workspace { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; flex: 1; min-height: 0; }
 .report-analysis-modal .grade-workspace[data-filters="true"] { grid-template-columns: 64px minmax(0,1fr); }
 .report-analysis-modal .gfilters { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; min-height: 0; gap: 10px; }

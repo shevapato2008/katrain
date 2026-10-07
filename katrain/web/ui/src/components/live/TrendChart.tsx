@@ -2,7 +2,7 @@ import { Box, Stack, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMeasuredWidth } from '../../hooks/useMeasuredWidth';
-import { TIER_DEF_TEXT, BRILLIANCE_BANDS } from './chartDefinitions';
+import { TIER_DEF_TEXT, BRILLIANCE_BANDS, BRILLIANCE_HELP_TEXT } from './chartDefinitions';
 import Segmented from './Segmented';
 import { placeChartLabels } from './chartLabelPositions';
 import { AnalysisHelpContent, ChartTabHelp, type AnalysisTab } from './AnalysisChartHelp';
@@ -336,10 +336,10 @@ export default function TrendChart({
   const brillianceDefs = (
     <Box sx={{ pt: 1 }}>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.7, mb: 0.75 }}>
-        {t(
-          'grade:brilliance_entry',
-          '入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。',
-        )}
+        {BRILLIANCE_HELP_TEXT(t).entry}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.7, mb: 0.75 }}>
+        {BRILLIANCE_HELP_TEXT(t).probability}
       </Typography>
       <Box
         sx={{
@@ -852,8 +852,8 @@ export default function TrendChart({
   if (reportMode) return <Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
     <Box className="report-chart-tabs" role="tablist" aria-label={t('grade:tabs', '着手评价')} sx={{ display: 'flex', flexShrink: 0, borderBottom: 1, borderColor: 'divider', height: 44,
       '& .chart-tab-help--inactive': { '@container board-rail (max-width: 560px)': { display: 'none' } } }}>
-      {reportTabs.map((item, index) => <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', flex: '1 1 auto', minWidth: 0, borderBottom: tab === index ? '2px solid' : '2px solid transparent', borderColor: tab === index ? 'primary.light' : 'transparent', color: tab === index ? 'primary.light' : 'text.secondary' }}>
-        <Box component="button" role="tab" aria-selected={tab === index} onClick={() => setTab(index)} sx={{ border: 0, bgcolor: 'transparent', color: 'inherit', fontFamily: 'inherit', fontSize: 14, px: '2px', height: 44, whiteSpace: 'nowrap', flex: 1, cursor: 'pointer', '@container board-rail (min-width: 560px)': { fontSize: 16 } }}>{item.label}</Box>
+      {reportTabs.map((item, index) => <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '1 1 auto', minWidth: 0, borderBottom: tab === index ? '2px solid' : '2px solid transparent', borderColor: tab === index ? 'primary.light' : 'transparent', color: tab === index ? 'primary.light' : 'text.secondary' }}>
+        <Box component="button" role="tab" aria-selected={tab === index} onClick={() => setTab(index)} sx={{ border: 0, bgcolor: 'transparent', color: 'inherit', fontFamily: 'inherit', fontSize: 14, px: '2px', minWidth: 44, height: 44, whiteSpace: 'nowrap', flex: '0 1 auto', cursor: 'pointer', '@container board-rail (min-width: 560px)': { fontSize: 16 } }}>{item.label}</Box>
         <ChartTabHelp label={item.label} active={tab === index}><AnalysisHelpContent tab={item.id} selection={item.id === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} /></ChartTabHelp>
       </Box>)}
     </Box>

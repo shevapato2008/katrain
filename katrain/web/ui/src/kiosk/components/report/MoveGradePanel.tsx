@@ -251,7 +251,7 @@ export default function MoveGradePanel({
           label={`${t('grade:axis_brilliance', '妙度 1–5')}${t('grade:axis_aria', '，黑方在轴上方、白方在下方，横轴是手数')}`}
         />
         {selLine(pts, brilliants, (p) => interpolate(
-          t('grade:sel_brilliant', '第 {n} 手 {m} · {s} · 妙度 {k} —— 走的就是引擎首选，而引擎自己只给了 {p}% 先验（越低越妙）'),
+          t('grade:sel_brilliant', '第 {n} 手 {m} · {s} · 妙度 {k} —— AI初选概率仅为 {p}%，深入计算后成为首选'),
           {
             n: p.move,
             m: p.a.move ?? '',

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Box, IconButton, Popover, useTheme } from '@mui/material';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
-import { TIER_DEF_TEXT, BRILLIANCE_BANDS } from './chartDefinitions';
+import { TIER_DEF_TEXT, BRILLIANCE_BANDS, BRILLIANCE_HELP_TEXT } from './chartDefinitions';
 import { useTranslation } from '../../hooks/useTranslation';
 import { GRADE_TIERS, PER_SIDE_LIMIT, type buildHistogram, type buildMatchRate, type selectPerSide } from '../../features/analysis/moveGrade';
 
@@ -19,7 +19,8 @@ export function AnalysisHelpContent({ tab, selection, histogram, matchRate }: {
   return <>
     {tab === 'trend' && <p>{t('report:trend_help', '绿线为黑方胜率，橙线为黑方领先目数。横轴为手数；点击图表跳转到对应局面，缺少分析的局面不补值。')}</p>}
     {tab === 'brilliant' && <>
-      <p>{t('grade:brilliance_entry', '入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。')}</p>
+      <p>{BRILLIANCE_HELP_TEXT(t).entry}</p>
+      <p>{BRILLIANCE_HELP_TEXT(t).probability}</p>
       {BRILLIANCE_BANDS.map(({ level, band }) => <div key={level}>{t('grade:brilliance', '妙度')} {level} · {band}</div>)}
     </>}
     {(tab === 'mistake' || tab === 'perf') && <>
@@ -54,7 +55,7 @@ export function ChartTabHelp({ label, children, active = true }: { label: string
       aria-label={`${label} · ${t('report:chart_help', '说明')}`} aria-expanded={!!anchor} aria-haspopup="dialog"
       onMouseEnter={event => { const target = event.currentTarget; clear(); timer.current = setTimeout(() => setAnchor(target), 550); }}
       onMouseLeave={clear} onClick={event => { clear(); setAnchor(anchor ? null : event.currentTarget); }}
-      sx={{ width: 44, height: 44, p: 0, flexShrink: 0, fontFamily: 'inherit', color: 'inherit', '& svg': { fontSize: 17 } }}><HelpOutlineIcon /></IconButton>
+      sx={{ width: 44, height: 44, p: 0, pl: '4px', justifyContent: 'flex-start', flexShrink: 0, fontFamily: 'inherit', color: 'inherit', '& svg': { fontSize: 20 } }}><InfoOutlinedIcon /></IconButton>
     <Popover open={!!anchor} anchorEl={anchor} onClose={() => { clear(); setAnchor(null); }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       slotProps={{ paper: { role: 'dialog', 'aria-label': `${label} · ${t('report:chart_help', '说明')}`,

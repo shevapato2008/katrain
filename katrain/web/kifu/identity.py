@@ -973,7 +973,21 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
     else:
         player_query = player_query.filter(KifuPlayerAlias.normalized_alias.contains(needle, autoescape=True))
         event_query = event_query.filter(KifuEventAlias.normalized_alias.contains(needle, autoescape=True))
-    return {row[0] for row in player_query.distinct()}, {row[0] for row in event_query.distinct()}
+    player_ids = {row[0] for row in player_query.distinct()}
+    event_ids = {row[0] for row in event_query.distinct()}
+    if exact:
+        # The existing proof gate checks the applied batch and official source.
+        query_rows = _approved_names(db, KifuPlayerName, "player_id", lang="tw").filter(
+            KifuPlayerName.decision_kind == "generated",
+            KifuPlayerName.generation_rule_version == "primary-orthographic-v1",
+            KifuPlayerName.display_name == query,
+        )
+        player_ids.update(
+            name.player_id
+            for name, _ in _qualified_name_rows(db, query_rows, KifuPlayerName, "player_id")
+            if normalize_alias(name.display_name) == needle
+        )
+    return player_ids, event_ids
 
 
 def display_maps(db: Session, albums: list, lang: str, *, selected_events=None):

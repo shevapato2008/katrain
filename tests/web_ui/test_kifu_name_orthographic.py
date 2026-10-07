@@ -741,6 +741,29 @@ def test_official_hanja_exact_retention_import_and_reader(monkeypatch):
         engine.dispose()
 
 
+def test_official_hanja_exact_search_uses_applied_proof():
+    from katrain.web.core.models_db import KifuNameBatch
+    from katrain.web.kifu.identity import matching_entity_ids
+
+    engine, bundle, anchors, inventory = hanja_fixture()
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            assert matching_entity_ids(db, "李昌植", exact=True) == ({17}, set())
+            assert matching_entity_ids(db, "李昌植", exact=False) == (set(), set())
+            batch = db.get(KifuNameBatch, applied["batch_id"])
+            artifact = deepcopy(batch.reviewed_artifact)
+            artifact["bundle"]["primary_orthographic"]["batches"][0]["content"]["members"][0][
+                "display_name"
+            ] = "李昌浩"
+            batch.reviewed_artifact = artifact
+            db.commit()
+        with Session(engine) as db:
+            assert matching_entity_ids(db, "李昌植", exact=True) == (set(), set())
+    finally:
+        engine.dispose()
+
+
 @pytest.mark.parametrize(
     "mutation",
     [

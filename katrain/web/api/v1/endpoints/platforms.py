@@ -875,7 +875,7 @@ async def platform_player_games(
 
 
 async def _change_player_follow(platform: str, peer_code: str, follow: bool, request: Request, user: User):
-    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
+    from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError, GolaxySelfFollowError
 
     pm = request.app.state.platform_manager
     async with pm._locks.setdefault(platform, asyncio.Lock()):
@@ -883,6 +883,8 @@ async def _change_player_follow(platform: str, peer_code: str, follow: bool, req
         adapter = _connected_golaxy_player(platform, peer_code, request)
         try:
             profile = await adapter.change_player_follow(peer_code, follow)
+        except GolaxySelfFollowError as exc:
+            raise HTTPException(status_code=400, detail="Cannot follow yourself") from exc
         except GolaxyLobbyAuthError as exc:
             raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
         except GolaxyLobbyError as exc:
@@ -909,6 +911,8 @@ async def platform_users(
     platform: str,
     q: Optional[str] = None,
     room: Optional[str] = None,
+    page: int = Query(default=0, ge=0, le=10000),
+    filter: Literal["all", "same_level", "following"] = "all",
     request: Request = None,
     user: User = Depends(require_platform_owner),
 ):
@@ -925,14 +929,15 @@ async def platform_users(
     if platform == "golaxy":
         from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
 
-        require_platform_owner(platform, request, user)
-        try:
-            users = await adapter.get_online_users()
-        except GolaxyLobbyAuthError as exc:
-            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
-        except GolaxyLobbyError as exc:
-            raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
-        require_platform_owner(platform, request, user)
+        async with pm._locks.setdefault(platform, asyncio.Lock()):
+            require_platform_owner(platform, request, user)
+            try:
+                users = await adapter.get_online_users(page=page, filter_name=filter)
+            except GolaxyLobbyAuthError as exc:
+                raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+            except GolaxyLobbyError as exc:
+                raise HTTPException(status_code=502, detail="Unable to load Golaxy users") from exc
+            require_platform_owner(platform, request, user)
         if q:
             prefix = q.casefold()
             users = [entry for entry in users if entry["username"].casefold().startswith(prefix)]
@@ -958,7 +963,10 @@ async def platform_users(
 
 
 @router.get("/{platform}/rooms")
-async def platform_rooms(platform: str, request: Request, user: User = Depends(require_platform_owner)):
+async def platform_rooms(
+    platform: str, request: Request, user: User = Depends(require_platform_owner),
+    page: int = Query(default=0, ge=0, le=10000),
+):
     """List rooms/channels on a platform (Fox, KGS)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -969,14 +977,15 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(r
     if platform == "golaxy":
         from katrain.web.platforms.golaxy.adapter import GolaxyLobbyAuthError, GolaxyLobbyError
 
-        require_platform_owner(platform, request, user)
-        try:
-            rooms = await adapter.get_rooms()
-        except GolaxyLobbyAuthError as exc:
-            raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
-        except GolaxyLobbyError as exc:
-            raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
-        require_platform_owner(platform, request, user)
+        async with pm._locks.setdefault(platform, asyncio.Lock()):
+            require_platform_owner(platform, request, user)
+            try:
+                rooms = await adapter.get_rooms(page=page)
+            except GolaxyLobbyAuthError as exc:
+                raise HTTPException(status_code=401, detail="Golaxy login expired") from exc
+            except GolaxyLobbyError as exc:
+                raise HTTPException(status_code=502, detail="Unable to load Golaxy rooms") from exc
+            require_platform_owner(platform, request, user)
     else:
         rooms = await adapter.get_rooms()
     return {"rooms": rooms}

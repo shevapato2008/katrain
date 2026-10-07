@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiError } from '../../api';
@@ -41,7 +41,7 @@ const deferred = <T,>() => {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   Object.defineProperty(document, 'hidden', { configurable: true, value: false });
   vision.enabled = true;
   auth.token = 'token';
@@ -422,6 +422,68 @@ describe('Golaxy home', () => {
     act(() => screen.getByRole('button', { name: '重试' }).click());
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByText('暂无对局')).toBeInTheDocument();
+  });
+
+  it('appends scroll pages, stops at an empty page and retains loaded pages on refresh', async () => {
+    platformRooms.mockImplementation((_platform, _token, page) => Promise.resolve({ rooms: page === 0 ? [room('1234')] : page === 1 ? [room('5678')] : [] }));
+    vi.useFakeTimers();
+    renderPage();
+    await act(async () => { await Promise.resolve(); });
+    const list = document.querySelector('.golaxy-home__list-body')!;
+    fireEvent.scroll(list);
+    await act(async () => { await Promise.resolve(); });
+    expect(platformRooms).toHaveBeenLastCalledWith('golaxy', 'token', 1);
+    expect(screen.getByText('1234 房')).toBeInTheDocument();
+    expect(screen.getByText('5678 房')).toBeInTheDocument();
+    await act(async () => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText('5678 房')).toBeInTheDocument();
+    fireEvent.scroll(list);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByText('没有更多了')).toBeInTheDocument();
+    const count = platformRooms.mock.calls.length;
+    fireEvent.scroll(list);
+    expect(platformRooms).toHaveBeenCalledTimes(count);
+  });
+
+  it('resets filter pages and ignores an old filter response', async () => {
+    const pending = deferred<{ users: { user_id: string; username: string }[] }>();
+    platformUsers.mockResolvedValueOnce({ users: [{ user_id: 'a', username: '全部棋友甲' }] })
+      .mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ users: [{ user_id: 'f', username: '关注棋友' }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(screen.getByRole('button', { name: '同级别' }));
+    expect(platformUsers).toHaveBeenLastCalledWith('golaxy', 'token', undefined, { page: 0, filter: 'same_level' });
+    await userEvent.click(screen.getByRole('button', { name: '我的关注' }));
+    expect(await screen.findByText('关注棋友')).toBeInTheDocument();
+    await act(async () => pending.resolve({ users: [{ user_id: 's', username: '过期同级棋友' }] }));
+    expect(screen.queryByText('过期同级棋友')).not.toBeInTheDocument();
+    expect(screen.queryByText('全部棋友甲')).not.toBeInTheDocument();
+  });
+
+  it('retains rows when loading another page fails and retries that page', async () => {
+    platformRooms.mockResolvedValueOnce({ rooms: [room('1234')] }).mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ rooms: [room('5678')] });
+    renderPage();
+    await screen.findByText('1234 房');
+    fireEvent.scroll(document.querySelector('.golaxy-home__list-body')!);
+    expect(await screen.findByText('没能读取更多，请重试')).toBeInTheDocument();
+    expect(screen.getByText('1234 房')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '重试加载更多' }));
+    expect(await screen.findByText('5678 房')).toBeInTheDocument();
+    expect(platformRooms).toHaveBeenLastCalledWith('golaxy', 'token', 1);
+  });
+
+  it('hides invitation and follow actions for the verified self even with the same nickname', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'owner', username: '本人', invite_able: true, is_self: true }] });
+    platformPlayerProfile.mockResolvedValue({ profile: { followed: false, is_self: true } });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看本人的个人资料' }));
+    expect(screen.queryByRole('button', { name: '邀请对局' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '添加关注' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
   });
 
 });

@@ -131,11 +131,11 @@ Local evidence sources: `golaxy-app-20260922.js`, `golaxy-gamezone.js`, `golaxy-
 
 | Area | Evidence level / source | Confirmed observation | Remaining gap |
 |------|-------------------------|-----------------------|---------------|
-| Room listing | Captured response + app JS | `GET /api/social/gameroom/list?page=0&size=15`; envelope has `code: "0"` and a `data` list. JS defaults to page `0`, size `15`. | Pagination behavior, freshness and failure handling have not been exercised. |
+| Room listing | Captured response + app JS | `GET /api/social/gameroom/list?page=0&size=15`; envelope has `code: "0"` and a `data` list. That older captured request used size `15`; the 20260922 client verified on 2026-10-08 uses page `0`, size `16`, and appends pages until empty. | Authenticated live multi-page behavior has not been exercised. |
 | Room projection | Captured room response | Room fields include `id`, `gameroomCode`, `gameroomStatus`, `wsGameId`, `gameMetaDto` and `gameroomStateDto.onlineUserCount`. Metadata includes `gameType`, `handicap`, `komi`, `blackNickname`, `whiteNickname`, `blackLevel`, `whiteLevel` and `gameState.situation`, `moveNum`, `gameStatus`. | Status values and field authority across lifecycle transitions remain unverified. |
 | Board snapshot | Captured room response, two snapshots | `situation` is a comma-separated sequence of integers; the two inspected sequences contain 76 and 25 entries respectively, equal to their `gameState.moveNum`. | This earlier snapshot alone did not establish a usable board decoder; see the later read-only room-detail evidence below. |
 | Lobby refresh | Static app + game-zone JS | `gamezone_refresh_time` is `30`; the client refresh loop waits `1000 * gamezone_refresh_time` milliseconds between refreshes. | No measured server update cadence or realtime replacement contract. |
-| Online user listing | Static app JS + failed saved response + authenticated read-only capture (2026-10-01) | Client uses `GET /api/social/gamezone/user/list` with defaults `page=0`, `size=15`, `level=-1`. Older saved response has `code: "6003"` (invalid token). A fresh authenticated request returned HTTP 200, `code: "0"`, and a `data` list of 16 rows. | The service returned 16 rows despite `size=15`; pagination behavior and freshness remain unverified. |
+| Online user listing | Static app JS + failed saved response + authenticated read-only capture (2026-10-01) | The older capture used `GET /api/social/gamezone/user/list?page=0&size=15&level=-1`; the 20260922 client verified on 2026-10-08 uses size `20`. Older saved response has `code: "6003"` (invalid token). A fresh authenticated request returned HTTP 200, `code: "0"`, and a `data` list of 16 rows. | The older service response returned 16 rows despite `size=15`; authenticated live multi-page behavior remains unverified. |
 | Online user projection | Static game-zone JS + authenticated read-only capture | Successful rows contain `userCode`, `nickname`, `photo`/`photoFile`, `level`, `winNum`, `loseNum`, `inviteAble`, app/web user and connection status fields, and app/web status details. Client also references `followAlias`. | The 2026-10-03 RK3562 capture below verifies device status and invitation flag wire types; freshness and other optional fields remain unverified. |
 | Quick match | Static app JS only | JSON `POST /api/social/gamezone/game/taste/match/{userCode}` passes caller options plus `userCode`, `gamename`, and defaults for `tasteBoardSize`, `tasteRule`, `tasteStone`, `tasteKomi`, `tasteHandicap`. Builder requires a successful `stompStatusCheck()`. Heartbeat and cancel use `POST /api/social/gamezone/game/taste/heartbeat/{userCode}` and `/api/social/gamezone/game/taste/cancel/{userCode}`, each with `{}` data. | No accepted request, match event, cancellation result, timeout or recovery capture. |
 | Create room | Static app JS only | `POST /api/social/gameroom/reserve` data keys: `user_code`, `inviter_user_code`, `inviter_client_id`, `invitee_user_code`, `invitee_client_id`; optional invite fields default to empty strings. | Success/failure responses, permissions and room configuration handshake are unverified. |
@@ -158,7 +158,7 @@ No live human match, authenticated STOMP connection/event payload, spectator joi
 
 ### Read-only lobby implementation
 
-`GET /api/v1/platforms/golaxy/rooms` and `/users` require the connected platform owner. They fetch page 0 from the authenticated Golaxy list endpoints above and return compatible kiosk projections. Rooms expose the observed room ID/code, handicap, player code/nickname, and `gameState.moveNum` as both the legacy hand-count `phase` and optional `move_number`. `room_type` now displays the verified `gameMetaDto.gameType` category (`80` → `自由战`, `82` → `升降战`), never a label inferred from `gameroomType`. `gameroomStateDto.onlineUserCount` projects to `room_user_count`, which includes all room users; `spectator_count` remains null. The lobby list still does not decode `gameState.situation` into a board; the separate room-detail snapshot endpoint below does.
+`GET /api/v1/platforms/golaxy/rooms` and `/users` require the connected platform owner. They accept a bounded nonnegative `page` (default 0) for the authenticated Golaxy list endpoints above and return compatible kiosk projections. Rooms expose the observed room ID/code, handicap, player code/nickname, and `gameState.moveNum` as both the legacy hand-count `phase` and optional `move_number`. `room_type` now displays the verified `gameMetaDto.gameType` category (`80` → `自由战`, `82` → `升降战`), never a label inferred from `gameroomType`. `gameroomStateDto.onlineUserCount` projects to `room_user_count`, which includes all room users; `spectator_count` remains null. The lobby list still does not decode `gameState.situation` into a board; the separate room-detail snapshot endpoint below does.
 
 The read-only adapter now uses the exact Elo-to-label entries from the published `app.b1558ddf.js` `computerLevel` table, rechecked on 2026-10-03. Its rows through `18级` match the existing `GOLAXY_AI_LEVELS` table; `210` through `150` add `19级` through `25级`. Integers and exact numeric strings are accepted; absent entries such as `2700` remain null. User rows expose code and display name (`followAlias` when present, otherwise `nickname`), nonnegative integer `wins`/`losses`, and normalized boolean `invite_able`. The latter preserves the upstream preference and does not authorize or guarantee an invitation. Presence uses the aggregate `connectionStatus` when available, otherwise the observed Web/App connection fields. Connected and explicitly false `inviteAble` is `拒绝`; otherwise the first recognized connected Web/App detail takes precedence, followed by the highest-priority recognized connected device status. Missing or unknown connection/status codes stay null rather than inheriting the official client's create-state fallback.
 
@@ -289,3 +289,27 @@ Realtime room/board/clock/member claims require captured event schemas and verif
 - **STOMP payload schemas unknown** — subscription channels known but message formats must be captured
 - **Endpoints can change on any deploy** (latest inspected client bundle: 2026-09-22)
 - **Legal gray area** — no public API terms
+
+
+### Lobby pagination, filters and self actions (2026-10-08)
+
+The public official `chunk-482a84a1.e788e007.js` (20260922 client) initializes
+rooms with `page=0,size=16` and users with `page=0,size=20`. Its `scrolLoad`
+increments the page and appends rows until the upstream returns an empty page.
+The kiosk follows that termination rule, deduplicates by room/user code, and
+refreshes all previously loaded pages together every 30 seconds.
+
+`allUser` calls `/api/social/gamezone/user/list` with `level=-1`; `sameLevel`
+substitutes the authenticated account's `userLevel`; `following` calls
+`/api/social/gamezone/user/follow/list`. The kiosk's `filter=all|same_level|following`
+keeps pagination owner-bound. It obtains the caller's usercode from active
+`check_token` and resolves the same-level value from that caller's own profile,
+without accepting a caller/level override from the browser. An unavailable level
+is an upstream error rather than a silent fallback to all players.
+
+The official client's `notOwn` compares selected userCode with the caller's
+usercode before exposing invitation or follow controls. The kiosk projects
+`is_self` on user rows and profiles and rejects follow/unfollow of the verified
+caller before any upstream write. Nicknames are not used for identity. Owner
+locks cover list identity hydration and requests; old account/filter responses
+are discarded by the UI.

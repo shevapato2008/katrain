@@ -257,11 +257,12 @@ export interface GolaxyOnlinePlayer {
   // Verified display projections; malformed or missing values remain null.
   wins?: number | null;
   losses?: number | null;
+  is_self?: boolean; // Compared with the caller usercode verified by check_token.
   invite_able?: boolean | null; // Upstream preference, not proof an invitation will succeed.
   avatar_url?: string | null;
 }
 
-export interface GolaxyPlayerProfile extends Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank' | 'wins' | 'losses'> {
+export interface GolaxyPlayerProfile extends Pick<GolaxyOnlinePlayer, 'user_id' | 'username' | 'rank' | 'wins' | 'losses' | 'is_self'> {
   followed: boolean | null;
 }
 
@@ -793,8 +794,11 @@ export const API = {
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string): Promise<{ users: T[] }> => {
-    const params = query ? `?q=${encodeURIComponent(query)}` : '';
+  platformUsers: async <T extends PlatformUser | GolaxyOnlinePlayer = PlatformUser>(platform: string, token: string | null | undefined, query?: string, lobby?: { page: number; filter: 'all' | 'same_level' | 'following' }): Promise<{ users: T[] }> => {
+    const search = new URLSearchParams();
+    if (query) search.set('q', query);
+    if (lobby) { search.set('page', String(lobby.page)); search.set('filter', lobby.filter); }
+    const params = search.size ? `?${search}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
       headers: authHeaders(token),
     });
@@ -823,8 +827,9 @@ export const API = {
     if (!response.ok) throw new ApiError(response.status, `Failed to change player follow (${response.status})`);
     return response.json();
   },
-  platformRooms: async (platform: string, token: string | null | undefined): Promise<{ rooms: GolaxyRoom[] }> => {
-    const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
+  platformRooms: async (platform: string, token: string | null | undefined, page?: number): Promise<{ rooms: GolaxyRoom[] }> => {
+    const params = page === undefined ? '' : `?page=${page}`;
+    const response = await fetch(`/api/v1/platforms/${platform}/rooms${params}`, {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new ApiError(response.status, `Failed to get rooms (${response.status})`);

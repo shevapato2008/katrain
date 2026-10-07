@@ -370,6 +370,10 @@ class GolaxyEngineTerminal(Exception):
     """
 
 
+class GolaxySelfFollowError(GolaxyLobbyError):
+    """The authenticated account cannot follow itself."""
+
+
 class GolaxyRestClient:
     """HTTP client for Golaxy REST API."""
 
@@ -531,6 +535,8 @@ class GolaxyRestClient:
         return data
 
     def set_tokens(self, access_token: str, refresh_token: str) -> None:
+        if access_token != self._access_token:
+            self._user_code = None
         self._access_token = access_token
         self._refresh_token = refresh_token
 
@@ -648,6 +654,8 @@ class GolaxyRestClient:
 
     async def change_player_follow(self, peer_code: str, follow: bool) -> None:
         caller_code = await self._get_user_code()
+        if peer_code == caller_code:
+            raise GolaxySelfFollowError("Cannot follow yourself")
         action = "follow" if follow else "unfollow"
         key = "followee_user_code" if follow else "peer_user_code"
         await self._enveloped_data(
@@ -735,11 +743,25 @@ class GolaxyRestClient:
             raise GolaxyLobbyError("Golaxy lobby response malformed")
         return body["data"]
 
-    async def list_gamerooms(self) -> list[dict]:
-        return await self._lobby_list("/api/social/gameroom/list", {"page": 0, "size": 15})
+    async def list_gamerooms(self, page: int = 0) -> list[dict]:
+        return await self._lobby_list("/api/social/gameroom/list", {"page": page, "size": 16})
 
-    async def list_gamezone_users(self) -> list[dict]:
-        return await self._lobby_list("/api/social/gamezone/user/list", {"page": 0, "size": 15, "level": -1})
+    async def list_gamezone_users(self, page: int = 0, filter_name: str = "all") -> list[dict]:
+        params = {"page": page, "size": 20}
+        if filter_name == "following":
+            return await self._lobby_list("/api/social/gamezone/user/follow/list", params)
+        level = -1
+        if filter_name == "same_level":
+            caller = await self._get_user_code()
+            profile = await self.get_player_profile(caller)
+            raw_level = profile.get("level")
+            level = _lobby_count(raw_level)
+            if type(raw_level) is str and raw_level.isascii() and raw_level.isdecimal():
+                level = int(raw_level)
+            if not level:
+                raise GolaxyLobbyError("Golaxy account level unavailable")
+        params["level"] = level
+        return await self._lobby_list("/api/social/gamezone/user/list", params)
 
     async def get_gameroom_info(self, room_id: str) -> dict:
         """Read one authenticated room, without forwarding upstream response bodies on errors."""
@@ -993,6 +1015,7 @@ class GolaxyAdapter(PlatformAdapter):
         follow_type = row.get("followType")
         return {
             "user_id": peer_code,
+            "is_self": peer_code == await self._rest._get_user_code(),
             "username": name.strip(),
             "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
             "wins": _lobby_count(row.get("winNum")),
@@ -1021,8 +1044,8 @@ class GolaxyAdapter(PlatformAdapter):
         await self._rest.change_player_follow(peer_code, follow)
         return await self.get_player_profile(peer_code)
 
-    async def get_rooms(self) -> list[dict]:
-        rows = await self._rest.list_gamerooms()
+    async def get_rooms(self, page: int = 0) -> list[dict]:
+        rows = await self._rest.list_gamerooms(page=page)
         rooms = []
         for row in rows:
             room_id = row.get("id")
@@ -1174,8 +1197,9 @@ class GolaxyAdapter(PlatformAdapter):
             "result": None,
         }
 
-    async def get_online_users(self, room: Optional[str] = None) -> list[dict]:
-        rows = await self._rest.list_gamezone_users()
+    async def get_online_users(self, room: Optional[str] = None, *, page: int = 0, filter_name: str = "all") -> list[dict]:
+        caller = await self._rest._get_user_code()
+        rows = await self._rest.list_gamezone_users(page=page, filter_name=filter_name)
         users = []
         for row in rows:
             code = row.get("userCode")
@@ -1185,6 +1209,7 @@ class GolaxyAdapter(PlatformAdapter):
             users.append(
                 {
                     "user_id": str(code),
+                    "is_self": str(code) == caller,
                     "username": str(name),
                     "rank": _lobby_label(row.get("level"), _LOBBY_RANKS),
                     "status": _lobby_presence(row),

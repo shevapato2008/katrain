@@ -758,7 +758,7 @@ class GolaxyRestClient:
             level = _lobby_count(raw_level)
             if type(raw_level) is str and raw_level.isascii() and raw_level.isdecimal():
                 level = int(raw_level)
-            if not level:
+            if level is None:
                 raise GolaxyLobbyError("Golaxy account level unavailable")
         params["level"] = level
         return await self._lobby_list("/api/social/gamezone/user/list", params)

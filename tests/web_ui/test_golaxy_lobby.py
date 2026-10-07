@@ -828,11 +828,12 @@ def test_self_profile_and_follow_are_bound_to_verified_usercode():
     assert writes == []
 
 
-async def test_same_level_uses_account_level_even_when_its_rank_label_is_unknown():
+@pytest.mark.parametrize("account_level", [0, 2700])
+async def test_same_level_uses_account_level_even_when_its_rank_label_is_unknown(account_level):
     def handler(request):
         if request.url.path.endswith("/info/user_code/owner-code"):
-            return httpx.Response(200, json={"code": 0, "data": {"userCode": "owner-code", "level": 2700}})
-        assert request.url.params["level"] == "2700"
+            return httpx.Response(200, json={"code": 0, "data": {"userCode": "owner-code", "level": account_level}})
+        assert request.url.params["level"] == str(account_level)
         return httpx.Response(200, json={"code": 0, "data": []})
 
     assert await _adapter(handler).get_online_users(filter_name="same_level") == []

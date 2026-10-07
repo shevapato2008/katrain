@@ -1,4 +1,4 @@
-"""Frozen, independently approved Chinese person-name orthographic outputs."""
+"""Frozen, independently approved Chinese orthography and official KBA Hanja retention."""
 
 from datetime import datetime
 import unicodedata
@@ -73,6 +73,26 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
     rules, maps = {}, {}
     for rule in section["rules"]:
         content = validate_transliteration_review(rule, "approved_orthographic_rule")
+        retained = content.get("reference_kind") == "official_hanja_preserved"
+        if retained:
+            _require(
+                content
+                == {
+                    "version": VERSION,
+                    "reference_kind": "official_hanja_preserved",
+                    "lang": "tw",
+                    "source_lang": "ko",
+                    "source_script": "Hanja",
+                    "target_script": "Hanja",
+                    "target_region": "TW",
+                    "preservation": "exact_codepoints",
+                },
+                "official Hanja rule must preserve exact Korean Hanja for TW",
+            )
+            digest = registry_sha256(rule)
+            _require(digest not in rules, "duplicate orthographic rule")
+            rules[digest], maps[digest] = rule, None
+            continue
         _require(
             set(content)
             == {
@@ -152,6 +172,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
         _require(rule_hash in rules, "orthographic batch rule missing")
         rule, mapping = rules[rule_hash], maps[rule_hash]
         r = rule["content"]
+        retained = r.get("reference_kind") == "official_hanja_preserved"
         _require(
             content.get("catalog_sha256") == catalog_sha256
             and content.get("approved_name_snapshot_sha256") == registry_sha256(snapshot),
@@ -209,7 +230,9 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     "preimage_binding_sha256",
                 }
                 | ({"raw_value", "raw_display_scope_sha256"} if raw else set())
-                and owner["kind"] in {"player", "raw_player"}
+                | ({"reference_kind"} if retained else set())
+                and owner["kind"] in ({"player"} if retained else {"player", "raw_player"})
+                and (not retained or member.get("reference_kind") == "official_hanja_preserved")
                 and key not in bindings
                 and member.get("lang") == r["lang"]
                 and member.get("rule_sha256") == rule_hash,
@@ -224,7 +247,8 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 source["owner"] == owner
                 and member.get("original_name") == original
                 and source["source_lang"] == r["source_lang"]
-                and source["source_script"] == r["source_script"],
+                and source["source_script"] == r["source_script"]
+                and (not retained or source.get("reference_kind") == "official_hanja_preserved"),
                 "orthographic member source/owner scope mismatch",
             )
             _require(
@@ -237,18 +261,21 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     all(member.get(k) == source.get(k) for k in ("raw_value", "raw_display_scope_sha256")),
                     "orthographic raw scope mismatch",
                 )
-            exclusions = EXCLUDED_CHARACTERS | set(r["excluded_characters"])
-            _require(
-                original not in EXCLUDED_NAMES | set(r["excluded_names"])
-                and not any(char in exclusions for char in original)
-                and all(char in mapping for char in original),
-                "orthographic name contains unknown or exceptional mapping",
-            )
-            output = "".join(mapping[char] for char in original)
-            _require(
-                output not in EXCLUDED_NAMES and not any(char in EXCLUDED_CHARACTERS for char in output),
-                "orthographic output contains a known exception",
-            )
+            if retained:
+                output = original
+            else:
+                exclusions = EXCLUDED_CHARACTERS | set(r["excluded_characters"])
+                _require(
+                    original not in EXCLUDED_NAMES | set(r["excluded_names"])
+                    and not any(char in exclusions for char in original)
+                    and all(char in mapping for char in original),
+                    "orthographic name contains unknown or exceptional mapping",
+                )
+                output = "".join(mapping[char] for char in original)
+                _require(
+                    output not in EXCLUDED_NAMES and not any(char in EXCLUDED_CHARACTERS for char in output),
+                    "orthographic output contains a known exception",
+                )
             changes = [
                 {"position": i, "input": f"U+{ord(a):04X}", "output": f"U+{ord(b):04X}"}
                 for i, (a, b) in enumerate(zip(original, output))
@@ -264,7 +291,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     not (
                         existing["owner"] == owner
                         and existing["lang"] == member["lang"]
-                        and existing.get("decision_kind") == "conventional"
+                        and (retained or existing.get("decision_kind") == "conventional")
                     ),
                     "orthographic cannot replace known conventional name",
                 )

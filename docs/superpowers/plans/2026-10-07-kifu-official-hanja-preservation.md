@@ -52,3 +52,7 @@
 ## Scope limits
 
 不做全库转换、不改原 SGF、比赛来源列表、段位字段、玩家/赛事 ID、FK、别名或隐藏标签；不增加网页全文/生平后台、翻译服务、缓存设施或前端页面。本轮只解决现有可靠证据的重复检索瓶颈。
+
+## Implementation checkpoint
+
+2026-10-07：3文件最小实现；orthographic/evidence实际172项、candidate/batch实际190项通过，包含SQLite importer与identity保持兼容字码点的真实读取测试。独立FH reviewer按spec符合性→代码质量/数据完整性顺序实读方案、diff及三份KBA真实desktop页，两阶段PASS，无Critical/Important；未重复全套测试。严格本人页格式变化会拒绝处理，属于预期边界。真实ret66及webreader/importer发布尚未执行，不计本批入库完成。

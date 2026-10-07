@@ -1251,7 +1251,7 @@ def capture_source_check(
 
 
 def validate_primary_orthographic_anchor(record: dict) -> dict:
-    """Approve only an exact Chinese original bound to one reviewed player scope."""
+    """Validate a reviewed Chinese original or an explicitly preserved official KBA Hanja name."""
     _require(
         isinstance(record, dict)
         and record.get("evidence_kind") == "primary_orthographic"
@@ -1267,7 +1267,9 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
     owner = content.get("owner")
     owner_key(owner, "tw")
     _require(owner["kind"] in {"player", "raw_player"}, "orthographic names only permit players")
-    required = {"owner", "original_name", "source_lang", "source_script", "chinese_origin", "binding", "sources"}
+    retained = content.get("reference_kind") == "official_hanja_preserved"
+    required = {"owner", "original_name", "source_lang", "source_script", "binding", "sources"}
+    required |= {"reference_kind", "korean_name"} if retained else {"chinese_origin"}
     if owner["kind"] == "raw_player":
         required |= {"raw_value", "raw_display_scope_sha256"}
     _require(set(content) == required, "orthographic original fields invalid; no reading or absence claims")
@@ -1275,15 +1277,30 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
     _require(
         isinstance(original, str)
         and 2 <= len(original) <= 16
-        and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
+        and all(
+            unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH")
+            or retained
+            and unicodedata.name(char, "").startswith("CJK COMPATIBILITY IDEOGRAPH")
+            for char in original
+        ),
         "orthographic original must be a complete Han person name",
     )
-    _require(
-        content.get("chinese_origin") is True
-        and content.get("source_lang") in {"zh-Hans", "zh-Hant"}
-        and content.get("source_script") == {"zh-Hans": "Hans", "zh-Hant": "Hant"}[content["source_lang"]],
-        "orthographic original requires reviewed Chinese origin/script",
-    )
+    if retained:
+        _require(
+            owner["kind"] == "player"
+            and content.get("source_lang") == "ko"
+            and content.get("source_script") == "Hanja"
+            and isinstance(content.get("korean_name"), str)
+            and bool(re.fullmatch(r"[가-힣]{2,16}", content["korean_name"])),
+            "official Hanja preservation requires Korean player original",
+        )
+    else:
+        _require(
+            content.get("chinese_origin") is True
+            and content.get("source_lang") in {"zh-Hans", "zh-Hant"}
+            and content.get("source_script") == {"zh-Hans": "Hans", "zh-Hant": "Hant"}[content["source_lang"]],
+            "orthographic original requires reviewed Chinese origin/script",
+        )
     binding = content.get("binding")
     _require(
         isinstance(binding, dict)
@@ -1337,8 +1354,54 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             and _text(source.get("record_locator")),
             "orthographic captured body/name/locator mismatch",
         )
-    _require(
-        any(source.get("tier") == "official" and binding["person_id"] in source["body_excerpt"] for source in sources),
-        "orthographic original needs official name and person-ID body",
-    )
+    if retained:
+        _require(
+            binding["person_id_namespace"] == "kba_pkey" and bool(re.fullmatch(r"[0-9]+", binding["person_id"])),
+            "official Hanja preservation requires stable KBA person ID",
+        )
+        for source in sources:
+            parsed = urlparse(source["url"])
+            _require(
+                source.get("tier") == "official"
+                and source.get("source_role") == "official_person_page"
+                and parsed.hostname in {"baduk.or.kr", "www.baduk.or.kr"}
+                and parsed.path == "/record/player_view.asp"
+                and parse_qs(parsed.query) == {"pkey": [binding["person_id"]]}
+                and source["record_locator"] == "pkey=" + binding["person_id"],
+                "official Hanja person page/ID/role mismatch",
+            )
+            parser = _VisibleHTML()
+            parser.feed(source["body_text"])
+            _require(parser.language == "ko", "official Hanja body must declare actual Korean language")
+            pair = r"(?<![가-힣])" + re.escape(content["korean_name"]) + r"\s*\(\s*" + re.escape(original) + r"\s*\)"
+            excerpt = _VisibleHTML()
+            excerpt.feed(source["body_excerpt"])
+            _require(
+                re.search(pair, " ".join(excerpt.parts)) is not None,
+                "official Hanja excerpt must contain the complete Korean/Hanja name pair",
+            )
+            rows = re.findall(r"<p\b[^>]*>.*?</p\s*>", source["body_text"], flags=re.I | re.S)
+            same_row = False
+            for markup in rows:
+                visible = _VisibleHTML()
+                visible.feed(markup)
+                if re.search(pair, " ".join(visible.parts)):
+                    same_row = True
+                    break
+            links = re.findall(r'<a\b[^>]*\bhref=[\'"]([^\'"]+)', source["body_text"], flags=re.I)
+            stable_id = any(
+                urlparse(urljoin(source["url"], link)).hostname in {"baduk.or.kr", "www.baduk.or.kr"}
+                and urlparse(link).path == "/record/diary.asp"
+                and parse_qs(urlparse(link).query) == {"foreignKey": [binding["person_id"]]}
+                for link in links
+            )
+            _require(same_row and stable_id, "official Hanja name row or captured stable person ID missing")
+    else:
+        _require(
+            any(
+                source.get("tier") == "official" and binding["person_id"] in source["body_excerpt"]
+                for source in sources
+            ),
+            "orthographic original needs official name and person-ID body",
+        )
     return content

@@ -671,3 +671,149 @@ def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, 
     assert len(source_hashes) == count
     sources[0]["content"]["sources"][0]["body_text"] += " tampered after the first read"
     assert orthographic.persisted_batch_bindings(persisted) is None
+
+
+def hanja_fixture():
+    engine, bundle, anchors, inventory = fixture()
+    original = "李昌植"  # U+F9E1 compatibility Hanja must survive unchanged.
+    source = anchors[0]["content"]
+    body = '<html lang="ko"><body><p>이창식(<em>李昌植</em>)</p><a href="/record/diary.asp?foreignKey=10000001">기사</a></body></html>'
+    source.pop("chinese_origin")
+    source.update(
+        reference_kind="official_hanja_preserved",
+        korean_name="이창식",
+        original_name=original,
+        source_lang="ko",
+        source_script="Hanja",
+    )
+    source["binding"].update(person_id_namespace="kba_pkey", person_id="10000001")
+    source["sources"] = [
+        {
+            **source["sources"][0],
+            "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000001",
+            "source_role": "official_person_page",
+            "body_text": body,
+            "body_excerpt": body,
+            "body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+            "observed_lang": "ko",
+            "record_locator": "pkey=10000001",
+        }
+    ]
+    rule = bundle["primary_orthographic"]["rules"][0]
+    rule["content"] = {
+        "version": "primary-orthographic-v1",
+        "reference_kind": "official_hanja_preserved",
+        "lang": "tw",
+        "source_lang": "ko",
+        "source_script": "Hanja",
+        "target_script": "Hanja",
+        "target_region": "TW",
+        "preservation": "exact_codepoints",
+    }
+    member = bundle["primary_orthographic"]["batches"][0]["content"]["members"][0]
+    member.update(
+        reference_kind="official_hanja_preserved",
+        original_name=original,
+        display_name=original,
+        codepoint_changes=[
+            {"position": i, "input": f"U+{ord(c):04X}", "output": f"U+{ord(c):04X}"} for i, c in enumerate(original)
+        ],
+    )
+    refresh(bundle, anchors[0])
+    return engine, bundle, anchors, inventory
+
+
+def test_official_hanja_exact_retention_import_and_reader(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = hanja_fixture()
+    try:
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])
+        assert report["write_ready"], report
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        assert applied["status"] == "applied"
+        with Session(engine) as db:
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="李昌植", page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 1 and page.items[0].display_player_black == "李昌植"
+            evidence = db.query(KifuNameResearchEvidence).one().research_payload
+            assert evidence["candidate"]["reference_kind"] == "official_hanja_preserved"
+            assert evidence["primary_orthographic"]["source_anchor"]["content"]["sources"][0]["observed_lang"] == "ko"
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "nfkc",
+        "changed",
+        "missing",
+        "person_id",
+        "role",
+        "language",
+        "url",
+        "korean_name",
+        "split_row",
+        "body_id",
+        "owner_binding",
+        "raw",
+        "verified",
+        "alias",
+        "fake_chinese",
+    ],
+)
+def test_official_hanja_rejects_invalid_source_output_or_conflict(mutation):
+    engine, bundle, anchors, inventory = hanja_fixture()
+    try:
+        source = anchors[0]["content"]
+        captured = source["sources"][0]
+        member = bundle["primary_orthographic"]["batches"][0]["content"]["members"][0]
+        batch = bundle["primary_orthographic"]["batches"][0]["content"]
+        snapshot = []
+        if mutation in {"nfkc", "changed"}:
+            member["display_name"] = "李昌植" if mutation == "nfkc" else "李昌埴"
+        elif mutation == "missing":
+            source["original_name"] = "李?植"
+        elif mutation == "person_id":
+            source["binding"]["person_id"] = "10000002"
+        elif mutation == "role":
+            captured["source_role"] = "news_article"
+        elif mutation == "language":
+            captured["observed_lang"] = "zh-Hant"
+        elif mutation == "url":
+            captured["url"] = "https://example.org/record/player_view.asp?pkey=10000001"
+        elif mutation == "korean_name":
+            source["korean_name"] = "김창식"
+        elif mutation == "split_row":
+            captured["body_text"] = captured["body_text"].replace("이창식(<em>李昌植</em>)", "이창식</p><p>李昌植")
+            captured["body_excerpt"] = captured["body_text"]
+            captured["body_sha256"] = hashlib.sha256(captured["body_text"].encode()).hexdigest()
+        elif mutation == "body_id":
+            captured["body_text"] = captured["body_text"].replace("foreignKey=10000001", "foreignKey=100000010")
+            captured["body_excerpt"] = captured["body_text"]
+            captured["body_sha256"] = hashlib.sha256(captured["body_text"].encode()).hexdigest()
+        elif mutation == "owner_binding":
+            source["binding"]["owner"] = {"kind": "player", "id": 999}
+        elif mutation == "raw":
+            source["owner"] = {"kind": "raw_player", "id": 7}
+        elif mutation == "verified":
+            snapshot = [
+                {
+                    "owner": member["owner"],
+                    "lang": "tw",
+                    "display_name": "已有名稱",
+                    "decision_kind": "generated",
+                    "review_status": "approved",
+                }
+            ]
+            batch["approved_name_snapshot_sha256"] = canonical_sha256(snapshot)
+        elif mutation == "alias":
+            batch["known_aliases"] = [{"owner": {"kind": "player", "id": 99}, "name": "李昌植"}]
+        else:
+            source.pop("reference_kind")
+            source.pop("korean_name")
+            source["chinese_origin"] = True
+        refresh(bundle, anchors[0])
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"], report
+    finally:
+        engine.dispose()

@@ -191,7 +191,8 @@ async def list_kifu_albums(
 
     if q:
         player_ids, event_ids = matching_entity_ids(db, q, exact=True)
-        if len(player_ids) == 1 and not event_ids:
+        exact_player = len(player_ids) == 1 and not event_ids
+        if exact_player:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
         elif len(event_ids) == 1 and not player_ids:
@@ -222,21 +223,22 @@ async def list_kifu_albums(
             if raw_players:
                 needle = or_(needle, KifuAlbum.player_black.in_(raw_players),
                              KifuAlbum.player_white.in_(raw_players))
-            unlinked = {raw for raw, canonical in raw_events if canonical is None}
-            no_selection = text(
-                "NOT EXISTS (SELECT 1 FROM kifu_album_event_selections AS s WHERE s.album_id = kifu_albums.id)"
-            )
-            if unlinked:
-                needle = or_(needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked) & no_selection)
-            for canonical in {canonical for _, canonical in raw_events if canonical is not None}:
-                raws = {raw for raw, name in raw_events if name == canonical}
-                event_ids_for_name = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
-                needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(event_ids_for_name)
-                             & no_selection)
-            if album_ids:
-                valid_ids = valid_override_search_ids(db, album_ids)
-                if valid_ids:
-                    needle = or_(needle, KifuAlbum.id.in_(valid_ids))
+            if not exact_player:
+                unlinked = {raw for raw, canonical in raw_events if canonical is None}
+                no_selection = text(
+                    "NOT EXISTS (SELECT 1 FROM kifu_album_event_selections AS s WHERE s.album_id = kifu_albums.id)"
+                )
+                if unlinked:
+                    needle = or_(needle, KifuAlbum.event_id.is_(None) & KifuAlbum.event.in_(unlinked) & no_selection)
+                for canonical in {canonical for _, canonical in raw_events if canonical is not None}:
+                    raws = {raw for raw, name in raw_events if name == canonical}
+                    event_ids_for_name = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
+                    needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(event_ids_for_name)
+                                 & no_selection)
+                if album_ids:
+                    valid_ids = valid_override_search_ids(db, album_ids)
+                    if valid_ids:
+                        needle = or_(needle, KifuAlbum.id.in_(valid_ids))
         query = query.filter(needle)
         count_query = count_query.filter(needle)
 

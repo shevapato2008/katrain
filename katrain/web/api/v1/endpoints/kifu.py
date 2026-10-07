@@ -140,7 +140,8 @@ async def list_kifu_albums(
             player_ids |= legacy_players
             event_ids |= legacy_events
         exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players
-        if len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids:
+        exact_player = len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids
+        if exact_player:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
         elif len(event_ids) == 1 and not player_ids and not raw_players and not raw_event_name_ids:
@@ -188,7 +189,7 @@ async def list_kifu_albums(
             if provisional_players:
                 needle = or_(needle, KifuAlbum.player_black.in_(provisional_players),
                              KifuAlbum.player_white.in_(provisional_players))
-            if provisional_events:
+            if provisional_events and not exact_player:
                 no_selection = ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id))
                 unlinked_raws = {raw for raw, canonical in provisional_events if canonical is None}
                 if unlinked_raws:
@@ -199,7 +200,7 @@ async def list_kifu_albums(
                     matching_ids = db.query(KifuEvent.id).filter(KifuEvent.canonical_name == canonical)
                     needle = or_(needle, KifuAlbum.event.in_(raws) & KifuAlbum.event_id.in_(matching_ids)
                                  & no_selection)
-            if provisional_albums:
+            if provisional_albums and not exact_player:
                 verified_albums = valid_override_search_ids(db, provisional_albums)
                 if verified_albums:
                     needle = or_(needle, KifuAlbum.id.in_(verified_albums))

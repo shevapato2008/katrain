@@ -15,11 +15,11 @@
 - [x] In `katrain/web/api/v1/endpoints/kifu.py`, return `parameters_valid` independently of `parameters_verified`. Valid default reports expose their new rows; old unbound reports remain unavailable.
 - [x] Update `types/kifu.ts`, `features/kifu/useKifuAnalysis.ts`, status/rule helpers, Galaxy metadata and kiosk metadata. Valid defaults render charts and show 日本规则（默认） / 中国规则（默认） and a source explanation in existing details. Preserve layout and verified event names.
 - [x] Run focused Python/frontend regressions, typecheck, standard and kiosk2D build. Independent Astra max review.
-- [ ] Check one representative real default report preview per device class after result import.
+- [x] Check one representative real default report preview per device class after result import.
 
 ## Chunk 2: Deployment and bounded rerun
 
 - [x] Deploy only affected backend modules and built frontend to home-ubuntu/ucloud-v100, preserving concurrent changes and online engines.
 - [x] Freeze previously excluded, supported games (24160, 24161, 24164–24169, 24171) after confirming their original SGF/komi/identities in both DBs. Keep KM 0 / missing KM unresolved.
-- [ ] Run on home-ubuntu using existing two-GPU isolated worker workflow, model s11003M-d5973M-7gres, 2000 visits. Preserve old reports until new complete results pass validation; back up before replacing jobs/moves.
-- [ ] Import new complete results into test and production, verify matching hashes, raw SGF unchanged, truthful default labels and working latest-report CTA. Record results and commit on the existing feature worktree.
+- [x] Run on home-ubuntu using existing two-GPU isolated worker workflow, model s11003M-d5973M-7gres, 2000 visits. Preserve old reports until new complete results pass validation; back up before replacing jobs/moves.
+- [x] Import new complete results into test and production, verify matching hashes, raw SGF unchanged, truthful default labels and working latest-report CTA. Record results and commit on the existing feature worktree.

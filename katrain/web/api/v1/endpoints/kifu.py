@@ -137,7 +137,9 @@ async def list_kifu_albums(
         )
         selected_event_ids = strict_selected_event_search_ids(db, q, raw_event_name_ids, event_ids)
         if not strict:
-            legacy_players, legacy_events = matching_entity_ids(db, q, exact=True)
+            legacy_players, legacy_events = matching_entity_ids(
+                db, q, exact=True, orthographic_batch_contexts=orthographic_batch_contexts
+            )
             player_ids |= legacy_players
             event_ids |= legacy_events
         exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players

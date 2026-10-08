@@ -1047,15 +1047,46 @@ def test_list_reuses_orthographic_batch_but_rechecks_source(monkeypatch):
         engine.dispose()
 
 
+def test_non_strict_list_reuses_orthographic_batch_in_legacy_exact_search(monkeypatch):
+    from katrain.web.kifu import name_orthographic
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "0")
+    engine, bundle, anchors, inventory, _ = verified_chinese_display_fixture(source_lang="jp")
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        counts = {"batch": 0, "source": 0}
+        original = name_orthographic.persisted_batch_bindings
+        original_source = name_orthographic.verified_source_live
+
+        def count_batch(batch):
+            if batch.id == applied["batch_id"]:
+                counts["batch"] += 1
+            return original(batch)
+
+        def count_source(conn, anchor):
+            counts["source"] += 1
+            return original_source(conn, anchor)
+
+        monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", count_batch)
+        monkeypatch.setattr(name_orthographic, "verified_source_live", count_source)
+        with Session(engine) as db:
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 1 and page.items[0].display_player_black == "加納一夫"
+        assert counts == {"batch": 1, "source": 3}
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("strict_names", ["0", "1"])
 @pytest.mark.parametrize("drift,changed", [
     ("status", "undone"),
     ("bundle_sha256", "f" * 64),
     ("reviewed_artifact", {"changed": True}),
 ])
-def test_list_refreshes_orthographic_batch_within_and_between_requests(monkeypatch, drift, changed):
+def test_list_refreshes_orthographic_batch_within_and_between_requests(monkeypatch, strict_names, drift, changed):
     from katrain.web.kifu import name_orthographic
 
-    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    monkeypatch.setenv("KIFU_STRICT_NAMES", strict_names)
     engine, bundle, anchors, inventory = fixture()
     try:
         applied = apply_bundle(engine, bundle, registry(), inventory, anchors)

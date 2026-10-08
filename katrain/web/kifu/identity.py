@@ -1051,7 +1051,9 @@ def display_event_name(
     return f"{translated} · {label} {year}"
 
 
-def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[int], set[int]]:
+def matching_entity_ids(
+    db: Session, query: str, *, exact: bool, orthographic_batch_contexts=None
+) -> tuple[set[int], set[int]]:
     needle = normalize_alias(query)
     if not needle:
         return set(), set()
@@ -1074,7 +1076,9 @@ def matching_entity_ids(db: Session, query: str, *, exact: bool) -> tuple[set[in
         )
         player_ids.update(
             name.player_id
-            for name, _ in _qualified_name_rows(db, query_rows, KifuPlayerName, "player_id")
+            for name, _ in _qualified_name_rows(
+                db, query_rows, KifuPlayerName, "player_id", orthographic_batch_contexts=orthographic_batch_contexts
+            )
             if normalize_alias(name.display_name) == needle
         )
     return player_ids, event_ids

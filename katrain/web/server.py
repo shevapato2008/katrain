@@ -638,7 +638,14 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.pvp_box_bridge = PvpBoxBridge(
         remote_client, app.state.box_sso, rooms, make_pvp_mirror, app.state.session_manager.remove_session
     )
-    app.state.session_manager.on_session_removed = lambda session: rooms.discard_local(session.session_id)
+    previous_session_removed = app.state.session_manager.on_session_removed
+
+    def on_box_session_removed(session):
+        rooms.discard_local(session.session_id)
+        if previous_session_removed is not None:
+            previous_session_removed(session)
+
+    app.state.session_manager.on_session_removed = on_box_session_removed
 
     async def revoke_pvp_generation(generation: int) -> None:
         bridge = app.state.pvp_box_bridge

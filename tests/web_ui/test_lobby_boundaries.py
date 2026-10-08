@@ -794,3 +794,71 @@ def test_an_invitation_can_only_open_one_game(client, app):
         assert _next(b)["type"] == "error"
 
     assert len(app.state.session_manager._sessions) == after_first, "同一封邀请开出了第二局"
+
+
+def test_removing_old_human_room_does_not_release_new_room_reservation(client, app):
+    alice_id, alice = _make_user(app, "room_owner")
+    bob_id, bob = _make_user(app, "room_old")
+    carol_id, carol = _make_user(app, "room_new")
+    dave_id, dave = _make_user(app, "room_third")
+
+    with _ws(client, _token(client, alice)) as a, _ws(client, _token(client, bob)) as b, \
+            _ws(client, _token(client, carol)) as c, _ws(client, _token(client, dave)) as d:
+        a.send_json({"type": "invite", "target_id": bob_id})
+        assert _next(b)["type"] == "invitation"
+        assert _next(a)["type"] == "info"
+        b.send_json({"type": "accept_invite", "target_id": alice_id})
+        old_room = _next(b)
+        assert old_room["type"] == "match_found"
+        assert _next(a)["type"] == "match_found"
+
+        old_session = app.state.session_manager.get_session(old_room["session_id"])
+        old_session.game_ended = True
+        app.state.session_manager.on_session_state(old_session.session_id)
+
+        a.send_json({"type": "invite", "target_id": carol_id})
+        assert _next(c)["type"] == "invitation"
+        assert _next(a)["type"] == "info"
+        c.send_json({"type": "accept_invite", "target_id": alice_id})
+        new_room = _next(c)
+        assert new_room["type"] == "match_found"
+        assert _next(a)["type"] == "match_found"
+
+        app.state.session_manager.remove_session(old_session.session_id)
+        assert app.state.session_manager.get_session(new_room["session_id"]).session_id == new_room["session_id"]
+        a.send_json({"type": "invite", "target_id": dave_id})
+        assert _next(d)["type"] == "invitation"
+        assert _next(a)["type"] == "info"
+        d.send_json({"type": "accept_invite", "target_id": alice_id})
+        blocked = _next(d)
+        assert blocked["type"] == "error" and blocked["code"] == "ALREADY_PLAYING"
+
+
+def test_removing_old_human_room_keeps_new_bot_room_reserved(client, app):
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "room_to_bot")
+    bob_id, bob = _make_user(app, "room_to_bot_peer")
+    _place(app, alice_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+
+    with _ws(client, _token(client, alice)) as a, _ws(client, _token(client, bob)) as b:
+        a.send_json({"type": "invite", "target_id": bob_id})
+        assert _next(b)["type"] == "invitation"
+        assert _next(a)["type"] == "info"
+        b.send_json({"type": "accept_invite", "target_id": alice_id})
+        old_room = _next(b)
+        assert old_room["type"] == "match_found"
+        assert _next(a)["type"] == "match_found"
+        old_session = app.state.session_manager.get_session(old_room["session_id"])
+        old_session.game_ended = True
+        app.state.session_manager.on_session_state(old_session.session_id)
+
+        a.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        bot_room = _next(a)
+        assert bot_room["type"] == "match_found"
+        app.state.session_manager.remove_session(old_session.session_id)
+        assert app.state.matchmaker._active_users[alice_id] == bot_room["session_id"]
+        assert app.state.matchmaker.reserve_invitation(alice_id, bob_id) is None

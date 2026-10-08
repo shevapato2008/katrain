@@ -265,14 +265,15 @@ class PvpLobbyBotRuntime:
         self._events[session.session_id] = event
         self._tasks[session.session_id] = asyncio.create_task(self._run_game(session))
 
-    def create_human_bot_game(self, human_id: int, human_name: str, identity: int, *, human_reserved=False):
+    def create_human_bot_game(self, human_id: int, human_name: str, identity: int):
         """Reserve one exact visible bot and create a nonranking central room."""
         matchmaker = self.app.state.matchmaker
-        if not human_reserved and not matchmaker.reserve_invitation(human_id, identity):
+        reservation = matchmaker.reserve_invitation(human_id, identity)
+        if reservation is None:
             return None
         reserved = self.reserve_exact_bot(identity)
         if reserved is None:
-            matchmaker.release_users(human_id, identity)
+            matchmaker.release_users(human_id, identity, owner=reservation)
             return None
         rung, generation = reserved
         session = None
@@ -285,13 +286,15 @@ class PvpLobbyBotRuntime:
                 black_id, white_id, b_name=black_name, w_name=white_name,
                 initial_game_type="free", skip_initial_analysis=True,
             )
+            if not matchmaker.bind_session(reservation, session.session_id, human_id, identity):
+                raise RuntimeError("bot invitation reservation changed during room creation")
             self._attach(session, rung, ((identity, generation),))
             return session
         except Exception:
             if session is not None:
                 self.app.state.session_manager.remove_session(session.session_id)
             self.release_bot(identity, generation)
-            matchmaker.release_users(human_id, identity)
+            matchmaker.release_users(human_id, identity, owner=reservation)
             raise
 
     def _bot_username(self, identity: int) -> str:
@@ -316,7 +319,8 @@ class PvpLobbyBotRuntime:
         if reserved is None:
             return
         identity, generation = reserved
-        if not matchmaker.reserve_queued_for_bot(human_id, rung, websocket):
+        reservation = matchmaker.reserve_queued_for_bot(human_id, rung, websocket)
+        if reservation is None:
             self.release_bot(identity, generation)
             return
         # create_human_bot_game needs an exact reservation, so attach directly.
@@ -330,12 +334,14 @@ class PvpLobbyBotRuntime:
                 black_id, white_id, b_name=black_name, w_name=white_name,
                 initial_game_type="free", skip_initial_analysis=True,
             )
+            if not matchmaker.bind_session(reservation, session.session_id, human_id):
+                raise RuntimeError("delayed bot reservation changed during room creation")
             self._attach(session, rung, ((identity, generation),))
         except Exception:
             if session is not None:
                 self.app.state.session_manager.remove_session(session.session_id)
             self.release_bot(identity, generation)
-            matchmaker.release_users(human_id)
+            matchmaker.release_users(human_id, owner=reservation)
             logging.getLogger("katrain_web").exception("delayed bot match could not start")
             try:
                 await websocket.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})

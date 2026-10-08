@@ -486,7 +486,8 @@ class Match:
 class Matchmaker:
     def __init__(self):
         self._queues: Dict[object, List[Dict]] = {}
-        self._active_users: Set[int] = set()
+        # User -> reservation token, replaced by session_id once room creation succeeds.
+        self._active_users: Dict[int, str] = {}
         self._lock = threading.Lock()
 
     def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None) -> Optional[Match]:
@@ -519,8 +520,9 @@ class Matchmaker:
                 opponent = queue.pop(0)
                 if opponent["user_id"] in self._active_users:
                     raise ValueError("queued user already has an active lobby game")
-                self._active_users.update((opponent["user_id"], user_id))
                 match_id = uuid.uuid4().hex
+                self._active_users[opponent["user_id"]] = match_id
+                self._active_users[user_id] = match_id
                 logger.info(f"Match found in {game_type} queue! User {user_id} matched with User {opponent['user_id']}")
                 return Match(
                     match_id=match_id,
@@ -535,30 +537,43 @@ class Matchmaker:
                 queue.append({"user_id": user_id, "websocket": websocket})
                 return None
 
-    def reserve_invitation(self, user_a: int, user_b: int) -> bool:
+    def reserve_invitation(self, user_a: int, user_b: int) -> str | None:
         with self._lock:
             if user_a in self._active_users or user_b in self._active_users:
-                return False
-            self._active_users.update((user_a, user_b))
+                return None
+            token = uuid.uuid4().hex
+            self._active_users[user_a] = token
+            self._active_users[user_b] = token
             for queue in self._queues.values():
                 queue[:] = [entry for entry in queue if entry["user_id"] not in (user_a, user_b)]
+            return token
+
+    def bind_session(self, token: str, session_id: str, *user_ids: int) -> bool:
+        with self._lock:
+            if not user_ids or any(self._active_users.get(user_id) != token for user_id in user_ids):
+                return False
+            for user_id in user_ids:
+                self._active_users[user_id] = session_id
             return True
 
-    def release_users(self, *user_ids: int) -> None:
+    def release_users(self, *user_ids: int, owner: str) -> None:
         with self._lock:
-            self._active_users.difference_update(user_ids)
+            for user_id in user_ids:
+                if self._active_users.get(user_id) == owner:
+                    del self._active_users[user_id]
 
-    def reserve_queued_for_bot(self, user_id: int, rung: int, websocket: WebSocket) -> bool:
+    def reserve_queued_for_bot(self, user_id: int, rung: int, websocket: WebSocket) -> str | None:
         with self._lock:
             queue = self._queues.get(rung, [])
             if user_id in self._active_users:
-                return False
+                return None
             for index, entry in enumerate(queue):
                 if entry["user_id"] == user_id and entry["websocket"] is websocket:
                     queue.pop(index)
-                    self._active_users.add(user_id)
-                    return True
-            return False
+                    token = uuid.uuid4().hex
+                    self._active_users[user_id] = token
+                    return token
+            return None
 
     def has_waiters(self) -> bool:
         with self._lock:

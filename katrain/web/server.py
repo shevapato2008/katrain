@@ -1130,7 +1130,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         matchmaker = getattr(app.state, "matchmaker", None)
         if matchmaker is not None:
             matchmaker.release_users(*(user_id for user_id in (session.player_b_id, session.player_w_id)
-                                       if user_id is not None))
+                                       if user_id is not None), owner=session.session_id)
         runtime = getattr(app.state, "pvp_lobby_bots", None)
         if runtime is not None:
             runtime.session_removed(session)
@@ -1145,7 +1145,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             matchmaker = getattr(app.state, "matchmaker", None)
             if matchmaker is not None:
                 matchmaker.release_users(*(user_id for user_id in (session.player_b_id, session.player_w_id)
-                                           if user_id is not None and user_id > 0))
+                                           if user_id is not None and user_id > 0), owner=session.session_id)
         runtime = getattr(app.state, "pvp_lobby_bots", None)
         if manager._loop and runtime is not None:
             manager._loop.call_soon_threadsafe(runtime.notify_state, sid)
@@ -3633,7 +3633,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                             app.state.session_factory, [match.player1_id, match.player2_id]
                         )
                         if any(current_rungs.get(user_id) != rung for user_id in (match.player1_id, match.player2_id)):
-                            app.state.matchmaker.release_users(match.player1_id, match.player2_id)
+                            app.state.matchmaker.release_users(match.player1_id, match.player2_id, owner=match.match_id)
                             for ws in (match.player1_socket, match.player2_socket):
                                 try:
                                     await ws.send_json({"type": "error", "code": "PLACEMENT_REQUIRED"})
@@ -3661,13 +3661,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 u1.get("username") if u1 else "White"
                             )
 
+                        game_session = None
                         try:
                             game_session = app.state.session_manager.create_multiplayer_session(
                                 pb, pw, b_name=pb_name, w_name=pw_name,
                                 initial_game_type="free", skip_initial_analysis=True,
                             )
+                            if not app.state.matchmaker.bind_session(match.match_id, game_session.session_id, pb, pw):
+                                raise RuntimeError("match reservation changed during room creation")
                         except Exception:
-                            app.state.matchmaker.release_users(pb, pw)
+                            if game_session is not None:
+                                manager.remove_session(game_session.session_id)
+                            app.state.matchmaker.release_users(pb, pw, owner=match.match_id)
                             for ws in (match.player1_socket, match.player2_socket):
                                 try:
                                     await ws.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})
@@ -3811,16 +3816,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         # Create Session (Inviter = Black, Acceptor = White by default, or random)
                         pb, pw = target_id, current_user.id
 
-                        if not app.state.matchmaker.reserve_invitation(pb, pw):
+                        reservation = app.state.matchmaker.reserve_invitation(pb, pw)
+                        if reservation is None:
                             await websocket.send_json({"type": "error", "code": "ALREADY_PLAYING"})
                             continue
+                        game_session = None
                         try:
                             game_session = app.state.session_manager.create_multiplayer_session(
                                 pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw),
                                 initial_game_type="free", skip_initial_analysis=True,
                             )
+                            if not app.state.matchmaker.bind_session(reservation, game_session.session_id, pb, pw):
+                                raise RuntimeError("invitation reservation changed during room creation")
                         except Exception:
-                            app.state.matchmaker.release_users(pb, pw)
+                            if game_session is not None:
+                                manager.remove_session(game_session.session_id)
+                            app.state.matchmaker.release_users(pb, pw, owner=reservation)
                             await websocket.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})
                             continue
 

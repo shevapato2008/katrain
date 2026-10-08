@@ -1,4 +1,7 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import Modal from '@mui/material/Modal';
+import CloseIcon from '@mui/icons-material/Close';
 
 import {
   badnessRank,
@@ -23,11 +26,13 @@ import { placeChartLabels } from '../../../components/live/chartLabelPositions';
 import type { MoveAnalysis } from '../../../types/live';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { interpolate } from '../../utils/interpolate';
+import { Icon } from '../../shell/icons';
+import './reportWorkspace.css';
 
 /** Kiosk presentation of the shared grading calculations. Filters stay beside
- * the plot; definitions and sample limits stay beside the current tab. */
+ * the plot; definitions and sample limits live in the active tab's help. */
 
-type TabId = 'trend' | 'brilliant' | 'mistake' | 'perf' | 'match';
+type TabId = 'recommend' | 'trend' | 'brilliant' | 'mistake' | 'perf' | 'match';
 type MatchView = 'stats' | 'dist';
 
 /** 黑白两色取自 galaxy 的 `chartMarks.tsx`,四个前端同一组值。 */
@@ -99,37 +104,39 @@ function Lollipop({
           ];
         })}
       </div>
-      <div ref={plotRef} className="lplot is-pickable">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          preserveAspectRatio="xMidYMid meet"
-          role="img"
-          aria-label={label}
-          data-testid="grade-lollipop"
-        >
-          {ticks.map((t) => {
-            const d = arm * (t / top);
-            return [
-              <line key={`gu${t}`} className="lgrid" x1="0" y1={mid - d} x2={width} y2={mid - d} />,
-              <line key={`gd${t}`} className="lgrid" x1="0" y1={mid + d} x2={width} y2={mid + d} />,
-            ];
-          })}
-          <line className="lax" x1="0" y1={mid} x2={width} y2={mid} />
-          {plotted.map((p, index) => {
-            const { x, y } = p;
-            const on = selected === p.move;
-            return (
-              <g key={`${p.move}-${p.black ? 'b' : 'w'}`} onClick={() => onPick(p)} style={{ cursor: 'pointer' }}>
-                {/* 命中区比点大一圈 —— 7 寸触摸屏上 5px 的圆点按不准。 */}
-                <rect x={x - 11} y={0} width={22} height={height} fill="transparent" />
-                <line className={on ? 'lstem on' : 'lstem'} x1={x} y1={mid} x2={x} y2={y} stroke={p.color} />
-                {on && <circle className="lhalo" cx={x} cy={y} r={8.5} stroke={p.color} />}
-                {labels[index] && <text x={labels[index]!.x} y={labels[index]!.y} fontSize={12} textAnchor="middle" fill="currentColor">{p.move}</text>}
-                <circle cx={x} cy={y} r={5} fill={stoneFill(p.black)} stroke={stoneRim(p.black)} strokeWidth={1.5} />
-              </g>
-            );
-          })}
-        </svg>
+      <div className="lplot is-pickable">
+        <div ref={plotRef} className="lplot-canvas">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="xMidYMid meet"
+            role="img"
+            aria-label={label}
+            data-testid="grade-lollipop"
+          >
+            {ticks.map((t) => {
+              const d = arm * (t / top);
+              return [
+                <line key={`gu${t}`} className="lgrid" x1="0" y1={mid - d} x2={width} y2={mid - d} />,
+                <line key={`gd${t}`} className="lgrid" x1="0" y1={mid + d} x2={width} y2={mid + d} />,
+              ];
+            })}
+            <line className="lax" x1="0" y1={mid} x2={width} y2={mid} />
+            {plotted.map((p, index) => {
+              const { x, y } = p;
+              const on = selected === p.move;
+              return (
+                <g key={`${p.move}-${p.black ? 'b' : 'w'}`} onClick={() => onPick(p)} style={{ cursor: 'pointer' }}>
+                  {/* 命中区比点大一圈 —— 7 寸触摸屏上 5px 的圆点按不准。 */}
+                  <rect x={x - 11} y={0} width={22} height={height} fill="transparent" />
+                  <line className={on ? 'lstem on' : 'lstem'} x1={x} y1={mid} x2={x} y2={y} stroke={p.color} />
+                  {on && <circle className="lhalo" cx={x} cy={y} r={8.5} stroke={p.color} />}
+                  {labels[index] && <text x={labels[index]!.x} y={labels[index]!.y} fontSize={12} textAnchor="middle" fill="currentColor">{p.move}</text>}
+                  <circle cx={x} cy={y} r={5} fill={stoneFill(p.black)} stroke={stoneRim(p.black)} strokeWidth={1.5} />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
         <span className="lscale">
           <span>1</span><span>{Math.round(span / 4)}</span><span>{Math.round(span / 2)}</span>
           <span>{Math.round((span * 3) / 4)}</span><span>{span}</span>
@@ -140,7 +147,7 @@ function Lollipop({
 }
 
 export default function MoveGradePanel({
-  analysis, totalMoves, onMoveClick, trend,
+  analysis, totalMoves, onMoveClick, trend, recommendation,
 }: {
   analysis: Record<number, MoveAnalysis>;
   /** 整局手数 —— 棒棒糖图的横轴量程。**不能拿画出来的最后一个点顶替**,见 `Lollipop`。 */
@@ -148,9 +155,34 @@ export default function MoveGradePanel({
   onMoveClick: (move: number) => void;
   /** 走势那一 tab 的内容 —— 曲线的接线长在页面上,见文件头①。 */
   trend: ReactNode;
+  /** Current-position candidates supplied by the report rail. */
+  recommendation?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<TabId>('trend');
+  const hasRecommendation = recommendation !== undefined;
+  const [selectedTab, setTab] = useState<TabId>(hasRecommendation ? 'recommend' : 'trend');
+  const tab = selectedTab === 'recommend' && !hasRecommendation ? 'trend' : selectedTab;
+  const [expanded, setExpanded] = useState(false);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const mainMountRef = useRef<HTMLDivElement>(null);
+  const dialogMountRef = useRef<HTMLDivElement>(null);
+  // The portal target never changes. Moving its DOM host preserves supplied
+  // children, measurements and selection without a second hidden workspace.
+  const [workspace] = useState(() => {
+    const node = document.createElement('div');
+    node.className = 'report-workspace report-workspace__content';
+    return node;
+  });
+  const attachDialog = useCallback((node: HTMLDivElement | null) => {
+    dialogMountRef.current = node;
+    // MUI may attach its portal after our layout effect (including StrictMode).
+    if (expanded && node) node.appendChild(workspace);
+  }, [expanded, workspace]);
+  useLayoutEffect(() => {
+    const mount = expanded ? dialogMountRef.current : mainMountRef.current;
+    mount?.appendChild(workspace);
+    return () => workspace.remove();
+  }, [expanded, workspace]);
   const [player, setPlayer] = useState<PlayerFilter>('both');
   const [phase, setPhase] = useState<PhaseId>('all');
   const [matchView, setMatchView] = useState<MatchView>('stats');
@@ -179,6 +211,7 @@ export default function MoveGradePanel({
   };
 
   const TABS: { id: TabId; label: string }[] = [
+    ...(hasRecommendation ? [{ id: 'recommend' as const, label: t('live:recommend_tab', '推荐') }] : []),
     { id: 'trend', label: t('live:trend_chart', '走势') },
     { id: 'brilliant', label: t('live:brilliant', '妙手') },
     { id: 'mistake', label: t('live:mistakes', '失误') },
@@ -409,17 +442,33 @@ export default function MoveGradePanel({
     );
   };
 
-  return (
-    <div className="gradebody" data-tab={tab} data-testid="grade-panel">
-      <div className="kiosk-optseg gseg gseg5" role="group" aria-label={t('grade:tabs', '着手评价')}>
-        {TABS.map(x => <div className="grade-tab" key={x.id} data-active={tab === x.id}>
+  const content = (
+    <div className="gradebody report-workspace__panel" data-tab={tab} data-testid="grade-panel"
+      onKeyDown={event => {
+        // Portal events follow the React tree rather than the modal's DOM host.
+        if (expanded && event.key === 'Escape') {
+          event.stopPropagation();
+          setExpanded(false);
+        }
+      }}>
+      <div className="report-workspace__tabs" role="group" aria-label={t('grade:tabs', '着手评价')}>
+        {TABS.map(x => <div className="grade-tab" key={x.id} data-tab-id={x.id} data-active={tab === x.id}>
           <button type="button" aria-pressed={tab === x.id} onClick={() => { setTab(x.id); setPicked(null); }}>{x.label}</button>
-          {tab === x.id && <ChartTabHelp key={x.id} label={x.label}><AnalysisHelpContent tab={x.id} selection={tab === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} /></ChartTabHelp>}
+          {tab === x.id && <ChartTabHelp key={x.id} label={x.label}>
+            {x.id === 'recommend' ? <p>{t('report:recommend_help', '推荐度是 AI 对候选着点的选择倾向，不是人类落子的概率。目差和胜率以待落子方为基准；正目差表示该方领先。点按候选可预览变化，实战着点不在前五时追加显示；缺少评估以 — 表示。')}</p>
+              : <AnalysisHelpContent tab={x.id} selection={tab === 'brilliant' ? brilliants : bads} histogram={histogram} matchRate={matchRate} />}
+          </ChartTabHelp>}
         </div>)}
+        <button type="button" className="report-workspace__expand" aria-expanded={expanded}
+          aria-label={expanded ? t('report:collapse_workspace', '收起分析工作区') : t('report:expand_workspace', '放大当前分析图表或推荐列表')}
+          onClick={() => setExpanded(value => !value)}>
+          {expanded ? <CloseIcon /> : <Icon name="corners-out" />}
+        </button>
       </div>
-      <div className="grade-workspace" data-filters={tab !== 'trend'}>
-        {tab !== 'trend' && filterBar(tab === 'match' ? viewSeg : null)}
+      <div className="grade-workspace" data-filters={tab !== 'trend' && tab !== 'recommend'}>
+        {tab !== 'trend' && tab !== 'recommend' && filterBar(tab === 'match' ? viewSeg : null)}
         <div className="grade-chart-main">
+          {tab === 'recommend' && recommendation}
           {tab === 'trend' && trend}
           {tab === 'brilliant' && renderBrilliant()}
           {tab === 'mistake' && renderMistake()}
@@ -427,6 +476,19 @@ export default function MoveGradePanel({
           {tab === 'match' && renderMatch()}
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div ref={hostRef} className="report-workspace report-workspace__host">
+      <div ref={mainMountRef} className="report-workspace__mount" />
+      <Modal open={expanded} onClose={() => setExpanded(false)} keepMounted disableScrollLock
+        container={() => hostRef.current?.closest<HTMLElement>('.report-analysis-rail') ?? hostRef.current!}
+        className="report-chart-dialog">
+        <div ref={attachDialog} className="report-chart-dialog__mount" role="dialog" aria-modal="true"
+          aria-label={TABS.find(item => item.id === tab)?.label} tabIndex={-1} />
+      </Modal>
+      {createPortal(content, workspace)}
     </div>
   );
 }

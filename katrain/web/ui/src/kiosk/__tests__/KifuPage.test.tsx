@@ -99,6 +99,18 @@ describe('屏 15 棋谱 · 问候与列表头', () => {
     expect(within(bar as HTMLElement).getByRole('button', { name: /导入 SGF/ })).toBeInTheDocument();
   });
 
+  it('导入有效 SGF 后带着本地谱和返回地址进入摆谱', async () => {
+    renderPage();
+    const sgf = '(;FF[4]GM[1]SZ[19];B[pd])';
+    fireEvent.change(screen.getByTestId('kifu-sgf-input'), {
+      target: { files: [new File([sgf], 'my-game.sgf', { type: 'application/x-go-sgf' })] },
+    });
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/kiosk\/baipu\/session\/local_\d+$/),
+      { state: expect.objectContaining({ sgf, name: 'my-game', backTo: '/kiosk/kifu' }) },
+    ));
+  });
+
   it('「导入 SGF」按下去开的是本地文件选择框', () => {
     renderPage();
     const input = screen.getByTestId('kifu-sgf-input') as HTMLInputElement;
@@ -149,6 +161,19 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     renderPage();
     fireEvent.click((await screen.findAllByRole('button', { name: /第 29 届三星杯/ }))[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
+  });
+
+  it.each([true, false, undefined])('报告入口只按 has_analysis=%s 展示', async (has_analysis) => {
+    getAlbums.mockResolvedValue({ items: [album(1, { has_analysis, sources: ['cwi', '19x19'] })], total: 1 });
+    renderPage();
+    const row = (await screen.findAllByRole('button', { name: /第 29 届三星杯/ }))[0];
+    expect(within(row).queryByText('已分析') !== null).toBe(has_analysis === true);
+    expect(within(row).getByText(has_analysis ? '查看分析报告' : '查看棋谱')).toBeInTheDocument();
+    expect(row).not.toHaveTextContent(/来源|19x19|CWI/i);
+    fireEvent.click(row);
+    expect(mockNavigate).toHaveBeenCalledWith(`/kiosk/kifu/1${has_analysis ? '' : '/replay'}`);
+    expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
   });
 
   it('搜了对不上:说「没有对得上的谱」并给换词的提示', async () => {
@@ -226,6 +251,28 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
 });
 
 describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
+  it('最近摆过在固定列表区域内切换，返回时保留搜索和页码', async () => {
+    seedRecent([{ id: 'local_1', name: '本地对局', savedAt: Date.now() }], {}, ['local_1']);
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 45 });
+    renderPage();
+    await screen.findByText('1 / 3');
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '柯洁' } });
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '柯洁' })));
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await screen.findByText('2 / 3');
+    const requests = getAlbums.mock.calls.length;
+    expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
+    expect(screen.getByRole('button', { name: '最近摆过' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('本地对局')).toBeInTheDocument();
+    expect(screen.queryByTestId('kifu-records')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
+    expect(screen.getByTestId('kifu-records')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toHaveValue('柯洁');
+    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    expect(getAlbums).toHaveBeenCalledTimes(requests);
+  });
+
   it('有没摆完的谱就出「继续摆谱」,写的是第几手', () => {
     seedRecent(
       [{ id: 'kifu_1', name: '第 29 届三星杯 · 半决赛', savedAt: Date.now() }],
@@ -246,6 +293,7 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     );
     renderPage();
     expect(screen.queryByTestId('resume-baipu-bar')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     expect(screen.getByText('已摆完')).toBeInTheDocument();
   });
 
@@ -271,6 +319,7 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
       ['kifu_1'],
     );
     renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     fireEvent.click(within(screen.getByTestId('kifu-recent-rows')).getByRole('button', { name: '接着摆' }));
     expect(mockNavigate).toHaveBeenCalledWith(
       '/kiosk/baipu/session/kifu_1',
@@ -285,6 +334,7 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
       [],   // 谱的缓存被清掉了
     );
     renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     fireEvent.click(within(screen.getByTestId('kifu-recent-rows')).getByRole('button', { name: '接着摆' }));
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.getByTestId('kifu-action-error').textContent).toContain('本地缓存没了');
@@ -292,6 +342,8 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
 
   it('一次都没摆过时写的是空态,不是一排假行', () => {
     renderPage();
+    expect(screen.queryByTestId('kifu-recent-empty')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     expect(screen.getByTestId('kifu-recent-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
   });

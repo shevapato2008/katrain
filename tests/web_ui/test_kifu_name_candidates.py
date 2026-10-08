@@ -1597,6 +1597,147 @@ def positive_zh_ko_fixture(owner_id=5498):
     return evidence, row, reg
 
 
+@pytest.mark.parametrize("words,expected", [
+    ([["huang"], ["jia", "yin"]], "황자인"),
+    ([["yang"], ["yi", "lun"]], "양이룬"),
+    ([["ke"], ["pei", "chen"]], "커페이천"),
+    ([["wang"], ["zi", "han"]], "왕쯔한"),
+])
+def test_positive_zh_ko_four_reviewed_finite_outputs(words, expected):
+    from katrain.web.kifu.name_zh_ko import render_name
+
+    assert render_name(words) == expected
+
+
+def positive_zh_ko_modern_fixture(owner_id):
+    from katrain.web.kifu.name_zh_ko import used_entries
+
+    cases = {
+        6531: ("黃家胤", "zh-Hant", "Huang Jia-Yin", [["huang"], ["jia", "yin"]], "황자인",
+               "https://taiwangorg.blogspot.com/2022/12/blog-post_91.html", None, None),
+        5115: ("杨以伦", "zh-Hans", "Yang Yilun", [["yang"], ["yi", "lun"]], "양이룬",
+               "https://db.u-go.net/2275/", None, None),
+        5214: ("柯沛辰", "zh-Hans", "Ke Peichen", [["ke"], ["pei", "chen"]], "커페이천",
+               "https://goratings.org/zh/players/2480.html", 2480,
+               "https://www.haifong.org/profession/venue/ACBF499C50310A39B5ED50FBD5B1E4E3"),
+        5543: ("王紫涵", "zh-Hans", "Wang Zihan", [["wang"], ["zi", "han"]], "왕쯔한",
+               "https://www.goratings.org/zh/players/2445.html", 2445,
+               "https://www.haifong.org/profession/venue/B15AD71345F8FF8D7E2E8FC2D7037F82"),
+    }
+    han, lang, latin, words, hangul, original_url, pair_id, authority_url = cases[owner_id]
+    evidence, row, reg = positive_zh_ko_fixture()
+    owner = {"kind": "player", "id": owner_id}
+
+    def capture(url, body, observed):
+        return {"url": url, "http_status": 200, "fetched_at": "2026-10-08T21:50:12Z",
+                "body_text": body, "body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                "body_excerpt": body, "locator": "player heading", "source_role": "published_player_profile",
+                "observed_lang": observed}
+
+    original_body = f"{han} {latin}" if pair_id is None else f"{han} {authority_url}"
+    original = capture(original_url, original_body, lang)
+    if pair_id is None:
+        reading = original if owner_id == 6531 else capture(original_url, f"{han} {latin}", "en")
+    else:
+        reading = capture(f"https://www.goratings.org/en/players/{pair_id}.html",
+                          f"{latin} {authority_url}", "en")
+    positive = evidence["positive_zh_ko"]
+    positive["scope"] = {"modern_standard_mandarin": True, "ordinary_mandarin": True,
+                         "personal_name": True, "basis": f"Reviewed published {han}/{latin} Go profile",
+                         "unresolved_reading_variants": []}
+    positive["identity"].update(owner=deepcopy(owner), original_name=han, capture=original)
+    positive["reading"].update(published=latin, reading_words=words, capture=reading)
+    if pair_id is not None:
+        positive["reading"]["profile_pair"] = {"provider": "goratings", "player_id": pair_id,
+                                                 "original_url": original_url, "authority_url": authority_url}
+    positive["rule"].update(used_entries=used_entries(words), output=hangul)
+    positive["contrary_checks"][0]["query"] = latin
+    positive["contrary_checks"][0]["capture"]["url"] = f"https://db.u-go.net/?q={quote_plus(latin)}"
+    positive["contrary_checks"][0]["capture"]["body_text"] = f"Go search {han} {latin}"
+    positive["contrary_checks"][0]["capture"]["body_excerpt"] = f"Go search {han} {latin}"
+    positive["contrary_checks"][0]["capture"]["body_sha256"] = hashlib.sha256(
+        f"Go search {han} {latin}".encode()).hexdigest()
+    positive["contrary_checks"][0]["relevant_matches"] = [f"{han} {latin}"]
+    positive["contrary_checks"][1]["query"] = hangul
+    positive["contrary_checks"][1]["capture"]["body_text"] = f"{hangul} {han} Go"
+    positive["contrary_checks"][1]["capture"]["body_excerpt"] = f"{hangul} {han} Go"
+    positive["contrary_checks"][1]["capture"]["body_sha256"] = hashlib.sha256(
+        f"{hangul} {han} Go".encode()).hexdigest()
+    positive["contrary_checks"][1]["relevant_matches"] = [f"{hangul} {han}"]
+    evidence.update(owner=owner, original_name=han, original_language=lang,
+                    original_language_basis_url=original_url, reading=latin,
+                    reading_basis_url=reading["url"], candidate_name=hangul)
+    source_id = "taiwan" if owner_id == 6531 else "ugo" if owner_id == 5115 else "goratings"
+    reg["sources"].append({"id": source_id, "tier": "language_go", "home_url":
+                           "https://taiwangorg.blogspot.com/" if owner_id == 6531 else
+                           "https://db.u-go.net/" if owner_id == 5115 else "https://goratings.org/",
+                           "language": lang})
+    evidence["registry_sha256"] = registry_sha256(reg)
+    evidence["source_checks"] = [check(owner=owner, source_id=source_id, url=original_url,
+                                       observed_lang=lang, query=han, candidate_name=han,
+                                       body_excerpt=original["body_excerpt"],
+                                       body_sha256=original["body_sha256"])]
+    row.update(owner=owner, display_name=hangul, research_sha256=canonical_sha256(evidence))
+    row["generated_review"].update(owner=owner, display_name=hangul, research_sha256=row["research_sha256"],
+                                   original_name=han, reading=latin, reading_words=words,
+                                   reading_basis_url=reading["url"], used_entries=positive["rule"]["used_entries"],
+                                   positive_zh_ko_sha256=canonical_sha256(positive))
+    return evidence, row, reg
+
+
+@pytest.mark.parametrize("owner_id", [6531, 5115, 5214, 5543])
+def test_positive_zh_ko_modern_scope_and_actual_profile_shapes(owner_id):
+    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
+
+    evidence, row, reg = positive_zh_ko_modern_fixture(owner_id)
+    assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+
+
+def test_positive_zh_ko_traditional_original_rejects_simplified_page_label():
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+
+    evidence, _, reg = positive_zh_ko_modern_fixture(6531)
+    evidence["positive_zh_ko"]["identity"]["capture"]["observed_lang"] = "zh-Hans"
+    with pytest.raises(EvidenceError):
+        validate_research_record(evidence, reg)
+
+
+@pytest.mark.parametrize("change", ["mixed_scope", "false_scope", "pair_id", "pair_url", "pair_params",
+                                     "pair_authority", "pair_provider_as_authority",
+                                     "original_hash", "reading_hash", "missing_original", "missing_latin"])
+def test_positive_zh_ko_modern_pair_rejects_unbound_pages(change):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+
+    evidence, _, reg = positive_zh_ko_modern_fixture(5214)
+    positive = evidence["positive_zh_ko"]
+    pair = positive["reading"]["profile_pair"]
+    if change == "mixed_scope": positive["scope"]["modern_mainland"] = True
+    elif change == "false_scope": positive["scope"]["modern_standard_mandarin"] = False
+    elif change == "pair_id": pair["player_id"] = 2445
+    elif change == "pair_url": pair["original_url"] = "https://goratings.org/zh/players/2445.html"
+    elif change == "pair_params":
+        positive["reading"]["capture"]["url"] += ";extra"
+        evidence["reading_basis_url"] = positive["reading"]["capture"]["url"]
+    elif change == "pair_authority": pair["authority_url"] = "https://other.example/"
+    elif change == "pair_provider_as_authority":
+        old = pair["authority_url"]
+        pair["authority_url"] = "https://goratings.org/players/2480"
+        for capture in (positive["identity"]["capture"], positive["reading"]["capture"]):
+            capture["body_text"] = capture["body_excerpt"] = capture["body_text"].replace(old, pair["authority_url"])
+            capture["body_sha256"] = hashlib.sha256(capture["body_text"].encode()).hexdigest()
+        evidence["source_checks"][0]["body_excerpt"] = positive["identity"]["capture"]["body_excerpt"]
+        evidence["source_checks"][0]["body_sha256"] = positive["identity"]["capture"]["body_sha256"]
+    elif change == "original_hash": positive["identity"]["capture"]["body_sha256"] = "b" * 64
+    elif change == "reading_hash": positive["reading"]["capture"]["body_sha256"] = "b" * 64
+    elif change in {"missing_original", "missing_latin"}:
+        capture = (positive["identity"]["capture"] if change == "missing_original"
+                   else positive["reading"]["capture"])
+        capture["body_text"] = capture["body_excerpt"] = f"Other player {pair['authority_url']}"
+        capture["body_sha256"] = hashlib.sha256(capture["body_text"].encode()).hexdigest()
+    with pytest.raises(EvidenceError):
+        validate_research_record(evidence, reg)
+
+
 @pytest.mark.parametrize("owner_id", [5498, 5739])
 def test_positive_zh_ko_accepts_only_reviewed_first_batch_inputs(owner_id):
     from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate, validate_research_record

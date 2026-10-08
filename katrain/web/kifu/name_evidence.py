@@ -1177,20 +1177,24 @@ def _validate_positive_zh_ko(record: dict) -> None:
         "version", "scope", "identity", "reading", "rule", "contrary_checks", "unresolved_conflicts", "source_anchors"
     } and positive["version"] == 1, "Chinese positive evidence fields invalid")
     scope = positive["scope"]
-    _require(isinstance(scope, dict) and set(scope) == {
-        "modern_mainland", "ordinary_mandarin", "personal_name", "basis", "unresolved_reading_variants"
-    } and all(scope.get(key) is True for key in ("modern_mainland", "ordinary_mandarin", "personal_name"))
+    common_scope = {"ordinary_mandarin", "personal_name", "basis", "unresolved_reading_variants"}
+    _require(isinstance(scope, dict) and (
+        set(scope) == common_scope | {"modern_mainland"} and scope["modern_mainland"] is True
+        or set(scope) == common_scope | {"modern_standard_mandarin"}
+        and scope["modern_standard_mandarin"] is True)
+             and scope["ordinary_mandarin"] is True and scope["personal_name"] is True
              and _text(scope["basis"]) and scope["unresolved_reading_variants"] == [],
-             "Chinese scope must be reviewed modern mainland ordinary Mandarin with no reading conflict")
+             "Chinese scope must be reviewed modern ordinary Mandarin with no reading conflict")
     identity, reading = positive["identity"], positive["reading"]
     _require(isinstance(identity, dict) and set(identity) == {
         "owner", "original_name", "status", "method", "basis", "capture"
     } and identity["owner"] == record["owner"] and identity["original_name"] == record["original_name"]
              and identity["status"] == "verified" and identity["method"] == "reviewed_owner_binding"
              and _text(identity["basis"]), "Chinese identity must bind exact owner and original name")
+    paired = isinstance(reading, dict) and "profile_pair" in reading
     _require(isinstance(reading, dict) and set(reading) == {
         "published", "system", "reading_words", "determination", "capture"
-    } and reading["published"] == record["reading"]
+    } | ({"profile_pair"} if paired else set()) and reading["published"] == record["reading"]
              and reading["system"] == "pinyin-syllables-v1" and _text(reading["determination"]),
              "Chinese reading must be complete published Hanyu Pinyin")
     words = reading["reading_words"]
@@ -1210,12 +1214,32 @@ def _validate_positive_zh_ko(record: dict) -> None:
     _require(original_capture["url"] == record["original_language_basis_url"]
              and record["original_name"] in original_capture["body_excerpt"]
              and original_capture["observed_lang"] in {"zh", "zh-Hans", "zh-Hant"}
+             and (scope.get("modern_standard_mandarin") is not True
+                  or original_capture["observed_lang"] == record["original_language"])
              and reading_capture["url"] == record["reading_basis_url"]
-             and record["original_name"] in reading_capture["body_excerpt"]
+             and (paired or record["original_name"] in reading_capture["body_excerpt"])
              and reading["published"] in reading_capture["body_excerpt"]
              and reading_capture["source_role"] in {"published_player_profile", "official_person_page"}
              and reading_capture["observed_lang"] in {"en", "zh", "zh-Hans", "zh-Hant"},
              "Chinese identity and published reading need exact same-person captured source rows")
+    if paired:
+        pair = reading["profile_pair"]
+        _require(isinstance(pair, dict) and set(pair) == {
+            "provider", "player_id", "original_url", "authority_url"
+        } and pair["provider"] == "goratings" and type(pair["player_id"]) is int
+                 and pair["player_id"] > 0 and _https_url(pair["authority_url"])
+                 and urlparse(pair["authority_url"]).netloc not in {"goratings.org", "www.goratings.org"}
+                 and pair["original_url"] == original_capture["url"]
+                 and all(urlparse(url).scheme == "https"
+                         and urlparse(url).netloc in {"goratings.org", "www.goratings.org"}
+                         and not urlparse(url).params and not urlparse(url).query
+                         and not urlparse(url).fragment
+                         for url in (original_capture["url"], reading_capture["url"]))
+                 and urlparse(original_capture["url"]).path == f"/zh/players/{pair['player_id']}.html"
+                 and urlparse(reading_capture["url"]).path == f"/en/players/{pair['player_id']}.html"
+                 and pair["authority_url"] in original_capture["body_text"]
+                 and pair["authority_url"] in reading_capture["body_text"],
+                 "Chinese paired profile requires two exact same-ID GoRatings captures and shared authority")
     rule = positive["rule"]
     _require(isinstance(rule, dict) and set(rule) == {"capture", "used_entries", "output", "format"}
              and rule["used_entries"] == entries and rule["output"] == output == record["candidate_name"]

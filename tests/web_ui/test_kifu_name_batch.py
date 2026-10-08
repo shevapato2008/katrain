@@ -2056,20 +2056,21 @@ def test_positive_zh_ko_rejects_published_target_and_cross_owner_collision(engin
         apply_bundle(engine, proposed, reg, inv, evidence)
 
 
-def _qualified_source_anchor(engine, inv, reg, lang, display):
+def _qualified_source_anchor(engine, inv, reg, lang, display, *, owner_id=5498,
+                             original_name="王宏伟", reading="Wang Hongwei"):
     from katrain.web.kifu.name_batch import _image
     from tests.web_ui.test_kifu_name_candidates import candidate, check, research
 
-    owner = {"kind": "player", "id": 5498}
+    owner = {"kind": "player", "id": owner_id}
     source_id, url, observed = (("cwa", "https://wqapi.cwql.org.cn/playerInfo/professional/list", "zh-Hans")
                                 if lang == "cn" else ("ugo", "https://db.u-go.net/1923/", "en"))
     source_check = check(owner=owner, source_id=source_id, url=url, observed_lang=observed,
                          query=display, candidate_name=display, body_excerpt=f"Go player {display}",
                          body_sha256=hashlib.sha256(display.encode()).hexdigest())
     found = research(owner=owner, lang=lang, registry_sha256=registry_sha256(reg),
-                     candidate_name=display, source_checks=[source_check], original_name="王宏伟",
+                     candidate_name=display, source_checks=[source_check], original_name=original_name,
                      original_language="zh-Hans", original_language_basis_url=url,
-                     reading="Wang Hongwei", reading_basis_url="https://db.u-go.net/1923/")
+                     reading=reading, reading_basis_url="https://db.u-go.net/1923/")
     row = candidate(owner=owner, lang=lang, display_name=display,
                     research_sha256=canonical_sha256(found), name_preimage_sha256=None)
     bind_fixture_candidate(row)
@@ -2079,7 +2080,7 @@ def _qualified_source_anchor(engine, inv, reg, lang, display):
                     member_set_sha256=canonical_sha256([member]), candidates=[row])
     receipt = apply_bundle(engine, proposed, reg, inv, [found])
     with engine.connect() as conn:
-        name_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.player_id == 5498,
+        name_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.player_id == owner_id,
                                                                KifuPlayerName.lang == lang))
         name = _image(conn, KifuPlayerName.__table__, name_id)
         evidence = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
@@ -2178,6 +2179,64 @@ def test_positive_zh_ko_source_revocation_hides_display_search_and_coverage(engi
         if revoked_lang == "cn":
             assert strict_display_maps(db, [album], "en")[0][5498] == "Wang Hongwei"
     assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"].get("generated", 0) == 0
+
+
+def test_positive_zh_ko_paired_profile_importer_reader_and_live_source(engine):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows, strict_display_maps
+    from katrain.web.kifu.name_coverage import coverage_report
+    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_modern_fixture
+
+    owner_id = 5214
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=owner_id, canonical_name="柯沛辰"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=owner_id, player_black="柯沛辰", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[柯沛辰]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    research, row, reg = positive_zh_ko_modern_fixture(owner_id)
+    reg["sources"].append({"id": "ugo", "tier": "language_go", "home_url": "https://db.u-go.net/",
+                           "language": "en"})
+    research["registry_sha256"] = registry_sha256(reg)
+    anchors = [_qualified_source_anchor(engine, inv, reg, "cn", "柯沛辰", owner_id=owner_id,
+                                        original_name="柯沛辰", reading="Ke Peichen"),
+               _qualified_source_anchor(engine, inv, reg, "en", "Ke Peichen", owner_id=owner_id,
+                                        original_name="柯沛辰", reading="Ke Peichen")]
+    research["positive_zh_ko"]["source_anchors"] = anchors
+    row["research_sha256"] = canonical_sha256(research)
+    row["generated_review"]["research_sha256"] = row["research_sha256"]
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(research["positive_zh_ko"])
+    row["name_preimage_sha256"] = None
+    row["preimage_binding"] = {
+        "actor_id": "fixture-binder-3", "actor_model": "gpt-6.1-sol",
+        "captured_at": "2026-10-08T21:56:00Z", "bound_at": "2026-10-08T21:57:00Z",
+        "name_preimage_sha256": None, "source_candidate_sha256": canonical_sha256(row),
+        "capture_sha256": hashlib.sha256(b"synthetic paired capture").hexdigest(),
+    }
+    proposed, _ = player_bundle(inv)
+    member = {"owner": row["owner"], "lang": "ko"}
+    proposed.update(registry_sha256=registry_sha256(reg), members=[member],
+                    member_set_sha256=canonical_sha256([member]), candidates=[row])
+    receipt = apply_bundle(engine, proposed, reg, inv, [research])
+
+    def qualified(db):
+        query = _approved_names(db, KifuPlayerName, "player_id", [owner_id], "ko").filter(
+            KifuPlayerName.display_name == "커페이천")
+        return [name.player_id for name, _ in _qualified_name_rows(db, query, KifuPlayerName, "player_id")]
+
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 12)
+        assert qualified(db) == [owner_id]
+        assert strict_display_maps(db, [album], "ko")[0][owner_id] == "커페이천"
+    assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"]["generated"] == 1
+    source_batch_id = anchors[0]["content"]["binding"]["source_batch"]["id"]
+    with engine.begin() as conn:
+        conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == source_batch_id).values(status="pending"))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 12)
+        assert qualified(db) == []
+        assert owner_id not in strict_display_maps(db, [album], "ko")[0]
+    assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"].get("generated", 0) == 0
+    assert batch_status(engine, receipt["batch_id"])["status"] == "applied"
 
 
 def test_positive_zh_ko_persisted_gate_has_no_importer_dependency(engine, monkeypatch):

@@ -139,6 +139,9 @@ def test_paged_complete_roster_with_filters(setup):
     assert first["items"][1]["presence"] == "offline"
     assert client.get(url, params={"kind": "bot", "presence": "playing"}).json()["total"] == 1
     assert client.get(url, params={"kind": "human", "presence": "online", "q": "human"}).json()["total"] == 1
+    humans = client.get(url, params={"kind": "human", "page_size": 100}).json()
+    assert humans["total"] == 4
+    assert [row["kind"] for row in humans["items"]] == ["human"] * 4
     assert client.get(url, params={"page_size": 200}).json()["page_size"] == 100
 
 

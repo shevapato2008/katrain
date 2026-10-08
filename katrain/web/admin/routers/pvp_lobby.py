@@ -190,9 +190,10 @@ def get_participants(
             row = present.get(user_id, {})
             results.append({"id": user_id, "username": username, "kind": "human", "ladder_rung": rung,
                             "rank_label": rank_names.get(rung), "presence": row.get("presence", "offline") if fresh else "unknown"})
-    bot_start = offset if kind == "bot" else max(0, offset - human_total)
-    for row in bot_rows[bot_start:bot_start + size - len(results)]:
-        results.append({"id": row["id"], "username": row.get("username", ""), "kind": "bot",
-                        "ladder_rung": row.get("ladder_rung"), "rank_label": row.get("rank_label"),
-                        "presence": row.get("presence", "offline")})
+    if kind != "human":
+        bot_start = offset if kind == "bot" else max(0, offset - human_total)
+        for row in bot_rows[bot_start:bot_start + size - len(results)]:
+            results.append({"id": row["id"], "username": row.get("username", ""), "kind": "bot",
+                            "ladder_rung": row.get("ladder_rung"), "rank_label": row.get("rank_label"),
+                            "presence": row.get("presence", "offline")})
     return {"items": results, "total": human_total + bot_total, "page": page, "page_size": size}

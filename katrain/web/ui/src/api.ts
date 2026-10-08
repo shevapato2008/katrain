@@ -503,7 +503,7 @@ export const API = {
     const params = new URLSearchParams({ session_id: sessionId });
     const headers: Record<string, string> = authHeaders(token);
     const response = await fetch(`/api/state?${params.toString()}`, { headers });
-    if (!response.ok) throw new Error("Failed to get state");
+    if (!response.ok) throw new ApiError(response.status, "Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
   },
   playMove: (sessionId: string, coords: { x: number; y: number } | null, token?: string): Promise<SessionResponse> =>

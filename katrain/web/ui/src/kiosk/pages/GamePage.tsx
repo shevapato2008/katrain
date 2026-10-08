@@ -181,7 +181,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token, user, isAuthenticated } = useAuth();
-  const session = useGameSession({ token: token ?? undefined, deferMoveSoundUntilPaint: true });
+  const { pathname } = useLocation();
+  const centralRoom = pathname.includes('/play/pvp/room/');
+  const session = useGameSession({ token: token ?? undefined, centralRoom, deferMoveSoundUntilPaint: true });
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -301,7 +303,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 而开局设置屏正是这么答的,两边不能给出两个答案。
   // 开局那一刻定下的值优先(见 `readSessionPlayOnBoard`),与 `PlayInputGuard` 读同一个函数。
   // 回落分支保留给旧记录或从房间进入的局；新开的星阵人机局也会在开局时写下 onBoard。
-  const { pathname } = useLocation();
   const [playOnBoard] = useState(() => readSessionPlayOnBoard(pathname));
   // 本局降级刷新后仍保留；路由复用 GamePage 时，降级与锁定历史都不能带进下一局。
   const screenFallbackKey = `kiosk_screen_fallback:${sessionId ?? ''}`;
@@ -416,7 +417,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // 没有取到局面且请求失败时，清掉失效的「继续上一局」入口。
   // 已有局面后的连接错误由对局屏处理，不切换成打不开状态。
-  const loadFailed = !session.gameState && !!session.error;
+  const loadFailed = !session.gameState && !!session.error && session.connectionLost !== 'central';
   useEffect(() => {
     if (loadFailed) clearActiveSession('game');
   }, [loadFailed]);
@@ -553,6 +554,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const celebrating = useGameCelebration(
     sessionId, session.gameState, session.gameState ? deriveHumanColor(session.gameState) : null,
   );
+
+  if (centralRoom && session.connectionLost === 'central') {
+    return <Box data-testid="central-room-disconnected" sx={{ display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 2, height: '100%', px: 4, textAlign: 'center' }}>
+      <Typography variant="h5">中央连接中断</Typography>
+      <Typography sx={{ color: 'text.secondary', fontSize: 14, maxWidth: 520 }}>
+        对局状态暂时无法确认。重新连接后会读取最新棋盘，请先不要继续落子。
+      </Typography>
+      <button type="button" className="kiosk-btn" disabled={session.reconnecting} onClick={session.reconnect}>
+        {session.reconnecting ? '正在重新连接…' : '重新连接'}
+      </button>
+      <button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/play/pvp/lobby')}>
+        返回在线大厅
+      </button>
+    </Box>;
+  }
 
   if (!session.gameState) {
     // 盒上全屏没有浏览器后退入口，加载中和加载失败都要能回到对弈。

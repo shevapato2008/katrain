@@ -98,23 +98,28 @@ const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
 const mockSetGameState = vi.fn();
+const mockReconnect = vi.fn();
 const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
   mockAcknowledgePaintedNode: vi.fn(),
-  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean } | null },
+  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean } | null },
 }));
 
 let mockGameState: GameState | undefined;
+let mockConnectionLost: 'central' | null = null;
+let mockSessionError: string | null = null;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean }) => {
+  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean }) => {
     capturedSessionOptions.current = options;
     return {
       sessionId: 'test-session',
       setSessionId: mockSetSessionId,
       gameState: mockGameState,
       setGameState: mockSetGameState,
-      error: null,
+      error: mockSessionError,
+      connectionLost: mockConnectionLost,
+      reconnect: mockReconnect,
       onMove: mockOnMove,
       onNavigate: mockOnNavigate,
       handleAction: mockHandleAction,
@@ -201,6 +206,8 @@ describe('GamePage', () => {
     mockSyncEvents = [];
     mockPoseLocked = true;
     mockPhysicalReminder = null;
+    mockConnectionLost = null;
+    mockSessionError = null;
     testNavigate = null;
     capturedBoardProps.current = null;
     capturedSessionOptions.current = null;
@@ -1006,6 +1013,26 @@ describe('GamePage', () => {
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
   describe('self-owned lobby room', () => {
+    it('blocks a stale board on central outage and offers a real reconnect', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      mockConnectionLost = 'central';
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(capturedSessionOptions.current?.centralRoom).toBe(true);
+      expect(screen.getByTestId('central-room-disconnected')).toHaveTextContent('中央连接中断');
+      expect(screen.queryByTestId('board')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '重新连接' }));
+      expect(mockReconnect).toHaveBeenCalledOnce();
+    });
+    it('keeps return-to-game state when the first room load gets a transient 503', () => {
+      mockGameState = undefined;
+      mockConnectionLost = 'central';
+      mockSessionError = 'Failed to get state';
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(screen.getByTestId('central-room-disconnected')).toBeInTheDocument();
+      expect(clearActiveSession).not.toHaveBeenCalled();
+    });
     it('uses the central seat to block opponent moves and returns to the lobby', async () => {
       mockGameState = makeGameState({
         game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B',

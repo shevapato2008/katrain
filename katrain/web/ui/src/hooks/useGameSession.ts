@@ -22,6 +22,7 @@ interface CountRequestData {
 
 interface UseGameSessionOptions {
     token?: string;  // Auth token for multiplayer games
+    centralRoom?: boolean;  // Kiosk box room: a 503 or WS 1013 means the central mirror is unavailable
     deferMoveSoundUntilPaint?: boolean;  // Kiosk: wait for the visible canvas to acknowledge the node
     onGameEnd?: (data: GameEndData) => void;  // Callback when game ends
     onCountRequest?: (data: CountRequestData) => void;  // Callback for count request (HvH)
@@ -32,12 +33,14 @@ interface UseGameSessionOptions {
 type QueuedSound = { sound: string; afterNodeId: number };
 
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
-    const { token, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
+    const { token, centralRoom = false, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
     // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
-    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | null>(null);
+    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | 'central' | null>(null);
+    const [retryEpoch, setRetryEpoch] = useState(0);
+    const [reconnecting, setReconnecting] = useState(false);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -188,15 +191,25 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
                     ownedWs = ws;
                     wsRef.current = ws;
-                    ws.onopen = () => { if (wsRef.current === ws) setConnectionLost(null); };
+                    ws.onopen = () => {
+                        if (wsRef.current !== ws) return;
+                        setConnectionLost(null);
+                        setReconnecting(false);
+                        if (centralRoom) setError(null);
+                    };
                     
                     ws.onmessage = (event) => {
+                        if (wsRef.current !== ws) return;
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'game_update') {
                             setGameState(msg.state);
                             if (msg.state?.game_type === 'pvp_online' && msg.state.platform_phase) {
                                 setPlatformPhase(msg.state.platform_phase);
                             }
+                        } else if (centralRoom && msg.type === 'error' && msg.code === 'CENTRAL_DISCONNECTED') {
+                            setConnectionLost('central');
+                            setReconnecting(false);
+                            setError('中央对局连接中断');
                         } else if (msg.type === 'spectator_count') {
                             // Lightweight update for spectator count only (doesn't reset timers)
                             setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
@@ -277,7 +290,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
                         clearQueuedSounds();
                         setPlatformPendingMove(null);
-                        if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                        if (centralRoom && event.code === 1013) {
+                            setConnectionLost('central');
+                            setReconnecting(false);
+                            setError('中央对局连接中断');
+                        } else if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
                             if (gameEndedRef.current) {
                                 /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
                                    有意收尾走的是正常关闭(session.py 的 SOCKET_CLOSE_SESSION_CLOSED),
@@ -312,7 +329,14 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                 } catch (err) {
                     if (disposed) return;
                     console.error("Failed to connect", err);
+                    if (centralRoom && typeof err === 'object' && err !== null && 'status' in err && err.status === 503) {
+                        setConnectionLost('central');
+                        setError('中央对局连接中断');
+                        setReconnecting(false);
+                        return;
+                    }
                     setError("Failed to connect to game");
+                    setReconnecting(false);
                 }
             };
             connect();
@@ -325,7 +349,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                 ownedWs?.close();
             };
         }
-    }, [sessionId, token, playSound, clearQueuedSounds, flushQueuedSounds]);
+    }, [sessionId, token, centralRoom, retryEpoch, playSound, clearQueuedSounds, flushQueuedSounds]);
+
+    const reconnect = useCallback(() => {
+        if (!sessionId) return;
+        setReconnecting(true);
+        setRetryEpoch((current) => current + 1);
+    }, [sessionId]);
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;
@@ -434,7 +464,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, reportSessionGone, onMove, onNavigate, handleAction,
+        sessionId, setSessionId, gameState, setGameState, error, connectionLost, reconnecting, reconnect,
+        clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
         platformPendingMove,

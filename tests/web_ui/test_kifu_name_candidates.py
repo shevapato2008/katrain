@@ -3,6 +3,7 @@
 from copy import deepcopy
 import hashlib
 import json
+from urllib.parse import quote_plus
 
 import pytest
 
@@ -1508,3 +1509,251 @@ def test_positive_ja_ko_rejects_inexact_or_early_review(change):
     elif change == "input_review": row["generated_review"]["identity_input_review"] = "pending"
     elif change == "rule": row["generation_rule_version"] = "arbitrary-v1"
     with pytest.raises(CandidateError): validate_candidate(row, evidence, registry(), inventory())
+
+
+def positive_zh_ko_fixture(owner_id=5498):
+    from katrain.web.kifu.name_zh_ko import RULE_BODY_SHA256, RULE_URL, used_entries
+
+    values = {5498: ("王宏伟", "Wang Hongwei", [["wang"], ["hong", "wei"]], "왕훙웨이"),
+              5739: ("翁子瑜", "Weng Ziyu", [["weng"], ["zi", "yu"]], "웡쯔위")}
+    han, latin, words, hangul = values[owner_id]
+    owner = {"kind": "player", "id": owner_id}
+
+    def capture(url, body, role, lang):
+        return {"url": url, "http_status": 200, "fetched_at": "2026-10-08T21:50:12Z",
+                "body_text": body, "body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                "body_excerpt": body, "locator": "person row", "source_role": role,
+                "observed_lang": lang}
+
+    profile = capture(f"https://db.u-go.net/{owner_id}/", f"{han} {latin} Citizenship: CHN",
+                      "published_player_profile", "en")
+    search = capture(f"https://db.u-go.net/?q={latin.replace(' ', '+')}",
+                     f"U-Go professional Go player search: {han} {latin} links to profile",
+                     "professional_go_search", "en")
+    original = capture("https://wqapi.cwql.org.cn/playerInfo/professional/list",
+                       f"playerName {han} professional player", "official_roster", "zh-Hans")
+    rule = {"url": RULE_URL, "http_status": 200, "fetched_at": "2026-10-08T21:30:16Z",
+            "body_sha256": RULE_BODY_SHA256, "source_role": "normative_rule", "observed_lang": "ko",
+            "table_locator": "Chapter 2 Table 5, raw HTML line 1573; note line 1578",
+            "scope_locator": "Chapter 4 section 2 item 1, raw HTML line 13706",
+            "tone_locator": "Chapter 3 Chinese section item 1, raw HTML line 6666"}
+    positive = {
+        "version": 1,
+        "scope": {"modern_mainland": True, "ordinary_mandarin": True, "personal_name": True,
+                  "basis": "Same person in a CHN Go profile and Chinese professional roster",
+                  "unresolved_reading_variants": []},
+        "identity": {"owner": deepcopy(owner), "original_name": han, "status": "verified",
+                     "method": "reviewed_owner_binding", "basis": "Exact owner and Han name matched",
+                     "capture": original},
+        "reading": {"published": latin, "system": "pinyin-syllables-v1", "reading_words": words,
+                    "determination": "Reviewed complete ordinary Hanyu Pinyin in mainland Go context",
+                    "capture": profile},
+        "rule": {"capture": rule, "used_entries": used_entries(words),
+                 "output": hangul, "format": "joined_surname_given_project_format"},
+        "contrary_checks": [
+            {"role": "original_go", "query": latin, "search_scope": "U-Go professional Go player database search",
+             "status": "found", "capture": search, "relevant_matches": [f"{han} {latin}"],
+             "resolution": "Same person and no conflicting reading", "conventional_gate_qualified": False},
+            {"role": "candidate_go", "query": hangul,
+             "search_scope": "Literal scan of saved Daum Chinese Go player roster",
+             "status": "found",
+             "capture": capture("https://example.org/korean-roster", f"{hangul} {han} Go",
+                                "reference_go_roster", "ko"),
+             "relevant_matches": [f"{hangul} {han}"],
+             "resolution": "Matching community usage; no qualified conventional source",
+             "conventional_gate_qualified": False},
+        ],
+        "unresolved_conflicts": [], "source_anchors": [],
+    }
+    reg = registry()
+    reg["sources"].append({"id": "cwa", "tier": "official", "home_url": "https://wqapi.cwql.org.cn/",
+                           "language": "zh-Hans"})
+    evidence = research(owner=owner, lang="ko", registry_sha256=registry_sha256(reg),
+                        source_basis="normative_zh_ko_v1", scope_status="generated_from_original",
+                        generation_rule_version="nikl-zh-ko-personal-name-v1", original_name=han,
+                        original_language="zh-Hans", original_language_basis_url=original["url"],
+                        reading=latin, reading_basis_url=profile["url"], candidate_name=hangul,
+                        positive_zh_ko=positive,
+                        source_checks=[check(owner=owner, source_id="cwa", url=original["url"],
+                                             observed_lang="zh-Hans", candidate_name=han,
+                                             body_excerpt=original["body_excerpt"],
+                                             body_sha256=original["body_sha256"])])
+    row = candidate(owner=owner, lang="ko", display_name=hangul, decision_kind="generated",
+                    research_sha256=canonical_sha256(evidence),
+                    generation_rule_version="nikl-zh-ko-personal-name-v1")
+    row.update(producer_id=evidence["producer_id"], producer_model=evidence["producer_model"],
+               produced_at="2026-10-08T21:55:00Z", reviewed_at="2026-10-08T22:00:00Z",
+               review_conclusion="approved_generated_display_and_rule")
+    row["generated_review"] = {
+        "decision": "approve_generated", "display_name": hangul, "owner": owner, "lang": "ko",
+        "generation_rule_version": row["generation_rule_version"], "research_sha256": row["research_sha256"],
+        "original_name": han, "reading": latin, "reading_words": words,
+        "reading_basis_url": profile["url"], "used_entries": positive["rule"]["used_entries"],
+        "positive_zh_ko_sha256": canonical_sha256(positive), "identity_input_review": "approved",
+        "rule_review": "approved", "output_review": "approved", "reviewer_id": row["reviewer_id"],
+        "reviewer_model": row["reviewer_model"], "reviewed_at": row["reviewed_at"],
+        "reason": "Checked exact sourced reading, finite NIKL entries and full output",
+    }
+    return evidence, row, reg
+
+
+@pytest.mark.parametrize("owner_id", [5498, 5739])
+def test_positive_zh_ko_accepts_only_reviewed_first_batch_inputs(owner_id):
+    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate, validate_research_record
+    evidence, row, reg = positive_zh_ko_fixture(owner_id)
+    assert validate_research_record(evidence, reg)["owner"] == evidence["owner"]
+    assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+
+
+@pytest.mark.parametrize("owner_id", [5498, 5739])
+def test_positive_zh_ko_keeps_actual_pinyin_and_roster_literal_queries(owner_id):
+    from katrain.web.kifu.name_evidence import validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture(owner_id)
+    original, korean = evidence["positive_zh_ko"]["contrary_checks"]
+    assert original["query"] == evidence["reading"]
+    assert korean["query"] == evidence["candidate_name"]
+    assert validate_research_record(evidence, reg)["owner"] == evidence["owner"]
+
+
+def test_positive_zh_ko_accepts_exact_han_name_query_in_go_corpus():
+    from katrain.web.kifu.name_evidence import validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    item = evidence["positive_zh_ko"]["contrary_checks"][0]
+    item["query"] = evidence["original_name"]
+    item["capture"]["url"] = f"https://db.u-go.net/?q={quote_plus(item['query'])}"
+    assert validate_research_record(evidence, reg)["owner"] == evidence["owner"]
+
+
+@pytest.mark.parametrize("change", ["owner", "source", "language", "reading", "segments", "unknown_syllable",
+                                     "rule_hash", "rule_url", "body_hash", "scope", "conflict", "mixed_ja",
+                                     "generic_marker", "wrong_output", "conventional_usage", "missing_scope",
+                                     "wrong_scope", "wrong_query", "wrong_query_url"])
+def test_positive_zh_ko_rejects_wrong_or_partial_evidence(change):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    positive = evidence["positive_zh_ko"]
+    if change == "owner": positive["identity"]["owner"]["id"] = 1
+    elif change == "source": evidence["reading_basis_url"] = "https://other.example/"
+    elif change == "language": evidence["original_language"] = "ja"
+    elif change == "reading": positive["reading"]["published"] = "Lin Qinghai"
+    elif change == "segments": positive["reading"]["reading_words"] = [["wang", "hong"], ["wei"]]
+    elif change == "unknown_syllable": positive["reading"]["reading_words"][1][0] = "xu"
+    elif change == "rule_hash": positive["rule"]["capture"]["body_sha256"] = "b" * 64
+    elif change == "rule_url": positive["rule"]["capture"]["url"] = "https://example.org/rules"
+    elif change == "body_hash": positive["reading"]["capture"]["body_sha256"] = "b" * 64
+    elif change == "scope": positive["scope"]["ordinary_mandarin"] = False
+    elif change == "conflict": positive["unresolved_conflicts"] = ["other reading"]
+    elif change == "mixed_ja": evidence["positive_generation"] = {}
+    elif change == "generic_marker": evidence["positive_generation"] = True
+    elif change == "wrong_output": positive["rule"]["output"] = "다른이름"
+    elif change == "conventional_usage": positive["contrary_checks"][1]["conventional_gate_qualified"] = True
+    elif change == "missing_scope": positive["contrary_checks"][0]["search_scope"] = ""
+    elif change == "wrong_scope": positive["contrary_checks"][1]["search_scope"] = "Unrelated movie corpus"
+    elif change == "wrong_query": positive["contrary_checks"][0]["query"] = "Unrelated person"
+    elif change == "wrong_query_url": positive["contrary_checks"][0]["query"] = evidence["original_name"]
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+@pytest.mark.parametrize("change", ["output", "review_hash", "review_words", "early_review", "producer",
+                                     "pending", "rule"])
+def test_positive_zh_ko_rejects_inexact_or_early_candidate_review(change):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_positive_zh_ko_candidate
+    evidence, row, reg = positive_zh_ko_fixture()
+    if change == "output": row["display_name"] = "다른이름"
+    elif change == "review_hash": row["generated_review"]["positive_zh_ko_sha256"] = "b" * 64
+    elif change == "review_words": row["generated_review"]["reading_words"] = [["wang"], ["hongwei"]]
+    elif change == "early_review": row["reviewed_at"] = "2026-10-08T21:00:00Z"
+    elif change == "producer": row["reviewer_id"] = row["producer_id"]
+    elif change == "pending": row["review_status"] = "pending"
+    elif change == "rule": row["generation_rule_version"] = "nikl-ja-ko-personal-name-v1"
+    with pytest.raises(EvidenceError): validate_positive_zh_ko_candidate(row, evidence, reg)
+
+
+def test_positive_zh_ko_accepts_actual_search_tool_transcript_without_http_claim():
+    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
+    evidence, row, reg = positive_zh_ko_fixture()
+    body = '{"query":"Wang Hongwei","result":"王宏伟 Wang Hongwei same player"}'
+    item = evidence["positive_zh_ko"]["contrary_checks"][0]
+    item["capture"] = {"capture_kind": "web_tool_response", "queried_at": "2026-10-08T21:56:01Z",
+                       "response_status": "completed_with_results", "body_text": body,
+                       "body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                       "body_excerpt": body, "locator": "result 1", "source_role": "search_tool_response",
+                       "observed_lang": "mul"}
+    row["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"]["research_sha256"] = row["research_sha256"]
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(evidence["positive_zh_ko"])
+    assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+
+
+def test_positive_zh_ko_not_found_cannot_hide_captured_matching_name():
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    item = evidence["positive_zh_ko"]["contrary_checks"][1]
+    item["status"] = "not_found"
+    item["relevant_matches"] = []
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+def test_positive_zh_ko_professional_korean_name_routes_to_conventional_review():
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    evidence["positive_zh_ko"]["contrary_checks"][1]["capture"]["source_role"] = "professional_go_profile"
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+@pytest.mark.parametrize("role", ["official_go_roster", "official_roster"])
+def test_positive_zh_ko_official_korean_roster_hit_routes_to_conventional_review(role):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    # The captured row contains this owner's exact Han and Korean names.
+    evidence["positive_zh_ko"]["contrary_checks"][1]["capture"]["source_role"] = role
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+def test_positive_zh_ko_unrelated_official_roster_hit_can_be_resolved():
+    from katrain.web.kifu.name_evidence import validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    item = evidence["positive_zh_ko"]["contrary_checks"][1]
+    item["capture"]["source_role"] = "official_go_roster"
+    item["capture"]["body_text"] = "왕훙웨이 王鸿薇 is a different person"
+    item["capture"]["body_excerpt"] = item["capture"]["body_text"]
+    item["capture"]["body_sha256"] = hashlib.sha256(item["capture"]["body_text"].encode()).hexdigest()
+    item["relevant_matches"] = ["왕훙웨이 王鸿薇"]
+    item["resolution"] = "Different Han name and different owner; not the Go player 王宏伟"
+    assert validate_research_record(evidence, reg)["owner"] == evidence["owner"]
+
+
+@pytest.mark.parametrize("relevant_matches", [["왕훙웨이", "王宏伟"], []])
+def test_positive_zh_ko_official_same_person_row_cannot_hide_in_relevant_match_grouping(relevant_matches):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    item = evidence["positive_zh_ko"]["contrary_checks"][1]
+    item["capture"]["source_role"] = "official_go_roster"
+    item["relevant_matches"] = relevant_matches
+    item["resolution"] = "Same Go player 王宏伟 has published official Korean name 왕훙웨이"
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+@pytest.mark.parametrize("queried_form", ["han", "pinyin"])
+def test_positive_zh_ko_not_found_cannot_hide_single_queried_original_form(queried_form):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
+    evidence, _, reg = positive_zh_ko_fixture()
+    item = evidence["positive_zh_ko"]["contrary_checks"][0]
+    form = evidence["original_name"] if queried_form == "han" else evidence["reading"]
+    item["query"] = form
+    item["status"] = "not_found"
+    item["relevant_matches"] = []
+    item["capture"]["url"] = f"https://db.u-go.net/?q={quote_plus(form)}"
+    item["capture"]["body_text"] = f"U-Go professional Go player result: {form}"
+    item["capture"]["body_excerpt"] = item["capture"]["body_text"]
+    item["capture"]["body_sha256"] = hashlib.sha256(item["capture"]["body_text"].encode()).hexdigest()
+    with pytest.raises(EvidenceError): validate_research_record(evidence, reg)
+
+
+def test_registry_version_fits_persisted_column(tmp_path):
+    from katrain.web.kifu.name_evidence import EvidenceError, load_registry
+    reg = registry()
+    reg["version"] = "v" * 65
+    path = tmp_path / "registry.json"
+    path.write_text(json.dumps(reg), encoding="utf-8")
+    with pytest.raises(EvidenceError): load_registry(path)

@@ -100,7 +100,8 @@ def _aware_timestamp(value: object) -> bool:
 def load_registry(path: str | Path = DEFAULT_REGISTRY) -> dict:
     """Load the pinned discovery scope; it does not assert that any name is verified."""
     registry = json.loads(Path(path).read_text(encoding="utf-8"))
-    _require(_text(registry.get("version")), "registry version is required")
+    _require(_text(registry.get("version")) and len(registry["version"]) <= 64,
+             "registry version is required and must fit the database column")
     tags = registry.get("language_tags")
     _require(isinstance(tags, dict) and bool(tags), "registry language_tags are required")
     scopes = registry.get("language_scopes")
@@ -1070,6 +1071,7 @@ def _validate_positive_ja_ko(record: dict) -> None:
              and record["owner"]["kind"] == "player" and set(record["owner"]) == {"kind", "id"}
              and record["lang"] == "ko" and record.get("original_language") == "ja",
              "positive generation is restricted to existing player ja-to-ko and its exact rule")
+    _require("positive_zh_ko" not in record, "Japanese and Chinese positive evidence cannot be mixed")
     _require("negative_closure" not in record, "positive generation cannot claim negative closure")
     positive = record.get("positive_generation")
     _require(isinstance(positive, dict) and set(positive) == {
@@ -1156,6 +1158,158 @@ def _validate_positive_ja_ko(record: dict) -> None:
              "positive source check must bind actual identity capture")
 
 
+def _validate_positive_zh_ko(record: dict) -> None:
+    """Validate the first finite Mandarin profile without inferring pronunciation from Han."""
+    from katrain.web.kifu.name_zh_ko import (
+        RULE_BODY_SHA256, RULE_LOCATORS, RULE_URL, RULE_VERSION, SOURCE_BASIS, render_name, used_entries,
+    )
+
+    _require(record.get("source_basis") == SOURCE_BASIS
+             and record.get("scope_status") == POSITIVE_SCOPE
+             and record.get("generation_rule_version") == RULE_VERSION
+             and record["owner"]["kind"] == "player" and set(record["owner"]) == {"kind", "id"}
+             and record["lang"] == "ko" and record.get("original_language") in {"zh-Hans", "zh-Hant"},
+             "Chinese positive generation requires existing player, Chinese original and exact rule")
+    _require("positive_generation" not in record and "negative_closure" not in record,
+             "Chinese positive evidence cannot mix Japanese or negative markers")
+    positive = record.get("positive_zh_ko")
+    _require(isinstance(positive, dict) and set(positive) == {
+        "version", "scope", "identity", "reading", "rule", "contrary_checks", "unresolved_conflicts", "source_anchors"
+    } and positive["version"] == 1, "Chinese positive evidence fields invalid")
+    scope = positive["scope"]
+    _require(isinstance(scope, dict) and set(scope) == {
+        "modern_mainland", "ordinary_mandarin", "personal_name", "basis", "unresolved_reading_variants"
+    } and all(scope.get(key) is True for key in ("modern_mainland", "ordinary_mandarin", "personal_name"))
+             and _text(scope["basis"]) and scope["unresolved_reading_variants"] == [],
+             "Chinese scope must be reviewed modern mainland ordinary Mandarin with no reading conflict")
+    identity, reading = positive["identity"], positive["reading"]
+    _require(isinstance(identity, dict) and set(identity) == {
+        "owner", "original_name", "status", "method", "basis", "capture"
+    } and identity["owner"] == record["owner"] and identity["original_name"] == record["original_name"]
+             and identity["status"] == "verified" and identity["method"] == "reviewed_owner_binding"
+             and _text(identity["basis"]), "Chinese identity must bind exact owner and original name")
+    _require(isinstance(reading, dict) and set(reading) == {
+        "published", "system", "reading_words", "determination", "capture"
+    } and reading["published"] == record["reading"]
+             and reading["system"] == "pinyin-syllables-v1" and _text(reading["determination"]),
+             "Chinese reading must be complete published Hanyu Pinyin")
+    words = reading["reading_words"]
+    try:
+        entries = used_entries(words)
+        output = render_name(words)
+        published = reading["published"].split()
+        _require(len(published) == 2 and all(
+            _normalized_phonetic_reading(word, reading["system"]) == "".join(syllables)
+            for word, syllables in zip(published, words)),
+            "Chinese surname/given and syllable boundaries differ from published spelling")
+    except ValueError as exc:
+        raise EvidenceError(str(exc)) from exc
+    for capture in (identity["capture"], reading["capture"]):
+        _validate_positive_capture(capture)
+    original_capture, reading_capture = identity["capture"], reading["capture"]
+    _require(original_capture["url"] == record["original_language_basis_url"]
+             and record["original_name"] in original_capture["body_excerpt"]
+             and original_capture["observed_lang"] in {"zh", "zh-Hans", "zh-Hant"}
+             and reading_capture["url"] == record["reading_basis_url"]
+             and record["original_name"] in reading_capture["body_excerpt"]
+             and reading["published"] in reading_capture["body_excerpt"]
+             and reading_capture["source_role"] in {"published_player_profile", "official_person_page"}
+             and reading_capture["observed_lang"] in {"en", "zh", "zh-Hans", "zh-Hant"},
+             "Chinese identity and published reading need exact same-person captured source rows")
+    rule = positive["rule"]
+    _require(isinstance(rule, dict) and set(rule) == {"capture", "used_entries", "output", "format"}
+             and rule["used_entries"] == entries and rule["output"] == output == record["candidate_name"]
+             and rule["format"] == "joined_surname_given_project_format",
+             "Chinese rule entries and full output must be exactly reproducible")
+    rule_capture = rule["capture"]
+    _require(isinstance(rule_capture, dict) and rule_capture == {
+        "url": RULE_URL, "http_status": 200, "fetched_at": rule_capture.get("fetched_at"),
+        "body_sha256": RULE_BODY_SHA256, "source_role": "normative_rule", "observed_lang": "ko",
+        **RULE_LOCATORS,
+    } and _aware_timestamp(rule_capture.get("fetched_at")),
+             "Chinese rule requires the exact captured official body, URL and locators")
+    _require(positive["unresolved_conflicts"] == [], "Chinese name has unresolved conflicts")
+    checks = positive["contrary_checks"]
+    _require(isinstance(checks, list) and bool(checks)
+             and {item.get("role") for item in checks if isinstance(item, dict)}
+                >= {"original_go", "candidate_go"},
+             "Chinese generation needs finite original and candidate Go-context checks")
+    for item in checks:
+        _require(isinstance(item, dict) and set(item) == {
+            "role", "query", "search_scope", "status", "capture", "relevant_matches", "resolution",
+            "conventional_gate_qualified"
+        } and item["role"] in {"original_go", "candidate_go"}
+                 and item["status"] in {"found", "not_found", "unavailable"}
+                 and _text(item["query"]) and _text(item["search_scope"]) and _text(item["resolution"])
+                 and item["conventional_gate_qualified"] is False
+                 and isinstance(item["relevant_matches"], list)
+                 and all(_text(match) for match in item["relevant_matches"]),
+                 "Chinese contrary check fields or result invalid")
+        tokens = (record["original_name"], reading["published"]) if item["role"] == "original_go" else (output,)
+        _require((any(token in item["query"] for token in tokens) if item["role"] == "original_go"
+                  else output in item["query"])
+                 and ("Go" in item["search_scope"] or "바둑" in item["search_scope"]),
+                 "Chinese contrary query must use an exact name in documented Go corpus context")
+        capture = item["capture"]
+        _require(isinstance(capture, dict), "Chinese contrary capture must be an object")
+        allowed_roles = ({"professional_go_search", "published_player_profile", "official_person_page",
+                          "search_tool_response"} if item["role"] == "original_go" else
+                         {"reference_go_roster", "professional_go_roster", "professional_go_profile",
+                          "official_go_roster", "official_roster", "search_tool_response"})
+        _require(capture.get("source_role") in allowed_roles,
+                 "Chinese contrary capture role differs from documented Go corpus")
+        if capture["source_role"] == "professional_go_search":
+            _require(parse_qs(urlparse(capture.get("url", "")).query).get("q") == [item["query"]],
+                     "Chinese professional Go search URL differs from the actual query")
+        if item["status"] == "unavailable":
+            _require(isinstance(capture, dict) and set(capture) == {
+                "url", "queried_at", "response_status", "source_role", "locator", "reason"
+            } and _https_url(capture["url"]) and _aware_timestamp(capture["queried_at"])
+                     and capture["response_status"] == "unavailable"
+                     and all(_text(capture[key]) for key in ("source_role", "locator", "reason"))
+                     and item["relevant_matches"] == [],
+                     "unavailable contrary response cannot claim absence")
+        else:
+            if capture.get("capture_kind") == "web_tool_response":
+                _require(set(capture) == {"capture_kind", "queried_at", "response_status", "body_text",
+                                          "body_sha256", "body_excerpt", "locator", "source_role", "observed_lang"}
+                         and item["status"] == "found" and _aware_timestamp(capture["queried_at"])
+                         and capture["response_status"] == "completed_with_results"
+                         and capture["source_role"] == "search_tool_response"
+                         and all(_text(capture[key]) for key in
+                                 ("body_text", "body_excerpt", "locator", "observed_lang"))
+                         and capture["body_sha256"] == hashlib.sha256(capture["body_text"].encode("utf-8")).hexdigest()
+                         and capture["body_excerpt"] in capture["body_text"],
+                         "Chinese search-tool transcript needs its actual response without HTTP claims")
+            else:
+                _validate_positive_capture(capture)
+                reliable_ko_source = capture["source_role"] in {
+                    "official_go_roster", "official_roster", "professional_go_roster", "professional_go_profile"
+                }
+                # A captured excerpt with both exact forms cannot be concealed
+                # by splitting or omitting relevant_matches.
+                same_person_ko_row = (record["original_name"] in capture["body_excerpt"]
+                                      and output in capture["body_excerpt"])
+                _require(not (item["role"] == "candidate_go" and item["status"] == "found"
+                              and reliable_ko_source and same_person_ko_row),
+                         "reliable published Korean player name needs conventional review")
+            _require(all(match in capture["body_text"] for match in item["relevant_matches"])
+                     and (item["status"] != "not_found" or item["relevant_matches"] == []
+                          and not any(token in capture["body_text"] for token in tokens)),
+                     "Chinese contrary matches must occur in captured response; captured name is not absent")
+    anchors = positive["source_anchors"]
+    _require(isinstance(anchors, list), "Chinese qualified source anchors must be a list")
+    for anchor in anchors:
+        content = validate_primary_orthographic_anchor(anchor)
+        _require(content["owner"] == record["owner"] and content["original_name"] == record["original_name"],
+                 "Chinese qualified source anchor differs from owner or Han name")
+    _require(any(check["status"] == "found" and check["candidate_name"] == record["original_name"]
+                 and check["url"] == original_capture["url"]
+                 and check["body_sha256"] == original_capture["body_sha256"]
+                 for check in record["source_checks"]),
+             "Chinese original source check must bind the captured original row")
+
+
 def validate_research_record(record: dict, registry: dict) -> dict:
     """Validate one candidate or negative search claim, always returning pending status."""
     _require(isinstance(record, dict), "research record must be an object")
@@ -1171,14 +1325,27 @@ def validate_research_record(record: dict, registry: dict) -> dict:
     _require(_text(record.get("producer_id")) and _text(record.get("producer_model")),
              "actual producer identity/model required")
     scope_status = record.get("scope_status")
-    positive = any((record.get("source_basis") == POSITIVE_SOURCE_BASIS, scope_status == POSITIVE_SCOPE,
-                    record.get("generation_rule_version") == POSITIVE_RULE, "positive_generation" in record))
-    if positive:
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION as ZH_RULE, SOURCE_BASIS as ZH_BASIS
+    ja_positive = any((record.get("source_basis") == POSITIVE_SOURCE_BASIS,
+                       record.get("generation_rule_version") == POSITIVE_RULE, "positive_generation" in record))
+    zh_positive = any((record.get("source_basis") == ZH_BASIS,
+                       record.get("generation_rule_version") == ZH_RULE, "positive_zh_ko" in record))
+    _require(not (ja_positive and zh_positive), "Japanese and Chinese positive markers are mixed")
+    _require(scope_status != POSITIVE_SCOPE or ja_positive or zh_positive,
+             "positive scope requires one exact language profile")
+    positive = ja_positive or zh_positive
+    if ja_positive:
         try:
             _validate_positive_ja_ko(record)
         except (KeyError, TypeError, StopIteration) as exc:
             raise EvidenceError("positive generation has missing or malformed evidence fields") from exc
         target = "ja"
+    elif zh_positive:
+        try:
+            _validate_positive_zh_ko(record)
+        except (KeyError, TypeError, StopIteration) as exc:
+            raise EvidenceError("Chinese positive generation has missing or malformed evidence fields") from exc
+        target = record["original_language"]
     sgf_literal = record.get("source_basis") == SGF_LITERAL_BASIS
     _require(not sgf_literal or owner["kind"] == "raw_event" and scope_status == "translated_from_original",
              "SGF literal evidence requires a translated existing raw event")
@@ -1713,3 +1880,57 @@ def validate_positive_ja_ko_candidate(row, research, registry):
         _require(review[key] == row[key], 'positive exact candidate review mismatch')
     for key in ('original_name', 'reading', 'reading_basis_url'):
         _require(review[key] == checked[key], 'positive exact reading review mismatch')
+
+
+def validate_positive_zh_ko_candidate(row: dict, research: dict, registry: dict) -> dict:
+    """Require independent approval of exact Chinese inputs, six-entry rule and output."""
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION
+
+    try:
+        checked = validate_research_record(research, registry)
+        _require(row["research_sha256"] == _positive_content_sha256(research)
+                 and row["owner"] == checked["owner"] and row["lang"] == checked["lang"] == "ko"
+                 and row["display_name"] == checked["candidate_name"]
+                 and row["generation_rule_version"] == RULE_VERSION
+                 and row["review_status"] == "approved" and row["decision_kind"] == "generated",
+                 "Chinese candidate differs from exact pending research")
+        for key in ("producer_id", "producer_model"):
+            _require(row[key] == checked[key], "Chinese candidate producer differs from research")
+        for key in ("producer_id", "producer_model", "reviewer_id", "reviewer_model", "review_conclusion"):
+            _require(_text(row[key]), "Chinese candidate review metadata missing")
+        _require(row["producer_id"] != row["reviewer_id"], "Chinese candidate review must be independent")
+        for key in ("produced_at", "reviewed_at"):
+            _require(_aware_timestamp(row[key]), "Chinese candidate review timestamp invalid")
+        reviewed = datetime.fromisoformat(row["reviewed_at"].replace("Z", "+00:00"))
+        _require(reviewed >= datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00")),
+                 "Chinese candidate review predates production")
+        positive = checked["positive_zh_ko"]
+        captures = [positive["identity"]["capture"], positive["reading"]["capture"],
+                    positive["rule"]["capture"], *[item["capture"] for item in positive["contrary_checks"]],
+                    *checked["source_checks"]]
+        _require(all(reviewed >= datetime.fromisoformat(c.get("fetched_at", c.get("queried_at")).replace("Z", "+00:00"))
+                     for c in captures if "fetched_at" in c or "queried_at" in c),
+                 "Chinese candidate review predates source or contrary capture")
+        review = row["generated_review"]
+        _require(isinstance(review, dict) and set(review) == {
+            "decision", "display_name", "owner", "lang", "generation_rule_version", "research_sha256",
+            "original_name", "reading", "reading_words", "reading_basis_url", "used_entries",
+            "positive_zh_ko_sha256", "identity_input_review", "rule_review", "output_review",
+            "reviewer_id", "reviewer_model", "reviewed_at", "reason"
+        } and row["review_conclusion"] == "approved_generated_display_and_rule"
+                 and review["decision"] == "approve_generated" and _text(review["reason"])
+                 and review["positive_zh_ko_sha256"] == _positive_content_sha256(positive)
+                 and all(review[key] == "approved" for key in
+                         ("identity_input_review", "rule_review", "output_review")),
+                 "Chinese exact input/rule/output review missing")
+        for key in ("display_name", "owner", "lang", "generation_rule_version", "research_sha256",
+                    "reviewer_id", "reviewer_model", "reviewed_at"):
+            _require(review[key] == row[key], "Chinese candidate review differs from exact row")
+        for key in ("original_name", "reading", "reading_basis_url"):
+            _require(review[key] == checked[key], "Chinese candidate review differs from exact research")
+        _require(review["reading_words"] == positive["reading"]["reading_words"]
+                 and review["used_entries"] == positive["rule"]["used_entries"],
+                 "Chinese candidate review differs from syllable boundaries or frozen entries")
+        return row
+    except (KeyError, TypeError, StopIteration) as exc:
+        raise EvidenceError("Chinese candidate has missing or malformed review fields") from exc

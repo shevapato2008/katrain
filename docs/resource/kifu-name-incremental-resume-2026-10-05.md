@@ -1204,3 +1204,8 @@ agon10（10 原文／205 盘）及 cmb2（2 原文／2 盘）已实际两库入�
 
 - retired153 / 580: 2 players/32 unchanged SGF/FK slots,2 persisted names and2 source links applied/verified both databases;6 actual HTTP cases each. Actualfull-five owners[3960, 5992],partial[3820, 5351, 5495]. Root actuallyread2main+4unique supports rawSHA/decoded excerpts: actualTW高川格 article ownnamed師從光原伊太郎(redlink,notownbiography), Igo/U-Go/CWI ownJapanese/Latin bridges; CWI EnglishCJGoExchange1962-07-13 Guo Tisheng black vsMaeda Nobuaki W+14/148 exactmatches target123986; oldChinaOlympicChineseownhistoricalplayer source,1963resultdifference preserved/excluded.2publishedNULL32unchangedSGF/FKslots,8oldverifiedfullrows including1oldgeneratedKO held.Original3failedKO/EN missingomitted withoutfakeabsences. Actual6.1source/FH6sol post575catalog originalapprovedcontext timestamp retained. No aliases/merge/rank/FK/hidden changes. No alias/merge/biography/rank/SGF/FK writes.
 - Actual PROD after580: players1651/3698(44.6458%), formal events64/85(75.2941%), both-player games132152/173025(76.3774%), full-five cards115535/173025(66.7736%), raw-title games40760/173025(23.5573%). HTML/actualownerlocks updated; translation/database writes continue.
+
+## 581 — B103 literal owner 审定
+
+- 两库实际 dry-run/apply/verify：103 literal raw owners /104 unchanged SGFs；仅 review_status/metadata，name_writes=0/FK=0。当前 catalog TEST aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2，PROD83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7。
+- 冻结515五语值继续待入库，不将owner状态计为翻译完成。统计仍为上一实际580的1651/3698棋手、64/85正式赛事、115535/173025完整卡片；已按零name写入及scope不变核对，不宣称新统计查询。两库收据/source/current碰撞/前像完整归档；root发现旧capture catalog后补抓真实post575cap再签，没有绕过校验。

@@ -111,6 +111,7 @@
 .golaxy-home__cards .kiosk-card__t b { font-size:15px; }
 .golaxy-home__cards .kiosk-card__t em { font-size:11px; }
 .golaxy-home__empty,.golaxy-home__state { padding:20px; color:var(--dim); font-size:13px; }
+.golaxy-home__empty button { min-height:44px; padding:0 16px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); color:var(--text); }
 .golaxy-home__state p { margin:0 0 12px; }
 .golaxy-home__state button { min-height:44px; padding:0 16px; border:1px solid var(--hair); border-radius:8px; background:var(--raise); color:var(--text); }
 .golaxy-home__tabs { display:flex; gap:5px; }

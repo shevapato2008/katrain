@@ -461,6 +461,15 @@ describe('Golaxy home', () => {
     expect(screen.queryByText('全部棋友甲')).not.toBeInTheDocument();
   });
 
+  it('does not offer another page for a short following list', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'fan', username: 'fan', status: '空闲' }] });
+    renderPage();
+    await userEvent.click(await screen.findByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(screen.getByRole('button', { name: '我的关注' }));
+    expect(await screen.findByRole('button', { name: '查看fan的个人资料' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '加载更多棋友' })).not.toBeInTheDocument();
+  });
+
   it('retains rows when loading another page fails and retries that page', async () => {
     platformRooms.mockResolvedValueOnce({ rooms: [room('1234')] }).mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce({ rooms: [room('5678')] });

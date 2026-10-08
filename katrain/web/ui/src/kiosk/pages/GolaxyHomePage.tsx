@@ -155,6 +155,7 @@ function useLobbyList<T extends { room_id?: string; user_id?: string }>(
   retry: number,
   load: LoadList<T>,
   setConnection: Dispatch<SetStateAction<Connection>>,
+  pageSize?: number,
 ): LobbyList<T> & { loadMore: (retry?: boolean) => void } {
   const [list, setList] = useState<LobbyList<T>>({ status: 'loading', items: [], more: 'idle', refreshing: false });
   const moreAction = useRef<(retry?: boolean) => void>(() => {});
@@ -170,7 +171,8 @@ function useLobbyList<T extends { room_id?: string; user_id?: string }>(
     let pages: T[][] = [];
     let timer: number | undefined;
     const items = () => [...new Map(pages.flat().map((item) => [item.room_id ?? item.user_id, item])).values()];
-    const hasMore = () => pages.length > 0 && pages.at(-1)!.length > 0;
+    const hasMore = () => pages.length > 0 && pages.at(-1)!.length > 0
+      && (pageSize === undefined || pages.at(-1)!.length >= pageSize);
     const schedule = () => {
       window.clearTimeout(timer);
       if (active && !document.hidden) timer = window.setTimeout(refresh, 30_000);
@@ -239,7 +241,7 @@ function useLobbyList<T extends { room_id?: string; user_id?: string }>(
       window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [connected, token, retry, load, setConnection]);
+  }, [connected, token, retry, load, setConnection, pageSize]);
 
   return { ...list, loadMore: (retryMore) => moreAction.current(retryMore) };
 }
@@ -266,7 +268,7 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
     : connection;
   const connected = currentConnection.kind === 'connected';
   const roomsList = useLobbyList(connected, token, listRetries.rooms, loadRooms, setConnection);
-  const usersList = useLobbyList(connected, token, listRetries.users, loadUsers, setConnection);
+  const usersList = useLobbyList(connected, token, listRetries.users, loadUsers, setConnection, userFilter === 'following' ? 20 : undefined);
   const rooms = roomsList.items;
   const users = usersList.items;
   const lists = { rooms: roomsList.status, users: usersList.status };

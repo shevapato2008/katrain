@@ -82,12 +82,13 @@ def idle_reserve_deficit(config: Mapping[str, object], idle_now: Mapping[int, in
 
 def choose_next_rung(eligible_rungs: Iterable[int], *, after_rung: int | None = None) -> int | None:
     """Select the next eligible rung in catalog order, wrapping at the end."""
-    eligible = sorted(set(eligible_rungs))
+    raw_rungs = tuple(eligible_rungs)
     playable = {level.rung for level in playable_rungs()}
-    if any(type(rung) is not int or rung not in playable for rung in eligible):
+    if any(type(rung) is not int or rung not in playable for rung in raw_rungs):
         raise ValueError("rotation contains an unplayable rung")
     if after_rung is not None and type(after_rung) is not int:
         raise ValueError("after_rung must be an integer or None")
+    eligible = sorted(set(raw_rungs))
     return next(
         (rung for rung in eligible if after_rung is None or rung > after_rung),
         eligible[0] if eligible else None,

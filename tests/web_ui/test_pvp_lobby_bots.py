@@ -114,6 +114,12 @@ def test_rotation_selects_next_eligible_rung_and_wraps():
     assert bots.choose_next_rung([], after_rung=7) is None
 
 
+@pytest.mark.parametrize("eligible", [[1, True], [1, "4"]])
+def test_rotation_rejects_invalid_raw_rungs_before_deduplication_or_sorting(eligible):
+    with pytest.raises(ValueError, match="unplayable rung"):
+        bots.choose_next_rung(eligible)
+
+
 def test_each_move_delay_is_selected_inside_five_to_thirty_seconds():
     class BoundaryRng:
         def __init__(self):

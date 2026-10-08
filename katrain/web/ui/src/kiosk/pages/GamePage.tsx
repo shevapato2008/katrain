@@ -37,6 +37,7 @@ import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
 import { countErrorMessage } from '../utils/countErrors';
 import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 import { useGameCelebration } from '../hooks/useGameCelebration';
+import { isStrictBoxKiosk } from '../shell/boxUrls';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
 type AttentionPoint = { row: number; col: number }; // vision row 0 is the top edge
@@ -183,7 +184,62 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { token, user, isAuthenticated } = useAuth();
   const { pathname } = useLocation();
   const centralRoom = pathname.includes('/play/pvp/room/');
-  const session = useGameSession({ token: token ?? undefined, centralRoom, deferMoveSoundUntilPaint: true });
+  const [centralUserId, setCentralUserId] = useState<number | null>(isStrictBoxKiosk ? null : user?.id ?? null);
+  const [countIdentityError, setCountIdentityError] = useState(false);
+  const [identityRetry, setIdentityRetry] = useState(0);
+  const [countRequest, setCountRequest] = useState<{ requester_id: number; requester_name: string } | null>(null);
+  const [countPending, setCountPending] = useState(false);
+  const [countNotice, setCountNotice] = useState<string | null>(null);
+  const [countResponding, setCountResponding] = useState(false);
+  useEffect(() => {
+    if (!centralRoom || !isAuthenticated) return;
+    if (!isStrictBoxKiosk) { setCentralUserId(user?.id ?? null); return; }
+    let cancelled = false;
+    setCentralUserId(null);
+    setCountIdentityError(false);
+    fetch('/api/pvp/identity', { headers: token ? { Authorization: `Bearer ${token}` } : undefined, credentials: 'same-origin' })
+      .then((response) => { if (!response.ok) throw new Error('identity unavailable'); return response.json(); })
+      .then((data: unknown) => {
+        const id = data && typeof data === 'object' ? (data as Record<string, unknown>).user_id : null;
+        if (typeof id !== 'number' || !Number.isFinite(id)) throw new Error('invalid identity');
+        if (!cancelled) setCentralUserId(id);
+      })
+      .catch(() => { if (!cancelled) setCountIdentityError(true); });
+    return () => { cancelled = true; };
+  }, [centralRoom, isAuthenticated, token, user?.id, identityRetry]);
+  useEffect(() => {
+    setCountRequest(null);
+    setCountPending(false);
+    setCountNotice(null);
+  }, [sessionId]);
+  const onCountRequest = useCallback((data: { requester_id: number; requester_name: string }) => {
+    if (centralRoom) setCountRequest(data);
+  }, [centralRoom]);
+  const onCountRejected = useCallback(() => {
+    if (!centralRoom) return;
+    setCountRequest(null);
+    setCountPending(false);
+    setCountNotice('数子请求已被拒绝');
+  }, [centralRoom]);
+  const onCountTimeout = useCallback(() => {
+    if (!centralRoom) return;
+    setCountRequest(null);
+    setCountPending(false);
+    setCountNotice('数子请求已超时');
+  }, [centralRoom]);
+  const session = useGameSession({ token: token ?? undefined, centralRoom, deferMoveSoundUntilPaint: true,
+    onCountRequest, onCountRejected, onCountTimeout });
+  useEffect(() => {
+    const result = session.gameEndData?.result;
+    if (!centralRoom || !result) return;
+    session.setGameState((current) => current ? { ...current, end_result: result, awaiting_count: false, degraded: false } : current);
+  }, [centralRoom, session.gameEndData, session.setGameState]);
+  useEffect(() => {
+    if (!session.gameState?.end_result || session.gameState.awaiting_count) return;
+    setCountRequest(null);
+    setCountPending(false);
+    setCountNotice(null);
+  }, [session.gameState?.end_result, session.gameState?.awaiting_count]);
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -606,6 +662,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const localGame = gameState.game_type === 'pvp_local';
   const lobbyGame = gameState.game_type === 'pvp_lobby';
   const lobbyCountRetry = lobbyGame && !!gameState.degraded && !!gameState.awaiting_count;
+  const opponentCountRequest = lobbyGame && countRequest && centralUserId !== null
+    && countRequest.requester_id !== centralUserId ? countRequest : null;
   const ogsGame = gameState.game_type === 'pvp_online';
   const onlineGame = ogsGame || lobbyGame;
   const myColor = gameState.platform_my_color ?? gameState.my_color ?? null;
@@ -825,6 +883,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
+  const respondToLobbyCount = async (accept: boolean) => {
+    if (!sessionId || !opponentCountRequest || countResponding) return;
+    setCountResponding(true);
+    setCountNotice(null);
+    try {
+      const response = await API.respondCount(sessionId, accept, token ?? undefined);
+      if (response?.state) session.setGameState(response.state);
+      setCountRequest(null);
+      setCountPending(false);
+      if (!accept) setCountNotice('已拒绝数子请求');
+    } catch {
+      setCountNotice('回应数子请求失败，请重试');
+    } finally {
+      setCountResponding(false);
+    }
+  };
+
   const handleAction = async (action: string) => {
     if (lobbyGame && !['pass', 'resign', 'count'].includes(action)) return;
     if (lobbyCountRetry && action !== 'count') return;
@@ -849,14 +924,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       return;
     }
     if (action === 'count') {
-      // 数子:人机 / 本地对局由服务端当场数完并结束对局(没有对手握手)。
-      if (!sessionId || countingRef.current) return;
+      if (lobbyGame && centralUserId === null) {
+        setCountNotice('无法确认中央账号身份，暂不能处理数子请求');
+        return;
+      }
+      if (!sessionId || countingRef.current || (lobbyGame && countPending)) return;
       countingRef.current = true;
       setCountError(null);
       setCounting(true);
       try {
-        const res = await API.requestCount(sessionId);
+        const res = await API.requestCount(sessionId, token ?? undefined);
         if (res?.state) session.setGameState(res.state);
+        if (lobbyGame && res?.status === 'pending') {
+          setCountPending(true);
+          setCountNotice(null);
+        }
       } catch (error) {
         // 结构化原因来自本地对局 v2；旧服务端/统一终局冲突仍由字符串回退覆盖。
         setCountError(error instanceof ApiError
@@ -1051,16 +1133,27 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
   // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
   // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
-  const statusSlot = lobbyCountRetry ? (
+  const statusSlot = lobbyGame && countIdentityError ? (
+    <div className="gstatus" data-testid="lobby-count-identity-error" data-tone="bad" role="alert">
+      <div><b>无法确认中央账号身份，暂不能处理数子请求</b></div>
+      <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => setIdentityRetry((n) => n + 1)}>重试身份</button>
+    </div>
+  ) : lobbyCountRetry ? (
     <div className="gstatus" data-testid="lobby-count-error" data-tone={counting ? undefined : 'bad'} role="alert">
       {counting && <CircularProgress size={14} />}
       <div>
-        <b>{counting ? '正在重新数子…' : '自动数子失败'}</b>
-        <span>棋局已停手，数子成功后才会显示正式结果。</span>
+        <b>{counting ? '正在重新数子…' : countPending ? '等待对方确认数子' : '自动数子失败'}</b>
+        <span>{countNotice ?? '棋局已停手，数子成功后才会显示正式结果。'}</span>
       </div>
-      <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting}
+      <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting || countPending}
         onClick={() => { void handleAction('count'); }}>重试数子</button>
     </div>
+  ) : lobbyGame && countPending ? (
+    <div className="gstatus" data-testid="lobby-count-pending" role="status">
+      <div><b>等待对方确认数子</b><span>对方接受后会显示正式结果。</span></div>
+    </div>
+  ) : lobbyGame && countNotice ? (
+    <div className="gstatus" data-testid="lobby-count-notice" role="status"><div><b>{countNotice}</b></div></div>
   ) : onlineMoveError ? (
     <div className="gstatus" data-testid="ogs-move-error" data-tone="bad" role="alert">
       <div><b>{onlineMoveError}</b></div>
@@ -1370,6 +1463,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           >
             {t('game:ogs_no_dead_send', '确认发送无死子')}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!opponentCountRequest} className="kiosk-game-side-dialog">
+        <DialogTitle>对方请求数子</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{opponentCountRequest?.requester_name}请求结束对局并数子，是否同意？</DialogContentText>
+          {countNotice === '回应数子请求失败，请重试' && <Alert severity="error">{countNotice}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={countResponding} onClick={() => void respondToLobbyCount(false)}>拒绝数子</Button>
+          <Button disabled={countResponding} variant="contained" onClick={() => void respondToLobbyCount(true)}>接受数子</Button>
         </DialogActions>
       </Dialog>
 

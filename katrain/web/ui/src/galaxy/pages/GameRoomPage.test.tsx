@@ -8,10 +8,10 @@
  *   M4 棋盘退回写死的 `{coords:true,numbers:false}`           ⇒「坐标开关通到棋盘」红
  *   M5 `actions={null}`（翻手键留在滚动段）                    ⇒「六个键在动作区」红
  */
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameState } from '../../api';
+import { API, type GameState } from '../../api';
 import GameRoomPage from './GameRoomPage';
 
 const mocks = vi.hoisted(() => ({
@@ -135,7 +135,18 @@ describe('GameRoomPage 统一版式', () => {
   it('wires the coordinates switch through to the board', () => {
     renderPage();
     expect(screen.getByTestId('mock-board')).toHaveAttribute('data-coords', 'true');
-    fireEvent.click(screen.getByRole('switch', { name: 'Coordinates' }));
+    fireEvent.click(screen.getByRole('button', { name: /Coordinates|坐标/ }));
     expect(screen.getByTestId('mock-board')).toHaveAttribute('data-coords', 'false');
+  });
+
+  it('shows a retry for a recoverable count failure instead of a final result', async () => {
+    mocks.gameState = makeState({ game_type: 'pvp_lobby', end_result: 'board-game-end', awaiting_count: true, degraded: true });
+    vi.mocked(API.requestCount).mockResolvedValue({ status: 'pending' });
+    renderPage();
+    expect(screen.queryByText('已结束')).not.toBeInTheDocument();
+    expect(screen.queryByText('board-game-end')).not.toBeInTheDocument();
+    expect(screen.getByText(/自动数子失败/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重试数子' }));
+    await waitFor(() => expect(API.requestCount).toHaveBeenCalledWith('s1', 'tk'));
   });
 });

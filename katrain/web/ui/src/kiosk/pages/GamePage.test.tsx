@@ -76,6 +76,8 @@ const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolve
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
 const { mockLadderStatus } = vi.hoisted(() => ({ mockLadderStatus: vi.fn() }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: mockLadderStatus }));
+const { strictBox } = vi.hoisted(() => ({ strictBox: { value: false } }));
+vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return strictBox.value; } }));
 
 let mockIsVisionEnabled = false;
 let mockPoseLocked = true;
@@ -101,16 +103,19 @@ const mockSetGameState = vi.fn();
 const mockReconnect = vi.fn();
 const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
   mockAcknowledgePaintedNode: vi.fn(),
-  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean } | null },
+  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean;
+    onCountRequest?: (data: { requester_id: number; requester_name: string }) => void;
+    onCountRejected?: () => void; onCountTimeout?: () => void } | null },
 }));
 
 let mockGameState: GameState | undefined;
 let mockConnectionLost: 'central' | null = null;
 let mockSessionError: string | null = null;
+let mockGameEndData: { reason: 'forfeit'; result: string } | null = null;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean; centralRoom?: boolean }) => {
+  useGameSession: (options: NonNullable<typeof capturedSessionOptions.current>) => {
     capturedSessionOptions.current = options;
     return {
       sessionId: 'test-session',
@@ -127,7 +132,7 @@ vi.mock('../../hooks/useGameSession', () => ({
       lastLog: null,
       chatMessages: [],
       sendChat: vi.fn(),
-      gameEndData: null,
+      gameEndData: mockGameEndData,
       physicalReminder: mockPhysicalReminder,
       // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
       // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
@@ -207,7 +212,9 @@ describe('GamePage', () => {
     mockPoseLocked = true;
     mockPhysicalReminder = null;
     mockConnectionLost = null;
+    strictBox.value = false;
     mockSessionError = null;
+    mockGameEndData = null;
     testNavigate = null;
     capturedBoardProps.current = null;
     capturedSessionOptions.current = null;
@@ -1013,6 +1020,85 @@ describe('GamePage', () => {
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
   describe('self-owned lobby room', () => {
+    it('applies a central opponent departure result carried by game_end', () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const { rerender } = renderPage('/kiosk/play/pvp/room/test-session');
+      mockGameEndData = { reason: 'forfeit', result: 'W+R' };
+      rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+      expect(mockSetGameState).toHaveBeenCalledWith(expect.any(Function));
+      mockGameState = mockSetGameState.mock.lastCall![0](mockGameState);
+      rerender(pageTree('/kiosk/play/pvp/room/test-session'));
+      expect(screen.getByTestId('result-badge')).toBeInTheDocument();
+    });
+    it('uses central identity to offer the opponent count request and responds', async () => {
+      strictBox.value = true;
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ user_id: 42 }), { status: 200 })));
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const respond = vi.spyOn(API, 'respondCount').mockResolvedValue({ accepted: true });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/pvp/identity', expect.anything()));
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 42, requester_name: '我' }));
+        expect(screen.queryByRole('button', { name: '接受数子' })).not.toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 1, requester_name: '对手' }));
+        expect(screen.getByRole('dialog')).toHaveTextContent('对手');
+        expect(screen.getByRole('button', { name: '拒绝数子' })).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '接受数子' }));
+        await waitFor(() => expect(respond).toHaveBeenCalledWith('test-session', true, 'mock-token'));
+      } finally { respond.mockRestore(); vi.unstubAllGlobals(); }
+    });
+
+    it('can reject an opponent count request', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const respond = vi.spyOn(API, 'respondCount').mockResolvedValue({ accepted: false });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 2, requester_name: '对手' }));
+        fireEvent.click(screen.getByRole('button', { name: '拒绝数子' }));
+        await waitFor(() => expect(respond).toHaveBeenCalledWith('test-session', false, 'mock-token'));
+      } finally { respond.mockRestore(); }
+    });
+
+    it('shows pending count and clears it on rejection or timeout', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      const request = vi.spyOn(API, 'requestCount').mockResolvedValue({ status: 'pending' });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountRejected?.());
+        expect(screen.getByText('数子请求已被拒绝')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'MOCK_COUNT' }));
+        expect(await screen.findByText('等待对方确认数子')).toBeInTheDocument();
+        act(() => capturedSessionOptions.current?.onCountTimeout?.());
+        expect(screen.getByText('数子请求已超时')).toBeInTheDocument();
+      } finally { request.mockRestore(); }
+    });
+
+    it('does not classify a count invitation when central identity fails', async () => {
+      strictBox.value = true;
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('{}', { status: 503 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ user_id: 42 }), { status: 200 })));
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        act(() => capturedSessionOptions.current?.onCountRequest?.({ requester_id: 1, requester_name: '对手' }));
+        expect(await screen.findByText('无法确认中央账号身份，暂不能处理数子请求')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: '接受数子' })).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '重试身份' }));
+        expect(await screen.findByRole('button', { name: '接受数子' })).toBeInTheDocument();
+      } finally { vi.unstubAllGlobals(); }
+    });
     it('blocks a stale board on central outage and offers a real reconnect', async () => {
       mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
         players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
@@ -1062,7 +1148,7 @@ describe('GamePage', () => {
         expect(mockOnMove).not.toHaveBeenCalled();
         expect(mockHandleAction).not.toHaveBeenCalledWith('pass');
         fireEvent.click(screen.getByRole('button', { name: '重试数子' }));
-        await waitFor(() => expect(count).toHaveBeenCalledWith('test-session'));
+        await waitFor(() => expect(count).toHaveBeenCalledWith('test-session', 'mock-token'));
       } finally { count.mockRestore(); }
     });
   });

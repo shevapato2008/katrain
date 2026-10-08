@@ -60,6 +60,7 @@ const GameRoomPage = () => {
     const [showCountConfirm, setShowCountConfirm] = useState(false);
     const [showCountRequestDialog, setShowCountRequestDialog] = useState(false);
     const [countRequesterName, setCountRequesterName] = useState<string>('');
+    const [countRetrying, setCountRetrying] = useState(false);
 
     const handleGameEnd = useCallback(() => {
         setShowGameEndDialog(true);
@@ -97,6 +98,7 @@ const GameRoomPage = () => {
         onCountRejected: handleCountRejected,
         onCountTimeout: handleCountTimeout
     });
+    const finalResult = !!gameState?.end_result && !gameState.awaiting_count;
 
     useEffect(() => {
         if (sessionId && sessionId !== currentSessionId) {
@@ -110,7 +112,7 @@ const GameRoomPage = () => {
         const isWhite = gameState?.players_info.W.name === user?.username;
         const isPlayer = isBlack || isWhite;
 
-        if (gameState && isPlayer && !gameState.end_result && !gameEndData) {
+        if (gameState && isPlayer && !finalResult && !gameEndData) {
             registerActiveGame(async () => {
                 if (sessionId && token) {
                     try {
@@ -124,7 +126,7 @@ const GameRoomPage = () => {
             unregisterActiveGame();
         }
         return () => unregisterActiveGame();
-    }, [gameState?.end_result, gameState?.players_info, gameEndData, user?.username, sessionId, token, registerActiveGame, unregisterActiveGame]);
+    }, [finalResult, gameState?.players_info, gameEndData, user?.username, sessionId, token, registerActiveGame, unregisterActiveGame]);
 
     const handleLeaveGame = useCallback(async () => {
         if (!sessionId || !token) return;
@@ -144,17 +146,18 @@ const GameRoomPage = () => {
         if (action === 'resign') {
              setShowResignConfirm(true);
         } else if (action === 'count') {
-             if (!gameState?.end_result) {
+             if (!finalResult) {
                  setShowCountConfirm(true);
              }
         } else {
              void (async () => { try { await handleAction(action); } catch { /* surfaced by hook */ } })();
         }
-    }, [handleAction, gameState?.end_result]);
+    }, [handleAction, finalResult]);
 
     const confirmCount = useCallback(async () => {
         setShowCountConfirm(false);
         if (!sessionId || !token) return;
+        setCountRetrying(true);
         try {
             const response = await API.requestCount(sessionId, token);
             if (response.result) {
@@ -165,6 +168,8 @@ const GameRoomPage = () => {
         } catch (e: any) {
             console.error("Count request failed:", e);
             alert(e.message || "Count request failed");
+        } finally {
+            setCountRetrying(false);
         }
     }, [sessionId, token]);
 
@@ -192,7 +197,8 @@ const GameRoomPage = () => {
     const myTurn = (gameState.player_to_move === 'B' && isBlack) || (gameState.player_to_move === 'W' && isWhite);
 
     const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
-    const isGameOver = !!gameState.end_result;
+    const isGameOver = finalResult;
+    const countRetry = !!gameState.end_result && !!gameState.awaiting_count && !!gameState.degraded;
 
     /* 「离开对局」的落点。观战者没有可判负的东西、已结束的对局也没有 —— 直接回大厅；
        只有进行中的自己的对局才弹那句「离开将判负」的确认框。 */
@@ -326,7 +332,9 @@ const GameRoomPage = () => {
                         /* 棋盘上方那条横栏取消了。「轮到你了 / 对方回合 / 观战中」升到这里成为状态徽章 ——
                            它是这一屏此刻的状态，模块牌右侧正是放状态的地方。 */
                         status={
-                            isGameOver
+                            countRetry
+                                ? <Chip size="small" color="error" variant="outlined" label="数子失败" />
+                                : isGameOver
                                 ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
                                 : !isPlayer
                                     ? <Chip size="small" variant="outlined" label={t('game_room:spectating', '观战中')} />
@@ -351,9 +359,13 @@ const GameRoomPage = () => {
                         isRated={isRankedGameType(gameState.game_type)}
                         isSpectator={!isPlayer}
                         spectatorCount={spectatorCount}
-                        resultAlert={gameState.end_result
-                            ? <Alert severity="success" variant="outlined">{translateResult(gameState.end_result, t, gameState.ruleset)}</Alert>
-                            : undefined}
+                        resultAlert={countRetry
+                            ? <Alert severity="error" variant="outlined" action={isPlayer
+                                ? <Button size="small" disabled={countRetrying} onClick={() => void confirmCount()}>重试数子</Button>
+                                : undefined}>自动数子失败，结果尚未确定。</Alert>
+                            : isGameOver
+                                ? <Alert severity="success" variant="outlined">{translateResult(gameState.end_result!, t, gameState.ruleset)}</Alert>
+                                : undefined}
                         onLeave={handleLeave}
                         embedded
                     />

@@ -16,6 +16,7 @@ import BoardPageShell from '../../components/board/BoardPageShell';
 import { useBoardCoordinates } from '../../components/board/useBoardCoordinates';
 import ModulePlate from '../../components/layout/ModulePlate';
 import LiveMatchDisplayControls from './LiveMatchDisplayControls';
+import ReplayBoard3D from '../../components/board/ReplayBoard3D';
 
 /* 加载态的占位**不是控件**。原来这里是 `<Button disabled><Skeleton/></Button>` ——
    一个禁用按钮，子元素只有骨架，于是既没有可见文字也没有 `aria-label`：读屏用户
@@ -45,6 +46,7 @@ export default function LiveMatchPage() {
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
+  const [view3d, setView3d] = useState(false);
   const [showTerritory, setShowTerritory] = useState(false);
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
@@ -153,7 +155,7 @@ export default function LiveMatchPage() {
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
       board={(
-        <LiveBoard
+        view3d ? <ReplayBoard3D moves={match.moves} currentMove={currentMove} boardSize={match.board_size} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined} /> : <LiveBoard
           moves={match.moves}
           currentMove={currentMove}
           pvMoves={pvMoves}
@@ -201,6 +203,7 @@ export default function LiveMatchPage() {
             showMoveNumbers={showMoveNumbers}
             showAiMarkers={showAiMarkers}
             showCoordinates={coordinates.visible}
+            view3d={view3d}
             ownershipAvailable={ownership != null}
             tryMoves={tryMoves}
             onTryMoveToggle={() => {
@@ -211,6 +214,7 @@ export default function LiveMatchPage() {
             onMoveNumbersToggle={() => setShowMoveNumbers((visible) => !visible)}
             onAiMarkersToggle={() => setShowAiMarkers((visible) => !visible)}
             onCoordinatesToggle={coordinates.toggle}
+            on3dToggle={() => setView3d((value) => !value)}
             onClearTryMoves={() => setTryMoves([])}
           />
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

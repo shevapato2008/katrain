@@ -18,12 +18,12 @@ import FlagIcon from '@mui/icons-material/Flag';
 import UndoIcon from '@mui/icons-material/Undo';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import CalculateIcon from '@mui/icons-material/Calculate';
-import ViewInArIcon from '@mui/icons-material/ViewInAr';
+import BoardDisplayControls from '../board/BoardDisplayControls';
 import { type GameState, API } from '../../../api';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleGroupSx, toolGridSx } from '../../../components/railStyles';
+import { railToggleGroupSx, boardControlGridSx } from '../../../components/railStyles';
 
 /** 右栏中段的一节：统一的内边距 + 一条分隔线。取代原来散落的 `<Divider/>`。 */
 /* 横向内距由 `BoardPageShell` 的 `RAIL_GUTTER` 统一供给，这里只留纵向 ——
@@ -217,7 +217,7 @@ const RightSidebarPanel = ({
 
                 {/* 工具格 + 离开对局 */}
                 <Box sx={sectionSx}>
-                    <Box sx={toolGridSx}>
+                    <Box sx={boardControlGridSx}>
                         <ToolGridButton
                             icon={<MapIcon />}
                             label={t('Territory', 'Territory')}
@@ -271,13 +271,6 @@ const RightSidebarPanel = ({
                             onClick={() => onAction('count')}
                             disabled={isGameOver || isSpectator || gameState.history.length < (gameState.count_min_moves ?? 100)}
                         />
-                        <ToolGridButton
-                            icon={<ViewInArIcon />}
-                            label={t('3D', '3D')}
-                            toggle
-                            active={analysisToggles.view3d}
-                            onClick={() => onToggleChange('view3d')}
-                        />
                     </Box>
                     {isRated && !isGameOver && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
@@ -329,30 +322,10 @@ const RightSidebarPanel = ({
                     </Box>
                 )}
 
-                {/* Other Settings */}
-                {/* 显示开关。冻结稿把它们做成**整行** —— 文字靠左、开关靠右、一行一个。
-                    原来是 MUI 的默认排布（开关在前、文字在后、并排挤成一行），
-                    320 右栏下两个开关会挨在一起，读起来像一个控件的两半。
-
-                    2026-08-30 右栏加宽后补 `auto-fit`：整行排布在 520 档下会把标签和
-                    滑块拉开近 480px，读起来不再像一个控件。`minmax(200px, 1fr)` 让它
-                    **只在装得下两列时**才分两列——320/360/420 三档可用宽分别是
-                    288/328/388，都小于 400，排布与加宽之前逐像素一致；520 档可用 488，
-                    分成两列各 244，标签与滑块重新贴在一起。 */}
-                <Box sx={{ py: 2, ...railToggleGroupSx }}>
-                    {([
-                        ['coords', t('Coordinates', 'Coordinates'), analysisToggles.coords, true],
-                        ['numbers', t('Move Numbers', 'Move Numbers'), analysisToggles.numbers, true],
-                        ['stoneDropEffect', t('Stone Effect', '落子特效'), !!analysisToggles.stoneDropEffect, !!analysisToggles.view3d],
-                    ] as [string, string, boolean, boolean][]).filter(([, , , shown]) => shown).map(([key, label, checked]) => (
-                        <FormControlLabel
-                            key={key}
-                            labelPlacement="start"
-                            sx={{ ml: 0, mr: 0, width: '100%', justifyContent: 'space-between' }}
-                            control={<Switch size="small" checked={checked} onChange={() => onToggleChange(key)} />}
-                            label={<Typography variant="body2">{label}</Typography>}
-                        />
-                    ))}
+                {/* 棋盘显示项与游戏操作隔开；落子特效仅在 3D 时可用。 */}
+                <Box sx={{ py: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <BoardDisplayControls numbers={!!analysisToggles.numbers} coordinates={!!analysisToggles.coords} view3d={!!analysisToggles.view3d} onNumbers={() => onToggleChange('numbers')} onCoordinates={() => onToggleChange('coords')} on3d={() => onToggleChange('view3d')} />
+                    {!!analysisToggles.view3d && <Box sx={{ mt: 1, ...railToggleGroupSx }}><FormControlLabel labelPlacement="start" sx={{ ml: 0, mr: 0, width: '100%', justifyContent: 'space-between' }} control={<Switch size="small" checked={!!analysisToggles.stoneDropEffect} onChange={() => onToggleChange('stoneDropEffect')} />} label={<Typography variant="body2">{t('Stone Effect', '落子特效')}</Typography>} /></Box>}
                 </Box>
 
                 {/* Game Result Progress (If Rated).

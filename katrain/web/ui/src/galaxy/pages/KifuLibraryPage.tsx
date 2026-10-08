@@ -30,7 +30,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ScienceIcon from '@mui/icons-material/Science';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -43,7 +44,6 @@ import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 import { formatRank } from '../../utils/rank';
-import { kifuSourceLabel } from '../../utils/kifuSource';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -120,14 +120,12 @@ function GameRecordCard({
   onClick,
   tMovesUnit,
   t,
-  lang,
   selected,
 }: {
   album: KifuAlbumSummary;
   onClick: () => void;
   tMovesUnit: string;
   t: (key: string, fallback?: string) => string;
-  lang: string;
   selected?: boolean;
 }) {
   const r = album.result || '';
@@ -228,16 +226,6 @@ function GameRecordCard({
             }} />
           </Box>
         </Box>
-        {!!album.sources?.length && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, minWidth: 0, mt: 0.6 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ ...railMetaSx, mr: 0.2 }}>
-              {t('kifu:source', '来源')}
-            </Typography>
-            {album.sources.map((source) => (
-              <Chip key={source} label={kifuSourceLabel(source, t, lang)} size="small" variant="outlined" sx={{ height: 19, maxWidth: '100%', fontSize: '0.63rem', '& .MuiChip-label': { px: 0.65, overflow: 'hidden', textOverflow: 'ellipsis' } }} />
-            ))}
-          </Box>
-        )}
       </CardActionArea>
     </Card>
   );
@@ -353,13 +341,17 @@ export default function KifuLibraryPage() {
     return () => { request.cancelled = true; };
   }, [selectedId, fetchSelected, previewReload]);
 
+  useEffect(() => {
+    if (selectedId === null && items[0]) handleCardClick(items[0]);
+  }, [items, selectedId, handleCardClick]);
+
   const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
 
-  const handleOpenInResearch = useCallback(() => {
+  const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
-      navigate(`/galaxy/research?kifu_id=${selectedId}`);
+      navigate(`/galaxy/kifu/${selectedId}/${visibleSelectedAlbum?.has_analysis ? 'report' : 'replay'}`);
     }
-  }, [selectedId, navigate]);
+  }, [selectedId, visibleSelectedAlbum?.has_analysis, navigate]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const movesUnit = t('kifu:moves_unit', '手');
@@ -499,7 +491,6 @@ export default function KifuLibraryPage() {
                         onClick={() => handleCardClick(album)}
                         tMovesUnit={movesUnit}
                         t={t}
-                        lang={lang}
                         selected={selectedId === album.id}
                       />
                     </Box>
@@ -548,12 +539,12 @@ export default function KifuLibraryPage() {
             <Button
               fullWidth
               variant="contained"
-              startIcon={<ScienceIcon />}
-              disabled={!selectedAlbum}
-              onClick={handleOpenInResearch}
+              startIcon={visibleSelectedAlbum?.has_analysis ? <AssessmentIcon /> : <LibraryBooksIcon />}
+              disabled={!hasPreview}
+              onClick={handleViewReport}
               sx={{ textTransform: 'none', minHeight: 40, borderRadius: '8px' }}
             >
-              {t('kifu:open_in_research', '在研究中打开')}
+              {visibleSelectedAlbum?.has_analysis ? t('kifu:view_analysis_report', '查看分析报告') : t('kifu:view_kifu', '查看棋谱')}
             </Button>
           </Box>
         </>

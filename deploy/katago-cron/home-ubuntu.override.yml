@@ -1,0 +1,5 @@
+services:
+  katrain-cron:
+    image: katrain-cron:transformer-test-20261002
+    environment:
+      KATAGO_EXPECTED_MODEL_SHA256: 93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871

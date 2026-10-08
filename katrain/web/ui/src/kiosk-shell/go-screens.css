@@ -1092,8 +1092,7 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 
    修法是给百分比一根**真轨道** `.hbt`：它在 `.hb` 里 `flex:1`，而 `.hb` 被
    `.hbars` 拉满（`align-items: stretch`，原来是 `flex-end` 所以 `.hb` 只有内容高）。
-   标签 `<u>` 留在 `.hb` 里、轨道外，所以它不占柱子的百分比基准 ——
-   也就不用把 `line-height: 11px` 那个值再拄到 `calc()` 里再写一遍。 */
+   标签绝对定位在柱顶，所以不占柱子的百分比基准。 */
 .hbars { flex: 1; min-height: 0; display: flex; align-items: stretch; justify-content: center;
   gap: 3px; width: 100%; }
 .hb { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
@@ -2305,3 +2304,149 @@ button.kiosk-row.figrow { flex: none; }
 @media (prefers-reduced-motion: reduce) {
   .kiosk-attention-marker { animation: none; }
 }
+
+/* Reports share the actual 460 × 516 rail. Keep its six rows fixed; transient
+   notices sit above the rail content instead of pushing playback offscreen. */
+.report-analysis-layout { position: relative; }
+.report-analysis-layout [data-coordinates="false"] .kiosk-board__ruler span { visibility: hidden; }
+.report-analysis-rail { position: relative; gap: 3px; width: 460px; height: 516px; min-height: 0; overflow: clip; }
+.report-analysis-rail__head {
+  flex: none; height: 80px; box-sizing: border-box; padding: 4px 8px;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  border: 1px solid var(--hair); border-radius: 8px; background: var(--panel);
+}
+.report-analysis-rail__scores { display: grid; grid-template-rows: 22px 22px; gap: 1px; font-size: 16px; }
+.report-analysis-rail__scores b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.report-analysis-rail__players { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 4px; }
+.report-analysis-rail__players strong { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 16px; font-weight: 600; }
+.report-analysis-rail__players strong span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-analysis-rail__players strong:last-child { justify-content: flex-end; }
+.report-analysis-rail__players .kifu-record__stone { width: 14px; height: 14px; }
+.report-analysis-rail__players b { color: var(--accent); white-space: nowrap; font-size: 16px; }
+.report-analysis-rail__win { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 16px; }
+.report-analysis-rail__win > span { white-space: nowrap; }
+.report-analysis-rail__win i { flex: 1; height: 6px; min-width: 12px; overflow: hidden; border-radius: 8px; background: #eff4ef; }
+.report-analysis-rail__win em { display: block; height: 100%; background: #101411; }
+.report-analysis-rail__status { display: flex; justify-content: space-between; gap: 4px; min-width: 0; font-size: 16px; color: #d4e2d7; }
+.report-analysis-rail__status span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.report-analysis-rail__notices:empty { display: none; }
+.report-analysis-rail__notices:not(:empty) {
+  position: absolute; z-index: 5; top: 130px; left: 0; right: 0;
+  max-height: 132px; overflow-y: auto;
+}
+.report-analysis-rail__notices .rverr { margin: 0 0 3px; background: var(--panel); box-shadow: 0 5px 16px #0009; }
+.report-analysis-rail__candidates { flex: none; height: 200px; box-sizing: border-box; border: 1px solid var(--hair); border-radius: 8px; overflow: hidden; }
+.report-analysis-rail__columns, .report-analysis-rail__candidate {
+  display: grid; grid-template-columns: 1.15fr 1fr 1fr 1fr; align-items: center; text-align: center;
+}
+.report-analysis-rail__columns { height: 22px; font-size: 14px; color: #d4e2d7; background: var(--panel); }
+.report-analysis-rail__candidate {
+  width: 100%; height: 44px; min-height: 44px; box-sizing: border-box; padding: 0 6px;
+  border: 0; border-top: 1px solid var(--hair); border-radius: 0;
+  background: var(--raise); color: var(--text); font-family: var(--font-sans); font-size: 14px;
+}
+.report-analysis-rail__candidate:first-of-type { color: var(--good); }
+.report-analysis-rail__candidate .neg { color: var(--bad); }
+.report-analysis-rail__candidate[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--raise)); }
+.report-analysis-rail__candidate:disabled { opacity: 1; color: var(--dim); cursor: default; }
+.report-analysis-rail__actions { flex: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; height: 44px; }
+.report-analysis-rail__actions button {
+  flex: 1; min-width: 44px; height: 44px; padding: 0 3px; border: 1px solid var(--hair);
+  border-radius: 8px; background: var(--panel); color: var(--text); font-size: 16px; line-height: 1.2;
+}
+.report-analysis-rail__actions .kiosk-icon { display: none; }
+.report-analysis-rail__actions button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--raise)); }
+.report-analysis-rail button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.report-analysis-rail button:disabled { cursor: default; }
+.report-analysis-rail__actions button:disabled { opacity: .5; }
+.report-analysis-rail__toggles.gtoggles { flex: none; height: 44px; gap: 4px; }
+.report-analysis-rail__toggles.gtoggles button { height: 44px; min-height: 44px; font-size: 16px; }
+.report-analysis-rail__toggles button:not([aria-pressed]):not(:disabled) { color: var(--text); }
+.report-analysis-rail__toggles .kiosk-icon { display: none; }
+.report-analysis-rail__toggles button[aria-pressed="true"] .kiosk-icon { display: inline-flex; }
+.report-analysis-rail .kiosk-movenav { margin-top: auto; flex: none; height: 44px; }
+.report-analysis-rail .kiosk-movenav button { min-height: 44px; }
+.report-analysis-rail .report-playback { display: grid; grid-template-columns: repeat(5,44px) minmax(0,1fr) 70px; gap: 3px; align-items: center; }
+.report-analysis-rail .report-playback button { width: 44px; height: 44px; padding: 0; font-size: 20px; }
+.report-analysis-rail .report-playback .kiosk-icon svg { width: 21px; height: 21px; }
+.report-analysis-rail .report-playback input[type="range"] { width: 100%; min-width: 0; height: 44px; accent-color: var(--accent); }
+.report-analysis-rail .report-playback output { font-size: 16px; text-align: right; white-space: nowrap; }
+.report-analysis-rail .rverr { flex: none; height: auto; margin: 0; overflow-wrap: anywhere; }
+.report-analysis-rail .rverr button { min-height: 44px; flex: none; }
+.report-analysis-modal.MuiModal-root { position: absolute; inset: 0; z-index: 30; }
+.report-analysis-modal .MuiBackdrop-root { position: absolute; }
+.report-analysis-modal__box {
+  position: absolute; top: 0; right: 0; width: 460px; height: 516px; box-sizing: border-box;
+  display: flex; flex-direction: column; border: 1px solid var(--accent); border-radius: 12px;
+  background: var(--panel); color: var(--text); box-shadow: 0 12px 40px #0008;
+}
+.report-analysis-modal__head { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; }
+.report-analysis-modal__head h3 { margin: 0; font-family: var(--font-sans); font-size: 16px; }
+.report-analysis-modal__head button { min-height: 44px; padding: 0 12px; background: var(--raise); color: var(--text); border: 1px solid var(--hair); border-radius: 8px; }
+.report-analysis-modal__body { flex: 1; min-height: 0; overflow-y: auto; }
+/* The plot owns remaining space; explanations are in the adjacent tab help. */
+.report-analysis-modal .gradebody { min-height: 0; height: 100%; display: flex; flex-direction: column; padding: 0 12px 12px; gap: 8px; }
+.report-analysis-modal .gseg5 { display: flex; flex: none; height: 44px; min-height: 44px; padding: 0; }
+.report-analysis-modal .grade-tab { display: flex; flex: 1 1 auto; min-width: 0; align-items: center; justify-content: center; }
+.report-analysis-modal .grade-tab > button:not(.chart-tab-help) { min-width: 44px; flex: 0 1 auto; height: 44px; padding: 0 3px; font-size: 14px; }
+.report-analysis-modal .grade-tab > .chart-tab-help { flex: 0 0 44px; width: 44px; padding: 0 0 0 4px; justify-content: flex-start; }
+.report-analysis-modal .grade-workspace { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; flex: 1; min-height: 0; }
+.report-analysis-modal .grade-workspace[data-filters="true"] { grid-template-columns: 64px minmax(0,1fr); }
+.report-analysis-modal .gfilters { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; min-height: 0; gap: 10px; }
+.report-analysis-modal .gfilters .gseg { display: flex; flex-direction: column; height: auto; padding: 0; flex: none; }
+.report-analysis-modal .gfilters button { width: 64px; height: 44px; min-height: 44px; font-size: 14px; flex: none; }
+.report-analysis-modal .grade-chart-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.report-analysis-modal .evalpad, .report-analysis-modal .lolli, .report-analysis-modal .hist, .report-analysis-modal .mband, .report-analysis-modal .mtab { flex: 1; height: auto; min-height: 0; }
+.report-analysis-modal .lolli { padding-top: 6px; padding-bottom: 26px; }
+.report-analysis-modal .lplot { position: relative; min-height: 0; height: 100%; }
+.report-analysis-modal .laxis { width: 32px; }
+.report-analysis-modal .laxis u, .report-analysis-modal .lside, .report-analysis-modal .lscale, .report-analysis-modal .hyaxis i, .report-analysis-modal .hg em, .report-analysis-modal .hg small { font-size: 12px; }
+.report-analysis-modal .lscale { bottom: -24px; }
+.report-analysis-modal .evalpad { display: flex; flex-direction: column; padding: 0; }
+.report-analysis-modal .report-trend { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 0; }
+.report-analysis-modal .tline { flex: none; font-size: 14px; line-height: 22px; color: var(--text); }
+.report-analysis-modal .report-trend__scale { margin: 0 44px 0 56px; flex: none; font-size: 12px; line-height: 16px; text-align: center; color: var(--text); }
+.report-analysis-modal .report-trend__scale > div { display: flex; justify-content: space-between; }
+.report-analysis-modal .wrplot .curve, .report-analysis-modal .wrplot .lead, .report-analysis-modal .wrplot .mid, .report-analysis-modal .wrplot .cursor { vector-effect: non-scaling-stroke; }
+.report-analysis-modal .wrplot .curve { stroke-width: 2; }
+.report-analysis-modal .wrplot .lead { stroke-width: 1.5; }
+.report-analysis-modal .evalpad .wrbox { height: 100%; min-height: 0; }
+.report-analysis-modal .wraxis { width: 48px; }
+.report-analysis-modal .wrlead { width: 36px; }
+.report-analysis-modal .wraxis i, .report-analysis-modal .wrlead i { font-size: 12px; }
+.report-analysis-modal .grade-chart-legend { display: flex; justify-content: center; gap: 20px; flex: none; height: 22px; font-size: 13px; color: var(--text); }
+.report-analysis-modal .grade-chart-legend span { display: flex; align-items: center; gap: 6px; }
+.report-analysis-modal .hist { display: flex; align-items: stretch; padding-top: 32px; }
+.report-analysis-modal .hcols, .report-analysis-modal .hg, .report-analysis-modal .hbars, .report-analysis-modal .hb { height: 100%; min-height: 0; }
+.report-analysis-modal .hg { display: flex; flex-direction: column; }
+.report-analysis-modal .hbars { flex: 1; }
+.report-analysis-modal .hg small { text-align: center; line-height: 14px; color: var(--dim); }
+.report-analysis-modal .mtab { display: flex; flex-direction: column; justify-content: space-around; }
+.report-analysis-modal .mr { grid-template-columns: minmax(0, 1fr); gap: 10px; height: auto; }
+.report-analysis-modal .ml { font-size: 14px; font-weight: 500; }
+.report-analysis-modal .mu { gap: 8px; }
+.report-analysis-modal .mu i { height: 9px; background: color-mix(in srgb, var(--dim) 24%, var(--panel)); }
+.report-analysis-modal .mu u { width: 40px; font-size: 14px; font-weight: 500; color: var(--text); }
+.report-analysis-modal .mu .sm { width: 14px; height: 14px; }
+.report-analysis-modal .mband { display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+.report-analysis-modal .mtrack { height: 100px; }
+.report-analysis-modal .mband .kiosk-ribbon__lead, .report-analysis-modal .mband .kiosk-ribbon__scale { font-size: 12px; color: var(--text); }
+.report-analysis-modal .selline { flex: none; height: auto; font-size: 12px; line-height: 1.5; }
+.report-analysis-modal__body:has(.gradebody) { overflow: hidden; }
+.report-analysis-modal__details { margin: 0; padding: 0 16px 16px; }
+.report-analysis-modal__details > div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair); }
+.report-analysis-modal__details dt { color: var(--dim); }
+.report-analysis-modal__details dd { margin: 0; overflow-wrap: anywhere; }
+.report-analysis-rail .kiosk-pagebar { font-size: 16px; }
+
+.report-analysis-rail__candidate-list { height: 176px; overflow-y: auto; scrollbar-width: thin; }
+.report-analysis-rail__candidate[data-actual] { background: color-mix(in srgb, var(--accent) 18%, var(--raise)); }
+.report-analysis-rail__win i[data-empty] { background: var(--hair); }
+.report-analysis-modal__details { font-family: var(--font-sans); font-size: 16px; }
+
+.report-analysis-modal .hb u { position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); font-size: 12px; line-height: 16px; font-weight: 400; }
+.report-analysis-modal .hb:nth-child(2) u { bottom: calc(100% + 19px); }
+.report-analysis-modal .hb b { position: relative; width: 12px; }
+.report-analysis-modal .hyaxis { padding-bottom: 56px; }
+.report-analysis-modal .laxis { margin-bottom: 0; }
+.report-analysis-modal .lscale { position: absolute; left: 0; right: 0; }

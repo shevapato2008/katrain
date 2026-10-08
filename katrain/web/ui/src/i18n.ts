@@ -13,7 +13,9 @@ interface LiveTranslations {
 class I18n {
   private translations: Record<string, string> = {};
   private liveTranslations: LiveTranslations | null = null;
-  private currentLang: string = 'en';
+  private currentLang: string = (() => {
+    try { return localStorage.getItem('katrain_language') || 'cn'; } catch { return 'cn'; }
+  })();
   private callbacks: Set<TranslationCallback> = new Set();
   private liveTranslationsLoading: boolean = false;
 
@@ -22,9 +24,9 @@ class I18n {
       const data = await API.getTranslations(lang);
       this.translations = data.translations;
       this.currentLang = lang;
-      // Also load live translations when language changes
-      await this.loadLiveTranslations(lang);
       this.notify();
+      // Library/UI labels must not wait for the unrelated live-name endpoint.
+      void this.loadLiveTranslations(lang).then(() => this.notify());
     } catch (error) {
       console.error(`Failed to load translations for ${lang}`, error);
     }

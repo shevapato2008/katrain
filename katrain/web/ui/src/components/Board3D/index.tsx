@@ -44,6 +44,7 @@ const PolarSync = ({ orbitRef, onPolarChange }: { orbitRef: React.RefObject<any>
 };
 
 interface Board3DProps extends BoardProps {
+  readOnly?: boolean;
   cameraPosition?: [number, number, number];
   cameraTarget?: [number, number, number];
   disableControls?: boolean;
@@ -62,7 +63,7 @@ interface Board3DProps extends BoardProps {
   initialPolarAngle?: number;
 }
 
-const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, cameraPosition, cameraTarget, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
+const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, readOnly = false, cameraPosition, cameraTarget, disableControls, fixedPolarAngle, frameloop = 'always', onCanvasReady, enableAzimuth, azimuthRange, initialPolarAngle }: Board3DProps) => {
   const boardSize = gameState.board_size[0];
   const orbitRef = useRef<any>(null);
   const [polarAngle, setPolarAngle] = useState(initialPolarAngle ?? Math.PI * 0.2); // initial approx
@@ -158,14 +159,14 @@ const Board3D = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, 
         )}
         <BoardMesh boardSize={boardSize} showCoordinates={!!analysisToggles.coords} />
         <StoneGroup gameState={gameState} enableDropEffect={!!analysisToggles.stoneDropEffect} />
-        <RaycastClick
+        {!readOnly && <RaycastClick
           gameState={gameState}
           onMove={onMove}
           onNavigate={onNavigate}
           playerColor={playerColor}
           onHover={handleHover}
-        />
-        <GhostStone gameState={gameState} hoverPos={hoverPos} showChildren={!!analysisToggles.children} playerColor={playerColor} />
+        />}
+        {!readOnly && <GhostStone gameState={gameState} hoverPos={hoverPos} showChildren={!!analysisToggles.children} playerColor={playerColor} />}
 
         {/* Analysis Overlays (some use <Text>, wrapped in Suspense) */}
         <LastMove gameState={gameState} />

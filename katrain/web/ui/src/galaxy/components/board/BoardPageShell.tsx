@@ -10,6 +10,7 @@ interface BoardPageShellProps {
   displayControls?: ReactNode;
   actions: ReactNode;
   onBoardSizeChange?: (edge: number) => void;
+  fixedRail?: boolean;
 }
 
 const BoardPageShell = ({
@@ -19,6 +20,7 @@ const BoardPageShell = ({
   displayControls,
   actions,
   onBoardSizeChange,
+  fixedRail = false,
 }: BoardPageShellProps) => {
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -175,8 +177,8 @@ const BoardPageShell = ({
               flex: 1,
               minHeight: 0,
               overflowX: 'hidden',
-              overflowY: 'auto',
-              scrollbarGutter: 'stable',
+              overflowY: fixedRail ? 'hidden' : 'auto',
+              scrollbarGutter: fixedRail ? 'auto' : 'stable',
             },
           }}
         >

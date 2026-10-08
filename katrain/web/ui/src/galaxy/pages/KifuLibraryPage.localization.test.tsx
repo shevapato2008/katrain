@@ -22,8 +22,8 @@ vi.mock('../../hooks/useTranslation', () => ({
 vi.mock('../../components/live/LiveBoard', () => ({ default: () => <div data-testid="board" /> }));
 vi.mock('../../components/live/PlaybackBar', () => ({ default: () => <div /> }));
 vi.mock('../components/board/BoardPageShell', () => ({
-  default: ({ board, modulePlate, railBody }: { board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode }) =>
-    <main>{modulePlate}{board}{railBody}</main>,
+  default: ({ board, modulePlate, railBody, actions }: { board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode; actions: React.ReactNode }) =>
+    <main>{modulePlate}{board}{railBody}{actions}</main>,
 }));
 vi.mock('../components/layout/ModulePlate', () => ({
   default: ({ title, subtitle, status }: { title: React.ReactNode; subtitle: React.ReactNode; status: React.ReactNode }) =>
@@ -54,6 +54,18 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱库语言展示', () => {
+  it('首屏自动打开当前页首局，按真实报告可用性命名入口', async () => {
+    const view = render(page());
+    expect(await screen.findByTestId('board')).toBeInTheDocument();
+    expect(getAlbums).toHaveBeenCalledWith({ q: '原黑', page: 2, page_size: 20, lang: 'cn' });
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
+    view.unmount();
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), has_analysis: true }], total: 1, page: 2, page_size: 20 });
+    getAlbum.mockResolvedValue({ ...detail('cn'), has_analysis: true });
+    render(page());
+    expect(await screen.findByTestId('board')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看分析报告' })).toBeInTheDocument();
+  });
   it('将姓名中的段位放进独立的小号段位元素', async () => {
     getAlbums.mockResolvedValue({
       items: [{
@@ -77,10 +89,7 @@ describe('Galaxy 棋谱库语言展示', () => {
     fireEvent.click(await screen.findByText('cn-black'));
     await waitFor(() => expect(getAlbum).toHaveBeenCalledWith(9, 'cn'));
     expect(screen.getByText(/cn-black vs cn-white/)).toBeInTheDocument();
-    expect(screen.getByText('星阵')).toBeInTheDocument();
-    expect(screen.getByText('CWI')).toBeInTheDocument();
-    expect(screen.getByText('19x19')).toBeInTheDocument();
-    expect(screen.getByText('来源待核实')).toBeInTheDocument();
+    expect(screen.queryByText('来源待核实')).not.toBeInTheDocument();
 
     for (const lang of ['en', 'jp']) {
       language.current = lang;
@@ -89,7 +98,7 @@ describe('Galaxy 棋谱库语言展示', () => {
       await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(9, lang));
       expect(await screen.findByText(`${lang}-black`)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`${lang}-black vs ${lang}-white`))).toBeInTheDocument();
-      expect(screen.getByText('GoLaxy')).toBeInTheDocument();
+      expect(screen.queryByText('GoLaxy')).not.toBeInTheDocument();
       expect(screen.getByRole('textbox')).toHaveValue('原黑');
     }
   });
@@ -139,7 +148,6 @@ describe('Galaxy 棋谱库语言展示', () => {
     try {
       getAlbum.mockRejectedValueOnce(new Error('offline'));
       render(page());
-      fireEvent.click(await screen.findByText('cn-black'));
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(1));
       await screen.findByText('选择一局棋谱预览');
 

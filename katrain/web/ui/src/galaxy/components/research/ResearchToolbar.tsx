@@ -167,7 +167,7 @@ export default function ResearchToolbar({
       <Box sx={toolGridSx}>
         <ToolGridButton
           icon={<FormatListNumberedIcon />}
-          label={t('research:move_numbers', '手数')}
+          label={t('Move Numbers', '手数')}
           toggle
           active={showMoveNumbers}
           onClick={onToggleMoveNumbers}
@@ -309,4 +309,3 @@ export default function ResearchToolbar({
     </Box>
   );
 }
-

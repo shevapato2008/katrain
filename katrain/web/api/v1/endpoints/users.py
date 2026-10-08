@@ -71,6 +71,22 @@ async def get_online_users(request: Request, current_user: User = Depends(get_cu
     ⚠️ 响应模型是 `OnlineUser` **不是 `User`** —— 后者带着 uuid / credits /
     is_admin / net_wins,而这一行一个都不需要。见 `models.OnlineUser` 的说明。
     """
+    from katrain.web.core.box_sso import strict_box_sso_enabled
+
+    bridge = getattr(request.app.state, "pvp_box_bridge", None)
+    if strict_box_sso_enabled() and bridge is not None:
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        try:
+            rows = await bridge.get_json(
+                request.app.state.box_sso.active_generation, current_user.id, "/api/v1/users/online"
+            )
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return [OnlineUser(**row) for row in rows]
+
     lobby_manager = request.app.state.lobby_manager
     repo = request.app.state.user_repo
     sessions = request.app.state.session_manager.list_active_multiplayer_sessions()

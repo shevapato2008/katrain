@@ -616,6 +616,34 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.matchmaker = Matchmaker()
     app.state.game_repo = None  # Multiplayer results are not recorded in board mode
 
+    # The box keeps only a physical mirror. Central owns the room and result.
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge, PvpBoxRooms
+
+    rooms = PvpBoxRooms()
+
+    def make_pvp_mirror(local_user_id: int, color: str, central_session_id: str) -> str:
+        session = app.state.session_manager.create_multiplayer_session(
+            local_user_id if color == "B" else -1,
+            local_user_id if color == "W" else -1,
+            initial_game_type="pvp_lobby",
+            skip_initial_analysis=True,
+        )
+        session.owner_user_id = local_user_id
+        session.central_session_id = central_session_id
+        session.katrain.deliver_analysis = False
+        session.katrain.platform_my_color = color
+        session.last_state = session.katrain.get_state()
+        return session.session_id
+
+    app.state.pvp_box_bridge = PvpBoxBridge(remote_client, app.state.box_sso, rooms, make_pvp_mirror)
+
+    async def revoke_pvp_generation(generation: int) -> None:
+        bridge = app.state.pvp_box_bridge
+        for room in bridge.rooms.revoke_generation(generation):
+            app.state.session_manager.remove_session(room.local_session_id)
+
+    app.state.box_sso.on_revoke_generation = revoke_pvp_generation
+
     manager = app.state.session_manager
     try:
         from katrain.web.interface import WebKaTrain
@@ -1071,6 +1099,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         enable_engine=enable_engine,
     )
     app.state.session_manager = manager
+
+    @app.get("/api/pvp/identity")
+    async def box_pvp_identity(current_user: User = Depends(get_current_user)):
+        from katrain.web.core.box_sso import strict_box_sso_enabled
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        if not strict_box_sso_enabled():
+            raise HTTPException(status_code=404, detail="Not found")
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        try:
+            return await bridge.identity(app.state.box_sso.active_generation, current_user.id)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
     def _on_session_removed(session):
         matchmaker = getattr(app.state, "matchmaker", None)
         if matchmaker is not None:
@@ -1165,12 +1210,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"status": "deleted"}
 
     @app.get("/api/state")
-    def get_state(session_id: str, current_user: User | None = Depends(get_current_user_optional)):
+    async def get_state(session_id: str, current_user: User | None = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="Session not found") from exc
         guard_session_reader(session, current_user, "session state")
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+            try:
+                payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
+                apply_pvp_box_state(session_id, payload["state"])
+                return payload
+            except PvpBoxAuthError as exc:
+                raise HTTPException(status_code=401, detail=str(exc)) from exc
+            except PvpBoxRemoteError as exc:
+                physical_play = getattr(app.state, "physical_play", None)
+                vision = getattr(app.state, "vision", None)
+                if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                    physical_play.enter_remote_disconnected()
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
         state = session.last_state or session.katrain.get_state()
@@ -1181,6 +1242,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/move")
     async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+            guard_session_reader(session, current_user, "play move")
+            try:
+                coords = None if request.pass_move else list(request.coords) if request.coords is not None else None
+                if coords is None and not request.pass_move:
+                    raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
+                payload = await bridge.forward_move(app.state.box_sso.active_generation, request.session_id, coords=coords)
+                apply_pvp_box_state(request.session_id, payload["state"])
+                manager.broadcast_to_session(request.session_id, {"type": "game_update", "state": payload["state"]})
+                return payload
+            except PvpBoxAuthError as exc:
+                raise HTTPException(status_code=401, detail=str(exc)) from exc
+            except PvpBoxRemoteError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except httpx.HTTPStatusError as exc:
+                raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
         tracks_auto_analysis = not is_ai_ladder_ranked_session(session) and bool(
@@ -1340,6 +1420,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
         guard_session_reader(session, current_user, "save SGF")
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(session, current_user, "GET", "/api/sgf/save")
         if is_ai_ladder_ranked_session(session):
             guard_ai_ladder_ranked_owner(session, current_user, "save-sgf")
             await _guard_ai_ladder_cloud_active(app, session, current_user)
@@ -2262,6 +2344,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(request.session_id)
         except KeyError:
             return _session_gone_reply(request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(session, current_user, "POST", "/api/resign", {"color": request.color})
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
         local_pvp = getattr(session, "game_type", "free") == "pvp_local"
@@ -2736,6 +2820,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/count/request", request.model_dump(exclude={"session_id"})
+            )
         _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
@@ -2849,9 +2937,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "state": state, "result": result}
 
     @app.post("/api/count/respond")
-    def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
+    async def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
         """Respond to a count request (HvH only). Accept or reject."""
         session = _get_session_or_404(manager, request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/count/respond", {"accept": request.accept}
+            )
         _guard_online_platform_local_ending(session)
 
         # Only for multiplayer games
@@ -2900,6 +2992,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(request.session_id)
         except KeyError:
             return _session_gone_reply(request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/timeout", request.model_dump(exclude={"session_id"})
+            )
         _require_multiplayer_participant(session, current_user)
         _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "timeout")
@@ -3317,6 +3413,87 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    def apply_pvp_box_state(local_session_id: str, state: dict) -> None:
+        session = manager.get_session(local_session_id)
+        session.last_state = state
+        physical_play = getattr(app.state, "physical_play", None)
+        vision = getattr(app.state, "vision", None)
+        if physical_play is not None and getattr(vision, "bound_session_id", None) == local_session_id:
+            physical_play.on_game_state(state)
+
+    async def forward_box_pvp_action(session, current_user, method, path, body=None):
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        guard_session_reader(session, current_user, path)
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        try:
+            payload = await bridge.forward_action(
+                app.state.box_sso.active_generation, session.session_id, method, path, body
+            )
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
+        if isinstance(payload.get("state"), dict):
+            apply_pvp_box_state(session.session_id, payload["state"])
+            manager.broadcast_to_session(session.session_id, {"type": "game_update", "state": payload["state"]})
+        return payload
+
+    async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
+        """Relay a box-origin socket to the central authority without exposing its token."""
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        await websocket.accept()
+        app.state.box_sso.register_socket(websocket)
+        try:
+            connector = await bridge.upstream_websocket(generation, local_user_id, path)
+            async with connector as upstream:
+                async def to_central():
+                    while True:
+                        payload = await websocket.receive_json()
+                        bridge.check_user(generation, local_user_id)
+                        await upstream.send(json.dumps(payload))
+
+                async def to_box():
+                    while True:
+                        payload = json.loads(await upstream.recv())
+                        bridge.check_user(generation, local_user_id)
+                        await websocket.send_json(transform(payload))
+
+                tasks = {asyncio.create_task(to_central()), asyncio.create_task(to_box())}
+                try:
+                    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        task.result()
+                finally:
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
+        except WebSocketDisconnect:
+            pass
+        except asyncio.CancelledError:
+            pass
+        except PvpBoxAuthError:
+            await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+            await websocket.close(code=1008)
+        except Exception:
+            logging.getLogger("katrain_web.pvp_box").warning("Central PvP WebSocket disconnected", exc_info=True)
+            if on_disconnect is not None:
+                on_disconnect()
+            try:
+                await websocket.send_json(
+                    {"type": "error", "code": "CENTRAL_DISCONNECTED", "message": "Central lobby disconnected"}
+                )
+                await websocket.close(code=1013)
+            except Exception:
+                pass
+        finally:
+            app.state.box_sso.discard_socket(websocket)
+
     # NOTE: /ws/lobby MUST be defined BEFORE /ws/{session_id} to avoid routing conflicts
     @app.websocket("/ws/lobby")
     async def lobby_websocket_endpoint(websocket: WebSocket):
@@ -3343,6 +3520,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logger.info("Lobby WebSocket: rejecting guest (read-only, no multiplayer)")
             await websocket.accept()
             await websocket.close(code=1008, reason="Guest not allowed in lobby")
+            return
+
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if strict_box_sso_enabled() and bridge is not None:
+            generation = app.state.box_sso.active_generation
+            try:
+                central_user_id = (await bridge.identity(generation, current_user.id))["user_id"]
+            except Exception:
+                await websocket.accept()
+                await websocket.send_json(
+                    {"type": "error", "code": "CENTRAL_DISCONNECTED", "message": "Central lobby disconnected"}
+                )
+                await websocket.close(code=1013)
+                return
+
+            def transform_lobby(message):
+                if message.get("type") == "match_found":
+                    return bridge.rewrite_match(generation, current_user.id, central_user_id, message)
+                return message
+
+            await proxy_pvp_websocket(websocket, bridge, generation, current_user.id, "/ws/lobby", transform_lobby)
+            bridge.rooms.lobby_disconnected(generation)
             return
 
         await websocket.accept()
@@ -3709,6 +3908,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def websocket_endpoint(websocket: WebSocket, session_id: str):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
         from katrain.web.core.box_sso import resolve_websocket_token, strict_box_sso_enabled
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError
 
         strict_box = strict_box_sso_enabled()
         token = resolve_websocket_token(websocket)
@@ -3728,6 +3928,44 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 await websocket.accept()
                 await websocket.close(code=1008, reason="Invalid token")
                 return
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        generation = app.state.box_sso.active_generation if strict_box else None
+        room = bridge.rooms.for_local(generation, session_id) if strict_box and bridge is not None else None
+        if room is not None:
+            if current_user is None or current_user.id != room.local_user_id:
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
+            try:
+                session = manager.get_session(session_id)
+                bridge.check_user(generation, current_user.id)
+            except (KeyError, PvpBoxAuthError):
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
+
+            def transform_room(payload):
+                if payload.get("type") == "game_update" and isinstance(payload.get("state"), dict):
+                    state = bridge.rewrite_state(generation, session_id, payload["state"])
+                    apply_pvp_box_state(session_id, state)
+                    return {**payload, "state": state}
+                return payload
+
+            session.sockets.add(websocket)
+            try:
+                def on_disconnect():
+                    physical_play = getattr(app.state, "physical_play", None)
+                    vision = getattr(app.state, "vision", None)
+                    if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                        physical_play.enter_remote_disconnected()
+
+                await proxy_pvp_websocket(
+                    websocket, bridge, generation, current_user.id, f"/ws/{room.central_session_id}",
+                    transform_room, on_disconnect,
+                )
+            finally:
+                session.sockets.discard(websocket)
+            return
         try:
             session = manager.get_session(session_id)
         except KeyError:
@@ -4555,7 +4793,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         return 0.0
 
     def _rearm_detection() -> None:
-        game_state = session.katrain.get_state()
+        game_state = session.last_state if getattr(session, "game_type", None) == "pvp_lobby" else session.katrain.get_state()
         if game_state and "stones" in game_state:
             vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
 
@@ -4665,6 +4903,36 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
 
     move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
     coords = (move.coords[0], move.coords[1])
+    bridge = getattr(app.state, "pvp_box_bridge", None)
+    if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        generation = app.state.box_sso.active_generation
+        room = bridge.rooms.for_local(generation, session_id)
+        if (
+            room is None
+            or getattr(vision, "bound_session_id", None) != session_id
+            or move_player != room.my_color
+        ):
+            log.info("PvP physical move refused: room, binding or color changed")
+            _rearm_detection()
+            return 0.5
+        try:
+            payload = await bridge.forward_move(generation, session_id, coords=list(coords))
+        except (PvpBoxAuthError, PvpBoxRemoteError, httpx.HTTPStatusError) as exc:
+            log.warning("Central PvP physical move was not accepted: %s", exc)
+            manager.broadcast_to_session(session_id, {"type": "pvp_central_disconnected"})
+            orchestrator = getattr(app.state, "physical_play", None)
+            if orchestrator is not None:
+                orchestrator.enter_remote_disconnected()
+            _rearm_detection()
+            return 0.5
+        session.last_state = payload["state"]
+        manager.broadcast_to_session(session_id, {"type": "game_update", "state": payload["state"]})
+        orchestrator = getattr(app.state, "physical_play", None)
+        if orchestrator is not None:
+            orchestrator.on_game_state(payload["state"])
+        return 0.0
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
         # L0b: the `expected_player` check above reads session.last_state — a broadcast

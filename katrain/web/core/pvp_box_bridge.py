@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from threading import RLock
 from typing import Any, Callable
+from urllib.parse import urlsplit
 
 import httpx
+from websockets.asyncio.client import connect as ws_connect
 
 
 @dataclass(frozen=True)
@@ -122,10 +124,21 @@ class PvpBoxBridge:
         ):
             raise PvpBoxAuthError("Box session is no longer current")
 
-    async def request(self, generation: int, local_user_id: int, method: str, path: str, *, json: Any = None):
+    async def request(
+        self,
+        generation: int,
+        local_user_id: int,
+        method: str,
+        path: str,
+        *,
+        json: Any = None,
+        params: dict | None = None,
+    ):
         self.check_user(generation, local_user_id)
         try:
             kwargs = {"json": json} if json is not None else {}
+            if params is not None:
+                kwargs["params"] = params
             response = await self.remote._request(method, path, **kwargs)
         except (httpx.HTTPError, TimeoutError) as exc:
             raise PvpBoxRemoteError("Central lobby disconnected") from exc
@@ -147,6 +160,21 @@ class PvpBoxBridge:
         if type(user_id) is not int or user_id <= 0:
             raise PvpBoxRemoteError("Central identity unavailable")
         return {"user_id": user_id}
+
+    async def upstream_websocket(self, generation: int, local_user_id: int, path: str):
+        # A REST identity read refreshes an expired access token before the WebSocket
+        # handshake. The cloud token remains in this process, never in the box URL.
+        await self.identity(generation, local_user_id)
+        self.check_user(generation, local_user_id)
+        token = self.remote._access_token
+        if not token:
+            raise PvpBoxAuthError("Central credential unavailable")
+        target = urlsplit(self.remote.base_url)
+        if target.scheme not in ("http", "https") or not target.netloc or not path.startswith("/"):
+            raise PvpBoxRemoteError("Central WebSocket URL is invalid")
+        origin = f"{target.scheme}://{target.netloc}"
+        url = f"{'wss' if target.scheme == 'https' else 'ws'}://{target.netloc}{path}"
+        return ws_connect(url, origin=origin, additional_headers={"Cookie": f"sb_token={token}"}, open_timeout=10)
 
     def _room(self, generation: int, local_user_id: int, central_user_id: int, central_session_id: str, color: str):
         self.check_user(generation, local_user_id)
@@ -189,23 +217,56 @@ class PvpBoxBridge:
         self.check_user(generation, room.local_user_id)
         return {**state, "game_type": "pvp_lobby", "platform_my_color": room.my_color, "my_color": room.my_color}
 
-    async def forward_move(self, generation: int, local_session_id: str, *, coords: list[int] | None) -> dict:
+    async def fetch_state(self, generation: int, local_session_id: str) -> dict:
         room = self.rooms.for_local(generation, local_session_id)
         if room is None:
             raise PvpBoxAuthError("Room is no longer current")
         response = await self.request(
-            generation,
-            room.local_user_id,
-            "POST",
-            "/api/move",
-            json={"session_id": room.central_session_id, "coords": coords, "pass_move": coords is None},
+            generation, room.local_user_id, "GET", "/api/state", params={"session_id": room.central_session_id}
         )
         response.raise_for_status()
         payload = response.json()
         if payload.get("session_id") != room.central_session_id or not isinstance(payload.get("state"), dict):
-            raise PvpBoxRemoteError("Central move response is invalid")
+            raise PvpBoxRemoteError("Central state response is invalid")
         return {
             **payload,
             "session_id": room.local_session_id,
             "state": self.rewrite_state(generation, room.local_session_id, payload["state"]),
         }
+
+    async def forward_move(self, generation: int, local_session_id: str, *, coords: list[int] | None) -> dict:
+        return await self.forward_action(
+            generation, local_session_id, "POST", "/api/move", {"coords": coords, "pass_move": coords is None}
+        )
+
+    async def forward_action(
+        self, generation: int, local_session_id: str, method: str, path: str, body: dict | None = None
+    ) -> dict:
+        room = self.rooms.for_local(generation, local_session_id)
+        if room is None:
+            raise PvpBoxAuthError("Room is no longer current")
+        if method == "GET":
+            response = await self.request(
+                generation, room.local_user_id, method, path, params={"session_id": room.central_session_id}
+            )
+        else:
+            response = await self.request(
+                generation,
+                room.local_user_id,
+                method,
+                path,
+                json={**(body or {}), "session_id": room.central_session_id},
+            )
+        response.raise_for_status()
+        payload = response.json()
+        if (
+            not isinstance(payload, dict)
+            or payload.get("session_id", room.central_session_id) != room.central_session_id
+        ):
+            raise PvpBoxRemoteError("Central action response is invalid")
+        result = {**payload}
+        if "session_id" in result:
+            result["session_id"] = room.local_session_id
+        if isinstance(result.get("state"), dict):
+            result["state"] = self.rewrite_state(generation, room.local_session_id, result["state"])
+        return result

@@ -2,6 +2,8 @@
 
 import pytest
 import httpx
+from katrain.web.core import pvp_box_bridge as bridge_module
+from katrain.web.core.box_sso import BoxSSOState
 
 from katrain.web.core.pvp_box_bridge import PvpBoxRooms, PvpBoxBridge, PvpBoxAuthError, PvpBoxRemoteError
 
@@ -169,6 +171,39 @@ def test_active_game_rewrites_only_own_row_with_distinct_central_id():
     assert bridge.rooms.for_local(12, "local-room").my_color == "W"
 
 
+@pytest.mark.asyncio
+async def test_fetch_state_uses_central_room_id_and_projects_mirror_state():
+    remote = FakeRemote()
+    remote.responses["/api/state"] = {"session_id": "central-room", "state": {"game_type": "free", "stones": []}}
+    bridge = PvpBoxBridge(remote, FakeSSO(), PvpBoxRooms(), lambda *_: "local-room")
+    bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "W"})
+
+    state = await bridge.fetch_state(12, "local-room")
+
+    assert remote.calls[-1] == ("GET", "/api/state", {"params": {"session_id": "central-room"}})
+    assert state == {
+        "session_id": "local-room",
+        "state": {"game_type": "pvp_lobby", "stones": [], "platform_my_color": "W", "my_color": "W"},
+    }
+
+
+@pytest.mark.asyncio
+async def test_upstream_websocket_uses_server_side_cloud_cookie_and_central_origin(monkeypatch):
+    remote = FakeRemote()
+    remote._access_token = "cloud-secret"
+    seen = {}
+    monkeypatch.setattr(bridge_module, "ws_connect", lambda url, **kw: seen.update(url=url, **kw) or "connection")
+    bridge = PvpBoxBridge(remote, FakeSSO(), PvpBoxRooms(), lambda *_: "local-room")
+
+    assert await bridge.upstream_websocket(12, 4, "/ws/lobby") == "connection"
+    assert seen == {
+        "url": "wss://central.example/ws/lobby",
+        "origin": "https://central.example",
+        "additional_headers": {"Cookie": "sb_token=cloud-secret"},
+        "open_timeout": 10,
+    }
+
+
 def test_local_mirror_state_has_seat_and_never_claims_central_free_game():
     bridge = PvpBoxBridge(FakeRemote(), FakeSSO(), PvpBoxRooms(), lambda *_: "local-room")
     bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"})
@@ -214,3 +249,42 @@ async def test_remote_failure_does_not_invent_a_local_move():
 
     with pytest.raises(PvpBoxRemoteError):
         await bridge.forward_move(12, "local-room", coords=[3, 3])
+
+
+@pytest.mark.asyncio
+async def test_control_action_rewrites_room_id_and_keeps_central_result_authoritative():
+    remote = FakeRemote()
+    remote.responses["/api/resign"] = {
+        "session_id": "central-room",
+        "state": {"game_type": "free", "end_result": "W+R"},
+    }
+    bridge = PvpBoxBridge(remote, FakeSSO(), PvpBoxRooms(), lambda *_: "local-room")
+    bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"})
+
+    result = await bridge.forward_action(12, "local-room", "POST", "/api/resign", {"color": None})
+
+    assert remote.calls[-1] == ("POST", "/api/resign", {"json": {"color": None, "session_id": "central-room"}})
+    assert result == {
+        "session_id": "local-room",
+        "state": {"game_type": "pvp_lobby", "end_result": "W+R", "platform_my_color": "B", "my_color": "B"},
+    }
+
+
+@pytest.mark.asyncio
+async def test_sso_generation_replacement_and_clear_revoke_room_mappings(tmp_path):
+    state = BoxSSOState(str(tmp_path / "key"))
+    rooms = PvpBoxRooms()
+    revoked = []
+
+    async def on_revoke(generation):
+        revoked.extend(rooms.revoke_generation(generation))
+
+    state.on_revoke_generation = on_revoke
+    await state.activate(12, user_id=4)
+    rooms.attach(12, 811, "central-room", "local-room", 4, "B")
+    await state.activate(13, user_id=5)
+    assert rooms.for_local(12, "local-room") is None
+    rooms.attach(13, 912, "new-central", "new-local", 5, "W")
+    await state.clear(13)
+    assert rooms.for_local(13, "new-local") is None
+    assert [room.central_session_id for room in revoked] == ["central-room", "new-central"]

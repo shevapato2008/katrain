@@ -22,6 +22,22 @@ async def list_active_multiplayer_games(
     一直留着:任何人都能枚举出正在进行的对局、双方用户名和会话号。
     `get_current_user` 本文件早就 import 了,只是没挂上。
     """
+    from katrain.web.core.box_sso import strict_box_sso_enabled
+
+    bridge = getattr(request.app.state, "pvp_box_bridge", None)
+    if strict_box_sso_enabled() and bridge is not None:
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        generation = request.app.state.box_sso.active_generation
+        try:
+            central_user_id = (await bridge.identity(generation, current_user.id))["user_id"]
+            rows = await bridge.get_json(generation, current_user.id, "/api/v1/games/active/multiplayer")
+            return bridge.rewrite_active_games(generation, current_user.id, central_user_id, rows)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     manager = request.app.state.session_manager
     user_repo = request.app.state.user_repo
     sessions = manager.list_active_multiplayer_sessions()

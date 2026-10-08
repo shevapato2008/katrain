@@ -12,6 +12,28 @@ import pytest
 from katrain.web.core.physical_play import BLACK, WHITE, PhysicalPlayConfig
 from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
 
+
+def test_pvp_lobby_guides_opponent_stones_even_when_both_seats_are_human():
+    state = {
+        "game_type": "pvp_lobby",
+        "platform_my_color": "W",
+        "players_info": {"B": {"player_type": "human"}, "W": {"player_type": "human"}},
+    }
+    assert PhysicalPlayOrchestrator._guided_colors_from_state(state) == {1}
+
+
+def test_remote_pvp_outage_pauses_detection_until_authoritative_state_returns():
+    orch, led, vision, _ = _orch()
+    orch.on_game_state(state([]))
+
+    orch.enter_remote_disconnected()
+    assert vision.paused is True
+    assert orch.board_caught_up is False
+    assert led.calls[-1] == ("clear",)
+
+    orch.on_game_state({**state([]), "game_type": "pvp_lobby", "platform_my_color": "B"})
+    assert vision.paused is False
+
 # Task 1 contract fixture: a real engine-game get_state() dump (both players marked
 # "human"; platform_engine_color:"W" is the only signal that W is the remote Golaxy AI).
 ENGINE_GAME_STATE_FIXTURE_PATH = os.path.join(

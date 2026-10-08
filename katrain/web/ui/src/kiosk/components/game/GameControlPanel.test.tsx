@@ -202,6 +202,14 @@ describe('GameControlPanel', () => {
     expect(screen.queryByText('轮到你')).toBeNull();
   });
 
+  test('self-owned lobby uses its central seat without OGS controls or AI analysis', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B' });
+    expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.queryByText('等待 OGS 计时')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+  });
+
   test('OGS finished phase blocks resign until the remote result is reflected locally', () => {
     panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'finished' });
     expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();

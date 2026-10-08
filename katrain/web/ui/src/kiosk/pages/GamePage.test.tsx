@@ -181,6 +181,8 @@ const pageTree = (initial = '/kiosk/play/ai/game/test-session') => (
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play/cross-platform/game/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/pvp/room/:sessionId" element={<GamePage />} />
+        <Route path="/kiosk/play/pvp/lobby" element={<div>PVP_LOBBY</div>} />
         <Route path="/kiosk/play/cross-platform/ogs" element={<div>OGS_HOME</div>} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
         <Route path="/kiosk/research" element={<div>RESEARCH_PAGE</div>} />
@@ -1003,6 +1005,21 @@ describe('GamePage', () => {
   });
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
+  describe('self-owned lobby room', () => {
+    it('uses the central seat to block opponent moves and returns to the lobby', async () => {
+      mockGameState = makeGameState({
+        game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' }, W: { ...basePlayer, player_type: 'player:human', name: '我' } },
+      });
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(capturedBoardProps.current?.playerColor).toBe('W');
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(mockOnMove).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByText('退出对局'));
+      fireEvent.click(screen.getByTestId('exit-leave-keep'));
+      expect(await screen.findByText('PVP_LOBBY')).toBeInTheDocument();
+    });
+  });
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
   describe('3D board removed', () => {

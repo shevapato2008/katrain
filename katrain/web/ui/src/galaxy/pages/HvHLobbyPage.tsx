@@ -1,346 +1,117 @@
-import { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Button, Avatar, Chip, Stack, CircularProgress, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions, Card, CardContent, Snackbar } from '@mui/material';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PeopleIcon from '@mui/icons-material/People';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
-import FriendsPanel from '../components/FriendsPanel';
-import { i18n } from '../../i18n';
-import ContentPageHeader from '../components/layout/ContentPageHeader';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
 import { websocketUrl } from '../../utils/websocketUrl';
+import './HvHLobbyPage.css';
 
-interface OnlineUser {
-    id: number;
-    username: string;
-    rank: string;
-    elo_points?: number;
-    avatar_url?: string;
-}
-
-interface ActiveGame {
-    session_id: string;
-    player_b: string;
-    player_w: string;
-    spectator_count: number;
-    move_count: number;
-}
-
-const HvHLobbyPage = () => {
-    const navigate = useNavigate();
-    const { user, token } = useAuth();
-    useSettings(); // Subscribe to translation changes for re-render
-    const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
-    const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isMatching, setIsRatedMatching] = useState(false);
-    const [queueTime, setQueueTime] = useState(0);
-    const [invitation, setInvitation] = useState<{from_id: number, from_name: string, mode: string} | null>(null);
-    const [snackbar, setSnackbar] = useState<{message: string, severity: 'info' | 'error' | 'success'} | null>(null);
-    const wsRef = useRef<WebSocket | null>(null);
-    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    // null = not placed yet (or not loaded). The rated-PvP prerequisite; the server
-    // enforces the same thing, this just avoids queueing only to be refused.
-    const [ladderRank, setLadderRank] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (!token) return;
-        getAiLadderStatus(token)
-            // A non-ready status (loading/error) has no placement_state at all — treat it
-            // as "no rank" rather than reading through it; this is only a pre-check.
-            .then((s) => setLadderRank(s?.placement_state?.phase === 'placed' ? s.placement_state.rung.rung : null))
-            .catch(() => setLadderRank(null));
-    }, [token]);
-
-    const fetchOnlineUsers = async () => {
-        if (!token) return;
-        try {
-            const response = await fetch('/api/v1/users/online', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setOnlineUsers(data);
-            } else {
-                setError("Failed to fetch online users");
-            }
-        } catch (err) {
-            setError("Network error");
-        }
-    };
-
-    const fetchActiveGames = async () => {
-        try {
-            const response = await fetch('/api/v1/games/active/multiplayer', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setActiveGames(data);
-            }
-        } catch (err) {
-            console.error("Failed to fetch active games", err);
-        }
-    };
-
-    const fetchData = async () => {
-        setLoading(true);
-        await Promise.all([fetchOnlineUsers(), fetchActiveGames()]);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        if (!token) return;
-        
-        fetchData();
-        const refreshInterval = setInterval(() => {
-            fetchOnlineUsers();
-            fetchActiveGames();
-        }, 10000);
-        const wsUrl = websocketUrl('/ws/lobby', token);
-        console.log("Connecting to Lobby WebSocket:", wsUrl);
-        const ws = new WebSocket(wsUrl);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            console.log("Lobby WebSocket connected");
-        };
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'match_found') {
-                setIsRatedMatching(false);
-                // Redirect to room
-                console.log("Match Found!", data);
-                navigate(`/galaxy/play/human/room/${data.session_id}`);
-            } else if (data.type === 'lobby_update') {
-                fetchOnlineUsers();
-            } else if (data.type === 'invitation') {
-                setInvitation({ from_id: data.from_id, from_name: data.from_name, mode: data.mode });
-            } else if (data.type === 'info') {
-                setSnackbar({ message: data.message, severity: 'info' });
-            } else if (data.type === 'error') {
-                setSnackbar({ message: data.message, severity: 'error' });
-            }
-        };
-
-        return () => {
-            ws.close();
-            clearInterval(refreshInterval);
-            if (timerRef.current) clearInterval(timerRef.current);
-        };
-    }, [token]);
-
-    const startMatchmaking = (gameType: string) => {
-        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-
-        // Rated PvP needs a ladder rank. The old check read `user.rank === '20k'`,
-        // the registration default — but nothing on the AI side ever moved it, so
-        // every player failed it forever and got sent to a page that could not fix
-        // it. `ladderRank` comes from GET /api/v1/ai-ladder/status, the one rank there is.
-        if (gameType === 'rated' && ladderRank === null) {
-            setSnackbar({
-                message: i18n.t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。'),
-                severity: 'info',
-            });
-            navigate('/galaxy/play/ai?mode=rated');
-            return;
-        }
-
-        wsRef.current.send(JSON.stringify({ type: 'start_matchmaking', game_type: gameType }));
-        setIsRatedMatching(true);
-        setQueueTime(0);
-        timerRef.current = setInterval(() => {
-            setQueueTime(prev => prev + 1);
-        }, 1000);
-    };
-
-    const stopMatchmaking = () => {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'stop_matchmaking' }));
-        }
-        setIsRatedMatching(false);
-        if (timerRef.current) clearInterval(timerRef.current);
-    };
-
-    const handleInvite = (targetId: number) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'invite', target_id: targetId }));
-        }
-    };
-
-    const handleAcceptInvite = () => {
-        if (wsRef.current?.readyState === WebSocket.OPEN && invitation) {
-            wsRef.current.send(JSON.stringify({ type: 'accept_invite', target_id: invitation.from_id }));
-            setInvitation(null);
-        }
-    };
-
-    const formatQueueTime = (s: number) => {
-        const m = Math.floor(s / 60);
-        const sec = s % 60;
-        return `${m}:${sec.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <Box sx={{ p: 4, height: '100%', overflow: 'auto' }}>
-            <ContentPageHeader
-                title={i18n.t('lobby:title', 'Multiplayer Lobby')}
-                parentLabel={i18n.t('btn:Play', 'Play')}
-                parentTo="/galaxy/play"
-            />
-            {/* 副标和两个开局按钮原来都在页头那一行里。spec §2.4 只留返回键 + 标题 + 状态。 */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1, mb: 4 }}>
-                <Typography variant="body1" color="text.secondary">{i18n.t('lobby:subtitle', 'Play against other humans or watch live games.')}</Typography>
-                <Stack direction="row" spacing={2}>
-                    <Button variant="contained" color="primary" size="large" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
-                        {i18n.t('lobby:quick_match_rated', 'Quick Match (Rated)')}
-                    </Button>
-                    <Button variant="outlined" color="primary" size="large" onClick={() => startMatchmaking('free')}>
-                        {i18n.t('lobby:custom_game', 'Custom Game')}
-                    </Button>
-                </Stack>
-            </Stack>
-
-            <Dialog open={isMatching} onClose={stopMatchmaking} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ textAlign: 'center', pt: 4 }}>{i18n.t('lobby:finding_opponent', 'Finding Opponent...')}</DialogTitle>
-                <DialogContent sx={{ textAlign: 'center', pb: 4 }}>
-                    <CircularProgress size={60} sx={{ my: 3 }} />
-                    <Typography variant="h6">{formatQueueTime(queueTime)}</Typography>
-                    <Typography variant="body2" color="text.secondary">{i18n.t('lobby:matching_desc', 'Looking for a suitable match for you.')}</Typography>
-                </DialogContent>
-                <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
-                    <Button onClick={stopMatchmaking} color="error" variant="outlined">{i18n.t('cancel', 'Cancel')}</Button>
-                </DialogActions>
-            </Dialog>
-
-            <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' } }}>
-                {/* Online Players Section */}
-                <Box sx={{ width: { xs: '100%', md: '30%' }, minWidth: 250 }}>
-                    <Card sx={{ bgcolor: 'background.paper', height: '100%' }}>
-                        <CardContent>
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                                <PeopleIcon color="primary" />
-                                <Typography variant="h6">{i18n.t('lobby:online_players', 'Online Players')} ({onlineUsers.length})</Typography>
-                            </Stack>
-                            <Divider sx={{ mb: 2 }} />
-                            
-                            {loading && onlineUsers.length === 0 ? (
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
-                            ) : error ? (
-                                <Alert severity="error">{error}</Alert>
-                            ) : (
-                                <Stack spacing={2}>
-                                    {onlineUsers.map((u) => (
-                                        <Box key={u.id} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.default', display: 'flex', alignItems: 'center', gap: 2, border: u.id === user?.id ? '1px solid rgba(74, 107, 92, 0.5)' : 'none' }}>
-                                            <Avatar sx={{ bgcolor: u.id === user?.id ? 'secondary.main' : 'primary.main' }}>{u.username[0].toUpperCase()}</Avatar>
-                                            <Box sx={{ flexGrow: 1 }}>
-                                                <Typography variant="subtitle2">
-                                                    {u.username} {u.id === user?.id && <Typography component="span" variant="caption" color="secondary">({i18n.t('lobby:you', 'You')})</Typography>}
-                                                </Typography>
-                                                <Chip 
-                                                    label={(u.rank === '20k' && (!u.elo_points || u.elo_points === 0)) ? i18n.t('lobby:no_rank', 'No Rank') : u.rank} 
-                                                    size="small" 
-                                                    variant="outlined" 
-                                                    sx={{ height: 20 }} 
-                                                />
-                                            </Box>
-                                            {u.id !== user?.id && (
-                                                <Button size="small" variant="text" onClick={() => handleInvite(u.id)}>{i18n.t('lobby:invite', 'Invite')}</Button>
-                                            )}
-                                        </Box>
-                                    ))}
-                                    {onlineUsers.length === 0 && (
-                                        <Typography variant="body2" color="text.secondary" textAlign="center">{i18n.t('lobby:no_players', 'No other players online.')}</Typography>
-                                    )}
-                                </Stack>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Box>
-
-                {/* Active Games Section */}
-                <Box sx={{ flexGrow: 1 }}>
-                    <Card sx={{ bgcolor: 'background.paper', height: '100%' }}>
-                        <CardContent>
-                            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                                <SportsEsportsIcon color="secondary" />
-                                <Typography variant="h6">{i18n.t('lobby:active_games', 'Active Games')}</Typography>
-                            </Stack>
-                            <Divider sx={{ mb: 2 }} />
-                            
-                            {activeGames.length === 0 ? (
-                                <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'background.default', borderRadius: 2 }}>
-                                    <Typography variant="body1" color="text.secondary">{i18n.t('lobby:no_active_games', 'No active games at the moment.')}</Typography>
-                                    <Typography variant="caption" color="text.secondary">{i18n.t('lobby:active_games_desc', 'Games will appear here once matchmaking is functional.')}</Typography>
-                                </Box>
-                            ) : (
-                                <Stack spacing={2}>
-                                    {activeGames.map((game) => (
-                                        <Card key={game.session_id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
-                                            <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                                                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                                    <Box>
-                                                        <Typography variant="subtitle2">
-                                                            {game.player_b} (B) vs {game.player_w} (W)
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {i18n.t('Moves', 'Moves')}: {game.move_count} | {i18n.t('Spectators', 'Spectators')}: {game.spectator_count}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Button 
-                                                        size="small" 
-                                                        variant="contained" 
-                                                        color="secondary"
-                                                        startIcon={<VisibilityIcon />}
-                                                        onClick={() => navigate(`/galaxy/play/human/room/${game.session_id}`)}
-                                                    >
-                                                        {i18n.t('lobby:watch', 'Watch')}
-                                                    </Button>
-                                                </Stack>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </Stack>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Box>
-
-                {/* Friends Panel */}
-                <Box sx={{ width: { xs: '100%', md: '300px' }, flexShrink: 0, display: { xs: 'none', lg: 'block' } }}>
-                    <FriendsPanel />
-                </Box>
-            </Box>
-
-            <Dialog open={!!invitation} onClose={() => setInvitation(null)} maxWidth="xs" fullWidth>
-                <DialogTitle>{i18n.t('lobby:invitation_title', 'Game Invitation')}</DialogTitle>
-                <DialogContent>
-                    <Typography>
-                        {i18n.t('lobby:invitation_text', '{{name}} invited you to a game.').replace('{{name}}', invitation?.from_name || '')}
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setInvitation(null)}>{i18n.t('lobby:decline', 'Decline')}</Button>
-                    <Button onClick={handleAcceptInvite} variant="contained">{i18n.t('lobby:accept', 'Accept')}</Button>
-                </DialogActions>
-            </Dialog>
-
-            <Snackbar 
-                open={!!snackbar} 
-                autoHideDuration={6000} 
-                onClose={() => setSnackbar(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert severity={snackbar?.severity || 'info'} onClose={() => setSnackbar(null)}>
-                    {snackbar?.message}
-                </Alert>
-            </Snackbar>
-        </Box>
-    );
+type OnlineUser = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
+type ActiveGame = { session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number };
+type Dialog = 'placement' | 'matching' | null;
+const isUser = (value: unknown): value is OnlineUser => {
+  if (!value || typeof value !== 'object') return false;
+  const u = value as Partial<OnlineUser>;
+  return typeof u.id === 'number' && typeof u.username === 'string';
+};
+const isGame = (value: unknown): value is ActiveGame => {
+  if (!value || typeof value !== 'object') return false;
+  const g = value as Partial<ActiveGame>;
+  return typeof g.session_id === 'string' && typeof g.player_b === 'string' && typeof g.player_w === 'string';
 };
 
-export default HvHLobbyPage;
+export default function HvHLobbyPage() {
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const [users, setUsers] = useState<OnlineUser[]>([]);
+  const [games, setGames] = useState<ActiveGame[]>([]);
+  const [following, setFollowing] = useState<number[]>([]);
+  const [rank, setRank] = useState<{ rung: number; label: string } | null>(null);
+  const [rankLoaded, setRankLoaded] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'same' | 'follow'>('all');
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState('');
+  const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [invitation, setInvitation] = useState<{ from_id: number; from_name: string } | null>(null);
+  const [notice, setNotice] = useState('');
+  const socket = useRef<WebSocket | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const clearTimer = () => { if (timer.current) clearInterval(timer.current); timer.current = null; };
+  const fetchLists = useCallback(async () => {
+    if (!token) return;
+    try {
+      const [u, g] = await Promise.all([
+        fetch('/api/v1/users/online', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/v1/games/active/multiplayer', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (!u.ok || !g.ok) throw new Error('大厅暂时无法连接，请稍后重试。');
+      const [uRows, gRows]: unknown[] = await Promise.all([u.json(), g.json()]);
+      setUsers(Array.isArray(uRows) ? uRows.filter(isUser) : []);
+      setGames(Array.isArray(gRows) ? gRows.filter(isGame) : []);
+      setError('');
+    } catch { setError('大厅暂时无法连接，请稍后重试。'); }
+    finally { setLoaded(true); }
+  }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    void getAiLadderStatus(token).then((s) => {
+      const p = s?.placement_state;
+      setRank(p?.phase === 'placed' ? { rung: p.rung.rung, label: p.rung.rank_name } : null);
+    }).catch(() => setRank(null)).finally(() => setRankLoaded(true));
+    void fetchLists();
+    const refresh = setInterval(() => { void fetchLists(); }, 10000);
+    const ws = new WebSocket(websocketUrl('/ws/lobby', token));
+    socket.current = ws;
+    ws.onopen = () => setConnection('connected');
+    ws.onclose = () => { setConnection('disconnected'); setDialog((d) => d === 'matching' ? null : d); clearTimer(); };
+    ws.onerror = () => setConnection('disconnected');
+    ws.onmessage = (event) => {
+      let data: Record<string, unknown>;
+      try { data = JSON.parse(event.data); } catch { return; }
+      if (data.type === 'match_found' && typeof data.session_id === 'string') {
+        clearTimer(); setDialog(null); navigate(`/galaxy/play/human/room/${data.session_id}`);
+      } else if (data.type === 'lobby_update') void fetchLists();
+      else if (data.type === 'invitation') setInvitation({ from_id: Number(data.from_id), from_name: String(data.from_name) });
+      else if (data.type === 'error') {
+        if (data.code === 'PLACEMENT_REQUIRED') setDialog('placement');
+        else setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。'));
+        clearTimer();
+      } else if (data.type === 'info') setNotice(String(data.message || ''));
+    };
+    return () => { ws.close(); clearInterval(refresh); clearTimer(); };
+  }, [token, fetchLists, navigate]);
+  useEffect(() => {
+    if (!token) return;
+    fetch('/api/v1/users/following', { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.ok ? r.json() : []).then((rows: unknown) => {
+      setFollowing(Array.isArray(rows) ? rows.map((row) => Number(row.id)).filter(Number.isFinite) : []);
+    }).catch(() => setFollowing([]));
+  }, [token]);
+  const send = (message: Record<string, unknown>) => {
+    if (socket.current?.readyState !== WebSocket.OPEN) { setNotice('大厅连接已断开，请刷新后重试。'); return false; }
+    socket.current.send(JSON.stringify(message)); return true;
+  };
+  const start = () => {
+    if (!rankLoaded) return;
+    if (!rank) { setDialog('placement'); return; }
+    if (!send({ type: 'start_matchmaking' })) return;
+    setElapsed(0); clearTimer(); timer.current = setInterval(() => setElapsed((n) => n + 1), 1000);
+    setDialog('matching');
+  };
+  const stop = () => { send({ type: 'stop_matchmaking' }); clearTimer(); setDialog(null); };
+  const roster = users.filter((u) => filter === 'all' || (filter === 'same' ? rank && u.ladder_rung === rank.rung : following.includes(u.id)));
+  const ordered = [...roster].sort((a, b) => Number(b.id === user?.id) - Number(a.id === user?.id) || Number(a.presence === 'playing') - Number(b.presence === 'playing'));
+  return <main className="pvp-galaxy">
+    <div className="pvp-galaxy__heading"><div><h1><button type="button" aria-label="返回对局" onClick={() => navigate('/galaxy/play')}>←</button>对战大厅</h1><p>选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。</p></div><div className="pvp-galaxy__identity"><span className="dot" />{rankLoaded ? rank ? '已定级' : '未定级' : '读取段位中'} <b>{rank?.label || (rankLoaded ? '先去升降级对弈' : '…')}</b></div></div>
+    <section className="pvp-galaxy__action" aria-label="快速匹配"><span className="emblem">棋</span><div><strong>来下一局</strong><small>优先寻找同段位真人；等待后由同段位棋手接局</small></div><button type="button" onClick={start} disabled={!rankLoaded || connection !== 'connected'}>快速匹配 →</button></section>
+    {connection === 'disconnected' && <p role="alert" className="pvp-galaxy__alert">大厅连接已断开，请刷新后重试。</p>}
+    {error && <p role="alert" className="pvp-galaxy__alert">{error} <button type="button" onClick={() => void fetchLists()}>重试</button></p>}
+    {notice && <p role="status" className="pvp-galaxy__alert">{notice}<button type="button" onClick={() => setNotice('')}>关闭</button></p>}
+    <div className="pvp-galaxy__layout">
+      <section className="pvp-galaxy__panel" aria-label="进行中的对局"><header><h2>进行中的对局</h2><em>In play</em><span>{games.length} 局正在进行</span></header><div className="pvp-galaxy__body">{!loaded && <p>正在读取对局…</p>}{loaded && !games.length && <p>当前没有进行中的对局。</p>}{games.map((g) => { const mine = g.player_b_id === user?.id || g.player_w_id === user?.id; return <article className="pvp-galaxy__game" data-testid="lobby-game" key={g.session_id}><div className="meta"><b>{g.session_id.slice(0, 4)} 房</b><span>分先 · 19 路</span><span>第 {g.move_count} 手</span></div><div className="pair"><div className="side"><span className="portrait">{g.player_b.slice(0, 1)}</span><div><b>{g.player_b}</b><small>执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></div></div><span className="versus">对</span><div className="side white"><div><b>{g.player_w}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白</small></div><span className="portrait">{g.player_w.slice(0, 1)}</span></div></div>{mine && <button type="button" onClick={() => navigate(`/galaxy/play/human/room/${g.session_id}`)}>返回棋盘 →</button>}</article>; })}<p className="tail">只列真实进行中的对局；自己的对局可返回棋盘。</p></div></section>
+      <section className="pvp-galaxy__panel" aria-label="在线棋友"><header><h2>在线棋友</h2><em>Players</em><span>{users.length} 人在线</span></header><div className="pvp-galaxy__tabs" role="tablist"><button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')}>全部棋友</button><button role="tab" aria-selected={filter === 'same'} disabled={!rank} onClick={() => setFilter('same')}>同段位</button><button role="tab" aria-selected={filter === 'follow'} onClick={() => setFilter('follow')}>我的关注</button></div><div className="pvp-galaxy__peers">{!loaded && <p>正在读取棋友…</p>}{loaded && !ordered.length && <p>当前筛选下没有在线棋友。</p>}{ordered.map((u) => { const me = u.id === user?.id; const busy = u.presence === 'playing'; return <div className={`peer ${me ? 'self' : ''}`} data-testid={`lobby-player-${u.id}`} key={u.id}><span className="portrait">{u.username.slice(0, 1)}</span><span className="name"><b>{u.username}</b><small>{u.rank_label || '尚未定级'}</small></span><span className={`state ${busy ? 'busy' : ''}`}>{busy ? '对局中' : '空闲'}</span>{me ? <span className="self-tag">这是你</span> : <button type="button" disabled={busy || connection !== 'connected'} onClick={() => send({ type: 'invite', target_id: u.id })}>邀请</button>}</div>; })}</div><p className="pvp-galaxy__tail">空闲棋手可邀请；同段位筛选按已定级段位计算。</p></section>
+    </div>
+    {dialog && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{dialog === 'placement' ? '完成定级后再来匹配' : '正在寻找同段位对手'}</h2><p>{dialog === 'placement' ? '大厅按「升降级对弈」的段位寻找同水平对手。请先完成 5 局定级赛，再回到这里匹配。' : '先寻找同段位真人，稍后由同段位棋手接局；成功后直接开局。'}</p><div className="detail"><span>{dialog === 'placement' ? '当前段位' : `${rank?.label} · 不计升降段位`}</span><b>{dialog === 'placement' ? '尚未定级' : `已等 ${elapsed} 秒`}</b></div>{dialog === 'matching' && <div className="progress" />}<div className="actions">{dialog === 'placement' ? <><button onClick={() => setDialog(null)}>返回大厅</button><button className="main" onClick={() => navigate('/galaxy/play/ai?mode=rated')}>去升降级对弈</button></> : <button onClick={stop}>取消匹配</button>}</div></section></div>}
+    {invitation && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{invitation.from_name} 邀你下一局</h2><p>接受后直接开局；这局不计升降段位。</p><div className="actions"><button onClick={() => setInvitation(null)}>返回大厅</button><button className="main" onClick={() => { send({ type: 'accept_invite', target_id: invitation.from_id }); setInvitation(null); }}>接受邀请</button></div></section></div>}
+  </main>;
+}

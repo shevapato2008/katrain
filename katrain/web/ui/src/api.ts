@@ -8,7 +8,7 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
-export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online';
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
 
 export interface GameState {
   game_id: string;
@@ -123,6 +123,8 @@ export interface GameState {
   platform_engine_color?: 'B' | 'W' | null;
   /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
   platform_my_color?: 'B' | 'W' | null;
+  /** Self-owned PvP mirror also exposes this neutral seat alias. */
+  my_color?: 'B' | 'W' | null;
   /** Current OGS phase, mirrored in get_state so reload can restore scoring UI. */
   platform_phase?: 'playing' | 'paused' | 'scoring' | 'finished' | null;
 }

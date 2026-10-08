@@ -65,7 +65,7 @@ interface AiPlacementStatus {
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
 export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
-  if (gameState.game_type === 'pvp_online') return gameState.platform_my_color ?? null;
+  if (gameState.game_type === 'pvp_online' || gameState.game_type === 'pvp_lobby') return gameState.platform_my_color ?? gameState.my_color ?? null;
   // Both-human (local PvP, server.py 'pvp_local'): null lets EITHER side play, so the
   // touchscreen fallback works for BOTH colors. Must precede the single-human checks
   // below, which would otherwise collapse to 'B' and block White from moving. Uses the
@@ -506,7 +506,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
-    if (gs.game_type === 'pvp_online') return;
+    if (gs.game_type === 'pvp_online' || gs.game_type === 'pvp_lobby') return;
     if (isRankedGameType(gs.game_type)) return;
     // 无人认领的会话:服务端**算了但不交付**(`analysis_delivered`)。开关那边已经灰了,
     // 这里再早退一次是因为**这条 `.catch(() => undefined)` 会把失败整个吞掉** ——
@@ -587,12 +587,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
-  const onlineGame = gameState.game_type === 'pvp_online';
+  const lobbyGame = gameState.game_type === 'pvp_lobby';
+  const ogsGame = gameState.game_type === 'pvp_online';
+  const onlineGame = ogsGame || lobbyGame;
+  const myColor = gameState.platform_my_color ?? gameState.my_color ?? null;
   const onlinePhase = session.platformPhase ?? gameState.platform_phase ?? null;
   const ogsScoringScope = `${sessionId}|${gameState.game_id}|${onlinePhase}`;
   const activeOgsScoring = ogsScoring?.scope === ogsScoringScope ? ogsScoring : null;
   const onlineScoringPending = activeOgsScoring?.status === 'sending' || activeOgsScoring?.status === 'waiting';
-  const onlineHome = '/kiosk/play/cross-platform/ogs';
+  const onlineHome = lobbyGame ? '/kiosk/play/pvp/lobby' : '/kiosk/play/cross-platform/ogs';
   const boardSize = gameState.board_size[0];
   const attentionPoints = visionAttentionPoints.length > 0 ? visionAttentionPoints
     : judgeUndecided?.positionKey === enginePositionKey ? judgeUndecided.points : [];
@@ -610,7 +613,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const gameTitle = engineMode ? t('game:golaxy_ai', '星阵围棋 · 人机')
     : gameState.game_type === 'ai_ladder_ranked' ? t('Ranked Game', '升降级对弈')
     : gameState.game_type === 'pvp_local' ? t('game:local_pvp', '本地对局')
-    : gameState.game_type === 'pvp_online' ? t('game:online_pvp', '在线对局')
+    : onlineGame ? t('game:online_pvp', '在线对局')
     : t('Free Game', '自由对弈');
   // 副标 = **开局时定死的那几条**(路数 / 规则 / 贴目 / 让子)。它们不是过程量,
   // 写在这里一次就够,不必像上一版那样占一整条 `Game info bar`。
@@ -739,7 +742,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地双人局按轮到落子的一方认输，人机局始终按人的座位认输。
   const bothHuman = gameState.players_info.B.player_type === 'player:human'
     && gameState.players_info.W.player_type === 'player:human';
-  const resignColor = onlineGame ? gameState.platform_my_color : gameState.player_to_move;
+  const resignColor = onlineGame ? myColor : gameState.player_to_move;
   const resignSide = resignColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方');
   const resignTitle = bothHuman
     ? t('game:resign_confirm_side', '{side}认输？').replace('{side}', resignSide)
@@ -789,7 +792,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : null;
 
   const sendOgsScoring = async (action: 'accept' | 'reject') => {
-    if (!onlineGame || onlinePhase !== 'scoring' || !sessionId || !gameState.platform_my_color
+    if (!ogsGame || onlinePhase !== 'scoring' || !sessionId || !myColor
       || ogsScoringRef.current === ogsScoringScope) return;
     ogsScoringRef.current = ogsScoringScope;
     setOgsScoring({ scope: ogsScoringScope, status: 'sending' });
@@ -805,9 +808,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   };
 
   const handleAction = async (action: string) => {
+    if (lobbyGame && !['pass', 'resign', 'count'].includes(action)) return;
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'ogs-score-accept') {
-      if (onlineGame && onlinePhase === 'scoring' && !onlineScoringPending) setOgsNoDeadConfirm(ogsScoringScope);
+      if (ogsGame && onlinePhase === 'scoring' && !onlineScoringPending) setOgsNoDeadConfirm(ogsScoringScope);
       return;
     }
     if (action === 'ogs-score-reject') {
@@ -816,10 +820,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
     if (onlineGame) {
       if (onlinePhase === 'finished' && action === 'resign') return;
-      if (!gameState.platform_my_color || (action === 'pass'
-        && (gameState.player_to_move !== gameState.platform_my_color
+      if (!myColor || (action === 'pass'
+        && (gameState.player_to_move !== myColor
           || (onlinePhase != null && onlinePhase !== 'playing')))) return;
-      if (action === 'count') return;
+      if (action === 'count' && ogsGame) return;
     }
     if (action === 'resign') {
       setShowResignConfirm(true);
@@ -851,8 +855,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
     if (isGameOver) return;
-    if (onlineGame && (!gameState.platform_my_color
-      || gameState.player_to_move !== gameState.platform_my_color
+    if (onlineGame && (!myColor
+      || gameState.player_to_move !== myColor
       || (onlinePhase != null && onlinePhase !== 'playing'))) return;
     setOnlineMoveError(null);
     try {
@@ -860,7 +864,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setAiPlacementStatus(null);
     } catch (e) {
       if (onlineGame) {
-        setOnlineMoveError(e instanceof ApiError && e.status === 409
+        setOnlineMoveError(lobbyGame ? t('game:lobby_move_unconfirmed', '这手尚未确认，请核对盘面后重试') : e instanceof ApiError && e.status === 409
           ? t('game:ogs_move_conflict', 'OGS 未确认这手棋，请先核对盘面，勿重复落子')
           : e instanceof ApiError && [502, 503, 504].includes(e.status)
             ? t('game:ogs_move_unavailable', 'OGS 暂时不可用，这手尚未确认，请检查连接')
@@ -1286,8 +1290,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             hardwareFault={hardwareFault}
             physicalStatus={physicalStatus}
             counting={autoCount.status === 'counting'}
-            platformClock={onlineGame ? session.platformClock : null}
-            platformPhase={onlineGame ? onlinePhase : null}
+            platformClock={ogsGame ? session.platformClock : null}
+            platformPhase={ogsGame ? onlinePhase : null}
             onlineScoringPending={onlineScoringPending}
             statusSlot={statusSlot}
           />
@@ -1365,7 +1369,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
             <Button
               color="error"
-              disabled={onlineGame && (!gameState.platform_my_color || onlinePhase === 'finished')}
+              disabled={onlineGame && (!myColor || onlinePhase === 'finished')}
               onClick={async () => {
                 try {
                   await session.handleAction('resign');
@@ -1413,7 +1417,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             </Button>
             <Button
               color="error"
-              disabled={onlineGame && (!gameState.platform_my_color || onlinePhase === 'finished')}
+              disabled={onlineGame && (!myColor || onlinePhase === 'finished')}
               onClick={async () => {
                 try {
                   await session.handleAction('resign');

@@ -1273,3 +1273,9 @@ agon10（10 原文／205 盘）及 cmb2（2 原文／2 盘）已实际两库入�
 - 统计为真实 r3 native strict_slot_approvals 在受影响 1,568 局的批次前后差值，其他棋局继承真实590基线；不冒称独立全库重扫，也不把 native 严格口径等同 legacy PROD web 已全部一致。
 - 两环境实际 HTTP 各 8 个例子通过；CN/TW 或 KO/EN/RU 查询返回同一数量和页面 ID，RU 用英语。生成名称查询仍约 2.2–8.7 秒，低延迟尚未完成；已继续定位同一请求 legacy exact search 的重复校验。
 - 实际审批、完整 bundle/来源、dry-run/apply/verify、页面同步、HTTP、统计分别归档 kifu-player-mixed20-20261009-{TEST,PROD}.json.gz。HTML 已更新实际 20 个名称及 3 条页面信息；翻译和入库继续。
+
+## r5 — 2026-10-09：请求内重复校验修复实际发布
+
+- TEST web 及 TEST/PROD administrative importer 已发布 efb0a4dd 的 3 个精确改动；PROD web 原 SQL 适配已有同一上下文传递，保持已核验 r4 镜像。无数据库写入，环境值及其他容器不变。
+- 实际只读原生路由 q=加納一夫/lang=tw 返回原 22 局/20 项；耗时 6.262 秒，上一观察 7.407 秒。588 批次证明由两次降为一次，五次 live source 检查均保留。只是单次前后观察，未达到低延迟目标。实际镜像、源码补丁、运行时 hash/健康与计时归档 kifu-reader-r5-cloud-deployment-20261009.json.gz。
+- 继续下一批 20 位棋手及 122 种赛事标题真实入库。

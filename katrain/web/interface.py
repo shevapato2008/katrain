@@ -133,6 +133,8 @@ class WebGame(Game):
                 and not self.ended_at(node)
             ):
                 self.terminal = GameEnd(self, node, self.end_result)
+                if getattr(self.katrain, "pvp_lobby_human_session", False) is True:
+                    self.katrain.pvp_lobby_awaiting_count = True
 
     def set_current_node(self, node):
         # r1:挪游标进对局提交锁。AI 在锁里核完「当前手仍是开算那一手」之后、`Game.play` 读 `current_node`

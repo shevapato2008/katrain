@@ -139,6 +139,9 @@ class SessionManager:
             session.player_b_id = player_b_id
             session.player_w_id = player_w_id
             session.game_type = initial_game_type
+            session.katrain.pvp_lobby_human_session = (
+                initial_game_type == "free" and player_b_id > 0 and player_w_id > 0
+            )
             # 普通多人局保留既有分析行为；平台在线局不得在这里重开分析交付。
             session.katrain.deliver_analysis = initial_game_type != "pvp_online"
 
@@ -356,7 +359,8 @@ class SessionManager:
             session = self.get_session(session_id)
         except KeyError:
             return
-        session.game_ended = True
+        if getattr(session.katrain, "pvp_lobby_awaiting_count", False) is not True:
+            session.game_ended = True
         self._schedule_game_ended(session, end)
 
     def _schedule_game_ended(self, session: WebSession, end: GameEnd):

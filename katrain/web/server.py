@@ -1399,7 +1399,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # 自然终局(双停)不经过认输 / 数子 / 超时,在这里收尾:先补分出胜负,再落账(N22)。只收尾**这一手造出来的**终局(r1 M1)。
         # AI 线程下出双停第二手时走的是 `manager.on_game_ended`,两条路是同一个函数、会话内串行。
         # 收尾必须在 `analysis_context` 之外:`persistent_analysis_activity` 在 `activity.lock` 里 yield,那把锁不许跨 await。
-        if end is not None and (not state.get("awaiting_count") or getattr(session, "bot_game", False) is True):
+        if end is not None and (
+            not state.get("awaiting_count")
+            or getattr(session, "bot_game", False) is True
+            or getattr(session.katrain, "pvp_lobby_human_session", False) is True
+        ):
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state

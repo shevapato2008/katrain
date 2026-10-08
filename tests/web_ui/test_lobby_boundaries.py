@@ -26,6 +26,9 @@
 """
 
 import uuid
+import importlib.util
+import threading
+from pathlib import Path
 
 import pytest
 
@@ -698,6 +701,121 @@ def test_two_human_passes_expose_count_retry_after_score_failure(client, app):
     assert second.json()["result"] == "B+1.5"
     assert second.json()["state"]["degraded"] is False
     assert second.json()["state"]["awaiting_count"] is False
+
+
+@pytest.mark.parametrize("score", [None, 1.5])
+def test_central_human_double_pass_first_frame_waits_for_score(client, app, score, monkeypatch):
+    from unittest.mock import MagicMock
+    from katrain.core.constants import MODE_PLAY
+    from katrain.web.models import GameEnd
+    from katrain.web import session as session_module
+
+    monkeypatch.setattr(session_module, "WebKaTrain", lambda **kwargs: MagicMock())
+
+    source = Path(__file__).resolve().parents[2] / "katrain/web/interface.py"
+    spec = importlib.util.spec_from_file_location("_pvp_real_interface", source)
+    real_interface = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(real_interface)
+
+    black_id, black = _make_user(app, "first_frame_black")
+    white_id, white = _make_user(app, "first_frame_white")
+    session = app.state.session_manager.create_multiplayer_session(
+        black_id, white_id, b_name=black, w_name=white, initial_game_type="free", skip_initial_analysis=True)
+    manager = app.state.session_manager
+    reservation = app.state.matchmaker.reserve_invitation(black_id, white_id)
+    assert app.state.matchmaker.bind_session(reservation, session.session_id, black_id, white_id)
+    game = session.katrain.game
+    node = game.current_node
+    node.next_player = "B"
+    node.is_pass = True
+    node.parent.is_pass = True
+    node.end_state = None
+    node.score = score
+    game.current_node = node
+    game.katrain = session.katrain
+    game.terminal = None
+    game.end_result = "终局"
+    game.ended_at.return_value = False
+    session.katrain.ai_ladder_commit_lock = threading.RLock()
+    session.katrain.play_analyze_mode = MODE_PLAY
+    session.katrain.analysis_allowed = True
+    session.katrain.pvp_lobby_awaiting_count = False
+    session.katrain.pvp_lobby_degraded = False
+    session.katrain.ensure_current_score.return_value = score
+    session.katrain.get_sgf.return_value = "(;GM[1];B[];W[])"
+
+    def state():
+        return {"player_to_move": "B", "history": ["pass", "pass"],
+                "end_result": game.end_result if game.terminal else None,
+                "awaiting_count": getattr(session.katrain, "pvp_lobby_awaiting_count", False) is True,
+                "degraded": getattr(session.katrain, "pvp_lobby_degraded", False) is True}
+
+    frames = []
+    owners_at_frame = []
+    original_broadcast = manager._schedule_broadcast
+
+    def capture(_session, payload):
+        if payload.get("type") == "game_update":
+            frames.append(dict(payload["state"]))
+            owners_at_frame.append(app.state.matchmaker._active_users.get(black_id))
+        return original_broadcast(_session, payload)
+
+    manager._schedule_broadcast = capture
+    session.katrain.get_state.side_effect = state
+    session.katrain.update_state.side_effect = lambda: session.katrain.update_state_callback(state())
+    def play(action, *args, **kwargs):
+        if action == "play":
+            real_interface.WebGame.record_two_pass_end(game, node)
+            session.katrain.update_state()
+
+    session.katrain.side_effect = play
+
+    if score is not None:
+        def commit(result, **kwargs):
+            node.end_state = result
+            game.end_result = result
+            game.terminal = GameEnd(game, node, result)
+            return game.terminal
+
+        session.katrain._commit_end_state.side_effect = commit
+
+    response = client.post("/api/move", headers={"Authorization": f"Bearer {_token(client, black)}"},
+                           json={"session_id": session.session_id, "pass_move": True})
+    assert response.status_code == 200, response.text
+    assert frames[0]["awaiting_count"] is True
+    assert frames[0]["degraded"] is False
+    assert owners_at_frame[0] == session.session_id
+    if score is None:
+        assert frames[-1]["awaiting_count"] is True
+        assert frames[-1]["degraded"] is True
+        assert session.game_ended is False
+        assert app.state.matchmaker._active_users[black_id] == session.session_id
+    else:
+        assert frames[-1]["awaiting_count"] is False
+        assert frames[-1]["degraded"] is False
+        assert frames[-1]["end_result"] == "B+1.5"
+        assert session.game_ended is True
+
+
+def test_game_ended_callback_does_not_release_pending_human_count(client, app):
+    from katrain.web.models import GameEnd
+
+    black_id, black = _make_user(app, "pending_callback_black")
+    white_id, white = _make_user(app, "pending_callback_white")
+    manager = app.state.session_manager
+    session = manager.create_multiplayer_session(
+        black_id, white_id, b_name=black, w_name=white, initial_game_type="free", skip_initial_analysis=True)
+    reservation = app.state.matchmaker.reserve_invitation(black_id, white_id)
+    assert app.state.matchmaker.bind_session(reservation, session.session_id, black_id, white_id)
+    session.katrain.pvp_lobby_awaiting_count = True
+    manager.on_game_ended = None
+    end = GameEnd(session.katrain.game, session.katrain.game.current_node, "终局")
+
+    manager._on_game_ended(session.session_id, end)
+    manager._on_state(session.session_id, {"end_result": "终局", "awaiting_count": True})
+
+    assert session.game_ended is False
+    assert app.state.matchmaker._active_users[black_id] == session.session_id
 
 
 def test_accept_invite_without_an_invitation_creates_no_game(client, app):

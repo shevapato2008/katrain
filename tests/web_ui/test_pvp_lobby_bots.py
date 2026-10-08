@@ -2,6 +2,9 @@
 
 from random import Random
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
+import asyncio
+import threading
 
 import pytest
 
@@ -134,3 +137,127 @@ def test_each_move_delay_is_selected_inside_five_to_thirty_seconds():
     assert bots.next_move_delay(rng) == 30
     assert rng.bounds == [(5, 30), (5, 30)]
     assert all(5 <= bots.next_move_delay(Random(seed)) <= 30 for seed in range(20))
+
+
+def test_runtime_keeps_idle_reserve_when_human_takes_a_bot():
+    runtime = bots.PvpLobbyBotRuntime(None)
+    rung = bots.playable_rungs()[0].rung
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 1,
+                          "idle_targets": {str(rung): 2}}, revision=4)
+    original = {row["id"] for row in runtime.public_online_rows() if row["ladder_rung"] == rung}
+    chosen, generation = runtime.reserve_bot(rung)
+    assert chosen in original
+    rows = [row for row in runtime.public_online_rows() if row["ladder_rung"] == rung]
+    assert len([row for row in rows if row["presence"] == "idle"]) >= 2
+    assert next(row for row in rows if row["id"] == chosen)["presence"] == "playing"
+    assert runtime.reservation_valid(chosen, generation)
+    runtime.release_bot(chosen, generation)
+    assert not runtime.reservation_valid(chosen, generation)
+
+
+def test_bot_pair_rotation_obeys_cap_and_skips_human_waiters():
+    runtime = bots.PvpLobbyBotRuntime(None)
+    rungs = [level.rung for level in bots.playable_rungs()[:3]]
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 2,
+                          "idle_targets": {}}, revision=1)
+    first = runtime.reserve_rotation_pair(human_waiting=False)
+    second = runtime.reserve_rotation_pair(human_waiting=False)
+    assert first is not None and second is not None
+    assert [first[0], second[0]] == rungs[:2]
+    assert runtime.reserve_rotation_pair(human_waiting=False) is None
+    assert runtime.reserve_rotation_pair(human_waiting=True) is None
+    runtime.release_rotation_pair(*first)
+    third = runtime.reserve_rotation_pair(human_waiting=False)
+    assert third is not None and third[0] == rungs[2]
+
+
+def test_disabled_config_blocks_new_reservations_but_preserves_active_bot():
+    runtime = bots.PvpLobbyBotRuntime(None)
+    rung = bots.playable_rungs()[0].rung
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 1,
+                          "idle_targets": {}}, revision=1)
+    chosen, generation = runtime.reserve_bot(rung)
+    runtime.apply_config({"version": 1, "enabled": False, "bot_game_limit": 0,
+                          "idle_targets": {}}, revision=2)
+    assert runtime.reserve_bot(rung) is None
+    assert runtime.reservation_valid(chosen, generation)
+    assert any(row["id"] == chosen for row in runtime.public_online_rows())
+
+
+def test_ladder_candidate_does_not_commit_its_move(monkeypatch):
+    from katrain.core import ai
+
+    node = object()
+    move = object()
+    class FakeGame:
+        current_node = node
+        def play(self, _move):
+            raise AssertionError("generation must not commit")
+    monkeypatch.setattr(ai.LadderStrategy, "generate_move", lambda self: (move, "certified"))
+    assert ai.generate_ladder_candidate(FakeGame(), 1) == (node, move, "certified")
+
+
+@pytest.mark.asyncio
+async def test_bot_second_pass_is_scored_before_terminal_finish():
+    runtime = bots.PvpLobbyBotRuntime(None)
+    node = SimpleNamespace()
+    game = SimpleNamespace(current_node=node)
+    committed = []
+    katrain = SimpleNamespace(game=game, ensure_current_score=lambda **kwargs: -1.5,
+                             _commit_end_state=lambda result, **kwargs: committed.append((result, kwargs)),
+                             get_state=lambda: {"end_result": "W+1.5"}, update_state=lambda: None)
+    session = SimpleNamespace(session_id="two-pass", lock=threading.Lock(), end_game_lock=asyncio.Lock(),
+                              katrain=katrain, game_ended=True, bot_finalized=False)
+    runtime._sessions[session.session_id] = ()
+    runtime.finish = AsyncMock()
+
+    await runtime.finish_terminal(session, SimpleNamespace(game=game, node=node, result="B+9.5?"))
+
+    assert committed == [("W+1.5", {"node": node, "fill_pending": True})]
+    runtime.finish.assert_awaited_once_with(session, reason="two_pass", result="W+1.5")
+
+
+@pytest.mark.asyncio
+async def test_invalid_engine_score_degrades_instead_of_fabricating_result():
+    runtime = bots.PvpLobbyBotRuntime(None)
+    node = SimpleNamespace()
+    game = SimpleNamespace(current_node=node)
+    katrain = SimpleNamespace(game=game, ensure_current_score=lambda **kwargs: float("nan"), update_state=lambda: None)
+    session = SimpleNamespace(session_id="stalled", lock=threading.Lock(), end_game_lock=asyncio.Lock(),
+                              katrain=katrain, game_ended=True, bot_finalized=False)
+    runtime._sessions[session.session_id] = ()
+    runtime.finish = AsyncMock()
+    runtime._abort_stalled = AsyncMock()
+
+    await runtime.finish_terminal(session, SimpleNamespace(game=game, node=node, result="board-game-end"))
+
+    assert session.bot_degraded is True
+    assert runtime.engine_errors == 1
+    runtime.finish.assert_not_awaited()
+    runtime._stall_tasks["stalled"].cancel()
+
+
+@pytest.mark.parametrize("invalidate", ["delete", "cancel"])
+def test_generated_candidate_cannot_commit_after_session_or_reservation_invalidated(invalidate):
+    rung = bots.playable_rungs()[0].rung
+    state = SimpleNamespace()
+    runtime = bots.PvpLobbyBotRuntime(SimpleNamespace(state=state))
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                          "idle_targets": {}}, revision=1)
+    identity, generation = runtime.reserve_bot(rung)
+    node = SimpleNamespace(next_player="B")
+    played = []
+    game = SimpleNamespace(current_node=node, end_result=None,
+                           play=lambda move, **kwargs: played.append(move))
+    katrain = SimpleNamespace(game=game, ai_ladder_commit_lock=threading.RLock(),
+                             get_state=lambda: {}, update_state=lambda: None)
+    session = SimpleNamespace(session_id="game-1", player_b_id=identity, player_w_id=1,
+                              game_ended=False, lock=threading.Lock(), katrain=katrain)
+    state.session_manager = SimpleNamespace(_lock=threading.Lock(), _sessions={session.session_id: session})
+    if invalidate == "delete":
+        state.session_manager._sessions.clear()
+    else:
+        runtime.release_bot(identity, generation)
+
+    assert runtime.commit_candidate(session, identity, generation, (node, object(), "certified")) is False
+    assert played == []

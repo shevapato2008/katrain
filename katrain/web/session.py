@@ -66,6 +66,8 @@ class SessionManager:
         #: N22:对局在**请求之外**结束(AI 后台线程下出双停第二手 / AI 认输)时调用的收尾函数,由 server.py 装上。
         #: 人发出的请求自己也调同一个函数;两边靠 `WebSession.end_game_lock` 与 `_record_ai_game` 的幂等只收尾一次。
         self.on_game_ended: Optional[Callable[[WebSession, GameEnd], Awaitable[None]]] = None
+        self.on_session_removed: Optional[Callable[[WebSession], None]] = None
+        self.on_session_state: Optional[Callable[[str], None]] = None
 
     def attach_loop(self, loop):
         self._loop = loop
@@ -212,8 +214,15 @@ class SessionManager:
         见 `SOCKET_CLOSE_SESSION_GONE` 上面那段。
         """
         with self._lock:
-            session = self._sessions.pop(session_id, None)
+            session = self._sessions.get(session_id)
         if session:
+            # The same commit boundary as bot candidate moves: deletion and
+            # reservation invalidation cannot race a generated move into play.
+            with session.lock:
+                with self._lock:
+                    if self._sessions.get(session_id) is not session:
+                        return
+                    self._sessions.pop(session_id)
             self._shutdown_all([session], close=SOCKET_CLOSE_SESSION_CLOSED)
 
     def broadcast_to_session(self, session_id: str, payload: Dict):
@@ -251,6 +260,11 @@ class SessionManager:
         跳过这一局的 `katrain.shutdown()` —— 2G 的 RK3562 上那意味着 KataGo 进程留着不走。
         """
         for session in sessions:
+            if self.on_session_removed:
+                try:
+                    self.on_session_removed(session)
+                except Exception:
+                    logging.getLogger("katrain_web").exception("session removal hook failed for %s", session.session_id)
             try:
                 self._schedule_socket_close(session, close)
             except Exception:
@@ -286,7 +300,19 @@ class SessionManager:
         expired = [sid for sid, s in self._sessions.items() if now - s.last_access > self.session_timeout]
         evicted: List[WebSession] = []
         for sid in expired:
-            session = self._sessions.pop(sid, None)
+            session = self._sessions.get(sid)
+            if session and getattr(session, "bot_game", False):
+                # Bot commit takes session.lock, then manager._lock. Never wait
+                # for that lock here in the reverse order; retry next sweep.
+                if not session.lock.acquire(blocking=False):
+                    continue
+                try:
+                    evicted_session = self._sessions.pop(sid, None)
+                finally:
+                    session.lock.release()
+                session = evicted_session
+            else:
+                session = self._sessions.pop(sid, None)
             if session:
                 evicted.append(session)
 
@@ -306,9 +332,11 @@ class SessionManager:
             session = self.get_session(session_id)
         except KeyError:
             return
-        if state.get("end_result"):
+        if state.get("end_result") and not state.get("awaiting_count"):
             session.game_ended = True
         session.last_state = state
+        if self.on_session_state:
+            self.on_session_state(session_id)
         state["sockets_count"] = len(session.sockets)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})
 
@@ -449,18 +477,27 @@ class Match:
 
 class Matchmaker:
     def __init__(self):
-        self._queues: Dict[str, List[Dict]] = {"rated": [], "free": []}
+        self._queues: Dict[object, List[Dict]] = {}
+        self._active_users: Set[int] = set()
         self._lock = threading.Lock()
 
-    def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket) -> Optional[Match]:
+    def add_to_queue(self, user_id: int, game_type: str, websocket: WebSocket, *, rung: int | None = None) -> Optional[Match]:
         import logging
 
         logger = logging.getLogger("katrain_web")
         with self._lock:
-            queue = self._queues.get(game_type)
-            if queue is None:
+            if game_type not in ("free", "rated"):
                 logger.warning(f"Invalid game_type requested: {game_type}")
                 return None
+            if user_id in self._active_users:
+                raise ValueError("user already has an active lobby game")
+            # `rung=None` only supports older direct Matchmaker users. The public
+            # lobby always supplies an authoritative placed rung.
+            key = rung if rung is not None else game_type
+            queue = self._queues.setdefault(key, [])
+            for other_key, other_queue in self._queues.items():
+                if other_key != key:
+                    other_queue[:] = [entry for entry in other_queue if entry["user_id"] != user_id]
 
             # Check if user already in queue
             for entry in queue:
@@ -472,13 +509,16 @@ class Matchmaker:
             # Check for existing match
             if queue:
                 opponent = queue.pop(0)
+                if opponent["user_id"] in self._active_users:
+                    raise ValueError("queued user already has an active lobby game")
+                self._active_users.update((opponent["user_id"], user_id))
                 match_id = uuid.uuid4().hex
                 logger.info(f"Match found in {game_type} queue! User {user_id} matched with User {opponent['user_id']}")
                 return Match(
                     match_id=match_id,
                     player1_id=opponent["user_id"],
                     player2_id=user_id,
-                    game_type=game_type,
+                    game_type="free" if rung is not None else game_type,
                     player1_socket=opponent["websocket"],
                     player2_socket=websocket,
                 )
@@ -486,6 +526,35 @@ class Matchmaker:
                 logger.info(f"Adding User {user_id} to {game_type} queue. Queue size now: {len(queue) + 1}")
                 queue.append({"user_id": user_id, "websocket": websocket})
                 return None
+
+    def reserve_invitation(self, user_a: int, user_b: int) -> bool:
+        with self._lock:
+            if user_a in self._active_users or user_b in self._active_users:
+                return False
+            self._active_users.update((user_a, user_b))
+            for queue in self._queues.values():
+                queue[:] = [entry for entry in queue if entry["user_id"] not in (user_a, user_b)]
+            return True
+
+    def release_users(self, *user_ids: int) -> None:
+        with self._lock:
+            self._active_users.difference_update(user_ids)
+
+    def reserve_queued_for_bot(self, user_id: int, rung: int, websocket: WebSocket) -> bool:
+        with self._lock:
+            queue = self._queues.get(rung, [])
+            if user_id in self._active_users:
+                return False
+            for index, entry in enumerate(queue):
+                if entry["user_id"] == user_id and entry["websocket"] is websocket:
+                    queue.pop(index)
+                    self._active_users.add(user_id)
+                    return True
+            return False
+
+    def has_waiters(self) -> bool:
+        with self._lock:
+            return any(queue for queue in self._queues.values())
 
     def remove_from_queue(self, user_id: int):
         with self._lock:

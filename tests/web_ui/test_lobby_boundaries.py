@@ -181,6 +181,7 @@ def test_public_roster_uses_ai_ladder_rank_and_room_presence(client, app):
         def public_online_rows(self):
             return [{"id": bot_id(rung.rung, 1), "username": bot_name(rung.rung, 1),
                      "ladder_rung": rung.rung, "rank_label": rung.rank_label, "presence": "playing"}]
+    original_runtime = app.state.pvp_lobby_bots
     app.state.pvp_lobby_bots = FakeRuntime()
 
     token = _token(client, bob)
@@ -203,6 +204,7 @@ def test_public_roster_uses_ai_ladder_rank_and_room_presence(client, app):
     assert found["player_b_rank_label"] == found["player_w_rank_label"] == rung.rank_label
     assert found["player_w"] == bot_name(rung.rung, 1)
     assert not {"kind", "is_bot", "uuid", "credits", "hashed_password"}.intersection(found)
+    app.state.pvp_lobby_bots = original_runtime
 
 
 # ── 3. 邀请不能凭空捏造 ────────────────────────────────────────────────────────
@@ -224,6 +226,352 @@ def _next(ws):
         if msg.get("type") != "lobby_update":
             return msg
     raise AssertionError("20 条里全是 lobby_update,没等到实质消息")
+
+
+def _place(app, user_id, rung):
+    from katrain.web.core.models_db import AiLadderProfile
+
+    db = app.state.session_factory()
+    try:
+        db.add(AiLadderProfile(user_id=user_id, ai_ladder_rung=rung, placement_lo=1,
+                               placement_hi=41, placement_completed=5))
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_unplaced_free_matchmaking_requires_placement(client, app):
+    _, alice = _make_user(app, "unplaced_free")
+    with _ws(client, _token(client, alice)) as ws:
+        ws.send_json({"type": "start_matchmaking"})
+        ws.send_json({"type": "invite", "target_id": 999999})  # deterministic response barrier
+        message = _next(ws)
+    assert message["type"] == "error" and message["code"] == "PLACEMENT_REQUIRED"
+    assert not app.state.session_manager.list_active_multiplayer_sessions()
+
+
+def test_legacy_rated_queue_pairs_only_same_rung_as_free(client, app):
+    from katrain.web.core.pvp_lobby_bots import playable_rungs
+
+    first, second = playable_rungs()[:2]
+    alice_id, alice = _make_user(app, "same_a")
+    bob_id, bob = _make_user(app, "other_b")
+    carol_id, carol = _make_user(app, "same_c")
+    _place(app, alice_id, first.rung)
+    _place(app, bob_id, second.rung)
+    _place(app, carol_id, first.rung)
+    with _ws(client, _token(client, alice)) as a, _ws(client, _token(client, bob)) as b, _ws(client, _token(client, carol)) as c:
+        a.send_json({"type": "start_matchmaking", "game_type": "rated"})
+        b.send_json({"type": "start_matchmaking", "game_type": "free"})
+        c.send_json({"type": "start_matchmaking"})
+        match = _next(c)
+        assert match["type"] == "match_found"
+        assert match["game_type"] == "free"
+        assert {match["players"]["player_b"], match["players"]["player_w"]} == {alice_id, carol_id}
+        assert match["my_color"] == ("B" if match["players"]["player_b"] == carol_id else "W")
+        assert _next(a)["session_id"] == match["session_id"]
+        assert app.state.session_manager.get_session(match["session_id"]).game_type == "free"
+
+
+def test_placed_user_can_invite_idle_same_rung_bot(client, app):
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_inviter")
+    _place(app, alice_id, rung)
+    runtime = app.state.pvp_lobby_bots
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                          "idle_targets": {str(rung): 1}}, revision=1)
+    with _ws(client, _token(client, alice)) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        match = _next(ws)
+    assert match["type"] == "match_found"
+    assert match["game_type"] == "free"
+    assert match["my_color"] in ("B", "W")
+    assert {match["players"]["player_b"], match["players"]["player_w"]} == {alice_id, bot_id(rung, 1)}
+    session = app.state.session_manager.get_session(match["session_id"])
+    assert session.bot_game is True
+    snapshot = runtime.build_snapshot()
+    assert snapshot["applied_config_revision"] == 1
+    assert snapshot["active_bot_games"] == 1
+    assert snapshot["reported_at"]
+    assert any(row["kind"] == "bot" and row["id"] == bot_id(rung, 1)
+               and row["session_id"] == session.session_id for row in snapshot["participants"])
+    headers = {"Authorization": f"Bearer {_token(client, alice)}"}
+    change = client.post("/api/player", headers=headers,
+                         json={"session_id": session.session_id, "bw": "W", "name": "hijack"})
+    assert change.status_code == 403
+    restart = client.post("/api/new-game", headers=headers, json={"session_id": session.session_id})
+    assert restart.status_code == 403
+    readable = client.get("/api/sgf/save", headers=headers, params={"session_id": session.session_id})
+    assert readable.status_code == 200
+
+
+def test_bot_resignation_records_human_once_and_releases_room(client, app):
+    from katrain.web.core.models_db import AiLadderProfile, UserGame
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_resign")
+    _place(app, alice_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+    token = _token(client, alice)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        match = _next(ws)
+    sid = match["session_id"]
+    app.state.session_manager.get_session(sid).katrain.get_sgf.return_value = "(;GM[1])"
+    response = client.post("/api/resign", headers={"Authorization": f"Bearer {token}"}, json={"session_id": sid})
+    assert response.status_code == 200, response.text
+    with pytest.raises(KeyError):
+        app.state.session_manager.get_session(sid)
+    assert alice_id not in app.state.matchmaker._active_users
+    assert bot_id(rung, 1) not in app.state.matchmaker._active_users
+    db = app.state.session_factory()
+    try:
+        assert db.query(UserGame).filter_by(user_id=alice_id, game_type="free", source="play_human").count() == 1
+        assert db.get(AiLadderProfile, alice_id).ai_ladder_rung == rung
+    finally:
+        db.close()
+
+
+def test_bot_accepts_human_count_request_immediately(client, app):
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_count")
+    _place(app, alice_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+    token = _token(client, alice)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        match = _next(ws)
+    sid = match["session_id"]
+    session = app.state.session_manager.get_session(sid)
+    session.katrain.get_state.return_value = {"awaiting_count": True, "history": [], "end_result": "终局"}
+    session.katrain.game.current_node.score = 2.5
+    session.katrain.get_sgf.return_value = "(;GM[1])"
+    response = client.post("/api/count/request", headers={"Authorization": f"Bearer {token}"},
+                           json={"session_id": sid})
+    assert response.status_code == 200, response.text
+    assert response.json()["result"] == "B+2.5"
+    with pytest.raises(KeyError):
+        app.state.session_manager.get_session(sid)
+
+
+def test_bot_count_failure_stays_visible_for_retry(client, app):
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_count_retry")
+    _place(app, alice_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+    token = _token(client, alice)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        sid = _next(ws)["session_id"]
+    session = app.state.session_manager.get_session(sid)
+    session.katrain.get_state.return_value = {"awaiting_count": True, "history": [], "end_result": "终局"}
+    session.katrain.game.current_node.score = None
+    session.katrain.ensure_current_score.return_value = None
+    response = client.post("/api/count/request", headers={"Authorization": f"Bearer {token}"},
+                           json={"session_id": sid})
+    assert response.status_code == 400
+    assert session.bot_degraded is True
+    assert session.game_ended is False
+    assert app.state.session_manager.get_session(sid) is session
+
+
+def test_bot_leave_marks_terminal_and_releases_reservation(client, app):
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_leave")
+    _place(app, alice_id, rung)
+    runtime = app.state.pvp_lobby_bots
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                          "idle_targets": {}}, revision=1)
+    token = _token(client, alice)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        match = _next(ws)
+    sid = match["session_id"]
+    session = app.state.session_manager.get_session(sid)
+    session.katrain.get_sgf.return_value = "(;GM[1])"
+    response = client.post("/api/multiplayer/leave", headers={"Authorization": f"Bearer {token}"},
+                           json={"session_id": sid})
+    assert response.status_code == 200, response.text
+    assert session.bot_finalized is True
+    assert session.game_ended is True
+    assert not runtime._busy
+
+
+def test_waiting_human_gets_same_rung_bot_after_grace_period(client, app):
+    from katrain.web.core.pvp_lobby_bots import playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "bot_wait")
+    _place(app, alice_id, rung)
+    runtime = app.state.pvp_lobby_bots
+    runtime.human_wait_seconds = 0.01
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                          "idle_targets": {}}, revision=1)
+    with _ws(client, _token(client, alice)) as ws:
+        ws.send_json({"type": "start_matchmaking", "game_type": "rated"})
+        match = _next(ws)
+    assert match["type"] == "match_found"
+    assert match["game_type"] == "free"
+    assert alice_id in (match["players"]["player_b"], match["players"]["player_w"])
+    assert min(match["players"]["player_b"], match["players"]["player_w"]) < 0
+    assert app.state.session_manager.get_session(match["session_id"]).bot_rung == rung
+
+
+def test_runtime_publishes_admin_snapshot_with_revision(client, app):
+    import json
+    from katrain.web.core.models_db import SystemConfigDB
+
+    db = app.state.session_factory()
+    try:
+        db.add(SystemConfigDB(key="pvp_lobby_bot_config", value=json.dumps({"revision": 9, "config": {
+            "version": 1, "enabled": True, "bot_game_limit": 2, "idle_targets": {"1": 3}}})))
+        db.commit()
+    finally:
+        db.close()
+    runtime = app.state.pvp_lobby_bots
+    runtime._load_config()
+    runtime._publish_snapshot()
+    db = app.state.session_factory()
+    try:
+        row = db.get(SystemConfigDB, "pvp_lobby_bot_runtime")
+        snapshot = json.loads(row.value)
+    finally:
+        db.close()
+    assert snapshot["applied_config_revision"] == 9
+    assert snapshot["rungs"][0]["idle_target"] == 3
+    assert snapshot["rungs"][0]["idle_now"] >= 3
+    assert snapshot["participants"]
+
+
+def test_rotation_creates_only_capped_bot_rooms_and_preserves_idle_targets(client, app):
+    from katrain.web.core.pvp_lobby_bots import playable_rungs
+
+    runtime = app.state.pvp_lobby_bots
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 1,
+                          "idle_targets": {}}, revision=1)
+    client.portal.call(runtime._start_rotation_game)
+    client.portal.call(runtime._start_rotation_game)
+    sessions = [session for session in app.state.session_manager.list_active_multiplayer_sessions()
+                if getattr(session, "bot_game", False)]
+    assert len(sessions) == 1
+    assert sessions[0].player_b_id < 0 and sessions[0].player_w_id < 0
+    assert sessions[0].bot_rung == playable_rungs()[0].rung
+    rows = [row for row in runtime.public_online_rows() if row["ladder_rung"] == sessions[0].bot_rung]
+    assert sum(row["presence"] == "idle" for row in rows) >= 2
+
+
+def test_duplicate_queue_request_and_stop_leave_no_bot_match(client, app):
+    import time
+    from katrain.web.core.pvp_lobby_bots import playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "queue_cancel")
+    _place(app, alice_id, rung)
+    runtime = app.state.pvp_lobby_bots
+    runtime.human_wait_seconds = 0.05
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                          "idle_targets": {}}, revision=1)
+    with _ws(client, _token(client, alice)) as ws:
+        ws.send_json({"type": "start_matchmaking"})
+        ws.send_json({"type": "start_matchmaking", "game_type": "rated"})
+        ws.send_json({"type": "stop_matchmaking"})
+        ws.send_json({"type": "invite", "target_id": 999999})
+        assert _next(ws)["type"] == "error"
+        time.sleep(0.1)
+    assert not app.state.session_manager.list_active_multiplayer_sessions()
+    assert not app.state.matchmaker.has_waiters()
+
+
+def test_two_human_passes_settle_nonranking_game_once(client, app):
+    from katrain.web.models import GameEnd
+    from katrain.web.core.models_db import UserGame
+
+    black_id, black = _make_user(app, "pass_black")
+    white_id, white = _make_user(app, "pass_white")
+    session = app.state.session_manager.create_multiplayer_session(
+        black_id, white_id, b_name=black, w_name=white, initial_game_type="free", skip_initial_analysis=True)
+    game = session.katrain.game
+    node = game.current_node
+    game.terminal = None
+    node.end_state = None
+    node.score = 1.5
+    session.katrain.analysis_allowed = True
+    session.katrain.get_state.return_value = {"player_to_move": "B", "history": ["pass", "pass"],
+                                               "awaiting_count": False, "end_result": "board-game-end"}
+    session.katrain.get_sgf.return_value = "(;GM[1];B[];W[])"
+    session.katrain.ensure_current_score.return_value = 1.5
+    session.katrain._commit_end_state.return_value = GameEnd(game, node, "B+1.5")
+    session.katrain.side_effect = lambda *args, **kwargs: setattr(game, "terminal", GameEnd(game, node, "board-game-end"))
+
+    token = _token(client, black)
+    response = client.post("/api/move", headers={"Authorization": f"Bearer {token}"},
+                           json={"session_id": session.session_id, "pass_move": True})
+    assert response.status_code == 200, response.text
+    client.portal.call(app.state.session_manager.on_game_ended, session, GameEnd(game, node, "board-game-end"))
+    db = app.state.session_factory()
+    try:
+        rows = db.query(UserGame).filter(UserGame.user_id.in_([black_id, white_id]),
+                                         UserGame.game_type == "free").all()
+        assert len(rows) == 2
+        assert {row.result for row in rows} == {"B+1.5"}
+    finally:
+        db.close()
+
+
+def test_two_human_passes_expose_count_retry_after_score_failure(client, app):
+    from katrain.web.models import GameEnd
+
+    black_id, black = _make_user(app, "retry_black")
+    white_id, white = _make_user(app, "retry_white")
+    session = app.state.session_manager.create_multiplayer_session(
+        black_id, white_id, b_name=black, w_name=white, initial_game_type="free", skip_initial_analysis=True)
+    game = session.katrain.game
+    node = game.current_node
+    game.terminal = None
+    node.end_state = None
+    node.score = None
+    session.katrain.analysis_allowed = True
+    session.katrain.get_state.side_effect = lambda: {
+        "player_to_move": "B", "history": ["pass", "pass"], "end_result": "终局",
+        "awaiting_count": bool(getattr(session.katrain, "pvp_lobby_awaiting_count", False)),
+        "degraded": bool(getattr(session.katrain, "pvp_lobby_degraded", False)),
+    }
+    session.katrain.get_sgf.return_value = "(;GM[1];B[];W[])"
+    session.katrain.ensure_current_score.return_value = None
+    session.katrain._commit_end_state.return_value = GameEnd(game, node, "B+1.5")
+    session.katrain.side_effect = lambda *args, **kwargs: setattr(game, "terminal", GameEnd(game, node, "终局"))
+
+    black_token, white_token = _token(client, black), _token(client, white)
+    move = client.post("/api/move", headers={"Authorization": f"Bearer {black_token}"},
+                       json={"session_id": session.session_id, "pass_move": True})
+    assert move.status_code == 200, move.text
+    assert move.json()["state"]["degraded"] is True
+    assert move.json()["state"]["awaiting_count"] is True
+    assert session.game_ended is False
+
+    node.score = 1.5
+    first = client.post("/api/count/request", headers={"Authorization": f"Bearer {black_token}"},
+                        json={"session_id": session.session_id})
+    assert first.status_code == 200, first.text
+    assert first.json()["status"] == "pending"
+    second = client.post("/api/count/request", headers={"Authorization": f"Bearer {white_token}"},
+                         json={"session_id": session.session_id})
+    assert second.status_code == 200, second.text
+    assert second.json()["result"] == "B+1.5"
+    assert second.json()["state"]["degraded"] is False
+    assert second.json()["state"]["awaiting_count"] is False
 
 
 def test_accept_invite_without_an_invitation_creates_no_game(client, app):

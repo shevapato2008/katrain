@@ -37,7 +37,7 @@ async def list_active_multiplayer_games(
 
     results = []
     for s in sessions:
-        if s.game_ended:
+        if s.game_ended or getattr(s, "game_type", "free") == "pvp_online":
             continue
         state = s.last_state or s.katrain.get_state()
         black_bot = bots_by_id.get(s.player_b_id, {})
@@ -57,6 +57,7 @@ async def list_active_multiplayer_games(
                 "player_w_rank_label": labels.get(white_rung),
                 "spectator_count": len(s.sockets) - 2 if len(s.sockets) > 2 else 0,
                 "move_count": len(state.get("history", [])),
+                "degraded": bool(getattr(s, "bot_degraded", False) or getattr(s, "multiplayer_degraded", False)),
             }
         )
     return results

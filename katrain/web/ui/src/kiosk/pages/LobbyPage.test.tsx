@@ -98,7 +98,7 @@ it('keeps invitations disabled while central identity is unknown and retries ide
   await userEvent.click(screen.getByRole('button', { name: '重试' }));
   await waitFor(() => expect(identities).toBe(2));
   await waitFor(() => expect(socketCount).toBe(2));
-  await waitFor(() => expect(within(shadow).getByRole('button', { name: '邀请' })).toBeEnabled());
+  await waitFor(() => expect(within(screen.getByTestId('lobby-player-1')).getByRole('button', { name: '邀请' })).toBeEnabled());
   expect(ladder).toHaveBeenCalled();
   expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 2 段');
 });
@@ -124,4 +124,15 @@ it('accepts an incoming invitation without a placement requirement', async () =>
   act(() => push({ type: 'invitation', from_id: 2, from_name: '同段' }));
   await userEvent.click(await screen.findByRole('button', { name: '接受并开局' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'accept_invite', target_id: 2 });
+});
+it('removes old lobby rows when a refresh fails', async () => {
+  page();
+  await screen.findByTestId('lobby-player-2');
+  expect(screen.getByTestId('lobby-game')).toBeInTheDocument();
+  vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+  act(() => push({ type: 'lobby_update' }));
+  await screen.findByText('大厅数据读取失败。');
+  await waitFor(() => expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument());
+  expect(screen.queryByTestId('lobby-game')).not.toBeInTheDocument();
+  expect(screen.queryByText('当前没有进行中的对局。')).not.toBeInTheDocument();
 });

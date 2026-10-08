@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import HvHLobbyPage from './HvHLobbyPage';
@@ -86,4 +86,15 @@ it('shows rank load error and retries instead of claiming the player is unplaced
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: '重试段位' }));
   expect(await screen.findByText('已定级')).toBeInTheDocument();
+});
+it('removes old lobby rows when a refresh fails', async () => {
+  render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
+  await screen.findByTestId('lobby-player-2');
+  expect(screen.getByTestId('lobby-game')).toBeInTheDocument();
+  vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+  act(() => push({ type: 'lobby_update' }));
+  await screen.findByText(/大厅暂时无法连接/);
+  await waitFor(() => expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument());
+  expect(screen.queryByTestId('lobby-game')).not.toBeInTheDocument();
+  expect(screen.queryByText('当前没有进行中的对局。')).not.toBeInTheDocument();
 });

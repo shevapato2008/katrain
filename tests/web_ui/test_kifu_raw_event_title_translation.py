@@ -707,6 +707,110 @@ def test_sgf_chinese_mixed_research_rejects_invalid_parts(damage):
         validate_research_record(research, registry())
 
 
+ENGLISH_RAWS = ("Hoensha game", "1st Tokyo Shinbun Cup", "26thP'aewang", "Kiseong,10th")
+HOENSHA_DISPLAYS = {"cn": "Hoensha棋局", "tw": "Hoensha棋局", "jp": "Hoenshaの対局",
+                    "ko": "Hoensha 대국", "en": "Hoensha game"}
+
+
+def english_sgf_literal(raw):
+    from katrain.web.kifu.name_structure import structure_event
+    structure = structure_event(raw)
+    parts = [{"kind": part["kind"], "text": part["text"]} for part in structure["parts"]]
+    row, research = bulk_sgf_literal(raw, parts)
+    research["original_language"] = "en"
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_english"
+    row["research_sha256"] = canonical_sha256(research)
+    return row, research, structure
+
+
+@pytest.mark.parametrize("raw", ENGLISH_RAWS)
+def test_sgf_english_research_accepts_actual_parser_shapes(raw):
+    _, research, structure = english_sgf_literal(raw)
+    assert validate_research_record(research, registry())["raw_parts"] == [
+        {"kind": part["kind"], "text": part["text"]} for part in structure["parts"]]
+
+
+@pytest.mark.parametrize("ordinal", ("2nd", "3rd", "11th", "12th", "13th", "21st", "112th", "999th"))
+def test_sgf_english_accepts_correct_ordinal_boundaries(ordinal):
+    _, research, _ = english_sgf_literal(f"{ordinal} Cup")
+    assert validate_research_record(research, registry())["raw_value"] == f"{ordinal} Cup"
+
+
+@pytest.mark.parametrize("raw", ("0th Cup", "1th Cup", "11st Cup", "12nd Cup", "13rd Cup",
+                                  "21th Cup", "1000th Cup", "Cup, 10th"))
+def test_sgf_english_rejects_invalid_ordinal_even_if_parser_keeps_core(raw):
+    _, research, _ = english_sgf_literal(raw)
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+@pytest.mark.parametrize("damage", ("wrong_language", "chinese_profile", "bad_hash", "wrong_parts",
+                                          "extra_part", "bad_ordinal", "non_ascii", "no_letter"))
+def test_sgf_english_research_rejects_cross_profile_or_invalid_parts(damage):
+    _, research, _ = english_sgf_literal("1st Tokyo Shinbun Cup")
+    if damage == "wrong_language":
+        research["original_language"] = "zh-Hans"
+    elif damage == "chinese_profile":
+        research["sgf_literal_evidence"]["owner_profile"] = "sgf_chinese_mixed"
+    elif damage == "bad_hash":
+        research["sgf_literal_evidence"]["raw_parts_sha256"] = "0" * 64
+    elif damage == "wrong_parts":
+        research["raw_parts"][0]["text"] = "2nd "
+    elif damage == "extra_part":
+        research["raw_parts"] = [{"kind": "edition", "text": "1st "},
+                                 {"kind": "core", "text": "Tokyo Shinbun "},
+                                 {"kind": "core", "text": "Cup"}]
+    else:
+        raw = {"bad_ordinal": "1th Cup", "non_ascii": "Café Cup", "no_letter": "123"}[damage]
+        research["raw_value"] = research["original_name"] = raw
+        research["raw_parts"] = [{"kind": "core", "text": raw}]
+        research["original_sgf_refs"][0]["gn_values"][0] = raw
+        research["sgf_literal_evidence"]["scope_rows"][0]["event"] = raw
+        research["sgf_literal_evidence"]["scope_sha256"] = canonical_sha256(
+            research["sgf_literal_evidence"]["scope_rows"])
+        research["sgf_literal_evidence"]["raw_parts_sha256"] = canonical_sha256(research["raw_parts"])
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+@pytest.mark.parametrize("raw", ENGLISH_RAWS)
+def test_sgf_english_name_apply_and_strict_read(engine, raw):
+    _, evidence, structure = english_sgf_literal(raw)
+    parts = evidence["raw_parts"]
+    proposed, inv, research = bulk_reviewed_bundle(engine, raw, parts, profile="sgf_english", structure=structure)
+    research[0]["original_language"] = "en"
+    candidate = proposed["candidates"][0]
+    candidate["research_sha256"] = canonical_sha256(research[0])
+    candidate.pop("preimage_binding")
+    bind_fixture_candidate(candidate)
+    assert dry_run_bundle(engine, proposed, registry(), inv, research)["approved"] == 1
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1][(11, raw, None)] == candidate["display_name"]
+
+
+@pytest.mark.parametrize("lang,display", HOENSHA_DISPLAYS.items())
+def test_sgf_english_hoensha_five_language_apply_and_strict_read(engine, lang, display):
+    from katrain.web.kifu.name_structure import structure_event
+    raw = "Hoensha game"
+    structure = structure_event(raw)
+    parts = [{"kind": part["kind"], "text": part["text"]} for part in structure["parts"]]
+    proposed, inv, research = bulk_reviewed_bundle(engine, raw, parts, profile="sgf_english", structure=structure)
+    research[0].update(original_language="en", lang=lang, candidate_name=display)
+    candidate = proposed["candidates"][0]
+    candidate.update(lang=lang, display_name=display, research_sha256=canonical_sha256(research[0]))
+    candidate.pop("preimage_binding")
+    bind_fixture_candidate(candidate)
+    proposed["members"][0]["lang"] = lang
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    assert dry_run_bundle(engine, proposed, registry(), inv, research)["approved"] == 1
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], lang)[-1][(11, raw, None)] == display
+
+
 @pytest.mark.parametrize("raw,parts", BULK_PARTS)
 def test_sgf_chinese_research_accepts_four_actual_parser_shapes(raw, parts):
     _, research = bulk_sgf_literal(raw, parts)

@@ -13,6 +13,7 @@ PRIMARY_LANGUAGES = frozenset({"cn", "tw", "jp", "ko", "en"})
 SGF_LITERAL_BASIS = "sgf_literal_v1"
 SGF_CHINESE_PROFILE = "sgf_chinese"
 SGF_CHINESE_MIXED_PROFILE = "sgf_chinese_mixed"
+SGF_ENGLISH_PROFILE = "sgf_english"
 NATIONAL15_RAW_VALUES = frozenset({
     *(f"2020中国国家队积分大循环第{number}轮" for number in range(1, 14)),
     "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛",
@@ -76,6 +77,9 @@ _LANGUAGE = re.compile(r"[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\Z")
 _UNSAFE = re.compile(r"[\[\]\x00-\x1f]")
 _CHINESE_LITERAL = re.compile(r"[\u3400-\u9fff0-9０-９ ，、。·：:（）()「」『』“”‘’《》〈〉—–-]+\Z")
 _CHINESE_MIXED_LITERAL = re.compile(r"[\u3400-\u9fffA-Za-z0-9０-９ ，、。·：:（）()「」『』“”‘’《》〈〉—–-]+\Z")
+_ENGLISH_LITERAL = re.compile(r"[A-Za-z0-9 ',#-]+\Z")
+_ENGLISH_PREFIX_ORDINAL = re.compile(r"([1-9][0-9]{0,2})(st|nd|rd|th) *\Z")
+_ENGLISH_SUFFIX_ORDINAL = re.compile(r",([1-9][0-9]{0,2})(st|nd|rd|th)\Z")
 _DISPLAY_SCRIPT = {
     "en": re.compile(r"[A-Za-z]"),
     "cn": re.compile(r"[\u3400-\u9fff]"),
@@ -139,6 +143,37 @@ def validate_chinese_literal_parts(raw, parts):
 def validate_chinese_mixed_literal_parts(raw, parts):
     """Check the selected mixed Chinese grammar against unchanged parser parts."""
     return _validate_chinese_literal_parts(raw, parts, mixed=True)
+
+
+def validate_english_literal_parts(raw, parts):
+    """Accept only lossless saved English-form core/edition parser parts."""
+    if (not isinstance(raw, str) or not _ENGLISH_LITERAL.fullmatch(raw)
+            or not re.search(r"[A-Za-z]", raw) or not isinstance(parts, list)
+            or len(parts) not in {1, 2}
+            or any(not isinstance(part, dict) or set(part) != {"kind", "text"}
+                   or not isinstance(part["text"], str) or not part["text"] for part in parts)
+            or "".join(part["text"] for part in parts) != raw
+            or sorted(part["kind"] for part in parts) != (["core"] if len(parts) == 1 else ["core", "edition"])):
+        raise ValueError("SGF English title needs ASCII text and exact core/edition parts")
+    core = next(part["text"] for part in parts if part["kind"] == "core")
+    if not re.search(r"[A-Za-z]", core):
+        raise ValueError("SGF English title needs a readable core")
+    if len(parts) == 1:
+        # A malformed or unparsed edition must not pass as a plain core.
+        if (re.match(r"[0-9]+(?:st|nd|rd|th)(?= |[A-Za-z])", raw)
+                or re.search(r", *[0-9]+(?:st|nd|rd|th)\Z", raw)):
+            raise ValueError("SGF English title has an unparsed edition")
+        return True
+    prefix = parts[0]["kind"] == "edition"
+    match = (_ENGLISH_PREFIX_ORDINAL if prefix else _ENGLISH_SUFFIX_ORDINAL).fullmatch(
+        parts[0 if prefix else 1]["text"])
+    if not match:
+        raise ValueError("SGF English title needs a correctly placed edition")
+    number = int(match.group(1))
+    suffix = "th" if number % 100 in {11, 12, 13} else {1: "st", 2: "nd", 3: "rd"}.get(number % 10, "th")
+    if match.group(2) != suffix:
+        raise ValueError("SGF English title needs the correct ordinal suffix")
+    return True
 
 
 def _validate_chinese_literal_parts(raw, parts, *, mixed):
@@ -207,7 +242,11 @@ def validate_raw_title_research(record):
     ]
     mixed_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
                  and record["sgf_literal_evidence"].get("owner_profile") == SGF_CHINESE_MIXED_PROFILE)
-    if any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
+    english_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
+                   and record["sgf_literal_evidence"].get("owner_profile") == SGF_ENGLISH_PROFILE)
+    if english_sgf:
+        validate_english_literal_parts(raw, parts)
+    if not english_sgf and any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
            and not (mixed_sgf and part["kind"] == "game")
            or part["kind"] == "edition" and not (
                _MIXED_EDITION if mixed_sgf else _ORDINAL).fullmatch(part["text"])
@@ -229,11 +268,13 @@ def validate_raw_title_research(record):
     elif geographic:
         raise ValueError("geographic qualifier is outside the fixed raw title scope")
     if sgf_literal:
-        if (original_language != "zh-Hans"
+        evidence = record.get("sgf_literal_evidence")
+        profile = evidence.get("owner_profile") if isinstance(evidence, dict) else None
+        required_language = "en" if profile == SGF_ENGLISH_PROFILE else "zh-Hans"
+        if (original_language != required_language
                 or record.get("original_language_basis") != "reviewed_sgf_gn"
                 or record.get("source_checks") != []):
-            raise ValueError("SGF literal evidence requires Chinese GN titles")
-        evidence = record.get("sgf_literal_evidence")
+            raise ValueError("SGF literal evidence requires its profile language and reviewed GN titles")
         if (not isinstance(evidence, dict) or not _time(evidence.get("captured_at"))
                 or not _text(evidence.get("scope_file"))):
             raise ValueError("SGF literal evidence needs a captured archived scope")
@@ -245,6 +286,10 @@ def validate_raw_title_research(record):
             validate_chinese_mixed_literal_parts(raw, parts)
             if evidence.get("raw_parts_sha256") != _hash(parts):
                 raise ValueError("SGF Chinese mixed title parts hash differs from its captured parts")
+        elif evidence.get("owner_profile") == SGF_ENGLISH_PROFILE:
+            validate_english_literal_parts(raw, parts)
+            if evidence.get("raw_parts_sha256") != _hash(parts):
+                raise ValueError("SGF English title parts hash differs from its captured parts")
         else:
             if ("owner_profile" in evidence or "raw_parts_sha256" in evidence or raw not in NATIONAL15_RAW_VALUES):
                 raise ValueError("SGF literal evidence lacks its manifest owner profile")
@@ -339,7 +384,7 @@ def sgf_literal_owner_matches(research, raw_owner, *, check_parser=False):
         review = raw_owner["review_metadata"]
         if not eligible_raw_title_owner(raw_owner) or literal["scope_sha256"] != review["scope_sha256"]:
             return False
-        if literal.get("owner_profile") in {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE}:
+        if literal.get("owner_profile") in {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE}:
             profile = literal["owner_profile"]
             parts = research["raw_parts"]
             digest = _hash(parts)

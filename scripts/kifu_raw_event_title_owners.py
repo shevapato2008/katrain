@@ -23,15 +23,17 @@ from katrain.web.kifu.name_batch import (
 from katrain.web.kifu.name_candidates import CandidateError, _check_signature, canonical_sha256
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.raw_event_translation import (
-    SGF_CHINESE_MIXED_PROFILE, SGF_CHINESE_PROFILE, SGF_LITERAL_BASIS,
-    validate_chinese_literal_parts, validate_chinese_mixed_literal_parts,
+    SGF_CHINESE_MIXED_PROFILE, SGF_CHINESE_PROFILE, SGF_ENGLISH_PROFILE, SGF_LITERAL_BASIS,
+    validate_chinese_literal_parts, validate_chinese_mixed_literal_parts, validate_english_literal_parts,
 )
 
-SGF_CHINESE_PROFILES = {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE}
+SGF_LITERAL_PROFILES = {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE}
 
 
 def _validate_sgf_parts(profile, raw, parts):
-    validator = validate_chinese_mixed_literal_parts if profile == SGF_CHINESE_MIXED_PROFILE else validate_chinese_literal_parts
+    validator = {SGF_CHINESE_PROFILE: validate_chinese_literal_parts,
+                 SGF_CHINESE_MIXED_PROFILE: validate_chinese_mixed_literal_parts,
+                 SGF_ENGLISH_PROFILE: validate_english_literal_parts}[profile]
     return validator(raw, parts)
 
 
@@ -71,23 +73,26 @@ PROFILE_LIMITS = {
 
 
 def _profile_limits(profile, manifest=None):
-    if profile in SGF_CHINESE_PROFILES:
-        _fail(isinstance(manifest, dict), "SGF Chinese profile requires its frozen manifest")
-        if profile == SGF_CHINESE_MIXED_PROFILE:
-            _fail(manifest.get("profile") == profile, "SGF Chinese mixed manifest profile differs")
+    if profile in SGF_LITERAL_PROFILES:
+        _fail(isinstance(manifest, dict), "SGF literal profile requires its frozen manifest")
+        if profile in {SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE}:
+            _fail(manifest.get("profile") == profile, "SGF literal manifest profile differs")
+        else:
+            _fail(manifest.get("profile") in {None, SGF_CHINESE_PROFILE}, "SGF literal manifest profile differs")
         records = manifest.get("records")
         _fail(isinstance(records, list) and 1 <= len(records) <= 150
               and all(isinstance(record, dict) and isinstance(record.get("raw_value"), str) for record in records),
-              "SGF Chinese manifest must contain at most 150 finite raw titles")
+              "SGF literal manifest must contain at most 150 finite raw titles")
         raws = sorted(record["raw_value"] for record in records)
         _fail(len(set(raws)) == len(raws) and manifest.get("raw_value_count") == len(raws)
               and manifest.get("raw_value_set_sha256") == canonical_sha256(raws),
-              "SGF Chinese manifest raw count or set hash differs")
+              "SGF literal manifest raw count or set hash differs")
         total = manifest.get("current_null_games")
         _fail(type(total) is int and total > 0, "fresh finite owner album total required")
         try:
             for raw in raws:
-                _validate_sgf_parts(profile, raw, [{"kind": "core", "text": raw}])
+                if profile != SGF_ENGLISH_PROFILE:
+                    _validate_sgf_parts(profile, raw, [{"kind": "core", "text": raw}])
         except ValueError as exc:
             raise BatchError(str(exc)) from exc
         return {"raw_count": len(raws), "raw_set_sha256": canonical_sha256(raws), "game_total": total}
@@ -95,13 +100,13 @@ def _profile_limits(profile, manifest=None):
     return PROFILE_LIMITS[profile]
 
 
-def _sgf_chinese_marker(owner, profile):
+def _sgf_literal_marker(owner, profile):
     try:
         parts = [{"kind": part["kind"], "text": part["text"]}
                  for part in owner["parsed_data"]["structure"]["parts"]]
         _validate_sgf_parts(profile, owner["raw_value"], parts)
     except (KeyError, TypeError, ValueError) as exc:
-        raise BatchError("SGF Chinese owner has invalid existing parser parts") from exc
+        raise BatchError("SGF literal owner has invalid existing parser parts") from exc
     return {"source_basis": SGF_LITERAL_BASIS, "profile": profile,
             "raw_parts_sha256": canonical_sha256(parts)}
 
@@ -164,9 +169,9 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
                 "changes": []}
         if profile != "first24":
             plan["profile"] = profile
-        if (profile == "national15" or profile in SGF_CHINESE_PROFILES):
+        if (profile == "national15" or profile in SGF_LITERAL_PROFILES):
             plan["game_total"] = game_total
-        if profile in SGF_CHINESE_PROFILES:
+        if profile in SGF_LITERAL_PROFILES:
             plan["raw_count"] = limits["raw_count"]
         for record in records:
             raw = record["raw_value"]
@@ -174,10 +179,10 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
             before = _image(conn, KifuRawEventValue.__table__, source_owner["raw_event_id"])
             _fail(before == source_owner["preimage"] and before["raw_value"] == raw,
                   f"research owner preimage changed for {raw}")
-            if profile in SGF_CHINESE_PROFILES:
+            if profile in SGF_LITERAL_PROFILES:
                 _fail(before["category"] == "unclassified_pending" and before["review_status"] == "pending"
                       and conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
-                      is None, "SGF Chinese owner must be pending, unclassified and unnamed")
+                      is None, "SGF literal owner must be pending, unclassified and unnamed")
             if profile == "team1":
                 _fail(raw == _TEAM_RAW and before["id"] == _TEAM_OWNER_ID,
                       "team profile requires the fixed existing raw owner")
@@ -189,7 +194,7 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
                 scope = _scope_rows(conn, raw)
                 ids = [row["id"] for row in scope]
             _fail(ids == by_raw[raw]["album_ids"], f"research album scope changed for {raw}")
-            if profile in SGF_CHINESE_PROFILES:
+            if profile in SGF_LITERAL_PROFILES:
                 _fail(scope == by_raw[raw].get("scope_rows"), f"research complete scope changed for {raw}")
             review = {**signature, "status": "approved", "version": OPERATION,
                       "raw_value": raw, "raw_event_id": before["id"],
@@ -198,8 +203,8 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
                       "category_basis": "Readable literal raw event title; no event identity or link approved"}
             if profile == "team1":
                 review["team_scope"] = team["review_scope"]
-            if profile in SGF_CHINESE_PROFILES:
-                review["sgf_literal"] = _sgf_chinese_marker(before, profile)
+            if profile in SGF_LITERAL_PROFILES:
+                review["sgf_literal"] = _sgf_literal_marker(before, profile)
             after = {**before, "review_status": "approved", "review_metadata": review}
             plan["changes"].append({"before": before, "after": after,
                                     "scope_rows": scope, "occurrence_album_ids": ids})
@@ -208,10 +213,10 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
 
 def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="first24", manifest=None):
     limits = _profile_limits(profile, manifest)
-    if profile in SGF_CHINESE_PROFILES:
-        _fail(canonical_sha256(manifest) == expected_manifest_sha256, "frozen SGF Chinese manifest hash differs")
+    if profile in SGF_LITERAL_PROFILES:
+        _fail(canonical_sha256(manifest) == expected_manifest_sha256, "frozen SGF literal manifest hash differs")
         _fail(plan.get("raw_count") == limits["raw_count"] and plan.get("game_total") == limits["game_total"],
-              "SGF Chinese plan count or total differs from manifest")
+              "SGF literal plan count or total differs from manifest")
     try:
         _check_signature(plan)
     except CandidateError as exc:
@@ -220,7 +225,7 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
           and plan.get("review_status") == "approved" and plan.get("operation") == OPERATION
           and plan.get("bundle_format") == 2 and plan.get("environment") in {"TEST", "PROD"},
           "raw title owner plan is not approved")
-    game_total = plan.get("game_total") if (profile == "national15" or profile in SGF_CHINESE_PROFILES) else limits["game_total"]
+    game_total = plan.get("game_total") if (profile == "national15" or profile in SGF_LITERAL_PROFILES) else limits["game_total"]
     _fail(type(game_total) is int and game_total > 0, "fresh finite owner album total required")
     _fail(plan.get("research_manifest_sha256") == expected_manifest_sha256
           and plan.get("registry_sha256") == registry_sha256(registry), "research or registry hash differs")
@@ -234,12 +239,12 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
     _fail(current_inventory == plan["inventory_sha256"], "album/source inventory changed")
     count = 0
     group_counts = [0, 0]
-    if profile in SGF_CHINESE_PROFILES:
+    if profile in SGF_LITERAL_PROFILES:
         source_records = {record["raw_value"]: record for record in manifest["records"]}
         members = manifest["member_manifest"][plan["environment"]]["members"]
         source_members = {member["raw_value"]: member for member in members}
         _fail(len(source_members) == len(members) == limits["raw_count"] and set(source_members) == set(source_records),
-              "SGF Chinese manifest member set differs")
+              "SGF literal manifest member set differs")
     for change in changes:
         before, after = change["before"], change["after"]
         _fail(before["category"] == after["category"] == "unclassified_pending"
@@ -262,12 +267,12 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
             ids = [row["id"] for row in scope]
         _fail(scope == change["scope_rows"] and ids == change["occurrence_album_ids"],
               "raw event EV, SGF, rank, source link, or album scope changed")
-        if profile in SGF_CHINESE_PROFILES:
+        if profile in SGF_LITERAL_PROFILES:
             source_owner = source_records[before["raw_value"]]["owners"][plan["environment"]]
             member = source_members[before["raw_value"]]
             _fail(source_owner["raw_event_id"] == before["id"] and source_owner["preimage"] == before
                   and member["album_ids"] == ids and member.get("scope_rows") == scope,
-                  "SGF Chinese plan differs from frozen owner or complete member scope")
+                  "SGF literal plan differs from frozen owner or complete member scope")
         review = after["review_metadata"]
         _fail(isinstance(review, dict) and review.get("status") == review.get("review_status") == "approved"
               and review.get("version") == OPERATION and review.get("raw_value") == before["raw_value"]
@@ -281,8 +286,8 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
         if profile == "team1":
             _fail(review.get("team_scope") == team["review_scope"],
                   "team fixed eligible/linked partition differs from signed review")
-        if profile in SGF_CHINESE_PROFILES:
-            _fail(review.get("sgf_literal") == _sgf_chinese_marker(before, profile), "SGF Chinese approved parser parts differ")
+        if profile in SGF_LITERAL_PROFILES:
+            _fail(review.get("sgf_literal") == _sgf_literal_marker(before, profile), "SGF literal approved parser parts differ")
         count += len(scope)
         if profile == "first24":
             group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)
@@ -295,8 +300,8 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
 
 def apply_plan(engine, plan, registry, expected_manifest_sha256, expected_plan_sha256, *, profile="first24", manifest=None):
     _profile_limits(profile, manifest)
-    if profile in SGF_CHINESE_PROFILES:
-        _fail(canonical_sha256(manifest) == expected_manifest_sha256, "frozen SGF Chinese manifest hash differs")
+    if profile in SGF_LITERAL_PROFILES:
+        _fail(canonical_sha256(manifest) == expected_manifest_sha256, "frozen SGF literal manifest hash differs")
         _fail(plan.get("research_manifest_sha256") == expected_manifest_sha256,
               "manifest differs from the signed owner plan")
     _fail(plan.get("profile", "first24") == profile, "raw title owner profile differs")
@@ -335,7 +340,7 @@ if __name__ == "__main__":
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--environment", choices=("TEST", "PROD"))
-    parser.add_argument("--profile", choices=(*PROFILE_LIMITS, *sorted(SGF_CHINESE_PROFILES)), default="first24")
+    parser.add_argument("--profile", choices=(*PROFILE_LIMITS, *sorted(SGF_LITERAL_PROFILES)), default="first24")
     parser.add_argument("--producer-id")
     parser.add_argument("--producer-model")
     parser.add_argument("--reviewer-id")
@@ -344,7 +349,7 @@ if __name__ == "__main__":
     parser.add_argument("--expected-manifest-sha256", required=True)
     parser.add_argument("--expected-plan-sha256")
     args = parser.parse_args()
-    if args.profile in SGF_CHINESE_PROFILES and args.manifest is None:
+    if args.profile in SGF_LITERAL_PROFILES and args.manifest is None:
         parser.error(f"{args.profile} requires --manifest for prepare, dry-run and apply")
     manifest = json.loads(args.manifest.read_text()) if args.manifest else None
     if manifest is not None:

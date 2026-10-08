@@ -591,3 +591,63 @@ def test_sgf_chinese_mixed_rejects_cross_profile_manifest(engine):
         prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese_mixed",
                      producer_id="producer-1", producer_model="gpt-6-sol", reviewer_id="reviewer-2",
                      reviewer_model="gpt-6-astra", review_conclusion="Reviewed exact mixed Chinese GN title")
+
+
+def test_sgf_chinese_rejects_english_manifest_marker(engine):
+    manifest = chinese_manifest_fixture(engine, ("全运会",))
+    manifest["profile"] = "sgf_english"
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_chinese",
+                     producer_id="producer-1", producer_model="gpt-6-sol", reviewer_id="reviewer-2",
+                     reviewer_model="gpt-6-astra", review_conclusion="Reviewed exact Chinese GN title")
+
+
+@pytest.mark.parametrize("raw", ("Hoensha game", "1st Tokyo Shinbun Cup", "26thP'aewang", "Kiseong,10th"))
+def test_sgf_english_owner_accepts_actual_parser_and_rechecks_scope(engine, raw):
+    manifest = chinese_manifest_fixture(engine, (raw,))
+    manifest["profile"] = "sgf_english"
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed English-form literal SGF title"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english", **kwargs)
+    marker = plan["changes"][0]["after"]["review_metadata"]["sgf_literal"]
+    assert marker["profile"] == "sgf_english"
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_english", manifest=manifest)["albums"] == 1
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.event == raw).values(black_rank="2d"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), digest, profile="sgf_english", manifest=manifest)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.event == raw).values(black_rank=None))
+    applied = apply_plan(engine, plan, registry(), digest, canonical_sha256(plan),
+                         profile="sgf_english", manifest=manifest)
+    assert applied["change_count"] == 1
+    undo_batch(engine, applied["batch_id"])
+
+
+@pytest.mark.parametrize("damage", ("wrong_profile", "bad_hash", "bad_parts", "too_many"))
+def test_sgf_english_owner_rejects_manifest_or_parser_drift(engine, damage):
+    raw = "Hoensha game"
+    manifest = chinese_manifest_fixture(engine, (raw,))
+    manifest["profile"] = "sgf_english"
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed English-form literal SGF title"}
+    if damage == "wrong_profile":
+        manifest["profile"] = "sgf_chinese_mixed"
+    elif damage == "too_many":
+        manifest["records"] *= 151
+        manifest["raw_value_count"] = 151
+    if damage in {"wrong_profile", "too_many"}:
+        with pytest.raises(BatchError):
+            prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english", **kwargs)
+        return
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english", **kwargs)
+    if damage == "bad_hash":
+        plan["changes"][0]["after"]["review_metadata"]["sgf_literal"]["raw_parts_sha256"] = "0" * 64
+    else:
+        plan["changes"][0]["before"]["parsed_data"]["structure"]["parts"][0]["text"] = "Different core"
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile="sgf_english", manifest=manifest)

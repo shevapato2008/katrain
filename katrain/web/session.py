@@ -564,13 +564,14 @@ class Matchmaker:
         with self._lock:
             return any(queue for queue in self._queues.values())
 
-    def remove_from_queue(self, user_id: int):
+    def remove_from_queue(self, user_id: int, websocket: WebSocket | None = None):
         with self._lock:
             for queue in self._queues.values():
                 for i, entry in enumerate(queue):
-                    if entry["user_id"] == user_id:
+                    if entry["user_id"] == user_id and (websocket is None or entry["websocket"] is websocket):
                         queue.pop(i)
-                        return
+                        return True
+        return False
 
 
 class LobbyManager:

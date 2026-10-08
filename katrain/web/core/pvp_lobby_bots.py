@@ -149,6 +149,7 @@ class PvpLobbyBotRuntime:
         self._stall_tasks: dict[str, asyncio.Task] = {}
         self._poll_task: asyncio.Task | None = None
         self._waiting_tasks: dict[int, asyncio.Task] = {}
+        self._waiting_sockets: dict[int, object] = {}
         self._move_slots = asyncio.Semaphore(2)
         self._move_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="pvp-bot")
         self.human_wait_seconds = 3.0
@@ -304,7 +305,7 @@ class PvpLobbyBotRuntime:
         if not self.config["enabled"]:
             return
         if human_ladder_rungs(self.app.state.session_factory, [human_id]).get(human_id) != rung:
-            self.app.state.matchmaker.remove_from_queue(human_id)
+            self.app.state.matchmaker.remove_from_queue(human_id, websocket)
             try:
                 await websocket.send_json({"type": "error", "code": "PLACEMENT_REQUIRED"})
             except Exception:
@@ -356,11 +357,20 @@ class PvpLobbyBotRuntime:
         self.cancel_human_wait(human_id)
         task = asyncio.create_task(self.match_waiting_human(human_id, human_name, rung, websocket))
         self._waiting_tasks[human_id] = task
-        task.add_done_callback(lambda done: self._waiting_tasks.pop(human_id, None)
-                               if self._waiting_tasks.get(human_id) is done else None)
+        self._waiting_sockets[human_id] = websocket
 
-    def cancel_human_wait(self, human_id: int) -> None:
+        def forget_completed(done):
+            if self._waiting_tasks.get(human_id) is done:
+                self._waiting_tasks.pop(human_id, None)
+                self._waiting_sockets.pop(human_id, None)
+
+        task.add_done_callback(forget_completed)
+
+    def cancel_human_wait(self, human_id: int, websocket=None) -> None:
+        if websocket is not None and self._waiting_sockets.get(human_id) is not websocket:
+            return
         task = self._waiting_tasks.pop(human_id, None)
+        self._waiting_sockets.pop(human_id, None)
         if task is not None:
             task.cancel()
 
@@ -659,6 +669,7 @@ class PvpLobbyBotRuntime:
         for task in list(self._waiting_tasks.values()):
             task.cancel()
         self._waiting_tasks.clear()
+        self._waiting_sockets.clear()
         for task in list(self._tasks.values()):
             task.cancel()
         for task in list(self._stall_tasks.values()):

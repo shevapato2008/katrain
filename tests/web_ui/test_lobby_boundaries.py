@@ -273,6 +273,38 @@ def test_legacy_rated_queue_pairs_only_same_rung_as_free(client, app):
         assert app.state.session_manager.get_session(match["session_id"]).game_type == "free"
 
 
+def test_old_lobby_tab_disconnect_keeps_new_tabs_queue_and_bot_wait(client, app):
+    from katrain.web.core.pvp_lobby_bots import playable_rungs
+
+    rung = playable_rungs()[0].rung
+    alice_id, alice = _make_user(app, "two_tabs")
+    bob_id, bob = _make_user(app, "two_tabs_peer")
+    _place(app, alice_id, rung)
+    _place(app, bob_id, rung)
+    runtime = app.state.pvp_lobby_bots
+    runtime.human_wait_seconds = 30
+    token = _token(client, alice)
+    with _ws(client, token) as newer:
+        with _ws(client, token) as older:
+            older.send_json({"type": "start_matchmaking"})
+            older.send_json({"type": "invite", "target_id": 999999})
+            assert _next(older)["type"] == "error"
+            newer.send_json({"type": "start_matchmaking"})
+            newer.send_json({"type": "invite", "target_id": 999999})
+            assert _next(newer)["type"] == "error"
+            wait_task = runtime._waiting_tasks[alice_id]
+        newer.send_json({"type": "invite", "target_id": 999999})
+        assert _next(newer)["type"] == "error"
+        queued = [entry for queue in app.state.matchmaker._queues.values() for entry in queue
+                  if entry["user_id"] == alice_id]
+        assert len(queued) == 1 and queued[0]["websocket"] is not None
+        assert runtime._waiting_tasks[alice_id] is wait_task and not wait_task.cancelled()
+        with _ws(client, _token(client, bob)) as peer:
+            peer.send_json({"type": "start_matchmaking"})
+            assert _next(peer)["type"] == "match_found"
+            assert _next(newer)["type"] == "match_found"
+
+
 def test_placed_user_can_invite_idle_same_rung_bot(client, app):
     from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
 
@@ -305,6 +337,46 @@ def test_placed_user_can_invite_idle_same_rung_bot(client, app):
     assert restart.status_code == 403
     readable = client.get("/api/sgf/save", headers=headers, params={"session_id": session.session_id})
     assert readable.status_code == 200
+
+
+def test_bot_move_rechecks_seat_and_turn_under_session_lock(client, app, monkeypatch):
+    from unittest.mock import MagicMock
+    from katrain.web import session as session_module
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+
+    monkeypatch.setattr(session_module, "WebKaTrain", lambda **kwargs: MagicMock())
+    rung = playable_rungs()[0].rung
+    human_id, username = _make_user(app, "bot_turn")
+    _place(app, human_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+    token = _token(client, username)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        sid = _next(ws)["session_id"]
+    session = app.state.session_manager.get_session(sid)
+    human_color = "B" if session.player_b_id == human_id else "W"
+    bot_color = "W" if human_color == "B" else "B"
+    node = session.katrain.game.current_node
+    node.next_player = human_color
+
+    def stale_outside_read():
+        node.next_player = bot_color
+        return {"player_to_move": human_color, "awaiting_count": False}
+
+    session.katrain.reset_mock()
+    session.katrain.get_state.side_effect = stale_outside_read
+    headers = {"Authorization": f"Bearer {token}"}
+    stale = client.post("/api/move", headers=headers, json={"session_id": sid, "pass_move": True})
+    assert stale.status_code in (403, 409), stale.text
+    session.katrain.assert_not_called()
+
+    node.next_player = human_color
+    session.katrain.get_state.side_effect = None
+    session.katrain.get_state.return_value = {"player_to_move": human_color, "awaiting_count": False}
+    accepted = client.post("/api/move", headers=headers, json={"session_id": sid, "pass_move": True})
+    assert accepted.status_code == 200, accepted.text
+    session.katrain.assert_any_call("play", None, guard=True, expected_player=human_color)
 
 
 def test_bot_resignation_records_human_once_and_releases_room(client, app):

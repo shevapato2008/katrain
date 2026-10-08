@@ -1256,6 +1256,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with analysis_context:
             with session.lock:
                 guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
+                bot_player = None
+                if getattr(session, "bot_game", False) is True:
+                    if current_user is None:
+                        raise HTTPException(status_code=401, detail="Authentication required for bot games")
+                    if current_user.id == session.player_b_id:
+                        bot_player = "B"
+                    elif current_user.id == session.player_w_id:
+                        bot_player = "W"
+                    else:
+                        raise HTTPException(status_code=403, detail="Not a bot game participant")
+                    if session.katrain.game.current_node.next_player != bot_player:
+                        raise HTTPException(status_code=403, detail="Not your turn")
                 before = _terminal_of(session)
                 # r1:非研究会话带 guard —— 这一手所在的局面线已结束 / 轮到 AI 就拒(409),双停第二手记终局事实。
                 # 研究会话照旧打谱,不冻结。
@@ -1274,7 +1286,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     else:
                         katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
                 else:
-                    katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                    play_kwargs = {"guard": session.mode != "research"}
+                    if bot_player is not None:
+                        play_kwargs["expected_player"] = bot_player
+                    katrain("play", None if coords is None else tuple(coords), **play_kwargs)
                 end = _new_terminal(session, before)
                 state = session.katrain.get_state()
                 session.last_state = state
@@ -3466,10 +3481,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                             runtime.schedule_human_wait(current_user.id, current_user.username, rung, websocket)
 
                 elif msg_type == "stop_matchmaking":
-                    app.state.matchmaker.remove_from_queue(current_user.id)
+                    app.state.matchmaker.remove_from_queue(current_user.id, websocket)
                     runtime = getattr(app.state, "pvp_lobby_bots", None)
                     if runtime is not None:
-                        runtime.cancel_human_wait(current_user.id)
+                        runtime.cancel_human_wait(current_user.id, websocket)
 
                 elif msg_type == "invite":
                     target_id = message.get("target_id")
@@ -3626,10 +3641,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         finally:
             app.state.box_sso.discard_socket(websocket)
-            app.state.matchmaker.remove_from_queue(current_user.id)
+            app.state.matchmaker.remove_from_queue(current_user.id, websocket)
             runtime = getattr(app.state, "pvp_lobby_bots", None)
             if runtime is not None:
-                runtime.cancel_human_wait(current_user.id)
+                runtime.cancel_human_wait(current_user.id, websocket)
             lobby_manager.discard_invites_for(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast(

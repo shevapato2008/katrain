@@ -4924,7 +4924,11 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
             return 0.5
         try:
             payload = await bridge.forward_move(generation, session_id, coords=list(coords))
-        except (PvpBoxAuthError, PvpBoxRemoteError, httpx.HTTPStatusError) as exc:
+        except httpx.HTTPStatusError as exc:
+            log.info("Central PvP physical move rejected: %s", exc)
+            _rearm_detection()
+            return 0.5
+        except (PvpBoxAuthError, PvpBoxRemoteError) as exc:
             log.warning("Central PvP physical move was not accepted: %s", exc)
             manager.broadcast_to_session(session_id, {"type": "pvp_central_disconnected"})
             orchestrator = getattr(app.state, "physical_play", None)

@@ -349,6 +349,38 @@ async def test_confirmed_physical_move_goes_upstream_and_updates_local_mirror(bo
     katrain.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_rejected_physical_move_does_not_claim_central_disconnected(box_app):
+    app, central, _ = box_app
+    app.state.pvp_box_bridge.rewrite_match(
+        12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"}
+    )
+    katrain = MagicMock()
+    mirror = WebSession(session_id="local-room", katrain=katrain, user_id=4, player_b_id=4)
+    mirror.game_type = "pvp_lobby"
+    mirror.last_state = {"game_type": "pvp_lobby", "stones": [], "player_to_move": "B"}
+    app.state.session_manager._sessions["local-room"] = mirror
+    vision = MagicMock()
+    vision.bound_session_id = "local-room"
+    vision.get_board_observation.return_value = (None, 0)
+    app.state.physical_play = MagicMock()
+
+    async def rejected(method, path, **kwargs):
+        return httpx.Response(
+            409, json={"detail": "not your turn"}, request=httpx.Request(method, f"https://central.example{path}")
+        )
+
+    central._request = rejected
+    delay = await _handle_confirmed_move(
+        app, vision, "local-room", ConfirmedMove(col=3, row=15, color=1), logging.getLogger("test")
+    )
+
+    assert delay == 0.5
+    app.state.physical_play.enter_remote_disconnected.assert_not_called()
+    vision.set_expected_from_stones.assert_called_once()
+    assert mirror.last_state["player_to_move"] == "B"
+
+
 class SmokeVision:
     enabled = True
 

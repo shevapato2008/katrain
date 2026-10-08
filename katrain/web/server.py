@@ -635,11 +635,14 @@ async def _lifespan_board(app: FastAPI, log):
         session.last_state = session.katrain.get_state()
         return session.session_id
 
-    app.state.pvp_box_bridge = PvpBoxBridge(remote_client, app.state.box_sso, rooms, make_pvp_mirror)
+    app.state.pvp_box_bridge = PvpBoxBridge(
+        remote_client, app.state.box_sso, rooms, make_pvp_mirror, app.state.session_manager.remove_session
+    )
+    app.state.session_manager.on_session_removed = lambda session: rooms.discard_local(session.session_id)
 
     async def revoke_pvp_generation(generation: int) -> None:
         bridge = app.state.pvp_box_bridge
-        for room in bridge.rooms.revoke_generation(generation):
+        for room in bridge.revoke_generation(generation):
             app.state.session_manager.remove_session(room.local_session_id)
 
     app.state.box_sso.on_revoke_generation = revoke_pvp_generation
@@ -1145,6 +1148,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def guard_bot_mutation(session):
         if getattr(session, "bot_game", False) is True:
             raise HTTPException(status_code=403, detail="Action unavailable in a certified bot game")
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            raise HTTPException(status_code=403, detail="Central PvP room controls this game")
 
     @app.get("/health")
     async def health(request: Request):
@@ -1232,6 +1237,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
                     physical_play.enter_remote_disconnected()
                 raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 404:
+                    bridge.rooms.discard_local(session_id)
+                    manager.remove_session(session_id)
+                raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
         state = session.last_state or session.katrain.get_state()
@@ -4312,6 +4322,8 @@ def _guard_online_platform_local_ending(session) -> None:
     """OGS alone decides counting, timeout and forfeits for its live game."""
     if getattr(session, "game_type", None) == "pvp_online":
         raise HTTPException(status_code=409, detail="online game result is controlled by the remote platform")
+    if getattr(session, "game_type", None) == "pvp_lobby":
+        raise HTTPException(status_code=409, detail="central PvP room controls the game result")
 
 
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
@@ -4912,6 +4924,10 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
+        orchestrator = getattr(app.state, "physical_play", None)
+        if getattr(orchestrator, "remote_disconnected", False) is True:
+            log.info("PvP physical move held while central room is disconnected")
+            return 0.5
         generation = app.state.box_sso.active_generation
         room = bridge.rooms.for_local(generation, session_id)
         if (

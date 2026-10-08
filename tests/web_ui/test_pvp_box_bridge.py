@@ -2,6 +2,8 @@
 
 import pytest
 import httpx
+from concurrent.futures import ThreadPoolExecutor
+import time
 from katrain.web.core import pvp_box_bridge as bridge_module
 from katrain.web.core.box_sso import BoxSSOState
 
@@ -57,6 +59,16 @@ def test_same_central_room_reconnect_preserves_mapping():
     assert rooms.for_local(1, "local-b") is None
 
 
+def test_removed_local_mirror_clears_room_mapping():
+    rooms = PvpBoxRooms()
+    rooms.attach(1, 811, "central-a", "local-b", 4, "B")
+
+    rooms.discard_local("local-b")
+
+    assert rooms.for_local(1, "local-b") is None
+    assert rooms.for_central(1, "central-a") is None
+
+
 @pytest.mark.parametrize("color", ["", "black", None, 1])
 def test_room_rejects_invalid_color(color):
     with pytest.raises(ValueError, match="color"):
@@ -88,6 +100,39 @@ class FakeSSO:
 
     def validates(self, generation):
         return generation == self.active_generation
+
+
+def test_concurrent_room_discovery_creates_only_one_mirror():
+    created = []
+
+    def make_mirror(*_):
+        created.append("local-room")
+        time.sleep(0.02)
+        return "local-room"
+
+    bridge = PvpBoxBridge(FakeRemote(), FakeSSO(), PvpBoxRooms(), make_mirror)
+    message = {"type": "match_found", "session_id": "central-room", "my_color": "B"}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: bridge.rewrite_match(12, 4, 811, message), range(2)))
+
+    assert [row["session_id"] for row in results] == ["local-room", "local-room"]
+    assert created == ["local-room"]
+
+
+def test_generation_replaced_during_mirror_creation_removes_orphan():
+    sso = FakeSSO()
+    removed = []
+
+    def make_mirror(*_):
+        sso.active_generation = 13
+        return "orphan-room"
+
+    bridge = PvpBoxBridge(FakeRemote(), sso, PvpBoxRooms(), make_mirror, removed.append)
+    with pytest.raises(PvpBoxAuthError):
+        bridge.rewrite_match(12, 4, 811, {"session_id": "central-room", "my_color": "B"})
+
+    assert removed == ["orphan-room"]
+    assert bridge.rooms.for_central(12, "central-room") is None
 
 
 @pytest.mark.asyncio

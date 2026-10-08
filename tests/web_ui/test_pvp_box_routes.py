@@ -137,6 +137,20 @@ def test_box_lobby_requires_current_cookie_and_reports_cloud_outage(box_app):
         assert client.get("/api/v1/users/online").status_code == 503
 
 
+def test_box_mirror_rejects_local_game_tree_mutation_and_forfeit(box_app):
+    app, _, token = box_app
+    katrain = MagicMock()
+    mirror = WebSession(session_id="local-room", katrain=katrain, user_id=4, player_b_id=4)
+    mirror.game_type = "pvp_lobby"
+    app.state.session_manager._sessions["local-room"] = mirror
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        assert client.post("/api/undo", json={"session_id": "local-room", "n_times": 1}).status_code == 403
+        assert client.post("/api/nav", json={"session_id": "local-room", "node_id": 0}).status_code == 403
+        assert client.post("/api/multiplayer/leave", json={"session_id": "local-room"}).status_code == 409
+    katrain.assert_not_called()
+
+
 class Upstream:
     def __init__(self, first):
         self.inbox = asyncio.Queue()
@@ -238,6 +252,28 @@ def test_room_outage_reports_disconnected_closes_1013_and_pauses_vision(box_app)
     assert error == {"type": "error", "code": "CENTRAL_DISCONNECTED", "message": "Central lobby disconnected"}
     assert closed.value.code == 1013
     assert orchestrator.enter_remote_disconnected.call_count >= 1
+
+
+def test_central_room_expiry_returns_404_and_discards_local_mirror(box_app):
+    app, central, token = box_app
+    bridge = app.state.pvp_box_bridge
+    bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "W"})
+    katrain = MagicMock()
+    mirror = WebSession(session_id="local-room", katrain=katrain, user_id=4, player_w_id=4)
+    mirror.game_type = "pvp_lobby"
+    app.state.session_manager._sessions["local-room"] = mirror
+
+    async def expired(method, path, **kwargs):
+        return httpx.Response(
+            404, json={"detail": "Session not found"}, request=httpx.Request(method, f"https://central.example{path}")
+        )
+
+    central._request = expired
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        assert client.get("/api/state", params={"session_id": "local-room"}).status_code == 404
+    assert bridge.rooms.for_local(12, "local-room") is None
+    assert "local-room" not in app.state.session_manager._sessions
 
 
 def test_box_state_and_touchscreen_move_forward_to_central_without_local_commit(box_app):
@@ -379,6 +415,30 @@ async def test_rejected_physical_move_does_not_claim_central_disconnected(box_ap
     app.state.physical_play.enter_remote_disconnected.assert_not_called()
     vision.set_expected_from_stones.assert_called_once()
     assert mirror.last_state["player_to_move"] == "B"
+
+
+@pytest.mark.asyncio
+async def test_queued_physical_move_is_held_while_central_is_disconnected(box_app):
+    app, central, _ = box_app
+    app.state.pvp_box_bridge.rewrite_match(
+        12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"}
+    )
+    katrain = MagicMock()
+    mirror = WebSession(session_id="local-room", katrain=katrain, user_id=4, player_b_id=4)
+    mirror.game_type = "pvp_lobby"
+    mirror.last_state = {"game_type": "pvp_lobby", "stones": [], "player_to_move": "B"}
+    app.state.session_manager._sessions["local-room"] = mirror
+    vision = MagicMock()
+    vision.bound_session_id = "local-room"
+    vision.get_board_observation.return_value = (None, 0)
+    app.state.physical_play = MagicMock(remote_disconnected=True)
+
+    delay = await _handle_confirmed_move(
+        app, vision, "local-room", ConfirmedMove(col=3, row=15, color=1), logging.getLogger("test")
+    )
+
+    assert delay == 0.5
+    assert not any(path == "/api/move" for _, path, _ in central.calls)
 
 
 class SmokeVision:

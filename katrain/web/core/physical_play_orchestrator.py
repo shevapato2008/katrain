@@ -245,6 +245,10 @@ class PhysicalPlayOrchestrator:
         self._add_pause_reason(self.PAUSE_REASON_REMOTE_DISCONNECTED)
         self._apply_points([])
 
+    @property
+    def remote_disconnected(self) -> bool:
+        return self.PAUSE_REASON_REMOTE_DISCONNECTED in self._pause_reasons
+
     def enter_awaiting_removal(self, coords: Tuple[int, int]) -> None:
         """Task 8 (B4/M5/D8): the recovery dialog's "cancel" hand-off. `coords` are
         GTP/board space (col, row0=bottom) — same convention as `enter_engine_error`

@@ -89,6 +89,14 @@ class PvpBoxRooms:
                 self._by_local.pop((generation, room.local_session_id), None)
             return room
 
+    def discard_local(self, local_session_id: str) -> None:
+        """Forget a mirror after SessionManager removes or expires it."""
+        with self._lock:
+            for key, room in list(self._by_local.items()):
+                if room.local_session_id == local_session_id:
+                    self._by_local.pop(key, None)
+                    self._by_central.pop((room.generation, room.central_session_id), None)
+
     def revoke_generation(self, generation: int) -> list[PvpBoxRoom]:
         with self._lock:
             rooms = [room for (room_generation, _), room in self._by_central.items() if room_generation == generation]
@@ -109,11 +117,20 @@ class PvpBoxRemoteError(RuntimeError):
 class PvpBoxBridge:
     """Narrow authenticated projections between one box user and the central lobby."""
 
-    def __init__(self, remote: Any, box_sso: Any, rooms: PvpBoxRooms, make_mirror: Callable[[int, str, str], str]):
+    def __init__(
+        self,
+        remote: Any,
+        box_sso: Any,
+        rooms: PvpBoxRooms,
+        make_mirror: Callable[[int, str, str], str],
+        discard_mirror: Callable[[str], None] | None = None,
+    ):
         self.remote = remote
         self.box_sso = box_sso
         self.rooms = rooms
         self.make_mirror = make_mirror
+        self.discard_mirror = discard_mirror
+        self._create_lock = RLock()
 
     @staticmethod
     def newer_state(current: dict | None, incoming: dict) -> dict:
@@ -161,7 +178,8 @@ class PvpBoxBridge:
 
     async def get_json(self, generation: int, local_user_id: int, path: str):
         response = await self.request(generation, local_user_id, "GET", path)
-        response.raise_for_status()
+        if not response.is_success:
+            raise PvpBoxRemoteError(f"Central lobby returned HTTP {response.status_code}")
         return response.json()
 
     async def identity(self, generation: int, local_user_id: int) -> dict[str, int]:
@@ -188,15 +206,26 @@ class PvpBoxBridge:
 
     def _room(self, generation: int, local_user_id: int, central_user_id: int, central_session_id: str, color: str):
         self.check_user(generation, local_user_id)
-        room = self.rooms.for_central(generation, central_session_id)
-        if room is not None:
-            if (room.central_user_id, room.local_user_id, room.my_color) != (central_user_id, local_user_id, color):
-                raise PvpBoxAuthError("Room belongs to another user")
-            return room
-        local_session_id = self.make_mirror(local_user_id, color, central_session_id)
-        return self.rooms.attach(
-            generation, central_user_id, central_session_id, local_session_id, local_user_id, color
-        )
+        with self._create_lock:
+            room = self.rooms.for_central(generation, central_session_id)
+            if room is not None:
+                if (room.central_user_id, room.local_user_id, room.my_color) != (central_user_id, local_user_id, color):
+                    raise PvpBoxAuthError("Room belongs to another user")
+                return room
+            local_session_id = self.make_mirror(local_user_id, color, central_session_id)
+            try:
+                self.check_user(generation, local_user_id)
+                return self.rooms.attach(
+                    generation, central_user_id, central_session_id, local_session_id, local_user_id, color
+                )
+            except Exception:
+                if self.discard_mirror is not None:
+                    self.discard_mirror(local_session_id)
+                raise
+
+    def revoke_generation(self, generation: int) -> list[PvpBoxRoom]:
+        with self._create_lock:
+            return self.rooms.revoke_generation(generation)
 
     def rewrite_match(self, generation: int, local_user_id: int, central_user_id: int, message: dict) -> dict:
         room = self._room(generation, local_user_id, central_user_id, message["session_id"], message["my_color"])

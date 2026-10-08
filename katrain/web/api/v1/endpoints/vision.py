@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -209,6 +210,11 @@ async def bind_session(
             raise HTTPException(status_code=401, detail=str(exc)) from exc
         except PvpBoxRemoteError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                bridge.rooms.discard_local(body.session_id)
+                manager.remove_session(body.session_id)
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         state = payload["state"]
         if state.get("board_size") not in ([19, 19], (19, 19), 19):
             raise HTTPException(status_code=409, detail="physical PvP requires a 19x19 board")

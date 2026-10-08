@@ -1,0 +1,80 @@
+.admin-app-lobby .admin-side { overflow-y:auto; }
+.admin-app-lobby .admin-nav { min-height:64px; padding:9px 16px; }
+.admin-lobby { min-width:0; width:100%; overflow:auto; height:calc(100vh - 80px); padding:20px 24px 28px; background:var(--admin-bg); font:18px/1.5 "Kaiti SC","STKaiti","KaiTi","LXGW WenKai",serif; color:var(--admin-text); }
+.admin-lobby button,.admin-lobby input,.admin-lobby select { font:inherit; color:inherit; }
+.admin-lobby button:disabled { cursor:default; opacity:.48; }
+.admin-lobby-head { display:flex; align-items:flex-start; gap:18px; }
+.admin-lobby-head h1 { margin:0; font-size:31px; font-weight:600; }
+.admin-lobby-head p { margin:5px 0 0; color:var(--admin-muted); font-size:17px; }
+.admin-lobby-status { margin-left:auto; padding:7px 11px; white-space:nowrap; border:1px solid #527b5e; border-radius:7px; background:#273a2d; color:#d6f0dc; font-size:14px; }
+.admin-lobby-status::before { content:""; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:#7ad496; }
+.admin-lobby-status.pending { border-color:#8e775f; background:#44362b; color:#f9d1ad; }
+.admin-lobby-status.pending::before { background:#e6a879; }
+.admin-lobby-status.stale { border-color:#ad765e; background:#4b2f2b; color:#ffe0d7; }
+.admin-lobby-status.stale::before { background:#f2a38a; }
+.admin-lobby-toolbar { display:flex; align-items:center; gap:17px; flex-wrap:wrap; margin:18px 0 14px; padding:13px 16px; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-panel); }
+.admin-lobby-toolbar strong { font-size:18px; }
+.admin-lobby-toolbar small { display:block; color:var(--admin-muted); font-size:14px; }
+.admin-lobby-switch { display:inline-flex; align-items:center; gap:10px; }
+.admin-lobby-switch input { width:20px; height:20px; accent-color:var(--admin-accent); }
+.admin-lobby-divider { height:36px; width:1px; background:var(--admin-line); }
+.admin-lobby-global { display:flex; align-items:center; gap:10px; }
+.admin-lobby-stepper { display:inline-flex; align-items:center; height:36px; border:1px solid #76665e; border-radius:7px; overflow:hidden; }
+.admin-lobby-stepper button { width:35px; height:34px; padding:0; border:0; background:#3c3433; font-size:20px; }
+.admin-lobby-stepper output { min-width:35px; text-align:center; }
+.admin-lobby-spacer { flex:1; }
+.admin-lobby-unsaved { color:#f4c681; font-size:13px; }
+.admin-lobby-save { min-width:106px; height:44px; border:1px solid var(--admin-accent); border-radius:7px; background:var(--admin-accent); color:var(--admin-on-accent)!important; font-weight:700!important; }
+.admin-lobby-hint { margin:-3px 0 14px; color:var(--admin-muted); font-size:14px; }
+.admin-lobby-hint strong { color:var(--admin-text); }
+.admin-lobby-hint button { padding:0 3px; border:0; background:transparent; color:var(--admin-link); text-decoration:underline; text-underline-offset:3px; }
+.admin-lobby-workspace { display:grid; grid-template-columns:minmax(490px,1.25fr) minmax(355px,.92fr); align-items:start; gap:14px; }
+.admin-lobby-box { min-width:0; overflow:hidden; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-panel); }
+.admin-lobby-boxhead { display:flex; align-items:center; min-height:53px; gap:12px; padding:0 16px; border-bottom:1px solid var(--admin-line); }
+.admin-lobby-boxhead h2 { margin:0; font-size:20px; font-weight:600; }
+.admin-lobby-boxhead>span { margin-left:auto; color:#dab8a3; font-size:13px; }
+.admin-lobby-groups { display:flex; gap:6px; padding:10px 14px; border-bottom:1px solid var(--admin-line); }
+.admin-lobby-groups button { min-height:32px; padding:0 11px; border:1px solid var(--admin-line); border-radius:6px; background:transparent; font-size:13px; }
+.admin-lobby-groups button[aria-selected=true] { background:var(--admin-active); border-color:#99715b; color:var(--admin-active-text); }
+.admin-lobby-rankhead,.admin-lobby-rankrow { display:grid; grid-template-columns:minmax(110px,1fr) 104px 155px 96px; gap:8px; align-items:center; padding:0 14px; }
+.admin-lobby-rankhead { min-height:36px; color:var(--admin-muted); font-size:13px; }
+.admin-lobby-ranks { height:495px; overflow:auto; scrollbar-color:#79665a transparent; }
+.admin-lobby-rankrow { min-height:48px; border-top:1px solid var(--admin-line); font-size:15px; }
+.admin-lobby-rankrow:hover { background:var(--admin-panel2); }
+.admin-lobby-rankname small { display:block; color:var(--admin-subtle); font-size:11px; }
+.admin-lobby-rankrow .admin-lobby-stepper { width:104px; height:31px; }
+.admin-lobby-rankrow .admin-lobby-stepper button { width:32px; height:29px; font-size:17px; }
+.admin-lobby-rankrow .admin-lobby-stepper output { flex:1; }
+.admin-lobby-low { color:#f4c681; }
+.admin-lobby-ok { color:#a8dda8; }
+.admin-lobby-unknown { color:var(--admin-muted); }
+.admin-lobby-boxfoot { display:flex; justify-content:space-between; gap:10px; padding:11px 14px; border-top:1px solid var(--admin-line); color:var(--admin-muted); font-size:13px; }
+.admin-lobby-right { display:flex; flex-direction:column; gap:14px; }
+.admin-lobby-metrics { display:grid; grid-template-columns:repeat(3,1fr); padding:14px 15px; }
+.admin-lobby-metrics>div { padding:0 10px; border-right:1px solid var(--admin-line); }
+.admin-lobby-metrics>div:first-child { padding-left:0; }
+.admin-lobby-metrics>div:last-child { border:0; }
+.admin-lobby-metrics small { display:block; color:var(--admin-muted); font-size:13px; }
+.admin-lobby-metrics strong { display:block; margin-top:4px; font:600 23px Arial,sans-serif; }
+.admin-lobby-metrics>div:first-child strong { color:#9edbb0; }
+.admin-lobby-right>.admin-lobby-box>p { margin:0; padding:0 15px 13px; color:var(--admin-muted); font-size:13px; }
+.admin-lobby-rosterfilters { display:flex; gap:8px; padding:10px 12px; border-bottom:1px solid var(--admin-line); }
+.admin-lobby-rosterfilters select,.admin-lobby-rosterfilters input { min-width:0; height:40px; border:1px solid var(--admin-line); border-radius:6px; background:var(--admin-well); font-size:13px; }
+.admin-lobby-rosterfilters select { padding:0 7px; }
+.admin-lobby-rosterfilters input { flex:1; width:100%; padding:0 10px; }
+.admin-lobby-rosterhead,.admin-lobby-person { display:grid; grid-template-columns:minmax(0,1fr) 51px 56px 55px; gap:7px; align-items:center; padding:0 12px; }
+.admin-lobby-rosterhead { height:32px; color:var(--admin-muted); font-size:11px; }
+.admin-lobby-roster { min-height:90px; max-height:317px; overflow:auto; }
+.admin-lobby-roster>p { margin:0; padding:14px; color:var(--admin-muted); font-size:13px; }
+.admin-lobby-person { min-height:45px; border-top:1px solid var(--admin-line); font-size:13px; }
+.admin-lobby-person b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.admin-lobby-kind { border:1px solid #677266; border-radius:5px; text-align:center; font-size:11px; }
+.admin-lobby-kind.bot { border-color:#9d7d56; color:#ebc797; }
+.admin-lobby-rosterfoot { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-top:1px solid var(--admin-line); color:var(--admin-muted); font-size:12px; }
+.admin-lobby-rosterfoot button,.admin-lobby-feedback button,.admin-lobby-load button { border:1px solid var(--admin-line); border-radius:5px; background:var(--admin-panel2); padding:4px 8px; }
+.admin-lobby-rosterfoot button+button { margin-left:6px; }
+.admin-lobby-feedback { margin-top:14px; padding:9px 12px; border:1px solid #8f765f; border-radius:7px; background:#42352b; color:#ffe5ce; font-size:13px; }
+.admin-lobby-feedback.error { border-color:#ad765e; }
+.admin-lobby-feedback button { margin-left:14px; }
+.admin-lobby-load { display:grid; place-content:center; gap:10px; min-height:300px; }
+@media(max-width:1190px) { .admin-lobby-workspace { grid-template-columns:1fr; } .admin-lobby-right { display:grid; grid-template-columns:1fr 1fr; } }

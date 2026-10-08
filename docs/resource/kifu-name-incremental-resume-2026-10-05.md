@@ -1185,3 +1185,10 @@ agon10（10 原文／205 盘）及 cmb2（2 原文／2 盘）已实际两库入�
 - Actual PROD after574: players1645/3698(44.4835%), formal events64/85(75.2941%), both-player games132045/173025(76.3156%), full-five cards115360/173025(66.6724%), raw-title games40635/173025(23.485%). HTML/actualownerlocks updated; translation/database writes continue.
 
 - A125 owner / 575: 125 literal raw-title owners review_status/metadata applied and exact journal verified TEST/PROD;125 unchanged SGFs, zero name/FK writes. 625 five-language names pending next batch. Prior574 full-five counts remain players1645/3698(44.4835%), formal events64/85(75.2941%), fullcards115360/173025(66.6724%); owner-only zero-name transition does not claim translation completion. Root finite20core-v2 lexicon/template review, TaiwaneseMeijin EN unsupportedTeam removed. Actualcat T d5c724ad1f3a8093c6d9fd30b13bacbf451393fbaf8652dfabe5498a2286d1f2 / P36c7bcb05efda5880fc8ae4c9a440cad24a974445c5bab88434d305b96fbd74e. Translation and real database writes continue.
+
+## 576 — 2026-10-08：A125 赛事标题五语入库
+
+- TEST、PROD 实际 dry-run/apply/verify 通过：625 个显示值、125 个 literal raw title owner；125 盘原 SGF/关联保持不变。每库 8 个实际 HTTP 案例通过，含主五语与英文回退。来源、字面核心与完整组合保持 translated provenance，不冒称新增正式赛事实体。
+- 实际 PROD 统计：五语齐全棋手 1,645/3,698（44.4835%）；正式赛事 64/85（75.2941%）；两方棋手齐全 132,045/173,025（76.3156%）；完整五语卡片 115,447/173,025（66.7227%，本批 +87）；字面赛事五语覆盖 40,760/173,025（23.5573%，本批 +125）。隐藏仍 250、listed 172,766；21 个零局旧赛事占位不计为完成。
+- 已将本批两库实际统计、源 freeze、候选证明及接口回执归档至 `kifu-incremental-applied-2026-10-05/kifu-event-title-highcoverage-a125-20261008-{TEST,PROD}.json.gz`，HTML 使用本批实际 PROD 统计刷新。
+- Root 主写 SQL/签审，独立 FH gpt-6-sol 制作字面翻译和签前绑定。没有改动姓名、身份、段位、别名、FK 或隐藏标签。远端 Git push 仍未成功；不影响已执行并核对的数据库更新。

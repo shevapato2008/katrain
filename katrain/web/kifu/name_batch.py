@@ -268,6 +268,8 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
                   "composed name preimage requires capture SHA-256")
         _fail("name_preimage_sha256" in candidate, "name preimage is missing from reviewed candidate")
         expected = candidate["name_preimage_sha256"]
+        if candidate.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1":
+            _fail(expected is None, "Chinese generated name requires an empty target")
         _fail(expected is None or (isinstance(expected, str) and _SHA256.fullmatch(expected) is not None),
               "name preimage must be null or a lowercase SHA-256")
         owner = candidate["owner"]
@@ -284,6 +286,12 @@ def _check_verified_sources(conn, evidence_records):
     for anchor in evidence_records:
         if anchor.get("evidence_kind") == "primary_orthographic":
             _fail(verified_source_live(conn, anchor), "verified source preimage or creation proof changed")
+        elif anchor.get("source_basis") == "normative_zh_ko_v1":
+            for source in anchor["positive_zh_ko"]["source_anchors"]:
+                _fail(source.get("content", {}).get("reference_kind") in {
+                    "verified_chinese_display", "verified_english_display"
+                } and verified_source_live(conn, source),
+                      "Chinese source preimage or creation proof changed")
 
 
 def _values_for_table(table, image: dict) -> dict:
@@ -578,6 +586,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
                 continue
+            _fail(row.get("generation_rule_version") != "nikl-zh-ko-personal-name-v1",
+                  f"Chinese generated name collides with another owner: {row['lang']}:{name_key}")
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
             if (own_kind == kind == "raw_event" and row["decision_kind"] == "translated"
                     and row["generation_rule_version"] == RAW_TITLE_VERSION
@@ -618,7 +628,9 @@ def _inspect(
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
     _check_name_preimages(conn, bundle["candidates"])
-    if bundle.get("primary_orthographic") is not None:
+    if bundle.get("primary_orthographic") is not None or any(
+        row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
+    ):
         _check_verified_sources(conn, evidence_records)
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
@@ -687,6 +699,7 @@ def _candidate_evidence(
     archive_description: dict | None = None,
     primary_orthographic: dict | None = None,
     normative_ja_ko: dict | None = None,
+    normative_zh_ko: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
@@ -694,6 +707,8 @@ def _candidate_evidence(
     payload = {"candidate": row, "research": research_by_hash.get(row.get("research_sha256"))}
     if normative_ja_ko is not None:
         payload["normative_ja_ko"] = normative_ja_ko
+    if normative_zh_ko is not None:
+        payload["normative_zh_ko"] = normative_zh_ko
     if primary_orthographic is not None:
         payload["primary_orthographic"] = primary_orthographic
     if composition is not None:
@@ -764,6 +779,9 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
             ({"batch_id": batch_id, "research_sha256": row["research_sha256"],
               "candidate_sha256": canonical_sha256(row)}
              if row.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1" else None),
+            ({"batch_id": batch_id, "research_sha256": row["research_sha256"],
+              "candidate_sha256": canonical_sha256(row)}
+             if row.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" else None),
         ),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
@@ -913,6 +931,9 @@ def _check_applied_v4(conn, batch, bundle):
             normative_ja_ko=({"batch_id": batch["id"], "research_sha256": research_hash,
                               "candidate_sha256": canonical_sha256(candidate)}
                              if candidate.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1" else None),
+            normative_zh_ko=({"batch_id": batch["id"], "research_sha256": research_hash,
+                              "candidate_sha256": canonical_sha256(candidate)}
+                             if candidate.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" else None),
         )
         for key, value in expected_evidence.items():
             stored = evidence[key]
@@ -939,10 +960,11 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
     _check_bundle_hash(bundle, expected_bundle_sha256)
     bundle_hash = canonical_sha256(bundle)
     has_transliteration = bundle.get("transliteration") is not None or bundle.get("primary_orthographic") is not None
-    has_positive = any(row.get("generation_rule_version") == "nikl-ja-ko-personal-name-v1"
+    has_positive = any(row.get("generation_rule_version") in {
+        "nikl-ja-ko-personal-name-v1", "nikl-zh-ko-personal-name-v1"}
                        for row in bundle["candidates"])
     normative_research = [record for record in evidence_records
-                          if record.get("source_basis") == "normative_ja_ko_v1"]
+                          if record.get("source_basis") in {"normative_ja_ko_v1", "normative_zh_ko_v1"}]
     with _locked_write(engine) as conn:
         previous = conn.execute(select(KifuNameBatch).where(KifuNameBatch.bundle_sha256 == bundle_hash)).mappings().one_or_none()
         if previous is not None:
@@ -981,7 +1003,9 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 _check_cross_bundle_collisions(
                     conn, bundle["candidates"], resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
                 )
-                if bundle.get("primary_orthographic") is not None:
+                if bundle.get("primary_orthographic") is not None or any(
+                    row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
+                ):
                     _check_verified_sources(conn, evidence_records)
             if bundle["bundle_format"] == 4:
                 _prevalidate(

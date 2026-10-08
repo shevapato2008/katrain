@@ -491,7 +491,9 @@ def verified_source_live(conn, anchor):
 
     try:
         source = anchor["content"]
-        if source.get("reference_kind") not in {"verified_chinese_display", "verified_japanese_display"}:
+        if source.get("reference_kind") not in {
+            "verified_chinese_display", "verified_japanese_display", "verified_english_display"
+        }:
             return True
         binding = source["binding"]
         name, evidence, batch = (binding[key] for key in ("source_name", "source_evidence", "source_batch"))

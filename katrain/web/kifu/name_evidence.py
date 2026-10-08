@@ -1301,8 +1301,9 @@ def _validate_positive_zh_ko(record: dict) -> None:
     _require(isinstance(anchors, list), "Chinese qualified source anchors must be a list")
     for anchor in anchors:
         content = validate_primary_orthographic_anchor(anchor)
-        _require(content["owner"] == record["owner"] and content["original_name"] == record["original_name"],
-                 "Chinese qualified source anchor differs from owner or Han name")
+        anchored_name = record["reading"] if content.get("reference_kind") == "verified_english_display" else record["original_name"]
+        _require(content["owner"] == record["owner"] and content["original_name"] == anchored_name,
+                 "Chinese qualified source anchor differs from owner or published name")
     _require(any(check["status"] == "found" and check["candidate_name"] == record["original_name"]
                  and check["url"] == original_capture["url"]
                  and check["body_sha256"] == original_capture["body_sha256"]
@@ -1550,7 +1551,7 @@ def capture_source_check(
 
 
 def validate_primary_orthographic_anchor(record: dict) -> dict:
-    """Validate a reviewed original or an explicitly preserved official KBA Hanja name."""
+    """Validate a reviewed original or an exact existing qualified display source."""
     _require(
         isinstance(record, dict)
         and record.get("evidence_kind") == "primary_orthographic"
@@ -1570,6 +1571,7 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
     verified_sources = {
         "verified_chinese_display": ("cn", "zh-Hans", "Hans"),
         "verified_japanese_display": ("jp", "ja", "Kanji"),
+        "verified_english_display": ("en", "en", "Latin"),
     }
     verified_display = content.get("reference_kind") in verified_sources
     original = content.get("original_name")
@@ -1581,8 +1583,9 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             "reference_kind", "owner", "original_name", "source_lang", "source_script", "binding"
         } and content.get("source_lang") == source_lang and content.get("source_script") == source_script
         and isinstance(original, str) and 2 <= len(original) <= 16
-        and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
-                 "verified display requires same-player Han source")
+        and (bool(re.fullmatch(r"[A-Za-z][A-Za-z .'-]+", original)) if source_language == "en"
+             else all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original)),
+                 "verified display requires same-player source name")
         binding = content.get("binding")
         _require(isinstance(binding, dict) and set(binding) == {
             "kind", "owner", "source_name", "source_evidence", "source_batch"
@@ -1776,10 +1779,29 @@ def is_positive_ja_ko(candidate: dict | None = None, payload: dict | None = None
     candidate = candidate if isinstance(candidate, dict) else {}
     payload = payload if isinstance(payload, dict) else {}
     research = payload.get("research")
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION as ZH_RULE, SOURCE_BASIS as ZH_BASIS
+    if (rule == ZH_RULE or candidate.get("generation_rule_version") == ZH_RULE
+            or "normative_zh_ko" in payload
+            or isinstance(research, dict) and (research.get("source_basis") == ZH_BASIS
+                or "positive_zh_ko" in research)):
+        return False
     return (rule == POSITIVE_RULE or candidate.get("generation_rule_version") == POSITIVE_RULE
             or "normative_ja_ko" in payload
             or isinstance(research, dict) and (research.get("source_basis") == POSITIVE_SOURCE_BASIS
                 or research.get("scope_status") == POSITIVE_SCOPE or "positive_generation" in research))
+
+
+def is_positive_zh_ko(candidate: dict | None = None, payload: dict | None = None, rule: str | None = None) -> bool:
+    """Recognize retained Chinese markers, including partial mutable proof damage."""
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION, SOURCE_BASIS
+
+    candidate = candidate if isinstance(candidate, dict) else {}
+    payload = payload if isinstance(payload, dict) else {}
+    research = payload.get("research")
+    return (rule == RULE_VERSION or candidate.get("generation_rule_version") == RULE_VERSION
+            or "normative_zh_ko" in payload
+            or isinstance(research, dict) and (research.get("source_basis") == SOURCE_BASIS
+                or "positive_zh_ko" in research))
 
 
 def _positive_content_sha256(value):
@@ -1838,6 +1860,69 @@ def persisted_positive_ja_ko_eligible(name: dict, evidence: dict, batch: dict, r
             return False
         validate_positive_ja_ko_candidate(row, research, registry)
         return True
+    except (KeyError, TypeError, ValueError, AttributeError, StopIteration):
+        return False
+
+
+def persisted_positive_zh_ko_eligible(name: dict, evidence: dict, batch: dict, registry: dict,
+                                      changes: list[dict], *, source_live=None) -> bool:
+    """Pure applied-proof gate shared by ORM and bounded SQL readers; never trusts status alone."""
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION as ZH_RULE, SOURCE_BASIS as ZH_BASIS
+
+    canonical_sha256 = _positive_content_sha256
+
+    try:
+        artifact = batch["reviewed_artifact"]
+        bundle = artifact["bundle"]
+        payload = evidence["research_payload"]
+        row, research, proof = payload["candidate"], payload["research"], payload["normative_zh_ko"]
+        if (batch["status"] != "applied" or canonical_sha256(bundle) != batch["bundle_sha256"]
+                or bundle["registry_sha256"] != registry_sha256(registry)
+                or bundle["registry_version"] != registry["version"]
+                or evidence["source_registry_id"] != batch["source_registry_id"]
+                or not isinstance(proof, dict) or set(proof) != {"batch_id", "research_sha256", "candidate_sha256"}
+                or type(proof["batch_id"]) is not int or type(batch["id"]) is not int
+                or proof != {"batch_id": batch["id"], "research_sha256": canonical_sha256(research),
+                            "candidate_sha256": canonical_sha256(row)}
+                or row["research_sha256"] != proof["research_sha256"]
+                or proof["research_sha256"] not in artifact["research_hashes"]
+                or [item for item in artifact["normative_research"]
+                    if canonical_sha256(item) == proof["research_sha256"]] != [research]
+                or [item for item in bundle["candidates"] if item["owner"] == row["owner"]
+                    and item["lang"] == row["lang"]] != [row]
+                or [item for item in bundle["members"] if item["owner"] == row["owner"]
+                    and item["lang"] == row["lang"]] != [{"owner": row["owner"], "lang": row["lang"]}]
+                or canonical_sha256(bundle["members"]) != bundle["member_set_sha256"]
+                or row["review_status"] != "approved" or row["decision_kind"] != "generated"
+                or row["generation_rule_version"] != ZH_RULE
+                or research["source_basis"] != ZH_BASIS
+                or row["owner"] != {"kind": "player", "id": name["player_id"]}
+                or name["player_id"] != evidence["player_id"] or name["lang"] != evidence["lang"]
+                or name["lang"] != "ko" or row["lang"] != "ko"
+                or name["status"] != "verified" or evidence["review_status"] != "approved"
+                or name["evidence_id"] != evidence["id"] or name["revision"] != evidence["revision"]
+                or name["display_name"] != row["display_name"] or evidence["candidate_name"] != row["display_name"]
+                or name["decision_kind"] != row["decision_kind"] or evidence["decision_kind"] != row["decision_kind"]
+                or name["generation_rule_version"] != ZH_RULE or evidence["generation_rule_version"] != ZH_RULE):
+            return False
+        name_changes = [change for change in changes if change["target_table"] == "kifu_player_names"
+                        and change["target_row_id"] == name["id"]]
+        evidence_changes = [change for change in changes if change["target_table"] == "kifu_name_research_evidence"
+                            and change["target_row_id"] == evidence["id"]]
+        if (len(name_changes) != 1 or len(evidence_changes) != 1
+                or name_changes[0]["batch_id"] != batch["id"] or evidence_changes[0]["batch_id"] != batch["id"]
+                or name_changes[0]["after_image"] != name or evidence_changes[0]["after_image"] != evidence
+                or evidence_changes[0]["before_image"] is not None
+                or row["name_preimage_sha256"] != (canonical_sha256(name_changes[0]["before_image"])
+                    if name_changes[0]["before_image"] is not None else None)):
+            return False
+        validate_positive_zh_ko_candidate(row, research, registry)
+        # Keep SQL access outside this pure helper, but require a fresh check
+        # of every bound source when the research references live DB names.
+        anchors = research["positive_zh_ko"]["source_anchors"]
+        return not anchors or callable(source_live) and all(
+            anchor["content"]["reference_kind"] in {"verified_chinese_display", "verified_english_display"}
+            and source_live(anchor) for anchor in anchors)
     except (KeyError, TypeError, ValueError, AttributeError, StopIteration):
         return False
 

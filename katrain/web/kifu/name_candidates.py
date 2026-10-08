@@ -615,7 +615,9 @@ def _validate_candidate(
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
         elif decision == "generated":
             from katrain.web.kifu.name_evidence import POSITIVE_SOURCE_BASIS, POSITIVE_RULE
+            from katrain.web.kifu.name_zh_ko import SOURCE_BASIS as ZH_BASIS, RULE_VERSION as ZH_RULE
             positive = checked.get("source_basis") == POSITIVE_SOURCE_BASIS
+            positive_zh = checked.get("source_basis") == ZH_BASIS
             if positive:
                 _require(row["generation_rule_version"] == POSITIVE_RULE and display == checked["candidate_name"],
                          "positive generated candidate differs from exact rule/output")
@@ -625,8 +627,17 @@ def _validate_candidate(
                         validate_positive_ja_ko_candidate(row, research, registry)
                     except EvidenceError as exc:
                         raise CandidateError(str(exc)) from exc
+            elif positive_zh:
+                _require(row["generation_rule_version"] == ZH_RULE and display == checked["candidate_name"],
+                         "Chinese positive generated candidate differs from exact rule/output")
+                if row["review_status"] == "approved":
+                    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
+                    try:
+                        validate_positive_zh_ko_candidate(row, research, registry)
+                    except EvidenceError as exc:
+                        raise CandidateError(str(exc)) from exc
             else:
-                _require(row["generation_rule_version"] != POSITIVE_RULE,
+                _require(row["generation_rule_version"] not in {POSITIVE_RULE, ZH_RULE},
                          "positive generated rule requires its exact research basis")
                 _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
             _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
@@ -1344,6 +1355,9 @@ def validate_bundle(
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
+            if any(row.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" for row in group):
+                errors.append(f"Chinese generated name collision: {lang}:{name} owners={owners}")
+                continue
             if all(row["owner"]["kind"] == "raw_event" and row["decision_kind"] == "translated"
                    and row["generation_rule_version"] == RAW_TITLE_VERSION
                    and row["review_status"] == "approved" for row in group):

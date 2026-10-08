@@ -1939,6 +1939,275 @@ def positive_ja_ko_bundle(inv):
     return proposed, [evidence]
 
 
+def positive_zh_ko_bundle(inv, owner_id=5498, *, source_anchors=(), source_registry=None):
+    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_fixture
+
+    research, row, reg = positive_zh_ko_fixture(owner_id)
+    if source_registry is not None:
+        reg = source_registry
+        research["registry_sha256"] = registry_sha256(reg)
+    research["positive_zh_ko"]["source_anchors"] = list(source_anchors)
+    row["research_sha256"] = canonical_sha256(research)
+    row["generated_review"]["research_sha256"] = row["research_sha256"]
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(research["positive_zh_ko"])
+    row["name_preimage_sha256"] = None
+    row["preimage_binding"] = {
+        "actor_id": "fixture-binder-3", "actor_model": "gpt-6.1-sol",
+        "captured_at": "2026-10-08T21:56:00Z", "bound_at": "2026-10-08T21:57:00Z",
+        "name_preimage_sha256": None, "source_candidate_sha256": canonical_sha256(row),
+        "capture_sha256": hashlib.sha256(b"synthetic Chinese preimage capture").hexdigest(),
+    }
+    proposed, _ = player_bundle(inv)
+    member = {"owner": row["owner"], "lang": "ko"}
+    proposed.update(registry_sha256=registry_sha256(reg), members=[member],
+                    member_set_sha256=canonical_sha256([member]), candidates=[row])
+    return proposed, [research], reg
+
+
+def test_positive_zh_ko_importer_reader_requires_exact_applied_ledger(engine):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows, strict_display_maps
+    from katrain.web.kifu.name_coverage import coverage_report
+
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=5498, canonical_name="王宏伟"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=5498, player_black="王宏伟", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[王宏伟]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    proposed, evidence, reg = positive_zh_ko_bundle(inv)
+    receipt = apply_bundle(engine, proposed, reg, inv, evidence)
+    with Session(engine) as db:
+        def eligible():
+            return _qualified_name_rows(db, _approved_names(db, KifuPlayerName, "player_id", [5498], "ko"),
+                                        KifuPlayerName, "player_id")
+
+        def visible_ids():
+            return [name.player_id for name, _ in _qualified_name_rows(
+                db, _approved_names(db, KifuPlayerName, "player_id", [5498], "ko").filter(
+                    KifuPlayerName.display_name == "왕훙웨이"), KifuPlayerName, "player_id")]
+
+        album = db.get(KifuAlbum, 12)
+
+        assert [name.player_id for name, _ in eligible()] == [5498]
+        assert visible_ids() == [5498]
+        assert strict_display_maps(db, [album], "ko")[0][5498] == "왕훙웨이"
+        assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"]["generated"] == 1
+        proof = db.query(KifuNameResearchEvidence).one()
+        original = deepcopy(proof.research_payload)
+        assert original["normative_zh_ko"] == {
+            "batch_id": receipt["batch_id"], "research_sha256": canonical_sha256(evidence[0]),
+            "candidate_sha256": canonical_sha256(proposed["candidates"][0])}
+        batch = db.get(KifuNameBatch, receipt["batch_id"])
+        batch.status = "pending"
+        db.flush()
+        assert eligible() == []
+        assert visible_ids() == []
+        assert 5498 not in strict_display_maps(db, [album], "ko")[0]
+        batch.status = "applied"
+        for malformed in (True, [], receipt["batch_id"] + 1):
+            changed = deepcopy(original)
+            changed["normative_zh_ko"]["batch_id"] = malformed
+            proof.research_payload = changed
+            db.flush()
+            assert eligible() == []
+        changed = deepcopy(original)
+        changed["candidate"]["display_name"] = "바뀐 이름"
+        proof.research_payload = changed
+        db.flush()
+        assert eligible() == []
+        proof.research_payload = original
+        artifact = deepcopy(batch.reviewed_artifact)
+        damaged_artifact = deepcopy(artifact)
+        damaged_artifact["normative_research"][0]["reading"] = "other reading"
+        batch.reviewed_artifact = damaged_artifact
+        db.flush()
+        assert eligible() == []
+        batch.reviewed_artifact = artifact
+        db.flush()
+        for removed in ("normative_zh_ko", "research"):
+            changed = deepcopy(original)
+            changed.pop(removed)
+            proof.research_payload = changed
+            db.flush()
+            assert eligible() == []
+        proof.research_payload = {"candidate": {}, "research": {}}
+        name = db.query(KifuPlayerName).one()
+        name.generation_rule_version = "legacy-generated-v1"
+        proof.generation_rule_version = "legacy-generated-v1"
+        db.flush()
+        assert eligible() == []
+
+
+@pytest.mark.parametrize("owner_id", [5498, 9999])
+def test_positive_zh_ko_rejects_published_target_and_cross_owner_collision(engine, owner_id):
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=5498, canonical_name="王宏伟"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=5498, player_black="王宏伟", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[王宏伟]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+        if owner_id != 5498:
+            conn.execute(KifuPlayer.__table__.insert().values(id=owner_id, canonical_name="Other"))
+        conn.execute(KifuPlayerName.__table__.insert().values(
+            player_id=owner_id, lang="ko", display_name="왕훙웨이", status="verified",
+            decision_kind="conventional", generation_rule_version="none", revision=1))
+    inv = build_inventory(engine)
+    proposed, evidence, reg = positive_zh_ko_bundle(inv)
+    with pytest.raises(BatchError):
+        apply_bundle(engine, proposed, reg, inv, evidence)
+
+
+def _qualified_source_anchor(engine, inv, reg, lang, display):
+    from katrain.web.kifu.name_batch import _image
+    from tests.web_ui.test_kifu_name_candidates import candidate, check, research
+
+    owner = {"kind": "player", "id": 5498}
+    source_id, url, observed = (("cwa", "https://wqapi.cwql.org.cn/playerInfo/professional/list", "zh-Hans")
+                                if lang == "cn" else ("ugo", "https://db.u-go.net/1923/", "en"))
+    source_check = check(owner=owner, source_id=source_id, url=url, observed_lang=observed,
+                         query=display, candidate_name=display, body_excerpt=f"Go player {display}",
+                         body_sha256=hashlib.sha256(display.encode()).hexdigest())
+    found = research(owner=owner, lang=lang, registry_sha256=registry_sha256(reg),
+                     candidate_name=display, source_checks=[source_check], original_name="王宏伟",
+                     original_language="zh-Hans", original_language_basis_url=url,
+                     reading="Wang Hongwei", reading_basis_url="https://db.u-go.net/1923/")
+    row = candidate(owner=owner, lang=lang, display_name=display,
+                    research_sha256=canonical_sha256(found), name_preimage_sha256=None)
+    bind_fixture_candidate(row)
+    proposed, _ = player_bundle(inv)
+    member = {"owner": owner, "lang": lang}
+    proposed.update(registry_sha256=registry_sha256(reg), members=[member],
+                    member_set_sha256=canonical_sha256([member]), candidates=[row])
+    receipt = apply_bundle(engine, proposed, reg, inv, [found])
+    with engine.connect() as conn:
+        name_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.player_id == 5498,
+                                                               KifuPlayerName.lang == lang))
+        name = _image(conn, KifuPlayerName.__table__, name_id)
+        evidence = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+        batch = _image(conn, KifuNameBatch.__table__, receipt["batch_id"])
+    kind = "verified_chinese_display" if lang == "cn" else "verified_english_display"
+    content = {"reference_kind": kind, "owner": owner, "original_name": display,
+               "source_lang": "zh-Hans" if lang == "cn" else "en",
+               "source_script": "Hans" if lang == "cn" else "Latin",
+               "binding": {"kind": kind, "owner": owner, "source_name": name, "source_evidence": evidence,
+                           "source_batch": {"id": batch["id"], "bundle_sha256": batch["bundle_sha256"],
+                                            "evidence_creation_sha256": canonical_sha256(evidence)}}}
+    return {"evidence_kind": "primary_orthographic", "version": 1, "content": content,
+            "approval": {"status": "approved", "content_sha256": canonical_sha256(content),
+                         "producer_id": "source-binder", "producer_model": "gpt-6.1-sol",
+                         "produced_at": "2026-10-08T21:53:00Z", "reviewer_id": "source-reviewer",
+                         "reviewer_model": "gpt-6-astra", "reviewed_at": "2026-10-08T21:54:00Z",
+                         "conclusion": "approved_orthographic_original"}}
+
+
+@pytest.mark.parametrize("revoked_lang", ["cn", "en"])
+@pytest.mark.parametrize("tamper", ["batch", "name", "evidence", "creation_ledger"])
+def test_positive_zh_ko_source_revocation_hides_display_search_and_coverage(engine, revoked_lang, tamper):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows, strict_display_maps
+    from katrain.web.kifu.name_coverage import coverage_report
+
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=5498, canonical_name="王宏伟"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=5498, player_black="王宏伟", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[王宏伟]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_fixture
+    _, _, reg = positive_zh_ko_fixture()
+    reg["sources"].append({"id": "ugo", "tier": "language_go", "home_url": "https://db.u-go.net/",
+                           "language": "en"})
+    anchors = [_qualified_source_anchor(engine, inv, reg, "cn", "王宏伟"),
+               _qualified_source_anchor(engine, inv, reg, "en", "Wang Hongwei")]
+    proposed, evidence, reg = positive_zh_ko_bundle(inv, source_anchors=anchors, source_registry=reg)
+    source_batch_id = next(anchor["content"]["binding"]["source_batch"]["id"] for anchor in anchors
+                           if anchor["content"]["binding"]["source_name"]["lang"] == revoked_lang)
+    with engine.begin() as conn:
+        conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == source_batch_id).values(status="pending"))
+    with pytest.raises(BatchError):
+        apply_bundle(engine, proposed, reg, inv, evidence)
+    with engine.begin() as conn:
+        conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == source_batch_id).values(status="applied"))
+    apply_bundle(engine, proposed, reg, inv, evidence)
+    from katrain.web.kifu.name_batch import _image
+    from katrain.web.kifu.name_evidence import persisted_positive_zh_ko_eligible
+    with engine.connect() as conn:
+        ko_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.player_id == 5498,
+                                                             KifuPlayerName.lang == "ko"))
+        ko_name = _image(conn, KifuPlayerName.__table__, ko_id)
+        ko_evidence = _image(conn, KifuNameResearchEvidence.__table__, ko_name["evidence_id"])
+        ko_batch_id = ko_evidence["research_payload"]["normative_zh_ko"]["batch_id"]
+        ko_batch = _image(conn, KifuNameBatch.__table__, ko_batch_id)
+        ko_changes = [_image(conn, KifuNameChange.__table__, change_id)
+                      for change_id in conn.scalars(select(KifuNameChange.id).where(KifuNameChange.batch_id == ko_batch_id))]
+    assert not persisted_positive_zh_ko_eligible(ko_name, ko_evidence, ko_batch, reg, ko_changes)
+    from katrain.web.kifu.name_orthographic import verified_source_live
+    with engine.connect() as conn:
+        assert persisted_positive_zh_ko_eligible(
+            ko_name, ko_evidence, ko_batch, reg, ko_changes,
+            source_live=lambda anchor: verified_source_live(conn, anchor))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 12)
+        query = _approved_names(db, KifuPlayerName, "player_id", [5498], "ko").filter(
+            KifuPlayerName.display_name == "왕훙웨이")
+        assert [name.player_id for name, _ in _qualified_name_rows(db, query, KifuPlayerName, "player_id")] == [5498]
+        assert strict_display_maps(db, [album], "ko")[0][5498] == "왕훙웨이"
+    assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"]["generated"] == 1
+    with engine.begin() as conn:
+        source = next(anchor["content"]["binding"] for anchor in anchors
+                      if anchor["content"]["binding"]["source_name"]["lang"] == revoked_lang)
+        if tamper == "batch":
+            conn.execute(KifuNameBatch.__table__.update().where(KifuNameBatch.id == source_batch_id).values(status="pending"))
+        elif tamper == "name":
+            conn.execute(KifuPlayerName.__table__.update().where(
+                KifuPlayerName.id == source["source_name"]["id"]).values(display_name="Changed"))
+        elif tamper == "evidence":
+            conn.execute(KifuNameResearchEvidence.__table__.update().where(
+                KifuNameResearchEvidence.id == source["source_evidence"]["id"]).values(producer_model="Changed"))
+        else:
+            change_id = conn.scalar(select(KifuNameChange.id).where(
+                KifuNameChange.batch_id == source_batch_id,
+                KifuNameChange.target_table == "kifu_name_research_evidence",
+                KifuNameChange.target_row_id == source["source_evidence"]["id"]))
+            conn.execute(KifuNameChange.__table__.update().where(KifuNameChange.id == change_id).values(
+                after_image={**source["source_evidence"], "producer_model": "Changed"}))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 12)
+        query = _approved_names(db, KifuPlayerName, "player_id", [5498], "ko").filter(
+            KifuPlayerName.display_name == "왕훙웨이")
+        assert _qualified_name_rows(db, query, KifuPlayerName, "player_id") == []
+        assert 5498 not in strict_display_maps(db, [album], "ko")[0]
+        if revoked_lang == "cn":
+            assert strict_display_maps(db, [album], "en")[0][5498] == "Wang Hongwei"
+    assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"].get("generated", 0) == 0
+
+
+def test_positive_zh_ko_persisted_gate_has_no_importer_dependency(engine, monkeypatch):
+    import sys
+    from katrain.web.kifu.name_batch import _image
+    from katrain.web.kifu.name_evidence import persisted_positive_zh_ko_eligible
+
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=5498, canonical_name="王宏伟"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=5498, player_black="王宏伟", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[王宏伟]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    proposed, evidence, reg = positive_zh_ko_bundle(inv)
+    receipt = apply_bundle(engine, proposed, reg, inv, evidence)
+    with engine.connect() as conn:
+        name_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.lang == "ko"))
+        name = _image(conn, KifuPlayerName.__table__, name_id)
+        stored = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+        batch = _image(conn, KifuNameBatch.__table__, receipt["batch_id"])
+        changes = [_image(conn, KifuNameChange.__table__, change_id)
+                   for change_id in conn.scalars(select(KifuNameChange.id))]
+    monkeypatch.setitem(sys.modules, "katrain.web.kifu.name_candidates", None)
+    assert persisted_positive_zh_ko_eligible(name, stored, batch, reg, changes)
+    for malformed_id in (True, 1.0):
+        changed = deepcopy(stored)
+        changed["research_payload"]["normative_zh_ko"]["batch_id"] = malformed_id
+        assert not persisted_positive_zh_ko_eligible(name, changed, batch, reg, changes)
+
+
 def test_positive_ja_ko_importer_reader_requires_exact_applied_ledger(engine):
     from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
     inv = build_inventory(engine)

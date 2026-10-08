@@ -30,4 +30,19 @@ For an actual-data comparison, the patched module (SHA-256 `63c5e10ec8880d98f8cf
 | 2 | 0.466 s | 0.899 s | valid |
 | 3 | 0.349 s | 0.878 s | valid |
 
-Unprofiled binding validation fell from 1.25–1.28 s to 0.88–0.90 s, about **30% faster** for this batch. `cProfile` now shows 1.49 million calls rather than 4.88 million, with `_normalize` down from 255,940 to 64,534 calls. The remaining work includes exact JSON hashing and validating every snapshot row; those gates remain intact. This is a component comparison, not a post-deployment HTTP latency claim. The full TW list path still needs one representative measurement after deployment.
+Unprofiled binding validation fell from 1.25–1.28 s to 0.88–0.90 s, about **30% faster** for this batch. `cProfile` now shows 1.49 million calls rather than 4.88 million, with `_normalize` down from 255,940 to 64,534 calls. The remaining work includes exact JSON hashing and validating every snapshot row; those gates remain intact. This is a component comparison, not a post-deployment HTTP latency claim.
+
+## TEST r2 list route, read-only diagnosis
+
+After TEST deployed r2, an isolated `katrain-kifu-importer:jp-original-display-test-20261009-r2` container invoked the actual `list_kifu_albums` route once for `q=加納一夫`, `lang=tw`, page size 20. It used the TEST database in a read-only SQL transaction and a read-only container filesystem; no code was injected into the running web service. The in-process route took **3.244 s**, returning 22 total matches and 20 page items. This is not the browser-to-server HTTP timing (reported separately at 4.2–4.7 s).
+
+| Component during that one route call | Calls | Total time |
+| --- | ---: | ---: |
+| Player-name qualification for search | 1 (2 rows) | 1.482 s |
+| Player-name qualification for page display | 1 (13 rows) | 1.551 s |
+| Batch 588 `persisted_batch_bindings` inside those calls | 2 | 0.785 + 0.897 = 1.682 s |
+| Live source proof | 3 | 0.111 s |
+| SQL statements referencing name batches | 5 | 0.361 s |
+| SQL statements referencing name changes | 9 | 0.083 s |
+
+The route qualifies player names once to resolve the search and again to display the selected page. Each qualification validates the same applied batch 588 context. The two context validations account for about 52% of measured in-process route time; both player-name qualification calls together account for about 94%. This explains the remaining TW cost more directly than the initial component profile. A possible next focused change is explicit reuse of one validated batch context within this single list request, while retaining per-name live source checks. That requires a separate review of freshness semantics before implementation. No new runtime cache or code change was made in this diagnostic step.

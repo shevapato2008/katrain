@@ -7,3 +7,5 @@
 `kifu_players.authoritative_pages` 是 JSON 数组，每项含 `url`、`source_id`、`language`、`role`、`evidence_ids`。`role` 表示登记的来源类别，维基或专业资料不会被标成官方。后续棋手主页可按棋手 ID 使用这些页面及现有棋谱 FK，不需要再次找源；生平和名局介绍尚未开发。
 
 统计网页是带时间的正式库快照；五语齐全指实体名称已独立批准并写库，完整覆盖指棋局双方棋手及赛事类型均具备五语名称。未关联实体的原文展示、中文首遍和未完成语言不计入这一覆盖率。
+
+`kifu-event-literal-593-594-20261009.json.gz` 是 TEST/PROD 实际 593 owner 审定与 594 五语字面标题入库的有界归档。包含冻结选择与来源、122-owner 审核、610 名称及研究全文、两库原始与 owner 后捕获、独立根审、prepare/dry-run/apply/verify、两库各 12 项 HTTP 回执，以及 PROD 938 局严格资格增量统计。两份 173,025 关联行的 format-4 inventory 仅保留文件与快照 SHA-256 引用，不重复装入归档；原 SGF 不在此归档中复制。字面 raw title 资格与 64/85 正式赛事实体完成数分开统计。

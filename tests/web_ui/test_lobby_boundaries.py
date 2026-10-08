@@ -385,6 +385,60 @@ def test_bot_count_failure_stays_visible_for_retry(client, app):
     assert app.state.session_manager.get_session(sid) is session
 
 
+def test_bot_timeout_binds_clock_and_records_actual_winner(client, app, monkeypatch):
+    from unittest.mock import MagicMock
+    from katrain.web import session as session_module
+    from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
+    from katrain.web.core.models_db import UserGame
+    from katrain.web.models import EndgameConflict, GameEnd
+
+    rung = playable_rungs()[0].rung
+    monkeypatch.setattr(session_module, "WebKaTrain", lambda **kwargs: MagicMock())
+    human_id, username = _make_user(app, "bot_timeout")
+    _place(app, human_id, rung)
+    app.state.pvp_lobby_bots.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
+                                           "idle_targets": {}}, revision=1)
+    token = _token(client, username)
+    with _ws(client, token) as ws:
+        ws.send_json({"type": "invite", "target_id": bot_id(rung, 1)})
+        sid = _next(ws)["session_id"]
+    session = app.state.session_manager.get_session(sid)
+    game = session.katrain.game
+    node = game.current_node
+    game.terminal = None
+    human_color = "B" if session.player_b_id == human_id else "W"
+    bot_color = "W" if human_color == "B" else "B"
+    node.next_player = bot_color
+    game.game_id = "clock-game"
+    session.katrain.get_state.return_value = {"player_to_move": bot_color, "end_result": None}
+    session.katrain.get_sgf.return_value = "(;GM[1])"
+
+    def clock_not_expired(action, **kwargs):
+        assert action == "timeout"
+        assert kwargs == {"expected_game_id": "clock-game", "expected_node_id": id(node), "color": bot_color}
+        raise EndgameConflict("clock_not_expired")
+
+    session.katrain.side_effect = clock_not_expired
+    headers = {"Authorization": f"Bearer {token}"}
+    denied = client.post("/api/timeout", headers=headers, json={"session_id": sid})
+    assert denied.status_code == 409, denied.text
+    assert app.state.session_manager.get_session(sid) is session
+
+    def expired(action, **kwargs):
+        assert kwargs["color"] == bot_color
+        game.terminal = GameEnd(game, node, f"{human_color}+T")
+
+    session.katrain.side_effect = expired
+    accepted = client.post("/api/timeout", headers=headers, json={"session_id": sid})
+    assert accepted.status_code == 200, accepted.text
+    db = app.state.session_factory()
+    try:
+        row = db.query(UserGame).filter_by(user_id=human_id, game_type="free").one()
+        assert row.result == f"{human_color}+T"
+    finally:
+        db.close()
+
+
 def test_bot_leave_marks_terminal_and_releases_reservation(client, app):
     from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
 

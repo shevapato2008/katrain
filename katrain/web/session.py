@@ -103,11 +103,15 @@ class SessionManager:
 
         self._shutdown_all(evicted, close=SOCKET_CLOSE_SESSION_GONE)
 
-        session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
-        session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
-        session.katrain.game_ended_callback = lambda end, sid=session_id: self._on_game_ended(sid, end)
-        katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
-        session.last_state = katrain.get_state()
+        try:
+            session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
+            session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
+            session.katrain.game_ended_callback = lambda end, sid=session_id: self._on_game_ended(sid, end)
+            katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
+            session.last_state = katrain.get_state()
+        except Exception:
+            self.remove_session(session_id)
+            raise
         return session
 
     def create_research_session(self, user_id: int, katago_uuid: Optional[str] = None) -> WebSession:
@@ -131,17 +135,21 @@ class SessionManager:
             initial_game_type=initial_game_type,
             skip_initial_analysis=skip_initial_analysis,
         )
-        session.player_b_id = player_b_id
-        session.player_w_id = player_w_id
-        session.game_type = initial_game_type
-        # 普通多人局保留既有分析行为；平台在线局不得在这里重开分析交付。
-        session.katrain.deliver_analysis = initial_game_type != "pvp_online"
+        try:
+            session.player_b_id = player_b_id
+            session.player_w_id = player_w_id
+            session.game_type = initial_game_type
+            # 普通多人局保留既有分析行为；平台在线局不得在这里重开分析交付。
+            session.katrain.deliver_analysis = initial_game_type != "pvp_online"
 
-        # Set player names in KaTrain
-        if b_name:
-            session.katrain("update_player", bw="B", player_type="human", name=b_name)
-        if w_name:
-            session.katrain("update_player", bw="W", player_type="human", name=w_name)
+            # Set player names in KaTrain
+            if b_name:
+                session.katrain("update_player", bw="B", player_type="human", name=b_name)
+            if w_name:
+                session.katrain("update_player", bw="W", player_type="human", name=w_name)
+        except Exception:
+            self.remove_session(session.session_id)
+            raise
 
         return session
 

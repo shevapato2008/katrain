@@ -12,6 +12,43 @@ from katrain.core import ladder
 from katrain.web.core import pvp_lobby_bots as bots
 
 
+@pytest.mark.parametrize("fail_at", ["start", "seat"])
+def test_failed_bot_room_creation_removes_registered_session_and_shuts_engine(monkeypatch, fail_at):
+    from katrain.web import session as session_module
+
+    created = []
+
+    class FailingWebKaTrain:
+        def __init__(self, **kwargs):
+            self.shutdown_calls = 0
+            created.append(self)
+
+        def start(self, **kwargs):
+            if fail_at == "start":
+                raise RuntimeError("start failed")
+
+        def get_state(self):
+            return {}
+
+        def __call__(self, action, **kwargs):
+            if fail_at == "seat" and action == "update_player":
+                raise RuntimeError("seat setup failed")
+
+        def shutdown(self):
+            self.shutdown_calls += 1
+
+    monkeypatch.setattr(session_module, "WebKaTrain", FailingWebKaTrain)
+    manager = session_module.SessionManager(enable_engine=False)
+
+    with pytest.raises(RuntimeError):
+        manager.create_multiplayer_session(7, -3, b_name="Human", w_name="Bot",
+                                           initial_game_type="free", skip_initial_analysis=True)
+
+    assert manager._sessions == {}
+    assert len(created) == 1
+    assert created[0].shutdown_calls == 1
+
+
 def test_playable_catalog_uses_only_fitted_certified_available_levels(monkeypatch):
     levels = (
         SimpleNamespace(

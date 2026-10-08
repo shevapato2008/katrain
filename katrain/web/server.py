@@ -1086,7 +1086,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(sid)
         except KeyError:
             return
-        if session.game_ended and not getattr(session, "bot_game", False):
+        if session.game_ended and getattr(session, "bot_game", False) is not True:
             matchmaker = getattr(app.state, "matchmaker", None)
             if matchmaker is not None:
                 matchmaker.release_users(*(user_id for user_id in (session.player_b_id, session.player_w_id)
@@ -1098,7 +1098,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     manager.on_session_state = _on_session_state
 
     def guard_bot_mutation(session):
-        if getattr(session, "bot_game", False):
+        if getattr(session, "bot_game", False) is True:
             raise HTTPException(status_code=403, detail="Action unavailable in a certified bot game")
 
     @app.get("/health")
@@ -1185,7 +1185,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         await _guard_ai_ladder_cloud_active(app, session, current_user)
         tracks_auto_analysis = not is_ai_ladder_ranked_session(session) and bool(
             getattr(session.katrain, "analysis_allowed", True)
-        ) and not getattr(session, "bot_game", False)
+        ) and getattr(session, "bot_game", False) is not True
         if tracks_auto_analysis:
             # 这里从前还有一条独立的 `current_user is None -> 401 "Authentication required for
             # analyzed games"`。它只可能打到**无人认领**的会话（有主人的局 `guard_session_reader`
@@ -1281,7 +1281,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # 自然终局(双停)不经过认输 / 数子 / 超时,在这里收尾:先补分出胜负,再落账(N22)。只收尾**这一手造出来的**终局(r1 M1)。
         # AI 线程下出双停第二手时走的是 `manager.on_game_ended`,两条路是同一个函数、会话内串行。
         # 收尾必须在 `analysis_context` 之外:`persistent_analysis_activity` 在 `activity.lock` 里 yield,那把锁不许跨 await。
-        if end is not None and (not state.get("awaiting_count") or getattr(session, "bot_game", False)):
+        if end is not None and (not state.get("awaiting_count") or getattr(session, "bot_game", False) is True):
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state
@@ -2353,7 +2353,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
 
-        if getattr(session, "bot_game", False):
+        if getattr(session, "bot_game", False) is True:
             if wrote:
                 winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
                 result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
@@ -2553,7 +2553,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         多人局 / 跨平台局在各自端点里落账并广播 `game_end`,不走这里 —— 合并跨平台 N13 时,星阵人机局在下面这条早退
         **之前**分流(见 Task 12「合并指引」)。研究模式里按出的双停不是「下完了一局」(PRD N22 验收 3)。
         游客局照样补分出胜负,只是不落账。"""
-        if getattr(session, "bot_game", False):
+        if getattr(session, "bot_game", False) is True:
             await app.state.pvp_lobby_bots.finish_terminal(session, end)
             return
         if session.player_b_id is not None or session.player_w_id is not None:
@@ -2754,7 +2754,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
-        if getattr(session, "bot_game", False):
+        if getattr(session, "bot_game", False) is True:
             node = session.katrain.game.current_node
             try:
                 await asyncio.to_thread(session.katrain.ensure_current_score, node=node)
@@ -2895,6 +2895,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         bound = request.expected_node_id is not None
         local_pvp = getattr(session, "game_type", None) == "pvp_local"
+        bot_game = getattr(session, "bot_game", False) is True
         wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
@@ -2910,9 +2911,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         expected_node_id=request.expected_node_id,
                         color=request.color,
                     )
-                elif local_pvp:
-                    # Backward-compatible local caller: bind the verdict to the current turn here,
-                    # then run the same authoritative clock check as the newer kiosk client.
+                elif local_pvp or bot_game:
+                    # Bind legacy requests to the server's current turn. Bot games
+                    # must never use the unverified Galaxy timeout path.
                     cn = katrain.game.current_node
                     katrain(
                         "timeout",
@@ -2926,7 +2927,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 # 被拒前先刷新 last_state:随后的 GET /api/state 给出此刻的局面与计时基准,前端据此重同步。
                 state = session.katrain.get_state()
                 session.last_state = state
-                if local_pvp and e.reason == "clock_not_expired":
+                if (local_pvp or bot_game) and e.reason == "clock_not_expired":
                     raise HTTPException(status_code=409, detail={"code": "time_not_expired", "state": state})
                 if bound or e.reason != "already_ended":
                     raise
@@ -2935,11 +2936,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
 
-        if getattr(session, "bot_game", False):
-            if wrote:
-                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
-                await app.state.pvp_lobby_bots.finish(session, reason="timeout", result=result)
+        if bot_game:
+            if wrote and end is not None:
+                await app.state.pvp_lobby_bots.finish(session, reason="timeout", result=end.result)
             return {"session_id": session.session_id, "state": state}
 
         # Record game result for multiplayer
@@ -2994,7 +2993,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
         result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
 
-        if getattr(session, "bot_game", False):
+        if getattr(session, "bot_game", False) is True:
             with session.lock:
                 session.katrain._commit_end_state(result)
                 session.game_ended = True

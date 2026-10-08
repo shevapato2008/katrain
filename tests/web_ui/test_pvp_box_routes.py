@@ -14,6 +14,8 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
+from websockets.exceptions import ConnectionClosedOK
+from websockets.frames import Close
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -50,6 +52,7 @@ class Central:
         if self.offline:
             raise httpx.ConnectError("offline")
         if path in ("/api/state", "/api/move", "/api/resign", "/api/count/request", "/api/timeout"):
+            terminal = {"end_result": "W+R", "awaiting_count": False} if path == "/api/resign" else {}
             return httpx.Response(
                 200,
                 json={
@@ -59,6 +62,7 @@ class Central:
                         "board_size": [19, 19],
                         "stones": [["B", [3, 3], None, 1]],
                         "player_to_move": "W",
+                        **terminal,
                     },
                 },
                 request=httpx.Request(method, f"https://central.example{path}"),
@@ -81,6 +85,7 @@ class Central:
                     "game_type": "free",
                 },
             ],
+            "/api/sgf/save": {"sgf": "(;GM[1]SZ[19]RE[B+F])"},
         }[path]
         return httpx.Response(200, json=data, request=httpx.Request(method, f"https://central.example{path}"))
 
@@ -107,6 +112,14 @@ def box_app(tmp_path, monkeypatch):
     central = Central()
     central.bound_user_id = str(shadow["id"])
     app.state.pvp_box_bridge = PvpBoxBridge(central, app.state.box_sso, PvpBoxRooms(), lambda *_: "local-room")
+    previous_removed = app.state.session_manager.on_session_removed
+
+    def on_removed(session):
+        app.state.pvp_box_bridge.rooms.discard_local(session.session_id)
+        if previous_removed is not None:
+            previous_removed(session)
+
+    app.state.session_manager.on_session_removed = on_removed
     yield app, central, create_access_token(data={"sub": "alice"}, box_generation=12)
     engine.dispose()
 
@@ -174,6 +187,21 @@ class Upstream:
             )
 
 
+class FinishedUpstream(Upstream):
+    def __init__(self, state):
+        super().__init__({"type": "game_update", "state": state})
+        self.inbox.put_nowait({"type": "game_end", "data": {"reason": "forfeit", "winner_id": 811, "result": "B+F"}})
+        self.closed = False
+
+    async def __aexit__(self, *_):
+        self.closed = True
+
+    async def recv(self):
+        if self.inbox.empty():
+            raise ConnectionClosedOK(Close(1000, "session_closed"), Close(1000, "session_closed"), True)
+        return await super().recv()
+
+
 def test_box_lobby_websocket_forwards_to_central_and_rewrites_match(box_app, monkeypatch):
     app, _, token = box_app
     upstream = Upstream({"type": "lobby_update", "online_count": 2})
@@ -223,6 +251,52 @@ def test_room_websocket_projects_central_update_and_keeps_mapping_for_reconnect(
 
     assert mirror.last_state["stones"] == central_state["stones"]
     assert bridge.rooms.for_local(12, "local-room") is not None
+
+
+def test_normal_central_game_end_preserves_result_without_outage_and_releases_sockets(box_app, monkeypatch):
+    app, central, token = box_app
+    bridge = app.state.pvp_box_bridge
+    bridge.rewrite_match(12, 4, 811, {"type": "match_found", "session_id": "central-room", "my_color": "B"})
+    katrain = MagicMock()
+    katrain.get_state.return_value = {"game_type": "pvp_lobby", "board_size": [19, 19], "stones": []}
+    mirror = WebSession(session_id="local-room", katrain=katrain, user_id=4, player_b_id=4)
+    mirror.game_type = "pvp_lobby"
+    app.state.session_manager._sessions["local-room"] = mirror
+    vision = MagicMock(bound_session_id="local-room")
+    app.state.vision = vision
+    app.state.physical_play = MagicMock()
+    upstream = FinishedUpstream(
+        {"game_type": "free", "board_size": [19, 19], "stones": [["B", [3, 3], None, 1]], "player_to_move": "W"}
+    )
+    monkeypatch.setattr(bridge_module, "ws_connect", lambda *_args, **_kwargs: upstream)
+
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        with client.websocket_connect("/ws/local-room", headers={"Origin": "http://testserver"}) as ws:
+            assert ws.receive_json()["type"] == "game_update"
+            ended = ws.receive_json()
+            assert ended["type"] == "game_end"
+            with pytest.raises(WebSocketDisconnect) as closed:
+                ws.receive_json()
+            assert closed.value.code == 1000
+        state = client.get("/api/state", params={"session_id": "local-room"})
+        sgf = client.get("/api/sgf/save", params={"session_id": "local-room"})
+
+    assert upstream.closed is True
+    assert not mirror.sockets
+    assert not app.state.box_sso._sockets
+    assert mirror.game_ended is True
+    assert mirror.last_state["end_result"] == "B+F"
+    assert mirror.last_state["stones"] == [["B", [3, 3], None, 1]]
+    assert state.status_code == 200
+    assert state.json()["state"]["end_result"] == "B+F"
+    assert sgf.json()["sgf"] == "(;GM[1]SZ[19]RE[B+F])"
+    assert bridge.rooms.for_local(12, "local-room") is not None  # Result and SGF may still be read until local expiry.
+    assert not any(path == "/api/state" for _, path, _ in central.calls)
+    app.state.physical_play.enter_remote_disconnected.assert_not_called()
+    app.state.physical_play.on_game_state.assert_called()
+    app.state.session_manager.remove_session("local-room")
+    assert bridge.rooms.for_local(12, "local-room") is None
 
 
 def test_room_outage_reports_disconnected_closes_1013_and_pauses_vision(box_app):
@@ -323,6 +397,8 @@ def test_box_resign_uses_central_terminal_action_without_local_settlement(box_ap
     assert response.status_code == 200
     assert response.json()["session_id"] == "local-room"
     assert ("POST", "/api/resign", {"json": {"session_id": "central-room", "color": None}}) in central.calls
+    assert mirror.game_ended is True
+    assert mirror.last_state["end_result"] == "W+R"
     katrain.assert_not_called()
 
 

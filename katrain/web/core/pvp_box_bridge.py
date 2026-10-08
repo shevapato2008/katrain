@@ -138,6 +138,12 @@ class PvpBoxBridge:
         if not current or current.get("game_id") != incoming.get("game_id"):
             return incoming
         old_index, new_index = current.get("current_node_index"), incoming.get("current_node_index")
+        if (
+            current.get("end_result")
+            and not current.get("awaiting_count")
+            and (not incoming.get("end_result") or incoming.get("awaiting_count"))
+        ):
+            return current
         if type(old_index) is int and type(new_index) is int and old_index > new_index:
             return current
         return incoming

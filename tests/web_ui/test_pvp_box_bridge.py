@@ -270,6 +270,14 @@ def test_delayed_move_response_cannot_replace_newer_opponent_websocket_state():
     assert PvpBoxBridge.newer_state(delayed, current) is current
 
 
+def test_terminal_result_cannot_be_erased_by_same_node_update():
+    terminal = {"game_id": "g", "current_node_index": 2, "end_result": "B+F", "awaiting_count": False}
+    stale = {"game_id": "g", "current_node_index": 2, "end_result": None}
+    assert PvpBoxBridge.newer_state(terminal, stale) is terminal
+    pending_count = {"game_id": "g", "current_node_index": 2, "end_result": "终局", "awaiting_count": True}
+    assert PvpBoxBridge.newer_state(terminal, pending_count) is terminal
+
+
 @pytest.mark.asyncio
 async def test_physical_move_uses_central_room_and_returns_authoritative_state():
     remote = FakeRemote()

@@ -1233,6 +1233,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
             try:
+                if session.game_ended and isinstance(session.last_state, dict):
+                    room = bridge.rooms.for_local(app.state.box_sso.active_generation, session_id)
+                    if room is None:
+                        raise PvpBoxAuthError("Room is no longer current")
+                    bridge.check_user(room.generation, room.local_user_id)
+                    return {"session_id": session_id, "state": session.last_state}
                 payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
                 payload["state"] = apply_pvp_box_state(session_id, payload["state"])
                 return payload
@@ -3434,6 +3440,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         session = manager.get_session(local_session_id)
         bridge = app.state.pvp_box_bridge
         state = bridge.newer_state(session.last_state, state)
+        if state.get("end_result") and not state.get("awaiting_count"):
+            session.game_ended = True
         if state is session.last_state:
             return state
         session.last_state = state
@@ -3468,6 +3476,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
         """Relay a box-origin socket to the central authority without exposing its token."""
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+        from websockets.exceptions import ConnectionClosedOK
 
         await websocket.accept()
         app.state.box_sso.register_socket(websocket)
@@ -3499,6 +3508,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         except asyncio.CancelledError:
             pass
+        except ConnectionClosedOK as exc:
+            close = exc.rcvd
+            try:
+                await websocket.close(code=close.code if close is not None else 1000,
+                                      reason=close.reason if close is not None else "session_closed")
+            except Exception:
+                pass
         except PvpBoxAuthError:
             await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
             await websocket.close(code=1008)
@@ -3971,6 +3987,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     state = bridge.rewrite_state(generation, session_id, payload["state"])
                     state = apply_pvp_box_state(session_id, state)
                     return {**payload, "state": state}
+                if payload.get("type") == "game_end" and isinstance(payload.get("data"), dict):
+                    result = payload["data"].get("result")
+                    if isinstance(result, str) and result:
+                        state = session.last_state or session.katrain.get_state()
+                        state = {**state, "end_result": result, "awaiting_count": False, "degraded": False}
+                        session.game_ended = True
+                        apply_pvp_box_state(session_id, state)
                 return payload
 
             session.sockets.add(websocket)

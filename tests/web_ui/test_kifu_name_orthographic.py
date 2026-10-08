@@ -1017,6 +1017,124 @@ def test_raw_player_orthographic_name_applies_only_to_frozen_scope(monkeypatch):
         engine.dispose()
 
 
+def test_list_reuses_orthographic_batch_but_rechecks_source(monkeypatch):
+    from katrain.web.kifu import name_orthographic
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        counts = {"batch": 0, "source": 0}
+        original_batch = name_orthographic.persisted_batch_bindings
+        original_source = name_orthographic.verified_source_live
+
+        def count_batch(batch):
+            if batch.id == applied["batch_id"]:
+                counts["batch"] += 1
+            return original_batch(batch)
+
+        def count_source(conn, anchor):
+            counts["source"] += 1
+            return original_source(conn, anchor)
+
+        monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", count_batch)
+        monkeypatch.setattr(name_orthographic, "verified_source_live", count_source)
+        with Session(engine) as db:
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 1 and page.items[0].display_player_black == "劉元赫"
+        assert counts == {"batch": 1, "source": 2}
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("drift,changed", [
+    ("status", "undone"),
+    ("bundle_sha256", "f" * 64),
+    ("reviewed_artifact", {"changed": True}),
+])
+def test_list_refreshes_orthographic_batch_within_and_between_requests(monkeypatch, drift, changed):
+    from katrain.web.kifu import name_orthographic
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        original = name_orthographic.persisted_batch_bindings
+        calls = 0
+
+        def revoke_after_first_validation(batch):
+            nonlocal calls
+            context = original(batch)
+            if batch.id == applied["batch_id"]:
+                calls += 1
+                if calls == 1:
+                    with Session(engine) as writer:
+                        writer.query(KifuNameBatch).filter_by(id=batch.id).update({drift: changed})
+                        writer.commit()
+            return context
+
+        monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", revoke_after_first_validation)
+        with Session(engine) as db:
+            held_batch = db.get(KifuNameBatch, applied["batch_id"])
+            first = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert first.total == 1
+            assert first.items[0].display_player_black != "劉元赫"
+            second = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert getattr(held_batch, drift) == changed
+            assert second.total == 0
+    finally:
+        engine.dispose()
+
+
+def test_list_refreshes_orthographic_batch_on_new_request_with_held_orm(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            held_batch = db.get(KifuNameBatch, applied["batch_id"])
+            first = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert first.total == 1 and first.items[0].display_player_black == "劉元赫"
+            assert held_batch.status == "applied"
+
+            with Session(engine) as writer:
+                writer.query(KifuNameBatch).filter_by(id=applied["batch_id"]).update({"status": "undone"})
+                writer.commit()
+            assert held_batch.status == "applied"
+
+            second = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert second.total == 0
+            assert held_batch.status == "undone"
+    finally:
+        engine.dispose()
+
+
+def test_list_preserves_pending_orthographic_batch_change(monkeypatch):
+    from katrain.web.kifu import name_orthographic
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = fixture()
+    try:
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        original = name_orthographic.persisted_batch_bindings
+
+        def change_after_first_validation(batch):
+            context = original(batch)
+            if batch.id == applied["batch_id"] and context is not None:
+                batch.status = "undone"
+            return context
+
+        monkeypatch.setattr(name_orthographic, "persisted_batch_bindings", change_after_first_validation)
+        with Session(engine, autoflush=False) as db:
+            held_batch = db.get(KifuNameBatch, applied["batch_id"])
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="劉元赫", page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 1
+            assert page.items[0].display_player_black != "劉元赫"
+            assert held_batch.status == "undone" and held_batch in db.dirty
+    finally:
+        engine.dispose()
+
+
 def raw_anchor_for_review():
     engine, _, anchors, _ = fixture()
     engine.dispose()

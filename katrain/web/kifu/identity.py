@@ -3,6 +3,7 @@
 import hashlib
 import os
 import unicodedata
+from copy import deepcopy
 
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
@@ -100,7 +101,7 @@ def _approved_names(db: Session, model, owner_column: str, ids: set[int] | None 
     return query
 
 
-def _qualified_name_rows(db, query, model, owner_column, *entities):
+def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic_batch_contexts=None):
     """Validate persisted finite generation proofs with one batch read per name query."""
     from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
 
@@ -169,13 +170,25 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
             )
             if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
                 batch_ids.add(proof["batch_id"])
-    batches = (
-        {batch.id: batch for batch in db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))}
-        if batch_ids
-        else {}
-    )
+    use_contexts = orthographic_batch_contexts is not None and not (db.new or db.dirty or db.deleted)
+    batch_query = db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))
+    if use_contexts:
+        batch_query = batch_query.populate_existing()
+    batches = {batch.id: batch for batch in batch_query} if batch_ids else {}
     contexts = {key: persisted_batch_bindings(batch) for key, batch in batches.items()}
-    orthographic_contexts = {key: name_orthographic.persisted_batch_bindings(batch) for key, batch in batches.items()}
+    orthographic_contexts = {}
+    for key, batch in batches.items():
+        cached = orthographic_batch_contexts.get(key) if use_contexts else None
+        snapshot = (batch.status, batch.bundle_sha256, batch.reviewed_artifact)
+        if cached is not None and batch.status == "applied" and cached[:3] == snapshot:
+            orthographic_contexts[key] = cached[3]
+            continue
+        if use_contexts:
+            orthographic_batch_contexts.pop(key, None)
+        context = name_orthographic.persisted_batch_bindings(batch)
+        orthographic_contexts[key] = context
+        if use_contexts and context is not None:
+            orthographic_batch_contexts[key] = (*deepcopy(snapshot), context)
     positive_batch_ids = {evidence.research_payload.get("normative_ja_ko", {}).get("batch_id")
                           for name, evidence, *_ in rows if positive_proof(name, evidence)
                           and isinstance(evidence.research_payload, dict)
@@ -224,7 +237,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
     return result
 
 
-def _approved_raw_player_names(db, *, values=None, lang=None, display=None):
+def _approved_raw_player_names(db, *, values=None, lang=None, display=None, orthographic_batch_contexts=None):
     """Return approved raw names with a verified finite scope when one was signed."""
     from katrain.web.kifu.name_candidates import canonical_sha256
 
@@ -238,7 +251,8 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None):
     if display is not None:
         query = query.filter(or_(KifuRawPlayerName.display_name == display,
                                  func.lower(KifuRawPlayerName.display_name) == display.lower()))
-    rows = _qualified_name_rows(db, query, KifuRawPlayerName, "raw_player_id", KifuRawPlayerValue.raw_value)
+    rows = _qualified_name_rows(db, query, KifuRawPlayerName, "raw_player_id", KifuRawPlayerValue.raw_value,
+                                orthographic_batch_contexts=orthographic_batch_contexts)
     batch_ids = set()
     for _, evidence, _ in rows:
         payload = evidence.research_payload
@@ -558,7 +572,9 @@ def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
-def strict_matching_names(db: Session, query: str, *, raw_name_rows=None) -> tuple[set[int], set[int], set[str], set[int]]:
+def strict_matching_names(
+    db: Session, query: str, *, raw_name_rows=None, orthographic_batch_contexts=None
+) -> tuple[set[int], set[int], set[str], set[int]]:
     """Expand only a unique approved owner across identity and raw-name scopes."""
     needle = normalize_alias(query)
     if not needle:
@@ -571,7 +587,10 @@ def strict_matching_names(db: Session, query: str, *, raw_name_rows=None) -> tup
         identity_matches.append(
             {
                 getattr(row, owner)
-                for row, _ in _qualified_name_rows(db, rows, model, owner)
+                for row, _ in _qualified_name_rows(
+                    db, rows, model, owner,
+                    orthographic_batch_contexts=orthographic_batch_contexts if model is KifuPlayerName else None
+                )
                 if normalize_alias(row.display_name) == needle
             }
         )
@@ -590,7 +609,8 @@ def strict_matching_names(db: Session, query: str, *, raw_name_rows=None) -> tup
             raw_matches.append({raw for _, raw in matched})
             raw_event_name_ids = {name.id for name, _ in matched}
             continue
-        scoped_matches = _approved_raw_player_names(db, display=query)
+        scoped_matches = _approved_raw_player_names(db, display=query,
+                                                    orthographic_batch_contexts=orthographic_batch_contexts)
         if raw_name_rows is not None:
             raw_name_rows.extend(scoped_matches)
         matches = {
@@ -724,7 +744,9 @@ def strict_selected_event_search_ids(
     return approved_ids
 
 
-def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events=None):
+def strict_display_maps(
+    db: Session, albums: list, lang: str, *, selected_events=None, orthographic_batch_contexts=None
+):
     """Read names for the current page in bounded, batched queries."""
     player_ids = {v for album in albums for v in (album.black_player_id, album.white_player_id) if v}
     selected_events = selected_events or {}
@@ -736,7 +758,8 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
     players = {
         row.player_id: row.display_name
         for row, _ in _qualified_name_rows(
-            db, _approved_names(db, KifuPlayerName, "player_id", player_ids, lang), KifuPlayerName, "player_id"
+            db, _approved_names(db, KifuPlayerName, "player_id", player_ids, lang), KifuPlayerName, "player_id",
+            orthographic_batch_contexts=orthographic_batch_contexts
         )
     }
     event_rows = _qualified_name_rows(
@@ -765,7 +788,9 @@ def strict_display_maps(db: Session, albums: list, lang: str, *, selected_events
             )
             continue
         raw_maps.append({raw: (name.display_name, scope)
-                         for name, raw, scope in _approved_raw_player_names(db, values=values, lang=lang)})
+                         for name, raw, scope in _approved_raw_player_names(
+                             db, values=values, lang=lang, orthographic_batch_contexts=orthographic_batch_contexts
+                         )})
     album_ids = [album.id for album in albums]
     sources: dict[int, set[str]] = {album_id: set() for album_id in album_ids}
     if album_ids:

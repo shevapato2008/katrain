@@ -122,6 +122,7 @@ async def list_kifu_albums(
         )
     requested_lang = lang
     lang = name_display_language(lang)
+    orthographic_batch_contexts = {}
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
     visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
@@ -132,7 +133,7 @@ async def list_kifu_albums(
         strict = strict_names_enabled()
         raw_name_rows = []
         player_ids, event_ids, raw_players, raw_event_name_ids = strict_matching_names(
-            db, q, raw_name_rows=raw_name_rows
+            db, q, raw_name_rows=raw_name_rows, orthographic_batch_contexts=orthographic_batch_contexts
         )
         selected_event_ids = strict_selected_event_search_ids(db, q, raw_event_name_ids, event_ids)
         if not strict:
@@ -222,7 +223,7 @@ async def list_kifu_albums(
     fallback_maps = None if strict else display_maps(db, records, lang, selected_events=selected_events)
     obscured_event_ids = obscured_program_event_ids(db, records, selected_events=selected_events)
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
-        db, records, lang, selected_events=selected_events
+        db, records, lang, selected_events=selected_events, orthographic_batch_contexts=orthographic_batch_contexts
     )
     return KifuAlbumListResponse(
         items=[

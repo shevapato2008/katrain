@@ -1383,7 +1383,7 @@ def capture_source_check(
 
 
 def validate_primary_orthographic_anchor(record: dict) -> dict:
-    """Validate a reviewed Chinese original or an explicitly preserved official KBA Hanja name."""
+    """Validate a reviewed original or an explicitly preserved official KBA Hanja name."""
     _require(
         isinstance(record, dict)
         and record.get("evidence_kind") == "primary_orthographic"
@@ -1400,29 +1400,34 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
     owner_key(owner, "tw")
     _require(owner["kind"] in {"player", "raw_player"}, "orthographic names only permit players")
     retained = content.get("reference_kind") == "official_hanja_preserved"
-    verified_display = content.get("reference_kind") == "verified_chinese_display"
+    verified_sources = {
+        "verified_chinese_display": ("cn", "zh-Hans", "Hans"),
+        "verified_japanese_display": ("jp", "ja", "Kanji"),
+    }
+    verified_display = content.get("reference_kind") in verified_sources
     original = content.get("original_name")
-    _require(content.get("reference_kind") in {None, "official_hanja_preserved", "verified_chinese_display"},
+    _require(content.get("reference_kind") in {None, "official_hanja_preserved", *verified_sources},
              "unknown primary orthographic reference kind")
     if verified_display:
+        source_language, source_lang, source_script = verified_sources[content["reference_kind"]]
         _require(owner["kind"] == "player" and set(content) == {
             "reference_kind", "owner", "original_name", "source_lang", "source_script", "binding"
-        } and content.get("source_lang") == "zh-Hans" and content.get("source_script") == "Hans"
+        } and content.get("source_lang") == source_lang and content.get("source_script") == source_script
         and isinstance(original, str) and 2 <= len(original) <= 16
         and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
-                 "verified Chinese display requires same-player CN source")
+                 "verified display requires same-player Han source")
         binding = content.get("binding")
         _require(isinstance(binding, dict) and set(binding) == {
             "kind", "owner", "source_name", "source_evidence", "source_batch"
-        } and binding.get("kind") == "verified_chinese_display" and binding.get("owner") == owner,
-                 "verified Chinese display binding invalid")
+        } and binding.get("kind") == content["reference_kind"] and binding.get("owner") == owner,
+                 "verified display binding invalid")
         name, evidence, batch = (binding.get(key) for key in ("source_name", "source_evidence", "source_batch"))
         _require(isinstance(name, dict) and isinstance(evidence, dict) and isinstance(batch, dict)
                  and set(batch) == {"id", "bundle_sha256", "evidence_creation_sha256"}
                  and type(batch.get("id")) is int and batch["id"] > 0
                  and bool(_HEX_SHA256.fullmatch(str(batch.get("bundle_sha256"))))
                  and batch.get("evidence_creation_sha256") == registry_sha256(evidence),
-                 "verified Chinese display source batch proof invalid")
+                 "verified display source batch proof invalid")
         payload = evidence.get("research_payload")
         candidate = payload.get("candidate") if isinstance(payload, dict) else None
         research = payload.get("research") if isinstance(payload, dict) else None
@@ -1435,7 +1440,7 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             source_reviewed = None
         _require(
             name.get("player_id") == owner.get("id")
-            and name.get("lang") == evidence.get("lang") == "cn"
+            and name.get("lang") == evidence.get("lang") == source_language
             and name.get("display_name") == evidence.get("candidate_name") == original
             and name.get("status") == "verified"
             and name.get("decision_kind") == evidence.get("decision_kind") == "conventional"
@@ -1448,7 +1453,7 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             and source_reviewed <= produced_at
             and isinstance(candidate, dict)
             and candidate.get("owner") == owner
-            and candidate.get("lang") == "cn"
+            and candidate.get("lang") == source_language
             and candidate.get("display_name") == original
             and candidate.get("decision_kind") == "conventional"
             and candidate.get("review_status") == "approved"
@@ -1458,7 +1463,7 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
             and candidate.get("research_sha256") == registry_sha256(research)
             and payload.get("primary_orthographic") is None
             and payload.get("transliteration") is None,
-            "verified Chinese display requires complete qualified conventional CN name and evidence",
+            "verified display requires complete qualified conventional source name and evidence",
         )
         return content
     required = {"owner", "original_name", "source_lang", "source_script", "binding", "sources"}

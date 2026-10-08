@@ -95,6 +95,22 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             _require(digest not in rules, "duplicate orthographic rule")
             rules[digest], maps[digest] = rule, None
             continue
+        japanese_display = content.get("reference_kind") == "verified_japanese_display"
+        if japanese_display and content.get("lang") == "cn":
+            _require(content == {
+                "version": VERSION,
+                "reference_kind": "verified_japanese_display",
+                "lang": "cn",
+                "source_lang": "ja",
+                "source_script": "Kanji",
+                "target_script": "Kanji",
+                "target_region": "CN",
+                "preservation": "exact_codepoints",
+            }, "Japanese original CN display rule must preserve exact codepoints")
+            digest = registry_sha256(rule)
+            _require(digest not in rules, "duplicate orthographic rule")
+            rules[digest], maps[digest] = rule, None
+            continue
         _require(
             set(content)
             == {
@@ -108,12 +124,15 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 "excluded_characters",
                 "excluded_names",
                 "exceptions_checked",
-            },
+            }
+            | ({"reference_kind"} if japanese_display else set()),
             "orthographic rule fields invalid",
         )
-        expected = {"tw": ("zh-Hans", "Hans", "Hant", "TW"), "cn": ("zh-Hant", "Hant", "Hans", "CN")}
+        expected = ({"tw": ("ja", "Kanji", "Hant", "TW")} if japanese_display else
+                    {"tw": ("zh-Hans", "Hans", "Hant", "TW"), "cn": ("zh-Hant", "Hant", "Hans", "CN")})
         _require(
             content.get("version") == VERSION
+            and (not japanese_display or content.get("reference_kind") == "verified_japanese_display")
             and content.get("lang") in expected
             and tuple(content.get(k) for k in ("source_lang", "source_script", "target_script", "target_region"))
             == expected[content["lang"]],
@@ -218,7 +237,9 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             owner = member.get("owner")
             key = owner_key(owner, member.get("lang"))
             raw = owner["kind"] == "raw_player"
-            verified_display = member.get("reference_kind") == "verified_chinese_display"
+            reference_kind = member.get("reference_kind")
+            verified_display = reference_kind in {"verified_chinese_display", "verified_japanese_display"}
+            japanese_display = reference_kind == "verified_japanese_display"
             _require(
                 set(member)
                 == {
@@ -255,19 +276,23 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 "orthographic member source/owner scope mismatch",
             )
             _require(
-                (verified_display and source.get("reference_kind") == "verified_chinese_display" and r["lang"] == "tw")
-                or (not verified_display and source.get("reference_kind") != "verified_chinese_display"),
+                (verified_display and source.get("reference_kind") == reference_kind
+                 and r.get("reference_kind") == (reference_kind if japanese_display else None)
+                 and (japanese_display or r["lang"] == "tw"))
+                or (not verified_display and source.get("reference_kind") not in
+                    {"verified_chinese_display", "verified_japanese_display"}
+                    and r.get("reference_kind") != "verified_japanese_display"),
                 "orthographic verified display reference mismatch",
             )
             if verified_display:
                 _require(member.get("name_preimage_sha256") is None,
-                         "verified Chinese display requires absent TW name preimage")
+                         "verified display requires absent target name preimage")
                 binding = source["binding"]
                 source_name, source_evidence = binding["source_name"], binding["source_evidence"]
                 _require(
                     any(
                         existing.get("owner") == owner
-                        and existing.get("lang") == "cn"
+                        and existing.get("lang") == ("jp" if japanese_display else "cn")
                         and existing.get("display_name") == original
                         and existing.get("decision_kind") == "conventional"
                         and existing.get("review_status") == "approved"
@@ -275,7 +300,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                         and existing.get("evidence_sha256") == registry_sha256(source_evidence)
                         for existing in snapshot
                     ),
-                    "orthographic verified CN source absent from qualified snapshot",
+                    "orthographic verified source absent from qualified snapshot",
                 )
             _require(
                 _time(batch["approval"]["produced_at"]) >= _time(anchor["approval"]["reviewed_at"])
@@ -287,7 +312,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     all(member.get(k) == source.get(k) for k in ("raw_value", "raw_display_scope_sha256")),
                     "orthographic raw scope mismatch",
                 )
-            if retained:
+            if retained or japanese_display and r["lang"] == "cn":
                 output = original
             else:
                 exclusions = EXCLUDED_CHARACTERS | set(r["excluded_characters"])
@@ -317,7 +342,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     not (
                         existing["owner"] == owner
                         and existing["lang"] == member["lang"]
-                        and (retained or existing.get("decision_kind") == "conventional")
+                        and (retained or verified_display or existing.get("decision_kind") == "conventional")
                     ),
                     "orthographic cannot replace known conventional name",
                 )
@@ -444,13 +469,13 @@ def persisted_batch_bindings(batch):
 
 
 def verified_source_live(conn, anchor):
-    """Recheck the exact conventional CN source and its creation record."""
+    """Recheck the exact conventional source and its creation record."""
     from katrain.web.core.models_db import KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayerName
     from katrain.web.kifu.name_batch import _image
 
     try:
         source = anchor["content"]
-        if source.get("reference_kind") != "verified_chinese_display":
+        if source.get("reference_kind") not in {"verified_chinese_display", "verified_japanese_display"}:
             return True
         binding = source["binding"]
         name, evidence, batch = (binding[key] for key in ("source_name", "source_evidence", "source_batch"))

@@ -283,7 +283,7 @@ def _check_verified_sources(conn, evidence_records):
 
     for anchor in evidence_records:
         if anchor.get("evidence_kind") == "primary_orthographic":
-            _fail(verified_source_live(conn, anchor), "verified CN source preimage or creation proof changed")
+            _fail(verified_source_live(conn, anchor), "verified source preimage or creation proof changed")
 
 
 def _values_for_table(table, image: dict) -> dict:

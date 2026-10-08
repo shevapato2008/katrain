@@ -196,6 +196,26 @@ def test_collects_current_wikipedia_official_and_profile_sources(engine):
     assert pages(engine, 18) == []
 
 
+def test_collects_goratings_captured_without_registered_www(engine):
+    from katrain.web.kifu.player_pages import sync_player_pages
+
+    url = "https://goratings.org/en/players/1.html"
+
+    def use_rating(research):
+        research["source_checks"][0].update(source_id="rating-en", url=url)
+
+    mutate_research(engine, use_rating)
+    sync_player_pages(engine, apply=True)
+    assert {page["url"] for page in pages(engine)} == {url, OFFICIAL}
+
+
+@pytest.mark.parametrize("host", ["goratings.org.example.com", "www.nihonkiin.or.jp", "en.wikipedia.org"])
+def test_goratings_alias_does_not_accept_other_publishers(host):
+    from katrain.web.kifu.player_pages import _source
+
+    assert _source(f"https://{host}/en/players/1.html", REGISTRY, "rating-en") is None
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

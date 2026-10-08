@@ -55,7 +55,10 @@ def _source(url, registry, source_id=None):
             continue
         home = urlparse(source.get("home_url", ""))
         prefix = home.path.rstrip("/")
-        if parsed.hostname == home.hostname and (
+        same_publisher = parsed.hostname == home.hostname or {parsed.hostname, home.hostname} <= {
+            "goratings.org", "www.goratings.org"
+        }
+        if same_publisher and (
             not prefix or parsed.path == prefix or parsed.path.startswith(prefix + "/")
         ):
             matches.append((len(prefix), source))

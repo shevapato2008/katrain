@@ -5,6 +5,7 @@ import unicodedata
 
 from sqlalchemy import select
 
+from katrain.web.core.models_db import KifuPlayerName
 from katrain.web.kifu.name_evidence import (
     EvidenceError,
     owner_key,
@@ -290,7 +291,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 "orthographic verified display reference mismatch",
             )
             if verified_display:
-                _require(member.get("name_preimage_sha256") is None,
+                _require(not japanese_display or member.get("name_preimage_sha256") is None,
                          "verified display requires absent target name preimage")
                 binding = source["binding"]
                 source_name, source_evidence = binding["source_name"], binding["source_evidence"]
@@ -436,6 +437,20 @@ def validate_orthographic_candidate(row, bindings):
         and _time(binder["bound_at"]) <= _time(batch["content"]["frozen_at"]),
         "orthographic final review must sign independently bound preimage before freeze",
     )
+    if member.get("reference_kind") == "verified_chinese_display" and row["name_preimage_sha256"] is not None:
+        target = binder.get("target_name_preimage")
+        _require(
+            row.get("lang") == "tw"
+            and isinstance(target, dict)
+            and set(target) == set(KifuPlayerName.__table__.columns.keys())
+            and type(target.get("id")) is int and target["id"] > 0
+            and type(target.get("player_id")) is int and target["player_id"] == row["owner"]["id"]
+            and target.get("lang") == "tw"
+            and target.get("status") == "review"
+            and target.get("evidence_id") is None
+            and registry_sha256(target) == row["name_preimage_sha256"],
+            "verified Chinese display requires exact evidence-free review target preimage",
+        )
 
 
 def persisted_batch_bindings(batch):

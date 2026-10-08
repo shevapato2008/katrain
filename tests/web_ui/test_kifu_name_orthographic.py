@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints import kifu
 from katrain.web.core.models_db import KifuAlbum, KifuPlayer, KifuPlayerName, KifuNameResearchEvidence, KifuNameBatch, KifuNameChange
-from katrain.web.kifu.name_batch import apply_bundle, catalog_snapshot_sha, dry_run_bundle, BatchError, approved_name_snapshot, name_preimage_sha256
+from katrain.web.kifu.name_batch import apply_bundle, catalog_snapshot_sha, dry_run_bundle, undo_batch, BatchError, approved_name_snapshot, name_preimage_sha256, _image
 from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
@@ -254,6 +254,111 @@ def verified_chinese_display_fixture(original="加纳一夫", output="加納一�
     )
     refresh(bundle, anchor)
     return engine, bundle, anchors, inventory, snapshot
+
+
+def legacy_tw_review_fixture(*, source_lang="cn"):
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture(source_lang=source_lang)
+    with Session(engine) as db:
+        db.add(KifuPlayerName(player_id=17, lang="tw", display_name="舊待核名稱", status="review",
+                              reference_kind="legacy_unverified"))
+        db.flush()
+        target = db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one()
+        before = _image(db.connection(), KifuPlayerName.__table__, target.id)
+        db.commit()
+    row = bundle["candidates"][0]
+    row["name_preimage_sha256"] = canonical_sha256(before)
+    row["preimage_binding"]["name_preimage_sha256"] = row["name_preimage_sha256"]
+    row["preimage_binding"]["target_name_preimage"] = before
+    refresh(bundle, anchors[0])
+    return engine, bundle, anchors, inventory, snapshot, before
+
+
+def test_verified_chinese_display_replaces_exact_legacy_review_and_undoes(monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory, snapshot, before = legacy_tw_review_fixture()
+    try:
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert report["write_ready"], report
+        assert dry_run_bundle(engine, bundle, registry(), inventory, anchors)["write_ready"]
+        applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+        assert applied["status"] == "applied"
+        with Session(engine) as db:
+            target = db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one()
+            assert target.id == before["id"]
+            assert target.status == "verified" and target.display_name == "加納一夫"
+            change = db.query(KifuNameChange).filter_by(batch_id=applied["batch_id"],
+                                                       target_table="kifu_player_names", target_row_id=before["id"]).one()
+            assert change.before_image == before
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20,
+                                                     lang="tw", db=db))
+            assert page.total == 1 and page.items[0].display_player_black == "加納一夫"
+        undone = undo_batch(engine, applied["batch_id"])
+        assert undone["status"] == "undone"
+        with Session(engine) as db:
+            assert _image(db.connection(), KifuPlayerName.__table__, before["id"]) == before
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("drift", ["status", "evidence", "owner", "lang", "hash", "missing_image",
+                                   "incomplete_image", "id"])
+def test_verified_chinese_display_rejects_invalid_review_target_proof(drift):
+    engine, bundle, anchors, inventory, snapshot, _ = legacy_tw_review_fixture()
+    try:
+        row = bundle["candidates"][0]
+        binding = row["preimage_binding"]
+        target = binding["target_name_preimage"]
+        if drift == "status":
+            target["status"] = "verified"
+        elif drift == "evidence":
+            target["evidence_id"] = 42
+        elif drift == "owner":
+            target["player_id"] = 99
+        elif drift == "lang":
+            target["lang"] = "cn"
+        elif drift == "hash":
+            row["name_preimage_sha256"] = "f" * 64
+            binding["name_preimage_sha256"] = row["name_preimage_sha256"]
+        elif drift == "missing_image":
+            del binding["target_name_preimage"]
+        elif drift == "incomplete_image":
+            del target["created_at"]
+        else:
+            target["id"] = 0
+        if drift in {"status", "evidence", "owner", "lang", "incomplete_image", "id"}:
+            row["name_preimage_sha256"] = canonical_sha256(target)
+            binding["name_preimage_sha256"] = row["name_preimage_sha256"]
+        refresh(bundle, anchors[0])
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"], report
+        with pytest.raises(BatchError):
+            apply_bundle(engine, bundle, registry(), inventory, anchors)
+    finally:
+        engine.dispose()
+
+
+def test_verified_chinese_display_rejects_review_target_changed_after_binding():
+    engine, bundle, anchors, inventory, _, before = legacy_tw_review_fixture()
+    try:
+        with Session(engine) as db:
+            db.get(KifuPlayerName, before["id"]).display_name = "後來改動"
+            db.commit()
+        with pytest.raises(BatchError, match="preimage changed"):
+            apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            assert db.get(KifuPlayerName, before["id"]).display_name == "後來改動"
+    finally:
+        engine.dispose()
+
+
+def test_verified_japanese_display_still_rejects_existing_review_target():
+    engine, bundle, anchors, inventory, snapshot, _ = legacy_tw_review_fixture(source_lang="jp")
+    try:
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"], report
+        assert any("absent target name preimage" in error for error in report["errors"])
+    finally:
+        engine.dispose()
 
 
 @pytest.mark.parametrize("original,output", [("加纳一夫", "加納一夫"), ("金井新一", "金井新一")])

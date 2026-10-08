@@ -479,6 +479,42 @@ def test_verified_japanese_tw_requires_finite_glyphs_and_no_alias_collision(drif
         engine.dispose()
 
 
+@pytest.mark.parametrize("drift", ["late_foreign_collision", "split_source_proof", "missing_language"])
+def test_verified_japanese_snapshot_checks_complete_rows_after_indexing(drift):
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture(
+        "加纳一夫", "加納一夫", source_lang="jp", lang="tw"
+    )
+    try:
+        if drift == "late_foreign_collision":
+            snapshot.extend({"owner": {"kind": "player", "id": 1000 + index}, "lang": "tw",
+                             "display_name": f"测试名称{index}", "decision_kind": "conventional",
+                             "review_status": "approved"} for index in range(100))
+            snapshot.append({"owner": {"kind": "player", "id": 99}, "lang": "tw",
+                             "display_name": "加納一夫", "decision_kind": "conventional",
+                             "review_status": "approved"})
+        elif drift == "split_source_proof":
+            source_row = snapshot[0]
+            duplicate = deepcopy(source_row)
+            source_row["evidence_sha256"] = "f" * 64
+            duplicate["display_name"] = "別人"
+            snapshot.append(duplicate)
+        else:
+            snapshot.append({"owner": {"kind": "player", "id": 99},
+                             "display_name": "別人", "decision_kind": "conventional",
+                             "review_status": "approved"})
+        bundle["primary_orthographic"]["batches"][0]["content"]["approved_name_snapshot_sha256"] = canonical_sha256(snapshot)
+        refresh(bundle, anchors[0])
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"]
+        if drift == "missing_language":
+            assert any("lang" in error for error in report["errors"]), report
+            return
+        expected = "approved-name collision" if drift == "late_foreign_collision" else "verified source absent"
+        assert any(expected in error for error in report["errors"]), report
+    finally:
+        engine.dispose()
+
+
 @pytest.mark.parametrize("original", ["加な一夫", "加A一夫", "加1一夫", "加隆一夫", "加々一夫",
                                        "加 一夫", "加\ufe00一夫", "加", "加" * 17])
 def test_verified_japanese_display_rejects_non_unified_codepoints_before_normalization(original):
@@ -1031,10 +1067,14 @@ def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, 
     # Known exceptional characters are irrelevant to measuring this clean batch.
     for member, row in zip(members, rows):
         member["rule_sha256"] = row["rule_sha256"] = rule_hash
+    snapshot = [{"owner": {"kind": "player", "id": 2000 + index}, "lang": "tw",
+                 "display_name": f"样本{index}", "decision_kind": "conventional", "review_status": "approved"}
+                for index in range(100)]
     batch["content"].update(
         rule_sha256=rule_hash,
         members=members,
         members_sha256=canonical_sha256(members),
+        approved_name_snapshot_sha256=canonical_sha256(snapshot),
         complete_name_review=deepcopy(members),
         sampled_members=[canonical_sha256(m) for m in members[:20]],
     )
@@ -1045,7 +1085,7 @@ def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, 
     bundle["candidates"] = rows
     artifact = {
         "bundle": bundle,
-        "approved_name_snapshot": [],
+        "approved_name_snapshot": snapshot,
         "orthographic_anchors": sources,
         "orthographic_anchor_hashes": sorted(canonical_sha256(a) for a in sources),
         "research_hashes": sorted(canonical_sha256(a) for a in sources),
@@ -1057,6 +1097,8 @@ def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, 
     source_ids = {id(source) for source in sources}
     source_hashes = []
     actual_hash = orthographic.registry_sha256
+    actual_normalize = orthographic._normalize
+    normalized_count = []
 
     def counted(value):
         if value is batch:
@@ -1066,8 +1108,14 @@ def test_runtime_context_hashes_entire_batch_once_and_not_per_name(monkeypatch, 
         return actual_hash(value)
 
     monkeypatch.setattr(orthographic, "registry_sha256", counted)
+    def counted_normalize(value):
+        normalized_count.append(value)
+        return actual_normalize(value)
+
+    monkeypatch.setattr(orthographic, "_normalize", counted_normalize)
     context = orthographic.persisted_batch_bindings(persisted)
     assert context is not None
+    assert len(normalized_count) <= len(snapshot) + count * 2
     assert len(hashes) == 1
     assert len(source_hashes) == count and set(source_hashes) == source_ids
     for row, source in zip(rows, sources):

@@ -57,6 +57,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
         isinstance(snapshot, list) and bool(_HEX_SHA256.fullmatch(str(catalog_sha256))),
         "orthographic approved-name/catalog snapshots required",
     )
+    snapshot_by_owner_lang, snapshot_by_normalized = {}, {}
     for row in snapshot:
         _require(
             isinstance(row, dict)
@@ -64,7 +65,11 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             and row.get("review_status") == "approved",
             "orthographic approved-name snapshot invalid",
         )
-        owner_key(row.get("owner"), row.get("lang"))
+        snapshot_key = owner_key(row.get("owner"), row["lang"])
+        snapshot_by_owner_lang.setdefault(snapshot_key, []).append(row)
+        if isinstance(row.get("lang"), str):
+            normalized_key = (row["lang"], _normalize(row["display_name"]))
+            snapshot_by_normalized.setdefault(normalized_key, set()).add(snapshot_key)
     _require(
         isinstance(section["rules"], list)
         and section["rules"]
@@ -289,16 +294,20 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                          "verified display requires absent target name preimage")
                 binding = source["binding"]
                 source_name, source_evidence = binding["source_name"], binding["source_evidence"]
+                source_lang = "jp" if japanese_display else "cn"
+                source_rows = snapshot_by_owner_lang.get(owner_key(owner, source_lang), ())
+                source_name_sha256 = registry_sha256(source_name)
+                source_evidence_sha256 = registry_sha256(source_evidence)
                 _require(
                     any(
                         existing.get("owner") == owner
-                        and existing.get("lang") == ("jp" if japanese_display else "cn")
+                        and existing.get("lang") == source_lang
                         and existing.get("display_name") == original
                         and existing.get("decision_kind") == "conventional"
                         and existing.get("review_status") == "approved"
-                        and existing.get("name_sha256") == registry_sha256(source_name)
-                        and existing.get("evidence_sha256") == registry_sha256(source_evidence)
-                        for existing in snapshot
+                        and existing.get("name_sha256") == source_name_sha256
+                        and existing.get("evidence_sha256") == source_evidence_sha256
+                        for existing in source_rows
                     ),
                     "orthographic verified source absent from qualified snapshot",
                 )
@@ -337,23 +346,15 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             )
             normalized = (member["lang"], _normalize(output))
             _require(normalized not in outputs or outputs[normalized] == owner, "orthographic output collision")
-            for existing in snapshot:
-                _require(
-                    not (
-                        existing["owner"] == owner
-                        and existing["lang"] == member["lang"]
-                        and (retained or verified_display or existing.get("decision_kind") == "conventional")
-                    ),
-                    "orthographic cannot replace known conventional name",
-                )
-                _require(
-                    not (
-                        existing["owner"] != owner
-                        and existing["lang"] == member["lang"]
-                        and _normalize(existing["display_name"]) == normalized[1]
-                    ),
-                    "orthographic approved-name collision",
-                )
+            _require(
+                not any(retained or verified_display or existing.get("decision_kind") == "conventional"
+                        for existing in snapshot_by_owner_lang.get(key, ())),
+                "orthographic cannot replace known conventional name",
+            )
+            _require(
+                all(existing_key == key for existing_key in snapshot_by_normalized.get(normalized, ())),
+                "orthographic approved-name collision",
+            )
             for alias in content["known_aliases"]:
                 _require(
                     isinstance(alias, dict) and set(alias) == {"owner", "name"} and isinstance(alias.get("name"), str),

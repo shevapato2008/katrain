@@ -115,6 +115,16 @@ class PvpBoxBridge:
         self.rooms = rooms
         self.make_mirror = make_mirror
 
+    @staticmethod
+    def newer_state(current: dict | None, incoming: dict) -> dict:
+        """Do not roll a mirror back when a move reply races a newer room frame."""
+        if not current or current.get("game_id") != incoming.get("game_id"):
+            return incoming
+        old_index, new_index = current.get("current_node_index"), incoming.get("current_node_index")
+        if type(old_index) is int and type(new_index) is int and old_index > new_index:
+            return current
+        return incoming
+
     def check_user(self, generation: int, local_user_id: int) -> None:
         if (
             not self.box_sso.validates(generation)

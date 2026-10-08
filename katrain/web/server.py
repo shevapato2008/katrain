@@ -1222,7 +1222,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             try:
                 payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
-                apply_pvp_box_state(session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(session_id, payload["state"])
                 return payload
             except PvpBoxAuthError as exc:
                 raise HTTPException(status_code=401, detail=str(exc)) from exc
@@ -1252,7 +1252,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if coords is None and not request.pass_move:
                     raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
                 payload = await bridge.forward_move(app.state.box_sso.active_generation, request.session_id, coords=coords)
-                apply_pvp_box_state(request.session_id, payload["state"])
+                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"])
                 manager.broadcast_to_session(request.session_id, {"type": "game_update", "state": payload["state"]})
                 return payload
             except PvpBoxAuthError as exc:
@@ -3413,13 +3413,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def apply_pvp_box_state(local_session_id: str, state: dict) -> None:
+    def apply_pvp_box_state(local_session_id: str, state: dict) -> dict:
         session = manager.get_session(local_session_id)
+        bridge = app.state.pvp_box_bridge
+        state = bridge.newer_state(session.last_state, state)
+        if state is session.last_state:
+            return state
         session.last_state = state
         physical_play = getattr(app.state, "physical_play", None)
         vision = getattr(app.state, "vision", None)
         if physical_play is not None and getattr(vision, "bound_session_id", None) == local_session_id:
             physical_play.on_game_state(state)
+        return state
 
     async def forward_box_pvp_action(session, current_user, method, path, body=None):
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
@@ -3439,7 +3444,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except httpx.HTTPStatusError as exc:
             raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if isinstance(payload.get("state"), dict):
-            apply_pvp_box_state(session.session_id, payload["state"])
+            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"])
             manager.broadcast_to_session(session.session_id, {"type": "game_update", "state": payload["state"]})
         return payload
 
@@ -3947,7 +3952,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             def transform_room(payload):
                 if payload.get("type") == "game_update" and isinstance(payload.get("state"), dict):
                     state = bridge.rewrite_state(generation, session_id, payload["state"])
-                    apply_pvp_box_state(session_id, state)
+                    state = apply_pvp_box_state(session_id, state)
                     return {**payload, "state": state}
                 return payload
 
@@ -4927,11 +4932,13 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 orchestrator.enter_remote_disconnected()
             _rearm_detection()
             return 0.5
-        session.last_state = payload["state"]
-        manager.broadcast_to_session(session_id, {"type": "game_update", "state": payload["state"]})
-        orchestrator = getattr(app.state, "physical_play", None)
-        if orchestrator is not None:
-            orchestrator.on_game_state(payload["state"])
+        state = bridge.newer_state(session.last_state, payload["state"])
+        if state is not session.last_state:
+            session.last_state = state
+            manager.broadcast_to_session(session_id, {"type": "game_update", "state": state})
+            orchestrator = getattr(app.state, "physical_play", None)
+            if orchestrator is not None:
+                orchestrator.on_game_state(state)
         return 0.0
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):

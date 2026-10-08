@@ -218,6 +218,13 @@ def test_local_mirror_state_has_seat_and_never_claims_central_free_game():
     assert central["game_type"] == "free"
 
 
+def test_delayed_move_response_cannot_replace_newer_opponent_websocket_state():
+    current = {"game_id": "g", "current_node_index": 2, "stones": [["W", [4, 4], None, 2]]}
+    delayed = {"game_id": "g", "current_node_index": 1, "stones": [["B", [3, 3], None, 1]]}
+    assert PvpBoxBridge.newer_state(current, delayed) is current
+    assert PvpBoxBridge.newer_state(delayed, current) is current
+
+
 @pytest.mark.asyncio
 async def test_physical_move_uses_central_room_and_returns_authoritative_state():
     remote = FakeRemote()

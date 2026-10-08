@@ -1209,3 +1209,9 @@ agon10（10 原文／205 盘）及 cmb2（2 原文／2 盘）已实际两库入�
 
 - 两库实际 dry-run/apply/verify：103 literal raw owners /104 unchanged SGFs；仅 review_status/metadata，name_writes=0/FK=0。当前 catalog TEST aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2，PROD83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7。
 - 冻结515五语值继续待入库，不将owner状态计为翻译完成。统计仍为上一实际580的1651/3698棋手、64/85正式赛事、115535/173025完整卡片；已按零name写入及scope不变核对，不宣称新统计查询。两库收据/source/current碰撞/前像完整归档；root发现旧capture catalog后补抓真实post575cap再签，没有绕过校验。
+
+## 582 — B103 赛事标题五语显示
+
+- 两库实际 dry-run/apply/verify 通过515显示值/103literal title owners/104 unchanged SGFs；每库8实际HTTP案例通过。翻译核心由此前20core-v2有限完整审定复用，字面冠名不冒称正式赛事实体。
+- 实际PROD统计：棋手1651/3698（44.6458%）、正式赛事64/85（75.2941%）；双方棋手132152/173025（76.3774%）；完整五语卡片115634/173025（66.8308%，+99）；raw title五语覆盖40864/173025（23.6174%，+104）。隐藏250/listed172766保持。
+- 两库原证据及实际统计/8HTTP回执完整归档，HTML按本批新PROD统计刷新；无姓名、ID、SGF、段位、FK、别名、列表或解析字段改动。

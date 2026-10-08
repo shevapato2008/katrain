@@ -14,6 +14,9 @@ vi.mock('../../hooks/useTranslation', () => ({
       'strength:dan': { cn: '段', en: 'dan', jp: '段' },
       'result:black_win': { cn: '黑胜', en: 'B+', jp: '黒勝' },
       'result:resign': { cn: '中盘', en: 'R', jp: '中押し' },
+      'review:tag_analyzed': { cn: '已分析', en: 'Analysed', jp: '解析済み' },
+      'kifu:view_analysis_report': { cn: '查看分析报告', en: 'View analysis report', jp: '解析レポートを見る' },
+      'kifu:view_kifu': { cn: '查看棋谱', en: 'View game record', jp: '棋譜を見る' },
       'kifu:moves_unit': { cn: '手', en: 'moves', jp: '手' },
       'kifu:source': { cn: '来源', en: 'Source', jp: '出典' },
       'kifu:source_golaxy': { cn: '星阵', en: 'GoLaxy', jp: 'GoLaxy' },
@@ -28,7 +31,7 @@ const record = (lang: string) => ({
   black_rank: '9d', white_rank: '9d', event: '原赛事', display_event: `${lang}-event`,
   round_name: '原轮次', display_round_name: `${lang}-round`, sources: ['golaxy', 'cwi', '19x19', 'unknown'],
   date_played: '2026-01-01', result: 'B+R', rules: 'chinese', komi: 7.5,
-  handicap: 0, board_size: 19, move_count: 101,
+  handicap: 0, board_size: 19, move_count: 101, has_analysis: true,
 });
 const response = (lang: string, total = 25) => ({ items: [record(lang)], total, page: 1, page_size: 20 });
 const deferred = <T,>() => {
@@ -51,6 +54,8 @@ describe('棋谱 kiosk 语言展示', () => {
     const row = await screen.findByRole('button', { name: /cn-event.*cn-black.*cn-white/ });
     expect(row).toHaveTextContent('9段');
     expect(row).toHaveTextContent('黑胜中盘');
+    expect(row).toHaveTextContent('已分析');
+    expect(row).toHaveTextContent('查看分析报告');
     expect(within(row).queryByText('来源')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
@@ -62,6 +67,8 @@ describe('棋谱 kiosk 语言展示', () => {
     expect(enRow).toHaveTextContent('en-round');
     expect(enRow).toHaveTextContent('9dan');
     expect(enRow).toHaveTextContent('B+R');
+    expect(enRow).toHaveTextContent('Analysed');
+    expect(enRow).toHaveTextContent('View analysis report');
     expect(enRow).not.toHaveTextContent('Source');
     expect(enRow).not.toHaveTextContent('GoLaxy');
     expect(enRow).not.toHaveTextContent('Source unverified');
@@ -75,6 +82,8 @@ describe('棋谱 kiosk 语言展示', () => {
     expect(jpRow).toHaveTextContent('jp-round');
     expect(jpRow).toHaveTextContent('9段');
     expect(jpRow).toHaveTextContent('黒勝中押し');
+    expect(jpRow).toHaveTextContent('解析済み');
+    expect(jpRow).toHaveTextContent('解析レポートを見る');
     expect(jpRow).not.toHaveTextContent('出典');
     expect(jpRow).not.toHaveTextContent('GoLaxy');
     expect(jpRow).not.toHaveTextContent('出典未確認');

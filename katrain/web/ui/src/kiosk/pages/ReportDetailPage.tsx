@@ -429,7 +429,7 @@ export default function ReportDetailPage() {
         statusVisible={task?.status !== 'completed'}
         metadata={(<div className="report-analysis-rail__status" data-testid="report-detail-metadata">
           <span>{game.result ? translateResult(game.result, t, game.rules) : '—'}</span>
-          <span>{kifuRulesLabel(game.rules, t)} · {t('report:komi_label', '贴目')} {game.komi ?? '—'}</span>
+          <span>{kifuRulesLabel(game.rules, t)}</span><span>{t('report:komi_label', '贴目')} {game.komi ?? '—'}</span>
         </div>)}
         details={[
           [t('review:black', '黑'), [game.player_black, game.black_rank].filter(Boolean).join(' · ')],
@@ -466,13 +466,14 @@ export default function ReportDetailPage() {
           <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
             <Icon name="lightbulb" />{t('Advice', '支招')}
           </button>
+          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryState(null); setActiveVariation(null); }}><span aria-hidden="true">×</span>{t('report:clear', '清空')}</button>
           </>)}
         toggles={(<>
           <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
           <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((v) => !v)}>
-            <Icon name="corners-out" />{t('Coordinates', '坐标')}
+            <Icon name="grid-nine" />{t('Coordinates', '坐标')}
           </button>
-          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryState(null); setActiveVariation(null); }}>{t('report:clear', '清空')}</button>
+
         </>)}
         notices={(<>{(error || retryError) && (
           <p className="rverr" role="status" data-testid="report-detail-alert">

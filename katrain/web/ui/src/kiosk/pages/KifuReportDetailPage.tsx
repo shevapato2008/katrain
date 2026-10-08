@@ -164,7 +164,7 @@ export default function KifuReportDetailPage() {
           statusVisible={detail?.status !== 'completed' || !kifuAnalysisParametersValid(detail) || detail.moves.length === 0 || analysisError}
           metadata={(<div className="report-analysis-rail__status" data-testid="kifu-report-metadata">
             <span>{album.result ? translateResult(album.result, t, analysisParameters?.rules ?? album.rules) : '—'}</span>
-            <span>{kifuRulesLabel(eventRules, t, analysisParameters)} · {t('report:komi_label', '贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
+            <span>{kifuRulesLabel(eventRules, t, analysisParameters)}</span><span>{t('report:komi_label', '贴目')} {analysisParameters?.komi ?? album.komi ?? '—'}</span>
           </div>)}
           details={[
             [t('review:black', '黑'), [album.display_player_black ?? album.player_black, album.display_black_rank ?? album.black_rank].filter(Boolean).join(' · ')],
@@ -183,14 +183,15 @@ export default function KifuReportDetailPage() {
           ]}
           detailActions={<button type="button" onClick={() => navigate(`/kiosk/kifu/${id}/replay`)}>{t('kifu:view_kifu', '查看棋谱')}</button>}
           actions={(<>
-            <button type="button" aria-pressed={tryMoveMode} onClick={() => { setTryMoveMode((value) => !value); setTryMoves([]); setVariation(null); }}>{t('report:try', '试下')}</button>
+            <button type="button" aria-pressed={tryMoveMode} onClick={() => { setTryMoveMode((value) => !value); setTryMoves([]); setVariation(null); }}><Icon name="hand-pointing" />{t('report:try', '试下')}</button>
             <button type="button" aria-pressed={showTerritory} disabled={!currentAnalysis?.ownership} onClick={() => setShowTerritory((value) => !value)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
             <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((value) => !value)}><Icon name="lightbulb" />{t('Advice', '支招')}</button>
+          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryMoves([]); setVariation(null); }}><span aria-hidden="true">×</span>{t('report:clear', '清空')}</button>
           </>)}
           toggles={(<>
             <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>
-            <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((value) => !value)}><Icon name="corners-out" />{t('Coordinates', '坐标')}</button>
-            <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryMoves([]); setVariation(null); }}>{t('report:clear', '清空')}</button>
+            <button type="button" aria-pressed={showCoordinates} onClick={() => setShowCoordinates((value) => !value)}><Icon name="grid-nine" />{t('Coordinates', '坐标')}</button>
+
           </>)}
           notices={(<>
             {analysisError && <p className="rverr" role="status">{t('kifu:analysis_read_error', '分析状态暂时无法读取')}<button type="button" onClick={() => navigate(0)}>{t('report:retry_load', '重试加载')}</button></p>}

@@ -5,8 +5,10 @@ import type { MoveAnalysis } from '../../../types/live';
 import type { WinratePoint } from '../../../features/report/reportStats';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { reportCandidates } from '../../../features/analysis/reportCandidates';
+import { Icon } from '../../shell/icons';
 import MoveGradePanel from './MoveGradePanel';
 import { ReviewWinratePlot, type LeadPoint } from './ReviewWinratePlot';
+import './reportRail.css';
 
 interface Props {
   testId: string;
@@ -35,113 +37,78 @@ interface Props {
   notices?: ReactNode;
 }
 
-/** Bounded candidate list and controls; full-game analysis stays in a bounded modal. */
+/** Both report types share one fixed workspace; only its bounded lists scroll. */
 export function ReportAnalysisRail(props: Props) {
   const { t } = useTranslation();
-  const [panel, setPanel] = useState<'analysis' | 'details' | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const railRef = useRef<HTMLDivElement>(null);
-  const candidates = props.analysis?.top_moves ?? [];
   const playedMove = props.actualMove ?? props.analysisByMove[props.currentMove + 1]?.move;
-  const playedCandidate = playedMove ? candidates.find((candidate) => candidate.move === playedMove) : undefined;
-  const playedOutsideTopFive = playedMove && !candidates.slice(0, 5).some((candidate) => candidate.move === playedMove);
-  const displayCandidates = reportCandidates(candidates, props.analysis ? playedMove : null);
+  const displayCandidates = reportCandidates(props.analysis?.top_moves ?? [], props.analysis ? playedMove : null);
   const percentage = (value: number | null | undefined) => value == null ? '—' : `${(value * 100).toFixed(1)}%`;
   const leadLabel = (value: number | null | undefined) => value == null ? '—' : `${value >= 0 ? '+' : '−'}${Math.abs(value).toFixed(1)}`;
   const black = t('review:black', '黑');
   const white = t('review:white', '白');
-  const analysisLabel = t('grade:fold_title', '着手评价 · 七档');
   const detailsLabel = t('report:game_details', '对局详情');
-  const close = () => setPanel(null);
+  const close = () => setDetailsOpen(false);
 
-  return (
-    <div ref={railRef} className="kiosk-rail report-analysis-rail" data-testid={props.shellTestId ?? `${props.testId}-shell`}>
-      {props.pagebar}
-      <div className="report-analysis-rail__head">
-        <div className="report-analysis-rail__scores" data-testid={`${props.testId}-scores`}>
-          <div className="report-analysis-rail__players"><strong title={props.players[0]}><i className="kifu-record__stone kifu-record__stone--black" aria-label={black} /><span>{props.players[0]}</span></strong><b>{props.analysis ? Math.abs(props.analysis.score_lead) < .05 ? t('report:even_position', '形势均衡') : `${props.analysis.score_lead > 0 ? black : white}${t('report:leads', '领先')} ${Math.abs(props.analysis.score_lead).toFixed(1)} ${t('report:points_unit', '目')}` : '—'}</b><strong title={props.players[1]}><span>{props.players[1]}</span><i className="kifu-record__stone kifu-record__stone--white" aria-label={white} /></strong></div>
-          <div className="report-analysis-rail__win"><span>{black} {percentage(props.analysis?.winrate)}</span><i data-empty={!props.analysis || undefined}>{props.analysis && <em style={{ width: `${Math.max(0, Math.min(100, props.analysis.winrate * 100))}%` }} />}</i><span>{white} {percentage(props.analysis ? 1 - props.analysis.winrate : null)}</span></div>
-        </div>
-        {props.metadata}
+  const recommendation = <section className="report-analysis-rail__candidates" data-testid={`${props.testId}-ai`}>
+    <div className="report-analysis-rail__candidate-head"><strong>{t('report:ai_recommendation', 'AI推荐')} · {props.playerToMove === 'B' ? black : white}{t('report:to_play', '方待落子')}</strong>{props.statusVisible && !detailsOpen && props.analysis ? props.status : <span>{t('report:after_move', '第 {n} 手后').replace('{n}', String(props.currentMove))}</span>}</div>
+    {props.analysis ? <>
+      <div className="report-analysis-rail__columns">
+        <span>{t('live:suggested_move', '着点')}</span><span>{t('live:recommendation', '推荐度')}</span>
+        <span>{t('report:score_difference', '目差')}</span><span>{t('live:winrate', '胜率')}</span>
       </div>
-      <div className="report-analysis-rail__notices">{props.notices}</div>
-      <section className="report-analysis-rail__candidates" data-testid={`${props.testId}-ai`}>
-        <div className="report-analysis-rail__columns">
-          <span>{props.playerToMove === 'B' ? black : white} · {t('live:suggested_move', '着点')}</span>
-          <span>{t('live:recommendation', '推荐度')}</span>
-          <span>{t('report:score_difference', '目差')}</span>
-          <span>{t('live:winrate', '胜率')}</span>
-        </div>
-        <div className="report-analysis-rail__candidate-list" data-testid="report-candidate-list">
-        {Array.from({ length: Math.max(5, displayCandidates.length) }, (_, index) => {
-          const move = displayCandidates[index];
-          const share = move?.percentage;
-          const score = move?.score_lead == null ? null : props.playerToMove === 'B' ? move.score_lead : -move.score_lead;
-          const winrate = move?.winrate == null ? null : props.playerToMove === 'B' ? move.winrate : 1 - move.winrate;
-          return (
-            <button
-              key={index} type="button" className="report-analysis-rail__candidate"
-              data-actual={move?.isActualMove || undefined}
-              data-testid={move ? 'ai-recommend-row' : 'ai-recommend-empty-row'}
-              disabled={!move || !move.pv.length} aria-pressed={!!move && props.activeMove === move.move}
-              onClick={() => move && props.onCandidateClick(move.move)}
-            >
-              <span>{move?.isActualMove ? t('report:actual_move_short', '实战') : index + 1} · {move?.move ?? '—'}</span>
-              <span>{share == null ? '—' : `${share.toFixed(0)}%`}</span>
-              <span className={score != null && score < 0 ? 'neg' : ''}>{leadLabel(score)}</span>
-              <span>{percentage(winrate)}</span>
-            </button>
-          );
+      <div className="report-analysis-rail__candidate-list" data-testid="report-candidate-list">
+        {displayCandidates.map((move, index) => {
+          const score = move.score_lead == null ? null : props.playerToMove === 'B' ? move.score_lead : -move.score_lead;
+          const winrate = move.winrate == null ? null : props.playerToMove === 'B' ? move.winrate : 1 - move.winrate;
+          return <button key={`${index}-${move.move}`} type="button" className="report-analysis-rail__candidate"
+            data-actual={move.isActualMove || undefined} data-testid="ai-recommend-row"
+            disabled={!move.pv.length} aria-pressed={props.activeMove === move.move}
+            onClick={() => props.onCandidateClick(move.move)}>
+            <span><i className={`kifu-record__stone kifu-record__stone--${props.playerToMove === 'B' ? 'black' : 'white'}`} aria-hidden="true" />{move.move}{move.isActualMove && <small>{index >= 5 ? t('report:actual_move_short', '实战') : '✓'}</small>}</span>
+            <span>{move.percentage == null ? '—' : `${move.percentage.toFixed(0)}%`}</span>
+            <span>{leadLabel(score)}</span><span>{percentage(winrate)}</span>
+          </button>;
         })}
-        </div>
-      </section>
-      <div className="report-analysis-rail__actions" data-testid={`${props.testId}-actions`}>
-        {props.actions}
-        <button type="button" aria-label={analysisLabel} onClick={() => setPanel('analysis')} data-testid={`${props.testId}-grade`}>
-          {t('report:analysis', '分析')}
-        </button>
       </div>
-      <div className="gtoggles gtoggles--icon report-analysis-rail__toggles" role="group" aria-label={t('review:toggles', '显示')} data-testid={`${props.testId}-toggles`}>
-        {props.toggles}
-        <button type="button" aria-label={detailsLabel} onClick={() => setPanel('details')}>{t('report:details_short', '详情')}</button>
+    </> : <div className="report-analysis-rail__empty" role="status">{!detailsOpen && props.status}<span>{t('report:no_position_analysis', '当前局面暂无分析数据')}</span></div>}
+  </section>;
+
+  return <div ref={railRef} className="kiosk-rail report-analysis-rail report-rail-v2" data-testid={props.shellTestId ?? `${props.testId}-shell`}>
+    <div className="report-analysis-rail__head">
+      <div className="report-analysis-rail__pagebar">{props.pagebar}<button type="button" className="report-details-button" aria-label={detailsLabel} onClick={() => setDetailsOpen(true)}><Icon name="info" /></button></div>
+      <div className="report-analysis-rail__scores" data-testid={`${props.testId}-scores`}>
+        <div className="report-analysis-rail__players"><strong title={props.players[0]}><i className="kifu-record__stone kifu-record__stone--black" aria-label={black} /><span>{props.players[0]}</span></strong><b>{props.analysis ? Math.abs(props.analysis.score_lead) < .05 ? t('report:even_position', '形势均衡') : `${props.analysis.score_lead > 0 ? black : white}${t('report:leads', '领先')} ${Math.abs(props.analysis.score_lead).toFixed(1)} ${t('report:points_unit', '目')}` : t('report:position_number', '第 {n} 手').replace('{n}', String(props.currentMove))}</b><strong title={props.players[1]}><span>{props.players[1]}</span><i className="kifu-record__stone kifu-record__stone--white" aria-label={white} /></strong></div>
+        <div className="report-analysis-rail__win"><span>{black} {percentage(props.analysis?.winrate)}</span><i data-empty={!props.analysis || undefined}>{props.analysis && <em style={{ width: `${Math.max(0, Math.min(100, props.analysis.winrate * 100))}%` }} />}</i><span>{white} {percentage(props.analysis ? 1 - props.analysis.winrate : null)}</span></div>
       </div>
-      {props.statusVisible && panel !== 'details' && props.status}
-      {props.navigation}
-      <Modal open={panel !== null} onClose={close} disablePortal disableScrollLock container={() => railRef.current!} className="report-analysis-modal">
-        <div className="report-analysis-modal__box" role="dialog" aria-modal="true" aria-label={panel === 'analysis' ? analysisLabel : detailsLabel}>
-          <div className="report-analysis-modal__head">
-            <h3>{panel === 'analysis' ? analysisLabel : detailsLabel}</h3>
-            <button type="button" onClick={close}>{t('Close', '关闭')}</button>
-          </div>
-          <div className="report-analysis-modal__body">
-            {panel === 'analysis' ? (
-              <MoveGradePanel
-                analysis={props.analysisByMove} totalMoves={props.totalMoves} onMoveClick={props.onMoveClick}
-                trend={<div className="report-trend">
-                  <div className="tline"><span className="wr">{t('live:black_winrate', '黑方胜率')} <b>{percentage(props.analysis?.winrate)}</b></span><span className="sl">{t('live:black_lead', '黑方领先')} <b>{leadLabel(props.analysis?.score_lead)}</b> {t('live:points_unit', '目')}</span></div>
-                  <div className="evalpad"><ReviewWinratePlot
-                  points={props.points} lead={props.lead}
-                  empty={props.points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
-                  axisTop={`${black} 100`} axisMid="50" axisBottom={`${white} 100`}
-                  label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
-                  cursor={props.currentMove} onPick={props.onMoveClick}
-                  totalMoves={props.totalMoves}
-                /></div>
-                  <div className="report-trend__scale"><div>{[0, .25, .5, .75, 1].map(f => <span key={f}>{Math.round(props.totalMoves * f)}</span>)}</div><span>{t('grade:axis_move_number', '手数')}</span></div>
-                </div>}
-              />
-            ) : (
-              <>
-              {props.status}
-              <dl className="report-analysis-modal__details">
-                {props.details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value == null || value === '' ? '—' : value}</dd></div>)}
-                {playedOutsideTopFive && <div><dt>{t('report:actual_move', '实战着点')}</dt><dd>{playedMove} · {playedCandidate ? t('report:outside_top_five', '未进入前五推荐') : t('report:unevaluated_move', '未进入候选，暂无评估')}</dd></div>}
-              </dl>
-              {props.detailActions && <div className="report-analysis-rail__actions" onClick={close}>{props.detailActions}</div>}
-              </>
-            )}
-          </div>
-        </div>
-      </Modal>
+      {props.metadata}
     </div>
-  );
+    <MoveGradePanel analysis={props.analysisByMove} totalMoves={props.totalMoves} onMoveClick={props.onMoveClick}
+      recommendation={recommendation}
+      trend={<div className="report-trend">
+        <div className="tline"><span className="wr">{t('live:black_winrate', '黑方胜率')} <b>{percentage(props.analysis?.winrate)}</b></span><span className="sl">{t('live:black_lead', '黑方领先')} <b>{leadLabel(props.analysis?.score_lead)}</b> {t('live:points_unit', '目')}</span></div>
+        <div className="evalpad"><ReviewWinratePlot points={props.points} lead={props.lead}
+          empty={props.points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
+          axisTop="100%" axisMid="50%" axisBottom="0%"
+          label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
+          cursor={props.currentMove} onPick={props.onMoveClick} totalMoves={props.totalMoves} /></div>
+        <div className="report-trend__scale"><div>{[0, .25, .5, .75, 1].map(f => <span key={f}>{Math.round(props.totalMoves * f)}</span>)}</div><span>{t('grade:axis_move_number', '手数')}</span></div>
+      </div>} />
+    <div className="report-analysis-rail__tools">
+      <div className="report-analysis-rail__actions" data-testid={`${props.testId}-actions`}>{props.actions}</div>
+      <div className="report-analysis-rail__toggles" role="group" aria-label={t('review:toggles', '显示')} data-testid={`${props.testId}-toggles`}>{props.toggles}</div>
+    </div>
+    {props.navigation}
+    <div className="report-analysis-rail__notices">{props.notices}</div>
+    <Modal open={detailsOpen} onClose={close} disablePortal disableScrollLock container={() => railRef.current!} className="report-analysis-modal report-details-modal">
+      <div className="report-analysis-modal__box" role="dialog" aria-modal="true" aria-label={detailsLabel}>
+        <div className="report-analysis-modal__head"><h3>{detailsLabel}</h3><button type="button" onClick={close} aria-label={t('Close', '关闭')}>×</button></div>
+        <div className="report-analysis-modal__body">{props.status}
+          <dl className="report-analysis-modal__details">{props.details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value == null || value === '' ? '—' : value}</dd></div>)}</dl>
+          {props.detailActions && <div className="report-analysis-rail__detail-actions" onClick={close}>{props.detailActions}</div>}
+        </div>
+      </div>
+    </Modal>
+  </div>;
 }

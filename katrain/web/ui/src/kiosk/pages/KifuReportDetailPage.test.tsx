@@ -14,6 +14,7 @@ const analysis: MoveAnalysis = {
   top_moves: Array.from({ length: 10 }, (_, i) => ({ ...candidate, move: `A${i + 1}` })), ownership: null,
   is_brilliant: false, is_mistake: false, is_questionable: false, delta_score: 0, delta_winrate: 0,
 };
+let analysisByMove: Record<number, MoveAnalysis> = { 0: analysis };
 let analysisFailed = false;
 let analysisParameters: VerifiedAnalysisParameters | null = null;
 let parametersValid: boolean | undefined;
@@ -21,7 +22,7 @@ let analysisCompleted = false;
 vi.mock('../../features/kifu/useKifuAnalysis', () => ({ useKifuAnalysis: () => ({
   detail: { status: analysisCompleted ? 'completed' : 'running', analyzed_moves: 0, total_moves: 2, requested_visits: 1500, moves: analysisCompleted ? [analysis] : [],
     analysis_parameters: analysisParameters, parameters_valid: parametersValid, parameters_verified: analysisParameters?.verified === true },
-  analysisByMove: { 0: analysis }, error: analysisFailed,
+  analysisByMove, error: analysisFailed,
 }) }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: (props: Record<string, unknown>) => {
   mocks.board = props;
@@ -39,27 +40,48 @@ function renderPage() {
   </Routes></MemoryRouter>);
 }
 async function loaded() { await screen.findByTestId('kifu-report-ai'); }
+function pickTab(name: string) {
+  fireEvent.click(screen.getByRole('button', { name, exact: true }));
+}
 
 describe('职业报告固定右栏', () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisFailed = false; analysisParameters = null; parametersValid = undefined; analysisCompleted = false; });
+  beforeEach(() => { vi.clearAllMocks(); mocks.getAlbum.mockResolvedValue(album); analysisByMove = { 0: analysis }; analysisFailed = false; analysisParameters = null; parametersValid = undefined; analysisCompleted = false; });
 
-  it('让子局按SGF白方视角显示五行，PSV分母包含全部十条候选', async () => {
+  it('让子局按SGF白方视角显示前五和第六行实战，PSV分母包含全部十条候选', async () => {
     renderPage(); await loaded();
     const rows = screen.getAllByTestId('ai-recommend-row');
     expect(rows).toHaveLength(6);
-    expect(rows[5]).toHaveTextContent('实战 · D4');
+    expect(rows[5]).toHaveTextContent('D4实战');
     expect(rows[0]).toHaveTextContent('10%');
     expect(rows[0]).toHaveTextContent('−4.1');
     expect(rows[0]).toHaveTextContent('36.0%');
     expect(mocks.board.currentMove).toBe(2);
     expect(screen.getByTestId('kifu-report-head')).toHaveTextContent('1500 visits');
+    expect(screen.getByTestId('kifu-report-head')).toHaveTextContent('分析中');
+  });
+
+  it('当前局面无分析时显示真实状态，不创建候选占位，详情不重复状态', async () => {
+    analysisByMove = {};
+    renderPage(); await loaded();
+    expect(screen.queryAllByTestId('ai-recommend-row')).toHaveLength(0);
+    expect(screen.queryAllByTestId('ai-recommend-empty-row')).toHaveLength(0);
+    expect(within(screen.getByTestId('kifu-report-ai')).getByText('当前局面暂无分析数据')).toBeVisible();
+    expect(screen.getByTestId('kifu-report-head')).toHaveTextContent('分析中');
+    expect(screen.getByTestId('kifu-report-scores')).toHaveTextContent('—');
+    expect(screen.getByTestId('kifu-report-scores')).not.toHaveTextContent('0.0%');
+    expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
+    expect(screen.getAllByTestId('kifu-report-head')).toHaveLength(1);
+    expect(within(screen.getByRole('dialog', { name: '对局详情' })).getByTestId('kifu-report-head')).toHaveTextContent('分析中');
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }));
+    expect(screen.getByTestId('kifu-report-head')).toHaveTextContent('分析中');
   });
 
   it('候选变化可预览及清空，试下可落子和清空，翻手清掉试下', async () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getAllByTestId('ai-recommend-row')[0]);
     expect(mocks.board.pvMoves).toEqual(['Q10', 'D10']);
-    fireEvent.click(screen.getByRole('button', { name: '清除变化' }));
+    fireEvent.click(screen.getByRole('button', { name: '清空' }));
     expect(mocks.board.pvMoves).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByRole('button', { name: 'place try' }));
@@ -79,21 +101,39 @@ describe('职业报告固定右栏', () => {
     expect(mocks.board.showCoordinates).toBe(false);
   });
 
-  it('分析弹层保留五页签、七档及筛选，能够关闭', async () => {
+  it('六页签内联显示，放大和收起保留图表页签、阶段及棋手筛选', async () => {
     renderPage(); await loaded();
-    fireEvent.click(screen.getByRole('button', { name: '着手评价 · 七档' }));
-    const dialog = screen.getByRole('dialog');
-    for (const tab of ['走势', '妙手', '失误', '发挥水准', 'AI吻合度']) expect(within(dialog).getByRole('button', { name: tab })).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: '妙手' }));
-    expect(within(dialog).getByRole('button', { name: '全盘' })).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: '关闭' }));
     expect(screen.queryByRole('dialog')).toBeNull();
+    const tabs = within(screen.getByRole('group', { name: '着手评价' }));
+    for (const name of ['推荐', '走势', '妙手', '失误', '发挥水准', 'AI吻合度']) {
+      expect(tabs.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', String(name === '推荐'));
+    }
+    expect(screen.queryByRole('button', { name: '分析', exact: true })).toBeNull();
+    pickTab('妙手');
+    fireEvent.click(screen.getByRole('button', { name: '布局', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: '白方', exact: true }));
+    const panel = screen.getByTestId('grade-panel');
+    fireEvent.click(screen.getByRole('button', { name: '放大当前分析图表或推荐列表' }));
+    const dialog = screen.getByRole('dialog', { name: '妙手', exact: true });
+    expect(within(dialog).getByTestId('grade-panel')).toBe(panel);
+    expect(screen.getAllByTestId('grade-panel')).toHaveLength(1);
+    for (const name of ['妙手', '布局', '白方']) {
+      expect(within(dialog).getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    }
+    fireEvent.click(within(dialog).getByRole('button', { name: '收起分析工作区' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByTestId('grade-panel')).toBe(panel);
+    for (const name of ['妙手', '布局', '白方']) {
+      expect(screen.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    }
+    pickTab('推荐');
+    expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
   });
 
   it('详情保留赛事日期结果段位规则贴目状态来源，查看棋谱仍跳转原页', async () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
-    const dialog = screen.getByRole('dialog');
+    const dialog = screen.getByRole('dialog', { name: '对局详情' });
     for (const value of ['赛事甲', '2026-10-01', 'W+R', '9p', '8p', 'japanese', '6.5', '分析中', 'archive', 'source-b']) expect(dialog).toHaveTextContent(value);
     expect(dialog).not.toHaveTextContent('已核验');
     fireEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
@@ -119,12 +159,20 @@ describe('职业报告固定右栏', () => {
       sgf_sha256: 'sgf', parameter_sha256: 'parameters', provenance: {} };
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'chinese' });
     renderPage(); await loaded();
-    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent('日本规则 · 贴目 0');
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText('日本规则', { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText('贴目 0', { exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
-    expect([...screen.getByTestId('kifu-report-actions').querySelectorAll('button')].map(button => button.textContent)).toEqual(['试下', '领地', '支招', '分析']);
-    expect([...screen.getByTestId('kifu-report-toggles').querySelectorAll('button')].map(button => button.textContent)).toEqual(['手数', '坐标', '清空', '详情']);
+    const actions = within(screen.getByTestId('kifu-report-actions')).getAllByRole('button');
+    expect(actions).toHaveLength(4);
+    ['试下', '领地', '支招', '清空'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    const toggles = within(screen.getByTestId('kifu-report-toggles')).getAllByRole('button');
+    expect(toggles).toHaveLength(2);
+    ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
+    expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
-    const dialog = screen.getByRole('dialog');
+    const dialog = screen.getByRole('dialog', { name: '对局详情' });
     expect(dialog).toHaveTextContent('日本规则');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('chinese');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent('6.5');
@@ -139,11 +187,14 @@ describe('职业报告固定右栏', () => {
     analysisCompleted = true;
     mocks.getAlbum.mockResolvedValue({ ...album, rules: 'japanese', komi });
     renderPage(); await loaded();
-    expect(screen.getByTestId('kifu-report-metadata')).toHaveTextContent(`${label} · 贴目 ${komi}`);
+    const metadata = screen.getByTestId('kifu-report-metadata');
+    expect(metadata.querySelectorAll('span')).toHaveLength(3);
+    expect(within(metadata).getByText(label, { exact: true })).toBeInTheDocument();
+    expect(within(metadata).getByText(`贴目 ${komi}`, { exact: true })).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-report-head')).toBeNull();
     expect(screen.getAllByTestId('ai-recommend-row')).toHaveLength(6);
     fireEvent.click(screen.getByRole('button', { name: '对局详情' }));
-    const dialog = screen.getByRole('dialog');
+    const dialog = screen.getByRole('dialog', { name: '对局详情' });
     expect(dialog).toHaveTextContent('分析已完成');
     expect(within(dialog).getByText('SGF 规则').parentElement).toHaveTextContent('—');
     expect(within(dialog).getByText('SGF 贴目').parentElement).toHaveTextContent(String(komi));

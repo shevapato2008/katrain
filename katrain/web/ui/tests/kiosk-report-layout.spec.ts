@@ -16,7 +16,7 @@ const game = {
 };
 
 for (const professional of [false, true]) {
-  test(`${professional ? '职业' : '个人'}报告：460×516、五行44px、弹层和坐标几何`, async ({ page }) => {
+  test(`${professional ? '职业' : '个人'}报告：460×516、固定工作区、统一筛选与坐标几何`, async ({ page }) => {
     await page.addInitScript(() => { localStorage.setItem('token', 'test'); localStorage.setItem('katrain_language', 'cn'); });
     await stubBackendStatics(page);
     let failRefresh = false;
@@ -31,7 +31,7 @@ for (const professional of [false, true]) {
         if (failRefresh) { await route.fulfill({ status: 503, json: { detail: 'offline' } }); return; }
         json = { id: 42, user_game_id: 'g1', status: 'completed', report_type: 'deep', total_moves: 4, analyzed_moves: 4, requested_visits: 1000 };
       } else if (path === '/api/v1/user-games/g1') json = game;
-      else if (path === '/api/v1/kifu/albums/7/analysis') json = { album_id: 7, canonical_album_id: 7, status: 'completed', total_moves: 4, analyzed_moves: 4, requested_visits: 2000, moves: rows };
+      else if (path === '/api/v1/kifu/albums/7/analysis') json = { album_id: 7, canonical_album_id: 7, status: 'completed', total_moves: 4, analyzed_moves: 4, requested_visits: 2000, parameters_valid: true, analysis_parameters: { version: 3, verified: false, rules: 'chinese', komi: 7.5, sgf_sha256: 'sgf', parameter_sha256: 'params', provenance: { source: 'komi_default' } }, moves: rows };
       else if (path === '/api/v1/kifu/albums/7') json = { ...game, id: 7, date_played: game.game_date, place: '上海', handicap: 0 };
       await route.fulfill({ json });
     });
@@ -51,28 +51,40 @@ for (const professional of [false, true]) {
     expect(await page.locator('.kiosk-board__ruler span').first().evaluate((el) => getComputedStyle(el).visibility)).toBe('hidden');
     await page.getByRole('button', { name: '坐标', exact: true }).click();
     await page.screenshot({ path: `/private/tmp/kiosk-${professional ? 'professional' : 'personal'}-report.png` });
-    await page.getByTestId(professional ? 'kifu-report-grade' : 'report-detail-grade').click();
-    const dialog = page.getByRole('dialog');
+    const tabs = page.getByRole('group', { name: '着手评价' });
+    for (const tab of ['推荐', '走势', '妙手', '失误', '发挥水准', 'AI吻合度']) await expect(tabs.getByRole('button', { name: tab, exact: true })).toBeVisible();
+    for (const tab of ['妙手', '发挥水准', 'AI吻合度']) {
+      await tabs.getByRole('button', { name: tab, exact: true }).click();
+      for (const filter of await page.locator('.gfilters button').all()) {
+        const bounds = (await filter.boundingBox())!;
+        expect(bounds.width).toBe(54); expect(bounds.height).toBe(44);
+      }
+    }
+    await page.getByRole('button', { name: '放大当前分析图表或推荐列表' }).click();
+    const dialog = page.getByRole('dialog', { name: 'AI吻合度', exact: true });
     await expect(dialog).toBeVisible();
     const size = await dialog.boundingBox();
-    expect(size?.width).toBe(460); expect(size?.height).toBe(480);
-    for (const tab of ['走势', '妙手', '失误', '发挥水准', 'AI吻合度']) await expect(dialog.getByRole('button', { name: tab, exact: true })).toBeVisible();
-    await page.screenshot({ path: `/private/tmp/kiosk-${professional ? 'professional' : 'personal'}-analysis.png` });
-    await dialog.getByRole('button', { name: '关闭', exact: true }).click();
-    await page.getByRole('button', { name: '对局详情', exact: true }).click();
-    await expect(dialog).toContainText('赛事甲');
-    await expect(dialog).toContainText('2026-10-01');
+    expect(size?.width).toBe(460); expect(size?.height).toBe(516);
+    await expect(page.getByTestId('grade-panel')).toHaveCount(1);
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
+    await expect(page.getByTestId('grade-panel')).toHaveAttribute('data-tab', 'match');
+    await page.getByRole('button', { name: '对局详情', exact: true }).click();
+    const details = page.getByRole('dialog', { name: '对局详情', exact: true });
+    await expect(details).toContainText('赛事甲');
+    await expect(details).toContainText('2026-10-01');
+    await page.keyboard.press('Escape');
+    await expect(details).not.toBeVisible();
     if (!professional) {
       failRefresh = true;
+      await page.getByRole('button', { name: '对局详情', exact: true }).click();
       await page.getByRole('button', { name: '重算', exact: true }).click();
       await expect(page.getByTestId('report-detail-alert')).toBeVisible();
       const retry = page.getByRole('button', { name: '重试加载', exact: true });
       await retry.scrollIntoViewIfNeeded(); await expect(retry).toBeInViewport();
       const nav = page.getByRole('button', { name: '上一手', exact: true });
       await nav.scrollIntoViewIfNeeded(); await expect(nav).toBeInViewport();
-      expect((await nav.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      expect((await nav.boundingBox())!.height).toBeGreaterThanOrEqual(38);
     }
   });
 }

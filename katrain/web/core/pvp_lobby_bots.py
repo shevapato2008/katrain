@@ -24,6 +24,23 @@ def playable_rungs() -> tuple[PlayableRung, ...]:
     )
 
 
+def human_ladder_rungs(session_factory, user_ids: Iterable[int]) -> dict[int, int | None]:
+    """Read authoritative human placement in one query from the app's database."""
+    ids = {user_id for user_id in user_ids if user_id > 0}
+    if not ids:
+        return {}
+    from katrain.web.core.models_db import AiLadderProfile
+
+    db = session_factory()
+    try:
+        rows = db.query(AiLadderProfile.user_id, AiLadderProfile.ai_ladder_rung).filter(
+            AiLadderProfile.user_id.in_(ids)
+        ).all()
+        return {user_id: rung for user_id, rung in rows}
+    finally:
+        db.close()
+
+
 def validate_config(config: Mapping[str, object]) -> dict[str, object]:
     """Validate and fill a version-one JSON configuration without changing its input."""
     if not isinstance(config, Mapping) or set(config) != {"version", "enabled", "bot_game_limit", "idle_targets"}:

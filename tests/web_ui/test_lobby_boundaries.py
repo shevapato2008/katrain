@@ -159,6 +159,52 @@ def test_online_users_does_not_leak_uuid_credits_or_admin(client, app):
     assert "rank" in row and "elo_points" in row
 
 
+def test_public_roster_uses_ai_ladder_rank_and_room_presence(client, app):
+    from katrain.web.core.models_db import AiLadderProfile
+    from katrain.web.core.pvp_lobby_bots import bot_id, bot_name, playable_rungs
+
+    rung = playable_rungs()[0]
+    alice_id, alice = _make_user(app, "placed")
+    bob_id, bob = _make_user(app, "unplaced")
+    db = app.state.session_factory()
+    try:
+        db.add(AiLadderProfile(user_id=alice_id, ai_ladder_rung=rung.rung, placement_lo=1,
+                               placement_hi=41, placement_completed=5))
+        db.commit()
+    finally:
+        db.close()
+    app.state.lobby_manager.add_user(bob_id, object())
+    game = app.state.session_manager.create_multiplayer_session(alice_id, bot_id(rung.rung, 1),
+                                                                  b_name=alice, w_name=bot_name(rung.rung, 1),
+                                                                  skip_initial_analysis=True)
+    class FakeRuntime:
+        def public_online_rows(self):
+            return [{"id": bot_id(rung.rung, 1), "username": bot_name(rung.rung, 1),
+                     "ladder_rung": rung.rung, "rank_label": rung.rank_label, "presence": "playing"}]
+    app.state.pvp_lobby_bots = FakeRuntime()
+
+    token = _token(client, bob)
+    headers = {"Authorization": f"Bearer {token}"}
+    rows = client.get("/api/v1/users/online", headers=headers).json()
+    by_id = {row["id"]: row for row in rows}
+    assert by_id[alice_id]["ladder_rung"] == rung.rung
+    assert by_id[alice_id]["rank_label"] == rung.rank_label
+    assert by_id[alice_id]["presence"] == "playing"
+    assert by_id[bob_id]["ladder_rung"] is None
+    assert by_id[bob_id]["rank_label"] is None
+    assert by_id[bob_id]["presence"] == "idle"
+    for row in rows:
+        assert not {"kind", "is_bot", "uuid", "credits", "hashed_password"}.intersection(row)
+
+    games = client.get("/api/v1/games/active/multiplayer", headers=headers).json()
+    found = next(row for row in games if row["session_id"] == game.session_id)
+    assert found["player_b_id"] == alice_id and found["player_w_id"] == bot_id(rung.rung, 1)
+    assert found["player_b_rung"] == found["player_w_rung"] == rung.rung
+    assert found["player_b_rank_label"] == found["player_w_rank_label"] == rung.rank_label
+    assert found["player_w"] == bot_name(rung.rung, 1)
+    assert not {"kind", "is_bot", "uuid", "credits", "hashed_password"}.intersection(found)
+
+
 # ── 3. 邀请不能凭空捏造 ────────────────────────────────────────────────────────
 
 

@@ -41,14 +41,19 @@ describe('admin PvP lobby', () => {
     await user.click(screen.getByRole('button', { name: '增加互战上限' }));
     expect(screen.getByRole('button', { name: '保存设置' })).toBeDisabled();
     expect(screen.getAllByText(/当前数量暂不可用/).length).toBeGreaterThan(0);
+    expect(screen.getByText('运行状态已过期，无法判断当前在线参与者。')).toBeInTheDocument();
+    expect(screen.queryByText('青石')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('在线状态'), 'all');
+    expect(await screen.findByText('青石')).toBeInTheDocument();
+    expect(screen.getAllByText('状态未知').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: '刷新状态' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '保存设置' })).toBeEnabled());
   });
 
   it('preserves a conflicting draft, reloads the server config, and paginates filtered roster', async () => {
     const api = makeApi(); const user = userEvent.setup();
-    api.savePvpLobby = vi.fn(async () => { throw new AdminApiError(409, '配置冲突'); });
-    api.pvpLobby = vi.fn().mockResolvedValueOnce(overview).mockResolvedValueOnce({ ...overview, config_revision: 5 });
+    api.savePvpLobby = vi.fn().mockRejectedValueOnce(new AdminApiError(409, '配置冲突')).mockResolvedValueOnce({ ...overview, config_revision: 6 });
+    api.pvpLobby = vi.fn().mockResolvedValueOnce(overview).mockResolvedValueOnce({ ...overview, config_revision: 5, config: { ...overview.config, bot_game_limit: 5 } });
     api.pvpParticipants = vi.fn().mockResolvedValue({ ...participants, total: 31 });
     render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
     await screen.findByText('棋友甲');
@@ -57,6 +62,10 @@ describe('admin PvP lobby', () => {
     expect(await screen.findByText(/服务器设置已变化/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '读取服务器设置' }));
     await waitFor(() => expect(api.pvpLobby).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText(/草稿已保留/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存设置' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: '保存设置' }));
+    await waitFor(() => expect(api.savePvpLobby).toHaveBeenLastCalledWith({ expected_revision: 5, config: expect.objectContaining({ bot_game_limit: 4 }) }));
     await user.selectOptions(screen.getByLabelText('身份类型'), 'bot');
     await waitFor(() => expect(api.pvpParticipants).toHaveBeenCalledWith(expect.objectContaining({ kind: 'bot', page: 1 }), expect.anything()));
     expect(within(screen.getByRole('region', { name: '参与者名单' })).getAllByText('机器人').length).toBeGreaterThan(0);
@@ -71,5 +80,31 @@ describe('admin PvP lobby', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('暂时不可用');
     await user.click(screen.getByRole('button', { name: '重试' }));
     expect(await screen.findByText('逐段位投放')).toBeInTheDocument();
+  });
+
+  it('clears previous roster rows while a filter request is loading', async () => {
+    const api = makeApi(); const user = userEvent.setup();
+    let resolveBots!: (page: ParticipantPage) => void;
+    api.pvpParticipants = vi.fn((query) => query.kind === 'bot'
+      ? new Promise<ParticipantPage>((resolve) => { resolveBots = resolve; })
+      : Promise.resolve(participants));
+    render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
+    expect(await screen.findByText('青石')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('身份类型'), 'bot');
+    expect(screen.queryByText('青石')).not.toBeInTheDocument();
+    expect(screen.getByText('正在读取参与者…')).toBeInTheDocument();
+    resolveBots({ ...participants, items: [participants.items[1]], total: 31 });
+    expect(await screen.findByText('棋友甲')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '下一页' }));
+    expect(screen.queryByText('棋友甲')).not.toBeInTheDocument();
+    expect(screen.getByText('正在读取参与者…')).toBeInTheDocument();
+  });
+
+  it('describes saved disabled config as off rather than healthy', async () => {
+    const api = makeApi();
+    api.pvpLobby = vi.fn(async () => ({ ...overview, config: { ...overview.config, enabled: false } }));
+    render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
+    expect(await screen.findByText('机器人投放已关闭')).toBeInTheDocument();
+    expect(screen.queryByText('服务端投放正常')).not.toBeInTheDocument();
   });
 });

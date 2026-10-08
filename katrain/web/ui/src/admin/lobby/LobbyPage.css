@@ -10,6 +10,8 @@
 .admin-lobby-status::before { content:""; display:inline-block; width:8px; height:8px; margin-right:7px; border-radius:50%; background:#7ad496; }
 .admin-lobby-status.pending { border-color:#8e775f; background:#44362b; color:#f9d1ad; }
 .admin-lobby-status.pending::before { background:#e6a879; }
+.admin-lobby-status.disabled { border-color:#696967; background:#343536; color:#d4d1cc; }
+.admin-lobby-status.disabled::before { background:#aaa7a2; }
 .admin-lobby-status.stale { border-color:#ad765e; background:#4b2f2b; color:#ffe0d7; }
 .admin-lobby-status.stale::before { background:#f2a38a; }
 .admin-lobby-toolbar { display:flex; align-items:center; gap:17px; flex-wrap:wrap; margin:18px 0 14px; padding:13px 16px; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-panel); }

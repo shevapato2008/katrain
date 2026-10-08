@@ -140,3 +140,20 @@ def test_paged_complete_roster_with_filters(setup):
     assert client.get(url, params={"kind": "bot", "presence": "playing"}).json()["total"] == 1
     assert client.get(url, params={"kind": "human", "presence": "online", "q": "human"}).json()["total"] == 1
     assert client.get(url, params={"page_size": 200}).json()["page_size"] == 100
+
+
+def test_stale_snapshot_does_not_claim_participants_are_current(setup):
+    client, app, factory, dependency = setup
+    authorize(app, dependency)
+    with factory() as db:
+        db.add(User(id=1, username="human-1", hashed_password="secret"))
+        db.commit()
+    snapshot(factory, age=60, participants=[
+        {"id": 1, "username": "human-1", "kind": "human", "ladder_rung": 1, "rank_label": "20级", "presence": "idle"},
+        {"id": -1, "username": "bot-1", "kind": "bot", "ladder_rung": 1, "rank_label": "20级", "presence": "playing"},
+    ])
+    url = "/api/admin/pvp-lobby/participants"
+    assert client.get(url, params={"presence": "online"}).json()["total"] == 0
+    assert client.get(url, params={"presence": "offline"}).json()["total"] == 0
+    all_rows = client.get(url, params={"presence": "all"}).json()["items"]
+    assert [(row["kind"], row["presence"]) for row in all_rows] == [("human", "unknown"), ("bot", "unknown")]

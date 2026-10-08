@@ -68,17 +68,25 @@ def _snapshot(db: Session) -> dict | None:
         return None
 
 
-def _runtime(db: Session, config: dict) -> dict:
-    reported = _snapshot(db)
-    timestamp = None
+def _reported_at(reported: dict | None) -> datetime | None:
     if reported and isinstance(reported.get("reported_at"), str):
         try:
             timestamp = datetime.fromisoformat(reported["reported_at"].replace("Z", "+00:00"))
-            if timestamp.tzinfo is None:
-                timestamp = None
+            return timestamp if timestamp.tzinfo is not None else None
         except ValueError:
             pass
-    stale = timestamp is None or not 0 <= (datetime.now(timezone.utc) - timestamp).total_seconds() <= RUNTIME_STALE_AFTER_S
+    return None
+
+
+def _snapshot_fresh(reported: dict | None) -> bool:
+    timestamp = _reported_at(reported)
+    return timestamp is not None and 0 <= (datetime.now(timezone.utc) - timestamp).total_seconds() <= RUNTIME_STALE_AFTER_S
+
+
+def _runtime(db: Session, config: dict) -> dict:
+    reported = _snapshot(db)
+    timestamp = _reported_at(reported)
+    stale = not _snapshot_fresh(reported)
     counts = {r.get("rung"): r for r in reported.get("rungs", []) if isinstance(r, dict)} if reported else {}
     ranks = [
         {
@@ -153,9 +161,12 @@ def get_participants(
     size = min(page_size, 100)
     offset = (page - 1) * size
     rows = _snapshot(db)
+    fresh = _snapshot_fresh(rows)
     present = {p.get("id"): p for p in rows.get("participants", []) if isinstance(p, dict)} if rows else {}
-    human_ids = {id for id, row in present.items() if row.get("kind") == "human" and type(id) is int and id > 0}
+    human_ids = {id for id, row in present.items() if row.get("kind") == "human" and type(id) is int and id > 0} if fresh else set()
     bot_rows = [row for row in present.values() if row.get("kind") == "bot" and type(row.get("id")) is int and row["id"] < 0]
+    if not fresh:
+        bot_rows = [{**row, "presence": "unknown"} for row in bot_rows]
     if q:
         bot_rows = [row for row in bot_rows if q.casefold() in str(row.get("username", "")).casefold()]
     if presence != "all":
@@ -169,7 +180,7 @@ def get_participants(
         ids = {id for id in human_ids if presence == "online" or present[id].get("presence") == presence}
         query = query.where(User.id.in_(ids))
     elif presence == "offline":
-        query = query.where(~User.id.in_(human_ids))
+        query = query.where(~User.id.in_(human_ids) if fresh else User.id.in_([]))
     human_total = db.scalar(select(func.count()).select_from(query.subquery())) if kind != "bot" else 0
     bot_total = len(bot_rows) if kind != "human" else 0
     results = []
@@ -178,7 +189,7 @@ def get_participants(
         for user_id, username, rung in db.execute(query.order_by(User.id).offset(offset).limit(size)):
             row = present.get(user_id, {})
             results.append({"id": user_id, "username": username, "kind": "human", "ladder_rung": rung,
-                            "rank_label": rank_names.get(rung), "presence": row.get("presence", "offline")})
+                            "rank_label": rank_names.get(rung), "presence": row.get("presence", "offline") if fresh else "unknown"})
     bot_start = offset if kind == "bot" else max(0, offset - human_total)
     for row in bot_rows[bot_start:bot_start + size - len(results)]:
         results.append({"id": row["id"], "username": row.get("username", ""), "kind": "bot",

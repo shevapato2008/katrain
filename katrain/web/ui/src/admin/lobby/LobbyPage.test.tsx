@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AdminApiError, createAdminApi } from '../api/client';
@@ -106,5 +106,65 @@ describe('admin PvP lobby', () => {
     render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
     expect(await screen.findByText('机器人投放已关闭')).toBeInTheDocument();
     expect(screen.queryByText('服务端投放正常')).not.toBeInTheDocument();
+  });
+
+  it('polls the overview and protects a draft when the server revision changes', async () => {
+    const api = makeApi(); const user = userEvent.setup();
+    let poll: (() => void) | undefined;
+    const originalSetInterval = window.setInterval.bind(window);
+    const intervalSpy = vi.spyOn(window, 'setInterval').mockImplementation(((handler: TimerHandler, timeout?: number) => {
+      if (timeout === 10_000) { poll = handler as () => void; return 99; }
+      return originalSetInterval(handler, timeout);
+    }) as typeof window.setInterval);
+    api.pvpLobby = vi.fn().mockResolvedValueOnce(overview).mockResolvedValue({ ...overview, config_revision: 5 });
+    try {
+      render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
+      await screen.findByText('逐段位投放');
+      await user.click(screen.getByRole('button', { name: '增加互战上限' }));
+      expect(poll).toBeDefined();
+      await act(async () => { poll?.(); });
+      await waitFor(() => expect(api.pvpLobby).toHaveBeenCalledTimes(2));
+      expect(await screen.findByText(/服务器设置已变化/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '保存设置' })).toBeDisabled();
+      expect(screen.getByText('4', { selector: 'output' })).toBeInTheDocument();
+      await act(async () => { poll?.(); });
+      await waitFor(() => expect(api.pvpLobby).toHaveBeenCalledTimes(3));
+      expect(screen.getByRole('button', { name: '读取服务器设置' })).toBeInTheDocument();
+    } finally { intervalSpy.mockRestore(); }
+  });
+
+  it('refreshes and clears the roster before treating a new overview as current', async () => {
+    const api = makeApi(); const user = userEvent.setup();
+    let resolveRoster!: (page: ParticipantPage) => void;
+    let rosterReads = 0;
+    api.pvpParticipants = vi.fn((query) => {
+      if (query.kind === 'human' && query.page_size === 1) return Promise.resolve(participants);
+      rosterReads += 1;
+      return rosterReads === 1 ? Promise.resolve(participants) : new Promise<ParticipantPage>((resolve) => { resolveRoster = resolve; });
+    });
+    render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
+    expect(await screen.findByText('青石')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '刷新状态' }));
+    expect(screen.queryByText('青石')).not.toBeInTheDocument();
+    expect(screen.getByText('正在读取参与者…')).toBeInTheDocument();
+    await waitFor(() => expect(rosterReads).toBe(2));
+    resolveRoster({ ...participants, items: [{ ...participants.items[0], id: 9, username: '新棋友' }] });
+    expect(await screen.findByText('新棋友')).toBeInTheDocument();
+  });
+
+  it('locks config controls while a save is in flight', async () => {
+    const api = makeApi(); const user = userEvent.setup();
+    let resolveSave!: (value: LobbyOverview) => void;
+    api.savePvpLobby = vi.fn(() => new Promise<LobbyOverview>((resolve) => { resolveSave = resolve; }));
+    render(<LobbyPage api={api} onUnauthorized={vi.fn()} />);
+    const plus = await screen.findByRole('button', { name: '增加互战上限' });
+    await user.click(plus);
+    await user.click(screen.getByRole('button', { name: '保存设置' }));
+    expect(screen.getByRole('checkbox')).toBeDisabled();
+    expect(plus).toBeDisabled();
+    expect(screen.getByRole('button', { name: '增加 1级 空闲目标' })).toBeDisabled();
+    resolveSave({ ...overview, config_revision: 5, config: { ...overview.config, bot_game_limit: 4 } });
+    await waitFor(() => expect(plus).toBeEnabled());
+    expect(screen.getByText('4', { selector: 'output' })).toBeInTheDocument();
   });
 });

@@ -29,12 +29,12 @@
 .admin-lobby-save { min-width:106px; height:44px; border:1px solid var(--admin-accent); border-radius:7px; background:var(--admin-accent); color:var(--admin-on-accent)!important; font-weight:700!important; }
 .admin-lobby-hint { margin:-3px 0 14px; color:var(--admin-muted); font-size:14px; }
 .admin-lobby-hint strong { color:var(--admin-text); }
-.admin-lobby-hint button { padding:0 3px; border:0; background:transparent; color:var(--admin-link); text-decoration:underline; text-underline-offset:3px; }
 .admin-lobby-workspace { display:grid; grid-template-columns:minmax(490px,1.25fr) minmax(355px,.92fr); align-items:start; gap:14px; }
 .admin-lobby-box { min-width:0; overflow:hidden; border:1px solid var(--admin-line); border-radius:9px; background:var(--admin-panel); }
 .admin-lobby-boxhead { display:flex; align-items:center; min-height:53px; gap:12px; padding:0 16px; border-bottom:1px solid var(--admin-line); }
 .admin-lobby-boxhead h2 { margin:0; font-size:20px; font-weight:600; }
 .admin-lobby-boxhead>span { margin-left:auto; color:#dab8a3; font-size:13px; }
+.admin-lobby-refresh { width:30px; height:30px; padding:0; border:1px solid var(--admin-line); border-radius:5px; background:var(--admin-panel2); color:var(--admin-text); line-height:1; }
 .admin-lobby-groups { display:flex; gap:6px; padding:10px 14px; border-bottom:1px solid var(--admin-line); }
 .admin-lobby-groups button { min-height:32px; padding:0 11px; border:1px solid var(--admin-line); border-radius:6px; background:transparent; font-size:13px; }
 .admin-lobby-groups button[aria-selected=true] { background:var(--admin-active); border-color:#99715b; color:var(--admin-active-text); }

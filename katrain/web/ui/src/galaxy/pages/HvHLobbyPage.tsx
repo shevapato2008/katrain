@@ -27,6 +27,7 @@ export default function HvHLobbyPage() {
   const [following, setFollowing] = useState<number[]>([]);
   const [rank, setRank] = useState<{ rung: number; label: string } | null>(null);
   const [rankLoaded, setRankLoaded] = useState(false);
+  const [rankError, setRankError] = useState(false);
   const [filter, setFilter] = useState<'all' | 'same' | 'follow'>('all');
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
@@ -37,6 +38,7 @@ export default function HvHLobbyPage() {
   const [notice, setNotice] = useState('');
   const socket = useRef<WebSocket | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rankRequest = useRef(0);
   const clearTimer = () => { if (timer.current) clearInterval(timer.current); timer.current = null; };
   const fetchLists = useCallback(async () => {
     if (!token) return;
@@ -53,12 +55,27 @@ export default function HvHLobbyPage() {
     } catch { setError('大厅暂时无法连接，请稍后重试。'); }
     finally { setLoaded(true); }
   }, [token]);
+  const loadRank = useCallback(async () => {
+    if (!token) return;
+    const request = ++rankRequest.current;
+    setRankLoaded(false);
+    setRankError(false);
+    try {
+      const status = await getAiLadderStatus(token);
+      const placement = status?.placement_state;
+      if (placement?.phase === 'placed' && typeof placement.rung?.rung === 'number'
+        && typeof placement.rung.rank_name === 'string') {
+        if (request === rankRequest.current) setRank({ rung: placement.rung.rung, label: placement.rung.rank_name });
+      } else if (placement?.phase === 'placement') {
+        if (request === rankRequest.current) setRank(null);
+      } else throw new Error('Invalid rank status');
+    } catch {
+      if (request === rankRequest.current) { setRank(null); setRankError(true); }
+    } finally { if (request === rankRequest.current) setRankLoaded(true); }
+  }, [token]);
+  useEffect(() => { void loadRank(); }, [loadRank]);
   useEffect(() => {
     if (!token) return;
-    void getAiLadderStatus(token).then((s) => {
-      const p = s?.placement_state;
-      setRank(p?.phase === 'placed' ? { rung: p.rung.rung, label: p.rung.rank_name } : null);
-    }).catch(() => setRank(null)).finally(() => setRankLoaded(true));
     void fetchLists();
     const refresh = setInterval(() => { void fetchLists(); }, 10000);
     const ws = new WebSocket(websocketUrl('/ws/lobby', token));
@@ -75,7 +92,7 @@ export default function HvHLobbyPage() {
       else if (data.type === 'invitation') setInvitation({ from_id: Number(data.from_id), from_name: String(data.from_name) });
       else if (data.type === 'error') {
         if (data.code === 'PLACEMENT_REQUIRED') setDialog('placement');
-        else setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。'));
+        else { setDialog(null); setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。')); }
         clearTimer();
       } else if (data.type === 'info') setNotice(String(data.message || ''));
     };
@@ -92,7 +109,7 @@ export default function HvHLobbyPage() {
     socket.current.send(JSON.stringify(message)); return true;
   };
   const start = () => {
-    if (!rankLoaded) return;
+    if (!rankLoaded || rankError) return;
     if (!rank) { setDialog('placement'); return; }
     if (!send({ type: 'start_matchmaking' })) return;
     setElapsed(0); clearTimer(); timer.current = setInterval(() => setElapsed((n) => n + 1), 1000);
@@ -102,8 +119,9 @@ export default function HvHLobbyPage() {
   const roster = users.filter((u) => filter === 'all' || (filter === 'same' ? rank && u.ladder_rung === rank.rung : following.includes(u.id)));
   const ordered = [...roster].sort((a, b) => Number(b.id === user?.id) - Number(a.id === user?.id) || Number(a.presence === 'playing') - Number(b.presence === 'playing'));
   return <main className="pvp-galaxy">
-    <div className="pvp-galaxy__heading"><div><h1><button type="button" aria-label="返回对局" onClick={() => navigate('/galaxy/play')}>←</button>对战大厅</h1><p>选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。</p></div><div className="pvp-galaxy__identity"><span className="dot" />{rankLoaded ? rank ? '已定级' : '未定级' : '读取段位中'} <b>{rank?.label || (rankLoaded ? '先去升降级对弈' : '…')}</b></div></div>
-    <section className="pvp-galaxy__action" aria-label="快速匹配"><span className="emblem">棋</span><div><strong>来下一局</strong><small>优先寻找同段位真人；等待后由同段位棋手接局</small></div><button type="button" onClick={start} disabled={!rankLoaded || connection !== 'connected'}>快速匹配 →</button></section>
+    <div className="pvp-galaxy__heading"><div><h1><button type="button" aria-label="返回对局" onClick={() => navigate('/galaxy/play')}>←</button>对战大厅</h1><p>选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。</p></div><div className="pvp-galaxy__identity"><span className="dot" />{rankLoaded ? rankError ? '段位读取失败' : rank ? '已定级' : '未定级' : '读取段位中'} <b>{rankError ? '请重试' : rank?.label || (rankLoaded ? '先去升降级对弈' : '…')}</b></div></div>
+    <section className="pvp-galaxy__action" aria-label="快速匹配"><span className="emblem">棋</span><div><strong>来下一局</strong><small>优先寻找同段位真人；等待后由同段位棋手接局</small></div><button type="button" onClick={start} disabled={!rankLoaded || rankError || connection !== 'connected'}>快速匹配 →</button></section>
+    {rankError && <p role="alert" className="pvp-galaxy__alert">段位状态暂时无法读取。<button type="button" onClick={() => void loadRank()}>重试段位</button></p>}
     {connection === 'disconnected' && <p role="alert" className="pvp-galaxy__alert">大厅连接已断开，请刷新后重试。</p>}
     {error && <p role="alert" className="pvp-galaxy__alert">{error} <button type="button" onClick={() => void fetchLists()}>重试</button></p>}
     {notice && <p role="status" className="pvp-galaxy__alert">{notice}<button type="button" onClick={() => setNotice('')}>关闭</button></p>}

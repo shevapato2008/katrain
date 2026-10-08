@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -60,9 +60,25 @@ it('requires placement only for matching and keeps invitations available', async
 });
 it('uses the central identity in strict box mode even when local shadow ID differs', async () => {
   box.strict = true; auth.token = null;
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? [
+    ...people, { id: 42, username: '中央的我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' },
+  ] : [{ ...games[0], session_id: 'local-mirror-room', player_w_id: 42 }]) })));
   page(); await screen.findByText('同段');
   expect(fetch).toHaveBeenCalledWith('/api/pvp/identity', expect.anything());
   expect(within(screen.getByTestId('lobby-player-1')).queryByText('这是你')).not.toBeInTheDocument();
+  expect(within(await screen.findByTestId('lobby-player-42')).getByText('这是你')).toBeInTheDocument();
+  await userEvent.click(screen.getByTestId('lobby-game'));
+  expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/local-mirror-room', { state: { backTo: '/kiosk/play/pvp/lobby' } });
+});
+it('shows rank load error and retries instead of claiming the player is unplaced', async () => {
+  ladder.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
+  page();
+  expect(await screen.findByText('段位读取失败')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+  expect(screen.queryByText('尚未定级')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '重试段位' }));
+  await waitFor(() => expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 2 段'));
 });
 it('preserves guest gate and incoming invitations', async () => {
   auth.isAuthenticated = false; page();

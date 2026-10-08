@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import HvHLobbyPage from './HvHLobbyPage';
@@ -14,12 +14,13 @@ vi.mock('../components/layout/ContentPageHeader', () => ({ default: () => <div /
 vi.mock('../components/FriendsPanel', () => ({ default: () => <div /> }));
 
 const sent: string[] = [];
+let push: (message: unknown) => void = () => {};
 class FakeWS {
   static OPEN = 1;
   readyState = 1;
   onmessage: ((event: { data: string }) => void) | null = null;
   onopen: (() => void) | null = null;
-  constructor() { queueMicrotask(() => this.onopen?.()); }
+  constructor() { push = (message) => this.onmessage?.({ data: JSON.stringify(message) }); queueMicrotask(() => this.onopen?.()); }
   send(value: string) { sent.push(value); }
   close() {}
 }
@@ -66,4 +67,23 @@ it('shows placement dialog only for matching and allows invitation when unplaced
   await userEvent.click(screen.getByRole('button', { name: '返回大厅' }));
   await userEvent.click(within(screen.getByTestId('lobby-player-2')).getByRole('button', { name: '邀请' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
+});
+it('closes matching and shows a non-placement queue rejection', async () => {
+  render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
+  await screen.findByText('已定级');
+  await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('正在寻找');
+  act(() => push({ type: 'error', code: 'QUEUE_FULL', message: '队列暂不可用' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('队列暂不可用');
+});
+it('shows rank load error and retries instead of claiming the player is unplaced', async () => {
+  getAiLadderStatus.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
+  render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
+  expect(await screen.findByText('段位读取失败')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+  expect(screen.queryByText('未定级')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '重试段位' }));
+  expect(await screen.findByText('已定级')).toBeInTheDocument();
 });

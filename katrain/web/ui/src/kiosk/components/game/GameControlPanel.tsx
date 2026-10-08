@@ -333,9 +333,11 @@ const GameControlPanel = ({
   const moves = Math.max(0, (gameState.history?.length ?? 0) - (gameState.game_type === 'ai_ladder_ranked' ? 1 : 0));
   // N 取服务端下发的 `count_min_moves`(S2a 起按路数缩放:19 路 100 / 13 路 47 / 9 路 22);
   // `?? 100` 只兜「老服务端不带这个字段」,不是前端自己的门槛。
-  // 双 pass 之后后端在等数子(`awaiting_count`),`/api/count/request` 跳过手数门槛 ⇒ 键跟着亮。
-  // 只认自动数子那两种局(大厅 / 星阵局后端也可能报这个位,但数子在那儿是另一条协议)。
-  const awaitingCount = !!gameState.awaiting_count && autoCountEligible(gameState, engineMode);
+  // 本地自动数子局在 `awaiting_count` 时可跳过手数门槛；大厅局中央会先自动补分，
+  // 仅补分失败（`degraded`）时才开放人工重试。OGS 使用另一条计分协议。
+  const lobbyCountRetry = gameState.game_type === 'pvp_lobby' && !!gameState.degraded && !!gameState.awaiting_count;
+  const awaitingCount = !!gameState.awaiting_count
+    && (autoCountEligible(gameState, engineMode) || lobbyCountRetry);
   const canCount = !isGameOver && !counting && (awaitingCount || moves >= countMin);
 
   // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
@@ -552,10 +554,10 @@ const GameControlPanel = ({
       onClick: () => onAction('undo'),
     }] : []),
     { key: 'pass', icon: 'hand-pointing', label: t('game:pass', '停一手'), onClick: () => onAction('pass'),
-      disabled: onlineGame && (platformPhase === 'scoring' || platformPhase === 'paused' || platformPhase === 'finished'
+      disabled: onlineGame && (lobbyCountRetry || platformPhase === 'scoring' || platformPhase === 'paused' || platformPhase === 'finished'
         || !myColor || gameState.player_to_move !== myColor) },
     { key: 'resign', icon: 'flag', label: t('Resign', '认输'), onClick: () => onAction('resign'),
-      disabled: onlineGame && (!myColor || platformPhase === 'finished'), danger: true },
+      disabled: onlineGame && (lobbyCountRetry || !myColor || platformPhase === 'finished'), danger: true },
   ];
 
   const actions = engineMode
@@ -722,6 +724,8 @@ const GameControlPanel = ({
               : analysisRequiresLogin && analysisActions.length > 0
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
                 // F4:双 pass 之后(awaitingCount)不再说「数子要下满 N 手」—— 门槛已经满足了。
+                : lobbyCountRetry && !isGameOver
+                  ? '自动数子失败，请按「数子」重试'
                 : awaitingCount && !isGameOver
                   ? t('game:both_passed', '双方都停了一手')
                   : !isGameOver && !canCount

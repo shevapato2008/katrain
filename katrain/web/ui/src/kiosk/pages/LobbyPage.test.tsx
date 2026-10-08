@@ -14,13 +14,14 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: ladder }));
 vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return box.strict; } }));
 const sent: string[] = [];
+let socketCount = 0;
 let push: (message: unknown) => void;
 class FakeWS {
   static OPEN = 1;
   readyState = 1;
   onmessage: ((event: { data: string }) => void) | null = null;
   onopen: (() => void) | null = null;
-  constructor() { push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); queueMicrotask(() => this.onopen?.()); }
+  constructor() { socketCount++; push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); queueMicrotask(() => this.onopen?.()); }
   send(value: string) { sent.push(value); }
   close() {}
 }
@@ -28,7 +29,7 @@ const games = [{ session_id: 'own', player_b: '他', player_w: '我', player_b_i
 const people = [{ id: 1, username: '我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' }, { id: 2, username: '同段', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle', kind: 'bot' }, { id: 3, username: '异段', ladder_rung: 13, rank_label: '业余 3 段', presence: 'idle' }];
 const page = () => render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
 beforeEach(() => {
-  sent.length = 0; nav.mockClear(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
+  sent.length = 0; socketCount = 0; nav.mockClear(); ladder.mockReset(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
   vi.stubGlobal('WebSocket', FakeWS);
   vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? people : games) })));
   ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
@@ -58,19 +59,51 @@ it('requires placement only for matching and keeps invitations available', async
   await userEvent.click(within(screen.getByTestId('lobby-player-2')).getByRole('button', { name: '邀请' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
 });
-it('uses the central identity in strict box mode even when local shadow ID differs', async () => {
+it('uses central identity and proxied central rank in strict box mode even when the local shadow differs', async () => {
   box.strict = true; auth.token = null;
+  ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 13, rank_name: '业余 3 段' } } });
   vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? [
-    ...people, { id: 42, username: '中央的我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' },
+    ...people, { id: 42, username: '中央的我', ladder_rung: 13, rank_label: '业余 3 段', presence: 'playing' },
   ] : [{ ...games[0], session_id: 'local-mirror-room', player_w_id: 42 }]) })));
   page(); await screen.findByText('同段');
   expect(fetch).toHaveBeenCalledWith('/api/pvp/identity', expect.anything());
   expect(within(screen.getByTestId('lobby-player-1')).queryByText('这是你')).not.toBeInTheDocument();
   expect(within(await screen.findByTestId('lobby-player-42')).getByText('这是你')).toBeInTheDocument();
+  expect(ladder).toHaveBeenCalled();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 3 段');
+  await userEvent.click(screen.getByRole('tab', { name: '同段位' }));
+  expect(screen.getByTestId('lobby-player-42')).toBeInTheDocument();
+  expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument();
   await userEvent.click(screen.getByTestId('lobby-game'));
   expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/local-mirror-room', { state: { backTo: '/kiosk/play/pvp/lobby' } });
 });
-it('shows rank load error and retries instead of claiming the player is unplaced', async () => {
+it('keeps invitations disabled while central identity is unknown and retries identity plus socket', async () => {
+  box.strict = true; auth.token = null;
+  let identities = 0;
+  vi.stubGlobal('fetch', vi.fn((url: string) => {
+    if (url.includes('/pvp/identity')) {
+      identities++;
+      return Promise.resolve(identities === 1
+        ? { ok: false, json: () => Promise.resolve({}) }
+        : { ok: true, json: () => Promise.resolve({ user_id: 42 }) });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/users/online')
+      ? [{ id: 1, username: '本地影子', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle' }, ...people.slice(1)]
+      : games) });
+  }));
+  page();
+  const shadow = await screen.findByTestId('lobby-player-1');
+  expect(within(shadow).getByRole('button', { name: '邀请' })).toBeDisabled();
+  expect(await screen.findByText('无法确认中央账号身份，请重试。')).toBeInTheDocument();
+  await userEvent.click(screen.getByRole('button', { name: '重试' }));
+  await waitFor(() => expect(identities).toBe(2));
+  await waitFor(() => expect(socketCount).toBe(2));
+  await waitFor(() => expect(within(shadow).getByRole('button', { name: '邀请' })).toBeEnabled());
+  expect(ladder).toHaveBeenCalled();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 2 段');
+});
+it.each([false, true])('shows rank load error and retries instead of claiming the player is unplaced (strict=%s)', async (strict) => {
+  box.strict = strict;
   ladder.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
   page();
   expect(await screen.findByText('段位读取失败')).toBeInTheDocument();

@@ -588,6 +588,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
   const lobbyGame = gameState.game_type === 'pvp_lobby';
+  const lobbyCountRetry = lobbyGame && !!gameState.degraded && !!gameState.awaiting_count;
   const ogsGame = gameState.game_type === 'pvp_online';
   const onlineGame = ogsGame || lobbyGame;
   const myColor = gameState.platform_my_color ?? gameState.my_color ?? null;
@@ -809,6 +810,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const handleAction = async (action: string) => {
     if (lobbyGame && !['pass', 'resign', 'count'].includes(action)) return;
+    if (lobbyCountRetry && action !== 'count') return;
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'ogs-score-accept') {
       if (ogsGame && onlinePhase === 'scoring' && !onlineScoringPending) setOgsNoDeadConfirm(ogsScoringScope);
@@ -854,7 +856,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
-    if (isGameOver) return;
+    if (isGameOver || lobbyCountRetry) return;
     if (onlineGame && (!myColor
       || gameState.player_to_move !== myColor
       || (onlinePhase != null && onlinePhase !== 'playing'))) return;
@@ -1032,7 +1034,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
   // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
   // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
-  const statusSlot = onlineMoveError ? (
+  const statusSlot = lobbyCountRetry ? (
+    <div className="gstatus" data-testid="lobby-count-error" data-tone={counting ? undefined : 'bad'} role="alert">
+      {counting && <CircularProgress size={14} />}
+      <div>
+        <b>{counting ? '正在重新数子…' : '自动数子失败'}</b>
+        <span>棋局已停手，数子成功后才会显示正式结果。</span>
+      </div>
+      <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting}
+        onClick={() => { void handleAction('count'); }}>重试数子</button>
+    </div>
+  ) : onlineMoveError ? (
     <div className="gstatus" data-testid="ogs-move-error" data-tone="bad" role="alert">
       <div><b>{onlineMoveError}</b></div>
     </div>
@@ -1289,7 +1301,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             engineItemCounts={engineItemCounts}
             hardwareFault={hardwareFault}
             physicalStatus={physicalStatus}
-            counting={autoCount.status === 'counting'}
+            counting={autoCount.status === 'counting' || counting}
             platformClock={ogsGame ? session.platformClock : null}
             platformPhase={ogsGame ? onlinePhase : null}
             onlineScoringPending={onlineScoringPending}

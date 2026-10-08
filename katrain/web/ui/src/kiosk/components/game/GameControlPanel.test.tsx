@@ -209,6 +209,21 @@ describe('GameControlPanel', () => {
     expect(screen.queryByText('等待 OGS 计时')).toBeNull();
     expect(screen.queryByText('AI支招')).toBeNull();
   });
+  test('self-owned lobby enables count retry when automatic two-pass scoring fails', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', degraded: true, awaiting_count: true,
+      end_result: 'board-game-end', history: [], count_min_moves: 100 });
+    const count = screen.getByRole('button', { name: '数子' });
+    expect(count).toBeEnabled();
+    expect(count).not.toHaveAttribute('title', expect.stringContaining('100'));
+    expect(screen.getByText(/自动数子失败/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();
+  });
+  test('self-owned lobby does not bypass count threshold without a degraded result', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', awaiting_count: true, degraded: false,
+      history: [], count_min_moves: 100 });
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
+  });
 
   test('OGS finished phase blocks resign until the remote result is reflected locally', () => {
     panel({ game_type: 'pvp_online', platform_my_color: 'B' }, { platformPhase: 'finished' });

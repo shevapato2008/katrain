@@ -1019,6 +1019,25 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByTestId('exit-leave-keep'));
       expect(await screen.findByText('PVP_LOBBY')).toBeInTheDocument();
     });
+    it('retries central counting after a degraded two-pass result without replaying moves', async () => {
+      mockGameState = makeGameState({
+        game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'W',
+        degraded: true, awaiting_count: true, end_result: 'board-game-end',
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } },
+      });
+      const count = vi.spyOn(API, 'requestCount').mockResolvedValue({ state: mockGameState } as never);
+      try {
+        renderPage('/kiosk/play/pvp/room/test-session');
+        expect(screen.getByTestId('lobby-count-error')).toHaveTextContent('自动数子失败');
+        await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+        await act(async () => { await capturedControlPanelProps.current?.onAction('pass'); });
+        expect(mockOnMove).not.toHaveBeenCalled();
+        expect(mockHandleAction).not.toHaveBeenCalledWith('pass');
+        fireEvent.click(screen.getByRole('button', { name: '重试数子' }));
+        await waitFor(() => expect(count).toHaveBeenCalledWith('test-session'));
+      } finally { count.mockRestore(); }
+    });
   });
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.

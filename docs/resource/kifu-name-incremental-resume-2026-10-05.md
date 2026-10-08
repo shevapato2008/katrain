@@ -1309,3 +1309,16 @@ agon10（10 原文／205 盘）及 cmb2（2 原文／2 盘）已实际两库入�
 - 首次 TEST 尝试的来源 registry 版本文字超过数据库 `VARCHAR(64)`，在任何 batch/名称写入前失败并回滚；旧 bundle 不是实际 595。最终使用 `2026-10-09-roster3-reference-v1`，实际 PROD/TEST bundle SHA-256 分别为 `7e9436ea7fbbe11de6e67006541e557ba32d4fbfaed3fa4a25da988ade7f59c7` / `7d23b5cb5ad326b667933acbae44b744112eb5b6e8cf1bef4c941c1862dbba05`。HTML 已用实际 595 名称、PROD 统计及 16 条 PROD 页面资料刷新。
 - 实际 v2 bundle/研究、两库 16-owner 物理捕获与执行回执、来源原始捕获、独立审核、两库页面与 HTTP 回执、PROD 有界统计已封存为 `kifu-incremental-applied-2026-10-05/kifu-next16-595-20261009.json.gz`（619,574 字节；SHA-256 `13ec2d09958e12f06f930ceefc62d3c77eba4c3e15fce2058110346c38398c67`）。两份 173,025 行 format-4 inventory 和含其内容的 root-reviewed-fresh 文件只保留哈希及审查摘要，不在归档中重复打包；失败的初次 bundle 只记录回滚原因，不计入实际批次。
 - 此归档仅覆盖 batch595 名称、资料页及样本查询闭环；中文姓名转韩文的有限规则 Task1 已通过独立审核并提交，Task2 入库与读取接入仍在开发中。
+
+## 596/597 — 2026-10-09：150 个中文 SGF 原始标题的 owner 与五语字面名称实际入库
+
+- TEST、PROD batch596 各审核并写入 150 个 `sgf_chinese_mixed` raw title owner，覆盖 174 盘原始赛事槽；batch597 各写入并验证 750 个 `literal_event_title` 五语名称及 750 条研究证据，共 1,500 项名称/证据账本变更。来源是冻结的 C76 全部 76 项与 Han 目录 74 项。两库 owner 与名称 apply/verify、各 12 项实际 HTTP 样本均通过；未创建正式赛事实体 ID，未改棋谱 SGF 或赛事 FK。
+- 校正后的 PROD r6 有界实际统计以 595 为基线：本批 174 盘的 raw title 五语资格新增，双方棋手也齐全的严格完整卡片新增 **148**。同一 r6 读取修复独立恢复较早的 **1,241** 个中文混合标题 owner，涉及另 **1,246** 盘及 **1,059** 张严格完整卡片。两组 owner 范围互不重叠；初次 597 bounded 输出只描述新 174 盘，是诊断结果，不作为最终进度。
+- 最终 PROD：棋手仍 **1,723/3,698（46.5928%）**，正式赛事类型仍 **64/85（75.2941%）**，双方棋手五语棋局仍 **133,895/173,025（77.3848%）**；严格完整卡片 **44,314/173,025（25.6113%，较595 +1,207）**，其中正式赛事 11,605、raw title 32,709；raw title 五语棋局 **41,273/173,025（23.8538%，较595 +1,420）**。统计只重算新 174 盘和旧 owner 恢复的 1,246 盘，其余沿用 595 实际基线，未声称独立全库严格扫描。字面 raw title 资格与 64/85 正式赛事实体完成数分开。
+- 来源、根审、两库 owner/name 执行回执、r6 native 构建证据、两库 HTTP、校正审计及 PROD 进度保存在 `kifu-incremental-applied-2026-10-05/kifu-event-chinese-596-597-20261009.json.gz`（976,901 字节；SHA-256 `d6e5862a4380d55ecee8a787583a8aacddd3fa075560bc4dbe43b81beee39b7a`）。两份 173,025 关联行 format-4 inventory 仅记哈希引用；HTML 已据最终 r6 PROD 快照更新。
+
+## r7 — 2026-10-09：中文姓名转韩文 Task2 读取接入两库实际发布
+
+- Task2 代码已合并于 `536718120c3c8630ba56b4d2a656f120e93152af`。TEST/PROD native adapter 按各自旧镜像的实际文件前像生成并核对变更：每环境 web 4 个、importer 6 个文件；源、补丁、前后 SHA 与独立代码审核已封存。此处只记录发布读端；未据此宣称首批新棋手名称已经入库。
+- TEST 实际保留旧 r5 web 镜像 `sha256:1f9c816c13f307987d44b66e0c5039391851104d4a0e89e5133f5d374f657547`，增加 4 个持久只读源码 bind；失败的 TEST web 镜像构建不算发布成功。PROD 实际使用新 r7 web 镜像 `sha256:5dffa47d373ad549154ec0821e892a61fba0f362f9f7910c118fb7a7aaa31560`，无需新增 bind。两库运行时文件 SHA、健康检查及环境哈希已核验，其他容器保持不变、SQL 写入 0；各 12 项 CN/TW/JP/KO/EN/RU HTTP 样本通过。样本耗时不代表全局性能保证。
+- 发布证据归档 `kifu-reader-zh-ko-r7-cloud-deployment-20261009.json.gz`（129,029 字节；SHA-256 `c71ede77d5a3565afe76648bcfd44961f2c183b66ba568cd607f84cf8a15886b`）。TEST 容器重建或回滚时须从固定 release 目录恢复这 4 个持久只读 bind，并核对运行时文件 SHA 后才能继续宣称 r7 行为。归档只含批准的变更源码、补丁、哈希引用、发布核验和 HTTP 结果，不含镜像层、原始环境变量或模型/数据库主体。

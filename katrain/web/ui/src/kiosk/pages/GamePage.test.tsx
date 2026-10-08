@@ -1020,6 +1020,18 @@ describe('GamePage', () => {
 
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
   describe('self-owned lobby room', () => {
+    it('holds moves and resignation while automatic count is pending', async () => {
+      mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'W',
+        end_result: '终局', awaiting_count: true, degraded: false,
+        players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },
+          W: { ...basePlayer, player_type: 'player:human', name: '我' } } });
+      renderPage('/kiosk/play/pvp/room/test-session');
+      expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+      await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+      expect(mockOnMove).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: 'MOCK_RESIGN' }));
+      expect(screen.queryByText('确认认输？')).not.toBeInTheDocument();
+    });
     it('applies a central opponent departure result carried by game_end', () => {
       mockGameState = makeGameState({ game_type: 'pvp_lobby', platform_my_color: 'W',
         players_info: { B: { ...basePlayer, player_type: 'player:human', name: '对手' },

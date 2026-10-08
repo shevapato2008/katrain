@@ -143,6 +143,7 @@ const GameRoomPage = () => {
     }, [navigate]);
 
     const handleActionWrapper = useCallback((action: string) => {
+        if (gameState?.end_result && gameState.awaiting_count) return;
         if (action === 'resign') {
              setShowResignConfirm(true);
         } else if (action === 'count') {
@@ -152,7 +153,7 @@ const GameRoomPage = () => {
         } else {
              void (async () => { try { await handleAction(action); } catch { /* surfaced by hook */ } })();
         }
-    }, [handleAction, finalResult]);
+    }, [handleAction, finalResult, gameState?.end_result, gameState?.awaiting_count]);
 
     const confirmCount = useCallback(async () => {
         setShowCountConfirm(false);
@@ -198,7 +199,9 @@ const GameRoomPage = () => {
 
     const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
     const isGameOver = finalResult;
-    const countRetry = !!gameState.end_result && !!gameState.awaiting_count && !!gameState.degraded;
+    const countStopped = !!gameState.end_result && !!gameState.awaiting_count;
+    const countRetry = countStopped && !!gameState.degraded;
+    const countPending = countStopped && !gameState.degraded;
 
     /* 「离开对局」的落点。观战者没有可判负的东西、已结束的对局也没有 —— 直接回大厅；
        只有进行中的自己的对局才弹那句「离开将判负」的确认框。 */
@@ -311,14 +314,14 @@ const GameRoomPage = () => {
                         }}>
                             <Board
                                 gameState={gameState}
-                                onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                                onMove={(x, y) => isPlayer && !countStopped ? onMove(x, y) : {}}
                                 analysisToggles={{ coords: displayToggles.coords, numbers: displayToggles.numbers }}
                             />
                         </div>
                         {view3d && Board3D && (
                             <Board3D
                                 gameState={gameState}
-                                onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                                onMove={(x, y) => isPlayer && !countStopped ? onMove(x, y) : {}}
                                 analysisToggles={displayToggles}
                             />
                         )}
@@ -334,6 +337,8 @@ const GameRoomPage = () => {
                         status={
                             countRetry
                                 ? <Chip size="small" color="error" variant="outlined" label="数子失败" />
+                                : countPending
+                                ? <Chip size="small" color="info" variant="outlined" label="正在自动数子" />
                                 : isGameOver
                                 ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
                                 : !isPlayer
@@ -363,6 +368,8 @@ const GameRoomPage = () => {
                             ? <Alert severity="error" variant="outlined" action={isPlayer
                                 ? <Button size="small" disabled={countRetrying} onClick={() => void confirmCount()}>重试数子</Button>
                                 : undefined}>自动数子失败，结果尚未确定。</Alert>
+                            : countPending
+                                ? <Alert severity="info" variant="outlined">双方已停手，正在自动数子。结果尚未确定，请稍候。</Alert>
                             : isGameOver
                                 ? <Alert severity="success" variant="outlined">{translateResult(gameState.end_result!, t, gameState.ruleset)}</Alert>
                                 : undefined}

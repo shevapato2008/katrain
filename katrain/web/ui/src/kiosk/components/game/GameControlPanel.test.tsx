@@ -70,6 +70,15 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('数子')).toBeInTheDocument();
   });
 
+  test('automatic lobby count stops turn prompts and disables play actions', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'B', end_result: '终局', awaiting_count: true, degraded: false });
+    expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+    expect(screen.queryByText('轮到你')).not.toBeInTheDocument();
+    for (const name of ['数子', '停一手', '认输']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
+    }
+  });
+
   test('胜率图只在终局后允许跳转棋谱位置', () => {
     const history = [
       { node_id: 10, score: 0, winrate: 0.5 },

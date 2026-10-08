@@ -662,6 +662,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const localGame = gameState.game_type === 'pvp_local';
   const lobbyGame = gameState.game_type === 'pvp_lobby';
   const lobbyCountRetry = lobbyGame && !!gameState.degraded && !!gameState.awaiting_count;
+  const lobbyAutoCountPending = lobbyGame && !!gameState.end_result && !!gameState.awaiting_count && !gameState.degraded;
   const opponentCountRequest = lobbyGame && countRequest && centralUserId !== null
     && countRequest.requester_id !== centralUserId ? countRequest : null;
   const ogsGame = gameState.game_type === 'pvp_online';
@@ -902,6 +903,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const handleAction = async (action: string) => {
     if (lobbyGame && !['pass', 'resign', 'count'].includes(action)) return;
+    if (lobbyAutoCountPending) return;
     if (lobbyCountRetry && action !== 'count') return;
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
     if (action === 'ogs-score-accept') {
@@ -955,7 +957,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
-    if (isGameOver || lobbyCountRetry) return;
+    if (isGameOver || lobbyAutoCountPending || lobbyCountRetry) return;
     if (onlineGame && (!myColor
       || gameState.player_to_move !== myColor
       || (onlinePhase != null && onlinePhase !== 'playing'))) return;
@@ -1147,6 +1149,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </div>
       <button type="button" className="kiosk-btn kiosk-btn--pill" disabled={counting || countPending}
         onClick={() => { void handleAction('count'); }}>重试数子</button>
+    </div>
+  ) : lobbyAutoCountPending ? (
+    <div className="gstatus" data-testid="lobby-auto-count-pending" role="status">
+      <div><b>正在自动数子</b><span>双方已停手，结果尚未确定。请稍候。</span></div>
     </div>
   ) : lobbyGame && countPending ? (
     <div className="gstatus" data-testid="lobby-count-pending" role="status">

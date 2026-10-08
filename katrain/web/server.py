@@ -3980,6 +3980,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         bridge = getattr(app.state, "pvp_box_bridge", None)
         generation = app.state.box_sso.active_generation if strict_box else None
         room = bridge.rooms.for_local(generation, session_id) if strict_box and bridge is not None else None
+        if strict_box and bridge is not None and room is None:
+            try:
+                unmapped_session = manager.get_session(session_id)
+            except KeyError:
+                unmapped_session = None
+            if unmapped_session is not None and getattr(unmapped_session, "game_type", None) == "pvp_lobby":
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
         if room is not None:
             if current_user is None or current_user.id != room.local_user_id:
                 await websocket.accept()
@@ -3991,6 +4000,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             except (KeyError, PvpBoxAuthError):
                 await websocket.accept()
                 await websocket.close(code=1008, reason="Room unavailable")
+                return
+
+            if session.game_ended and isinstance(session.last_state, dict):
+                await websocket.accept()
+                app.state.box_sso.register_socket(websocket)
+                session.sockets.add(websocket)
+                try:
+                    bridge.check_user(generation, current_user.id)
+                    await websocket.send_json({"type": "game_update", "state": session.last_state})
+                    await websocket.close(code=1000, reason="session_closed")
+                except PvpBoxAuthError:
+                    try:
+                        await websocket.close(code=1008, reason="Room unavailable")
+                    except RuntimeError:
+                        pass
+                except (WebSocketDisconnect, RuntimeError):
+                    pass
+                finally:
+                    session.sockets.discard(websocket)
+                    app.state.box_sso.discard_socket(websocket)
                 return
 
             def transform_room(payload):

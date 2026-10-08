@@ -268,7 +268,15 @@ def test_normal_central_game_end_preserves_result_without_outage_and_releases_so
     upstream = FinishedUpstream(
         {"game_type": "free", "board_size": [19, 19], "stones": [["B", [3, 3], None, 1]], "player_to_move": "W"}
     )
-    monkeypatch.setattr(bridge_module, "ws_connect", lambda *_args, **_kwargs: upstream)
+    central_dials = []
+
+    def connect_central(*_args, **_kwargs):
+        central_dials.append(True)
+        if len(central_dials) != 1:
+            raise AssertionError("a finished mirror must not reconnect the deleted central room")
+        return upstream
+
+    monkeypatch.setattr(bridge_module, "ws_connect", connect_central)
 
     with TestClient(app) as client:
         client.cookies.set("sb_go_token", token)
@@ -281,8 +289,34 @@ def test_normal_central_game_end_preserves_result_without_outage_and_releases_so
             assert closed.value.code == 1000
         state = client.get("/api/state", params={"session_id": "local-room"})
         sgf = client.get("/api/sgf/save", params={"session_id": "local-room"})
+        with client.websocket_connect("/ws/local-room", headers={"Origin": "http://testserver"}) as refreshed:
+            final = refreshed.receive_json()
+            assert final["type"] == "game_update"
+            assert final["state"]["end_result"] == "B+F"
+            assert final["state"]["stones"] == [["B", [3, 3], None, 1]]
+            with pytest.raises(WebSocketDisconnect) as closed_refresh:
+                refreshed.receive_json()
+            assert closed_refresh.value.code == 1000
+        client.cookies.clear()
+        with client.websocket_connect("/ws/local-room", headers={"Origin": "http://testserver"}) as anonymous:
+            with pytest.raises(WebSocketDisconnect) as denied:
+                anonymous.receive_json()
+            assert denied.value.code == 1008
+        client.cookies.set("sb_go_token", token)
+        app.state.box_sso.active_generation = 13
+        with client.websocket_connect("/ws/local-room", headers={"Origin": "http://testserver"}) as stale:
+            with pytest.raises(WebSocketDisconnect) as denied_generation:
+                stale.receive_json()
+            assert denied_generation.value.code == 1008
+        client.cookies.set("sb_go_token", create_access_token(data={"sub": "alice"}, box_generation=13))
+        with client.websocket_connect("/ws/local-room", headers={"Origin": "http://testserver"}) as remapped:
+            with pytest.raises(WebSocketDisconnect) as denied_old_room:
+                remapped.receive_json()
+            assert denied_old_room.value.code == 1008
+        app.state.box_sso.active_generation = 12
 
     assert upstream.closed is True
+    assert central_dials == [True]
     assert not mirror.sockets
     assert not app.state.box_sso._sockets
     assert mirror.game_ended is True

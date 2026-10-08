@@ -123,6 +123,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
     # discriminator was removed. Bound this lookup to evidence already returned.
     evidence_ids = {evidence.id for _, evidence, *_ in rows}
     positive_ledger_ids = set()
+    verified_display_ledger_ids = set()
     if evidence_ids:
         for change in db.query(KifuNameChange).filter(
             KifuNameChange.target_table == "kifu_name_research_evidence",
@@ -133,12 +134,24 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
                 payload=after.get("research_payload"), rule=after.get("generation_rule_version")
             ):
                 positive_ledger_ids.add(change.target_row_id)
+            if isinstance(after, dict):
+                created_payload = after.get("research_payload")
+                created_candidate = created_payload.get("candidate") if isinstance(created_payload, dict) else None
+                created_proof = created_payload.get("primary_orthographic") if isinstance(created_payload, dict) else None
+                created_anchor = created_proof.get("source_anchor") if isinstance(created_proof, dict) else None
+                created_source = created_anchor.get("content") if isinstance(created_anchor, dict) else None
+                if (isinstance(created_candidate, dict)
+                    and created_candidate.get("reference_kind") == "verified_chinese_display"
+                    or isinstance(created_source, dict)
+                    and created_source.get("reference_kind") == "verified_chinese_display"):
+                    verified_display_ledger_ids.add(change.target_row_id)
 
     def orthographic_proof(name, evidence):
         payload = evidence.research_payload
         candidate = payload.get("candidate") if isinstance(payload, dict) else None
         return (
-            name.generation_rule_version == name_orthographic.VERSION
+            evidence.id in verified_display_ledger_ids
+            or name.generation_rule_version == name_orthographic.VERSION
             or isinstance(payload, dict)
             and "primary_orthographic" in payload
             or isinstance(candidate, dict)
@@ -205,7 +218,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities):
         raw = extra[0] if owner_column.startswith("raw_") and extra else None
         eligible = name_orthographic.persisted_name_eligible if orthographic else persisted_name_eligible
         context = orthographic_contexts[batch_id] if orthographic else contexts[batch_id]
-        if eligible(name, evidence, owner_column, raw, batches[batch_id], context):
+        if (eligible(name, evidence, owner_column, raw, batches[batch_id], context, db)
+            if orthographic else eligible(name, evidence, owner_column, raw, batches[batch_id], context)):
             result.append(row)
     return result
 

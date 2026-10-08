@@ -3,13 +3,14 @@
 import asyncio
 import hashlib
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints import kifu
-from katrain.web.core.models_db import KifuAlbum, KifuPlayer, KifuPlayerName, KifuNameResearchEvidence
-from katrain.web.kifu.name_batch import apply_bundle, catalog_snapshot_sha, dry_run_bundle, BatchError
+from katrain.web.core.models_db import KifuAlbum, KifuPlayer, KifuPlayerName, KifuNameResearchEvidence, KifuNameBatch, KifuNameChange
+from katrain.web.kifu.name_batch import apply_bundle, catalog_snapshot_sha, dry_run_bundle, BatchError, approved_name_snapshot, name_preimage_sha256
 from katrain.web.kifu.name_candidates import canonical_sha256, validate_bundle
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
@@ -170,6 +171,215 @@ def refresh(bundle, anchor):
         review_conclusion="approved_orthographic_batch",
     )
     row["preimage_binding"].update(bound_at="2026-10-03T12:30:00Z")
+
+
+def verified_chinese_display_fixture(original="加纳一夫", output="加納一夫"):
+    """A Japanese owner with a separately approved conventional CN display."""
+    from tests.web_ui.test_kifu_name_api import _evidence
+    from katrain.web.kifu.name_batch import _image
+
+    engine, bundle, anchors, inventory = fixture()
+    with Session(engine) as db:
+        player = db.get(KifuPlayer, 17)
+        player.canonical_name = "加藤一夫"
+        db.query(KifuAlbum).update({"player_black": "加藤一夫", "sgf_content": "(;PB[加藤一夫]PW[White];B[aa])"})
+        source_evidence = _evidence(db, "player", 17, "cn", original)
+        source_evidence.produced_at = datetime(2026, 10, 3, 8, 0, tzinfo=timezone.utc)
+        source_evidence.reviewed_at = datetime(2026, 10, 3, 9, 0, tzinfo=timezone.utc)
+        source_research = {"scope_status": "found", "candidate_name": original}
+        source_candidate = {"owner": {"kind": "player", "id": 17}, "lang": "cn", "display_name": original,
+                            "decision_kind": "conventional", "review_status": "approved",
+                            "research_sha256": canonical_sha256(source_research)}
+        source_evidence.research_payload = {"candidate": source_candidate, "research": source_research}
+        db.add(KifuPlayerName(player_id=17, lang="cn", display_name=original, status="verified",
+                              decision_kind="conventional", generation_rule_version="test-v1", revision=1,
+                              evidence_id=source_evidence.id))
+        db.flush()
+        source_name = db.query(KifuPlayerName).filter_by(player_id=17, lang="cn").one()
+        source_bundle = {"candidates": [source_candidate]}
+        source_batch = KifuNameBatch(bundle_sha256=canonical_sha256(source_bundle), inventory_sha256="b" * 64,
+                                     source_registry_id=source_evidence.source_registry_id,
+                                     reviewed_artifact={"bundle": source_bundle,
+                                                        "research_hashes": [canonical_sha256(source_research)]}, status="applied")
+        db.add(source_batch)
+        db.flush()
+        conn = db.connection()
+        name_image = _image(conn, KifuPlayerName.__table__, source_name.id)
+        evidence_image = _image(conn, KifuNameResearchEvidence.__table__, source_evidence.id)
+        source_change = KifuNameChange(batch_id=source_batch.id, sequence=1,
+                                       target_table="kifu_name_research_evidence", target_row_id=source_evidence.id,
+                                       before_image=None, after_image=evidence_image)
+        db.add(source_change)
+        db.add(KifuNameChange(batch_id=source_batch.id, sequence=2, target_table="kifu_player_names",
+                              target_row_id=source_name.id, before_image=None, after_image=name_image))
+        source_batch_id = source_batch.id
+        source_bundle_sha256 = source_batch.bundle_sha256
+        db.commit()
+    inventory = build_inventory(engine)
+    bundle.update(inventory_sha256=inventory["sha256"], catalog_sha256=catalog_snapshot_sha(engine))
+    row = bundle["candidates"][0]
+    row.update(lang="tw", display_name=output, name_preimage_sha256=None)
+    bundle["members"][0]["lang"] = "tw"
+    bundle["member_set_sha256"] = canonical_sha256(bundle["members"])
+    anchor = anchors[0]
+    anchor["content"] = {
+        "reference_kind": "verified_chinese_display", "owner": row["owner"], "original_name": original,
+        "source_lang": "zh-Hans", "source_script": "Hans",
+        "binding": {"kind": "verified_chinese_display", "owner": row["owner"],
+                    "source_name": name_image, "source_evidence": evidence_image,
+                    "source_batch": {"id": source_batch_id, "bundle_sha256": source_bundle_sha256,
+                                     "evidence_creation_sha256": canonical_sha256(evidence_image)}},
+    }
+    rule = bundle["primary_orthographic"]["rules"][0]["content"]
+    rule.update(mappings=[{**rule["mappings"][0], "input": a, "output": b}
+                          for a, b in zip(original, output)])
+    member = bundle["primary_orthographic"]["batches"][0]["content"]["members"][0]
+    member.update(reference_kind="verified_chinese_display", original_name=original, display_name=output,
+                  codepoint_changes=[{"position": i, "input": f"U+{ord(a):04X}", "output": f"U+{ord(b):04X}"}
+                                     for i, (a, b) in enumerate(zip(original, output))])
+    snapshot = approved_name_snapshot(engine)
+    bundle["primary_orthographic"]["batches"][0]["content"].update(
+        approved_name_snapshot_sha256=canonical_sha256(snapshot), catalog_sha256=bundle["catalog_sha256"]
+    )
+    refresh(bundle, anchor)
+    return engine, bundle, anchors, inventory, snapshot
+
+
+@pytest.mark.parametrize("original,output", [("加纳一夫", "加納一夫"), ("金井新一", "金井新一")])
+def test_verified_chinese_display_import_and_readback(monkeypatch, original, output):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture(original, output)
+    try:
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert report["write_ready"], report
+        assert dry_run_bundle(engine, bundle, registry(), inventory, anchors)["write_ready"]
+        assert apply_bundle(engine, bundle, registry(), inventory, anchors)["status"] == "applied"
+        with Session(engine) as db:
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 1 and page.items[0].display_player_black == output
+            assert db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one().decision_kind == "generated"
+    finally:
+        engine.dispose()
+
+
+def test_verified_chinese_display_does_not_resolve_sheng_variant():
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture("加升一夫", "加昇一夫")
+    try:
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"]
+        assert any("exceptional mapping" in error for error in report["errors"])
+    finally:
+        engine.dispose()
+
+
+def test_verified_chinese_display_locked_import_rechecks_source_preimage():
+    engine, bundle, anchors, inventory, _ = verified_chinese_display_fixture()
+    try:
+        with Session(engine) as db:
+            db.query(KifuPlayerName).filter_by(player_id=17, lang="cn").update({"display_name": "加纳二夫"})
+            db.commit()
+        with pytest.raises(BatchError):
+            apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            assert db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").count() == 0
+    finally:
+        engine.dispose()
+
+
+def test_verified_chinese_display_cannot_replace_resigned_existing_tw():
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture()
+    try:
+        with Session(engine) as db:
+            db.add(KifuPlayerName(player_id=17, lang="tw", display_name="待核名稱", status="review",
+                                  decision_kind="conventional", generation_rule_version="none", revision=1))
+            db.commit()
+        row = bundle["candidates"][0]
+        preimage = name_preimage_sha256(engine, row["owner"], "tw")
+        assert isinstance(preimage, str) and len(preimage) == 64
+        row["name_preimage_sha256"] = preimage
+        row["preimage_binding"]["name_preimage_sha256"] = preimage
+        refresh(bundle, anchors[0])
+        report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)
+        assert not report["write_ready"], report
+        with pytest.raises(BatchError):
+            apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            assert db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one().display_name == "待核名稱"
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("drift", ["foreign_owner", "source_value", "source_review", "source_decision", "source_proof", "target_filled", "direction", "ambiguous"])
+def test_verified_chinese_display_rejects_bad_source_or_target(drift):
+    engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture()
+    try:
+        source = anchors[0]["content"]
+        if drift == "foreign_owner":
+            source["binding"]["owner"] = {"kind": "player", "id": 99}
+        elif drift == "source_value":
+            source["binding"]["source_name"]["display_name"] = "加纳二夫"
+        elif drift == "source_review":
+            source["binding"]["source_name"]["status"] = "review"
+        elif drift == "source_decision":
+            source["binding"]["source_evidence"]["decision_kind"] = "generated"
+        elif drift == "source_proof":
+            source["binding"]["source_batch"]["bundle_sha256"] = "f" * 64
+        elif drift == "direction":
+            source["source_lang"] = "zh-Hant"
+        elif drift == "ambiguous":
+            source["original_name"] = "加升一夫"
+        else:
+            with Session(engine) as db:
+                db.add(KifuPlayerName(player_id=17, lang="tw", display_name="已有名稱", status="review",
+                                      decision_kind="conventional", generation_rule_version="none", revision=1))
+                db.commit()
+        if drift != "target_filled":
+            refresh(bundle, anchors[0])
+            if drift != "source_proof":
+                assert not validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=snapshot)["write_ready"]
+        with pytest.raises(BatchError):
+            apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            assert db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").count() == (1 if drift == "target_filled" else 0)
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("drift", ["source_name", "source_evidence", "source_journal", "source_batch", "masked_target"])
+def test_verified_chinese_display_reader_rejects_damaged_proof(monkeypatch, drift):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory, _ = verified_chinese_display_fixture()
+    try:
+        apply_bundle(engine, bundle, registry(), inventory, anchors)
+        with Session(engine) as db:
+            name = db.query(KifuPlayerName).filter_by(player_id=17, lang="tw").one()
+            evidence = db.get(KifuNameResearchEvidence, name.evidence_id)
+            if drift == "source_name":
+                db.query(KifuPlayerName).filter_by(player_id=17, lang="cn").update({"display_name": "加纳二夫"})
+            elif drift == "source_evidence":
+                db.query(KifuNameResearchEvidence).filter_by(id=anchors[0]["content"]["binding"]["source_evidence"]["id"]).update(
+                    {"decision_kind": "generated"})
+            elif drift == "source_journal":
+                source_id = anchors[0]["content"]["binding"]["source_evidence"]["id"]
+                journal = db.query(KifuNameChange).filter_by(target_table="kifu_name_research_evidence", target_row_id=source_id).one()
+                journal.after_image = {"changed": True}
+            elif drift == "source_batch":
+                source_batch = db.get(KifuNameBatch, anchors[0]["content"]["binding"]["source_batch"]["id"])
+                source_batch.bundle_sha256 = "f" * 64
+            else:
+                name.decision_kind = evidence.decision_kind = "conventional"
+                name.generation_rule_version = evidence.generation_rule_version = "none"
+                payload = deepcopy(evidence.research_payload)
+                payload["candidate"].update(decision_kind="conventional", generation_rule_version="none")
+                payload.pop("primary_orthographic")
+                evidence.research_payload = payload
+            db.commit()
+        with Session(engine) as db:
+            page = asyncio.run(kifu.list_kifu_albums(_request(), q="加納一夫", page=1, page_size=20, lang="tw", db=db))
+            assert page.total == 0
+        assert coverage_report(engine, inventory, languages=("tw",))["languages"]["tw"]["by_decision"].get("generated", 0) == 0
+    finally:
+        engine.dispose()
 
 
 def test_valid_finite_orthographic_bundle():

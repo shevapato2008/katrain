@@ -3,6 +3,8 @@
 from datetime import datetime
 import unicodedata
 
+from sqlalchemy import select
+
 from katrain.web.kifu.name_evidence import (
     EvidenceError,
     owner_key,
@@ -16,7 +18,7 @@ from katrain.web.kifu.name_evidence import (
 
 VERSION = "primary-orthographic-v1"
 # These require individual actual-name evidence; a general table cannot settle them.
-EXCLUDED_CHARACTERS = frozenset("于於钟鍾鐘岳嶽杰傑")
+EXCLUDED_CHARACTERS = frozenset("于於钟鍾鐘岳嶽杰傑升昇")
 EXCLUDED_NAMES = frozenset({"胡子扬", "胡子揚", "鬍子揚", "孔杰", "孔傑"})
 
 
@@ -216,6 +218,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             owner = member.get("owner")
             key = owner_key(owner, member.get("lang"))
             raw = owner["kind"] == "raw_player"
+            verified_display = member.get("reference_kind") == "verified_chinese_display"
             _require(
                 set(member)
                 == {
@@ -230,8 +233,8 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     "preimage_binding_sha256",
                 }
                 | ({"raw_value", "raw_display_scope_sha256"} if raw else set())
-                | ({"reference_kind"} if retained else set())
-                and owner["kind"] in ({"player"} if retained else {"player", "raw_player"})
+                | ({"reference_kind"} if retained or verified_display else set())
+                and owner["kind"] in ({"player"} if retained or verified_display else {"player", "raw_player"})
                 and (not retained or member.get("reference_kind") == "official_hanja_preserved")
                 and key not in bindings
                 and member.get("lang") == r["lang"]
@@ -251,6 +254,29 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 and (not retained or source.get("reference_kind") == "official_hanja_preserved"),
                 "orthographic member source/owner scope mismatch",
             )
+            _require(
+                (verified_display and source.get("reference_kind") == "verified_chinese_display" and r["lang"] == "tw")
+                or (not verified_display and source.get("reference_kind") != "verified_chinese_display"),
+                "orthographic verified display reference mismatch",
+            )
+            if verified_display:
+                _require(member.get("name_preimage_sha256") is None,
+                         "verified Chinese display requires absent TW name preimage")
+                binding = source["binding"]
+                source_name, source_evidence = binding["source_name"], binding["source_evidence"]
+                _require(
+                    any(
+                        existing.get("owner") == owner
+                        and existing.get("lang") == "cn"
+                        and existing.get("display_name") == original
+                        and existing.get("decision_kind") == "conventional"
+                        and existing.get("review_status") == "approved"
+                        and existing.get("name_sha256") == registry_sha256(source_name)
+                        and existing.get("evidence_sha256") == registry_sha256(source_evidence)
+                        for existing in snapshot
+                    ),
+                    "orthographic verified CN source absent from qualified snapshot",
+                )
             _require(
                 _time(batch["approval"]["produced_at"]) >= _time(anchor["approval"]["reviewed_at"])
                 and batch["approval"]["reviewer_id"] != anchor["approval"]["producer_id"],
@@ -417,7 +443,49 @@ def persisted_batch_bindings(batch):
         return None
 
 
-def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
+def verified_source_live(conn, anchor):
+    """Recheck the exact conventional CN source and its creation record."""
+    from katrain.web.core.models_db import KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayerName
+    from katrain.web.kifu.name_batch import _image
+
+    try:
+        source = anchor["content"]
+        if source.get("reference_kind") != "verified_chinese_display":
+            return True
+        binding = source["binding"]
+        name, evidence, batch = (binding[key] for key in ("source_name", "source_evidence", "source_batch"))
+        if _image(conn, KifuPlayerName.__table__, name["id"]) != name:
+            return False
+        if _image(conn, KifuNameResearchEvidence.__table__, evidence["id"]) != evidence:
+            return False
+        stored_batch = conn.execute(select(KifuNameBatch.__table__).where(KifuNameBatch.id == batch["id"])).mappings().one_or_none()
+        if stored_batch is None or stored_batch["status"] != "applied" or stored_batch["bundle_sha256"] != batch["bundle_sha256"]:
+            return False
+        artifact = stored_batch["reviewed_artifact"]
+        payload = evidence["research_payload"]
+        source_bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        if (not isinstance(source_bundle, dict)
+            or registry_sha256(source_bundle) != stored_batch["bundle_sha256"]
+            or payload.get("candidate") not in source_bundle.get("candidates", ())
+            or payload["candidate"].get("research_sha256") != registry_sha256(payload["research"])
+            or registry_sha256(payload["research"]) not in artifact.get("research_hashes", ())):
+            return False
+        for table, row in (("kifu_name_research_evidence", evidence), ("kifu_player_names", name)):
+            changes = conn.execute(select(KifuNameChange.__table__).where(
+                KifuNameChange.batch_id == batch["id"],
+                KifuNameChange.target_table == table,
+                KifuNameChange.target_row_id == row["id"],
+            )).mappings().all()
+            if len(changes) != 1 or changes[0]["after_image"] != row:
+                return False
+            if table == "kifu_name_research_evidence" and changes[0]["before_image"] is not None:
+                return False
+        return True
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return False
+
+
+def persisted_name_eligible(name, evidence, owner_column, raw, batch, context, db=None):
     if context is None or not isinstance(evidence.research_payload, dict):
         return False
     payload = evidence.research_payload
@@ -434,6 +502,8 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context):
         key = owner_key(row["owner"], row["lang"])
         expected = candidates.get(key)
         if row != expected or proof.get("source_anchor") != anchors_by_hash[row["source_anchor_sha256"]]:
+            return False
+        if db is not None and not verified_source_live(db.connection(), proof["source_anchor"]):
             return False
         # The context already validated every frozen candidate. Equality above binds
         # this untrusted payload to that checked value without hashing the whole batch again.

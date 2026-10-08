@@ -278,6 +278,14 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
         _fail(actual == expected, f"name preimage changed: {_owner_ref(owner)}:{candidate['lang']}")
 
 
+def _check_verified_sources(conn, evidence_records):
+    from katrain.web.kifu.name_orthographic import verified_source_live
+
+    for anchor in evidence_records:
+        if anchor.get("evidence_kind") == "primary_orthographic":
+            _fail(verified_source_live(conn, anchor), "verified CN source preimage or creation proof changed")
+
+
 def _values_for_table(table, image: dict) -> dict:
     values = dict(image)
     for key, value in values.items():
@@ -610,6 +618,8 @@ def _inspect(
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
     _check_name_preimages(conn, bundle["candidates"])
+    if bundle.get("primary_orthographic") is not None:
+        _check_verified_sources(conn, evidence_records)
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     for candidate in bundle["candidates"]:
         _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events)
@@ -971,6 +981,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 _check_cross_bundle_collisions(
                     conn, bundle["candidates"], resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
                 )
+                if bundle.get("primary_orthographic") is not None:
+                    _check_verified_sources(conn, evidence_records)
             if bundle["bundle_format"] == 4:
                 _prevalidate(
                     bundle,

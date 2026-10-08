@@ -1400,12 +1400,72 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
     owner_key(owner, "tw")
     _require(owner["kind"] in {"player", "raw_player"}, "orthographic names only permit players")
     retained = content.get("reference_kind") == "official_hanja_preserved"
+    verified_display = content.get("reference_kind") == "verified_chinese_display"
+    original = content.get("original_name")
+    _require(content.get("reference_kind") in {None, "official_hanja_preserved", "verified_chinese_display"},
+             "unknown primary orthographic reference kind")
+    if verified_display:
+        _require(owner["kind"] == "player" and set(content) == {
+            "reference_kind", "owner", "original_name", "source_lang", "source_script", "binding"
+        } and content.get("source_lang") == "zh-Hans" and content.get("source_script") == "Hans"
+        and isinstance(original, str) and 2 <= len(original) <= 16
+        and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
+                 "verified Chinese display requires same-player CN source")
+        binding = content.get("binding")
+        _require(isinstance(binding, dict) and set(binding) == {
+            "kind", "owner", "source_name", "source_evidence", "source_batch"
+        } and binding.get("kind") == "verified_chinese_display" and binding.get("owner") == owner,
+                 "verified Chinese display binding invalid")
+        name, evidence, batch = (binding.get(key) for key in ("source_name", "source_evidence", "source_batch"))
+        _require(isinstance(name, dict) and isinstance(evidence, dict) and isinstance(batch, dict)
+                 and set(batch) == {"id", "bundle_sha256", "evidence_creation_sha256"}
+                 and type(batch.get("id")) is int and batch["id"] > 0
+                 and bool(_HEX_SHA256.fullmatch(str(batch.get("bundle_sha256"))))
+                 and batch.get("evidence_creation_sha256") == registry_sha256(evidence),
+                 "verified Chinese display source batch proof invalid")
+        payload = evidence.get("research_payload")
+        candidate = payload.get("candidate") if isinstance(payload, dict) else None
+        research = payload.get("research") if isinstance(payload, dict) else None
+        source_reviewed = evidence.get("reviewed_at")
+        try:
+            source_reviewed = datetime.fromisoformat(source_reviewed.replace("Z", "+00:00"))
+            if source_reviewed.tzinfo is None:
+                source_reviewed = source_reviewed.replace(tzinfo=timezone.utc)
+        except (AttributeError, ValueError):
+            source_reviewed = None
+        _require(
+            name.get("player_id") == owner.get("id")
+            and name.get("lang") == evidence.get("lang") == "cn"
+            and name.get("display_name") == evidence.get("candidate_name") == original
+            and name.get("status") == "verified"
+            and name.get("decision_kind") == evidence.get("decision_kind") == "conventional"
+            and name.get("evidence_id") == evidence.get("id")
+            and name.get("revision") == evidence.get("revision")
+            and name.get("generation_rule_version") == evidence.get("generation_rule_version")
+            and evidence.get("player_id") == owner.get("id")
+            and evidence.get("review_status") == "approved"
+            and source_reviewed is not None
+            and source_reviewed <= produced_at
+            and isinstance(candidate, dict)
+            and candidate.get("owner") == owner
+            and candidate.get("lang") == "cn"
+            and candidate.get("display_name") == original
+            and candidate.get("decision_kind") == "conventional"
+            and candidate.get("review_status") == "approved"
+            and isinstance(research, dict)
+            and research.get("scope_status") == "found"
+            and research.get("candidate_name") == original
+            and candidate.get("research_sha256") == registry_sha256(research)
+            and payload.get("primary_orthographic") is None
+            and payload.get("transliteration") is None,
+            "verified Chinese display requires complete qualified conventional CN name and evidence",
+        )
+        return content
     required = {"owner", "original_name", "source_lang", "source_script", "binding", "sources"}
     required |= {"reference_kind", "korean_name"} if retained else {"chinese_origin"}
     if owner["kind"] == "raw_player":
         required |= {"raw_value", "raw_display_scope_sha256"}
     _require(set(content) == required, "orthographic original fields invalid; no reading or absence claims")
-    original = content.get("original_name")
     _require(
         isinstance(original, str)
         and 2 <= len(original) <= 16

@@ -1472,6 +1472,40 @@ def test_positive_ja_ko_research_and_pending_then_exact_approved_candidate():
     assert validate_candidate(row, evidence, registry(), inventory()) == row
 
 
+@pytest.mark.parametrize("original, surname, given, source_url, official_excerpt, output", [
+    ("橋本\u3000誼", "ハシモト", "ヨシミ", "https://www.nihonkiin.or.jp/player/htm/ki000021.htm",
+     "<h1>橋本\u3000誼<span>（ハシモト\u3000ヨシミ / HASHIMOTO, Yoshimi）</span></h1>", "하시모토 요시미"),
+    ("山崎\u3000祐男", "ヤマザキ", "マスオ", "https://www.nihonkiin.or.jp/player/htm/ki000071.htm",
+     "<h1>山崎\u3000祐男<span>（ヤマザキ\u3000マスオ / YAMAZAKI, Masuo）</span></h1>", "야마자키 마스오"),
+])
+def test_positive_ja_ko_accepts_official_fullwidth_surname_divider(original, surname, given, source_url,
+                                                                    official_excerpt, output):
+    from katrain.web.kifu.name_evidence import EvidenceError, _validate_positive_ja_ko
+
+    evidence, _ = positive_ja_ko_fixture()
+    positive = evidence["positive_generation"]
+    capture = {
+        **positive["identity"]["capture"], "url": source_url,
+        "body_text": official_excerpt, "body_excerpt": official_excerpt,
+        "body_sha256": hashlib.sha256(official_excerpt.encode()).hexdigest(),
+        "source_role": "official_person_page",
+    }
+    evidence.update(original_name=original, reading=f"{surname} {given}", candidate_name=output,
+                    original_language_basis_url=source_url, reading_basis_url=source_url)
+    positive["identity"].update(original_name=original, reading=evidence["reading"], capture=capture)
+    positive["reading"].update(surname=surname, given=given, capture=capture)
+    positive["explanation"].update(surname=output.split()[0], given=output.split()[1], output=output)
+    positive["conflict_queries"][0]["query"] = f"{original} 바둑"
+    positive["conflict_queries"][1]["query"] = f"{output} 바둑"
+    evidence["source_checks"][0].update(candidate_name=original, url=source_url,
+                                        body_sha256=capture["body_sha256"], body_excerpt=official_excerpt)
+
+    _validate_positive_ja_ko(evidence)
+    evidence["source_checks"][0]["candidate_name"] = original.replace("\u3000", "")
+    with pytest.raises(EvidenceError, match="source checks support original Japanese identity"):
+        _validate_positive_ja_ko(evidence)
+
+
 @pytest.mark.parametrize("change", [
     "wrong_owner_kind", "wrong_target", "wrong_source", "wrong_rule", "hash", "reading",
     "rule_page", "failed_query", "wrong_query_tokens", "unresolved", "unknown_field", "negative_closure",

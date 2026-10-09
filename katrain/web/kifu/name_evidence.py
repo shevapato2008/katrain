@@ -1110,7 +1110,8 @@ def _validate_positive_ja_ko(record: dict) -> None:
                  and capture["source_role"] in {
                      "official_person_page", "professional_go_rating_archive", "professional_go_history_compilation",
                      "biographical_dictionary", "professional_archive", "official_profile"
-                 } and record["original_name"] in text and reading["surname"] + reading["given"] in text,
+                 } and re.sub(r"\s+", "", record["original_name"]) in text
+                 and reading["surname"] + reading["given"] in text,
                  "positive identity/reading must occur together in actual Japanese source")
     for item in rules:
         capture = item["capture"]

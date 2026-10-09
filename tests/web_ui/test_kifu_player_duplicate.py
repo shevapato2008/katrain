@@ -21,7 +21,7 @@ from katrain.web.kifu.name_batch import BatchError
 from katrain.web.kifu.name_candidates import canonical_sha256
 
 
-@pytest.fixture(params=["piao", "li"])
+@pytest.fixture(params=["piao", "li", "li_jie"])
 def catalog(tmp_path, request):
     from katrain.web.kifu import player_duplicate as merge
 
@@ -76,16 +76,14 @@ def catalog(tmp_path, request):
                 for index in range(moving + protected)
             ],
         )
-        conn.execute(
-            KifuRawPlayerValue.__table__.insert().values(
-                id=pair["raw_id"],
-                raw_value=pair["names"][1],
-                category="readable_unlinked",
-                review_status="pending",
-                parsed_data={"original": True},
-                review_metadata={"player_id": retired, "kind": "provisional_person_link", "extra": "keep"},
-            )
-        )
+        raw_ids = pair.get("raw_ids") or (pair["raw_id"],)
+        conn.execute(KifuRawPlayerValue.__table__.insert(), [
+            {"id": raw_id, "raw_value": pair["spellings"][index + 1],
+             "category": "readable_unlinked", "review_status": "pending",
+             "parsed_data": {"original": True},
+             "review_metadata": {"player_id": retired, "kind": "provisional_person_link", "extra": "keep"}}
+            for index, raw_id in enumerate(raw_ids)
+        ])
         if request.param == "li":
             conn.execute(
                 KifuPlayerName.__table__.insert(),
@@ -140,8 +138,16 @@ def proposal(merge, before, key):
                 "album_full_row_sha256": canonical_sha256(album),
             }
             (updates if owner == retired else protected).append(slot)
-    raw = before["full_rows"]["kifu_raw_player_values"][0]
-    metadata = {**raw["review_metadata"], "player_id": survivor}
+    raws = [row for row in before["full_rows"]["kifu_raw_player_values"]
+            if str(row["review_metadata"].get("player_id")) == str(retired)]
+    raw_updates = [
+        {"raw_id": raw["id"], "raw_value": raw["raw_value"], "before_full_row": raw,
+         "before_review_metadata": raw["review_metadata"],
+         "after_review_metadata": {**raw["review_metadata"], "player_id": survivor},
+         "columns_allowed_to_change": ["review_metadata"],
+         "preserve_review_status": raw["review_status"]}
+        for raw in raws
+    ]
     return {
         "format": "kifu-player-single-duplicate-proposal-v1",
         "status": "pending_independent_review",
@@ -157,17 +163,7 @@ def proposal(merge, before, key):
         "retire_player": players[retired],
         "operations": {
             "album_fk_updates": updates,
-            "raw_metadata_updates": [
-                {
-                    "raw_id": raw["id"],
-                    "raw_value": raw["raw_value"],
-                    "before_full_row": raw,
-                    "before_review_metadata": raw["review_metadata"],
-                    "after_review_metadata": metadata,
-                    "columns_allowed_to_change": ["review_metadata"],
-                    "preserve_review_status": raw["review_status"],
-                }
-            ],
+            "raw_metadata_updates": raw_updates,
             "insert_alias_if_exact_preimage_still_absent": {
                 "player_id": survivor,
                 "alias": pair["names"][1],
@@ -384,3 +380,68 @@ def test_applying_actor_can_be_the_independent_reviewer(catalog):
         actor_id=approval["reviewer_id"],
     )
     assert merge.verify(engine, receipt["batch_id"])["status"] == "verified"
+
+
+def test_five_reviewed_directions_are_exact_and_reverse_is_rejected():
+    from katrain.web.kifu import player_duplicate as merge
+
+    expected = {
+        "li_jie": (10755, 10754, 4970, 4969),
+        "park_ji": (10665, 10677, 4880, 4892),
+        "park_jin": (10665, 10709, 4880, 4924),
+        "cho_huilian": (895, 11730, 5962, 5961),
+        "cho_huilian_variant": (895, 11731, 5962, 5963),
+    }
+    for key, (test_survivor, test_retired, prod_survivor, prod_retired) in expected.items():
+        for environment, survivor, retired in (("TEST", test_survivor, test_retired),
+                                               ("PROD", prod_survivor, prod_retired)):
+            plan = {"environment": environment, "survivor_player": {"id": survivor},
+                    "retire_player": {"id": retired}}
+            assert merge.pair_key(plan) == key
+            plan["survivor_player"], plan["retire_player"] = plan["retire_player"], plan["survivor_player"]
+            with pytest.raises(BatchError):
+                merge.pair_key(plan)
+
+
+@pytest.mark.parametrize("catalog", ["li_jie"], indirect=True)
+def test_fresh_unsigned_proposal_pins_two_raw_metadata_references(catalog):
+    from scripts.kifu_player_duplicate_proposal import build_proposal
+
+    merge, _, before, _, _ = catalog
+    built = build_proposal(
+        merge, before, "li_jie", producer_id="fixture-producer", producer_model="fixture",
+        identity_review_sha="1" * 64, preimage_path="fresh.json.gz", preimage_bytes_sha="2" * 64)
+    assert [row["raw_id"] for row in built["operations"]["raw_metadata_updates"]] == [11584, 11585]
+    assert built["counts"]["raw_metadata_updates"] == 2
+    assert [row["before_review_metadata"]["player_id"] for row in
+            built["operations"]["raw_metadata_updates"]] == [10754, 10754]
+
+
+@pytest.mark.parametrize("catalog", ["li_jie"], indirect=True)
+def test_overlapping_park_cho_album_requires_fresh_second_preimage(catalog):
+    merge, engine, _, plan, _ = catalog
+    park = merge.PAIRS["park_ji"]["ids"]["TEST"]
+    cho = merge.PAIRS["cho_huilian"]["ids"]["TEST"]
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert(), [
+            {"id": park[0], "canonical_name": "朴志恩"},
+            {"id": park[1], "canonical_name": "朴智恩"},
+            {"id": cho[0], "canonical_name": "赵惠连"},
+            {"id": cho[1], "canonical_name": "赵惠莲"},
+        ])
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=9001, black_player_id=cho[1], white_player_id=park[1],
+            player_black="赵惠莲", player_white="朴智恩", black_rank="四段", white_rank="四段",
+            date_played="2003-10-14", event="unchanged event", source_path="overlap.sgf",
+            sgf_content="(;PB[赵惠莲]PW[朴智恩]BR[四段]WR[四段])"))
+    with engine.connect() as conn:
+        before_cho = merge.capture(conn, "TEST", "cho_huilian")
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 9001).values(white_player_id=park[0]))
+    with engine.connect() as conn:
+        with pytest.raises(BatchError, match="preimage/after-image changed"):
+            merge._capture_match(conn, {"environment": "TEST", "survivor_player": {"id": cho[0]},
+                                        "retire_player": {"id": cho[1]}}, before_cho)
+        refreshed = merge.capture(conn, "TEST", "cho_huilian")
+    assert refreshed["full_rows"]["kifu_albums"][0]["sgf_content"] == before_cho["full_rows"]["kifu_albums"][0]["sgf_content"]
+    assert refreshed["full_rows"]["kifu_albums"][0]["white_player_id"] == park[0]

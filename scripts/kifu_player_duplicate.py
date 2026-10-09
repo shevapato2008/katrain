@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from katrain.web.kifu.player_duplicate import check, run, undo, verify  # noqa: E402
+from scripts.kifu_player_duplicate_proposal import native_duplicate_columns  # noqa: E402
 
 
 def _load(path):
@@ -57,6 +58,7 @@ def main(argv=None):
         review = _load(args.review)
     engine = create_engine(args.database_url)
     try:
+        native_duplicate_columns(engine, require_read_only=False)
         if args.command == "check":
             result = check(engine, plan, preimage, expected_plan_sha256=args.plan_sha256)
         elif args.command in {"dry-run", "apply"}:

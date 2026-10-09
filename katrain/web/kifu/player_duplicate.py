@@ -1,4 +1,4 @@
-"""Exact, reversible merges for the two reviewed Piao Wenyao and Li Zhe pairs.
+"""Exact, reversible merges for explicitly reviewed duplicate player pairs.
 
 This adapter consumes the existing single-pair proposals. It does not research
 identities, translate names, or extend the general name-batch undo allowlist.
@@ -55,6 +55,33 @@ PAIRS = {
         "raw_id": 11601,
         "spellings": ("李喆", "李哲", "李喆", "李テツ", "Li Zhe", "리저"),
     },
+    # New pairs follow this execution order: Li Jie, Park Ji, Cho Huilian,
+    # Park Jin, Cho variant. Later same-survivor counts require fresh captures.
+    "li_jie": {
+        "ids": {"PROD": (4970, 4969), "TEST": (10755, 10754)},
+        "names": ("李劼", "李劫"), "counts": (169, 30),
+        "raw_ids": (11584, 11585), "spellings": ("李劼", "李劫", "李劫五段"),
+    },
+    "park_ji": {
+        "ids": {"PROD": (4880, 4892), "TEST": (10665, 10677)},
+        "names": ("朴志恩", "朴智恩"), "counts": (127, 276),
+        "raw_ids": (11452,), "spellings": ("朴志恩", "朴智恩", "朴志恩九段", "朴志恩五段", "朴志恩六段"),
+    },
+    "park_jin": {
+        "ids": {"PROD": (4880, 4924), "TEST": (10665, 10709)},
+        "names": ("朴志恩", "朴鋕恩"), "counts": (1, 403),
+        "raw_ids": (11506,), "spellings": ("朴志恩", "朴鋕恩", "朴志恩九段", "朴志恩五段", "朴志恩六段"),
+    },
+    "cho_huilian": {
+        "ids": {"PROD": (5962, 5961), "TEST": (895, 11730)},
+        "names": ("赵惠连", "赵惠莲"), "counts": (126, 403),
+        "raw_ids": (13349, 13350), "spellings": ("赵惠连", "赵惠莲", "赵惠莲七段"),
+    },
+    "cho_huilian_variant": {
+        "ids": {"PROD": (5962, 5963), "TEST": (895, 11731)},
+        "names": ("赵惠连", "赵慧连"), "counts": (1, 529),
+        "raw_ids": (13356,), "spellings": ("赵惠连", "赵慧连"),
+    },
 }
 FORMAT = "kifu-player-single-duplicate-proposal-v1"
 AUDIT_FORMAT = "kifu-player-duplicate-execution-v1"
@@ -103,11 +130,12 @@ ORDER BY table_name,column_name
 
 def expected_counts(key):
     moving, protected = PAIRS[key]["counts"]
+    raw_ids = PAIRS[key]["raw_ids"] if "raw_ids" in PAIRS[key] else (PAIRS[key]["raw_id"],)
     return {
         "album_fk_updates": moving,
         "protected_existing_slots": protected,
         "survivor_slots_after": moving + protected,
-        "raw_metadata_updates": 1,
+        "raw_metadata_updates": len(raw_ids),
         "aliases_to_insert": 1,
         "unreviewed_duplicate_rows_to_delete": 1,
         "name_writes": 0,
@@ -124,7 +152,7 @@ def pair_key(plan):
             environment
         ]:
             return key
-    raise BatchError("only the pinned Piao Wenyao and Li Zhe pairs are supported")
+    raise BatchError("only explicitly pinned duplicate-player pairs are supported")
 
 
 def _schema(conn):
@@ -366,31 +394,31 @@ def _validate(plan, preimage, expected_sha):
         "alias already exists",
     )
     raw_updates = operations["raw_metadata_updates"]
-    _fail(len(raw_updates) == 1, "one raw metadata update required")
-    raw = next((row for row in full["kifu_raw_player_values"] if row["id"] == pair["raw_id"]), None)
-    _fail(
-        raw is not None
-        and isinstance(raw["review_metadata"], dict)
-        and raw["review_metadata"].get("player_id") == retired,
-        "old raw metadata reference changed",
-    )
-    expected_raw = {
-        "raw_id": raw["id"],
-        "raw_value": raw["raw_value"],
-        "before_full_row": raw,
-        "before_review_metadata": raw["review_metadata"],
-        "after_review_metadata": {**raw["review_metadata"], "player_id": survivor},
-        "columns_allowed_to_change": ["review_metadata"],
-        "preserve_review_status": raw["review_status"],
-    }
-    _fail(raw_updates == [expected_raw], "only raw metadata.player_id may change")
+    raw_ids = pair["raw_ids"] if "raw_ids" in pair else (pair["raw_id"],)
+    expected_raw = []
+    for raw_id in raw_ids:
+        raw = next((row for row in full["kifu_raw_player_values"] if row["id"] == raw_id), None)
+        _fail(
+            raw is not None
+            and isinstance(raw["review_metadata"], dict)
+            and raw["review_metadata"].get("player_id") == retired,
+            "old raw metadata reference changed",
+        )
+        expected_raw.append({
+            "raw_id": raw["id"], "raw_value": raw["raw_value"], "before_full_row": raw,
+            "before_review_metadata": raw["review_metadata"],
+            "after_review_metadata": {**raw["review_metadata"], "player_id": survivor},
+            "columns_allowed_to_change": ["review_metadata"],
+            "preserve_review_status": raw["review_status"],
+        })
+    _fail(raw_updates == expected_raw, "only pinned raw metadata.player_id values may change")
     _fail(
         [
             row["id"]
             for row in full["kifu_raw_player_values"]
             if isinstance(row["review_metadata"], dict) and str(row["review_metadata"].get("player_id")) == str(retired)
         ]
-        == [pair["raw_id"]],
+        == list(raw_ids),
         "unexpected retired metadata references",
     )
     _fail(plan["declared_fk_inventory"] == preimage["declared_player_fks"], "proposal FK inventory changed")
@@ -475,15 +503,15 @@ def _changes(plan, preimage, alias_image):
         after_albums.setdefault(row_id, deepcopy(albums[row_id]))[slot["column"]] = slot["after_player_id"]
     for row_id in sorted(after_albums):
         changes.append((KifuAlbum, row_id, albums[row_id], after_albums[row_id]))
-    raw = plan["operations"]["raw_metadata_updates"][0]
-    changes.append(
-        (
-            KifuRawPlayerValue,
-            raw["raw_id"],
-            raw["before_full_row"],
-            {**raw["before_full_row"], "review_metadata": raw["after_review_metadata"]},
+    for raw in plan["operations"]["raw_metadata_updates"]:
+        changes.append(
+            (
+                KifuRawPlayerValue,
+                raw["raw_id"],
+                raw["before_full_row"],
+                {**raw["before_full_row"], "review_metadata": raw["after_review_metadata"]},
+            )
         )
-    )
     changes.append((KifuPlayerAlias, alias_image["id"], None, alias_image))
     changes.append((KifuPlayer, plan["retire_player"]["id"], plan["retire_player"], None))
     return changes

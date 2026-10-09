@@ -81,12 +81,13 @@ describe('职业报告固定右栏', () => {
     renderPage(); await loaded();
     fireEvent.click(screen.getAllByTestId('ai-recommend-row')[0]);
     expect(mocks.board.pvMoves).toEqual(['Q10', 'D10']);
-    fireEvent.click(screen.getByRole('button', { name: '清空' }));
+    fireEvent.click(screen.getByRole('button', { name: '清除变化' }));
     expect(mocks.board.pvMoves).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByRole('button', { name: 'place try' }));
-    fireEvent.click(screen.getByRole('button', { name: '清空' }));
-    expect(mocks.board.tryMoves).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: '试下' }));
+    expect(mocks.board.tryMoves).toBeUndefined();
+    fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByRole('button', { name: 'place try' }));
     fireEvent.click(screen.getByRole('button', { name: '下一手' }));
     expect(mocks.board.tryMoves).toEqual([]);
@@ -166,7 +167,7 @@ describe('职业报告固定右栏', () => {
     expect(screen.queryByRole('button', { name: '查看棋谱' })).toBeNull();
     const actions = within(screen.getByTestId('kifu-report-actions')).getAllByRole('button');
     expect(actions).toHaveLength(4);
-    ['试下', '领地', '支招', '清空'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
+    ['试下', '领地', '支招', '实体棋盘'].forEach((name, index) => expect(actions[index]).toHaveAccessibleName(name));
     const toggles = within(screen.getByTestId('kifu-report-toggles')).getAllByRole('button');
     expect(toggles).toHaveLength(2);
     ['手数', '坐标'].forEach((name, index) => expect(toggles[index]).toHaveAccessibleName(name));
@@ -203,4 +204,20 @@ describe('职业报告固定右栏', () => {
     expect(within(dialog).getByText('规则来源').parentElement).toHaveTextContent(`SGF 未记录规则；按贴目 ${komi} 默认采用${label}，未核验赛事实际规则。`);
     expect(dialog).not.toHaveTextContent('已核验');
   });
+});
+
+
+it('报告的实体棋盘入口携带原始 SGF 和报告返回地址', async () => {
+  renderPage(); await loaded();
+  expect(screen.queryByRole('button', { name: '清空' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '实体棋盘' }));
+  expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/baipu/session/kifu_7', {
+    state: expect.objectContaining({ sgf: album.sgf_content, backTo: '/kiosk/kifu/7', backLabel: '报告' }),
+  });
+});
+
+it('非19路报告不能进入实体棋盘摆谱', async () => {
+  mocks.getAlbum.mockResolvedValue({ ...album, board_size: 9, sgf_content: '(;SZ[9];B[dd])' });
+  renderPage(); await loaded();
+  expect(screen.getByRole('button', { name: '实体棋盘' })).toBeDisabled();
 });

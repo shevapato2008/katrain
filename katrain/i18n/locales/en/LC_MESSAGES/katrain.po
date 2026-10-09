@@ -7284,3 +7284,21 @@ msgstr "Analysis completed"
 
 msgid "report:score_difference"
 msgstr "Score difference"
+
+msgid "kifu:pagination"
+msgstr "Game record pagination"
+
+msgid "kifu:jump_page"
+msgstr "Page number"
+
+msgid "kifu:jump"
+msgstr "Go"
+
+msgid "kifu:page_range"
+msgstr "Enter a whole page number between 1 and {max}"
+
+msgid "report:physical_board"
+msgstr "Physical board"
+
+msgid "report:back_report"
+msgstr "Report"

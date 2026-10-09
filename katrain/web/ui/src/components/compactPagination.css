@@ -1,0 +1,9 @@
+.compact-pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; color: inherit; font: inherit; font-size: 13px; }
+.compact-pagination .compact-pagination__position { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.compact-pagination button, .compact-pagination .compact-pagination__input { box-sizing: border-box; height: 44px; border: 1px solid var(--hair, #415148); border-radius: 8px; background: transparent; color: inherit; font: inherit; }
+.compact-pagination button { display: flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; padding: 0; }
+.compact-pagination .compact-pagination__jump { width: auto; padding: 0 10px; }
+.compact-pagination .compact-pagination__input { width: 56px; min-width: 0; margin: 0; padding: 0 4px; text-align: center; }
+.compact-pagination svg { display: block; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.compact-pagination button:disabled, .compact-pagination input:disabled { opacity: .4; }
+.compact-pagination button:focus-visible, .compact-pagination input:focus-visible { outline: 2px solid var(--accent, #7ec994); outline-offset: -2px; }

@@ -13,6 +13,7 @@ import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
 import { kifuRulesLabel } from '../../features/kifu/kifuRules';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
+import PhysicalBoardButton from '../components/PhysicalBoardButton';
 import { ReportAnalysisRail } from '../components/report/ReportAnalysisRail';
 import KioskReportPlayback from '../components/report/KioskReportPlayback';
 import { failureLine, failureReason, outcomeLine, rowTitle, yourColor } from '../components/report/reviewPresentation';
@@ -466,7 +467,7 @@ export default function ReportDetailPage() {
           <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
             <Icon name="lightbulb" />{t('Advice', '支招')}
           </button>
-          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryState(null); setActiveVariation(null); }}><span aria-hidden="true">×</span>{t('report:clear', '清空')}</button>
+          <PhysicalBoardButton source={`user_game_${game.id}`} name={title} sgf={game.sgf_content} boardSize={boardSize} />
           </>)}
         toggles={(<>
           <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>

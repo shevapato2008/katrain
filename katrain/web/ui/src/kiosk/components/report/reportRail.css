@@ -41,7 +41,12 @@
 .report-rail-v2 .report-playback button:nth-child(3) { height: 38px; min-height: 38px; border-radius: 50%; color: #101a14; background: #58b57a; }
 .report-rail-v2 .report-playback svg { width: 20px; height: 20px; }
 .report-rail-v2 .report-playback output { font: 600 13px var(--font-sans); }
-.report-rail-v2 .report-playback input[type="range"] { height: 38px; }
+/* Reset text-field spacing; the thumb centre and painted track share endpoints. */
+.report-rail-v2 .report-playback input[type="range"] { appearance: none; height: 38px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.report-rail-v2 .report-playback input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(var(--accent),var(--accent)) center / calc(100% - 16px) 4px no-repeat; }
+.report-rail-v2 .report-playback input[type="range"]::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--accent); }
+.report-rail-v2 .report-playback input[type="range"]::-moz-range-track { height: 4px; background: linear-gradient(var(--accent),var(--accent)) center / calc(100% - 16px) 4px no-repeat; }
+.report-rail-v2 .report-playback input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: var(--accent); }
 .report-rail-v2 .report-analysis-rail__notices:not(:empty) { top: 157px; left: 9px; right: 9px; }
 .report-rail-v2 .report-analysis-rail__detail-actions { display: flex; gap: 8px; padding: 8px 16px 16px; }
 .report-rail-v2 .report-analysis-rail__detail-actions button { min-height: 44px; font: 400 13px var(--font-sans); }

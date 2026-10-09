@@ -1602,6 +1602,7 @@ def positive_zh_ko_fixture(owner_id=5498):
     ([["yang"], ["yi", "lun"]], "양이룬"),
     ([["ke"], ["pei", "chen"]], "커페이천"),
     ([["wang"], ["zi", "han"]], "왕쯔한"),
+    ([["li"], ["jie"]], "리제"),
 ])
 def test_positive_zh_ko_four_reviewed_finite_outputs(words, expected):
     from katrain.web.kifu.name_zh_ko import render_name

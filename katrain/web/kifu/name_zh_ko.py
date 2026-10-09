@@ -54,6 +54,10 @@ SYLLABLES = {
              "locator": "Chapter 2 Table 5, raw HTML line 1573: initial ch -> ㅊ plus final en -> 언, giving 천; this is not the independent chi -> 츠 entry."},
     "han": {"hangul": "한", "kind": "reviewed_composition",
             "locator": "Chapter 2 Table 5, raw HTML line 1573: initial h -> ㅎ plus final an -> 안, giving 한."},
+    "li": {"hangul": "리", "kind": "reviewed_composition",
+           "locator": "Chapter 2 Table 5, raw HTML line 1573: initial l -> ㄹ plus final yi (i) -> 이; select post-initial i under note line 1578, giving 리."},
+    "jie": {"hangul": "제", "kind": "reviewed_composition",
+            "locator": "Chapter 2 Table 5, raw HTML line 1573: initial j -> ㅈ plus final ye (ie) -> 예; select post-initial ie under note line 1578. Chapter 3 Chinese section item 2, raw lines 6707 and 6711: 졔 -> 제."},
 }
 
 

@@ -2001,6 +2001,7 @@ def test_positive_zh_ko_importer_reader_requires_exact_applied_ledger(engine):
         batch.status = "pending"
         db.flush()
         assert eligible() == []
+
         assert visible_ids() == []
         assert 5498 not in strict_display_maps(db, [album], "ko")[0]
         batch.status = "applied"
@@ -2034,6 +2035,124 @@ def test_positive_zh_ko_importer_reader_requires_exact_applied_ledger(engine):
         name = db.query(KifuPlayerName).one()
         name.generation_rule_version = "legacy-generated-v1"
         proof.generation_rule_version = "legacy-generated-v1"
+        db.flush()
+        assert eligible() == []
+        legacy_like = deepcopy(original)
+        legacy_like.pop("normative_zh_ko")
+        legacy_like["research"].pop("source_basis")
+        legacy_like["research"].pop("positive_zh_ko")
+        legacy_like["research"]["scope_status"] = "not_found_in_scope"
+        legacy_like["research"]["candidate_name"] = ""
+        legacy_like["research"]["negative_closure"] = {"version": 1}
+        legacy_like["candidate"]["generation_rule_version"] = "legacy-generated-v1"
+        proof.research_payload = legacy_like
+        db.flush()
+        assert eligible() == []
+
+
+def test_legacy_zh_negative_creation_reader_restores_only_unchanged_applied_name(engine):
+    from datetime import datetime
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows, strict_display_maps, strict_slot_approvals
+    from katrain.web.kifu.name_coverage import coverage_report
+    from katrain.web.kifu.name_evidence import (
+        negative_closure_evidence_sha256, negative_closure_scope_sha256,
+        negative_closure_template_sha256, validate_research_record,
+    )
+    from tests.web_ui.test_kifu_name_candidates import approved_generated, candidate, check, research
+    from tests.web_ui.test_kifu_name_api import _list
+    from katrain.web.kifu.name_batch import _image
+
+    source_registry = registry()
+    source_registry["sources"][0]["language"] = "ko"
+    owner = {"kind": "player", "id": 17}
+    source_check = check(
+        owner=owner, status="not_found", candidate_name="", identity_basis="", observed_lang="ko",
+        body_excerpt="No player matched this query", check_id="ko-search", method="site_search",
+        response_sha256="a" * 64, completeness="complete", searched_forms=["선이언"],
+        entity_field_scope=None, scan_id="ko-profiles", page_index=1, page_count=1,
+        next_page_url="", pagination_exhausted=True, pagination_basis="No next-page link",
+        search_scope="Indexed profiles", scope_complete=True, negative_outcome="no_target_string",
+    )
+    researched = research(
+        owner=owner, lang="ko", registry_sha256=registry_sha256(source_registry),
+        original_name="沈逸恩", original_language="zh", source_lang="zh", reading="Shen Yi'en",
+        scope_status="not_found_in_scope", candidate_name="", source_checks=[source_check],
+        produced_at="2026-10-02T10:05:00Z",
+    )
+    researched["negative_closure"] = {
+        "version": 1, "owner": owner, "lang": "ko", "source_lang": "zh", "scope_id": "player-17-ko",
+        "scope_version": "1", "registry_sha256": researched["registry_sha256"],
+        "required_check_ids": ["ko-search"], "scope_boundary": "Indexed profiles only",
+        "required_checks": [{key: source_check[key] for key in (
+            "check_id", "source_id", "method", "query", "url", "searched_forms",
+            "entity_field_scope", "scan_id", "page_index", "page_count", "next_page_url",
+            "pagination_exhausted", "pagination_basis") }],
+        "known_leads": [], "retained_limitations": ["Printed sources"],
+        "reviewer_id": "scope-reviewer", "reviewer_model": "gpt-6-astra",
+        "reviewed_at": "2026-10-02T10:30:00Z", "conclusion": "approved_not_found_in_scope",
+        "reason": "No admissible Korean name in the searched scope",
+    }
+    closure = researched["negative_closure"]
+    closure["scope_template_sha256"] = negative_closure_template_sha256(researched)
+    closure["scope_sha256"] = negative_closure_scope_sha256(researched)
+    closure["evidence_sha256"] = negative_closure_evidence_sha256(researched)
+    validate_research_record(researched, source_registry)
+    row = approved_generated(candidate(
+        owner=owner, lang="ko", display_name="선이언", decision_kind="generated",
+        generation_rule_version="nikl-zh-ko-personal-name-v1",
+        research_sha256=canonical_sha256(researched), produced_at="2026-10-02T10:40:00Z",
+    ), researched)
+    payload = {"candidate": row, "research": researched}
+    timestamp = lambda value: datetime.fromisoformat(value.replace("Z", "+00:00"))
+    with engine.begin() as conn:
+        conn.execute(KifuNameSourceRegistry.__table__.insert().values(
+            id=41, version=source_registry["version"], sha256=registry_sha256(source_registry),
+            registry=source_registry))
+        conn.execute(KifuNameBatch.__table__.insert().values(
+            id=332, bundle_sha256="b" * 64, inventory_sha256="c" * 64,
+            source_registry_id=41, reviewed_artifact={}, status="applied"))
+        conn.execute(KifuNameResearchEvidence.__table__.insert().values(
+            id=42, player_id=17, lang="ko", revision=1, source_registry_id=41,
+            candidate_name=row["display_name"], decision_kind="generated",
+            generation_rule_version=row["generation_rule_version"], research_payload=payload,
+            producer_id=row["producer_id"], producer_model=row["producer_model"],
+            produced_at=timestamp(row["produced_at"]), reviewer_id=row["reviewer_id"],
+            reviewer_model=row["reviewer_model"], reviewed_at=timestamp(row["reviewed_at"]),
+            review_status="approved"))
+        conn.execute(KifuPlayerName.__table__.insert().values(
+            id=43, player_id=17, lang="ko", display_name=row["display_name"], status="verified",
+            decision_kind="generated", generation_rule_version=row["generation_rule_version"],
+            revision=1, evidence_id=42))
+        conn.execute(KifuNameChange.__table__.insert().values(
+            id=44, batch_id=332, sequence=1, target_table="kifu_name_research_evidence",
+            target_row_id=42, before_image=None,
+            after_image=_image(conn, KifuNameResearchEvidence.__table__, 42)))
+    inv = build_inventory(engine)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        batch = db.get(KifuNameBatch, 332)
+        evidence = db.get(KifuNameResearchEvidence, 42)
+
+        def eligible():
+            return _qualified_name_rows(db, _approved_names(db, KifuPlayerName, "player_id", {17}, "ko"),
+                                        KifuPlayerName, "player_id")
+
+        assert [name.display_name for name, _ in eligible()] == ["선이언"]
+        assert strict_display_maps(db, [album], "ko")[0][17] == "선이언"
+        assert [item.id for item in _list(db, q="선이언", lang="ko").items] == [11]
+        assert strict_slot_approvals(db, [album], "ko")[11][0] == ("generated", 42)
+        assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"]["generated"] == 1
+        batch.status = "pending"
+        db.flush()
+        assert eligible() == []
+        assert _list(db, q="선이언", lang="ko").items == []
+        assert strict_slot_approvals(db, [album], "ko")[11][0] is None
+        batch.status = "applied"
+        evidence.candidate_name = "선이언 "
+        db.flush()
+        assert eligible() == []
+        evidence.candidate_name = "선이언"
+        db.query(KifuNameChange).filter_by(id=44).delete()
         db.flush()
         assert eligible() == []
 

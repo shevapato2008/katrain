@@ -1833,6 +1833,84 @@ def _positive_content_sha256(value):
     return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
+def persisted_legacy_zh_negative_eligible(name: dict, evidence: dict, batch: dict, registry: dict,
+                                          creation_changes: list[dict]) -> bool:
+    """Read only the exact, applied negative profile created under the older Chinese rule."""
+    from katrain.web.kifu.name_zh_ko import RULE_VERSION as ZH_RULE
+
+    try:
+        if (type(batch["id"]) is not int or batch["status"] != "applied"
+                or evidence["source_registry_id"] != batch["source_registry_id"]
+                or len(creation_changes) != 1):
+            return False
+        creation = creation_changes[0]
+        if (creation["target_table"] != "kifu_name_research_evidence"
+                or type(creation["target_row_id"]) is not int or creation["target_row_id"] != evidence["id"]
+                or type(creation["batch_id"]) is not int or creation["batch_id"] != batch["id"]
+                or creation["before_image"] is not None
+                or _positive_content_sha256(creation["after_image"]) != _positive_content_sha256(evidence)):
+            return False
+        created = creation["after_image"]
+        payload = created["research_payload"]
+        if not isinstance(payload, dict) or set(payload) != {"candidate", "research"}:
+            return False
+        row, research = payload["candidate"], payload["research"]
+        if (not isinstance(row, dict) or not isinstance(research, dict)
+                or research.get("scope_status") != "not_found_in_scope"
+                or research.get("candidate_name") != ""
+                or any(key in research for key in ("source_basis", "positive_zh_ko", "positive_generation"))
+                or research["negative_closure"]["version"] != 1):
+            return False
+        checked = validate_research_record(research, registry)
+        owner = {"kind": "player", "id": name["player_id"]}
+        if (name["lang"] != "ko" or name["status"] != "verified"
+                or name["decision_kind"] != "generated" or name["generation_rule_version"] != ZH_RULE
+                or evidence["player_id"] != name["player_id"] or evidence["lang"] != "ko"
+                or evidence["review_status"] != "approved" or evidence["decision_kind"] != "generated"
+                or evidence["generation_rule_version"] != ZH_RULE
+                or name["evidence_id"] != evidence["id"] or name["revision"] != evidence["revision"]
+                or evidence["candidate_name"] != name["display_name"]
+                or row["owner"] != owner or checked["owner"] != owner
+                or row["lang"] != "ko" or checked["lang"] != "ko"
+                or row["display_name"] != name["display_name"]
+                or row["decision_kind"] != "generated" or row["generation_rule_version"] != ZH_RULE
+                or row["research_sha256"] != _positive_content_sha256(research)
+                or row["review_status"] != "approved"
+                or row["review_conclusion"] != "approved_generated_display_and_rule"
+                or row["producer_id"] != evidence["producer_id"]
+                or row["producer_model"] != evidence["producer_model"]
+                or row["reviewer_id"] != evidence["reviewer_id"]
+                or row["reviewer_model"] != evidence["reviewer_model"]
+                or row["producer_id"] == row["reviewer_id"]):
+            return False
+        def parsed(value):
+            result = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            return result if result.tzinfo else result.replace(tzinfo=timezone.utc)
+        if (not all(_aware_timestamp(row[key]) for key in ("produced_at", "reviewed_at"))
+                or not _aware_timestamp(research["produced_at"])
+                or parsed(row["produced_at"]) != parsed(evidence["produced_at"])
+                or parsed(row["reviewed_at"]) != parsed(evidence["reviewed_at"])
+                or parsed(row["produced_at"]) <= parsed(research["negative_closure"]["reviewed_at"])
+                or parsed(row["produced_at"]) < parsed(research["produced_at"])
+                or parsed(row["reviewed_at"]) < parsed(row["produced_at"])
+                or parsed(row["reviewed_at"]) <= parsed(research["negative_closure"]["reviewed_at"])):
+            return False
+        review = row["generated_review"]
+        expected = {
+            "decision": "approve_generated", "owner": owner, "lang": "ko",
+            "display_name": row["display_name"], "generation_rule_version": ZH_RULE,
+            "original_name": research["original_name"], "reading": research["reading"],
+            "reading_basis_url": research["reading_basis_url"],
+            "research_sha256": row["research_sha256"], "reviewer_id": row["reviewer_id"],
+            "reviewer_model": row["reviewer_model"], "reviewed_at": row["reviewed_at"],
+        }
+        return (isinstance(review, dict) and set(review) == set(expected) | {"reason"}
+                and all(review[key] == value for key, value in expected.items())
+                and _text(review["reason"]))
+    except (EvidenceError, KeyError, TypeError, ValueError, AttributeError):
+        return False
+
+
 def persisted_positive_ja_ko_eligible(name: dict, evidence: dict, batch: dict, registry: dict,
                                      changes: list[dict]) -> bool:
     """Pure applied-proof gate shared by ORM and bounded SQL readers; never trusts status alone."""

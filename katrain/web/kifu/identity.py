@@ -108,7 +108,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     from katrain.web.kifu import name_orthographic
     from katrain.web.kifu.name_evidence import (
         is_positive_ja_ko, is_positive_zh_ko, persisted_positive_ja_ko_eligible,
-        persisted_positive_zh_ko_eligible,
+        persisted_positive_zh_ko_eligible, persisted_legacy_zh_negative_eligible,
     )
     from katrain.web.core.models_db import KifuNameChange, KifuNameSourceRegistry
 
@@ -134,12 +134,18 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     ja_ledger_ids = set()
     zh_ledger_ids = set()
     verified_display_ledger_ids = set()
+    evidence_creation_changes = {key: [] for key in evidence_ids}
+    legacy_batch_ids = set()
     if evidence_ids:
         for change in db.query(KifuNameChange).filter(
             KifuNameChange.target_table == "kifu_name_research_evidence",
             KifuNameChange.target_row_id.in_(evidence_ids),
         ):
             after = change.after_image
+            evidence_creation_changes[change.target_row_id].append(image(change))
+            if (isinstance(after, dict) and after.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1"
+                    and type(change.batch_id) is int):
+                legacy_batch_ids.add(change.batch_id)
             if isinstance(after, dict) and is_positive_ja_ko(
                 payload=after.get("research_payload"), rule=after.get("generation_rule_version")
             ):
@@ -172,7 +178,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             and candidate.get("generation_rule_version") == name_orthographic.VERSION
         )
 
-    batch_ids = set()
+    batch_ids = set(legacy_batch_ids)
     for name, evidence, *_ in rows:
         if (name.decision_kind == "transliterated" or orthographic_proof(name, evidence) or positive_kind(name, evidence)) and isinstance(
             evidence.research_payload, dict
@@ -211,7 +217,8 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
         if type(batch_id) is int and batch_id in batches:
             positive_batch_ids.add(batch_id)
-    registry_ids = {batches[key].source_registry_id for key in positive_batch_ids}
+    registry_ids = {batches[key].source_registry_id for key in positive_batch_ids | legacy_batch_ids
+                    if key in batches}
     registries = {row.id: row.registry for row in db.query(KifuNameSourceRegistry).filter(
         KifuNameSourceRegistry.id.in_(registry_ids))} if registry_ids else {}
     positive_changes = {key: [] for key in positive_batch_ids}
@@ -221,6 +228,15 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     result = []
     for row in rows:
         name, evidence, *extra = row
+        creation_changes = evidence_creation_changes.get(evidence.id, [])
+        if (name.decision_kind == "generated" and name.lang == "ko" and len(creation_changes) == 1
+                and creation_changes[0]["batch_id"] in legacy_batch_ids):
+            batch = batches.get(creation_changes[0]["batch_id"])
+            registry = registries.get(batch.source_registry_id) if batch else None
+            if batch and registry and persisted_legacy_zh_negative_eligible(
+                    image(name), image(evidence), image(batch), registry, creation_changes):
+                result.append(row)
+                continue
         kind = positive_kind(name, evidence)
         if kind:
             payload = evidence.research_payload

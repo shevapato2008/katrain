@@ -63,3 +63,14 @@ The independent Astra decision is [source-and-rule-decision.md](../../resource/k
 ## Acceptance
 
 Done when the four sourced names are actually qualified and searchable in both cloud environments, with authority URLs stored and honest statistics. Holds remain explicit; no RK restart. Existing five-language names and immutable applied proofs remain valid. User authorization covers execution; no additional approval question is required.
+
+## Discovered regression: preserve the reviewed legacy negative method
+
+The real r7 catalog comparison found four batch-332 Korean names using the same rule-version string as the new positive profile. Their immutable creation images contain approved negative-closure research rather than `normative_zh_ko`; the new reader therefore rejected valid existing names. Actual read-only capture: `/tmp/kifu-zh-ko-weng-closure-root-20261009/598-old332-four-capture-actual.json.gz`; 730 unique albums / 731 target slots. An independent Astra review confirmed the exact research/closure/review hashes and current creation images.
+
+**Files:** Minimal pure compatibility helper in `name_evidence.py`, qualified reader branch in `identity.py`, focused existing batch test, and the inspected native SQL reader adaptation. No database write or migration.
+
+- [ ] Add one legacy-negative reader regression and one stripped-positive/altered-legacy rejection check before implementing the fix.
+- [ ] Accept the existing legacy method only when the complete live evidence equals its unique `before_image=null` creation after-image in an actually applied batch, with exact approved candidate/research/negative-closure/generated-review bindings. Do not remove rule-only recognition or let arbitrary missing positive proof fall through. New positive creation remains governed by its immutable positive proof even after mutable markers are removed.
+- [ ] Keep new import restrictions unchanged; this is read compatibility for already applied research, not permission to republish or overwrite a name using an old method.
+- [ ] Independently review the focused code and native backport; verify the actual four old owners regain qualification and Weng remains qualified before updating the 598 coverage totals. Reuse the eight-game Weng delta once the original catalog set is restored; no full 173k strict rescan.

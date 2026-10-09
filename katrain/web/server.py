@@ -261,6 +261,7 @@ async def lifespan(app: FastAPI):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
+    app.state.session_manager.clear_spectator_presence()
     app.state.session_manager.cleanup_expired()
 
 
@@ -1107,14 +1108,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             with session.lock:
                 if not session.game_ended:
                     session.last_state = session.katrain.get_state()
-                    session.last_state["sockets_count"] = len(session.sockets)
-                    return session.last_state
-        return session.last_state or session.katrain.get_state()
+        state = session.last_state or session.katrain.get_state()
+        state["sockets_count"] = len(session.sockets)
+        if not strict_box_sso_enabled():
+            state["spectator_count"] = session.spectator_presence.count(
+                (session.player_b_id, session.player_w_id), session.sockets
+            )
+        return state
 
-    from katrain.web.core.box_sso import BoxSSOState, is_guest_user
+    from katrain.web.core.box_sso import BoxSSOState, is_guest_user, strict_box_sso_enabled
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
     app.include_router(api_router, prefix="/api/v1")
+    from katrain.web.api.pvp_spectator import create_pvp_spectator_router
+
+    app.include_router(create_pvp_spectator_router(guard_session_viewer, session_state_for_read))
     add_catalog_cache_middleware(app)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
     # the full server serves the complete build. Both emit index.html + /assets,
@@ -3805,15 +3813,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     if target_id and target_id != current_user.id:
                         runtime = getattr(app.state, "pvp_lobby_bots", None)
                         if type(target_id) is int and target_id < 0 and runtime is not None:
-                            from katrain.web.core.pvp_lobby_bots import human_ladder_rungs
-
-                            rung = human_ladder_rungs(app.state.session_factory, [current_user.id]).get(current_user.id)
-                            if rung is None:
-                                await websocket.send_json({"type": "error", "code": "PLACEMENT_REQUIRED"})
-                                continue
-                            if rung != runtime.bot_rung(target_id):
-                                await websocket.send_json({"type": "error", "code": "BOT_UNAVAILABLE"})
-                                continue
+                            # Direct invitations are nonranking games at the chosen opponent's strength.
+                            # Placement and same-rung restrictions belong only to quick matchmaking.
                             try:
                                 game_session = runtime.create_human_bot_game(current_user.id, current_user.username, target_id)
                             except Exception:
@@ -4148,6 +4149,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if strict_box:
             app.state.box_sso.register_socket(websocket)
         session.sockets.add(websocket)
+        if not strict_box:
+            session.spectator_presence.join_socket(websocket, current_user.id if current_user is not None else None)
         # 棋盘已经在屏上了 ⇒ 钟可以起步(Fan 2026-09-20:「我要看到电子棋盘再开始计时」)。
         #
         # ⚠️ 只对**没有视觉的部署**成立。盒子上 `physicalPlay = !screenFallback && isVisionEnabled`
@@ -4156,35 +4159,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # (10:36:10 建局 / 10:37:19 才绑上,中间用户在标定屏、碰不到棋盘)。
         # 板上由 `api/v1/endpoints/vision.py` 的 bind_session 起步;屏幕降级的局由「第一手落下」
         # 在 `interface.update_timer` 里兜底。
-        vision_service = getattr(app.state, "vision", None)
-        if (
-            not session_owner_ids(session)
-            or (current_user is not None and current_user.id in session_owner_ids(session))
-        ) and (vision_service is None or not vision_service.enabled):
-            if session.katrain.start_clock():
-                logging.getLogger("katrain_web").info(
-                    "Clock started for session %s (game websocket connected)", session_id
-                )
         try:
+            vision_service = getattr(app.state, "vision", None)
+            if (
+                not session_owner_ids(session)
+                or (current_user is not None and current_user.id in session_owner_ids(session))
+            ) and (vision_service is None or not vision_service.enabled):
+                if session.katrain.start_clock():
+                    logging.getLogger("katrain_web").info(
+                        "Clock started for session %s (game websocket connected)", session_id
+                    )
             state = session_state_for_read(session)
             state["sockets_count"] = len(session.sockets)
             # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})
-            # 🔴 名字撒谎:type 叫 `spectator_count`,`count` 却是**原始 socket 数**,不是观众数。
-            # 减 2 由消费方做(`GameRoomPage.tsx:194` 的 `sockets_count - 2`),因为这条消息只是
-            # 给 `state["sockets_count"]` 打的补丁 —— 它和上面那行 `state["sockets_count"]`
-            # 说的是同一个量,前端两处都存进 `sockets_count`。
-            #
-            # 而 REST 那条同名字段是**已经减过的**:`api/v1/endpoints/games.py:39`
-            # `len(s.sockets) - 2`,`HvHLobbyPage.tsx:291` 直接显示。
-            # ⇒ 全仓 **3 个产出方**(WS 两处:本处 + 离房那处;REST 一处)、**2 种语义**:
-            # 原料 × 2 与成品 × 1。今天各自算对了。
-            # **而「照着名字直接显示」这个动作已经存在两处**(`HvHLobbyPage.tsx:291`、
-            # kiosk `LobbyPage.tsx:358`,吃的都是成品那条)⇒ 屏上已经有两个先例在教下一个人
-            # 怎么接。**缺陷不是在等第一个消费者,是在等下一个人接错那一条。**
-            # 这条已登记进四棋类大厅裁决 §8.4(`variant_local.go` 那段的属主是围棋)。
-            # 改名要连着 wire 契约一起改,所以本轮只留话不动线。
-            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
+            # Legacy `count` stays the raw socket count; the additive field counts people.
+            if not strict_box:
+                manager.broadcast_spectator_count(session, force=True)
+            else:
+                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
             while True:
                 message = await websocket.receive_json()
                 if message.get("type") == "ping":
@@ -4247,11 +4240,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             if strict_box:
                 app.state.box_sso.discard_socket(websocket)
             session.sockets.discard(websocket)
-            # Broadcast updated spectator count when someone leaves
-            # 🔴 这是 `spectator_count` 的**第二个**产出方,`count` 同样是原始 socket 数不是观众数 ——
-            # 完整说明见进房那处(本文件上方 `session.sockets.add(websocket)` 之后)。**改一处要改两处。**
-            # 只贴一处的后果就是:动到没贴的这一处的人照样看不到。(国象 track 复量出这一处,2026-08-27)
-            if session.sockets:  # Only if there are still connected clients
+            session.spectator_presence.leave_socket(websocket)
+            if not strict_box:
+                manager.broadcast_spectator_count(session, force=True)
+            elif session.sockets:
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
     # SPA Routing for Galaxy UI

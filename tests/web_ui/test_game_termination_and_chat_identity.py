@@ -117,6 +117,9 @@ def _inject_session(app, *, user_id=None, player_b_id=None, player_w_id=None):
     session.game_type = "free"
     session.lock = threading.Lock()
     session.sockets = set()
+    from katrain.web.core.pvp_spectator_presence import PvpSpectatorPresence
+
+    session.spectator_presence = PvpSpectatorPresence()
     session.last_access = 0.0
     session.last_state = {"end_result": None}
     session.pending_count_request = None

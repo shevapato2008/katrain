@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { API, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState } from '../api';
+import { API, verifiedSpectatorCount, type EndGameResponse, type GameState, type PhysicalEngineErrorState, type PlatformClockState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
 import { requestFailureKind } from '../utils/requestFailure';
@@ -212,7 +212,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setError('中央对局连接中断');
                         } else if (msg.type === 'spectator_count') {
                             // Lightweight update for spectator count only (doesn't reset timers)
-                            setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
+                            setGameState(prev => prev ? { ...prev, sockets_count: msg.count, spectator_count: verifiedSpectatorCount(msg.spectator_count) } : prev);
                         } else if (msg.type === 'sound') {
                             if (typeof msg.data.after_node_id === 'number') {
                                 soundQueueRef.current.push({

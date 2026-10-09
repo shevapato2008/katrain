@@ -10,7 +10,7 @@ vi.mock('react-router-dom', async () => ({ ...(await vi.importActual('react-rout
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 1, username: '我' }, token: 'tok' }) }));
 vi.mock('../../context/SettingsContext', () => ({ useSettings: () => ({}) }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus }));
-vi.mock('../components/layout/ContentPageHeader', () => ({ default: () => <div /> }));
+vi.mock('../context/GameNavigationContext', () => ({ useGameNavigation: () => ({ requestNavigation: navigate }) }));
 vi.mock('../components/FriendsPanel', () => ({ default: () => <div /> }));
 
 const sent: string[] = [];
@@ -50,18 +50,22 @@ it('returns to own room and cancels the queue', async () => {
   render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
   await screen.findByText('同段');
   await screen.findByText('已定级');
-  await userEvent.click(within(screen.getByTestId('lobby-game')).getByRole('button', { name: /返回棋盘/ }));
+  await userEvent.click(screen.getByTestId('lobby-game'));
   expect(navigate).toHaveBeenCalledWith('/galaxy/play/human/room/own');
   await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
   await userEvent.click(screen.getByRole('button', { name: '取消匹配' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'stop_matchmaking' });
 });
-it('opens another pair\'s ongoing game for spectating', async () => {
+it('opens another pair\'s ongoing game from a keyboard accessible card', async () => {
   vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('multiplayer')
     ? [{ session_id: 'watch', player_b: '松风', player_w: '小舟', player_b_id: -1, player_w_id: -2, move_count: 8 }] : []) })));
   render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
   const game = await screen.findByTestId('lobby-game');
-  await userEvent.click(within(game).getByRole('button', { name: /观战/ }));
+  expect(game.tagName).toBe('BUTTON');
+  expect(game).toHaveAccessibleName('观战 松风 对 小舟');
+  expect(within(game).queryByRole('button')).not.toBeInTheDocument();
+  game.focus();
+  await userEvent.keyboard('{Enter}');
   expect(navigate).toHaveBeenCalledWith('/galaxy/play/human/room/watch');
 });
 it('shows placement dialog only for matching and allows invitation when unplaced', async () => {
@@ -75,6 +79,9 @@ it('shows placement dialog only for matching and allows invitation when unplaced
   await userEvent.click(screen.getByRole('button', { name: '返回大厅' }));
   await userEvent.click(within(screen.getByTestId('lobby-player-2')).getByRole('button', { name: '邀请' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
+  await userEvent.click(within(screen.getByTestId('lobby-player-3')).getByRole('button', { name: '邀请' }));
+  expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 3 });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 it('closes matching and shows a non-placement queue rejection', async () => {
   render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);

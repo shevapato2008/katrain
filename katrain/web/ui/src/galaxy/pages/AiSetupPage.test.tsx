@@ -164,6 +164,27 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     expect(screen.getByRole('option', { name: '棋力阶梯' })).toBeInTheDocument();
   });
 
+  it('keeps the free-game summary in sync with the selected settings and returns to play', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    const summary = await screen.findByTestId('free-game-summary');
+    expect(summary).toHaveTextContent('19路');
+    expect(summary).toHaveTextContent('Human-like · 10k');
+    expect(summary).toHaveTextContent('不计时');
+
+    await user.click(comboboxForLabel('Board Size'));
+    await user.click(screen.getByRole('option', { name: '13x13' }));
+    await user.click(comboboxForLabel('Your Color'));
+    await user.click(screen.getByRole('option', { name: 'White (Second)' }));
+    await user.click(screen.getByRole('switch', { name: 'Enable Timer' }));
+    expect(summary).toHaveTextContent('13路');
+    expect(summary).toHaveTextContent('White · Komi 6.5 · Handicap 0');
+    expect(summary).toHaveTextContent('10 Minutes · 3×30 Seconds');
+
+    await user.click(screen.getByTestId('free-return-action'));
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play');
+  });
+
   it('shows a rung selector (not the human-rank slider) once 棋力阶梯 is chosen', async () => {
     renderPage();
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
@@ -324,15 +345,15 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
   });
 
   it.each([
-    ['active-other', blockingGame('active', 'other_device')],
-    ['pending', blockingGame('pending_settlement')],
-  ])('挡局面板不摆「刷新状态」:%s', async (_label, occupiedGame) => {
+    ['active-other', blockingGame('active', 'other_device'), '认输那一局，在这里开新局'],
+    ['pending', blockingGame('pending_settlement'), '放弃未送达成绩，在这里开新局'],
+  ])('挡局面板不摆「刷新状态」:%s', async (_label, occupiedGame, endAction) => {
     // 它做的事(重问一次 /status)这块屏每 15 秒已经在自动做,所以它在每一格
     // 要么是别的按钮的真子集,要么什么都改不了。
     rankedState.current = { ...rankedState.current, blocking_game: occupiedGame };
     renderPage('rated');
 
-    await screen.findByRole('button', { name: '认输那一局，在这里开新局' });
+    await screen.findByRole('button', { name: endAction });
     expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
   });
 
@@ -508,8 +529,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     renderPage('rated');
 
     // 先制造一条陈旧错误:开新局失败。
-    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认认输' }));
+    await user.click(await screen.findByRole('button', { name: '放弃未送达成绩，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认放弃成绩' }));
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 

@@ -9,6 +9,8 @@ from typing import Awaitable, Callable, Dict, Optional, Set, List
 from starlette.websockets import WebSocket
 
 from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE
+from katrain.web.core.box_sso import strict_box_sso_enabled
+from katrain.web.core.pvp_spectator_presence import PvpSpectatorPresence
 from katrain.web.interface import WebKaTrain
 from katrain.web.models import GameEnd
 
@@ -44,6 +46,7 @@ class WebSession:
     # 不串行的话先落账的那一方会把「终局」写进账,补出来的分数就再也进不去了(`_recorded` 已置)。
     end_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
+    spectator_presence: PvpSpectatorPresence = field(default_factory=PvpSpectatorPresence, repr=False)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None
     pending_count_request: Optional[int] = None  # User ID that initiated count request
@@ -243,6 +246,53 @@ class SessionManager:
         except KeyError:
             pass
 
+    @staticmethod
+    def spectator_count(session: WebSession) -> int:
+        return session.spectator_presence.count((session.player_b_id, session.player_w_id), session.sockets)
+
+    def broadcast_spectator_count(self, session: WebSession, force: bool = False) -> int:
+        count = self.spectator_count(session)
+        changed = session.spectator_presence.mark_published(count)
+        if force or changed:
+            self._schedule_broadcast(
+                session, {"type": "spectator_count", "count": len(session.sockets), "spectator_count": count}
+            )
+        return count
+
+    def touch_http_spectator(self, session: WebSession, user_id: int) -> int:
+        with self._lock:
+            registered = self._sessions.get(session.session_id) is session
+        if not registered:
+            return self.spectator_count(session)
+        if user_id not in (session.player_b_id, session.player_w_id):
+            session.spectator_presence.touch_http(user_id)
+        count = self.broadcast_spectator_count(session)
+        self._arm_spectator_expiry(session)
+        return count
+
+    def _arm_spectator_expiry(self, session: WebSession):
+        session.spectator_presence.set_expiry_handle(None)
+        delay = session.spectator_presence.expiry_delay()
+        if delay is not None and self._loop is not None and self._loop.is_running():
+            handle = self._loop.call_later(delay, self._expire_http_spectators, session)
+            session.spectator_presence.set_expiry_handle(handle)
+
+    def _expire_http_spectators(self, session: WebSession):
+        # Do not use get_session: passive presence expiry must not keep a game alive.
+        with self._lock:
+            registered = self._sessions.get(session.session_id) is session
+        if not registered:
+            session.spectator_presence.clear()
+            return
+        self.broadcast_spectator_count(session)
+        self._arm_spectator_expiry(session)
+
+    def clear_spectator_presence(self):
+        with self._lock:
+            sessions = list(self._sessions.values())
+        for session in sessions:
+            session.spectator_presence.clear()
+
     def cleanup_expired(self):
         """回收过期会话。**同步方法，不要直接在事件循环上调用** —— 见 `_cleanup_locked`。"""
         with self._lock:
@@ -271,6 +321,7 @@ class SessionManager:
         跳过这一局的 `katrain.shutdown()` —— 2G 的 RK3562 上那意味着 KataGo 进程留着不走。
         """
         for session in sessions:
+            session.spectator_presence.clear()
             if self.on_session_removed:
                 try:
                     self.on_session_removed(session)
@@ -349,6 +400,8 @@ class SessionManager:
         if self.on_session_state:
             self.on_session_state(session_id)
         state["sockets_count"] = len(session.sockets)
+        if not strict_box_sso_enabled():
+            state["spectator_count"] = self.spectator_count(session)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})
 
     def _on_game_ended(self, session_id: str, end: GameEnd):
@@ -413,6 +466,9 @@ class SessionManager:
                 stale.append(ws)
         for ws in stale:
             session.sockets.discard(ws)
+            session.spectator_presence.leave_socket(ws)
+        if stale and not strict_box_sso_enabled():
+            self.broadcast_spectator_count(session, force=True)
 
     def _schedule_socket_close(self, session: WebSession, close):
         """Close a session's game sockets, on the loop.
@@ -475,6 +531,7 @@ class SessionManager:
             pass  # already disconnected, or never acked in time — nothing left to tell it
         # /ws's own finally: discards the same socket from its cleanup; Set.discard is idempotent.
         session.sockets.discard(ws)
+        session.spectator_presence.leave_socket(ws)
 
 
 @dataclass

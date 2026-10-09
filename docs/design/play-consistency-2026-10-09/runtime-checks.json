@@ -1,0 +1,157 @@
+{
+  "hall": {
+    "errors": [],
+    "header": {
+      "x": 248,
+      "y": 82,
+      "width": 1160,
+      "height": 56
+    },
+    "fonts": [
+      {
+        "selector": ".galaxy-play-page__header h1",
+        "text": "对战大厅",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-galaxy__game .meta",
+        "text": "ee36 房\n分先 · 19 路\n第 170 手",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 22
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-galaxy__panel h2",
+        "text": "进行中的对局",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 6
+          }
+        ]
+      }
+    ]
+  },
+  "free": {
+    "errors": [],
+    "header": {
+      "x": 248,
+      "y": 82,
+      "width": 1160,
+      "height": 56
+    },
+    "fonts": [
+      {
+        "selector": ".galaxy-play-page__header h1",
+        "text": "自由对弈",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".galaxy-play-page .MuiSelect-select",
+        "text": "19x19 (标准)",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 10
+          }
+        ]
+      },
+      {
+        "selector": ".galaxy-play-page .MuiButton-root",
+        "text": "对局",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 2
+          }
+        ]
+      }
+    ],
+    "menuFonts": [
+      {
+        "selector": ".MuiMenuItem-root",
+        "text": "19x19 (标准)",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 10
+          }
+        ]
+      }
+    ]
+  },
+  "rated": {
+    "errors": [],
+    "header": {
+      "x": 248,
+      "y": 82,
+      "width": 1160,
+      "height": 56
+    },
+    "fonts": [
+      {
+        "selector": ".galaxy-play-page__header h1",
+        "text": "升降级对弈",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 5
+          }
+        ]
+      },
+      {
+        "selector": ".galaxy-play-page .MuiButton-root",
+        "text": "● 黑棋",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": "[data-testid=\"current-rank\"]",
+        "text": "定级中",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 3
+          }
+        ]
+      }
+    ]
+  }
+}

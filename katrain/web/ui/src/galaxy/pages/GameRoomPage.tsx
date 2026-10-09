@@ -12,7 +12,7 @@ import ModulePlate from '../components/layout/ModulePlate';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
-import { API } from '../../api';
+import { API, verifiedSpectatorCount } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { translateResult } from '../../utils/resultTranslation';
 
@@ -197,7 +197,7 @@ const GameRoomPage = () => {
     const isPlayer = isBlack || isWhite;
     const myTurn = (gameState.player_to_move === 'B' && isBlack) || (gameState.player_to_move === 'W' && isWhite);
 
-    const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
+    const spectatorCount = verifiedSpectatorCount(gameState.spectator_count);
     const isGameOver = finalResult;
     const countStopped = !!gameState.end_result && !!gameState.awaiting_count;
     const countRetry = countStopped && !!gameState.degraded;
@@ -352,6 +352,8 @@ const GameRoomPage = () => {
                     />
                 )}
                 railBody={(
+                    <>
+                    {spectatorCount === undefined && <Box sx={{ px: 2, pt: 1, color: 'text.secondary', fontSize: 13 }}>观战人数未返回</Box>}
                     <RightSidebarPanel
                         gameState={gameState}
                         analysisToggles={{ ownership: false, hints: false, score: false, policy: false, ...displayToggles }}
@@ -376,6 +378,7 @@ const GameRoomPage = () => {
                         onLeave={handleLeave}
                         embedded
                     />
+                    </>
                 )}
                 actions={<RightSidebarActions onAction={isPlayer ? handleActionWrapper : () => {}} isGameOver={isGameOver} />}
             />

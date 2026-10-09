@@ -308,12 +308,14 @@ def test_old_lobby_tab_disconnect_keeps_new_tabs_queue_and_bot_wait(client, app)
             assert _next(newer)["type"] == "match_found"
 
 
-def test_placed_user_can_invite_idle_same_rung_bot(client, app):
+@pytest.mark.parametrize("human_level", [None, 0, 1], ids=["unplaced", "same-rung", "different-rung"])
+def test_user_can_invite_idle_bot_regardless_of_placement_or_rung(client, app, human_level):
     from katrain.web.core.pvp_lobby_bots import bot_id, playable_rungs
 
     rung = playable_rungs()[0].rung
     alice_id, alice = _make_user(app, "bot_inviter")
-    _place(app, alice_id, rung)
+    if human_level is not None:
+        _place(app, alice_id, playable_rungs()[human_level].rung)
     runtime = app.state.pvp_lobby_bots
     runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0,
                           "idle_targets": {str(rung): 1}}, revision=1)

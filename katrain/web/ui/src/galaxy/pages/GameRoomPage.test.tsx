@@ -55,7 +55,7 @@ const makeState = (over: Partial<GameState> = {}): GameState => ({
   current_node_index: 1, history: [], player_to_move: 'B', stones: [], last_move: null,
   prisoner_count: { B: 0, W: 0 }, analysis: null, commentary: '', is_root: false, is_pass: false,
   end_result: null, children: [], ghost_stones: [], note: '', language: 'zh', game_type: 'free',
-  sockets_count: 5,
+  sockets_count: 5, spectator_count: 3,
   players_info: {
     B: { player_type: 'human', player_subtype: '', name: 'fan', calculated_rank: null, periods_used: 0, main_time_used: 0 },
     W: { player_type: 'human', player_subtype: '', name: 'cat', calculated_rank: null, periods_used: 0, main_time_used: 0 },
@@ -97,7 +97,7 @@ describe('GameRoomPage 统一版式', () => {
     // 棋盘那一格里只有棋盘：观众数和离开键都降到了右栏。
     const stage = screen.getByTestId('board-stage');
     expect(stage).toHaveTextContent('');
-    // sockets_count 5 = 两名棋手 + 3 名观众
+    // Verified authenticated spectator membership is independent of sockets_count.
     expect(screen.getByTestId('board-rail-scroll')).toHaveTextContent('3 Spectators');
   });
 
@@ -162,4 +162,13 @@ describe('GameRoomPage 统一版式', () => {
     expect(mocks.onMove).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Resign' })).toBeDisabled();
   });
+});
+
+
+it.each([undefined, null, -1, 1.5, '3'])('does not estimate spectators from sockets when verified membership is %s', (count) => {
+  mocks.gameState = makeState({ sockets_count: 20, spectator_count: count as number });
+  mocks.getFollowing.mockResolvedValue([]);
+  renderPage();
+  expect(screen.getByText('观战人数未返回')).toBeInTheDocument();
+  expect(screen.queryByText('18 Spectators')).not.toBeInTheDocument();
 });

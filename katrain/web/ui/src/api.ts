@@ -1,3 +1,8 @@
+/** An absent or invalid membership count is unknown, never an estimate from sockets. */
+export function verifiedSpectatorCount(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
 export interface PlayerInfo {
   player_type: string;
   player_subtype: string;
@@ -62,6 +67,8 @@ export interface GameState {
     zen_mode: boolean;
   };
   sockets_count?: number;
+  /** Unique authenticated viewers excluding both player seats; absent on older servers. */
+  spectator_count?: number;
   timer?: {
     paused: boolean;
     main_time_used: number;

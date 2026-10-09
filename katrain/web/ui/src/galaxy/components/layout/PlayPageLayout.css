@@ -1,0 +1,38 @@
+.galaxy-play-page {
+  --play-font: "SmartBox Kai", "LXGW WenKai", "Kaiti SC", serif;
+  --play-panel: #232624;
+  --play-line: #3b4540;
+  --play-muted: #b8c0b8;
+  --play-accent: #89b59a;
+  padding: 30px 32px 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  color: #f0f1eb;
+  font: 16px/1.5 var(--play-font);
+}
+.galaxy-play-page *, .galaxy-play-page *::before, .galaxy-play-page *::after { box-sizing: border-box; }
+.galaxy-play-page button, .galaxy-play-page input, .galaxy-play-page select, .galaxy-play-page textarea { font-family: var(--play-font); }
+.galaxy-play-page h1, .galaxy-play-page h2, .galaxy-play-page h3 { font-family: var(--play-font); }
+.galaxy-play-page__inner { max-width: 1440px; margin: 0 auto; }
+.galaxy-play-page__header { margin-bottom: 24px; }
+.galaxy-play-page__header [data-testid="module-plate"] { min-height: 56px; gap: 12px; }
+.galaxy-play-page__header .MuiIconButton-root { width: 44px !important; height: 44px !important; flex: 0 0 44px; border-radius: 8px; }
+.galaxy-play-page__header h1 { font-size: 32px; line-height: 1.3; font-weight: 600; letter-spacing: 0; }
+.galaxy-play-page__header .MuiIconButton-root:hover { background: #28372c; }
+.galaxy-play-stage { border: 1px solid var(--play-line); border-radius: 12px; background: var(--play-panel); overflow: hidden; }
+.galaxy-play-stage--split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; }
+.galaxy-play-stage__main, .galaxy-play-stage__side { padding: 28px; min-width: 0; }
+.galaxy-play-stage__side { border-left: 1px solid var(--play-line); display: flex; flex-direction: column; gap: 20px; }
+.galaxy-play-page .galaxy-play-stage .MuiButton-root { min-height: 44px; border-radius: 8px; }
+@media (max-width: 1100px) {
+  .galaxy-play-page { padding: 24px; }
+  .galaxy-play-stage--split { grid-template-columns: minmax(0, 1fr) 300px; }
+  .galaxy-play-stage__main, .galaxy-play-stage__side { padding: 22px; }
+}
+@media (max-width: 800px) {
+  .galaxy-play-page { padding: 20px 16px calc(80px + env(safe-area-inset-bottom)); }
+  .galaxy-play-page__header h1 { font-size: 26px; }
+  .galaxy-play-stage--split { grid-template-columns: 1fr; }
+  .galaxy-play-stage__side { border-left: 0; border-top: 1px solid var(--play-line); }
+}

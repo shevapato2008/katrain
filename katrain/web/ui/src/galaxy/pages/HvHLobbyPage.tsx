@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
 import { websocketUrl } from '../../utils/websocketUrl';
+import PlayPageLayout from '../components/layout/PlayPageLayout';
 import './HvHLobbyPage.css';
 
 type OnlineUser = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
@@ -122,18 +123,73 @@ export default function HvHLobbyPage() {
   const stop = () => { send({ type: 'stop_matchmaking' }); clearTimer(); setDialog(null); };
   const roster = users.filter((u) => filter === 'all' || (filter === 'same' ? rank && u.ladder_rung === rank.rung : following.includes(u.id)));
   const ordered = [...roster].sort((a, b) => Number(b.id === user?.id) - Number(a.id === user?.id) || Number(a.presence === 'playing') - Number(b.presence === 'playing'));
-  return <main className="pvp-galaxy">
-    <div className="pvp-galaxy__heading"><div><h1><button type="button" aria-label="返回对局" onClick={() => navigate('/galaxy/play')}>←</button>对战大厅</h1><p>选择空闲棋友，或一键匹配同段位对手。所有大厅对局均不计升降段位。</p></div><div className="pvp-galaxy__identity"><span className="dot" />{rankLoaded ? rankError ? '段位读取失败' : rank ? '已定级' : '未定级' : '读取段位中'} <b>{rankError ? '请重试' : rank?.label || (rankLoaded ? '先去升降级对弈' : '…')}</b></div></div>
-    <section className="pvp-galaxy__action" aria-label="快速匹配"><span className="emblem">棋</span><div><strong>来下一局</strong><small>优先寻找同段位真人；等待后由同段位棋手接局</small></div><button type="button" onClick={start} disabled={!rankLoaded || rankError || connection !== 'connected'}>快速匹配 →</button></section>
+  return <PlayPageLayout title="对战大厅" status={
+    <div className="pvp-galaxy__identity">
+      <span>{rankLoaded ? rankError ? '段位读取失败' : rank ? '已定级' : '未定级' : '读取段位中'}</span>
+      <b>{rankError ? '请重试' : rank?.label || (rankLoaded ? '尚未定级' : '…')}</b>
+    </div>
+  }><div className="pvp-galaxy">
+    <section className="pvp-galaxy__action" aria-label="快速匹配">
+      <div><h2>来下一局</h2><p>快速匹配同段位，或邀请任意段位的空闲棋友。大厅对局不计升降段位。</p></div>
+      <button type="button" onClick={start} disabled={!rankLoaded || rankError || connection !== 'connected'}>快速匹配 →</button>
+    </section>
     {rankError && <p role="alert" className="pvp-galaxy__alert">段位状态暂时无法读取。<button type="button" onClick={() => void loadRank()}>重试段位</button></p>}
     {connection === 'disconnected' && <p role="alert" className="pvp-galaxy__alert">大厅连接已断开，请刷新后重试。</p>}
     {error && <p role="alert" className="pvp-galaxy__alert">{error} <button type="button" onClick={() => void fetchLists()}>重试</button></p>}
     {notice && <p role="status" className="pvp-galaxy__alert">{notice}<button type="button" onClick={() => setNotice('')}>关闭</button></p>}
     <div className="pvp-galaxy__layout">
-      <section className="pvp-galaxy__panel" aria-label="进行中的对局"><header><h2>进行中的对局</h2><em>In play</em><span>{error ? '—' : games.length} 局正在进行</span></header><div className="pvp-galaxy__body">{!loaded && <p>正在读取对局…</p>}{loaded && !error && !games.length && <p>当前没有进行中的对局。</p>}{games.map((g) => { const mine = g.player_b_id === user?.id || g.player_w_id === user?.id; return <article className="pvp-galaxy__game" data-testid="lobby-game" key={g.session_id} onClick={() => navigate(`/galaxy/play/human/room/${g.session_id}`)}><div className="meta"><b>{g.session_id.slice(0, 4)} 房</b><span>分先 · 19 路</span><span>第 {g.move_count} 手</span></div><div className="pair"><div className="side"><span className="portrait">{g.player_b.slice(0, 1)}</span><div><b>{g.player_b}</b><small>执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></div></div><span className="versus">对</span><div className="side white"><div><b>{g.player_w}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白</small></div><span className="portrait">{g.player_w.slice(0, 1)}</span></div></div><button type="button">{mine ? '返回棋盘 →' : '观战 →'}</button></article>; })}<p className="tail">点击对局即可观战；自己的对局可返回棋盘。</p></div></section>
-      <section className="pvp-galaxy__panel" aria-label="在线棋友"><header><h2>在线棋友</h2><em>Players</em><span>{error ? '—' : users.length} 人在线</span></header><div className="pvp-galaxy__tabs" role="tablist"><button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')}>全部棋友</button><button role="tab" aria-selected={filter === 'same'} disabled={!rank} onClick={() => setFilter('same')}>同段位</button><button role="tab" aria-selected={filter === 'follow'} onClick={() => setFilter('follow')}>我的关注</button></div><div className="pvp-galaxy__peers">{!loaded && <p>正在读取棋友…</p>}{loaded && !error && !ordered.length && <p>当前筛选下没有在线棋友。</p>}{ordered.map((u) => { const me = u.id === user?.id; const busy = u.presence === 'playing'; return <div className={`peer ${me ? 'self' : ''}`} data-testid={`lobby-player-${u.id}`} key={u.id}><span className="portrait">{u.username.slice(0, 1)}</span><span className="name"><b>{u.username}</b><small>{u.rank_label || '尚未定级'}</small></span><span className={`state ${busy ? 'busy' : ''}`}>{busy ? '对局中' : '空闲'}</span>{me ? <span className="self-tag">这是你</span> : <button type="button" disabled={busy || connection !== 'connected'} onClick={() => send({ type: 'invite', target_id: u.id })}>邀请</button>}</div>; })}</div><p className="pvp-galaxy__tail">空闲棋手可邀请；同段位筛选按已定级段位计算。</p></section>
+      <section className="pvp-galaxy__panel" aria-label="进行中的对局">
+        <header><h2>进行中的对局</h2><span>{error ? '—' : games.length} 局正在进行</span></header>
+        <div className="pvp-galaxy__body">
+          {!loaded && <p>正在读取对局…</p>}
+          {loaded && !error && !games.length && <p>当前没有进行中的对局。</p>}
+          {games.map((g) => {
+            const mine = g.player_b_id === user?.id || g.player_w_id === user?.id;
+            return <button
+              type="button"
+              className="pvp-galaxy__game"
+              data-testid="lobby-game"
+              aria-label={`${mine ? '返回棋盘' : '观战'} ${g.player_b} 对 ${g.player_w}`}
+              key={g.session_id}
+              onClick={() => navigate(`/galaxy/play/human/room/${g.session_id}`)}
+            >
+              <span className="meta"><span>{g.session_id.slice(0, 4)} 房</span><span>分先 · 19 路</span><span>第 {g.move_count} 手</span></span>
+              <span className="pair">
+                <span className="side"><span className="portrait">{g.player_b.slice(0, 1)}</span><span className="name"><b>{g.player_b}</b><small>执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></span></span>
+                <span className="versus">对</span>
+                <span className="side white"><span className="name"><b>{g.player_w}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白</small></span><span className="portrait">{g.player_w.slice(0, 1)}</span></span>
+              </span>
+              <span className="watch">{mine ? '返回棋盘 →' : '观战 →'}</span>
+            </button>;
+          })}
+        </div>
+        <p className="pvp-galaxy__tail">点击对局即可观战；自己的对局可返回棋盘。</p>
+      </section>
+      <section className="pvp-galaxy__panel" aria-label="在线棋友">
+        <header><h2>在线棋友</h2><span>{error ? '—' : users.length} 人在线</span></header>
+        <div className="pvp-galaxy__tabs" role="tablist" aria-label="棋友筛选">
+          <button type="button" role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')}>全部棋友</button>
+          <button type="button" role="tab" aria-selected={filter === 'same'} disabled={!rank} onClick={() => setFilter('same')}>同段位</button>
+          <button type="button" role="tab" aria-selected={filter === 'follow'} onClick={() => setFilter('follow')}>我的关注</button>
+        </div>
+        <div className="pvp-galaxy__peers">
+          {!loaded && <p>正在读取棋友…</p>}
+          {loaded && !error && !ordered.length && <p>当前筛选下没有在线棋友。</p>}
+          {ordered.map((u) => {
+            const me = u.id === user?.id;
+            const busy = u.presence === 'playing';
+            return <div className={`peer ${me ? 'self' : ''}`} data-testid={`lobby-player-${u.id}`} key={u.id}>
+              <span className="portrait">{u.username.slice(0, 1)}</span>
+              <span className="name"><b>{u.username}</b><small>{u.rank_label || '尚未定级'}</small></span>
+              <span className={`state ${busy ? 'busy' : ''}`}>{busy ? '对局中' : '空闲'}</span>
+              {me ? <span className="self-tag">这是你</span> : <button type="button" disabled={busy || connection !== 'connected'} onClick={() => send({ type: 'invite', target_id: u.id })}>邀请</button>}
+            </div>;
+          })}
+        </div>
+        <p className="pvp-galaxy__tail">未定级也可邀请；快速匹配需先完成定级。</p>
+      </section>
     </div>
     {dialog && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{dialog === 'placement' ? '完成定级后再来匹配' : '正在寻找同段位对手'}</h2><p>{dialog === 'placement' ? '大厅按「升降级对弈」的段位寻找同水平对手。请先完成 5 局定级赛，再回到这里匹配。' : '先寻找同段位真人，稍后由同段位棋手接局；成功后直接开局。'}</p><div className="detail"><span>{dialog === 'placement' ? '当前段位' : `${rank?.label} · 不计升降段位`}</span><b>{dialog === 'placement' ? '尚未定级' : `已等 ${elapsed} 秒`}</b></div>{dialog === 'matching' && <div className="progress" />}<div className="actions">{dialog === 'placement' ? <><button onClick={() => setDialog(null)}>返回大厅</button><button className="main" onClick={() => navigate('/galaxy/play/ai?mode=rated')}>去升降级对弈</button></> : <button onClick={stop}>取消匹配</button>}</div></section></div>}
     {invitation && <div className="pvp-galaxy__layer"><section className="pvp-galaxy__dialog" role="dialog" aria-modal="true"><h2>{invitation.from_name} 邀你下一局</h2><p>接受后直接开局；这局不计升降段位。</p><div className="actions"><button onClick={() => setInvitation(null)}>返回大厅</button><button className="main" onClick={() => { send({ type: 'accept_invite', target_id: invitation.from_id }); setInvitation(null); }}>接受邀请</button></div></section></div>}
-  </main>;
+  </div></PlayPageLayout>;
 }

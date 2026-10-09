@@ -56,6 +56,7 @@ const KifuDetailPage = lazy(() => import('./pages/KifuDetailPage'));
 const KifuReportDetailPage = lazy(() => import('./pages/KifuReportDetailPage'));
 const BaipuSessionRoute = lazy(() => import('./pages/BaipuSessionRoute'));
 const LobbyPage = lazy(() => import('./pages/LobbyPage'));
+const PvpSpectatorPage = lazy(() => import('./pages/PvpSpectatorPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const ReportDetailPage = lazy(() => import('./pages/ReportDetailPage'));
@@ -137,6 +138,7 @@ export const KioskRoutes = () => {
 
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
+          <Route path="play/pvp/watch/:sessionId" element={<PvpSpectatorPage />} />
           <Route path="play/cross-platform/login/:platform" element={<PlatformLoginPage />} />
           <Route path="play/cross-platform/lobby" element={<LegacyPlatformLobbyRedirect />} />
           <Route path="play/cross-platform/golaxy" element={<GolaxyHomePage />} />

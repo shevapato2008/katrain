@@ -25,7 +25,9 @@ async def list_active_multiplayer_games(
     from katrain.web.core.box_sso import strict_box_sso_enabled
 
     bridge = getattr(request.app.state, "pvp_box_bridge", None)
-    if strict_box_sso_enabled() and bridge is not None:
+    if strict_box_sso_enabled():
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
 
         generation = request.app.state.box_sso.active_generation
@@ -71,7 +73,7 @@ async def list_active_multiplayer_games(
                 "player_w_rung": white_rung,
                 "player_b_rank_label": labels.get(black_rung),
                 "player_w_rank_label": labels.get(white_rung),
-                "spectator_count": len(s.sockets) - 2 if len(s.sockets) > 2 else 0,
+                "spectator_count": manager.spectator_count(s),
                 "move_count": len(state.get("history", [])),
                 "degraded": bool(getattr(s, "bot_degraded", False) or getattr(s, "multiplayer_degraded", False)),
             }

@@ -5,6 +5,7 @@ import { TsumegoProgressProvider } from './context/TsumegoProgressContext';
 import { useSettings } from './context/SettingsContext';
 import { createGalaxyTheme } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
+import './kiosk-shell/fonts.css';
 import MainLayout from './galaxy/components/layout/MainLayout';
 const Dashboard = lazy(() => import('./galaxy/pages/Dashboard'));
 const ResearchPage = lazy(() => import('./galaxy/pages/ResearchPage'));

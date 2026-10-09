@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -30,7 +30,12 @@ class FakeWS {
 }
 const games = [{ session_id: 'own', player_b: '他', player_w: '我', player_b_id: 9, player_w_id: 1, move_count: 10, player_b_rank_label: '业余 2 段', player_w_rank_label: '业余 2 段' }];
 const people = [{ id: 1, username: '我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' }, { id: 2, username: '同段', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle', kind: 'bot' }, { id: 3, username: '异段', ladder_rung: 13, rank_label: '业余 3 段', presence: 'idle' }];
-const page = () => render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
+const page = (players = true) => {
+  const view = render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
+  if (players && auth.isAuthenticated) fireEvent.click(screen.getByRole('tab', { name: /在线棋友/ }));
+  return view;
+};
+const showGames = () => userEvent.click(screen.getByRole('tab', { name: /进行中对局/ }));
 beforeEach(() => {
   sent.length = 0; sockets.length = 0; socketCount = 0; nav.mockClear(); ladder.mockReset(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
   vi.stubGlobal('WebSocket', FakeWS);
@@ -38,28 +43,32 @@ beforeEach(() => {
   ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
-it('shows one unranked match, same-rung filter, own-room return, and no bot/watch affordance', async () => {
+it('shows quick matching, same-rung filtering and own-room return', async () => {
   page(); await screen.findByText('同段'); await screen.findByText('我的段位');
   expect(screen.getAllByRole('button', { name: /快速匹配/ })).toHaveLength(1);
-  await userEvent.click(screen.getByRole('tab', { name: '同段位' }));
+  await userEvent.click(screen.getByRole('button', { name: '同段位' }));
   expect(screen.queryByText('异段')).not.toBeInTheDocument();
-  expect(screen.queryByText(/机器人|bot|观战/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/机器人|bot/i)).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'start_matchmaking' });
   await userEvent.click(screen.getByRole('button', { name: '取消匹配' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'stop_matchmaking' });
+  await showGames();
   await userEvent.click(screen.getByTestId('lobby-game'));
   expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/own', { state: { backTo: '/kiosk/play/pvp/lobby' } });
 });
 it('requires placement only for matching and keeps invitations available', async () => {
   ladder.mockResolvedValue({ placement_state: { phase: 'placement', completed_games: 2, total_games: 5 } });
   page(); await screen.findByText('同段'); await screen.findByText('我的段位');
-  expect(screen.getByRole('tab', { name: '同段位' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: '同段位' })).toBeDisabled();
   await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
   expect(screen.getByRole('dialog')).toHaveTextContent('定级');
   expect(sent).toHaveLength(0);
   await userEvent.click(screen.getByRole('button', { name: '稍后再说' }));
   await userEvent.click(within(screen.getByTestId('lobby-player-2')).getByRole('button', { name: '邀请' }));
+  expect(screen.getByRole('dialog', { name: '邀请 同段 对局' })).toBeInTheDocument();
+  expect(sent).toHaveLength(0);
+  await userEvent.click(screen.getByRole('button', { name: '发送邀请' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'invite', target_id: 2 });
 });
 it('uses central identity and proxied central rank in strict box mode even when the local shadow differs', async () => {
@@ -74,9 +83,10 @@ it('uses central identity and proxied central rank in strict box mode even when 
   expect(within(await screen.findByTestId('lobby-player-42')).getByText('这是你')).toBeInTheDocument();
   expect(ladder).toHaveBeenCalled();
   expect(screen.getByText('我的段位').parentElement).toHaveTextContent('业余 3 段');
-  await userEvent.click(screen.getByRole('tab', { name: '同段位' }));
+  await userEvent.click(screen.getByRole('button', { name: '同段位' }));
   expect(screen.getByTestId('lobby-player-42')).toBeInTheDocument();
   expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument();
+  await showGames();
   await userEvent.click(screen.getByTestId('lobby-game'));
   expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/room/local-mirror-room', { state: { backTo: '/kiosk/play/pvp/lobby' } });
 });
@@ -131,6 +141,7 @@ it('accepts an incoming invitation without a placement requirement', async () =>
 it('removes old lobby rows when a refresh fails', async () => {
   page();
   await screen.findByTestId('lobby-player-2');
+  await showGames();
   expect(screen.getByTestId('lobby-game')).toBeInTheDocument();
   vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
   act(() => push({ type: 'lobby_update' }));
@@ -202,4 +213,109 @@ it('cancels the previous identity reconnect when the signed-in account changes',
   await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
   expect(socketCount).toBe(2);
   expect(sent).toHaveLength(0);
+});
+
+it('opens other players games as readonly spectators, including a cloud ID on a strict box', async () => {
+  box.strict = true;
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(
+    url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? people
+      : [{ ...games[0], session_id: 'central-other-room', player_w_id: 77 }]) })));
+  page();
+  await showGames();
+  const card = await screen.findByTestId('lobby-game');
+  expect(card.tagName).toBe('BUTTON');
+  await userEvent.click(card);
+  expect(nav).toHaveBeenCalledWith('/kiosk/play/pvp/watch/central-other-room');
+});
+
+
+it('starts with roving games/players tabs and the invite card focuses the players panel', async () => {
+  page(false);
+  const gamesTab = screen.getByRole('tab', { name: /进行中对局/ });
+  const playersTab = screen.getByRole('tab', { name: /在线棋友/ });
+  expect(gamesTab).toHaveAttribute('aria-selected', 'true');
+  expect(gamesTab).toHaveAttribute('tabindex', '0');
+  expect(playersTab).toHaveAttribute('tabindex', '-1');
+  gamesTab.focus(); await userEvent.keyboard('{ArrowRight}');
+  expect(playersTab).toHaveFocus();
+  expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', playersTab.id);
+  await userEvent.keyboard('{Home}'); expect(gamesTab).toHaveFocus();
+  await userEvent.keyboard('{End}'); expect(playersTab).toHaveFocus();
+  await userEvent.click(screen.getByRole('button', { name: /邀请棋友/ }));
+  expect(screen.getByRole('tabpanel')).toHaveFocus();
+});
+
+it('confirms the selected other-rank invite once and traps/restores dialog focus', async () => {
+  ladder.mockResolvedValue({ placement_state: { phase: 'placement' } });
+  page();
+  const target = await screen.findByTestId('lobby-player-3');
+  const trigger = within(target).getByRole('button', { name: '邀请' });
+  await userEvent.click(trigger);
+  const modal = screen.getByRole('dialog', { name: '邀请 异段 对局' });
+  expect(modal).toHaveTextContent('业余 3 段');
+  expect(modal).toHaveFocus(); expect(sent).toHaveLength(0);
+  await userEvent.tab({ shift: true });
+  expect(screen.getByRole('button', { name: '发送邀请' })).toHaveFocus();
+  await userEvent.tab(); expect(within(modal).getByRole('button', { name: '返回大厅' })).toHaveFocus();
+  await userEvent.keyboard('{Escape}'); expect(trigger).toHaveFocus(); expect(sent).toHaveLength(0);
+  await userEvent.click(trigger);
+  await userEvent.dblClick(screen.getByRole('button', { name: '发送邀请' }));
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'invite', target_id: 3 }]);
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); expect(trigger).toHaveFocus();
+});
+
+it('keeps self and busy invites unavailable and stops matchmaking with Escape', async () => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? [...people, { id: 4, username: '忙碌', ladder_rung: 12, rank_label: '2段', presence: 'playing' }] : games } as Response));
+  page();
+  expect(within(await screen.findByTestId('lobby-player-1')).queryByRole('button', { name: '邀请' })).not.toBeInTheDocument();
+  expect(within(screen.getByTestId('lobby-player-4')).getByRole('button', { name: '邀请' })).toBeDisabled();
+  const match = screen.getByRole('button', { name: /快速匹配/ });
+  await waitFor(() => expect(match).toBeEnabled()); await userEvent.click(match);
+  expect(screen.getByRole('dialog', { name: '正在寻找同段位对手' })).toHaveFocus();
+  await userEvent.keyboard('{Escape}');
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'start_matchmaking' }, { type: 'stop_matchmaking' }]);
+  expect(match).toHaveFocus();
+});
+
+it.each([undefined, null, -1, 1.5, '3'])('shows unknown spectators for unverified count %s', async (count) => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? people : [{ ...games[0], spectator_count: count, sockets_count: 20 }] } as Response));
+  page(false);
+  expect(await screen.findByText('观战人数未返回')).toBeInTheDocument();
+  expect(screen.queryByText('18 人观战')).not.toBeInTheDocument();
+});
+
+it('shows verified spectators with black/white seats and uses no per-room request', async () => {
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? people : [{ ...games[0], spectator_count: 0 }] } as Response));
+  page(false);
+  expect(await screen.findByText('0 人观战')).toBeInTheDocument();
+  expect(screen.getByTestId('lobby-game')).toHaveTextContent('执黑');
+  expect(screen.getByTestId('lobby-game')).toHaveTextContent('执白');
+  expect(document.querySelector('.pvp-kiosk__mini-board')).not.toBeNull();
+  expect(vi.mocked(fetch).mock.calls.map(([url]) => url)).toEqual(['/api/v1/users/online', '/api/v1/games/active/multiplayer']);
+});
+
+it('drops old account rows and ignores late list and rank responses', async () => {
+  let resolveUsers!: (value: Response) => void;
+  let resolveGames!: (value: Response) => void;
+  let resolveRank!: (value: unknown) => void;
+  ladder.mockReturnValueOnce(new Promise((resolve) => { resolveRank = resolve; }));
+  vi.mocked(fetch).mockImplementationOnce(() => new Promise((resolve) => { resolveUsers = resolve; }))
+    .mockImplementationOnce(() => new Promise((resolve) => { resolveGames = resolve; }));
+  const view = page();
+  auth.user = { id: 7, username: '新账号' }; auth.token = 'new';
+  vi.mocked(fetch).mockImplementation((url) => Promise.resolve({ ok: true, json: async () => String(url).includes('/users/online')
+    ? [{ id: 7, username: '新账号', ladder_rung: 13, rank_label: '3段', presence: 'idle' }] : [] } as Response));
+  ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 13, rank_name: '3段' } } });
+  view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
+  expect(await screen.findByText('新账号')).toBeInTheDocument();
+  await act(async () => {
+    resolveUsers({ ok: true, json: async () => people } as Response);
+    resolveGames({ ok: true, json: async () => games } as Response);
+    resolveRank({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '2段' } } });
+  });
+  expect(screen.queryByText('同段')).not.toBeInTheDocument();
+  expect(screen.getByText('我的段位').parentElement).toHaveTextContent('3段');
 });

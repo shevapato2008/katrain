@@ -92,6 +92,13 @@ def test_bot_ids_are_negative_and_names_are_unique_across_rungs_and_slots():
     assert all("bot" not in name.lower() and "机器人" not in name for name in names)
 
 
+def test_bot_names_look_like_nicknames_and_stay_unique_for_the_lobby_population():
+    names = [bots.bot_name(level.rung, slot) for level in bots.playable_rungs() for slot in range(1, 41)]
+    assert len(set(names)) == len(names)
+    assert all(2 <= len(name) <= 8 for name in names)
+    assert all("棋友" not in name and "·" not in name and not any(char.isdigit() for char in name) for name in names)
+
+
 @pytest.mark.parametrize("rung,slot", [(0, 1), (1, 0), (True, 1), (1, False)])
 def test_bot_identity_rejects_nonpositive_or_noninteger_coordinates(rung, slot):
     with pytest.raises(ValueError):

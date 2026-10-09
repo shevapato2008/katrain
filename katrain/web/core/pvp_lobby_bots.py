@@ -88,9 +88,33 @@ def bot_id(rung: int, slot: int) -> int:
     return -(pair_sum * (pair_sum + 1) // 2 + slot + 1)
 
 
+_NICK_PREFIXES = (
+    "小林 阿哲 江南 夏日 北岛 南山 青山 白鹿 山间 海边 云端 林中 月下 风里 雨后 春日 "
+    "秋日 冬日 晨间 晚间 小陈 阿远 小周 小叶 小唐 阿宁 小苏 阿白 小陆 阿川 小何 阿泽 "
+    "慢慢 默默 悠悠 轻轻 安安 木木 圆圆 小满 星河 长安 东篱 西窗 竹林 茶山 松间 柳岸 "
+    "石桥 溪边 湖畔 远山 荷塘 云山 清溪 微风 晴天 流云 落日 青禾 半夏 北辰 南风 归舟"
+).split()
+_NICK_SUFFIXES = (
+    "听雨 看云 望月 观澜 听风 寻山 望海 拾光 读书 喝茶 散步 走走 路过 发呆 下棋 游记 "
+    "小鱼 小舟 青竹 白茶 麦子 栗子 青柠 山雀 飞鸟 橘子 柚子 松果 石头 贝壳 萤火 清欢 "
+    "星星 月亮 太阳 花花 叶子 小鹿 小猫 小熊 小羊 小兔 小树 海棠 荷花 桂花 玉兰 杏花 "
+    "知秋 念夏 迎春 初晴 未眠 如歌 有光 向晚 清和 闲来 随风 漫步 远行 慢行 拂晓 若水"
+).split()
+
+
 def bot_name(rung: int, slot: int) -> str:
-    _check_identity_coordinates(rung, slot)
-    return f"棋友·{rung}·{slot}"
+    """Stable nickname combinations, shuffled independently of rank and seat order."""
+    identity = -bot_id(rung, slot)
+    capacity = len(_NICK_PREFIXES) * len(_NICK_SUFFIXES)
+    # 197 is coprime to 4096: every supported seat has a distinct combination.
+    index = ((identity % capacity) * 197 + 101) % capacity
+    name = _NICK_PREFIXES[index // len(_NICK_SUFFIXES)] + _NICK_SUFFIXES[index % len(_NICK_SUFFIXES)]
+    # Unusually large slot numbers keep their identity without exposing rank/slot digits.
+    extra = identity // capacity
+    while extra:
+        extra, letter = divmod(extra - 1, 26)
+        name += chr(ord("a") + letter)
+    return name
 
 
 def idle_reserve_deficit(config: Mapping[str, object], idle_now: Mapping[int, int]) -> dict[int, int]:

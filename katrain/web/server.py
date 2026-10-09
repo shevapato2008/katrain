@@ -21,7 +21,9 @@ from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import (
-    adjudicate_ranked_position, analyze_ranked_territory, mark_ai_ladder_remote_terminal,
+    adjudicate_ranked_position,
+    analyze_ranked_territory,
+    mark_ai_ladder_remote_terminal,
 )
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
@@ -1071,7 +1073,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         允许集与 `guard_session_reader` 相同,但**语义不同**,所以是两个函数不是一个:
         读取放行的是「能看这局的人」,终结放行的是「这局是他的」。这两个集合今天恰好相等
-        (观战者不在里面 —— 那是另一个待修的问题),但它们没有理由永远相等,合并会让将来
+        (观战通过独立的只读守卫放行),但它们没有理由永远相等,合并会让将来
         「放开观战」变成「放开认输」。
 
         **无人认领的会话不设闸**:未登录直接开的本地单机局三个 id 全是 None,没有可越权
@@ -1085,6 +1087,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             raise HTTPException(status_code=401, detail=f"Authentication required for {action}")
         if current_user.id not in owner_ids:
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a player in this game")
+
+    def guard_session_viewer(session, current_user, action: str) -> None:
+        """Authenticated users may watch public lobby games; mutations retain participant guards."""
+        if current_user is not None and getattr(session, "game_type", None) in ("free", "pvp_lobby"):
+            seats = (getattr(session, "player_b_id", None), getattr(session, "player_w_id", None))
+            if all(type(seat) is int for seat in seats):
+                return
+        guard_session_reader(session, current_user, action)
 
     from katrain.web.core.box_sso import BoxSSOState, is_guest_user
 
@@ -1126,6 +1136,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             raise HTTPException(status_code=401, detail=str(exc)) from exc
         except PvpBoxRemoteError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     def _on_session_removed(session):
         matchmaker = getattr(app.state, "matchmaker", None)
         if matchmaker is not None:
@@ -1136,6 +1147,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             runtime.session_removed(session)
 
     manager.on_session_removed = _on_session_removed
+
     def _on_session_state(sid):
         try:
             session = manager.get_session(sid)
@@ -1227,7 +1239,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(session_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="Session not found") from exc
-        guard_session_reader(session, current_user, "session state")
+        guard_session_viewer(session, current_user, "session state")
         bridge = getattr(app.state, "pvp_box_bridge", None)
         if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
             from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
@@ -1848,6 +1860,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle continuous analysis")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "continuous-analysis")
         activity = app.state.ranked_analysis_activity
@@ -1872,6 +1885,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         analysis itself streams back asynchronously over the game WebSocket, so this returns
         the current (possibly not-yet-analyzed) state immediately."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze current")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "current-analysis")
         with persistent_analysis_activity(current_user, session, "current", "current analysis"):
@@ -1884,6 +1898,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze extra")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "extra-analysis")
         with persistent_analysis_activity(current_user, session, "extra", "extra analysis"):
@@ -1898,6 +1913,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def show_pv(request: PVRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "show pv")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "show-analysis-pv")
         with session.lock:
@@ -1911,6 +1927,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def clear_pv(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "clear pv")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "clear-analysis-pv")
         with session.lock:
@@ -1927,6 +1944,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise HTTPException(status_code=401, detail="Authentication required for analysis mode")
             guard_user_has_no_pending_ranked_game(app, current_user, "analysis mode")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set mode")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "set-mode")
         with session.lock:
@@ -1941,6 +1959,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "find mistake")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "find-mistake")
         _guard_engine_move_pending(app, request.session_id)
@@ -1954,6 +1973,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/branch")
     def switch_branch(request: SwitchBranchRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch branch")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "switch-branch")
         _guard_engine_move_pending(app, request.session_id)
@@ -1967,6 +1987,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/tsumego")
     def tsumego_frame(request: TsumegoRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "tsumego frame")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "tsumego-analysis")
         with persistent_analysis_activity(current_user, session, "tsumego", "tsumego analysis"):
@@ -1979,6 +2000,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/selfplay")
     def selfplay(request: SelfPlayRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "selfplay")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "selfplay-analysis")
         with persistent_analysis_activity(current_user, session, "selfplay", "selfplay analysis"):
@@ -1993,6 +2015,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/region")
     def set_region(request: SelectBoxRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set region")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "region-analysis")
         with persistent_analysis_activity(current_user, session, "region", "region analysis"):
@@ -3166,8 +3189,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"status": "forfeited", "redirect": "/galaxy/play/human"}
 
     @app.post("/api/timer/pause")
-    def pause_timer(request: ToggleAnalysisRequest):
+    def pause_timer(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "pause timer")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "pause-timer")
         with session.lock:
@@ -3177,8 +3201,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state, "paused": session.katrain.timer_paused}
 
     @app.post("/api/rotate")
-    def rotate(request: ToggleAnalysisRequest):
+    def rotate(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "rotate")
         guard_bot_mutation(session)
         with session.lock:
             session.katrain("rotate")
@@ -3187,8 +3212,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/delete")
-    def delete_node(request: NavRequest):
+    def delete_node(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "delete node")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "delete-node")
         with session.lock:
@@ -3198,8 +3224,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/prune")
-    def prune_branch(request: NavRequest):
+    def prune_branch(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "prune branch")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "prune-branch")
         with session.lock:
@@ -3209,8 +3236,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/make-main")
-    def make_main_branch(request: NavRequest):
+    def make_main_branch(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "make main branch")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "make-main-branch")
         with session.lock:
@@ -3220,8 +3248,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/toggle-collapse")
-    def toggle_collapse(request: NavRequest):
+    def toggle_collapse(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle collapse")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "toggle-node-collapse")
         with session.lock:
@@ -3233,6 +3262,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ui/toggle")
     def toggle_ui(request: UIToggleRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle ui")
         guard_bot_mutation(session)
         analysis_toggles = getattr(
             session.katrain, "ANALYSIS_TOGGLES", frozenset({"eval", "hints", "ownership", "policy", "dots"})
@@ -3251,8 +3281,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/language")
-    def switch_language(request: LanguageRequest):
+    def switch_language(request: LanguageRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch language")
         with session.lock:
             session.katrain("switch_lang", lang=request.lang)
             state = session.katrain.get_state()
@@ -3369,8 +3400,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"rank": "??"}
 
     @app.post("/api/theme")
-    def switch_theme(request: ThemeRequest):
+    def switch_theme(request: ThemeRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch theme")
         with session.lock:
             session.katrain("switch_theme", theme=request.theme)
             state = session.katrain.get_state()
@@ -3380,6 +3412,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/game")
     def analyze_game(request: GameAnalysisRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze game")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "game-analysis")
         with persistent_analysis_activity(current_user, session, "game", "game analysis"):
@@ -3399,6 +3432,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/scan")
     def analysis_scan(request: AnalysisScanRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analysis scan")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "analysis-scan")
         with persistent_analysis_activity(current_user, session, "scan", "analysis scan"):
@@ -3412,6 +3446,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def analysis_progress(session_id: str, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis progress")
         session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "analysis progress")
         guard_ai_ladder_ranked_session(session, "analysis-progress")
         with session.lock:
             progress = session.katrain._do_analysis_progress()
@@ -3422,6 +3457,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def get_game_report(request: GameReportRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis report")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "get game report")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "analysis-report")
         with session.lock:
@@ -3430,8 +3466,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "report": report}
 
     @app.post("/api/mode/insert")
-    def set_insert_mode(request: InsertModeRequest):
+    def set_insert_mode(request: InsertModeRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set insert mode")
         guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "insert-mode")
         with session.lock:
@@ -4042,6 +4079,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
             session.sockets.add(websocket)
             try:
+
                 def on_disconnect():
                     physical_play = getattr(app.state, "physical_play", None)
                     vision = getattr(app.state, "vision", None)
@@ -4049,8 +4087,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         physical_play.enter_remote_disconnected()
 
                 await proxy_pvp_websocket(
-                    websocket, bridge, generation, current_user.id, f"/ws/{room.central_session_id}",
-                    transform_room, on_disconnect,
+                    websocket,
+                    bridge,
+                    generation,
+                    current_user.id,
+                    f"/ws/{room.central_session_id}",
+                    transform_room,
+                    on_disconnect,
                 )
             finally:
                 session.sockets.discard(websocket)
@@ -4062,7 +4105,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             await websocket.close(code=1008, reason="Session not found")
             return
         try:
-            guard_session_reader(session, current_user, "session websocket")
+            guard_session_viewer(session, current_user, "session websocket")
             if not is_ai_ladder_ranked_session(session):
                 guard_user_has_no_pending_ranked_game(app, current_user, "session websocket")
         except HTTPException:
@@ -4083,7 +4126,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # 板上由 `api/v1/endpoints/vision.py` 的 bind_session 起步;屏幕降级的局由「第一手落下」
         # 在 `interface.update_timer` 里兜底。
         vision_service = getattr(app.state, "vision", None)
-        if vision_service is None or not vision_service.enabled:
+        if (
+            not session_owner_ids(session)
+            or (current_user is not None and current_user.id in session_owner_ids(session))
+        ) and (vision_service is None or not vision_service.enabled):
             if session.katrain.start_clock():
                 logging.getLogger("katrain_web").info(
                     "Clock started for session %s (game websocket connected)", session_id

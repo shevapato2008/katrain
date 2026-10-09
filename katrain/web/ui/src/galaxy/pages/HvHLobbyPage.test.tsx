@@ -56,6 +56,14 @@ it('returns to own room and cancels the queue', async () => {
   await userEvent.click(screen.getByRole('button', { name: '取消匹配' }));
   expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'stop_matchmaking' });
 });
+it('opens another pair\'s ongoing game for spectating', async () => {
+  vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('multiplayer')
+    ? [{ session_id: 'watch', player_b: '松风', player_w: '小舟', player_b_id: -1, player_w_id: -2, move_count: 8 }] : []) })));
+  render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);
+  const game = await screen.findByTestId('lobby-game');
+  await userEvent.click(within(game).getByRole('button', { name: /观战/ }));
+  expect(navigate).toHaveBeenCalledWith('/galaxy/play/human/room/watch');
+});
 it('shows placement dialog only for matching and allows invitation when unplaced', async () => {
   getAiLadderStatus.mockResolvedValue({ placement_state: { phase: 'placement', total_games: 5, completed_games: 2 } });
   render(<MemoryRouter><HvHLobbyPage /></MemoryRouter>);

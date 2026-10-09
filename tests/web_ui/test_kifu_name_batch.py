@@ -1939,10 +1939,10 @@ def positive_ja_ko_bundle(inv):
     return proposed, [evidence]
 
 
-def positive_zh_ko_bundle(inv, owner_id=5498, *, source_anchors=(), source_registry=None):
-    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_fixture
+def positive_zh_ko_bundle(inv, owner_id=5498, *, source_anchors=(), source_registry=None, component_reading=False):
+    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_component_fixture, positive_zh_ko_fixture
 
-    research, row, reg = positive_zh_ko_fixture(owner_id)
+    research, row, reg = positive_zh_ko_component_fixture() if component_reading else positive_zh_ko_fixture(owner_id)
     if source_registry is not None:
         reg = source_registry
         research["registry_sha256"] = registry_sha256(reg)
@@ -1962,6 +1962,30 @@ def positive_zh_ko_bundle(inv, owner_id=5498, *, source_anchors=(), source_regis
     proposed.update(registry_sha256=registry_sha256(reg), members=[member],
                     member_set_sha256=canonical_sha256([member]), candidates=[row])
     return proposed, [research], reg
+
+
+def test_positive_zh_ko_component_rule_imports_to_qualified_ledger(engine):
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
+
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=5498, canonical_name="王宏伟"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, black_player_id=5498, player_black="王宏伟", player_white="Unknown",
+            event="GNUGo3.8", sgf_content="(;FF[4]PB[王宏伟]PW[Unknown]EV[GNUGo3.8])", source_path="two.sgf"))
+    inv = build_inventory(engine)
+    proposed, evidence, reg = positive_zh_ko_bundle(inv, component_reading=True)
+    receipt = apply_bundle(engine, proposed, reg, inv, evidence)
+    with Session(engine) as db:
+        query = _approved_names(db, KifuPlayerName, "player_id", [5498], "ko")
+        rows = _qualified_name_rows(db, query, KifuPlayerName, "player_id")
+        assert [name.display_name for name, _ in rows] == ["왕추"]
+        proof = db.query(KifuNameResearchEvidence).one()
+        assert proof.research_payload["research"]["positive_zh_ko"]["rule"]["used_entries"]["qiu"]["method"] == (
+            "nikl-table5-components-v1")
+        batch = db.get(KifuNameBatch, receipt["batch_id"])
+        batch.status = "pending"
+        db.flush()
+        assert _qualified_name_rows(db, query, KifuPlayerName, "player_id") == []
 
 
 def test_positive_zh_ko_importer_reader_requires_exact_applied_ledger(engine):

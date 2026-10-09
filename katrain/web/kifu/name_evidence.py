@@ -185,7 +185,7 @@ def _normalized_phonetic_reading(value: str, system: str) -> str:
     _require(len(value) <= 1024, "transliteration phonetic reading too long")
     text = unicodedata.normalize("NFD", value.lower())
     if system == "pinyin-syllables-v1":
-        text = text.replace("u\u0308", "ü").replace("u:", "ü").replace("v", "ü")
+        text = text.replace("u\u0308", "ü").replace("e\u0302", "ê").replace("u:", "ü").replace("v", "ü")
         marks, tones = "\u0300\u0301\u0304\u030c", "12345"
     elif system == "hepburn-syllables-v1":
         marks, tones = "\u0304", ""
@@ -196,7 +196,7 @@ def _normalized_phonetic_reading(value: str, system: str) -> str:
         if char in " -’'ʼ" or char in marks or char in tones:
             continue
         _require(
-            char in "abcdefghijklmnopqrstuvwxyz" or char == "ü" and system == "pinyin-syllables-v1",
+            char in "abcdefghijklmnopqrstuvwxyz" or char in "üê" and system == "pinyin-syllables-v1",
             "transliteration source reading must be phonetic in the declared roman system",
         )
         letters.append(char)
@@ -1160,9 +1160,9 @@ def _validate_positive_ja_ko(record: dict) -> None:
 
 
 def _validate_positive_zh_ko(record: dict) -> None:
-    """Validate the first finite Mandarin profile without inferring pronunciation from Han."""
+    """Validate sourced Mandarin syllables without inferring pronunciation from Han."""
     from katrain.web.kifu.name_zh_ko import (
-        CURRENT_RULE_BODY_SHA256, CURRENT_RULE_SYLLABLES, CURRENT_RULE_URL,
+        CURRENT_RULE_BODY_SHA256, CURRENT_RULE_URL,
         LEGACY_RULE_SYLLABLES, RULE_BODY_SHA256, RULE_LOCATORS, RULE_URL,
         RULE_VERSION, SOURCE_BASIS, render_name, used_entries,
     )
@@ -1251,15 +1251,16 @@ def _validate_positive_zh_ko(record: dict) -> None:
     rule_capture = rule["capture"]
     capture_pair = ((rule_capture.get("url"), rule_capture.get("body_sha256"))
                     if isinstance(rule_capture, dict) else (None, None))
-    allowed_syllables = (LEGACY_RULE_SYLLABLES if capture_pair == (RULE_URL, RULE_BODY_SHA256)
-                         else CURRENT_RULE_SYLLABLES if capture_pair == (CURRENT_RULE_URL, CURRENT_RULE_BODY_SHA256)
-                         else frozenset())
+    # used_entries has reproduced every entry from the bounded current rules.
+    # Only the old exact capture is limited to the original eighteen entries.
+    supported_entries = (capture_pair == (CURRENT_RULE_URL, CURRENT_RULE_BODY_SHA256)
+                         or capture_pair == (RULE_URL, RULE_BODY_SHA256) and set(entries) <= LEGACY_RULE_SYLLABLES)
     _require(isinstance(rule_capture, dict) and rule_capture == {
         "url": capture_pair[0], "http_status": 200, "fetched_at": rule_capture.get("fetched_at"),
         "body_sha256": capture_pair[1], "source_role": "normative_rule", "observed_lang": "ko",
         **RULE_LOCATORS,
     } and _aware_timestamp(rule_capture.get("fetched_at"))
-             and bool(allowed_syllables) and set(entries) <= allowed_syllables,
+             and supported_entries,
              "Chinese rule requires the exact captured official body, URL and locators")
     _require(positive["unresolved_conflicts"] == [], "Chinese name has unresolved conflicts")
     checks = positive["contrary_checks"]
@@ -2079,7 +2080,7 @@ def validate_positive_ja_ko_candidate(row, research, registry):
 
 
 def validate_positive_zh_ko_candidate(row: dict, research: dict, registry: dict) -> dict:
-    """Require independent approval of exact Chinese inputs, six-entry rule and output."""
+    """Require independent approval of exact Chinese inputs, rule entries and output."""
     from katrain.web.kifu.name_zh_ko import RULE_VERSION
 
     try:

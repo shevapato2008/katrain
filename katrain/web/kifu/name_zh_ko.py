@@ -1,7 +1,7 @@
-"""The reviewed, finite NIKL Chinese player-name rule used by the first batch.
+"""Bounded NIKL transcription of sourced, reviewed Mandarin player-name syllables.
 
 These entries transcribe *verified* Hanyu Pinyin. They never derive a reading
-from Han characters or assert that NIKL endorsed an individual player name.
+from Han characters, certify Pinyin legality or endorse an individual name.
 """
 
 from __future__ import annotations
@@ -19,8 +19,7 @@ RULE_LOCATORS = {
     "tone_locator": "Chapter 3 Chinese section item 1, raw HTML line 6666",
 }
 
-# Every entry has an exact source locator. Only syllables in the independently
-# reviewed first batch are frozen here; a new name needs a new rule review.
+# Historical entries and their proof locators remain frozen byte-for-byte.
 SYLLABLES = {
     "wang": {"hangul": "왕", "kind": "direct_table_entry",
              "locator": "Table 5 finals: wang (uang) -> 왕, zero-initial form."},
@@ -91,18 +90,110 @@ SYLLABLES.update({
     "ying": {"hangul": "잉", "kind": "direct_table_entry",
              "locator": "Chapter 2 Table 5, raw HTML line 1573: zero-initial ying (ing) -> 잉."},
 })
+# Historical thirty-entry snapshot; current capture support also includes the
+# bounded component rules below, without enumerating a legal Pinyin universe.
 CURRENT_RULE_SYLLABLES = frozenset(SYLLABLES)
 
 
+COMPONENT_RULE_VERSION = "nikl-table5-components-v1"
+# Captured NIKL Table 5, raw HTML line 1573; the note at 1578 distinguishes
+# standalone forms from forms after a consonant. These are rule components,
+# not a Cartesian-product catalogue of legal Mandarin syllables.
+INITIALS = {
+    "b": "ㅂ", "p": "ㅍ", "m": "ㅁ", "f": "ㅍ", "d": "ㄷ", "t": "ㅌ", "n": "ㄴ", "l": "ㄹ",
+    "g": "ㄱ", "k": "ㅋ", "h": "ㅎ", "j": "ㅈ", "q": "ㅊ", "x": "ㅅ", "zh": "ㅈ", "ch": "ㅊ",
+    "sh": "ㅅ", "r": "ㄹ", "z": "ㅉ", "c": "ㅊ", "s": "ㅆ",
+}
+# (standalone spelling, printed post-initial aliases, standalone Hangul,
+# post-initial Hangul). Keep all 38 actual rows, including differing u forms.
+FINAL_ROWS = (
+    ("a", (), "아", "아"), ("o", (), "오", "오"), ("e", (), "어", "어"), ("ê", (), "에", "에"),
+    ("yi", ("i",), "이", "이"), ("wu", ("u",), "우", "우"), ("yu", ("u",), "위", "위"),
+    ("ai", (), "아이", "아이"), ("ei", (), "에이", "에이"), ("ao", (), "아오", "아오"),
+    ("ou", (), "어우", "어우"), ("an", (), "안", "안"), ("en", (), "언", "언"),
+    ("ang", (), "앙", "앙"), ("eng", (), "엉", "엉"), ("er", ("r",), "얼", "얼"),
+    ("yai", (), "야이", "야이"), ("yao", ("iao",), "야오", "야오"),
+    ("you", ("iou", "iu"), "유", "유"), ("yan", ("ian",), "옌", "옌"),
+    ("yin", ("in",), "인", "인"), ("yang", ("iang",), "양", "양"), ("ying", ("ing",), "잉", "잉"),
+    ("wa", ("ua",), "와", "와"), ("wo", ("uo",), "워", "워"), ("wai", ("uai",), "와이", "와이"),
+    ("wei", ("ui",), "웨이", "우이"), ("wan", ("uan",), "완", "완"),
+    ("wen", ("un",), "원", "운"), ("wang", ("uang",), "왕", "왕"),
+    ("weng", ("ong",), "웡", "웅"), ("yue", ("ue",), "웨", "웨"),
+    ("yuan", ("uan",), "위안", "위안"), ("yun", ("un",), "윈", "윈"),
+    ("ya", ("ia",), "야", "야"), ("yo", (), "요", "요"), ("ye", ("ie",), "예", "예"),
+    ("yong", ("iong",), "융", "융"),
+)
+_ZERO_INITIAL_FINALS = {row[0]: row for row in FINAL_ROWS}
+_UMLAUT_FINALS = {row[1][0]: row for row in FINAL_ROWS if row[0] in {"yu", "yue", "yuan", "yun"}}
+_POST_INITIAL_FINALS = {
+    alias: row for row in FINAL_ROWS if row[0] not in {"yu", "yue", "yuan", "yun", "er", "yai", "yo"}
+    for alias in row[1] or (row[0],)
+}
+_APICAL_SYLLABLES = {"zhi": "즈", "chi": "츠", "shi": "스", "ri": "르", "zi": "쯔", "ci": "츠", "si": "쓰"}
+_MOE_UMLAUT_LOCATOR = (
+    " Chinese MOE spelling explanation, requested "
+    "https://www.moe.gov.cn/s78/A18/A18_ztzl/jnhypyfa/201805/t20180517_336341.html, "
+    "actual HTTP final http://www.moe.gov.cn/s78/A18/A18_ztzl/jnhypyfa/201805/t20180517_336341.html, "
+    "body SHA-256 184692fa2fd97dc8b356c5cef1c0e56fec58995de076a1e82fa8c4070a3d484d, "
+    "raw HTML line 206: jqxy followed by ü omits the dots."
+)
+
+
+def _component_entry(syllable: str) -> dict[str, str]:
+    """Render a confirmed syllable using only table rows and reviewed spelling branches."""
+    locator = "Chapter 2 Table 5, raw HTML line 1573; note at raw HTML line 1578: "
+    if syllable in _APICAL_SYLLABLES:
+        hangul = _APICAL_SYLLABLES[syllable]
+        locator += f"initial {syllable[:-1]} [{syllable}] -> [{hangul}]; bracketed independent syllable."
+        kind = "direct_table_entry"
+    elif syllable in _ZERO_INITIAL_FINALS:
+        row = _ZERO_INITIAL_FINALS[syllable]
+        hangul = row[2]
+        locator += f"final {syllable} -> {hangul}; standalone zero-initial form."
+        kind = "direct_table_entry"
+    else:
+        initial = next((key for key in sorted(INITIALS, key=len, reverse=True) if syllable.startswith(key)), "")
+        final = syllable[len(initial):]
+        row = None
+        spelling_locator = ""
+        if initial in {"j", "q", "x"} and final in _UMLAUT_FINALS:
+            row = _UMLAUT_FINALS[final]
+            spelling_locator = _MOE_UMLAUT_LOCATOR
+        elif initial in {"n", "l"} and final.startswith("ü"):
+            row = _UMLAUT_FINALS.get("u" + final[1:])
+            spelling_locator = " Written ü selects the rounded final, distinct from wu/u." + _MOE_UMLAUT_LOCATOR
+        elif initial:
+            row = _POST_INITIAL_FINALS.get(final)
+        if row is None:
+            raise ValueError("unknown or uncovered reviewed Hanyu Pinyin syllable")
+        onset = INITIALS[initial]
+        hangul = row[3]
+        # Every table final starts with a precomposed vowel syllable (initial ㅇ).
+        offset = ord(hangul[0]) - 0xAC00
+        vowel, coda = offset // 28 % 21, offset % 28
+        simplified = {2: 0, 7: 5, 12: 8, 17: 13}.get(vowel, vowel) if onset in {"ㅈ", "ㅉ", "ㅊ"} else vowel
+        hangul = chr(0xAC00 + "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ".index(onset) * 588
+                     + simplified * 28 + coda) + hangul[1:]
+        cell = row[0] + (f" ({', '.join(row[1])})" if row[1] else "")
+        locator += (f"initial {initial} -> {onset} plus final {cell} -> {row[2]}; "
+                    f"select post-initial {final} -> {row[3]} under the note, giving {hangul}.")
+        if simplified != vowel:
+            locator += " Chapter 3 Chinese section item 2, raw HTML line 6707: simplify ㅑ/ㅖ/ㅛ/ㅠ after ㅈ/ㅉ/ㅊ to ㅏ/ㅔ/ㅗ/ㅜ."
+        locator += spelling_locator
+        kind = "reviewed_composition"
+    return {"hangul": hangul, "kind": kind, "locator": locator, "method": COMPONENT_RULE_VERSION}
+
+
 def used_entries(reading_words: list[list[str]]) -> dict[str, dict[str, str]]:
-    """Return the exact finite source entries used in a segmented reading."""
+    """Return reproducible rule entries; source and identity approval remain separate."""
     if (not isinstance(reading_words, list) or len(reading_words) != 2
             or any(not isinstance(word, list) or not word for word in reading_words)):
         raise ValueError("a surname and given-name syllable list are required")
     syllables = [syllable for word in reading_words for syllable in word]
-    if any(not isinstance(syllable, str) or syllable not in SYLLABLES for syllable in syllables):
+    if any(not isinstance(syllable, str) or not syllable for syllable in syllables):
         raise ValueError("unknown or invalid reviewed Hanyu Pinyin syllable")
-    return {syllable: deepcopy(SYLLABLES[syllable]) for syllable in syllables}
+    return {syllable: deepcopy(SYLLABLES[syllable]) if syllable in SYLLABLES else _component_entry(syllable)
+            for syllable in syllables}
 
 
 def render_name(reading_words: list[list[str]]) -> str:

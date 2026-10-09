@@ -1741,13 +1741,13 @@ def test_positive_zh_ko_twelve_reviewed_syllables_render_five_names(words, expec
     assert render_name(words) == expected
 
 
-def positive_zh_ko_rule_variant_fixture(*, new_syllables, rule_url, rule_sha256):
+def positive_zh_ko_rule_variant_fixture(*, new_syllables, rule_url, rule_sha256, reading_case=None):
     from katrain.web.kifu.name_zh_ko import used_entries
 
     evidence, row, reg = positive_zh_ko_fixture(5498)
     positive = evidence["positive_zh_ko"]
-    if new_syllables:
-        words, latin, hangul = [["wang"], ["qing", "hai"]], "Wang Qinghai", "왕칭하이"
+    if new_syllables or reading_case is not None:
+        words, latin, hangul = reading_case or ([["wang"], ["qing", "hai"]], "Wang Qinghai", "왕칭하이")
         evidence.update(reading=latin, candidate_name=hangul)
         reading = positive["reading"]
         reading.update(published=latin, reading_words=words)
@@ -1777,6 +1777,86 @@ def positive_zh_ko_rule_variant_fixture(*, new_syllables, rule_url, rule_sha256)
     row["generated_review"].update(research_sha256=row["research_sha256"],
                                     positive_zh_ko_sha256=canonical_sha256(positive))
     return evidence, row, reg
+
+
+def positive_zh_ko_component_fixture():
+    """Synthetic existing-profile protocol fixture; no live source assertion."""
+    from katrain.web.kifu.name_zh_ko import CURRENT_RULE_BODY_SHA256, CURRENT_RULE_URL
+
+    return positive_zh_ko_rule_variant_fixture(
+        new_syllables=True, rule_url=CURRENT_RULE_URL, rule_sha256=CURRENT_RULE_BODY_SHA256,
+        reading_case=([["wang"], ["qiu"]], "Wang Qiu", "왕추"))
+
+
+def test_positive_zh_ko_preserves_all_thirty_frozen_entries():
+    from katrain.web.kifu.name_zh_ko import LEGACY_RULE_SYLLABLES, RULE_VERSION, SOURCE_BASIS, SYLLABLES
+
+    # This baseline covers complete objects, including the historical proof locators.
+    assert canonical_sha256(SYLLABLES) == "e303a74f8cfa26b440c29b8b8029748e2fd2171b41a32196790aaba82217fa1e"
+    assert len(SYLLABLES) == 30 and len(LEGACY_RULE_SYLLABLES) == 18
+    assert (RULE_VERSION, SOURCE_BASIS) == ("nikl-zh-ko-personal-name-v1", "normative_zh_ko_v1")
+
+
+@pytest.mark.parametrize("syllable,expected", [
+    ("yi", "이"), ("wu", "우"), ("yu", "위"), ("yai", "야이"), ("yo", "요"),
+    ("zhi", "즈"), ("chi", "츠"), ("shi", "스"), ("ri", "르"), ("zi", "쯔"), ("ci", "츠"), ("si", "쓰"),
+    ("wei", "웨이"), ("hui", "후이"), ("wen", "원"), ("lun", "룬"), ("weng", "웡"), ("hong", "훙"),
+    ("lu", "루"), ("lü", "뤼"), ("nu", "누"), ("nü", "뉘"), ("nüe", "눼"), ("lüe", "뤠"),
+    ("ju", "쥐"), ("qu", "취"), ("xu", "쉬"), ("juan", "쥐안"), ("jun", "쥔"),
+    ("jian", "젠"), ("qian", "첸"), ("xian", "셴"), ("qiao", "차오"), ("xiao", "샤오"),
+    ("qiu", "추"), ("liu", "류"), ("liou", "류"), ("tian", "톈"), ("hai", "하이"),
+    ("cao", "차오"), ("zou", "쩌우"), ("zha", "자"), ("zhe", "저"), ("zhang", "장"),
+    ("yue", "웨"), ("yuan", "위안"), ("yun", "윈"), ("yong", "융"), ("xiong", "슝"),
+    ("e", "어"), ("ê", "에"), ("er", "얼"),
+])
+def test_positive_zh_ko_component_rules_render_reviewed_syllables(syllable, expected):
+    from katrain.web.kifu.name_zh_ko import render_name
+
+    assert render_name([["wang"], [syllable]]) == "왕" + expected
+
+
+@pytest.mark.parametrize("syllable", ["unknown", "hongwei", "bweng", "xuee", "lue", "r", "huar", "yü", "i", "jü"])
+def test_positive_zh_ko_component_rules_hold_uncovered_spellings(syllable):
+    from katrain.web.kifu.name_zh_ko import used_entries
+
+    with pytest.raises(ValueError):
+        used_entries([["wang"], [syllable]])
+
+
+@pytest.mark.parametrize("spelling,expected", [("Lǚ", "lü"), ("Lu:4", "lü"), ("Lv4", "lü"),
+                                                 ("ê", "ê"), ("e\u0302\u0301", "ê"), ("é", "e")])
+def test_positive_zh_ko_normalization_preserves_distinct_final_letters(spelling, expected):
+    from katrain.web.kifu.name_evidence import _normalized_phonetic_reading
+
+    assert _normalized_phonetic_reading(spelling, "pinyin-syllables-v1") == expected
+
+
+@pytest.mark.parametrize("change", [None, "legacy_pair", "wrong_url", "wrong_hash", "scope", "conflict", "segments", "method"])
+def test_positive_zh_ko_component_candidate_keeps_exact_evidence_gates(change):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_positive_zh_ko_candidate
+    from katrain.web.kifu.name_zh_ko import RULE_BODY_SHA256, RULE_URL
+
+    evidence, row, reg = positive_zh_ko_component_fixture()
+    positive = evidence["positive_zh_ko"]
+    entry = positive["rule"]["used_entries"]["qiu"]
+    assert entry["method"] == "nikl-table5-components-v1"
+    assert "q -> ㅊ" in entry["locator"] and "you (iou, iu)" in entry["locator"]
+    assert "raw HTML line 6707" in entry["locator"]
+    if change == "legacy_pair": positive["rule"]["capture"].update(url=RULE_URL, body_sha256=RULE_BODY_SHA256)
+    elif change == "wrong_url": positive["rule"]["capture"]["url"] = RULE_URL
+    elif change == "wrong_hash": positive["rule"]["capture"]["body_sha256"] = "b" * 64
+    elif change == "scope": positive["scope"]["ordinary_mandarin"] = False
+    elif change == "conflict": positive["unresolved_conflicts"] = ["Unconfirmed Mandarin reading"]
+    elif change == "segments": positive["reading"]["reading_words"] = [["wang"], ["qu", "yi"]]
+    elif change == "method": entry["method"] = "unreviewed"
+    row["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"].update(research_sha256=row["research_sha256"],
+                                    positive_zh_ko_sha256=canonical_sha256(positive))
+    if change is None:
+        assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+    else:
+        with pytest.raises(EvidenceError):
+            validate_positive_zh_ko_candidate(row, evidence, reg)
 
 
 @pytest.mark.parametrize("new_syllables,rule_url,rule_sha256,accepted", [

@@ -682,9 +682,8 @@ async def _lifespan_board(app: FastAPI, log):
     # 引导亮度也落在这个目录下(`led/guidance.json`),所以 LED 那段要能读到它。
     app.state.hardware_vision_dir = hardware_vision_dir
 
-    # Initialise every optional camera-dependent surface before attempting to
-    # acquire the device. A missing UVC device must leave the regular board
-    # (including LEDs and kiosk play) available rather than aborting lifespan.
+    # Initialise optional camera surfaces. The shared hub keeps recovering when
+    # UVC is temporarily absent, including while recognition is idle.
     app.state.camera_hub = None
     app.state.vision = None
     app.state.vision_ws_clients = {}
@@ -762,19 +761,9 @@ async def _lifespan_board(app: FastAPI, log):
             )
         camera_hub = CameraHub(hub_config)
         try:
-            camera_hub.start()
+            camera_hub.start(allow_unavailable=True)
         except DeviceBusy as exc:
             log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
-            camera_hub = None
-        except RuntimeError as exc:
-            # CameraHub uses this error only when CameraManager cannot open the
-            # configured device. Preserve every other RuntimeError as a startup
-            # failure (including future non-device configuration defects).
-            if not str(exc).startswith("Failed to open camera "):
-                raise
-            log.warning(
-                "Camera unavailable; continuing without vision, capture, calibration, or physical play: %s", exc
-            )
             camera_hub = None
         if camera_hub is not None and hardware_vision_state is not None:
             if camera_hub.controls_effective is not True:

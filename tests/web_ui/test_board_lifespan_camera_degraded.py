@@ -4,6 +4,7 @@ import asyncio
 import importlib.util
 import logging
 import sys
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 from types import ModuleType
@@ -13,6 +14,8 @@ from fastapi import APIRouter, HTTPException
 
 from katrain.web.api.v1.endpoints import baipu as baipu_api
 from katrain.web.core import baipu_capture, capture_service
+from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
+from katrain.web.api.v1.endpoints.vision import vision_status
 
 from katrain.web.models import EndgameConflict, GameEnd
 
@@ -43,19 +46,24 @@ class _Connectivity:
 
 class _CameraUnavailable:
     instances = []
+    controls_effective = None
 
     def __init__(self, config):
         self.config = config
         self.started = False
         type(self).instances.append(self)
 
-    def start(self):
+    def start(self, *, allow_unavailable=False):
         self.started = True
-        raise RuntimeError("Failed to open camera /dev/video0")
+        if not allow_unavailable:
+            raise RuntimeError("Failed to open camera /dev/video0")
+
+    def request_controls(self, **kwargs):
+        pass
 
 
 class _CameraAvailable(_CameraUnavailable):
-    def start(self):
+    def start(self, *, allow_unavailable=False):
         self.started = True
 
 
@@ -71,9 +79,20 @@ class _Led:
         self.started = True
 
 
-class _MustNotConstruct:
+class _OptionalService:
+    bound_session_id = None
+
     def __init__(self, *args, **kwargs):
-        raise AssertionError("camera-dependent service must not be constructed")
+        self.__dict__.update(kwargs)
+
+    def start(self):
+        pass
+
+    def set_geometry(self, geometry):
+        pass
+
+    def poll_events(self):
+        return []
 
 
 class _Manager:
@@ -223,17 +242,34 @@ def _install_board_startup_fakes(monkeypatch):
         "katrain.web.core.camera_hub",
         SimpleNamespace(CameraHub=_CameraUnavailable, CameraHubConfig=lambda **kwargs: SimpleNamespace(**kwargs)),
     )
-    monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=_MustNotConstruct))
+    monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=_OptionalService))
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.capture_service",
-        SimpleNamespace(CaptureService=_MustNotConstruct),
+        SimpleNamespace(CaptureService=_OptionalService),
     )
+    for name, exports in {
+        "katrain.vision.parallax_store": {
+            "attach_parallax": lambda config, *args: (config, logging.INFO, "parallax off")
+        },
+        "katrain.web.core.physical_play": {"PhysicalPlayConfig": lambda: SimpleNamespace(hint_engine="local")},
+        "katrain.web.core.physical_play_orchestrator": {"PhysicalPlayOrchestrator": _OptionalService},
+        "katrain.web.core.hint_gate": {"DefaultHintGate": lambda engine: object()},
+        "katrain.web.core.vision_pump": {"route_vision_event": lambda *args, **kwargs: None},
+        "katrain.web.core.geometry_calibration_service": {"GeometryCalibrationService": _OptionalService},
+        "katrain.web.core.baipu_capture": dict(
+            resolve_baipu_collect=baipu_capture.resolve_baipu_collect,
+            resolve_fiducial_mode=baipu_capture.resolve_fiducial_mode,
+        ),
+    }.items():
+        monkeypatch.setitem(sys.modules, name, SimpleNamespace(**exports))
     monkeypatch.setitem(sys.modules, "katrain.web.core.led_service", SimpleNamespace(LedService=_Led))
 
 
 @pytest.mark.asyncio
-async def test_board_lifespan_degrades_when_camera_hub_cannot_start(server_module, monkeypatch, caplog):
+async def test_board_lifespan_keeps_camera_consumers_available_during_initial_absence(
+    server_module, monkeypatch, caplog
+):
     server = server_module
     _CameraUnavailable.instances.clear()
     _Led.instances.clear()
@@ -244,7 +280,7 @@ async def test_board_lifespan_degrades_when_camera_hub_cannot_start(server_modul
     monkeypatch.setattr(
         server.settings,
         "_vision_config",
-        SimpleNamespace(enabled=True, camera_device=0, camera_width=1280, camera_height=720),
+        SimpleNamespace(enabled=True, camera_device=0, camera_width=1280, camera_height=720, backend="fake"),
         raising=False,
     )
     monkeypatch.setattr(
@@ -255,6 +291,7 @@ async def test_board_lifespan_degrades_when_camera_hub_cannot_start(server_modul
             camera_device=0,
             width=1280,
             height=720,
+            out_dir="/tmp/camera-recovery-test",
             lock_exposure=False,
             exposure=None,
             lock_awb=False,
@@ -268,25 +305,111 @@ async def test_board_lifespan_degrades_when_camera_hub_cannot_start(server_modul
         raising=False,
     )
 
+    class MissingCamera:
+        is_connected = False
+        available = False
+        recovered = threading.Event()
+
+        def open(self):
+            self.is_connected = self.available
+            if self.is_connected:
+                self.recovered.set()
+            return self.is_connected
+
+        def close(self):
+            pass
+
+        def read_frame(self):
+            if not self.is_connected:
+                self.open()
+            return None
+
+    camera = MissingCamera()
+    monkeypatch.setattr(CameraHub, "RECOVERY_INTERVAL_S", 0.01)
+    hub = CameraHub(CameraHubConfig(), camera=camera)
+
+    class Vision:
+        enabled = True
+        pose_lock_status = "unlocked"
+        sync_state = "idle"
+        bound_session_id = None
+
+        def __init__(self, config, frame_source):
+            self.frame_source = frame_source
+
+        def start(self):
+            pass
+
+        def refresh_status(self):
+            connected = self.frame_source.is_connected()
+            self.camera_status = "connected" if connected else "disconnected"
+            self._latest_status = SimpleNamespace(
+                camera_ready=connected, geometry_ready=False, model_ready=True, recognition_ready=False
+            )
+
+    async def idle(_app):
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(server, "_vision_event_pump", idle)
+    monkeypatch.setattr(server, "_vision_move_poller", idle)
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.camera_hub",
+        SimpleNamespace(CameraHub=lambda config: hub, CameraHubConfig=CameraHubConfig),
+    )
+    monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=Vision))
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.vision.parallax_store",
+        SimpleNamespace(attach_parallax=lambda config, *args: (config, logging.INFO, "parallax off")),
+    )
+    monkeypatch.setitem(sys.modules, "katrain.web.core.capture_service", capture_service)
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.geometry_calibration_service",
+        SimpleNamespace(GeometryCalibrationService=lambda **kwargs: SimpleNamespace(**kwargs)),
+    )
+    monkeypatch.setitem(sys.modules, "katrain.web.core.baipu_capture", baipu_capture)
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.physical_play",
+        SimpleNamespace(PhysicalPlayConfig=lambda: SimpleNamespace(hint_engine="local")),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.physical_play_orchestrator",
+        SimpleNamespace(PhysicalPlayOrchestrator=lambda **kwargs: SimpleNamespace(**kwargs)),
+    )
+    monkeypatch.setitem(
+        sys.modules, "katrain.web.core.hint_gate", SimpleNamespace(DefaultHintGate=lambda engine: object())
+    )
+    monkeypatch.setattr(_Led, "is_connected", lambda self: True, raising=False)
+
     app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
-    await server._lifespan_board(app, server.logging.getLogger("test.camera-degraded"))
-
-    assert _CameraUnavailable.instances[0].started is True
-    assert _Led.instances[0].started is True
-    assert app.state.camera_hub is None
-    assert app.state.vision is None
-    assert app.state.vision_ws_clients == {}
-    assert app.state.vision_move_queue is None
-    assert app.state.vision_pump_task is None
-    assert app.state.vision_poller_task is None
-    assert app.state.capture is None
-    assert app.state.geometry is None
-    assert app.state.geometry_calibration is None
-    assert app.state.physical_play is None
-    assert app.state.physical_play_config is None
-    assert "camera unavailable" in caplog.text.lower()
-
-    await _cancel_startup_tasks(app)
+    try:
+        await server._lifespan_board(app, server.logging.getLogger("test.camera-degraded"))
+        assert _Led.instances[0].started is True
+        assert app.state.camera_hub is hub
+        assert app.state.vision.frame_source is hub
+        assert app.state.capture._hub is hub
+        assert app.state.geometry_calibration.capture is app.state.capture
+        assert app.state.physical_play.vision is app.state.vision
+        assert app.state.geometry is None
+        status = await vision_status(SimpleNamespace(app=app))
+        assert status["enabled"] is True
+        assert status["camera_connected"] is False
+        assert status["camera_ready"] is False
+        assert status["recognition_ready"] is False
+        assert "camera unavailable" in caplog.text.lower()
+        camera.available = True
+        assert await asyncio.to_thread(camera.recovered.wait, 1)
+        recovered = await vision_status(SimpleNamespace(app=app))
+        assert recovered["camera_connected"] is True
+        assert app.state.capture.is_connected()
+        assert recovered["recognition_ready"] is False  # Calibration is still required.
+    finally:
+        await _cancel_startup_tasks(app)
+        hub.stop()
 
 
 @pytest.mark.asyncio
@@ -410,7 +533,9 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
     monkeypatch.setattr(
         server.settings,
         "_vision_config",
-        SimpleNamespace(enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720),
+        SimpleNamespace(
+            enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720, backend="fake"
+        ),
         raising=False,
     )
     monkeypatch.setattr(
@@ -458,6 +583,7 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
         SimpleNamespace(
             HardwareVisionStateStore=FakeHardwareVisionStore,
             CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK="hardware_auto_then_lock",
+            CameraProfile=lambda **kwargs: SimpleNamespace(**kwargs),
         ),
     )
     app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
@@ -524,7 +650,7 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
             self.control_calls = []
             type(self).instance = self
 
-        def start(self):
+        def start(self, *, allow_unavailable=False):
             pass
 
         def request_controls(self, **controls):
@@ -647,7 +773,7 @@ async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_mo
         def __init__(self, config):
             self.config = config
 
-        def start(self):
+        def start(self, *, allow_unavailable=False):
             pass
 
     class CaptureService:

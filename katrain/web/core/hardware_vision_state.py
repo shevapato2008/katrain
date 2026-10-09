@@ -247,7 +247,9 @@ class HardwareVisionStateStore:
                 raise ValueError(f"sha256 mismatch for {name}")
 
         profile = CameraProfile.from_json_dict(_read_json_object(generation_dir / PROFILE_FILENAME))
-        if (profile.camera_device, profile.width, profile.height) != (camera_device, width, height):
+        if (profile.width, profile.height) != (width, height) or not _camera_devices_match(
+            profile.camera_device, camera_device
+        ):
             raise ValueError("camera profile does not match requested camera and resolution")
         geometry = _load_valid_geometry(generation_dir, profile)
         return HardwareVisionState(generation=generation, geometry=geometry, profile=profile)
@@ -282,6 +284,18 @@ def _normalize_camera_device(value: Any) -> str:
     if not normalized:
         raise ValueError("camera_device must not be empty")
     return normalized
+
+
+def _camera_devices_match(stored: str, requested: str) -> bool:
+    """Accept a legacy index/path through an alias only with current node identity."""
+    if stored == requested:
+        return True
+    stored_path = f"/dev/video{stored}" if stored.isdigit() else stored
+    requested_path = f"/dev/video{requested}" if requested.isdigit() else requested
+    try:
+        return os.path.samefile(stored_path, requested_path)
+    except OSError:
+        return False
 
 
 def _validate_dimensions(width: Any, height: Any) -> tuple[int, int]:

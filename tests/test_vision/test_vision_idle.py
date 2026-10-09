@@ -60,6 +60,9 @@ class _FakeCap:
         time.sleep(0.005)
         return True
 
+    def release(self):
+        pass
+
 
 def test_camera_stops_decoding_when_nobody_asked_for_frames_and_resumes_on_demand():
     cam = CameraManager(device_id=0)

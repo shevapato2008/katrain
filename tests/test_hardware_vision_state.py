@@ -57,6 +57,40 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def test_profile_matches_alias_only_when_it_points_to_the_same_node(tmp_path):
+    module = _state_module()
+    device = tmp_path / "video0"
+    device.touch()
+    alias = tmp_path / "smartbox-cam"
+    alias.symlink_to(device)
+    store = module.HardwareVisionStateStore(tmp_path / "state")
+    store.commit(_geometry(), _profile(module, camera_device=str(device)))
+    assert store.load_current(str(alias), 640, 480) is not None
+
+    alias.unlink()
+    different = tmp_path / "video1"
+    different.touch()
+    alias.symlink_to(different)
+    assert store.load_current(str(alias), 640, 480) is None
+    alias.unlink()
+    assert store.load_current(str(alias), 640, 480) is None
+
+
+def test_numeric_camera_profile_uses_device_path_for_alias_match(tmp_path, monkeypatch):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    store.commit(_geometry(), _profile(module, camera_device=0))
+    identities = []
+
+    def samefile(stored, requested):
+        identities.append((stored, requested))
+        return stored == "/dev/video0" and requested == "/dev/smartbox-cam"
+
+    monkeypatch.setattr(module.os.path, "samefile", samefile)
+    assert store.load_current("/dev/smartbox-cam", 640, 480) is not None
+    assert identities == [("/dev/video0", "/dev/smartbox-cam")]
+
+
 def _replace_manifest_hash(generation_dir: Path, payload_name: str) -> None:
     manifest_path = generation_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

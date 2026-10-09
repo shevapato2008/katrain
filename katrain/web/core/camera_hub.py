@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -23,17 +26,21 @@ class CameraHubConfig:
 class CameraHub:
     """Own exactly one CameraManager and expose its latest-frame API."""
 
+    RECOVERY_INTERVAL_S = 5.0
+
     def __init__(self, config: CameraHubConfig, camera=None):
         self.config = config
         self._camera = camera
         self._started = False
         self._lifecycle_lock = threading.Lock()
+        self._recovery_stop = threading.Event()
+        self._recovery_thread: threading.Thread | None = None
 
     @property
     def is_started(self) -> bool:
         return self._started
 
-    def start(self) -> None:
+    def start(self, *, allow_unavailable: bool = False) -> None:
         with self._lifecycle_lock:
             if self._started:
                 return
@@ -50,26 +57,60 @@ class CameraHub:
                     lock_awb=self.config.lock_awb,
                 )
             if not self._camera.open():
-                raise RuntimeError(f"Failed to open camera {self.config.device_id}")
+                if not allow_unavailable:
+                    raise RuntimeError(f"Failed to open camera {self.config.device_id}")
+                logger.warning("Camera unavailable; retaining shared services and retrying: %s", self.config.device_id)
             self._started = True
+            self._recovery_stop = threading.Event()
+            self._recovery_thread = threading.Thread(
+                target=self._recover_loop, args=(self._recovery_stop,), daemon=True, name="camera-recovery"
+            )
+            self._recovery_thread.start()
+
+    def _recover_loop(self, stop: threading.Event) -> None:
+        while not stop.wait(self.RECOVERY_INTERVAL_S):
+            with self._lifecycle_lock:
+                if not self._started or stop.is_set():
+                    return
+                if not self.is_connected():
+                    try:
+                        # CameraManager owns reconnect cooldown/identity and reader startup.
+                        # This runs even when vision is idle and no consumer requests frames.
+                        self._camera.read_frame()
+                    except Exception:
+                        logger.exception("Camera recovery failed for %s", self.config.device_id)
 
     def stop(self) -> None:
         with self._lifecycle_lock:
             if not self._started:
                 return
-            self._camera.close()
             self._started = False
+            self._recovery_stop.set()
+            recovery, self._recovery_thread = self._recovery_thread, None
+            self._camera.close()
+        if recovery is not None:
+            recovery.join()
 
     def is_connected(self) -> bool:
         return bool(self._started and self._camera is not None and getattr(self._camera, "is_connected", False))
 
     def read_frame(self):
-        return self._camera.read_frame() if self._camera is not None else None
+        if not self._lifecycle_lock.acquire(blocking=False):
+            return None
+        try:
+            return self._camera.read_frame() if self._started else None
+        finally:
+            self._lifecycle_lock.release()
 
     def grab_fresh(self, after_ts=None, settle_ms: float = 150.0):
-        if self._camera is None:
+        if not self._lifecycle_lock.acquire(blocking=False):
             return None, 0, 0.0
-        return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+        try:
+            if not self._started:
+                return None, 0, 0.0
+            return self._camera.grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+        finally:
+            self._lifecycle_lock.release()
 
     def grab_burst(self, n: int = 8, interval: float = 0.1):
         frames = []

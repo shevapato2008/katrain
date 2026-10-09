@@ -82,6 +82,8 @@ async def move(request: Request):
 
 
 def require_ws(websocket: WebSocket):
+    if websocket.headers.get("authorization") == f"Bearer {AUTH}":
+        return True
     return websocket.cookies.get("sb_token") == AUTH and websocket.headers.get("origin") == (
         f"http://{websocket.url.netloc}"
     )

@@ -9,7 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuEventAlias, KifuNameResearchEvidence, KifuPlayer, KifuPlayerName,
+    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventAlias, KifuEventSelectionBatch,
+    KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayer, KifuPlayerName,
     KifuRawEventName, KifuRawEventValue, KifuRawPlayerName, KifuRawPlayerValue,
 )
 from katrain.web.kifu.identity import (
@@ -249,6 +250,8 @@ def test_same_literal_title_can_search_two_exact_raw_members(engine):
         assert set(db.scalars(select(KifuAlbum.id).where(strict_raw_event_search_clause(db, ids)))) == {11, 12}
         assert set(db.scalars(select(KifuAlbum.id).where(
             reviewed_raw_event_search_clause(db, "Friendship Cup, Round 1")))) == {11, 12}
+        assert set(db.scalars(select(KifuAlbum.id).where(
+            legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup, Round 1")))) == {11, 12}
 
 
 def test_second_bundle_accepts_same_title_only_from_approved_raw_translation(engine):
@@ -304,6 +307,8 @@ def test_five_primary_titles_and_secondary_english_fallback(engine):
         for lang, display in {**displays, "en": "Friendship Cup, Round 1"}.items():
             assert strict_display_maps(db, [album], lang)[-1][(11, album.event, None)] == display
             assert reviewed_raw_event_hints(db, [album], lang) == {11: display}
+            assert list(db.scalars(select(KifuAlbum.id).where(
+                legacy_raw_events.reviewed_literal_raw_event_search_clause(db, display)))) == [11]
         for lang in ("de", "es", "fr", "ru", "tr", "ua"):
             assert reviewed_raw_event_hints(db, [album], lang) == {11: "Friendship Cup, Round 1"}
 
@@ -374,6 +379,7 @@ def test_legacy_exact_raw_search_refuses_ambiguous_other_name_owners(engine, col
                 generation_rule_version="test-rule"))
     with Session(engine) as db:
         assert reviewed_raw_event_search_clause(db, display) is None
+        assert legacy_raw_events.reviewed_literal_raw_event_search_clause(db, display) is None
     with engine.begin() as conn:
         owner_field = (KifuNameResearchEvidence.player_id if collision == "two_players"
                        else KifuNameResearchEvidence.raw_player_id)
@@ -428,6 +434,73 @@ def test_persisted_literal_title_rejects_changed_approval_or_evidence(engine, da
         album = db.get(KifuAlbum, 11)
         assert reviewed_raw_event_hints(db, [album], "en") == {}
         assert _approved_raw_event_names(db, values={album.event}, lang="en") == []
+        assert legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup, Round 1") is None
+
+
+@pytest.mark.parametrize("damage", ["pending_batch", "bundle_hash", "candidate", "research_hash", "ledger"])
+def test_literal_exact_search_requires_live_immutable_batch(engine, damage):
+    proposed, inv, research = reviewed_bundle(engine)
+    applied = apply_bundle(engine, proposed, registry(), inv, research)
+    with engine.begin() as conn:
+        batch = conn.execute(select(KifuNameBatch.__table__)).mappings().one()
+        artifact = deepcopy(batch["reviewed_artifact"])
+        if damage == "pending_batch":
+            conn.execute(KifuNameBatch.__table__.update().values(status="pending"))
+        elif damage == "bundle_hash":
+            conn.execute(KifuNameBatch.__table__.update().values(bundle_sha256="0" * 64))
+        elif damage == "candidate":
+            artifact["bundle"]["candidates"][0]["display_name"] = "Different title"
+            conn.execute(KifuNameBatch.__table__.update().values(
+                reviewed_artifact=artifact, bundle_sha256=canonical_sha256(artifact["bundle"])))
+        elif damage == "research_hash":
+            artifact["research_hashes"] = []
+            conn.execute(KifuNameBatch.__table__.update().values(reviewed_artifact=artifact))
+        else:
+            conn.execute(KifuNameChange.__table__.delete().where(
+                KifuNameChange.batch_id == applied["batch_id"],
+                KifuNameChange.target_table == "kifu_name_research_evidence"))
+    with Session(engine) as db:
+        assert legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup, Round 1") is None
+
+
+@pytest.mark.parametrize("damage", ["hidden", "linked", "duplicate", "selected", "changed_raw"])
+def test_literal_exact_search_keeps_only_reviewed_public_unlinked_scope(engine, monkeypatch, damage):
+    proposed, inv, research = reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    old_model = SimpleNamespace(id=KifuAlbum.id, event=KifuAlbum.event,
+                                event_id=KifuAlbum.event_id, duplicate_of_id=KifuAlbum.duplicate_of_id)
+    monkeypatch.setattr(legacy_raw_events, "KifuAlbum", old_model)
+    with Session(engine) as db:
+        db.add(KifuAlbum(id=12, player_black="A", player_white="B", event="友情杯第１轮",
+                         sgf_content="(;)", source_path="outside-reviewed-scope.sgf"))
+        db.commit()
+        clause = legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup, Round 1")
+        assert list(db.scalars(select(KifuAlbum.id).where(clause))) == [11]
+        assert legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup") is None
+        album = db.get(KifuAlbum, 11)
+        if damage == "hidden":
+            album.list_hidden_reason = "fixture"
+        elif damage == "linked":
+            db.add(KifuEvent(id=1, canonical_name="Other event"))
+            db.flush()
+            album.event_id = 1
+        elif damage == "duplicate":
+            album.duplicate_of_id = 12
+        elif damage == "changed_raw":
+            album.event = "友情杯第２轮"
+        else:
+            now = datetime.now(timezone.utc)
+            batch = KifuEventSelectionBatch(bundle_sha256="a" * 64, member_set_sha256="b" * 64,
+                reviewed_artifact={}, producer_id="producer", reviewer_id="reviewer", reviewed_at=now,
+                status="applied")
+            db.add(batch)
+            db.flush()
+            db.add(KifuAlbumEventSelection(album_id=11, batch_id=batch.id, selected_raw="Other GN",
+                sgf_sha256="c" * 64, property_name="GN", property_index=1, status="approved",
+                rule_version="fixture", reviewer_id="reviewer", reviewed_at=now))
+        db.commit()
+        clause = legacy_raw_events.reviewed_literal_raw_event_search_clause(db, "Friendship Cup, Round 1")
+        assert list(db.scalars(select(KifuAlbum.id).where(clause))) == []
 
 
 def sgf_literal(raw="2020中国国家队积分大循环第1轮"):

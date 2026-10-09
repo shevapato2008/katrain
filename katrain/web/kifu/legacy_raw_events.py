@@ -17,6 +17,7 @@ from katrain.web.kifu.name_candidates import (
     _CLASSIFICATION_TEMPLATES_V2,
     _check_signature,
     _time,
+    canonical_sha256,
     classification_template_sha256,
     validate_archive_description_candidate,
     validate_archive_description_scope,
@@ -174,7 +175,7 @@ def _approved_rows(db, *, values=None, lang=None, display=None):
         params["display"] = display
     query = text(
         """
-        SELECT n.raw_event_id, n.lang, n.display_name, n.decision_kind, n.generation_rule_version,
+        SELECT n.raw_event_id, n.evidence_id, n.lang, n.display_name, n.decision_kind, n.generation_rule_version,
                n.status AS name_status, n.revision AS name_revision,
                r.raw_value, r.category, r.parser_version, r.review_metadata,
                r.review_status AS raw_owner_status,
@@ -182,7 +183,7 @@ def _approved_rows(db, *, values=None, lang=None, display=None):
                e.candidate_name AS evidence_candidate_name, e.decision_kind AS evidence_decision_kind,
                e.generation_rule_version AS evidence_rule_version,
                e.review_status AS evidence_status, e.revision AS evidence_revision,
-               e.research_payload, e.producer_id, e.producer_model, e.produced_at,
+               e.source_registry_id, e.research_payload, e.producer_id, e.producer_model, e.produced_at,
                e.reviewer_id, e.reviewer_model, e.reviewed_at
         FROM kifu_raw_event_names AS n
         JOIN kifu_raw_event_values AS r ON r.id = n.raw_event_id
@@ -260,3 +261,61 @@ def reviewed_raw_event_search_clause(db, query):
             clause = and_(clause, KifuAlbum.id.in_(ids))
         clauses.append(clause)
     return or_(*clauses)
+
+
+def reviewed_literal_raw_event_search_clause(db, query):
+    """Expand an exact reviewed literal title within its applied immutable album scope.
+
+    This old-ORM bridge reads the existing creation ledger and batch in one
+    bounded query. It does not render translations or import newer ORM models.
+    """
+    rows = [(row, ids) for row, ids in _approved_rows(db, display=query)
+            if row["decision_kind"] == "translated" and _normalized(row["display_name"]) == _normalized(query)]
+    if not rows or _other_exact_name_exists(db, query):
+        return None
+    evidence_ids = {row["evidence_id"] for row, _ in rows}
+    changes = {}
+    for change in db.execute(text("""
+        SELECT c.target_row_id, c.before_image, c.after_image, b.status,
+               b.bundle_sha256, b.source_registry_id, b.reviewed_artifact
+        FROM kifu_name_changes AS c JOIN kifu_name_batches AS b ON b.id = c.batch_id
+        WHERE c.target_table = 'kifu_name_research_evidence' AND c.target_row_id IN :ids
+    """).bindparams(bindparam("ids", expanding=True)), {"ids": tuple(evidence_ids)}).mappings():
+        changes.setdefault(change["target_row_id"], []).append(change)
+    clauses = []
+    for row, _ in rows:
+        try:
+            ledger = changes.get(row["evidence_id"], [])
+            if len(ledger) != 1:
+                continue
+            stored = ledger[0]
+            created = _json(stored["after_image"])
+            payload = _json(row["research_payload"])
+            candidate = payload["candidate"]
+            artifact = _json(stored["reviewed_artifact"])
+            bundle = artifact["bundle"]
+            if (stored["status"] != "applied" or _json(stored["before_image"]) is not None
+                    or created["id"] != row["evidence_id"]
+                    or created["raw_event_id"] != row["raw_event_id"]
+                    or created["lang"] != row["lang"] or created["revision"] != row["evidence_revision"]
+                    or created["review_status"] != "approved" or created["research_payload"] != payload
+                    or not (created["source_registry_id"] == row["source_registry_id"] == stored["source_registry_id"])
+                    or canonical_sha256(bundle) != stored["bundle_sha256"]
+                    or [item for item in bundle["candidates"]
+                        if item.get("owner") == candidate["owner"] and item.get("lang") == candidate["lang"]] != [candidate]
+                    or candidate["research_sha256"] not in artifact["research_hashes"]):
+                continue
+            declarations = [item for item in bundle["owners"] if item.get("owner") == candidate["owner"]]
+            if len(declarations) != 1:
+                continue
+            declaration = declarations[0]
+            ids = declaration["occurrence_album_ids"]
+            if (not isinstance(ids, list) or not ids or any(type(id_) is not int or id_ <= 0 for id_ in ids)
+                    or len(set(ids)) != len(ids) or canonical_sha256(ids) != declaration["occurrence_sha256"]):
+                continue
+            clauses.append(and_(KifuAlbum.id.in_(ids), KifuAlbum.event == row["raw_value"],
+                                KifuAlbum.event_id.is_(None), KifuAlbum.duplicate_of_id.is_(None),
+                                _PUBLIC, _NO_SELECTION))
+        except (KeyError, TypeError, AttributeError, ValueError):
+            continue
+    return or_(*clauses) if clauses else None

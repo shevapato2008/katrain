@@ -1728,6 +1728,84 @@ def test_positive_zh_ko_modern_scope_and_actual_profile_shapes(owner_id):
     assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
 
 
+@pytest.mark.parametrize("words,expected", [
+    ([["li"], ["qing", "hai"]], "리칭하이"),
+    ([["xiao"], ["rui", "shan"]], "샤오루이산"),
+    ([["wang"], ["ye", "hui"]], "왕예후이"),
+    ([["dong"], ["tian", "yi"]], "둥톈이"),
+    ([["xu"], ["jian", "ying"]], "쉬젠잉"),
+])
+def test_positive_zh_ko_twelve_reviewed_syllables_render_five_names(words, expected):
+    from katrain.web.kifu.name_zh_ko import render_name
+
+    assert render_name(words) == expected
+
+
+def positive_zh_ko_rule_variant_fixture(*, new_syllables, rule_url, rule_sha256):
+    from katrain.web.kifu.name_zh_ko import used_entries
+
+    evidence, row, reg = positive_zh_ko_fixture(5498)
+    positive = evidence["positive_zh_ko"]
+    if new_syllables:
+        words, latin, hangul = [["wang"], ["qing", "hai"]], "Wang Qinghai", "왕칭하이"
+        evidence.update(reading=latin, candidate_name=hangul)
+        reading = positive["reading"]
+        reading.update(published=latin, reading_words=words)
+        profile = reading["capture"]
+        profile["body_text"] = profile["body_excerpt"] = f"王宏伟 {latin} Citizenship: CHN"
+        profile["body_sha256"] = hashlib.sha256(profile["body_text"].encode()).hexdigest()
+        original_go, candidate_go = positive["contrary_checks"]
+        original_go["query"] = latin
+        original_go["capture"]["url"] = f"https://db.u-go.net/?q={quote_plus(latin)}"
+        original_go["capture"]["body_text"] = original_go["capture"]["body_excerpt"] = (
+            f"U-Go professional Go player search: 王宏伟 {latin} links to profile")
+        original_go["capture"]["body_sha256"] = hashlib.sha256(
+            original_go["capture"]["body_text"].encode()).hexdigest()
+        original_go["relevant_matches"] = [f"王宏伟 {latin}"]
+        candidate_go["query"] = hangul
+        candidate_go["capture"]["body_text"] = candidate_go["capture"]["body_excerpt"] = f"{hangul} 王宏伟 Go"
+        candidate_go["capture"]["body_sha256"] = hashlib.sha256(
+            candidate_go["capture"]["body_text"].encode()).hexdigest()
+        candidate_go["relevant_matches"] = [f"{hangul} 王宏伟"]
+        positive["rule"].update(used_entries=used_entries(words), output=hangul)
+        row["display_name"] = hangul
+        review = row["generated_review"]
+        review.update(display_name=hangul, reading=latin, reading_words=words,
+                      used_entries=positive["rule"]["used_entries"])
+    positive["rule"]["capture"].update(url=rule_url, body_sha256=rule_sha256)
+    row["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"].update(research_sha256=row["research_sha256"],
+                                    positive_zh_ko_sha256=canonical_sha256(positive))
+    return evidence, row, reg
+
+
+@pytest.mark.parametrize("new_syllables,rule_url,rule_sha256,accepted", [
+    (False, "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b", True),
+    (False, "https://www.korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "fba7508fd4dfb60eee30561ff8e11c64493fb3f0bd9fecceacb1fcedd13c6731", True),
+    (True, "https://www.korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "fba7508fd4dfb60eee30561ff8e11c64493fb3f0bd9fecceacb1fcedd13c6731", True),
+    (True, "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b", False),
+    (True, "https://www.korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b", False),
+    (True, "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+     "fba7508fd4dfb60eee30561ff8e11c64493fb3f0bd9fecceacb1fcedd13c6731", False),
+    (True, "https://www.korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003", "a" * 64, False),
+])
+def test_positive_zh_ko_rule_capture_variants_bind_finite_domain(new_syllables, rule_url, rule_sha256, accepted):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_positive_zh_ko_candidate
+
+    evidence, row, reg = positive_zh_ko_rule_variant_fixture(
+        new_syllables=new_syllables, rule_url=rule_url, rule_sha256=rule_sha256)
+    if accepted:
+        assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+    else:
+        with pytest.raises(EvidenceError):
+            validate_positive_zh_ko_candidate(row, evidence, reg)
+
+
 def test_positive_zh_ko_traditional_original_rejects_simplified_page_label():
     from katrain.web.kifu.name_evidence import EvidenceError, validate_research_record
 
@@ -1813,7 +1891,7 @@ def test_positive_zh_ko_rejects_wrong_or_partial_evidence(change):
     elif change == "language": evidence["original_language"] = "ja"
     elif change == "reading": positive["reading"]["published"] = "Lin Qinghai"
     elif change == "segments": positive["reading"]["reading_words"] = [["wang", "hong"], ["wei"]]
-    elif change == "unknown_syllable": positive["reading"]["reading_words"][1][0] = "xu"
+    elif change == "unknown_syllable": positive["reading"]["reading_words"][1][0] = "zhuo"
     elif change == "rule_hash": positive["rule"]["capture"]["body_sha256"] = "b" * 64
     elif change == "rule_url": positive["rule"]["capture"]["url"] = "https://example.org/rules"
     elif change == "body_hash": positive["reading"]["capture"]["body_sha256"] = "b" * 64

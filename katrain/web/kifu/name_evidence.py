@@ -1162,7 +1162,9 @@ def _validate_positive_ja_ko(record: dict) -> None:
 def _validate_positive_zh_ko(record: dict) -> None:
     """Validate the first finite Mandarin profile without inferring pronunciation from Han."""
     from katrain.web.kifu.name_zh_ko import (
-        RULE_BODY_SHA256, RULE_LOCATORS, RULE_URL, RULE_VERSION, SOURCE_BASIS, render_name, used_entries,
+        CURRENT_RULE_BODY_SHA256, CURRENT_RULE_SYLLABLES, CURRENT_RULE_URL,
+        LEGACY_RULE_SYLLABLES, RULE_BODY_SHA256, RULE_LOCATORS, RULE_URL,
+        RULE_VERSION, SOURCE_BASIS, render_name, used_entries,
     )
 
     _require(record.get("source_basis") == SOURCE_BASIS
@@ -1247,11 +1249,17 @@ def _validate_positive_zh_ko(record: dict) -> None:
              and rule["format"] == "joined_surname_given_project_format",
              "Chinese rule entries and full output must be exactly reproducible")
     rule_capture = rule["capture"]
+    capture_pair = ((rule_capture.get("url"), rule_capture.get("body_sha256"))
+                    if isinstance(rule_capture, dict) else (None, None))
+    allowed_syllables = (LEGACY_RULE_SYLLABLES if capture_pair == (RULE_URL, RULE_BODY_SHA256)
+                         else CURRENT_RULE_SYLLABLES if capture_pair == (CURRENT_RULE_URL, CURRENT_RULE_BODY_SHA256)
+                         else frozenset())
     _require(isinstance(rule_capture, dict) and rule_capture == {
-        "url": RULE_URL, "http_status": 200, "fetched_at": rule_capture.get("fetched_at"),
-        "body_sha256": RULE_BODY_SHA256, "source_role": "normative_rule", "observed_lang": "ko",
+        "url": capture_pair[0], "http_status": 200, "fetched_at": rule_capture.get("fetched_at"),
+        "body_sha256": capture_pair[1], "source_role": "normative_rule", "observed_lang": "ko",
         **RULE_LOCATORS,
-    } and _aware_timestamp(rule_capture.get("fetched_at")),
+    } and _aware_timestamp(rule_capture.get("fetched_at"))
+             and bool(allowed_syllables) and set(entries) <= allowed_syllables,
              "Chinese rule requires the exact captured official body, URL and locators")
     _require(positive["unresolved_conflicts"] == [], "Chinese name has unresolved conflicts")
     checks = positive["contrary_checks"]

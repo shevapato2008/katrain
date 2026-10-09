@@ -60,6 +60,39 @@ SYLLABLES = {
             "locator": "Chapter 2 Table 5, raw HTML line 1573: initial j -> ㅈ plus final ye (ie) -> 예; select post-initial ie under note line 1578. Chapter 3 Chinese section item 2, raw lines 6707 and 6711: 졔 -> 제."},
 }
 
+# The original eighteen entries remain valid with the old exact capture. New
+# entries below require the separately captured www body checked by review.
+LEGACY_RULE_SYLLABLES = frozenset(SYLLABLES)
+CURRENT_RULE_URL = "https://www.korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003"
+CURRENT_RULE_BODY_SHA256 = "fba7508fd4dfb60eee30561ff8e11c64493fb3f0bd9fecceacb1fcedd13c6731"
+SYLLABLES.update({
+    "qing": {"hangul": "칭", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: q -> ㅊ and post-initial ing from ying (ing) -> 잉 under note line 1578; compose 칭."},
+    "hai": {"hangul": "하이", "kind": "reviewed_composition",
+            "locator": "Chapter 2 Table 5, raw HTML line 1573: h -> ㅎ and ai -> 아이; compose 하이."},
+    "xiao": {"hangul": "샤오", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: x -> ㅅ and post-initial iao from yao (iao) -> 야오 under note line 1578; compose 샤오. The Chapter 3 simplification does not list x/ㅅ."},
+    "rui": {"hangul": "루이", "kind": "reviewed_composition",
+            "locator": "Chapter 2 Table 5, raw HTML line 1573: r -> ㄹ and post-initial ui from wei (ui) -> 우이 under note line 1578; compose 루이."},
+    "shan": {"hangul": "산", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: sh -> ㅅ and an -> 안; compose 산."},
+    "ye": {"hangul": "예", "kind": "direct_table_entry",
+           "locator": "Chapter 2 Table 5, raw HTML line 1573: zero-initial ye (ie) -> 예."},
+    "hui": {"hangul": "후이", "kind": "reviewed_composition",
+            "locator": "Chapter 2 Table 5, raw HTML line 1573: h -> ㅎ and post-initial ui from wei (ui) -> 우이 under note line 1578; compose 후이."},
+    "dong": {"hangul": "둥", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: d -> ㄷ and post-initial ong from weng (ong) -> 웅 under note line 1578; compose 둥."},
+    "tian": {"hangul": "톈", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: t -> ㅌ and post-initial ian from yan (ian) -> 옌 under note line 1578; compose 톈. The Chapter 3 simplification does not list t/ㅌ."},
+    "xu": {"hangul": "쉬", "kind": "reviewed_composition",
+           "locator": "Chapter 2 Table 5, raw HTML line 1573: x -> ㅅ and post-initial u/ü from yu (u) -> 위; compose 쉬. Chinese MOE spelling explanation, requested https://www.moe.gov.cn/s78/A18/A18_ztzl/jnhypyfa/201805/t20180517_336341.html, actual HTTP final http://www.moe.gov.cn/s78/A18/A18_ztzl/jnhypyfa/201805/t20180517_336341.html, body SHA-256 184692fa2fd97dc8b356c5cef1c0e56fec58995de076a1e82fa8c4070a3d484d, raw HTML line 206: jqxy followed by ü omits the dots."},
+    "jian": {"hangul": "젠", "kind": "reviewed_composition",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: j -> ㅈ and post-initial ian from yan (ian) -> 옌, composing 졘; Chapter 3 item 2 at raw line 6707 makes ㅖ after ㅈ into ㅔ, hence 젠. Raw lines 6710-6711 show analogous examples, not a literal 졘 -> 젠 example."},
+    "ying": {"hangul": "잉", "kind": "direct_table_entry",
+             "locator": "Chapter 2 Table 5, raw HTML line 1573: zero-initial ying (ing) -> 잉."},
+})
+CURRENT_RULE_SYLLABLES = frozenset(SYLLABLES)
+
 
 def used_entries(reading_words: list[list[str]]) -> dict[str, dict[str, str]]:
     """Return the exact finite source entries used in a segmented reading."""

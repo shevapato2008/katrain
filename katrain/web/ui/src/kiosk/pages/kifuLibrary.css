@@ -57,22 +57,29 @@
 .kifu-library .kifu-record__head { width: 100%; gap: 10px; }
 .kifu-library .kifu-record__event { font-size: 13px; color: var(--library-muted); }
 .kifu-library .kifu-record__round { margin: 0; opacity: 1; }
-.kifu-library .kifu-record__meta { gap: 8px; font-family: var(--font-sans); font-size: 13px; color: var(--library-muted); white-space: nowrap; }
-.kifu-library .kifu-record__analyzed { color: var(--library-accent); }
-.kifu-library .kifu-record__match { width: 100%; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 10px; }
+.kifu-library .kifu-record__meta { margin-left: auto; justify-content: flex-end; text-align: right; gap: 8px; font-family: var(--font-sans); font-size: 13px; color: var(--library-muted); white-space: nowrap; }
+.kifu-library .kifu-record__match { width: 100%; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; }
 .kifu-library .kifu-record__player { gap: 5px; font-size: 15px; }
-.kifu-library .kifu-record__player--white { justify-content: flex-start; text-align: left; }
+.kifu-library .kifu-record__player--white { justify-content: flex-end; text-align: right; }
 .kifu-library .kifu-record__player small { font-size: 13px; color: var(--library-muted); }
 .kifu-library .kifu-record__result { min-width: 0; max-width: 126px; padding: 3px 8px; font-family: var(--font-sans); font-size: 13px; font-weight: 400; background: transparent; }
 .kifu-library .kifu-record__stone { width: 13px; height: 13px; }
 .kifu-library .kifu-record__stone--black { background: #080b09; border-color: #95a49b; box-shadow: none; }
 .kifu-library .kifu-record__stone--white { background: #f2f4ef; border-color: #d5ddd5; box-shadow: none; }
-.kifu-library .kifu-record__entry { display: flex; align-items: center; justify-content: flex-end; gap: 2px; font-size: 13px; color: var(--library-accent); white-space: nowrap; }
+.kifu-library .kifu-record__entry { display: inline-flex; align-items: center; flex: none; color: var(--library-accent); }
 
 .kifu-library__footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.kifu-library .kpager { gap: 8px; font-family: var(--font-sans); font-size: 13px; color: var(--text); }
-.kifu-library .kpager button { width: 44px; padding: 0; }
-.kifu-library .kpager > span { min-width: 72px; text-align: center; }
+/* Keep the active page field above the touch keyboard in the fixed-height kiosk. */
+body.skbd-padded .kifu-library .compact-pagination:focus-within {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--skbd-height, 260px) + 8px);
+  z-index: 100;
+  padding: 4px;
+  border: 1px solid var(--library-line);
+  border-radius: 9px;
+  background: var(--library-panel);
+}
 .kifu-library .kifu-library__recent-toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 .kifu-library .kiosk-resume { min-height: var(--l1-resume-h); }
 .kifu-library .kifu-library__recent > .kiosk-seclabel { align-items: center; }

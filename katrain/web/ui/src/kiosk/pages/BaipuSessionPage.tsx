@@ -137,10 +137,9 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-22):棋谱屏导入、棋谱详情「摆这一局」
-  // 进来回那一页。摆谱列表 `/kiosk/baipu` 已删(K1,只剩重定向),所以入口只剩棋谱这一族,
-  // 键名一律「棋谱」;没写明来处(直接输 URL)回棋谱屏,不回那条重定向。
+  // 返回原来的棋谱或报告页；直接输入 URL 时默认回棋谱屏。
   const back = useBackTo('/kiosk/kifu');
-  const backLabel = t('baipu:back_kifu', '棋谱');
+  const backLabel = (location.state as { backLabel?: string } | null)?.backLabel ?? t('baipu:back_kifu', '棋谱');
   const { user, isGuest, isLoading } = useAuth();
   const identityKey = user?.uuid ?? null;
   const store = useMemo(

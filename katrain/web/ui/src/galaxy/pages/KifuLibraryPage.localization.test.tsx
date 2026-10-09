@@ -99,7 +99,7 @@ describe('Galaxy 棋谱库语言展示', () => {
       expect(await screen.findByText(`${lang}-black`)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`${lang}-black vs ${lang}-white`))).toBeInTheDocument();
       expect(screen.queryByText('GoLaxy')).not.toBeInTheDocument();
-      expect(screen.getByRole('textbox')).toHaveValue('原黑');
+      expect(screen.getByPlaceholderText('Search by player, event, date...')).toHaveValue('原黑');
     }
   });
 
@@ -177,5 +177,22 @@ describe('Galaxy 棋谱库语言展示', () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+});
+
+
+describe('Galaxy 紧凑分页', () => {
+  it('直接跳转保留搜索条件，上一页/下一页继续更新 URL 页码', async () => {
+    getAlbums.mockImplementation(({ lang }: { lang: string }) => Promise.resolve({ items: [record(lang)], total: 172766 }));
+    render(page()); await screen.findByText('cn-black');
+    const input = screen.getByRole('textbox', { name: '跳转页码' });
+    expect(input).toHaveValue('2');
+    fireEvent.change(input, { target: { value: '8639' } });
+    fireEvent.submit(input.closest('form')!);
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '原黑', page: 8639, page_size: 20, lang: 'cn' }));
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '上一页' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 8638 })));
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 });

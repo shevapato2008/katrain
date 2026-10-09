@@ -19,7 +19,6 @@ import {
   Box,
   Typography,
   TextField,
-  Pagination,
   InputAdornment,
   Skeleton,
   Fade,
@@ -44,6 +43,7 @@ import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 import { formatRank } from '../../utils/rank';
+import CompactPagination from '../../components/CompactPagination';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -292,7 +292,7 @@ export default function KifuLibraryPage() {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const handlePageChange = (_: unknown, newPage: number) => {
+  const handlePageChange = (newPage: number) => {
     const params: Record<string, string> = {};
     if (query) params.q = query;
     if (newPage > 1) params.page = String(newPage);
@@ -502,20 +502,9 @@ export default function KifuLibraryPage() {
 
           {totalPages > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', px: 1, pb: 2 }}>
-              {/* 分页保持 MUI 默认密度，**不收 `siblingCount`**。
-                  收了确实每档都是一行，但第 1 页会从 `1 2 3 4 5 … 1254` 掉成
-                  `1 2 3 … 1254` —— 少两个直达页码，账本上就是丢了两个控件。
-                  实测默认密度在 320 栏里放得下：第 1 页 270px / 309px 可用；
-                  翻到第 600 页那种四位数居中的情况会**折成两行**（高 28 → 56），
-                  但它在中段里，滚到底完整可见（承重实测 R6 量过）。
-                  两行不好看，但比够不着页码轻。 */}
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                color="primary"
-                shape="rounded"
-                size="small"
+              <CompactPagination
+                key={`${query}:${lang}`} page={page} totalPages={totalPages}
+                disabled={loading} onPageChange={handlePageChange}
               />
             </Box>
           )}

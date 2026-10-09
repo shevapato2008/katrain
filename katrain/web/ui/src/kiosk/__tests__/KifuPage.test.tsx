@@ -89,35 +89,13 @@ describe('屏 15 棋谱 · 问候与列表头', () => {
     expect(screen.getByText('名局，以及把谱摆到实体盘上')).toBeInTheDocument();
   });
 
-  // 2026-09-23 Fan:列表要一进来就在。三张卡(搜棋谱 / 摆到实体盘 / 导入 SGF)拆了,
-  // 「导入 SGF」挪到搜索框右边 —— 屏上一张卡都不剩,也就没有要先按的开关。
-  it('没有卡片,搜索框和「导入 SGF」一进来就在同一行', () => {
+  it('搜索框常驻，删除导入 SGF 及其文件输入入口', () => {
     renderPage();
-    expect(document.querySelectorAll('.kiosk-card')).toHaveLength(0);
-    const bar = document.querySelector('[data-testid="kifu-search"] .ksearch__bar')!;
-    expect(within(bar as HTMLElement).getByPlaceholderText('棋手、赛事、年份都能搜')).toBeInTheDocument();
-    expect(within(bar as HTMLElement).getByRole('button', { name: /导入 SGF/ })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('棋手、赛事、年份都能搜')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /导入 SGF/ })).toBeNull();
+    expect(screen.queryByTestId('kifu-sgf-input')).toBeNull();
   });
 
-  it('导入有效 SGF 后带着本地谱和返回地址进入摆谱', async () => {
-    renderPage();
-    const sgf = '(;FF[4]GM[1]SZ[19];B[pd])';
-    fireEvent.change(screen.getByTestId('kifu-sgf-input'), {
-      target: { files: [new File([sgf], 'my-game.sgf', { type: 'application/x-go-sgf' })] },
-    });
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/kiosk\/baipu\/session\/local_\d+$/),
-      { state: expect.objectContaining({ sgf, name: 'my-game', backTo: '/kiosk/kifu' }) },
-    ));
-  });
-
-  it('「导入 SGF」按下去开的是本地文件选择框', () => {
-    renderPage();
-    const input = screen.getByTestId('kifu-sgf-input') as HTMLInputElement;
-    const clicked = vi.spyOn(input, 'click');
-    fireEvent.click(screen.getByRole('button', { name: /导入 SGF/ }));
-    expect(clicked).toHaveBeenCalled();
-  });
 });
 
 describe('屏 15 棋谱 · 名局列表默认摊开', () => {
@@ -167,8 +145,9 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     getAlbums.mockResolvedValue({ items: [album(1, { has_analysis, sources: ['cwi', '19x19'] })], total: 1 });
     renderPage();
     const row = (await screen.findAllByRole('button', { name: /第 29 届三星杯/ }))[0];
-    expect(within(row).queryByText('已分析') !== null).toBe(has_analysis === true);
-    expect(within(row).getByText(has_analysis ? '查看分析报告' : '查看棋谱')).toBeInTheDocument();
+    expect(within(row).queryByText('已分析')).toBeNull();
+    expect(within(row).queryByText(has_analysis ? '查看分析报告' : '查看棋谱')).toBeNull();
+    expect(within(row).getByLabelText(has_analysis ? '查看分析报告' : '查看棋谱')).toBeInTheDocument();
     expect(row).not.toHaveTextContent(/来源|19x19|CWI/i);
     fireEvent.click(row);
     expect(mockNavigate).toHaveBeenCalledWith(`/kiosk/kifu/1${has_analysis ? '' : '/replay'}`);
@@ -189,7 +168,7 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
   it('翻页:第 1 页「上一页」是灰的;「下一页」发第 2 页', async () => {
     getAlbums.mockResolvedValue({ items: [album(1)], total: 80, page: 1, page_size: 20 });
     renderPage();
-    await screen.findByText('1 / 4');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('1'));
     expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 20, lang: i18n.lang }));
@@ -204,12 +183,12 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
       getAlbums.mockResolvedValue({ items: [album(1)], total: 80, page: 1, page_size: 20 });
       renderPage();
       await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-      expect(screen.getByText('1 / 4')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('1');
       fireEvent.click(screen.getByRole('button', { name: '下一页' }));
       await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-      expect(screen.getByText('2 / 4')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2');
       await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
-      expect(screen.getByText('2 / 4')).toBeInTheDocument();
+      expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2');
       expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 20, lang: i18n.lang });
     } finally {
       vi.useRealTimers();
@@ -219,11 +198,11 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
   it('在第 3 页改搜索词,结果回第 1 页', async () => {
     getAlbums.mockResolvedValue({ items: [album(1)], total: 100, page: 1, page_size: 20 });
     renderPage();
-    await screen.findByText('1 / 5');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('1'));
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
-    await screen.findByText('2 / 5');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2'));
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
-    await screen.findByText('3 / 5');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('3'));
     fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '柯洁' } });
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '柯洁', page: 1, page_size: 20, lang: i18n.lang }));
   });
@@ -245,8 +224,8 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
     expect(screen.queryByText(/Request failed/)).toBeNull();
     expect(screen.queryByText('没有对得上的谱')).toBeNull();
     expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
-    // 断网不连累另外两条路:导入 SGF 还在
-    expect(screen.getByRole('button', { name: /导入 SGF/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '最近摆过' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '跳转' })).toBeDisabled();
   });
 });
 
@@ -255,11 +234,11 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     seedRecent([{ id: 'local_1', name: '本地对局', savedAt: Date.now() }], {}, ['local_1']);
     getAlbums.mockResolvedValue({ items: [album(1)], total: 45 });
     renderPage();
-    await screen.findByText('1 / 3');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('1'));
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '柯洁' } });
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ q: '柯洁' })));
     fireEvent.click(screen.getByRole('button', { name: '下一页' }));
-    await screen.findByText('2 / 3');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2'));
     const requests = getAlbums.mock.calls.length;
     expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
@@ -269,7 +248,7 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     expect(screen.getByTestId('kifu-records')).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toHaveValue('柯洁');
-    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '跳转页码' })).toHaveValue('2');
     expect(getAlbums).toHaveBeenCalledTimes(requests);
   });
 
@@ -346,5 +325,37 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     fireEvent.click(screen.getByRole('button', { name: '最近摆过' }));
     expect(screen.getByTestId('kifu-recent-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
+  });
+});
+
+
+describe('棋谱列表直接跳页', () => {
+  it('输入页码提交后只请求目标页，箭头继续基于目标页翻页', async () => {
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 172766 });
+    renderPage();
+    await screen.findByText('共 172,766 局');
+    const input = screen.getByRole('textbox', { name: '跳转页码' });
+    fireEvent.change(input, { target: { value: '8639' } });
+    fireEvent.submit(input.closest('form')!);
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 8639, page_size: 20, lang: i18n.lang }));
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '上一页' }));
+    await waitFor(() => expect(input).toHaveValue('8638'));
+  });
+
+  it('空页码、0、小数和超出总页数均不发送新请求', async () => {
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 80 });
+    renderPage(); await screen.findByText('共 80 局');
+    const input = screen.getByRole('textbox', { name: '跳转页码' });
+    const calls = getAlbums.mock.calls.length;
+    for (const value of ['', '0', '1.5', '5']) {
+      fireEvent.change(input, { target: { value } });
+      fireEvent.submit(input.closest('form')!);
+      expect(getAlbums).toHaveBeenCalledTimes(calls);
+      expect((input as HTMLInputElement).validity.valid).toBe(false);
+    }
+    fireEvent.change(input, { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: '跳转' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 3 })));
   });
 });

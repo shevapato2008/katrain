@@ -14,6 +14,7 @@ import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
+import PhysicalBoardButton from '../components/PhysicalBoardButton';
 import { ReportAnalysisRail } from '../components/report/ReportAnalysisRail';
 import KioskReportPlayback from '../components/report/KioskReportPlayback';
 import { colsFor, rowsFor } from '../shell/goBoard';
@@ -186,7 +187,7 @@ export default function KifuReportDetailPage() {
             <button type="button" aria-pressed={tryMoveMode} onClick={() => { setTryMoveMode((value) => !value); setTryMoves([]); setVariation(null); }}><Icon name="hand-pointing" />{t('report:try', '试下')}</button>
             <button type="button" aria-pressed={showTerritory} disabled={!currentAnalysis?.ownership} onClick={() => setShowTerritory((value) => !value)}><Icon name="map-trifold" />{t('report:territory', '领地')}</button>
             <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((value) => !value)}><Icon name="lightbulb" />{t('Advice', '支招')}</button>
-          <button type="button" disabled={!activeMove && tryMoves.length === 0} onClick={() => { setTryMoves([]); setVariation(null); }}><span aria-hidden="true">×</span>{t('report:clear', '清空')}</button>
+            <PhysicalBoardButton source={`kifu_${album.id}`} name={title} sgf={album.sgf_content} boardSize={boardSize} />
           </>)}
           toggles={(<>
             <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((value) => !value)}><Icon name="list-numbers" />{t('report:move_numbers', '手数')}</button>

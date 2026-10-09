@@ -8,7 +8,7 @@ export interface PlayerInfo {
   main_time_used: number;
 }
 
-export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online';
+export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
 
 export interface GameState {
   game_id: string;
@@ -81,10 +81,12 @@ export interface GameState {
   language: string;
   count_min_moves?: number;
   /**
-   * 盒上模式、双方各停一手、这一局还没有结果 ⇒ 后端等前端来数子(v2-design §3.4)。
-   * 为真时 `/api/count/request` 跳过手数门槛。老服务端不带这个字段 ⇒ undefined ⇒ 不自动数。
+   * 双方各停一手、这一局还没有正式胜负时，允许 `/api/count/request` 跳过手数门槛。
+   * 本地局由客户端自动请求；大厅局由中央自动补分，失败时结合 `degraded` 开放重试。
    */
   awaiting_count?: boolean;
+  /** 大厅局双 pass 后中央自动补分失败；此时可手动重试数子。 */
+  degraded?: boolean;
   engine?: "local" | "cloud";
   trainer_settings?: {
     eval_thresholds: number[];
@@ -123,6 +125,8 @@ export interface GameState {
   platform_engine_color?: 'B' | 'W' | null;
   /** OGS online game: the authenticated box user's seat, supplied by the session bridge. */
   platform_my_color?: 'B' | 'W' | null;
+  /** Self-owned PvP mirror also exposes this neutral seat alias. */
+  my_color?: 'B' | 'W' | null;
   /** Current OGS phase, mirrored in get_state so reload can restore scoring UI. */
   platform_phase?: 'playing' | 'paused' | 'scoring' | 'finished' | null;
 }
@@ -499,7 +503,7 @@ export const API = {
     const params = new URLSearchParams({ session_id: sessionId });
     const headers: Record<string, string> = authHeaders(token);
     const response = await fetch(`/api/state?${params.toString()}`, { headers });
-    if (!response.ok) throw new Error("Failed to get state");
+    if (!response.ok) throw new ApiError(response.status, "Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
   },
   playMove: (sessionId: string, coords: { x: number; y: number } | null, token?: string): Promise<SessionResponse> =>

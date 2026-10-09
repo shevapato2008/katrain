@@ -133,6 +133,8 @@ class WebGame(Game):
                 and not self.ended_at(node)
             ):
                 self.terminal = GameEnd(self, node, self.end_result)
+                if getattr(self.katrain, "pvp_lobby_human_session", False) is True:
+                    self.katrain.pvp_lobby_awaiting_count = True
 
     def set_current_node(self, node):
         # r1:挪游标进对局提交锁。AI 在锁里核完「当前手仍是开算那一手」之后、`Game.play` 读 `current_node`
@@ -734,12 +736,13 @@ class WebKaTrain(KaTrainBase):
             "count_min_moves": self.count_min_moves(),
             # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
             # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
-            "awaiting_count": is_awaiting_count(self),
+            "awaiting_count": is_awaiting_count(self) or bool(getattr(self, "pvp_lobby_awaiting_count", False)),
+            "degraded": bool(getattr(self, "pvp_lobby_degraded", False)),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "platform_my_color": getattr(self, "platform_my_color", None),
             "platform_phase": getattr(getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)),
-            "analysis_allowed": self.analysis_allowed,
+            "analysis_allowed": self.analysis_allowed and not getattr(self, "pvp_bot_session", False),
             # 与 `analysis_allowed` 是两件事，别合并：
             #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
             #   analysis_delivered = 算了，但交不交给你（无人认领的会话拿不到）

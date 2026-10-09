@@ -39,6 +39,7 @@ class BoxSSOState:
         # guess a user.
         self.active_user_id: int | None = None
         self._sockets: set[Any] = set()
+        self.on_revoke_generation = None
 
     def authorize_bridge(self, client_host: str | None, presented_key: str | None) -> bool:
         if client_host not in LOOPBACK_HOSTS or not presented_key:
@@ -67,7 +68,10 @@ class BoxSSOState:
         if self.active_generation is not None and generation < self.active_generation:
             raise ValueError("generation must not go backwards")
         if self.active_generation is not None and generation != self.active_generation:
+            old_generation = self.active_generation
             await self._close_sockets("Box generation replaced")
+            if self.on_revoke_generation is not None:
+                await self.on_revoke_generation(old_generation)
         self.active_generation = generation
         self.active_user_id = user_id
 
@@ -90,6 +94,8 @@ class BoxSSOState:
         self.active_generation = None
         self.active_user_id = None
         await self._close_sockets("Box session revoked")
+        if self.on_revoke_generation is not None:
+            await self.on_revoke_generation(generation)
         return True
 
     async def _close_sockets(self, reason: str) -> None:

@@ -1,4 +1,4 @@
-import { Activity, BookOpen, CircleCheck, Cpu, Database, TriangleAlert, ShieldCheck, Users, Camera, ChevronRight, Clock3 } from 'lucide-react';
+import { Activity, BookOpen, CircleCheck, Cpu, Database, TriangleAlert, ShieldCheck, Users, Camera, ChevronRight, Clock3, Swords } from 'lucide-react';
 import { isLabPage, type AdminPage } from './adminPages';
 
 const LAB: { id: AdminPage; label: string }[] = [
@@ -10,6 +10,7 @@ const FOOT: Record<AdminPage, string> = {
   tutorial: '修改会写入该环境的教程数据',
   cron: '暂停、恢复与立即运行会写入审计。',
   performance: '只读页面，不修改配置。',
+  lobby: '数量改动保存后写入该环境，并记录审计。',
   users: '调整积分与生成兑换码会写入该环境的主库。',
   audit: '只读页面。',
   health: '只读页面，不修改配置。',
@@ -36,6 +37,7 @@ export default function AdminSidebar({ attention, page, labOpen, environmentLabe
     {nav('tutorial', BookOpen, '教程管理')}
     {nav('cron', Clock3, '定时任务')}
     {nav('performance', Activity, '性能监控')}
+    {nav('lobby', Swords, '对战大厅')}
     {nav('users', Users, '用户与计费')}
     {nav('audit', ShieldCheck, '审计日志')}
     {nav('health', CircleCheck, '配置体检', attention?.config)}

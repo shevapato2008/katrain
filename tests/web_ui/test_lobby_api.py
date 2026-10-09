@@ -31,6 +31,7 @@ def app():
     from katrain.web.session import LobbyManager
 
     app.state.user_repo = SQLAlchemyUserRepository(SessionLocal)
+    app.state.session_factory = SessionLocal
     app.state.lobby_manager = LobbyManager()
 
     return app

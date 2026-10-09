@@ -1,559 +1,150 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from '@mui/material';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useTranslation } from '../../hooks/useTranslation';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
 import { websocketUrl } from '../../utils/websocketUrl';
-import { Icon } from '../shell/icons';
-import { KioskPagebar } from '../shell/KioskPagebar';
-import { KioskScrollZone } from '../shell/KioskScrollZone';
-import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { interpolate } from '../utils/interpolate';
+import { isStrictBoxKiosk } from '../shell/boxUrls';
+import './LobbyPage.css';
 
-/**
- * 屏 06 在线大厅(`sample-go/shots/06-lobby.png`,L2 两栏,没有棋盘 ⇒ 页控条通栏),
- * 外加三个态:06b 未登录 · 06c 匹配中 · 06d 收到邀请。
- *
- * 稿子 2026-08-23 按 Fan 的裁定**照国际象棋 05L 那一组重做**:上一版是三张统计卡 +
- * 两张模式卡 + 两段列表竖着摞在一栏里,人和局被切成上下两段,而右边 460 那半屏空着。
- * 现在是两栏 —— **左栏是局、右栏是人**,各自独立滚,主行动钉在右栏底。
- *
- * ## 围棋和国象不一样的四处,每一处都是**围棋给不出国象那个数**
- *
- * ① 国象大厅只有一种对局;围棋有**两种**(`start_matchmaking{game_type:"free"|"rated"}`,
- *    `server.py:2325`),而 rated 那条队要先在「升降级对弈」打完 5 局定级赛
- *    (`server.py:2337` 回 `PLACEMENT_REQUIRED`)⇒ 主行动上面一条分段,没定级时排位灰掉,
- *    底下一行说清为什么。灰而不说原因,这套稿子在别处专门骂过。
- * ② 国象对局卡带「等级 + 等级分」;`/api/v1/games/active/multiplayer`
- *    (`endpoints/games.py:11`)对每一局只回 `player_b` / `player_w` **两个名字字符串**
- *    ⇒ 那一格换成**执黑 / 执白**:这个接口唯一多给出来的事实,也正是点进去观战第一眼要认的。
- * ③ 国象棋友行有四态 + 「我的状态」下拉 + 「已关注」+ 四个筛选。围棋这边:`/ws/lobby`
- *    没有 set-status;关注那套接口**是有的**(`/api/v1/users/follow/{username}`,
- *    galaxy 的 `FriendsPanel` 在用)但**盒内一个入口都没有** ⇒ 关注集恒为空,拿它筛
- *    永远筛不出东西。⇒ 都不画,状态只留**算得出的两态**(空闲 / 对局中,
- *    靠比对左栏那份进行中对局的名字)。
- * ④ 国象房间有钟(15+10);围棋匹配出来的局**压根没有钟** ——
- *    `create_multiplayer_session(pb, pw, b_name, w_name)`(`server.py:2360`)不带任何
- *    时钟参数 ⇒ 一个字都不写时限。**不是「不限时」,是没有那个字段。**
- *
- * ## 和稿子的两处不同,都是「稿子画的今天喂不出来」
- *
- * ⚠️ **段位那一列没有实现。** 稿子按「接上之后」画了它,并在自己的注释里写死了契约:
- *    `/api/v1/users/online` 回的是 `User.rank` / `User.elo_points`,而全仓**没有任何
- *    一处写这两个字段** —— `UPDATE users SET` 只出现在 `core/billing.py`(改的是
- *    credits),`models_db.py:75` 的默认值 `"20k"` 从注册那天起没人动过。围棋**有**真段位,
- *    它在 `ai_ladder_ranked` 那张表里(`has_ladder_rank`),缺的只是 `/users/online`
- *    去 join 一下。
- *    今天照画只有两种结果:每个人恒显「20k / 0」,或者按现有那句
- *    `rank==='20k' && !elo → 无段位` 把整列写死成一个词 —— 而**定过级的人会被这一列
- *    说成没定过级**。所以这一列**不上**:接上那个 join 之后补,位置和宽度稿子里定死了
- *    (`.rk`,62px,名字之后第一格)。这是本屏唯一一处「实现比稿子少」的地方。
- * ⚠️ **06d 那行小字改了。** 稿子写「不接受就一直挂着 —— 邀请没有期限」,只说了一半:
- *    `/ws/lobby` 里 `invite` 只是把一条消息转给对方(`server.py:2402`),**没有 TTL、
- *    没有撤回、也没有 decline** ⇒ 屏上这颗「拒绝」今天只能关掉本地这个弹窗,对面收不到
- *    任何东西。那就得说出来,不能让人以为按了「拒绝」对方会知道。
- *
- * 同理**不画倒计时**:国象 05S 的 60 秒条是他们服务端定的期限,围棋没有那个期限 ——
- * 画一条走完归零、而后端在归零时什么都不做的条,是拿动画伪造一个不存在的裁定。
- * 匹配那一屏的条是**不定长**的(等多久取决于队列里有没有第二个人,这个数产不出来),
- * 已等秒数则是真的(前端自己数)。
- *
- * ## 两个自己写出来又量出来的错(留档,因为它们都不会在 jsdom 里响)
- *
- * ① **无限刷新。** `useTranslation()` 的 `t` **每次渲染都是一个新函数**,把它写进
- *    `useCallback` / `useEffect` 的依赖里,依赖每帧都变 ⇒ `/ws/lobby` 那个 effect 每帧重跑:
- *    新开一条 socket、新起一条定时器、立刻再拉一次两个列表 → setState → 再渲染 → 再跑。
- *    表现是四图那一步 `waitForLoadState('networkidle')` **永远等不到**(网络一刻不停)。
- *    ⇒ effect 里一个 `t` 都不留:失败存**布尔**、通知存**事件**,译文在渲染时才求。
- *    顺带修好第二件事:译文一旦存进 state,切语言之后屏上还留着上一种语言那句。
- *
- * ## 顺手修掉的一个 hooks 顺序错
- *
- * 旧版把「没登录就返回一句 Alert」写在**一部分 hooks 中间** —— `/ws/lobby` 那个
- * `useEffect` 排在早退之后。访客那一帧只注册前几个 hook,登录之后同一个组件实例
- * 多注册一个,React 当场抛「Rendered more hooks than during the previous render」。
- * 现在所有 hook 都排在早退之前,访客那一帧走的是同一条 hook 序列。
- */
-
-interface OnlineUser {
-  id: number;
-  username: string;
-}
-
-interface ActiveGame {
-  session_id: string;
-  player_b: string;
-  player_w: string;
-  spectator_count: number;
-  move_count: number;
-}
-
-/**
- * 认不出来的行**整行丢掉**,不凑合渲染。
- *
- * `await res.json()` 回来的是 `unknown`,一句 `as ActiveGame[]` 只是让类型检查闭嘴 ——
- * 少一个 `session_id`,`.slice(0,4)` 当场抛,而这一屏上面没有 error boundary,
- * 整个 app 白屏。2026-08-24 `navigation.integration.test.tsx` 就是这么炸的:
- * 它那个兜底 fetch 对所有 URL 回同一份分类数组,一行都没有 `session_id`。
- * 认不出的行也**没法观战**(点进去没有 session 可进),所以丢掉比凑合画一张卡诚实。
- */
-const isActiveGame = (g: unknown): g is ActiveGame => {
-  if (!g || typeof g !== 'object') return false;
-  const r = g as Partial<ActiveGame>;
-  return typeof r.session_id === 'string' && r.session_id.length > 0
-    && typeof r.player_b === 'string' && typeof r.player_w === 'string';
-};
-
-type MatchMode = 'free' | 'rated';
-
-/** 定级进度。`remaining === null` = 读不到(接口挂了)—— 那就不许说「你还差 N 局」。 */
-type Placement =
-  | { placed: true }
-  | { placed: false; remaining: number | null };
-
-/** 房间对局前被标定台拦下时,返回回到大厅(见 `hooks/useBackTo`)。这一页只在大厅路由上。 */
-const BACK_TO_LOBBY = { backTo: '/kiosk/play/pvp/lobby' };
-
-const LobbyPage = () => {
+type Person = { id: number; username: string; ladder_rung: number | null; rank_label: string | null; presence: 'idle' | 'playing' };
+type Game = { session_id: string; player_b: string; player_w: string; player_b_id?: number; player_w_id?: number; player_b_rank_label?: string | null; player_w_rank_label?: string | null; move_count: number };
+const isPerson = (v: unknown): v is Person => !!v && typeof v === 'object' && typeof (v as Person).id === 'number' && typeof (v as Person).username === 'string';
+const isGame = (v: unknown): v is Game => !!v && typeof v === 'object' && typeof (v as Game).session_id === 'string' && typeof (v as Game).player_b === 'string' && typeof (v as Game).player_w === 'string';
+const BACK = { backTo: '/kiosk/play/pvp/lobby' };
+export default function LobbyPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
-  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
-  // 「认没认证」一律判 isAuthenticated —— 判 token 会把盒上每个登录用户都当成访客。
   const { user, token, isAuthenticated } = useAuth();
-
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
-  const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
+  const [centralId, setCentralId] = useState<number | null>(isStrictBoxKiosk ? null : user?.id ?? null);
+  const [identityError, setIdentityError] = useState(false);
+  const [users, setUsers] = useState<Person[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [rank, setRank] = useState<{ rung: number; label: string } | null>(null);
+  const [rankLoaded, setRankLoaded] = useState(false);
+  const [rankError, setRankError] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-  // ⚠️ 存的是**事件**不是那句译文。`useTranslation()` 的 `t` 每次渲染都是新函数,
-  // 把它写进 effect 依赖会让这一屏自己转圈(见文件头「一个无限刷新」那一节);
-  // 而且译文一旦存进 state,切语言之后屏上还留着上一种语言的那句。
-  const [notice, setNotice] = useState<{ kind: 'placement' } | { kind: 'text'; text: string; bad: boolean } | null>(null);
-  const [placement, setPlacement] = useState<Placement>({ placed: false, remaining: null });
-  const [mode, setMode] = useState<MatchMode>('free');
-  const [isMatching, setIsMatching] = useState(false);
-  const [queueTime, setQueueTime] = useState(0);
-  const [invitation, setInvitation] = useState<{ from_id: number; from_name: string } | null>(null);
-
-  const wsRef = useRef<WebSocket | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const authHeaders = useMemo(
-    () => (token ? { Authorization: `Bearer ${token}` } : undefined),
-    [token],
-  );
-
+  const [loadError, setLoadError] = useState(false);
+  const [connection, setConnection] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [filter, setFilter] = useState<'all' | 'same'>('all');
+  const [dialog, setDialog] = useState<'placement' | 'matching' | null>(null);
+  const [invite, setInvite] = useState<{ from_id: number; from_name: string } | null>(null);
+  const [notice, setNotice] = useState('');
+  const [elapsed, setElapsed] = useState(0);
+  const [retryEpoch, setRetryEpoch] = useState(0);
+  const socket = useRef<WebSocket | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rankRequest = useRef(0);
+  const peersRef = useRef<HTMLDivElement>(null);
+  const clearTimer = () => { if (timer.current) clearInterval(timer.current); timer.current = null; };
   const fetchLists = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const [usersRes, gamesRes] = await Promise.all([
-        fetch('/api/v1/users/online', { headers: authHeaders }),
-        fetch('/api/v1/games/active/multiplayer', { headers: authHeaders }),
+      const [u, g] = await Promise.all([
+        fetch('/api/v1/users/online', { headers: token ? { Authorization: `Bearer ${token}` } : undefined }),
+        fetch('/api/v1/games/active/multiplayer', { headers: token ? { Authorization: `Bearer ${token}` } : undefined }),
       ]);
-      if (!usersRes.ok) throw new Error(String(usersRes.status));
-      const users: unknown = await usersRes.json();
-      setOnlineUsers(Array.isArray(users) ? users as OnlineUser[] : []);
-      // 对局那一份挂了不该把整屏判死:名单还是真的,只是左栏空着。
-      if (gamesRes.ok) {
-        const games: unknown = await gamesRes.json();
-        setActiveGames(Array.isArray(games) ? games.filter(isActiveGame) : []);
-      }
-      setFailed(false);
+      if (!u.ok || !g.ok) throw new Error();
+      const [uRows, gRows]: unknown[] = await Promise.all([u.json(), g.json()]);
+      setUsers(Array.isArray(uRows) ? uRows.filter(isPerson) : []);
+      setGames(Array.isArray(gRows) ? gRows.filter(isGame) : []);
+      setLoadError(false);
     } catch {
-      setFailed(true);
-    } finally {
-      setLoaded(true);
+      setUsers([]);
+      setGames([]);
+      setLoadError(true);
     }
-  }, [authHeaders, isAuthenticated]);
-
+    finally { setLoaded(true); }
+  }, [isAuthenticated, token]);
   useEffect(() => {
     if (!isAuthenticated) return;
-    // 闸一撤，TS 不再把 string | null 窄化成 string —— 这里必须显式转。
-    getAiLadderStatus(token ?? undefined)
-      .then((s) => {
-        const p = s?.placement_state;
-        if (p?.phase === 'placed') setPlacement({ placed: true });
-        else if (p?.phase === 'placement') {
-          setPlacement({ placed: false, remaining: Math.max(0, p.total_games - p.completed_games) });
-        } else setPlacement({ placed: false, remaining: null });
-      })
-      // 读不到就是读不到:退回「没定级」挡住排位(和服务端同一个结论),但**不报一个编出来的局数**。
-      .catch(() => setPlacement({ placed: false, remaining: null }));
+    if (!isStrictBoxKiosk) { setCentralId(user?.id ?? null); return; }
+    let cancelled = false;
+    setCentralId(null);
+    setIdentityError(false);
+    fetch('/api/pvp/identity', { headers: token ? { Authorization: `Bearer ${token}` } : undefined, credentials: 'same-origin' })
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
+      .then((data: unknown) => {
+        const id = data && typeof data === 'object' ? (data as Record<string, unknown>).user_id : null;
+        if (typeof id !== 'number' || !Number.isFinite(id)) throw new Error();
+        if (!cancelled) {
+          setCentralId(id);
+          setIdentityError(false);
+        }
+      }).catch(() => { if (!cancelled) { setCentralId(null); setIdentityError(true); } });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, token, user?.id, retryEpoch]);
+  const loadRank = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const request = ++rankRequest.current;
+    setRankLoaded(false);
+    setRankError(false);
+    try {
+      const status = await getAiLadderStatus(token ?? undefined);
+      const placement = status?.placement_state;
+      if (placement?.phase === 'placed' && typeof placement.rung?.rung === 'number'
+        && typeof placement.rung.rank_name === 'string') {
+        if (request === rankRequest.current) setRank({ rung: placement.rung.rung, label: placement.rung.rank_name });
+      } else if (placement?.phase === 'placement') {
+        if (request === rankRequest.current) setRank(null);
+      } else throw new Error('Invalid rank status');
+    } catch {
+      if (request === rankRequest.current) { setRank(null); setRankError(true); }
+    } finally { if (request === rankRequest.current) setRankLoaded(true); }
   }, [isAuthenticated, token]);
-
-  // 没定级时排位那一段选不了 —— 万一它当时是选中的,得掉回自由,
-  // 否则「开始匹配」会带着一个屏上已经灰掉的模式发出去。
+  useEffect(() => { void loadRank(); }, [loadRank, retryEpoch]);
   useEffect(() => {
-    if (!placement.placed && mode === 'rated') setMode('free');
-  }, [placement.placed, mode]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return undefined;
+    if (!isAuthenticated) return;
     void fetchLists();
     const refresh = setInterval(() => { void fetchLists(); }, 10000);
-
-    // 走共享 helper,不手搓协议串 —— `websocketUrl` 是上游 dc55f32e 那族修复的落点,
-    // 全仓扫描闸盯着它(`utils/websocketUrl.test.ts`)。
     const ws = new WebSocket(websocketUrl('/ws/lobby', token));
-    wsRef.current = ws;
-
-    ws.onmessage = (event: MessageEvent<string>) => {
-      const data = JSON.parse(event.data) as Record<string, string | number>;
-      if (data.type === 'match_found') {
-        setIsMatching(false);
-        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`, { state: BACK_TO_LOBBY });
-      } else if (data.type === 'lobby_update') {
-        void fetchLists();
-      } else if (data.type === 'invitation') {
-        setInvitation({ from_id: Number(data.from_id), from_name: String(data.from_name) });
-      } else if (data.type === 'info') {
-        setNotice({ kind: 'text', text: String(data.message), bad: false });
-      } else if (data.type === 'error') {
-        // 服务端也会挡排位(`PLACEMENT_REQUIRED`)—— 前端那道只是免得白排一次队。
-        setIsMatching(false);
-        setNotice(data.code === 'PLACEMENT_REQUIRED'
-          ? { kind: 'placement' }
-          // 邀请过期/已被用掉。后端只发 code —— 它的 `message` 是英文、写给运维的。
-          : data.code === 'INVITE_NOT_PENDING'
-            ? { kind: 'text', text: t('lobby:invite_expired', '这封邀请已经过期或被用过了 —— 请对方再邀一次'), bad: true }
-            : { kind: 'text', text: String(data.message), bad: true });
-      }
+    socket.current = ws;
+    ws.onopen = () => setConnection('connected');
+    ws.onclose = () => { setConnection('disconnected'); setDialog((d) => d === 'matching' ? null : d); clearTimer(); };
+    ws.onerror = () => setConnection('disconnected');
+    ws.onmessage = (event) => {
+      let data: Record<string, unknown>;
+      try { data = JSON.parse(event.data); } catch { return; }
+      if (data.type === 'match_found' && typeof data.session_id === 'string') {
+        clearTimer(); setDialog(null); navigate(`/kiosk/play/pvp/room/${data.session_id}`, { state: BACK });
+      } else if (data.type === 'lobby_update') void fetchLists();
+      else if (data.type === 'invitation') setInvite({ from_id: Number(data.from_id), from_name: String(data.from_name) });
+      else if (data.type === 'error') {
+        clearTimer();
+        if (data.code === 'PLACEMENT_REQUIRED') setDialog('placement');
+        else { setDialog(null); setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。')); }
+      } else if (data.type === 'info') setNotice(String(data.message || ''));
     };
-
-    return () => {
-      ws.close();
-      clearInterval(refresh);
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isAuthenticated, token, fetchLists, navigate]);
-
-  /** 正在下棋的人 = 左栏那份对局里出现过的名字。接口只给名字,所以只能按名字比。 */
-  const playingNames = useMemo(
-    () => new Set(activeGames.flatMap((g) => [g.player_b, g.player_w])),
-    [activeGames],
-  );
-
-  // 排序:我自己在最前,然后是**邀得动**的人,最后才是对局中的。
-  // 名单一长,能点的那几个不该埋在十几行灰按钮下面。
-  const roster = useMemo(() => {
-    const rank = (u: OnlineUser) => (u.id === user?.id ? 0 : playingNames.has(u.username) ? 2 : 1);
-    return [...onlineUsers].sort((a, b) => rank(a) - rank(b));
-  }, [onlineUsers, playingNames, user?.id]);
-
-  const send = (payload: Record<string, unknown>) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify(payload));
+    return () => { ws.onopen = null; ws.onclose = null; ws.onerror = null; ws.onmessage = null; ws.close(); clearInterval(refresh); clearTimer(); };
+  }, [isAuthenticated, token, fetchLists, navigate, retryEpoch]);
+  const retryLobby = () => {
+    setNotice('');
+    setConnection('connecting');
+    setLoaded(false);
+    setUsers([]);
+    setGames([]);
+    setRetryEpoch((n) => n + 1);
   };
-
-  const startMatchmaking = () => {
-    send({ type: 'start_matchmaking', game_type: mode });
-    setIsMatching(true);
-    setQueueTime(0);
-    timerRef.current = setInterval(() => setQueueTime((n) => n + 1), 1000);
+  const send = (message: Record<string, unknown>) => {
+    if (socket.current?.readyState !== WebSocket.OPEN) { setNotice('大厅连接已断开，请稍后重试。'); return false; }
+    socket.current.send(JSON.stringify(message)); return true;
   };
-
-  const stopMatchmaking = () => {
-    send({ type: 'stop_matchmaking' });
-    setIsMatching(false);
-    if (timerRef.current) clearInterval(timerRef.current);
+  const start = () => {
+    if (!rankLoaded || rankError || centralId === null) return;
+    if (!rank) { setDialog('placement'); return; }
+    if (!send({ type: 'start_matchmaking' })) return;
+    clearTimer(); setElapsed(0); timer.current = setInterval(() => setElapsed((n) => n + 1), 1000); setDialog('matching');
   };
-
-  // ── 06b 未登录 ──────────────────────────────────────────────────────────
-  // 所有 hook 都在上面跑完了,这里才早退 —— 见文件头「hooks 顺序」那一节。
-  if (!isAuthenticated) {
-    return (
-      <div className="kiosk-layout-a lobby-layout" data-testid="lobby-guest">
-        <KioskPagebar
-          backLabel={t('Back to play', '返回对弈')}
-          onBack={() => navigate('/kiosk/play')}
-          title={t('lobby:hall_title', '在线大厅')}
-          sub={t('lobby:need_login', '需要登录')}
-        />
-        <div className="kiosk-rail gate-rail">
-          <section className="rgate">
-            <span><Icon name="users" /></span>
-            <h2>{t('lobby:gate_title', '登录后进在线大厅')}</h2>
-            <p>
-              {t('lobby:gate_why', '大厅要把你的名字和在线状态发给别的盒子上的人,所以它按账号走。访客没有账号,也就没有可以给别人看的身份。')}
-            </p>
-            <div className="fact">
-              <span>{t('lobby:gate_fact_k', '登录之后')}</span>
-              <b>{t('lobby:gate_fact_v', '别人能在名单里看到你、邀请你')}</b>
-              {/* 稿子这一行写的是段位从哪来 —— 而段位那一列这一版没上(见文件头),
-                  照抄就会承诺一个屏上根本没有的东西。换成这一屏真做得到的事。 */}
-              <small>{t('lobby:gate_fact_note', '名单只列此刻连着的人:你在就有你,退出就没了')}</small>
-            </div>
-          </section>
-          <p className="rrule">
-            {t('lobby:gate_rule_a', '登录只管这一条线。')}
-            <b>{t('lobby:gate_rule_b', '人机对弈、本地对局、训练营、复盘、棋谱,访客照样能用。')}</b>
-          </p>
-          <button type="button" className="kiosk-primary-action" onClick={() => navigate('/kiosk/login')}>
-            {t('lobby:go_login', '前往登录')}
-          </button>
-          <button type="button" className="rsecond" onClick={() => navigate('/kiosk/play')}>
-            {t('Back to play', '返回对弈')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // 读完之前和读完之后是**两句不同的话**,所以是两个 key ——
-  // 同一个 key 配两个默认值,会让「翻译表赢」之后两态说同一句。
-  const loading = t('lobby:loading', '正在读…');
-  const emptyGames = loaded ? t('lobby:no_games_now', '现在没有人在下') : loading;
-  const emptyPlayers = loaded ? t('lobby:no_players_now', '这会儿只有你在线') : loading;
-
-  return (
-    <div className="kiosk-layout-a lobby-layout" data-testid="lobby-page">
-      <KioskPagebar
-        backLabel={t('Back to play', '返回对弈')}
-        onBack={() => navigate('/kiosk/play')}
-        title={t('lobby:hall_title', '在线大厅')}
-        sub={t('lobby:hall_sub', '和别的盒子上的人下 · 也可以进去看')}
-      />
-
-      {/* ── 左栏:进行中的对局 ── */}
-      <div className="lobbycol">
-        <KioskScrollZone
-          grow
-          className="gamelist"
-          head={(
-            <KioskSecLabel
-              zh={t('lobby:active_games', '进行中的对局')}
-              en="In play"
-              value={interpolate(t('lobby:games_count', '{n} 局'), { n: activeGames.length })}
-            />
-          )}
-        >
-          {failed && <Alert severity="error" sx={{ fontSize: '0.75rem' }}>{t('lobby:load_failed', '读不到大厅 —— 网络或服务没通')}</Alert>}
-          {!failed && activeGames.length === 0 && <p className="lobbyempty">{emptyGames}</p>}
-          {activeGames.map((g) => {
-            /**
-             * ⚠️ **只有自己在里面的那一局才点得进去。**
-             *
-             * 这一列原来整列可点、屏上还写着「点进去可以观战」—— 而观战这条路
-             * **今天根本不存在**:`/api/session/{id}/*` 一律过 `guard_session_reader`,
-             * 陌生人进去必 403。也就是说那句话邀请用户去按一颗必然失败的按钮。
-             *
-             * 观战要做是另一轮的事(要一条只读旁路 + 真正的只读态,而且得先证明
-             * `game_update` 广播里的 `analysis` 不会递给旁观者 —— 那道闸是防
-             * 「跨会话偷分析」的反作弊闸)。在那之前**撤回承诺**,不是灰着一颗键:
-             * 灰键说的是「满足条件就给你」,而这里没有条件可满足。
-             *
-             * 判别位只能拿用户名比:这条端点对每一局只回 `player_b` / `player_w`
-             * 两个名字字符串,没有 id。用户名在库里是唯一的(建号时就挡重名)。
-             */
-            const mine = !!user && (g.player_b === user.username || g.player_w === user.username);
-            const Cell = mine ? 'button' : 'div';
-            return (
-            <Cell
-              key={g.session_id}
-              {...(mine
-                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`, { state: BACK_TO_LOBBY }) }
-                : {})}
-              className={mine ? 'gcard is-mine' : 'gcard is-static'}
-              data-testid="lobby-game"
-              data-mine={mine ? '1' : '0'}
-            >
-              <span className="gcard__meta">
-                <b>{g.session_id.slice(0, 4)}</b>
-                {interpolate(t('lobby:move_no', '第 {n} 手'), { n: g.move_count })}
-                {/* 观众数只在**真有观众**时出现 —— 恒挂一个 0 是拿一个空位置冒充一条信息。 */}
-                {g.spectator_count > 0 && (
-                  <i><Icon name="users" />{g.spectator_count}</i>
-                )}
-              </span>
-              <span className="gcard__vs">
-                <span className="gcard__p">
-                  <span className="gcard__n">{g.player_b}</span>
-                  <span className="gside"><span className="disc b" />{t('lobby:plays_black', '执黑')}</span>
-                </span>
-                <span className="gcard__mid">{t('lobby:vs', '对')}</span>
-                <span className="gcard__p is-r">
-                  <span className="gcard__n">{g.player_w}</span>
-                  <span className="gside">{t('lobby:plays_white', '执白')}<span className="disc w" /></span>
-                </span>
-              </span>
-            </Cell>
-            );
-          })}
-        </KioskScrollZone>
-      </div>
-
-      {/* ── 右栏:在线棋手 + 匹配 ── */}
-      <div className="lobbycol">
-        <KioskScrollZone
-          grow
-          className="lobbylist"
-          head={(
-            <KioskSecLabel
-              zh={t('lobby:players', '在线棋手')}
-              en="Players"
-              value={interpolate(t('lobby:online_count', '在线 {n} 人'), { n: onlineUsers.length })}
-            />
-          )}
-        >
-          {roster.length === 0 && <p className="lobbyempty">{emptyPlayers}</p>}
-          {roster.map((u) => {
-            const me = u.id === user?.id;
-            const playing = playingNames.has(u.username);
-            return (
-              <div key={u.id} className={`lobbyrow${me ? ' is-me' : ''}`} data-testid="lobby-player">
-                <div className="lobbyrow__id"><h4>{u.username}</h4></div>
-                <span className={`lvst${playing ? ' is-play' : ''}`}>
-                  {playing ? t('lobby:in_game', '对局中') : t('lobby:idle', '空闲')}
-                </span>
-                {me ? (
-                  <span className="lobbyrow__self">{t('lobby:this_is_you', '这是你')}</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="lobbyrow__act"
-                    disabled={playing}
-                    onClick={() => send({ type: 'invite', target_id: u.id })}
-                  >
-                    {t('lobby:invite', '邀请')}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </KioskScrollZone>
-
-        <p className="lobbylist__note">
-          <b>{t('lobby:idle', '空闲')}</b>
-          {t('lobby:note_a', '的人可以邀请,')}
-          <b>{t('lobby:in_game', '对局中')}</b>
-          {/* 「点进去可以观战」撤掉了 —— 观战这条路今天不存在,陌生人进去必 403。
-              换成这一列真正给得出的那件事:自己那局能回去。 */}
-          {t('lobby:note_b', '的不行。左边是进行中的对局,自己那局可以点回去。')}
-        </p>
-
-        <div className="matchpick">
-          <span className="kiosk-seg" role="radiogroup" aria-label={t('lobby:match_mode', '匹配哪一种')}>
-            {([['free', t('lobby:mode_free', '自由对局')], ['rated', t('lobby:mode_rated', '排位赛')]] as const).map(
-              ([v, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  className="kiosk-seg__btn"
-                  role="radio"
-                  aria-checked={mode === v}
-                  aria-pressed={mode === v}
-                  disabled={v === 'rated' && !placement.placed}
-                  onClick={() => setMode(v)}
-                >{label}</button>
-              ),
-            )}
-          </span>
-          {/* 灰了就得有人说原因。读不到定级进度时**不报局数** —— 那个数当时并不知道。 */}
-          {!placement.placed && (
-            <p className="matchpick__why" data-testid="lobby-rated-why">
-              {t('lobby:rated_why_a', '排位赛要先在')}
-              <b>{t('lobby:ladder_name', '升降级对弈')}</b>
-              {placement.remaining === null
-                ? t('lobby:rated_why_b_unknown', '打完 5 局定级赛。')
-                : interpolate(t('lobby:rated_why_b', '打完 5 局定级赛 —— 你还差 {n} 局。'), { n: placement.remaining })}
-            </p>
-          )}
-        </div>
-
-        <button
-          type="button"
-          className="kiosk-primary-action"
-          data-testid="lobby-start-match"
-          onClick={startMatchmaking}
-        >
-          {t('lobby:start_match', '开始匹配')}
-        </button>
-      </div>
-
-      {/* ── 06c 匹配中 ── */}
-      {isMatching && (
-        <div className="cdlg" data-testid="lobby-matching">
-          <div className="cdlg__box wdlg" role="dialog" aria-modal="true" aria-label={t('lobby:matching_title', '正在找对手')}>
-            <h3>{t('lobby:matching_title', '正在找对手')}</h3>
-            <p className="wdlg__lead">
-              {t('lobby:matching_lead_a', '服务端把你放进了')}
-              <b>{mode === 'rated' ? t('lobby:mode_rated', '排位赛') : t('lobby:mode_free', '自由对局')}</b>
-              {t('lobby:matching_lead_b', '的队列,配上就直接开局,不用再确认一次。')}
-            </p>
-            {/* 不定长:等多久取决于队列里有没有第二个人,这个数产不出来。 */}
-            <div className="wbar"><span className="wbar__loop" /></div>
-            <div className="wdlg__row">
-              <span className="wdlg__num">
-                {t('lobby:waited_a', '已等 ')}<b data-testid="lobby-queue-secs">{queueTime}</b>{t('lobby:waited_b', ' 秒')}
-              </span>
-              {/* 时限一个字都不写:匹配出来的局没有钟(`create_multiplayer_session` 不带时钟参数)。 */}
-              <span className="wdlg__tc">
-                {mode === 'rated'
-                  ? t('lobby:matching_tc_rated', '配上就开局 · 计段位')
-                  : t('lobby:matching_tc_free', '配上就开局 · 不计段位')}
-              </span>
-            </div>
-            <div className="cdlg__acts">
-              <button type="button" className="ghost" onClick={stopMatchmaking}>
-                {t('lobby:cancel_match', '取消匹配')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 06d 收到邀请 ── */}
-      {invitation && (
-        <div className="cdlg" data-testid="lobby-invitation">
-          <div className="cdlg__box wdlg" role="dialog" aria-modal="true">
-            <h3>{interpolate(t('lobby:invite_title', '{name}邀你下一局'), { name: invitation.from_name })}</h3>
-            {/* 稿子这一句前面还有「业余 3 段 · 」—— `invitation` 里只有 `from_id` /
-                `from_name` / `mode`,没有段位。不编。 */}
-            <p className="wdlg__lead">
-              <b>{t('lobby:invite_lead_a', '接受就直接开局')}</b>
-              {t('lobby:invite_lead_b', ',邀请方执黑。')}
-            </p>
-            <div className="wdlg__row">
-              <span className="wdlg__num">{t('lobby:invite_kind', '自由对局 · 不计段位')}</span>
-              {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,两半都不成立:
-                  后端没有 decline,这颗「拒绝」只关掉本地这个窗;
-                  🔴 而「没有期限」**已经被我们自己 2026-08-25 那次提交证伪** ——
-                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py`)。
-                  屏上那句话不会自己跟着改,所以这是**过期的不是注释,是屏上的句子**。 */}
-              <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效')}</span>
-            </div>
-            <div className="cdlg__acts">
-              <button type="button" className="ghost" onClick={() => setInvitation(null)}>
-                {t('lobby:decline', '拒绝')}
-              </button>
-              <button
-                type="button"
-                className="main"
-                onClick={() => {
-                  send({ type: 'accept_invite', target_id: invitation.from_id });
-                  setInvitation(null);
-                }}
-              >
-                {t('lobby:accept_and_play', '接受并开局')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {notice && (
-        <Alert
-          severity={notice.kind === 'placement' || notice.bad ? 'error' : 'info'}
-          onClose={() => setNotice(null)}
-          sx={{ position: 'absolute', left: 16, right: 16, bottom: 8, zIndex: 20 }}
-        >
-          {notice.kind === 'placement'
-            ? t('lobby:placement_required', '先在「升降级对弈」打完 5 局定级赛，才能进行人人排位。')
-            : notice.text}
-        </Alert>
-      )}
-    </div>
-  );
-};
-
-export default LobbyPage;
+  const stop = () => { send({ type: 'stop_matchmaking' }); clearTimer(); setDialog(null); };
+  const ordered = users.filter((u) => filter === 'all' || (rank && u.ladder_rung === rank.rung))
+    .sort((a, b) => Number(b.id === centralId) - Number(a.id === centralId) || Number(a.presence === 'playing') - Number(b.presence === 'playing'));
+  if (!isAuthenticated) return <div className="pvp-kiosk pvp-kiosk--guest" data-testid="lobby-guest"><div className="pvp-kiosk__bar"><button onClick={() => navigate('/kiosk/play')}>← 返回对弈</button><strong>在线大厅</strong></div><section><h2>登录后进在线大厅</h2><p>登录后，棋友可以在名单中看到你并邀请你对局。</p><button onClick={() => navigate('/kiosk/login')}>前往登录</button></section></div>;
+  return <div className="pvp-kiosk" data-testid="lobby-page">
+    <div className="pvp-kiosk__bar"><button type="button" onClick={() => navigate('/kiosk/play')}>← 返回对弈</button><strong>在线大厅</strong><small>自有对战 · 与同段位棋友对局</small><span>我的段位 <b>{rankLoaded ? rankError ? '段位读取失败' : rank?.label || '尚未定级' : '读取中'}</b></span></div>
+    <section className="pvp-kiosk__start"><div className="pvp-kiosk__label">开一局 <em>Start</em></div><div className="pvp-kiosk__start-grid"><button className="primary" type="button" onClick={start} disabled={!rankLoaded || rankError || centralId === null || connection !== 'connected'}><span className="tile">棋</span><span><strong>快速匹配</strong><small>按当前段位找对手 · 本大厅对局不计升降段位</small></span><span className="arr">开始匹配 →</span></button><button type="button" onClick={() => peersRef.current?.focus()}><span className="tile">友</span><span><strong>邀请棋友</strong><small>从右侧名单选择空闲棋手</small></span><span className="arrow">→</span></button></div></section>
+    {rankError && <div role="alert" className="pvp-kiosk__error">段位状态暂时无法读取。<button type="button" onClick={() => void loadRank()}>重试段位</button></div>}
+    {(identityError || loadError || connection === 'disconnected' || notice) && <div role="alert" className="pvp-kiosk__error">{identityError ? '无法确认中央账号身份，请重试。' : loadError ? '大厅数据读取失败。' : connection === 'disconnected' ? '大厅连接已断开，请稍后重试。' : notice}<button type="button" onClick={retryLobby}>重试</button></div>}
+    <div className="pvp-kiosk__hall"><section className="pvp-kiosk__col" aria-label="进行中的对局"><header><div className="pvp-kiosk__label">进行中的对局 <em>In play</em></div><span>{loadError ? '—' : games.length} 局</span></header><div className="pvp-kiosk__list">{!loaded && <p>正在读取对局…</p>}{loaded && !loadError && !games.length && <p>当前没有进行中的对局。</p>}{games.map((g) => { const mine = centralId !== null && (g.player_b_id === centralId || g.player_w_id === centralId); const Cell = mine ? 'button' : 'article'; return <Cell key={g.session_id} data-testid="lobby-game" className="pvp-kiosk__game" {...(mine ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`, { state: BACK }) } : {})}><span className="meta"><span>{g.session_id.slice(0, 4)} 房</span><span>第 {g.move_count} 手</span><span>19 路 · 对局中</span></span><span className="pair"><span className="player"><b>{g.player_b}</b><small>● 执黑{g.player_b_rank_label ? ` · ${g.player_b_rank_label}` : ''}</small></span><span className="vs">对</span><span className="player"><b>{g.player_w}</b><small>{g.player_w_rank_label ? `${g.player_w_rank_label} · ` : ''}执白 ○</small></span></span></Cell>; })}</div><footer>只列真实进行中的对局；自己的对局可返回棋盘。</footer></section>
+    <section className="pvp-kiosk__col" aria-label="在线棋友"><header><div className="pvp-kiosk__label">在线棋友 <em>Players</em></div><div role="tablist" className="tabs"><button role="tab" aria-selected={filter === 'all'} onClick={() => setFilter('all')}>全部</button><button role="tab" aria-selected={filter === 'same'} disabled={!rank} onClick={() => setFilter('same')}>同段位</button></div><span>在线 {loadError ? '—' : users.length} 人</span></header><div className="pvp-kiosk__list" ref={peersRef} tabIndex={-1}>{!loaded && <p>正在读取棋友…</p>}{loaded && !loadError && !ordered.length && <p>当前筛选下没有在线棋友。</p>}{ordered.map((u) => { const me = centralId !== null && u.id === centralId; const busy = u.presence === 'playing'; return <div key={u.id} data-testid={`lobby-player-${u.id}`} className={`pvp-kiosk__peer ${me ? 'me' : ''}`}><span className="avatar">{u.username.slice(0, 1)}</span><span className="name"><b>{u.username}</b><small>{u.rank_label || '尚未定级'}</small></span><span className={`state ${busy ? 'busy' : ''}`}>{busy ? '对局中' : '空闲'}</span>{me ? <span className="self">这是你</span> : <button type="button" disabled={busy || centralId === null || connection !== 'connected'} onClick={() => send({ type: 'invite', target_id: u.id })}>邀请</button>}</div>; })}</div><footer>空闲棋手可邀请；同段位筛选按已定级段位计算。</footer></section></div>
+    {dialog && <div className="pvp-kiosk__layer"><section role="dialog" aria-modal="true"><h2>{dialog === 'placement' ? '需要先完成定级' : '正在寻找同段位对手'}</h2><p>{dialog === 'placement' ? '快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。' : '先寻找同段位真人，稍后由同段位棋手接局；匹配成功后直接进入棋盘。'}</p><div className="fact"><span>{dialog === 'placement' ? '当前段位' : `${rank?.label} · 不计升降段位`}</span><b>{dialog === 'placement' ? '尚未定级' : `已等 ${elapsed} 秒`}</b></div>{dialog === 'matching' && <div className="wait-line" />}<div className="actions">{dialog === 'placement' ? <><button onClick={() => setDialog(null)}>稍后再说</button><button className="main" onClick={() => navigate('/kiosk/play/ai/setup/ranked')}>去升降级对弈</button></> : <button onClick={stop}>取消匹配</button>}</div></section></div>}
+    {invite && <div className="pvp-kiosk__layer"><section role="dialog" aria-modal="true"><h2>{invite.from_name}邀你下一局</h2><p>接受后直接开局；这局不计升降段位。</p><div className="actions"><button onClick={() => setInvite(null)}>拒绝</button><button className="main" onClick={() => { send({ type: 'accept_invite', target_id: invite.from_id }); setInvite(null); }}>接受并开局</button></div></section></div>}
+  </div>;
+}

@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from katrain.web.core.models_db import KifuAlbum, KifuPlayer
 from katrain.web.kifu import name_inventory  # freeze the native format-4 inventory column list before mapping
 
-NEW_KEYS = frozenset({"li_jie", "park_ji", "park_jin", "cho_huilian", "cho_huilian_variant"})
+NEW_KEYS = frozenset({"li_jie", "park_ji", "park_jin", "cho_huilian", "cho_huilian_variant",
+                      "fujisawa_kurano", "fujisawa_sawa"})
 
 
 def native_duplicate_columns(engine, *, require_read_only=True):
@@ -43,7 +44,7 @@ def native_duplicate_columns(engine, *, require_read_only=True):
 def build_proposal(merge, preimage, key, *, producer_id, producer_model, identity_review_sha, preimage_path,
                    preimage_bytes_sha):
     if key not in NEW_KEYS:
-        raise ValueError("only five reviewed directions are supported")
+        raise ValueError("only the reviewed duplicate directions are supported")
     pair = merge.PAIRS[key]
     environment = preimage["environment"]
     survivor, retired = pair["ids"][environment]
@@ -108,6 +109,11 @@ def main():
         native_duplicate_columns(engine)
         from katrain.web.kifu import player_duplicate as merge
         with merge._readonly(engine) as conn, conn.begin():
+            if args.key in {"fujisawa_kurano", "fujisawa_sawa"}:
+                applied_605 = conn.scalar(text("SELECT status FROM kifu_name_batches WHERE id=605"))
+                latest_batch_id = conn.scalar(text("SELECT max(id) FROM kifu_name_batches"))
+                if applied_605 != "applied" or latest_batch_id is None or latest_batch_id < 605:
+                    raise RuntimeError("reviewed Fujisawa capture requires applied name batch 605")
             preimage = merge.capture(conn, args.environment, args.key)
         raw = json.dumps(preimage, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         compressed = gzip.compress(raw, mtime=0)

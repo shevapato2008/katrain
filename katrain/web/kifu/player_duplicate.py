@@ -82,6 +82,18 @@ PAIRS = {
         "names": ("赵惠连", "赵慧连"), "counts": (1, 529),
         "raw_ids": (13356,), "spellings": ("赵惠连", "赵慧连"),
     },
+    # Source-reviewed Fujisawa Hosai: retire original-name owners in this order.
+    "fujisawa_kurano": {
+        "ids": {"PROD": (5854, 5853), "TEST": (11623, 11622)},
+        "names": ("藤泽朋斋", "藤泽库之助"), "counts": (92, 442),
+        "raw_ids": (13161, 13162, 13163),
+        "spellings": ("藤泽朋斋", "藤泽库之助", "藤泽库之助九段", "藤泽库之助五段"),
+    },
+    "fujisawa_sawa": {
+        "ids": {"PROD": (5854, 5850), "TEST": (11623, 11619)},
+        "names": ("藤泽朋斋", "藤沢库之助"), "counts": (1, 534),
+        "raw_ids": (13155,), "spellings": ("藤泽朋斋", "藤沢库之助", "藤沢庫之助"),
+    },
 }
 FORMAT = "kifu-player-single-duplicate-proposal-v1"
 AUDIT_FORMAT = "kifu-player-duplicate-execution-v1"
@@ -126,6 +138,7 @@ SELECT table_name,column_name,data_type FROM information_schema.columns
 WHERE table_schema='public'
 ORDER BY table_name,column_name
 """
+_FUJISAWA_STUB_IDS = {"PROD": 5855, "TEST": 11624}
 
 
 def expected_counts(key):
@@ -255,7 +268,7 @@ def capture(conn, environment, key):
     full["kifu_album_sources"] = _rows(conn, KifuAlbumSource, KifuAlbumSource.album_id.in_(albumids))
     sourceids = {row["source_id"] for row in full["kifu_album_sources"]}
     full["kifu_sources"] = _rows(conn, KifuSource, KifuSource.id.in_(sourceids))
-    return {
+    result = {
         "environment": environment,
         "database": database,
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -283,6 +296,22 @@ def capture(conn, environment, key):
             "names": _rows(conn, KifuPlayerName, KifuPlayerName.display_name.in_(spellings)),
         },
     }
+    if key in {"fujisawa_kurano", "fujisawa_sawa"}:
+        stub_id = _FUJISAWA_STUB_IDS[environment]
+        stub_refs = {}
+        for table, column in sorted(_FKS):
+            model = _MODELS[table]
+            stub_refs[f"{table}.{column}"] = _rows(conn, model, model.__table__.c[column] == stub_id)
+        result["protected_stub"] = {
+            "owner": _rows(conn, KifuPlayer, KifuPlayer.id == stub_id),
+            "declared_fk_rows": stub_refs,
+            "raw_metadata_refs": _rows(
+                conn, KifuRawPlayerValue,
+                cast(KifuRawPlayerValue.review_metadata["player_id"].as_string(), String) == str(stub_id),
+            ),
+            "retained_raw_13167": _rows(conn, KifuRawPlayerValue, KifuRawPlayerValue.id == 13167),
+        }
+    return result
 
 
 def _business(snapshot):
@@ -335,6 +364,31 @@ def _validate(plan, preimage, expected_sha):
             f"incomplete preimage row: {table}",
         )
     survivor, retired = pair["ids"][plan["environment"]]
+    protected_stub_id = None
+    if key in {"fujisawa_kurano", "fujisawa_sawa"}:
+        protected_stub_id = _FUJISAWA_STUB_IDS[plan["environment"]]
+        protected_stub = preimage.get("protected_stub")
+        _fail(isinstance(protected_stub, dict)
+              and set(protected_stub) == {"owner", "declared_fk_rows", "raw_metadata_refs", "retained_raw_13167"},
+              "Fujisawa protected stub preimage missing")
+        _fail(len(protected_stub["owner"]) == 1
+              and protected_stub["owner"][0]["id"] == protected_stub_id
+              and protected_stub["owner"][0]["canonical_name"] == "藤泽朋斎"
+              and set(protected_stub["owner"][0]) == set(KifuPlayer.__table__.columns.keys()),
+              "Fujisawa protected stub owner changed")
+        _fail(set(protected_stub["declared_fk_rows"]) == {f"{table}.{column}" for table, column in _FKS}
+              and all(not rows for rows in protected_stub["declared_fk_rows"].values())
+              and protected_stub["raw_metadata_refs"] == [],
+              "Fujisawa protected stub acquired a reference")
+        retained_raw = protected_stub["retained_raw_13167"]
+        _fail(len(retained_raw) == 1 and retained_raw[0]["id"] == 13167
+              and set(retained_raw[0]) == set(KifuRawPlayerValue.__table__.columns.keys())
+              and retained_raw[0]["raw_value"] == "藤泽朋斎"
+              and isinstance(retained_raw[0]["review_metadata"], dict)
+              and retained_raw[0]["review_metadata"].get("player_id") == survivor,
+              "Fujisawa retained raw 13167 changed ownership")
+    else:
+        _fail("protected_stub" not in preimage, "unexpected protected stub scope")
     _fail(
         full["kifu_players"] == sorted([plan["survivor_player"], plan["retire_player"]], key=lambda row: row["id"]),
         "owner preimage differs from proposal",
@@ -353,7 +407,8 @@ def _validate(plan, preimage, expected_sha):
             for row in rows
             if "player_id" in row
         )
-        and all(row["id"] in (survivor, retired) for row in preimage["collision_preimages"]["players"]),
+        and all(row["id"] in (survivor, retired, protected_stub_id)
+                for row in preimage["collision_preimages"]["players"]),
         "external identity collision",
     )
     _fail(plan.get("counts") == expected_counts(key), "pinned operation counts changed")

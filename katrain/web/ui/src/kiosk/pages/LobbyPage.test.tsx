@@ -14,6 +14,7 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: ladder }));
 vi.mock('../shell/boxUrls', () => ({ get isStrictBoxKiosk() { return box.strict; } }));
 const sent: string[] = [];
+const sockets: FakeWS[] = [];
 let socketCount = 0;
 let push: (message: unknown) => void;
 class FakeWS {
@@ -21,7 +22,9 @@ class FakeWS {
   readyState = 1;
   onmessage: ((event: { data: string }) => void) | null = null;
   onopen: (() => void) | null = null;
-  constructor() { socketCount++; push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); queueMicrotask(() => this.onopen?.()); }
+  onclose: ((event: { code: number }) => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor() { socketCount++; sockets.push(this); push = (m) => this.onmessage?.({ data: JSON.stringify(m) }); queueMicrotask(() => this.onopen?.()); }
   send(value: string) { sent.push(value); }
   close() {}
 }
@@ -29,12 +32,12 @@ const games = [{ session_id: 'own', player_b: '他', player_w: '我', player_b_i
 const people = [{ id: 1, username: '我', ladder_rung: 12, rank_label: '业余 2 段', presence: 'playing' }, { id: 2, username: '同段', ladder_rung: 12, rank_label: '业余 2 段', presence: 'idle', kind: 'bot' }, { id: 3, username: '异段', ladder_rung: 13, rank_label: '业余 3 段', presence: 'idle' }];
 const page = () => render(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>);
 beforeEach(() => {
-  sent.length = 0; socketCount = 0; nav.mockClear(); ladder.mockReset(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
+  sent.length = 0; sockets.length = 0; socketCount = 0; nav.mockClear(); ladder.mockReset(); box.strict = false; auth.token = 'tok'; auth.user = { id: 1, username: '我' }; auth.isAuthenticated = true;
   vi.stubGlobal('WebSocket', FakeWS);
   vi.stubGlobal('fetch', vi.fn((url: string) => Promise.resolve({ ok: true, json: () => Promise.resolve(url.includes('/pvp/identity') ? { user_id: 42 } : url.includes('/users/online') ? people : games) })));
   ladder.mockResolvedValue({ placement_state: { phase: 'placed', rung: { rung: 12, rank_name: '业余 2 段' } } });
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 it('shows one unranked match, same-rung filter, own-room return, and no bot/watch affordance', async () => {
   page(); await screen.findByText('同段'); await screen.findByText('我的段位');
   expect(screen.getAllByRole('button', { name: /快速匹配/ })).toHaveLength(1);
@@ -135,4 +138,68 @@ it('removes old lobby rows when a refresh fails', async () => {
   await waitFor(() => expect(screen.queryByTestId('lobby-player-2')).not.toBeInTheDocument());
   expect(screen.queryByTestId('lobby-game')).not.toBeInTheDocument();
   expect(screen.queryByText('当前没有进行中的对局。')).not.toBeInTheDocument();
+});
+it('reconnects after a central restart and clears matching without resending it', async () => {
+  page();
+  await screen.findByText('同段');
+  await userEvent.click(screen.getByRole('button', { name: /快速匹配/ }));
+  expect(screen.getByRole('dialog')).toHaveTextContent('正在寻找同段位对手');
+  vi.useFakeTimers();
+  act(() => {
+    push({ type: 'error', code: 'CENTRAL_DISCONNECTED', message: 'Central lobby disconnected' });
+    sockets[0].readyState = 3;
+    sockets[0].onclose?.({ code: 1013 });
+  });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  act(() => push({ type: 'lobby_update' }));
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeEnabled();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(sent.map((raw) => JSON.parse(raw))).toEqual([{ type: 'start_matchmaking' }]);
+});
+it('does not reconnect after an authentication policy rejection', async () => {
+  page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1008 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(1);
+  expect(screen.getByRole('button', { name: /快速匹配/ })).toBeDisabled();
+});
+it('cancels a pending reconnect when leaving the lobby', async () => {
+  const view = page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  view.unmount();
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(1);
+});
+it('backs off repeated failed reconnects instead of retrying every second', async () => {
+  page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  act(() => { sockets[1].readyState = 3; sockets[1].onclose?.({ code: 1013 }); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+  expect(socketCount).toBe(3);
+});
+it('cancels the previous identity reconnect when the signed-in account changes', async () => {
+  box.strict = true; auth.token = null;
+  const view = page();
+  await screen.findByText('同段');
+  vi.useFakeTimers();
+  act(() => { sockets[0].readyState = 3; sockets[0].onclose?.({ code: 1013 }); });
+  auth.user = { id: 7, username: '新账号' };
+  await act(async () => { view.rerender(<ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>); });
+  expect(socketCount).toBe(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+  expect(socketCount).toBe(2);
+  expect(sent).toHaveLength(0);
 });

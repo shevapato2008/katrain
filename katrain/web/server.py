@@ -1096,6 +1096,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 return
         guard_session_reader(session, current_user, action)
 
+    def session_state_for_read(session):
+        # A cached move snapshot does not include thinking time since that move.
+        # Refresh / reconnect must read the same current server clock as the players.
+        if (
+            getattr(session, "game_type", None) in ("free", "pvp_lobby")
+            and type(getattr(session, "player_b_id", None)) is int
+            and type(getattr(session, "player_w_id", None)) is int
+        ):
+            with session.lock:
+                if not session.game_ended:
+                    session.last_state = session.katrain.get_state()
+                    session.last_state["sockets_count"] = len(session.sockets)
+                    return session.last_state
+        return session.last_state or session.katrain.get_state()
+
     from katrain.web.core.box_sso import BoxSSOState, is_guest_user
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
@@ -1269,7 +1284,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
-        state = session.last_state or session.katrain.get_state()
+        state = session_state_for_read(session)
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
         return {"session_id": session.session_id, "state": state}
@@ -3517,7 +3532,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
         """Relay a box-origin socket to the central authority without exposing its token."""
         from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
-        from websockets.exceptions import ConnectionClosedOK
+        from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
         await websocket.accept()
         app.state.box_sso.register_socket(websocket)
@@ -3553,13 +3568,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             close = exc.rcvd
             try:
                 await websocket.close(code=close.code if close is not None else 1000,
-                                      reason=close.reason if close is not None else "session_closed")
+                                      reason="session_closed")
             except Exception:
                 pass
         except PvpBoxAuthError:
             await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
-            await websocket.close(code=1008)
-        except Exception:
+            await websocket.close(code=1008, reason="authentication_required")
+        except Exception as exc:
+            if isinstance(exc, ConnectionClosedError) and exc.rcvd is not None and exc.rcvd.code == 1008:
+                # Keep authentication rejection terminal. Do not forward or log
+                # the central close reason, which may contain credential details.
+                try:
+                    await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+                    await websocket.close(code=1008, reason="authentication_required")
+                except Exception:
+                    pass
+                return
             logging.getLogger("katrain_web.pvp_box").warning("Central PvP WebSocket disconnected", exc_info=True)
             if on_disconnect is not None:
                 on_disconnect()
@@ -3603,9 +3627,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         bridge = getattr(app.state, "pvp_box_bridge", None)
         if strict_box_sso_enabled() and bridge is not None:
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError
+
             generation = app.state.box_sso.active_generation
             try:
                 central_user_id = (await bridge.identity(generation, current_user.id))["user_id"]
+            except PvpBoxAuthError:
+                await websocket.accept()
+                await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+                await websocket.close(code=1008, reason="authentication_required")
+                return
             except Exception:
                 await websocket.accept()
                 await websocket.send_json(
@@ -4135,7 +4166,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     "Clock started for session %s (game websocket connected)", session_id
                 )
         try:
-            state = session.last_state or session.katrain.get_state()
+            state = session_state_for_read(session)
             state["sockets_count"] = len(session.sockets)
             # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})

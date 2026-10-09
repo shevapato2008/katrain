@@ -14,7 +14,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
-from websockets.exceptions import ConnectionClosedOK
+from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.frames import Close
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -24,7 +24,7 @@ from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
 from katrain.web.core.config import settings
 from katrain.web.core.physical_play import PhysicalPlayConfig
 from katrain.web.core.physical_play_orchestrator import PhysicalPlayOrchestrator
-from katrain.web.core.pvp_box_bridge import PvpBoxBridge, PvpBoxRooms
+from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxBridge, PvpBoxRooms
 from katrain.web.core.remote_client import RemoteAPIClient
 from katrain.web.core import pvp_box_bridge as bridge_module
 from katrain.web.server import create_app, _handle_confirmed_move
@@ -218,6 +218,61 @@ def test_box_lobby_websocket_forwards_to_central_and_rewrites_match(box_app, mon
     assert match["central_session_id"] == "central-room"
     assert upstream.sent == [{"type": "start_matchmaking"}]
     assert app.state.pvp_box_bridge.rooms.for_local(12, "local-room") is not None
+
+
+def test_box_lobby_identity_auth_rejection_is_terminal(box_app, monkeypatch):
+    app, _, token = box_app
+
+    async def reject_identity(*_args):
+        raise PvpBoxAuthError("private credential details")
+
+    monkeypatch.setattr(app.state.pvp_box_bridge, "identity", reject_identity)
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        with client.websocket_connect("/ws/lobby", headers={"Origin": "http://testserver"}) as ws:
+            assert ws.receive_json() == {"type": "error", "code": "BOX_SESSION_REVOKED"}
+            with pytest.raises(WebSocketDisconnect) as closed:
+                ws.receive_json()
+            assert closed.value.code == 1008
+            assert "private credential details" not in closed.value.reason
+
+
+def test_box_lobby_upstream_auth_close_is_terminal_without_exposing_reason(box_app, monkeypatch, caplog):
+    app, _, token = box_app
+
+    class RejectedUpstream(Upstream):
+        async def recv(self):
+            raise ConnectionClosedError(Close(1008, "private credential details"), Close(1008, "private credential details"), True)
+
+    monkeypatch.setattr(bridge_module, "ws_connect", lambda *_args, **_kwargs: RejectedUpstream(None))
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        with client.websocket_connect("/ws/lobby", headers={"Origin": "http://testserver"}) as ws:
+            assert ws.receive_json() == {"type": "error", "code": "BOX_SESSION_REVOKED"}
+            with pytest.raises(WebSocketDisconnect) as closed:
+                ws.receive_json()
+            assert closed.value.code == 1008
+            assert "private credential details" not in closed.value.reason
+    assert "private credential details" not in caplog.text
+    assert not app.state.box_sso._sockets
+
+
+@pytest.mark.parametrize("code", [1012, 1013])
+def test_box_lobby_upstream_service_close_remains_retryable(box_app, monkeypatch, code):
+    app, _, token = box_app
+
+    class InterruptedUpstream(Upstream):
+        async def recv(self):
+            raise ConnectionClosedError(Close(code, "service restarting"), Close(code, "service restarting"), True)
+
+    monkeypatch.setattr(bridge_module, "ws_connect", lambda *_args, **_kwargs: InterruptedUpstream(None))
+    with TestClient(app) as client:
+        client.cookies.set("sb_go_token", token)
+        with client.websocket_connect("/ws/lobby", headers={"Origin": "http://testserver"}) as ws:
+            assert ws.receive_json()["code"] == "CENTRAL_DISCONNECTED"
+            with pytest.raises(WebSocketDisconnect) as closed:
+                ws.receive_json()
+            assert closed.value.code == 1013
 
 
 def test_room_websocket_projects_central_update_and_keeps_mapping_for_reconnect(box_app, monkeypatch):

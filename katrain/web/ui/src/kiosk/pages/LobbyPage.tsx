@@ -95,26 +95,63 @@ export default function LobbyPage() {
     if (!isAuthenticated) return;
     void fetchLists();
     const refresh = setInterval(() => { void fetchLists(); }, 10000);
-    const ws = new WebSocket(websocketUrl('/ws/lobby', token));
-    socket.current = ws;
-    ws.onopen = () => setConnection('connected');
-    ws.onclose = () => { setConnection('disconnected'); setDialog((d) => d === 'matching' ? null : d); clearTimer(); };
-    ws.onerror = () => setConnection('disconnected');
-    ws.onmessage = (event) => {
-      let data: Record<string, unknown>;
-      try { data = JSON.parse(event.data); } catch { return; }
-      if (data.type === 'match_found' && typeof data.session_id === 'string') {
-        clearTimer(); setDialog(null); navigate(`/kiosk/play/pvp/room/${data.session_id}`, { state: BACK });
-      } else if (data.type === 'lobby_update') void fetchLists();
-      else if (data.type === 'invitation') setInvite({ from_id: Number(data.from_id), from_name: String(data.from_name) });
-      else if (data.type === 'error') {
+    let stopped = false;
+    let authRejected = false;
+    let reconnect: ReturnType<typeof setTimeout> | null = null;
+    let retryDelay = 1000;
+    const connect = () => {
+      if (stopped) return;
+      const ws = new WebSocket(websocketUrl('/ws/lobby', token));
+      socket.current = ws;
+      const current = () => !stopped && socket.current === ws;
+      ws.onopen = () => { if (current()) setConnection('connected'); };
+      ws.onclose = (event) => {
+        if (!current()) return;
+        socket.current = null;
+        setConnection('disconnected');
+        setDialog((d) => d === 'matching' ? null : d);
         clearTimer();
-        if (data.code === 'PLACEMENT_REQUIRED') setDialog('placement');
-        else { setDialog(null); setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。')); }
-      } else if (data.type === 'info') setNotice(String(data.message || ''));
+        // A central release closes the upstream socket (1012 -> box 1013).
+        // Reconnect the lobby only; never replay a match request or invitation.
+        if (!authRejected && event.code !== 1008) {
+          reconnect = setTimeout(() => { reconnect = null; connect(); }, retryDelay);
+          retryDelay = Math.min(retryDelay * 2, 15000);
+        }
+      };
+      ws.onerror = () => { if (current()) setConnection('disconnected'); };
+      ws.onmessage = (event) => {
+        if (!current()) return;
+        let data: Record<string, unknown>;
+        try { data = JSON.parse(event.data); } catch { return; }
+        if (data.type === 'match_found' && typeof data.session_id === 'string') {
+          clearTimer(); setDialog(null); navigate(`/kiosk/play/pvp/room/${data.session_id}`, { state: BACK });
+        } else if (data.type === 'lobby_update') {
+          retryDelay = 1000;
+          void fetchLists();
+        } else if (data.type === 'invitation') setInvite({ from_id: Number(data.from_id), from_name: String(data.from_name) });
+        else if (data.type === 'error') {
+          clearTimer();
+          if (data.code === 'PLACEMENT_REQUIRED') setDialog('placement');
+          else if (data.code === 'CENTRAL_DISCONNECTED') {
+            setDialog(null); setConnection('disconnected');
+          } else {
+            if (data.code === 'BOX_SESSION_REVOKED') authRejected = true;
+            setDialog(null); setNotice(data.code === 'INVITE_NOT_PENDING' ? '邀请已过期，请对方重新邀请。' : String(data.message || '操作失败，请重试。'));
+          }
+        } else if (data.type === 'info') setNotice(String(data.message || ''));
+      };
     };
-    return () => { ws.onopen = null; ws.onclose = null; ws.onerror = null; ws.onmessage = null; ws.close(); clearInterval(refresh); clearTimer(); };
-  }, [isAuthenticated, token, fetchLists, navigate, retryEpoch]);
+    setConnection('connecting');
+    connect();
+    return () => {
+      stopped = true;
+      if (reconnect) clearTimeout(reconnect);
+      const ws = socket.current;
+      if (ws) { ws.onopen = null; ws.onclose = null; ws.onerror = null; ws.onmessage = null; ws.close(); }
+      socket.current = null;
+      clearInterval(refresh); clearTimer();
+    };
+  }, [isAuthenticated, token, user?.id, fetchLists, navigate, retryEpoch]);
   const retryLobby = () => {
     setNotice('');
     setConnection('connecting');

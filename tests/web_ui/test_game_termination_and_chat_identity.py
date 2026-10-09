@@ -268,6 +268,34 @@ def test_authenticated_lobby_spectator_can_read_and_stream_but_cannot_play(app, 
         assert response.status_code == 403, response.text
 
 
+@pytest.mark.parametrize("game_type", ["free", "pvp_lobby"])
+@pytest.mark.parametrize("transport", ["http", "websocket"])
+def test_lobby_refresh_reads_current_server_clock_without_starting_it(app, client, game_type, transport):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=-17)
+    session.game_type = game_type
+    session.last_state = {"end_result": None, "timer": {"main_time_used": 10}}
+    clock = {"used": 14}
+    session.katrain.get_state.side_effect = lambda: {
+        "end_result": None, "timer": {"main_time_used": clock["used"]}
+    }
+    headers = _login(client, viewer)
+    token = _token(client, viewer)
+    session.katrain.start_clock.reset_mock()
+    for used in (14, 19):
+        clock["used"] = used
+        if transport == "http":
+            response = client.get("/api/state", params={"session_id": session.session_id}, headers=headers)
+            assert response.status_code == 200, response.text
+            state = response.json()["state"]
+        else:
+            with _chat_socket(client, session.session_id, token) as ws:
+                state = ws.receive_json()["state"]
+        assert state["timer"]["main_time_used"] == used
+    session.katrain.start_clock.assert_not_called()
+
+
 @pytest.mark.parametrize("game_type", ["ai_ladder_ranked", "pvp_online", "pvp_local", "research"])
 def test_spectator_cannot_read_private_or_external_sessions(app, client, game_type):
     black_id, _ = _make_user(app, "black")

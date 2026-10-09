@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import PlayerCard from './PlayerCard';
 
 // NB: PlayerInfo.calculated_rank is typed string|null (pre-existing quirk — do NOT pass a raw
@@ -12,6 +12,47 @@ const humanInfo = {
   player_type: 'human', player_subtype: '', name: 'User',
   calculated_rank: null, periods_used: 0, main_time_used: 0,  // rank_display omitted (optional)
 };
+
+describe('PlayerCard server clock snapshots', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-09T00:00:00Z')); });
+  afterEach(() => vi.useRealTimers());
+  const timer = (used: number) => ({
+    paused: false, main_time_used: 0, current_node_time_used: used, next_player_periods_used: 0,
+    settings: { main_time: 0, byo_length: 30, byo_periods: 5, sound: false },
+  });
+
+  it('does not count elapsed time twice when an authoritative byoyomi snapshot arrives', () => {
+    const { rerender } = render(<PlayerCard player="B" info={humanInfo} captures={0} active timer={timer(10)} />);
+    act(() => vi.advanceTimersByTime(2000));
+    expect(screen.getByText('18s')).toBeInTheDocument();
+    rerender(<PlayerCard player="B" info={humanInfo} captures={0} active timer={timer(12)} />);
+    expect(screen.getByText('18s')).toBeInTheDocument();
+    rerender(<PlayerCard player="B" info={{ ...humanInfo, periods_used: 1 }} captures={0} active timer={timer(1)} />);
+    expect(screen.getByText('29s')).toBeInTheDocument();
+  });
+
+  it('keeps interpolating when only non-clock display data changes', () => {
+    const { rerender } = render(<PlayerCard player="B" info={humanInfo} captures={0} active timer={timer(10)} />);
+    act(() => vi.advanceTimersByTime(2000));
+    rerender(<PlayerCard player="B" info={humanInfo} captures={1} active timer={timer(10)} />);
+    expect(screen.getByText('18s')).toBeInTheDocument();
+  });
+
+  it('does not trigger timeout from stale interpolation on a valid last-period snapshot', () => {
+    const onTimeout = vi.fn();
+    const info = { ...humanInfo, periods_used: 4 };
+    const { rerender } = render(<PlayerCard player="B" info={info} captures={0} active timer={timer(24)} onTimeout={onTimeout} />);
+    act(() => vi.advanceTimersByTime(2000));
+    rerender(<PlayerCard player="B" info={info} captures={0} active timer={timer(29)} onTimeout={onTimeout} />);
+    expect(screen.getByText('1s')).toBeInTheDocument();
+    expect(onTimeout).not.toHaveBeenCalled();
+  });
+
+  it('does not apply the active player node time to the inactive player', () => {
+    render(<PlayerCard player="W" info={humanInfo} captures={0} active={false} timer={timer(12)} />);
+    expect(screen.getByText('30s')).toBeInTheDocument();
+  });
+});
 
 describe('PlayerCard rank_display', () => {
   it('shows rank_display 段位 when present (ladder AI)', () => {

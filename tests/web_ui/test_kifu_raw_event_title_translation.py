@@ -730,6 +730,51 @@ def test_sgf_english_research_accepts_actual_parser_shapes(raw):
         {"kind": part["kind"], "text": part["text"]} for part in structure["parts"]]
 
 
+def test_sgf_english_event_research_accepts_ev_and_mixed_gn_scope():
+    _, research, _ = english_sgf_literal("1st Tokyo Shinbun Cup")
+    research["original_language_basis"] = "reviewed_sgf_event_title"
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_english_event"
+    research["original_sgf_refs"][0].update(gn_values=["Game 1"], ev_values=[research["raw_value"]])
+    second = {**research["sgf_literal_evidence"]["scope_rows"][0], "id": 12,
+              "source_path": "second.sgf", "sgf_sha256": "4" * 64}
+    research["sgf_literal_evidence"]["scope_rows"].append(second)
+    research["sgf_literal_evidence"]["scope_sha256"] = canonical_sha256(
+        research["sgf_literal_evidence"]["scope_rows"])
+    research["original_sgf_refs"].append({"album_id": 12, "source_path": "second.sgf",
+                                          "sgf_sha256": "4" * 64,
+                                          "gn_values": [research["raw_value"]], "ev_values": []})
+    assert validate_research_record(research, registry())["raw_value"] == research["raw_value"]
+
+
+@pytest.mark.parametrize("damage", ("wrong_ev", "later_ev", "wrong_gn", "wrong_basis", "old_profile"))
+def test_sgf_english_event_rejects_wrong_source_field(damage):
+    _, research, _ = english_sgf_literal("1st Tokyo Shinbun Cup")
+    raw = research["raw_value"]
+    research["original_language_basis"] = "reviewed_sgf_event_title"
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_english_event"
+    ref = research["original_sgf_refs"][0]
+    ref.update(gn_values=[raw], ev_values=[raw])
+    if damage == "wrong_ev":
+        ref["ev_values"] = ["Other Cup"]
+    elif damage == "later_ev":
+        ref["ev_values"] = ["Other Cup", raw]
+    elif damage == "wrong_gn":
+        ref.update(gn_values=["Other game"], ev_values=[])
+    elif damage == "wrong_basis":
+        research["original_language_basis"] = "reviewed_sgf_gn"
+    else:
+        research["sgf_literal_evidence"]["owner_profile"] = "sgf_english"
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
+def test_old_sgf_english_profile_still_requires_empty_ev():
+    _, research, _ = english_sgf_literal("1st Tokyo Shinbun Cup")
+    research["original_sgf_refs"][0]["ev_values"] = [research["raw_value"]]
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
 @pytest.mark.parametrize("ordinal", ("2nd", "3rd", "11th", "12th", "13th", "21st", "112th", "999th"))
 def test_sgf_english_accepts_correct_ordinal_boundaries(ordinal):
     _, research, _ = english_sgf_literal(f"{ordinal} Cup")

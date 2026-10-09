@@ -14,6 +14,7 @@ SGF_LITERAL_BASIS = "sgf_literal_v1"
 SGF_CHINESE_PROFILE = "sgf_chinese"
 SGF_CHINESE_MIXED_PROFILE = "sgf_chinese_mixed"
 SGF_ENGLISH_PROFILE = "sgf_english"
+SGF_ENGLISH_EVENT_PROFILE = "sgf_english_event"
 NATIONAL15_RAW_VALUES = frozenset({
     *(f"2020中国国家队积分大循环第{number}轮" for number in range(1, 14)),
     "2013职业棋手精英赛", "2014日本国家队新浪网络训练赛",
@@ -176,6 +177,19 @@ def validate_english_literal_parts(raw, parts):
     return True
 
 
+def sgf_title_ref_matches(ref, raw, profile):
+    """Use the reviewed SGF title field; a populated EV takes precedence over GN."""
+    if not isinstance(ref, dict):
+        return False
+    gn, ev = ref.get("gn_values"), ref.get("ev_values")
+    if (not isinstance(gn, list) or not isinstance(ev, list)
+            or any(not isinstance(value, str) for value in gn + ev)):
+        return False
+    if profile == SGF_ENGLISH_EVENT_PROFILE:
+        return bool(ev and ev[0] == raw or not ev and gn and gn[0] == raw)
+    return bool(not ev and gn and gn[0] == raw)
+
+
 def _validate_chinese_literal_parts(raw, parts, *, mixed):
     characters = _CHINESE_MIXED_LITERAL if mixed else _CHINESE_LITERAL
     if (not isinstance(raw, str) or not characters.fullmatch(raw)
@@ -243,7 +257,8 @@ def validate_raw_title_research(record):
     mixed_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
                  and record["sgf_literal_evidence"].get("owner_profile") == SGF_CHINESE_MIXED_PROFILE)
     english_sgf = (sgf_literal and isinstance(record.get("sgf_literal_evidence"), dict)
-                   and record["sgf_literal_evidence"].get("owner_profile") == SGF_ENGLISH_PROFILE)
+                   and record["sgf_literal_evidence"].get("owner_profile") in {
+                       SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE})
     if english_sgf:
         validate_english_literal_parts(raw, parts)
     if not english_sgf and any(part["kind"] not in {"core", "year", "edition", "round", "geographic_qualifier"}
@@ -270,11 +285,13 @@ def validate_raw_title_research(record):
     if sgf_literal:
         evidence = record.get("sgf_literal_evidence")
         profile = evidence.get("owner_profile") if isinstance(evidence, dict) else None
-        required_language = "en" if profile == SGF_ENGLISH_PROFILE else "zh-Hans"
+        required_language = "en" if profile in {SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE} else "zh-Hans"
+        required_basis = ("reviewed_sgf_event_title" if profile == SGF_ENGLISH_EVENT_PROFILE
+                          else "reviewed_sgf_gn")
         if (original_language != required_language
-                or record.get("original_language_basis") != "reviewed_sgf_gn"
+                or record.get("original_language_basis") != required_basis
                 or record.get("source_checks") != []):
-            raise ValueError("SGF literal evidence requires its profile language and reviewed GN titles")
+            raise ValueError("SGF literal evidence requires its profile language and reviewed title field")
         if (not isinstance(evidence, dict) or not _time(evidence.get("captured_at"))
                 or not _text(evidence.get("scope_file"))):
             raise ValueError("SGF literal evidence needs a captured archived scope")
@@ -286,7 +303,7 @@ def validate_raw_title_research(record):
             validate_chinese_mixed_literal_parts(raw, parts)
             if evidence.get("raw_parts_sha256") != _hash(parts):
                 raise ValueError("SGF Chinese mixed title parts hash differs from its captured parts")
-        elif evidence.get("owner_profile") == SGF_ENGLISH_PROFILE:
+        elif evidence.get("owner_profile") in {SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE}:
             validate_english_literal_parts(raw, parts)
             if evidence.get("raw_parts_sha256") != _hash(parts):
                 raise ValueError("SGF English title parts hash differs from its captured parts")
@@ -317,10 +334,8 @@ def validate_raw_title_research(record):
         for row, ref in zip(rows, refs):
             if (not isinstance(ref, dict) or type(ref.get("album_id")) is not int or ref["album_id"] != row["id"]
                     or ref.get("source_path") != row["source_path"] or ref.get("sgf_sha256") != row["sgf_sha256"]
-                    or ref.get("ev_values") != [] or not isinstance(ref.get("gn_values"), list)
-                    or not ref["gn_values"] or ref["gn_values"][0] != raw
-                    or any(not isinstance(value, str) for value in ref["gn_values"])):
-                raise ValueError("SGF literal GN reference differs from its exact captured scope")
+                    or not sgf_title_ref_matches(ref, raw, profile)):
+                raise ValueError("SGF literal title reference differs from its exact captured scope")
         support = record.get("translation_support", [])
         if not isinstance(support, list):
             raise ValueError("translation support must be captured page records")
@@ -384,7 +399,8 @@ def sgf_literal_owner_matches(research, raw_owner, *, check_parser=False):
         review = raw_owner["review_metadata"]
         if not eligible_raw_title_owner(raw_owner) or literal["scope_sha256"] != review["scope_sha256"]:
             return False
-        if literal.get("owner_profile") in {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE}:
+        if literal.get("owner_profile") in {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE,
+                                            SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE}:
             profile = literal["owner_profile"]
             parts = research["raw_parts"]
             digest = _hash(parts)

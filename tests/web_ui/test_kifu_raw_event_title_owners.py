@@ -627,6 +627,60 @@ def test_sgf_english_owner_accepts_actual_parser_and_rechecks_scope(engine, raw)
     undo_batch(engine, applied["batch_id"])
 
 
+def english_event_manifest_fixture(engine):
+    from katrain.web.kifu.name_structure import structure_event
+    from scripts.kifu_raw_event_title_owners import _english_event_refs, _scope_rows
+    raw = "1st Tokyo Shinbun Cup"
+    manifest = finite_fixture(engine, (raw,), (2,))
+    manifest.update(profile="sgf_english_event", raw_value_count=1,
+                    raw_value_set_sha256=canonical_sha256([raw]), current_null_games=2)
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 200).values(
+            parsed_data={"structure": structure_event(raw)}))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(
+            sgf_content=f"(;GN[First game]EV[{raw}])"))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2001).values(
+            sgf_content=f"(;GN[{raw}])"))
+        manifest["records"][0]["owners"]["TEST"]["preimage"] = _image(conn, KifuRawEventValue.__table__, 200)
+        member = manifest["member_manifest"]["TEST"]["members"][0]
+        member["scope_rows"] = _scope_rows(conn, raw)
+        member["original_sgf_refs"] = _english_event_refs(conn, raw, member["scope_rows"])
+    return manifest
+
+
+def test_sgf_english_event_owner_accepts_mixed_scope_and_rechecks_source(engine):
+    manifest = english_event_manifest_fixture(engine)
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact EV and GN title fields"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_event", **kwargs)
+    assert plan["changes"][0]["after"]["review_metadata"]["sgf_literal"]["profile"] == "sgf_english_event"
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_english_event", manifest=manifest)["albums"] == 2
+    bad = deepcopy(manifest)
+    bad["member_manifest"]["TEST"]["members"][0]["original_sgf_refs"][0]["ev_values"] = ["Other Cup"]
+    with pytest.raises(BatchError):
+        prepare_plan(engine, bad, "TEST", registry(), profile="sgf_english_event", **kwargs)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(
+            sgf_content="(;GN[1st Tokyo Shinbun Cup]EV[Other Cup])"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        inspect_plan(conn, plan, registry(), digest, profile="sgf_english_event", manifest=manifest)
+
+
+def test_sgf_english_event_owner_rejects_hidden_album_in_full_scope(engine):
+    manifest = english_event_manifest_fixture(engine)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2001).values(
+            list_hidden_reason="excluded"))
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_event",
+                     producer_id="producer-1", producer_model="gpt-6-sol",
+                     reviewer_id="reviewer-2", reviewer_model="gpt-6-astra",
+                     review_conclusion="Reviewed exact EV and GN title fields")
+
+
 @pytest.mark.parametrize("damage", ("wrong_profile", "bad_hash", "bad_parts", "too_many"))
 def test_sgf_english_owner_rejects_manifest_or_parser_drift(engine, damage):
     raw = "Hoensha game"

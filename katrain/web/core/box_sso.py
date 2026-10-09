@@ -122,6 +122,11 @@ def resolve_websocket_token(websocket: Any) -> str | None:
         return websocket.cookies.get(GO_COOKIE_NAME)
     if "token" in websocket.query_params:
         return websocket.query_params.get("token")
+    # Server-to-server clients can send credentials explicitly. Browser cookie
+    # sockets still require the same origin; strict box browsers only use GO_COOKIE_NAME.
+    scheme, _, token = (websocket.headers.get("authorization") or "").partition(" ")
+    if scheme.lower() == "bearer" and token.strip():
+        return token.strip()
     if websocket.headers.get("origin") != expected_origin:
         return None
     return websocket.cookies.get("sb_token")

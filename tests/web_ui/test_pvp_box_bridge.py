@@ -233,7 +233,7 @@ async def test_fetch_state_uses_central_room_id_and_projects_mirror_state():
 
 
 @pytest.mark.asyncio
-async def test_upstream_websocket_uses_server_side_cloud_cookie_and_central_origin(monkeypatch):
+async def test_upstream_websocket_uses_server_side_bearer_and_central_origin(monkeypatch):
     remote = FakeRemote()
     remote._access_token = "cloud-secret"
     seen = {}
@@ -244,7 +244,7 @@ async def test_upstream_websocket_uses_server_side_cloud_cookie_and_central_orig
     assert seen == {
         "url": "wss://central.example/ws/lobby",
         "origin": "https://central.example",
-        "additional_headers": {"Cookie": "sb_token=cloud-secret"},
+        "additional_headers": {"Authorization": "Bearer cloud-secret"},
         "open_timeout": 10,
     }
 

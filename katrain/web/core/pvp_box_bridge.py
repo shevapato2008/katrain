@@ -208,7 +208,7 @@ class PvpBoxBridge:
             raise PvpBoxRemoteError("Central WebSocket URL is invalid")
         origin = f"{target.scheme}://{target.netloc}"
         url = f"{'wss' if target.scheme == 'https' else 'ws'}://{target.netloc}{path}"
-        return ws_connect(url, origin=origin, additional_headers={"Cookie": f"sb_token={token}"}, open_timeout=10)
+        return ws_connect(url, origin=origin, additional_headers={"Authorization": f"Bearer {token}"}, open_timeout=10)
 
     def _room(self, generation: int, local_user_id: int, central_user_id: int, central_session_id: str, color: str):
         self.check_user(generation, local_user_id)

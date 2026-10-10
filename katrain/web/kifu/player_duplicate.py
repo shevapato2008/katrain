@@ -82,6 +82,28 @@ PAIRS = {
         "names": ("赵惠连", "赵慧连"), "counts": (1, 529),
         "raw_ids": (13356,), "spellings": ("赵惠连", "赵慧连"),
     },
+    "choi_kyubyeong": {
+        "ids": {"PROD": (4537, 4558), "TEST": (10327, 10348)},
+        "names": ("崔圭丙", "崔珪昞"), "counts": (88, 216),
+        "raw_ids": (7346, 7412, 10853),
+        "spellings": ("崔圭丙", "崔珪昞", "Ch'oeKyu-pyeong", "ChoiGyuByeong"),
+    },
+    "ueno_asami": {
+        "ids": {"PROD": (83, 3769), "TEST": (83, 9567)},
+        "names": ("上野爱咲美", "上野爱笑美"), "counts": (79, 426),
+        "raw_ids": (9415,), "spellings": ("上野爱咲美", "上野爱笑美"),
+    },
+    "yun_junsang_jun": {
+        "ids": {"PROD": (4453, 4446), "TEST": (10244, 10237)},
+        "names": ("尹峻相", "尹俊相"), "counts": (79, 478),
+        "raw_ids": (10650, 10651, 10652, 10653, 10654),
+        "spellings": ("尹峻相", "尹俊相"),
+    },
+    "chinen_kaori": {
+        "ids": {"PROD": (5633, 5632), "TEST": (11406, 11405)},
+        "names": ("知念薰", "知念熏"), "counts": (84, 193),
+        "raw_ids": (12771,), "spellings": ("知念薰", "知念熏"),
+    },
     # Source-reviewed Fujisawa Hosai: retire original-name owners in this order.
     "fujisawa_kurano": {
         "ids": {"PROD": (5854, 5853), "TEST": (11623, 11622)},

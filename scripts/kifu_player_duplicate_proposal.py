@@ -15,7 +15,8 @@ from katrain.web.core.models_db import KifuAlbum, KifuPlayer
 from katrain.web.kifu import name_inventory  # freeze the native format-4 inventory column list before mapping
 
 NEW_KEYS = frozenset({"li_jie", "park_ji", "park_jin", "cho_huilian", "cho_huilian_variant",
-                      "fujisawa_kurano", "fujisawa_sawa"})
+                      "fujisawa_kurano", "fujisawa_sawa", "choi_kyubyeong", "ueno_asami", "yun_junsang_jun",
+                      "chinen_kaori"})
 
 
 def native_duplicate_columns(engine, *, require_read_only=True):

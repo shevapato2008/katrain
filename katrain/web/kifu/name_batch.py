@@ -700,7 +700,7 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
 
 
 def _canonical_shared_permissions(conn, candidates, shared_displays, research_by_hash):
-    """Recheck each finite player collision group against this database and live sources."""
+    """Recheck finite canonical collision groups and their exact live sources."""
     from katrain.web.kifu.name_first_pass import canonical_shared_display_candidate
 
     if not shared_displays:
@@ -712,28 +712,48 @@ def _canonical_shared_permissions(conn, candidates, shared_displays, research_by
     url = conn.engine.url
     binding = f"{url.drivername}://{url.host or ''}:{url.port or ''}/{url.database or ''}"
     result = {}
-    existing = conn.execute(select(KifuPlayerName.__table__).where(
-        KifuPlayerName.lang.in_({item["lang"] for item in shared_displays}),
-        KifuPlayerName.status == "verified")).mappings().all()
+    langs = {item["lang"] for item in shared_displays}
+    existing = {
+        "player": conn.execute(select(KifuPlayerName.__table__).where(
+            KifuPlayerName.lang.in_(langs), KifuPlayerName.status == "verified")).mappings().all(),
+        "event": conn.execute(select(KifuEventName.__table__).where(
+            KifuEventName.lang.in_(langs), KifuEventName.status == "verified")).mappings().all(),
+        "raw_event": conn.execute(select(KifuRawEventName.__table__).where(
+            KifuRawEventName.lang.in_(langs), KifuRawEventName.status == "verified")).mappings().all(),
+    }
     for permission in shared_displays:
-        key = (permission["lang"], permission["normalized_key"])
+        kind = permission.get("owner_kind", "player")
+        _fail(kind in {"player", "event"}, "shared display owner kind changed")
+        key = (kind, permission["lang"], permission["normalized_key"])
         _fail(key not in result and permission.get("database_binding") == binding,
               "shared display database binding or group changed")
-        rows = [row for row in candidates if row.get("owner", {}).get("kind") == "player"
-                and row.get("lang") == key[0] and normalize_alias(row.get("display_name", "")) == key[1]]
+        rows = [row for row in candidates if row.get("owner", {}).get("kind") == kind
+                and row.get("lang") == key[1] and normalize_alias(row.get("display_name", "")) == key[2]]
         _fail(bool(rows) and all(canonical_shared_display_candidate(
             row, (research_by_hash or {}).get(row.get("research_sha256")), permission) for row in rows),
             "shared display candidate or source permission changed")
         members = {member["id"]: member["source_preimage_sha256"] for member in permission["members"]}
-        observed = {row["player_id"] for row in existing
-                    if row["lang"] == key[0] and normalize_alias(row["display_name"]) == key[1]}
+        observed = {row[f"{kind}_id"] for row in existing[kind]
+                    if row["lang"] == key[1] and normalize_alias(row["display_name"]) == key[2]}
         observed.update(row["owner"]["id"] for row in rows)
         _fail(observed == set(members), "shared display collision members changed")
         for owner_id, source_hash in members.items():
-            owner = _image(conn, KifuPlayer.__table__, owner_id)
+            owner = _image(conn, (KifuPlayer if kind == "player" else KifuEvent).__table__, owner_id)
             _fail(owner is not None and canonical_sha256(owner) == source_hash,
                   "shared display source owner changed")
-        result[key] = set(members)
+        raw_members = {member["id"]: member["source_preimage_sha256"]
+                       for member in permission.get("raw_members", ())}
+        observed_raw = {row["raw_event_id"] for row in existing["raw_event"]
+                        if row["lang"] == key[1] and normalize_alias(row["display_name"]) == key[2]}
+        if kind == "event":
+            _fail(observed_raw == set(raw_members), "shared display raw-event members changed")
+            for owner_id, source_hash in raw_members.items():
+                owner = _image(conn, KifuRawEventValue.__table__, owner_id)
+                _fail(owner is not None and canonical_sha256(owner) == source_hash,
+                      "shared display raw-event source changed")
+        else:
+            _fail(not raw_members, "player shared display cannot name raw events")
+        result[key] = (set(members), set(raw_members))
     return result
 
 
@@ -794,8 +814,13 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
                 continue
-            if (own_kind == kind == "player" and {own_id, existing_id} <= canonical_shared.get(
-                    (row["lang"], name_key), set())):
+            canonical_ids, raw_event_ids = canonical_shared.get(
+                (own_kind, row["lang"], name_key), (set(), set()))
+            if (own_kind == kind and own_kind in {"player", "event"}
+                    and {own_id, existing_id} <= canonical_ids):
+                continue
+            if own_kind == "event" and kind == "raw_event" and own_id in canonical_ids \
+                    and existing_id in raw_event_ids:
                 continue
             incoming_shared = (own_kind == "raw_player" and name_first_pass.shared_display_candidate(
                 row, declarations.get(_owner_ref(owner), {}).get("raw_display_scope")))

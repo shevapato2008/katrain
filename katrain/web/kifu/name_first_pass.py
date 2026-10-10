@@ -263,12 +263,13 @@ def shared_event_display_candidate(row, research, *, require_approval=True):
 
 
 def canonical_shared_display_candidate(row, research, permission, *, require_approval=True):
-    """A finite text collision permission, without any player identity claim."""
+    """A finite text collision permission, without any identity claim."""
     from katrain.web.kifu.identity import normalize_alias
     from katrain.web.kifu.name_candidates import canonical_sha256
 
+    kind = permission.get("owner_kind", "player") if isinstance(permission, dict) else None
     if not (isinstance(row, dict) and isinstance(research, dict) and isinstance(permission, dict)
-            and row.get("owner", {}).get("kind") == "player"
+            and kind in {"player", "event"} and row.get("owner", {}).get("kind") == kind
             and row.get("decision_kind") == "generated"
             and row.get("generation_rule_version") == VERSION
             and row.get("review_status") in ({"approved"} if require_approval else {"pending", "approved"})
@@ -286,15 +287,39 @@ def canonical_shared_display_candidate(row, research, permission, *, require_app
             and permission.get("identity_relation") == "unknown"):
         return False
     members = permission.get("members")
-    return (isinstance(members, list) and len(members) >= 2
+    raw_members = permission.get("raw_members", [])
+    return (isinstance(members, list) and isinstance(raw_members, list)
+            and len(members) + len(raw_members) >= 2
             and members == sorted(members, key=lambda member: member.get("id", 0))
             and len({member.get("id") for member in members}) == len(members)
             and all(isinstance(member, dict) and set(member) == {"id", "source_preimage_sha256"}
                     and type(member["id"]) is int and member["id"] > 0
                     and isinstance(member["source_preimage_sha256"], str)
                     and _HASH.fullmatch(member["source_preimage_sha256"]) for member in members)
+            and (kind == "event" or not raw_members)
+            and raw_members == sorted(raw_members, key=lambda member: member.get("id", 0))
+            and len({member.get("id") for member in raw_members}) == len(raw_members)
+            and all(isinstance(member, dict) and set(member) == {"id", "source_preimage_sha256"}
+                    and type(member["id"]) is int and member["id"] > 0
+                    and isinstance(member["source_preimage_sha256"], str)
+                    and _HASH.fullmatch(member["source_preimage_sha256"]) for member in raw_members)
             and {member["id"]: member["source_preimage_sha256"] for member in members}.get(
                 row["owner"]["id"]) == research["source_input"]["owner_preimage_sha256"])
+
+
+def own_source_event_numbers_preserved(row, research):
+    """Permit a literal year/round in an existing event's own first-pass source."""
+    if not (isinstance(research, dict) and row.get("owner", {}).get("kind") == "event"
+            and row.get("decision_kind") == "generated"
+            and row.get("generation_rule_version") == VERSION
+            and research.get("source_basis") == VERSION
+            and research.get("source_input", {}).get("kind") == "catalog_canonical"
+            and research["source_input"].get("owner") == row["owner"]
+            and research.get("candidate_name") == row.get("display_name")):
+        return False
+    original = research["source_input"].get("text", "")
+    return (bool(re.search(r"(?<!\d)[12]\d{3}(?!\d)", original))
+            and Counter(re.findall(r"\d+", original)) == Counter(re.findall(r"\d+", row["display_name"])))
 
 
 def validate_candidate(row, research, shared_displays=()):
@@ -305,6 +330,14 @@ def validate_candidate(row, research, shared_displays=()):
         raise ValueError("first-pass generated candidate markers or output differ")
     if row["owner"]["kind"] == "raw_event" and row.get("raw_value") != research["source_input"]["text"]:
         raise ValueError("first-pass raw candidate differs from exact original")
+    if row["owner"]["kind"] == "event":
+        source = research.get("source_input", {})
+        source_year = re.search(r"(?<!\d)[12]\d{3}(?!\d)", source.get("text", ""))
+        display_year = re.search(r"\b[12]\d{3}\b", row["display_name"])
+        if source_year and not own_source_event_numbers_preserved(row, research):
+            raise ValueError("event first-pass source numbers changed")
+        if display_year and not own_source_event_numbers_preserved(row, research):
+            raise ValueError("event core name contains a year")
     record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
     if record_mode != (row.get("record_label_mode") == RECORD_LABEL_MODE) or (
             "record_label_mode" in row and not record_mode):

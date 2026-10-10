@@ -784,7 +784,16 @@ def _validate_candidate(
         _require(not _RANK_SUFFIX.search(display) and not _RESULT.search(display),
                  "player name contains a rank or result")
     if row["owner"]["kind"] == "event" and decision in {"conventional", "generated", "transliterated", "translated"}:
-        _require(not re.search(r"\b[12]\d{3}\b", display), "event core name contains a year")
+        from katrain.web.kifu.name_first_pass import own_source_event_numbers_preserved
+        source = research.get("source_input", {}) if isinstance(research, dict) else {}
+        first_pass_year_source = (decision == "generated"
+                                  and row.get("generation_rule_version") == "user_authorized_first_pass_v1"
+                                  and source.get("kind") == "catalog_canonical"
+                                  and bool(re.search(r"(?<!\d)[12]\d{3}(?!\d)", source.get("text", ""))))
+        _require(not first_pass_year_source or own_source_event_numbers_preserved(row, research),
+                 "event first-pass source numbers changed")
+        _require(not re.search(r"\b[12]\d{3}\b", display)
+                 or own_source_event_numbers_preserved(row, research), "event core name contains a year")
     return row
 
 
@@ -1406,10 +1415,13 @@ def validate_bundle(
                     and all(shared_event_display_candidate(row, research_by_hash.get(row.get("research_sha256")))
                             for row in raw_events)):
                 continue
-            if all(row["owner"]["kind"] == "player" for row in group):
+            if all(row["owner"]["kind"] in {"player", "event"} for row in group) \
+                    and len({row["owner"]["kind"] for row in group}) == 1:
                 from katrain.web.kifu.name_first_pass import canonical_shared_display_candidate
+                kind = group[0]["owner"]["kind"]
                 permissions = [permission for permission in bundle.get("shared_displays", ())
-                               if permission.get("lang") == lang and permission.get("normalized_key") == name]
+                               if permission.get("owner_kind", "player") == kind
+                               and permission.get("lang") == lang and permission.get("normalized_key") == name]
                 if (len(permissions) == 1 and all(canonical_shared_display_candidate(
                         row, research_by_hash.get(row.get("research_sha256")), permissions[0])
                         for row in group)):

@@ -11,7 +11,7 @@ from katrain.web.kifu.name_batch import BatchError, _image, apply_bundle, dry_ru
 from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.core.models_db import (
     KifuAlbum, KifuPlayer, KifuPlayerName, KifuEvent, KifuEventName,
-    KifuRawEventValue, KifuRawPlayerValue, KifuRawPlayerName, KifuNameResearchEvidence,
+    KifuRawEventValue, KifuRawEventName, KifuRawPlayerValue, KifuRawPlayerName, KifuNameResearchEvidence,
 )
 from katrain.web.kifu.identity import (
     _approved_names, _qualified_name_rows, _approved_raw_event_names, _raw_event_map,
@@ -60,6 +60,105 @@ def first_pass_pair():
                              "reviewed_at": "2026-10-11T01:01:00Z"},
     }
     return candidate, research
+
+
+def test_formal_event_own_year_and_finite_raw_collision(engine):
+    from katrain.web.kifu.name_batch import _canonical_shared_permissions
+    from katrain.web.kifu.name_first_pass import (
+        canonical_shared_display_candidate, own_source_event_numbers_preserved,
+    )
+
+    original = "2026野狐围棋研究会春季循环赛"
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=15, canonical_name=original))
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=63269, raw_value=original, category="formal_event_candidate", review_status="approved"))
+    with Session(engine) as db:
+        evidence = _evidence(db, "raw_event", 63269, "cn", original)
+        db.add(KifuRawEventName(raw_event_id=63269, lang="cn", display_name=original, status="verified",
+                                decision_kind="conventional", generation_rule_version="test-v1",
+                                revision=1, evidence_id=evidence.id))
+        db.commit()
+    with engine.connect() as conn:
+        event_image = _image(conn, KifuEvent.__table__, 15)
+        raw_image = _image(conn, KifuRawEventValue.__table__, 63269)
+    owner = {"kind": "event", "id": 15}
+    candidate, research = first_pass_pair()
+    candidate.update(owner=owner, display_name=original)
+    research.update(owner=owner, original_name=original, candidate_name=original)
+    research["source_input"].update(owner=owner, text=original,
+                                    owner_preimage_sha256=canonical_sha256(event_image))
+    assert own_source_event_numbers_preserved(candidate, research)
+    bad = dict(candidate, display_name="2027野狐围棋研究会春季循环赛")
+    assert not own_source_event_numbers_preserved(bad, research)
+    url = engine.url
+    permission = {
+        "version": "canonical-shared-display-v1", "owner_kind": "event", "environment": "TEST",
+        "database_binding": f"{url.drivername}://{url.host or ''}:{url.port or ''}/{url.database or ''}",
+        "normalizer": "normalize_alias-v1", "lang": "cn", "display_name": original,
+        "normalized_key": original, "identity_relation": "unknown",
+        "members": [{"id": 15, "source_preimage_sha256": canonical_sha256(event_image)}],
+        "raw_members": [{"id": 63269, "source_preimage_sha256": canonical_sha256(raw_image)}],
+    }
+    candidate["collision_decision"] = "shared_display"
+    candidate["collision_basis"] = {"permission_sha256": canonical_sha256(permission)}
+    candidate["research_sha256"] = canonical_sha256(research)
+    assert canonical_shared_display_candidate(candidate, research, permission)
+    with engine.connect() as conn:
+        assert _canonical_shared_permissions(conn, [candidate], [permission],
+                                             {candidate["research_sha256"]: research}) == {
+            ("event", "cn", original): ({15}, {63269})
+        }
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=63270, raw_value="Another", category="formal_event_candidate", review_status="approved"))
+    with Session(engine) as db:
+        evidence = _evidence(db, "raw_event", 63270, "cn", original)
+        db.add(KifuRawEventName(raw_event_id=63270, lang="cn", display_name=original, status="verified",
+                                decision_kind="conventional", generation_rule_version="test-v1",
+                                revision=1, evidence_id=evidence.id))
+        db.commit()
+    with engine.connect() as conn, pytest.raises(BatchError, match="raw-event members changed"):
+        _canonical_shared_permissions(conn, [candidate], [permission],
+                                      {candidate["research_sha256"]: research})
+
+
+def test_first_pass_event_year_gate_requires_own_source_numbers():
+    from katrain.web.kifu.name_first_pass import validate_candidate as validate_first_pass_candidate
+
+    candidate, research = first_pass_pair()
+    owner = {"kind": "event", "id": 3}
+    original = "2026世界围棋团体赛热身赛1/3轮"
+    display = "2026 세계 바둑 단체전 연습 경기 1/3라운드"
+    research.update(owner=owner, lang="ko", original_name=original, candidate_name=display)
+    research["source_input"].update(owner=owner, text=original)
+    research["generation"]["method"] = "translation"
+    candidate.update(owner=owner, lang="ko", display_name=display,
+                     research_sha256=canonical_sha256(research))
+    candidate["generated_review"].update(owner=owner, lang="ko", display_name=display,
+                                          research_sha256=candidate["research_sha256"])
+    assert validate_candidate(candidate, research, registry(), inventory()) == candidate
+    assert validate_first_pass_candidate(candidate, research) == candidate
+    changed = deepcopy(candidate)
+    changed_research = deepcopy(research)
+    changed["display_name"] = changed_research["candidate_name"] = display.replace("2026", "2027")
+    changed["research_sha256"] = canonical_sha256(changed_research)
+    changed["generated_review"].update(display_name=changed["display_name"],
+                                       research_sha256=changed["research_sha256"])
+    with pytest.raises(CandidateError, match="event first-pass source numbers changed"):
+        validate_candidate(changed, changed_research, registry(), inventory())
+    with pytest.raises(ValueError, match="event first-pass source numbers changed"):
+        validate_first_pass_candidate(changed, changed_research)
+    dropped = deepcopy(candidate)
+    dropped_research = deepcopy(research)
+    dropped["display_name"] = dropped_research["candidate_name"] = display.replace("2026 ", "")
+    dropped["research_sha256"] = canonical_sha256(dropped_research)
+    dropped["generated_review"].update(display_name=dropped["display_name"],
+                                       research_sha256=dropped["research_sha256"])
+    with pytest.raises(CandidateError, match="event first-pass source numbers changed"):
+        validate_candidate(dropped, dropped_research, registry(), inventory())
+    with pytest.raises(ValueError, match="event first-pass source numbers changed"):
+        validate_first_pass_candidate(dropped, dropped_research)
 
 
 def test_first_pass_uses_actual_source_without_external_claims():

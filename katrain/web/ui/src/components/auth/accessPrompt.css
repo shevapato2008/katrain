@@ -4,7 +4,7 @@
 .access-symbol{display:grid;place-items:center;width:48px;height:48px;border:1px solid #496551;border-radius:12px;background:#1b3022;color:#b8d7be;margin-bottom:20px}
 .access-symbol svg{width:24px;height:24px}
 .access-dialog .access-eyebrow{font-size:14px;line-height:1.55;color:#b6cbbd;margin-bottom:8px}
-.access-dialog h2{font-size:28px;line-height:1.35;font-weight:600;margin-bottom:14px}
+.access-dialog h2{font-family:inherit;font-size:28px;line-height:1.35;font-weight:600;margin-bottom:14px}
 .access-description{font-size:16px;line-height:1.7;color:#d4ded4}
 .access-dialog .access-next-note{margin-top:20px;padding:13px 14px;background:#1b241e;border:1px solid #415445;border-radius:8px;color:#bacfbe;font-size:14px;line-height:1.65}
 .access-actions{display:flex;gap:10px;margin-top:26px}

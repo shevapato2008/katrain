@@ -1,5 +1,5 @@
 import { Box, Typography, LinearProgress, Divider, IconButton, Stack, Slider, Tooltip, Tabs, Tab } from '@mui/material';
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -155,23 +155,6 @@ export default function ResearchAnalysisPanel({
   // 走势图宽度由容器实测驱动；绘图与点击映射共用它（见 renderTrendChart 的说明）。
   const [chartRef, measuredWidth] = useMeasuredWidth();
   const [trendTab, setTrendTab] = useState(0);
-  const audioCache = useRef<Record<string, HTMLAudioElement>>({});
-
-  // Play stone sound on navigation
-  const prevMoveRef = useRef(currentMove);
-  useEffect(() => {
-    if (currentMove !== prevMoveRef.current) {
-      prevMoveRef.current = currentMove;
-      const soundName = 'stone1';
-      if (!audioCache.current[soundName]) {
-        audioCache.current[soundName] = new Audio(`/assets/sounds/${soundName}.wav`);
-      }
-      const audio = audioCache.current[soundName];
-      audio.currentTime = 0;
-      audio.play().catch(() => {});
-    }
-  }, [currentMove]);
-
   const winratePercent = winrate * 100;
   const blackAdvantage = winrate > 0.5;
 

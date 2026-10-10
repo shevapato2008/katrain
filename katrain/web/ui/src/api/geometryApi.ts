@@ -61,7 +61,7 @@ export interface GeometryStatus {
   lock_moved?: boolean;
   capabilities: {
     camera_ready: boolean;
-    led_ready: boolean;
+    led_ready: boolean | null;
     geometry_ready: boolean;
     recognition_ready?: boolean;
     model_ready?: boolean;
@@ -87,7 +87,7 @@ export const GeometryAPI = {
       phase: 'disabled',
       session_calibrated: false,
       last_valid: Boolean(data.locked),
-      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+      capabilities: { camera_ready: false, led_ready: data.capabilities?.led_ready ?? null, geometry_ready: false },
     };
   },
   calibrate: async (trigger: 'auto' | 'manual'): Promise<GeometryStatus> => json(await fetch(`${API_BASE}/calibrate`, {

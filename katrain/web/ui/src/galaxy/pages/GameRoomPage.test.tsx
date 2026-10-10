@@ -8,10 +8,10 @@
  *   M4 棋盘退回写死的 `{coords:true,numbers:false}`           ⇒「坐标开关通到棋盘」红
  *   M5 `actions={null}`（翻手键留在滚动段）                    ⇒「六个键在动作区」红
  */
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { act, render, screen, within, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GameState } from '../../api';
+import { API, type GameState } from '../../api';
 import GameRoomPage from './GameRoomPage';
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   handleAction: vi.fn(),
   onMove: vi.fn(),
   getFollowing: vi.fn(),
+  boardMove: null as ((x: number, y: number) => void) | null,
 }));
 
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tk', user: { id: 1, username: 'fan' } }) }));
@@ -35,9 +36,10 @@ vi.mock('../../api', async (importOriginal) => {
 /* 棋盘桩件把拿到的开关**回读**出来 —— 坐标 / 手数那两个开关以前是死的
    （面板一个字面量、棋盘另一个字面量），只断言开关自己变了是证不到这一点的。 */
 vi.mock('../../components/Board', () => ({
-  default: ({ analysisToggles }: { analysisToggles: Record<string, boolean> }) => (
-    <div data-testid="mock-board" data-coords={String(analysisToggles.coords)} data-numbers={String(analysisToggles.numbers)} />
-  ),
+  default: ({ analysisToggles, onMove }: { analysisToggles: Record<string, boolean>; onMove: (x: number, y: number) => void }) => {
+    mocks.boardMove = onMove;
+    return <div data-testid="mock-board" data-coords={String(analysisToggles.coords)} data-numbers={String(analysisToggles.numbers)} />;
+  },
 }));
 vi.mock('../../components/ScoreGraph', () => ({ default: () => <div data-testid="mock-score-graph" /> }));
 
@@ -53,7 +55,7 @@ const makeState = (over: Partial<GameState> = {}): GameState => ({
   current_node_index: 1, history: [], player_to_move: 'B', stones: [], last_move: null,
   prisoner_count: { B: 0, W: 0 }, analysis: null, commentary: '', is_root: false, is_pass: false,
   end_result: null, children: [], ghost_stones: [], note: '', language: 'zh', game_type: 'free',
-  sockets_count: 5,
+  sockets_count: 5, spectator_count: 3,
   players_info: {
     B: { player_type: 'human', player_subtype: '', name: 'fan', calculated_rank: null, periods_used: 0, main_time_used: 0 },
     W: { player_type: 'human', player_subtype: '', name: 'cat', calculated_rank: null, periods_used: 0, main_time_used: 0 },
@@ -75,6 +77,7 @@ describe('GameRoomPage 统一版式', () => {
     vi.clearAllMocks();
     mocks.getFollowing.mockResolvedValue([]);
     mocks.gameState = makeState();
+    mocks.boardMove = null;
   });
 
   it('puts all six navigation keys in the non-scrolling actions band, each with a name', () => {
@@ -94,7 +97,7 @@ describe('GameRoomPage 统一版式', () => {
     // 棋盘那一格里只有棋盘：观众数和离开键都降到了右栏。
     const stage = screen.getByTestId('board-stage');
     expect(stage).toHaveTextContent('');
-    // sockets_count 5 = 两名棋手 + 3 名观众
+    // Verified authenticated spectator membership is independent of sockets_count.
     expect(screen.getByTestId('board-rail-scroll')).toHaveTextContent('3 Spectators');
   });
 
@@ -135,7 +138,37 @@ describe('GameRoomPage 统一版式', () => {
   it('wires the coordinates switch through to the board', () => {
     renderPage();
     expect(screen.getByTestId('mock-board')).toHaveAttribute('data-coords', 'true');
-    fireEvent.click(screen.getByRole('switch', { name: 'Coordinates' }));
+    fireEvent.click(screen.getByRole('button', { name: /Coordinates|坐标/ }));
     expect(screen.getByTestId('mock-board')).toHaveAttribute('data-coords', 'false');
   });
+
+  it('shows a retry for a recoverable count failure instead of a final result', async () => {
+    mocks.gameState = makeState({ game_type: 'pvp_lobby', end_result: 'board-game-end', awaiting_count: true, degraded: true });
+    vi.mocked(API.requestCount).mockResolvedValue({ status: 'pending' });
+    renderPage();
+    expect(screen.queryByText('已结束')).not.toBeInTheDocument();
+    expect(screen.queryByText('board-game-end')).not.toBeInTheDocument();
+    expect(screen.getByText(/自动数子失败/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重试数子' }));
+    await waitFor(() => expect(API.requestCount).toHaveBeenCalledWith('s1', 'tk'));
+  });
+
+  it('shows automatic counting without allowing another move or resignation', () => {
+    mocks.gameState = makeState({ game_type: 'pvp_lobby', end_result: '终局', awaiting_count: true, degraded: false });
+    renderPage();
+    expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+    expect(screen.queryByText('轮到你了')).not.toBeInTheDocument();
+    act(() => mocks.boardMove?.(3, 3));
+    expect(mocks.onMove).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Resign' })).toBeDisabled();
+  });
+});
+
+
+it.each([undefined, null, -1, 1.5, '3'])('does not estimate spectators from sockets when verified membership is %s', (count) => {
+  mocks.gameState = makeState({ sockets_count: 20, spectator_count: count as number });
+  mocks.getFollowing.mockResolvedValue([]);
+  renderPage();
+  expect(screen.getByText('观战人数未返回')).toBeInTheDocument();
+  expect(screen.queryByText('18 Spectators')).not.toBeInTheDocument();
 });

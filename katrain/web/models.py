@@ -215,6 +215,9 @@ class OnlineUser(BaseModel):
     rank: str = "20k"
     elo_points: int = 0
     avatar_url: Optional[str] = None
+    ladder_rung: Optional[int] = None
+    rank_label: Optional[str] = None
+    presence: str = "idle"
 
 
 class UserInDB(User):

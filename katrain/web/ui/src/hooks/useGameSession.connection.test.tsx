@@ -122,4 +122,41 @@ describe('useGameSession · 断线与一次性错误分开记(N25)', () => {
     expect(API.newGame).not.toHaveBeenCalled();
     expect(API.createSession).not.toHaveBeenCalled();
   });
+
+  it('marks the box room unavailable on the central error frame and retries state plus socket', async () => {
+    const hook = renderHook(() => useGameSession({ centralRoom: true }));
+    await act(async () => { hook.result.current.setSessionId('session-123'); });
+    act(() => { sockets[0].onopen?.(); });
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'error', code: 'CENTRAL_DISCONNECTED', message: 'offline' }) } as MessageEvent); });
+    act(() => { sockets[0].onclose?.({ code: 1013, reason: '', wasClean: true }); });
+    expect(hook.result.current.connectionLost).toBe('central');
+    await act(async () => { hook.result.current.reconnect(); });
+    expect(API.getState).toHaveBeenCalledTimes(2);
+    expect(sockets).toHaveLength(2);
+    expect(hook.result.current.connectionLost).toBe('central');
+    act(() => { sockets[0].onmessage?.({ data: JSON.stringify({ type: 'game_update', state: { stale: true } }) } as MessageEvent); });
+    expect(hook.result.current.gameState).not.toHaveProperty('stale');
+    act(() => { sockets[1].onopen?.(); });
+    expect(hook.result.current.connectionLost).toBeNull();
+  });
+
+  it('keeps a 503 room state load retryable without a stale board', async () => {
+    vi.mocked(API.getState).mockRejectedValueOnce(Object.assign(new Error('Failed to get state'), { status: 503 }));
+    const hook = renderHook(() => useGameSession({ centralRoom: true }));
+    await act(async () => { hook.result.current.setSessionId('session-123'); });
+    expect(hook.result.current.gameState).toBeNull();
+    expect(hook.result.current.connectionLost).toBe('central');
+    expect(sockets).toHaveLength(0);
+    await act(async () => { hook.result.current.reconnect(); });
+    expect(sockets).toHaveLength(1);
+    act(() => { sockets[0].onopen?.(); });
+    expect(hook.result.current.connectionLost).toBeNull();
+  });
+
+  it('treats a central room 1013 close as an outage even if its error frame is lost', async () => {
+    const hook = renderHook(() => useGameSession({ centralRoom: true }));
+    await act(async () => { hook.result.current.setSessionId('session-123'); });
+    act(() => { sockets[0].onclose?.({ code: 1013, reason: '', wasClean: true }); });
+    expect(hook.result.current.connectionLost).toBe('central');
+  });
 });

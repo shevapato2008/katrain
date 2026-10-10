@@ -70,6 +70,15 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('数子')).toBeInTheDocument();
   });
 
+  test('automatic lobby count stops turn prompts and disables play actions', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'B', end_result: '终局', awaiting_count: true, degraded: false });
+    expect(screen.getByText('正在自动数子')).toBeInTheDocument();
+    expect(screen.queryByText('轮到你')).not.toBeInTheDocument();
+    for (const name of ['数子', '停一手', '认输']) {
+      expect(screen.getByRole('button', { name })).toBeDisabled();
+    }
+  });
+
   test('胜率图只在终局后允许跳转棋谱位置', () => {
     const history = [
       { node_id: 10, score: 0, winrate: 0.5 },
@@ -200,6 +209,29 @@ describe('GameControlPanel', () => {
     expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
     expect(within(screen.getByTestId('player-card-W')).getByText(/等待对方/)).toBeInTheDocument();
     expect(screen.queryByText('轮到你')).toBeNull();
+  });
+
+  test('self-owned lobby uses its central seat without OGS controls or AI analysis', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', player_to_move: 'B' });
+    expect(within(screen.getByTestId('player-card-B')).getByText(/对方回合/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.queryByText('等待 OGS 计时')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+  });
+  test('self-owned lobby enables count retry when automatic two-pass scoring fails', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', degraded: true, awaiting_count: true,
+      end_result: 'board-game-end', history: [], count_min_moves: 100 });
+    const count = screen.getByRole('button', { name: '数子' });
+    expect(count).toBeEnabled();
+    expect(count).not.toHaveAttribute('title', expect.stringContaining('100'));
+    expect(screen.getByText(/自动数子失败/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '停一手' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输' })).toBeDisabled();
+  });
+  test('self-owned lobby does not bypass count threshold without a degraded result', () => {
+    panel({ game_type: 'pvp_lobby', platform_my_color: 'W', awaiting_count: true, degraded: false,
+      history: [], count_min_moves: 100 });
+    expect(screen.getByRole('button', { name: '数子' })).toBeDisabled();
   });
 
   test('OGS finished phase blocks resign until the remote result is reflected locally', () => {

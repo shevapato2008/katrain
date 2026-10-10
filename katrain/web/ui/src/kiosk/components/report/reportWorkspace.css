@@ -1,0 +1,260 @@
+/* Approved 7-inch report workspace. All chart rules stay inside this scope. */
+.report-workspace__host {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.report-workspace__mount,
+.report-workspace__content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.report-workspace .gradebody.report-workspace__panel {
+  display: grid;
+  grid-template-rows: 44px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+.report-workspace .report-workspace__tabs {
+  display: flex;
+  height: 44px;
+  padding: 0 5px;
+  box-shadow: inset 0 -1px var(--hair);
+}
+
+.report-workspace .grade-tab {
+  --tab-width: 56px;
+  display: flex;
+  flex: 0 0 var(--tab-width);
+  width: var(--tab-width);
+  min-width: 0;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--dim);
+}
+
+.report-workspace .grade-tab[data-tab-id="perf"] { --tab-width: 84px; }
+.report-workspace .grade-tab[data-tab-id="match"] { --tab-width: 88px; }
+.report-workspace .grade-tab[data-active="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  box-shadow: inset 0 -2px var(--accent);
+}
+
+.report-workspace .grade-tab > button:not(.chart-tab-help) {
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.report-workspace .grade-tab > .chart-tab-help {
+  flex: 0 0 20px;
+  width: 20px;
+  min-width: 20px;
+  max-width: 20px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0;
+  justify-content: center;
+  color: inherit;
+}
+.report-workspace .grade-tab > .chart-tab-help svg { font-size: 18px; }
+
+.report-workspace .report-workspace__expand {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+.report-workspace .report-workspace__expand svg { width: 20px; height: 20px; }
+.report-workspace button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.report-workspace .grade-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  gap: 8px;
+  overflow: hidden;
+}
+.report-workspace .grade-workspace[data-filters="true"] { grid-template-columns: 62px minmax(0, 1fr); }
+
+.report-workspace .gfilters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 62px;
+  min-height: 0;
+  gap: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dim) transparent;
+}
+.report-workspace .gfilters::-webkit-scrollbar { width: 6px; }
+.report-workspace .gfilters .gseg {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 54px;
+  height: auto;
+  padding: 0;
+  gap: 4px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  margin: 0;
+}
+.report-workspace .gfilters .gseg + .gseg { border-top: 1px solid var(--hair); padding-top: 6px; margin-top: 2px; }
+.report-workspace .gfilters button {
+  flex: 0 0 44px;
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--raise);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.report-workspace .gfilters button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--panel));
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.report-workspace .grade-chart-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  gap: 6px;
+  overflow: hidden;
+}
+.report-workspace .gempty { display: grid; place-items: center; flex: 1; font-size: 13px; }
+.report-workspace .selline { flex: none; height: auto; font-size: 12px; line-height: 1.5; }
+
+/* Measure only the SVG canvas, so the scale does not distort circles or ticks. */
+.report-workspace .lolli { flex: 1; min-height: 0; padding: 0; gap: 8px; }
+.report-workspace .laxis { width: 32px; margin-bottom: 20px; }
+.report-workspace .laxis u,
+.report-workspace .lside,
+.report-workspace .lscale { font-size: 12px; }
+.report-workspace .lplot { position: relative; height: auto; min-height: 0; }
+.report-workspace .lplot-canvas { flex: 1; min-height: 0; background: var(--ink); border-radius: 7px; overflow: hidden; }
+.report-workspace .lplot svg { width: 100%; height: 100%; border: 0; }
+.report-workspace .lscale { position: static; flex: 0 0 20px; height: 20px; align-items: center; }
+
+.report-workspace .report-trend { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 6px; }
+.report-workspace .tline { flex: none; font-size: 13px; line-height: 20px; }
+.report-workspace .evalpad { flex: 1; min-height: 0; display: flex; padding: 0; }
+.report-workspace .evalpad .wrbox { height: 100%; min-height: 0; }
+.report-workspace .wraxis { width: 48px; }
+.report-workspace .wrlead { width: 36px; }
+.report-workspace .wraxis i,
+.report-workspace .wrlead i { font-size: 12px; }
+.report-workspace .wrplot .curve,
+.report-workspace .wrplot .lead,
+.report-workspace .wrplot .mid,
+.report-workspace .wrplot .cursor { vector-effect: non-scaling-stroke; }
+.report-workspace .wrplot .curve { stroke-width: 2; }
+.report-workspace .wrplot .lead { stroke-width: 1.5; }
+.report-workspace .report-trend__scale { flex: none; margin: 0 36px 0 48px; font-size: 12px; line-height: 16px; text-align: center; color: var(--dim); }
+.report-workspace .report-trend__scale > div { display: flex; justify-content: space-between; }
+
+.report-workspace .grade-chart-legend { display: flex; justify-content: center; flex: none; height: 20px; gap: 20px; font-size: 13px; }
+.report-workspace .grade-chart-legend span { display: flex; align-items: center; gap: 6px; }
+.report-workspace .hist { flex: 1; min-height: 0; padding-top: 32px; }
+.report-workspace .hcols,
+.report-workspace .hg { height: 100%; min-height: 0; }
+.report-workspace .hbars { flex: 1; min-height: 0; }
+.report-workspace .hb { height: 100%; min-height: 0; }
+.report-workspace .hb b { position: relative; width: 12px; }
+.report-workspace .hb u { position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); font-size: 12px; line-height: 16px; font-weight: 400; }
+.report-workspace .hb:nth-child(2) u { bottom: calc(100% + 19px); }
+.report-workspace .hyaxis { padding-bottom: 56px; }
+.report-workspace .hyaxis i,
+.report-workspace .hg em,
+.report-workspace .hg small { font-size: 12px; }
+.report-workspace .hg small { flex: none; text-align: center; line-height: 14px; color: var(--dim); }
+
+.report-workspace .mtab { flex: 1; min-height: 0; justify-content: space-around; }
+.report-workspace .mr { grid-template-columns: 82px minmax(0, 1fr); grid-template-rows: repeat(2, 22px); gap: 4px 8px; height: auto; }
+.report-workspace .ml { grid-row: 1 / 3; font-size: 13px; }
+.report-workspace .mu { grid-column: 2; gap: 6px; }
+.report-workspace .mu i { height: 9px; background: color-mix(in srgb, var(--dim) 24%, var(--panel)); }
+.report-workspace .mu u { width: 40px; font-size: 13px; color: var(--text); }
+.report-workspace .mu .sm { width: 14px; height: 14px; }
+.report-workspace .mband { flex: 1; min-height: 0; justify-content: center; gap: 16px; }
+.report-workspace .mtrack { height: clamp(40px, 16vh, 100px); }
+.report-workspace .mband .kiosk-ribbon__lead { width: 32px; font-size: 13px; }
+.report-workspace .mband .kiosk-ribbon__scale { padding-left: 32px; font-size: 12px; }
+
+/* Modal is portalled into the rail; the board keeps its full 516px square. */
+.report-chart-dialog.MuiModal-root { position: absolute; inset: 0; z-index: 30; }
+.report-chart-dialog .MuiBackdrop-root { position: absolute; }
+.report-chart-dialog__mount {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 460px;
+  height: 516px;
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px #0008;
+}
+.report-chart-dialog .report-workspace__panel { border-color: var(--accent); }
+.report-chart-dialog .mtrack { height: 150px; }

@@ -126,7 +126,20 @@ class TestGeometryEndpoint:
 
     def test_status_unlocked(self):
         _, c = _client(capture=FakeCapture([]))
-        assert c.get("/geometry/status").json() == {"locked": False}
+        assert c.get("/geometry/status").json() == {
+            "locked": False,
+            "capabilities": {"led_ready": None},
+        }
+
+    @pytest.mark.parametrize("board_connected", [True, False, None])
+    def test_status_without_capture_preserves_board_a_cache(self, board_connected):
+        from types import SimpleNamespace
+
+        led = SimpleNamespace(is_connected=lambda: True, is_board_connected=lambda: board_connected)
+        _, client = _client(led=led)
+        body = client.get("/geometry/status").json()
+        assert body["locked"] is False
+        assert body["capabilities"]["led_ready"] is board_connected
 
     def test_no_frames(self):
         _, c = _client(capture=FakeCapture([]), led=FakeLed())

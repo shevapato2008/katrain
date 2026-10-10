@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { API } from '../api';
 import { setKioskIdentity } from '../kiosk/storage/kioskActivityStorage';
 
@@ -18,7 +18,12 @@ interface User {
     is_admin?: boolean;
 }
 
+export type AuthStatus = 'checking' | 'authenticated' | 'guest' | 'expired' | 'unavailable';
+
 interface AuthContextType {
+    status: AuthStatus;
+    retry: () => Promise<void>;
+    identityKey: string | null;
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -47,115 +52,142 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [token, setToken] = useState<string | null>(() =>
         isStrictBoxKiosk ? null : localStorage.getItem('token')
     );
-    // True until the mount-time session probe settles. Guards MUST wait for this
-    // before redirecting, otherwise a valid persisted session (localStorage token
-    // OR the shared box-SSO cookie) flashes the login page on every fresh page
-    // load — e.g. re-entering 围棋, which is a full :8080→:8081 navigation.
-    const [isLoading, setIsLoading] = useState(true);
+    const [status, setStatus] = useState<AuthStatus>('checking');
+    const generation = useRef(0);
+    const activeController = useRef<AbortController | null>(null);
+    const activeProbe = useRef<Promise<void> | null>(null);
+    const hadIdentity = useRef(false);
+    const isLoading = status === 'checking';
 
-    useEffect(() => {
-        let cancelled = false;
-        // Bound the probe so a hung /me never leaves the kiosk stuck on the
-        // guard's loading spinner with no escape (falls through to login instead).
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const bootstrap = async () => {
-            // This deletion is synchronous and precedes the first network call,
-            // preventing an old JS Bearer token from overriding the box cookie.
-            if (isStrictBoxKiosk) localStorage.removeItem('token');
-            const stored = isStrictBoxKiosk ? null : localStorage.getItem('token');
-            try {
-                // Probe /me with the stored token if any; the browser also
-                // auto-sends the shared 127.0.0.1 `sb_go_token` cookie.
-                let usedToken: string | null = stored;
-                let response = await fetch('/api/v1/auth/me', {
-                    headers: stored ? { Authorization: `Bearer ${stored}` } : undefined,
-                    signal: controller.signal,
-                });
-                // Stored token stale/expired? Drop it and retry cookie-only, so a
-                // valid box-SSO session still restores instead of bouncing to login.
-                if (!isStrictBoxKiosk && !response.ok && stored) {
-                    localStorage.removeItem('token');
-                    usedToken = null;
-                    response = await fetch('/api/v1/auth/me', { signal: controller.signal });
-                }
-                if (cancelled) return;
-                if (response.ok) {
-                    setUser(await response.json());
-                    setToken(usedToken);
-                } else {
-                    if (!isStrictBoxKiosk) localStorage.removeItem('token');
-                    setToken(null);
-                    setUser(null);
-                }
-            } catch {
-                if (!cancelled) setUser(null);
-            } finally {
-                if (!cancelled) setIsLoading(false);
-            }
-        };
-        bootstrap().finally(() => clearTimeout(timeout));
-        return () => {
-            cancelled = true;
-            clearTimeout(timeout);
-            controller.abort();
-        };
+    const invalidatePending = useCallback(() => {
+        generation.current += 1;
+        activeController.current?.abort();
+        activeController.current = null;
+        activeProbe.current = null;
+        return generation.current;
     }, []);
 
+    const retry = useCallback((): Promise<void> => {
+        // One probe owns the entire Bearer -> cookie fallback, including its timeout.
+        if (activeProbe.current) return activeProbe.current;
+        const requestGeneration = generation.current;
+        const controller = new AbortController();
+        activeController.current = controller;
+        const current = () => generation.current === requestGeneration && !controller.signal.aborted;
+        const stored = isStrictBoxKiosk ? null : localStorage.getItem('token');
+        let usedToken = stored;
+        const hadCredential = Boolean(stored) || hadIdentity.current;
+        setUser(null);
+        setStatus('checking');
+        setKioskIdentity(null, false);
+
+        let timeout: ReturnType<typeof setTimeout>;
+        const deadline = new Promise<never>((_, reject) => {
+            timeout = setTimeout(() => {
+                controller.abort();
+                reject(new Error('Authentication probe timed out'));
+            }, 8000);
+        });
+        const probe = async () => {
+            let response = await fetch('/api/v1/auth/me', {
+                headers: stored ? { Authorization: `Bearer ${stored}` } : undefined,
+                signal: controller.signal,
+            });
+            if (!current()) return;
+            // Only a real /me 401 invalidates a Bearer. Service errors, permissions
+            // failures and network errors retain it for the next explicit retry.
+            if (!isStrictBoxKiosk && response.status === 401 && stored) {
+                localStorage.removeItem('token');
+                setToken(null);
+                usedToken = null;
+                response = await fetch('/api/v1/auth/me', { signal: controller.signal });
+                if (!current()) return;
+            }
+            if (response.ok) {
+                const restoredUser: User = await response.json();
+                if (!current()) return;
+                hadIdentity.current = true;
+                setUser(restoredUser);
+                setToken(usedToken);
+                setStatus(restoredUser.username === 'guest' ? 'guest' : 'authenticated');
+            } else if (response.status === 401) {
+                setToken(null);
+                setStatus(hadCredential ? 'expired' : 'guest');
+            } else {
+                setStatus('unavailable');
+            }
+        };
+        const pending = Promise.race([probe(), deadline]).catch(() => {
+            // Abort may mean either the bounded deadline or a newer login/logout.
+            if (generation.current === requestGeneration) setStatus('unavailable');
+        }).finally(() => {
+            clearTimeout(timeout!);
+            if (activeController.current === controller) {
+                activeController.current = null;
+                activeProbe.current = null;
+            }
+        });
+        activeProbe.current = pending;
+        return pending;
+    }, []);
+
+    useEffect(() => {
+        // Strict builds never read a JS credential or override the HttpOnly cookie.
+        if (isStrictBoxKiosk) localStorage.removeItem('token');
+        void retry();
+        return () => { invalidatePending(); };
+    }, [retry, invalidatePending]);
+
     const login = async (username: string, password: string) => {
-        if (isStrictBoxKiosk) {
-            throw new Error('Direct login is disabled in strict box mode');
-        }
+        if (isStrictBoxKiosk) throw new Error('Direct login is disabled in strict box mode');
+        const requestGeneration = invalidatePending();
         try {
             const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
             });
-
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
-
+            if (!response.ok) throw new Error('Login failed');
             const data = await response.json();
             const newToken = data.access_token;
-
-            // 先把用户资料拉到再返回,确保 isAuthenticated(=!!user)在 navigate 前已为 true,
-            // 否则首次登录会因 user 尚未加载被 AuthGuard 弹回登录页(需点两次)。
-            // A non-strict direct login has the freshly issued token in memory;
-            // use it for the active-session verification before persisting it.
             const meRes = await fetch('/api/v1/auth/me', {
-                headers: { 'Authorization': `Bearer ${newToken}` }
+                headers: { Authorization: `Bearer ${newToken}` },
             });
-            if (!meRes.ok) {
-                throw new Error('Login failed');
-            }
-            const userData = await meRes.json();
-
+            if (!meRes.ok) throw new Error('Login failed');
+            const userData: User = await meRes.json();
+            // A logout or newer login owns the state even if this request settles later.
+            if (generation.current !== requestGeneration) return;
+            // A retry may have started while login was in flight. Retire that
+            // probe before committing the new account or its saved credential.
+            invalidatePending();
             localStorage.setItem('token', newToken);
+            hadIdentity.current = true;
             setUser(userData);
             setToken(newToken);
+            setStatus(userData.username === 'guest' ? 'guest' : 'authenticated');
         } catch (error) {
+            if (generation.current === requestGeneration && status === 'checking') setStatus('unavailable');
             throw error;
         }
     };
 
     const logout = useCallback(async () => {
-        // Call backend to cleanup sessions before clearing local state
-        if (isStrictBoxKiosk || token) {
-            try {
-                // Strict box identity lives in the HttpOnly cookie, so omit
-                // Bearer and let the browser send the same-origin cookie.
-                // Galaxy and legacy kiosk retain their historical token path.
-                await API.logout(isStrictBoxKiosk ? undefined : token ?? undefined);
-            } catch (e) {
-                console.warn("Logout request failed, proceeding with local cleanup");
-            }
-        }
+        invalidatePending();
+        // Remove identity before awaiting network cleanup so private children unmount now.
+        hadIdentity.current = false;
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);
-    }, [token]);
+        setStatus('guest');
+        setKioskIdentity(null, false);
+        if (isStrictBoxKiosk || token || user) {
+            try {
+                await API.logout(isStrictBoxKiosk ? undefined : token ?? undefined);
+            } catch {
+                console.warn('Logout request failed, proceeding with local cleanup');
+            }
+        }
+    }, [token, user, invalidatePending]);
 
     const isGuest = user?.username === 'guest';
 
@@ -172,7 +204,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, isAuthenticated: !!user, isLoading, login, logout, token, isGuest, isStrictBoxKiosk }}
+            value={{ user, isAuthenticated: !!user, isLoading, status, retry,
+                identityKey: user ? user.uuid ?? `${user.id}:${user.username}` : null,
+                login, logout, token, isGuest, isStrictBoxKiosk }}
         >
             {children}
         </AuthContext.Provider>

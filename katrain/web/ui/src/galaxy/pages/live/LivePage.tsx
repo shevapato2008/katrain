@@ -7,7 +7,7 @@
  * 迁移前这一页是「左 棋盘 + 页头 / 右 500px 写死宽度的列表」，标题在棋盘正上方，
  * 播放条挂在棋盘底下。S8 那轮只换了页头，整体版式没动 —— 本次补上。
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography, Tabs, Tab, Button, Chip, CircularProgress } from '@mui/material';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,8 @@ import { useLiveMatch } from '../../../hooks/live/useLiveMatch';
 import MatchList from '../../../components/live/MatchList';
 import LiveBoard from '../../../components/live/LiveBoard';
 import PlaybackBar from '../../../components/live/PlaybackBar';
+import { isReplayStoneMove, useReplayStoneSound } from '../../../hooks/useReplayStoneSound';
+import { useSound } from '../../../hooks/useSound';
 import UpcomingList from '../../../components/live/UpcomingList';
 import type { MatchSummary } from '../../../types/live';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -52,6 +54,41 @@ export default function LivePage() {
      那一帧 loading 是 false 而 match 是旧的。用身份比对没有这个缝 ——
      「手里这份是不是我点的那一局」是个确定的事实。 */
   const matchReady = selectedMatch != null && selectedMatch.id === selectedMatchId;
+  const { play: playSound } = useSound();
+  const [replaySelection, setReplaySelection] = useState<{ id: string | null; move: number } | null>(null);
+  const liveSnapshot = useRef<{ id: string; cursor: number; moves: string[] } | null>(null);
+  const soundedFrontier = useRef<{ id: string; move: number } | null>(null);
+  useEffect(() => {
+    // Visibility restoration establishes a fresh silent snapshot baseline.
+    const resetLiveSnapshot = () => { liveSnapshot.current = null; };
+    document.addEventListener('visibilitychange', resetLiveSnapshot);
+    return () => document.removeEventListener('visibilitychange', resetLiveSnapshot);
+  }, []);
+  useEffect(() => {
+    liveSnapshot.current = !document.hidden && matchReady && selectedMatch && !matchLoading
+      ? { id: selectedMatch.id, cursor: currentMove, moves: selectedMatch.moves } : null;
+  }, [matchReady, selectedMatch, matchLoading, currentMove]);
+  useReplayStoneSound({ identity: selectedMatchId, cursor: currentMove, move: selectedMatch?.moves[currentMove - 1],
+    ready: matchReady && !matchLoading, boardSize: selectedMatch?.board_size ?? 19,
+    selected: replaySelection?.id === selectedMatchId && replaySelection.move === currentMove });
+  const selectCurrentMove = (move: number) => {
+    setReplaySelection({ id: selectedMatchId, move });
+    setCurrentMove(move);
+  };
+  const followCurrentMove = (move: number) => {
+    const previous = liveSnapshot.current;
+    if (!document.hidden && matchReady && selectedMatch && !matchLoading && previous?.id === selectedMatch.id
+      && previous.cursor === previous.moves.length && move === previous.moves.length + 1 && move === selectedMatch.moves.length
+      && previous.moves.every((value, index) => value === selectedMatch.moves[index])
+      && isReplayStoneMove(selectedMatch.moves[move - 1], selectedMatch.board_size)
+      && !(soundedFrontier.current?.id === selectedMatch.id && soundedFrontier.current.move === move)) {
+      soundedFrontier.current = { id: selectedMatch.id, move };
+      playSound('stone');
+    }
+    setReplaySelection(null);
+    setCurrentMove(move);
+  };
+
 
   // Auto-select first match when matches load
   useEffect(() => {
@@ -207,7 +244,8 @@ export default function LivePage() {
             <PlaybackBar
               currentMove={currentMove}
               totalMoves={selectedMatch.move_count}
-              onMoveChange={setCurrentMove}
+              onMoveChange={selectCurrentMove}
+              onFollowMoveChange={followCurrentMove}
               isLive={selectedMatch.status === 'live'}
             />
           )}

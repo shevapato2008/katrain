@@ -43,6 +43,8 @@ vi.mock('../../../hooks/live/useLiveMatches', () => ({
 /* useLiveMatch 的 mock 要能**记下调用参数**、也能被单条用例改返回值：
    「列表页不该拉分析」这条判据落在传进去的 options 上，不在渲染出来的 DOM 上；
    「切换中不该画上一局」这条要能造出「hook 返回的还是上一局」那个中间态。 */
+const playSound = vi.hoisted(() => vi.fn());
+vi.mock('../../../hooks/useSound', () => ({ useSound: () => ({ play: playSound }) }));
 const liveMatch = vi.hoisted(() => ({
   spy: vi.fn(),
   result: { current: null as unknown as ReturnType<typeof Object> },
@@ -53,7 +55,8 @@ vi.mock('../../../hooks/live/useLiveMatch', () => ({
     return liveMatch.result.current;
   },
 }));
-vi.mock('../../../components/live/LiveBoard', () => ({
+vi.mock('../../../components/live/LiveBoard', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../../components/live/LiveBoard')>(),
   default: () => <div data-testid="mock-live-board" />,
 }));
 vi.mock('../../../components/live/UpcomingList', () => ({
@@ -78,6 +81,7 @@ const renderPage = () => render(
 describe('LivePage（迁 BoardPageShell 之后）', () => {
   beforeEach(() => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    playSound.mockClear();
     liveMatch.spy.mockClear();
     liveMatch.result.current = {
       match: detail, loading: false, currentMove: 194, setCurrentMove: vi.fn(),
@@ -154,5 +158,56 @@ describe('LivePage（迁 BoardPageShell 之后）', () => {
 
     // 迁移前这里是 `rightTab === 0 && (...)`，切到第二个页签整块消失。
     expect(screen.getByTestId('live-enter-match')).toBeInTheDocument();
+  });
+  it('sounds on explicit preview replay and keeps arrival and repeated state silent', async () => {
+    liveMatch.result.current = { match: { ...detail, move_count: 2, status: 'finished' }, loading: false, currentMove: 2, setCurrentMove: vi.fn() };
+    const page = () => <MemoryRouter><GameNavigationProvider><LivePage /></GameNavigationProvider></MemoryRouter>;
+    const view = render(page());
+    await screen.findByTestId('mock-live-board');
+    expect(playSound).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+    liveMatch.result.current = { ...liveMatch.result.current, currentMove: 1 };
+    view.rerender(page());
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    view.rerender(page());
+    expect(playSound).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([true, false])('keeps background polling and the first resumed preview snapshot silent before sounding a new live stone (background update=%s)', async (backgroundUpdate) => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    try {
+      liveMatch.result.current = { match: { ...detail, move_count: 2 }, loading: false, currentMove: 2, setCurrentMove: vi.fn() };
+      const page = () => <MemoryRouter><GameNavigationProvider><LivePage /></GameNavigationProvider></MemoryRouter>;
+      const view = render(page());
+      await screen.findByTestId('mock-live-board');
+      hidden.mockReturnValue(true);
+      fireEvent(document, new Event('visibilitychange'));
+      const backgroundMoves = backgroundUpdate ? [...detail.moves, 'K10'] : detail.moves;
+      if (backgroundUpdate) {
+        liveMatch.result.current = { ...liveMatch.result.current, match: { ...detail, moves: backgroundMoves, move_count: backgroundMoves.length } };
+        view.rerender(page());
+        liveMatch.result.current = { ...liveMatch.result.current, currentMove: backgroundMoves.length };
+        view.rerender(page());
+      }
+      expect(playSound).not.toHaveBeenCalled();
+      hidden.mockReturnValue(false);
+      fireEvent(document, new Event('visibilitychange'));
+      const resumedMoves = [...backgroundMoves, 'C4'];
+      liveMatch.result.current = { ...liveMatch.result.current, match: { ...detail, moves: resumedMoves, move_count: resumedMoves.length } };
+      view.rerender(page());
+      liveMatch.result.current = { ...liveMatch.result.current, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).not.toHaveBeenCalled();
+      const nextMoves = [...resumedMoves, 'C5'];
+      liveMatch.result.current = { ...liveMatch.result.current, match: { ...detail, moves: nextMoves, move_count: nextMoves.length } };
+      view.rerender(page());
+      liveMatch.result.current = { ...liveMatch.result.current, currentMove: nextMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+      fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+      liveMatch.result.current = { ...liveMatch.result.current, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledTimes(2);
+    } finally { hidden.mockRestore(); }
   });
 });

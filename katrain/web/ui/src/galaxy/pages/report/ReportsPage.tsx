@@ -38,6 +38,7 @@ import {
   toLocalUserGameParams,
 } from '../../../features/report/reportModel';
 import PlaybackBar from '../../../components/live/PlaybackBar';
+import { useReplayStoneSound } from '../../../hooks/useReplayStoneSound';
 import ReportGameCard from '../../components/report/ReportGameCard';
 import ReportImportMenu from '../../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../../components/report/ReportLibraryImportDialog';
@@ -86,7 +87,9 @@ export default function ReportsPage() {
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
+  const [previewSetupCount, setPreviewSetupCount] = useState(0);
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
+  const [replaySelection, setReplaySelection] = useState<{ id: string | null; move: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [localImportOpen, setLocalImportOpen] = useState(false);
@@ -129,6 +132,7 @@ export default function ReportsPage() {
     setSelectedGame(game);
     setPreviewMoves(parsed.moves);
     setPreviewColors(parsed.stoneColors);
+    setPreviewSetupCount(parsed.setupCount ?? 0);
     setPreviewBoardSize(parsed.metadata.boardSize || game.board_size || 19);
     setPreviewCurrentMove(parsed.moves.length);
   }, []);
@@ -181,6 +185,14 @@ export default function ReportsPage() {
     () => games.find((game) => game.id === selectedGameId) || null,
     [games, selectedGameId],
   );
+
+  const selectPreviewMove = (move: number) => {
+    setReplaySelection({ id: selectedGameId, move });
+    setPreviewCurrentMove(move);
+  };
+  useReplayStoneSound({ identity: selectedGameId, cursor: Math.max(0, previewCurrentMove - previewSetupCount), move: previewMoves[previewCurrentMove - 1],
+    ready: selectedGame?.id === selectedGameId && selectedGame !== null && !previewLoading, boardSize: previewBoardSize,
+    selected: replaySelection?.id === selectedGameId && replaySelection.move === previewCurrentMove });
 
   const totalPages = Math.max(1, Math.ceil(totalGames / PAGE_SIZE));
 
@@ -415,6 +427,7 @@ export default function ReportsPage() {
             moves={previewMoves}
             stoneColors={previewColors}
             currentMove={previewCurrentMove}
+            handicapCount={previewSetupCount}
             boardSize={previewBoardSize}
             /* 迁移前这里写死 `showCoordinates`。改成走 spec §3.2 的自动档（棋盘边长
                低于 500px 时默认关闭）。本页右栏塞的是列表、没有显示开关那一段，
@@ -573,7 +586,7 @@ export default function ReportsPage() {
           <PlaybackBar
             currentMove={previewCurrentMove}
             totalMoves={previewMoves.length}
-            onMoveChange={setPreviewCurrentMove}
+            onMoveChange={selectPreviewMove}
           />
         ) : null}
       />

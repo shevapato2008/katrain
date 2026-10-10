@@ -2,7 +2,8 @@ import { createTheme } from '@mui/material/styles';
 import { zenTheme } from '../theme';
 
 export const SYSTEM_UI_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
-export const CHINESE_UI_FONT = `'LXGW WenKai', ${SYSTEM_UI_FONT}`;
+// Galaxy's WenKai subsets contain CJK only; the shared WenKai face supplies Latin/digits.
+export const CHINESE_UI_FONT = `'LXGW WenKai', "SmartBox Kai", "Kaiti SC", serif`;
 
 export const createGalaxyTheme = (language: string) => {
   const fontFamily = language === 'cn' || language === 'tw' ? CHINESE_UI_FONT : SYSTEM_UI_FONT;

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { TutorialReadAPI } from '../../api/tutorialApi';
+import { useSound } from '../../hooks/useSound';
+import { findNumberedStone } from '../../components/tutorials/SGFBoard';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { BoardPayload, TutorialFigure, TutorialSectionDetail } from '../../types/tutorial';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
@@ -90,6 +92,7 @@ const TutorialSectionPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { play } = useSound();
   const nav = (location.state ?? null) as SectionNavState | null;
 
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
@@ -134,6 +137,12 @@ const TutorialSectionPage = () => {
   const maxStep = useMemo(() => maxMoveOf(current), [current]);
 
   const effStep = stepFor && current && stepFor.id === current.id ? stepFor.step : maxStep;
+  const lastStone = findNumberedStone(current?.board_payload, effStep);
+  const handleStepChange = useCallback((step: number) => {
+    if (!current || step === effStep) return;
+    setStepFor({ id: current.id, step });
+    if (findNumberedStone(current.board_payload, step)) play('stone');
+  }, [current, effStep, play]);
   const full = current != null && fullFor === current.id;
   const onVideo = current != null && videoFor === current.id && Boolean(current.video_asset);
   const onAudio = current != null && audioFor === current.id;
@@ -302,6 +311,7 @@ const TutorialSectionPage = () => {
               black={board.black}
               white={board.white}
               numbers={board.numbers}
+              last={lastStone ? xyToCoord(lastStone[0], lastStone[1], board.size) : undefined}
               letters={board.letters}
               shapes={board.shapes}
               highlights={board.highlights}
@@ -399,7 +409,7 @@ const TutorialSectionPage = () => {
               en="Moves"
               count={maxStep + 1}
               index={effStep}
-              onChange={(i) => setStepFor({ id: current.id, step: i })}
+              onChange={handleStepChange}
               value={effStep === 0
                 ? t('tutorial:step_zero', '只摆底子')
                 : interpolate(t('tutorial:step_n', '走到第 {n} 手'), { n: effStep })}

@@ -1,18 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ApiError } from '../../api';
 import GolaxyHomePage from './GolaxyHomePage';
 
-const { platformStatus, platformRooms, platformUsers, platformLogout, navigate, vision, auth } = vi.hoisted(() => ({
+const { platformStatus, platformRooms, platformUsers, platformLogout, platformPlayerProfile, platformPlayerGames, platformFollowPlayer, navigate, vision, auth } = vi.hoisted(() => ({
   platformStatus: vi.fn(),
   platformRooms: vi.fn(), platformUsers: vi.fn(), platformLogout: vi.fn(),
+  platformPlayerProfile: vi.fn(), platformPlayerGames: vi.fn(), platformFollowPlayer: vi.fn(),
   navigate: vi.fn(),
   vision: { enabled: true },
   auth: { token: 'token', isAuthenticated: true },
 }));
-vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers, platformLogout } }));
+vi.mock('../../api', async () => ({ ...await vi.importActual('../../api'), API: { platformStatus, platformRooms, platformUsers, platformLogout, platformPlayerProfile, platformPlayerGames, platformFollowPlayer } }));
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => auth,
 }));
@@ -40,7 +41,7 @@ const deferred = <T,>() => {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   Object.defineProperty(document, 'hidden', { configurable: true, value: false });
   vision.enabled = true;
   auth.token = 'token';
@@ -50,6 +51,9 @@ beforeEach(() => {
   platformRooms.mockResolvedValue({ rooms: [] });
   platformUsers.mockResolvedValue({ users: [] });
   platformLogout.mockResolvedValue({ status: 'disconnected', platform: 'golaxy' });
+  platformPlayerProfile.mockResolvedValue({ profile: { followed: null } });
+  platformPlayerGames.mockResolvedValue({ total: 0, games: [] });
+  platformFollowPlayer.mockResolvedValue({ profile: { followed: true } });
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -149,6 +153,67 @@ describe('Golaxy home', () => {
     expect(screen.queryByText('对弈战绩')).not.toBeInTheDocument();
     expect(screen.queryByText('邀请状态')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '邀请对局' })).toBeDisabled();
+  });
+
+  it('opens verified player history and shows the empty state or returned games', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲', invite_able: true }] });
+    platformPlayerGames.mockResolvedValue({ total: 1, games: [{ game_id: '314', black: '黑棋甲', white: '白棋乙', move_number: 145, result: 'B+R', board_size: 19 }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
+    expect(platformPlayerGames).toHaveBeenCalledWith('golaxy', 'u1', 'token', 0);
+    expect(await screen.findByText(/黑棋甲.*白棋乙/)).toBeInTheDocument();
+    expect(screen.getByText(/145 手/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '返回资料' }));
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
+  });
+
+  it('loads older history pages when the verified total exceeds the first page', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲' }] });
+    const firstPage = Array.from({ length: 10 }, (_, index) => ({ game_id: String(index), black: `黑方${index}`, white: '白方', move_number: 10, result: null, board_size: 19 }));
+    platformPlayerGames.mockResolvedValueOnce({ total: 11, games: firstPage })
+      .mockResolvedValueOnce({ total: 11, games: [{ game_id: '10', black: '末页黑方', white: '白方', move_number: 11, result: null, board_size: 19 }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(screen.getByRole('button', { name: '查看棋谱' }));
+    await userEvent.click(await screen.findByRole('button', { name: '加载更多' }));
+    expect(platformPlayerGames).toHaveBeenLastCalledWith('golaxy', 'u1', 'token', 1);
+    expect(await screen.findByText(/末页黑方/)).toBeInTheDocument();
+    expect(screen.getByText(/黑方0/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '加载更多' })).not.toBeInTheDocument();
+  });
+
+  it('confirms follow state from Golaxy and changes it through the selected owner', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲', invite_able: true }] });
+    platformPlayerProfile.mockResolvedValue({ profile: { followed: false } });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(await screen.findByRole('button', { name: '添加关注' }));
+    expect(platformFollowPlayer).toHaveBeenCalledWith('golaxy', 'u1', true, 'token');
+    expect(await screen.findByRole('button', { name: '取消关注' })).toBeInTheDocument();
+  });
+
+  it('re-reads follow state after an ambiguous write failure instead of repeating the write', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'u1', username: '棋友甲', status: '空闲' }] });
+    platformPlayerProfile.mockResolvedValueOnce({ profile: { followed: false } })
+      .mockResolvedValueOnce({ profile: { followed: true } });
+    platformFollowPlayer.mockRejectedValueOnce(new Error('confirmation lost'));
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看棋友甲的个人资料' }));
+    await userEvent.click(await screen.findByRole('button', { name: '添加关注' }));
+    expect(await screen.findByRole('button', { name: '重新读取关注状态' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '添加关注' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: '重新读取关注状态' }));
+    expect(await screen.findByRole('button', { name: '取消关注' })).toBeEnabled();
+    expect(platformFollowPlayer).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the selected player through a refresh and updates only that identity', async () => {
@@ -357,6 +422,77 @@ describe('Golaxy home', () => {
     act(() => screen.getByRole('button', { name: '重试' }).click());
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByText('暂无对局')).toBeInTheDocument();
+  });
+
+  it('appends scroll pages, stops at an empty page and retains loaded pages on refresh', async () => {
+    platformRooms.mockImplementation((_platform, _token, page) => Promise.resolve({ rooms: page === 0 ? [room('1234')] : page === 1 ? [room('5678')] : [] }));
+    vi.useFakeTimers();
+    renderPage();
+    await act(async () => { await Promise.resolve(); });
+    const list = document.querySelector('.golaxy-home__list-body')!;
+    fireEvent.scroll(list);
+    await act(async () => { await Promise.resolve(); });
+    expect(platformRooms).toHaveBeenLastCalledWith('golaxy', 'token', 1);
+    expect(screen.getByText('1234 房')).toBeInTheDocument();
+    expect(screen.getByText('5678 房')).toBeInTheDocument();
+    await act(async () => vi.advanceTimersByTime(30_000));
+    expect(screen.getByText('5678 房')).toBeInTheDocument();
+    fireEvent.scroll(list);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.getByText('没有更多了')).toBeInTheDocument();
+    const count = platformRooms.mock.calls.length;
+    fireEvent.scroll(list);
+    expect(platformRooms).toHaveBeenCalledTimes(count);
+  });
+
+  it('resets filter pages and ignores an old filter response', async () => {
+    const pending = deferred<{ users: { user_id: string; username: string }[] }>();
+    platformUsers.mockResolvedValueOnce({ users: [{ user_id: 'a', username: '全部棋友甲' }] })
+      .mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ users: [{ user_id: 'f', username: '关注棋友' }] });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(screen.getByRole('button', { name: '同级别' }));
+    expect(platformUsers).toHaveBeenLastCalledWith('golaxy', 'token', undefined, { page: 0, filter: 'same_level' });
+    await userEvent.click(screen.getByRole('button', { name: '我的关注' }));
+    expect(await screen.findByText('关注棋友')).toBeInTheDocument();
+    await act(async () => pending.resolve({ users: [{ user_id: 's', username: '过期同级棋友' }] }));
+    expect(screen.queryByText('过期同级棋友')).not.toBeInTheDocument();
+    expect(screen.queryByText('全部棋友甲')).not.toBeInTheDocument();
+  });
+
+  it('does not offer another page for a short following list', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'fan', username: 'fan', status: '空闲' }] });
+    renderPage();
+    await userEvent.click(await screen.findByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(screen.getByRole('button', { name: '我的关注' }));
+    expect(await screen.findByRole('button', { name: '查看fan的个人资料' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '加载更多棋友' })).not.toBeInTheDocument();
+  });
+
+  it('retains rows when loading another page fails and retries that page', async () => {
+    platformRooms.mockResolvedValueOnce({ rooms: [room('1234')] }).mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ rooms: [room('5678')] });
+    renderPage();
+    await screen.findByText('1234 房');
+    fireEvent.scroll(document.querySelector('.golaxy-home__list-body')!);
+    expect(await screen.findByText('没能读取更多，请重试')).toBeInTheDocument();
+    expect(screen.getByText('1234 房')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '重试加载更多' }));
+    expect(await screen.findByText('5678 房')).toBeInTheDocument();
+    expect(platformRooms).toHaveBeenLastCalledWith('golaxy', 'token', 1);
+  });
+
+  it('hides invitation and follow actions for the verified self even with the same nickname', async () => {
+    platformUsers.mockResolvedValue({ users: [{ user_id: 'owner', username: '本人', invite_able: true, is_self: true }] });
+    platformPlayerProfile.mockResolvedValue({ profile: { followed: false, is_self: true } });
+    renderPage();
+    await screen.findByText(/真实账号/);
+    await userEvent.click(screen.getByRole('tab', { name: '在线棋友' }));
+    await userEvent.click(await screen.findByRole('button', { name: '查看本人的个人资料' }));
+    expect(screen.queryByRole('button', { name: '邀请对局' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '添加关注' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
   });
 
 });

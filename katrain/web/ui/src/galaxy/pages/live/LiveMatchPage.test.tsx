@@ -7,6 +7,7 @@ import type { MatchDetail, MoveAnalysis } from '../../../types/live';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
 import LiveMatchPage from './LiveMatchPage';
 
+const playSound = vi.hoisted(() => vi.fn());
 const mockSetCurrentMove = vi.fn();
 const mockRefresh = vi.fn();
 let liveFixture: {
@@ -25,14 +26,19 @@ vi.mock('../../../hooks/live/useLiveMatch', () => ({
 }));
 
 vi.mock('../../../hooks/useSound', () => ({
-  useSound: () => ({ play: vi.fn() }),
+  useSound: () => ({ play: playSound }),
 }));
 
-vi.mock('../../../components/live/LiveBoard', () => ({
+vi.mock('../../../components/live/LiveBoard', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../../components/live/LiveBoard')>(),
   default: (props: Record<string, unknown>) => {
     boardProps = props;
     return <div data-testid="mock-live-board">Live Board</div>;
   },
+}));
+
+vi.mock('../../components/board/ReplayBoard3D', () => ({
+  default: () => <div data-testid="mock-3d-board">3D Board</div>,
 }));
 
 type ResizeCallback = ConstructorParameters<typeof ResizeObserver>[0];
@@ -81,6 +87,7 @@ describe('LiveMatchPage', () => {
     ResizeObserverMock.callback = undefined;
     ResizeObserverMock.observed = undefined;
     boardProps = {};
+    playSound.mockClear();
     mockSetCurrentMove.mockReset();
     mockRefresh.mockReset();
     mockRefresh.mockResolvedValue(undefined);
@@ -88,6 +95,17 @@ describe('LiveMatchPage', () => {
       match, loading: false, error: null, currentMove: 2,
       setCurrentMove: mockSetCurrentMove, analysis, refresh: mockRefresh,
     };
+  });
+
+  it('switches between 2D and 3D from the shared board display group', () => {
+    renderPage();
+    const toggle = screen.getByRole('button', { name: '3D' });
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('mock-3d-board')).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByTestId('mock-live-board')).toBeInTheDocument();
   });
 
   it('composes real match data and panels into the shared shell without an old board header', () => {
@@ -111,9 +129,9 @@ describe('LiveMatchPage', () => {
     expect(controls).toBeInTheDocument();
     // 工具格是四列一行的四个键；坐标不在格子里，是格子下面单独一行的开关。
     expect(within(controls).getAllByRole('button')).toHaveLength(4);
-    expect(within(rail).getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: '坐标' })).toBeInTheDocument();
     expect(trend).toHaveStyle({ flex: 'none' });
-    expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
+    expect(within(actions).getByText('2 / 3 手')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
   });
 
@@ -138,7 +156,8 @@ describe('LiveMatchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try Move' }));
     act(() => (boardProps.onTryMove as (move: string) => void)('K10'));
     expect(boardProps.tryMoves).toEqual(['K10']);
-    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    fireEvent.click(screen.getByRole('button', { name: '清空' }));
     expect(boardProps.tryMoves).toEqual([]);
 
     act(() => ResizeObserverMock.callback?.(
@@ -147,13 +166,13 @@ describe('LiveMatchPage', () => {
     ));
     expect(boardProps.showCoordinates).toBe(true);
     // 坐标已从工具格挪成单独一行的开关（与死活题页对齐），role 从 button 变成 checkbox。
-    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeChecked();
+    expect(screen.getByRole('button', { name: '坐标' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('keeps the playback move counter as one measurable action-region item', () => {
     renderPage();
     const counter = within(screen.getByTestId('board-rail-actions')).getByTestId('playback-move-counter');
-    expect(counter).toHaveTextContent('2 / 3 live:moves');
+    expect(counter).toHaveTextContent('2 / 3 手');
     expect(counter).toHaveStyle({ minWidth: '87px', whiteSpace: 'nowrap' });
   });
 
@@ -226,5 +245,70 @@ describe('LiveMatchPage', () => {
 
     resolveRefresh();
     await waitFor(() => expect(retry).toBeEnabled());
+  });
+
+it('sounds once for explicit replay, keeps pass, initial frontier and recovery catch-up silent, and sounds one new live stone', () => {
+  liveFixture.currentMove = 3;
+  const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+  const view = render(page());
+  expect(playSound).not.toHaveBeenCalled();
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10'], move_count: 4 } };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  liveFixture = { ...liveFixture, currentMove: 4 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(1);
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10', 'pass'], move_count: 5 } };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, currentMove: 5 };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10', 'pass', 'C4', 'C5', 'C6'], move_count: 8 } };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, currentMove: 8 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+  liveFixture = { ...liveFixture, currentMove: 7 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(2);
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(2);
+});
+
+  it.each([true, false])('keeps background polling and the first resumed snapshot silent before sounding a new live stone (background update=%s)', (backgroundUpdate) => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    try {
+      liveFixture.currentMove = 3;
+      const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+      const view = render(page());
+      hidden.mockReturnValue(true);
+      fireEvent(document, new Event('visibilitychange'));
+      const backgroundMoves = backgroundUpdate ? [...match.moves, 'K10'] : match.moves;
+      if (backgroundUpdate) {
+        liveFixture = { ...liveFixture, match: { ...match, moves: backgroundMoves, move_count: backgroundMoves.length } };
+        view.rerender(page());
+        liveFixture = { ...liveFixture, currentMove: backgroundMoves.length };
+        view.rerender(page());
+      }
+      expect(playSound).not.toHaveBeenCalled();
+      hidden.mockReturnValue(false);
+      fireEvent(document, new Event('visibilitychange'));
+      const resumedMoves = [...backgroundMoves, 'C4'];
+      liveFixture = { ...liveFixture, match: { ...match, moves: resumedMoves, move_count: resumedMoves.length } };
+      view.rerender(page());
+      liveFixture = { ...liveFixture, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).not.toHaveBeenCalled();
+      const nextMoves = [...resumedMoves, 'C5'];
+      liveFixture = { ...liveFixture, match: { ...match, moves: nextMoves, move_count: nextMoves.length } };
+      view.rerender(page());
+      liveFixture = { ...liveFixture, currentMove: nextMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+      fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+      liveFixture = { ...liveFixture, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledTimes(2);
+    } finally { hidden.mockRestore(); }
   });
 });

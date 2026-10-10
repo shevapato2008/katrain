@@ -10,6 +10,8 @@ import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { Icon } from '../shell/icons';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { useResearchBoard, type BoardTool } from '../hooks/useResearchBoard';
+import { useSound } from '../../hooks/useSound';
+import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ruleNameOf } from '../utils/setupOptions';
@@ -136,6 +138,7 @@ const ResearchPage = () => {
   const { token, isAuthenticated } = useAuth();
 
   const board = useResearchBoard();
+  const { play } = useSound();
   // ⚠️ **token 必传。** 签名是 `token?: string`(选填)—— 漏传编译得过、单测也不红,
   // 但服务端会 `close(1008, "Invalid token")`:棋盘停在 `/api/state` 那一帧,摆子看起来
   // 像点了没反应,分析结果永远不刷新。**本机看不出来**,127.0.0.1 上有 cookie 兜底。
@@ -398,18 +401,20 @@ const ResearchPage = () => {
 
   const onIntersection = useCallback((x: number, y: number) => {
     if (scan === 'running') return; // 扫描期间盘面是冻的
-    editGuard(() => board.handleIntersectionClick(x, y));
-  }, [scan, editGuard, board]);
+    editGuard(() => { if (board.handleIntersectionClick(x, y)) play('stone'); });
+  }, [scan, editGuard, board, play]);
 
   const goToMove = useCallback((move: number) => {
     const clamped = Math.max(0, Math.min(board.moves.length, move));
+    if (clamped === board.currentMove) return;
     board.handleMoveChange(clamped);
+    if (clamped > 0 && isReplayStoneMove(board.moves[clamped - 1], board.boardSize)) play('stone');
     // 扫完之后会话也要跟着挪,否则 `gs.analysis` 说的还是上一个节点。
     if (scan === 'done' && session.gameState) {
       const node = session.gameState.history[clamped]?.node_id;
       if (node !== undefined) void session.onNavigate(node);
     }
-  }, [board, scan, session]);
+  }, [board, scan, session, play]);
 
   // ── 入口:三条深链 ─────────────────────────────────────────────────────────
   //
@@ -617,6 +622,7 @@ const ResearchPage = () => {
             showCoordinates={false}
             handicapCount={board.handicapCount}
             onIntersectionClick={onIntersection}
+            rejectOccupiedIntersections={board.boardTool !== 'delete'}
             nextColor={board.nextColor ?? undefined}
             /* 推荐点**常亮**,没有开关管它 —— 稿子 `data-ghost="R11,C7,Q6"` 就是这么画的。 */
             aiMarkers={markers}

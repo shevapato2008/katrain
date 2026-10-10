@@ -70,8 +70,19 @@ def _evidence(db, owner, owner_id, lang, display, decision="conventional", revis
     return row
 
 
-def _list(db, q=None, lang="cn"):
-    return asyncio.run(kifu.list_kifu_albums(_request(), q=q, page=1, page_size=20, lang=lang, db=db))
+def _list(db, q=None, lang="cn", page_size=20):
+    return asyncio.run(kifu.list_kifu_albums(_request(), q=q, page=1, page_size=page_size, lang=lang, db=db))
+
+
+def _assert_page_scoped_sgf_read(statements):
+    """The preview may read SGF only through the bounded album page query."""
+    reads = [statement.lower() for statement in statements if "sgf_content" in statement.lower()]
+    assert len(reads) == 1
+    assert "from kifu_albums" in reads[0]
+    assert "order by" in reads[0]
+    assert "limit" in reads[0]
+    assert "offset" in reads[0]
+    assert "count(" not in reads[0]
 
 
 def _preserve_stored_locale(monkeypatch):
@@ -518,6 +529,7 @@ def test_strict_page_batches_twenty_albums_in_all_languages(monkeypatch):
 
         event.listen(engine, "before_cursor_execute", record_sql)
         try:
+            query_counts = []
             for lang in languages:
                 statements.clear()
                 page = _list(db, lang=lang)
@@ -526,7 +538,10 @@ def test_strict_page_batches_twenty_albums_in_all_languages(monkeypatch):
                     item.display_player_black == f"Player {lang}" and item.display_event == f"Cup {lang}"
                     for item in page.items
                 )
-                assert len(statements) <= 7
+                _assert_page_scoped_sgf_read(statements)
+                query_counts.append(len(statements))
+                assert len(statements) <= 10
+            assert len(set(query_counts)) == 1
         finally:
             event.remove(engine, "before_cursor_execute", record_sql)
     finally:
@@ -936,13 +951,20 @@ def test_strict_composed_display_search_and_queries_are_bounded(monkeypatch, own
         event.listen(engine, "before_cursor_execute", record_sql)
         try:
             page = _list(db, "1er Honinbo", "cn")
+            page_statements = list(statements)
+            statements.clear()
+            first = _list(db, "1er Honinbo", "cn", page_size=1)
+            first_statements = list(statements)
         finally:
             event.remove(engine, "before_cursor_execute", record_sql)
         assert page.total == 20
         assert {item.id for item in page.items} == {album.id for album in albums}
         assert all(item.display_event == "第1届本因坊战" for item in page.items)
-        assert len(statements) <= 18
-        assert not any("sgf_content" in statement for statement in statements)
+        assert first.total == 20 and len(first.items) == 1
+        assert len(page_statements) <= 28
+        assert len(page_statements) <= len(first_statements) + 2
+        _assert_page_scoped_sgf_read(page_statements)
+        _assert_page_scoped_sgf_read(first_statements)
         assert (
             asyncio.run(kifu.get_kifu_album(_request(), outside.id, lang="cn", db=db)).display_event == "赛事名称待核实"
         )

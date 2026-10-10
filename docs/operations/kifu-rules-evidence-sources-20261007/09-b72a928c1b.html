@@ -1,0 +1,593 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="한국기원">
+	<meta name="description" content="한국기원 공식 홈페이지. 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="한국기원">
+	<meta property="og:url" content="https://www.baduk.or.kr/">
+	<meta property="og:title" content="한국기원">
+	<meta property="og:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta property="og:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="한국기원 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="한국기원">
+	<meta name="twitter:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="twitter:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png">
+
+	<link rel="canonical" href="https://www.baduk.or.kr/">
+	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.baduk.or.kr/">
+
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "한국기원",
+		"url": "https://www.baduk.or.kr/",
+		"logo": "https://www.baduk.or.kr/images/common/logo.png"
+	}
+	</script>
+
+
+
+	
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js?ver=1"></script>
+	<script language="javascript" src="/js/jquery-3.7.1.min.js"></script>
+	<script language="javascript" src="/js/swiper.jquery.min.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+<body>
+
+<div id="wrap">
+
+	<div class="eventWrap" id="topPopup" >
+		
+		
+
+<link rel="stylesheet" href="/common/swiper.min.css">
+
+<div class="innerEvent">	
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			
+				<div class="swiper-slide">
+					<a href="https://w.baduk.or.kr/" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/무제-1.jpg" style="width:320px;height:150px"></a>
+				</div>
+				
+				<div class="swiper-slide">
+					<a href="https://badukland.co.kr" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/배너 시안 2.png" style="width:320px;height:150px"></a>
+				</div>
+				
+		</div>
+	</div>
+
+	<span class="btn_slide prev"><button type="button" class="PP"></button></span>
+	<span class="btn_slide next"><button type="button" class="NN"></button></span> 
+</div>
+
+<script>
+	var swiper = new Swiper('.swiper-container', {
+		loop: true,
+		pagination: '.swiper-pagination',
+		slidesPerView: 3,
+		paginationClickable: true,
+		prevButton: '.PP',
+		nextButton: '.NN'
+	});
+</script>
+
+	</div>
+
+	<div id="header_wrap">
+		<div class="header_topa">
+			<div class="gnb_sub" id="allMenu" style="display:none" onclick="allMenuOnOff()">
+                <div class="innerContents">
+                    <dl>
+                        <dt >
+							<a href="/about/history.asp">기원소개</a>
+						</dt>
+                        <dd>
+                            <ul>
+								<li><a href="/about/history.asp"      >한국기원약사</a></li>
+								<li><a href="/about/business.asp"     >주요사업</a></li>
+								<li><a href="/about/management.asp"   >경영공시</a></li>
+								<li><a href="/about/since.asp"        >연혁</a></li>
+								<li><a href="/about/ceo.asp"          >역대총재/이사장</a></li>
+								<li><a href="/about/executive.asp"    >임원명단</a></li>
+								<li><a href="/about/organization.asp" >조직도</a></li>
+								<li><a href="/about/charactor.asp"    >캐릭터/CI</a></li>
+								<li><a href="/about/igf.asp"          >IGF</a></li>
+								<li><a href="/about/contact.asp"      >찾아오시는길</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="nuxt-link-active">
+							<a href="/news/report.asp">바둑뉴스</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/news/report.asp"     >보도자료</a></li>
+								<li><a href="/news/summary.asp"    class="nuxt-link-exact-active nuxt-link-active">바둑뉴스</a></li>
+								<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+								<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+								<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+								<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/record/diary.asp">기록실</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/record/diary.asp"         >대국결과</a></li>
+								<li><a href="/record/schedule.asp"      >대국일정</a></li>
+								<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+								<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+								<li><a href="/record/rankingYears.asp"  >연도별순위</a></li>
+								<li><a href="/record/rankingYear.asp"   >단일연도순위</a></li>
+								<li><a href="/record/player.asp"        >기사정보</a></li>
+								<li><a href="/record/title.asp"         >타이틀현황</a></li>
+								<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/gibo/gibo.asp">기보감상</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/gibo/gibo.asp" >전체기보</a></li>
+								<li><a href="https://goldengibo.baduk.or.kr/" target="_blank">도약기 기보</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/game/game.asp?etcKey=1">기전정보</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/game/game.asp?etcKey=1" >현행 기전</a></li>
+								<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/square/board.asp">바둑인광장</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/square/board.asp"        >공지사항</a></li>
+								<li><a href="/square/amaApply.asp"     >아마단급</a></li>
+								<li><a href="/square/amaGame.asp"      >대회참가신청</a></li>
+								<li><a href="/square/explain.asp"      >공개해설신청</a></li>
+								<li><a href="/square/talk.asp"         >바둑토크</a></li>
+								<li><a href="/square/studentScore.asp" >통합연구생리그</a></li>
+								<li><a href="/square/site.asp"         >관련사이트</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/story/about.asp">바둑이야기</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/story/about.asp"     >바둑이란</a></li>
+								<li><a href="/story/bHistory.asp"  >바둑의 역사</a></li>
+								<li><a href="/story/howto.asp"     >대국방법</a></li>
+								<li><a href="/story/manner.asp"    >대국예절</a></li>
+								<li><a href="/story/badukRule.asp" >바둑규칙</a></li>
+								<li><a href="/story/gameRule.asp"  >경기규정</a></li>
+								<li><a href="/story/keyword.asp"   >바둑용어</a></li>
+								<!--<li><a href="https://archives.baduk.or.kr/archives/" target="_blank">바둑아카이브즈</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+			<div class="gnba">
+				<div class="popup_isShow">
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('X')" >팝업닫기<span class="close"></span></button>
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('')"  style="display:none">팝업열기<span class="open"></span></button>
+				</div>
+				<div class="gnb">
+					<form action="/etc/search.asp" method="post" name="sForm">
+					<fieldset class="searchW">
+						<legend class="hidden">통함검색</legend>
+						<dl>
+							<dt>통합검색</dt>
+							<dd class="searchWa"><span class="inputa"><input type="searchW" name="searchKey" value="" placeholder="검색어를 입력하세요"></span><span class="btn_searcha"><button type="button" onclick="sForm.submit()"></button></span></dd>
+						</dl>
+					</fieldset>
+					</form>
+					<ul class="links">
+						<li><a href="https://www.tvbaduk.com/" target="_blank">바둑TV</a></li>
+						<li><a href="/news/monthly.asp">월간바둑</a></li>
+						<li><a href="https://www.badukmall.co.kr/" target="_blank">바둑몰</a></li>
+						<li><a href="https://badukland.co.kr/" target="_blank">바둑랜드</a></li>
+						<li><a href="https://www.facebook.com/KoreaBadukAssociation/" target="_blank" class="facebook"></a></li>
+						<li><a href="https://www.instagram.com/korea_baduk_association/" target="_blank" class="insta"></a></li>
+						<li class="spread" onclick="allMenuOnOff()"><button type="button"></button></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="header">
+			
+			
+
+			<div class="logo">
+				<h1><a href="/"><img src="/images/common/logo.png" alt="한국기원" /></a></h1>
+			</div>
+			<div class="navia">
+				<ul class="navi">
+					<li ><a href="/about/history.asp">기원소개</a></li>
+					<li class="selected"><a href="/news/report.asp">바둑뉴스</a></li>
+					<li ><a href="/record/diary.asp">기록실</a></li>
+					<li ><a href="/gibo/gibo.asp">기보감상</a></li>
+					<li ><a href="/game/game.asp">기전정보</a></li>
+					<li ><a href="/square/board.asp">바둑인광장</a></li>
+					<li ><a href="/story/about.asp">바둑이야기</a></li>
+				</ul>
+			</div> 
+		</div>
+	</div>
+
+<div id="container">  
+          
+	<div class="subVisaul02">
+		<div class="subTitle">바둑뉴스</div>
+	</div>
+
+	<div class="contents_wrap">
+		
+		
+
+<div class="lnb">
+	<ul>
+		
+
+			<li><a href="/news/report.asp"     >보도자료</a></li>
+			<li><a href="/news/summary.asp"    class="lnb_on">바둑뉴스</a></li>
+			<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+			<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+			<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+			<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+
+		
+	</ul>
+</div>
+
+
+		<div class="pageTitle">            
+			<h2>
+				<div class="ttbar"></div>
+				바둑뉴스
+			</h2>
+		</div>
+		
+		<div class="contents">
+			
+			<div class="subTab">
+				<ul>
+					<li><a onclick="tebMenu('')"     class="subTab_on">전체</a></li>
+					<li><a onclick="tebMenu('BTV')"  >바둑TV뉴스</a></li>
+					<li><a onclick="tebMenu('KBL')"  >한국바둑리그</a></li>
+					<li><a onclick="tebMenu('SBA')"  >레전드바둑리그</a></li>
+					<li><a onclick="tebMenu('WBA')"  >여자바둑리그</a></li>
+					<li><a onclick="tebMenu('KBCL')" >챌린지바둑리그</a></li>
+				</ul>
+			</div> 
+				
+			<div class="newsView">
+				<div class="newsViewArea">
+					<div class="newsViewTop">
+						<h3>심야의 혈투! 승자는 정관장!</h3>
+						<dl>
+							<dt>등록일</dt>
+							<dd>2026-01-26</dd>
+							<dt class="hit">조회수</dt>
+							<dd>1,055</dd>
+						</dl>
+					</div>
+					<div class="newsViewBody">
+						<div class="newsDetailMain">
+							<table>
+							<tbody>
+							<tr><td><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[크기변환]개시.JPG" alt=""></td></tr>
+							
+								<tr><td class="mainCaption">▲ 정관장과 마한의 심장 영암의 무박 2일 심야 혈투가 막을 올렸다.</td></tr>
+							
+							</tbody>
+							</table>
+						</div>
+						자정을 넘겨 0시 43분에야 끝난 처절한 승부. 25일(일) 한국기원 바둑TV 스튜디오에서 열린 2025-2026 KB국민은행 바둑리그 12라운드 4경기에서 정관장이 마한의 심장 영암을 장장 6시간에 가까운 혈투 끝에 3-2로 간신히 이겼다.<br>
+<br>
+<b><font color=brown> 1국 마한의 심장 영암 신진서(1지명) vs 정관장 김명훈(1지명) </b></font><br>
+<b><font color=orange> 신진서, 289수 흑 불계승. 마한의 심장 영암 1-0 정관장  </b></font><br>
+<br>
+지난주 강유택(한옥마을 전주)에게 일격을 당했지만 9승 1패로 여전히 다승 1위를 지키고 있는 신진서가 선봉에 나섰다. 올 시즌 첫 1지명과의 맞대결이다. 마주한 김명훈은 1지명 상대 3승 1패, 선발 출전에서도 역시 3승 1패를 기록 중이다.<br>
+<br>
+신중한 행마 속에 팽팽한 국면이 이어졌다. 자신의 진영에 침투한 돌을 효과적으로 공략한 신진서가 먼저 앞서갔다. 신진서의 강수에 김명훈이 역공으로 맞서며 국면은 다시 혼란에 빠졌다. 좌변에서 한창 패싸움이 벌어졌다. 팻감 공방 과정에서 기민하게 움직인 신진서가 결국 불계승을 거뒀다. 난타전 끝에 영암이 선제점을 올렸다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]1국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850]신진서.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 올 시즌 첫 1지명 대결을 승리로 장식한 신진서(마한의 심장 영암). 지난 10차례 대국에서 5지명 2회, 4지명 3회 등 평균 3.75지명(용병 제외)의 하위 지명자를 상대해온 점은 한해원 감독에게 아쉬운 대목이다.</div><br>
+<br>
+<b><font color=brown> 2국 정관장 안국현(3지명) vs 마한의 심장 영암 홍성지(2지명) </b></font><br>
+<b><font color=orange> 안국현, 323수 흑 7.5집 승. 정관장 1-1 마한의 심장 영암 </b></font><br>
+<br>
+포스트시즌을 향해 갈 길이 바쁜 영암은 개인 다승 2위 홍성지(8승 3패)를 서둘러 투입했다. 정관장은 안국현(3승 8패)이 나섰다. 정반대의 시즌 성적도 큰 차이를 보이지만, 무엇보다 상대 전적 1승 7패로 절대 열세인 안국현은 2012년 이후 7연패를 당하고 있다. 천적에 가까운 존재를 만났다. <br>
+<br>
+우변 공방에서 안국현이 승기를 잡았다. 비세를 느낀 홍성지가 좌변 흑진에 침투해 흔들기에 나섰다. 수상전이 예상되는 상황, 홍성지는 2선에 빠지는 완착을 두었고, 안국현은 2선에 붙이는 맥점을 구사하며 확실한 우위를 확보했다. 홍성지의 끈질긴 추격에도 침착한 마무리로 안국현이 7.5집을 남겼다. 정관장이 1-1 동점을 만들었다. <br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]2국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]안국현.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 절묘한 맥을 여러 차례 선보이며 동점타를 터트린 안국현(정관장). 지난해 11월 영암 투어 당시, 버스로 이동하는 내내 스마트폰으로 묘수풀이에 몰두했던 모습이 인상적이었다.</div><br>
+<br>
+<b><font color=brown> 3국 정관장 박상진(2지명) vs 마한의 심장 영암 이재성(4지명) </b></font><br>
+<b><font color=orange> 박상진, 222수 백 불계승. 정관장 2-1 마한의 심장 영암 </b></font><br>
+<br>
+박상진은 지난 9라운드부터 변상일(한옥마을 전주)·이지현(원익)·한태희(울산 고려아연)를 잇달아 꺾으며 3연승 행진 중이다. 이재성 역시 지난주 한옥마을 전주전 최종국에서 한상조를 상대로 극적인 승리를 거뒀다. 기분 좋은 흐름을 타고 있는 두 선수가 중요한 길목에서 만났다.<br>
+<br>
+좌변에서 상당한 실리를 챙긴 이재성의 승률 그래프가 99%를 넘겼다. 이른 시점부터 불리해진 박상진에게 그나마 다행인 점은 바둑판에 빈 자리가 많이 남았다는 것. 하변에서 난전을 유도하며 결국 상대의 패착을 이끌어냈다. 전세를 뒤집은 박상진이 후반을 침착하게 마무리했다. 정관장이 2-1로 역전에 성공했다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]3국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]박상진.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 승률 1%에서 출발해 극적인 역전극을 연출한 박상진(정관장). 시즌 7승 5패.</div><br>
+<br>
+<b><font color=brown> 4국 마한의 심장 영암 심재익(3지명) vs 정관장 최민서(5지명) </b></font><br>
+<b><font color=orange> 심재익, 254수 백 불계승. 마한의 심장 영암 2-2 정관장 </b></font><br>
+<br>
+3국과 달리 최근 흐름이 좋지 않은 두 선수가 만났다. 7연패를 포함해 2승 9패로 시즌 최다 연패라는 불명예를 안고 있는 심재익, 그리고 김은지(원익)전에서 이해할 수 없는 투석으로 화제를 낳았던 최민서의 대결이다.<br>
+<br>
+팽팽하던 균형은 좌상귀 공방에서 단번에 깨졌다. 최민서의 흑 대마 사활이 걸린 패싸움이 발생하면서 심재익이 확실한 주도권을 쥐었다. 종반 한때 최민서가 우상귀 사활을 추궁할 수 있는 기회마저 놓치며 불계패했다. 심재익의 승리로 영암이 2-2 동점을 만들며 최종국이 성사됐다. <br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]4국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]심재익.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 올 시즌 부침을 겪고 있지만 2020-2021 시즌 5지명 신분으로 7연승을 기록한 적이 있는 심재익(마한의 심장 영암). 시즌 3승 9패.</div><br>
+<br>
+<b><font color=brown> 5국 정관장 박하민(4지명) vs 마한의 심장 영암 최광호(5지명) </b></font><br>
+<b><font color=orange> 박하민, 242수 백 불계승. 정관장 3-2 마한의 심장 영암 </b></font><br>
+<br>
+자정을 앞둔 밤 11시 42분, 최종국이 시작됐다. 영암은 지난주 한옥마을 전주전에서 6연패 사슬을 끊었지만 풀세트 성적 1승 6패로 최종전 약점을 드러냈고, 정관장 역시 2승 5패로 뒷심이 약하기는 마찬가지다.<br>
+<br>
+오래 기다린 끝에 시작된 5국, 승부는 싱겁게 갈렸다. 초반 행마에서 생소한 모양이 등장했는데, 최광호의 선택이 최악의 결과를 낳았다. 처음부터 크게 벌어진 격차를 안고 최광호가 집요하게 승부수를 던졌지만 박하민의 냉정한 대처에 더 이상 변수는 없었다. 박하민이 길고 긴 승부의 마침표를 찍으며, 정관장이 3-2로 역전승을 거뒀다. <br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]5국.JPG' /></div><div class=caption style='width:560px; margin:0 auto'></div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]박하민.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 최광호(마한의 심장 영암)의 끈질긴 추격을 따돌린 박하민(정관장). 시즌 3승 8패.</div><br>
+<br>
+12라운드를 치른 결과 포스트시즌의 윤곽이 드러났다. 울산 고려아연과 원익이 포스트시즌 진출을 확정했다. 파죽의 9연승 질주를 이어간 울산 고려아연이 단독 1위를 굳건히 지켰고, 원익과 영림프라임창호가 각각 한 경기 차로 2·3위에 자리했다. 4위 한옥마을 전주를 비롯해 GS칼텍스, 수려한 합천은 남은  두 번의 라운드에서 마지막 포스트시즌 티켓을 놓고 치열한 경쟁을 벌인다.<br>
+<br>
+개인 다승 순위는 이날 승리를 추가한 신진서가 10승 1패로 1위를 지켰다. 2승 간격으로 무려 9명의 공동 2위 그룹이 형성됐다. 8전 전승의 강유택을 비롯해 안성준·송지훈(이상 8승 3패)·김명훈·변상일·신민준·홍성지(이상 8승 4패)·박정환·박민규(이상 8승 5패) 등이 8승 대열에 이름을 올렸다.<br>
+<br>
+정규리그 13라운드는 오는 29일(목) 한옥마을 전주-울산 고려아연 전으로 재개된다. 이어서 GS칼텍스-수려한 합천(지역투어), 정관장-영림프라임창호, 원익-마한의 심장 영암의 대결이 펼쳐진다. <br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][수정]결과.jpg' /></div><div class=caption style='width:300px; margin:0 auto'></div><br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][수정]순위.jpg' /></div><div class=caption style='width:480px; margin:0 auto'></div><br>
+<br>
+○● 2025-2026 KB국민은행 바둑리그는 8개 팀이 더블리그 방식으로 총 14라운드 56경기를 치른다. 정규리그 상위 4개 팀이 포스트시즌에 진출해 우승 상금 2억 5,000만원을 놓고 최종 대결을 펼친다. 매 경기 5판 3선승제로 진행되며, 기본 시간 1분에 착수할 때마다 15초가 추가되는 피셔 룰 방식이 적용된다.<br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]영암 진서.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 1국을 승리하고 마한의 심장 영암 검토실에 복귀한 신진서(오른쪽 첫 번째)가 뒤늦은 저녁 식사를 하고 있다.<br>
+</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]영암 텐션.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 4국을 마치고 최종국을 앞둔 늦은 시간, 한해원 감독의 텐션이 여전히 높은 마한의 심장 영암 검토실</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]정관장.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 2국 안국현의 대국 화면에 시선이 쏠린 정관장 선수단</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]5국 개시.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 자정을 앞두고 시작된 운명의 최종국</div><br>
+<br>
+<div align='center'><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/[850][크기변환]시계.JPG' /></div><div class=caption style='width:560px; margin:0 auto'>▲ 최종국 최광호(마한의 심장 영암)의 첫 수가 놓이자, 경기장 시계가 11시 42분을 가리켰다.</div>
+					</div>
+					<button type="button" class="listBack" onclick="listPage()">목록</button>
+				</div>
+
+				<div class="newsViewSide">
+					
+
+<div class="sideList">
+	<h2>보도자료</h2>
+	<ul>
+		
+			<li>
+				<a onclick="viewPage_report('5967')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/casdfdf.jpg"></figure>
+				<dl class="article">
+					<dt>하나은행, 한국바둑리그 새로운 타이틀 스폰서로 나선다!</dt>
+					<dd>하나은행이 한국기원과 「2026-2027 하나은행 한국바둑리그」 타이틀 스폰서 조인식을 갖고 새 시즌 공식 후원사로 나섰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5966')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/ascdssfdsf.jpg"></figure>
+				<dl class="article">
+					<dt>김은지·김채영, IBK기업은행배 4강 동반 진출</dt>
+					<dd>김은지 9단과 김채영 9단이 4강에 오르며 IBK기업은행배 초대 우승을 향한 도전을 이어가게 됐다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5965')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/acdfdsf.jpg"></figure>
+				<dl class="article">
+					<dt>독보적 1위 신진서, 82개월 연속 정상 질주</dt>
+					<dd>신진서 9단이 82개월 연속 랭킹 정상을 지켰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5964')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/asddsafdsf.jpg"></figure>
+				<dl class="article">
+					<dt>한국 원투펀치 김은지ㆍ최정, IBK기업은행배 8강 진출</dt>
+					<dd>한국 여자랭킹 1위 김은지 9단과 2위 최정 9단이 IBK기업은행배 16강 둘째 날 경기에서 나란히 승리하며 8강에 안착했다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a onclick="viewPage_report('5963')">
+				<figure><img src="https://www.baduk.or.kr/FileUpDown/homepage/news/2026 IBK기업은행배 16강1 오전 대국 전경(웹).JPG"></figure>
+				<dl class="article">
+					<dt>스미레ㆍ김채영, IBK기업은행배 8강 진출</dt>
+					<dd>여자랭킹 3위 스미레 6단과 5위 김채영 9단이 2026 IBK기업은행배 여자바둑 월드마스터스 8강에 진출했다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+	</ul>
+</div>
+
+<form method="post" name="f_report">	
+	<input type="hidden" name="news_no">
+</form>
+
+<script>
+	function viewPage_report(news_no){
+		f_report.news_no.value = news_no;
+		f_report.action = "report_view.asp";
+		f_report.submit();
+	}
+</script>
+
+
+<div class="sideList">
+	<h2>언론사뉴스</h2>
+	<ul>
+		
+			<li>
+				<a href="https://m.sports.naver.com/general/article/003/0014234092" target="_blank">
+				<dl>
+					<dt>김은지·김채영, IBK배 여자바둑 월드마스터스 준결승 진출</dt>
+					<dd>김은지는 우에노, 김채영은 탕자원 격파
+내년 1월 속개…5일 준결승·6~8일 결승
+</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://www.ppss.kr/news/articleView.html?idxno=314033" target="_blank">
+				<dl>
+					<dt>IBK기업은행배 4강 멤버 한·중 2-2로 압축</dt>
+					<dd>김은지-위즈잉, 김채영-리샤오시 내년 1월 결승행 다퉈
+</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://m.sports.naver.com/general/article/023/0004002232" target="_blank">
+				<dl>
+					<dt>김은지·김채영, 4강 진출… 2대2 韓·中 맞대결</dt>
+					<dd>‘IBK배 여자바둑 월드마스터스’ 8강
+내년 1월 위즈잉·리샤오시와 준결승</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://m.sports.naver.com/general/article/472/0000041810" target="_blank">
+				<dl>
+					<dt>'한국 바둑 에이스' 신진서 9단, 82개월 연속 랭킹 1위</dt>
+					<dd>한국 바둑의 절대 강자 신진서 9단이 82개월 연속 정상을 지켰다.</dd>
+				</dl>
+				</a>
+			</li>
+			
+			<li>
+				<a href="https://www.kukinews.com/article/view/kuk202610050044" target="_blank">
+				<dl>
+					<dt>최정, 위즈잉에 패해 탈락…4강 오른 ‘바둑 여왕’ 김은지, ‘우승 2억원’ IBK배 책임진다</dt>
+					<dd>김은지·김채영 9단, IBK기업은행배 4강 동반 진출
+최정, ‘라이벌’ 위즈잉에게 완패 당하며 8강서 탈락
+준결승전에서 김은지-위즈잉, 김채영-리샤오시 격돌
+내년 1월5일 4강, 6∼8일 결승 3번기로 챔피언 결정</dd>
+				</dl>
+				</a>
+			</li>
+			
+	</ul>
+</div>
+				</div>
+			</div>
+		</div> 
+
+	</div>
+</div>
+
+
+	
+	<div id="footer">
+		<div class="innerFoot">
+            <ul class="footerLinks">
+				<li><a href="/about/history.asp">한국기원소개</a></li>
+				<li><a href="/about/contact.asp">찾아오시는길</a></li>
+				<li><a href="/member/provision.asp">이용약관</a></li>
+				<li><a href="/member/privacy.asp">개인정보처리방침</a></li>
+            </ul>
+            <address>
+                주소 : 서울시 성동구 마장로 210 전화 : 02-3407-3800 팩스 : 02-3407-3875 이메일 : webmaster@baduk.or.kr 사업자등록번호 : 206-82-03412
+                출판 : 1967년 7월 7일 등록(라-906호)<br />
+                (재)한국기원 대표자: 정태순<br />
+                ⓒ 2010 ~ 2026 KOREA BADUK ASSOCIATION. All rights reserved.
+            </address>
+        </div>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+<form method="post" name="s1">	
+	<input type="hidden" name="keyColumn" value="">
+	<input type="hidden" name="keyWord"   value="">
+	<input type="hidden" name="pageNo"    value="">
+	<input type="hidden" name="etcKey"    value="">
+</form>
+
+<script>
+	function listPage(){
+		s1.action = "summary.asp?#pageFocus";
+		s1.submit();
+	}
+	
+	//view에서 탭메뉴
+	function tebMenu(str){
+		s1.pageNo.value = "1";
+		s1.etcKey.value = str;
+		s1.action = "summary.asp?#pageFocus";
+		s1.submit();
+	}
+</script>

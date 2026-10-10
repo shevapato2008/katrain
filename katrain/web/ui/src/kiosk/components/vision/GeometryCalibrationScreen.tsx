@@ -343,8 +343,7 @@ export function GeometryCalibrationScreen({
 
   // ── 三格状态 ───────────────────────────────────────────────────────────────
   //
-  // **没读到之前一律「—」且不给 tone** —— `DEFAULT_STATUS` 三个 capability 全是 false,
-  // 直接画就会在还没问过的时候说「未连接」。「还没读到」≠「读到了没连上」(G8)。
+  // 没读到时不给 tone；LED 未确认不能当成未连接。
   const calibValue = (): StatusCell => {
     if (phase === 'ready' && status.session_calibrated) return { label: '标定', value: '已标定', tone: 'good' };
     if (phase === 'degraded') return { label: '标定', value: '已失效', tone: 'bad' };
@@ -357,11 +356,10 @@ export function GeometryCalibrationScreen({
   const cells: StatusCell[] = loaded ? [
     { label: '摄像头', value: cameraReady ? '已连接' : '未连接', tone: cameraReady ? 'good' : 'bad' },
     calibValue(),
-    // 复用设置屏那个 key:同一件事只有一种说法,也不用新增译文。「未连接」照这一行原来的写法。
-    { label: 'LED', value: ledReady ? t('settings:led_serial_connected', '串口已连接') : '未连接',
-      tone: ledReady ? 'good' : 'bad' },
+    { label: 'LED', value: ledReady == null ? '未确认' : ledReady ? t('settings:camera_connected', '已连接') : '未连接',
+      tone: ledReady == null ? undefined : ledReady ? 'good' : 'warn' },
   ] : [
-    { label: '摄像头', value: '—' }, { label: '标定', value: '—' }, { label: 'LED', value: '—' },
+    { label: '摄像头', value: '—' }, { label: '标定', value: '—' }, { label: 'LED', value: '未确认' },
   ];
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────

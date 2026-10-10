@@ -34,6 +34,7 @@ class PhysicalPlayOrchestrator:
     PAUSE_REASON_LAG = "lag"
     PAUSE_REASON_HINT = "hint"
     PAUSE_REASON_ENGINE_ERROR = "engine_error"  # Task 7 (B5/M1/M4)
+    PAUSE_REASON_REMOTE_DISCONNECTED = "remote_disconnected"
     PAUSE_REASON_AWAITING_REMOVAL = "awaiting_removal"  # Task 8 (B4/M5/D8)
     # A finished game must stop comparing the physical board against a frozen expected
     # board. Measured on RK3562 2026-09-20: a game that ended 15.5 min into the session
@@ -150,6 +151,9 @@ class PhysicalPlayOrchestrator:
         if self._session_id is None:
             return
         self._latest_state = state
+        if state.get("game_type") == "pvp_lobby" and self.PAUSE_REASON_REMOTE_DISCONNECTED in self._pause_reasons:
+            self._caught_up = True
+            self._remove_pause_reason(self.PAUSE_REASON_REMOTE_DISCONNECTED)
         # `end_result` alone is NOT the end: after two passes the result is already
         # written while `awaiting_count` is still true, and the board is still live for
         # counting. Pausing on `end_result` would let one glare phantom kill vision
@@ -234,6 +238,16 @@ class PhysicalPlayOrchestrator:
         reason is still active) once the recovery dialog is dismissed/resolved."""
         self._engine_error_context = None
         self._remove_pause_reason(self.PAUSE_REASON_ENGINE_ERROR)
+
+    def enter_remote_disconnected(self) -> None:
+        """Hold physical detection and clear guidance until a central state arrives."""
+        self._caught_up = False
+        self._add_pause_reason(self.PAUSE_REASON_REMOTE_DISCONNECTED)
+        self._apply_points([])
+
+    @property
+    def remote_disconnected(self) -> bool:
+        return self.PAUSE_REASON_REMOTE_DISCONNECTED in self._pause_reasons
 
     def enter_awaiting_removal(self, coords: Tuple[int, int]) -> None:
         """Task 8 (B4/M5/D8): the recovery dialog's "cancel" hand-off. `coords` are
@@ -484,6 +498,12 @@ class PhysicalPlayOrchestrator:
         players = state.get("players_info")
         if not players:
             return None
+        if state.get("game_type") == "pvp_lobby":
+            # Both seats are humans in the central room. This box guides the
+            # opponent's stones because only our seat is observed as a move.
+            my_color = state.get("platform_my_color")
+            if my_color in ("B", "W"):
+                return {WHITE if my_color == "B" else BLACK}
         engine_color = state.get("platform_engine_color")
         return {
             color

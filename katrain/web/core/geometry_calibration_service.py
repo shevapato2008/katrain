@@ -220,7 +220,7 @@ class GeometryCalibrationService:
         status["out_size"] = getattr(self.current_lock, "out_size", None)
         status["capabilities"] = {
             "camera_ready": self._is_ready(self.capture),
-            "led_ready": self._is_ready(self.led),
+            "led_ready": self.led.is_board_connected() if self.led is not None else None,
             "geometry_ready": self.current_lock is not None and status["session_calibrated"],
         }
         return status

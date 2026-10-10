@@ -3336,7 +3336,7 @@ msgid "grade:histogram_aria"
 msgstr "7 段階の着手評価の分布。黒い棒が黒番、白い棒が白番で、それぞれ自分の手数で正規化"
 
 msgid "grade:def_brilliant"
-msgstr "エンジンの第一候補で、しかもエンジンの直感が見落としていた手（事前確率 10% 未満）"
+msgstr "AIが深く読み進めた後の第一候補を打ち、その手のAIの初期選択確率が10%未満（ヨセでは6%未満）"
 
 msgid "grade:def_best"
 msgstr "エンジンの第一候補"
@@ -3352,8 +3352,11 @@ msgstr "前の手が未解析、または探索量が足りず判定できない
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"次の 3 条件をすべて満たすこと：エンジンの第一候補を打った、その第一候補の事前確率が 10% "
-"未満（エンジンの直感も見落とした）、勝敗がまだ決まっていない。"
+"妙手と認められるには、実戦でAIが深く読み進めた後の第一候補を打ち、その手のAIの初期選択確率が10%未満（ヨセでは6%未満）で、局面の勝敗がまだ決まっていないことが必要です。"
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"AIの初期選択確率とは、深く読み進める前にAIがその手を選ぶ確率です。勝率でも、人間がその手を打つ確率でもありません。初期選択確率が非常に低い手でも、深く読み進めた結果、第一候補になることがあります。"
 
 msgid "grade:match_timeline_legend"
 msgstr "全高の塗り = 第一候補、半分の淡色 = 上位 3 候補、地色 = それ以外"
@@ -3913,7 +3916,7 @@ msgstr "第 {n} 手 {m} · {s} · {g} · {x} 目損"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"第 {n} 手 {m} · {s} · 妙手度 {k} —— エンジンの第一候補でありながら、事前確率は {p}% しかありません（低いほど妙手）"
+"第 {n} 手 {m} · {s} · 妙手度 {k} —— AIの初期選択確率はわずか {p}%、深く読み進めた後に第一候補となった手"
 
 msgid "grade:truncated_plot"
 msgstr "各手番につき最大 {k} 件まで表示、ほかに {n} 件は未表示"
@@ -6973,3 +6976,6 @@ msgstr "ログイン確認に失敗しました"
 
 msgid "vision:not_a_stone"
 msgstr "石ではない"
+
+msgid "report:score_difference"
+msgstr "目差"

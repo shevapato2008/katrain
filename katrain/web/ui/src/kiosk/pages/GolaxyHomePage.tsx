@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API, ApiError, type PlatformInfo, type GolaxyRoom, type GolaxyOnlinePlayer } from '../../api';
+import { API, ApiError, type PlatformInfo, type GolaxyRoom, type GolaxyOnlinePlayer, type GolaxyPlayerGame } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
@@ -16,7 +16,7 @@ type Connection =
   | { kind: 'disconnected' }
   | { kind: 'connected'; account: PlatformInfo; token: string | null | undefined };
 
-type ProfileStage = 'main' | 'invite' | 'pending' | 'error';
+type ProfileStage = 'main' | 'invite' | 'pending' | 'error' | 'kifu';
 
 const playerRecord = (player: GolaxyOnlinePlayer) =>
   Number.isSafeInteger(player.wins) && Number.isSafeInteger(player.losses)
@@ -28,12 +28,22 @@ const PlayerAvatar = ({ player }: { player: GolaxyOnlinePlayer }) => player.avat
   ? <img className="golaxy-home__avatar" src={player.avatar_url} alt="" />
   : <span className="golaxy-home__avatar">{player.username.slice(-1)}</span>;
 
-// Reusable view for the verified player identity. No invitation write is wired yet.
-export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: {
-  player: GolaxyOnlinePlayer; onClose: () => void; initialStage?: ProfileStage;
+// Reusable view for the verified player identity. Invitation writes remain gated.
+export function GolaxyPlayerProfile({ player, token, onClose, initialStage = 'main' }: {
+  player: GolaxyOnlinePlayer; token: string | null | undefined; onClose: () => void; initialStage?: ProfileStage;
 }) {
-  const [stage, setStage] = useState<ProfileStage>(initialStage);
+  const [stage, setStage] = useState<ProfileStage>(player.is_self ? 'main' : initialStage);
+  const [profileSelf, setProfileSelf] = useState<boolean | undefined>(player.is_self);
+  const isSelf = player.is_self === true || profileSelf === true;
   const [mode, setMode] = useState<'screen' | 'physical'>('screen');
+  const [followed, setFollowed] = useState<boolean | null>(null);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followError, setFollowError] = useState(false);
+  const [games, setGames] = useState<GolaxyPlayerGame[]>([]);
+  const [gamesTotal, setGamesTotal] = useState<number | null>(null);
+  const [gamesPage, setGamesPage] = useState(0);
+  const [gamesStatus, setGamesStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [gamesRetry, setGamesRetry] = useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
   const closeAction = useRef(onClose);
   useEffect(() => { closeAction.current = onClose; }, [onClose]);
@@ -45,9 +55,47 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
     document.addEventListener('keydown', closeOnEscape);
     return () => { document.removeEventListener('keydown', closeOnEscape); previousFocus?.focus(); };
   }, []);
+  useEffect(() => {
+    let active = true;
+    API.platformPlayerProfile('golaxy', player.user_id, token)
+      .then(({ profile }) => { if (active) { setFollowed(profile.followed); setProfileSelf(profile.is_self); } })
+      .catch(() => { if (active) setFollowError(true); });
+    return () => { active = false; };
+  }, [player.user_id, token]);
+  const reloadFollow = async () => {
+    setFollowBusy(true);
+    setFollowError(false);
+    try {
+      const { profile } = await API.platformPlayerProfile('golaxy', player.user_id, token);
+      setFollowed(profile.followed);
+    } catch {
+      setFollowed(null);
+      setFollowError(true);
+    } finally {
+      setFollowBusy(false);
+    }
+  };
+  useEffect(() => {
+    if (stage !== 'kifu') return;
+    let active = true;
+    setGamesStatus('loading');
+    API.platformPlayerGames('golaxy', player.user_id, token, gamesPage)
+      .then(({ games: rows, total }) => { if (active) { setGames((current) => gamesPage === 0 ? rows : [...current, ...rows]); setGamesTotal(total); setGamesStatus('ready'); } })
+      .catch(() => { if (active) setGamesStatus('error'); });
+    return () => { active = false; };
+  }, [stage, player.user_id, token, gamesPage, gamesRetry]);
+  const changeFollow = async () => {
+    if (isSelf || followed === null || followBusy) return;
+    setFollowBusy(true); setFollowError(false);
+    try {
+      const { profile } = await API.platformFollowPlayer('golaxy', player.user_id, !followed, token);
+      setFollowed(profile.followed);
+    } catch { setFollowed(null); setFollowError(true); }
+    finally { setFollowBusy(false); }
+  };
   const record = playerRecord(player);
-  const canConfigureInvite = player.invite_able === true;
-  const title = { main: '星阵在线棋友', invite: '发送对局邀请', pending: '等待对方回应', error: '邀请未发送' }[stage];
+  const canConfigureInvite = !isSelf && player.invite_able === true;
+  const title = { main: '星阵在线棋友', invite: '发送对局邀请', pending: '等待对方回应', error: '邀请未发送', kifu: '历史棋谱' }[stage];
   return <div className="golaxy-home__profile-layer" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <section className="golaxy-home__profile-dialog" role="dialog" aria-modal="true" aria-labelledby="golaxy-profile-title"
       onKeyDown={(event) => {
@@ -66,11 +114,21 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
             {record && <div><small>对弈战绩</small><b>{record}</b></div>}
             {player.invite_able != null && <div><small>邀请偏好</small><b>{invitationPreference(player)}</b></div>}
           </div>
+          {followError && <p className="golaxy-home__profile-feedback" role="alert">关注结果尚未确认。<button disabled={followBusy} onClick={reloadFollow}>重新读取关注状态</button></p>}
         </> : stage === 'invite' ? <>
           <p className="golaxy-home__profile-subtitle">邀请这位棋友进行星阵人人对弈</p>
           <div className="golaxy-home__invite-peer"><PlayerAvatar player={player} /><b>{player.username}</b><small>{[player.rank, player.status].filter(Boolean).join(' · ')}</small></div>
           <div className="golaxy-home__invite-label">本机落子方式</div><div className="golaxy-home__invite-modes"><button aria-pressed={mode === 'screen'} onClick={() => setMode('screen')}>屏幕落子</button><button aria-pressed={mode === 'physical'} onClick={() => setMode('physical')}>实体棋盘</button></div>
           <p className="golaxy-home__invite-note">邀请对局暂不可用。星阵邀请、取消和进入可落子的对局尚未完成验证。</p>
+        </> : stage === 'kifu' ? <>
+          <p className="golaxy-home__profile-subtitle">{player.username}的星阵人人对弈棋谱</p>
+          {gamesStatus === 'loading' ? <p role="status">正在读取棋谱…</p>
+            : gamesStatus === 'error' ? <div role="alert">棋谱暂时无法读取。<button onClick={() => setGamesRetry((value) => value + 1)}>重试</button></div>
+              : games.length === 0 ? <p>暂无人人对弈棋谱</p>
+                : <><div className="golaxy-home__kifu-list">{games.map((game) => <div className="golaxy-home__kifu-item" key={game.game_id}>
+                  <b>{game.black || '黑方'} · {game.white || '白方'}</b>
+                  <small>{[game.board_size ? `${game.board_size} 路` : null, game.move_number != null ? `${game.move_number} 手` : null, game.result].filter(Boolean).join(' · ')}</small>
+                </div>)}</div>{gamesTotal !== null && games.length < gamesTotal && <button className="golaxy-home__kifu-more" onClick={() => setGamesPage((value) => value + 1)}>加载更多</button>}</>}
         </> : <div className="golaxy-home__invite-pending" role={stage === 'error' ? 'alert' : 'status'}>
           <span className="golaxy-home__invite-ring">{stage === 'pending' ? '⋯' : '!'}</span>
           <strong>{stage === 'pending' ? `邀请已发送 · 等待${player.username}回应` : '没能发送对局邀请'}</strong>
@@ -78,7 +136,7 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
         </div>}
       </div>
       <div className="golaxy-home__profile-foot">
-        {stage === 'main' ? <><button className="primary" disabled={!canConfigureInvite} onClick={() => setStage('invite')}>邀请对局</button><button disabled title="棋谱接口尚未接通">查看棋谱</button><button disabled title="关注接口尚未接通">添加关注</button></>
+        {stage === 'main' ? <>{!isSelf && <button className="primary" disabled={!canConfigureInvite} onClick={() => setStage('invite')}>邀请对局</button>}<button onClick={() => { setGamesPage(0); setGames([]); setStage('kifu'); }}>查看棋谱</button>{!isSelf && <button disabled={followed === null || followBusy} onClick={changeFollow}>{followBusy ? '正在更新' : followed ? '取消关注' : '添加关注'}</button>}</>
           : stage === 'invite' ? <><button onClick={() => setStage('main')}>返回资料</button><button className="primary" disabled title="邀请对局暂不可用">发送邀请</button></>
             : stage === 'pending' ? <button disabled title="取消邀请尚未接通">取消邀请</button> : <button onClick={() => setStage('main')}>返回资料</button>}
       </div>
@@ -86,64 +144,106 @@ export function GolaxyPlayerProfile({ player, onClose, initialStage = 'main' }: 
   </div>;
 }
 
-type LobbyList<T> = { status: 'loading' | 'ready' | 'error'; items: T[] };
-type LoadList<T> = (token: string | null | undefined) => Promise<T[]>;
+type LobbyList<T> = { status: 'loading' | 'ready' | 'error'; items: T[]; more: 'idle' | 'loading' | 'error' | 'done'; refreshing: boolean };
+type LoadList<T> = (token: string | null | undefined, page: number) => Promise<T[]>;
+type UserFilter = 'all' | 'same_level' | 'following';
+const loadRooms: LoadList<GolaxyRoom> = (token, page) => API.platformRooms('golaxy', token, page).then(({ rooms }) => rooms);
 
-const loadRooms: LoadList<GolaxyRoom> = (token) => API.platformRooms('golaxy', token).then(({ rooms }) => rooms);
-const loadUsers: LoadList<GolaxyOnlinePlayer> = (token) => API.platformUsers<GolaxyOnlinePlayer>('golaxy', token).then(({ users }) => users);
-
-function useLobbyList<T>(
+function useLobbyList<T extends { room_id?: string; user_id?: string }>(
   connected: boolean,
   token: string | null | undefined,
   retry: number,
   load: LoadList<T>,
   setConnection: Dispatch<SetStateAction<Connection>>,
-): LobbyList<T> {
-  const [list, setList] = useState<LobbyList<T>>({ status: 'loading', items: [] });
+  pageSize?: number,
+): LobbyList<T> & { loadMore: (retry?: boolean) => void } {
+  const [list, setList] = useState<LobbyList<T>>({ status: 'loading', items: [], more: 'idle', refreshing: false });
+  const moreAction = useRef<(retry?: boolean) => void>(() => {});
 
   useEffect(() => {
-    if (!connected) {
-      setList({ status: 'loading', items: [] });
-      return;
-    }
+    setList({ status: 'loading', items: [], more: 'idle', refreshing: false });
+    moreAction.current = () => {};
+    if (!connected) return;
     let active = true;
     let latestRequest = 0;
+    let busy = false;
+    let moreError = false;
+    let pages: T[][] = [];
     let timer: number | undefined;
-    const refresh = () => {
-      if (!active || document.hidden) return;
+    const items = () => [...new Map(pages.flat().map((item) => [item.room_id ?? item.user_id, item])).values()];
+    const hasMore = () => pages.length > 0 && pages.at(-1)!.length > 0
+      && (pageSize === undefined || pages.at(-1)!.length >= pageSize);
+    const schedule = () => {
+      window.clearTimeout(timer);
+      if (active && !document.hidden) timer = window.setTimeout(refresh, 30_000);
+    };
+    const fail = (error: unknown, append: boolean) => {
+      if (error instanceof ApiError && error.status === 401) {
+        active = false;
+        setConnection((current) => current.kind === 'connected' ? { kind: 'expired' } : current);
+      } else if (append) {
+        moreError = true;
+        setList((current) => ({ ...current, more: 'error', refreshing: false }));
+      } else {
+        setList({ status: 'error', items: [], more: 'idle', refreshing: false });
+      }
+    };
+    async function refresh() {
+      if (!active || document.hidden || busy) return;
+      busy = true;
       const request = ++latestRequest;
-      load(token).then((items) => {
-        if (active && request === latestRequest) setList({ status: 'ready', items });
-      }).catch((error: unknown) => {
-        if (!active || request !== latestRequest) return;
-        if (error instanceof ApiError && error.status === 401) {
-          active = false;
-          setConnection((current) => current.kind === 'connected' ? { kind: 'expired' } : current);
-        } else {
-          setList({ status: 'error', items: [] });
+      if (pages.length) setList((current) => ({ ...current, refreshing: true }));
+      try {
+        const refreshed: T[][] = [];
+        for (let page = 0; page < Math.max(1, pages.length); page++) {
+          const rows = await load(token, page);
+          if (!active || request !== latestRequest) return;
+          refreshed.push(rows);
+          if (rows.length === 0) break;
         }
-      }).finally(() => {
-        if (active && request === latestRequest && !document.hidden) timer = window.setTimeout(refresh, 30_000);
-      });
+        pages = refreshed;
+        moreError = false;
+        setList({ status: 'ready', items: items(), more: hasMore() ? 'idle' : 'done', refreshing: false });
+      } catch (error) {
+        if (active && request === latestRequest) fail(error, false);
+      } finally {
+        if (active && request === latestRequest) { busy = false; schedule(); }
+      }
+    }
+    moreAction.current = async (retryMore = false) => {
+      if (!active || document.hidden || busy || !hasMore() || (moreError && !retryMore)) return;
+      busy = true;
+      const request = ++latestRequest;
+      setList((current) => ({ ...current, more: 'loading' }));
+      try {
+        const rows = await load(token, pages.length);
+        if (!active || request !== latestRequest) return;
+        pages = [...pages, rows];
+        moreError = false;
+        setList({ status: 'ready', items: items(), more: hasMore() ? 'idle' : 'done', refreshing: false });
+      } catch (error) {
+        if (active && request === latestRequest) fail(error, true);
+      } finally {
+        if (active && request === latestRequest) { busy = false; schedule(); }
+      }
     };
     const onVisibilityChange = () => {
       window.clearTimeout(timer);
       latestRequest += 1;
-      if (!document.hidden) refresh();
+      busy = false;
+      if (!document.hidden) void refresh();
     };
-
-    setList({ status: 'loading', items: [] });
     document.addEventListener('visibilitychange', onVisibilityChange);
-    refresh();
+    void refresh();
     return () => {
       active = false;
       latestRequest += 1;
       window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [connected, token, retry, load, setConnection]);
+  }, [connected, token, retry, load, setConnection, pageSize]);
 
-  return list;
+  return { ...list, loadMore: (retryMore) => moreAction.current(retryMore) };
 }
 
 const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?: ProfileStage }) => {
@@ -159,16 +259,21 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
   const accountGeneration = useRef(0);
   const [selectedPlayer, setSelectedPlayer] = useState<GolaxyOnlinePlayer | null>(null);
   const [tab, setTab] = useState<'rooms' | 'users'>('rooms');
+  const [userFilter, setUserFilter] = useState<UserFilter>('all');
+  const loadUsers = useCallback<LoadList<GolaxyOnlinePlayer>>((authToken, page) => API.platformUsers<GolaxyOnlinePlayer>('golaxy', authToken, undefined, { page, filter: userFilter }).then(({ users }) => users), [userFilter]);
+  const listBody = useRef<HTMLDivElement>(null);
   const [listRetries, setListRetries] = useState({ rooms: 0, users: 0 });
   const currentConnection: Connection = connection.kind === 'connected' && connection.token !== token
     ? { kind: 'loading' }
     : connection;
   const connected = currentConnection.kind === 'connected';
   const roomsList = useLobbyList(connected, token, listRetries.rooms, loadRooms, setConnection);
-  const usersList = useLobbyList(connected, token, listRetries.users, loadUsers, setConnection);
+  const usersList = useLobbyList(connected, token, listRetries.users, loadUsers, setConnection, userFilter === 'following' ? 20 : undefined);
   const rooms = roomsList.items;
   const users = usersList.items;
   const lists = { rooms: roomsList.status, users: usersList.status };
+  const activeList = tab === 'rooms' ? roomsList : usersList;
+  useEffect(() => { if (listBody.current) listBody.current.scrollTop = 0; }, [tab, userFilter]);
   const profilePlayer = selectedPlayer ? users.find((user) => user.user_id === selectedPlayer.user_id) ?? selectedPlayer : null;
 
   useEffect(() => {
@@ -275,11 +380,14 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
                 </div>
                 <span>{tab === 'rooms' ? '点选一局进入只读观战 · 按星阵状态更新' : '级别、胜负和状态以星阵返回为准'}</span>
               </div>
-              <div className="golaxy-home__list-body">
+              <div className="golaxy-home__list-body" ref={listBody} onScroll={(event) => {
+                const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
+                if (scrollHeight - scrollTop - clientHeight <= 64 && activeList.status === 'ready') activeList.loadMore();
+              }}>
               {lists[tab] === 'loading' && <p role="status" className="golaxy-home__empty">{tab === 'rooms' ? t('platform:loading_rooms', '正在读取星阵对局') : t('platform:loading_users', '正在读取在线棋友')}</p>}
               {lists[tab] === 'error' && <div className="golaxy-home__state" role="alert"><p>{tab === 'rooms' ? t('platform:rooms_failed', '没能读取星阵对局') : t('platform:users_failed', '没能读取在线棋友')}</p><button onClick={() => setListRetries((counts) => ({ ...counts, [tab]: counts[tab] + 1 }))}>{t('common:retry', '重试')}</button></div>}
               {lists[tab] === 'ready' && (tab === 'rooms' ? rooms.length === 0 : users.length === 0) && <p className="golaxy-home__empty">{tab === 'rooms' ? t('platform:no_rooms', '暂无对局') : t('platform:no_users', '暂无在线棋友')}</p>}
-              {tab === 'users' && <div className="golaxy-home__player-filters"><button aria-pressed="true">全部棋友</button><button disabled title="同级筛选尚未接通">同级别</button><button disabled title="关注接口尚未接通">我的关注</button><small>胜负与状态以星阵为准</small></div>}
+              {tab === 'users' && <div className="golaxy-home__player-filters"><button aria-pressed={userFilter === 'all'} onClick={() => setUserFilter('all')}>全部棋友</button><button aria-pressed={userFilter === 'same_level'} onClick={() => setUserFilter('same_level')}>同级别</button><button aria-pressed={userFilter === 'following'} onClick={() => setUserFilter('following')}>我的关注</button><small>胜负与状态以星阵为准</small></div>}
               {lists[tab] === 'ready' && <div className="golaxy-home__room-grid" role="tabpanel">
                 {tab === 'rooms' ? rooms.map((room) => <button key={room.room_id} className="golaxy-home__room" onClick={() => navigate(`/kiosk/play/cross-platform/golaxy/spectate/${encodeURIComponent(room.room_id)}`)}>
                   <span className="golaxy-home__room-top"><b>{room.room_number ? `${room.room_number} ${t('platform:room_suffix', '房')}` : t('platform:room', '房间')}</b>{room.room_type && <span>{room.room_type}</span>}{room.handicap !== null && <span>{room.handicap === 0 ? t('platform:even_game', '分先') : room.handicap === -1 ? t('platform:black_first', '让先') : `${t('platform:handicap', '让')} ${room.handicap} ${t('platform:stones', '子')}`}</span>}{room.room_user_count != null && <small>{room.room_user_count} 人在房间</small>}</span>
@@ -290,13 +398,19 @@ const GolaxyHomePage = ({ profileInitialStage = 'main' }: { profileInitialStage?
                   </span>
                 </button>) : users.map((user) => <button key={user.user_id} className="golaxy-home__player" onClick={() => setSelectedPlayer(user)} aria-label={`查看${user.username}的个人资料`}><PlayerAvatar player={user} /><span className="golaxy-home__player-name"><b>{user.username}</b>{user.rank && <small>{user.rank}</small>}</span>{playerRecord(user) && <span className="golaxy-home__record">{playerRecord(user)}</span>}{playerStatus(user) && <span className={`golaxy-home__player-state${statusClass(playerStatus(user))}`}>{playerStatus(user)}</span>}</button>)}
               </div>}
+              {lists[tab] === 'ready' && <div className="golaxy-home__empty">
+                {activeList.refreshing ? <p role="status">正在更新列表…</p> : activeList.more === 'loading' ? <p role="status">正在加载更多…</p>
+                  : activeList.more === 'error' ? <div role="alert"><p>没能读取更多，请重试</p><button onClick={() => activeList.loadMore(true)}>重试加载更多</button></div>
+                    : activeList.more === 'done' && activeList.items.length > 0 ? <p>没有更多了</p>
+                      : activeList.items.length > 0 && <button onClick={() => activeList.loadMore()}>{tab === 'rooms' ? '加载更多对局' : '加载更多棋友'}</button>}
+              </div>}
               </div>
               </div>
             </section>
           </>
         )}
       </div>
-      {profilePlayer && connected && <GolaxyPlayerProfile key={profilePlayer.user_id} player={profilePlayer} initialStage={profileInitialStage} onClose={() => setSelectedPlayer(null)} />}
+      {profilePlayer && connected && <GolaxyPlayerProfile key={profilePlayer.user_id} player={profilePlayer} token={token} initialStage={profileInitialStage} onClose={() => setSelectedPlayer(null)} />}
     </div>
   );
 };

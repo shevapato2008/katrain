@@ -35,7 +35,7 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   handicapCount: number; // Number of leading setup stones (from handicap)
 
   // Board actions
-  handleIntersectionClick: (x: number, y: number) => void;
+  handleIntersectionClick: (x: number, y: number) => boolean;
   handlePass: () => void;
   handleClear: () => void;
   handleMoveChange: (move: number) => void;
@@ -95,6 +95,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const selectedStoneRef = useRef<{ x: number; y: number; moveIndex: number } | null>(null);
 
   const handleIntersectionClick = useCallback((x: number, y: number) => {
+    if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= boardSize || y >= boardSize) return false;
     const letters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
     const col = letters[x];
     const row = y + 1;
@@ -114,7 +115,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
       setStoneColors(newColors);
       setCurrentMove(newMoves.length);
       rawSgfRef.current = null;
-      return;
+      return false;
     }
 
     if (editMode === 'move') {
@@ -124,25 +125,26 @@ export function useResearchBoard(): UseResearchBoardReturn {
         for (let i = moves.length - 1; i >= 0; i--) {
           if (moves[i] === moveStr) {
             selectedStoneRef.current = { x, y, moveIndex: i };
-            return;
+            return false;
           }
         }
         // No stone found at this position
-        return;
+        return false;
       } else {
         // Second click: move the stone to the new position
         const { moveIndex } = selectedStoneRef.current;
+        selectedStoneRef.current = null;
+        if (moves[moveIndex] === moveStr) return false;
         const newMoves = [...moves];
         newMoves[moveIndex] = moveStr;
         setMoves(newMoves);
-        selectedStoneRef.current = null;
         rawSgfRef.current = null;
-        return;
+        return true;
       }
     }
 
     // No placeMode selected = do nothing on click
-    if (!placeMode) return;
+    if (!placeMode) return false;
 
     // Determine stone color based on placeMode
     let color: 'B' | 'W';
@@ -166,7 +168,8 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
     rawSgfRef.current = null;
-  }, [moves, stoneColors, currentMove, editMode, placeMode]);
+    return true;
+  }, [moves, stoneColors, currentMove, boardSize, editMode, placeMode]);
 
   const handlePass = useCallback(() => {
     const newMoves = moves.slice(0, currentMove);

@@ -3,6 +3,7 @@ import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from '../
 import type { VisionStatus, VisionDevices, VisionMode, VisionGeometry, VisionImport, VisionCaptureInput, VisionFrame, VisionSessionList, VisionSession, VisionPreview, VisionSampleReview, VisionFreezeParameters, VisionFrozen, KifuAlbumList, KifuAlbumDetail, VisionFiducialMode, VisionAutoCheck, VisionModels, DiagnosticsStatus, DiagnosticsSnapshot } from '../vision/types';
 import type { AdminUserList, AdminUserDetail, LedgerPage, QuotaRow, RedeemedRow, AdjustInput, AdjustResult, CodesInput, CodesResult, CodeListing, AuditPage, AuditQuery } from '../users/types';
 import type { TrainingStatus, TrainingDataset, TrainingPresets, TrainingRun, TrainingModel, TrainingStartInput } from '../vision/training/types';
+import type { LobbyConfig, LobbyOverview, ParticipantPage, ParticipantQuery } from '../lobby/types';
 
 export interface TutorialCategory { slug: string; title: string; book_count: number }
 export interface TutorialBook { id: number; category: string; title: string; slug: string; chapter_count: number }
@@ -127,6 +128,9 @@ export function createAdminApi(fetcher: typeof fetch = fetch, token: () => strin
     resolveError: (id: number) => adminRequest<ErrorGroupRow>(`/errors/${id}/resolve`, { method: 'POST' }),
     attention: (signal?: AbortSignal) => adminRequest<Attention>('/attention', { signal, cache: 'no-store' }),
     devices: (signal?: AbortSignal) => adminRequest<DeviceFleet>('/devices', { signal, cache: 'no-store' }),
+    pvpLobby: (signal?: AbortSignal) => adminRequest<LobbyOverview>('/pvp-lobby', { signal, cache: 'no-store' }),
+    savePvpLobby: (value: { expected_revision: number; config: LobbyConfig }) => adminRequest<LobbyOverview>('/pvp-lobby/config', { method: 'PUT', body: body(value) }),
+    pvpParticipants: (query: ParticipantQuery, signal?: AbortSignal) => adminRequest<ParticipantPage>(`/pvp-lobby/participants?${new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]))}`, { signal, cache: 'no-store' }),
     decideDevice: (id: string, decision: 'approve' | 'reject' | 'reset') => adminRequest<{ device_id: string; status: string }>(`/devices/${encodeURIComponent(id)}/${decision}`, { method: 'POST' }),
     cronPause: (name: string, reason: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/pause`, { method: 'POST', body: body({ reason }) }),
     cronResume: (name: string) => adminRequest<{ job: string; paused: boolean }>(`/cron/jobs/${encodeURIComponent(name)}/resume`, { method: 'POST' }),

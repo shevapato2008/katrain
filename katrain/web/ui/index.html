@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>智星盒 · 围棋</title>
+    <script>
+      // Start the one bounded library request while application modules download.
+      if (/^\/(galaxy|kiosk)\/kifu\/?$/.test(location.pathname)) {
+        var query = new URLSearchParams(location.search);
+        var params = new URLSearchParams();
+        if (query.get('q')) params.set('q', query.get('q'));
+        params.set('page', query.get('page') || '1');
+        params.set('page_size', '20');
+        var language = 'cn';
+        try { language = localStorage.getItem('katrain_language') || 'cn'; } catch (_) {}
+        params.set('lang', language);
+        var path = '/api/v1/kifu/albums?' + params;
+        window.__kifuListRequest = { path: path, response: fetch(path, { priority: 'high' }) };
+        window.__kifuListRequest.response.catch(function () {});
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -25,7 +41,7 @@
         function loadKioskKeyboard() {
           loadScript('/pinyin-ime.js?v=kbd5', function () {
             loadScript('/pinyin-compose.js?v=kbd5', function () {
-              loadScript('/smartkeyboard.js?v=kbd5');
+              loadScript('/smartkeyboard.js?v=kbd6');
             });
           });
         }

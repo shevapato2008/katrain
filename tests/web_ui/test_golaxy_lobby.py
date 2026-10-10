@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 
 from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.platforms.golaxy.adapter import GolaxyAdapter, GolaxyLobbyAuthError
@@ -38,11 +40,13 @@ ROOM = {
 }
 
 
-def _adapter(handler):
+def _adapter(handler, verified=True):
     adapter = GolaxyAdapter()
     adapter._rest._client = httpx.AsyncClient(base_url="https://api.19x19.com", transport=httpx.MockTransport(handler))
     adapter._rest.set_tokens("old-token", "refresh-token")
     adapter._connected = True
+    if verified:
+        adapter._rest._user_code = "owner-code"  # Already hydrated by check_token for these list fixtures.
     return adapter
 
 
@@ -59,7 +63,7 @@ def _app(adapter, owner=7):
 def test_room_endpoint_maps_captured_fields_without_inventing_spectators():
     def handler(request):
         assert request.url.path == "/api/social/gameroom/list"
-        assert dict(request.url.params) == {"page": "0", "size": "15"}
+        assert dict(request.url.params) == {"page": "0", "size": "16"}
         assert request.headers["Authorization"] == "Bearer old-token"
         return httpx.Response(200, json={"code": "0", "data": [ROOM]})
 
@@ -87,7 +91,7 @@ def test_room_endpoint_maps_captured_fields_without_inventing_spectators():
 def test_user_endpoint_fetches_golaxy_list_and_projects_only_verified_fields():
     def handler(request):
         assert request.url.path == "/api/social/gamezone/user/list"
-        assert dict(request.url.params) == {"page": "0", "size": "15", "level": "-1"}
+        assert dict(request.url.params) == {"page": "0", "size": "20", "level": "-1"}
         return httpx.Response(
             200,
             json={
@@ -117,6 +121,7 @@ def test_user_endpoint_fetches_golaxy_list_and_projects_only_verified_fields():
         "users": [
             {
                 "user_id": "u1",
+                "is_self": False,
                 "username": "Player",
                 "rank": "7段",
                 "status": "观战",
@@ -127,6 +132,7 @@ def test_user_endpoint_fetches_golaxy_list_and_projects_only_verified_fields():
             },
             {
                 "user_id": "u2",
+                "is_self": False,
                 "username": "Friend",
                 "rank": None,
                 "status": None,
@@ -137,6 +143,165 @@ def test_user_endpoint_fetches_golaxy_list_and_projects_only_verified_fields():
             },
         ]
     }
+
+
+def test_player_profile_uses_token_owner_as_caller_and_only_returns_public_fields():
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.path))
+        if request.url.path == "/api/auth/oauth/check_token":
+            return httpx.Response(200, json={
+                "active": True, "username": "0086-13116158612", "nickname": "Owner", "usercode": "owner-code",
+            })
+        assert request.url.path == "/api/social/follow/user/info/user_code/owner-code"
+        assert dict(request.url.params) == {"peer_user_code": "peer-code"}
+        return httpx.Response(200, json={"code": 0, "data": {
+            "userCode": "peer-code", "nickname": "Peer", "level": 2500,
+            "winNum": 12, "loseNum": 7, "followType": 1,
+            "username": "private-login-principal", "signature": "not forwarded",
+        }})
+
+    response = TestClient(_app(_adapter(handler, verified=False))).get("/api/v1/platforms/golaxy/users/peer-code/profile")
+    assert response.status_code == 200
+    assert response.json() == {"profile": {
+        "user_id": "peer-code", "is_self": False, "username": "Peer", "rank": "7段",
+        "wins": 12, "losses": 7, "followed": True,
+    }}
+    assert seen == [
+        ("POST", "/api/auth/oauth/check_token"),
+        ("GET", "/api/social/follow/user/info/user_code/owner-code"),
+    ]
+
+
+def test_player_profile_rejects_foreign_owner_and_bad_target_before_upstream_call():
+    called = []
+    adapter = _adapter(lambda request: called.append(request) or httpx.Response(200, json={"code": 0, "data": {}}))
+    path = "/api/v1/platforms/golaxy/users/peer-code/profile"
+    assert TestClient(_app(adapter, owner=8)).get(path).status_code == 403
+    assert TestClient(_app(adapter)).get("/api/v1/platforms/golaxy/users/bad%20code/profile").status_code == 400
+    assert called == []
+
+
+def test_player_profile_maps_expired_token_to_unauthorized():
+    def handler(request):
+        assert request.url.path == "/api/auth/oauth/check_token"
+        return httpx.Response(401, json={"error": "invalid_token"})
+
+    response = TestClient(_app(_adapter(handler, verified=False))).get("/api/v1/platforms/golaxy/users/peer-code/profile")
+    assert response.status_code == 401
+
+
+def test_player_history_requests_human_games_and_projects_list():
+    def handler(request):
+        assert request.url.path == "/api/engine/games/user_code/peer-code"
+        assert dict(request.url.params) == {"game_type": "8", "page": "0", "size": "10"}
+        return httpx.Response(200, json={"code": 0, "data": {
+            "total": 1, "gameMetaList": [{
+                "id": 314, "pb": "Black", "pw": "White", "moveNum": 145,
+                "gameResult": "B+R", "boardSize": 19, "username": "private",
+            }],
+        }})
+
+    response = TestClient(_app(_adapter(handler))).get("/api/v1/platforms/golaxy/users/peer-code/games")
+    assert response.status_code == 200
+    assert response.json() == {"total": 1, "games": [{
+        "game_id": "314", "black": "Black", "white": "White",
+        "move_number": 145, "result": "B+R", "board_size": 19,
+    }]}
+
+
+def test_player_history_requests_selected_page_and_rejects_out_of_range_page():
+    def handler(request):
+        assert request.url.path == "/api/engine/games/user_code/peer-code"
+        assert dict(request.url.params) == {"game_type": "8", "page": "1", "size": "10"}
+        return httpx.Response(200, json={"code": 0, "data": {"total": 11, "gameMetaList": [
+            {"id": 315, "pb": "Black", "pw": "White", "moveNum": 146},
+        ]}})
+
+    client = TestClient(_app(_adapter(handler)))
+    path = "/api/v1/platforms/golaxy/users/peer-code/games"
+    response = client.get(path, params={"page": 1})
+    assert response.status_code == 200
+    assert response.json()["games"][0]["game_id"] == "315"
+    assert client.get(path, params={"page": -1}).status_code == 422
+
+
+@pytest.mark.parametrize("follow,upstream_path,field,follow_type", [
+    (True, "/api/social/follow/follow/user_code/owner-code", "followee_user_code", 1),
+    (False, "/api/social/follow/unfollow/user_code/owner-code", "peer_user_code", 0),
+])
+def test_follow_change_uses_token_owner_and_confirms_new_relation(follow, upstream_path, field, follow_type):
+    requests = []
+
+    def handler(request):
+        requests.append((request.method, request.url.path))
+        if request.url.path == "/api/auth/oauth/check_token":
+            return httpx.Response(200, json={
+                "active": True, "username": "0086-13116158612", "nickname": "Owner", "usercode": "owner-code",
+            })
+        if request.method == "POST":
+            assert request.url.path == upstream_path
+            assert json.loads(request.content) == {field: "peer-code"}
+            return httpx.Response(200, json={"code": 0, "data": True})
+        assert request.url.path == "/api/social/follow/user/info/user_code/owner-code"
+        assert dict(request.url.params) == {"peer_user_code": "peer-code"}
+        return httpx.Response(200, json={"code": 0, "data": {
+            "userCode": "peer-code", "nickname": "Peer", "followType": follow_type,
+        }})
+
+    client = TestClient(_app(_adapter(handler, verified=False)))
+    path = "/api/v1/platforms/golaxy/users/peer-code/follow"
+    response = client.post(path) if follow else client.delete(path)
+    assert response.status_code == 200
+    assert response.json()["profile"]["followed"] is follow
+    assert requests == [
+        ("POST", "/api/auth/oauth/check_token"),
+        ("POST", upstream_path),
+        ("GET", "/api/social/follow/user/info/user_code/owner-code"),
+    ]
+
+
+async def test_follow_write_waits_for_owner_lock_before_contacting_golaxy():
+    from katrain.web.api.v1.endpoints.platforms import _change_player_follow
+
+    requests = []
+    adapter = _adapter(lambda request: requests.append(request) or httpx.Response(200, json={"code": 0, "data": {}}))
+    app = _app(adapter)
+    manager = app.state.platform_manager
+    lock = manager._locks.setdefault("golaxy", asyncio.Lock())
+    async with lock:
+        task = asyncio.create_task(_change_player_follow(
+            "golaxy", "peer-code", True, SimpleNamespace(app=app), SimpleNamespace(id=7),
+        ))
+        await asyncio.sleep(0.02)
+        assert requests == []
+        manager._platform_user_ids["golaxy"] = 8
+    with pytest.raises(HTTPException) as exc:
+        await task
+    assert exc.value.status_code == 403
+    assert requests == []
+
+
+async def test_profile_read_waits_for_owner_lock_before_hydrating_caller_code():
+    from katrain.web.api.v1.endpoints.platforms import platform_player_profile
+
+    requests = []
+    adapter = _adapter(lambda request: requests.append(request) or httpx.Response(200, json={"code": 0, "data": {}}))
+    app = _app(adapter)
+    manager = app.state.platform_manager
+    lock = manager._locks.setdefault("golaxy", asyncio.Lock())
+    async with lock:
+        task = asyncio.create_task(platform_player_profile(
+            "golaxy", "peer-code", SimpleNamespace(app=app), SimpleNamespace(id=7),
+        ))
+        await asyncio.sleep(0.02)
+        assert requests == []
+        manager._platform_user_ids["golaxy"] = 8
+    with pytest.raises(HTTPException) as exc:
+        await task
+    assert exc.value.status_code == 403
+    assert requests == []
 
 
 async def test_live_user_fields_supply_presence_and_numeric_invitation_preference():
@@ -185,7 +350,7 @@ async def test_account_identity_comes_from_active_token_not_scan_username():
         assert request.content == b"token=old-token"
         return httpx.Response(200, json={"active": True, "username": "0086-13116158612", "nickname": "棋友甲"})
 
-    adapter = _adapter(handler)
+    adapter = _adapter(handler, verified=False)
     assert await adapter.get_account_identity() == {
         "username": "0086-13116158612",
         "nickname": "棋友甲",
@@ -198,13 +363,13 @@ async def test_inactive_token_cannot_supply_a_display_name():
         return httpx.Response(200, json={"active": False, "username": "0086-13116158612", "nickname": "棋友甲"})
 
     with pytest.raises(GolaxyLobbyAuthError, match="expired"):
-        await _adapter(handler).get_account_identity()
+        await _adapter(handler, verified=False).get_account_identity()
 
 
 def test_golaxy_user_query_filters_current_page_by_username_prefix():
     def handler(request):
         assert request.url.path == "/api/social/gamezone/user/list"
-        assert dict(request.url.params) == {"page": "0", "size": "15", "level": "-1"}
+        assert dict(request.url.params) == {"page": "0", "size": "20", "level": "-1"}
         return httpx.Response(
             200,
             json={
@@ -222,6 +387,7 @@ def test_golaxy_user_query_filters_current_page_by_username_prefix():
         "users": [
             {
                 "user_id": "u1",
+                "is_self": False,
                 "username": "Player",
                 "rank": None,
                 "status": None,
@@ -606,3 +772,68 @@ def test_room_expired_token_is_401_without_runtime_refresh():
     response = TestClient(_app(_adapter(handler))).get("/api/v1/platforms/golaxy/rooms")
     assert response.status_code == 401
     assert refresh_calls == 0
+
+
+@pytest.mark.parametrize("path,size", [("rooms", "16"), ("users", "20")])
+def test_lobby_requests_selected_page_and_rejects_invalid_page(path, size):
+    def handler(request):
+        assert request.url.params["page"] == "2"
+        assert request.url.params["size"] == size
+        return httpx.Response(200, json={"code": 0, "data": []})
+
+    adapter = _adapter(handler)
+    client = TestClient(_app(adapter))
+    assert client.get(f"/api/v1/platforms/golaxy/{path}", params={"page": 2}).status_code == 200
+    assert client.get(f"/api/v1/platforms/golaxy/{path}", params={"page": -1}).status_code == 422
+
+
+@pytest.mark.parametrize("filter_name,path,level", [
+    ("all", "/api/social/gamezone/user/list", "-1"),
+    ("same_level", "/api/social/gamezone/user/list", "2500"),
+    ("following", "/api/social/gamezone/user/follow/list", None),
+])
+def test_user_filters_use_verified_caller_identity(filter_name, path, level):
+    def handler(request):
+        if request.url.path == "/api/auth/oauth/check_token":
+            return httpx.Response(200, json={"active": True, "username": "0086-13116158612", "nickname": "Owner", "usercode": "owner-code"})
+        if request.url.path == "/api/social/follow/user/info/user_code/owner-code":
+            assert request.url.params["peer_user_code"] == "owner-code"
+            return httpx.Response(200, json={"code": 0, "data": {"userCode": "owner-code", "level": 2500}})
+        assert request.url.path == path
+        assert dict(request.url.params) == {"page": "1", "size": "20", **({"level": level} if level else {})}
+        return httpx.Response(200, json={"code": 0, "data": [
+            {"userCode": "owner-code", "nickname": "Same name", "inviteAble": 1},
+            {"userCode": "peer-code", "nickname": "Same name", "inviteAble": 1},
+        ]})
+
+    response = TestClient(_app(_adapter(handler, verified=False))).get("/api/v1/platforms/golaxy/users", params={"page": 1, "filter": filter_name})
+    assert response.status_code == 200
+    assert [row["is_self"] for row in response.json()["users"]] == [True, False]
+
+
+def test_self_profile_and_follow_are_bound_to_verified_usercode():
+    writes = []
+    def handler(request):
+        if request.url.path == "/api/auth/oauth/check_token":
+            return httpx.Response(200, json={"active": True, "username": "0086-13116158612", "nickname": "Owner", "usercode": "owner-code"})
+        if request.method == "POST":
+            writes.append(request)
+        return httpx.Response(200, json={"code": 0, "data": {"userCode": "owner-code", "nickname": "Owner", "followType": 0}})
+
+    client = TestClient(_app(_adapter(handler, verified=False)))
+    path = "/api/v1/platforms/golaxy/users/owner-code"
+    assert client.get(path + "/profile").json()["profile"]["is_self"] is True
+    assert client.post(path + "/follow").status_code == 400
+    assert client.delete(path + "/follow").status_code == 400
+    assert writes == []
+
+
+@pytest.mark.parametrize("account_level", [0, 2700])
+async def test_same_level_uses_account_level_even_when_its_rank_label_is_unknown(account_level):
+    def handler(request):
+        if request.url.path.endswith("/info/user_code/owner-code"):
+            return httpx.Response(200, json={"code": 0, "data": {"userCode": "owner-code", "level": account_level}})
+        assert request.url.params["level"] == str(account_level)
+        return httpx.Response(200, json={"code": 0, "data": []})
+
+    assert await _adapter(handler).get_online_users(filter_name="same_level") == []

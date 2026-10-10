@@ -124,6 +124,7 @@
   function keyLabel(spec) {
     if (typeof spec === "string") return state.shift ? spec.toUpperCase() : spec;
     if (spec.icon) return spec.icon;
+    if (spec.k === "return" && state.target && state.target.enterKeyHint === "go") return state.target.getAttribute("data-enter-label") || "Go";
     if (spec.k === "lang") return state.mode === "zh" ? "中" : "EN";
     return spec.label || spec.k;
   }
@@ -202,6 +203,7 @@
   function onReturn() {
     if (state.mode === "zh" && state.buffer) { flushBuffer(); return; }
     var el = state.target;
+    if (el && el.enterKeyHint === "go" && el.form) { el.form.requestSubmit(); return; }
     if (el && el.tagName === "TEXTAREA") { insertText("\n"); }
     else { hideKbd(); }
   }
@@ -399,10 +401,14 @@
 
   function showKbd(target) {
     state.target = target;
+    if (target.inputMode === "numeric") { state.layer = "num"; clearBuffer(); }
+    render();
     root.classList.add("skbd-open");
     document.body.classList.add("skbd-padded");
     requestAnimationFrame(function () {
-      document.body.style.paddingBottom = root.offsetHeight + "px";
+      var height = root.offsetHeight + "px";
+      document.body.style.paddingBottom = height;
+      document.body.style.setProperty("--skbd-height", height);
       try { target.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
     });
   }
@@ -412,6 +418,7 @@
     clearBuffer();
     state.target = null;
     document.body.style.paddingBottom = "";
+    document.body.style.removeProperty("--skbd-height");
     document.body.classList.remove("skbd-padded");
   }
 

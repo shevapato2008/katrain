@@ -333,15 +333,20 @@ const GameControlPanel = ({
   const moves = Math.max(0, (gameState.history?.length ?? 0) - (gameState.game_type === 'ai_ladder_ranked' ? 1 : 0));
   // N 取服务端下发的 `count_min_moves`(S2a 起按路数缩放:19 路 100 / 13 路 47 / 9 路 22);
   // `?? 100` 只兜「老服务端不带这个字段」,不是前端自己的门槛。
-  // 双 pass 之后后端在等数子(`awaiting_count`),`/api/count/request` 跳过手数门槛 ⇒ 键跟着亮。
-  // 只认自动数子那两种局(大厅 / 星阵局后端也可能报这个位,但数子在那儿是另一条协议)。
-  const awaitingCount = !!gameState.awaiting_count && autoCountEligible(gameState, engineMode);
-  const canCount = !isGameOver && !counting && (awaitingCount || moves >= countMin);
+  // 本地自动数子局在 `awaiting_count` 时可跳过手数门槛；大厅局中央会先自动补分，
+  // 仅补分失败（`degraded`）时才开放人工重试。OGS 使用另一条计分协议。
+  const lobbyCountStopped = gameState.game_type === 'pvp_lobby' && !!gameState.end_result && !!gameState.awaiting_count;
+  const lobbyCountRetry = gameState.game_type === 'pvp_lobby' && !!gameState.degraded && !!gameState.awaiting_count;
+  const awaitingCount = !!gameState.awaiting_count
+    && (autoCountEligible(gameState, engineMode) || lobbyCountRetry);
+  const canCount = !isGameOver && !counting && (!lobbyCountStopped || lobbyCountRetry) && (awaitingCount || moves >= countMin);
 
   // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
   // 开局就定死没有,永久不可用 → 撤掉)。后台分析照跑、只给数子用,见 `GamePage` 的 `wantAnalysis`。
   const localGame = gameState.game_type === 'pvp_local';
-  const onlineGame = gameState.game_type === 'pvp_online';
+  const ogsGame = gameState.game_type === 'pvp_online';
+  const onlineGame = ogsGame || gameState.game_type === 'pvp_lobby';
+  const myColor = gameState.platform_my_color ?? gameState.my_color ?? null;
 
   // 这一局是不是**人机自由对弈**。规范 §8 那张「按对弈方式判」的表只有一句话:
   // 自由对弈能用的,另外四种(升降级 / 本地两人 / 在线大厅 / 星阵人机)一概不能。
@@ -379,10 +384,11 @@ const GameControlPanel = ({
   };
   const stateWord = (c: 'B' | 'W') =>
     isGameOver ? t('game:ended', '本局结束')
-      : onlineGame && platformPhase === 'scoring' ? t('game:ogs_scoring_short', 'OGS 数子中')
-      : onlineGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
-      : onlineGame && c !== gameState.platform_my_color && c === toMove ? t('game:opponent_turn', '对方回合')
-      : onlineGame && c === gameState.platform_my_color && c !== toMove ? t('game:waiting_for_opponent', '等待对方')
+      : lobbyCountStopped ? (lobbyCountRetry ? '数子失败' : '正在自动数子')
+      : ogsGame && platformPhase === 'scoring' ? t('game:ogs_scoring_short', 'OGS 数子中')
+      : ogsGame && platformPhase === 'paused' ? t('game:ogs_paused_short', 'OGS 暂停中')
+      : onlineGame && c !== myColor && c === toMove ? t('game:opponent_turn', '对方回合')
+      : onlineGame && c === myColor && c !== toMove ? t('game:waiting_for_opponent', '等待对方')
       : c !== toMove ? t('game:played', '已落子')
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');
@@ -529,7 +535,7 @@ const GameControlPanel = ({
       onClick: territory.onRequest, disabled: territory.disabled,
       reason: territory.remaining === 0 ? '本局 3 次机会已用完' : undefined,
     }] : []),
-    ...(onlineGame && platformPhase === 'scoring' ? [
+    ...(ogsGame && platformPhase === 'scoring' ? [
       {
         key: 'ogs-score-accept', icon: 'handshake' as const, label: t('game:ogs_score_accept_no_dead', '确认无死子'),
         onClick: () => onAction('ogs-score-accept'), disabled: onlineScoringPending || !gameState.platform_my_color,
@@ -541,8 +547,8 @@ const GameControlPanel = ({
       },
     ] : [{
       key: 'count', icon: 'squares-four' as const, label: t('Score', '数子'),
-      onClick: () => onAction('count'), disabled: onlineGame || !canCount,
-      reason: onlineGame ? t('game:ogs_scoring_wait', '由 OGS 进入计分阶段后才能操作')
+      onClick: () => onAction('count'), disabled: ogsGame || !canCount,
+      reason: ogsGame ? t('game:ogs_scoring_wait', '由 OGS 进入计分阶段后才能操作')
         : t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin)),
     }]),
     ...(undoAllowed ? [{
@@ -550,10 +556,10 @@ const GameControlPanel = ({
       onClick: () => onAction('undo'),
     }] : []),
     { key: 'pass', icon: 'hand-pointing', label: t('game:pass', '停一手'), onClick: () => onAction('pass'),
-      disabled: onlineGame && (platformPhase === 'scoring' || platformPhase === 'paused' || platformPhase === 'finished'
-        || !gameState.platform_my_color || gameState.player_to_move !== gameState.platform_my_color) },
+      disabled: onlineGame && (lobbyCountStopped || platformPhase === 'scoring' || platformPhase === 'paused' || platformPhase === 'finished'
+        || !myColor || gameState.player_to_move !== myColor) },
     { key: 'resign', icon: 'flag', label: t('Resign', '认输'), onClick: () => onAction('resign'),
-      disabled: onlineGame && (!gameState.platform_my_color || platformPhase === 'finished'), danger: true },
+      disabled: onlineGame && (lobbyCountStopped || !myColor || platformPhase === 'finished'), danger: true },
   ];
 
   const actions = engineMode
@@ -590,23 +596,23 @@ const GameControlPanel = ({
         <>
           <PlayerRow
             color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
-            turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
-            clock={onlineGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t}
+            turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
+            clock={ogsGame ? onlineClock('W') : clockFor('W')} lang={lang} t={t}
           />
           <PlayerRow
             color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
-            turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
-            clock={onlineGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
+            turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
+            clock={ogsGame ? onlineClock('B') : clockFor('B')} lang={lang} t={t}
           />
         </>
       ) : (
         <>
           <SeatRow
-            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+            gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver && !lobbyCountStopped} state={stateWord('W')}
             untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout}
           />
           <SeatRow
-            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+            gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver && !lobbyCountStopped} state={stateWord('B')}
             untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout}
           />
         </>
@@ -707,7 +713,7 @@ const GameControlPanel = ({
             ? `领地判断：本局剩余 ${territory.remaining ?? '—'} 次`
             : hardwareFault
             ?? physicalStatus
-            ?? (onlineGame
+            ?? (ogsGame
               ? platformPhase === 'scoring'
                 ? t('game:ogs_score_no_dead', '当前未同步 OGS 死子标记；将按无死子确认')
                 : platformPhase === 'paused'
@@ -720,6 +726,10 @@ const GameControlPanel = ({
               : analysisRequiresLogin && analysisActions.length > 0
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
                 // F4:双 pass 之后(awaitingCount)不再说「数子要下满 N 手」—— 门槛已经满足了。
+                : lobbyCountStopped && !lobbyCountRetry && !isGameOver
+                  ? '正在自动数子'
+                : lobbyCountRetry && !isGameOver
+                  ? '自动数子失败，请按「数子」重试'
                 : awaitingCount && !isGameOver
                   ? t('game:both_passed', '双方都停了一手')
                   : !isGameOver && !canCount

@@ -21,7 +21,9 @@ from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import (
-    adjudicate_ranked_position, analyze_ranked_territory, mark_ai_ladder_remote_terminal,
+    adjudicate_ranked_position,
+    analyze_ranked_territory,
+    mark_ai_ladder_remote_terminal,
 )
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
@@ -246,6 +248,9 @@ async def lifespan(app: FastAPI):
         if remote_client:
             await remote_client.close()
     else:
+        runtime = getattr(app.state, "pvp_lobby_bots", None)
+        if runtime is not None:
+            await runtime.stop()
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
@@ -256,6 +261,7 @@ async def lifespan(app: FastAPI):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
+    app.state.session_manager.clear_spectator_presence()
     app.state.session_manager.cleanup_expired()
 
 
@@ -409,6 +415,10 @@ async def _lifespan_server(app: FastAPI, log):
         log.error(f"Initialization failed: {e}")
 
     manager.attach_loop(asyncio.get_running_loop())
+    from katrain.web.core.pvp_lobby_bots import PvpLobbyBotRuntime
+
+    app.state.pvp_lobby_bots = PvpLobbyBotRuntime(app)
+    await app.state.pvp_lobby_bots.start()
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
     app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
     # Board mode never spends locally (billing is proxied to the cloud, see
@@ -609,6 +619,44 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.matchmaker = Matchmaker()
     app.state.game_repo = None  # Multiplayer results are not recorded in board mode
 
+    # The box keeps only a physical mirror. Central owns the room and result.
+    from katrain.web.core.pvp_box_bridge import PvpBoxBridge, PvpBoxRooms
+
+    rooms = PvpBoxRooms()
+
+    def make_pvp_mirror(local_user_id: int, color: str, central_session_id: str) -> str:
+        session = app.state.session_manager.create_multiplayer_session(
+            local_user_id if color == "B" else -1,
+            local_user_id if color == "W" else -1,
+            initial_game_type="pvp_lobby",
+            skip_initial_analysis=True,
+        )
+        session.owner_user_id = local_user_id
+        session.central_session_id = central_session_id
+        session.katrain.deliver_analysis = False
+        session.katrain.platform_my_color = color
+        session.last_state = session.katrain.get_state()
+        return session.session_id
+
+    app.state.pvp_box_bridge = PvpBoxBridge(
+        remote_client, app.state.box_sso, rooms, make_pvp_mirror, app.state.session_manager.remove_session
+    )
+    previous_session_removed = app.state.session_manager.on_session_removed
+
+    def on_box_session_removed(session):
+        rooms.discard_local(session.session_id)
+        if previous_session_removed is not None:
+            previous_session_removed(session)
+
+    app.state.session_manager.on_session_removed = on_box_session_removed
+
+    async def revoke_pvp_generation(generation: int) -> None:
+        bridge = app.state.pvp_box_bridge
+        for room in bridge.revoke_generation(generation):
+            app.state.session_manager.remove_session(room.local_session_id)
+
+    app.state.box_sso.on_revoke_generation = revoke_pvp_generation
+
     manager = app.state.session_manager
     try:
         from katrain.web.interface import WebKaTrain
@@ -635,9 +683,8 @@ async def _lifespan_board(app: FastAPI, log):
     # 引导亮度也落在这个目录下(`led/guidance.json`),所以 LED 那段要能读到它。
     app.state.hardware_vision_dir = hardware_vision_dir
 
-    # Initialise every optional camera-dependent surface before attempting to
-    # acquire the device. A missing UVC device must leave the regular board
-    # (including LEDs and kiosk play) available rather than aborting lifespan.
+    # Initialise optional camera surfaces. The shared hub keeps recovering when
+    # UVC is temporarily absent, including while recognition is idle.
     app.state.camera_hub = None
     app.state.vision = None
     app.state.vision_ws_clients = {}
@@ -715,19 +762,9 @@ async def _lifespan_board(app: FastAPI, log):
             )
         camera_hub = CameraHub(hub_config)
         try:
-            camera_hub.start()
+            camera_hub.start(allow_unavailable=True)
         except DeviceBusy as exc:
             log.warning("Camera occupied; continuing without vision, capture, calibration, or physical play: %s", exc)
-            camera_hub = None
-        except RuntimeError as exc:
-            # CameraHub uses this error only when CameraManager cannot open the
-            # configured device. Preserve every other RuntimeError as a startup
-            # failure (including future non-device configuration defects).
-            if not str(exc).startswith("Failed to open camera "):
-                raise
-            log.warning(
-                "Camera unavailable; continuing without vision, capture, calibration, or physical play: %s", exc
-            )
             camera_hub = None
         if camera_hub is not None and hardware_vision_state is not None:
             if camera_hub.controls_effective is not True:
@@ -1026,7 +1063,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         允许集与 `guard_session_reader` 相同,但**语义不同**,所以是两个函数不是一个:
         读取放行的是「能看这局的人」,终结放行的是「这局是他的」。这两个集合今天恰好相等
-        (观战者不在里面 —— 那是另一个待修的问题),但它们没有理由永远相等,合并会让将来
+        (观战通过独立的只读守卫放行),但它们没有理由永远相等,合并会让将来
         「放开观战」变成「放开认输」。
 
         **无人认领的会话不设闸**:未登录直接开的本地单机局三个 id 全是 None,没有可越权
@@ -1041,10 +1078,40 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if current_user.id not in owner_ids:
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a player in this game")
 
-    from katrain.web.core.box_sso import BoxSSOState, is_guest_user
+    def guard_session_viewer(session, current_user, action: str) -> None:
+        """Authenticated users may watch public lobby games; mutations retain participant guards."""
+        if current_user is not None and getattr(session, "game_type", None) in ("free", "pvp_lobby"):
+            seats = (getattr(session, "player_b_id", None), getattr(session, "player_w_id", None))
+            if all(type(seat) is int for seat in seats):
+                return
+        guard_session_reader(session, current_user, action)
+
+    def session_state_for_read(session):
+        # A cached move snapshot does not include thinking time since that move.
+        # Refresh / reconnect must read the same current server clock as the players.
+        if (
+            getattr(session, "game_type", None) in ("free", "pvp_lobby")
+            and type(getattr(session, "player_b_id", None)) is int
+            and type(getattr(session, "player_w_id", None)) is int
+        ):
+            with session.lock:
+                if not session.game_ended:
+                    session.last_state = session.katrain.get_state()
+        state = session.last_state or session.katrain.get_state()
+        state["sockets_count"] = len(session.sockets)
+        if not strict_box_sso_enabled():
+            state["spectator_count"] = session.spectator_presence.count(
+                (session.player_b_id, session.player_w_id), session.sockets
+            )
+        return state
+
+    from katrain.web.core.box_sso import BoxSSOState, is_guest_user, strict_box_sso_enabled
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
     app.include_router(api_router, prefix="/api/v1")
+    from katrain.web.api.pvp_spectator import create_pvp_spectator_router
+
+    app.include_router(create_pvp_spectator_router(guard_session_viewer, session_state_for_read))
     add_catalog_cache_middleware(app)
     # Board mode serves the kiosk-2d bundle (board-proxy API base, no three.js);
     # the full server serves the complete build. Both emit index.html + /assets,
@@ -1064,6 +1131,56 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         enable_engine=enable_engine,
     )
     app.state.session_manager = manager
+
+    @app.get("/api/pvp/identity")
+    async def box_pvp_identity(current_user: User = Depends(get_current_user)):
+        from katrain.web.core.box_sso import strict_box_sso_enabled
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        if not strict_box_sso_enabled():
+            raise HTTPException(status_code=404, detail="Not found")
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        try:
+            return await bridge.identity(app.state.box_sso.active_generation, current_user.id)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    def _on_session_removed(session):
+        matchmaker = getattr(app.state, "matchmaker", None)
+        if matchmaker is not None:
+            matchmaker.release_users(*(user_id for user_id in (session.player_b_id, session.player_w_id)
+                                       if user_id is not None), owner=session.session_id)
+        runtime = getattr(app.state, "pvp_lobby_bots", None)
+        if runtime is not None:
+            runtime.session_removed(session)
+
+    manager.on_session_removed = _on_session_removed
+
+    def _on_session_state(sid):
+        try:
+            session = manager.get_session(sid)
+        except KeyError:
+            return
+        if session.game_ended and getattr(session, "bot_game", False) is not True:
+            matchmaker = getattr(app.state, "matchmaker", None)
+            if matchmaker is not None:
+                matchmaker.release_users(*(user_id for user_id in (session.player_b_id, session.player_w_id)
+                                           if user_id is not None and user_id > 0), owner=session.session_id)
+        runtime = getattr(app.state, "pvp_lobby_bots", None)
+        if manager._loop and runtime is not None:
+            manager._loop.call_soon_threadsafe(runtime.notify_state, sid)
+
+    manager.on_session_state = _on_session_state
+
+    def guard_bot_mutation(session):
+        if getattr(session, "bot_game", False) is True:
+            raise HTTPException(status_code=403, detail="Action unavailable in a certified bot game")
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            raise HTTPException(status_code=403, detail="Central PvP room controls this game")
 
     @app.get("/health")
     async def health(request: Request):
@@ -1116,6 +1233,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def delete_session(session_id: str, current_user: User = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
+            guard_bot_mutation(session)
             guard_ai_ladder_ranked_session(session, "delete-session")
             # Ownership set = the research/play owner AND both multiplayer participants (R4-F7).
             owners = session_owner_ids(session)
@@ -1128,15 +1246,42 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"status": "deleted"}
 
     @app.get("/api/state")
-    def get_state(session_id: str, current_user: User | None = Depends(get_current_user_optional)):
+    async def get_state(session_id: str, current_user: User | None = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail="Session not found") from exc
-        guard_session_reader(session, current_user, "session state")
+        guard_session_viewer(session, current_user, "session state")
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+            try:
+                if session.game_ended and isinstance(session.last_state, dict):
+                    room = bridge.rooms.for_local(app.state.box_sso.active_generation, session_id)
+                    if room is None:
+                        raise PvpBoxAuthError("Room is no longer current")
+                    bridge.check_user(room.generation, room.local_user_id)
+                    return {"session_id": session_id, "state": session.last_state}
+                payload = await bridge.fetch_state(app.state.box_sso.active_generation, session_id)
+                payload["state"] = apply_pvp_box_state(session_id, payload["state"])
+                return payload
+            except PvpBoxAuthError as exc:
+                raise HTTPException(status_code=401, detail=str(exc)) from exc
+            except PvpBoxRemoteError as exc:
+                physical_play = getattr(app.state, "physical_play", None)
+                vision = getattr(app.state, "vision", None)
+                if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                    physical_play.enter_remote_disconnected()
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 404:
+                    bridge.rooms.discard_local(session_id)
+                    manager.remove_session(session_id)
+                raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
-        state = session.last_state or session.katrain.get_state()
+        state = session_state_for_read(session)
         if not is_ai_ladder_ranked_session(session):
             guard_user_has_no_pending_ranked_game(app, current_user, "session state")
         return {"session_id": session.session_id, "state": state}
@@ -1144,11 +1289,30 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/move")
     async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+            guard_session_reader(session, current_user, "play move")
+            try:
+                coords = None if request.pass_move else list(request.coords) if request.coords is not None else None
+                if coords is None and not request.pass_move:
+                    raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
+                payload = await bridge.forward_move(app.state.box_sso.active_generation, request.session_id, coords=coords)
+                payload["state"] = apply_pvp_box_state(request.session_id, payload["state"])
+                manager.broadcast_to_session(request.session_id, {"type": "game_update", "state": payload["state"]})
+                return payload
+            except PvpBoxAuthError as exc:
+                raise HTTPException(status_code=401, detail=str(exc)) from exc
+            except PvpBoxRemoteError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except httpx.HTTPStatusError as exc:
+                raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
         guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
         tracks_auto_analysis = not is_ai_ladder_ranked_session(session) and bool(
             getattr(session.katrain, "analysis_allowed", True)
-        )
+        ) and getattr(session, "bot_game", False) is not True
         if tracks_auto_analysis:
             # 这里从前还有一条独立的 `current_user is None -> 401 "Authentication required for
             # analyzed games"`。它只可能打到**无人认领**的会话（有主人的局 `guard_session_reader`
@@ -1219,6 +1383,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with analysis_context:
             with session.lock:
                 guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
+                bot_player = None
+                if getattr(session, "bot_game", False) is True:
+                    if current_user is None:
+                        raise HTTPException(status_code=401, detail="Authentication required for bot games")
+                    if current_user.id == session.player_b_id:
+                        bot_player = "B"
+                    elif current_user.id == session.player_w_id:
+                        bot_player = "W"
+                    else:
+                        raise HTTPException(status_code=403, detail="Not a bot game participant")
+                    if session.katrain.game.current_node.next_player != bot_player:
+                        raise HTTPException(status_code=403, detail="Not your turn")
                 before = _terminal_of(session)
                 # r1:非研究会话带 guard —— 这一手所在的局面线已结束 / 轮到 AI 就拒(409),双停第二手记终局事实。
                 # 研究会话照旧打谱,不冻结。
@@ -1237,14 +1413,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     else:
                         katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
                 else:
-                    katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                    play_kwargs = {"guard": session.mode != "research"}
+                    if bot_player is not None:
+                        play_kwargs["expected_player"] = bot_player
+                    katrain("play", None if coords is None else tuple(coords), **play_kwargs)
                 end = _new_terminal(session, before)
                 state = session.katrain.get_state()
                 session.last_state = state
         # 自然终局(双停)不经过认输 / 数子 / 超时,在这里收尾:先补分出胜负,再落账(N22)。只收尾**这一手造出来的**终局(r1 M1)。
         # AI 线程下出双停第二手时走的是 `manager.on_game_ended`,两条路是同一个函数、会话内串行。
         # 收尾必须在 `analysis_context` 之外:`persistent_analysis_activity` 在 `activity.lock` 里 yield,那把锁不许跨 await。
-        if end is not None and not state.get("awaiting_count"):
+        if end is not None and (
+            not state.get("awaiting_count")
+            or getattr(session, "bot_game", False) is True
+            or getattr(session.katrain, "pvp_lobby_human_session", False) is True
+        ):
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state
@@ -1253,6 +1436,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/undo")
     def undo_move(request: UndoRedoRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "undo")
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="undo not allowed in ranked games")
@@ -1269,6 +1453,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/redo")
     def redo_move(request: UndoRedoRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "redo")
         if session.mode == "play" and getattr(session.katrain, "game_type", "free") in ("rated", "ranked"):
             raise HTTPException(status_code=403, detail="redo not allowed in ranked games")
@@ -1285,6 +1470,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.get("/api/sgf/save")
     async def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "save SGF")
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(session, current_user, "GET", "/api/sgf/save")
         if is_ai_ladder_ranked_session(session):
             guard_ai_ladder_ranked_owner(session, current_user, "save-sgf")
             await _guard_ai_ladder_cloud_active(app, session, current_user)
@@ -1297,6 +1485,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/sgf/load")
     def load_sgf(request: LoadSGFRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "load-sgf")
         guard_session_reader(session, current_user, "load SGF")
         guard_user_has_no_pending_ranked_game(app, current_user, "SGF analysis")
@@ -1316,6 +1505,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/new-game")
     def new_game(request: NewGameRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "new-game")
         guard_session_reader(session, current_user, "new game")
         _guard_platform_game_board_mutation(app, request.session_id)
@@ -1370,6 +1560,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/game/setup")
     def game_setup(request: GameSettingsRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "game-setup")
         guard_session_reader(session, current_user, "game setup")
         app.state.ranked_analysis_activity.end_session(session.session_id)
@@ -1522,6 +1713,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/edit-game")
     def edit_game(request: EditGameRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "edit-game")
         guard_session_reader(session, current_user, "edit game")
         _guard_platform_game_board_mutation(app, request.session_id)
@@ -1537,6 +1729,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         _guard_engine_move_pending(app, request.session_id)
         gateway = getattr(app.state, "platform_gateway", None)
         is_platform_game = gateway and gateway.is_platform_game(request.session_id)
@@ -1584,6 +1777,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ai-move")
     def ai_move(request: UndoRedoRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "ai-move")
         guard_session_reader(session, current_user, "AI move")
         # Unconditional (not just while pending): this path bypasses the Golaxy
@@ -1621,6 +1815,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/config")
     def update_config(request: ConfigUpdateRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "update-config")
         guard_session_reader(session, current_user, "update config")
         with session.lock:
@@ -1634,6 +1829,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         request: ConfigBulkUpdateRequest, current_user: User | None = Depends(get_current_user_optional)
     ):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "update-config-bulk")
         guard_session_reader(session, current_user, "update config")
         with session.lock:
@@ -1646,6 +1842,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/player")
     def update_player(request: UpdatePlayerRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "update-player")
         guard_session_reader(session, current_user, "update player")
         with session.lock:
@@ -1663,6 +1860,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/player/swap")
     def swap_players(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "swap-players")
         guard_session_reader(session, current_user, "swap players")
         with session.lock:
@@ -1674,6 +1872,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/continuous")
     def toggle_continuous_analysis(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle continuous analysis")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "continuous-analysis")
         activity = app.state.ranked_analysis_activity
         with activity.lock:
@@ -1697,6 +1897,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         analysis itself streams back asynchronously over the game WebSocket, so this returns
         the current (possibly not-yet-analyzed) state immediately."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze current")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "current-analysis")
         with persistent_analysis_activity(current_user, session, "current", "current analysis"):
             with session.lock:
@@ -1708,6 +1910,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/extra")
     def analyze_extra(request: AnalyzeExtraRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze extra")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "extra-analysis")
         with persistent_analysis_activity(current_user, session, "extra", "extra analysis"):
             with session.lock:
@@ -1721,6 +1925,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def show_pv(request: PVRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "show pv")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "show-analysis-pv")
         with session.lock:
             session.katrain("_do_show_pv", request.pv)
@@ -1733,6 +1939,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def clear_pv(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis PV")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "clear pv")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "clear-analysis-pv")
         with session.lock:
             session.katrain("_do_clear_pv")
@@ -1748,6 +1956,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise HTTPException(status_code=401, detail="Authentication required for analysis mode")
             guard_user_has_no_pending_ranked_game(app, current_user, "analysis mode")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set mode")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "set-mode")
         with session.lock:
             session.katrain.play_analyze_mode = request.mode
@@ -1761,6 +1971,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/mistake")
     def find_mistake(request: FindMistakeRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "find mistake")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "find-mistake")
         _guard_engine_move_pending(app, request.session_id)
         with persistent_analysis_activity(current_user, session, "mistake", "mistake analysis"):
@@ -1773,6 +1985,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav/branch")
     def switch_branch(request: SwitchBranchRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch branch")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "switch-branch")
         _guard_engine_move_pending(app, request.session_id)
         with persistent_analysis_activity(current_user, session, "nav", "navigation analysis"):
@@ -1785,6 +1999,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/tsumego")
     def tsumego_frame(request: TsumegoRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "tsumego frame")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "tsumego-analysis")
         with persistent_analysis_activity(current_user, session, "tsumego", "tsumego analysis"):
             with session.lock:
@@ -1796,6 +2012,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/selfplay")
     def selfplay(request: SelfPlayRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "selfplay")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "selfplay-analysis")
         with persistent_analysis_activity(current_user, session, "selfplay", "selfplay analysis"):
             with session.lock:
@@ -1809,6 +2027,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/region")
     def set_region(request: SelectBoxRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set region")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "region-analysis")
         with persistent_analysis_activity(current_user, session, "region", "region analysis"):
             with session.lock:
@@ -2186,6 +2406,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(request.session_id)
         except KeyError:
             return _session_gone_reply(request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(session, current_user, "POST", "/api/resign", {"color": request.color})
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
         local_pvp = getattr(session, "game_type", "free") == "pvp_local"
@@ -2292,6 +2514,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state = session.katrain.get_state()
             session.last_state = state
 
+        if getattr(session, "bot_game", False) is True:
+            if wrote:
+                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
+                await app.state.pvp_lobby_bots.finish(session, reason="resign", result=result)
+            return {"session_id": session.session_id, "state": state}
+
         # Record game result for multiplayer
         if is_multiplayer and current_user and wrote:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
@@ -2327,7 +2556,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return {"session_id": session.session_id, "state": state}
 
-    def _complete_count(session, app, current_user, node=None):
+    def _complete_count(session, app, current_user, node=None, *, record_multiplayer=True):
         """数子并结束对局,返回 `result`。单机 / 本地对局由调用方在放开 session.lock 之后经 `_finish_ended_game` 收尾;
         多人局在这里同步记录并广播。
 
@@ -2337,14 +2566,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """
         node = session.katrain.game.current_node if node is None else node
         terminal = _terminal_of(session)
-        awaiting_count = node is session.katrain.game.current_node and is_awaiting_count(session.katrain)
+        pending_free_two_pass = (
+            getattr(session, "game_type", None) == "free"
+            and (getattr(session, "multiplayer_degraded", False) or getattr(session, "bot_degraded", False))
+            and terminal is not None
+            and terminal.node is node
+            and not getattr(node, "end_state", None)
+        )
+        awaiting_count = node is session.katrain.game.current_node and (
+            is_awaiting_count(session.katrain) or pending_free_two_pass
+        )
         if terminal is not None and terminal.node is node and not awaiting_count:
             # 非原子预检,只为说对原因:等分析的这几秒里这一局被认输 / 超时了,分数多半也没补上,
             # 不预检的话会先撞上下面的 400「分析没算出来」。真正的判别在 `_commit_end_state` 里。
             raise EndgameConflict("already_ended")
         score = node.score
 
-        if score is None:
+        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -2356,10 +2594,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         result, winner_color = _count_result(score)
         session.katrain._commit_end_state(result, node=node, fill_pending=awaiting_count)
         session.game_ended = True
+        session.multiplayer_degraded = False
+        session.katrain.pvp_lobby_awaiting_count = False
+        session.katrain.pvp_lobby_degraded = False
 
         # Record multiplayer game result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         if is_multiplayer:
+            if not record_multiplayer:
+                return result
             winner_id = session.player_b_id if winner_color == "B" else session.player_w_id
             try:
                 if not _is_guest_participant(app, session):
@@ -2444,7 +2687,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if not getattr(session.katrain, "analysis_allowed", False):
             return None
         score = await asyncio.to_thread(session.katrain.ensure_current_score, node=end.node)
-        if score is None:
+        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
             return None
         result, _ = _count_result(score)
         with session.lock:
@@ -2453,6 +2696,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             except EndgameConflict:
                 return None
             session.game_ended = True
+            session.multiplayer_degraded = False
+            session.katrain.pvp_lobby_awaiting_count = False
+            session.katrain.pvp_lobby_degraded = False
             session.last_state = session.katrain.get_state()
         session.katrain.update_state()  # 推给前端:结果从「终局」变成「黑+3.5」;在两把锁之外调
         return filled
@@ -2468,7 +2714,48 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         多人局 / 跨平台局在各自端点里落账并广播 `game_end`,不走这里 —— 合并跨平台 N13 时,星阵人机局在下面这条早退
         **之前**分流(见 Task 12「合并指引」)。研究模式里按出的双停不是「下完了一局」(PRD N22 验收 3)。
         游客局照样补分出胜负,只是不落账。"""
+        if getattr(session, "bot_game", False) is True:
+            await app.state.pvp_lobby_bots.finish_terminal(session, end)
+            return
         if session.player_b_id is not None or session.player_w_id is not None:
+            if getattr(session, "game_type", "free") != "free":
+                return
+            lock = getattr(session, "end_game_lock", None)
+            if not isinstance(lock, asyncio.Lock):
+                lock = asyncio.Lock()
+                session.end_game_lock = lock
+            async with lock:
+                if getattr(session, "_recorded_multiplayer", False) or session.katrain.game is not end.game:
+                    return
+                try:
+                    filled = await _score_two_pass_end(session, end)
+                except Exception:
+                    logging.getLogger("katrain_web").exception("two-pass scoring failed for %s", session.session_id)
+                    filled = None
+                if filled is None:
+                    terminal = _terminal_of(session)
+                    if terminal is not None and terminal.node is end.node and getattr(end.node, "end_state", None):
+                        return
+                    session.game_ended = False
+                    session.multiplayer_degraded = True
+                    session.katrain.pvp_lobby_degraded = True
+                    session.katrain.pvp_lobby_awaiting_count = True
+                    session.katrain.update_state()
+                    return
+                result = filled.result
+                winner_id = session.player_b_id if result.startswith("B+") else session.player_w_id
+                try:
+                    if not _is_guest_participant(app, session):
+                        app.state.game_repo.record_multiplayer_game(
+                            sgf_content=session.katrain.get_sgf(), result=result,
+                            game_type="free", black_id=session.player_b_id, white_id=session.player_w_id,
+                        )
+                except Exception:
+                    logging.getLogger("katrain_web").exception("two-pass recording failed for %s", session.session_id)
+                session._recorded_multiplayer = True
+                manager._schedule_broadcast(
+                    session, {"type": "game_end", "data": {"reason": "two_pass", "winner_id": winner_id, "result": result}}
+                )
             return
         if getattr(session, "mode", "play") == "research":
             return
@@ -2595,6 +2882,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/count/request", request.model_dump(exclude={"session_id"})
+            )
         _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
@@ -2603,7 +2894,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         state = session.katrain.get_state()
         # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
         # the manual-count move threshold and the placeholder end_result is not a final result.
-        if not state.get("awaiting_count"):
+        pending_free_two_pass = (
+            getattr(session, "game_type", None) == "free"
+            and (getattr(session, "multiplayer_degraded", False) or getattr(session, "bot_degraded", False))
+            and _terminal_of(session) is not None
+            and not getattr(session.katrain.game.current_node, "end_state", None)
+        )
+        if not state.get("awaiting_count") and not pending_free_two_pass:
             ranked_count = getattr(session, "game_type", None) == "ai_ladder_ranked"
             count_min_moves = 100 if ranked_count else state.get("count_min_moves")
             if count_min_moves is None:
@@ -2621,6 +2918,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return await _complete_ranked_count(session, app, current_user)
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+
+        if getattr(session, "bot_game", False) is True:
+            node = session.katrain.game.current_node
+            try:
+                await asyncio.to_thread(session.katrain.ensure_current_score, node=node)
+            except Exception as exc:
+                app.state.pvp_lobby_bots.mark_degraded(session)
+                raise HTTPException(status_code=503, detail="Counting is temporarily unavailable; retry") from exc
+            with session.lock:
+                try:
+                    result = _complete_count(session, app, current_user, node=node, record_multiplayer=False)
+                except HTTPException:
+                    app.state.pvp_lobby_bots.mark_degraded(session)
+                    raise
+                state = session.katrain.get_state()
+                session.last_state = state
+            await app.state.pvp_lobby_bots.finish(session, reason="count", result=result)
+            return {"session_id": session.session_id, "state": state, "result": result}
 
         if is_multiplayer:
             # HvH: Check if user is a player
@@ -2684,9 +2999,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "state": state, "result": result}
 
     @app.post("/api/count/respond")
-    def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
+    async def respond_count(request: CountResponse, current_user: User = Depends(get_current_user)):
         """Respond to a count request (HvH only). Accept or reject."""
         session = _get_session_or_404(manager, request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/count/respond", {"accept": request.accept}
+            )
         _guard_online_platform_local_ending(session)
 
         # Only for multiplayer games
@@ -2735,6 +3054,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session = manager.get_session(request.session_id)
         except KeyError:
             return _session_gone_reply(request.session_id)
+        if getattr(session, "game_type", None) == "pvp_lobby":
+            return await forward_box_pvp_action(
+                session, current_user, "POST", "/api/timeout", request.model_dump(exclude={"session_id"})
+            )
         _require_multiplayer_participant(session, current_user)
         _guard_online_platform_local_ending(session)
         guard_session_terminator(session, current_user, "timeout")
@@ -2745,6 +3068,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         bound = request.expected_node_id is not None
         local_pvp = getattr(session, "game_type", None) == "pvp_local"
+        bot_game = getattr(session, "bot_game", False) is True
         wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
@@ -2760,9 +3084,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         expected_node_id=request.expected_node_id,
                         color=request.color,
                     )
-                elif local_pvp:
-                    # Backward-compatible local caller: bind the verdict to the current turn here,
-                    # then run the same authoritative clock check as the newer kiosk client.
+                elif local_pvp or bot_game:
+                    # Bind legacy requests to the server's current turn. Bot games
+                    # must never use the unverified Galaxy timeout path.
                     cn = katrain.game.current_node
                     katrain(
                         "timeout",
@@ -2776,7 +3100,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 # 被拒前先刷新 last_state:随后的 GET /api/state 给出此刻的局面与计时基准,前端据此重同步。
                 state = session.katrain.get_state()
                 session.last_state = state
-                if local_pvp and e.reason == "clock_not_expired":
+                if (local_pvp or bot_game) and e.reason == "clock_not_expired":
                     raise HTTPException(status_code=409, detail={"code": "time_not_expired", "state": state})
                 if bound or e.reason != "already_ended":
                     raise
@@ -2784,6 +3108,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             end = _new_terminal(session, before) if wrote else None
             state = session.katrain.get_state()
             session.last_state = state
+
+        if bot_game:
+            if wrote and end is not None:
+                await app.state.pvp_lobby_bots.finish(session, reason="timeout", result=end.result)
+            return {"session_id": session.session_id, "state": state}
 
         # Record game result for multiplayer
         if is_multiplayer and current_user and wrote:
@@ -2818,7 +3147,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/multiplayer/leave")
-    def leave_multiplayer_game(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
+    async def leave_multiplayer_game(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user)):
         """Leave a multiplayer game (counts as forfeit)"""
         session = _get_session_or_404(manager, request.session_id)
         _guard_online_platform_local_ending(session)
@@ -2836,6 +3165,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Player leaving = forfeit
         winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
         result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
+
+        if getattr(session, "bot_game", False) is True:
+            with session.lock:
+                session.katrain._commit_end_state(result)
+                session.game_ended = True
+                session.last_state = session.katrain.get_state()
+            await app.state.pvp_lobby_bots.finish(session, reason="forfeit", result=result)
+            return {"status": "forfeited", "redirect": "/galaxy/play/human"}
 
         try:
             if not _is_guest_participant(app, session):
@@ -2864,8 +3201,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"status": "forfeited", "redirect": "/galaxy/play/human"}
 
     @app.post("/api/timer/pause")
-    def pause_timer(request: ToggleAnalysisRequest):
+    def pause_timer(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "pause timer")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "pause-timer")
         with session.lock:
             session.katrain.timer_paused = not session.katrain.timer_paused
@@ -2874,8 +3213,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state, "paused": session.katrain.timer_paused}
 
     @app.post("/api/rotate")
-    def rotate(request: ToggleAnalysisRequest):
+    def rotate(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "rotate")
+        guard_bot_mutation(session)
         with session.lock:
             session.katrain("rotate")
             state = session.katrain.get_state()
@@ -2883,8 +3224,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/delete")
-    def delete_node(request: NavRequest):
+    def delete_node(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "delete node")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "delete-node")
         with session.lock:
             session.katrain("delete_node", node_id=request.node_id)
@@ -2893,8 +3236,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/prune")
-    def prune_branch(request: NavRequest):
+    def prune_branch(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "prune branch")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "prune-branch")
         with session.lock:
             session.katrain("prune_branch", node_id=request.node_id)
@@ -2903,8 +3248,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/make-main")
-    def make_main_branch(request: NavRequest):
+    def make_main_branch(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "make main branch")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "make-main-branch")
         with session.lock:
             session.katrain("make_main_branch", node_id=request.node_id)
@@ -2913,8 +3260,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/node/toggle-collapse")
-    def toggle_collapse(request: NavRequest):
+    def toggle_collapse(request: NavRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle collapse")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "toggle-node-collapse")
         with session.lock:
             session.katrain("toggle_collapse", node_id=request.node_id)
@@ -2925,6 +3274,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/ui/toggle")
     def toggle_ui(request: UIToggleRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "toggle ui")
+        guard_bot_mutation(session)
         analysis_toggles = getattr(
             session.katrain, "ANALYSIS_TOGGLES", frozenset({"eval", "hints", "ownership", "policy", "dots"})
         )
@@ -2942,8 +3293,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/language")
-    def switch_language(request: LanguageRequest):
+    def switch_language(request: LanguageRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch language")
         with session.lock:
             session.katrain("switch_lang", lang=request.lang)
             state = session.katrain.get_state()
@@ -3060,8 +3412,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"rank": "??"}
 
     @app.post("/api/theme")
-    def switch_theme(request: ThemeRequest):
+    def switch_theme(request: ThemeRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "switch theme")
         with session.lock:
             session.katrain("switch_theme", theme=request.theme)
             state = session.katrain.get_state()
@@ -3071,6 +3424,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/game")
     def analyze_game(request: GameAnalysisRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analyze game")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "game-analysis")
         with persistent_analysis_activity(current_user, session, "game", "game analysis"):
             with session.lock:
@@ -3089,6 +3444,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/analysis/scan")
     def analysis_scan(request: AnalysisScanRequest, current_user: User = Depends(get_current_user)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "analysis scan")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "analysis-scan")
         with persistent_analysis_activity(current_user, session, "scan", "analysis scan"):
             with session.lock:
@@ -3101,6 +3458,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def analysis_progress(session_id: str, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis progress")
         session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "analysis progress")
         guard_ai_ladder_ranked_session(session, "analysis-progress")
         with session.lock:
             progress = session.katrain._do_analysis_progress()
@@ -3111,6 +3469,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def get_game_report(request: GameReportRequest, current_user: User = Depends(get_current_user)):
         guard_user_has_no_pending_ranked_game(app, current_user, "analysis report")
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "get game report")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "analysis-report")
         with session.lock:
             report = session.katrain._do_game_report(depth_filter=request.depth_filter)
@@ -3118,14 +3478,121 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "report": report}
 
     @app.post("/api/mode/insert")
-    def set_insert_mode(request: InsertModeRequest):
+    def set_insert_mode(request: InsertModeRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_reader(session, current_user, "set insert mode")
+        guard_bot_mutation(session)
         guard_ai_ladder_ranked_session(session, "insert-mode")
         with session.lock:
             session.katrain("insert_mode", mode=request.mode)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
+
+    def apply_pvp_box_state(local_session_id: str, state: dict) -> dict:
+        session = manager.get_session(local_session_id)
+        bridge = app.state.pvp_box_bridge
+        state = bridge.newer_state(session.last_state, state)
+        if state.get("end_result") and not state.get("awaiting_count"):
+            session.game_ended = True
+        if state is session.last_state:
+            return state
+        session.last_state = state
+        physical_play = getattr(app.state, "physical_play", None)
+        vision = getattr(app.state, "vision", None)
+        if physical_play is not None and getattr(vision, "bound_session_id", None) == local_session_id:
+            physical_play.on_game_state(state)
+        return state
+
+    async def forward_box_pvp_action(session, current_user, method, path, body=None):
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        guard_session_reader(session, current_user, path)
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if bridge is None:
+            raise HTTPException(status_code=503, detail="Central lobby unavailable")
+        try:
+            payload = await bridge.forward_action(
+                app.state.box_sso.active_generation, session.session_id, method, path, body
+            )
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except httpx.HTTPStatusError as exc:
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
+        if isinstance(payload.get("state"), dict):
+            payload["state"] = apply_pvp_box_state(session.session_id, payload["state"])
+            manager.broadcast_to_session(session.session_id, {"type": "game_update", "state": payload["state"]})
+        return payload
+
+    async def proxy_pvp_websocket(websocket, bridge, generation, local_user_id, path, transform, on_disconnect=None):
+        """Relay a box-origin socket to the central authority without exposing its token."""
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+        from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
+
+        await websocket.accept()
+        app.state.box_sso.register_socket(websocket)
+        try:
+            connector = await bridge.upstream_websocket(generation, local_user_id, path)
+            async with connector as upstream:
+                async def to_central():
+                    while True:
+                        payload = await websocket.receive_json()
+                        bridge.check_user(generation, local_user_id)
+                        await upstream.send(json.dumps(payload))
+
+                async def to_box():
+                    while True:
+                        payload = json.loads(await upstream.recv())
+                        bridge.check_user(generation, local_user_id)
+                        await websocket.send_json(transform(payload))
+
+                tasks = {asyncio.create_task(to_central()), asyncio.create_task(to_box())}
+                try:
+                    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                    for task in done:
+                        task.result()
+                finally:
+                    for task in tasks:
+                        task.cancel()
+                    await asyncio.gather(*tasks, return_exceptions=True)
+        except WebSocketDisconnect:
+            pass
+        except asyncio.CancelledError:
+            pass
+        except ConnectionClosedOK as exc:
+            close = exc.rcvd
+            try:
+                await websocket.close(code=close.code if close is not None else 1000,
+                                      reason="session_closed")
+            except Exception:
+                pass
+        except PvpBoxAuthError:
+            await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+            await websocket.close(code=1008, reason="authentication_required")
+        except Exception as exc:
+            if isinstance(exc, ConnectionClosedError) and exc.rcvd is not None and exc.rcvd.code == 1008:
+                # Keep authentication rejection terminal. Do not forward or log
+                # the central close reason, which may contain credential details.
+                try:
+                    await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+                    await websocket.close(code=1008, reason="authentication_required")
+                except Exception:
+                    pass
+                return
+            logging.getLogger("katrain_web.pvp_box").warning("Central PvP WebSocket disconnected", exc_info=True)
+            if on_disconnect is not None:
+                on_disconnect()
+            try:
+                await websocket.send_json(
+                    {"type": "error", "code": "CENTRAL_DISCONNECTED", "message": "Central lobby disconnected"}
+                )
+                await websocket.close(code=1013)
+            except Exception:
+                pass
+        finally:
+            app.state.box_sso.discard_socket(websocket)
 
     # NOTE: /ws/lobby MUST be defined BEFORE /ws/{session_id} to avoid routing conflicts
     @app.websocket("/ws/lobby")
@@ -3155,6 +3622,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             await websocket.close(code=1008, reason="Guest not allowed in lobby")
             return
 
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        if strict_box_sso_enabled() and bridge is not None:
+            from katrain.web.core.pvp_box_bridge import PvpBoxAuthError
+
+            generation = app.state.box_sso.active_generation
+            try:
+                central_user_id = (await bridge.identity(generation, current_user.id))["user_id"]
+            except PvpBoxAuthError:
+                await websocket.accept()
+                await websocket.send_json({"type": "error", "code": "BOX_SESSION_REVOKED"})
+                await websocket.close(code=1008, reason="authentication_required")
+                return
+            except Exception:
+                await websocket.accept()
+                await websocket.send_json(
+                    {"type": "error", "code": "CENTRAL_DISCONNECTED", "message": "Central lobby disconnected"}
+                )
+                await websocket.close(code=1013)
+                return
+
+            def transform_lobby(message):
+                if message.get("type") == "match_found":
+                    return bridge.rewrite_match(generation, current_user.id, central_user_id, message)
+                return message
+
+            await proxy_pvp_websocket(websocket, bridge, generation, current_user.id, "/ws/lobby", transform_lobby)
+            bridge.rooms.lobby_disconnected(generation)
+            return
+
         await websocket.accept()
         if strict_box_sso_enabled():
             app.state.box_sso.register_socket(websocket)
@@ -3175,29 +3671,44 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     await websocket.send_json({"type": "pong"})
 
                 elif msg_type == "start_matchmaking":
+                    from katrain.web.core.pvp_lobby_bots import human_ladder_rungs, playable_rungs
+
                     game_type = message.get("game_type", "free")
                     logging.getLogger("katrain_web").info(
                         f"User {current_user.username} (ID: {current_user.id}) started matchmaking for {game_type}"
                     )
 
-                    # Prerequisite for rated PvP: you must have a ladder rank, so the
-                    # pairing has something to pair on. Formerly a count of finished
-                    # `game_type == "rated"` games, which nothing ever wrote for an AI
-                    # game -- the counter sat at 0 forever and the lobby sent players to
-                    # a page that could not move it.
-                    if game_type == "rated":
-                        if not app.state.ai_ladder_repo.has_ladder_rank(current_user.id):
-                            await websocket.send_json(
-                                {
-                                    "type": "error",
-                                    "code": "PLACEMENT_REQUIRED",
-                                    "message": "Finish your 5-game 定级赛 in 升降级对弈 before playing rated PvP.",
-                                }
-                            )
-                            continue
-
-                    match = app.state.matchmaker.add_to_queue(current_user.id, game_type, websocket)
+                    if game_type not in ("free", "rated"):
+                        await websocket.send_json({"type": "error", "code": "INVALID_GAME_TYPE"})
+                        continue
+                    rung = human_ladder_rungs(app.state.session_factory, [current_user.id]).get(current_user.id)
+                    if rung not in {level.rung for level in playable_rungs()}:
+                        await websocket.send_json(
+                            {"type": "error", "code": "PLACEMENT_REQUIRED",
+                             "message": "Finish placement in 升降级对弈 before matchmaking."}
+                        )
+                        continue
+                    try:
+                        match = app.state.matchmaker.add_to_queue(current_user.id, "free", websocket, rung=rung)
+                    except ValueError:
+                        await websocket.send_json({"type": "error", "code": "ALREADY_PLAYING"})
+                        continue
                     if match:
+                        runtime = getattr(app.state, "pvp_lobby_bots", None)
+                        if runtime is not None:
+                            runtime.cancel_human_wait(match.player1_id)
+                            runtime.cancel_human_wait(match.player2_id)
+                        current_rungs = human_ladder_rungs(
+                            app.state.session_factory, [match.player1_id, match.player2_id]
+                        )
+                        if any(current_rungs.get(user_id) != rung for user_id in (match.player1_id, match.player2_id)):
+                            app.state.matchmaker.release_users(match.player1_id, match.player2_id, owner=match.match_id)
+                            for ws in (match.player1_socket, match.player2_socket):
+                                try:
+                                    await ws.send_json({"type": "error", "code": "PLACEMENT_REQUIRED"})
+                                except Exception:
+                                    pass
+                            continue
                         logging.getLogger("katrain_web").info(f"Match found: {match.player1_id} vs {match.player2_id}")
                         # Fetch Usernames
                         user_repo = app.state.user_repo
@@ -3219,9 +3730,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 u1.get("username") if u1 else "White"
                             )
 
-                        game_session = app.state.session_manager.create_multiplayer_session(
-                            pb, pw, b_name=pb_name, w_name=pw_name
-                        )
+                        game_session = None
+                        try:
+                            game_session = app.state.session_manager.create_multiplayer_session(
+                                pb, pw, b_name=pb_name, w_name=pw_name,
+                                initial_game_type="free", skip_initial_analysis=True,
+                            )
+                            if not app.state.matchmaker.bind_session(match.match_id, game_session.session_id, pb, pw):
+                                raise RuntimeError("match reservation changed during room creation")
+                        except Exception:
+                            if game_session is not None:
+                                manager.remove_session(game_session.session_id)
+                            app.state.matchmaker.release_users(pb, pw, owner=match.match_id)
+                            for ws in (match.player1_socket, match.player2_socket):
+                                try:
+                                    await ws.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})
+                                except Exception:
+                                    pass
+                            continue
 
                         # Found a match!
                         match_payload = {
@@ -3238,22 +3764,65 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         }
 
                         # Send reliably
+                        sent1 = sent2 = False
                         try:
-                            await match.player1_socket.send_json(match_payload)
+                            await match.player1_socket.send_json({**match_payload, "my_color": "B" if match.player1_id == pb else "W"})
+                            sent1 = True
                         except Exception as e:
                             logger.error(f"Failed to send match to Player 1: {e}")
 
                         try:
-                            await match.player2_socket.send_json(match_payload)
+                            await match.player2_socket.send_json({**match_payload, "my_color": "B" if match.player2_id == pb else "W"})
+                            sent2 = True
                         except Exception as e:
                             logger.error(f"Failed to send match to Player 2: {e}")
+                        if not (sent1 and sent2):
+                            app.state.session_manager.remove_session(game_session.session_id)
+                            for ws, sent in ((match.player1_socket, sent1), (match.player2_socket, sent2)):
+                                if sent:
+                                    try:
+                                        await ws.send_json({"type": "error", "code": "MATCH_CANCELLED"})
+                                    except Exception:
+                                        pass
+                            continue
+                        await lobby_manager.broadcast({"type": "lobby_update"})
+                    else:
+                        runtime = getattr(app.state, "pvp_lobby_bots", None)
+                        if runtime is not None:
+                            runtime.schedule_human_wait(current_user.id, current_user.username, rung, websocket)
 
                 elif msg_type == "stop_matchmaking":
-                    app.state.matchmaker.remove_from_queue(current_user.id)
+                    app.state.matchmaker.remove_from_queue(current_user.id, websocket)
+                    runtime = getattr(app.state, "pvp_lobby_bots", None)
+                    if runtime is not None:
+                        runtime.cancel_human_wait(current_user.id, websocket)
 
                 elif msg_type == "invite":
                     target_id = message.get("target_id")
                     if target_id and target_id != current_user.id:
+                        runtime = getattr(app.state, "pvp_lobby_bots", None)
+                        if type(target_id) is int and target_id < 0 and runtime is not None:
+                            # Direct invitations are nonranking games at the chosen opponent's strength.
+                            # Placement and same-rung restrictions belong only to quick matchmaking.
+                            try:
+                                game_session = runtime.create_human_bot_game(current_user.id, current_user.username, target_id)
+                            except Exception:
+                                logging.getLogger("katrain_web").exception("bot invitation failed")
+                                await websocket.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})
+                                continue
+                            if game_session is None:
+                                await websocket.send_json({"type": "error", "code": "BOT_UNAVAILABLE"})
+                                continue
+                            pb, pw = game_session.player_b_id, game_session.player_w_id
+                            try:
+                                await websocket.send_json({"type": "match_found", "session_id": game_session.session_id,
+                                                           "game_type": "free", "players": {"player_b": pb, "player_w": pw},
+                                                           "my_color": "B" if pb == current_user.id else "W"})
+                            except Exception:
+                                manager.remove_session(game_session.session_id)
+                                continue
+                            await lobby_manager.broadcast({"type": "lobby_update"})
+                            continue
                         # Find target sockets
                         # Note: accessing _online_users directly as get_online_user_ids only returns keys
                         # We need to expose sockets or lock properly. LobbyManager._online_users is internal but we are in the same module logic context mostly.
@@ -3296,6 +3865,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         and target_id != current_user.id
                         and lobby_manager.consume_invite(target_id, current_user.id)
                     ):
+                        with lobby_manager._lock:
+                            target_sockets = list(lobby_manager._online_users.get(target_id, []))
+                        if not target_sockets:
+                            await websocket.send_json({"type": "error", "code": "INVITE_NOT_PENDING"})
+                            continue
                         # Fetch Usernames
                         user_repo = app.state.user_repo
                         all_users = user_repo.list_users()
@@ -3304,9 +3878,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         # Create Session (Inviter = Black, Acceptor = White by default, or random)
                         pb, pw = target_id, current_user.id
 
-                        game_session = app.state.session_manager.create_multiplayer_session(
-                            pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw)
-                        )
+                        reservation = app.state.matchmaker.reserve_invitation(pb, pw)
+                        if reservation is None:
+                            await websocket.send_json({"type": "error", "code": "ALREADY_PLAYING"})
+                            continue
+                        game_session = None
+                        try:
+                            game_session = app.state.session_manager.create_multiplayer_session(
+                                pb, pw, b_name=users_by_id.get(pb), w_name=users_by_id.get(pw),
+                                initial_game_type="free", skip_initial_analysis=True,
+                            )
+                            if not app.state.matchmaker.bind_session(reservation, game_session.session_id, pb, pw):
+                                raise RuntimeError("invitation reservation changed during room creation")
+                        except Exception:
+                            if game_session is not None:
+                                manager.remove_session(game_session.session_id)
+                            app.state.matchmaker.release_users(pb, pw, owner=reservation)
+                            await websocket.send_json({"type": "error", "code": "SESSION_UNAVAILABLE"})
+                            continue
 
                         match_payload = {
                             "type": "match_found",
@@ -3315,17 +3904,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                             "players": {"player_b": pb, "player_w": pw},
                         }
 
-                        # Send to self (Acceptor)
-                        await websocket.send_json(match_payload)
-
                         # Send to Inviter
-                        with lobby_manager._lock:
-                            target_sockets = list(lobby_manager._online_users.get(target_id, []))
+                        delivered = []
                         for ws in target_sockets:
                             try:
-                                await ws.send_json(match_payload)
+                                await ws.send_json({**match_payload, "my_color": "B"})
+                                delivered.append(ws)
                             except:
                                 pass
+                        if not delivered:
+                            manager.remove_session(game_session.session_id)
+                            await websocket.send_json({"type": "error", "code": "INVITE_NOT_PENDING"})
+                            continue
+                        try:
+                            await websocket.send_json({**match_payload, "my_color": "W"})
+                        except Exception:
+                            manager.remove_session(game_session.session_id)
+                            for ws in delivered:
+                                try:
+                                    await ws.send_json({"type": "error", "code": "MATCH_CANCELLED"})
+                                except Exception:
+                                    pass
+                            continue
                     else:
                         # 🔴 **这个 else 原来没有。** 2026-08-25 给 `accept_invite` 加了
                         # `consume_invite`(一次性 + `INVITE_TTL_SECONDS = 120`)之后,
@@ -3351,7 +3951,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             pass
         finally:
             app.state.box_sso.discard_socket(websocket)
-            app.state.matchmaker.remove_from_queue(current_user.id)
+            app.state.matchmaker.remove_from_queue(current_user.id, websocket)
+            runtime = getattr(app.state, "pvp_lobby_bots", None)
+            if runtime is not None:
+                runtime.cancel_human_wait(current_user.id, websocket)
             lobby_manager.discard_invites_for(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast(
@@ -3416,6 +4019,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def websocket_endpoint(websocket: WebSocket, session_id: str):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
         from katrain.web.core.box_sso import resolve_websocket_token, strict_box_sso_enabled
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError
 
         strict_box = strict_box_sso_enabled()
         token = resolve_websocket_token(websocket)
@@ -3435,6 +4039,86 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 await websocket.accept()
                 await websocket.close(code=1008, reason="Invalid token")
                 return
+        bridge = getattr(app.state, "pvp_box_bridge", None)
+        generation = app.state.box_sso.active_generation if strict_box else None
+        room = bridge.rooms.for_local(generation, session_id) if strict_box and bridge is not None else None
+        if strict_box and bridge is not None and room is None:
+            try:
+                unmapped_session = manager.get_session(session_id)
+            except KeyError:
+                unmapped_session = None
+            if unmapped_session is not None and getattr(unmapped_session, "game_type", None) == "pvp_lobby":
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
+        if room is not None:
+            if current_user is None or current_user.id != room.local_user_id:
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
+            try:
+                session = manager.get_session(session_id)
+                bridge.check_user(generation, current_user.id)
+            except (KeyError, PvpBoxAuthError):
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Room unavailable")
+                return
+
+            if session.game_ended and isinstance(session.last_state, dict):
+                await websocket.accept()
+                app.state.box_sso.register_socket(websocket)
+                session.sockets.add(websocket)
+                try:
+                    bridge.check_user(generation, current_user.id)
+                    await websocket.send_json({"type": "game_update", "state": session.last_state})
+                    await websocket.close(code=1000, reason="session_closed")
+                except PvpBoxAuthError:
+                    try:
+                        await websocket.close(code=1008, reason="Room unavailable")
+                    except RuntimeError:
+                        pass
+                except (WebSocketDisconnect, RuntimeError):
+                    pass
+                finally:
+                    session.sockets.discard(websocket)
+                    app.state.box_sso.discard_socket(websocket)
+                return
+
+            def transform_room(payload):
+                if payload.get("type") == "game_update" and isinstance(payload.get("state"), dict):
+                    state = bridge.rewrite_state(generation, session_id, payload["state"])
+                    state = apply_pvp_box_state(session_id, state)
+                    return {**payload, "state": state}
+                if payload.get("type") == "game_end" and isinstance(payload.get("data"), dict):
+                    result = payload["data"].get("result")
+                    if isinstance(result, str) and result:
+                        state = session.last_state or session.katrain.get_state()
+                        state = {**state, "end_result": result, "awaiting_count": False, "degraded": False}
+                        session.game_ended = True
+                        apply_pvp_box_state(session_id, state)
+                return payload
+
+            session.sockets.add(websocket)
+            try:
+
+                def on_disconnect():
+                    physical_play = getattr(app.state, "physical_play", None)
+                    vision = getattr(app.state, "vision", None)
+                    if physical_play is not None and getattr(vision, "bound_session_id", None) == session_id:
+                        physical_play.enter_remote_disconnected()
+
+                await proxy_pvp_websocket(
+                    websocket,
+                    bridge,
+                    generation,
+                    current_user.id,
+                    f"/ws/{room.central_session_id}",
+                    transform_room,
+                    on_disconnect,
+                )
+            finally:
+                session.sockets.discard(websocket)
+            return
         try:
             session = manager.get_session(session_id)
         except KeyError:
@@ -3442,7 +4126,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             await websocket.close(code=1008, reason="Session not found")
             return
         try:
-            guard_session_reader(session, current_user, "session websocket")
+            guard_session_viewer(session, current_user, "session websocket")
             if not is_ai_ladder_ranked_session(session):
                 guard_user_has_no_pending_ranked_game(app, current_user, "session websocket")
         except HTTPException:
@@ -3454,6 +4138,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if strict_box:
             app.state.box_sso.register_socket(websocket)
         session.sockets.add(websocket)
+        if not strict_box:
+            session.spectator_presence.join_socket(websocket, current_user.id if current_user is not None else None)
         # 棋盘已经在屏上了 ⇒ 钟可以起步(Fan 2026-09-20:「我要看到电子棋盘再开始计时」)。
         #
         # ⚠️ 只对**没有视觉的部署**成立。盒子上 `physicalPlay = !screenFallback && isVisionEnabled`
@@ -3462,32 +4148,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # (10:36:10 建局 / 10:37:19 才绑上,中间用户在标定屏、碰不到棋盘)。
         # 板上由 `api/v1/endpoints/vision.py` 的 bind_session 起步;屏幕降级的局由「第一手落下」
         # 在 `interface.update_timer` 里兜底。
-        vision_service = getattr(app.state, "vision", None)
-        if vision_service is None or not vision_service.enabled:
-            if session.katrain.start_clock():
-                logging.getLogger("katrain_web").info(
-                    "Clock started for session %s (game websocket connected)", session_id
-                )
         try:
-            state = session.last_state or session.katrain.get_state()
+            vision_service = getattr(app.state, "vision", None)
+            if (
+                not session_owner_ids(session)
+                or (current_user is not None and current_user.id in session_owner_ids(session))
+            ) and (vision_service is None or not vision_service.enabled):
+                if session.katrain.start_clock():
+                    logging.getLogger("katrain_web").info(
+                        "Clock started for session %s (game websocket connected)", session_id
+                    )
+            state = session_state_for_read(session)
             state["sockets_count"] = len(session.sockets)
             # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})
-            # 🔴 名字撒谎:type 叫 `spectator_count`,`count` 却是**原始 socket 数**,不是观众数。
-            # 减 2 由消费方做(`GameRoomPage.tsx:194` 的 `sockets_count - 2`),因为这条消息只是
-            # 给 `state["sockets_count"]` 打的补丁 —— 它和上面那行 `state["sockets_count"]`
-            # 说的是同一个量,前端两处都存进 `sockets_count`。
-            #
-            # 而 REST 那条同名字段是**已经减过的**:`api/v1/endpoints/games.py:39`
-            # `len(s.sockets) - 2`,`HvHLobbyPage.tsx:291` 直接显示。
-            # ⇒ 全仓 **3 个产出方**(WS 两处:本处 + 离房那处;REST 一处)、**2 种语义**:
-            # 原料 × 2 与成品 × 1。今天各自算对了。
-            # **而「照着名字直接显示」这个动作已经存在两处**(`HvHLobbyPage.tsx:291`、
-            # kiosk `LobbyPage.tsx:358`,吃的都是成品那条)⇒ 屏上已经有两个先例在教下一个人
-            # 怎么接。**缺陷不是在等第一个消费者,是在等下一个人接错那一条。**
-            # 这条已登记进四棋类大厅裁决 §8.4(`variant_local.go` 那段的属主是围棋)。
-            # 改名要连着 wire 契约一起改,所以本轮只留话不动线。
-            manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
+            # Legacy `count` stays the raw socket count; the additive field counts people.
+            if not strict_box:
+                manager.broadcast_spectator_count(session, force=True)
+            else:
+                manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
             while True:
                 message = await websocket.receive_json()
                 if message.get("type") == "ping":
@@ -3550,24 +4229,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             if strict_box:
                 app.state.box_sso.discard_socket(websocket)
             session.sockets.discard(websocket)
-            # Broadcast updated spectator count when someone leaves
-            # 🔴 这是 `spectator_count` 的**第二个**产出方,`count` 同样是原始 socket 数不是观众数 ——
-            # 完整说明见进房那处(本文件上方 `session.sockets.add(websocket)` 之后)。**改一处要改两处。**
-            # 只贴一处的后果就是:动到没贴的这一处的人照样看不到。(国象 track 复量出这一处,2026-08-27)
-            if session.sockets:  # Only if there are still connected clients
+            session.spectator_presence.leave_socket(websocket)
+            if not strict_box:
+                manager.broadcast_spectator_count(session, force=True)
+            elif session.sockets:
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 
     # SPA Routing for Galaxy UI
     @app.get("/galaxy", response_class=FileResponse)
     @app.get("/galaxy/{full_path:path}", response_class=FileResponse)
     async def serve_galaxy_app(full_path: str = None):
-        return str(static_root / "index.html")
+        return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
 
     # SPA Routing for Kiosk UI
     @app.get("/kiosk", response_class=FileResponse)
     @app.get("/kiosk/{full_path:path}", response_class=FileResponse)
     async def serve_kiosk_app(full_path: str = None):
-        return str(static_root / "index.html")
+        return FileResponse(static_root / "index.html", headers={"Cache-Control": "no-cache"})
 
     # SPA Routing for Video Recorder
     @app.get("/record", response_class=FileResponse)
@@ -3776,6 +4454,8 @@ def _guard_online_platform_local_ending(session) -> None:
     """OGS alone decides counting, timeout and forfeits for its live game."""
     if getattr(session, "game_type", None) == "pvp_online":
         raise HTTPException(status_code=409, detail="online game result is controlled by the remote platform")
+    if getattr(session, "game_type", None) == "pvp_lobby":
+        raise HTTPException(status_code=409, detail="central PvP room controls the game result")
 
 
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
@@ -4262,7 +4942,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         return 0.0
 
     def _rearm_detection() -> None:
-        game_state = session.katrain.get_state()
+        game_state = session.last_state if getattr(session, "game_type", None) == "pvp_lobby" else session.katrain.get_state()
         if game_state and "stones" in game_state:
             vision.set_expected_from_stones(game_state["stones"], expected_node_id=game_state.get("current_node_id"))
 
@@ -4372,6 +5052,46 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
 
     move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
     coords = (move.coords[0], move.coords[1])
+    bridge = getattr(app.state, "pvp_box_bridge", None)
+    if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        orchestrator = getattr(app.state, "physical_play", None)
+        if getattr(orchestrator, "remote_disconnected", False) is True:
+            log.info("PvP physical move held while central room is disconnected")
+            return 0.5
+        generation = app.state.box_sso.active_generation
+        room = bridge.rooms.for_local(generation, session_id)
+        if (
+            room is None
+            or getattr(vision, "bound_session_id", None) != session_id
+            or move_player != room.my_color
+        ):
+            log.info("PvP physical move refused: room, binding or color changed")
+            _rearm_detection()
+            return 0.5
+        try:
+            payload = await bridge.forward_move(generation, session_id, coords=list(coords))
+        except httpx.HTTPStatusError as exc:
+            log.info("Central PvP physical move rejected: %s", exc)
+            _rearm_detection()
+            return 0.5
+        except (PvpBoxAuthError, PvpBoxRemoteError) as exc:
+            log.warning("Central PvP physical move was not accepted: %s", exc)
+            manager.broadcast_to_session(session_id, {"type": "pvp_central_disconnected"})
+            orchestrator = getattr(app.state, "physical_play", None)
+            if orchestrator is not None:
+                orchestrator.enter_remote_disconnected()
+            _rearm_detection()
+            return 0.5
+        state = bridge.newer_state(session.last_state, payload["state"])
+        if state is not session.last_state:
+            session.last_state = state
+            manager.broadcast_to_session(session_id, {"type": "game_update", "state": state})
+            orchestrator = getattr(app.state, "physical_play", None)
+            if orchestrator is not None:
+                orchestrator.on_game_state(state)
+        return 0.0
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
         # L0b: the `expected_player` check above reads session.last_state — a broadcast

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
@@ -72,7 +73,7 @@ interface MoveEntry {
 }
 
 const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): string | null => {
-  if (!rules) return null;
+  if (!rules) return t('kifu:rules_unresolved', '规则待核验');
   const r = rules.trim().toLowerCase();
   if (r === 'chinese' || r === 'cn') return t('Chinese rules', '中国规则');
   if (r === 'japanese' || r === 'jp') return t('Japanese rules', '日本规则');
@@ -152,6 +153,8 @@ const KifuDetailPage = () => {
 
   const total = entries.length;
   const at = Math.min(cursor, total);
+  useReplayStoneSound({ identity: album?.id ?? null, cursor: at, move: entries[at - 1]?.coord ?? undefined,
+    ready: !!album && album.id === Number(kifuId) && steps !== null, selected: true, boardSize });
   // 走到第 `at` 手 = 播到那一手所在的 step(含),开局则只播它前面的 setup。
   const stepCount = at === 0
     ? (entries[0]?.stepIndex ?? steps?.length ?? 0)
@@ -189,7 +192,7 @@ const KifuDetailPage = () => {
       album.date_played,
       `${boardSize} ${t('kifu:board_lines', '路')}`,
       rulesLabel(album.rules, t),
-      album.komi != null ? `${t('kifu:komi_black', '黑贴')} ${album.komi} ${t('kifu:komi_unit', '目')}` : null,
+      album.komi != null ? `${t('report:sgf_komi', 'SGF 贴目')} ${album.komi} ${t('kifu:komi_unit', '目')}` : null,
       album.handicap > 0 ? `${t('kifu:handicap_pre', '让')} ${album.handicap} ${t('kifu:handicap_unit', '子')}` : null,
       album.result ? translateResult(album.result, t, album.rules) : null,
       `${album.move_count} ${t('kifu:moves_unit', '手')}`,

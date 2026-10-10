@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -30,8 +30,8 @@ const meResponse = { id: 1, uuid: 'test-uuid-1234', username: 'testuser', rank: 
 
 const okJson = (body: unknown): Promise<Response> =>
   Promise.resolve({ ok: true, json: async () => body } as Response);
-const notOk = (): Promise<Response> =>
-  Promise.resolve({ ok: false, json: async () => ({}) } as Response);
+const notOk = (status = 401): Promise<Response> =>
+  Promise.resolve({ ok: false, status, json: async () => ({}) } as Response);
 const mockFetch = vi.mocked(global.fetch);
 
 const hasAuthHeader = (init?: RequestInit) => {
@@ -48,6 +48,7 @@ const nonStrictIt = isStrictBoxKiosk ? it.skip : it;
 const galaxyIt = isKioskBuild ? it.skip : it;
 
 describe('AuthContext', () => {
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetAllMocks();
@@ -319,4 +320,117 @@ describe('AuthContext', () => {
     expect(setItem).not.toHaveBeenCalled();
     expect(removeItem).toHaveBeenCalledWith('token');
   });
+
+  nonStrictIt.each([503, 403])('retains Bearer credentials on /me %s and restores through retry', async (status) => {
+    localStorage.setItem('token', 'saved-token');
+    mockFetch.mockImplementationOnce(() => notOk(status));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.status).toBe('unavailable'));
+    expect(localStorage.getItem('token')).toBe('saved-token');
+    expect(result.current.token).toBe('saved-token');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    mockFetch.mockImplementation(() => okJson(meResponse));
+    await act(async () => { await result.current.retry(); });
+    expect(result.current.status).toBe('authenticated');
+    expect(mockFetch.mock.calls[1][1]?.headers).toEqual({ Authorization: 'Bearer saved-token' });
+  });
+
+  nonStrictIt('retains Bearer credentials after a network failure', async () => {
+    localStorage.setItem('token', 'saved-token');
+    mockFetch.mockRejectedValue(new TypeError('offline'));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.status).toBe('unavailable'));
+    expect(localStorage.getItem('token')).toBe('saved-token');
+    expect(result.current.token).toBe('saved-token');
+  });
+
+  it('bounds a hung probe and serializes concurrent retry clicks', async () => {
+    vi.useFakeTimers();
+    mockFetch.mockImplementation(() => new Promise(() => {}));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    expect(result.current.status).toBe('checking');
+    await act(async () => { await vi.advanceTimersByTimeAsync(8000); });
+    expect(result.current.status).toBe('unavailable');
+    let retryOne: Promise<void>;
+    let retryTwo: Promise<void>;
+    act(() => { retryOne = result.current.retry(); retryTwo = result.current.retry(); });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    await act(async () => { await vi.advanceTimersByTimeAsync(8000); await Promise.all([retryOne!, retryTwo!]); });
+    expect(result.current.status).toBe('unavailable');
+  });
+
+  nonStrictIt('only a rejected saved credential establishes expiry', async () => {
+    localStorage.setItem('token', 'expired-token');
+    mockFetch.mockImplementation(() => notOk(401));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.status).toBe('expired'));
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(result.current.token).toBeNull();
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  nonStrictIt('ignores a late bootstrap after successful login', async () => {
+    let resolveBootstrap: (value: Response) => void = () => {};
+    mockFetch.mockImplementationOnce(() => new Promise((resolve) => { resolveBootstrap = resolve; }));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    mockFetch.mockImplementation((input) => String(input).endsWith('/login')
+      ? okJson({ access_token: 'new-token' }) : okJson(meResponse));
+    await act(async () => { await result.current.login('testuser', 'password'); });
+    await act(async () => { resolveBootstrap(await notOk(401)); });
+    expect(result.current.status).toBe('authenticated');
+    expect(result.current.token).toBe('new-token');
+    expect(localStorage.getItem('token')).toBe('new-token');
+  });
+
+  it('unmounts identity immediately on logout and ignores a late probe', async () => {
+    let resolveBootstrap: (value: Response) => void = () => {};
+    mockFetch.mockImplementationOnce(() => new Promise((resolve) => { resolveBootstrap = resolve; }));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    mockFetch.mockImplementation(() => okJson({}));
+    await act(async () => { await result.current.logout(); });
+    await act(async () => { resolveBootstrap(await okJson(meResponse)); });
+    expect(result.current.status).toBe('guest');
+    expect(result.current.user).toBeNull();
+  });
+
+  nonStrictIt('failed login during bootstrap leaves a retryable state', async () => {
+    mockFetch.mockImplementationOnce(() => new Promise(() => {}));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    mockFetch.mockImplementation(() => notOk(401));
+    await act(async () => { await expect(result.current.login('bad', 'bad')).rejects.toThrow('Login failed'); });
+    expect(result.current.status).toBe('unavailable');
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  nonStrictIt.each([200, 401])('a retry started during login cannot replace the new account after late /me %s', async (lateStatus) => {
+    localStorage.setItem('token', 'old-token');
+    mockFetch.mockImplementationOnce(() => notOk(503));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.status).toBe('unavailable'));
+    let finishLogin: (value: Response) => void = () => {};
+    let finishRetry: (value: Response) => void = () => {};
+    mockFetch.mockImplementation((input, init) => {
+      if (String(input).endsWith('/login')) return new Promise((resolve) => { finishLogin = resolve; });
+      const headers = init?.headers as Record<string, string> | undefined;
+      if (headers?.Authorization === 'Bearer new-token') return okJson(meResponse);
+      if (headers?.Authorization === 'Bearer old-token') return new Promise((resolve) => { finishRetry = resolve; });
+      return notOk(401);
+    });
+    let loginPending: Promise<void>;
+    let retryPending: Promise<void>;
+    act(() => { loginPending = result.current.login('testuser', 'password'); });
+    act(() => { retryPending = result.current.retry(); });
+    await act(async () => { finishLogin(await okJson({ access_token: 'new-token' })); await loginPending!; });
+    expect(result.current.status).toBe('authenticated');
+    await act(async () => {
+      finishRetry(await (lateStatus === 401 ? notOk(401) : okJson({ ...meResponse, id: 99, uuid: 'old', username: 'old' })));
+      await retryPending!;
+    });
+    expect(result.current.status).toBe('authenticated');
+    expect(result.current.user?.username).toBe('testuser');
+    expect(result.current.token).toBe('new-token');
+    expect(localStorage.getItem('token')).toBe('new-token');
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
 });

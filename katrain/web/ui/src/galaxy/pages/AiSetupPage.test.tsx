@@ -96,7 +96,7 @@ vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
 }));
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => authState.current,
+  useAuth: () => ({ ...authState.current, status: authState.current.isLoading ? 'checking' : authState.current.isAuthenticated ? 'authenticated' : 'guest', identityKey: authState.current.user?.id, retry: vi.fn() }),
 }));
 
 vi.mock('../../context/SettingsContext', () => ({
@@ -162,6 +162,27 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     const user = userEvent.setup();
     await user.click(comboboxForLabel('AI Strategy'));
     expect(screen.getByRole('option', { name: '棋力阶梯' })).toBeInTheDocument();
+  });
+
+  it('keeps the free-game summary in sync with the selected settings and returns to play', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    const summary = await screen.findByTestId('free-game-summary');
+    expect(summary).toHaveTextContent('19路');
+    expect(summary).toHaveTextContent('Human-like · 10k');
+    expect(summary).toHaveTextContent('不计时');
+
+    await user.click(comboboxForLabel('Board Size'));
+    await user.click(screen.getByRole('option', { name: '13x13' }));
+    await user.click(comboboxForLabel('Your Color'));
+    await user.click(screen.getByRole('option', { name: 'White (Second)' }));
+    await user.click(screen.getByRole('switch', { name: 'Enable Timer' }));
+    expect(summary).toHaveTextContent('13路');
+    expect(summary).toHaveTextContent('White · Komi 6.5 · Handicap 0');
+    expect(summary).toHaveTextContent('10 Minutes · 3×30 Seconds');
+
+    await user.click(screen.getByTestId('free-return-action'));
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play');
   });
 
   it('shows a rung selector (not the human-rank slider) once 棋力阶梯 is chosen', async () => {
@@ -324,15 +345,15 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
   });
 
   it.each([
-    ['active-other', blockingGame('active', 'other_device')],
-    ['pending', blockingGame('pending_settlement')],
-  ])('挡局面板不摆「刷新状态」:%s', async (_label, occupiedGame) => {
+    ['active-other', blockingGame('active', 'other_device'), '认输那一局，在这里开新局'],
+    ['pending', blockingGame('pending_settlement'), '放弃未送达成绩，在这里开新局'],
+  ])('挡局面板不摆「刷新状态」:%s', async (_label, occupiedGame, endAction) => {
     // 它做的事(重问一次 /status)这块屏每 15 秒已经在自动做,所以它在每一格
     // 要么是别的按钮的真子集,要么什么都改不了。
     rankedState.current = { ...rankedState.current, blocking_game: occupiedGame };
     renderPage('rated');
 
-    await screen.findByRole('button', { name: '认输那一局，在这里开新局' });
+    await screen.findByRole('button', { name: endAction });
     expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
   });
 
@@ -508,8 +529,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     renderPage('rated');
 
     // 先制造一条陈旧错误:开新局失败。
-    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认认输' }));
+    await user.click(await screen.findByRole('button', { name: '放弃未送达成绩，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认放弃成绩' }));
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
@@ -702,16 +723,15 @@ describe('AiSetupPage — 未登录访客', () => {
 
   it('升降级对弈：说的是「需要登录」而不是「登录已失效」，并且当场能登录', async () => {
     renderPage('rated');
-    expect(await screen.findByTestId('rated-login-required')).toHaveTextContent('需要登录');
+    expect(await screen.findByRole('dialog', { name: '登录后进入升降级对弈' })).toHaveTextContent('定级与升降级成绩需要记录到你的账号');
+    expect(mockCreateSession).not.toHaveBeenCalled();
     // 「重试」是给「加载失败」用的出口，对从未登录过的人按多少次都不会成功。
     expect(screen.queryByRole('button', { name: '重试' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
     const user = userEvent.setup();
-    await user.click(screen.getByTestId('rated-login-action'));
+    await user.click(screen.getByRole('button', { name: '登录并继续' }));
     // 断言的是「能当场填凭据的那个框」,不是「有个框」——换成再弹一次「需要登录」的
     // AuthRequiredDialog 也满足 findByRole('dialog'),而那样用户永远登不上去。
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', { name: '登录智星盒' });
     expect(within(dialog).getAllByRole('textbox').length).toBeGreaterThan(0);
     expect(dialog.querySelector('input[type="password"]')).not.toBeNull();
   });
@@ -800,8 +820,8 @@ describe('AiSetupPage — 未登录访客', () => {
   it('升降级对弈：给游客指出自由对弈这条不需要账号的路', async () => {
     renderPage('rated');
     const user = userEvent.setup();
-    await user.click(await screen.findByTestId('rated-login-free-fallback'));
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/ai?mode=free');
+    await user.click(await screen.findByRole('button', { name: '返回对弈' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play', { replace: true });
   });
 
   it('自由对弈：让游客进，但开局前先说清楚这一局不会被保存', async () => {

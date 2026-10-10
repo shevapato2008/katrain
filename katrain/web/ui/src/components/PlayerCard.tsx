@@ -73,33 +73,30 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
 }) => {
   const { t, lang } = useTranslation();
   const isBlack = player === 'B';
-  const [clientElapsed, setClientElapsed] = React.useState(0);
+  const clockSnapshot = [player, active, !!timer, timer?.paused, info.main_time_used, info.periods_used,
+    active ? timer?.current_node_time_used : 0, timer?.settings.main_time,
+    timer?.settings.byo_length, timer?.settings.byo_periods].join('|');
+  const [elapsedSample, setElapsedSample] = React.useState({ snapshot: clockSnapshot, seconds: 0 });
+  // New authoritative clock data must never inherit the previous snapshot's interpolation,
+  // even on the first render before effects run (which can otherwise trigger a false timeout).
+  const clientElapsed = elapsedSample.snapshot === clockSnapshot ? elapsedSample.seconds : 0;
   const lastCountdownSecondRef = useRef<number | null>(null);
-  const lastActiveTimeRef = useRef<number>(Date.now());
-  const lastMainTimeUsedRef = useRef<number>(info.main_time_used);
   const timeoutTriggeredRef = useRef<boolean>(false);
 
   React.useEffect(() => {
-    // Reset the timer start time when becoming active or when time tracking values change
-    if (active && !timer?.paused) {
-      lastActiveTimeRef.current = Date.now();
-      lastMainTimeUsedRef.current = info.main_time_used;
-      setClientElapsed(0);
-    }
-
+    const startedAt = Date.now();
+    setElapsedSample({ snapshot: clockSnapshot, seconds: 0 });
     if (!active || !timer || timer.paused) {
-      setClientElapsed(0);
       return;
     }
 
     const interval = setInterval(() => {
-      const elapsed = (Date.now() - lastActiveTimeRef.current) / 1000;
-      setClientElapsed(elapsed);
+      setElapsedSample({ snapshot: clockSnapshot, seconds: (Date.now() - startedAt) / 1000 });
     }, 100);
 
     return () => clearInterval(interval);
     // Only depend on truly changing values, not object references
-  }, [active, timer?.paused, info.main_time_used]);
+  }, [clockSnapshot]);
 
   // 段位: a ladder AI carries its 段位 as a string in rank_display; everyone else uses the
   // numeric calculated_rank rendered by localizedRank.
@@ -112,7 +109,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
     settings: timer?.settings,
     mainTimeUsed: info.main_time_used,
     periodsUsed: info.periods_used,
-    nodeTimeUsed: timer?.current_node_time_used ?? 0,
+    nodeTimeUsed: active ? timer?.current_node_time_used ?? 0 : 0,
     active,
     clientElapsed,
   });

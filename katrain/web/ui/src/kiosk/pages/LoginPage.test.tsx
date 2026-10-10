@@ -64,4 +64,11 @@ describe('LoginPage strict-box redirect (decision B)', () => {
     expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
   });
+  it('allows a technical guest to sign into a real account outside strict mode', () => {
+    mockUseAuth.mockReturnValue({ login: mockLogin, isStrictBoxKiosk: false, isAuthenticated: true, isGuest: true, isLoading: false });
+    renderLoginPage();
+    expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+  });
+
 });

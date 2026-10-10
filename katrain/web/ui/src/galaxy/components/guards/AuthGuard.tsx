@@ -1,37 +1,28 @@
-import type { ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Box, Typography, Paper } from '@mui/material';
-import LockIcon from '@mui/icons-material/Lock';
+import { AccessPrompt } from '../../../components/auth/AccessPrompt';
+import { ProtectedOutline } from '../../../components/auth/ProtectedOutline';
+import { accessAllowed, accessMetadata, type AccessFeature } from '../../../components/auth/accessPolicy';
+import LoginModal from '../auth/LoginModal';
 
-// Simple Login Reminder Component
-const LoginReminder = () => (
-    <Box sx={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-        <Paper sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: 400 }}>
-            <LockIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h5" gutterBottom>Login Required</Typography>
-            <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 3 }}>
-                This feature is only available to registered users. Please login to continue.
-            </Typography>
-            {/* Logic to trigger login dialog would go here, or just tell user to use sidebar */}
-            <Typography variant="caption" color="text.disabled">
-                Use the Login button in the sidebar.
-            </Typography>
-        </Paper>
-    </Box>
-);
-
-export const AuthGuard = ({ children }: { children: ReactNode }) => {
-    const { isAuthenticated, isLoading } = useAuth();
-
-    // Wait for the mount-time session probe before showing the login reminder,
-    // so a valid persisted session doesn't flash "Login Required" on page load.
-    if (isLoading) {
-        return null;
+export const AuthGuard = ({ children, feature = 'hall', realAccount = feature === 'hall' || feature === 'rated' }: {
+    children: ReactNode;
+    feature?: AccessFeature;
+    realAccount?: boolean;
+}) => {
+    const auth = useAuth();
+    const navigate = useNavigate();
+    const [loginOpen, setLoginOpen] = useState(false);
+    const status = auth.status;
+    if (accessAllowed(status, auth.isAuthenticated, auth.isGuest, realAccount)) {
+        return <Fragment key={auth.identityKey}>{children}</Fragment>;
     }
-
-    if (!isAuthenticated) {
-        return <LoginReminder />;
-    }
-
-    return <>{children}</>;
+    return <>
+        <ProtectedOutline surface="galaxy" feature={feature} />
+        <AccessPrompt open={!loginOpen} surface="galaxy" status={status} feature={feature}
+            onPrimary={() => { if (status === 'unavailable') void auth.retry(); else setLoginOpen(true); }}
+            onBack={() => navigate(`/galaxy${accessMetadata[feature].backPath}`, { replace: true })} />
+        {loginOpen && <LoginModal open onClose={() => setLoginOpen(false)} />}
+    </>;
 };

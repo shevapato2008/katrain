@@ -3379,8 +3379,8 @@ msgstr ""
 
 msgid "grade:def_brilliant"
 msgstr ""
-"Played the engine's top choice that even the engine's intuition missed "
-"(prior < 10%)"
+"Played the AI's top choice after in-depth analysis, with an AI initial "
+"selection probability below 10% (below 6% in the endgame)"
 
 msgid "grade:def_best"
 msgstr "Played the engine's top choice"
@@ -3396,9 +3396,18 @@ msgstr "Cannot be judged: the previous move has no analysis or too few visits"
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"All three must hold: played the engine's top choice, that choice's policy "
-"prior was under 10% (even the engine's intuition missed it), and the game "
-"was still undecided."
+"A brilliant move must meet all these conditions: the move played is the "
+"AI's top choice after in-depth analysis; its AI initial selection "
+"probability is below 10% (below 6% in the endgame); the outcome of the "
+"game is still undecided."
+
+msgid "grade:initial_probability_help"
+msgstr ""
+"AI initial selection probability is the probability the AI assigns to "
+"choosing this move before in-depth analysis. It is neither the win "
+"probability nor the probability that a human would play it. A move with a "
+"very low initial selection probability can still become the top choice "
+"after in-depth analysis."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -3987,8 +3996,8 @@ msgstr "Move {n} {m} · {s} · {g} · lost {x} pts"
 
 msgid "grade:sel_brilliant"
 msgstr ""
-"Move {n} {m} · {s} · brilliance {k} — it is the engine's own first choice, "
-"yet the engine gave it only {p}% prior (the lower, the more brilliant)"
+"Move {n} {m} · {s} · brilliance {k} — AI initial selection probability was"
+" only {p}%; became the top choice after in-depth analysis"
 
 msgid "grade:truncated_plot"
 msgstr "At most {k} per side are drawn; {n} more are not shown"
@@ -7224,3 +7233,75 @@ msgstr "Couldn't confirm sign-in"
 
 msgid "vision:not_a_stone"
 msgstr "Not a stone"
+
+msgid "kifu:view_analysis_report"
+msgstr "View analysis report"
+
+msgid "kifu:view_kifu"
+msgstr "View game record"
+
+msgid "kifu:professional_game"
+msgstr "Professional game"
+
+msgid "kifu:report_title"
+msgstr "Professional game report"
+
+msgid "kifu:report_load_failed"
+msgstr "This professional game is temporarily unavailable"
+
+msgid "kifu:report_loading"
+msgstr "Loading professional game report"
+
+msgid "kifu:report_progress"
+msgstr "Analyzed {done} / {total} moves"
+
+msgid "kifu:report_visits"
+msgstr "2000 visits per position · {total} moves"
+
+msgid "kifu:report_visits_heading"
+msgstr "Professional game · 2000 visits per position"
+
+msgid "kifu:report_no_position"
+msgstr "No analysis for this position yet"
+
+msgid "kifu:analysis_read_error"
+msgstr "Analysis status temporarily unavailable"
+
+msgid "kifu:analysis_loading"
+msgstr "Loading analysis"
+
+msgid "kifu:analysis_unavailable"
+msgstr "Analysis not scheduled"
+
+msgid "kifu:analysis_pending"
+msgstr "Waiting for analysis"
+
+msgid "kifu:analysis_running"
+msgstr "Analyzing"
+
+msgid "kifu:analysis_failed"
+msgstr "Analysis incomplete"
+
+msgid "kifu:analysis_completed"
+msgstr "Analysis completed"
+
+msgid "report:score_difference"
+msgstr "Score difference"
+
+msgid "kifu:pagination"
+msgstr "Game record pagination"
+
+msgid "kifu:jump_page"
+msgstr "Page number"
+
+msgid "kifu:jump"
+msgstr "Go"
+
+msgid "kifu:page_range"
+msgstr "Enter a whole page number between 1 and {max}"
+
+msgid "report:physical_board"
+msgstr "Physical board"
+
+msgid "report:back_report"
+msgstr "Report"

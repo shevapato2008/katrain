@@ -123,7 +123,7 @@ describe('Golaxy spectator', () => {
     expect(playSound).not.toHaveBeenCalled();
   });
 
-  it('shows earlier validated positions and returns to the latest without replay sound', async () => {
+  it('sounds each explicit historical stone and returns to latest once', async () => {
     open();
     await screen.findByText('测试黑方');
     expect(document.querySelector('[data-stone="w"][data-at="L10"]')).not.toBeNull();
@@ -136,10 +136,11 @@ describe('Golaxy spectator', () => {
     expect(document.querySelector('[data-stone="b"][data-at="K10"]')).toBeNull();
     await userEvent.click(screen.getByRole('button', { name: /回到最新/ }));
     expect(document.querySelector('[data-stone="w"][data-at="L10"]')).not.toBeNull();
-    expect(playSound).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledTimes(3);
+    expect(playSound).toHaveBeenLastCalledWith('stone');
   });
 
-  it('keeps an earlier board while the latest snapshot advances without sounding on review or return', async () => {
+  it('keeps automatic updates silent in history and sounds a single explicit return', async () => {
     await openReadyWithFakeTimers();
     act(() => screen.getByRole('button', { name: '上一手' }).click());
     platformRoomSnapshot.mockResolvedValueOnce(nextSnapshot);
@@ -147,10 +148,32 @@ describe('Golaxy spectator', () => {
     expect(screen.getByTestId('spectator-board').parentElement).toHaveTextContent('3 手');
     expect(screen.getByText(/最新：黑 Q4 · 第 5 手/)).toBeInTheDocument();
     expect(document.querySelector('[data-stone="b"][data-at="Q4"]')).toBeNull();
-    expect(playSound).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledTimes(1);
     act(() => screen.getByRole('button', { name: /回到最新/ }).click());
     expect(document.querySelector('[data-stone="b"][data-at="Q4"]')).not.toBeNull();
+    expect(playSound).toHaveBeenCalledTimes(2);
+    platformRoomSnapshot.mockResolvedValueOnce(nextSnapshot);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(playSound).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps historical pass, start and local mute silent', async () => {
+    const passed = { ...snapshot, black_stones: ['D16'], history: [...snapshot.history.slice(0, 3),
+      { ...snapshot.history[2], move_number: 3, last_move: { color: 'B' as const, coordinate: null } },
+      { ...snapshot.history[4], black_stones: ['D16'] }] };
+    platformRoomSnapshot.mockResolvedValue(passed);
+    await openReadyWithFakeTimers();
+    act(() => screen.getByRole('button', { name: '上一手' }).click()); // pass
     expect(playSound).not.toHaveBeenCalled();
+    act(() => screen.getByRole('button', { name: '上一手' }).click()); // W Q16
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    act(() => screen.getByRole('button', { name: '落子音：开' }).click());
+    act(() => screen.getByRole('button', { name: /回到最新/ }).click());
+    expect(playSound).toHaveBeenCalledTimes(1);
+    act(() => screen.getByRole('button', { name: '落子音：关' }).click());
+    for (let i = 0; i < 4; i++) act(() => screen.getByRole('button', { name: '上一手' }).click());
+    expect(playSound).toHaveBeenCalledTimes(3); // two real stones, pass and start stay silent
+    expect(screen.getByRole('button', { name: '上一手' })).toBeDisabled();
   });
 
   it('sounds once for a new visible stone, not for initial, duplicate, or local mute', async () => {
@@ -183,13 +206,23 @@ describe('Golaxy spectator', () => {
     expect(playSound).toHaveBeenCalledTimes(2);
   });
 
-  it('sounds once for each new stone in a validated two-move jump', async () => {
+  it('sounds at most once for the latest placed stone in a validated two-move jump', async () => {
     await openReadyWithFakeTimers();
     platformRoomSnapshot.mockResolvedValueOnce(sixthSnapshot);
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
-    expect(playSound).toHaveBeenCalledTimes(2);
-    expect(playSound).toHaveBeenNthCalledWith(1, 'stone');
-    expect(playSound).toHaveBeenNthCalledWith(2, 'stone');
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  });
+
+  it('does not sound for earlier stones when a jump ends in a pass', async () => {
+    await openReadyWithFakeTimers();
+    const passed = { ...nextSnapshot, move_number: 6, last_move: { color: 'W' as const, coordinate: null },
+      history: [...nextSnapshot.history, { black_stones: nextSnapshot.black_stones,
+        white_stones: nextSnapshot.white_stones, move_number: 6,
+        last_move: { color: 'W' as const, coordinate: null } }] };
+    platformRoomSnapshot.mockResolvedValueOnce(passed);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(screen.getByText(/最新：白 停一手 · 第 6 手/)).toBeInTheDocument();
+    expect(playSound).not.toHaveBeenCalled();
   });
 
   it('skips a pass while sounding the later stone in a two-move jump', async () => {
@@ -241,7 +274,7 @@ describe('Golaxy spectator', () => {
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(screen.getByTestId('spectator-board').parentElement).toHaveTextContent('5 手');
     expect(screen.getByRole('button', { name: /正在看最新/ })).toBeDisabled();
-    expect(playSound).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledTimes(1);
 
     act(() => screen.getByRole('button', { name: '上一手' }).click());
     const earlier = { ...snapshot, game_id: '442', ...snapshot.history[2],
@@ -250,7 +283,7 @@ describe('Golaxy spectator', () => {
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(screen.getByTestId('spectator-board').parentElement).toHaveTextContent('2 手');
     expect(screen.getByRole('button', { name: /正在看最新/ })).toBeDisabled();
-    expect(playSound).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledTimes(2);
   });
 
   it('uses history continuity when the verified game ID is unavailable', async () => {
@@ -263,10 +296,10 @@ describe('Golaxy spectator', () => {
     platformRoomSnapshot.mockResolvedValueOnce({ ...snapshot, game_id: null });
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
     expect(screen.getByRole('button', { name: /正在看最新/ })).toBeDisabled();
-    expect(playSound).toHaveBeenCalledTimes(1);
+    expect(playSound).toHaveBeenCalledTimes(2);
     platformRoomSnapshot.mockResolvedValueOnce({ ...nextSnapshot, game_id: null });
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
-    expect(playSound).toHaveBeenCalledTimes(1);
+    expect(playSound).toHaveBeenCalledTimes(2);
   });
 
   it('does not sound for a move first seen after the page was hidden', async () => {

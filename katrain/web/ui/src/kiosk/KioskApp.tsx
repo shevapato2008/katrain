@@ -27,6 +27,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
+import { accessAllowed, kioskAccessPolicy } from '../components/auth/accessPolicy';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
@@ -78,11 +79,16 @@ const LegacyPlatformLobbyRedirect = () => {
 };
 
 export const KioskRoutes = () => {
-  const { user } = useAuth();
+  const { user, status, isAuthenticated, isGuest } = useAuth();
+  const { pathname } = useLocation();
+  const accessPolicy = kioskAccessPolicy(pathname);
+  const accessBlocked = Boolean(accessPolicy && !accessAllowed(status, isAuthenticated, isGuest, accessPolicy.realAccount));
   const { t } = useTranslation();
   // The shared zero-persistence guest account has literal username "guest";
   // never surface that raw string in the header — show the localized label.
-  const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
+  const headerUsername = status === 'checking' ? t('auth:checking_identity', '身份确认中')
+    : status === 'unavailable' ? t('auth:unavailable_identity', '身份待确认')
+    : user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
     <Suspense fallback={null}><Routes>
@@ -110,7 +116,7 @@ export const KioskRoutes = () => {
               **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
               不是这一层。前端少一道门不等于后端少一道。
           `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
-      <Route element={<KioskLayout username={headerUsername} />}>
+      <Route element={<KioskLayout username={headerUsername} accessBlocked={accessBlocked} />}>
         <Route index element={<Navigate to="play" replace />} />
 
         {/* --- 游客可达:自由对弈那条链 --- */}

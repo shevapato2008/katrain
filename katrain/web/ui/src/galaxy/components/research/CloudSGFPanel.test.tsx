@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import GameLibraryModal from './CloudSGFPanel';
 import { vi, describe, it, expect, Mock, beforeEach } from 'vitest';
 import { useAuth } from '../../../context/AuthContext';
@@ -40,7 +40,7 @@ describe('GameLibraryModal', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    (useAuth as Mock).mockReturnValue({ token: 'mock-token' });
+    (useAuth as Mock).mockReturnValue({ token: 'mock-token', status: 'authenticated', isAuthenticated: true, isGuest: false, identityKey: 'one' });
   });
 
   it('renders when open', () => {
@@ -197,15 +197,40 @@ describe('GameLibraryModal', () => {
   });
 
   it('shows login prompt when not authenticated', () => {
-    (useAuth as Mock).mockReturnValue({ token: null });
+    (useAuth as Mock).mockReturnValue({ token: null, status: 'guest', isAuthenticated: false, isGuest: false, identityKey: null });
 
     render(<GameLibraryModal open={true} onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
 
-    expect(screen.getByText('登录后可查看个人棋谱')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '登录并继续' })).toBeInTheDocument();
   });
 
   it('does not render when closed', () => {
     const { container } = render(<GameLibraryModal open={false} onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
+  it.each(['checking', 'unavailable'])('does not request personal groups with a retained token during %s', (status) => {
+    (useAuth as Mock).mockReturnValue({ token: 'saved-token', status, isAuthenticated: false, isGuest: false, identityKey: null, retry: vi.fn() });
+    render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    expect(UserGamesAPI.list).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: status === 'checking' ? '正在确认登录状态' : '暂时无法确认登录状态' })).toBeInTheDocument();
+  });
+  it('ignores old personal records after changing identity', async () => {
+    let finish: (value: unknown) => void = () => {};
+    (UserGamesAPI.list as Mock).mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const view = render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    (useAuth as Mock).mockReturnValue({ token: 'new-token', status: 'authenticated', isAuthenticated: true, identityKey: 'two' });
+    (UserGamesAPI.list as Mock).mockResolvedValueOnce({ items: [], total: 0 });
+    view.rerender(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    await act(async () => { finish({ items: [{ id: 'old', title: 'OLD PRIVATE GAME' }], total: 1 }); });
+    expect(screen.queryByText('OLD PRIVATE GAME')).not.toBeInTheDocument();
+  });
+  it('lets anonymous readers cancel to the public tournament library', async () => {
+    (useAuth as Mock).mockReturnValue({ token: null, status: 'guest', isAuthenticated: false, identityKey: null });
+    (KifuAPI.getAlbums as Mock).mockResolvedValueOnce({ items: [{ id: 1, title: 'PUBLIC GAME' }], total: 1 });
+    render(<GameLibraryModal open onClose={mockOnClose} onLoadGame={mockOnLoadGame} />);
+    fireEvent.click(screen.getByRole('button', { name: '继续浏览' }));
+    expect(await screen.findByText('PUBLIC GAME')).toBeInTheDocument();
+    expect(UserGamesAPI.list).not.toHaveBeenCalled();
+  });
+
 });

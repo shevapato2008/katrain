@@ -3,7 +3,7 @@
  * - Personal game library (user_games API, requires auth)
  * - Public tournament kifu albums (kifu API, no auth needed)
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, Box, Typography,
   List, ListItem, ListItemButton, ListItemText,
@@ -14,6 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import FolderIcon from '@mui/icons-material/Folder';
 import PublicIcon from '@mui/icons-material/Public';
+import AuthRequiredDialog from '../auth/AuthRequiredDialog';
+import { accessAllowed } from '../../../components/auth/accessPolicy';
 import { useAuth } from '../../../context/AuthContext';
 import { UserGamesAPI, type UserGameSummary } from '../../api/userGamesApi';
 import { KifuAPI } from '../../../api/kifuApi';
@@ -36,7 +38,8 @@ const CATEGORY_KEYS: { key: Category; labelKey: string; labelFallback: string; i
 const PAGE_SIZE = 15;
 
 export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibraryModalProps) {
-  const { token } = useAuth();
+  const { token, status, isAuthenticated, isGuest, identityKey } = useAuth();
+  const privateAllowed = accessAllowed(status, isAuthenticated, isGuest, false);
   const { t } = useTranslation();
   const [category, setCategory] = useState<Category>('my_games');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,8 +47,15 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   const [loading, setLoading] = useState(false);
 
   // Data
-  const [items, setItems] = useState<GameListItem[]>([]);
-  const [total, setTotal] = useState(0);
+  const scopeKey = `${identityKey ?? 'anonymous'}:${status}:${category}`;
+  const scopeRef = useRef(scopeKey);
+  scopeRef.current = scopeKey;
+  const openRef = useRef(open);
+  openRef.current = open;
+  const requestGeneration = useRef(0);
+  const [records, setRecords] = useState<{ scope: string; items: GameListItem[]; total: number }>({ scope: '', items: [], total: 0 });
+  const items = records.scope === scopeKey ? records.items : [];
+  const total = records.scope === scopeKey ? records.total : 0;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -53,14 +63,21 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   useEffect(() => {
     if (!open) return;
     fetchData();
-  }, [open, category, page]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { requestGeneration.current += 1; };
+  }, [open, category, page, scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = useCallback(async () => {
+    const generation = ++requestGeneration.current;
+    const current = () => generation === requestGeneration.current && scopeRef.current === scopeKey && openRef.current;
+    const commit = (nextItems: GameListItem[], nextTotal: number) => {
+      if (current()) setRecords({ scope: scopeKey, items: nextItems, total: nextTotal });
+    };
+    if (category !== 'public_kifu' && !privateAllowed) { commit([], 0); setLoading(false); return; }
     setLoading(true);
     try {
       if (category === 'public_kifu') {
         const resp = await KifuAPI.getAlbums({ q: searchQuery || undefined, page, page_size: PAGE_SIZE });
-        setItems(resp.items.map((item: any) => ({
+        commit(resp.items.map((item: any) => ({
           id: String(item.id),
           title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
           playerBlack: item.player_black || '',
@@ -70,9 +87,8 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           date: item.game_date || item.event_date || '',
           source: 'public_kifu' as const,
           sgfContent: item.sgf_content,
-        })));
-        setTotal(resp.total);
-      } else if (token) {
+        })), resp.total);
+      } else if (privateAllowed) {
         const catFilter = category === 'my_positions' ? 'position' : 'game';
         const resp = await UserGamesAPI.list(token, {
           page,
@@ -80,7 +96,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           category: catFilter,
           q: searchQuery || undefined,
         });
-        setItems(resp.items.map((item: UserGameSummary) => ({
+        commit(resp.items.map((item: UserGameSummary) => ({
           id: item.id,
           title: item.title || `${item.player_black || '?'} vs ${item.player_white || '?'}`,
           playerBlack: item.player_black || '',
@@ -89,20 +105,17 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           moveCount: item.move_count,
           date: item.game_date || item.created_at || '',
           source: category,
-        })));
-        setTotal(resp.total);
+        })), resp.total);
       } else {
-        setItems([]);
-        setTotal(0);
+        commit([], 0);
       }
     } catch (err) {
       console.error('Failed to fetch games:', err);
-      setItems([]);
-      setTotal(0);
+      commit([], 0);
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [category, page, searchQuery, token]);
+  }, [category, page, searchQuery, token, privateAllowed, scopeKey]);
 
   const handleSearch = () => {
     setPage(1);
@@ -114,6 +127,8 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   };
 
   const handleSelectGame = async (item: GameListItem) => {
+    const generation = requestGeneration.current;
+    const current = () => generation === requestGeneration.current && scopeRef.current === scopeKey && openRef.current;
     try {
       let sgf: string | undefined;
       if (item.source === 'public_kifu') {
@@ -124,12 +139,12 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
           const detail = await KifuAPI.getAlbum(Number(item.id));
           sgf = detail.sgf_content;
         }
-      } else if (token) {
+      } else if (privateAllowed) {
         // Personal game: fetch detail to get SGF
         const detail = await UserGamesAPI.get(token, item.id);
         sgf = detail.sgf_content;
       }
-      if (sgf) {
+      if (sgf && current()) {
         onLoadGame(sgf);
         onClose();
       }
@@ -145,6 +160,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
   };
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={onClose}
@@ -181,7 +197,6 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
                 <ListItemButton
                   selected={category === cat.key}
                   onClick={() => handleCategoryChange(cat.key)}
-                  disabled={cat.key !== 'public_kifu' && !token}
                   sx={{
                     py: 1.5,
                     '&.Mui-selected': {
@@ -202,7 +217,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
               </ListItem>
             ))}
           </List>
-          {!token && (
+          {!privateAllowed && (
             <Box sx={{ p: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
                 {t('research:login_to_view', '登录后可查看个人棋谱')}
@@ -240,7 +255,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
             ) : items.length === 0 ? (
               <Box sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
-                  {!token && category !== 'public_kifu' ? t('research:please_login', '请先登录') : t('research:no_games', '暂无棋谱')}
+                  {!privateAllowed && category !== 'public_kifu' ? t('research:please_login', '请先登录') : t('research:no_games', '暂无棋谱')}
                 </Typography>
               </Box>
             ) : (
@@ -287,6 +302,9 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
         </Box>
       </DialogContent>
     </Dialog>
+    <AuthRequiredDialog open={open && category !== 'public_kifu' && !privateAllowed} feature="cloud"
+      onClose={() => handleCategoryChange('public_kifu')} onAuthenticated={() => {}} />
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Alert, Box, Button } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
@@ -36,6 +36,7 @@ import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLad
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
+import KioskAuthGuard from '../components/guards/KioskAuthGuard';
 import { emphasized } from '../components/setup/emphasized';
 
 /* **AI 策略那一组撤掉了(2026-09-21),对手钉死拟人。**
@@ -50,15 +51,17 @@ const AI_STRATEGY = 'ai:human';
 type SetupColor = 'black' | 'white' | 'nigiri';
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
-const AiSetupPage = () => {
+const AiSetupContent = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { token, user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { token, user, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth();
   // 「落子」那一格读的是它 —— 设备能力,不是设置项。
   const { isVisionEnabled } = useVision();
   const isRanked = mode === 'ranked';
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const {
     status: aiLadderStatus,
     retry: retryAiLadderStatus,
@@ -70,13 +73,6 @@ const AiSetupPage = () => {
   // 挡着新局的那一局。有它的时候整个右栏换成挡局面板 —— 底下那些设置一个都用不上,
   // 摆着只会让用户以为改一改就能开局。
   const blockingGame = isRanked ? aiLadderBlockingGame(aiLadderStatus) : null;
-
-  /* 升降级的登录门**补在页面里,不在路由上** —— `play/ai/setup/:mode` 一条路由两种对弈,
-     Fan 只让摘自由对弈那条。段位记在账号上,没有账号就无处可记 ⇒ 这一屏对游客不是
-     「暂时不可用」而是**永远需要先有账号**,所以说的是原因不是故障。
-     `authLoading` 必须等:`/me` 没回来之前 `isAuthenticated` 是 false,
-     不等就会让已登录用户每次进来先闪一下「需要登录」。 */
-  const rankedNeedsLogin = isRanked && !authLoading && !isAuthenticated;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -256,11 +252,13 @@ const AiSetupPage = () => {
     setLifecyclePending(true);
     try {
       await endAiLadderGame(gameId, token ?? undefined);
+      if (!mounted.current) return;
       // `settled`(认输,记一负)/`released`(让掉,什么都不记)/`pending_settlement`
       // 三种成功形状在这块屏上是同一个后续:占位没了,回到开局卡。区别已经在按下之前
       // 由代价行和弹窗说清了,这里再复述一遍只会多一个会漂的副本。
       await retryAiLadderStatus();
     } catch (endError) {
+      if (!mounted.current) return;
       if (endError instanceof AiLadderApiError && endError.status === 404) {
         // 那一局已经不在了(多半是原盒子刚把结果送到,或者重复按了一次)。这是成功,
         // 不是失败 —— 说成失败会让用户在一个已经放开的账号上继续按。
@@ -272,7 +270,7 @@ const AiSetupPage = () => {
         setLifecycleError(t('Could not end that game, please retry', '结束对局失败，请重试'));
       }
     } finally {
-      setLifecyclePending(false);
+      if (mounted.current) setLifecyclePending(false);
     }
   };
 
@@ -290,12 +288,14 @@ const AiSetupPage = () => {
     setSyncRetryPending(true);
     try {
       const { sync } = await retryAiLadderSettlement(gameId, token ?? undefined);
+      if (!mounted.current) return;
       if (sync && sync.state !== 'synced') {
         applyBlockingSync(gameId, sync);
         return;
       }
       await retryAiLadderStatus();
     } catch (retryError) {
+      if (!mounted.current) return;
       if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
         setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
       } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
@@ -306,7 +306,7 @@ const AiSetupPage = () => {
         setLifecycleError(t('Retry failed, please try again later', '重试失败，请稍后再试'));
       }
     } finally {
-      setSyncRetryPending(false);
+      if (mounted.current) setSyncRetryPending(false);
     }
   };
 
@@ -406,20 +406,7 @@ const AiSetupPage = () => {
             : t('play:free_setup_sub', '开局设置 · 人机 · 不计入段位')}
         />
 
-        {rankedNeedsLogin ? (
-          <Box data-testid="ranked-login-required" sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1.5, justifyContent: 'center' }}>
-            <Alert severity="info">
-              {t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')}
-            </Alert>
-            <button type="button" className="kiosk-primary-action" onClick={() => navigate('/kiosk/login')}>
-              {t('auth:go_login', '去登录')}
-            </button>
-            {/* 给第二条出路:他现在就能下的那一种。只说「去登录」等于把人堵在这儿。 */}
-            <Button size="small" color="inherit" onClick={() => navigate('/kiosk/play/ai/setup/free')}>
-              {t('play:go_free_play', '先去自由对弈')}
-            </Button>
-          </Box>
-        ) : blockingGame ? (
+        {blockingGame ? (
           // 有一局挡着的时候,整个右栏换成挡局面板:执子、用时、开始按钮此刻一个都用不上,
           // 摆着只会让用户以为改一改就能开局,而真正能推进事情的两三个按钮反倒被挤到看不见。
           // `:512`「按下按钮时骨架不动,只有右栏换内容」—— 这是同一个位置的两种内容。
@@ -673,21 +660,7 @@ const AiSetupPage = () => {
               </Alert>
             )}
 
-            {/* 🔴 **今天这一条在 kiosk 上走不到。** `KioskApp.tsx:81` 用 `KioskAuthGuard`
-                把除登录页外的**每一条** kiosk 路由都包住了,未登录会 `<Navigate to="/kiosk/login">`
-                ⇒ 游客根本到不了这一屏。**kiosk 没有游客模式,这是设计,不是漏做** ——
-                galaxy 允许不登录随便逛,kiosk 不允许。
-                留着这一条是因为它是**对的**:服务端(develop 的 guest-free-play)已经放行无主会话,
-                哪天产品决定盒上也开游客对弈(那是动鉴权边界,要 Fan 拍),这一条当天就生效,
-                不用再想一遍。**它不假装自己现在有用。**
-
-                下面那个判据本身:**是 `isAuthenticated` 不是 `!token`** —— strict box kiosk 上
-                鉴权走 HttpOnly 的 `sb_go_token` cookie,`token` 恒为 null,拿它判游客
-                会对盒上**每一个已登录用户**都说「你正在以游客身份对弈」。
-                `authLoading` 必须等:挂载时那次 `/me` 探针没回来之前 `isAuthenticated` 是
-                false,不等就会让已登录用户每次进这一屏都先闪一下这句话。
-                升降级那一屏不说 —— 它对游客根本开不了局,该说的是「需要登录」不是「你是游客」。 */}
-            {!isRanked && !authLoading && !isAuthenticated && !error && !authPrompt && (
+            {!isRanked && !authLoading && !isAuthenticated && authStatus === 'guest' && !error && !authPrompt && (
               <Alert severity="info" sx={{ mb: 1 }} data-testid="setup-guest-notice">
                 {t('play:guest_free_notice',
                    '你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。')}
@@ -728,6 +701,13 @@ const AiSetupPage = () => {
       </div>
     </div>
   );
+};
+
+const AiSetupPage = () => {
+  const { mode } = useParams<{ mode: string }>();
+  return mode === 'ranked'
+    ? <KioskAuthGuard feature="rated" realAccount><AiSetupContent /></KioskAuthGuard>
+    : <AiSetupContent />;
 };
 
 export default AiSetupPage;

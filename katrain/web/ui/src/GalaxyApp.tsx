@@ -6,6 +6,7 @@ import { useSettings } from './context/SettingsContext';
 import { createGalaxyTheme } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import './kiosk-shell/fonts.css';
+import { AuthGuard } from './galaxy/components/guards/AuthGuard';
 import MainLayout from './galaxy/components/layout/MainLayout';
 const Dashboard = lazy(() => import('./galaxy/pages/Dashboard'));
 const ResearchPage = lazy(() => import('./galaxy/pages/ResearchPage'));
@@ -65,11 +66,11 @@ const GalaxyApp = () => {
             <Route path="play" element={<PlayMenu />} />
             <Route path="play/ai" element={<AiSetupPage />} />
             <Route path="play/game/:sessionId" element={<GamePage />} />
-            <Route path="play/human" element={<HvHLobbyPage />} />
-            <Route path="play/human/room/:sessionId" element={<GameRoomPage />} />
+            <Route path="play/human" element={<AuthGuard feature="hall"><HvHLobbyPage /></AuthGuard>} />
+            <Route path="play/human/room/:sessionId" element={<AuthGuard feature="hall"><GameRoomPage /></AuthGuard>} />
             <Route path="research" element={<ResearchPage />} />
-            <Route path="report" element={<ReportsPage />} />
-            <Route path="report/:taskId" element={<ReportDetailPage />} />
+            <Route path="report" element={<AuthGuard feature="reports"><ReportsPage /></AuthGuard>} />
+            <Route path="report/:taskId" element={<AuthGuard feature="reports"><ReportDetailPage /></AuthGuard>} />
             <Route path="kifu" element={<KifuLibraryPage />} />
             <Route path="kifu/:albumId/replay" element={<KifuReportDetailPage replayOnly />} />
             <Route path="kifu/:albumId/report" element={<KifuReportDetailPage />} />

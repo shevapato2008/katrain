@@ -96,7 +96,7 @@ vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
 }));
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => authState.current,
+  useAuth: () => ({ ...authState.current, status: authState.current.isLoading ? 'checking' : authState.current.isAuthenticated ? 'authenticated' : 'guest', identityKey: authState.current.user?.id, retry: vi.fn() }),
 }));
 
 vi.mock('../../context/SettingsContext', () => ({
@@ -723,16 +723,15 @@ describe('AiSetupPage — 未登录访客', () => {
 
   it('升降级对弈：说的是「需要登录」而不是「登录已失效」，并且当场能登录', async () => {
     renderPage('rated');
-    expect(await screen.findByTestId('rated-login-required')).toHaveTextContent('需要登录');
+    expect(await screen.findByRole('dialog', { name: '登录后进入升降级对弈' })).toHaveTextContent('定级与升降级成绩需要记录到你的账号');
+    expect(mockCreateSession).not.toHaveBeenCalled();
     // 「重试」是给「加载失败」用的出口，对从未登录过的人按多少次都不会成功。
     expect(screen.queryByRole('button', { name: '重试' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
     const user = userEvent.setup();
-    await user.click(screen.getByTestId('rated-login-action'));
+    await user.click(screen.getByRole('button', { name: '登录并继续' }));
     // 断言的是「能当场填凭据的那个框」,不是「有个框」——换成再弹一次「需要登录」的
     // AuthRequiredDialog 也满足 findByRole('dialog'),而那样用户永远登不上去。
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('dialog', { name: '登录智星盒' });
     expect(within(dialog).getAllByRole('textbox').length).toBeGreaterThan(0);
     expect(dialog.querySelector('input[type="password"]')).not.toBeNull();
   });
@@ -821,8 +820,8 @@ describe('AiSetupPage — 未登录访客', () => {
   it('升降级对弈：给游客指出自由对弈这条不需要账号的路', async () => {
     renderPage('rated');
     const user = userEvent.setup();
-    await user.click(await screen.findByTestId('rated-login-free-fallback'));
-    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/ai?mode=free');
+    await user.click(await screen.findByRole('button', { name: '返回对弈' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play', { replace: true });
   });
 
   it('自由对弈：让游客进，但开局前先说清楚这一局不会被保存', async () => {

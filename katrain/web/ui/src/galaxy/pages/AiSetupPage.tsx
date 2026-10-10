@@ -19,8 +19,7 @@ import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import AiLadderRatedSetup from '../components/aiLadder/AiLadderRatedSetup';
 import PlayPageLayout from '../components/layout/PlayPageLayout';
 import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
-import LoginModal from '../components/auth/LoginModal';
-import LoginIcon from '@mui/icons-material/Login';
+import { AuthGuard } from '../components/guards/AuthGuard';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -31,10 +30,10 @@ const valueToRank = (val: number) => {
     }
 };
 
-const AiSetupPage = () => {
+const AiSetupContent = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user, token, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { user, token, isAuthenticated, isLoading: authLoading, status: authStatus } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
@@ -52,7 +51,6 @@ const AiSetupPage = () => {
     // 未登录时该说的那句话。空 = 不说。自由对弈本身不需要登录（服务端对无人认领的会话放行），
     // 所以这条只在服务端仍然拒绝时兜底 —— 它不是常态路径，而是「万一还是 401」的出口。
     const [authPrompt, setAuthPrompt] = useState('');
-    const [loginOpen, setLoginOpen] = useState(false);
     const [lifecyclePending, setLifecyclePending] = useState(false);
     const [lifecycleError, setLifecycleError] = useState('');
     const [syncRetryPending, setSyncRetryPending] = useState(false);
@@ -75,6 +73,7 @@ const AiSetupPage = () => {
         setLifecyclePending(false);
         setLifecycleError('');
         setLifecycleReceipt(undefined);
+        return () => { lifecycleGeneration.current += 1; };
     }, [isRated, token, user?.id, user?.username]);
 
     useEffect(() => {
@@ -386,10 +385,13 @@ const AiSetupPage = () => {
      */
     const handleRetrySettlement = async (gameId: string) => {
         if (syncRetryPending) return;
+        const requestGeneration = lifecycleGeneration.current;
+        const current = () => lifecycleGeneration.current === requestGeneration;
         setLifecycleError('');
         setSyncRetryPending(true);
         try {
             const { sync } = await retryAiLadderSettlement(gameId, token || undefined);
+            if (!current()) return;
             if (sync && sync.state !== 'synced') {
                 // 还是没送到:退避重排、次数加一(或者被云端拒收)。就地把这份状态贴上去。
                 applyBlockingSync(gameId, sync);
@@ -406,6 +408,7 @@ const AiSetupPage = () => {
             }
             await retryAiLadderStatus();
         } catch (retryError) {
+            if (!current()) return;
             if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
                 setLifecycleError('登录已失效，请重新登录后再试');
             } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
@@ -416,7 +419,7 @@ const AiSetupPage = () => {
                 setLifecycleError('重试失败，请稍后再试');
             }
         } finally {
-            setSyncRetryPending(false);
+            if (current()) setSyncRetryPending(false);
         }
     };
 
@@ -477,52 +480,6 @@ const AiSetupPage = () => {
         );
     };
 
-    /**
-     * 升降级对弈的未登录支。
-     *
-     * 段位是记在账号上的,没有账号就无处可记 —— 这一屏对游客不是「暂时不可用」而是
-     * **永远需要先有账号**,所以说的是原因不是故障。在这条分支之前,游客走到这里看到的是
-     * 「登录已失效,请重新登录后再试」(`/api/v1/ai-ladder/status` 的 401 被当成过期处理),
-     * 那句话对**从未登录过**的人是假的,而且旁边只有一个「重试」——重试永远不会成功。
-     *
-     * `authLoading` 必须等:挂载时那次 `/me` 探针没回来之前 `isAuthenticated` 是 false,
-     * 不等就会让已登录用户每次刷新都先闪一下「需要登录」(AuthGuard 里记的是同一条)。
-     * 同一个理由,状态请求也要等 —— `useAiLadderStatus(..., isRated && isAuthenticated)`。
-     */
-    if (isRated && !authLoading && !isAuthenticated) {
-        return (
-            <PlayPageLayout title="升降级对弈">
-                <Box component="section" className="galaxy-play-stage galaxy-play-stage__main">
-                    <Alert severity="info" data-testid="rated-login-required">
-                        {t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')}
-                    </Alert>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2.5 }}>
-                        <Button
-                            data-testid="rated-login-action"
-                            variant="contained"
-                            size="large"
-                            startIcon={<LoginIcon />}
-                            onClick={() => setLoginOpen(true)}
-                        >
-                            {t('Login', '登录')}
-                        </Button>
-                        {/* 游客不是无路可走:自由对弈本来就不需要账号,把那条路指出来。 */}
-                        <Button
-                            data-testid="rated-login-free-fallback"
-                            variant="outlined"
-                            color="inherit"
-                            size="large"
-                            onClick={() => navigate('/galaxy/play/ai?mode=free')}
-                        >
-                            {t('play:go_free_play', '先去自由对弈')}
-                        </Button>
-                    </Stack>
-                </Box>
-                <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-            </PlayPageLayout>
-        );
-    }
-
     if (isRated) {
         return (
             <PlayPageLayout title="升降级对弈">
@@ -559,7 +516,7 @@ const AiSetupPage = () => {
                     onRetrySettlement={handleRetrySettlement}
                     syncRetryPending={syncRetryPending}
                 />
-                <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
+                <AuthRequiredDialog feature={isRated ? "rated" : "play"} open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
             </PlayPageLayout>
         );
     }
@@ -589,7 +546,7 @@ const AiSetupPage = () => {
             {/* 自由对弈不需要账号,但**代价要在开局前说**:这一局落在一个匿名会话上,
                 服务端不会把它写进任何人的棋谱库(落库那几处的条件都是 `current_user and
                 session.user_id`)。事后才发现「棋谱没了」比事前少一句话贵得多。 */}
-            {!authLoading && !isAuthenticated && (
+            {!authLoading && !isAuthenticated && authStatus === 'guest' && (
                 <Alert severity="info" data-testid="free-guest-notice" sx={{ mb: 3 }}>
                     {t('play:guest_free_notice', '你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。')}
                 </Alert>
@@ -812,9 +769,16 @@ const AiSetupPage = () => {
                     </Stack>
                 </Box>
             </Box>
-            <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
+            <AuthRequiredDialog feature={isRated ? "rated" : "play"} open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
         </PlayPageLayout>
     );
+};
+
+const AiSetupPage = () => {
+    const [searchParams] = useSearchParams();
+    return searchParams.get('mode') === 'rated'
+        ? <AuthGuard feature="rated"><AiSetupContent /></AuthGuard>
+        : <AiSetupContent />;
 };
 
 export default AiSetupPage;

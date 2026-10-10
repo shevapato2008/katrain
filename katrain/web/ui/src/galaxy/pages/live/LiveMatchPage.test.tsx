@@ -274,4 +274,41 @@ it('sounds once for explicit replay, keeps pass, initial frontier and recovery c
   view.rerender(page());
   expect(playSound).toHaveBeenCalledTimes(2);
 });
+
+  it.each([true, false])('keeps background polling and the first resumed snapshot silent before sounding a new live stone (background update=%s)', (backgroundUpdate) => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    try {
+      liveFixture.currentMove = 3;
+      const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+      const view = render(page());
+      hidden.mockReturnValue(true);
+      fireEvent(document, new Event('visibilitychange'));
+      const backgroundMoves = backgroundUpdate ? [...match.moves, 'K10'] : match.moves;
+      if (backgroundUpdate) {
+        liveFixture = { ...liveFixture, match: { ...match, moves: backgroundMoves, move_count: backgroundMoves.length } };
+        view.rerender(page());
+        liveFixture = { ...liveFixture, currentMove: backgroundMoves.length };
+        view.rerender(page());
+      }
+      expect(playSound).not.toHaveBeenCalled();
+      hidden.mockReturnValue(false);
+      fireEvent(document, new Event('visibilitychange'));
+      const resumedMoves = [...backgroundMoves, 'C4'];
+      liveFixture = { ...liveFixture, match: { ...match, moves: resumedMoves, move_count: resumedMoves.length } };
+      view.rerender(page());
+      liveFixture = { ...liveFixture, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).not.toHaveBeenCalled();
+      const nextMoves = [...resumedMoves, 'C5'];
+      liveFixture = { ...liveFixture, match: { ...match, moves: nextMoves, move_count: nextMoves.length } };
+      view.rerender(page());
+      liveFixture = { ...liveFixture, currentMove: nextMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+      fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+      liveFixture = { ...liveFixture, currentMove: resumedMoves.length };
+      view.rerender(page());
+      expect(playSound).toHaveBeenCalledTimes(2);
+    } finally { hidden.mockRestore(); }
+  });
 });

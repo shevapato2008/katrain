@@ -61,7 +61,13 @@ export default function LiveMatchPage() {
   const liveSnapshot = useRef<{ id: string; cursor: number; moves: string[] } | null>(null);
   const soundedFrontier = useRef<{ id: string; move: number } | null>(null);
   useEffect(() => {
-    liveSnapshot.current = matchReady && match ? { id: match.id, cursor: currentMove, moves: match.moves } : null;
+    // Visibility restoration establishes a fresh silent snapshot baseline.
+    const resetLiveSnapshot = () => { liveSnapshot.current = null; };
+    document.addEventListener('visibilitychange', resetLiveSnapshot);
+    return () => document.removeEventListener('visibilitychange', resetLiveSnapshot);
+  }, []);
+  useEffect(() => {
+    liveSnapshot.current = !document.hidden && matchReady && match ? { id: match.id, cursor: currentMove, moves: match.moves } : null;
   }, [matchReady, match, currentMove]);
   useReplayStoneSound({ identity: matchId ?? null, cursor: currentMove, move: match?.moves[currentMove - 1],
     ready: matchReady, boardSize: match?.board_size ?? 19,
@@ -73,7 +79,7 @@ export default function LiveMatchPage() {
   };
   const followCurrentMove = (move: number) => {
     const previous = liveSnapshot.current;
-    if (matchReady && match && previous?.id === match.id && previous.cursor === previous.moves.length
+    if (!document.hidden && matchReady && match && previous?.id === match.id && previous.cursor === previous.moves.length
       && move === previous.moves.length + 1 && move === match.moves.length
       && previous.moves.every((value, index) => value === match.moves[index])
       && isReplayStoneMove(match.moves[move - 1], match.board_size)

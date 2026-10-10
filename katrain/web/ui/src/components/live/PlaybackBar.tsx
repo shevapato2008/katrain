@@ -14,6 +14,8 @@ interface PlaybackBarProps {
   currentMove: number;
   totalMoves: number;
   onMoveChange: (move: number) => void;
+  /** Automatic live catch-up can use a separate, silent replay path. */
+  onFollowMoveChange?: (move: number) => void;
   isLive?: boolean;
   touchSized?: boolean;
   inline?: boolean;
@@ -23,6 +25,7 @@ export default function PlaybackBar({
   currentMove,
   totalMoves,
   onMoveChange,
+  onFollowMoveChange,
   isLive = false,
   touchSized = false,
   inline = false,
@@ -62,9 +65,9 @@ export default function PlaybackBar({
   // Follow latest move when in follow mode
   useEffect(() => {
     if (followLatest && isLive && currentMove < totalMoves) {
-      onMoveChange(totalMoves);
+      (onFollowMoveChange ?? onMoveChange)(totalMoves);
     }
-  }, [followLatest, isLive, totalMoves, currentMove, onMoveChange]);
+  }, [followLatest, isLive, totalMoves, currentMove, onMoveChange, onFollowMoveChange]);
 
   // Stop playing when reaching end
   useEffect(() => {

@@ -1,7 +1,10 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BOARD_ASSETS } from '../board/boardUtils';
+import { BOARD_ASSETS, calculateBoardLayout, gridToCanvas } from '../board/boardUtils';
 import LiveBoard, { type AiMoveMarker } from './LiveBoard';
+
+const { drawLastMoveMarker } = vi.hoisted(() => ({ drawLastMoveMarker: vi.fn() }));
+vi.mock('../board/boardUtils', async (importOriginal) => ({ ...await importOriginal<typeof import('../board/boardUtils')>(), drawLastMoveMarker }));
 
 type ResizeCallback = ConstructorParameters<typeof ResizeObserver>[0];
 
@@ -68,6 +71,7 @@ function notifySize(width = 380, height = 380) {
 beforeEach(() => {
   requestedAssets.length = 0;
   fillText.mockClear();
+  drawLastMoveMarker.mockClear();
   ResizeObserverMock.callback = undefined;
   ResizeObserverMock.observed = undefined;
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
@@ -179,4 +183,47 @@ describe('LiveBoard responsive sizing', () => {
 
     await waitFor(() => expect(fillText).not.toHaveBeenCalled());
   });
+});
+
+describe('LiveBoard accepted trial stones', () => {
+  it('moves the contrast circle to the last displayed trial and ignores occupied, duplicate or invalid trials', async () => {
+    render(<LiveBoard moves={['D4']} currentMove={1} boardSize={9} showCoordinates={false} tryMoves={['E5', 'D4', 'E5', 'pass', 'T19']} />);
+    await act(async () => {});
+    expect(drawLastMoveMarker).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), 4, 4, 9, 'W');
+    expect(fillText.mock.calls.map(([text]) => text).filter(text => text === '3')).toHaveLength(0);
+  });
+  it('rejects an occupied or repeated trial intersection before calling its owner', async () => {
+    const onTryMove = vi.fn();
+    const { container } = render(<LiveBoard moves={['D4']} currentMove={1} boardSize={9} showCoordinates={false} tryMoves={['E5']} onTryMove={onTryMove} />);
+    await act(async () => {});
+    const canvas = container.querySelector('canvas')!;
+    vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 600, height: 600 } as DOMRect);
+    const layout = calculateBoardLayout(600, 600, 9, { margin: 0.5, exact: true });
+    for (const [x, y] of [[3, 3], [4, 4], [5, 5]]) {
+      const pos = gridToCanvas(layout, x, y, 9);
+      fireEvent.click(canvas, { clientX: pos.x, clientY: pos.y });
+    }
+    expect(onTryMove).toHaveBeenCalledExactlyOnceWith('F6');
+  });
+});
+
+it('can reject occupied placement clicks while preserving edit selection clicks', async () => {
+  const onIntersectionClick = vi.fn();
+  const props = { moves: ['D4'], currentMove: 1, boardSize: 9, showCoordinates: false, onIntersectionClick };
+  const { container, rerender } = render(<LiveBoard {...props} rejectOccupiedIntersections />);
+  await act(async () => {});
+  const canvas = container.querySelector('canvas')!;
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({ left: 0, top: 0, width: 600, height: 600 } as DOMRect);
+  const point = gridToCanvas(calculateBoardLayout(600, 600, 9, { margin: 0.5, exact: true }), 3, 3, 9);
+  fireEvent.click(canvas, { clientX: point.x, clientY: point.y });
+  expect(onIntersectionClick).not.toHaveBeenCalled();
+  rerender(<LiveBoard {...props} />);
+  fireEvent.click(canvas, { clientX: point.x, clientY: point.y });
+  expect(onIntersectionClick).toHaveBeenCalledExactlyOnceWith(3, 3);
+});
+
+it('does not invent a last move from initial handicap setup stones', async () => {
+  render(<LiveBoard moves={['D4', 'F6']} stoneColors={['B', 'B']} currentMove={2} handicapCount={2} boardSize={9} showCoordinates={false} />);
+  await act(async () => {});
+  expect(drawLastMoveMarker).not.toHaveBeenCalled();
 });

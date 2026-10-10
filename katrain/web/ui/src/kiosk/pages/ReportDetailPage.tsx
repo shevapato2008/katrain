@@ -6,6 +6,7 @@ import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { useAuth } from '../../context/AuthContext';
 import { winrateSeries } from '../../features/report/reportStats';
 import { useReportDetail } from '../../features/report/useReportDetail';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { requestFailureKind } from '../../utils/requestFailure';
@@ -151,19 +152,7 @@ export default function ReportDetailPage() {
     if (error != null) console.warn('[report-detail] error', error);
   }, [error]);
 
-  const previousPosition = useRef<{ identity: string; move: number } | null>(null);
-  useEffect(() => {
-    if (!game) {
-      previousPosition.current = null;
-      return;
-    }
-    const soundIdentity = `${task?.id || taskId || ''}:${game.id}`;
-    const previous = previousPosition.current;
-    if (previous?.identity === soundIdentity && currentMove > 0 && previous.move !== currentMove) {
-      playSound('stone');
-    }
-    previousPosition.current = { identity: soundIdentity, move: currentMove };
-  }, [currentMove, game, playSound, task?.id, taskId]);
+  const [replaySelection, setReplaySelection] = useState<{ identity: string; move: number } | null>(null);
 
   const previewData = useMemo(() => {
     if (!game?.sgf_content) return null;
@@ -211,6 +200,9 @@ export default function ReportDetailPage() {
   const setupCount = previewData?.setupCount ?? 0;
   const boardCursor = currentMove + setupCount;
   const playerToMove = reportPlayerToMove(previewData?.stoneColors, boardCursor, setupCount);
+  useReplayStoneSound({ identity: reportIdentity, cursor: currentMove, move: previewData?.moves[boardCursor - 1],
+    ready: !loading && !!previewData, boardSize,
+    selected: replaySelection?.identity === reportIdentity && replaySelection.move === currentMove });
   const totalMoves = previewData
     ? Math.max(0, previewData.moves.length - setupCount)
     : (game?.move_count || 0);
@@ -243,9 +235,19 @@ export default function ReportDetailPage() {
   );
 
   const handleMoveChange = useCallback((move: number) => {
+    setReplaySelection({ identity: reportIdentity, move });
     setActiveVariation(null);
     setCurrentMove(move);
-  }, [setCurrentMove]);
+  }, [setCurrentMove, reportIdentity]);
+
+  const handleTryMove = (move: string) => {
+    setTryState((previous) => ({
+      identity: reportIdentity,
+      baseMove: currentMove,
+      moves: [...(previous?.identity === reportIdentity && previous.baseMove === currentMove ? previous.moves : []), move],
+    }));
+    playSound('stone');
+  };
 
   const handleTryToggle = useCallback(() => {
     setTryModeState({ identity: reportIdentity, enabled: !tryMoveMode });
@@ -378,16 +380,7 @@ export default function ReportDetailPage() {
             ownership={showTerritory ? ownership : null}
             minContainerHeight={0}
             tryMoves={tryMoveMode ? tryMoves : undefined}
-            onTryMove={tryMoveMode ? (move) => setTryState((previous) => ({
-              identity: reportIdentity,
-              baseMove: currentMove,
-              moves: [
-                ...(previous?.identity === reportIdentity && previous.baseMove === currentMove
-                  ? previous.moves
-                  : []),
-                move,
-              ],
-            })) : undefined}
+            onTryMove={tryMoveMode ? handleTryMove : undefined}
             // 盘上的标记与候选行都可打开变化，点其它位置关闭。
             onIntersectionClick={!tryMoveMode ? (x, y) => {
               const coord = coordAt(x, y);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
@@ -149,6 +150,8 @@ const KifuDetailPage = () => {
 
   const total = entries.length;
   const at = Math.min(cursor, total);
+  useReplayStoneSound({ identity: album?.id ?? null, cursor: at, move: entries[at - 1]?.coord ?? undefined,
+    ready: !!album && album.id === Number(kifuId) && steps !== null, selected: true, boardSize });
   // 走到第 `at` 手 = 播到那一手所在的 step(含),开局则只播它前面的 setup。
   const stepCount = at === 0
     ? (entries[0]?.stepIndex ?? steps?.length ?? 0)

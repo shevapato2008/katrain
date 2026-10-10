@@ -8,6 +8,7 @@ import { useKifuAnalysis } from '../../features/kifu/useKifuAnalysis';
 import { kifuAnalysisParametersValid, kifuAnalysisStatus } from '../../features/kifu/kifuAnalysisStatus';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { reportPlayerToMove } from '../../utils/reportPlayer';
+import { useSound } from '../../hooks/useSound';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -37,6 +38,11 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
   const [showTerritory, setShowTerritory] = useState(false);
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
+  const { play: playSound } = useSound();
+  const handleTryMove = (move: string) => {
+    setTryMoves((previous) => [...previous, move]);
+    playSound('stone');
+  };
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const coordinates = useBoardCoordinates(boardEdge);
   const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(replayOnly ? null : id);
@@ -60,7 +66,7 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
   const at = Math.min(currentMove, totalMoves);
   const boardCursor = at + (parsed?.setupCount ?? 0);
   useReplayStoneSound({ identity: id, cursor: at, move: parsed?.moves[boardCursor - 1],
-    ready: !!parsed && (replayOnly || !!detail), selected: selectedPosition?.id === id });
+    ready: !!parsed && (replayOnly || !!detail), boardSize: parsed?.metadata.boardSize || album?.board_size || 19, selected: selectedPosition?.id === id });
   const playerToMove = reportPlayerToMove(parsed?.stoneColors, boardCursor, parsed?.setupCount);
   const analysis = analysisByMove[at] ?? null;
   const markers = useMemo((): AiMoveMarker[] | null => {
@@ -77,7 +83,7 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
       fixedRail
       onBoardSizeChange={setBoardEdge}
       board={parsed ? (
-        view3d ? <ReplayBoard3D moves={parsed.moves} stoneColors={parsed.stoneColors} currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19} handicapCount={parsed.setupCount ?? 0} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={markers} showTerritory={showTerritory} ownership={showTerritory ? analysis?.ownership ?? null : null} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined} /> : <LiveBoard
+        view3d ? <ReplayBoard3D moves={parsed.moves} stoneColors={parsed.stoneColors} currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19} handicapCount={parsed.setupCount ?? 0} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={markers} showTerritory={showTerritory} ownership={showTerritory ? analysis?.ownership ?? null : null} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? handleTryMove : undefined} /> : <LiveBoard
           moves={parsed.moves} stoneColors={parsed.stoneColors}
           currentMove={boardCursor} boardSize={parsed.metadata.boardSize || album?.board_size || 19}
           nextColor={playerToMove}
@@ -86,7 +92,7 @@ export default function KifuReportDetailPage({ replayOnly = false }: { replayOnl
           showMoveNumbers={showMoveNumbers} showTerritory={showTerritory}
           showCoordinates={coordinates.visible} ownership={showTerritory ? analysis?.ownership ?? null : null}
           tryMoves={tryMoveMode ? tryMoves : undefined}
-          onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined}
+          onTryMove={tryMoveMode ? handleTryMove : undefined}
           minimumCanvasSize={0} minContainerHeight={0}
         />
       ) : loadError || id === null ? <Alert severity="error">{t('kifu:report_load_failed', '职业棋局暂时无法读取')}</Alert> : <CircularProgress />}

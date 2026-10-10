@@ -7,6 +7,7 @@ import type { MatchDetail, MoveAnalysis } from '../../../types/live';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
 import LiveMatchPage from './LiveMatchPage';
 
+const playSound = vi.hoisted(() => vi.fn());
 const mockSetCurrentMove = vi.fn();
 const mockRefresh = vi.fn();
 let liveFixture: {
@@ -25,10 +26,11 @@ vi.mock('../../../hooks/live/useLiveMatch', () => ({
 }));
 
 vi.mock('../../../hooks/useSound', () => ({
-  useSound: () => ({ play: vi.fn() }),
+  useSound: () => ({ play: playSound }),
 }));
 
-vi.mock('../../../components/live/LiveBoard', () => ({
+vi.mock('../../../components/live/LiveBoard', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../../../components/live/LiveBoard')>(),
   default: (props: Record<string, unknown>) => {
     boardProps = props;
     return <div data-testid="mock-live-board">Live Board</div>;
@@ -85,6 +87,7 @@ describe('LiveMatchPage', () => {
     ResizeObserverMock.callback = undefined;
     ResizeObserverMock.observed = undefined;
     boardProps = {};
+    playSound.mockClear();
     mockSetCurrentMove.mockReset();
     mockRefresh.mockReset();
     mockRefresh.mockResolvedValue(undefined);
@@ -128,7 +131,7 @@ describe('LiveMatchPage', () => {
     expect(within(controls).getAllByRole('button')).toHaveLength(4);
     expect(within(rail).getByRole('button', { name: '坐标' })).toBeInTheDocument();
     expect(trend).toHaveStyle({ flex: 'none' });
-    expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
+    expect(within(actions).getByText('2 / 3 手')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
   });
 
@@ -153,6 +156,7 @@ describe('LiveMatchPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Try Move' }));
     act(() => (boardProps.onTryMove as (move: string) => void)('K10'));
     expect(boardProps.tryMoves).toEqual(['K10']);
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
     fireEvent.click(screen.getByRole('button', { name: '清空' }));
     expect(boardProps.tryMoves).toEqual([]);
 
@@ -168,7 +172,7 @@ describe('LiveMatchPage', () => {
   it('keeps the playback move counter as one measurable action-region item', () => {
     renderPage();
     const counter = within(screen.getByTestId('board-rail-actions')).getByTestId('playback-move-counter');
-    expect(counter).toHaveTextContent('2 / 3 live:moves');
+    expect(counter).toHaveTextContent('2 / 3 手');
     expect(counter).toHaveStyle({ minWidth: '87px', whiteSpace: 'nowrap' });
   });
 
@@ -242,4 +246,32 @@ describe('LiveMatchPage', () => {
     resolveRefresh();
     await waitFor(() => expect(retry).toBeEnabled());
   });
+
+it('sounds once for explicit replay, keeps pass, initial frontier and recovery catch-up silent, and sounds one new live stone', () => {
+  liveFixture.currentMove = 3;
+  const page = () => <MemoryRouter initialEntries={['/galaxy/live/live-9']}><GameNavigationProvider><Routes><Route path="/galaxy/live/:matchId" element={<LiveMatchPage />} /></Routes></GameNavigationProvider></MemoryRouter>;
+  const view = render(page());
+  expect(playSound).not.toHaveBeenCalled();
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10'], move_count: 4 } };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  liveFixture = { ...liveFixture, currentMove: 4 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(1);
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10', 'pass'], move_count: 5 } };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, currentMove: 5 };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, match: { ...match, moves: [...match.moves, 'K10', 'pass', 'C4', 'C5', 'C6'], move_count: 8 } };
+  view.rerender(page());
+  liveFixture = { ...liveFixture, currentMove: 8 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: 'live:previous' }));
+  liveFixture = { ...liveFixture, currentMove: 7 };
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(2);
+  view.rerender(page());
+  expect(playSound).toHaveBeenCalledTimes(2);
+});
 });

@@ -705,6 +705,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     );
     again();
     expect(playSound).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '上一手' }));
     detail = { ...baseDetail(), currentMove: 1 };
     again();
     expect(playSound).toHaveBeenCalledWith('stone');

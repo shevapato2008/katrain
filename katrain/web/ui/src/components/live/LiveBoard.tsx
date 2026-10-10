@@ -29,6 +29,8 @@ export interface LiveBoardProps {
   boardSize?: number; // 9, 13, or 19
   showCoordinates?: boolean;
   onIntersectionClick?: (x: number, y: number) => void;
+  /** Placement mode rejects existing stones; editing can still select them. */
+  rejectOccupiedIntersections?: boolean;
   nextColor?: 'B' | 'W'; // Color of the next stone to place (for hover preview)
   pvMoves?: string[] | null; // Principal variation moves to display as semi-transparent stones
   aiMarkers?: AiMoveMarker[] | null; // AI recommended moves to mark on board
@@ -195,7 +197,7 @@ export function buildReplayBoardState(moves: string[], currentMove: number, boar
     moveNumbers[y][x] = i < handicapCount ? null : i + 1 - handicapCount;
     const captured = removeCaptures(board, x, y, boardSize);
     for (const [cx, cy] of captured) moveNumbers[cy][cx] = null;
-    lastMove = coords;
+    if (i >= handicapCount) lastMove = coords;
     lastPlayer = player;
   }
   return { board, moveNumbers, lastMove, lastPlayer };
@@ -335,6 +337,7 @@ export default function LiveBoard({
   boardSize = 19,
   showCoordinates = true,
   onIntersectionClick,
+  rejectOccupiedIntersections = false,
   nextColor,
   pvMoves,
   aiMarkers,
@@ -493,17 +496,24 @@ export default function LiveBoard({
       }
     }
 
+    let markerMove = lastMove;
+    let markerPlayer = lastPlayer;
+
     // Draw try moves (semi-transparent stones for experimentation)
     if (tryMoves && tryMoves.length > 0) {
       let tryPlayer: 'B' | 'W' = lastPlayer === 'B' ? 'W' : 'B';
       if (currentMove === 0) tryPlayer = 'B';
 
+      const tryOccupied = new Set<string>();
       for (let i = 0; i < tryMoves.length; i++) {
         const coords = parseMove(tryMoves[i]);
         if (coords) {
           const [x, y] = coords;
-          if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x]) {
+          if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !tryOccupied.has(`${x},${y}`)) {
             drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg);
+            tryOccupied.add(`${x},${y}`);
+            markerMove = coords;
+            markerPlayer = tryPlayer;
           }
         }
         tryPlayer = tryPlayer === 'B' ? 'W' : 'B';
@@ -511,9 +521,9 @@ export default function LiveBoard({
     }
 
     // Draw last move marker (always show, even with move numbers)
-    if (lastMove) {
-      const [x, y] = lastMove;
-      drawLastMoveMarker(ctx, layout, x, y, boardSize, lastPlayer);
+    if (markerMove) {
+      const [x, y] = markerMove;
+      drawLastMoveMarker(ctx, layout, x, y, boardSize, markerPlayer);
     }
 
     // 摆谱: pulsing markers for stones the user must physically remove (提子).
@@ -707,6 +717,11 @@ export default function LiveBoard({
     if (gridPos) {
       // Handle try move mode
       if (onTryMove) {
+        const { board } = buildBoardState();
+        if (board[gridPos.y][gridPos.x] || tryMoves?.some((trial) => {
+          const coords = parseMove(trial);
+          return coords?.[0] === gridPos.x && coords[1] === gridPos.y;
+        })) return;
         const move = coordsToMove(gridPos.x, gridPos.y);
         onTryMove(move);
         return;
@@ -714,6 +729,7 @@ export default function LiveBoard({
 
       // Regular intersection click
       if (onIntersectionClick) {
+        if (rejectOccupiedIntersections && buildBoardState().board[gridPos.y][gridPos.x]) return;
         onIntersectionClick(gridPos.x, gridPos.y);
       }
     }

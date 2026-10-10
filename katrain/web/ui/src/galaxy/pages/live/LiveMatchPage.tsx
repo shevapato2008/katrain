@@ -9,6 +9,7 @@ import MatchInfo from '../../../components/live/MatchInfo';
 import PlaybackBar from '../../../components/live/PlaybackBar';
 import TrendChart from '../../../components/live/TrendChart';
 import { useLiveMatch } from '../../../hooks/live/useLiveMatch';
+import { isReplayStoneMove, useReplayStoneSound } from '../../../hooks/useReplayStoneSound';
 import { useSound } from '../../../hooks/useSound';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { i18n } from '../../../i18n';
@@ -55,13 +56,39 @@ export default function LiveMatchPage() {
   const coordinates = useBoardCoordinates(boardEdge);
 
   const { play: playSound } = useSound();
-  const prevMoveRef = useRef<number | null>(null);
+  const [replaySelection, setReplaySelection] = useState<{ id: string; move: number } | null>(null);
+  const matchReady = !loading && match?.id === matchId;
+  const liveSnapshot = useRef<{ id: string; cursor: number; moves: string[] } | null>(null);
+  const soundedFrontier = useRef<{ id: string; move: number } | null>(null);
   useEffect(() => {
-    if (match && currentMove > 0 && prevMoveRef.current !== null && currentMove !== prevMoveRef.current) {
+    liveSnapshot.current = matchReady && match ? { id: match.id, cursor: currentMove, moves: match.moves } : null;
+  }, [matchReady, match, currentMove]);
+  useReplayStoneSound({ identity: matchId ?? null, cursor: currentMove, move: match?.moves[currentMove - 1],
+    ready: matchReady, boardSize: match?.board_size ?? 19,
+    selected: replaySelection?.id === matchId && replaySelection?.move === currentMove });
+  const selectCurrentMove = (move: number) => {
+    if (matchId) setReplaySelection({ id: matchId, move });
+    setCurrentMove(move);
+    setTryMoves([]);
+  };
+  const followCurrentMove = (move: number) => {
+    const previous = liveSnapshot.current;
+    if (matchReady && match && previous?.id === match.id && previous.cursor === previous.moves.length
+      && move === previous.moves.length + 1 && move === match.moves.length
+      && previous.moves.every((value, index) => value === match.moves[index])
+      && isReplayStoneMove(match.moves[move - 1], match.board_size)
+      && !(soundedFrontier.current?.id === match.id && soundedFrontier.current.move === move)) {
+      soundedFrontier.current = { id: match.id, move };
       playSound('stone');
     }
-    prevMoveRef.current = currentMove;
-  }, [currentMove, match, playSound]);
+    setReplaySelection(null);
+    setCurrentMove(move);
+    setTryMoves((previous) => previous.length ? [] : previous);
+  };
+  const handleTryMove = (move: string) => {
+    setTryMoves((previous) => [...previous, move]);
+    playSound('stone');
+  };
 
   const currentAnalysis = analysis[currentMove];
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
@@ -155,7 +182,7 @@ export default function LiveMatchPage() {
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
       board={(
-        view3d ? <ReplayBoard3D moves={match.moves} currentMove={currentMove} boardSize={match.board_size} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined} /> : <LiveBoard
+        view3d ? <ReplayBoard3D moves={match.moves} currentMove={currentMove} boardSize={match.board_size} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? handleTryMove : undefined} /> : <LiveBoard
           moves={match.moves}
           currentMove={currentMove}
           pvMoves={pvMoves}
@@ -166,7 +193,7 @@ export default function LiveMatchPage() {
           showCoordinates={coordinates.visible}
           ownership={ownership}
           tryMoves={tryMoveMode ? tryMoves : undefined}
-          onTryMove={tryMoveMode ? (move: string) => setTryMoves((previous) => [...previous, move]) : undefined}
+          onTryMove={tryMoveMode ? handleTryMove : undefined}
           minimumCanvasSize={0}
           minContainerHeight={0}
         />
@@ -225,7 +252,7 @@ export default function LiveMatchPage() {
               analysis={analysis}
               totalMoves={match.move_count}
               currentMove={currentMove}
-              onMoveClick={setCurrentMove}
+              onMoveClick={selectCurrentMove}
             />
           </Box>
         </>
@@ -234,7 +261,8 @@ export default function LiveMatchPage() {
         <PlaybackBar
           currentMove={currentMove}
           totalMoves={match.move_count}
-          onMoveChange={setCurrentMove}
+          onMoveChange={selectCurrentMove}
+          onFollowMoveChange={followCurrentMove}
           isLive={match.status === 'live'}
         />
       )}

@@ -113,6 +113,7 @@ describe('ReportDetailPage', () => {
     reportDetailFixture = loaded;
     view.rerender(page());
     expect(playSound).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Move 1' }));
     reportDetailFixture = { ...loaded, currentMove: 1 };
     view.rerender(page());
     expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');

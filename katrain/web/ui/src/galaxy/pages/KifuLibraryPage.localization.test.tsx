@@ -4,8 +4,8 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KifuLibraryPage from './KifuLibraryPage';
 
-const { getAlbums, getAlbum, language } = vi.hoisted(() => ({
-  getAlbums: vi.fn(), getAlbum: vi.fn(), language: { current: 'cn' },
+const { getAlbums, getAlbum, language, play } = vi.hoisted(() => ({
+  getAlbums: vi.fn(), getAlbum: vi.fn(), play: vi.fn(), language: { current: 'cn' },
 }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum } }));
 vi.mock('../../hooks/useTranslation', () => ({
@@ -20,10 +20,11 @@ vi.mock('../../hooks/useTranslation', () => ({
   }),
 }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: () => <div data-testid="board" /> }));
-vi.mock('../../components/live/PlaybackBar', () => ({ default: () => <div /> }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
+vi.mock('../../components/live/PlaybackBar', () => ({ default: ({ onMoveChange }: { onMoveChange: (move: number) => void }) => <><button onClick={() => onMoveChange(1)}>preview previous</button><button onClick={() => onMoveChange(2)}>preview pass</button><button onClick={() => onMoveChange(0)}>preview start</button></> }));
 vi.mock('../components/board/BoardPageShell', () => ({
-  default: ({ board, modulePlate, railBody, actions }: { board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode; actions: React.ReactNode }) =>
-    <main>{modulePlate}{board}{railBody}{actions}</main>,
+  default: ({ board, modulePlate, railBody, actions, navigation }: { navigation: React.ReactNode; board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode; actions: React.ReactNode }) =>
+    <main>{modulePlate}{board}{railBody}{actions}{navigation}</main>,
 }));
 vi.mock('../components/layout/ModulePlate', () => ({
   default: ({ title, subtitle, status }: { title: React.ReactNode; subtitle: React.ReactNode; status: React.ReactNode }) =>
@@ -195,4 +196,24 @@ describe('Galaxy 紧凑分页', () => {
     await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 8638 })));
     expect(screen.queryByRole('navigation')).toBeNull();
   });
+});
+
+it('sounds once for explicit unanalysed archive replay, never initial load, pass, repeated cursor or start', async () => {
+  getAlbum.mockResolvedValue({ ...detail('cn'), sgf_content: '(;GM[1]FF[4]SZ[19];B[aa];W[];B[bb])' });
+  render(page());
+  await screen.findByTestId('board');
+  expect(play).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('preview previous'));
+  expect(play).toHaveBeenCalledExactlyOnceWith('stone');
+  fireEvent.click(screen.getByText('preview previous'));
+  fireEvent.click(screen.getByText('preview pass'));
+  fireEvent.click(screen.getByText('preview start'));
+  expect(play).toHaveBeenCalledTimes(1);
+});
+
+it('keeps initial handicap setup replay silent', async () => {
+  getAlbum.mockResolvedValue({ ...detail('cn'), sgf_content: '(;GM[1]FF[4]SZ[19]HA[2]AB[dd][pp];W[dp])' });
+  render(page()); await screen.findByTestId('board');
+  fireEvent.click(screen.getByText('preview previous'));
+  expect(play).not.toHaveBeenCalled();
 });

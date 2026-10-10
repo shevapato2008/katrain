@@ -9,6 +9,8 @@ import { buildReportStatesByGame } from '../../../features/report/reportModel';
 
 import ReportsPage from './ReportsPage';
 
+const playSound = vi.hoisted(() => vi.fn());
+vi.mock('../../../hooks/useSound', () => ({ useSound: () => ({ play: playSound }) }));
 const mockUserGamesList = vi.fn();
 const mockUserGamesGet = vi.fn();
 const mockUserGamesCreate = vi.fn();
@@ -85,7 +87,7 @@ vi.mock('../../../components/live/LiveBoard', () => ({
 }));
 
 vi.mock('../../../components/live/PlaybackBar', () => ({
-  default: () => <div data-testid="mock-playback-bar">Playback Bar</div>,
+  default: ({ onMoveChange }: { onMoveChange: (move: number) => void }) => <div data-testid="mock-playback-bar">Playback Bar<button onClick={() => onMoveChange(1)}>preview previous</button><button onClick={() => onMoveChange(2)}>preview pass</button></div>,
 }));
 
 const gameSummary = {
@@ -118,6 +120,7 @@ const gameDetail = {
 // 覆盖全部 galaxy 路由，所以这里补的是**测试的装配**，不是生产缺口。
 describe('ReportsPage', () => {
   beforeEach(() => {
+    playSound.mockClear();
     setAuth(true);
     mockUserGamesList.mockReset();
     mockUserGamesGet.mockReset();
@@ -151,6 +154,18 @@ describe('ReportsPage', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('sounds explicit saved-game replay once while load, repeated cursor and pass stay silent', async () => {
+    mockUserGamesGet.mockResolvedValue({ ...gameDetail, sgf_content: '(;SZ[19];B[dd];W[];B[pp])' });
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
+    await screen.findByTestId('mock-live-board');
+    expect(playSound).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('preview previous'));
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+    fireEvent.click(screen.getByText('preview previous'));
+    fireEvent.click(screen.getByText('preview pass'));
+    expect(playSound).toHaveBeenCalledTimes(1);
   });
 
   it('renders report list and preview shell', async () => {

@@ -38,6 +38,7 @@ import { translateResult } from '../../utils/resultTranslation';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import LiveBoard from '../../components/live/LiveBoard';
 import PlaybackBar from '../../components/live/PlaybackBar';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
@@ -252,7 +253,9 @@ export default function KifuLibraryPage() {
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
+  const [replaySelection, setReplaySelection] = useState<{ id: number | null; move: number } | null>(null);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
+  const [previewSetupCount, setPreviewSetupCount] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewReload, setPreviewReload] = useState(0);
   const [boardEdge, setBoardEdge] = useState(0);
@@ -324,6 +327,7 @@ export default function KifuLibraryPage() {
         const parsed = sgfToMoves(detail.sgf_content);
         setPreviewMoves(parsed.moves);
         setPreviewColors(parsed.stoneColors);
+        setPreviewSetupCount(parsed.setupCount ?? 0);
         setPreviewCurrentMove(parsed.moves.length); // Show final position
         setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
       }
@@ -346,6 +350,13 @@ export default function KifuLibraryPage() {
   }, [items, selectedId, handleCardClick]);
 
   const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
+  const selectPreviewMove = (move: number) => {
+    setReplaySelection({ id: selectedId, move });
+    setPreviewCurrentMove(move);
+  };
+  useReplayStoneSound({ identity: selectedId, cursor: Math.max(0, previewCurrentMove - previewSetupCount), move: previewMoves[previewCurrentMove - 1],
+    ready: !!visibleSelectedAlbum && !previewLoading, boardSize: previewBoardSize,
+    selected: replaySelection?.id === selectedId && replaySelection.move === previewCurrentMove });
 
   const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
@@ -388,6 +399,7 @@ export default function KifuLibraryPage() {
           moves={previewMoves}
           stoneColors={previewColors}
           currentMove={previewCurrentMove}
+          handicapCount={previewSetupCount}
           boardSize={previewBoardSize}
           /* 迁版式前这里写死 `showCoordinates={true}`。改成走共享的自动档：
              spec §3.2「棋盘边长低于 500px 时坐标默认关闭」。本页冻结稿里没有坐标
@@ -521,7 +533,7 @@ export default function KifuLibraryPage() {
             <PlaybackBar
               currentMove={previewCurrentMove}
               totalMoves={previewMoves.length}
-              onMoveChange={setPreviewCurrentMove}
+              onMoveChange={selectPreviewMove}
             />
           )}
           <Box sx={{ p: 2, pt: hasPreview ? 1 : 2 }}>

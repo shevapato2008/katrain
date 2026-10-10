@@ -480,10 +480,10 @@ const Board: React.FC<BoardProps> = ({
     }
 
     // Last Move
-    if (gameState.last_move) {
+    const lastStone = gameState.last_move && gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
+    if (gameState.last_move && lastStone) {
       const pos = gridToCanvas(layout, gameState.last_move[0], gameState.last_move[1], boardSize);
-      const lastStone = gameState.stones.find(s => s[1] && s[1][0] === gameState.last_move![0] && s[1][1] === gameState.last_move![1]);
-      const lastPlayer = lastStone ? lastStone[0] : null;
+      const lastPlayer = lastStone[0];
 
       const circleRadius = layout.gridSize * 0.35;
 

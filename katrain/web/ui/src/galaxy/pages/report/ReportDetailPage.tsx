@@ -14,12 +14,13 @@
  * 分成了两个几乎相同的分支（其中 disabled 那支连 Tooltip 都掉了，也就没人告诉用户为什么按不动）。
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Box, Button, CircularProgress, Skeleton } from '@mui/material';
 
 import LiveBoard, { type AiMoveMarker } from '../../../components/live/LiveBoard';
 import { useAuth } from '../../../context/AuthContext';
+import { useReplayStoneSound } from '../../../hooks/useReplayStoneSound';
 import { useSound } from '../../../hooks/useSound';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { sgfToMoves } from '../../../utils/sgfSerializer';
@@ -83,7 +84,17 @@ export default function ReportDetailPage() {
 
   // Sound on move navigation
   const { play: playSound } = useSound();
-  const prevMoveRef = useRef<{ identity: string; move: number } | null>(null);
+  const [replaySelection, setReplaySelection] = useState<{ identity: string; move: number } | null>(null);
+  const reportIdentity = `${taskId}:${game?.id ?? ''}`;
+  const selectCurrentMove = (move: number) => {
+    setReplaySelection({ identity: reportIdentity, move });
+    setCurrentMove(move);
+    setTryMoves([]);
+  };
+  const handleTryMove = (move: string) => {
+    setTryMoves((previous) => [...previous, move]);
+    playSound('stone');
+  };
 
 
   const previewData = useMemo(() => {
@@ -95,15 +106,9 @@ export default function ReportDetailPage() {
   const setupCount = previewData?.setupCount ?? 0;
   const boardCursor = currentMove + setupCount;
   const playerToMove = reportPlayerToMove(previewData?.stoneColors, boardCursor, setupCount);
-  useEffect(() => {
-    if (loading || !game || !previewData) { prevMoveRef.current = null; return; }
-    const identity = `${taskId}:${game.id}`;
-    const previous = prevMoveRef.current;
-    const move = previewData.moves[boardCursor - 1];
-    if (previous?.identity === identity && previous.move !== currentMove && currentMove > 0
-      && move && /^[A-HJ-Z][1-9]\d*$/i.test(move)) playSound('stone');
-    prevMoveRef.current = { identity, move: currentMove };
-  }, [loading, game, previewData, taskId, currentMove, boardCursor, playSound]);
+  useReplayStoneSound({ identity: reportIdentity, cursor: currentMove, move: previewData?.moves[boardCursor - 1],
+    ready: !loading && !!previewData, boardSize: previewData?.metadata.boardSize || game?.board_size || 19,
+    selected: replaySelection?.identity === reportIdentity && replaySelection.move === currentMove });
 
 
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
@@ -188,7 +193,7 @@ export default function ReportDetailPage() {
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
       board={previewData ? (
-        view3d ? <ReplayBoard3D moves={previewData.moves} stoneColors={previewData.stoneColors} currentMove={boardCursor} boardSize={boardSize} handicapCount={setupCount} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? (move) => setTryMoves((prev) => [...prev, move]) : undefined} /> : <LiveBoard
+        view3d ? <ReplayBoard3D moves={previewData.moves} stoneColors={previewData.stoneColors} currentMove={boardCursor} boardSize={boardSize} handicapCount={setupCount} showCoordinates={coordinates.visible} showMoveNumbers={showMoveNumbers} showAiMarkers={showAiMarkers} aiMarkers={aiMarkers} showTerritory={showTerritory} ownership={ownership} tryMoves={tryMoveMode ? tryMoves : undefined} onTryMove={tryMoveMode ? handleTryMove : undefined} /> : <LiveBoard
           moves={previewData.moves}
           stoneColors={previewData.stoneColors}
           currentMove={boardCursor}
@@ -203,7 +208,7 @@ export default function ReportDetailPage() {
           showCoordinates={coordinates.visible}
           ownership={ownership}
           tryMoves={tryMoveMode ? tryMoves : undefined}
-          onTryMove={tryMoveMode ? (move: string) => setTryMoves((prev) => [...prev, move]) : undefined}
+          onTryMove={tryMoveMode ? handleTryMove : undefined}
           /* 两个 400px 地板必须关掉。默认值（LiveBoard.tsx:325-326）会给根 Box 加
              `minHeight: 400`，在 shell 那个 `aspectRatio: 1/1` 的定尺格里就是「越量越大」，
              1024×768 和 430×880 两档必然撑破。已迁的两页同样传 0/0。 */
@@ -222,7 +227,7 @@ export default function ReportDetailPage() {
             {task?.status !== 'completed' && <Alert severity={task?.status === 'failed' ? 'error' : 'info'} sx={{ py: 0, '& .MuiAlert-message': { fontSize: 18 } }}>{task?.status === 'running' ? `${t('report:generating', '分析中')} · ${task.analyzed_moves} / ${task.total_moves} ${t('live:moves', '手')}` : task?.status === 'failed' ? t('report:failed', '分析失败') : t('report:queuing', '等待分析')}</Alert>}
             <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} topN={5} reportMode playerToMove={playerToMove} actualMove={previewData?.moves[boardCursor]} />
           </>}
-          analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart reportMode analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={setCurrentMove} /></Box>}
+          analysis={<Box data-testid="report-trend-region" sx={{ height: '100%', minHeight: 0 }}><TrendChart reportMode analysis={analysisByMove} totalMoves={totalMoves} currentMove={currentMove} onMoveClick={selectCurrentMove} /></Box>}
           controls={<LiveMatchDisplayControls
             reportMode
             tryMoveMode={tryMoveMode}
@@ -244,7 +249,7 @@ export default function ReportDetailPage() {
             on3dToggle={() => setView3d((value) => !value)}
             onClearTryMoves={() => setTryMoves([])}
           />}
-          navigation={<PlaybackBar inline currentMove={currentMove} totalMoves={totalMoves} onMoveChange={setCurrentMove} />}
+          navigation={<PlaybackBar inline currentMove={currentMove} totalMoves={totalMoves} onMoveChange={selectCurrentMove} />}
         />
       )}
       actions={null}

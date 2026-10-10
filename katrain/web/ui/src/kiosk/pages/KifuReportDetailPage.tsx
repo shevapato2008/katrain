@@ -10,6 +10,7 @@ import { gradedMoves, isBad } from '../../features/analysis/moveGrade';
 import type { WinratePoint } from '../../features/report/reportStats';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { translateResult } from '../../utils/resultTranslation';
+import { useSound } from '../../hooks/useSound';
 import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -38,6 +39,11 @@ export default function KifuReportDetailPage() {
   const [showTerritory, setShowTerritory] = useState(false);
   const [tryMoveMode, setTryMoveMode] = useState(false);
   const [tryMoves, setTryMoves] = useState<string[]>([]);
+  const { play: playSound } = useSound();
+  const handleTryMove = (move: string) => {
+    setTryMoves((previous) => [...previous, move]);
+    playSound('stone');
+  };
   const { detail, analysisByMove, error: analysisError } = useKifuAnalysis(id);
   const analysisParameters = detail && kifuAnalysisParametersValid(detail) ? detail.analysis_parameters : null;
   const defaultRulesSource = kifuDefaultRulesSource(analysisParameters, t);
@@ -68,7 +74,7 @@ export default function KifuReportDetailPage() {
   const at = Math.min(cursor, totalMoves);
   const boardCursor = at + (parsed?.setupCount ?? 0);
   useReplayStoneSound({ identity: id, cursor: at, move: parsed?.moves[boardCursor - 1],
-    ready: !!parsed && !!detail, selected: selectedPosition?.id === id });
+    ready: !!parsed && !!detail, boardSize, selected: selectedPosition?.id === id });
   const playerToMove = reportPlayerToMove(parsed?.stoneColors, boardCursor, parsed?.setupCount);
   const currentAnalysis = analysisByMove[at] ?? null;
   const markers = useMemo((): AiMoveMarker[] | null => {
@@ -123,7 +129,7 @@ export default function KifuReportDetailPage() {
             showMoveNumbers={showMoveNumbers} showTerritory={showTerritory}
             ownership={showTerritory ? currentAnalysis?.ownership ?? null : null}
             tryMoves={tryMoveMode ? tryMoves : undefined}
-            onTryMove={tryMoveMode ? (move) => setTryMoves((previous) => [...previous, move]) : undefined}
+            onTryMove={tryMoveMode ? handleTryMove : undefined}
           />}
         </div>
         <div className="kiosk-board__ruler kiosk-board__ruler--right">

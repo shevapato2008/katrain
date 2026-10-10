@@ -59,7 +59,7 @@
 .gob .ln { stroke: var(--gb-line); }
 .gob .star { fill: var(--gb-line); }
 /* 最后一手的圈 */
-.gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+.gob .mark { fill: none; stroke-width: 3.5; }
 .gob .pending-ring { fill: none; stroke-width: 7; }
 .gob .pending-ring--b { stroke: #fff; }
 .gob .pending-ring--w { stroke: #141414; }

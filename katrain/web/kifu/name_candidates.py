@@ -532,6 +532,7 @@ def _validate_candidate(
     composition_context: tuple[dict, dict, dict, dict] | None = None,
     transliteration_context: dict | None = None,
     orthographic_context: dict | None = None,
+    shared_displays: list[dict] = (),
 ) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
@@ -595,7 +596,7 @@ def _validate_candidate(
         first_pass = name_first_pass.is_first_pass(row) or name_first_pass.is_first_pass(checked)
         if first_pass:
             try:
-                name_first_pass.validate_candidate(row, checked)
+                name_first_pass.validate_candidate(row, checked, shared_displays)
             except ValueError as exc:
                 raise CandidateError(str(exc)) from exc
         if row["review_status"] == "approved" and not first_pass:
@@ -1110,6 +1111,10 @@ def validate_bundle(
              and bool(_HASH.fullmatch(str(bundle.get("inventory_sha256", "")))), "inventory hash mismatch")
     _require(bundle.get("registry_version") == registry["version"]
              and bundle.get("registry_sha256") == registry_sha256(registry), "source registry mismatch")
+    _require("shared_displays" not in bundle or (
+        isinstance(bundle["shared_displays"], list)
+        and all(isinstance(item, dict) for item in bundle["shared_displays"])),
+        "shared display permissions must be a finite list")
     _require(_text(bundle.get("rule_version")), "bundle rule version required")
     members = bundle.get("members")
     candidates = bundle.get("candidates")
@@ -1249,6 +1254,7 @@ def validate_bundle(
                     matched = evidence_by_hash.get(item.get("research_sha256"), [])
                     _require(len(matched) == 1, "composed series base research missing or duplicate")
                     _validate_candidate(item, matched[0], registry, values,
+                                        shared_displays=bundle.get("shared_displays", ()),
                                         declarations=declarations, link_targets=link_targets)
                     _require(item["review_status"] == "approved", "composed series base must be approved")
                     base_by_lang[item["lang"]] = item
@@ -1318,6 +1324,7 @@ def validate_bundle(
                 composition_context=composition_context,
                 transliteration_context=transliteration_context,
                 orthographic_context=orthographic_context,
+                shared_displays=bundle.get("shared_displays", ()),
             )
             decisions.append(checked)
         except (AttributeError, CandidateError) as exc:
@@ -1399,6 +1406,14 @@ def validate_bundle(
                     and all(shared_event_display_candidate(row, research_by_hash.get(row.get("research_sha256")))
                             for row in raw_events)):
                 continue
+            if all(row["owner"]["kind"] == "player" for row in group):
+                from katrain.web.kifu.name_first_pass import canonical_shared_display_candidate
+                permissions = [permission for permission in bundle.get("shared_displays", ())
+                               if permission.get("lang") == lang and permission.get("normalized_key") == name]
+                if (len(permissions) == 1 and all(canonical_shared_display_candidate(
+                        row, research_by_hash.get(row.get("research_sha256")), permissions[0])
+                        for row in group)):
+                    continue
             if any(row.get("generation_rule_version") == "user_authorized_first_pass_v1" for row in group):
                 errors.append(f"first-pass name collision: {lang}:{name} owners={owners}")
                 continue

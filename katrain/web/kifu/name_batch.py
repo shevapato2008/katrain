@@ -699,8 +699,46 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
     return sorted(ids)
 
 
+def _canonical_shared_permissions(conn, candidates, shared_displays, research_by_hash):
+    """Recheck each finite player collision group against this database and live sources."""
+    from katrain.web.kifu.name_first_pass import canonical_shared_display_candidate
+
+    if not shared_displays:
+        return {}
+    _fail(all(isinstance(item, dict) and isinstance(item.get("lang"), str)
+              and isinstance(item.get("normalized_key"), str)
+              and isinstance(item.get("members"), list) for item in shared_displays),
+          "shared display permission shape changed")
+    url = conn.engine.url
+    binding = f"{url.drivername}://{url.host or ''}:{url.port or ''}/{url.database or ''}"
+    result = {}
+    existing = conn.execute(select(KifuPlayerName.__table__).where(
+        KifuPlayerName.lang.in_({item["lang"] for item in shared_displays}),
+        KifuPlayerName.status == "verified")).mappings().all()
+    for permission in shared_displays:
+        key = (permission["lang"], permission["normalized_key"])
+        _fail(key not in result and permission.get("database_binding") == binding,
+              "shared display database binding or group changed")
+        rows = [row for row in candidates if row.get("owner", {}).get("kind") == "player"
+                and row.get("lang") == key[0] and normalize_alias(row.get("display_name", "")) == key[1]]
+        _fail(bool(rows) and all(canonical_shared_display_candidate(
+            row, (research_by_hash or {}).get(row.get("research_sha256")), permission) for row in rows),
+            "shared display candidate or source permission changed")
+        members = {member["id"]: member["source_preimage_sha256"] for member in permission["members"]}
+        observed = {row["player_id"] for row in existing
+                    if row["lang"] == key[0] and normalize_alias(row["display_name"]) == key[1]}
+        observed.update(row["owner"]["id"] for row in rows)
+        _fail(observed == set(members), "shared display collision members changed")
+        for owner_id, source_hash in members.items():
+            owner = _image(conn, KifuPlayer.__table__, owner_id)
+            _fail(owner is not None and canonical_sha256(owner) == source_hash,
+                  "shared display source owner changed")
+        result[key] = set(members)
+    return result
+
+
 def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), research_by_hash=None,
-                                   resolved_refs=None) -> None:
+                                   resolved_refs=None, shared_displays=()) -> None:
     from katrain.web.kifu import name_first_pass
     from katrain.web.kifu.identity import _approved_raw_event_names, _approved_raw_player_names
     from katrain.web.kifu.raw_event_translation import (
@@ -713,6 +751,7 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
     }
     if not languages:
         return
+    canonical_shared = _canonical_shared_permissions(conn, candidates, shared_displays, research_by_hash)
     existing_names = defaultdict(list)
     for kind, (_owner_model, name_model, owner_column) in _OWNER.items():
         names = conn.execute(select(name_model.__table__).where(name_model.lang.in_(languages),
@@ -754,6 +793,9 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
         )
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
+                continue
+            if (own_kind == kind == "player" and {own_id, existing_id} <= canonical_shared.get(
+                    (row["lang"], name_key), set())):
                 continue
             incoming_shared = (own_kind == "raw_player" and name_first_pass.shared_display_candidate(
                 row, declarations.get(_owner_ref(owner), {}).get("raw_display_scope")))
@@ -851,7 +893,8 @@ def _inspect(
         _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events,
                          research_by_hash.get(candidate.get("research_sha256")))
     _check_cross_bundle_collisions(conn, bundle["candidates"], owners=bundle.get("owners", ()),
-                                   research_by_hash=research_by_hash)
+                                   research_by_hash=research_by_hash,
+                                   shared_displays=bundle.get("shared_displays", ()))
     return {**report, "bundle_sha256": canonical_sha256(bundle),
             "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"),
                                                  selected_scope, selected_events),
@@ -1243,7 +1286,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 _check_cross_bundle_collisions(
                     conn, bundle["candidates"], owners=bundle.get("owners", ()),
                     research_by_hash={canonical_sha256(item): item for item in evidence_records},
-                    resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
+                    resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {}),
+                    shared_displays=bundle.get("shared_displays", ()),
                 )
                 if bundle.get("primary_orthographic") is not None or any(
                     row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records

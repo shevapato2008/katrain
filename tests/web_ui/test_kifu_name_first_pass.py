@@ -632,6 +632,100 @@ def test_first_pass_canonical_owner_cas_catches_pages_drift(engine):
         dry_run_bundle(engine, bundle, db_registry(), inv, research)
 
 
+def test_canonical_shared_display_is_finite_and_searches_each_id_once(engine, monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert(), [
+            {"id": 18, "canonical_name": "吴清源"},
+            {"id": 19, "canonical_name": "Other"},
+        ])
+        conn.execute(KifuAlbum.__table__.insert(), [
+            {"id": 12, "black_player_id": 18, "player_black": "Other", "player_white": "Other",
+             "event": "Cup", "sgf_content": "(;B[aa])", "source_path": "two.sgf"},
+            {"id": 13, "black_player_id": 17, "white_player_id": 18, "player_black": "Other",
+             "player_white": "Other", "event": "Cup", "sgf_content": "(;B[bb])", "source_path": "both.sgf"},
+            {"id": 14, "black_player_id": 19, "player_black": "Other", "player_white": "Other",
+             "event": "Cup", "sgf_content": "(;B[cc])", "source_path": "outside.sgf"},
+        ])
+    inv, bundle, records = bound_player_bundle(engine)
+    with engine.connect() as conn:
+        second_image = _image(conn, KifuPlayer.__table__, 18)
+    first_image = bundle["owners"][0]["preimage"]
+    url = engine.url
+    permission = {
+        "version": "canonical-shared-display-v1", "environment": "TEST",
+        "database_binding": f"{url.drivername}://{url.host or ''}:{url.port or ''}/{url.database or ''}",
+        "normalizer": "normalize_alias-v1", "lang": "cn", "display_name": "吴清源",
+        "normalized_key": "吴清源", "identity_relation": "unknown",
+        "members": [
+            {"id": 17, "source_preimage_sha256": canonical_sha256(first_image)},
+            {"id": 18, "source_preimage_sha256": canonical_sha256(second_image)},
+        ],
+    }
+    second_research = deepcopy(records[0])
+    second_research["owner"] = {"kind": "player", "id": 18}
+    second_research["source_input"].update(
+        owner=second_research["owner"], owner_preimage_sha256=canonical_sha256(second_image))
+    second_candidate = deepcopy(bundle["candidates"][0])
+    second_candidate["owner"] = second_research["owner"]
+    second_candidate["research_sha256"] = canonical_sha256(second_research)
+    second_candidate["generated_review"].update(
+        owner=second_research["owner"], research_sha256=second_candidate["research_sha256"])
+    for candidate in (bundle["candidates"][0], second_candidate):
+        candidate["collision_decision"] = "shared_display"
+        candidate["collision_basis"] = {"permission_sha256": canonical_sha256(permission)}
+        candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(candidate)
+    members = [{"owner": candidate["owner"], "lang": "cn"}
+               for candidate in (bundle["candidates"][0], second_candidate)]
+    owners = [bundle["owners"][0], {"owner": second_candidate["owner"], "preimage": second_image}]
+    bundle.update(members=members, member_set_sha256=canonical_sha256(members),
+                  candidates=[bundle["candidates"][0], second_candidate],
+                  owners=owners, owner_set_sha256=canonical_sha256(owners),
+                  shared_displays=[permission])
+    records.append(second_research)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    assert apply_bundle(engine, bundle, db_registry(), inv, records)["status"] == "applied"
+    with Session(engine) as db:
+        other_locale = _evidence(db, "player", 17, "jp", "吴清源")
+        db.add(KifuPlayerName(player_id=17, lang="jp", display_name="吴清源", status="verified",
+                               decision_kind="conventional", generation_rule_version="test-v1",
+                               revision=1, evidence_id=other_locale.id))
+        db.commit()
+    with Session(engine) as db:
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "吴清源")[0] == {17, 18}
+        response = _list(db, "吴清源")
+        assert {item.id for item in response.items} == {11, 12, 13}
+        assert response.total == 3
+        monkeypatch.setenv("KIFU_STRICT_NAMES", "0")
+        assert {item.id for item in _list(db, "吴清源").items} == {11, 12, 13}
+        monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    with Session(engine) as db:
+        db.add(KifuEvent(id=31, canonical_name="吴清源"))
+        event_evidence = _evidence(db, "event", 31, "cn", "吴清源")
+        db.add(KifuEventName(event_id=31, lang="cn", display_name="吴清源", status="verified",
+                             decision_kind="conventional", generation_rule_version="test-v1",
+                             revision=1, evidence_id=event_evidence.id))
+        db.flush()
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "吴清源") == (set(), set(), set(), set())
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.update().where(KifuPlayer.id == 18).values(canonical_name="Changed"))
+    with Session(engine) as db:
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "吴清源")[0] == {17}
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.update().where(KifuPlayer.id == 18).values(canonical_name="吴清源"))
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 19, "cn", "吴清源")
+        db.add(KifuPlayerName(player_id=19, lang="cn", display_name="吴清源", status="verified",
+                               decision_kind="conventional", generation_rule_version="test-v1",
+                               revision=1, evidence_id=evidence.id))
+        db.commit()
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "吴清源")[0] == set()
+
+
 def test_first_pass_event_series_is_qualified_for_read(engine):
     with engine.begin() as conn:
         conn.execute(KifuEvent.__table__.insert().values(id=4, canonical_name="Oteai"))

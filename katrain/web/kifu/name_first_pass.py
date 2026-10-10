@@ -262,7 +262,42 @@ def shared_event_display_candidate(row, research, *, require_approval=True):
     return not (Counter(re.findall(r"\d+", raw)) - Counter(re.findall(r"\d+", row["display_name"])))
 
 
-def validate_candidate(row, research):
+def canonical_shared_display_candidate(row, research, permission, *, require_approval=True):
+    """A finite text collision permission, without any player identity claim."""
+    from katrain.web.kifu.identity import normalize_alias
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    if not (isinstance(row, dict) and isinstance(research, dict) and isinstance(permission, dict)
+            and row.get("owner", {}).get("kind") == "player"
+            and row.get("decision_kind") == "generated"
+            and row.get("generation_rule_version") == VERSION
+            and row.get("review_status") in ({"approved"} if require_approval else {"pending", "approved"})
+            and row.get("collision_decision") == "shared_display"
+            and row.get("collision_basis") == {"permission_sha256": canonical_sha256(permission)}
+            and research.get("source_input", {}).get("owner") == row["owner"]
+            and research.get("candidate_name") == row.get("display_name")
+            and permission.get("version") == "canonical-shared-display-v1"
+            and permission.get("environment") in {"TEST", "PROD"}
+            and isinstance(permission.get("database_binding"), str) and permission["database_binding"]
+            and permission.get("normalizer") == "normalize_alias-v1"
+            and permission.get("lang") == row.get("lang") in LANGUAGES
+            and permission.get("display_name") == row.get("display_name")
+            and permission.get("normalized_key") == normalize_alias(row["display_name"])
+            and permission.get("identity_relation") == "unknown"):
+        return False
+    members = permission.get("members")
+    return (isinstance(members, list) and len(members) >= 2
+            and members == sorted(members, key=lambda member: member.get("id", 0))
+            and len({member.get("id") for member in members}) == len(members)
+            and all(isinstance(member, dict) and set(member) == {"id", "source_preimage_sha256"}
+                    and type(member["id"]) is int and member["id"] > 0
+                    and isinstance(member["source_preimage_sha256"], str)
+                    and _HASH.fullmatch(member["source_preimage_sha256"]) for member in members)
+            and {member["id"]: member["source_preimage_sha256"] for member in members}.get(
+                row["owner"]["id"]) == research["source_input"]["owner_preimage_sha256"])
+
+
+def validate_candidate(row, research, shared_displays=()):
     from katrain.web.kifu.name_parse import parse_event
     if not (row.get("decision_kind") == "generated" and row.get("generation_rule_version") == VERSION
             and research.get("source_basis") == VERSION
@@ -282,7 +317,9 @@ def validate_candidate(row, research):
         raise ValueError("first-pass raw player differs from literal or signed scope")
     if ("collision_decision" in row or "collision_basis" in row) and not (
             shared_display_candidate(row, require_approval=False)
-            or shared_event_display_candidate(row, research, require_approval=False)):
+            or shared_event_display_candidate(row, research, require_approval=False)
+            or any(canonical_shared_display_candidate(row, research, permission, require_approval=False)
+                   for permission in shared_displays)):
         raise ValueError("first-pass shared display needs its exact raw literal basis")
     if row.get("review_status") == "pending":
         if "generated_review" in row:
@@ -310,13 +347,13 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
     candidate, research, proof = (payload.get(key) for key in ("candidate", "research", "first_pass"))
     if not all(isinstance(value, dict) for value in (candidate, research, proof, batch, owner)):
         return False
-    try:
-        validate_research(research)
-        validate_candidate(candidate, research)
-    except (ValueError, KeyError, TypeError):
-        return False
     artifact = batch.get("reviewed_artifact")
     bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+    try:
+        validate_research(research)
+        validate_candidate(candidate, research, bundle.get("shared_displays", ()) if isinstance(bundle, dict) else ())
+    except (ValueError, KeyError, TypeError):
+        return False
     candidate_hash = canonical_sha256(candidate)
     research_hash = canonical_sha256(research)
     if (batch.get("status") != "applied" or not isinstance(bundle, dict)

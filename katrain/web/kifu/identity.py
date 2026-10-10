@@ -786,6 +786,70 @@ def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     return or_(*clauses) if clauses else KifuAlbum.id.in_([])
 
 
+def _finite_shared_player_ids(db: Session, rows, needle: str) -> set[int]:
+    """Find a source-bound permission for exactly the currently qualified canonical owners."""
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    ids = {name.player_id for name, _ in rows}
+    if len(ids) < 2:
+        return set()
+    url = db.get_bind().engine.url
+    binding = f"{url.drivername}://{url.host or ''}:{url.port or ''}/{url.database or ''}"
+    candidates = []
+    for name, evidence in rows:
+        payload = evidence.research_payload
+        candidate = payload.get("candidate") if isinstance(payload, dict) else None
+        proof = payload.get("first_pass") if isinstance(payload, dict) else None
+        if isinstance(candidate, dict) and candidate.get("collision_decision") == "shared_display" \
+                and isinstance(proof, dict) and type(proof.get("batch_id")) is int:
+            candidates.append((candidate, proof["batch_id"], name.lang))
+    if not candidates:
+        return set()
+    batches = {batch.id: batch for batch in db.query(KifuNameBatch).filter(
+        KifuNameBatch.id.in_({batch_id for _, batch_id, _ in candidates}))}
+    observed_by_lang = {}
+    for candidate, batch_id, lang in candidates:
+        if lang not in observed_by_lang:
+            observed_by_lang[lang] = {owner_id for owner_id, display in db.query(
+                KifuPlayerName.player_id, KifuPlayerName.display_name).filter(
+                    KifuPlayerName.lang == lang, KifuPlayerName.status == "verified")
+                if normalize_alias(display) == needle}
+        if observed_by_lang[lang] != ids:
+            continue
+        batch = batches.get(batch_id)
+        artifact = batch.reviewed_artifact if batch is not None else None
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        if (batch is None or batch.status != "applied" or not isinstance(bundle, dict)
+                or canonical_sha256(bundle) != batch.bundle_sha256
+                or candidate not in bundle.get("candidates", ())):
+            continue
+        for permission in bundle.get("shared_displays", ()):
+            if (permission.get("environment") not in {"TEST", "PROD"}
+                    or permission.get("database_binding") != binding
+                    or permission.get("normalizer") != "normalize_alias-v1"
+                    or permission.get("identity_relation") != "unknown"
+                    or permission.get("lang") != lang
+                    or permission.get("normalized_key") != needle
+                    or normalize_alias(permission.get("display_name", "")) != needle
+                    or candidate.get("collision_basis") != {"permission_sha256": canonical_sha256(permission)}):
+                continue
+            members = permission.get("members")
+            if not isinstance(members, list) or {member.get("id") for member in members} != ids:
+                continue
+            valid = True
+            for member in members:
+                owner = db.get(KifuPlayer, member["id"])
+                image = ({column.name: (value.isoformat() if hasattr(value, "isoformat") else value)
+                          for column in KifuPlayer.__table__.columns
+                          for value in [getattr(owner, column.name)]} if owner is not None else None)
+                if image is None or canonical_sha256(image) != member.get("source_preimage_sha256"):
+                    valid = False
+                    break
+            if valid:
+                return ids
+    return set()
+
+
 def strict_matching_names(
     db: Session, query: str, *, raw_name_rows=None, orthographic_batch_contexts=None
 ) -> tuple[set[int], set[int], set[str], set[int]]:
@@ -794,20 +858,20 @@ def strict_matching_names(
     if not needle:
         return set(), set(), set(), set()
     identity_matches = []
+    player_rows = []
     for model, owner in ((KifuPlayerName, "player_id"), (KifuEventName, "event_id")):
         rows = _approved_names(db, model, owner).filter(
             or_(model.display_name == query, func.lower(model.display_name) == query.lower())
         )
-        identity_matches.append(
-            {
-                getattr(row, owner)
-                for row, _ in _qualified_name_rows(
-                    db, rows, model, owner,
-                    orthographic_batch_contexts=orthographic_batch_contexts if model is KifuPlayerName else None
-                )
-                if normalize_alias(row.display_name) == needle
-            }
+        qualified = _qualified_name_rows(
+            db, rows, model, owner,
+            orthographic_batch_contexts=orthographic_batch_contexts if model is KifuPlayerName else None
         )
+        if model is KifuPlayerName:
+            player_rows = [(row, evidence) for row, evidence in qualified
+                           if normalize_alias(row.display_name) == needle]
+        identity_matches.append({getattr(row, owner) for row, _ in qualified
+                                 if normalize_alias(row.display_name) == needle})
     raw_matches = []
     raw_event_name_ids = set()
     for model, value_model, owner in (
@@ -833,6 +897,9 @@ def strict_matching_names(
             if normalize_alias(name.display_name) == needle
         }
         raw_matches.append(matches)
+    canonical_shared = (_finite_shared_player_ids(db, player_rows, needle)
+                        if len(identity_matches[0]) > 1 and not identity_matches[1] and not raw_matches[1]
+                        else set())
     matches_by_owner = (*identity_matches, *raw_matches)
     raw_title_group = (not any(identity_matches) and not raw_matches[0]
                        and len(raw_matches[1]) > 1
@@ -847,7 +914,7 @@ def strict_matching_names(
         )
     )
     raw_player_display_group = (
-        bool(raw_matches[0]) and len(identity_matches[0]) <= 1 and not identity_matches[1]
+        bool(raw_matches[0]) and (len(identity_matches[0]) <= 1 or canonical_shared) and not identity_matches[1]
         and not raw_matches[1] and all(
             name.generation_rule_version == name_first_pass.VERSION
             and isinstance(scope, PreparedRawPlayerScope) and bool(scope.members)
@@ -864,7 +931,8 @@ def strict_matching_names(
         )
     )
     if (sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group
-            and not linked_formal_group and not raw_player_display_group and not raw_event_display_group):
+            and not linked_formal_group and not raw_player_display_group and not raw_event_display_group
+            and not (canonical_shared and (not raw_matches[0] or raw_player_display_group))):
         return set(), set(), set(), set()
     return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 

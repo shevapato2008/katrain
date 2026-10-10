@@ -467,7 +467,8 @@ def _inventory_values(inventory: dict) -> dict[str, set]:
 
 def _check_owner_in_inventory(row: dict, values: dict[str, set], *,
                               declarations: dict[str, dict] | None = None,
-                              link_targets: set[str] | None = None) -> None:
+                              link_targets: set[str] | None = None,
+                              allow_unlinked_first_pass: bool = False) -> None:
     owner = row["owner"]
     declaration = declarations.get(_owner_token(owner)) if declarations is not None else None
     if declarations is not None:
@@ -483,7 +484,9 @@ def _check_owner_in_inventory(row: dict, values: dict[str, set], *,
             _require(pinned.get("raw_value") == row["raw_value"], "raw spelling differs from owner manifest")
     else:
         linked = owner.get("id") in values[owner["kind"]] if "id" in owner else False
-        _require(linked or (link_targets is not None and _owner_token(owner) in link_targets),
+        _require(linked or (link_targets is not None and _owner_token(owner) in link_targets)
+                 or (allow_unlinked_first_pass and "id" in owner and declaration is not None
+                     and _text(pinned.get("canonical_name"))),
                  "entity ID/ref absent from pinned inventory and approved links")
         _require("raw_value" not in row, "entity candidate must not claim a raw spelling")
 
@@ -532,7 +535,10 @@ def _validate_candidate(
 ) -> dict:
     _require(isinstance(row, dict), "candidate must be an object")
     _owner_key(row.get("owner"), row.get("lang"))
-    _check_owner_in_inventory(row, inventory_values, declarations=declarations, link_targets=link_targets)
+    _check_owner_in_inventory(
+        row, inventory_values, declarations=declarations, link_targets=link_targets,
+        allow_unlinked_first_pass=row.get("generation_rule_version") == "user_authorized_first_pass_v1",
+    )
     _check_signature(row)
     decision = row.get("decision_kind")
     _require(isinstance(decision, str) and decision in DECISION_KINDS, "decision kind invalid")
@@ -585,7 +591,14 @@ def _validate_candidate(
             raise CandidateError(str(exc)) from exc
     elif decision in {"conventional", "generated", "corrected", "translated"}:
         checked = _research_for(row, research, registry)
-        if row["review_status"] == "approved":
+        from katrain.web.kifu import name_first_pass
+        first_pass = name_first_pass.is_first_pass(row) or name_first_pass.is_first_pass(checked)
+        if first_pass:
+            try:
+                name_first_pass.validate_candidate(row, checked)
+            except ValueError as exc:
+                raise CandidateError(str(exc)) from exc
+        if row["review_status"] == "approved" and not first_pass:
             captures = []
             if checked.get("source_basis") in {SGF_LITERAL_BASIS, "linked_sgf_literal_v1"}:
                 captures.append(checked["sgf_literal_evidence"]["captured_at"])
@@ -614,57 +627,60 @@ def _validate_candidate(
                              "SGF literal owner scope differs from approved complete preimage")
             _require(bool(_SCRIPT[row["lang"]].search(display)), "translated name lacks target-language script")
         elif decision == "generated":
-            from katrain.web.kifu.name_evidence import POSITIVE_SOURCE_BASIS, POSITIVE_RULE
-            from katrain.web.kifu.name_zh_ko import SOURCE_BASIS as ZH_BASIS, RULE_VERSION as ZH_RULE
-            positive = checked.get("source_basis") == POSITIVE_SOURCE_BASIS
-            positive_zh = checked.get("source_basis") == ZH_BASIS
-            if positive:
-                _require(row["generation_rule_version"] == POSITIVE_RULE and display == checked["candidate_name"],
-                         "positive generated candidate differs from exact rule/output")
-                if row["review_status"] == "approved":
-                    from katrain.web.kifu.name_evidence import validate_positive_ja_ko_candidate
-                    try:
-                        validate_positive_ja_ko_candidate(row, research, registry)
-                    except EvidenceError as exc:
-                        raise CandidateError(str(exc)) from exc
-            elif positive_zh:
-                _require(row["generation_rule_version"] == ZH_RULE and display == checked["candidate_name"],
-                         "Chinese positive generated candidate differs from exact rule/output")
-                if row["review_status"] == "approved":
-                    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
-                    try:
-                        validate_positive_zh_ko_candidate(row, research, registry)
-                    except EvidenceError as exc:
-                        raise CandidateError(str(exc)) from exc
+            if first_pass:
+                _require(bool(_SCRIPT[row["lang"]].search(display)), "generated name lacks target-language script")
             else:
-                _require(row["generation_rule_version"] not in {POSITIVE_RULE, ZH_RULE},
-                         "positive generated rule requires its exact research basis")
-                _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
-            _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
-                     "generated name needs sourced original reading")
-            if row["review_status"] == "approved":
-                review = row.get("generated_review")
-                _require(isinstance(review, dict)
-                         and row.get("review_conclusion") == "approved_generated_display_and_rule"
-                         and review.get("decision") == "approve_generated"
-                         and review.get("display_name") == display
-                         and review.get("owner") == row["owner"] and review.get("lang") == row["lang"]
-                         and review.get("generation_rule_version") == row["generation_rule_version"]
-                         and review.get("research_sha256") == row["research_sha256"]
-                         and review.get("original_name") == checked["original_name"]
-                         and review.get("reading") == checked["reading"]
-                         and review.get("reading_basis_url") == checked["reading_basis_url"]
-                         and review.get("reviewer_id") == row["reviewer_id"]
-                         and review.get("reviewer_model") == row["reviewer_model"]
-                         and review.get("reviewed_at") == row["reviewed_at"]
-                         and _text(review.get("reason")),
-                         "approved generated name needs an affirmative exact generated review")
-            closure = checked.get("negative_closure")
-            if closure and row["review_status"] == "approved":
-                _require(_time(row["reviewed_at"]) > _time(closure["reviewed_at"]),
-                         "generated name review must follow its negative closure")
-            _require(row["generation_rule_version"] != "none", "generated name needs a named conversion rule")
-            _require(bool(_SCRIPT[row["lang"]].search(display)), "generated name lacks target-language script")
+                from katrain.web.kifu.name_evidence import POSITIVE_SOURCE_BASIS, POSITIVE_RULE
+                from katrain.web.kifu.name_zh_ko import SOURCE_BASIS as ZH_BASIS, RULE_VERSION as ZH_RULE
+                positive = checked.get("source_basis") == POSITIVE_SOURCE_BASIS
+                positive_zh = checked.get("source_basis") == ZH_BASIS
+                if positive:
+                    _require(row["generation_rule_version"] == POSITIVE_RULE and display == checked["candidate_name"],
+                             "positive generated candidate differs from exact rule/output")
+                    if row["review_status"] == "approved":
+                        from katrain.web.kifu.name_evidence import validate_positive_ja_ko_candidate
+                        try:
+                            validate_positive_ja_ko_candidate(row, research, registry)
+                        except EvidenceError as exc:
+                            raise CandidateError(str(exc)) from exc
+                elif positive_zh:
+                    _require(row["generation_rule_version"] == ZH_RULE and display == checked["candidate_name"],
+                             "Chinese positive generated candidate differs from exact rule/output")
+                    if row["review_status"] == "approved":
+                        from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
+                        try:
+                            validate_positive_zh_ko_candidate(row, research, registry)
+                        except EvidenceError as exc:
+                            raise CandidateError(str(exc)) from exc
+                else:
+                    _require(row["generation_rule_version"] not in {POSITIVE_RULE, ZH_RULE},
+                             "positive generated rule requires its exact research basis")
+                    _require(checked["scope_status"] == "not_found_in_scope", "generated name needs complete negative search")
+                _require(_text(checked.get("reading")) and _text(checked.get("reading_basis_url")),
+                         "generated name needs sourced original reading")
+                if row["review_status"] == "approved":
+                    review = row.get("generated_review")
+                    _require(isinstance(review, dict)
+                             and row.get("review_conclusion") == "approved_generated_display_and_rule"
+                             and review.get("decision") == "approve_generated"
+                             and review.get("display_name") == display
+                             and review.get("owner") == row["owner"] and review.get("lang") == row["lang"]
+                             and review.get("generation_rule_version") == row["generation_rule_version"]
+                             and review.get("research_sha256") == row["research_sha256"]
+                             and review.get("original_name") == checked["original_name"]
+                             and review.get("reading") == checked["reading"]
+                             and review.get("reading_basis_url") == checked["reading_basis_url"]
+                             and review.get("reviewer_id") == row["reviewer_id"]
+                             and review.get("reviewer_model") == row["reviewer_model"]
+                             and review.get("reviewed_at") == row["reviewed_at"]
+                             and _text(review.get("reason")),
+                             "approved generated name needs an affirmative exact generated review")
+                closure = checked.get("negative_closure")
+                if closure and row["review_status"] == "approved":
+                    _require(_time(row["reviewed_at"]) > _time(closure["reviewed_at"]),
+                             "generated name review must follow its negative closure")
+                _require(row["generation_rule_version"] != "none", "generated name needs a named conversion rule")
+                _require(bool(_SCRIPT[row["lang"]].search(display)), "generated name lacks target-language script")
         else:
             _require(checked["scope_status"] == "found" and display == checked["candidate_name"],
                      "adopted name must match found target-language evidence")
@@ -1098,6 +1114,9 @@ def validate_bundle(
     members = bundle.get("members")
     candidates = bundle.get("candidates")
     _require(isinstance(members, list) and members and isinstance(candidates, list), "finite members and candidates required")
+    if any(isinstance(item, dict) and item.get("generation_rule_version") == "user_authorized_first_pass_v1"
+           for item in candidates):
+        _require(bundle["bundle_format"] in {2, 3, 4}, "first pass requires complete owner manifest")
     if any(isinstance(item, dict) and isinstance(item.get("owner"), dict)
            and item["owner"].get("kind") == "raw_event"
            and item.get("decision_kind") == "translated" for item in candidates):
@@ -1119,6 +1138,14 @@ def validate_bundle(
     member_keys = []
     member_map = {}
     raw_spellings = {}
+    first_pass_keys = {
+        _owner_key(item["owner"], item["lang"])
+        for item in candidates if isinstance(item, dict) and isinstance(item.get("owner"), dict)
+        and item["owner"].get("kind") in {"player", "event"}
+        and type(item["owner"].get("id")) is int and item["owner"]["id"] > 0
+        and item.get("lang") in PRIMARY_NAME_LANGUAGES
+        and item.get("generation_rule_version") == "user_authorized_first_pass_v1"
+    }
     for number, item in enumerate(members):
         try:
             key = _owner_key(item.get("owner"), item.get("lang"))
@@ -1127,7 +1154,10 @@ def validate_bundle(
                          "v4 writes only event and raw_event names")
             if bundle["bundle_format"] == 1:
                 _require("id" in item["owner"], "v1 members need existing DB IDs")
-            _check_owner_in_inventory(item, values, declarations=declarations, link_targets=link_targets)
+            _check_owner_in_inventory(
+                item, values, declarations=declarations, link_targets=link_targets,
+                allow_unlinked_first_pass=key in first_pass_keys,
+            )
             if key in member_map:
                 raise CandidateError("duplicate member")
             owner = item["owner"]
@@ -1355,6 +1385,9 @@ def validate_bundle(
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
+            if any(row.get("generation_rule_version") == "user_authorized_first_pass_v1" for row in group):
+                errors.append(f"first-pass name collision: {lang}:{name} owners={owners}")
+                continue
             if any(row.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" for row in group):
                 errors.append(f"Chinese generated name collision: {lang}:{name} owners={owners}")
                 continue

@@ -1452,6 +1452,15 @@ def validate_research_record(record: dict, registry: dict, *, verify_captured_bo
              "research record cannot contain a review signature")
     _require(_text(record.get("producer_id")) and _text(record.get("producer_model")),
              "actual producer identity/model required")
+    from katrain.web.kifu import name_first_pass
+    if name_first_pass.is_first_pass(record):
+        try:
+            name_first_pass.validate_research(record)
+        except ValueError as exc:
+            raise EvidenceError(str(exc)) from exc
+        result = deepcopy(record)
+        result["owner_key"] = exact_owner_key
+        return result
     scope_status = record.get("scope_status")
     from katrain.web.kifu.name_zh_ko import RULE_VERSION as ZH_RULE, SOURCE_BASIS as ZH_BASIS
     ja_positive = any((record.get("source_basis") == POSITIVE_SOURCE_BASIS,

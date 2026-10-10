@@ -261,6 +261,7 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
 
 
 def _check_name_preimages(conn, candidates: list[dict]) -> None:
+    from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION
     for candidate in candidates:
         if candidate["decision_kind"] == "composed":
             capture = candidate.get("preimage_binding", {}).get("capture_sha256")
@@ -278,6 +279,58 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
             continue
         actual = _name_preimage_sha256(conn, owner, candidate["lang"])
         _fail(actual == expected, f"name preimage changed: {_owner_ref(owner)}:{candidate['lang']}")
+        if candidate.get("generation_rule_version") == FIRST_PASS_VERSION:
+            _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
+            target = conn.execute(select(name_model.__table__).where(
+                name_model.__table__.c[owner_column] == owner["id"],
+                name_model.lang == candidate["lang"])).mappings().one_or_none()
+            _fail(target is None or target["status"] != "verified" and target["evidence_id"] is None,
+                  "first pass cannot replace verified or evidence-backed name")
+
+
+def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: dict[str, dict]) -> None:
+    """Bind every generated source to the current complete owner/source images."""
+    from katrain.web.kifu.name_first_pass import VERSION, READABLE_RAW_CATEGORIES, raw_scope_rows_many
+
+    raw_values = {research_by_hash[candidate["research_sha256"]]["source_input"]["text"]
+                  for candidate in candidates if candidate.get("generation_rule_version") == VERSION
+                  and candidate["owner"]["kind"] == "raw_event"}
+    raw_scopes = raw_scope_rows_many(conn, raw_values)
+
+    for candidate in candidates:
+        if candidate.get("generation_rule_version") != VERSION:
+            continue
+        research = research_by_hash.get(candidate.get("research_sha256"))
+        _fail(isinstance(research, dict), "first-pass research missing")
+        source = research["source_input"]
+        owner = candidate["owner"]
+        _fail("id" in owner and source["owner"] == owner, "first-pass source owner differs")
+        owner_model, name_model, owner_column = _OWNER[owner["kind"]]
+        live_owner = _image(conn, owner_model.__table__, owner["id"])
+        _fail(live_owner is not None and canonical_sha256(live_owner) == source["owner_preimage_sha256"],
+              "first-pass source owner changed")
+        kind = source["kind"]
+        if kind == "catalog_canonical":
+            _fail(live_owner["canonical_name"] == source["text"], "first-pass canonical source changed")
+        elif kind == "raw_event_literal":
+            _fail(live_owner["raw_value"] == source["text"], "first-pass raw source changed")
+            _fail(live_owner["category"] in READABLE_RAW_CATEGORIES
+                  and parse_event(source["text"], None).category in READABLE_RAW_CATEGORIES,
+                  "first-pass raw source is classified as a program, generic, damaged or archive value")
+            _fail(research["raw_scope"]["slots"] == raw_scopes[source["text"]],
+                  "first-pass raw occurrence scope changed")
+        else:
+            source_name = _image(conn, name_model.__table__, source["name_id"])
+            _fail(source_name is not None and source_name[owner_column] == owner["id"]
+                  and source_name["lang"] == source["lang"] and source_name["display_name"] == source["text"]
+                  and source_name["status"] == "verified"
+                  and canonical_sha256(source_name) == source["name_preimage_sha256"],
+                  "first-pass locale source changed")
+            evidence = _image(conn, KifuNameResearchEvidence.__table__, source_name["evidence_id"])
+            _fail(evidence is not None and evidence[owner_column] == owner["id"]
+                  and evidence["review_status"] == "approved"
+                  and canonical_sha256(evidence) == source["evidence_preimage_sha256"],
+                  "first-pass locale evidence changed")
 
 
 def _check_verified_sources(conn, evidence_records):
@@ -581,11 +634,13 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
     elif kind == "player":
         linked = conn.scalar(select(KifuAlbum.id).where(or_(
             KifuAlbum.black_player_id == owner_id, KifuAlbum.white_player_id == owner_id)).limit(1))
-        _fail(linked is not None or _owner_ref(row["owner"]) in (link_targets or set()),
+        _fail(linked is not None or _owner_ref(row["owner"]) in (link_targets or set())
+              or row.get("generation_rule_version") == "user_authorized_first_pass_v1",
               "player ID is not linked in the current album snapshot or approved links")
     else:
         linked = conn.scalar(select(KifuAlbum.id).where(KifuAlbum.event_id == owner_id).limit(1))
         _fail(linked is not None or bool((selected_events or {}).get(owner_id))
+              or row.get("generation_rule_version") == "user_authorized_first_pass_v1"
               or _owner_ref(row["owner"]) in (link_targets or set()),
               "event ID is not linked in the current album snapshot or approved links")
 
@@ -656,6 +711,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
                 continue
+            _fail(row.get("generation_rule_version") != "user_authorized_first_pass_v1",
+                  f"first-pass normalized name collision: {row['lang']}:{name_key}")
             _fail(row.get("generation_rule_version") != "nikl-zh-ko-personal-name-v1",
                   f"Chinese generated name collides with another owner: {row['lang']}:{name_key}")
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
@@ -718,6 +775,7 @@ def _inspect(
         _check_verified_sources(conn, evidence_records)
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     research_by_hash = {canonical_sha256(record): record for record in evidence_records}
+    _check_first_pass_sources(conn, bundle["candidates"], research_by_hash)
     for candidate in bundle["candidates"]:
         _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events,
                          research_by_hash.get(candidate.get("research_sha256")))
@@ -786,6 +844,7 @@ def _candidate_evidence(
     primary_orthographic: dict | None = None,
     normative_ja_ko: dict | None = None,
     normative_zh_ko: dict | None = None,
+    first_pass: dict | None = None,
 ) -> dict:
     owner = row["owner"]
     produced_at = datetime.fromisoformat(row["produced_at"].replace("Z", "+00:00"))
@@ -795,6 +854,8 @@ def _candidate_evidence(
         payload["normative_ja_ko"] = normative_ja_ko
     if normative_zh_ko is not None:
         payload["normative_zh_ko"] = normative_zh_ko
+    if first_pass is not None:
+        payload["first_pass"] = first_pass
     if primary_orthographic is not None:
         payload["primary_orthographic"] = primary_orthographic
     if composition is not None:
@@ -827,6 +888,9 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
     name_table = name_model.__table__
     current = conn.execute(select(name_table).where(name_table.c[owner_column] == owner_id,
                                                     name_table.c.lang == row["lang"])).mappings().one_or_none()
+    if row.get("generation_rule_version") == "user_authorized_first_pass_v1":
+        _fail(current is None or current["status"] != "verified" and current["evidence_id"] is None,
+              "first pass cannot replace verified or evidence-backed name")
     before = _image(conn, name_table, current["id"]) if current else None
     revision = max(int(current["revision"] or 0), 0) + 1 if current else 1
     evidence_table = KifuNameResearchEvidence.__table__
@@ -868,6 +932,12 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
             ({"batch_id": batch_id, "research_sha256": row["research_sha256"],
               "candidate_sha256": canonical_sha256(row)}
              if row.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" else None),
+            first_pass=({"batch_id": batch_id, "research_sha256": row["research_sha256"],
+                         "candidate_sha256": canonical_sha256(row),
+                         "verification_level": "generated_first_pass",
+                         "raw_scope_sha256": canonical_sha256(research_by_hash[row["research_sha256"]]["raw_scope"])
+                         if row["owner"]["kind"] == "raw_event" else None}
+                        if row.get("generation_rule_version") == "user_authorized_first_pass_v1" else None),
         ),
     )
     _record_change(conn, batch_id, sequence, KifuNameResearchEvidence, evidence_id, None, evidence_after)
@@ -1020,6 +1090,12 @@ def _check_applied_v4(conn, batch, bundle):
             normative_zh_ko=({"batch_id": batch["id"], "research_sha256": research_hash,
                               "candidate_sha256": canonical_sha256(candidate)}
                              if candidate.get("generation_rule_version") == "nikl-zh-ko-personal-name-v1" else None),
+            first_pass=({"batch_id": batch["id"], "research_sha256": research_hash,
+                         "candidate_sha256": canonical_sha256(candidate),
+                         "verification_level": "generated_first_pass",
+                         "raw_scope_sha256": canonical_sha256(research["raw_scope"])
+                         if candidate["owner"]["kind"] == "raw_event" else None}
+                        if candidate.get("generation_rule_version") == "user_authorized_first_pass_v1" else None),
         )
         for key, value in expected_evidence.items():
             stored = evidence[key]
@@ -1049,6 +1125,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
     has_positive = any(row.get("generation_rule_version") in {
         "nikl-ja-ko-personal-name-v1", "nikl-zh-ko-personal-name-v1"}
                        for row in bundle["candidates"])
+    has_first_pass = any(row.get("generation_rule_version") == "user_authorized_first_pass_v1"
+                         for row in bundle["candidates"])
     normative_research = [record for record in evidence_records
                           if record.get("source_basis") in {"normative_ja_ko_v1", "normative_zh_ko_v1"}]
     with _locked_write(engine) as conn:
@@ -1093,7 +1171,14 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                     row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
                 ):
                     _check_verified_sources(conn, evidence_records)
-            if bundle["bundle_format"] == 4:
+            if has_first_pass:
+                _prevalidate(bundle, registry, inventory, evidence_records)
+                _fail(previous["reviewed_artifact"].get("research_hashes") ==
+                      sorted(canonical_sha256(record) for record in evidence_records),
+                      "applied first-pass research changed")
+                _check_first_pass_sources(conn, bundle["candidates"],
+                                          {canonical_sha256(record): record for record in evidence_records})
+            if bundle["bundle_format"] == 4 or has_first_pass:
                 _prevalidate(
                     bundle,
                     registry,

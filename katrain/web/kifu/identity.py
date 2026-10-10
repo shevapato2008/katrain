@@ -32,6 +32,7 @@ from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.name_structure import structure_event
 from katrain.web.kifu.name_raw_player_scope import prepare_raw_player_scope, raw_player_scope_slot
 from katrain.web.kifu.name_evidence import EvidenceError
+from katrain.web.kifu import name_first_pass
 
 LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"})
 PRIMARY_NAME_LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko"})
@@ -106,6 +107,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     from katrain.web.kifu.name_transliteration import persisted_batch_bindings, persisted_name_eligible
 
     from katrain.web.kifu import name_orthographic
+    from katrain.web.kifu import name_first_pass
     from katrain.web.kifu.name_evidence import (
         is_positive_ja_ko, is_positive_zh_ko, persisted_positive_ja_ko_eligible,
         persisted_positive_zh_ko_eligible, persisted_legacy_zh_negative_eligible,
@@ -134,6 +136,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     ja_ledger_ids = set()
     zh_ledger_ids = set()
     verified_display_ledger_ids = set()
+    first_pass_ledger_ids = set()
     evidence_creation_changes = {key: [] for key in evidence_ids}
     legacy_batch_ids = set()
     if evidence_ids:
@@ -157,6 +160,11 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             if isinstance(after, dict):
                 created_payload = after.get("research_payload")
                 created_candidate = created_payload.get("candidate") if isinstance(created_payload, dict) else None
+                if (after.get("generation_rule_version") == name_first_pass.VERSION
+                        or isinstance(created_payload, dict) and "first_pass" in created_payload
+                        or isinstance(created_candidate, dict)
+                        and created_candidate.get("generation_rule_version") == name_first_pass.VERSION):
+                    first_pass_ledger_ids.add(change.target_row_id)
                 created_proof = created_payload.get("primary_orthographic") if isinstance(created_payload, dict) else None
                 created_anchor = created_proof.get("source_anchor") if isinstance(created_proof, dict) else None
                 created_source = created_anchor.get("content") if isinstance(created_anchor, dict) else None
@@ -183,7 +191,15 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
         )
 
     batch_ids = set(legacy_batch_ids)
+    first_pass_batch_ids = set()
     for name, evidence, *_ in rows:
+        payload = evidence.research_payload
+        proof = payload.get("first_pass") if isinstance(payload, dict) else None
+        if (evidence.id in first_pass_ledger_ids or name.generation_rule_version == name_first_pass.VERSION
+                or evidence.generation_rule_version == name_first_pass.VERSION
+                or isinstance(payload, dict) and name_first_pass.is_first_pass(payload.get("research"))):
+            if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
+                first_pass_batch_ids.add(proof["batch_id"])
         if (name.decision_kind == "transliterated" or orthographic_proof(name, evidence) or positive_kind(name, evidence)) and isinstance(
             evidence.research_payload, dict
         ):
@@ -194,6 +210,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             )
             if isinstance(proof, dict) and type(proof.get("batch_id")) is int:
                 batch_ids.add(proof["batch_id"])
+    batch_ids |= first_pass_batch_ids
     use_contexts = orthographic_batch_contexts is not None and not (db.new or db.dirty or db.deleted)
     batch_query = db.query(KifuNameBatch).filter(KifuNameBatch.id.in_(batch_ids))
     if use_contexts:
@@ -229,10 +246,65 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
     if positive_batch_ids:
         for change in db.query(KifuNameChange).filter(KifuNameChange.batch_id.in_(positive_batch_ids)):
             positive_changes[change.batch_id].append(image(change))
+    first_pass_changes = {key: {} for key in first_pass_batch_ids}
+    if first_pass_batch_ids:
+        for change in db.query(KifuNameChange).filter(KifuNameChange.batch_id.in_(first_pass_batch_ids)):
+            first_pass_changes[change.batch_id][(change.target_table, change.target_row_id)] = image(change)
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    first_pass_members = {}
+    for batch_id in first_pass_batch_ids:
+        batch = batches.get(batch_id)
+        artifact = batch.reviewed_artifact if batch else None
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        if (batch and batch.status == "applied" and isinstance(bundle, dict)
+                and canonical_sha256(bundle) == batch.bundle_sha256):
+            first_pass_members[batch_id] = (
+                {canonical_sha256(item) for item in bundle.get("candidates", ())},
+                set(artifact.get("research_hashes", ())),
+            )
+    owner_kind = {KifuPlayerName: "player", KifuEventName: "event",
+                  KifuRawEventName: "raw_event", KifuRawPlayerName: "raw_player"}.get(model)
+    first_pass_rows = [row for row in rows if owner_kind and (
+        row[1].id in first_pass_ledger_ids
+        or row[0].generation_rule_version == name_first_pass.VERSION
+        or row[1].generation_rule_version == name_first_pass.VERSION
+        or isinstance(row[1].research_payload, dict)
+        and ("first_pass" in row[1].research_payload
+             or name_first_pass.is_first_pass(row[1].research_payload.get("research"))))]
+    first_pass_evidence_ids = {row[1].id for row in first_pass_rows}
+    owner_model = {"player": KifuPlayer, "event": KifuEvent,
+                   "raw_event": KifuRawEventValue, "raw_player": KifuRawPlayerValue}.get(owner_kind)
+    owner_images = {}
+    source_names = {}
+    source_evidence = {}
+    if first_pass_rows:
+        owner_ids = {getattr(name, owner_column) for name, *_ in first_pass_rows}
+        owner_images = {owner.id: image(owner) for owner in db.query(owner_model).filter(owner_model.id.in_(owner_ids))}
+        source_ids = {source.get("name_id") for _, evidence, *_ in first_pass_rows
+                      for research in [(evidence.research_payload or {}).get("research")]
+                      for source in [research.get("source_input", {}) if isinstance(research, dict) else {}]
+                      if source.get("kind") == "existing_locale" and type(source.get("name_id")) is int}
+        if source_ids:
+            source_names = {item.id: image(item) for item in db.query(model).filter(model.id.in_(source_ids))}
+            evidence_source_ids = {item["evidence_id"] for item in source_names.values() if item["evidence_id"]}
+            source_evidence = {item.id: image(item) for item in db.query(KifuNameResearchEvidence).filter(
+                KifuNameResearchEvidence.id.in_(evidence_source_ids))}
     result = []
     for row in rows:
         name, evidence, *extra = row
         creation_changes = evidence_creation_changes.get(evidence.id, [])
+        if evidence.id in first_pass_evidence_ids:
+            payload = evidence.research_payload
+            proof = payload.get("first_pass") if isinstance(payload, dict) else None
+            batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
+            batch = batches.get(batch_id)
+            if owner_kind != "raw_player" and batch and name_first_pass.persisted_eligible(
+                    image(name), image(evidence), owner_kind,
+                    owner_images.get(getattr(name, owner_column)), image(batch),
+                    first_pass_changes.get(batch_id, {}), source_names, source_evidence,
+                    first_pass_members.get(batch_id)):
+                result.append(row)
+            continue
         if (name.decision_kind == "generated" and name.lang == "ko" and len(creation_changes) == 1
                 and creation_changes[0]["batch_id"] in legacy_batch_ids):
             batch = batches.get(creation_changes[0]["batch_id"])
@@ -399,11 +471,13 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     )
     from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
     from katrain.web.kifu.raw_event_translation import eligible_literal_raw_name, LINKED_SGF_LITERAL_BASIS
+    from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION, raw_scope_rows_many
 
     query = (
         _approved_names(db, KifuRawEventName, "raw_event_id", lang=lang)
         .join(KifuRawEventValue, KifuRawEventName.raw_event_id == KifuRawEventValue.id)
-        .filter(KifuRawEventValue.review_status == "approved")
+        .filter(or_(KifuRawEventValue.review_status == "approved",
+                    KifuRawEventName.generation_rule_version == FIRST_PASS_VERSION))
     )
     if values is not None:
         query = query.filter(KifuRawEventValue.raw_value.in_(values))
@@ -439,7 +513,19 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
             )
         }
     result = []
+    first_pass_scopes = raw_scope_rows_many(db.connection(), {
+        raw for name, raw, _evidence, _owner in rows if name.generation_rule_version == FIRST_PASS_VERSION})
     for name, raw, evidence, raw_owner in rows:
+        if name.generation_rule_version == FIRST_PASS_VERSION:
+            payload = evidence.research_payload
+            research = payload.get("research") if isinstance(payload, dict) else None
+            scope = research.get("raw_scope") if isinstance(research, dict) else None
+            if (not isinstance(scope, dict) or scope.get("raw_value") != raw
+                    or raw_owner.raw_value != raw):
+                continue
+            if scope.get("slots") == first_pass_scopes[raw]:
+                result.append((name, raw, {"first_pass": scope["slots"]}))
+            continue
         if name.decision_kind == "translated":
             payload = evidence.research_payload
             research = payload.get("research") if isinstance(payload, dict) else None
@@ -596,6 +682,20 @@ def _raw_event_map(rows, albums, selected_events, *, approvals=False, selected_i
     result = {}
     for name, raw, composition in rows:
         value = (name.decision_kind, name.evidence_id) if approvals else name.display_name
+        if isinstance(composition, dict) and "first_pass" in composition:
+            slots = {(row["album_id"], row["slot"]): row for row in composition["first_pass"]}
+            for album in albums:
+                selected = selected_events.get(album.id)
+                slot = "selected_event" if selected is not None else "event"
+                member = slots.get((album.id, slot))
+                if (member is None or not member["approved"] or member["duplicate_of_id"] is not None
+                        or member["list_hidden_reason"] is not None):
+                    continue
+                actual_raw, actual_event_id = selected if selected is not None else (album.event, album.event_id)
+                if (actual_raw == raw and actual_event_id == member["event_id"]
+                        and (selected is not None or album.id not in selected_ids)):
+                    result[(album.id, raw, actual_event_id)] = value
+            continue
         if name.decision_kind == "translated":
             if isinstance(composition, dict) and "linked_literal" in composition:
                 for album in albums:
@@ -642,6 +742,17 @@ def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     rows = _approved_raw_event_names(db, name_ids=name_ids)
     linked_members = _linked_live_members(db, rows)
     for name, raw, composition in rows:
+        if isinstance(composition, dict) and "first_pass" in composition:
+            for item in composition["first_pass"]:
+                if (item["slot"] != "event" or not item["approved"]
+                        or item["duplicate_of_id"] is not None or item["list_hidden_reason"] is not None):
+                    continue
+                clauses.append(and_(KifuAlbum.id == item["album_id"], KifuAlbum.event == raw,
+                                    KifuAlbum.event_id == item["event_id"]
+                                    if item["event_id"] is not None else KifuAlbum.event_id.is_(None),
+                                    KifuAlbum.duplicate_of_id.is_(None),
+                                    ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id))))
+            continue
         if name.decision_kind == "translated":
             if isinstance(composition, dict) and "linked_literal" in composition:
                 ids = [album_id for album_id, member_raw, _ in linked_members if member_raw == raw]
@@ -766,10 +877,17 @@ def strict_selected_event_search_ids(
     if not selected_raws:
         return set()
     names_by_raw = {}
-    for name, raw, _ in _approved_raw_event_names(db, values=selected_raws):
+    first_pass_by_id = {}
+    for name, raw, proof in _approved_raw_event_names(db, values=selected_raws):
         if name.decision_kind == "translated":
             continue
         names_by_raw.setdefault(raw, []).append(name)
+        if isinstance(proof, dict) and "first_pass" in proof:
+            first_pass_by_id[name.id] = {(item["album_id"], item["event_id"])
+                                           for item in proof["first_pass"]
+                                           if item["slot"] == "selected_event" and item["approved"]
+                                           and item["duplicate_of_id"] is None
+                                           and item["list_hidden_reason"] is None}
     raw_matches = {
         raw
         for raw, names in names_by_raw.items()
@@ -813,8 +931,9 @@ def strict_selected_event_search_ids(
         album_id: [
             name for name in names_by_raw.get(raw, [])
             if query.lower() in raw.lower() or name.id in raw_name_ids
+            if name.id not in first_pass_by_id or (album_id, event_id) in first_pass_by_id[name.id]
         ]
-        for album_id, (raw, _) in verified.items()
+        for album_id, (raw, event_id) in verified.items()
     }
     languages = {name.lang for names in candidate_names.values() for name in names if name.lang in LANGUAGES}
     # An identity match can use any complete current event approval. A raw-name
@@ -885,7 +1004,8 @@ def strict_display_maps(
             linked_members = _linked_live_members(db, rows, candidate_ids={album.id for album in albums})
             selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
                 KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
-                if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
+                if any(name.decision_kind == "translated" or name.generation_rule_version == name_first_pass.VERSION
+                       for name, _, _ in rows) else set())
             raw_maps.append(
                 _raw_event_map(rows, albums, selected_events, selected_ids=selected_ids,
                                linked_members=linked_members)
@@ -981,7 +1101,8 @@ def strict_slot_approvals(
             linked_members = _linked_live_members(db, rows, candidate_ids={album.id for album in albums})
             selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
                 KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
-                if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
+                if any(name.decision_kind == "translated" or name.generation_rule_version == name_first_pass.VERSION
+                       for name, _, _ in rows) else set())
             raw_approvals.append(
                 _raw_event_map(rows, albums, selected_events, approvals=True, selected_ids=selected_ids,
                                linked_members=linked_members)

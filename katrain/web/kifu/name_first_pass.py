@@ -1,0 +1,221 @@
+"""One authorized generated-name profile; no external publication is claimed."""
+
+import re
+
+VERSION = "user_authorized_first_pass_v1"
+LEVEL = "generated_first_pass"
+LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko"})
+METHODS = frozenset({"retain_original", "orthographic_conversion", "transliteration", "translation"})
+READABLE_RAW_CATEGORIES = frozenset({"formal_event_candidate", "game_description", "unclassified_pending"})
+_HASH = re.compile(r"^[0-9a-f]{64}$")
+
+
+def is_first_pass(row):
+    return isinstance(row, dict) and any(row.get(key) == value for key, value in (
+        ("source_basis", VERSION), ("generation_rule_version", VERSION),
+        ("scope_status", LEVEL), ("verification_level", LEVEL)))
+
+
+def validate_research(record):
+    if not (record.get("source_basis") == VERSION and record.get("scope_status") == LEVEL
+            and record.get("verification_level") == LEVEL and record.get("lang") in LANGUAGES):
+        raise ValueError("first-pass markers or language differ")
+    if any(key in record for key in (
+        "source_checks", "negative_closure", "original_language_basis_url", "reading_basis_url",
+        "positive_generation", "positive_zh_ko", "translation_support", "sgf_literal_evidence",
+        "primary_orthographic", "transliteration")):
+        raise ValueError("first pass cannot claim sourced or negative-search evidence")
+    if record.get("generation_rule_version") not in {None, VERSION}:
+        raise ValueError("first pass cannot mix another generation rule")
+    owner = record.get("owner")
+    source = record.get("source_input")
+    generation = record.get("generation")
+    if not (isinstance(owner, dict) and owner.get("kind") in {"player", "event", "raw_event"}
+            and type(owner.get("id")) is int and owner["id"] > 0
+            and isinstance(source, dict) and source.get("owner") == owner
+            and source.get("kind") in {"catalog_canonical", "existing_locale", "raw_event_literal"}
+            and isinstance(source.get("text"), str) and source["text"]
+            and _HASH.fullmatch(str(source.get("owner_preimage_sha256", "")))
+            and record.get("original_name") == source["text"]
+            and isinstance(record.get("original_language"), str) and record["original_language"]
+            and isinstance(record.get("candidate_name"), str) and record["candidate_name"]
+            and isinstance(generation, dict) and generation.get("method") in METHODS):
+        raise ValueError("first pass needs exact owner, original, method and candidate")
+    if source["kind"] == "catalog_canonical" and owner["kind"] not in {"player", "event"}:
+        raise ValueError("canonical source must belong to player or event")
+    if source["kind"] == "raw_event_literal" and owner["kind"] != "raw_event":
+        raise ValueError("raw literal source needs raw event owner")
+    if source["kind"] == "raw_event_literal":
+        from katrain.web.kifu.name_parse import parse_event
+        if parse_event(source["text"], None).category not in READABLE_RAW_CATEGORIES:
+            raise ValueError("first pass cannot rename a program, generic, damaged or archive value")
+    if source["kind"] == "existing_locale":
+        if not (source.get("lang") in LANGUAGES and source["lang"] != record["lang"]
+                and type(source.get("name_id")) is int and source["name_id"] > 0
+                and _HASH.fullmatch(str(source.get("name_preimage_sha256", "")))
+                and _HASH.fullmatch(str(source.get("evidence_preimage_sha256", "")))):
+            raise ValueError("existing locale needs exact same-owner name and evidence")
+    if generation["method"] == "retain_original" and record["candidate_name"] != source["text"]:
+        raise ValueError("retained original differs from output")
+    if generation.get("reading_basis") not in {None, "model_inferred", "existing_locale"}:
+        raise ValueError("first pass cannot claim sourced reading")
+    if owner["kind"] == "raw_event":
+        scope = record.get("raw_scope")
+        if not (isinstance(scope, dict) and scope.get("raw_value") == source["text"]
+                and isinstance(scope.get("slots"), list) and scope["slots"]):
+            raise ValueError("raw title needs finite current occurrence scope")
+        slots = scope["slots"]
+        if (slots != sorted(slots, key=lambda item: (item.get("album_id", 0), item.get("slot", "")))
+                or len({(item.get("album_id"), item.get("slot")) for item in slots}) != len(slots)
+                or any(not isinstance(item, dict) or type(item.get("album_id")) is not int
+                       or item.get("slot") not in {"event", "selected_event"}
+                       or item.get("raw_value") != source["text"]
+                       or item.get("event_id") is not None and type(item.get("event_id")) is not int
+                       or not isinstance(item.get("approved"), bool)
+                       for item in slots)):
+            raise ValueError("raw title slots must be sorted exact current occurrences")
+    elif "raw_scope" in record:
+        raise ValueError("entity name cannot claim raw scope")
+    return record
+
+
+def raw_scope_rows(conn, raw):
+    """Capture all current direct and selected occurrences of one literal raw title."""
+    return raw_scope_rows_many(conn, {raw})[raw]
+
+
+def raw_scope_rows_many(conn, raws):
+    """Capture a page or batch of literal scopes with shared database reads."""
+    from sqlalchemy import bindparam, select, text
+    from katrain.web.core.models_db import KifuAlbumEventSelection
+    from katrain.web.kifu.event_selection import verified_selection_rows
+
+    raws = set(raws)
+    if not raws:
+        return {}
+    physical = ("SELECT id, event, event_id, event_edition_id, duplicate_of_id, list_hidden_reason, source_path "
+                "FROM kifu_albums WHERE {column} IN :values")
+    direct = conn.execute(text(physical.format(column="event")).bindparams(
+        bindparam("values", expanding=True)), {"values": sorted(raws)}).mappings().all()
+    selected = conn.execute(select(KifuAlbumEventSelection.__table__).where(
+        KifuAlbumEventSelection.selected_raw.in_(raws))).mappings().all()
+    proofs = verified_selection_rows(conn, selected) if selected else {}
+    selected_ids = [row["album_id"] for row in selected]
+    selected_albums = {row["id"]: row for row in conn.execute(text(
+        "SELECT id, event, event_id, event_edition_id, duplicate_of_id, list_hidden_reason, source_path "
+        "FROM kifu_albums WHERE id IN :ids").bindparams(bindparam("ids", expanding=True)),
+        {"ids": selected_ids}).mappings()} if selected_ids else {}
+    result = {raw: [] for raw in raws}
+    for row in direct:
+        result[row["event"]].append({"album_id": row["id"], "slot": "event", "raw_value": row["event"],
+                       "event_id": row["event_id"], "event_edition_id": row["event_edition_id"],
+                       "duplicate_of_id": row["duplicate_of_id"],
+                       "list_hidden_reason": row["list_hidden_reason"], "source_path": row["source_path"],
+                       "approved": True})
+    for selection in selected:
+        row = selected_albums.get(selection["album_id"])
+        if row is None:
+            continue
+        proof = proofs.get(selection["album_id"])
+        raw = selection["selected_raw"]
+        result[raw].append({"album_id": row["id"], "slot": "selected_event", "raw_value": raw,
+                       "event_id": proof["event_id"] if proof else selection["event_id"],
+                       "event_edition_id": row["event_edition_id"],
+                       "duplicate_of_id": row["duplicate_of_id"],
+                       "list_hidden_reason": row["list_hidden_reason"], "source_path": row["source_path"],
+                       "approved": proof is not None})
+    return {raw: sorted(rows, key=lambda item: (item["album_id"], item["slot"]))
+            for raw, rows in result.items()}
+
+
+def validate_candidate(row, research):
+    if not (row.get("decision_kind") == "generated" and row.get("generation_rule_version") == VERSION
+            and research.get("source_basis") == VERSION
+            and row.get("display_name") == research.get("candidate_name")):
+        raise ValueError("first-pass generated candidate markers or output differ")
+    if row["owner"]["kind"] == "raw_event" and row.get("raw_value") != research["source_input"]["text"]:
+        raise ValueError("first-pass raw candidate differs from exact original")
+    if row.get("review_status") == "pending":
+        if "generated_review" in row:
+            raise ValueError("pending first pass cannot carry approval")
+        return row
+    if row.get("review_status") != "approved" or row.get("review_conclusion") != "approved_first_pass_display_and_source":
+        raise ValueError("first pass needs explicit approval")
+    review = row.get("generated_review")
+    if not (isinstance(review, dict) and review.get("decision") == "approve_generated_first_pass"
+            and all(review.get(key) == row.get(key) for key in (
+                "owner", "lang", "display_name", "research_sha256", "reviewer_id",
+                "reviewer_model", "reviewed_at"))):
+        raise ValueError("first pass needs exact independent display/source approval")
+    return row
+
+
+def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
+                       source_names=None, source_evidence=None, batch_members=None):
+    """A signed, applied creation with unchanged live name, evidence and source."""
+    from katrain.web.kifu.name_candidates import canonical_sha256
+
+    payload = evidence.get("research_payload")
+    if not isinstance(payload, dict):
+        return False
+    candidate, research, proof = (payload.get(key) for key in ("candidate", "research", "first_pass"))
+    if not all(isinstance(value, dict) for value in (candidate, research, proof, batch, owner)):
+        return False
+    try:
+        validate_research(research)
+        validate_candidate(candidate, research)
+    except (ValueError, KeyError, TypeError):
+        return False
+    artifact = batch.get("reviewed_artifact")
+    bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+    candidate_hash = canonical_sha256(candidate)
+    research_hash = canonical_sha256(research)
+    if (batch.get("status") != "applied" or not isinstance(bundle, dict)
+            or batch_members is None or candidate_hash not in batch_members[0]
+            or research_hash not in batch_members[1]
+            or proof != {"batch_id": batch["id"], "candidate_sha256": canonical_sha256(candidate),
+                         "research_sha256": research_hash, "verification_level": LEVEL,
+                         "raw_scope_sha256": canonical_sha256(research["raw_scope"])
+                         if owner_kind == "raw_event" else None}):
+        return False
+    owner_id = name.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id"}[owner_kind])
+    if (candidate.get("owner") != {"kind": owner_kind, "id": owner_id}
+            or name.get("lang") != candidate.get("lang")
+            or name.get("display_name") != candidate.get("display_name")
+            or name.get("decision_kind") != evidence.get("decision_kind") != "generated"
+            or name.get("generation_rule_version") != evidence.get("generation_rule_version") != VERSION
+            or name.get("revision") != evidence.get("revision")
+            or name.get("evidence_id") != evidence.get("id")
+            or evidence.get("candidate_name") != name.get("display_name")
+            or evidence.get("review_status") != "approved"
+            or canonical_sha256(owner) != research["source_input"]["owner_preimage_sha256"]):
+        return False
+    source = research["source_input"]
+    if source["kind"] == "catalog_canonical" and owner.get("canonical_name") != source["text"]:
+        return False
+    if source["kind"] == "raw_event_literal" and owner.get("raw_value") != source["text"]:
+        return False
+    if source["kind"] == "raw_event_literal" and owner.get("category") not in READABLE_RAW_CATEGORIES:
+        return False
+    if source["kind"] == "existing_locale":
+        existing = (source_names or {}).get(source["name_id"])
+        existing_evidence = (source_evidence or {}).get(existing.get("evidence_id")) if existing else None
+        if (not existing or not existing_evidence or existing.get("display_name") != source["text"]
+                or existing.get("lang") != source["lang"]
+                or existing.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id"}[owner_kind]) != owner_id
+                or existing.get("status") != "verified"
+                or existing_evidence.get("review_status") != "approved"
+                or canonical_sha256(existing) != source["name_preimage_sha256"]
+                or canonical_sha256(existing_evidence) != source["evidence_preimage_sha256"]):
+            return False
+    evidence_change = changes.get(("kifu_name_research_evidence", evidence["id"]))
+    name_change = changes.get(({
+        "player": "kifu_player_names", "event": "kifu_event_names", "raw_event": "kifu_raw_event_names"
+    }[owner_kind], name["id"]))
+    return (isinstance(evidence_change, dict) and isinstance(name_change, dict)
+            and evidence_change.get("before_image") is None
+            and evidence_change.get("after_image") == evidence
+            and name_change.get("after_image") == name
+            and candidate.get("name_preimage_sha256") == (
+                canonical_sha256(name_change["before_image"])
+                if name_change["before_image"] is not None else None))

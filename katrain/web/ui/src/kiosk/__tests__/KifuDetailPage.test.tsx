@@ -106,13 +106,23 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     await waitLoaded();
   });
 
-  it('连不上云端(503)时说「要联网」,不印原文;重试照样再拉一次', async () => {
-    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+  it('连不上云端时提示检查连接或重试，不断言盒子离线', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503', { code: 'kifu_cloud_unreachable' }));
     renderPage();
-    expect(await screen.findByText('这一局要联网才能读')).toBeInTheDocument();
+    expect(await screen.findByText('无法连接棋谱库')).toBeInTheDocument();
+    expect(screen.getByText('请检查网络连接或稍后重试。')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitLoaded();
+  });
+
+  it('云端服务报错时提示暂不可用，不误报断网', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503', { code: 'kifu_cloud_error' }));
+    renderPage();
+    expect(await screen.findByText('棋谱库暂时不可用')).toBeInTheDocument();
+    expect(screen.getByText('云端服务暂时出了问题，请稍后重试。')).toBeInTheDocument();
+    expect(screen.queryByText('无法连接棋谱库')).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 
   it('题头写的是两位棋手、段位和这一局的元数据', async () => {

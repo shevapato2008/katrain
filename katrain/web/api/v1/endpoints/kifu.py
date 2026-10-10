@@ -45,11 +45,12 @@ _HISTORICAL_PLAYER_ALIASES = {
 
 
 async def _from_dispatcher(call, not_found_detail: str):
-    """board 模式走云端。**连不上是 503,不是空库**(见 `RepositoryDispatcher.kifu_list_albums` 那段注释)。"""
+    """Board proxy: distinguish cloud HTTP failure from an unreachable cloud."""
     try:
         return await call()
     except RemoteServiceUnavailableError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        code = "kifu_cloud_error" if isinstance(exc.__cause__, httpx.HTTPStatusError) else "kifu_cloud_unreachable"
+        raise HTTPException(status_code=503, detail={"code": code, "message": str(exc)}) from exc
     except httpx.HTTPStatusError as exc:
         status = exc.response.status_code
         detail = not_found_detail if status == 404 else f"Remote kifu request failed ({status})"

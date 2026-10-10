@@ -6798,16 +6798,22 @@ msgid "baipu:wrong_title"
 msgstr "置き間違い · 正しくは {c}"
 
 msgid "kifu:detail_offline"
-msgstr "この対局を読むにはネット接続が必要です"
+msgstr "棋譜ライブラリに接続できません"
 
 msgid "kifu:detail_offline_hint"
-msgstr "棋譜ライブラリはクラウドにあり、この端末は今接続できません。"
+msgstr "ネットワーク接続を確認するか、しばらくしてから再試行してください。"
 
 msgid "kifu:list_offline"
-msgstr "棋譜ライブラリの検索にはネット接続が必要です"
+msgstr "棋譜ライブラリに接続できません"
 
 msgid "kifu:list_offline_hint"
-msgstr "この端末は今クラウドに接続できません。並べた棋譜と読み込んだ SGF は影響を受けません。"
+msgstr "ネットワーク接続を確認するか、しばらくしてから再試行してください。"
+
+msgid "kifu:service_unavailable"
+msgstr "棋譜ライブラリは一時的に利用できません"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "クラウドサービスで問題が発生しています。しばらくしてから再試行してください。"
 
 msgid "kifu:wrong_size_reason"
 msgstr "これは {n} 路の棋譜です —— 実物の盤は 19 路のみ並べられます"

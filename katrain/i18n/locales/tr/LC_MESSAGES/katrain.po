@@ -7068,18 +7068,22 @@ msgid "baipu:wrong_title"
 msgstr "Yanlış yer · {c} olmalı"
 
 msgid "kifu:detail_offline"
-msgstr "Bu oyunu açmak için internet bağlantısı gerekir"
+msgstr "Oyun arşivine bağlanılamıyor"
 
 msgid "kifu:detail_offline_hint"
-msgstr "Kayıt kitaplığı bulutta ve bu cihaz şu anda ona ulaşamıyor."
+msgstr "Ağ bağlantınızı kontrol edin veya daha sonra yeniden deneyin."
 
 msgid "kifu:list_offline"
-msgstr "Kayıt kitaplığında arama için internet bağlantısı gerekir"
+msgstr "Oyun arşivine bağlanılamıyor"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Bu cihaz şu anda buluta ulaşamıyor. Dizdiğiniz kayıtlar ve içe aktarılan "
-"SGF'ler etkilenmez."
+msgstr "Ağ bağlantınızı kontrol edin veya daha sonra yeniden deneyin."
+
+msgid "kifu:service_unavailable"
+msgstr "Oyun arşivi geçici olarak kullanılamıyor"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "Bulut hizmeti geçici olarak kullanılamıyor. Lütfen biraz sonra yeniden deneyin."
 
 msgid "kifu:wrong_size_reason"
 msgstr "Bu {n}×{n} bir kayıt — gerçek tahta yalnızca 19×19 alır"

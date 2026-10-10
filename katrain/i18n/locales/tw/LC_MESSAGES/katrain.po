@@ -6773,16 +6773,22 @@ msgid "baipu:wrong_title"
 msgstr "放錯了 · 應該在 {c}"
 
 msgid "kifu:detail_offline"
-msgstr "這一局要連網才能讀"
+msgstr "無法連線至棋譜庫"
 
 msgid "kifu:detail_offline_hint"
-msgstr "棋譜庫在雲端，這台盒子現在連不上。"
+msgstr "請檢查網路連線，或稍後再試。"
 
 msgid "kifu:list_offline"
-msgstr "棋譜庫要連網才能搜"
+msgstr "無法連線至棋譜庫"
 
 msgid "kifu:list_offline_hint"
-msgstr "這台盒子現在連不上雲端。擺過的譜和匯入的 SGF 不受影響。"
+msgstr "請檢查網路連線，或稍後再試。"
+
+msgid "kifu:service_unavailable"
+msgstr "棋譜庫暫時無法使用"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "雲端服務暫時出了問題，請稍後再試。"
 
 msgid "kifu:wrong_size_reason"
 msgstr "這是 {n} 路的譜 —— 實體盤只擺得了 19 路"

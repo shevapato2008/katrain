@@ -6730,16 +6730,22 @@ msgid "baipu:wrong_title"
 msgstr "잘못 놓았습니다 · {c}에 놓아야 합니다"
 
 msgid "kifu:detail_offline"
-msgstr "이 대국을 읽으려면 인터넷 연결이 필요합니다"
+msgstr "기보 라이브러리에 연결할 수 없습니다"
 
 msgid "kifu:detail_offline_hint"
-msgstr "기보 라이브러리는 클라우드에 있는데, 이 기기는 지금 연결할 수 없습니다."
+msgstr "네트워크 연결을 확인하거나 잠시 후 다시 시도해 주세요."
 
 msgid "kifu:list_offline"
-msgstr "기보 라이브러리를 검색하려면 인터넷 연결이 필요합니다"
+msgstr "기보 라이브러리에 연결할 수 없습니다"
 
 msgid "kifu:list_offline_hint"
-msgstr "이 기기는 지금 클라우드에 연결할 수 없습니다. 놓아 본 기보와 가져온 SGF는 영향을 받지 않습니다."
+msgstr "네트워크 연결을 확인하거나 잠시 후 다시 시도해 주세요."
+
+msgid "kifu:service_unavailable"
+msgstr "기보 라이브러리를 일시적으로 사용할 수 없습니다"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "클라우드 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
 
 msgid "kifu:wrong_size_reason"
 msgstr "{n}줄 기보입니다 — 실물 바둑판은 19줄만 놓을 수 있습니다"

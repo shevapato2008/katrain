@@ -93,8 +93,7 @@ const KifuDetailPage = () => {
   const [steps, setSteps] = useState<BaipuStep[] | null>(null);
   const [boardSize, setBoardSize] = useState(19);
   const [error, setError] = useState<string | null>(null);
-  /** 读不到是不是「连不上云端」(503)—— 棋谱库只在云端。 */
-  const [offline, setOffline] = useState(false);
+  const [failure, setFailure] = useState<'unreachable' | 'service' | 'other'>('other');
   const [reload, setReload] = useState(0);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
   const nowRef = useRef<HTMLSpanElement | null>(null);
@@ -122,7 +121,11 @@ const KifuDetailPage = () => {
       .catch((e: Error) => {
         if (!cancelled) {
           setError(e.message);
-          setOffline(e instanceof ApiError && e.status === 503);
+          const detail = e instanceof ApiError ? e.detail : null;
+          const unreachable = e instanceof ApiError && e.status === 503
+            && typeof detail === 'object' && detail !== null
+            && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
+          setFailure(unreachable ? 'unreachable' : e instanceof ApiError && e.status >= 500 ? 'service' : 'other');
         }
       });
     return () => { cancelled = true; };
@@ -262,8 +265,16 @@ const KifuDetailPage = () => {
 
         {error ? (
           <div className="empty" data-testid="kifu-detail-error">
-            <h4>{offline ? t('kifu:detail_offline', '这一局要联网才能读') : t('kifu:load_failed', '这一局读不到')}</h4>
-            <p>{offline ? t('kifu:detail_offline_hint', '棋谱库在云端，这台盒子现在连不上。') : error}</p>
+            <h4>{failure === 'unreachable'
+              ? t('kifu:detail_offline', '无法连接棋谱库')
+              : failure === 'service'
+                ? t('kifu:service_unavailable', '棋谱库暂时不可用')
+                : t('kifu:load_failed', '这一局读不到')}</h4>
+            <p>{failure === 'unreachable'
+              ? t('kifu:detail_offline_hint', '请检查网络连接或稍后重试。')
+              : failure === 'service'
+                ? t('kifu:service_unavailable_hint', '云端服务暂时出了问题，请稍后重试。')
+                : error}</p>
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"

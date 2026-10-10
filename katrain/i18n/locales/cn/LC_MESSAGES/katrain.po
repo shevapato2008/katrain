@@ -6629,16 +6629,22 @@ msgid "baipu:wrong_title"
 msgstr "放错了 · 应该在 {c}"
 
 msgid "kifu:detail_offline"
-msgstr "这一局要联网才能读"
+msgstr "无法连接棋谱库"
 
 msgid "kifu:detail_offline_hint"
-msgstr "棋谱库在云端，这台盒子现在连不上。"
+msgstr "请检查网络连接或稍后重试。"
 
 msgid "kifu:list_offline"
-msgstr "棋谱库要联网才能搜"
+msgstr "无法连接棋谱库"
 
 msgid "kifu:list_offline_hint"
-msgstr "这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。"
+msgstr "请检查网络连接或稍后重试。"
+
+msgid "kifu:service_unavailable"
+msgstr "棋谱库暂时不可用"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "云端服务暂时出了问题，请稍后重试。"
 
 msgid "kifu:wrong_size_reason"
 msgstr "这是 {n} 路的谱 —— 实体盘只摆得了 19 路"

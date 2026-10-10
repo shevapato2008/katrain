@@ -7080,20 +7080,22 @@ msgid "baipu:wrong_title"
 msgstr "Mal placée · elle va en {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Cette partie nécessite une connexion Internet"
+msgstr "Impossible de se connecter à la bibliothèque de parties"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"La bibliothèque de kifus est dans le cloud, et cet appareil ne peut pas la "
-"joindre pour l'instant."
+msgstr "Vérifiez votre connexion réseau ou réessayez plus tard."
 
 msgid "kifu:list_offline"
-msgstr "La recherche de kifus nécessite une connexion Internet"
+msgstr "Impossible de se connecter à la bibliothèque de parties"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Cet appareil ne peut pas joindre le cloud pour l'instant. Les kifus rejoués "
-"et les SGF importés ne sont pas concernés."
+msgstr "Vérifiez votre connexion réseau ou réessayez plus tard."
+
+msgid "kifu:service_unavailable"
+msgstr "Bibliothèque de parties temporairement indisponible"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "Le service cloud est temporairement indisponible. Réessayez plus tard."
 
 msgid "kifu:wrong_size_reason"
 msgstr "C'est un kifu {n}×{n} — le plateau réel n'accepte que le 19×19"

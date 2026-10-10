@@ -7035,19 +7035,22 @@ msgid "baipu:wrong_title"
 msgstr "Wrong spot · it goes on {c}"
 
 msgid "kifu:detail_offline"
-msgstr "This game needs a network connection to open"
+msgstr "Can't connect to the record library"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"The record library is in the cloud, and this box can't reach it right now."
+msgstr "Check your network connection or try again later."
 
 msgid "kifu:list_offline"
-msgstr "Searching the record library needs a network connection"
+msgstr "Can't connect to the record library"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"This box can't reach the cloud right now. Records you've replayed and "
-"imported SGFs aren't affected."
+msgstr "Check your network connection or try again later."
+
+msgid "kifu:service_unavailable"
+msgstr "Record library temporarily unavailable"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "The cloud service is temporarily unavailable. Please try again shortly."
 
 msgid "kifu:wrong_size_reason"
 msgstr "This is a {n}×{n} record — the physical board only takes 19×19"

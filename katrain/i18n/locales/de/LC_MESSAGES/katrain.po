@@ -7100,20 +7100,22 @@ msgid "baipu:wrong_title"
 msgstr "Falsch gesetzt · gehört auf {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Für diese Partie ist eine Internetverbindung nötig"
+msgstr "Verbindung zum Partienarchiv nicht möglich"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"Die Kifu-Bibliothek liegt in der Cloud, und dieses Gerät erreicht sie gerade"
-" nicht."
+msgstr "Prüfe die Netzwerkverbindung oder versuche es später erneut."
 
 msgid "kifu:list_offline"
-msgstr "Die Kifu-Suche braucht eine Internetverbindung"
+msgstr "Verbindung zum Partienarchiv nicht möglich"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Dieses Gerät erreicht die Cloud gerade nicht. Nachgestellte Kifus und "
-"importierte SGFs sind nicht betroffen."
+msgstr "Prüfe die Netzwerkverbindung oder versuche es später erneut."
+
+msgid "kifu:service_unavailable"
+msgstr "Partienarchiv vorübergehend nicht verfügbar"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "Der Cloud-Dienst ist vorübergehend nicht verfügbar. Bitte versuche es später erneut."
 
 msgid "kifu:wrong_size_reason"
 msgstr "Das ist ein {n}×{n}-Kifu — das echte Brett kann nur 19×19"

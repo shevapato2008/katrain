@@ -6934,20 +6934,22 @@ msgid "baipu:wrong_title"
 msgstr "Mal colocada · va en {c}"
 
 msgid "kifu:detail_offline"
-msgstr "Esta partida necesita conexión a internet para abrirse"
+msgstr "No se puede conectar a la biblioteca de partidas"
 
 msgid "kifu:detail_offline_hint"
-msgstr ""
-"La biblioteca de partidas está en la nube y este equipo no puede conectarse "
-"ahora."
+msgstr "Comprueba la conexión de red o vuelve a intentarlo más tarde."
 
 msgid "kifu:list_offline"
-msgstr "Buscar en la biblioteca de partidas requiere conexión a internet"
+msgstr "No se puede conectar a la biblioteca de partidas"
 
 msgid "kifu:list_offline_hint"
-msgstr ""
-"Este equipo no puede conectarse a la nube ahora. Las partidas reproducidas y"
-" los SGF importados no se ven afectados."
+msgstr "Comprueba la conexión de red o vuelve a intentarlo más tarde."
+
+msgid "kifu:service_unavailable"
+msgstr "La biblioteca de partidas no está disponible temporalmente"
+
+msgid "kifu:service_unavailable_hint"
+msgstr "El servicio en la nube no está disponible temporalmente. Vuelve a intentarlo más tarde."
 
 msgid "kifu:wrong_size_reason"
 msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"

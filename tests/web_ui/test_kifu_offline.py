@@ -1,8 +1,8 @@
 """board 模式棋谱库:连不上云端是 503,不是空库(N9)。
 
 以前 `RepositoryDispatcher.kifu_*` 离线回空列表 / None ⇒ 列表端点 200 空、详情端点 404,
-屏 15 写「没有对得上的谱 · 换棋手名再试」—— 人会去反复换关键词,而真实原因是没网。
-判据落在**端点给出的状态码**上:前端靠 503 分出「要联网」和「没搜到」。
+屏 15 写「没有对得上的谱 · 换棋手名再试」—— 人会去反复换关键词,而真实原因是云端不可达。
+现在端点保留 503 并在 detail 中区分连接失败与云端 HTTP 错误,前端给出相应提示。
 """
 
 from types import SimpleNamespace
@@ -49,7 +49,7 @@ async def test_offline_list_is_503_not_an_empty_library():
     with pytest.raises(HTTPException) as exc:
         await kifu.list_kifu_albums(request=_request(_dispatcher(online=False)), q=None, page=1, page_size=6, db=None)
     assert exc.value.status_code == 503
-    assert exc.value.detail == "Remote kifu service unavailable"
+    assert exc.value.detail == {"code": "kifu_cloud_unreachable", "message": "Remote kifu service unavailable"}
 
 
 @pytest.mark.asyncio
@@ -65,6 +65,7 @@ async def test_cloud_unreachable_is_503():
     with pytest.raises(HTTPException) as exc:
         await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6, db=None)
     assert exc.value.status_code == 503
+    assert exc.value.detail["code"] == "kifu_cloud_unreachable"
 
 
 @pytest.mark.asyncio
@@ -93,7 +94,7 @@ async def test_online_passes_through():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("endpoint", ["list", "detail"])
-@pytest.mark.parametrize("upstream_status, expected_status", [(403, 403), (500, 503)])
+@pytest.mark.parametrize("upstream_status, expected_status", [(403, 403), (500, 503), (503, 503)])
 async def test_cloud_errors_keep_4xx_and_map_5xx(endpoint, upstream_status, expected_status):
     remote_call = AsyncMock(side_effect=_status_error(upstream_status))
     d = _dispatcher(**{"search" if endpoint == "list" else "get": remote_call})
@@ -104,5 +105,6 @@ async def test_cloud_errors_keep_4xx_and_map_5xx(endpoint, upstream_status, expe
             await kifu.get_kifu_album(request=_request(d), album_id=7, db=None)
     assert exc.value.status_code == expected_status
     assert exc.value.detail == (
-        "Remote kifu service unavailable" if expected_status == 503 else "Remote kifu request failed (403)"
+        {"code": "kifu_cloud_error", "message": "Remote kifu service unavailable"}
+        if expected_status == 503 else "Remote kifu request failed (403)"
     )

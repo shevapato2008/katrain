@@ -91,8 +91,7 @@ const KifuPage = () => {
   const [albumsLang, setAlbumsLang] = useState<string | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [listError, setListError] = useState<string | null>(null);
-  /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
-  const [listOffline, setListOffline] = useState(false);
+  const [listFailure, setListFailure] = useState<'unreachable' | 'service' | 'other'>('other');
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
@@ -127,7 +126,11 @@ const KifuPage = () => {
       .catch((err: Error) => {
         if (!cancelled) {
           setListError(err.message);
-          setListOffline(err instanceof ApiError && err.status === 503);
+          const detail = err instanceof ApiError ? err.detail : null;
+          const unreachable = err instanceof ApiError && err.status === 503
+            && typeof detail === 'object' && detail !== null
+            && 'code' in detail && detail.code === 'kifu_cloud_unreachable';
+          setListFailure(unreachable ? 'unreachable' : err instanceof ApiError && err.status >= 500 ? 'service' : 'other');
           setAlbums(null);
         }
       });
@@ -245,10 +248,16 @@ const KifuPage = () => {
           </div>
           {listError ? (
             <div className="empty">
-              <h4>{listOffline ? t('kifu:list_offline', '棋谱库要联网才能搜') : t('kifu:list_failed', '棋谱库读不到')}</h4>
-              <p>{listOffline
-                ? t('kifu:list_offline_hint', '这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。')
-                : listError}</p>
+              <h4>{listFailure === 'unreachable'
+                ? t('kifu:list_offline', '无法连接棋谱库')
+                : listFailure === 'service'
+                  ? t('kifu:service_unavailable', '棋谱库暂时不可用')
+                  : t('kifu:list_failed', '棋谱库读不到')}</h4>
+              <p>{listFailure === 'unreachable'
+                ? t('kifu:list_offline_hint', '请检查网络连接或稍后重试。')
+                : listFailure === 'service'
+                  ? t('kifu:service_unavailable_hint', '云端服务暂时出了问题，请稍后重试。')
+                  : listError}</p>
               <button
                 type="button"
                 className="kiosk-btn kiosk-btn--pill pill"

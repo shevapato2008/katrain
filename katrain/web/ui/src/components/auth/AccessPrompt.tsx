@@ -58,6 +58,6 @@ export function AccessPrompt({ open, surface, status, feature, onPrimary, onBack
         {t(checking ? 'auth:checking' : unavailable ? 'auth:retry' : strictBox ? 'auth:box_login' : 'auth:login_continue', checking ? '正在确认' : unavailable ? '重试' : strictBox ? '去盒子主页登录' : '登录并继续')}
       </button>
     </div>
-    {status === 'guest' && feature === 'hall' && !action && <p className="access-quiet">{t('auth:hall_privacy_note', '未登录时不显示棋友名单和进行中的私人对局。')}</p>}
+    {status === 'guest' && feature === 'hall' && !action && <p className="access-quiet">{t('auth:hall_privacy_note', '未登录时不显示棋友名单和进行中的对局。')}</p>}
   </Dialog>;
 }

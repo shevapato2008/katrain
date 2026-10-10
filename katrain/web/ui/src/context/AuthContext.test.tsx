@@ -402,4 +402,35 @@ describe('AuthContext', () => {
     expect(result.current.isLoading).toBe(false);
   });
 
+  nonStrictIt.each([200, 401])('a retry started during login cannot replace the new account after late /me %s', async (lateStatus) => {
+    localStorage.setItem('token', 'old-token');
+    mockFetch.mockImplementationOnce(() => notOk(503));
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.status).toBe('unavailable'));
+    let finishLogin: (value: Response) => void = () => {};
+    let finishRetry: (value: Response) => void = () => {};
+    mockFetch.mockImplementation((input, init) => {
+      if (String(input).endsWith('/login')) return new Promise((resolve) => { finishLogin = resolve; });
+      const headers = init?.headers as Record<string, string> | undefined;
+      if (headers?.Authorization === 'Bearer new-token') return okJson(meResponse);
+      if (headers?.Authorization === 'Bearer old-token') return new Promise((resolve) => { finishRetry = resolve; });
+      return notOk(401);
+    });
+    let loginPending: Promise<void>;
+    let retryPending: Promise<void>;
+    act(() => { loginPending = result.current.login('testuser', 'password'); });
+    act(() => { retryPending = result.current.retry(); });
+    await act(async () => { finishLogin(await okJson({ access_token: 'new-token' })); await loginPending!; });
+    expect(result.current.status).toBe('authenticated');
+    await act(async () => {
+      finishRetry(await (lateStatus === 401 ? notOk(401) : okJson({ ...meResponse, id: 99, uuid: 'old', username: 'old' })));
+      await retryPending!;
+    });
+    expect(result.current.status).toBe('authenticated');
+    expect(result.current.user?.username).toBe('testuser');
+    expect(result.current.token).toBe('new-token');
+    expect(localStorage.getItem('token')).toBe('new-token');
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
 });

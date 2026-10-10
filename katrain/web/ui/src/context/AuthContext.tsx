@@ -157,6 +157,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const userData: User = await meRes.json();
             // A logout or newer login owns the state even if this request settles later.
             if (generation.current !== requestGeneration) return;
+            // A retry may have started while login was in flight. Retire that
+            // probe before committing the new account or its saved credential.
+            invalidatePending();
             localStorage.setItem('token', newToken);
             hadIdentity.current = true;
             setUser(userData);

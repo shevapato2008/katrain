@@ -1385,6 +1385,13 @@ def validate_bundle(
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
+            from katrain.web.kifu.name_first_pass import shared_display_candidate
+            raw_group = [row for row in group if row["owner"]["kind"] == "raw_player"]
+            canonical_group = [row for row in group if row["owner"]["kind"] == "player"]
+            if (raw_group and len(canonical_group) <= 1 and len(raw_group) + len(canonical_group) == len(group)
+                    and all(shared_display_candidate(row, (declarations or {}).get(
+                        _owner_token(row["owner"]), {}).get("raw_display_scope")) for row in raw_group)):
+                continue
             if any(row.get("generation_rule_version") == "user_authorized_first_pass_v1" for row in group):
                 errors.append(f"first-pass name collision: {lang}:{name} owners={owners}")
                 continue

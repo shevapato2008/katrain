@@ -288,14 +288,17 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
                   "first pass cannot replace verified or evidence-backed name")
 
 
-def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: dict[str, dict]) -> None:
+def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: dict[str, dict], owners: list[dict]) -> None:
     """Bind every generated source to the current complete owner/source images."""
-    from katrain.web.kifu.name_first_pass import VERSION, READABLE_RAW_CATEGORIES, raw_scope_rows_many
+    from katrain.web.kifu.name_first_pass import (
+        VERSION, READABLE_RAW_CATEGORIES, raw_scope_rows_many, raw_player_scope_live,
+    )
 
     raw_values = {research_by_hash[candidate["research_sha256"]]["source_input"]["text"]
                   for candidate in candidates if candidate.get("generation_rule_version") == VERSION
                   and candidate["owner"]["kind"] == "raw_event"}
     raw_scopes = raw_scope_rows_many(conn, raw_values)
+    raw_player_occurrences = {}
 
     for candidate in candidates:
         if candidate.get("generation_rule_version") != VERSION:
@@ -319,6 +322,25 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
                   "first-pass raw source is classified as a program, generic, damaged or archive value")
             _fail(research["raw_scope"]["slots"] == raw_scopes[source["text"]],
                   "first-pass raw occurrence scope changed")
+        elif kind == "raw_player_literal":
+            _fail(live_owner["raw_value"] == source["text"] and live_owner["category"] == "readable_unlinked"
+                  and live_owner["review_status"] in {"pending", "approved"}
+                  and parse_player(source["text"], None).category == "readable_unlinked",
+                  "first-pass raw player source changed or is not readable")
+            declaration = next((item for item in owners if item.get("owner") == owner), None)
+            scope = declaration.get("raw_display_scope") if isinstance(declaration, dict) else None
+            if source["text"] not in raw_player_occurrences:
+                raw_player_occurrences[source["text"]] = list(conn.scalars(
+                    select(KifuAlbum.id).where(or_(KifuAlbum.player_black == source["text"],
+                                                   KifuAlbum.player_white == source["text"])).order_by(KifuAlbum.id)))
+            occurrence_ids = raw_player_occurrences[source["text"]]
+            _fail(isinstance(declaration, dict) and declaration.get("occurrence_album_ids") == occurrence_ids
+                  and declaration.get("occurrence_sha256") == canonical_sha256(occurrence_ids),
+                  "first-pass raw player complete occurrences changed")
+            _fail(isinstance(scope, dict) and canonical_sha256(scope) == research["raw_display_scope_sha256"]
+                  and candidate.get("raw_display_scope_sha256") == research["raw_display_scope_sha256"]
+                  and raw_player_scope_live(conn, scope),
+                  "first-pass raw player public unlinked scope changed")
         else:
             source_name = _image(conn, name_model.__table__, source["name_id"])
             _fail(source_name is not None and source_name[owner_column] == owner["id"]
@@ -674,7 +696,9 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
     return sorted(ids)
 
 
-def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_refs=None) -> None:
+def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), resolved_refs=None) -> None:
+    from katrain.web.kifu import name_first_pass
+    from katrain.web.kifu.identity import _approved_raw_player_names
     from katrain.web.kifu.raw_event_translation import (
         VERSION as RAW_TITLE_VERSION, eligible_literal_raw_name, eligible_raw_title_owner,
     )
@@ -692,6 +716,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
         for existing in names:
             existing_names[(existing["lang"], normalize_alias(existing["display_name"]))].append(
                 (kind, existing[owner_column], existing["evidence_id"], dict(existing)))
+    declarations = {_owner_ref(item["owner"]): item for item in owners}
+    qualified_raw = {}
     for row in candidates:
         if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}:
             continue
@@ -710,6 +736,26 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
         )
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
+                continue
+            incoming_shared = (own_kind == "raw_player" and name_first_pass.shared_display_candidate(
+                row, declarations.get(_owner_ref(owner), {}).get("raw_display_scope")))
+            if kind == "raw_player" and (own_kind == "raw_player" or own_kind == "player"):
+                cache_key = (row["lang"], name_key)
+                if cache_key not in qualified_raw:
+                    raw_ids = {item[1] for item in existing_names[cache_key] if item[0] == "raw_player"}
+                    values = {image["raw_value"] for raw_id in raw_ids
+                              if (image := _image(conn, KifuRawPlayerValue.__table__, raw_id))}
+                    with Session(bind=conn) as db:
+                        qualified_raw[cache_key] = {
+                            name.id for name, _raw, scope in _approved_raw_player_names(
+                                db, values=values, lang=row["lang"])
+                            if name.generation_rule_version == name_first_pass.VERSION
+                            and scope is not None and normalize_alias(name.display_name) == name_key
+                        }
+            existing_shared = kind == "raw_player" and existing_name["id"] in qualified_raw.get(
+                (row["lang"], name_key), set())
+            if (incoming_shared and kind == "player") or (existing_shared and own_kind == "player") or (
+                    incoming_shared and existing_shared and own_kind == kind == "raw_player"):
                 continue
             _fail(row.get("generation_rule_version") != "user_authorized_first_pass_v1",
                   f"first-pass normalized name collision: {row['lang']}:{name_key}")
@@ -775,11 +821,11 @@ def _inspect(
         _check_verified_sources(conn, evidence_records)
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
     research_by_hash = {canonical_sha256(record): record for record in evidence_records}
-    _check_first_pass_sources(conn, bundle["candidates"], research_by_hash)
+    _check_first_pass_sources(conn, bundle["candidates"], research_by_hash, bundle.get("owners", []))
     for candidate in bundle["candidates"]:
         _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events,
                          research_by_hash.get(candidate.get("research_sha256")))
-    _check_cross_bundle_collisions(conn, bundle["candidates"])
+    _check_cross_bundle_collisions(conn, bundle["candidates"], owners=bundle.get("owners", ()))
     return {**report, "bundle_sha256": canonical_sha256(bundle),
             "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"),
                                                  selected_scope, selected_events),
@@ -936,7 +982,9 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
                          "candidate_sha256": canonical_sha256(row),
                          "verification_level": "generated_first_pass",
                          "raw_scope_sha256": canonical_sha256(research_by_hash[row["research_sha256"]]["raw_scope"])
-                         if row["owner"]["kind"] == "raw_event" else None}
+                         if row["owner"]["kind"] == "raw_event" else
+                         research_by_hash[row["research_sha256"]].get("raw_display_scope_sha256")
+                         if row["owner"]["kind"] == "raw_player" else None}
                         if row.get("generation_rule_version") == "user_authorized_first_pass_v1" else None),
         ),
     )
@@ -1094,7 +1142,9 @@ def _check_applied_v4(conn, batch, bundle):
                          "candidate_sha256": canonical_sha256(candidate),
                          "verification_level": "generated_first_pass",
                          "raw_scope_sha256": canonical_sha256(research["raw_scope"])
-                         if candidate["owner"]["kind"] == "raw_event" else None}
+                         if candidate["owner"]["kind"] == "raw_event" else
+                         research.get("raw_display_scope_sha256")
+                         if candidate["owner"]["kind"] == "raw_player" else None}
                         if candidate.get("generation_rule_version") == "user_authorized_first_pass_v1" else None),
         )
         for key, value in expected_evidence.items():
@@ -1165,7 +1215,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                     "applied transliteration after-image changed",
                 )
                 _check_cross_bundle_collisions(
-                    conn, bundle["candidates"], resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
+                    conn, bundle["candidates"], owners=bundle.get("owners", ()),
+                    resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
                 )
                 if bundle.get("primary_orthographic") is not None or any(
                     row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
@@ -1177,7 +1228,8 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                       sorted(canonical_sha256(record) for record in evidence_records),
                       "applied first-pass research changed")
                 _check_first_pass_sources(conn, bundle["candidates"],
-                                          {canonical_sha256(record): record for record in evidence_records})
+                                          {canonical_sha256(record): record for record in evidence_records},
+                                          bundle.get("owners", []))
             if bundle["bundle_format"] == 4 or has_first_pass:
                 _prevalidate(
                     bundle,

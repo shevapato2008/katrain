@@ -11,7 +11,7 @@ from katrain.web.kifu.name_batch import BatchError, _image, apply_bundle, dry_ru
 from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.core.models_db import (
     KifuAlbum, KifuPlayer, KifuPlayerName, KifuEvent, KifuEventName,
-    KifuRawEventValue, KifuNameResearchEvidence,
+    KifuRawEventValue, KifuRawPlayerValue, KifuRawPlayerName, KifuNameResearchEvidence,
 )
 from katrain.web.kifu.identity import (
     _approved_names, _qualified_name_rows, _approved_raw_event_names, _raw_event_map,
@@ -19,11 +19,16 @@ from katrain.web.kifu.identity import (
     strict_display_maps,
 )
 from katrain.web.kifu.name_first_pass import raw_scope_rows
+from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS
 from katrain.web.kifu.name_coverage import coverage_report
 from sqlalchemy.orm import Session
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
 from tests.web_ui.test_kifu_name_candidates import inventory, registry
-from tests.web_ui.test_kifu_name_batch import engine, player_bundle, bind_fixture_candidate, registry as db_registry
+from tests.web_ui.test_kifu_name_batch import (
+    engine, player_bundle, bind_fixture_candidate, registry as db_registry,
+)
+from katrain.web.kifu.name_batch import undo_batch, _check_first_pass_sources, _check_name_preimages
+from tests.web_ui.test_kifu_name_api import _evidence, _list
 
 
 def first_pass_pair():
@@ -101,6 +106,39 @@ def test_first_pass_raw_rejects_program_generic_and_damaged_values(raw):
         validate_research_record(research, registry())
 
 
+def test_first_pass_raw_player_requires_exact_literal_and_signed_scope():
+    candidate, research = first_pass_pair()
+    owner = {"kind": "raw_player", "id": 20}
+    research.update(owner=owner, original_name="李元赫九段", candidate_name="李元赫")
+    research["source_input"] = {"kind": "raw_player_literal", "owner": owner,
+                                "text": "李元赫九段", "parsed_name": "李元赫", "embedded_rank": "九段",
+                                "owner_preimage_sha256": "a" * 64}
+    research["generation"]["method"] = "translation"
+    research["raw_display_scope_sha256"] = "b" * 64
+    candidate.update(owner=owner, raw_value="李元赫九段", display_name="李元赫",
+                     raw_display_scope_sha256="b" * 64)
+    candidate["research_sha256"] = canonical_sha256(research)
+    candidate["generated_review"].update(owner=owner, display_name="李元赫",
+                                           research_sha256=candidate["research_sha256"])
+    inv = inventory()
+    inv["album_associations"][0][1] = "李元赫九段"
+    assert validate_research_record(research, registry())["source_input"]["kind"] == "raw_player_literal"
+    assert validate_candidate(candidate, research, registry(), inv)["raw_display_scope_sha256"] == "b" * 64
+    bad = deepcopy(candidate)
+    bad.pop("raw_display_scope_sha256")
+    with pytest.raises(CandidateError):
+        validate_candidate(bad, research, registry(), inv)
+    bad_research = deepcopy(research)
+    bad_research["source_input"]["parsed_name"] = "李元赫九段"
+    with pytest.raises(EvidenceError):
+        validate_research_record(bad_research, registry())
+    retained = deepcopy(research)
+    retained["generation"]["method"] = "retain_original"
+    retained["candidate_name"] = "李元赫九段"
+    with pytest.raises(EvidenceError):
+        validate_research_record(retained, registry())
+
+
 def bound_player_bundle(engine):
     inv = build_inventory(engine)
     bundle, _ = player_bundle(inv)
@@ -123,6 +161,330 @@ def bound_player_bundle(engine):
                   owners=[declaration], owner_set_sha256=canonical_sha256([declaration]),
                   album_links=[], link_set_sha256=canonical_sha256([]))
     return inv, bundle, [research]
+
+
+def bound_raw_player_bundle(engine, *, five_languages=False, second_raw=False):
+    from katrain.web.kifu.name_parse import parse_player
+
+    raw = "李元赫九段"
+    with engine.begin() as conn:
+        conn.execute(KifuRawPlayerValue.__table__.insert().values(
+            id=20, raw_value=raw, category=parse_player(raw, None).category, review_status="pending"))
+        conn.execute(KifuAlbum.__table__.insert(), [
+            {"id": 12, "player_black": raw, "player_white": "Other", "event": "Cup",
+             "sgf_content": "(;PB[李元赫九段])", "source_path": "raw-12.sgf"},
+            {"id": 13, "player_black": raw, "black_player_id": 17, "player_white": "Other",
+             "event": "Cup", "sgf_content": "(;PB[李元赫九段])", "source_path": "raw-13.sgf"},
+            {"id": 14, "duplicate_of_id": 12, "player_black": raw, "player_white": "Other",
+             "event": "Cup", "sgf_content": "(;PB[李元赫九段])", "source_path": "raw-14.sgf"},
+            {"id": 15, "player_black": "Other", "player_white": raw, "event": "Cup",
+             "sgf_content": "(;PW[李元赫九段])", "source_path": "raw-15.sgf"},
+        ])
+        if second_raw:
+            other = "李元赫"
+            conn.execute(KifuRawPlayerValue.__table__.insert().values(
+                id=21, raw_value=other, category=parse_player(other, None).category, review_status="pending"))
+            conn.execute(KifuAlbum.__table__.insert().values(
+                id=16, player_black=other, player_white="Other", event="Cup",
+                sgf_content="(;PB[李元赫])", source_path="raw-16.sgf"))
+    inv, bundle, records = bound_player_bundle(engine)
+    owner = {"kind": "raw_player", "id": 20}
+    with engine.connect() as conn:
+        owner_image = _image(conn, KifuRawPlayerValue.__table__, 20)
+        albums = {row["id"]: row for row in conn.execute(KifuAlbum.__table__.select().where(
+            KifuAlbum.id.in_([12, 15]))).mappings()}
+    content = {"inventory_sha256": inv["sha256"], "raw_value": raw,
+               "applicability_basis": "First pass of this exact public unlinked raw slot",
+               "slots": [{"album_id": 12, "slot": "black",
+                          "context": {key: albums[12][key] for key in CONTEXT_FIELDS}},
+                         {"album_id": 15, "slot": "white",
+                          "context": {key: albums[15][key] for key in CONTEXT_FIELDS}}]}
+    scope = {"content": content, "approval": {
+        "status": "approved", "content_sha256": canonical_sha256(content),
+        "producer_id": "translator", "producer_model": "gpt-6-luna",
+        "produced_at": "2026-10-11T01:00:00Z", "reviewer_id": "reviewer",
+        "reviewer_model": "gpt-6.1-sol", "reviewed_at": "2026-10-11T01:01:00Z",
+        "conclusion": "approved_raw_display_scope"}}
+    scope_hash = canonical_sha256(scope)
+    displays = {"en": "Lee Wonhyuk", "cn": "李元赫", "tw": "李元赫",
+                "jp": "李元赫", "ko": "이원혁"}
+    languages = ("en", "cn", "tw", "jp", "ko") if five_languages else ("en",)
+    candidates, research_records, members = [], [], []
+    for lang in languages:
+        research = deepcopy(records[0])
+        research.update(owner=owner, lang=lang, original_name=raw, candidate_name=displays[lang],
+                        raw_display_scope_sha256=scope_hash)
+        research["source_input"] = {"kind": "raw_player_literal", "owner": owner, "text": raw,
+                                    "parsed_name": "李元赫", "embedded_rank": "九段",
+                                    "owner_preimage_sha256": canonical_sha256(owner_image)}
+        research["generation"]["method"] = "transliteration" if lang in {"en", "ko"} else "retain_original"
+        candidate = deepcopy(bundle["candidates"][0])
+        candidate.update(owner=owner, lang=lang, raw_value=raw, display_name=displays[lang],
+                         raw_display_scope_sha256=scope_hash, research_sha256=canonical_sha256(research))
+        candidate["generated_review"].update(owner=owner, lang=lang, display_name=displays[lang],
+                                              research_sha256=candidate["research_sha256"])
+        candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(candidate)
+        candidates.append(candidate)
+        research_records.append(research)
+        members.append({"owner": owner, "lang": lang, "raw_value": raw})
+    declaration = {"owner": owner, "preimage": owner_image,
+                   "occurrence_album_ids": [12, 13, 14, 15],
+                   "occurrence_sha256": canonical_sha256([12, 13, 14, 15]),
+                   "raw_display_scope": scope}
+    bundle.update(members=members, member_set_sha256=canonical_sha256(members), candidates=candidates,
+                  owners=[declaration], owner_set_sha256=canonical_sha256([declaration]),
+                  catalog_sha256=catalog_snapshot_sha(engine))
+    if second_raw:
+        with engine.connect() as conn:
+            other_image = _image(conn, KifuRawPlayerValue.__table__, 21)
+            album = conn.execute(KifuAlbum.__table__.select().where(KifuAlbum.id == 16)).mappings().one()
+        other_owner = {"kind": "raw_player", "id": 21}
+        other_content = deepcopy(content)
+        other_content.update(raw_value="李元赫", slots=[{
+            "album_id": 16, "slot": "black", "context": {key: album[key] for key in CONTEXT_FIELDS},
+        }])
+        other_scope = deepcopy(scope)
+        other_scope["content"] = other_content
+        other_scope["approval"]["content_sha256"] = canonical_sha256(other_content)
+        other_research = deepcopy(research_records[0])
+        other_research.update(owner=other_owner, original_name="李元赫",
+                              raw_display_scope_sha256=canonical_sha256(other_scope))
+        other_research["source_input"].update(
+            owner=other_owner, text="李元赫", parsed_name="李元赫", embedded_rank=None,
+            owner_preimage_sha256=canonical_sha256(other_image))
+        other_candidate = deepcopy(candidates[0])
+        other_candidate.update(owner=other_owner, raw_value="李元赫",
+                               raw_display_scope_sha256=canonical_sha256(other_scope),
+                               research_sha256=canonical_sha256(other_research))
+        other_candidate["generated_review"].update(owner=other_owner,
+                                                  research_sha256=other_candidate["research_sha256"])
+        other_candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(other_candidate)
+        other_declaration = {"owner": other_owner, "preimage": other_image,
+                             "occurrence_album_ids": [16], "occurrence_sha256": canonical_sha256([16]),
+                             "raw_display_scope": other_scope}
+        bundle["candidates"].append(other_candidate)
+        bundle["members"].append({"owner": other_owner, "lang": "en", "raw_value": "李元赫"})
+        bundle["owners"].append(other_declaration)
+        research_records.append(other_research)
+        bundle["member_set_sha256"] = canonical_sha256(bundle["members"])
+        bundle["owner_set_sha256"] = canonical_sha256(bundle["owners"])
+    return inv, bundle, research_records
+
+
+def test_first_pass_raw_player_applies_only_to_public_unlinked_signed_slot_and_undoes(engine, monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    inv, bundle, records = bound_raw_player_bundle(engine, five_languages=True)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    result = apply_bundle(engine, bundle, db_registry(), inv, records)
+    assert result["status"] == "applied"
+    assert apply_bundle(engine, bundle, db_registry(), inv, records)["status"] == "already_applied"
+    from katrain.web.kifu.identity import _approved_raw_player_names
+    with Session(engine) as db:
+        for lang, display in (("en", "Lee Wonhyuk"), ("cn", "李元赫"), ("tw", "李元赫"),
+                              ("jp", "李元赫"), ("ko", "이원혁")):
+            names = _approved_raw_player_names(db, values={"李元赫九段"}, lang=lang)
+            assert len(names) == 1 and names[0][2] is not None
+            assert {item.id for item in _list(db, display, lang).items if item.id in {12, 15}} == {12, 15}
+            page = {item.id: item for item in _list(db, lang=lang).items}
+            assert display in page[12].display_player_black
+            assert display in page[15].display_player_white
+    report = coverage_report(engine, inv, languages=("en", "cn", "tw", "jp", "ko"))
+    assert not any((item["album_id"], item["slot"]) in {(12, "black"), (15, "white")}
+                   for item in report["missing_examples"])
+    with engine.connect() as conn:
+        raw_album = conn.execute(KifuAlbum.__table__.select().where(KifuAlbum.id == 12)).mappings().one()
+        assert (raw_album["player_black"], raw_album["black_player_id"], raw_album["black_rank"],
+                raw_album["sgf_content"]) == ("李元赫九段", None, None, "(;PB[李元赫九段])")
+    assert undo_batch(engine, result["batch_id"])["status"] == "undone"
+    with Session(engine) as db:
+        assert all(_approved_raw_player_names(db, values={"李元赫九段"}, lang=lang) == []
+                   for lang in ("en", "cn", "tw", "jp", "ko"))
+
+
+@pytest.mark.parametrize("drift", ["linked", "hidden"])
+def test_first_pass_raw_player_rejects_linked_or_hidden_scope_after_apply(engine, drift):
+    from katrain.web.kifu.identity import _approved_raw_player_names
+    from katrain.web.kifu.name_first_pass import raw_player_scope_live
+
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    scope = bundle["owners"][0]["raw_display_scope"]
+    with engine.connect() as conn:
+        assert raw_player_scope_live(conn, scope)
+    apply_bundle(engine, bundle, db_registry(), inv, records)
+    with engine.begin() as conn:
+        changes = {"black_player_id": 17} if drift == "linked" else {"list_hidden_reason": "manual"}
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 12).values(**changes))
+    with engine.connect() as conn:
+        assert not raw_player_scope_live(conn, scope)
+        with pytest.raises(BatchError, match="public unlinked scope changed"):
+            _check_first_pass_sources(conn, bundle["candidates"],
+                                      {canonical_sha256(records[0]): records[0]}, bundle["owners"])
+    with Session(engine) as db:
+        assert _approved_raw_player_names(db, values={"李元赫九段"}, lang="en") == []
+
+
+def test_first_pass_raw_player_public_scope_uses_physical_columns_with_thin_mapper(engine, monkeypatch):
+    from katrain.web.core import models_db
+    from katrain.web.kifu.name_first_pass import raw_player_scope_live
+
+    _inv, bundle, _records = bound_raw_player_bundle(engine)
+    with monkeypatch.context() as patch:
+        patch.setattr(models_db, "KifuAlbum", SimpleNamespace)
+        with engine.connect() as conn:
+            assert raw_player_scope_live(conn, bundle["owners"][0]["raw_display_scope"])
+
+
+def test_first_pass_raw_player_pending_owner_does_not_enable_old_profile(engine):
+    from katrain.web.kifu.identity import _approved_raw_player_names
+
+    _inv, bundle, _records = bound_raw_player_bundle(engine)
+    with Session(engine) as db:
+        evidence = _evidence(db, "raw_player", 20, "en", "Old profile")
+        db.add(KifuRawPlayerName(raw_player_id=20, lang="en", display_name="Old profile",
+                                 status="verified", decision_kind="conventional",
+                                 generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+        assert _approved_raw_player_names(db, values={"李元赫九段"}, lang="en") == []
+    with engine.connect() as conn:
+        target = conn.execute(KifuRawPlayerName.__table__.select()).mappings().one()
+        candidate = deepcopy(bundle["candidates"][0])
+        candidate["name_preimage_sha256"] = canonical_sha256(_image(conn, KifuRawPlayerName.__table__, target["id"]))
+        with pytest.raises(BatchError, match="cannot replace verified or evidence-backed"):
+            _check_name_preimages(conn, [candidate])
+
+
+def test_first_pass_raw_player_rejects_existing_cross_owner_name_collision(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 17, "en", "Lee Wonhyuk")
+        db.add(KifuPlayerName(player_id=17, lang="en", display_name="Lee Wonhyuk",
+                               status="verified", decision_kind="conventional",
+                               generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    with pytest.raises(BatchError, match="collision"):
+        dry_run_bundle(engine, bundle, db_registry(), inv, records)
+
+
+def _share_raw_display(candidate):
+    candidate["collision_decision"] = "shared_display"
+    candidate["collision_basis"] = {
+        "kind": "literal_translation", "source_text": candidate["raw_value"],
+        "parsed_name": "李元赫", "provenance": "signed_raw_player_literal",
+    }
+    candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(candidate)
+
+
+def _one_raw_bundle(bundle, records, index):
+    one = deepcopy(bundle)
+    one["candidates"] = [deepcopy(bundle["candidates"][index])]
+    one["members"] = [deepcopy(bundle["members"][index])]
+    one["owners"] = [deepcopy(bundle["owners"][index])]
+    one["member_set_sha256"] = canonical_sha256(one["members"])
+    one["owner_set_sha256"] = canonical_sha256(one["owners"])
+    return one, [deepcopy(records[index])]
+
+
+@pytest.mark.parametrize("order", [(0, 1), (1, 0)])
+def test_first_pass_two_raw_players_share_display_across_batches_and_search(engine, order):
+    inv, bundle, records = bound_raw_player_bundle(engine, second_raw=True)
+    for candidate in bundle["candidates"]:
+        _share_raw_display(candidate)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    for index in order:
+        one, one_records = _one_raw_bundle(bundle, records, index)
+        assert apply_bundle(engine, one, db_registry(), inv, one_records)["status"] == "applied"
+    with Session(engine) as db:
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "Lee Wonhyuk")[:3] == (set(), set(), {"李元赫九段", "李元赫"})
+        assert {item.id for item in _list(db, "Lee Wonhyuk", "en").items if item.id in {12, 15, 16}} == {
+            12, 15, 16,
+        }
+
+
+def test_first_pass_two_raw_players_share_display_in_same_bundle(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine, second_raw=True)
+    for candidate in bundle["candidates"]:
+        _share_raw_display(candidate)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    assert apply_bundle(engine, bundle, db_registry(), inv, records)["status"] == "applied"
+
+
+def test_first_pass_existing_raw_display_allows_later_canonical_player(engine):
+    inv, raw_bundle, raw_records = bound_raw_player_bundle(engine)
+    apply_bundle(engine, raw_bundle, db_registry(), inv, raw_records)
+    player_inv, player_bundle_data, player_records = bound_player_bundle(engine)
+    research = player_records[0]
+    research.update(lang="en", candidate_name="Lee Wonhyuk")
+    research["generation"]["method"] = "translation"
+    candidate = player_bundle_data["candidates"][0]
+    candidate.update(lang="en", display_name="Lee Wonhyuk", research_sha256=canonical_sha256(research))
+    candidate["generated_review"].update(
+        lang="en", display_name="Lee Wonhyuk", research_sha256=candidate["research_sha256"])
+    candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(candidate)
+    player_bundle_data["members"] = [{"owner": candidate["owner"], "lang": "en"}]
+    player_bundle_data["member_set_sha256"] = canonical_sha256(player_bundle_data["members"])
+    assert dry_run_bundle(engine, player_bundle_data, db_registry(), player_inv, player_records)["ready"]
+
+
+def test_first_pass_shared_display_does_not_accept_old_raw_profile(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine, second_raw=True)
+    incoming, incoming_records = _one_raw_bundle(bundle, records, 0)
+    _share_raw_display(incoming["candidates"][0])
+    with Session(engine) as db:
+        evidence = _evidence(db, "raw_player", 21, "en", "Lee Wonhyuk")
+        db.add(KifuRawPlayerName(raw_player_id=21, lang="en", display_name="Lee Wonhyuk",
+                                 status="verified", decision_kind="conventional",
+                                 generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    with pytest.raises(BatchError, match="collision"):
+        dry_run_bundle(engine, incoming, db_registry(), inv, incoming_records)
+
+
+def test_first_pass_raw_player_can_share_existing_canonical_display(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 17, "en", "Lee Wonhyuk")
+        db.add(KifuPlayerName(player_id=17, lang="en", display_name="Lee Wonhyuk",
+                              status="verified", decision_kind="conventional",
+                              generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    _share_raw_display(bundle["candidates"][0])
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    assert apply_bundle(engine, bundle, db_registry(), inv, records)["status"] == "applied"
+    with Session(engine) as db:
+        from katrain.web.kifu.identity import strict_matching_names
+        assert strict_matching_names(db, "Lee Wonhyuk")[:3] == ({17}, set(), {"李元赫九段"})
+        assert {item.id for item in _list(db, "Lee Wonhyuk", "en").items if item.id in {11, 12, 15}} == {
+            11, 12, 15,
+        }
+
+
+def test_first_pass_shared_display_requires_exact_literal_basis(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    with Session(engine) as db:
+        evidence = _evidence(db, "player", 17, "en", "Lee Wonhyuk")
+        db.add(KifuPlayerName(player_id=17, lang="en", display_name="Lee Wonhyuk",
+                              status="verified", decision_kind="conventional",
+                              generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    _share_raw_display(bundle["candidates"][0])
+    bundle["candidates"][0]["collision_basis"]["source_text"] = "Another raw"
+    bundle["candidates"][0]["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(bundle["candidates"][0])
+    with pytest.raises((BatchError, CandidateError), match="collision|shared"):
+        dry_run_bundle(engine, bundle, db_registry(), inv, records)
+
+
+def test_first_pass_raw_player_locks_complete_literal_occurrences(engine):
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    apply_bundle(engine, bundle, db_registry(), inv, records)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=16, player_black="李元赫九段", player_white="Other", event="Cup",
+            sgf_content="(;PB[李元赫九段])", source_path="raw-16.sgf"))
+    with engine.connect() as conn:
+        with pytest.raises(BatchError, match="occurrences changed"):
+            _check_first_pass_sources(conn, bundle["candidates"],
+                                      {canonical_sha256(records[0]): records[0]}, bundle["owners"])
 
 
 def test_first_pass_apply_read_and_retry_require_persisted_proof(engine):

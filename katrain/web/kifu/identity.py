@@ -30,7 +30,7 @@ from katrain.web.core.models_db import (
 )
 from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.name_structure import structure_event
-from katrain.web.kifu.name_raw_player_scope import prepare_raw_player_scope, raw_player_scope_slot
+from katrain.web.kifu.name_raw_player_scope import PreparedRawPlayerScope, prepare_raw_player_scope, raw_player_scope_slot
 from katrain.web.kifu.name_evidence import EvidenceError
 from katrain.web.kifu import name_first_pass
 
@@ -298,7 +298,7 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             proof = payload.get("first_pass") if isinstance(payload, dict) else None
             batch_id = proof.get("batch_id") if isinstance(proof, dict) else None
             batch = batches.get(batch_id)
-            if owner_kind != "raw_player" and batch and name_first_pass.persisted_eligible(
+            if batch and name_first_pass.persisted_eligible(
                     image(name), image(evidence), owner_kind,
                     owner_images.get(getattr(name, owner_column)), image(batch),
                     first_pass_changes.get(batch_id, {}), source_names, source_evidence,
@@ -359,7 +359,10 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, orth
     query = (
         _approved_names(db, KifuRawPlayerName, "raw_player_id", lang=lang)
         .join(KifuRawPlayerValue, KifuRawPlayerName.raw_player_id == KifuRawPlayerValue.id)
-        .filter(KifuRawPlayerValue.review_status == "approved")
+        .filter(or_(KifuRawPlayerValue.review_status == "approved",
+                    and_(KifuRawPlayerName.generation_rule_version == name_first_pass.VERSION,
+                         KifuRawPlayerValue.review_status == "pending",
+                         KifuRawPlayerValue.category == "readable_unlinked")))
     )
     if values is not None:
         query = query.filter(KifuRawPlayerValue.raw_value.in_(values))
@@ -425,6 +428,9 @@ def _approved_raw_player_names(db, *, values=None, lang=None, display=None, orth
         try:
             prepared = prepare_raw_player_scope(scope)
         except (EvidenceError, KeyError, TypeError, AttributeError):
+            continue
+        if name.generation_rule_version == name_first_pass.VERSION and not name_first_pass.raw_player_scope_live(
+                db.connection(), prepared):
             continue
         result.append((name, raw, prepared))
     return result
@@ -836,7 +842,17 @@ def strict_matching_names(
             for name, _raw, proof in matched
         )
     )
-    if sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group and not linked_formal_group:
+    raw_player_display_group = (
+        bool(raw_matches[0]) and len(identity_matches[0]) <= 1 and not identity_matches[1]
+        and not raw_matches[1] and all(
+            name.generation_rule_version == name_first_pass.VERSION
+            and isinstance(scope, PreparedRawPlayerScope) and bool(scope.members)
+            for name, _raw, scope in scoped_matches
+            if normalize_alias(name.display_name) == needle
+        )
+    )
+    if (sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group
+            and not linked_formal_group and not raw_player_display_group):
         return set(), set(), set(), set()
     return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 

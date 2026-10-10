@@ -30,10 +30,10 @@ def validate_research(record):
     owner = record.get("owner")
     source = record.get("source_input")
     generation = record.get("generation")
-    if not (isinstance(owner, dict) and owner.get("kind") in {"player", "event", "raw_event"}
+    if not (isinstance(owner, dict) and owner.get("kind") in {"player", "event", "raw_event", "raw_player"}
             and type(owner.get("id")) is int and owner["id"] > 0
             and isinstance(source, dict) and source.get("owner") == owner
-            and source.get("kind") in {"catalog_canonical", "existing_locale", "raw_event_literal"}
+            and source.get("kind") in {"catalog_canonical", "existing_locale", "raw_event_literal", "raw_player_literal"}
             and isinstance(source.get("text"), str) and source["text"]
             and _HASH.fullmatch(str(source.get("owner_preimage_sha256", "")))
             and record.get("original_name") == source["text"]
@@ -45,6 +45,16 @@ def validate_research(record):
         raise ValueError("canonical source must belong to player or event")
     if source["kind"] == "raw_event_literal" and owner["kind"] != "raw_event":
         raise ValueError("raw literal source needs raw event owner")
+    if source["kind"] == "raw_player_literal":
+        from katrain.web.kifu.name_parse import parse_player
+        parsed = parse_player(source["text"], None)
+        if (owner["kind"] != "raw_player" or parsed.category != "readable_unlinked" or not parsed.name
+                or source.get("parsed_name") != parsed.name
+                or source.get("embedded_rank") != parsed.embedded_rank
+                or not _HASH.fullmatch(str(record.get("raw_display_scope_sha256", "")))):
+            raise ValueError("raw player needs readable literal and signed finite scope")
+    elif owner["kind"] == "raw_player":
+        raise ValueError("raw player first pass needs its own literal source")
     if source["kind"] == "raw_event_literal":
         from katrain.web.kifu.name_parse import parse_event
         if parse_event(source["text"], None).category not in READABLE_RAW_CATEGORIES:
@@ -55,7 +65,8 @@ def validate_research(record):
                 and _HASH.fullmatch(str(source.get("name_preimage_sha256", "")))
                 and _HASH.fullmatch(str(source.get("evidence_preimage_sha256", "")))):
             raise ValueError("existing locale needs exact same-owner name and evidence")
-    if generation["method"] == "retain_original" and record["candidate_name"] != source["text"]:
+    retained = source.get("parsed_name") if source["kind"] == "raw_player_literal" else source["text"]
+    if generation["method"] == "retain_original" and record["candidate_name"] != retained:
         raise ValueError("retained original differs from output")
     if generation.get("reading_basis") not in {None, "model_inferred", "existing_locale"}:
         raise ValueError("first pass cannot claim sourced reading")
@@ -128,6 +139,60 @@ def raw_scope_rows_many(conn, raws):
             for raw, rows in result.items()}
 
 
+def raw_player_scope_live(conn, scope):
+    """Check signed raw-player members against physical public, unlinked slots."""
+    from sqlalchemy import bindparam, text
+    from katrain.web.kifu.name_raw_player_scope import CONTEXT_FIELDS, PreparedRawPlayerScope, prepare_raw_player_scope
+
+    try:
+        prepared = scope if isinstance(scope, PreparedRawPlayerScope) else prepare_raw_player_scope(scope)
+    except (ValueError, KeyError, TypeError):
+        return False
+    ids = sorted({album_id for album_id, _ in prepared.members})
+    columns = ", ".join(("id", *CONTEXT_FIELDS, "list_hidden_reason"))
+    rows = conn.execute(text(f"SELECT {columns} FROM kifu_albums WHERE id IN :ids").bindparams(
+        bindparam("ids", expanding=True)), {"ids": ids}).mappings()
+    live = {row["id"]: row for row in rows}
+    return all(
+        (row := live.get(album_id)) is not None
+        and row["duplicate_of_id"] is None and row["list_hidden_reason"] is None
+        and row[f"{slot}_player_id"] is None
+        and {field: row[field] for field in CONTEXT_FIELDS} == context
+        for (album_id, slot), context in prepared.members.items()
+    )
+
+
+def shared_display_candidate(row, scope=None, *, require_approval=True):
+    """A raw literal may share display text without asserting player identity."""
+    from katrain.web.kifu.name_candidates import canonical_sha256
+    from katrain.web.kifu.name_parse import parse_player
+    from katrain.web.kifu.name_raw_player_scope import prepare_raw_player_scope
+
+    if (not isinstance(row, dict) or not isinstance(row.get("owner"), dict)
+            or row["owner"].get("kind") != "raw_player"
+            or row.get("decision_kind") != "generated"
+            or row.get("generation_rule_version") != VERSION
+            or row.get("review_status") not in ({"approved"} if require_approval else {"pending", "approved"})
+            or row.get("collision_decision") != "shared_display"):
+        return False
+    raw = row.get("raw_value")
+    parsed = parse_player(raw, None) if isinstance(raw, str) else None
+    if (parsed is None or parsed.category != "readable_unlinked" or not parsed.name
+            or row.get("collision_basis") != {
+                "kind": "literal_translation", "source_text": raw,
+                "parsed_name": parsed.name, "provenance": "signed_raw_player_literal",
+            }):
+        return False
+    if scope is None:
+        return True
+    try:
+        prepared = prepare_raw_player_scope(scope)
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return False
+    return (bool(prepared.members) and prepared.raw_value == raw
+            and canonical_sha256(scope) == row.get("raw_display_scope_sha256"))
+
+
 def validate_candidate(row, research):
     if not (row.get("decision_kind") == "generated" and row.get("generation_rule_version") == VERSION
             and research.get("source_basis") == VERSION
@@ -135,6 +200,12 @@ def validate_candidate(row, research):
         raise ValueError("first-pass generated candidate markers or output differ")
     if row["owner"]["kind"] == "raw_event" and row.get("raw_value") != research["source_input"]["text"]:
         raise ValueError("first-pass raw candidate differs from exact original")
+    if row["owner"]["kind"] == "raw_player" and (row.get("raw_value") != research["source_input"]["text"]
+            or row.get("raw_display_scope_sha256") != research.get("raw_display_scope_sha256")):
+        raise ValueError("first-pass raw player differs from literal or signed scope")
+    if ("collision_decision" in row or "collision_basis" in row) and not shared_display_candidate(
+            row, require_approval=False):
+        raise ValueError("first-pass shared display needs its exact raw literal basis")
     if row.get("review_status") == "pending":
         if "generated_review" in row:
             raise ValueError("pending first pass cannot carry approval")
@@ -176,9 +247,11 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
             or proof != {"batch_id": batch["id"], "candidate_sha256": canonical_sha256(candidate),
                          "research_sha256": research_hash, "verification_level": LEVEL,
                          "raw_scope_sha256": canonical_sha256(research["raw_scope"])
-                         if owner_kind == "raw_event" else None}):
+                         if owner_kind == "raw_event" else research.get("raw_display_scope_sha256")
+                         if owner_kind == "raw_player" else None}):
         return False
-    owner_id = name.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id"}[owner_kind])
+    owner_id = name.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id",
+                         "raw_player": "raw_player_id"}[owner_kind])
     if (candidate.get("owner") != {"kind": owner_kind, "id": owner_id}
             or name.get("lang") != candidate.get("lang")
             or name.get("display_name") != candidate.get("display_name")
@@ -197,12 +270,17 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
         return False
     if source["kind"] == "raw_event_literal" and owner.get("category") not in READABLE_RAW_CATEGORIES:
         return False
+    if source["kind"] == "raw_player_literal" and (owner.get("raw_value") != source["text"]
+            or owner.get("category") != "readable_unlinked"
+            or owner.get("review_status") not in {"pending", "approved"}):
+        return False
     if source["kind"] == "existing_locale":
         existing = (source_names or {}).get(source["name_id"])
         existing_evidence = (source_evidence or {}).get(existing.get("evidence_id")) if existing else None
         if (not existing or not existing_evidence or existing.get("display_name") != source["text"]
                 or existing.get("lang") != source["lang"]
-                or existing.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id"}[owner_kind]) != owner_id
+                or existing.get({"player": "player_id", "event": "event_id", "raw_event": "raw_event_id",
+                                 "raw_player": "raw_player_id"}[owner_kind]) != owner_id
                 or existing.get("status") != "verified"
                 or existing_evidence.get("review_status") != "approved"
                 or canonical_sha256(existing) != source["name_preimage_sha256"]
@@ -210,7 +288,8 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
             return False
     evidence_change = changes.get(("kifu_name_research_evidence", evidence["id"]))
     name_change = changes.get(({
-        "player": "kifu_player_names", "event": "kifu_event_names", "raw_event": "kifu_raw_event_names"
+        "player": "kifu_player_names", "event": "kifu_event_names", "raw_event": "kifu_raw_event_names",
+        "raw_player": "kifu_raw_player_names"
     }[owner_kind], name["id"]))
     return (isinstance(evidence_change, dict) and isinstance(name_change, dict)
             and evidence_change.get("before_image") is None

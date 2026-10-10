@@ -102,6 +102,22 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             rules[digest], maps[digest] = rule, None
             continue
         japanese_display = content.get("reference_kind") == "verified_japanese_display"
+        catalog_default = content.get("reference_kind") == "catalog_chinese_default"
+        if catalog_default and content.get("lang") == "cn":
+            _require(content == {
+                "version": VERSION,
+                "reference_kind": "catalog_chinese_default",
+                "lang": "cn",
+                "source_lang": "zh",
+                "source_script": "Han",
+                "target_script": "Han",
+                "target_region": "CN",
+                "preservation": "exact_codepoints",
+            }, "catalog Chinese CN rule must preserve exact codepoints")
+            digest = registry_sha256(rule)
+            _require(digest not in rules, "duplicate orthographic rule")
+            rules[digest], maps[digest] = rule, None
+            continue
         if japanese_display and content.get("lang") == "cn":
             _require(content == {
                 "version": VERSION,
@@ -131,14 +147,16 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 "excluded_names",
                 "exceptions_checked",
             }
-            | ({"reference_kind"} if japanese_display else set()),
+            | ({"reference_kind"} if japanese_display or catalog_default else set()),
             "orthographic rule fields invalid",
         )
         expected = ({"tw": ("ja", "Kanji", "Hant", "TW")} if japanese_display else
+                    {"tw": ("zh", "Han", "Hant", "TW")} if catalog_default else
                     {"tw": ("zh-Hans", "Hans", "Hant", "TW"), "cn": ("zh-Hant", "Hant", "Hans", "CN")})
         _require(
             content.get("version") == VERSION
             and (not japanese_display or content.get("reference_kind") == "verified_japanese_display")
+            and (not catalog_default or content.get("reference_kind") == "catalog_chinese_default")
             and content.get("lang") in expected
             and tuple(content.get(k) for k in ("source_lang", "source_script", "target_script", "target_region"))
             == expected[content["lang"]],
@@ -246,6 +264,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             reference_kind = member.get("reference_kind")
             verified_display = reference_kind in {"verified_chinese_display", "verified_japanese_display"}
             japanese_display = reference_kind == "verified_japanese_display"
+            catalog_default = reference_kind == "catalog_chinese_default"
             _require(
                 set(member)
                 == {
@@ -260,8 +279,10 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     "preimage_binding_sha256",
                 }
                 | ({"raw_value", "raw_display_scope_sha256"} if raw else set())
-                | ({"reference_kind"} if retained or verified_display else set())
-                and owner["kind"] in ({"player"} if retained or verified_display else {"player", "raw_player"})
+                | ({"reference_kind"} if retained or verified_display or catalog_default else set())
+                and owner["kind"] in (
+                    {"player"} if retained or verified_display or catalog_default else {"player", "raw_player"}
+                )
                 and (not retained or member.get("reference_kind") == "official_hanja_preserved")
                 and key not in bindings
                 and member.get("lang") == r["lang"]
@@ -278,6 +299,10 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                 and member.get("original_name") == original
                 and source["source_lang"] == r["source_lang"]
                 and source["source_script"] == r["source_script"]
+                and (source.get("reference_kind") == "catalog_chinese_default") == catalog_default
+                and (not catalog_default or source.get("reference_kind") == "catalog_chinese_default"
+                     and source["binding"]["catalog_sha256"] == catalog_sha256
+                     and r.get("reference_kind") == "catalog_chinese_default")
                 and (not retained or source.get("reference_kind") == "official_hanja_preserved"),
                 "orthographic member source/owner scope mismatch",
             )
@@ -322,7 +347,7 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
                     all(member.get(k) == source.get(k) for k in ("raw_value", "raw_display_scope_sha256")),
                     "orthographic raw scope mismatch",
                 )
-            if retained or japanese_display and r["lang"] == "cn":
+            if retained or (r["lang"] == "cn" and (japanese_display or catalog_default)):
                 output = original
             else:
                 exclusions = EXCLUDED_CHARACTERS | set(r["excluded_characters"])
@@ -348,7 +373,8 @@ def validate_orthographic(section, candidates, anchors, snapshot, catalog_sha256
             normalized = (member["lang"], _normalize(output))
             _require(normalized not in outputs or outputs[normalized] == owner, "orthographic output collision")
             _require(
-                not any(retained or verified_display or existing.get("decision_kind") == "conventional"
+                not any(
+                    retained or verified_display or catalog_default or existing.get("decision_kind") == "conventional"
                         for existing in snapshot_by_owner_lang.get(key, ())),
                 "orthographic cannot replace known conventional name",
             )
@@ -437,19 +463,20 @@ def validate_orthographic_candidate(row, bindings):
         and _time(binder["bound_at"]) <= _time(batch["content"]["frozen_at"]),
         "orthographic final review must sign independently bound preimage before freeze",
     )
-    if member.get("reference_kind") == "verified_chinese_display" and row["name_preimage_sha256"] is not None:
+    if (member.get("reference_kind") in {"verified_chinese_display", "catalog_chinese_default"}
+            and row["name_preimage_sha256"] is not None):
         target = binder.get("target_name_preimage")
         _require(
-            row.get("lang") == "tw"
+            row.get("lang") in ({"tw"} if member.get("reference_kind") == "verified_chinese_display" else {"cn", "tw"})
             and isinstance(target, dict)
             and set(target) == set(KifuPlayerName.__table__.columns.keys())
             and type(target.get("id")) is int and target["id"] > 0
             and type(target.get("player_id")) is int and target["player_id"] == row["owner"]["id"]
-            and target.get("lang") == "tw"
+            and target.get("lang") == row["lang"]
             and target.get("status") == "review"
             and target.get("evidence_id") is None
             and registry_sha256(target) == row["name_preimage_sha256"],
-            "verified Chinese display requires exact evidence-free review target preimage",
+            "catalog/verified Chinese display requires exact evidence-free review target preimage",
         )
 
 
@@ -484,13 +511,24 @@ def persisted_batch_bindings(batch):
         return None
 
 
-def verified_source_live(conn, anchor):
+def verified_source_live(conn, anchor, *, allow_authoritative_pages_drift=False):
     """Recheck the exact conventional source and its creation record."""
     from katrain.web.core.models_db import KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayerName
     from katrain.web.kifu.name_batch import _image
 
     try:
         source = anchor["content"]
+        if source.get("reference_kind") == "catalog_chinese_default":
+            from katrain.web.core.models_db import KifuPlayer
+
+            binding = source["binding"]
+            current = _image(conn, KifuPlayer.__table__, source["owner"]["id"])
+            if not allow_authoritative_pages_drift:
+                return current == binding["owner_preimage"]
+            return current is not None and all(
+                current[field] == binding["owner_preimage"][field]
+                for field in ("id", "canonical_name", "created_at")
+            )
         if source.get("reference_kind") not in {
             "verified_chinese_display", "verified_japanese_display", "verified_english_display"
         }:
@@ -546,7 +584,9 @@ def persisted_name_eligible(name, evidence, owner_column, raw, batch, context, d
         expected = candidates.get(key)
         if row != expected or proof.get("source_anchor") != anchors_by_hash[row["source_anchor_sha256"]]:
             return False
-        if db is not None and not verified_source_live(db.connection(), proof["source_anchor"]):
+        if db is not None and not verified_source_live(
+            db.connection(), proof["source_anchor"], allow_authoritative_pages_drift=True
+        ):
             return False
         # The context already validated every frozen candidate. Equality above binds
         # this untrusted payload to that checked value without hashing the whole batch again.

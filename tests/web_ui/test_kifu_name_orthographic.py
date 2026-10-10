@@ -256,6 +256,203 @@ def verified_chinese_display_fixture(original="加纳一夫", output="加納一�
     return engine, bundle, anchors, inventory, snapshot
 
 
+def catalog_chinese_default_fixture(lang="tw"):
+    """An existing Chinese catalog spelling, without an external name claim."""
+    from katrain.web.kifu.name_batch import _image
+
+    engine, bundle, anchors, inventory = fixture(lang)
+    row, anchor = bundle["candidates"][0], anchors[0]
+    original = anchor["content"]["original_name"]
+    with Session(engine) as db:
+        owner_image = _image(db.connection(), KifuPlayer.__table__, row["owner"]["id"])
+    anchor["content"] = {
+        "reference_kind": "catalog_chinese_default", "owner": row["owner"],
+        "original_name": original, "source_lang": "zh", "source_script": "Han",
+        "binding": {
+            "kind": "catalog_chinese_default", "owner": row["owner"],
+            "owner_preimage": owner_image, "owner_preimage_sha256": canonical_sha256(owner_image),
+            "catalog_sha256": bundle["catalog_sha256"], "captured_at": "2026-10-03T09:00:00Z",
+            "policy_basis": "user_authorized_existing_chinese_canonical",
+        },
+    }
+    rule = bundle["primary_orthographic"]["rules"][0]["content"]
+    if lang == "cn":
+        rule.clear()
+        rule.update(version="primary-orthographic-v1", reference_kind="catalog_chinese_default",
+                    lang="cn", source_lang="zh", source_script="Han", target_script="Han",
+                    target_region="CN", preservation="exact_codepoints")
+        output = original
+    else:
+        rule.update(reference_kind="catalog_chinese_default", source_lang="zh", source_script="Han")
+        output = row["display_name"]
+    member = bundle["primary_orthographic"]["batches"][0]["content"]["members"][0]
+    member.update(reference_kind="catalog_chinese_default", display_name=output,
+                  codepoint_changes=[{"position": i, "input": f"U+{ord(a):04X}", "output": f"U+{ord(b):04X}"}
+                                     for i, (a, b) in enumerate(zip(original, output))])
+    row["display_name"] = output
+    refresh(bundle, anchor)
+    return engine, bundle, anchors, inventory
+
+
+@pytest.mark.parametrize("lang", ["cn", "tw"])
+def test_catalog_chinese_default_import_read_and_undo(monkeypatch, lang):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture(lang)
+    report = validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])
+    assert report["write_ready"], report
+    assert dry_run_bundle(engine, bundle, registry(), inventory, anchors)["write_ready"]
+    applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+    with Session(engine) as db:
+        name = db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).one()
+        assert name.display_name == bundle["candidates"][0]["display_name"]
+        assert name.decision_kind == "generated"
+        page = asyncio.run(kifu.list_kifu_albums(_request(), q=name.display_name, page=1, page_size=20,
+                                                lang=lang, db=db))
+        assert page.total == 1 and page.items[0].display_player_black == name.display_name
+    assert coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"]["generated"] == 1
+    undo_batch(engine, applied["batch_id"])
+
+
+@pytest.mark.parametrize("drift", ["wrong_owner", "wrong_canonical", "wrong_catalog", "foreign_locale"])
+def test_catalog_chinese_default_rejects_false_provenance(drift):
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture()
+    content = anchors[0]["content"]
+    if drift == "wrong_owner":
+        content["binding"]["owner"]["id"] += 1
+    elif drift == "wrong_canonical":
+        content["original_name"] = "另一个人"
+    elif drift == "wrong_catalog":
+        content["binding"]["catalog_sha256"] = "f" * 64
+    else:
+        content["source_lang"] = "ja"
+    anchors[0]["approval"]["content_sha256"] = canonical_sha256(content)
+    if drift == "wrong_catalog":
+        refresh(bundle, anchors[0])
+        assert not validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])["write_ready"]
+    else:
+        with pytest.raises(EvidenceError):
+            validate_primary_orthographic_anchor(anchors[0])
+
+
+def test_catalog_chinese_default_rejects_unmapped_tw_character():
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture("tw")
+    rule = bundle["primary_orthographic"]["rules"][0]["content"]
+    rule["mappings"].pop()
+    refresh(bundle, anchors[0])
+    assert not validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])["write_ready"]
+
+
+@pytest.mark.parametrize("drift", ["canonical_name", "authoritative_pages"])
+def test_catalog_chinese_default_rejects_owner_drift_at_apply(drift):
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture("tw")
+    with Session(engine) as db:
+        player = db.get(KifuPlayer, 17)
+        if drift == "canonical_name":
+            player.canonical_name = "另一个人"
+        else:
+            player.authoritative_pages = [{"url": "https://example.org/new-page"}]
+        db.commit()
+    with pytest.raises(BatchError):
+        apply_bundle(engine, bundle, registry(), inventory, anchors)
+
+
+@pytest.mark.parametrize("lang", ["cn", "tw"])
+def test_catalog_chinese_default_review_target_is_exact_cas(lang):
+    from katrain.web.kifu.name_batch import _image
+
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture(lang)
+    with Session(engine) as db:
+        db.add(KifuPlayerName(player_id=17, lang=lang, display_name="待核舊名", status="review",
+                              reference_kind="legacy_unverified"))
+        db.flush()
+        target = db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).one()
+        before = _image(db.connection(), KifuPlayerName.__table__, target.id)
+        db.commit()
+    row = bundle["candidates"][0]
+    row["name_preimage_sha256"] = canonical_sha256(before)
+    row["preimage_binding"].update(name_preimage_sha256=row["name_preimage_sha256"],
+                                   target_name_preimage=before)
+    refresh(bundle, anchors[0])
+    assert validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])["write_ready"]
+    with Session(engine) as db:
+        db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).update({"display_name": "另一待核名"})
+        db.commit()
+    with pytest.raises(BatchError):
+        apply_bundle(engine, bundle, registry(), inventory, anchors)
+
+
+def test_catalog_chinese_default_cannot_replace_approved_target():
+    from katrain.web.kifu.name_batch import _image
+
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture("cn")
+    with Session(engine) as db:
+        db.add(KifuPlayerName(player_id=17, lang="cn", display_name="已批准名", status="verified",
+                              decision_kind="conventional", revision=1))
+        db.flush()
+        target = db.query(KifuPlayerName).filter_by(player_id=17, lang="cn").one()
+        before = _image(db.connection(), KifuPlayerName.__table__, target.id)
+        db.commit()
+    row = bundle["candidates"][0]
+    row["name_preimage_sha256"] = canonical_sha256(before)
+    row["preimage_binding"].update(name_preimage_sha256=row["name_preimage_sha256"],
+                                   target_name_preimage=before)
+    refresh(bundle, anchors[0])
+    assert not validate_bundle(bundle, registry(), inventory, anchors, approved_name_snapshot=[])["write_ready"]
+
+
+@pytest.mark.parametrize("lang", ["cn", "tw"])
+@pytest.mark.parametrize("identity_drift", ["canonical_name", "created_at"])
+def test_catalog_chinese_default_reader_allows_pages_but_rechecks_identity(monkeypatch, lang, identity_drift):
+    from katrain.web.kifu.name_orthographic import verified_source_live
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture(lang)
+    applied = apply_bundle(engine, bundle, registry(), inventory, anchors)
+    output = bundle["candidates"][0]["display_name"]
+    with Session(engine) as db:
+        assert verified_source_live(db.connection(), anchors[0])
+        db.get(KifuPlayer, 17).authoritative_pages = [{"url": "https://example.org/new-page"}]
+        db.commit()
+    with Session(engine) as db:
+        assert not verified_source_live(db.connection(), anchors[0])  # dry-run/apply still require full row
+        assert verified_source_live(db.connection(), anchors[0], allow_authoritative_pages_drift=True)
+        page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+        assert page.total == 1 and page.items[0].display_player_black == output
+        player = db.get(KifuPlayer, 17)
+        if identity_drift == "canonical_name":
+            player.canonical_name = "另一个人"
+        else:
+            player.created_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        db.commit()
+    with Session(engine) as db:
+        assert not verified_source_live(db.connection(), anchors[0], allow_authoritative_pages_drift=True)
+    assert coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"].get("generated", 0) == 0
+    assert applied["status"] == "applied"
+
+
+@pytest.mark.parametrize("lang", ["cn", "tw"])
+def test_catalog_chinese_default_creation_ledger_rejects_masked_target(monkeypatch, lang):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    engine, bundle, anchors, inventory = catalog_chinese_default_fixture(lang)
+    apply_bundle(engine, bundle, registry(), inventory, anchors)
+    output = bundle["candidates"][0]["display_name"]
+    with Session(engine) as db:
+        name = db.query(KifuPlayerName).filter_by(player_id=17, lang=lang).one()
+        evidence = db.get(KifuNameResearchEvidence, name.evidence_id)
+        name.decision_kind = evidence.decision_kind = "conventional"
+        name.generation_rule_version = evidence.generation_rule_version = "none"
+        payload = deepcopy(evidence.research_payload)
+        payload["candidate"].update(decision_kind="conventional", generation_rule_version="none")
+        payload.pop("primary_orthographic")
+        evidence.research_payload = payload
+        db.commit()
+    with Session(engine) as db:
+        page = asyncio.run(kifu.list_kifu_albums(_request(), q=output, page=1, page_size=20, lang=lang, db=db))
+        assert all(item.display_player_black != output for item in page.items)
+    decisions = coverage_report(engine, inventory, languages=(lang,))["languages"][lang]["by_decision"]
+    assert decisions.get("generated", 0) == 0 and decisions.get("conventional", 0) == 0
+
+
 def legacy_tw_review_fixture(*, source_lang="cn"):
     engine, bundle, anchors, inventory, snapshot = verified_chinese_display_fixture(source_lang=source_lang)
     with Session(engine) as db:

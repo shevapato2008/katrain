@@ -1,0 +1,139 @@
+{
+  "schema": "catalog-chinese-default-independent-code-review-v1",
+  "status": "independent_approve",
+  "reviewer_id": "/root/resume_catalog_cn_code_review_astra",
+  "reviewed_at": "2026-10-10T10:58:45.619045+00:00",
+  "head": "96d216c5ae18db02f46e55f2c014bf9b327e0a6f",
+  "route_decision_sha256": "fd0531fab3ab8e01fb7b3d256fee9f228d8a5c34857fea01d0e39b5971de8963",
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "status": "resolved_and_retested",
+      "path": "katrain/web/kifu/name_orthographic.py",
+      "lines": [
+        521,
+        525
+      ],
+      "related_path": "katrain/web/kifu/identity.py",
+      "related_lines": [
+        163,
+        167,
+        258,
+        260
+      ],
+      "title": "Catalog proof can be downgraded to conventional by clearing mutable discriminators",
+      "evidence": "Applied one CN and one TW fixture, then set name/evidence/candidate decision_kind=conventional and generation_rule_version=none, removed primary_orthographic payload, and changed owner canonical_name. Both strict API queries still returned total=1/display=劉元赫; both coverage reports counted conventional=1. Immutable creation-ledger reference_kind sets omit catalog_chinese_default.",
+      "required_fix": "Recognize catalog_chinese_default in both immutable creation-ledger checks and add CN/TW masked-target regression.",
+      "resolution": "Both immutable creation-ledger reference-kind sets now include catalog_chinese_default; parameterized CN/TW strict-reader and coverage regression rejects masked targets."
+    },
+    {
+      "id": "R2",
+      "priority": "P1",
+      "status": "resolved_and_retested",
+      "path": "katrain/web/kifu/name_orthographic.py",
+      "lines": [
+        521,
+        525,
+        581
+      ],
+      "related_path": "katrain/web/kifu/player_pages.py",
+      "related_lines": [
+        185,
+        207,
+        255,
+        268
+      ],
+      "title": "Normal authoritative_pages append invalidates all catalog names",
+      "evidence": "New reader reuses full KifuPlayer row comparison, including authoritative_pages, while routine page sync appends only those metadata. Added implementation test already confirms any page metadata change makes source_live false; persisted_name_eligible uses that same check.",
+      "required_fix": "Keep complete owner row CAS in dry-run/apply. Only persisted reader may ignore authoritative_pages drift, while requiring owner existence and exact id/canonical_name/created_at. This corrects the earlier policy schema overconstraint at root request.",
+      "resolution": "Default source_live retains full-row equality; only persisted_name_eligible opts in to authoritative_pages drift, comparing exact id/canonical_name/created_at and requiring current owner. CN/TW API survives page append; identity drift loses coverage; pre-apply metadata drift blocks."
+    }
+  ],
+  "validation": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/web_ui/test_kifu_name_orthographic.py -k 'catalog_chinese_default or tamper or independent or scope or collision'",
+      "exit_code": 0,
+      "result": "57 passed, 127 deselected in 3.95s"
+    },
+    {
+      "command": "Independent in-memory fixture probe: missing owner, forged owner ID, non-Han canonical, mismatched canonical, source_lang=cn, target lang=jp, same producer/reviewer",
+      "exit_code": 0,
+      "result": "All 7 rejected"
+    },
+    {
+      "command": "Independent CN/TW masked-target + canonical-drift probe",
+      "exit_code": 0,
+      "result": "Both incorrectly accepted and counted conventional; R1 reproduction"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/web_ui/test_kifu_name_orthographic.py -k 'catalog_chinese_default or tamper or independent or scope or collision'",
+      "exit_code": 0,
+      "result": "63 passed, 127 deselected in 4.21s",
+      "phase": "final_review_after_fixes"
+    },
+    {
+      "command": "git diff --check -- katrain/web/kifu/identity.py katrain/web/kifu/name_evidence.py katrain/web/kifu/name_orthographic.py tests/web_ui/test_kifu_name_orthographic.py docs/superpowers/plans/2026-10-02-kifu-full-name-localization.md",
+      "exit_code": 0,
+      "result": "No whitespace errors"
+    },
+    {
+      "command": ".venv/bin/python -m py_compile katrain/web/kifu/identity.py katrain/web/kifu/name_evidence.py katrain/web/kifu/name_orthographic.py tests/web_ui/test_kifu_name_orthographic.py",
+      "exit_code": 0,
+      "result": "Compilation succeeded"
+    }
+  ],
+  "deployment_requirement": "Ship updated validator and persisted reader to active API runtime and rebuildable container image before importing catalog candidates. Dockerfile.web copies source; compose binds assets only. No deployment or DB access performed.",
+  "scope_limitations": [
+    "No product changes, git mutation, production/TEST database access, or child agents.",
+    "Review is code approval only, not native candidate/source approval or deployment authorization.",
+    "Previously reported 9 legacy regex-message test failures were not rerun or made a gate."
+  ],
+  "initial_reviewed_files": [
+    {
+      "path": "katrain/web/kifu/name_evidence.py",
+      "sha256": "e22c52a9116c31387c33fc91445e7e03999f30ed7caa050bb7e20a265d3b1374"
+    },
+    {
+      "path": "katrain/web/kifu/name_orthographic.py",
+      "sha256": "bf580e6b7ca9843ca46b9bf60f333aeefe096e9c1698b4c5acfa85a6a0502e37"
+    },
+    {
+      "path": "tests/web_ui/test_kifu_name_orthographic.py",
+      "sha256": "b0935364f8efbe0f9ff6fa2033efdcb6acd5c0a09a8abdda3a837275da2616b1"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-02-kifu-full-name-localization.md",
+      "sha256": "e41d7a5474eadb322038235b7a656ad6e482e49d82e48580ab90dd9f033faf04"
+    }
+  ],
+  "reviewed_files": [
+    {
+      "path": "katrain/web/kifu/name_evidence.py",
+      "sha256": "e22c52a9116c31387c33fc91445e7e03999f30ed7caa050bb7e20a265d3b1374"
+    },
+    {
+      "path": "katrain/web/kifu/name_orthographic.py",
+      "sha256": "163fe52697cefd28b5a02344c24e4c46d62cf4bd1f3115f912cab945ebc9f779"
+    },
+    {
+      "path": "katrain/web/kifu/identity.py",
+      "sha256": "9810815376de0497e5e94826490fb18a7061b66f5ffb81bb3b52ca6322cebae3"
+    },
+    {
+      "path": "tests/web_ui/test_kifu_name_orthographic.py",
+      "sha256": "cfa68e5b8c311ce869bb4ada84399bfd37caa14dfd453de24d96dc1e56fff55e"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-10-02-kifu-full-name-localization.md",
+      "sha256": "132e54acd0479e17abc9760847a0edeff9711df38d56645d9cf5947b39af1277"
+    }
+  ],
+  "remaining_material_findings": [],
+  "contract_clarifications": {
+    "binding_field": "policy_basis=user_authorized_existing_chinese_canonical",
+    "source_identity": "source_lang=zh; source_script=Han; output CN exact preservation or TW finite mapping only",
+    "root_requested_metadata_refinement": "Full owner preimage for dry-run/apply; persisted reader may ignore authoritative_pages changes and must match existing id/canonical_name/created_at. Recorded in final plan.",
+    "source_approval_independence": "Anchor, rule and frozen batch approvals, plus final reviewer/binder independence retained. Review does not approve source/native candidates."
+  }
+}

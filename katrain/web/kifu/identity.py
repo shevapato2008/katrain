@@ -161,9 +161,13 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
                 created_anchor = created_proof.get("source_anchor") if isinstance(created_proof, dict) else None
                 created_source = created_anchor.get("content") if isinstance(created_anchor, dict) else None
                 if (isinstance(created_candidate, dict)
-                    and created_candidate.get("reference_kind") in {"verified_chinese_display", "verified_japanese_display"}
+                    and created_candidate.get("reference_kind") in {
+                        "verified_chinese_display", "verified_japanese_display", "catalog_chinese_default"
+                    }
                     or isinstance(created_source, dict)
-                    and created_source.get("reference_kind") in {"verified_chinese_display", "verified_japanese_display"}):
+                    and created_source.get("reference_kind") in {
+                        "verified_chinese_display", "verified_japanese_display", "catalog_chinese_default"
+                    }):
                     verified_display_ledger_ids.add(change.target_row_id)
 
     def orthographic_proof(name, evidence):

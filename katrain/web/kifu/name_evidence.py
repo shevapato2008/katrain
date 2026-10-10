@@ -1705,6 +1705,49 @@ def validate_primary_orthographic_anchor(record: dict, *, _allow_traditional_chi
     owner = content.get("owner")
     owner_key(owner, "tw")
     _require(owner["kind"] in {"player", "raw_player"}, "orthographic names only permit players")
+    if content.get("reference_kind") == "catalog_chinese_default":
+        from katrain.web.core.models_db import KifuPlayer
+
+        original = content.get("original_name")
+        _require(
+            owner["kind"] == "player"
+            and set(owner) == {"kind", "id"}
+            and set(content) == {"reference_kind", "owner", "original_name", "source_lang", "source_script", "binding"}
+            and content.get("source_lang") == "zh"
+            and content.get("source_script") == "Han"
+            and isinstance(original, str)
+            and 2 <= len(original) <= 16
+            and all(unicodedata.name(char, "").startswith("CJK UNIFIED IDEOGRAPH") for char in original),
+            "catalog Chinese default requires exact existing Han player name",
+        )
+        binding = content.get("binding")
+        _require(
+            isinstance(binding, dict)
+            and set(binding) == {
+                "kind", "owner", "owner_preimage", "owner_preimage_sha256", "catalog_sha256", "captured_at",
+                "policy_basis",
+            }
+            and binding.get("kind") == "catalog_chinese_default"
+            and binding.get("owner") == owner
+            and binding.get("policy_basis") == "user_authorized_existing_chinese_canonical"
+            and bool(_HEX_SHA256.fullmatch(str(binding.get("catalog_sha256", ""))))
+            and _aware_timestamp(binding.get("captured_at"))
+            and datetime.fromisoformat(binding["captured_at"].replace("Z", "+00:00")) <= produced_at,
+            "catalog Chinese default binding invalid",
+        )
+        preimage = binding.get("owner_preimage")
+        _require(
+            isinstance(preimage, dict)
+            and set(preimage) == set(KifuPlayer.__table__.columns.keys())
+            and type(preimage.get("id")) is int
+            and preimage["id"] == owner["id"]
+            and preimage.get("canonical_name") == original
+            and isinstance(preimage.get("authoritative_pages"), list)
+            and _text(preimage.get("created_at"))
+            and binding.get("owner_preimage_sha256") == registry_sha256(preimage),
+            "catalog Chinese default owner preimage mismatch",
+        )
+        return content
     retained = content.get("reference_kind") == "official_hanja_preserved"
     verified_sources = {
         "verified_chinese_display": ("cn", "zh-Hans", "Hans"),

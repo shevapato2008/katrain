@@ -291,7 +291,8 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
 def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: dict[str, dict], owners: list[dict]) -> None:
     """Bind every generated source to the current complete owner/source images."""
     from katrain.web.kifu.name_first_pass import (
-        VERSION, READABLE_RAW_CATEGORIES, raw_scope_rows_many, raw_player_scope_live,
+        VERSION, RECORD_LABEL_MODE, READABLE_RAW_CATEGORIES, eligible_record_label, raw_scope_rows_many,
+        raw_player_scope_live,
     )
 
     raw_values = {research_by_hash[candidate["research_sha256"]]["source_input"]["text"]
@@ -317,8 +318,10 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
             _fail(live_owner["canonical_name"] == source["text"], "first-pass canonical source changed")
         elif kind == "raw_event_literal":
             _fail(live_owner["raw_value"] == source["text"], "first-pass raw source changed")
-            _fail(live_owner["category"] in READABLE_RAW_CATEGORIES
-                  and parse_event(source["text"], None).category in READABLE_RAW_CATEGORIES,
+            record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
+            _fail(eligible_record_label(research, live_owner["category"]) if record_mode else (
+                live_owner["category"] in READABLE_RAW_CATEGORIES
+                and parse_event(source["text"], None).category in READABLE_RAW_CATEGORIES),
                   "first-pass raw source is classified as a program, generic, damaged or archive value")
             _fail(research["raw_scope"]["slots"] == raw_scopes[source["text"]],
                   "first-pass raw occurrence scope changed")
@@ -696,9 +699,10 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
     return sorted(ids)
 
 
-def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), resolved_refs=None) -> None:
+def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), research_by_hash=None,
+                                   resolved_refs=None) -> None:
     from katrain.web.kifu import name_first_pass
-    from katrain.web.kifu.identity import _approved_raw_player_names
+    from katrain.web.kifu.identity import _approved_raw_event_names, _approved_raw_player_names
     from katrain.web.kifu.raw_event_translation import (
         VERSION as RAW_TITLE_VERSION, eligible_literal_raw_name, eligible_raw_title_owner,
     )
@@ -718,6 +722,20 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
                 (kind, existing[owner_column], existing["evidence_id"], dict(existing)))
     declarations = {_owner_ref(item["owner"]): item for item in owners}
     qualified_raw = {}
+    event_keys = {(row["lang"], normalize_alias(row["display_name"])) for row in candidates
+                  if row["decision_kind"] in {"conventional", "generated", "corrected", "composed",
+                                              "transliterated", "translated"}
+                  and row["owner"]["kind"] in {"event", "raw_event"}}
+    existing_raw_event_ids = {item[3]["id"] for key in event_keys for item in existing_names[key]
+                              if item[0] == "raw_event"}
+    qualified_raw_events = set()
+    if existing_raw_event_ids:
+        with Session(bind=conn) as db:
+            qualified_raw_events = {
+                name.id for name, _raw, proof in _approved_raw_event_names(db, name_ids=existing_raw_event_ids)
+                if isinstance(proof, dict) and not proof.get("record_label")
+                and (proof.get("first_pass") or proof.get("linked_literal"))
+            }
     for row in candidates:
         if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}:
             continue
@@ -739,6 +757,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
                 continue
             incoming_shared = (own_kind == "raw_player" and name_first_pass.shared_display_candidate(
                 row, declarations.get(_owner_ref(owner), {}).get("raw_display_scope")))
+            incoming_event_shared = (own_kind == "raw_event" and name_first_pass.shared_event_display_candidate(
+                row, (research_by_hash or {}).get(row.get("research_sha256"))))
             if kind == "raw_player" and (own_kind == "raw_player" or own_kind == "player"):
                 cache_key = (row["lang"], name_key)
                 if cache_key not in qualified_raw:
@@ -756,6 +776,11 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
                 (row["lang"], name_key), set())
             if (incoming_shared and kind == "player") or (existing_shared and own_kind == "player") or (
                     incoming_shared and existing_shared and own_kind == kind == "raw_player"):
+                continue
+            existing_event_shared = kind == "raw_event" and existing_name["id"] in qualified_raw_events
+            if ((incoming_event_shared and kind == "event")
+                    or (existing_event_shared and own_kind == "event")
+                    or (incoming_event_shared and existing_event_shared and own_kind == kind == "raw_event")):
                 continue
             _fail(row.get("generation_rule_version") != "user_authorized_first_pass_v1",
                   f"first-pass normalized name collision: {row['lang']}:{name_key}")
@@ -825,7 +850,8 @@ def _inspect(
     for candidate in bundle["candidates"]:
         _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events,
                          research_by_hash.get(candidate.get("research_sha256")))
-    _check_cross_bundle_collisions(conn, bundle["candidates"], owners=bundle.get("owners", ()))
+    _check_cross_bundle_collisions(conn, bundle["candidates"], owners=bundle.get("owners", ()),
+                                   research_by_hash=research_by_hash)
     return {**report, "bundle_sha256": canonical_sha256(bundle),
             "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"),
                                                  selected_scope, selected_events),
@@ -1216,6 +1242,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 )
                 _check_cross_bundle_collisions(
                     conn, bundle["candidates"], owners=bundle.get("owners", ()),
+                    research_by_hash={canonical_sha256(item): item for item in evidence_records},
                     resolved_refs=previous["reviewed_artifact"].get("resolved_refs", {})
                 )
                 if bundle.get("primary_orthographic") is not None or any(

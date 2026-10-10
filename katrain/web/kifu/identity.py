@@ -477,7 +477,9 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     )
     from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
     from katrain.web.kifu.raw_event_translation import eligible_literal_raw_name, LINKED_SGF_LITERAL_BASIS
-    from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION, raw_scope_rows_many
+    from katrain.web.kifu.name_first_pass import (
+        VERSION as FIRST_PASS_VERSION, eligible_record_label, raw_scope_rows_many,
+    )
 
     query = (
         _approved_names(db, KifuRawEventName, "raw_event_id", lang=lang)
@@ -530,7 +532,8 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
                     or raw_owner.raw_value != raw):
                 continue
             if scope.get("slots") == first_pass_scopes[raw]:
-                result.append((name, raw, {"first_pass": scope["slots"]}))
+                result.append((name, raw, {"first_pass": scope["slots"],
+                                           "record_label": eligible_record_label(research, raw_owner.category)}))
             continue
         if name.decision_kind == "translated":
             payload = evidence.research_payload
@@ -687,7 +690,8 @@ def _raw_event_map(rows, albums, selected_events, *, approvals=False, selected_i
                    linked_members=frozenset()):
     result = {}
     for name, raw, composition in rows:
-        value = (name.decision_kind, name.evidence_id) if approvals else name.display_name
+        decision = "record_label" if isinstance(composition, dict) and composition.get("record_label") else name.decision_kind
+        value = (decision, name.evidence_id) if approvals else name.display_name
         if isinstance(composition, dict) and "first_pass" in composition:
             slots = {(row["album_id"], row["slot"]): row for row in composition["first_pass"]}
             for album in albums:
@@ -851,8 +855,16 @@ def strict_matching_names(
             if normalize_alias(name.display_name) == needle
         )
     )
+    raw_event_display_group = (
+        bool(matched) and not identity_matches[0] and len(identity_matches[1]) <= 1
+        and not raw_matches[0] and all(
+            isinstance(proof, dict) and not proof.get("record_label")
+            and bool(proof.get("first_pass") or proof.get("linked_literal"))
+            for _name, _raw, proof in matched
+        )
+    )
     if (sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group
-            and not linked_formal_group and not raw_player_display_group):
+            and not linked_formal_group and not raw_player_display_group and not raw_event_display_group):
         return set(), set(), set(), set()
     return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 

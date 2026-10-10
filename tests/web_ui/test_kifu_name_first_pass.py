@@ -106,6 +106,107 @@ def test_first_pass_raw_rejects_program_generic_and_damaged_values(raw):
         validate_research_record(research, registry())
 
 
+def test_first_pass_record_label_requires_exact_token_template_and_submode():
+    from katrain.web.kifu.name_first_pass import record_label_display
+
+    _candidate, research = first_pass_pair()
+    owner = {"kind": "raw_event", "id": 7}
+    raw = "GNUGo3.8"
+    research.update(owner=owner, lang="cn", original_name=raw,
+                    candidate_name=record_label_display("cn", raw))
+    research["source_input"] = {"kind": "raw_event_literal", "owner": owner, "text": raw,
+                                "owner_preimage_sha256": "a" * 64,
+                                "record_label_basis": "program_token"}
+    research["generation"] = {"method": "translation", "submode": "literal_record_label"}
+    research["raw_scope"] = {"raw_value": raw, "slots": [
+        {"album_id": 1, "slot": "event", "raw_value": raw, "event_id": None, "approved": True}]}
+    assert validate_research_record(research, registry())["candidate_name"] == "棋谱标记：GNUGo3.8"
+    sgf = deepcopy(research)
+    sgf["original_name"] = sgf["source_input"]["text"] = "004sgf"
+    sgf["source_input"]["record_label_basis"] = "sgf_token"
+    sgf["raw_scope"]["raw_value"] = sgf["raw_scope"]["slots"][0]["raw_value"] = "004sgf"
+    sgf["candidate_name"] = record_label_display("cn", "004sgf")
+    assert validate_research_record(sgf, registry())["candidate_name"] == "棋谱标记：004sgf"
+    for change in (lambda r: r["generation"].pop("submode"),
+                   lambda r: r["source_input"].update(record_label_basis="sgf_token"),
+                   lambda r: r.update(candidate_name="围棋比赛")):
+        bad = deepcopy(research)
+        change(bad)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, registry())
+    for unreadable in ("2010??????", "(;EV[broken]", ""):
+        bad = deepcopy(research)
+        bad["original_name"] = bad["source_input"]["text"] = unreadable
+        bad["raw_scope"]["raw_value"] = bad["raw_scope"]["slots"][0]["raw_value"] = unreadable
+        bad["candidate_name"] = record_label_display("cn", unreadable)
+        with pytest.raises(EvidenceError):
+            validate_research_record(bad, registry())
+
+
+def test_first_pass_shared_raw_title_requires_literal_basis_and_number():
+    from katrain.web.kifu.name_first_pass import shared_event_display_candidate
+
+    row, research = first_pass_pair()
+    owner = {"kind": "raw_event", "id": 8}
+    raw = "28th Honinbo"
+    research.update(owner=owner, lang="en", original_name=raw, candidate_name="28th Honinbo Tournament")
+    research["source_input"] = {"kind": "raw_event_literal", "owner": owner, "text": raw,
+                                "owner_preimage_sha256": "a" * 64}
+    research["generation"]["method"] = "translation"
+    research["raw_scope"] = {"raw_value": raw, "slots": [
+        {"album_id": 1, "slot": "event", "raw_value": raw, "event_id": None, "approved": True}]}
+    row.update(owner=owner, lang="en", raw_value=raw, display_name="28th Honinbo Tournament",
+               research_sha256=canonical_sha256(research), collision_decision="shared_display",
+               collision_basis={"kind": "literal_title_translation", "source_text": raw,
+                                "provenance": "signed_raw_event_literal"})
+    row["generated_review"].update(owner=owner, lang="en", display_name=row["display_name"],
+                                   research_sha256=row["research_sha256"])
+    assert shared_event_display_candidate(row, research)
+    bad = deepcopy(row)
+    bad["display_name"] = "Honinbo Tournament"
+    assert not shared_event_display_candidate(bad, research)
+    bad["display_name"] = research["candidate_name"] = "128th Honinbo Tournament"
+    assert not shared_event_display_candidate(bad, research)
+    research["candidate_name"] = row["display_name"]
+    research["source_input"]["text"] = research["original_name"] = "28th Honinbo Round 28"
+    research["raw_scope"]["raw_value"] = "28th Honinbo Round 28"
+    row["raw_value"] = "28th Honinbo Round 28"
+    row["collision_basis"]["source_text"] = "28th Honinbo Round 28"
+    assert not shared_event_display_candidate(row, research)
+    bad = deepcopy(row)
+    bad["collision_basis"]["source_text"] = "Other"
+    assert not shared_event_display_candidate(bad, research)
+
+
+def test_first_pass_record_label_rejects_mismatched_live_category(engine):
+    raw = "004sgf"
+    owner = {"kind": "raw_event", "id": 20}
+    with engine.begin() as conn:
+        conn.execute(KifuRawEventValue.__table__.insert().values(
+            id=20, raw_value=raw, category="formal_event_candidate", review_status="pending"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="Black", player_white="White", event=raw,
+            sgf_content=f"(;EV[{raw}])", source_path="record-label.sgf"))
+    with engine.connect() as conn:
+        image = _image(conn, KifuRawEventValue.__table__, 20)
+        scope = raw_scope_rows(conn, raw)
+    research = {
+        "owner": owner, "lang": "en", "source_basis": "user_authorized_first_pass_v1",
+        "scope_status": "generated_first_pass", "verification_level": "generated_first_pass",
+        "original_name": raw, "original_language": "und", "source_input": {
+            "kind": "raw_event_literal", "owner": owner, "text": raw,
+            "owner_preimage_sha256": canonical_sha256(image), "record_label_basis": "sgf_token"},
+        "raw_scope": {"raw_value": raw, "slots": scope},
+        "generation": {"method": "translation", "submode": "literal_record_label"},
+        "candidate_name": "Record label: 004sgf",
+    }
+    candidate = {"owner": owner, "lang": "en", "decision_kind": "generated",
+                 "generation_rule_version": "user_authorized_first_pass_v1",
+                 "research_sha256": canonical_sha256(research)}
+    with engine.connect() as conn, pytest.raises(BatchError, match="classified|record label"):
+        _check_first_pass_sources(conn, [candidate], {candidate["research_sha256"]: research}, [])
+
+
 def test_first_pass_raw_player_requires_exact_literal_and_signed_scope():
     candidate, research = first_pass_pair()
     owner = {"kind": "raw_player", "id": 20}
@@ -660,3 +761,270 @@ def test_first_pass_raw_title_stays_on_exact_public_direct_slot(engine):
     coverage = coverage_report(engine, inv, languages=("en",))
     assert not any(item["slot"] == "event" and item["album_id"] in {11, 12}
                    for item in coverage["missing_examples"])
+
+
+def bound_shared_raw_event_bundle(engine):
+    from katrain.web.kifu.name_parse import parse_event
+
+    raws = ("28th Honinbo", "第28期本因坊战")
+    with engine.begin() as conn:
+        for index, raw in enumerate(raws):
+            conn.execute(KifuRawEventValue.__table__.insert().values(
+                id=20 + index, raw_value=raw, category=parse_event(raw, None).category,
+                review_status="pending"))
+            conn.execute(KifuAlbum.__table__.insert().values(
+                id=12 + index, player_black="Black", player_white="White", event=raw,
+                sgf_content=f"(;EV[{raw}])", source_path=f"raw-event-{index}.sgf"))
+    inv = build_inventory(engine)
+    candidates, records, members, declarations = [], [], [], []
+    for index, raw in enumerate(raws):
+        owner = {"kind": "raw_event", "id": 20 + index}
+        with engine.connect() as conn:
+            owner_image = _image(conn, KifuRawEventValue.__table__, owner["id"])
+            slots = raw_scope_rows(conn, raw)
+        research = {
+            "owner": owner, "lang": "en", "registry_version": "test-1",
+            "registry_sha256": registry_sha256(db_registry()),
+            "source_basis": "user_authorized_first_pass_v1", "scope_status": "generated_first_pass",
+            "verification_level": "generated_first_pass", "original_name": raw,
+            "original_language": "und", "source_input": {
+                "kind": "raw_event_literal", "owner": owner, "text": raw,
+                "owner_preimage_sha256": canonical_sha256(owner_image)},
+            "raw_scope": {"raw_value": raw, "slots": slots},
+            "generation": {"method": "translation"}, "candidate_name": "28th Honinbo Tournament",
+            "producer_id": "translator", "producer_model": "gpt-6-luna", "review_status": "pending",
+        }
+        member = {"owner": owner, "lang": "en", "raw_value": raw}
+        candidate = bind_fixture_candidate({
+            **member, "display_name": research["candidate_name"], "decision_kind": "generated",
+            "research_sha256": canonical_sha256(research),
+            "generation_rule_version": "user_authorized_first_pass_v1", "name_preimage_sha256": None,
+            "collision_decision": "shared_display",
+            "collision_basis": {"kind": "literal_title_translation", "source_text": raw,
+                                "provenance": "signed_raw_event_literal"},
+            "producer_id": "translator", "producer_model": "gpt-6-luna",
+            "produced_at": "2026-10-11T01:00:00Z", "review_status": "approved",
+            "reviewer_id": "reviewer", "reviewer_model": "gpt-6.1-sol",
+            "reviewed_at": "2026-10-11T01:01:00Z",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "generated_review": {"decision": "approve_generated_first_pass", "owner": owner,
+                                 "lang": "en", "display_name": research["candidate_name"],
+                                 "research_sha256": canonical_sha256(research),
+                                 "reviewer_id": "reviewer", "reviewer_model": "gpt-6.1-sol",
+                                 "reviewed_at": "2026-10-11T01:01:00Z"},
+        })
+        candidate["preimage_binding"].update(captured_at="2026-10-11T01:00:15Z",
+                                               bound_at="2026-10-11T01:00:30Z")
+        candidates.append(candidate)
+        records.append(research)
+        members.append(member)
+        declarations.append({"owner": owner, "preimage": owner_image,
+                             "occurrence_album_ids": [12 + index],
+                             "occurrence_sha256": canonical_sha256([12 + index])})
+    bundle = {"bundle_format": 2, "inventory_format": inv["inventory_format"],
+              "inventory_sha256": inv["sha256"], "registry_version": "test-1",
+              "registry_sha256": registry_sha256(db_registry()), "rule_version": "first-pass-v1",
+              "catalog_sha256": catalog_snapshot_sha(engine), "members": members,
+              "member_set_sha256": canonical_sha256(members), "candidates": candidates,
+              "owners": declarations, "owner_set_sha256": canonical_sha256(declarations),
+              "album_links": [], "link_set_sha256": canonical_sha256([])}
+    return inv, bundle, records
+
+
+def _one_shared_raw_event_bundle(bundle, records, index):
+    one = deepcopy(bundle)
+    one["members"] = [bundle["members"][index]]
+    one["member_set_sha256"] = canonical_sha256(one["members"])
+    one["candidates"] = [bundle["candidates"][index]]
+    one["owners"] = [bundle["owners"][index]]
+    one["owner_set_sha256"] = canonical_sha256(one["owners"])
+    return one, [records[index]]
+
+
+def test_first_pass_shared_raw_event_same_bundle_and_finite_search(engine):
+    from katrain.web.kifu.identity import strict_matching_names
+
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    apply_bundle(engine, bundle, db_registry(), inv, records)
+    with Session(engine) as db:
+        assert len(strict_matching_names(db, "28th Honinbo Tournament")[3]) == 2
+        assert {item.id for item in _list(db, "28th Honinbo Tournament", "en").items if item.id in {12, 13}} == {
+            12, 13,
+        }
+
+
+@pytest.mark.parametrize("order", [(0, 1), (1, 0)])
+def test_first_pass_shared_raw_event_cross_bundle_order(engine, order):
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    for index in order:
+        one, one_records = _one_shared_raw_event_bundle(bundle, records, index)
+        assert dry_run_bundle(engine, one, db_registry(), inv, one_records)["ready"]
+        assert apply_bundle(engine, one, db_registry(), inv, one_records)["status"] == "applied"
+
+
+def test_first_pass_shared_raw_event_can_match_existing_canonical_event(engine):
+    from katrain.web.kifu.identity import strict_matching_names
+
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=4, canonical_name="Honinbo"))
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    one, one_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    with Session(engine) as db:
+        evidence = _evidence(db, "event", 4, "en", "28th Honinbo Tournament")
+        db.add(KifuEventName(event_id=4, lang="en", display_name="28th Honinbo Tournament",
+                             status="verified", decision_kind="conventional",
+                             generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    assert dry_run_bundle(engine, one, db_registry(), inv, one_records)["ready"]
+    apply_bundle(engine, one, db_registry(), inv, one_records)
+    with Session(engine) as db:
+        player_ids, event_ids, _players, raw_names = strict_matching_names(db, "28th Honinbo Tournament")
+        assert player_ids == set() and event_ids == {4} and len(raw_names) == 1
+
+
+def test_first_pass_existing_shared_raw_event_allows_later_canonical_event(engine):
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=4, canonical_name="Honinbo"))
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    one, one_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    apply_bundle(engine, one, db_registry(), inv, one_records)
+    event_inv, event_bundle, event_records = bound_player_bundle(engine)
+    owner = {"kind": "event", "id": 4}
+    with engine.connect() as conn:
+        owner_image = _image(conn, KifuEvent.__table__, 4)
+    research = event_records[0]
+    research.update(owner=owner, lang="en", original_name="Honinbo",
+                    candidate_name="28th Honinbo Tournament")
+    research["source_input"] = {"kind": "catalog_canonical", "owner": owner, "text": "Honinbo",
+                                "owner_preimage_sha256": canonical_sha256(owner_image)}
+    research["generation"]["method"] = "translation"
+    candidate = event_bundle["candidates"][0]
+    candidate.update(owner=owner, lang="en", display_name="28th Honinbo Tournament",
+                     research_sha256=canonical_sha256(research))
+    candidate["generated_review"].update(owner=owner, lang="en", display_name=candidate["display_name"],
+                                          research_sha256=candidate["research_sha256"])
+    candidate["preimage_binding"]["source_candidate_sha256"] = canonical_sha256(candidate)
+    event_bundle["members"] = [{"owner": owner, "lang": "en"}]
+    event_bundle["member_set_sha256"] = canonical_sha256(event_bundle["members"])
+    event_bundle["owners"] = [{"owner": owner, "preimage": owner_image}]
+    event_bundle["owner_set_sha256"] = canonical_sha256(event_bundle["owners"])
+    event_bundle["catalog_sha256"] = catalog_snapshot_sha(engine)
+    assert dry_run_bundle(engine, event_bundle, db_registry(), event_inv, event_records)["ready"]
+
+
+@pytest.mark.parametrize("other_kind", ["player", "old_raw_event"])
+def test_first_pass_shared_raw_event_does_not_mix_player_or_old_raw(engine, other_kind):
+    inv, bundle, records = bound_shared_raw_event_bundle(engine)
+    one, one_records = _one_shared_raw_event_bundle(bundle, records, 0)
+    with Session(engine) as db:
+        if other_kind == "player":
+            evidence = _evidence(db, "player", 17, "en", "28th Honinbo Tournament")
+            db.add(KifuPlayerName(player_id=17, lang="en", display_name="28th Honinbo Tournament",
+                                   status="verified", decision_kind="conventional",
+                                   generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        else:
+            evidence = _evidence(db, "raw_event", 21, "en", "28th Honinbo Tournament")
+            from katrain.web.core.models_db import KifuRawEventName
+            db.add(KifuRawEventName(raw_event_id=21, lang="en", display_name="28th Honinbo Tournament",
+                                    status="verified", decision_kind="conventional",
+                                    generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.commit()
+    with pytest.raises(BatchError, match="collision"):
+        dry_run_bundle(engine, one, db_registry(), inv, one_records)
+
+
+def test_first_pass_record_label_only_on_direct_scope_not_selected_title(engine):
+    from katrain.web.kifu.name_first_pass import record_label_display
+
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            source="https://19x19.com", source_path="data/kifu-album/19x19/one.sgf",
+            date_played="1934-10-01", board_size=19,
+            sgf_content="(;FF[4]SZ[19]SO[https://19x19.com]GN[GNUGo3.8]GN[Other]GC[Other | 1手])"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="Black", player_white="White", event="GNUGo3.8",
+            sgf_content="(;EV[GNUGo3.8])", source_path="gnugo-direct.sgf"))
+    apply_reviewed_selection(engine, 11)
+    inv = build_inventory(engine, inventory_format=4)
+    owner = {"kind": "raw_event", "id": 7}
+    with engine.connect() as conn:
+        owner_image = _image(conn, KifuRawEventValue.__table__, 7)
+        slots = raw_scope_rows(conn, "GNUGo3.8")
+    assert owner_image["category"] == "program_source_label"
+    declaration = {"owner": owner, "preimage": owner_image, "occurrence_album_ids": [11, 12],
+                   "occurrence_sha256": canonical_sha256([11, 12])}
+    members, candidates, records = [], [], []
+    for lang in ("en", "cn", "tw", "jp", "ko"):
+        display = record_label_display(lang, "GNUGo3.8")
+        research = {
+            "owner": owner, "lang": lang, "registry_version": "test-1",
+            "registry_sha256": registry_sha256(db_registry()),
+            "source_basis": "user_authorized_first_pass_v1", "scope_status": "generated_first_pass",
+            "verification_level": "generated_first_pass", "original_name": "GNUGo3.8",
+            "original_language": "und", "source_input": {
+                "kind": "raw_event_literal", "owner": owner, "text": "GNUGo3.8",
+                "owner_preimage_sha256": canonical_sha256(owner_image),
+                "record_label_basis": "program_token"},
+            "raw_scope": {"raw_value": "GNUGo3.8", "slots": slots},
+            "generation": {"method": "translation", "submode": "literal_record_label"},
+            "candidate_name": display, "producer_id": "translator", "producer_model": "gpt-6-luna",
+            "review_status": "pending",
+        }
+        member = {"owner": owner, "lang": lang, "raw_value": "GNUGo3.8"}
+        candidate = bind_fixture_candidate({
+            **member, "display_name": display, "decision_kind": "generated",
+            "research_sha256": canonical_sha256(research),
+            "generation_rule_version": "user_authorized_first_pass_v1", "name_preimage_sha256": None,
+            "record_label_mode": "literal_record_label",
+            "producer_id": "translator", "producer_model": "gpt-6-luna",
+            "produced_at": "2026-10-11T01:00:00Z", "review_status": "approved",
+            "reviewer_id": "reviewer", "reviewer_model": "gpt-6.1-sol",
+            "reviewed_at": "2026-10-11T01:01:00Z",
+            "review_conclusion": "approved_first_pass_display_and_source",
+            "generated_review": {"decision": "approve_generated_first_pass", "owner": owner,
+                                 "lang": lang, "display_name": display,
+                                 "research_sha256": canonical_sha256(research),
+                                 "reviewer_id": "reviewer", "reviewer_model": "gpt-6.1-sol",
+                                 "reviewed_at": "2026-10-11T01:01:00Z"},
+        })
+        candidate["preimage_binding"].update(captured_at="2026-10-11T01:00:15Z",
+                                               bound_at="2026-10-11T01:00:30Z")
+        members.append(member)
+        candidates.append(candidate)
+        records.append(research)
+    bundle = {"bundle_format": 2, "inventory_format": inv["inventory_format"],
+              "inventory_sha256": inv["sha256"], "registry_version": "test-1",
+              "registry_sha256": registry_sha256(db_registry()), "rule_version": "first-pass-v1",
+              "catalog_sha256": catalog_snapshot_sha(engine), "members": members,
+              "member_set_sha256": canonical_sha256(members), "candidates": candidates,
+              "owners": [declaration], "owner_set_sha256": canonical_sha256([declaration]),
+              "album_links": [], "link_set_sha256": canonical_sha256([])}
+    unmarked = deepcopy(candidates[0])
+    unmarked.pop("record_label_mode")
+    with pytest.raises(CandidateError, match="record label"):
+        validate_candidate(unmarked, records[0], db_registry(), inv)
+    assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
+    result = apply_bundle(engine, bundle, db_registry(), inv, records)
+    with Session(engine) as db:
+        albums = db.query(KifuAlbum).filter(KifuAlbum.id.in_([11, 12])).all()
+        selected = live_event_selections(db, albums, album_ids={11})
+        for lang in ("en", "cn", "tw", "jp", "ko"):
+            rows = _approved_raw_event_names(db, values={"GNUGo3.8"}, lang=lang)
+            assert len(rows) == 1
+            assert _raw_event_map(rows, albums, selected) == {
+                (12, "GNUGo3.8", None): record_label_display(lang, "GNUGo3.8")}
+            assert {item.id for item in _list(db, record_label_display(lang, "GNUGo3.8"), lang).items
+                    if item.id in {11, 12}} == {12}
+    coverage = coverage_report(engine, inv, languages=("en", "cn", "tw", "jp", "ko"))
+    assert all(coverage["languages"][lang]["by_decision"].get("record_label", 0) == 1
+               for lang in ("en", "cn", "tw", "jp", "ko"))
+    from katrain.web.kifu.name_batch import _check_cross_bundle_collisions
+    with engine.connect() as conn:
+        with pytest.raises(BatchError, match="collision"):
+            _check_cross_bundle_collisions(conn, [{
+                "owner": {"kind": "event", "id": 4}, "lang": "en",
+                "display_name": "Record label: GNUGo3.8", "decision_kind": "generated",
+                "generation_rule_version": "user_authorized_first_pass_v1", "review_status": "approved",
+            }])
+    assert undo_batch(engine, result["batch_id"])["status"] == "undone"

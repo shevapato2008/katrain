@@ -1,6 +1,7 @@
 """One authorized generated-name profile; no external publication is claimed."""
 
 import re
+from collections import Counter
 
 VERSION = "user_authorized_first_pass_v1"
 LEVEL = "generated_first_pass"
@@ -8,6 +9,41 @@ LANGUAGES = frozenset({"en", "cn", "tw", "jp", "ko"})
 METHODS = frozenset({"retain_original", "orthographic_conversion", "transliteration", "translation"})
 READABLE_RAW_CATEGORIES = frozenset({"formal_event_candidate", "game_description", "unclassified_pending"})
 _HASH = re.compile(r"^[0-9a-f]{64}$")
+_SGF_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,127}(?:\.sgf|sgf)$", re.I)
+RECORD_LABEL_MODE = "literal_record_label"
+RECORD_LABELS = {"cn": "棋谱标记：{raw}", "tw": "棋譜標記：{raw}",
+                 "jp": "棋譜ラベル：{raw}", "ko": "기보 표기: {raw}", "en": "Record label: {raw}"}
+
+
+def record_label_kind(raw):
+    if raw == "GNUGo3.8":
+        return "program_token"
+    if isinstance(raw, str) and _SGF_TOKEN.fullmatch(raw):
+        return "sgf_token"
+    return None
+
+
+def record_label_display(lang, raw):
+    return RECORD_LABELS[lang].format(raw=raw)
+
+
+def eligible_record_label(research, owner_category):
+    source = research.get("source_input") if isinstance(research, dict) else None
+    generation = research.get("generation") if isinstance(research, dict) else None
+    if not (isinstance(source, dict) and isinstance(generation, dict)
+            and source.get("kind") == "raw_event_literal"
+            and generation.get("method") == "translation"
+            and generation.get("submode") == RECORD_LABEL_MODE
+            and research.get("lang") in RECORD_LABELS):
+        return False
+    raw = source.get("text")
+    kind = record_label_kind(raw)
+    expected_category = {"program_token": "program_source_label", "sgf_token": "unclassified_pending"}.get(kind)
+    from katrain.web.kifu.name_parse import parse_event
+    return (kind is not None and source.get("record_label_basis") == kind
+            and owner_category == expected_category
+            and parse_event(raw, None).category == expected_category
+            and research.get("candidate_name") == record_label_display(research["lang"], raw))
 
 
 def is_first_pass(row):
@@ -57,8 +93,16 @@ def validate_research(record):
         raise ValueError("raw player first pass needs its own literal source")
     if source["kind"] == "raw_event_literal":
         from katrain.web.kifu.name_parse import parse_event
-        if parse_event(source["text"], None).category not in READABLE_RAW_CATEGORIES:
+        category = parse_event(source["text"], None).category
+        if not eligible_record_label(record, category) and category not in READABLE_RAW_CATEGORIES:
             raise ValueError("first pass cannot rename a program, generic, damaged or archive value")
+        if (generation.get("submode") == RECORD_LABEL_MODE or "record_label_basis" in source
+                or record.get("candidate_name", "").startswith(tuple(
+                    template.split("{raw}")[0] for template in RECORD_LABELS.values()))) and not eligible_record_label(
+                    record, category):
+            raise ValueError("record label needs exact source token, category, method and native template")
+    elif generation.get("submode") == RECORD_LABEL_MODE or "record_label_basis" in source:
+        raise ValueError("record label is only for raw event literal metadata")
     if source["kind"] == "existing_locale":
         if not (source.get("lang") in LANGUAGES and source["lang"] != record["lang"]
                 and type(source.get("name_id")) is int and source["name_id"] > 0
@@ -193,18 +237,52 @@ def shared_display_candidate(row, scope=None, *, require_approval=True):
             and canonical_sha256(scope) == row.get("raw_display_scope_sha256"))
 
 
+def shared_event_display_candidate(row, research, *, require_approval=True):
+    """Permit a shared raw title as text only, with its own finite literal source."""
+    if (not isinstance(row, dict) or not isinstance(research, dict)
+            or row.get("owner", {}).get("kind") != "raw_event"
+            or row.get("decision_kind") != "generated"
+            or row.get("generation_rule_version") != VERSION
+            or row.get("review_status") not in ({"approved"} if require_approval else {"pending", "approved"})
+            or row.get("collision_decision") != "shared_display"):
+        return False
+    raw = row.get("raw_value")
+    source = research.get("source_input")
+    scope = research.get("raw_scope")
+    if (not isinstance(raw, str) or not isinstance(source, dict) or not isinstance(scope, dict)
+            or source.get("kind") != "raw_event_literal" or source.get("text") != raw
+            or research.get("generation", {}).get("submode") == RECORD_LABEL_MODE
+            or research.get("candidate_name") != row.get("display_name")
+            or scope.get("raw_value") != raw or not isinstance(scope.get("slots"), list)
+            or not scope["slots"] or row.get("collision_basis") != {
+                "kind": "literal_title_translation", "source_text": raw,
+                "provenance": "signed_raw_event_literal",
+            }):
+        return False
+    return not (Counter(re.findall(r"\d+", raw)) - Counter(re.findall(r"\d+", row["display_name"])))
+
+
 def validate_candidate(row, research):
+    from katrain.web.kifu.name_parse import parse_event
     if not (row.get("decision_kind") == "generated" and row.get("generation_rule_version") == VERSION
             and research.get("source_basis") == VERSION
             and row.get("display_name") == research.get("candidate_name")):
         raise ValueError("first-pass generated candidate markers or output differ")
     if row["owner"]["kind"] == "raw_event" and row.get("raw_value") != research["source_input"]["text"]:
         raise ValueError("first-pass raw candidate differs from exact original")
+    record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
+    if record_mode != (row.get("record_label_mode") == RECORD_LABEL_MODE) or (
+            "record_label_mode" in row and not record_mode):
+        raise ValueError("record label candidate marker differs from signed research")
+    if record_mode and not eligible_record_label(
+            research, parse_event(research["source_input"]["text"], None).category):
+        raise ValueError("record label candidate differs from exact template")
     if row["owner"]["kind"] == "raw_player" and (row.get("raw_value") != research["source_input"]["text"]
             or row.get("raw_display_scope_sha256") != research.get("raw_display_scope_sha256")):
         raise ValueError("first-pass raw player differs from literal or signed scope")
-    if ("collision_decision" in row or "collision_basis" in row) and not shared_display_candidate(
-            row, require_approval=False):
+    if ("collision_decision" in row or "collision_basis" in row) and not (
+            shared_display_candidate(row, require_approval=False)
+            or shared_event_display_candidate(row, research, require_approval=False)):
         raise ValueError("first-pass shared display needs its exact raw literal basis")
     if row.get("review_status") == "pending":
         if "generated_review" in row:
@@ -268,8 +346,12 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
         return False
     if source["kind"] == "raw_event_literal" and owner.get("raw_value") != source["text"]:
         return False
-    if source["kind"] == "raw_event_literal" and owner.get("category") not in READABLE_RAW_CATEGORIES:
-        return False
+    if source["kind"] == "raw_event_literal":
+        record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
+        if record_mode and not eligible_record_label(research, owner.get("category")):
+            return False
+        if not record_mode and owner.get("category") not in READABLE_RAW_CATEGORIES:
+            return False
     if source["kind"] == "raw_player_literal" and (owner.get("raw_value") != source["text"]
             or owner.get("category") != "readable_unlinked"
             or owner.get("review_status") not in {"pending", "approved"}):

@@ -1372,6 +1372,7 @@ def validate_bundle(
                 if any(_owner_key(owner, lang) not in approved_keys for lang in PRIMARY_NAME_LANGUAGES):
                     errors.append(f"linked identity lacks all five approved language names: {token}")
     collisions = defaultdict(list)
+    research_by_hash = {canonical_sha256(record): record for record in research_records}
     for row in decisions:
         if row["review_status"] == "approved" and row["decision_kind"] in {
             "conventional",
@@ -1385,12 +1386,18 @@ def validate_bundle(
     for (lang, name), owners in collisions.items():
         if len({_owner_token(owner) for owner in owners}) > 1:
             group = [row for row in decisions if row["lang"] == lang and normalize_alias(row["display_name"]) == name]
-            from katrain.web.kifu.name_first_pass import shared_display_candidate
+            from katrain.web.kifu.name_first_pass import shared_display_candidate, shared_event_display_candidate
             raw_group = [row for row in group if row["owner"]["kind"] == "raw_player"]
             canonical_group = [row for row in group if row["owner"]["kind"] == "player"]
             if (raw_group and len(canonical_group) <= 1 and len(raw_group) + len(canonical_group) == len(group)
                     and all(shared_display_candidate(row, (declarations or {}).get(
                         _owner_token(row["owner"]), {}).get("raw_display_scope")) for row in raw_group)):
+                continue
+            raw_events = [row for row in group if row["owner"]["kind"] == "raw_event"]
+            events = [row for row in group if row["owner"]["kind"] == "event"]
+            if (raw_events and len(events) <= 1 and len(raw_events) + len(events) == len(group)
+                    and all(shared_event_display_candidate(row, research_by_hash.get(row.get("research_sha256")))
+                            for row in raw_events)):
                 continue
             if any(row.get("generation_rule_version") == "user_authorized_first_pass_v1" for row in group):
                 errors.append(f"first-pass name collision: {lang}:{name} owners={owners}")

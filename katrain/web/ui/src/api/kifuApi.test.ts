@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api';
 import { KifuAPI } from './kifuApi';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { delete window.__kifuListRequest; vi.unstubAllGlobals(); });
 
 describe('棋谱 HTTP 错误保留状态码，供列表和详情识别离线', () => {
   // 页面测试只桩 KifuAPI；这里经过真实客户端，防止 fixture 自己构造 ApiError 掩盖接线断路。
@@ -43,4 +43,26 @@ describe('棋谱展示语言', () => {
       '/api/v1/kifu/albums/7',
     ]);
   });
+});
+
+it('首条棋谱直接复用列表 preview，不再串行请求详情', async () => {
+  const preview = { id: 24171, sgf_content: '(;SZ[19];B[dd])' };
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ items: [preview], preview, total: 1 }), { status: 200 })));
+  vi.stubGlobal('fetch', fetchMock);
+  await KifuAPI.getAlbums({ page: 1, page_size: 20, lang: 'cn' });
+  expect(await KifuAPI.getAlbum(24171, 'cn')).toEqual(preview);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('首次预加载网络失败后重试发起新的请求', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response('{"items":[],"total":0}'));
+  vi.stubGlobal('fetch', fetchMock);
+  window.__kifuListRequest = {
+    path: '/api/v1/kifu/albums?page=1&page_size=20&lang=cn',
+    response: Promise.reject(new Error('offline')),
+  };
+  const request = () => KifuAPI.getAlbums({ page: 1, page_size: 20, lang: 'cn' });
+  await expect(request()).rejects.toThrow('offline');
+  expect(await request()).toEqual({ items: [], total: 0 });
+  expect(fetchMock).toHaveBeenCalledTimes(1);
 });

@@ -74,12 +74,14 @@ class TestCaptureService:
         svc.start()
         frame, seq, ts = svc.grab_fresh(after_ts=100.0, settle_ms=10)
         assert frame.shape == (8, 8, 3) and seq == 7 and ts == 123.0
+        svc.stop()
 
     def test_read_frame_delegates_for_preview(self):
         cam = FakeCam()
         svc = _svc(cam)
         svc.start()
         assert svc.read_frame().shape == (8, 8, 3)
+        svc.stop()
 
     def test_runtime_controls_and_readbacks_delegate(self):
         cam = FakeCam()
@@ -93,6 +95,7 @@ class TestCaptureService:
         assert svc.initial_exposure == 166.0
         assert svc.current_auto_exposure == 1.0
         assert svc.current_exposure == 222.0
+        svc.stop()
 
     def test_capture_to_writes_file(self, tmp_path):
         cam = FakeCam()
@@ -103,6 +106,7 @@ class TestCaptureService:
         assert out.exists() and seq == 7
         # parent dir was created; no leftover tmp file
         assert not (tmp_path / "game1" / ".frame_000.tmp.jpg").exists()
+        svc.stop()
 
     def test_capture_to_raises_without_frame(self, tmp_path):
         cam = FakeCam()
@@ -111,6 +115,7 @@ class TestCaptureService:
         svc.start()
         with pytest.raises(RuntimeError):
             svc.capture_to(str(tmp_path / "x.jpg"))
+        svc.stop()
 
     def test_grab_burst(self):
         cam = FakeCam()
@@ -118,6 +123,7 @@ class TestCaptureService:
         svc.start()
         frames = svc.grab_burst(n=3, interval=0)
         assert len(frames) == 3
+        svc.stop()
 
 
 class TestCameraGrabFreshGate:

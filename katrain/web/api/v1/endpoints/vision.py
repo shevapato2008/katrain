@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -111,6 +112,8 @@ def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest
 async def vision_status(request: Request):
     """Return vision service status."""
     vision = getattr(request.app.state, "vision", None)
+    led = getattr(request.app.state, "led", None)
+    led_connected = led.is_board_connected() if led is not None else None
     if vision is None:
         return {
             "enabled": False,
@@ -122,7 +125,7 @@ async def vision_status(request: Request):
             "geometry_ready": False,
             "model_ready": False,
             "recognition_ready": False,
-            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+            "led_connected": led_connected,
         }
 
     vision.refresh_status()
@@ -136,7 +139,7 @@ async def vision_status(request: Request):
         "geometry_ready": vision._latest_status.geometry_ready,
         "model_ready": vision._latest_status.model_ready,
         "recognition_ready": vision._latest_status.recognition_ready,
-        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+        "led_connected": led_connected,
     }
 
 
@@ -195,6 +198,38 @@ async def bind_session(
         session = None
     if session is None:
         raise HTTPException(status_code=404, detail=f"Session {body.session_id} not found")
+    bridge = getattr(request.app.state, "pvp_box_bridge", None)
+    if bridge is not None and getattr(session, "game_type", None) == "pvp_lobby":
+        from katrain.web.core.pvp_box_bridge import PvpBoxAuthError, PvpBoxRemoteError
+
+        generation = request.app.state.box_sso.active_generation
+        room = bridge.rooms.for_local(generation, body.session_id)
+        if current_user is None or room is None or room.local_user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="PvP room unavailable")
+        try:
+            payload = await bridge.fetch_state(generation, body.session_id)
+        except PvpBoxAuthError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PvpBoxRemoteError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                bridge.rooms.discard_local(body.session_id)
+                manager.remove_session(body.session_id)
+            raise HTTPException(status_code=exc.response.status_code, detail=exc.response.text) from exc
+        state = payload["state"]
+        if state.get("board_size") not in ([19, 19], (19, 19), 19):
+            raise HTTPException(status_code=409, detail="physical PvP requires a 19x19 board")
+        session.last_state = state
+        vision.bind_session(body.session_id)
+        request.app.state.ranked_vision_binding = None
+        _drain_stale_move_queue(request)
+        vision.set_expected_from_stones(state["stones"], expected_node_id=state.get("current_node_id"))
+        orchestrator = getattr(request.app.state, "physical_play", None)
+        if orchestrator is not None:
+            orchestrator.on_bind(body.session_id, session)
+            orchestrator.on_game_state(state)
+        return {"ok": True, "session_id": body.session_id}
     ranked_binding = None
     if is_ai_ladder_ranked_session(session):
         with session.lock:

@@ -22,16 +22,19 @@ export interface AiMoveMarker {
   score_lead: number;
 }
 
-interface LiveBoardProps {
+export interface LiveBoardProps {
   moves: string[]; // Array of moves in display format (e.g., "Q16", "D4")
   stoneColors?: ('B' | 'W')[]; // Parallel array of stone colors; if absent, alternates B/W
   currentMove: number; // Which move to display up to
   boardSize?: number; // 9, 13, or 19
   showCoordinates?: boolean;
   onIntersectionClick?: (x: number, y: number) => void;
+  /** Placement mode rejects existing stones; editing can still select them. */
+  rejectOccupiedIntersections?: boolean;
   nextColor?: 'B' | 'W'; // Color of the next stone to place (for hover preview)
   pvMoves?: string[] | null; // Principal variation moves to display as semi-transparent stones
   aiMarkers?: AiMoveMarker[] | null; // AI recommended moves to mark on board
+  aiMarkerLimit?: number; // Maximum AI markers to display (default 3)
   showAiMarkers?: boolean; // Whether to display AI markers (default true)
   showMoveNumbers?: boolean; // Whether to display move numbers on stones
   handicapCount?: number; // Number of leading setup stones to skip when numbering
@@ -53,7 +56,9 @@ interface LiveBoardProps {
 }
 
 // Convert display coordinate (e.g., "Q16") to board indices
-function parseMove(move: string): [number, number] | null {
+// Shared with the 3D replay adapter; pure board logic does not retain component state.
+// eslint-disable-next-line react-refresh/only-export-components
+export function parseMove(move: string): [number, number] | null {
   if (!move || move.length < 2) return null;
   if (move.toLowerCase() === 'pass') return null;
 
@@ -174,6 +179,28 @@ function removeCaptures(
     }
   }
   return captured;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function buildReplayBoardState(moves: string[], currentMove: number, boardSize: number, stoneColors?: ('B' | 'W')[], handicapCount = 0) {
+  const board: (string | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+  const moveNumbers: (number | null)[][] = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+  let lastMove: [number, number] | null = null;
+  let lastPlayer: 'B' | 'W' = 'B';
+  for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
+    const coords = parseMove(moves[i]);
+    if (!coords) continue;
+    const [x, y] = coords;
+    if (x >= boardSize || y >= boardSize) continue;
+    const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
+    board[y][x] = player;
+    moveNumbers[y][x] = i < handicapCount ? null : i + 1 - handicapCount;
+    const captured = removeCaptures(board, x, y, boardSize);
+    for (const [cx, cy] of captured) moveNumbers[cy][cx] = null;
+    if (i >= handicapCount) lastMove = coords;
+    lastPlayer = player;
+  }
+  return { board, moveNumbers, lastMove, lastPlayer };
 }
 
 // Jade green color for AI markers (matching play module style)
@@ -310,9 +337,11 @@ export default function LiveBoard({
   boardSize = 19,
   showCoordinates = true,
   onIntersectionClick,
+  rejectOccupiedIntersections = false,
   nextColor,
   pvMoves,
   aiMarkers,
+  aiMarkerLimit = 3,
   showAiMarkers = true,
   showMoveNumbers = false,
   handicapCount = 0,
@@ -384,48 +413,12 @@ export default function LiveBoard({
   }, [minimumCanvasSize]);
 
   // Build board state from moves (with capture handling)
-  const buildBoardState = () => {
-    const board: (string | null)[][] = Array(boardSize)
-      .fill(null)
-      .map(() => Array(boardSize).fill(null));
-    // Track move numbers for each position
-    const moveNumbers: (number | null)[][] = Array(boardSize)
-      .fill(null)
-      .map(() => Array(boardSize).fill(null));
-
-    let lastMove: [number, number] | null = null;
-    let lastPlayer: 'B' | 'W' = 'B';
-
-    for (let i = 0; i < Math.min(currentMove, moves.length); i++) {
-      const coords = parseMove(moves[i]);
-      if (coords) {
-        const [x, y] = coords;
-        if (x >= 0 && x < boardSize && y >= 0 && y < boardSize) {
-          const player = stoneColors?.[i] ?? (i % 2 === 0 ? 'B' : 'W');
-          board[y][x] = player;
-          // Handicap setup stones (indices 0..handicapCount-1) get no number.
-          // Game moves are numbered starting from 1.
-          moveNumbers[y][x] = i < handicapCount ? null : (i + 1 - handicapCount);
-
-          // Remove captured opponent stones (also clear their move numbers)
-          const capturedPositions = removeCaptures(board, x, y, boardSize);
-          for (const pos of capturedPositions) {
-            moveNumbers[pos[1]][pos[0]] = null;
-          }
-
-          lastMove = coords;
-          lastPlayer = player;
-        }
-      }
-    }
-
-    return { board, moveNumbers, lastMove, lastPlayer };
-  };
+  const buildBoardState = () => buildReplayBoardState(moves, currentMove, boardSize, stoneColors, handicapCount);
 
   // Render board function
   const renderBoard = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !imagesLoaded) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -503,17 +496,24 @@ export default function LiveBoard({
       }
     }
 
+    let markerMove = lastMove;
+    let markerPlayer = lastPlayer;
+
     // Draw try moves (semi-transparent stones for experimentation)
     if (tryMoves && tryMoves.length > 0) {
       let tryPlayer: 'B' | 'W' = lastPlayer === 'B' ? 'W' : 'B';
       if (currentMove === 0) tryPlayer = 'B';
 
+      const tryOccupied = new Set<string>();
       for (let i = 0; i < tryMoves.length; i++) {
         const coords = parseMove(tryMoves[i]);
         if (coords) {
           const [x, y] = coords;
-          if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x]) {
+          if (x >= 0 && x < boardSize && y >= 0 && y < boardSize && !board[y][x] && !tryOccupied.has(`${x},${y}`)) {
             drawPvStone(ctx, layout, x, y, boardSize, tryPlayer, i + 1, blackImg, whiteImg);
+            tryOccupied.add(`${x},${y}`);
+            markerMove = coords;
+            markerPlayer = tryPlayer;
           }
         }
         tryPlayer = tryPlayer === 'B' ? 'W' : 'B';
@@ -521,9 +521,9 @@ export default function LiveBoard({
     }
 
     // Draw last move marker (always show, even with move numbers)
-    if (lastMove) {
-      const [x, y] = lastMove;
-      drawLastMoveMarker(ctx, layout, x, y, boardSize, lastPlayer);
+    if (markerMove) {
+      const [x, y] = markerMove;
+      drawLastMoveMarker(ctx, layout, x, y, boardSize, markerPlayer);
     }
 
     // 摆谱: pulsing markers for stones the user must physically remove (提子).
@@ -583,8 +583,7 @@ export default function LiveBoard({
     // Draw AI move markers (colored circles on empty intersections)
     if (showAiMarkers && aiMarkers && aiMarkers.length > 0 && !pvMoves) {
       // Only show AI markers when not hovering on PV (PV takes precedence)
-      // Limit to top 3 to match play module
-      const markersToShow = aiMarkers.slice(0, 3);
+      const markersToShow = aiMarkers.slice(0, aiMarkerLimit);
       for (const marker of markersToShow) {
         const coords = parseMove(marker.move);
         if (coords) {
@@ -600,11 +599,7 @@ export default function LiveBoard({
     // Draw PV (principal variation) stones if hovering
     if (pvMoves && pvMoves.length > 0) {
       // Determine the starting player for PV moves (opposite of last player)
-      let pvPlayer: 'B' | 'W' = lastPlayer === 'B' ? 'W' : 'B';
-      // If we're at move 0 (empty board), black plays first
-      if (currentMove === 0) {
-        pvPlayer = 'B';
-      }
+      let pvPlayer: 'B' | 'W' = nextColor ?? (currentMove === 0 ? 'B' : lastPlayer === 'B' ? 'W' : 'B');
 
       // Track positions already used by PV stones
       const pvOccupied = new Set<string>();
@@ -658,7 +653,6 @@ export default function LiveBoard({
 
   // Render on state change; animate only when AI markers need pulsing
   useEffect(() => {
-    if (!imagesLoaded) return;
     renderBoard();
 
     const needsAnimation =
@@ -669,7 +663,7 @@ export default function LiveBoard({
       const interval = setInterval(renderBoard, 100); // ~10fps for pulse
       return () => clearInterval(interval);
     }
-  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
+  }, [moves, stoneColors, currentMove, boardSize, canvasSize, imagesLoaded, showCoordinates, pvMoves, aiMarkers, aiMarkerLimit, showAiMarkers, showMoveNumbers, showTerritory, ownership, tryMoves, nextColor, nextMovePoint, capturedPositions]);
 
   // Convert grid coordinates to move notation (e.g., Q16)
   const coordsToMove = (x: number, y: number): string => {
@@ -723,6 +717,11 @@ export default function LiveBoard({
     if (gridPos) {
       // Handle try move mode
       if (onTryMove) {
+        const { board } = buildBoardState();
+        if (board[gridPos.y][gridPos.x] || tryMoves?.some((trial) => {
+          const coords = parseMove(trial);
+          return coords?.[0] === gridPos.x && coords[1] === gridPos.y;
+        })) return;
         const move = coordsToMove(gridPos.x, gridPos.y);
         onTryMove(move);
         return;
@@ -730,6 +729,7 @@ export default function LiveBoard({
 
       // Regular intersection click
       if (onIntersectionClick) {
+        if (rejectOccupiedIntersections && buildBoardState().board[gridPos.y][gridPos.x]) return;
         onIntersectionClick(gridPos.x, gridPos.y);
       }
     }

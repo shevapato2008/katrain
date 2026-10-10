@@ -26,7 +26,8 @@ import { TutorialAPI } from '../../api/tutorialApi';
 import BoardPageShell from '../../components/board/BoardPageShell';
 import ModulePlate from '../../components/layout/ModulePlate';
 import ToolGridButton from '../../components/board/ToolGridButton';
-import SGFBoard from '../../components/tutorials/SGFBoard';
+import SGFBoard, { findNumberedStone } from '../../components/tutorials/SGFBoard';
+import { useSound } from '../../../hooks/useSound';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
 import AudioPlayer from '../../components/tutorials/AudioPlayer';
@@ -37,6 +38,7 @@ import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
   const { token, user } = useAuth();
+  const { play } = useSound();
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +129,14 @@ export default function TutorialFigurePage() {
   useEffect(() => {
     setMoveStep(maxMoveNumber > 0 ? maxMoveNumber : null);
   }, [currentFigureIndex, maxMoveNumber]);
+
+  const currentStep = moveStep ?? maxMoveNumber;
+  const lastStone = editor.isEditing ? null : findNumberedStone(displayPayload, currentStep);
+  const handleStepChange = useCallback((step: number) => {
+    if (step === currentStep) return;
+    setMoveStep(step);
+    if (findNumberedStone(displayPayload, step)) play('stone');
+  }, [currentStep, displayPayload, play]);
 
   const isVerified = currentFigure?.recognition_debug?.human_verified === true;
 
@@ -335,6 +345,7 @@ export default function TutorialFigurePage() {
         {hasBoard ? (
           <SGFBoard
             payload={editor.isEditing ? editor.payload : displayPayload!}
+            last={lastStone}
             maxMoveStep={editor.isEditing ? undefined : (moveStep ?? undefined)}
             showFullBoard={editor.isEditing}
             onClick={editor.isEditing ? editor.handleClick : undefined}
@@ -448,7 +459,7 @@ export default function TutorialFigurePage() {
                   <Box>
                     <Slider
                       value={moveStep ?? maxMoveNumber}
-                      onChange={(_, v) => setMoveStep(v as number)}
+                      onChange={(_, v) => handleStepChange(v as number)}
                       min={0}
                       max={maxMoveNumber}
                       step={1}

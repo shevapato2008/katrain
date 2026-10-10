@@ -3174,7 +3174,7 @@ msgid "grade:histogram_aria"
 msgstr "七档发挥水准分布，黑柱为黑方、白柱为白方，各自归一"
 
 msgid "grade:def_brilliant"
-msgstr "走出引擎首选，且连引擎自己都没想到（先验 < 10%）"
+msgstr "走出AI深入计算后的首选，且AI初选概率低于10%（官子低于6%）"
 
 msgid "grade:def_best"
 msgstr "走出引擎首选"
@@ -3189,7 +3189,10 @@ msgid "grade:def_unrated"
 msgstr "上一手没分析或搜索量不足，判不了"
 
 msgid "grade:brilliance_entry"
-msgstr "入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。"
+msgstr "妙手需满足：实战走出AI深入计算后的首选；AI初选概率低于10%（官子低于6%）；局面胜负尚未确定。"
+
+msgid "grade:initial_probability_help"
+msgstr "AI初选概率指AI深入计算前对这步棋的选择概率，不是胜率，也不是人类落子概率。初选概率很低的招法，也可能在深入计算后成为首选。"
 
 msgid "grade:match_timeline_legend"
 msgstr "满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他"
@@ -3748,7 +3751,7 @@ msgid "grade:sel_bad"
 msgstr "第 {n} 手 {m} · {s} · {g} · 目损 {x} 目"
 
 msgid "grade:sel_brilliant"
-msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— 走的就是引擎首选，而引擎自己只给了 {p}% 先验（越低越妙）"
+msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— AI初选概率仅为 {p}%，深入计算后成为首选"
 
 msgid "grade:truncated_plot"
 msgstr "图上每方最多画 {k} 条，另有 {n} 处未画出"
@@ -6801,3 +6804,75 @@ msgstr "确认登录失败"
 
 msgid "vision:not_a_stone"
 msgstr "不是落子"
+
+msgid "kifu:view_analysis_report"
+msgstr "查看分析报告"
+
+msgid "kifu:view_kifu"
+msgstr "查看棋谱"
+
+msgid "kifu:professional_game"
+msgstr "职业棋局"
+
+msgid "kifu:report_title"
+msgstr "职业棋局报告"
+
+msgid "kifu:report_load_failed"
+msgstr "职业棋局暂时无法读取"
+
+msgid "kifu:report_loading"
+msgstr "正在读取职业棋局报告"
+
+msgid "kifu:report_progress"
+msgstr "已分析 {done} / {total} 手"
+
+msgid "kifu:report_visits"
+msgstr "每局面 2000 visits · {total} 手"
+
+msgid "kifu:report_visits_heading"
+msgstr "职业棋局 · 每局面 2000 visits"
+
+msgid "kifu:report_no_position"
+msgstr "当前局面暂无分析结果"
+
+msgid "kifu:analysis_read_error"
+msgstr "分析状态暂时无法读取"
+
+msgid "kifu:analysis_loading"
+msgstr "正在读取分析"
+
+msgid "kifu:analysis_unavailable"
+msgstr "尚未安排分析"
+
+msgid "kifu:analysis_pending"
+msgstr "等待分析"
+
+msgid "kifu:analysis_running"
+msgstr "分析中"
+
+msgid "kifu:analysis_failed"
+msgstr "分析未完成"
+
+msgid "kifu:analysis_completed"
+msgstr "分析已完成"
+
+msgid "report:score_difference"
+msgstr "目差"
+
+msgid "kifu:pagination"
+msgstr "棋谱分页"
+
+msgid "kifu:jump_page"
+msgstr "跳转页码"
+
+msgid "kifu:jump"
+msgstr "跳转"
+
+msgid "kifu:page_range"
+msgstr "请输入 1 到 {max} 之间的整数页码"
+
+msgid "report:physical_board"
+msgstr "实体棋盘"
+
+msgid "report:back_report"
+msgstr "报告"

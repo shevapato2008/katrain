@@ -1,0 +1,114 @@
+{
+  "hall": {
+    "fonts": [
+      {
+        "selector": ".pvp-kiosk__bar>strong",
+        "text": "在线大厅",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-kiosk__start-grid strong",
+        "text": "快速匹配",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".pvp-kiosk__game .meta span:last-child",
+        "text": "19 路 · 对局中",
+        "fonts": [
+          {
+            "familyName": "Geist",
+            "postScriptName": "Geist-Regular",
+            "isCustomFont": true,
+            "glyphCount": 6
+          },
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      }
+    ],
+    "invitation": {
+      "type": "invite",
+      "target_id": -11
+    },
+    "quickMatchingGuide": "需要先完成定级\n\n快速匹配按你的升降级段位寻找同水平对手。请先在「升降级对弈」完成 5 局定级赛。\n\n当前段位\n尚未定级\n稍后再说\n去升降级对弈"
+  },
+  "spectator": {
+    "url": "http://127.0.0.1:5173/kiosk/play/pvp/watch/ee36",
+    "board": {
+      "x": 16,
+      "y": 114,
+      "width": 474,
+      "height": 472
+    },
+    "fonts": [
+      {
+        "selector": ".golaxy-spectator__page-title",
+        "text": "大厅对局观战",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 6
+          }
+        ]
+      },
+      {
+        "selector": ".golaxy-spectator__clock-name b",
+        "text": "秋日拂晓",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      },
+      {
+        "selector": ".golaxy-spectator__watch-head",
+        "text": "在线大厅\n只读观战\n对局中",
+        "fonts": [
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Bold",
+            "isCustomFont": true,
+            "glyphCount": 4
+          },
+          {
+            "familyName": "LXGW WenKai",
+            "postScriptName": "LXGWWenKai-Regular",
+            "isCustomFont": true,
+            "glyphCount": 4
+          }
+        ]
+      }
+    ],
+    "returnedToHall": true,
+    "referenceBoard": {
+      "x": 16,
+      "y": 114,
+      "width": 474,
+      "height": 472
+    }
+  },
+  "errors": []
+}

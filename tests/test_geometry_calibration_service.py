@@ -31,10 +31,21 @@ class FakeLed:
     def is_connected(self):
         return True
 
+    def is_board_connected(self):
+        return True
+
 
 class FakeCapture:
     def is_connected(self):
         return True
+
+
+@pytest.mark.parametrize("board_connected", [True, False, None])
+def test_calibration_status_led_uses_board_a_cache(tmp_path, board_connected):
+    led = FakeLed()
+    led.is_board_connected = lambda: board_connected
+    service = GeometryCalibrationService(led=led, capture=FakeCapture(), save_path=tmp_path / "g.npz")
+    assert service.status()["capabilities"]["led_ready"] is board_connected
 
 
 class FreshFakeCapture(FakeCapture):

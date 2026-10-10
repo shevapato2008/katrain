@@ -185,8 +185,13 @@ def test_camera_hub_reads_a_frame_with_its_identity_under_one_lock():
 
     hub = CameraHub(CameraHubConfig(device_id=0))
     inner = MagicMock()
+    inner._reader_thread = None
     inner.read_frame_identified.return_value = ("frame", 7, 1.5)
     hub._camera = inner
-    assert hub.read_frame_identified() == ("frame", 7, 1.5)
+    try:
+        hub.start()
+        assert hub.read_frame_identified() == ("frame", 7, 1.5)
+    finally:
+        hub.stop()
     hub._camera = None
     assert hub.read_frame_identified() == (None, 0, 0.0)

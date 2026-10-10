@@ -29,7 +29,7 @@ def test_vision_status_returns_disabled_status_when_service_is_not_enabled():
         "geometry_ready": False,
         "model_ready": False,
         "recognition_ready": False,
-        "led_connected": False,
+        "led_connected": None,
     }
 
 

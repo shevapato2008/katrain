@@ -338,10 +338,13 @@ async def geometry_status(request: Request):
             capabilities.update(model_ready=False, recognition_ready=False)
         return result
     lock = getattr(request.app.state, "geometry", None)
+    led = getattr(request.app.state, "led", None)
+    capabilities = {"led_ready": led.is_board_connected() if led is not None else None}
     if lock is None:
-        return {"locked": False}
+        return {"locked": False, "capabilities": capabilities}
     return {
         "locked": True,
+        "capabilities": capabilities,
         "confidence": getattr(lock, "confidence", None),
         "out_size": getattr(lock, "out_size", None),
     }

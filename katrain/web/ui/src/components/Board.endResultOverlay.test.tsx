@@ -39,6 +39,13 @@ const baseState = {
 describe('Board end-result overlay', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  test('does not draw a last-move circle at an empty intersection', () => {
+    const { ctx } = mockContext();
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
+    render(<Board gameState={{ ...baseState, last_move: [3, 3] }} onMove={() => {}} analysisToggles={{}} />);
+    expect(ctx.arc.mock.calls.some(call => call[2] > 5)).toBe(false);
+  });
+
   test('draws the full-canvas overlay by default (galaxy/未指定态不变)', () => {
     const { ctx, fillRectCalls } = mockContext();
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;

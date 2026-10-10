@@ -72,7 +72,7 @@ const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }
 vi.mock('../utils/activeSession', () => ({ writeActiveSession }));
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
+  useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true, status: 'authenticated', isGuest: false, identityKey: 'test' }),
 }));
 
 // 「怎么落子」那一格读的是**设备能力**(摄像头标没标定),不是设置项 ——
@@ -582,4 +582,19 @@ describe('A15 · 升降级开局 503 分原因', () => {
     expect(screen.queryByText(/升降级引擎暂时不可用/)).not.toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+  it('does not refresh private status after an end response settles on an unmounted page', async () => {
+    retryRanked.mockClear();
+    let finish: (value: unknown) => void = () => {};
+    withBlocking(blockingGame({ ownership: 'current_device', session_id: 'old-session' }));
+    endRanked.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const view = renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
+    view.unmount();
+    finish({ game_id: 'occupied-game', state: 'settled' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(retryRanked).not.toHaveBeenCalled();
+  });
+
 });

@@ -252,23 +252,21 @@ const SettingsPage = () => {
                 </button>
               </span>
             </div>
-            {/* 三件器件的读数。**「读不到」和「没连上」是两回事** ——
-                没问到之前(`loaded=false`)`DEFAULT_STATUS` 三个 capability 全是 false,照画就会在
-                开机那一瞬说「未连接」。所以没读到 / 没有摄像头时一律「—」且不给灯色。
-                措辞照抄标定屏那三格(`GeometryCalibrationScreen` 的 `cells`),同一件事只有一套写法;
-                LED 那一格照视觉赛道 V4:它只说串口通没通,不代表每颗灯都亮。 */}
+            {/* LED 的 Board A 供电确认独立于摄像头；未知状态没有绿色灯色。 */}
             {([
               ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready,
                 t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
               ['calib', t('Calibration', '几何标定'), status.capabilities.geometry_ready,
                 t('settings:geometry_calibrated', '已标定'), t('settings:geometry_uncalibrated', '未标定')],
               ['led', 'LED', status.capabilities.led_ready,
-                t('settings:led_serial_connected', '串口已连接'), t('settings:not_ready', '未连接')],
+                t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
             ] as const).map(([key, label, ok, yes, no]) => (
               <div className="kiosk-row" key={key} data-testid={`settings-cap-${key}`}>
                 <span className="kiosk-row__t"><b>{label}</b></span>
                 <span className="kiosk-row__end">
-                  {!loaded || noCamera ? (
+                  {key === 'led' && (!loaded || ok == null) ? (
+                    <span className="kiosk-tag">未确认</span>
+                  ) : !loaded || (noCamera && key !== 'led') ? (
                     <span className="kiosk-tag">—</span>
                   ) : (
                     <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{ok ? yes : no}</span>

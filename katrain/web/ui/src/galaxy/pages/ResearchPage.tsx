@@ -10,6 +10,8 @@ import BoardPageShell from '../components/board/BoardPageShell';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useResearchBoard } from '../hooks/useResearchBoard';
+import { useSound } from '../../hooks/useSound';
+import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, authHeaders } from '../../api';
@@ -19,11 +21,12 @@ import GameLibraryModal from '../components/research/CloudSGFPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
+import { accessAllowed } from '../../components/auth/accessPolicy';
 import type { ResearchBoardState } from '../hooks/useResearchBoard';
 
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
-    const { token, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { token, status, identityKey, isGuest, isAuthenticated, isLoading: authLoading } = useAuth();
     const { t, lang } = useTranslation();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
 
@@ -65,23 +68,16 @@ const ResearchPage = () => {
     // Board state hook (L1)
     const board = useResearchBoard();
 
-    // Stone placement sound for L1
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const prevMoveRef = useRef<number>(0);
-    useEffect(() => {
-        // Play sound when currentMove changes (stone placed or navigation)
-        if (board.currentMove !== prevMoveRef.current) {
-            prevMoveRef.current = board.currentMove;
-            if (!isAnalyzing) {
-                if (!audioRef.current) {
-                    audioRef.current = new Audio('/assets/sounds/stone1.wav');
-                }
-                const audio = audioRef.current;
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-            }
-        }
-    }, [board.currentMove, isAnalyzing]);
+    const { play } = useSound();
+    const handleL1Intersection = useCallback((x: number, y: number) => {
+        if (board.handleIntersectionClick(x, y)) play('stone');
+    }, [board, play]);
+    const handleL1MoveChange = useCallback((move: number) => {
+        const target = Math.max(0, Math.min(board.moves.length, move));
+        if (target === board.currentMove) return;
+        board.handleMoveChange(target);
+        if (target > 0 && isReplayStoneMove(board.moves[target - 1], board.boardSize)) play('stone');
+    }, [board, play]);
 
     // L1 quick analysis: hints + territory
     const [l1ShowHints, setL1ShowHints] = useState(false);
@@ -264,8 +260,9 @@ const ResearchPage = () => {
        落到一张空棋盘。
 
        和上面那条 `?kifu_id=` 是**两个 id 空间**：那条走棋谱库 `KifuAPI.getAlbum`，
-       这条走个人对局 `UserGamesAPI.get`（要 token，而 auth 是异步加载的，所以
-       `!token` 时先不烧掉 ref，等 token 到了这个 effect 会因为依赖变化再跑一次）。
+       这条走个人对局 `UserGamesAPI.get`，必须等 /me 确认身份；保留的 token 不代表
+       已确认登录，而 cookie 身份可以没有 token。加载结果归属发出请求时的身份，
+       退出、切号或卸载后不能再装进棋盘。
 
        **不认 `&analyze=1`。** 全盘扫描是计费动作，不该由一次导航悄悄触发；报告页那一局
        也早已分析过。要分析就按「开始研究」。上面 kifu 那条认它，是它原有的行为，不动。
@@ -273,14 +270,21 @@ const ResearchPage = () => {
        SGF 用刚取回来的 `detail.sgf_content`，不从 `board` 反推 —— `loadFromSGF` 的
        setState 在同一段 async 续体里还没冲刷，此刻读 `board.moves` 拿到的是加载前的空值。
        （kiosk 那份同名页在 `ResearchPage.tsx:374` 的注释里记的就是这个坑。） */
-    const userGameLoadedRef = useRef(false);
+    const userGameId = searchParams.get('user_game_id');
+    const privateGameAllowed = accessAllowed(status, isAuthenticated, isGuest, false) && !!identityKey;
+    const userGameScope = privateGameAllowed && userGameId ? `${identityKey}:${userGameId}` : null;
+    const userGameScopeRef = useRef(userGameScope);
+    userGameScopeRef.current = userGameScope;
+    const userGameLoadedRef = useRef<string | null>(null);
     useEffect(() => {
-        const userGameId = searchParams.get('user_game_id');
-        if (!userGameId || userGameLoadedRef.current || !token) return;
-        userGameLoadedRef.current = true;
+        if (!userGameId || !userGameScope || userGameLoadedRef.current === userGameScope) return;
+        let cancelled = false;
+        const current = () => !cancelled && userGameScopeRef.current === userGameScope;
 
         UserGamesAPI.get(token, userGameId)
             .then((detail) => {
+                if (!current()) return;
+                userGameLoadedRef.current = userGameScope;
                 if (!detail.sgf_content) return;
                 const result = board.loadFromSGF(detail.sgf_content);
                 if (!result.success) {
@@ -288,9 +292,11 @@ const ResearchPage = () => {
                 }
             })
             .catch((err) => {
+                if (!current()) return;
                 console.error('Failed to load user game for deep link:', err);
             });
-    }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
+        return () => { cancelled = true; };
+    }, [userGameId, userGameScope, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Poll analysis progress while analyzing and not yet complete
     useEffect(() => {
@@ -526,8 +532,9 @@ const ResearchPage = () => {
         const targetNodeId = history[clampedMove]?.node_id;
         if (targetNodeId !== undefined) {
             await session.onNavigate(targetNodeId);
+            if (clampedMove > 0 && isReplayStoneMove(history[clampedMove]?.move, session.gameState.board_size[0])) play('stone');
         }
-    }, [session]);
+    }, [session, play]);
 
     /* ══════════════════════════════════════════════════════════════════
        统一版式：三个形态都走 BoardPageShell 的三段右栏
@@ -752,7 +759,8 @@ const ResearchPage = () => {
                         showCoordinates={coordinates.visible}
                         showMoveNumbers={board.showMoveNumbers}
                         handicapCount={board.handicapCount}
-                        onIntersectionClick={board.handleIntersectionClick}
+                        onIntersectionClick={handleL1Intersection}
+                        rejectOccupiedIntersections={!board.editMode}
                         nextColor={board.nextColor ?? undefined}
                         aiMarkers={l1ShowHints ? l1AiMarkers : null}
                         showAiMarkers={l1ShowHints}
@@ -819,7 +827,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove === 0}
-                                onClick={() => board.handleMoveChange(0)}
+                                onClick={() => handleL1MoveChange(0)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ⏮
@@ -827,7 +835,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove === 0}
-                                onClick={() => board.handleMoveChange(board.currentMove - 1)}
+                                onClick={() => handleL1MoveChange(board.currentMove - 1)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ◀
@@ -847,7 +855,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove >= board.moves.length}
-                                onClick={() => board.handleMoveChange(board.currentMove + 1)}
+                                onClick={() => handleL1MoveChange(board.currentMove + 1)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ▶
@@ -855,7 +863,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove >= board.moves.length}
-                                onClick={() => board.handleMoveChange(board.moves.length)}
+                                onClick={() => handleL1MoveChange(board.moves.length)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ⏭

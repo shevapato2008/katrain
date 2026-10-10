@@ -39,7 +39,7 @@ const authState = {
   isLoading: false,
 };
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => authState,
+  useAuth: () => ({ ...authState, status: authState.isLoading ? 'checking' : authState.isAuthenticated ? 'authenticated' : 'guest', identityKey: authState.user?.id, retry: vi.fn() }),
 }));
 
 // 「怎么落子」读的是设备能力,不是设置项 —— 这一屏因此要 VisionProvider 的桩。
@@ -424,11 +424,11 @@ describe('AiSetupPage', () => {
       authState.isAuthenticated = false;
       authState.user = null;
       renderPage('ranked');
-      const panel = await screen.findByTestId('ranked-login-required');
-      expect(panel).toHaveTextContent('需要登录');
-      expect(within(panel).getByRole('button', { name: /去登录/ })).toBeInTheDocument();
-      // 只说「去登录」等于把人堵在这儿 —— 他现在就能下的那一种也要给。
-      expect(within(panel).getByRole('button', { name: /先去自由对弈/ })).toBeInTheDocument();
+      const panel = await screen.findByRole('dialog', { name: '登录后进入升降级对弈' });
+      expect(panel).toHaveTextContent('定级与升降级成绩需要记录到你的账号');
+      expect(within(panel).getByRole('button', { name: '登录并继续' })).toBeInTheDocument();
+      expect(within(panel).getByRole('button', { name: '返回对弈' })).toBeInTheDocument();
+      expect(screen.queryByTestId('ai-setup-page')).not.toBeInTheDocument();
     });
 
     it('已登录时升降级屏照常渲染设置,不弹登录', async () => {

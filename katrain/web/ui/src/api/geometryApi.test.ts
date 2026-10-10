@@ -4,6 +4,15 @@ import { GeometryAPI } from './geometryApi';
 describe('GeometryAPI', () => {
   afterEach(() => vi.restoreAllMocks());
 
+  it.each([true, false, null])('preserves Board A=%s in the no-camera legacy status branch', async (ledReady) => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({
+      locked: false, capabilities: { led_ready: ledReady },
+    }), { status: 200 }));
+    const status = await GeometryAPI.status();
+    expect(status.phase).toBe('disabled');
+    expect(status.capabilities.led_ready).toBe(ledReady);
+  });
+
   it('starts automatic LED calibration with empty-board confirmation', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ phase: 'waiting_empty' }), { status: 202 }),

@@ -83,7 +83,10 @@ def _get_camera_name(device_id: int | str) -> str | None:
     if sys.platform != "linux":
         return None
     if isinstance(device_id, str):
-        dev_num = device_id.replace("/dev/video", "")
+        node = os.path.basename(os.path.realpath(device_id))
+        if not node.startswith("video") or not node[5:].isdigit():
+            return None
+        dev_num = node[5:]
     else:
         dev_num = str(device_id)
     try:
@@ -126,6 +129,7 @@ class CameraManager:
     """
 
     RECONNECT_COOLDOWN = 5.0  # seconds between reconnect attempts
+    READER_JOIN_TIMEOUT_S = 2.0
 
     def __init__(
         self,
@@ -181,15 +185,26 @@ class CameraManager:
         self._desired_auto_exposure: float | None = None
         self._desired_exposure: float | None = None
         self._stop_event = threading.Event()
+        self._lifecycle_lock = threading.RLock()
 
     @property
     def is_connected(self) -> bool:
         """Whether the camera is currently open and readable."""
-        return self._connected and self._cap is not None and self._cap.isOpened()
+        with self._frame_lock:
+            return bool(
+                self._connected and self._cap is not None and self._cap.isOpened() and self._latest_frame is not None
+            )
 
     def open(self) -> bool:
         """Open the camera device and start the background reader thread."""
+        with self._lifecycle_lock:
+            return self._open_locked()
+
+    def _open_locked(self) -> bool:
         self.close()
+        if self._reader_thread is not None:
+            # A native read may outlive the bounded join. Never overlap readers.
+            return False
         with self._controls_lock:
             self._controls_effective = None
             open_generation = self._controls_generation
@@ -323,7 +338,7 @@ class CameraManager:
             self._connected = True
 
             # Start background reader thread
-            self._stop_event.clear()
+            self._stop_event = threading.Event()
             self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True, name="cam-reader")
             self._reader_thread.start()
             return True
@@ -333,13 +348,21 @@ class CameraManager:
 
     def close(self) -> None:
         """Stop the reader thread and release the camera device."""
+        with self._lifecycle_lock:
+            self._close_locked()
+
+    def _close_locked(self) -> None:
         self._stop_event.set()
+        with self._frame_lock:
+            self._connected = False
+            self._latest_frame = None
         if self._reader_thread is not None:
-            # Thread.start() can fail after the capture was acquired. An
-            # unstarted thread cannot be joined, but the capture still needs
-            # releasing before the outer CameraHub releases its device lease.
+            # Thread.start() can fail after capture acquisition; unstarted threads cannot be joined.
             if self._reader_thread.ident is not None:
-                self._reader_thread.join(timeout=2)
+                self._reader_thread.join(timeout=self.READER_JOIN_TIMEOUT_S)
+            if self._reader_thread.is_alive():
+                logger.warning("Camera %s reader is still stopping; deferring reopen", self._device_id)
+                return  # The reader releases its own capture in finally.
             self._reader_thread = None
         if self._cap is not None:
             self._cap.release()
@@ -377,11 +400,25 @@ class CameraManager:
 
     def _reader_loop(self) -> None:
         """Continuously read frames in background, keeping only the latest."""
-        while not self._stop_event.is_set():
+        cap, stop = self._cap, self._stop_event
+        try:
+            self._read_frames(cap, stop)
+        finally:
+            # Never acquire the lifecycle lock here: close() joins this thread
+            # while holding it. No replacement can open before this reader exits.
+            cap.release()
+            with self._frame_lock:
+                if self._cap is cap:
+                    self._cap = None
+                    self._connected = False
+                    self._latest_frame = None
+
+    def _read_frames(self, cap, stop: threading.Event) -> None:
+        while not stop.is_set():
             self._apply_pending_controls()
             now = time.monotonic()
             idle = now - self._last_demand > CAMERA_IDLE_AFTER_S
-            grab = getattr(self._cap, "grab", None)
+            grab = getattr(cap, "grab", None)
             if idle and grab is not None and now - self._last_idle_decode < CAMERA_IDLE_DECODE_INTERVAL_S:
                 # 没人要画面:只出队不解码。缓冲照常清空 —— grab_fresh 的时间戳闸靠「读出即盖章」,
                 # 不能让缓冲里攒下旧帧、恢复时被盖上新时间。RK3562 上 1080p 解码占 katrain 的 33%。
@@ -399,7 +436,7 @@ class CameraManager:
             if idle:
                 self._last_idle_decode = now
             try:
-                ret, frame = self._cap.read()  # type: ignore[union-attr]
+                ret, frame = cap.read()
             except cv2.error as exc:
                 logger.warning("Camera %s read error: %s", self._device_id, exc)
                 self._mark_disconnected()
@@ -411,6 +448,8 @@ class CameraManager:
                 return
 
             with self._frame_lock:
+                if stop.is_set():
+                    return
                 self._latest_frame = frame
                 self._frame_seq += 1
                 self._frame_ts = time.monotonic()
@@ -563,16 +602,17 @@ class CameraManager:
             exposure_readback = None
         auto_valid = auto_readback is not None and bool(np.isfinite(auto_readback))
         exposure_valid = exposure_readback is not None and bool(np.isfinite(exposure_readback))
-        auto_ok = auto_write_ok and auto_valid and (
-            "auto_exposure" not in pending
-            or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
+        auto_ok = (
+            auto_write_ok
+            and auto_valid
+            and (
+                "auto_exposure" not in pending
+                or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
+            )
         )
         exposure_ok = exposure_write_ok and (
             "exposure" not in pending
-            or (
-                exposure_valid
-                and _exposure_readback_matches(pending["exposure"], exposure_readback)
-            )
+            or (exposure_valid and _exposure_readback_matches(pending["exposure"], exposure_readback))
         )
         manual_without_exposure = (
             pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL and "exposure" not in pending
@@ -631,7 +671,9 @@ class CameraManager:
     # ------------------------------------------------------------------
 
     def _mark_disconnected(self) -> None:
-        self._connected = False
+        with self._frame_lock:
+            self._connected = False
+            self._latest_frame = None
         logger.warning("Camera %s marked as disconnected", self._device_id)
 
     def _try_reconnect(self) -> np.ndarray | None:
@@ -641,6 +683,17 @@ class CameraManager:
         physical disconnect/reconnect), scans all video devices by the V4L2
         device name recorded on first connection.
         """
+        if not self._lifecycle_lock.acquire(blocking=False):
+            return None
+        try:
+            if self._connected:
+                with self._frame_lock:
+                    return self._latest_frame.copy() if self._latest_frame is not None else None
+            return self._reconnect_locked()
+        finally:
+            self._lifecycle_lock.release()
+
+    def _reconnect_locked(self) -> np.ndarray | None:
         now = time.monotonic()
         if now - self._last_reconnect_attempt < self.RECONNECT_COOLDOWN:
             return None
@@ -654,7 +707,12 @@ class CameraManager:
             return self.read_frame()
 
         # Original path failed — scan by device name (handles USB renumbering)
-        if self._camera_name:
+        numbered_device = isinstance(self._device_id, int) or (
+            isinstance(self._device_id, str)
+            and self._device_id.startswith("/dev/video")
+            and self._device_id[len("/dev/video") :].isdigit()
+        )
+        if self._camera_name and numbered_device:
             new_id = _find_device_by_name(self._camera_name, self._device_id)
             if new_id is not None:
                 logger.info(

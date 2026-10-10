@@ -400,6 +400,7 @@ class LiveAnalysisDB(Base):
     score_lead = Column(Float, nullable=True)  # Black's lead in points
     top_moves = Column(JSON, nullable=True)  # [{move, visits, winrate, score_lead, prior, pv}, ...]
     ownership = Column(JSON, nullable=True)  # 2D array of ownership values (-1 to 1, positive=Black)
+    model_sha256 = Column(String(64), nullable=True)
 
     # Move classification
     actual_move = Column(String(8), nullable=True)  # The move that was played
@@ -1126,6 +1127,69 @@ class KifuAlbumEventSelection(Base):
     )
 
 
+class KifuAnalysisJob(Base):
+    """Analysis of a canonical professional album, independent of user reports."""
+
+    __tablename__ = "kifu_analysis_jobs"
+
+    id = Column(Integer, primary_key=True)
+    album_id = Column(Integer, ForeignKey("kifu_albums.id"), nullable=False, index=True)
+    sgf_sha256 = Column(String(64), nullable=False)
+    model_sha256 = Column(String(64), nullable=False)
+    requested_visits = Column(Integer, nullable=False)
+    # NULL is intentionally unverified for pre-migration jobs, even with explicit RU/KM.
+    analysis_parameters = Column(JSON, nullable=True)
+    status = Column(String(16), nullable=False, default="pending")
+    total_moves = Column(Integer, nullable=False)
+    analyzed_moves = Column(Integer, nullable=False, default=0)
+    retry_count = Column(Integer, nullable=False, default=0)
+    error_message = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+
+    __table_args__ = (
+        UniqueConstraint("album_id", "sgf_sha256", "model_sha256", "requested_visits", name="uq_kifu_analysis_identity"),
+        CheckConstraint("requested_visits > 0", name="ck_kifu_analysis_visits"),
+        CheckConstraint("status IN ('pending', 'running', 'completed', 'failed')", name="ck_kifu_analysis_status"),
+        Index("ix_kifu_analysis_jobs_status_created", "status", "created_at"),
+    )
+
+
+class KifuAnalysisMove(Base):
+    """Depth verified position snapshot for a professional game."""
+
+    __tablename__ = "kifu_analysis_moves"
+
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, ForeignKey("kifu_analysis_jobs.id"), nullable=False, index=True)
+    move_number = Column(Integer, nullable=False)
+    parameter_sha256 = Column(String(64), nullable=True)
+    root_visits = Column(Integer, nullable=False)
+    visits = Column(Integer)
+    winrate = Column(Float)
+    score_lead = Column(Float)
+    top_moves = Column(JSON)
+    ownership = Column(JSON)
+    actual_move = Column(String(8))
+    actual_player = Column(String(1))
+    delta_score = Column(Float)
+    delta_winrate = Column(Float)
+    grade = Column(String(16))
+    points_lost = Column(Float)
+    points_lost_source = Column(String(12))
+    is_top_move = Column(Boolean)
+    top_prior = Column(Float)
+    brilliance = Column(Integer)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("job_id", "move_number", name="uq_kifu_analysis_move"),
+        CheckConstraint("root_visits > 0", name="ck_kifu_analysis_root_visits"),
+    )
+
+
 class KifuAlbumSource(Base):
     __tablename__ = "kifu_album_sources"
 
@@ -1268,6 +1332,7 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    model_sha256 = Column(String(64), nullable=True)
     # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
     # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
     # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，

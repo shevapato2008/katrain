@@ -8,9 +8,10 @@ import { i18n } from '../../../i18n';
 interface LoginModalProps {
     open: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
 }
 
-const LoginModal = ({ open, onClose }: LoginModalProps) => {
+const LoginModal = ({ open, onClose, onSuccess }: LoginModalProps) => {
     useSettings(); // Subscribe to translation changes
     const { login } = useAuth();
     const [isRegister, setIsRegister] = useState(false);
@@ -44,6 +45,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
             } else {
                 await login(username, password);
             }
+            onSuccess?.();
             onClose();
             // Reset state slightly after close for smooth transition
             setTimeout(() => {

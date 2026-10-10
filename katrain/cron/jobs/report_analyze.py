@@ -15,21 +15,11 @@ from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
 from katrain.cron.sgf import ParsedGame, parse_game
-from katrain.cron import move_grade
+from katrain.cron.report_position import position_snapshot
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
 MAX_RETRIES = 3
-
-
-def _ownership_grid(raw: Any, board_size: int) -> list[list[float]] | None:
-    if not isinstance(raw, list):
-        return None
-    grid: list[list[float]] = []
-    for y in range(board_size):
-        start = y * board_size
-        grid.append([float(v) for v in raw[start : start + board_size]])
-    return grid
 
 
 class ReportAnalyzerJob(BaseJob):
@@ -206,9 +196,20 @@ class ReportAnalyzerJob(BaseJob):
                     return
 
             parsed = parse_game(game.sgf_content)
+            if parsed.dropped_midgame_setup or parsed.invalid_moves:
+                task.status = "failed"
+                task.error_message = "棋谱包含分析引擎无法忠实还原的中途摆子或无效着手"
+                db.commit()
+                return
             moves = parsed.moves
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
+            expected_sha = config.KATAGO_EXPECTED_MODEL_SHA256
+            if expected_sha and (task.model_sha256 not in (None, expected_sha) or (resume_from and not task.model_sha256)):
+                task.status = "failed"
+                task.error_message = "已有棋谱报告使用旧版或未知模型，不能混合续跑；请联系管理员处理"
+                db.commit()
+                return
             task.status = "running"
             # total_moves 由 web 在建任务时解析并写死（那是计价的操作数）。
             # 这里只在它缺失时兜底 —— 覆盖它会让「已付费的手数」与「实际分析的手数」
@@ -244,6 +245,14 @@ class ReportAnalyzerJob(BaseJob):
                     self._mark_task_for_retry_or_failure(task, f"Analysis failed at move {move_number}")
                     db.commit()
                     return
+
+                if expected_sha:
+                    if task.model_sha256 not in (None, expected_sha):
+                        task.status = "failed"
+                        task.error_message = "报告模型在分析过程中发生变化"
+                        db.commit()
+                        return
+                    task.model_sha256 = expected_sha
 
                 record = (
                     db.query(ReportTaskMoveDB)
@@ -342,104 +351,13 @@ class ReportAnalyzerJob(BaseJob):
             )
             return None
 
-        root_info = response.get("rootInfo", {})
-        move_infos = response.get("moveInfos", [])
-        ownership = _ownership_grid(response.get("ownership"), board_size)
-
-        actual_move = moves[move_number - 1][1] if move_number > 0 else None
-        actual_player = moves[move_number - 1][0] if move_number > 0 else None
-
-        # Compute delta relative to previous move
-        previous_score = None
-        previous_winrate = None
-        previous_top_moves = None
-        previous_visits = None
+        previous = None
         if move_number > 0:
             with SessionLocal() as db:
-                prev = (
+                previous = (
                     db.query(ReportTaskMoveDB)
-                    .filter(
-                        ReportTaskMoveDB.task_id == task_id,
-                        ReportTaskMoveDB.move_number == move_number - 1,
-                    )
+                    .filter(ReportTaskMoveDB.task_id == task_id, ReportTaskMoveDB.move_number == move_number - 1)
                     .first()
                 )
-                if prev:
-                    previous_score = prev.score_lead
-                    previous_winrate = prev.winrate
-                    # 评级要用落子前那个局面的候选列表：pointsLost 取自同一次搜索，
-                    # 而首选的 policy 先验是「难不难被想到」那根轴的输入。
-                    previous_top_moves = prev.top_moves
-                    previous_visits = prev.root_visits
-
-        score_lead = root_info.get("scoreLead", 0.0)
-        winrate = root_info.get("winrate", 0.5)
-
-        delta_score = None
-        delta_winrate = None
-        if previous_score is not None and previous_winrate is not None and actual_player:
-            if actual_player == "B":
-                delta_score = score_lead - previous_score
-                delta_winrate = winrate - previous_winrate
-            else:
-                delta_score = previous_score - score_lead
-                delta_winrate = previous_winrate - winrate
-
-        # Build top moves
-        #
-        # human_prior 与 human_profile **成对存**：一个概率不说清是哪一档人给的就没有意义，
-        # 而且档位是可配置的，将来换档时老报告的数字必须还能自证是按哪一档算的。
-        # 引擎没返回 humanPrior 时两个都留 None —— 不能填 0，那是「没人会下」的意思。
-        # 说不清是谁给的数就不存：没配 profile 时即便引擎回了 humanPrior 也丢掉
-        # （正常情况下不会 —— 实跑确认过不设 profile 时引擎根本不返回 human 字段 ——
-        # 但存一个无法归档的概率比不存更坏，界面上没法说它是哪一档人的选择率）。
-        human_profile = config.HUMAN_SL_PROFILE or None
-        top_moves = []
-        for mi in move_infos[:10]:
-            human_prior = mi.get("humanPrior") if human_profile else None
-            top_moves.append(
-                {
-                    "move": mi.get("move"),
-                    "visits": mi.get("visits"),
-                    "winrate": mi.get("winrate"),
-                    "score_lead": mi.get("scoreLead"),
-                    "prior": mi.get("prior"),
-                    "pv": mi.get("pv"),
-                    "psv": mi.get("playSelectionValue", 0.0),
-                    "human_prior": human_prior,
-                    "human_profile": human_profile if human_prior is not None else None,
-                }
-            )
-
-        # 着手评价。阈值真源是 katrain/core/move_grade.yaml；
-        # katrain/cron/move_grade.py 是由它生成的 stdlib-only 副本（不跨包、不需要 PyYAML）。
-        # 注意 move_number 是「落子后」的局面序号，也就是这手棋的序号。
-        grade = move_grade.grade(
-            prev_top_moves=previous_top_moves,
-            prev_visits=previous_visits,
-            actual_move=actual_move,
-            actual_player=actual_player,
-            actual_score_lead=score_lead,
-            actual_winrate=winrate,
-            move_number=move_number,
-        )
-
-        return {
-            "status": "success",
-            "grade": grade["grade"],
-            "points_lost": grade["points_lost"],
-            "points_lost_source": grade["points_lost_source"],
-            "root_visits": root_info.get("visits"),
-            "is_top_move": grade["is_top_move"],
-            "top_prior": grade["top_prior"],
-            "brilliance": grade["brilliance"],
-            "winrate": winrate,
-            "score_lead": score_lead,
-            "visits": max((m.get("visits", 0) for m in move_infos[:1]), default=0),
-            "top_moves": top_moves,
-            "ownership": ownership,
-            "actual_move": actual_move,
-            "actual_player": actual_player,
-            "delta_score": delta_score,
-            "delta_winrate": delta_winrate,
-        }
+                return position_snapshot(response, parsed, move_number, previous, config.HUMAN_SL_PROFILE or None)
+        return position_snapshot(response, parsed, move_number, previous, config.HUMAN_SL_PROFILE or None)

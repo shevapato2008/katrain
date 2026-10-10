@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API, ApiError, type GolaxySpectatorPosition, type GolaxySpectatorSnapshot } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PLATFORM_MARKS } from '../constants/platformMarks';
@@ -143,10 +144,9 @@ const GolaxySpectatorPage = () => {
         const sameGame = prior !== null && prior.game_id === snapshot.game_id && sameHistoryPrefix(prior, snapshot);
         const regressed = sameGame && snapshot.move_number < prior.move_number;
         if (prior && (!sameGame || regressed)) setHistoryMove(null);
-        if (sameGame && !suppressNextSound && !document.hidden && historyMoveRef.current === null && soundOnRef.current) {
-          for (const position of snapshot.history.slice(prior.move_number + 1)) {
-            if (position.last_move?.coordinate) playSound('stone');
-          }
+        if (sameGame && snapshot.move_number > prior.move_number && snapshot.last_move?.coordinate
+          && !suppressNextSound && !document.hidden && historyMoveRef.current === null && soundOnRef.current) {
+          playSound('stone');
         }
         if (!regressed) previousSnapshot = snapshot;
         suppressNextSound = false;
@@ -205,6 +205,18 @@ const GolaxySpectatorPage = () => {
   const position = historyMove === null ? ready : ready?.history[historyMove] || ready;
   const lastMove = ready?.last_move;
   const earlier = position && position.move_number > 0 ? ready?.history[position.move_number - 1] : null;
+  const selectHistoryMove = (move: number | null) => {
+    const target = move === null ? ready : ready?.history[move];
+    if (!target) return;
+    setHistoryMove(move);
+    const last = target.last_move;
+    if (soundOn && target.move_number !== position?.move_number && target.move_number > 0
+      && last?.coordinate && isReplayStoneMove(last.coordinate, ready?.board_size)
+      && (last.color === 'B' ? target.black_stones : target.white_stones).includes(last.coordinate)) {
+      playSound('stone');
+    }
+  };
+
   const formatClock = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
   const clockCard = (color: 'black' | 'white') => {
     const person = ready?.[color]; const clock = ready?.clocks?.[color];
@@ -245,7 +257,7 @@ const GolaxySpectatorPage = () => {
         <div className="golaxy-spectator__members-head"><strong>房间成员</strong><span>{ready?.members ? `对局双方与观战棋友 · ${ready.members.length} 人` : '成员信息未返回'}</span></div>
         <div className="golaxy-spectator__members">{ready?.members ? ready.members.map((member) => <div className="golaxy-spectator__member" key={member.user_id}><span className="golaxy-spectator__avatar">{member.username.slice(-1)}</span><b>{member.username}</b><small>{member.role === 'black' ? '对局 · 黑' : member.role === 'white' ? '对局 · 白' : member.role === 'spectator' ? '观战' : '身份未返回'}</small></div>) : <p className="golaxy-spectator__note">星阵尚未提供可展示的房间成员名单。</p>}</div>
         {view.kind === 'error' && <div className="golaxy-spectator__error-actions"><button type="button" onClick={() => view.reconnect ? navigate('/kiosk/play/cross-platform/login/golaxy') : setRetry((count) => count + 1)}>{view.reconnect ? '重新连接' : '重试'}</button></div>}
-        <div className="golaxy-spectator__footer"><button type="button" aria-pressed={soundOn} onClick={() => setSoundOn(!soundOn)}>落子音：{soundOn ? '开' : '关'}</button><button type="button" disabled={!earlier} title={!earlier ? '已经是第一手之前' : undefined} onClick={() => earlier && setHistoryMove(earlier.move_number)}>上一手</button><button className="golaxy-spectator__return-live" disabled={historyMove === null || !ready} onClick={() => setHistoryMove(null)}>{historyMove !== null ? '回到最新' : '正在看最新'}{ready ? ` · ${ready.move_number} 手` : ''}</button></div>
+        <div className="golaxy-spectator__footer"><button type="button" aria-pressed={soundOn} onClick={() => setSoundOn(!soundOn)}>落子音：{soundOn ? '开' : '关'}</button><button type="button" disabled={!earlier} title={!earlier ? '已经是第一手之前' : undefined} onClick={() => earlier && selectHistoryMove(earlier.move_number)}>上一手</button><button className="golaxy-spectator__return-live" disabled={historyMove === null || !ready} onClick={() => selectHistoryMove(null)}>{historyMove !== null ? '回到最新' : '正在看最新'}{ready ? ` · ${ready.move_number} 手` : ''}</button></div>
       </aside>
     </div>
   </div>;

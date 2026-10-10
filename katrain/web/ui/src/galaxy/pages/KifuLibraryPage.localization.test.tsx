@@ -4,8 +4,8 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import KifuLibraryPage from './KifuLibraryPage';
 
-const { getAlbums, getAlbum, language } = vi.hoisted(() => ({
-  getAlbums: vi.fn(), getAlbum: vi.fn(), language: { current: 'cn' },
+const { getAlbums, getAlbum, language, play } = vi.hoisted(() => ({
+  getAlbums: vi.fn(), getAlbum: vi.fn(), play: vi.fn(), language: { current: 'cn' },
 }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums, getAlbum } }));
 vi.mock('../../hooks/useTranslation', () => ({
@@ -20,10 +20,11 @@ vi.mock('../../hooks/useTranslation', () => ({
   }),
 }));
 vi.mock('../../components/live/LiveBoard', () => ({ default: () => <div data-testid="board" /> }));
-vi.mock('../../components/live/PlaybackBar', () => ({ default: () => <div /> }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
+vi.mock('../../components/live/PlaybackBar', () => ({ default: ({ onMoveChange }: { onMoveChange: (move: number) => void }) => <><button onClick={() => onMoveChange(1)}>preview previous</button><button onClick={() => onMoveChange(2)}>preview pass</button><button onClick={() => onMoveChange(0)}>preview start</button></> }));
 vi.mock('../components/board/BoardPageShell', () => ({
-  default: ({ board, modulePlate, railBody }: { board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode }) =>
-    <main>{modulePlate}{board}{railBody}</main>,
+  default: ({ board, modulePlate, railBody, actions, navigation }: { navigation: React.ReactNode; board: React.ReactNode; modulePlate: React.ReactNode; railBody: React.ReactNode; actions: React.ReactNode }) =>
+    <main>{modulePlate}{board}{railBody}{actions}{navigation}</main>,
 }));
 vi.mock('../components/layout/ModulePlate', () => ({
   default: ({ title, subtitle, status }: { title: React.ReactNode; subtitle: React.ReactNode; status: React.ReactNode }) =>
@@ -54,6 +55,18 @@ beforeEach(() => {
 });
 
 describe('Galaxy 棋谱库语言展示', () => {
+  it('首屏自动打开当前页首局，按真实报告可用性命名入口', async () => {
+    const view = render(page());
+    expect(await screen.findByTestId('board')).toBeInTheDocument();
+    expect(getAlbums).toHaveBeenCalledWith({ q: '原黑', page: 2, page_size: 20, lang: 'cn' });
+    expect(screen.getByRole('button', { name: '查看棋谱' })).toBeInTheDocument();
+    view.unmount();
+    getAlbums.mockResolvedValue({ items: [{ ...record('cn'), has_analysis: true }], total: 1, page: 2, page_size: 20 });
+    getAlbum.mockResolvedValue({ ...detail('cn'), has_analysis: true });
+    render(page());
+    expect(await screen.findByTestId('board')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '查看分析报告' })).toBeInTheDocument();
+  });
   it('将姓名中的段位放进独立的小号段位元素', async () => {
     getAlbums.mockResolvedValue({
       items: [{
@@ -77,10 +90,7 @@ describe('Galaxy 棋谱库语言展示', () => {
     fireEvent.click(await screen.findByText('cn-black'));
     await waitFor(() => expect(getAlbum).toHaveBeenCalledWith(9, 'cn'));
     expect(screen.getByText(/cn-black vs cn-white/)).toBeInTheDocument();
-    expect(screen.getByText('星阵')).toBeInTheDocument();
-    expect(screen.getByText('CWI')).toBeInTheDocument();
-    expect(screen.getByText('19x19')).toBeInTheDocument();
-    expect(screen.getByText('来源待核实')).toBeInTheDocument();
+    expect(screen.queryByText('来源待核实')).not.toBeInTheDocument();
 
     for (const lang of ['en', 'jp']) {
       language.current = lang;
@@ -89,8 +99,8 @@ describe('Galaxy 棋谱库语言展示', () => {
       await waitFor(() => expect(getAlbum).toHaveBeenLastCalledWith(9, lang));
       expect(await screen.findByText(`${lang}-black`)).toBeInTheDocument();
       expect(screen.getByText(new RegExp(`${lang}-black vs ${lang}-white`))).toBeInTheDocument();
-      expect(screen.getByText('GoLaxy')).toBeInTheDocument();
-      expect(screen.getByRole('textbox')).toHaveValue('原黑');
+      expect(screen.queryByText('GoLaxy')).not.toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Search by player, event, date...')).toHaveValue('原黑');
     }
   });
 
@@ -139,7 +149,6 @@ describe('Galaxy 棋谱库语言展示', () => {
     try {
       getAlbum.mockRejectedValueOnce(new Error('offline'));
       render(page());
-      fireEvent.click(await screen.findByText('cn-black'));
       await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(1));
       await screen.findByText('选择一局棋谱预览');
 
@@ -170,4 +179,41 @@ describe('Galaxy 棋谱库语言展示', () => {
       consoleError.mockRestore();
     }
   });
+});
+
+
+describe('Galaxy 紧凑分页', () => {
+  it('直接跳转保留搜索条件，上一页/下一页继续更新 URL 页码', async () => {
+    getAlbums.mockImplementation(({ lang }: { lang: string }) => Promise.resolve({ items: [record(lang)], total: 172766 }));
+    render(page()); await screen.findByText('cn-black');
+    const input = screen.getByRole('textbox', { name: '跳转页码' });
+    expect(input).toHaveValue('2');
+    fireEvent.change(input, { target: { value: '8639' } });
+    fireEvent.submit(input.closest('form')!);
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '原黑', page: 8639, page_size: 20, lang: 'cn' }));
+    expect(screen.getByRole('button', { name: '下一页' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '上一页' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(expect.objectContaining({ page: 8638 })));
+    expect(screen.queryByRole('navigation')).toBeNull();
+  });
+});
+
+it('sounds once for explicit unanalysed archive replay, never initial load, pass, repeated cursor or start', async () => {
+  getAlbum.mockResolvedValue({ ...detail('cn'), sgf_content: '(;GM[1]FF[4]SZ[19];B[aa];W[];B[bb])' });
+  render(page());
+  await screen.findByTestId('board');
+  expect(play).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByText('preview previous'));
+  expect(play).toHaveBeenCalledExactlyOnceWith('stone');
+  fireEvent.click(screen.getByText('preview previous'));
+  fireEvent.click(screen.getByText('preview pass'));
+  fireEvent.click(screen.getByText('preview start'));
+  expect(play).toHaveBeenCalledTimes(1);
+});
+
+it('keeps initial handicap setup replay silent', async () => {
+  getAlbum.mockResolvedValue({ ...detail('cn'), sgf_content: '(;GM[1]FF[4]SZ[19]HA[2]AB[dd][pp];W[dp])' });
+  render(page()); await screen.findByTestId('board');
+  fireEvent.click(screen.getByText('preview previous'));
+  expect(play).not.toHaveBeenCalled();
 });

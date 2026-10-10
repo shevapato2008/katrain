@@ -117,6 +117,9 @@ def _inject_session(app, *, user_id=None, player_b_id=None, player_w_id=None):
     session.game_type = "free"
     session.lock = threading.Lock()
     session.sockets = set()
+    from katrain.web.core.pvp_spectator_presence import PvpSpectatorPresence
+
+    session.spectator_presence = PvpSpectatorPresence()
     session.last_access = 0.0
     session.last_state = {"end_result": None}
     session.pending_count_request = None
@@ -151,7 +154,10 @@ def test_an_outsider_cannot_end_someone_elses_game(app, client, endpoint):
 
     resp = client.post(endpoint, json={"session_id": session.session_id}, headers=_login(client, mallory_name))
     assert resp.status_code == 403, resp.text
-    assert "player in this game" in resp.json()["detail"]
+    assert resp.json()["detail"] in (
+        "Not a participant",
+        f"{endpoint.rsplit('/', 1)[-1]} is restricted to a player in this game",
+    )
 
 
 @pytest.mark.parametrize("endpoint", ["/api/resign", "/api/timeout"])
@@ -239,6 +245,149 @@ def test_the_opponent_is_told_even_when_the_game_cannot_be_recorded(app, client,
 
 def _chat_socket(client, session_id: str, token: str):
     return client.websocket_connect(f"/ws/{session_id}?token={token}")
+
+
+@pytest.mark.parametrize("game_type", ["free", "pvp_lobby"])
+def test_authenticated_lobby_spectator_can_read_and_stream_but_cannot_play(app, client, game_type):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=-17)
+    session.game_type = game_type
+    headers = _login(client, viewer)
+    assert client.get("/api/state", params={"session_id": session.session_id}, headers=headers).status_code == 200
+    session.katrain.start_clock.reset_mock()
+    with _chat_socket(client, session.session_id, _token(client, viewer)) as ws:
+        assert ws.receive_json()["type"] == "game_update"
+        ws.send_json({"type": "ping"})
+        assert _await(ws, "pong") == {"type": "pong"}
+    session.katrain.start_clock.assert_not_called()
+    for endpoint, body in (
+        ("/api/move", {"coords": [3, 3]}),
+        ("/api/undo", {"n_times": 1}),
+        ("/api/resign", {}),
+        ("/api/timeout", {}),
+    ):
+        response = client.post(endpoint, json={"session_id": session.session_id, **body}, headers=headers)
+        assert response.status_code == 403, response.text
+
+
+@pytest.mark.parametrize("game_type", ["free", "pvp_lobby"])
+@pytest.mark.parametrize("transport", ["http", "websocket"])
+def test_lobby_refresh_reads_current_server_clock_without_starting_it(app, client, game_type, transport):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=-17)
+    session.game_type = game_type
+    session.last_state = {"end_result": None, "timer": {"main_time_used": 10}}
+    clock = {"used": 14}
+    session.katrain.get_state.side_effect = lambda: {
+        "end_result": None, "timer": {"main_time_used": clock["used"]}
+    }
+    headers = _login(client, viewer)
+    token = _token(client, viewer)
+    session.katrain.start_clock.reset_mock()
+    for used in (14, 19):
+        clock["used"] = used
+        if transport == "http":
+            response = client.get("/api/state", params={"session_id": session.session_id}, headers=headers)
+            assert response.status_code == 200, response.text
+            state = response.json()["state"]
+        else:
+            with _chat_socket(client, session.session_id, token) as ws:
+                state = ws.receive_json()["state"]
+        assert state["timer"]["main_time_used"] == used
+    session.katrain.start_clock.assert_not_called()
+
+
+@pytest.mark.parametrize("game_type", ["ai_ladder_ranked", "pvp_online", "pvp_local", "research"])
+def test_spectator_cannot_read_private_or_external_sessions(app, client, game_type):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=-17)
+    session.game_type = game_type
+    assert (
+        client.get("/api/state", params={"session_id": session.session_id}, headers=_login(client, viewer)).status_code
+        == 403
+    )
+
+
+def test_lobby_spectating_requires_login_and_does_not_open_single_player_sessions(app, client):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=-17)
+    assert client.get("/api/state", params={"session_id": session.session_id}).status_code == 401
+    session.player_w_id = None
+    assert (
+        client.get("/api/state", params={"session_id": session.session_id}, headers=_login(client, viewer)).status_code
+        == 403
+    )
+
+
+def test_lobby_spectator_cannot_mutate_game_tree_clocks_settings_or_analysis(app, client):
+    black_id, _ = _make_user(app, "black")
+    _, viewer = _make_user(app, "viewer")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=99)
+    headers = _login(client, viewer)
+    endpoints = (
+        "/api/node/delete",
+        "/api/node/prune",
+        "/api/node/make-main",
+        "/api/node/toggle-collapse",
+        "/api/timer/pause",
+        "/api/rotate",
+        "/api/ui/toggle",
+        "/api/language",
+        "/api/theme",
+        "/api/mode/insert",
+        "/api/mode",
+        "/api/nav/mistake",
+        "/api/nav/branch",
+        *(
+            f"/api/analysis/{suffix}"
+            for suffix in (
+                "continuous",
+                "current",
+                "extra",
+                "show-pv",
+                "clear-pv",
+                "tsumego",
+                "selfplay",
+                "region",
+                "game",
+                "scan",
+                "report",
+            )
+        ),
+    )
+    for endpoint in endpoints:
+        body = {
+            "session_id": session.session_id,
+            "mode": "play",
+            "pv": "D4",
+            "setting": "coordinates",
+            "lang": "cn",
+            "theme": "default",
+            "coords": [0, 0, 18, 18],
+            "direction": 1,
+            "until_move": 10,
+        }
+        response = client.post(endpoint, json=body, headers=headers)
+        assert response.status_code == 403, (endpoint, response.text)
+    assert (
+        client.get("/api/analysis/progress", params={"session_id": session.session_id}, headers=headers).status_code
+        == 403
+    )
+    session.katrain.assert_not_called()
+
+
+def test_clock_and_tree_mutations_still_work_for_owner_and_unclaimed_session(app, client):
+    owner_id, owner = _make_user(app, "owner")
+    headers = _login(client, owner)
+    for user_id, auth in ((owner_id, headers), (None, {})):
+        session = _inject_session(app, user_id=user_id)
+        session.katrain.timer_paused = False
+        assert client.post("/api/timer/pause", json={"session_id": session.session_id}, headers=auth).status_code == 200
+        assert client.post("/api/node/delete", json={"session_id": session.session_id}, headers=auth).status_code == 200
 
 
 def _await(ws, *wanted: str, limit: int = 8) -> dict:

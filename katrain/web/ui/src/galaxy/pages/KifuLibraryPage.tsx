@@ -19,7 +19,6 @@ import {
   Box,
   Typography,
   TextField,
-  Pagination,
   InputAdornment,
   Skeleton,
   Fade,
@@ -30,7 +29,8 @@ import {
   CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ScienceIcon from '@mui/icons-material/Science';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import { KifuAPI } from '../../api/kifuApi';
 import type { KifuAlbumSummary, KifuAlbumDetail } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -38,12 +38,13 @@ import { translateResult } from '../../utils/resultTranslation';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import LiveBoard from '../../components/live/LiveBoard';
 import PlaybackBar from '../../components/live/PlaybackBar';
+import { useReplayStoneSound } from '../../hooks/useReplayStoneSound';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 import { formatRank } from '../../utils/rank';
-import { kifuSourceLabel } from '../../utils/kifuSource';
+import CompactPagination from '../../components/CompactPagination';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -120,14 +121,12 @@ function GameRecordCard({
   onClick,
   tMovesUnit,
   t,
-  lang,
   selected,
 }: {
   album: KifuAlbumSummary;
   onClick: () => void;
   tMovesUnit: string;
   t: (key: string, fallback?: string) => string;
-  lang: string;
   selected?: boolean;
 }) {
   const r = album.result || '';
@@ -228,16 +227,6 @@ function GameRecordCard({
             }} />
           </Box>
         </Box>
-        {!!album.sources?.length && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.5, minWidth: 0, mt: 0.6 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ ...railMetaSx, mr: 0.2 }}>
-              {t('kifu:source', '来源')}
-            </Typography>
-            {album.sources.map((source) => (
-              <Chip key={source} label={kifuSourceLabel(source, t, lang)} size="small" variant="outlined" sx={{ height: 19, maxWidth: '100%', fontSize: '0.63rem', '& .MuiChip-label': { px: 0.65, overflow: 'hidden', textOverflow: 'ellipsis' } }} />
-            ))}
-          </Box>
-        )}
       </CardActionArea>
     </Card>
   );
@@ -264,7 +253,9 @@ export default function KifuLibraryPage() {
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
   const [previewCurrentMove, setPreviewCurrentMove] = useState(0);
+  const [replaySelection, setReplaySelection] = useState<{ id: number | null; move: number } | null>(null);
   const [previewBoardSize, setPreviewBoardSize] = useState(19);
+  const [previewSetupCount, setPreviewSetupCount] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewReload, setPreviewReload] = useState(0);
   const [boardEdge, setBoardEdge] = useState(0);
@@ -304,7 +295,7 @@ export default function KifuLibraryPage() {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const handlePageChange = (_: unknown, newPage: number) => {
+  const handlePageChange = (newPage: number) => {
     const params: Record<string, string> = {};
     if (query) params.q = query;
     if (newPage > 1) params.page = String(newPage);
@@ -336,6 +327,7 @@ export default function KifuLibraryPage() {
         const parsed = sgfToMoves(detail.sgf_content);
         setPreviewMoves(parsed.moves);
         setPreviewColors(parsed.stoneColors);
+        setPreviewSetupCount(parsed.setupCount ?? 0);
         setPreviewCurrentMove(parsed.moves.length); // Show final position
         setPreviewBoardSize(parsed.metadata.boardSize || detail.board_size || 19);
       }
@@ -353,13 +345,24 @@ export default function KifuLibraryPage() {
     return () => { request.cancelled = true; };
   }, [selectedId, fetchSelected, previewReload]);
 
-  const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
+  useEffect(() => {
+    if (selectedId === null && items[0]) handleCardClick(items[0]);
+  }, [items, selectedId, handleCardClick]);
 
-  const handleOpenInResearch = useCallback(() => {
+  const visibleSelectedAlbum = selectedAlbum?.id === selectedId && selectedAlbumLang === lang ? selectedAlbum : null;
+  const selectPreviewMove = (move: number) => {
+    setReplaySelection({ id: selectedId, move });
+    setPreviewCurrentMove(move);
+  };
+  useReplayStoneSound({ identity: selectedId, cursor: Math.max(0, previewCurrentMove - previewSetupCount), move: previewMoves[previewCurrentMove - 1],
+    ready: !!visibleSelectedAlbum && !previewLoading, boardSize: previewBoardSize,
+    selected: replaySelection?.id === selectedId && replaySelection.move === previewCurrentMove });
+
+  const handleViewReport = useCallback(() => {
     if (selectedId !== null) {
-      navigate(`/galaxy/research?kifu_id=${selectedId}`);
+      navigate(`/galaxy/kifu/${selectedId}/${visibleSelectedAlbum?.has_analysis ? 'report' : 'replay'}`);
     }
-  }, [selectedId, navigate]);
+  }, [selectedId, visibleSelectedAlbum?.has_analysis, navigate]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const movesUnit = t('kifu:moves_unit', '手');
@@ -396,6 +399,7 @@ export default function KifuLibraryPage() {
           moves={previewMoves}
           stoneColors={previewColors}
           currentMove={previewCurrentMove}
+          handicapCount={previewSetupCount}
           boardSize={previewBoardSize}
           /* 迁版式前这里写死 `showCoordinates={true}`。改成走共享的自动档：
              spec §3.2「棋盘边长低于 500px 时坐标默认关闭」。本页冻结稿里没有坐标
@@ -499,7 +503,6 @@ export default function KifuLibraryPage() {
                         onClick={() => handleCardClick(album)}
                         tMovesUnit={movesUnit}
                         t={t}
-                        lang={lang}
                         selected={selectedId === album.id}
                       />
                     </Box>
@@ -511,20 +514,9 @@ export default function KifuLibraryPage() {
 
           {totalPages > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', px: 1, pb: 2 }}>
-              {/* 分页保持 MUI 默认密度，**不收 `siblingCount`**。
-                  收了确实每档都是一行，但第 1 页会从 `1 2 3 4 5 … 1254` 掉成
-                  `1 2 3 … 1254` —— 少两个直达页码，账本上就是丢了两个控件。
-                  实测默认密度在 320 栏里放得下：第 1 页 270px / 309px 可用；
-                  翻到第 600 页那种四位数居中的情况会**折成两行**（高 28 → 56），
-                  但它在中段里，滚到底完整可见（承重实测 R6 量过）。
-                  两行不好看，但比够不着页码轻。 */}
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={handlePageChange}
-                color="primary"
-                shape="rounded"
-                size="small"
+              <CompactPagination
+                key={`${query}:${lang}`} page={page} totalPages={totalPages}
+                disabled={loading} onPageChange={handlePageChange}
               />
             </Box>
           )}
@@ -541,19 +533,19 @@ export default function KifuLibraryPage() {
             <PlaybackBar
               currentMove={previewCurrentMove}
               totalMoves={previewMoves.length}
-              onMoveChange={setPreviewCurrentMove}
+              onMoveChange={selectPreviewMove}
             />
           )}
           <Box sx={{ p: 2, pt: hasPreview ? 1 : 2 }}>
             <Button
               fullWidth
               variant="contained"
-              startIcon={<ScienceIcon />}
-              disabled={!selectedAlbum}
-              onClick={handleOpenInResearch}
+              startIcon={visibleSelectedAlbum?.has_analysis ? <AssessmentIcon /> : <LibraryBooksIcon />}
+              disabled={!hasPreview}
+              onClick={handleViewReport}
               sx={{ textTransform: 'none', minHeight: 40, borderRadius: '8px' }}
             >
-              {t('kifu:open_in_research', '在研究中打开')}
+              {visibleSelectedAlbum?.has_analysis ? t('kifu:view_analysis_report', '查看分析报告') : t('kifu:view_kifu', '查看棋谱')}
             </Button>
           </Box>
         </>

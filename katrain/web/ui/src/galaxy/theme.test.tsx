@@ -88,7 +88,7 @@ describe('createGalaxyTheme', () => {
 });
 
 describe('GalaxyApp', () => {
-  it('marks the Galaxy root language and supplies its locale theme to routes', () => {
+  it('marks the Galaxy root language and supplies its locale theme to routes', async () => {
     settings.language = 'cn';
 
     const { container } = render(
@@ -101,6 +101,6 @@ describe('GalaxyApp', () => {
 
     expect(container.querySelector('.galaxy-root')).toHaveAttribute('data-language', 'cn');
     expect(zenTheme.typography.fontFamily).toContain('Manrope');
-    expect(screen.getByTestId('theme-probe')).toHaveAttribute('data-font-family', CHINESE_UI_FONT);
+    expect(await screen.findByTestId('theme-probe')).toHaveAttribute('data-font-family', CHINESE_UI_FONT);
   });
 });

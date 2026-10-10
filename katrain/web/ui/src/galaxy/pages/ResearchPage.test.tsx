@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import ResearchPage from './ResearchPage';
 import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { API } from '../../api';
+import { writeAudioPref } from '../../utils/audioPrefs';
 
 const { language } = vi.hoisted(() => ({ language: { current: 'cn' } }));
 vi.mock('../../hooks/useTranslation', () => ({
@@ -59,8 +60,7 @@ vi.mock('../../hooks/useResearchSession', () => ({
 }));
 
 // Mock useAuth so authentication state can be toggled per test.
-// NOTE: ResearchPage only reads `token` from useAuth (for cloud-save); it does NOT
-// gate rendering on auth — the board is available logged-out by design.
+// The board stays available logged-out; private deep links require confirmed auth.
 vi.mock('../../context/AuthContext', async (importOriginal) => {
   const actual = await importOriginal();
   return {
@@ -83,8 +83,8 @@ vi.mock('../context/GameNavigationContext', () => ({
 // 桩件把 `moves.length` 回读出来：深链那条用例要证的是「棋子真的进了棋盘」，
 // 光断言 fetch 调过只证明我发出了请求，证不到棋局被装上。
 vi.mock('../../components/live/LiveBoard', () => ({
-  default: ({ moves }: { moves?: unknown[] }) => (
-    <div data-testid="mock-live-board" data-moves={moves?.length ?? 0}>Live Board</div>
+  default: ({ moves, onIntersectionClick }: { moves?: unknown[]; onIntersectionClick?: (x: number, y: number) => void }) => (
+    <div data-testid="mock-live-board" data-moves={moves?.length ?? 0}><button onClick={() => onIntersectionClick?.(3, 3)}>摆 D4</button></div>
   ),
 }));
 
@@ -104,22 +104,32 @@ vi.mock('../../components/Board', () => ({
   default: () => <div data-testid="mock-board">Board Component</div>,
 }));
 
-const renderPage = (path = '/galaxy/research') =>
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <ResearchPage />
-    </MemoryRouter>
-  );
+const pageElement = (path = '/galaxy/research') => (
+  <MemoryRouter initialEntries={[path]}>
+    <ResearchPage />
+  </MemoryRouter>
+);
+const renderPage = (path = '/galaxy/research') => render(pageElement(path));
 
 const KIFU_SGF = '(;FF[4]GM[1]SZ[19];B[pd];W[dp];B[pp];W[dd])';
+const USER_GAME_SGF = '(;FF[4]GM[1]SZ[19];B[pd];W[dp])';
+const confirmedAuth = {
+  status: 'authenticated', identityKey: 'one', isAuthenticated: true,
+  isLoading: false, isGuest: false, token: 'test-token',
+};
+const anonymousAuth = {
+  status: 'guest', identityKey: null, isAuthenticated: false,
+  isLoading: false, isGuest: false, token: null,
+};
 
 describe('ResearchPage', () => {
   // 有两条 `not.toHaveBeenCalled()`，调用记录必须逐条清零，否则前一条用例的调用会算到后一条头上。
   beforeEach(() => {
     vi.clearAllMocks();
     language.current = 'cn';
-    // clearAllMocks 会连 mockResolvedValue 一起清掉，所以每条用例前重新给上。
+    writeAudioPref('sfx', true);
     createSession.mockResolvedValue('sess-1');
+    getUserGame.mockReset().mockResolvedValue({ id: 'g1', sgf_content: USER_GAME_SGF });
     getAlbum.mockResolvedValue({
       id: 42,
       sgf_content: KIFU_SGF,
@@ -134,7 +144,7 @@ describe('ResearchPage', () => {
   });
 
   it('keeps an edited player name when the deep-linked kifu language changes', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
     getAlbum.mockImplementation((_id: number, lang: string) => Promise.resolve({
       id: 42, sgf_content: KIFU_SGF,
       display_player_black: `${lang}-black`, display_player_white: `${lang}-white`,
@@ -149,9 +159,29 @@ describe('ResearchPage', () => {
     await waitFor(() => expect(input).toHaveValue('Edited player'));
   });
 
+  it('loads a deep-linked game silently and plays one shared sound for an explicit stone navigation', async () => {
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
+    renderPage('/galaxy/research?kifu_id=42');
+    await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '◀' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '⏮' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the shared SFX setting for accepted local placements', () => {
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
+    renderPage();
+    writeAudioPref('sfx', false);
+    fireEvent.click(screen.getByRole('button', { name: '摆 D4' }));
+    expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '1');
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+  });
+
   // Test A — research is intentionally available without login (no auth gate).
   it('renders the board and setup panel without requiring login', () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, token: null });
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
 
     renderPage();
 
@@ -164,7 +194,7 @@ describe('ResearchPage', () => {
 
   // Test B — authenticated render still shows the same edit-mode board + setup panel.
   it('renders the board and setup panel when authenticated', () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
 
     renderPage();
 
@@ -173,7 +203,7 @@ describe('ResearchPage', () => {
   });
 
   it('passes the Galaxy access token to quick analysis', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '支招' }));
     await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalledWith(expect.any(Object), 'test-token'));
@@ -197,7 +227,7 @@ describe('ResearchPage', () => {
    * → 本条红，实得 `createSession(undefined, …)`。
    */
   it('analyzes the deep-linked kifu itself, not a blank board', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
 
     renderPage('/galaxy/research?kifu_id=42&analyze=1');
 
@@ -215,8 +245,8 @@ describe('ResearchPage', () => {
   });
 
   /** 不带 `analyze=1` 时只装棋盘、不开会话 —— 全盘扫描是计费动作。 */
-  it('loads a deep-linked kifu without opening an analysis session', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+  it('loads a public deep-linked kifu anonymously without opening an analysis session', async () => {
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
 
     renderPage('/galaxy/research?kifu_id=42');
 
@@ -228,7 +258,7 @@ describe('ResearchPage', () => {
 
   // 复盘页「进入研究室」的落点（Fan 2026-08-22 点头补的深链）。
   it('loads the handed-off game from ?user_game_id', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
 
     renderPage('/galaxy/research?user_game_id=g1');
 
@@ -237,9 +267,61 @@ describe('ResearchPage', () => {
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '2'));
   });
 
+  it.each(['checking', 'unavailable'])('does not fetch a private deep link with a retained token during %s', (status) => {
+    (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status, token: 'saved-token', isLoading: status === 'checking' });
+
+    renderPage('/galaxy/research?user_game_id=g1');
+
+    expect(getUserGame).not.toHaveBeenCalled();
+    expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '0');
+  });
+
+  it('waits for confirmed cookie identity before loading a private deep link', async () => {
+    (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status: 'checking', isLoading: true });
+    const view = renderPage('/galaxy/research?user_game_id=g1');
+    expect(getUserGame).not.toHaveBeenCalled();
+
+    (useAuth as Mock).mockReturnValue({ ...confirmedAuth, token: null });
+    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+
+    await waitFor(() => expect(getUserGame).toHaveBeenCalledWith(null, 'g1'));
+    await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '2'));
+  });
+
+  it('does not load a private deep-link response after logout', async () => {
+    let finish: (value: unknown) => void = () => {};
+    getUserGame.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
+    const view = renderPage('/galaxy/research?user_game_id=g1');
+    expect(getUserGame).toHaveBeenCalledWith('test-token', 'g1');
+
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
+    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+    await act(async () => { finish({ id: 'g1', sgf_content: USER_GAME_SGF }); });
+
+    expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '0');
+    expect(getUserGame).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads only the current identity response after changing accounts', async () => {
+    let finishOld: (value: unknown) => void = () => {};
+    getUserGame.mockImplementationOnce(() => new Promise((resolve) => { finishOld = resolve; }));
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
+    const view = renderPage('/galaxy/research?user_game_id=g1');
+
+    (useAuth as Mock).mockReturnValue({ ...confirmedAuth, identityKey: 'two', token: 'new-token' });
+    getUserGame.mockResolvedValueOnce({ id: 'g1', sgf_content: KIFU_SGF });
+    view.rerender(pageElement('/galaxy/research?user_game_id=g1'));
+    await waitFor(() => expect(getUserGame).toHaveBeenCalledWith('new-token', 'g1'));
+    await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
+    await act(async () => { finishOld({ id: 'g1', sgf_content: USER_GAME_SGF }); });
+
+    expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4');
+  });
+
   // 没有这个参数时不许去打个人对局接口 —— 平时进研究室是空棋盘，那条路不该产生请求。
   it('does not fetch a user game without the deep-link param', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
 
     renderPage();
 
@@ -250,7 +332,7 @@ describe('ResearchPage', () => {
   /* 分析是计费动作，不该由一次导航触发。这条守的是「深链只装棋，不开扫描」——
      它同时也是「以后有人顺手给这条深链加 analyze=1」的绊线。 */
   it('does not start an analysis scan on the deep link', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, token: 'test-token' });
+    (useAuth as Mock).mockReturnValue(confirmedAuth);
 
     renderPage('/galaxy/research?user_game_id=g1&analyze=1');
 
@@ -262,7 +344,7 @@ describe('ResearchPage', () => {
   // 必需的 `get_current_user`）。闸必须在**进 L2 之前**：一旦进去，屏上会是「正在分析
   // 棋局」加一个永远不会成功的「重试」，而且还会在服务端留下一个白建的会话壳。
   it('未登录点开始研究：说需要登录，且一个会话壳都不建', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, isLoading: false, token: null });
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
 
     renderPage();
     fireEvent.click(screen.getByTestId('mock-start-analysis'));
@@ -273,7 +355,7 @@ describe('ResearchPage', () => {
   });
 
   it('/me 探针还没回来时不误挡：不弹「需要登录」', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, isLoading: true, token: null });
+    (useAuth as Mock).mockReturnValue({ ...anonymousAuth, status: 'checking', isLoading: true });
 
     renderPage();
     fireEvent.click(screen.getByTestId('mock-start-analysis'));
@@ -283,7 +365,7 @@ describe('ResearchPage', () => {
   });
 
   it('已登录照常进 L2', async () => {
-    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, isLoading: false, token: 'tok' });
+    (useAuth as Mock).mockReturnValue({ ...confirmedAuth, token: 'tok' });
 
     renderPage();
     fireEvent.click(screen.getByTestId('mock-start-analysis'));

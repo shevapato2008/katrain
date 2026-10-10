@@ -56,6 +56,8 @@ KIFU_CATALOG_TABLES = {
     "kifu_name_changes",
     "kifu_event_selection_batches",
     "kifu_album_event_selections",
+    "kifu_analysis_jobs",
+    "kifu_analysis_moves",
 }
 PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | KIFU_CATALOG_TABLES | {AI_LADDER_LEGACY_TABLE}
 

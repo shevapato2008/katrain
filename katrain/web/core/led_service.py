@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import queue
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -93,6 +94,14 @@ class LedServiceConfig:
 
 
 _SENTINEL = object()
+_LINK_TIMEOUT = 0.2
+_LINK_INTERVAL = 2.0
+_LINK_RETRY_INTERVAL = 10.0
+_LINK_MAX_AGE = 6.0
+_LINK_LINE = re.compile(
+    r"LINK cc=(OPEN|RD|RA) cc_raw=\d+ cc_mv=\d+ "
+    r"ack=(OK|WEAK|ABSENT) ack_raw=\d+ ack_mv=\d+ link=(UP|DOWN|CABLE_ONLY)"
+)
 
 
 class _Batch:
@@ -129,6 +138,11 @@ class LedService:
         self._connected = False
         self._last_reconnect = 0.0
         self._last_errors: List[str] = []
+        # One immutable snapshot keeps HTTP readers independent of serial I/O.
+        self._board_link = None  # (monotonic timestamp, link, cc, ack)
+        self._next_link_poll = 0.0
+        self._link_response_pending = False
+        self._link_partial_line = False
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
@@ -220,7 +234,19 @@ class LedService:
         self._thread = None
 
     def is_connected(self) -> bool:
+        """Board B transport only; capture transactions retain this meaning."""
         return self._connected
+
+    def board_status(self) -> Dict:
+        """Read cached Board A power acknowledgement; never query serial here."""
+        snapshot = self._board_link
+        if not self._connected or snapshot is None or self._clock() - snapshot[0] > _LINK_MAX_AGE:
+            return {"connected": None, "board_link": None, "cc": None, "ack": None}
+        _, link, cc, ack = snapshot
+        return {"connected": link == "UP", "board_link": link, "cc": cc, "ack": ack}
+
+    def is_board_connected(self) -> Optional[bool]:
+        return self.board_status()["connected"]
 
     @property
     def last_errors(self) -> List[str]:
@@ -319,6 +345,7 @@ class LedService:
                 except queue.Empty:
                     if self._serial is None:
                         self._maybe_reconnect()
+                    self._maybe_poll_board_link()
                     continue
                 if item is _SENTINEL:
                     break
@@ -334,6 +361,7 @@ class LedService:
                     self._connected = False
                     self._close_serial()
                     self._finish(item, ok=False, shown_at=None, errors=[str(e)])
+                self._maybe_poll_board_link()
         finally:
             self._close_serial()
 
@@ -361,8 +389,23 @@ class LedService:
         self._serial.write((cmd + "\n").encode("ascii"))
         # Read response lines until OK/ERR or a couple of blanks (READY etc. ignored).
         for _ in range(4):
-            line = self._serial.readline().decode("ascii", errors="replace").strip()
+            raw = self._serial.readline()
+            if self._link_partial_line:
+                # LINK's timed-out prefix still owns the rest of this line,
+                # including an "OK ..." tail. Release it only at the newline.
+                if raw.endswith(b"\n"):
+                    self._link_partial_line = False
+                    self._link_response_pending = False
+                continue
+            if raw and not raw.endswith(b"\n") and self._link_response_pending:
+                self._link_partial_line = True
+                continue
+            line = raw.decode("ascii", errors="replace").strip()
             if not line:
+                continue
+            if line.startswith("LINK ") or (line == "ERR cmd" and self._link_response_pending):
+                # A timed-out LINK owns its late response, never CLEAR/SHOW's ACK.
+                self._link_response_pending = False
                 continue
             if line.startswith("OK"):
                 return True, line
@@ -370,6 +413,94 @@ class LedService:
                 return False, line
             # other chatter (READY/STATUS) — keep reading
         return False, "no-ack"
+
+    def _maybe_poll_board_link(self) -> None:
+        # Queued batches have priority; never poll inside a CLEAR/SETI/SHOW batch.
+        if self._stop.is_set() or self._serial is None or not self._queue.empty():
+            return
+        if self._clock() < self._next_link_poll:
+            return
+        try:
+            self._poll_board_link()
+        except Exception as exc:
+            log.warning("LED LINK read failed: %s", exc)
+            self._close_serial()
+
+    def _poll_board_link(self) -> None:
+        """Worker-only standalone LINK read with a total 200 ms timeout budget."""
+        self._board_link = None
+        port = self._serial
+        previous_timeout = getattr(port, "timeout", None)
+        deadline = self._clock() + _LINK_TIMEOUT
+        try:
+            port.timeout = _LINK_TIMEOUT
+            # Buffered late status belongs to the previous query. An unfinished
+            # line must retain its framing and be consumed through its newline.
+            if not self._link_partial_line:
+                self._drain_prewrite_input()
+            self._link_response_pending = True
+            port.write(b"LINK\n")
+            for _ in range(8):
+                remaining = deadline - self._clock()
+                if remaining <= 0:
+                    break
+                port.timeout = remaining
+                line = self._read_link_line(deadline).decode("ascii", errors="replace").strip()
+                if not line:
+                    break
+                if line.startswith("LINK "):
+                    self._link_response_pending = False
+                    match = _LINK_LINE.fullmatch(line)
+                    if match:
+                        cc, ack, link = match.groups()
+                        # Mirror v7 firmware: ACK OK wins even when CC is OPEN.
+                        expected = "UP" if ack == "OK" else "DOWN" if cc == "OPEN" else "CABLE_ONLY"
+                        if link == expected:
+                            self._board_link = (self._clock(), link, cc, ack)
+                    break
+                if line.startswith("ERR"):
+                    self._link_response_pending = False
+                    break
+        finally:
+            port.timeout = previous_timeout
+            self._next_link_poll = self._clock() + (
+                _LINK_INTERVAL if self._board_link is not None else _LINK_RETRY_INTERVAL
+            )
+
+    def _read_link_line(self, deadline: float) -> bytes:
+        port = self._serial
+        read = getattr(port, "read", None)
+        if not callable(read):
+            # Minimal serial adapters used by callers/tests may only offer lines.
+            raw = port.readline()
+            if self._link_partial_line:
+                if raw.endswith(b"\n"):
+                    self._link_partial_line = False
+                return b""
+            if raw and not raw.endswith(b"\n"):
+                self._link_partial_line = True
+                return b""
+            return raw
+        # pyserial's generic readline may restart the timeout per byte. Set the
+        # remaining budget for each read instead, including unterminated chatter.
+        data = bytearray()
+        for _ in range(256):
+            remaining = deadline - self._clock()
+            if remaining <= 0:
+                break
+            port.timeout = remaining
+            chunk = read(1)
+            if not chunk:
+                break
+            data.extend(chunk)
+            if chunk == b"\n":
+                if self._link_partial_line:
+                    self._link_partial_line = False
+                    data.clear()
+                    continue
+                return bytes(data)
+        self._link_partial_line = self._link_partial_line or bool(data)
+        return b""
 
     def _finish(self, batch, *, ok: bool, shown_at, errors: List[str]) -> None:
         if batch is _SENTINEL or not isinstance(batch, _Batch):
@@ -440,6 +571,10 @@ class LedService:
             self._serial.timeout = previous_timeout
 
     def _open_serial(self) -> None:
+        self._board_link = None
+        self._next_link_poll = 0.0
+        self._link_response_pending = False
+        self._link_partial_line = False
         if self._device_lease is None:
             # Imported here so standalone LED users can load this leaf module
             # without importing the web application package.
@@ -509,6 +644,9 @@ class LedService:
             log.warning("LED serial unavailable: %s", exc)
 
     def _close_serial(self) -> None:
+        self._board_link = None
+        self._link_response_pending = False
+        self._link_partial_line = False
         if self._serial is not None:
             try:
                 self._serial.close()

@@ -53,8 +53,7 @@ export const VisionProvider = ({ children }: { children: ReactNode }) => {
       setLoaded(true);
     } catch (err) {
       console.error('Failed to fetch vision status', err);
-      // Keep the last known status on transient errors rather than
-      // resetting to defaults, so the UI does not flicker.
+      setVisionStatus((previous) => ({ ...previous, ledConnected: null }));
     }
   }, []);
 

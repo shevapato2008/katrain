@@ -1,15 +1,20 @@
 """REST API endpoints for the kifu album (tournament game records) module."""
 
 from typing import Optional, List
+import hashlib
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, defer
+from katrain.core.sgf_parser import SGF
+from katrain.cron.kifu_parameters import ParameterError, resolve_parameters, validate_parameters
 
 from katrain.web.core.db import get_db
-from katrain.web.core.models_db import KifuAlbum, KifuAlbumEventSelection, KifuEvent
+from katrain.web.core.models_db import (
+    KifuAlbum, KifuAlbumEventSelection, KifuAnalysisJob, KifuAnalysisMove, KifuEvent,
+)
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.kifu.identity import (
     LANGUAGES,
@@ -27,10 +32,13 @@ from katrain.web.kifu.identity import (
     strict_names_enabled,
     strict_selected_event_search_ids,
 )
-from katrain.web.kifu.name_parse import parse_player
+from katrain.web.kifu.name_parse import parse_event, parse_player
 from katrain.web.kifu.round_names import display_round_name
+from katrain.web.kifu.library import report_availability
 
 router = APIRouter()
+KIFU_MODEL_SHA256 = "93bdb63a3bfae4a70db0cb5265287495ecfc10b1ba1cc6814feeba1cdf055871"
+KIFU_VISITS = 2000
 
 # The archive uses Japanese romanizations while many kiosk users search in Chinese.
 _HISTORICAL_PLAYER_ALIASES = {
@@ -42,6 +50,31 @@ _HISTORICAL_PLAYER_ALIASES = {
     "木谷实": ("kitani minoru",),
     "木谷實": ("木谷实", "kitani minoru"),
 }
+
+
+def _obscured_program_event_ids_loaded(db: Session, albums: list, selected_events: dict) -> set[int]:
+    """Use SGF content already loaded for the list preview and analysis status."""
+    candidates = [album for album in albums if album.event == "GNUGo3.8" and album.id not in selected_events]
+    if not candidates:
+        return set()
+    obscured = {
+        album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
+            KifuAlbumEventSelection.album_id.in_([album.id for album in candidates])
+        )
+    }
+    for album in candidates:
+        try:
+            names = SGF.parse_sgf(album.sgf_content).get_list_property("GN") or []
+        except Exception:
+            obscured.add(album.id)
+            continue
+        if names and names[0] == "GNUGo3.8" and any(
+            name and name != names[0]
+            and parse_event(name, None).category not in {"program_source_label", "corrupt_data"}
+            for name in names[1:]
+        ):
+            obscured.add(album.id)
+    return obscured
 
 
 async def _from_dispatcher(call, not_found_detail: str):
@@ -83,6 +116,7 @@ class KifuAlbumSummary(BaseModel):
     display_event: Optional[str] = None
     display_round_name: Optional[str] = None
     sources: List[str] = Field(default_factory=list)
+    has_analysis: bool = False
 
 
 class KifuAlbumDetail(KifuAlbumSummary):
@@ -101,6 +135,122 @@ class KifuAlbumListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    preview: Optional[KifuAlbumDetail] = None
+
+
+@router.get("/albums/{album_id}/analysis")
+async def get_kifu_analysis(request: Request, album_id: int, db: Session = Depends(get_db)):
+    """Read the current pinned analysis; exact duplicates share their canonical job.
+
+    analysis_parameters is the validated stored engine-input snapshot, never the
+    album's raw metadata. Invalid/missing proof returns rules_unresolved, an
+    actionable parameter_error and no moves. Album/SGF reading remains available.
+    """
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        return await _from_dispatcher(
+            lambda: dispatcher.kifu_get_analysis(album_id), f"Kifu album {album_id} not found"
+        )
+
+    album = db.query(KifuAlbum).filter(KifuAlbum.id == album_id).first()
+    if album is None:
+        raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
+    canonical_id = album.duplicate_of_id or album.id
+    canonical = album if canonical_id == album.id else db.query(KifuAlbum).filter(KifuAlbum.id == canonical_id).first()
+    if canonical is None or canonical.duplicate_of_id is not None:
+        raise HTTPException(status_code=409, detail="Canonical kifu album is invalid")
+    sgf_sha256 = hashlib.sha256(canonical.sgf_content.encode("utf-8")).hexdigest()
+    # A duplicate link is only valid while both SGF payloads remain byte-identical.
+    if album.id != canonical_id and album.sgf_content != canonical.sgf_content:
+        canonical_id = album.id
+        canonical = album
+        sgf_sha256 = hashlib.sha256(album.sgf_content.encode("utf-8")).hexdigest()
+    job = (
+        db.query(KifuAnalysisJob)
+        .filter(
+            KifuAnalysisJob.album_id == canonical_id,
+            KifuAnalysisJob.sgf_sha256 == sgf_sha256,
+            KifuAnalysisJob.model_sha256 == KIFU_MODEL_SHA256,
+            KifuAnalysisJob.requested_visits == KIFU_VISITS,
+        )
+        .first()
+    )
+    parameters = None
+    parameter_error = None
+    try:
+        if job is not None:
+            parameters = validate_parameters(canonical.sgf_content, job.analysis_parameters)
+        else:
+            # Can explain missing metadata before admission, but only a stored
+            # engine-input snapshot may be presented as report parameters.
+            resolve_parameters(canonical.sgf_content)
+    except ParameterError as exc:
+        parameter_error = exc.as_dict()
+    moves = (
+        []
+        if job is None or parameter_error
+        else (
+            db.query(KifuAnalysisMove)
+            .filter(KifuAnalysisMove.job_id == job.id)
+            .order_by(KifuAnalysisMove.move_number)
+            .all()
+        )
+    )
+    if parameters and any(row.parameter_sha256 != parameters["parameter_sha256"] for row in moves):
+        parameter_error = {
+            "code": "parameter_mismatch",
+            "message": "Stored positions use stale or unverified parameters",
+        }
+        parameters = None
+        moves = []
+    complete = bool(
+        job
+        and len(moves) == job.total_moves + 1
+        and all(row.move_number == number and row.root_visits >= KIFU_VISITS for number, row in enumerate(moves))
+    )
+    status = job.status if job else "unavailable"
+    error_message = job.error_message if job else None
+    if parameter_error:
+        status = "rules_unresolved"
+        error_message = parameter_error["message"]
+    if status == "completed" and not complete:
+        status = "failed"
+        error_message = "Stored analysis is incomplete"
+    fields = (
+        "move_number",
+        "actual_move",
+        "actual_player",
+        "winrate",
+        "score_lead",
+        "visits",
+        "root_visits",
+        "top_moves",
+        "ownership",
+        "delta_score",
+        "delta_winrate",
+        "grade",
+        "points_lost",
+        "points_lost_source",
+        "is_top_move",
+        "top_prior",
+        "brilliance",
+    )
+    return {
+        "album_id": album_id,
+        "canonical_album_id": canonical_id,
+        "sgf_sha256": sgf_sha256,
+        "model_sha256": KIFU_MODEL_SHA256,
+        "requested_visits": KIFU_VISITS,
+        "status": status,
+        "analysis_parameters": parameters,
+        "parameters_valid": parameters is not None,
+        "parameters_verified": bool(parameters and parameters["verified"]),
+        "parameter_error": parameter_error,
+        "total_moves": job.total_moves if job else canonical.move_count,
+        "analyzed_moves": job.analyzed_moves if job and not parameter_error else 0,
+        "error_message": error_message,
+        "moves": [{field: getattr(row, field) for field in fields} for row in moves if row.root_visits >= KIFU_VISITS],
+    }
 
 
 @router.get("/albums", response_model=KifuAlbumListResponse)
@@ -125,7 +275,7 @@ async def list_kifu_albums(
     lang = name_display_language(lang)
     orthographic_batch_contexts = {}
 
-    query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
+    query = db.query(KifuAlbum).options(defer(KifuAlbum.search_text))
     visible = (KifuAlbum.duplicate_of_id.is_(None), KifuAlbum.list_hidden_reason.is_(None))
     query = query.filter(*visible)
     count_query = db.query(func.count(KifuAlbum.id)).filter(*visible)
@@ -231,28 +381,35 @@ async def list_kifu_albums(
     selected_events = live_event_selections(db, records)
     strict = strict_names_enabled()
     fallback_maps = None if strict else display_maps(db, records, lang, selected_events=selected_events)
-    obscured_event_ids = obscured_program_event_ids(db, records, selected_events=selected_events)
+    obscured_event_ids = _obscured_program_event_ids_loaded(db, records, selected_events)
     players, events, event_canonical_names, sources, raw_players, raw_events = strict_display_maps(
         db, records, lang, selected_events=selected_events, orthographic_batch_contexts=orthographic_batch_contexts
     )
+    availability = report_availability(db, records, KIFU_MODEL_SHA256, KIFU_VISITS)
+    items = [
+        _summary(
+            r, players, events, event_canonical_names, sources, lang,
+            round_lang=requested_lang, raw_players=raw_players, raw_events=raw_events,
+            obscured_event_ids=obscured_event_ids, selected_events=selected_events,
+            fallback_maps=fallback_maps,
+        ).model_copy(update={"has_analysis": availability[r.id]})
+        for r in records
+    ]
+    preview = (
+        None
+        if not records
+        else KifuAlbumDetail.model_validate(
+            {
+                **items[0].model_dump(),
+                "place": records[0].place,
+                "source": records[0].source,
+                "sgf_content": records[0].sgf_content,
+            }
+        )
+    )
     return KifuAlbumListResponse(
-        items=[
-            _summary(
-                r,
-                players,
-                events,
-                event_canonical_names,
-                sources,
-                lang,
-                round_lang=requested_lang,
-                raw_players=raw_players,
-                raw_events=raw_events,
-                obscured_event_ids=obscured_event_ids,
-                selected_events=selected_events,
-                fallback_maps=fallback_maps,
-            )
-            for r in records
-        ],
+        items=items,
+        preview=preview,
         total=total,
         page=page,
         page_size=page_size,
@@ -301,6 +458,7 @@ async def get_kifu_album(request: Request, album_id: int, lang: str = "cn", db: 
         selected_events=selected_events,
         fallback_maps=fallback_maps,
     ).model_dump()
+    values["has_analysis"] = report_availability(db, [record], KIFU_MODEL_SHA256, KIFU_VISITS)[record.id]
     return KifuAlbumDetail.model_validate(
         {**values, "place": record.place, "source": record.source, "sgf_content": record.sgf_content}
     )

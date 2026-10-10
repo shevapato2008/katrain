@@ -5,7 +5,7 @@ import { KioskRoutes } from './KioskApp';
 
 const auth = vi.hoisted(() => ({ authenticated: true }));
 vi.mock('../context/AuthContext', () => ({
-  useAuth: () => ({ user: auth.authenticated ? { username: 'u' } : null, isAuthenticated: auth.authenticated, isLoading: false }),
+  useAuth: () => ({ user: auth.authenticated ? { username: 'u' } : null, isAuthenticated: auth.authenticated, isLoading: false, status: auth.authenticated ? 'authenticated' : 'guest', isGuest: false, identityKey: 'u' }),
 }));
 vi.mock('../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 vi.mock('./components/layout/KioskLayout', () => ({ default: Outlet }));

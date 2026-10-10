@@ -5,7 +5,7 @@ const DEFAULT_STATUS: GeometryStatus = {
   phase: 'required',
   session_calibrated: false,
   last_valid: false,
-  capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+  capabilities: { camera_ready: false, led_ready: null, geometry_ready: false },
 };
 
 interface GeometryContextValue {
@@ -13,7 +13,7 @@ interface GeometryContextValue {
   /**
    * 第一次问过服务端了没有。
    *
-   * **不是锦上添花:`DEFAULT_STATUS` 的三个 capability 全是 `false`**,直接拿去画状态格,
+   * `DEFAULT_STATUS` 的摄像头与几何 capability 是 `false`，LED 是未知；直接画状态格,
    * 就会在**还没问过**的时候说「摄像头未连接」。而「还没读到状态」和「读到了没连上」
    * 是两回事 —— `goHardware.ts` 的注释早就把这条判过一次(值给「—」、不给 tone)。
    * 少了这个布尔,那条注释在标定屏上就落不了地。
@@ -43,8 +43,11 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
         // 404 = 这台盒子压根没起 capture 服务。**这是一个读到了的结论**,不是没读到 ⇒ 也算 loaded。
         setStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
         setLoaded(true);
+      } else {
+        setStatus((previous) => ({
+          ...previous, capabilities: { ...previous.capabilities, led_ready: null },
+        }));
       }
-      // 其它错误(502 / 超时)**故意不置 loaded** —— 那才是「还没问出来」。
     }
   }, []);
 

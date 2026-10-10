@@ -100,6 +100,37 @@ describe('PlayPage', () => {
     platformStatusMock.mockResolvedValue({ platforms: [] });
   });
 
+  it('updates the greeting each hour without refreshing the page or refetching platforms', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 11, 5, 30));
+    try {
+      await act(async () => { renderPage(); });
+      expect(screen.getByText(/夜深了/)).toHaveTextContent('fan');
+      act(() => { vi.advanceTimersByTime(60 * 60 * 1000); });
+      expect(screen.getByText(/早上好/)).toHaveTextContent('fan');
+      expect(platformStatusMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('refreshes a stale greeting on focus and cleans up its hourly timer on unmount', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 11, 2));
+    try {
+      let page!: ReturnType<typeof renderPage>;
+      await act(async () => { page = renderPage(); });
+      expect(screen.getByText(/夜深了/)).toBeInTheDocument();
+      vi.setSystemTime(new Date(2026, 9, 11, 8));
+      fireEvent.focus(window);
+      expect(screen.getByText(/早上好/)).toBeInTheDocument();
+      page.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('四张模式卡完全等样式 —— 稿子里没有「主推」那一张', () => {
     renderPage();
     const modeCardLabels = ['自由对弈', '升降级对弈', '本地对局', '在线大厅'];

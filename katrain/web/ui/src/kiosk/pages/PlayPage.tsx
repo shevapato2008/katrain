@@ -45,6 +45,20 @@ const PlayPage = () => {
   const engineReadiness = useEngineReadiness();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
+  const [hour, setHour] = useState(() => new Date().getHours());
+
+  useEffect(() => {
+    const updateHour = () => setHour(new Date().getHours());
+    const onVisible = () => { if (!document.hidden) updateHour(); };
+    const interval = setInterval(updateHour, 60 * 60 * 1000);
+    window.addEventListener('focus', updateHour);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', updateHour);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
 
   useEffect(() => {
     let current = true;
@@ -63,7 +77,6 @@ const PlayPage = () => {
     return () => { current = false; };
   }, [isAuthenticated, token]);
 
-  const hour = new Date().getHours();
   const [greetKey, greetZh] =
     hour < 6 ? ['Late night', '夜深了'] :
     hour < 11 ? ['Good morning', '早上好'] :

@@ -178,7 +178,7 @@ describe('AiLadderRatedSetup', () => {
     });
     renderSetup(status);
 
-    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '放弃未送达成绩，在这里开新局' })).toBeEnabled();
     // 下完了的局没有「继续」可言。
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });
@@ -378,7 +378,10 @@ describe('AiLadderRatedSetup', () => {
     // 照着一句已经不成立的话按下去。
     rerender(<AiLadderRatedSetup {...props} status={pending} />);
     await waitFor(() => expect(
-      within(screen.getByRole('dialog')).getByText(/会以一场负替换它真实的结果/),
+      within(screen.getByRole('dialog')).getByText(
+        '那一局已经下完了，但成绩还没送到云端。放弃后会按一场负局了结并计入升降级，真实棋谱和结果将无法再作为本局成绩补交。'
+        + '若成绩仍可重试，请先送达成绩；若云端拒收，请联系维护人员修复。此操作不可撤销。',
+      ),
     ).toBeInTheDocument());
     expect(screen.queryByText(/它将计为本局负并计入升降级/)).not.toBeInTheDocument();
     expect(onEndGame).not.toHaveBeenCalled();
@@ -464,7 +467,7 @@ describe('AiLadderRatedSetup', () => {
     // 而这一格**仍然说话** —— 去码那一刀最容易在这里把静默漏回来。
     expect(screen.getByText('云端拒收了这一局的成绩，再试也是同一个答复。')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/HTTP\s*4\d\d/);
-    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+    expect(screen.getByText('放弃会丢失真实成绩，按一场负局计入升降级')).toBeInTheDocument();
   });
 
   it('网页直连没有 outbox：不发 sync，就不摆重试按钮', () => {
@@ -475,8 +478,8 @@ describe('AiLadderRatedSetup', () => {
     renderSetup(status);
 
     expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
-    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '放弃未送达成绩，在这里开新局' })).toBeEnabled();
+    expect(screen.getByText('放弃会丢失真实成绩，按一场负局计入升降级')).toBeInTheDocument();
   });
 
   it('这一格属于本机、却接不回来时，说的是「就在这台设备上，只是本机没有它的记录」', () => {

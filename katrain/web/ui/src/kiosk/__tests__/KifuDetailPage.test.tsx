@@ -25,7 +25,8 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-const { getAlbum } = vi.hoisted(() => ({ getAlbum: vi.fn() }));
+const { getAlbum, play } = vi.hoisted(() => ({ getAlbum: vi.fn(), play: vi.fn() }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play }) }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbum } }));
 
 const { baipuLoad, cacheSgfMock } = vi.hoisted(() => ({ baipuLoad: vi.fn(), cacheSgfMock: vi.fn() }));
@@ -133,7 +134,7 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     expect(hero.textContent).toContain('2026-06-30');
     expect(hero.textContent).toContain('19 路');
     expect(hero.textContent).toContain('中国规则');
-    expect(hero.textContent).toContain('黑贴 7.5 目');
+    expect(hero.textContent).toContain('SGF 贴目 7.5 目');
     expect(hero.textContent).toContain('241 手');
   });
 });
@@ -268,4 +269,18 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     expect(btn).toBeDisabled();
     expect(btn).toHaveAttribute('title', expect.stringContaining('13 路'));
   });
+});
+
+it('keeps archive load, pass and start silent while explicit forward/backward/jump replay sounds once', async () => {
+  baipuLoad.mockResolvedValue({ board_size: 19, steps: [...STEPS, step({ kind: 'pass', color: 'B' })], meta: {} });
+  renderPage(); await waitLoaded();
+  expect(play).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: '下一手' }));
+  expect(play).toHaveBeenCalledExactlyOnceWith('stone');
+  fireEvent.click(screen.getByRole('button', { name: '跳到最后' }));
+  expect(play).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button', { name: '上一手' }));
+  expect(play).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole('button', { name: '回到开局' }));
+  expect(play).toHaveBeenCalledTimes(2);
 });

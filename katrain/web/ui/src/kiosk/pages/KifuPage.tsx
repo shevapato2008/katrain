@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -10,16 +10,17 @@ import {
 } from '../../api/baipuApi';
 import { translateResult } from '../../utils/resultTranslation';
 import { formatRank } from '../../utils/rank';
-import { kifuSourceLabel } from '../../utils/kifuSource';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { Icon } from '../shell/icons';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { whenLabel } from '../utils/whenLabel';
+import CompactPagination from '../../components/CompactPagination';
+import './kifuLibrary.css';
 
 const DEBOUNCE_MS = 350;
-/** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
-const PAGE_SIZE = 6;
+/** Fetch only the current 20 records; the existing list owns its scroll area. */
+const PAGE_SIZE = 20;
 const SEARCH_SESSION_KEY = 'katrain_kiosk_kifu_search';
 
 const readSearchSession = (): { query: string; page: number } => {
@@ -41,48 +42,17 @@ const readRecent = (): RecentItem[] =>
 const isDone = (p: BaipuProgress | null): boolean =>
   p != null && p.total != null && p.k >= p.total;
 
-/**
- * 屏 15 · 棋谱 `/kiosk/kifu` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。
- *
- * 规范 §3 只许围棋加**一个**棋种专属 Dock 项,这一项就是它:原来的
- * 「棋谱 / 摆谱 / 直播」三项收在这儿。**摆谱的入口就在这一屏** ——
- * Task 4 把它下了 Dock,在本屏接上之前它只能靠输 URL 到达,那笔账在这里销。
- *
- * 结构对着稿子 `data-screen="kifu"`(2026-09-23 版):
- * 问候 → 继续摆谱 → 名局棋谱(搜索框 + 导入 SGF / 一页六局 / 翻页)→ 最近摆过。
- *
- * ## 名局列表一进来就摊开(Fan 2026-09-23)
- *
- * 上一版照 8 月的稿子画成三张卡(搜棋谱 / 摆到实体盘 / 导入 SGF),列表收在「搜棋谱」开关后面,
- * 首屏能看见的一排行是直播 —— 盒上看起来就是「直播的列表挪进了棋谱库」。Fan 改判:这一屏的
- * 正文就是棋谱库那一页谱。三张卡拆掉:搜索框常驻在列表头上,「导入 SGF」贴在它右边;
- * 「摆到实体盘」不另开入口 —— 挑一局点进屏 16 再摆,和从这张表挑谱是同一个动作。
- *
- * ## 没有直播(Fan 2026-09-22)
- *
- * kiosk 端整个直播模块删掉,只在 galaxy 保留 —— 这一屏没有直播那一组,问候副标里的「职业直播」
- * 也一起去掉,盒上的 `/api/v1/board/live/*` 代理同样删了。**别再把直播加回这一屏。**
- *
- * ## 组标题右端是真数据
- *
- * 规范说 `.secval` 的位置放的是数据(G5),所以写「共 N 局」,取自列表那一发的 `total`。
- *
- * ## `kifu:famous_records` 是另起的 key
- *
- * `kifu:records` 在 cn PO 里是**「条记录」**(galaxy 拿它当「1234 条记录」的量词用)。
- * 复用它,这一组的标题会变成「条记录」——**PO 赢默认值**,闸四(`kiosk-shell-contract`)
- * 抓的就是这个。
- */
+/** L1 library: keep the shell geometry; only the current page/local history scrolls. */
 const KifuPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, lang } = useTranslation();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [recent, setRecent] = useState<RecentItem[]>(readRecent);
-  const [importError, setImportError] = useState<string | null>(null);
+  const [showRecent, setShowRecent] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
-  // ── 名局棋谱:离开设置页再回来时保留本次浏览的搜索 ──
+  // Preserve the current search and page when returning from Settings.
   const [initialSearch] = useState(readSearchSession);
   const [searchInput, setSearchInput] = useState(initialSearch.query);
   const [query, setQuery] = useState(initialSearch.query);
@@ -146,29 +116,12 @@ const KifuPage = () => {
     const cached = getCachedSgf(entry.id);
     if (!cached) {
       // 谱是**整份缓存在本地**的,缓存没了就没法离线接着摆 —— 如实说,不假装还能点。
-      setImportError(t('kifu:cache_gone', '这份谱的本地缓存没了,得重新选一次'));
+      setSessionError(t('kifu:cache_gone', '这份谱的本地缓存没了,得重新选一次'));
       setRecent(readRecent());
       return;
     }
     startSession(cached.id, cached.name, cached.sgf);
   }, [startSession, t]);
-
-  const onImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result || '');
-      if (!text.includes('(;')) {
-        setImportError(t('kifu:bad_sgf', '不是有效的 SGF 文件'));
-        return;
-      }
-      startSession(`local_${Date.now()}`, file.name.replace(/\.sgf$/i, ''), text);
-    };
-    reader.onerror = () => setImportError(t('kifu:read_failed', '读取文件失败'));
-    reader.readAsText(file);
-    e.target.value = '';   // 同一个文件要能再导一次
-  };
 
   // 「继续摆谱」认的是**最近摆过、又还没摆完**的那一份。
   const resumable = recent.find((e) => (e.progress?.k ?? 0) > 0 && !isDone(e.progress)) ?? null;
@@ -176,78 +129,101 @@ const KifuPage = () => {
   const visibleAlbums = albumsLang === lang ? albums : null;
 
   return (
-    <KioskScrollZone>
+    <div className="kiosk-side kifu-library">
       <div className="kiosk-greet">
         <b>{t('kifu:greet_a', '看别人的')}<i>{t('kifu:greet_b', '棋')}</i></b>
         <span>{t('kifu:greet_sub', '名局，以及把谱摆到实体盘上')}</span>
       </div>
-
-      {resumable && (
-        <div className="kiosk-resume" data-testid="resume-baipu-bar">
-          <span className="bar" />
-          <div>
-            <h4>{t('kifu:resume_baipu', '继续摆谱')}</h4>
-            <p>
-              {t('kifu:resume_at', '上次摆到第')} {resumable.progress?.k} {t('kifu:moves_unit', '手')}
-              {' · '}
-              {t('kifu:resume_hint', '灯会指下一手落在哪')}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="kiosk-btn kiosk-btn--pill pill"
-            onClick={() => resume(resumable)}
-          >
-            {t('kifu:resume', '继续')}
-          </button>
+      <KioskSecLabel
+        zh={t('kifu:famous_records', '名局棋谱')}
+        en="Records"
+        value={total != null ? `${t('kifu:total_prefix', '共')} ${total.toLocaleString()} ${t('kifu:games_unit', '局')}` : undefined}
+      />
+      <div className="ksearch" data-testid="kifu-search">
+        <div className="ksearch__bar">
+          <label className="ksearch__field">
+            <Icon name="magnifying-glass" />
+            <input
+              type="search"
+              className="ksearch__box"
+              aria-label={t('kifu:search_placeholder_cn', '棋手、赛事、年份都能搜')}
+              placeholder={t('kifu:search_placeholder_cn', '棋手、赛事、年份都能搜')}
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setShowRecent(false); }}
+            />
+          </label>
         </div>
-      )}
+      </div>
 
-      {importError && (
-        <div className="empty" data-testid="kifu-action-error">
-          <h4>{t('kifu:cannot_start', '这一份摆不了')}</h4>
-          <p>{importError}</p>
-        </div>
-      )}
-
-      <section className="kiosk-section">
-        <KioskSecLabel
-          zh={t('kifu:famous_records', '名局棋谱')}
-          en="Records"
-          value={total != null ? `${t('kifu:total_prefix', '共')} ${total.toLocaleString()} ${t('kifu:games_unit', '局')}` : undefined}
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".sgf"
-          hidden
-          data-testid="kifu-sgf-input"
-          onChange={onImport}
-        />
-
-        <div className="ksearch" data-testid="kifu-search">
-          <div className="ksearch__bar">
-            <label className="ksearch__field">
-              <Icon name="magnifying-glass" />
-              <input
-                type="search"
-                className="ksearch__box"
-                placeholder={t('kifu:search_placeholder_cn', '棋手、赛事、年份都能搜')}
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+      <KioskScrollZone grow className="kifu-library__list" resetKey={`${query}:${page}:${lang}:${showRecent}`}>
+        <div id="kifu-library-list">
+          {sessionError && (
+            <div className="empty" role="alert" data-testid="kifu-action-error">
+              <h4>{t('kifu:cannot_start', '这一份摆不了')}</h4>
+              <p>{sessionError}</p>
+            </div>
+          )}
+          {resumable && (
+            <div className="kiosk-resume" data-testid="resume-baipu-bar">
+              <span className="bar" />
+              <div>
+                <h4>{t('kifu:resume_baipu', '继续摆谱')}</h4>
+                <p>
+                  {t('kifu:resume_at', '上次摆到第')} {resumable.progress?.k} {t('kifu:moves_unit', '手')}
+                  {' · '}{t('kifu:resume_hint', '灯会指下一手落在哪')}
+                </p>
+              </div>
+              <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => resume(resumable)}>
+                {t('kifu:resume', '继续')}
+              </button>
+            </div>
+          )}
+          {showRecent ? (
+            <section className="kifu-library__recent">
+              <KioskSecLabel
+                zh={t('kifu:recent', '最近摆过')}
+                en="Recent"
+                value={t('kifu:on_this_box', '存在这台盒子上')}
               />
-            </label>
-            <button
-              type="button"
-              className="kiosk-btn kiosk-btn--pill ksearch__import"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon name="upload-simple" />
-              {t('kifu:import_sgf', '导入 SGF')}
-            </button>
-          </div>
-          {listError ? (
-            <div className="empty">
+              {recent.length === 0 ? (
+                <div className="empty" data-testid="kifu-recent-empty">
+                  <h4>{t('kifu:no_recent', '这台盒子上还没摆过谱')}</h4>
+                  <p>{t('kifu:no_recent_hint', '从上面挑一份,或者导入一个 SGF —— 选过的谱整份存在本地,断网也摆得完。')}</p>
+                </div>
+              ) : (
+                <div className="kiosk-rows" data-testid="kifu-recent-rows">
+                  {recent.slice(0, 6).map((e) => {
+                    const done = isDone(e.progress);
+                    return (
+                      <div className="kiosk-row" key={e.id}>
+                        <span className="kiosk-row__lead">
+                          {done ? t('kifu:whole_game', '全谱') : `${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
+                        </span>
+                        <span className="kiosk-row__t">
+                          <b>{e.name}</b>
+                          <em>
+                            {done ? t('kifu:placed_all', '摆完')
+                              : `${t('kifu:placed_at', '摆到第')} ${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
+                            {' · '}{whenLabel(e.savedAt, t)}
+                          </em>
+                        </span>
+                        <span className="kiosk-row__end">
+                          {done ? (
+                            <span className="kiosk-tag kiosk-tag--win">{t('kifu:done_tag', '已摆完')}</span>
+                          ) : (
+                            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => resume(e)}>
+                              {t('kifu:keep_placing', '接着摆')}
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ) : listError ? (
+            <div className="empty" role="alert">
               <h4>{listFailure === 'unreachable'
                 ? t('kifu:list_offline', '无法连接棋谱库')
                 : listFailure === 'service'
@@ -267,152 +243,84 @@ const KifuPage = () => {
               </button>
             </div>
           ) : visibleAlbums == null ? (
-            <div className="empty">
+            <div className="empty" role="status">
               <h4>{query ? t('kifu:searching', '正在找') : t('kifu:loading', '加载中...')}</h4>
             </div>
           ) : visibleAlbums.length === 0 ? (
-            // 没搜任何东西时是空库,不是「没对上」—— 别叫人去换一个根本没输过的词。
-            query ? (
-              <div className="empty">
-                <h4>{t('kifu:no_results_cn', '没有对得上的谱')}</h4>
-                <p>{t('kifu:no_results_hint', '换棋手名、赛事名或者年份再试。')}</p>
-              </div>
-            ) : (
-              <div className="empty"><h4>{t('kifu:no_results', '未找到棋谱')}</h4></div>
-            )
+            <div className="empty">
+              <h4>{query ? t('kifu:no_results_cn', '没有对得上的谱') : t('kifu:no_results', '未找到棋谱')}</h4>
+              {query && <p>{t('kifu:no_results_hint', '换棋手名、赛事名或者年份再试。')}</p>}
+            </div>
           ) : (
-            <>
-              <div className="kifu-records" data-testid="kifu-records">
-                {visibleAlbums.map((a) => {
-                  const event = a.display_event ?? '';
-                  const round = a.display_round_name ?? '';
-                  const winner = /^[Bb黑]/.test(a.result || '') ? 'black'
-                    : /^[Ww白]/.test(a.result || '') ? 'white' : null;
-                  return (
-                    <button
-                      type="button"
-                      className="kifu-record"
-                      key={a.id}
-                      onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
-                      style={a.sources?.length ? { height: 'auto', minHeight: 64, gridTemplateRows: '18px 25px auto' } : undefined}
-                    >
-                      <span className="kifu-record__head">
-                        <span className="kifu-record__event" title={[event, round].filter(Boolean).join(' · ')}>
-                          {event || ''}
-                          {round && <span className="kifu-record__round">{round}</span>}
-                        </span>
-                        <span className="kifu-record__meta">
-                          {a.date_played && <span>{a.date_played}</span>}
-                          <span>{a.move_count} {t('kifu:moves_unit', '手')}</span>
-                        </span>
-                      </span>
-                      <span className="kifu-record__match">
-                        <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
-                          <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
-                          <span className="kifu-record__name">{a.display_player_black ?? t('game:black_side', '黑方')}</span>
-                          {a.display_black_rank && <small>{formatRank(a.display_black_rank, t)}</small>}
-                        </span>
-                        <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
-                          {translateResult(a.result, t, a.rules)}
-                        </span>
-                        <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
-                          {a.display_white_rank && <small>{formatRank(a.display_white_rank, t)}</small>}
-                          <span className="kifu-record__name">{a.display_player_white ?? t('game:white_side', '白方')}</span>
-                          <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
-                        </span>
-                      </span>
-                      {!!a.sources?.length && (
-                        <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4, minWidth: 0, marginTop: 5, fontSize: 10, color: '#9eadab' }}>
-                          <span>{t('kifu:source', '来源')}</span>
-                          {a.sources.map((source) => (
-                            <span key={source} style={{ maxWidth: '100%', overflowWrap: 'anywhere', border: '1px solid currentColor', borderRadius: 4, padding: '1px 5px' }}>{kifuSourceLabel(source, t, lang)}</span>
-                          ))}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {totalPages > 1 && (
-                <div className="kpager">
+            <div className="kifu-records" data-testid="kifu-records">
+              {visibleAlbums.map((a) => {
+                const event = a.display_event ?? '';
+                const round = a.display_round_name ?? '';
+                const winner = /^[Bb黑]/.test(a.result || '') ? 'black'
+                  : /^[Ww白]/.test(a.result || '') ? 'white' : null;
+                return (
                   <button
                     type="button"
-                    className="kiosk-btn kiosk-btn--pill"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className="kifu-record"
+                    key={a.id}
+                    onClick={() => navigate(`/kiosk/kifu/${a.id}${a.has_analysis ? '' : '/replay'}`)}
                   >
-                    {t('kifu:prev_page', '上一页')}
+                    <span className="kifu-record__head">
+                      <span className="kifu-record__entry" role="img"
+                        aria-label={a.has_analysis ? t('kifu:view_analysis_report', '查看分析报告') : t('kifu:view_kifu', '查看棋谱')}
+                        title={a.has_analysis ? t('kifu:view_analysis_report', '查看分析报告') : t('kifu:view_kifu', '查看棋谱')}>
+                        <Icon name={a.has_analysis ? 'trend-up' : 'books'} />
+                      </span>
+                      <span className="kifu-record__event" title={[event, round].filter(Boolean).join(' · ')}>
+                        {event || ''}
+                        {round && <span className="kifu-record__round"> · {round}</span>}
+                      </span>
+                      <span className="kifu-record__meta">
+                        {a.date_played && <span>{a.date_played}</span>}
+                        <span>{a.move_count} {t('kifu:moves_unit', '手')}</span>
+                      </span>
+                    </span>
+                    <span className="kifu-record__match">
+                      <span className={`kifu-record__player${winner === 'black' ? ' is-winner' : ''}`}>
+                        <span className="kifu-record__stone kifu-record__stone--black" aria-hidden="true" />
+                        <span className="kifu-record__name">{a.display_player_black ?? t('game:black_side', '黑方')}</span>
+                        {a.display_black_rank && <small>{formatRank(a.display_black_rank, t)}</small>}
+                      </span>
+                      <span className={`kifu-record__result${winner ? ` kifu-record__result--${winner}` : ''}`}>
+                        {translateResult(a.result, t, a.rules)}
+                      </span>
+                      <span className={`kifu-record__player kifu-record__player--white${winner === 'white' ? ' is-winner' : ''}`}>
+                        <span className="kifu-record__stone kifu-record__stone--white" aria-hidden="true" />
+                        {a.display_white_rank && <small>{formatRank(a.display_white_rank, t)}</small>}
+                        <span className="kifu-record__name">{a.display_player_white ?? t('game:white_side', '白方')}</span>
+                      </span>
+                    </span>
                   </button>
-                  <span>{page} / {totalPages}</span>
-                  <button
-                    type="button"
-                    className="kiosk-btn kiosk-btn--pill"
-                    disabled={page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  >
-                    {t('kifu:next_page', '下一页')}
-                  </button>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           )}
         </div>
-      </section>
+      </KioskScrollZone>
 
-      <section className="kiosk-section">
-        <KioskSecLabel
-          zh={t('kifu:recent', '最近摆过')}
-          en="Recent"
-          value={t('kifu:on_this_box', '存在这台盒子上')}
+      <div className="kifu-library__footer">
+        <button
+          type="button"
+          className="kiosk-btn kifu-library__recent-toggle"
+          aria-pressed={showRecent}
+          aria-controls="kifu-library-list"
+          onClick={() => setShowRecent((value) => !value)}
+        >
+          <Icon name="books" />
+          {t('kifu:recent', '最近摆过')}
+        </button>
+        <CompactPagination
+          key={`${query}:${lang}`} page={page} totalPages={totalPages}
+          disabled={total == null || listError != null}
+          onPageChange={(next) => { setShowRecent(false); setPage(next); }}
         />
-        {recent.length === 0 ? (
-          <div className="empty" data-testid="kifu-recent-empty">
-            <h4>{t('kifu:no_recent', '这台盒子上还没摆过谱')}</h4>
-            <p>{t('kifu:no_recent_hint', '从上面挑一份,或者导入一个 SGF —— 选过的谱整份存在本地,断网也摆得完。')}</p>
-          </div>
-        ) : (
-          <div className="kiosk-rows" data-testid="kifu-recent-rows">
-            {recent.slice(0, 6).map((e) => {
-              const done = isDone(e.progress);
-              return (
-                <div className="kiosk-row" key={e.id}>
-                  <span className="kiosk-row__lead">
-                    {done
-                      ? t('kifu:whole_game', '全谱')
-                      : `${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
-                  </span>
-                  <span className="kiosk-row__t">
-                    <b>{e.name}</b>
-                    <em>
-                      {done
-                        ? t('kifu:placed_all', '摆完')
-                        // 行里写「摆到第 N 手」,横幅上才写「上次」—— 横幅说的是「你上一次在做什么」,
-                        // 行说的是「这一份摆到哪儿了」。稿子这两处也是分开的两句。
-                        : `${t('kifu:placed_at', '摆到第')} ${e.progress?.k ?? 0} ${t('kifu:moves_unit', '手')}`}
-                      {' · '}
-                      {whenLabel(e.savedAt, t)}
-                    </em>
-                  </span>
-                  <span className="kiosk-row__end">
-                    {done ? (
-                      <span className="kiosk-tag kiosk-tag--win">{t('kifu:done_tag', '已摆完')}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="kiosk-btn kiosk-btn--pill"
-                        onClick={() => resume(e)}
-                      >
-                        {t('kifu:keep_placing', '接着摆')}
-                      </button>
-                    )}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </KioskScrollZone>
+      </div>
+    </div>
   );
 };
 

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { writeAudioPref } from '../../utils/audioPrefs';
 import type { GameState } from '../../api';
 
 /**
@@ -130,11 +131,37 @@ const actions = () => screen.getByTestId('research-actions');
 describe('屏 21 研究', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    writeAudioPref('sfx', true);
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
     mockCreateSession.mockResolvedValue('session-123');
     mockGameState = null;
     vi.mocked(API.quickAnalyze).mockResolvedValue(quick());
     vi.mocked(API.analysisScan).mockResolvedValue({});
     authState.current = { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() };
+  });
+
+  it('sounds once after an accepted placement and keeps delete, pass, and the opening silent', async () => {
+    renderPage();
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '停一手' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(screen.getByTestId('research-tools')).getByRole('button', { name: '删除' }));
+    await userEvent.click(screen.getByRole('button', { name: '点 D4' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps imported moves silent and sounds only on explicit real-stone navigation', async () => {
+    vi.mocked(KifuAPI.getAlbum).mockResolvedValue({ id: 9, sgf_content: '(;SZ[19];B[dd];W[pp];B[])' } as any);
+    renderPage('/kiosk/research?kifu_id=9');
+    await waitFor(() => expect(screen.getByTestId('research-pagebar')).toHaveTextContent('第 3 手'));
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '上一手' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '下一手' }));
+    await userEvent.click(screen.getByRole('button', { name: '回到开局' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
   });
 
   // ── 编辑工具:四段互斥,不是一排开关 ────────────────────────────────────────

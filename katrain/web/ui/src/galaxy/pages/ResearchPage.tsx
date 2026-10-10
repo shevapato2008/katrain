@@ -10,6 +10,8 @@ import BoardPageShell from '../components/board/BoardPageShell';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useResearchBoard } from '../hooks/useResearchBoard';
+import { useSound } from '../../hooks/useSound';
+import { isReplayStoneMove } from '../../hooks/useReplayStoneSound';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, authHeaders } from '../../api';
@@ -66,23 +68,16 @@ const ResearchPage = () => {
     // Board state hook (L1)
     const board = useResearchBoard();
 
-    // Stone placement sound for L1
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const prevMoveRef = useRef<number>(0);
-    useEffect(() => {
-        // Play sound when currentMove changes (stone placed or navigation)
-        if (board.currentMove !== prevMoveRef.current) {
-            prevMoveRef.current = board.currentMove;
-            if (!isAnalyzing) {
-                if (!audioRef.current) {
-                    audioRef.current = new Audio('/assets/sounds/stone1.wav');
-                }
-                const audio = audioRef.current;
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-            }
-        }
-    }, [board.currentMove, isAnalyzing]);
+    const { play } = useSound();
+    const handleL1Intersection = useCallback((x: number, y: number) => {
+        if (board.handleIntersectionClick(x, y)) play('stone');
+    }, [board, play]);
+    const handleL1MoveChange = useCallback((move: number) => {
+        const target = Math.max(0, Math.min(board.moves.length, move));
+        if (target === board.currentMove) return;
+        board.handleMoveChange(target);
+        if (target > 0 && isReplayStoneMove(board.moves[target - 1], board.boardSize)) play('stone');
+    }, [board, play]);
 
     // L1 quick analysis: hints + territory
     const [l1ShowHints, setL1ShowHints] = useState(false);
@@ -523,8 +518,9 @@ const ResearchPage = () => {
         const targetNodeId = history[clampedMove]?.node_id;
         if (targetNodeId !== undefined) {
             await session.onNavigate(targetNodeId);
+            if (clampedMove > 0 && isReplayStoneMove(history[clampedMove]?.move, session.gameState.board_size[0])) play('stone');
         }
-    }, [session]);
+    }, [session, play]);
 
     /* ══════════════════════════════════════════════════════════════════
        统一版式：三个形态都走 BoardPageShell 的三段右栏
@@ -749,7 +745,8 @@ const ResearchPage = () => {
                         showCoordinates={coordinates.visible}
                         showMoveNumbers={board.showMoveNumbers}
                         handicapCount={board.handicapCount}
-                        onIntersectionClick={board.handleIntersectionClick}
+                        onIntersectionClick={handleL1Intersection}
+                        rejectOccupiedIntersections={!board.editMode}
                         nextColor={board.nextColor ?? undefined}
                         aiMarkers={l1ShowHints ? l1AiMarkers : null}
                         showAiMarkers={l1ShowHints}
@@ -816,7 +813,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove === 0}
-                                onClick={() => board.handleMoveChange(0)}
+                                onClick={() => handleL1MoveChange(0)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ⏮
@@ -824,7 +821,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove === 0}
-                                onClick={() => board.handleMoveChange(board.currentMove - 1)}
+                                onClick={() => handleL1MoveChange(board.currentMove - 1)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ◀
@@ -844,7 +841,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove >= board.moves.length}
-                                onClick={() => board.handleMoveChange(board.currentMove + 1)}
+                                onClick={() => handleL1MoveChange(board.currentMove + 1)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ▶
@@ -852,7 +849,7 @@ const ResearchPage = () => {
                             <Button
                                 size="small"
                                 disabled={board.currentMove >= board.moves.length}
-                                onClick={() => board.handleMoveChange(board.moves.length)}
+                                onClick={() => handleL1MoveChange(board.moves.length)}
                                 sx={{ minWidth: 32, color: 'text.secondary' }}
                             >
                                 ⏭

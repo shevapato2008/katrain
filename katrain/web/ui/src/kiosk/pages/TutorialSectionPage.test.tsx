@@ -24,7 +24,8 @@ import TutorialSectionPage from './TutorialSectionPage';
  *   ⑦ **「← 目录」回得到你离开时那一屏**(书 + 摊开的章)。
  */
 
-const { getSection } = vi.hoisted(() => ({ getSection: vi.fn() }));
+const { getSection, playStone } = vi.hoisted(() => ({ getSection: vi.fn(), playStone: vi.fn() }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: playStone }) }));
 vi.mock('../../api/tutorialApi', () => ({
   TutorialReadAPI: {
     getSection: (...a: unknown[]) => getSection(...a),
@@ -108,6 +109,34 @@ beforeEach(() => {
 });
 
 describe('屏 25 课程 · 小节讲解', () => {
+  it('sounds only for user-selected numbered stones and marks the actual current stone', async () => {
+    renderPage();
+    await ready();
+    expect(playStone).not.toHaveBeenCalled();
+    expect(document.querySelector('.gob .mark')).toHaveAttribute('cx', document.querySelector('.gob .num[data-at="E4"]')!.getAttribute('x'));
+    expect(document.querySelector('.gob .mark')).toHaveAttribute('cy', document.querySelector('.gob .num[data-at="E4"]')!.getAttribute('y'));
+    await userEvent.click(screen.getByRole('button', { name: '退一手' }));
+    expect(playStone).toHaveBeenCalledExactlyOnceWith('stone');
+    expect(document.querySelector('.gob .mark')).toHaveAttribute('cx', document.querySelector('.gob .num[data-at="D4"]')!.getAttribute('x'));
+    expect(document.querySelector('.gob .mark')).toHaveAttribute('cy', document.querySelector('.gob .num[data-at="D4"]')!.getAttribute('y'));
+    await userEvent.click(screen.getByRole('button', { name: '退一手' }));
+    expect(document.querySelector('.gob .mark')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: '下一图' }));
+    expect(playStone).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: '播放语音讲解' }));
+    expect(playStone).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a numbered empty point silent and does not invent its last stone', async () => {
+    getSection.mockResolvedValue({ ...SECTION, figures: [figure({ board_payload: { size: 19, stones: { B: [[3, 3]], W: [] }, labels: { '3,3': '1', '4,4': '3' } } })] });
+    renderPage();
+    await ready();
+    expect(document.querySelector('.gob .mark')).toBeNull();
+    await userEvent.click(screen.getByRole('button', { name: '退一手' }));
+    expect(playStone).not.toHaveBeenCalled();
+    expect(document.querySelector('.gob .mark')).toBeNull();
+  });
+
   it('进来看到的是**棋图**,不是视频 —— 视频要按了才占那块 516', async () => {
     renderPage();
     await ready();

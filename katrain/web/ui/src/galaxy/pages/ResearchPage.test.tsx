@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { API } from '../../api';
+import { writeAudioPref } from '../../utils/audioPrefs';
 
 vi.mock('../../api', () => ({ API: {
   quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [] }] }),
@@ -77,8 +78,8 @@ vi.mock('../context/GameNavigationContext', () => ({
 // 桩件把 `moves.length` 回读出来：深链那条用例要证的是「棋子真的进了棋盘」，
 // 光断言 fetch 调过只证明我发出了请求，证不到棋局被装上。
 vi.mock('../../components/live/LiveBoard', () => ({
-  default: ({ moves }: { moves?: unknown[] }) => (
-    <div data-testid="mock-live-board" data-moves={moves?.length ?? 0}>Live Board</div>
+  default: ({ moves, onIntersectionClick }: { moves?: unknown[]; onIntersectionClick?: (x: number, y: number) => void }) => (
+    <div data-testid="mock-live-board" data-moves={moves?.length ?? 0}><button onClick={() => onIntersectionClick?.(3, 3)}>摆 D4</button></div>
   ),
 }));
 
@@ -120,6 +121,7 @@ describe('ResearchPage', () => {
   // 有两条 `not.toHaveBeenCalled()`，调用记录必须逐条清零，否则前一条用例的调用会算到后一条头上。
   beforeEach(() => {
     vi.clearAllMocks();
+    writeAudioPref('sfx', true);
     createSession.mockResolvedValue('sess-1');
     getUserGame.mockReset().mockResolvedValue({ id: 'g1', sgf_content: USER_GAME_SGF });
     getAlbum.mockResolvedValue({
@@ -133,6 +135,26 @@ describe('ResearchPage', () => {
        就是返回 Promise），补的是 jsdom 的缺口。以前没人踩到，是因为在此之前没有一条
        用例真的让 `currentMove` 动过 —— 深链这条是第一个。 */
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+  });
+
+  it('loads a deep-linked game silently and plays one shared sound for an explicit stone navigation', async () => {
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
+    renderPage('/galaxy/research?kifu_id=42');
+    await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '4'));
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '◀' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: '⏮' }));
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the shared SFX setting for accepted local placements', () => {
+    (useAuth as Mock).mockReturnValue(anonymousAuth);
+    renderPage();
+    writeAudioPref('sfx', false);
+    fireEvent.click(screen.getByRole('button', { name: '摆 D4' }));
+    expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '1');
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
   });
 
   // Test A — research is intentionally available without login (no auth gate).

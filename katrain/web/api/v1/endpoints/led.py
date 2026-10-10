@@ -83,4 +83,4 @@ async def led_clear(request: Request):
 @router.get("/status")
 async def led_status(request: Request):
     led = _get_led(request)
-    return {"connected": led.is_connected(), "last_errors": led.last_errors}
+    return {**led.board_status(), "transport_connected": led.is_connected(), "last_errors": led.last_errors}

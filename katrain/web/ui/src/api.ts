@@ -367,7 +367,7 @@ export interface VisionStatusResponse {
   sync_state: string;
   bound_session_id: string | null;
   recognition_ready?: boolean;
-  led_connected?: boolean;
+  led_connected?: boolean | null;
 }
 
 // Task 9: physical engine-move (Golaxy 隧道) error recovery. `col`/`row` are GTP/board

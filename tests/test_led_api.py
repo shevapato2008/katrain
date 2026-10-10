@@ -23,8 +23,9 @@ _led_endpoint_spec.loader.exec_module(led)
 
 
 class FakeLed:
-    def __init__(self, connected=True):
+    def __init__(self, connected=True, board_connected=True):
         self._connected = connected
+        self.board_connected = board_connected
         self.calls = []
         self.last_errors = []
 
@@ -38,6 +39,9 @@ class FakeLed:
 
     def is_connected(self):
         return self._connected
+
+    def board_status(self):
+        return {"connected": self.board_connected, "board_link": None, "cc": None, "ack": None}
 
 
 def _client(led_obj, vision=None):
@@ -63,9 +67,18 @@ class TestLedEndpoints:
         vision = FakeVision()
         c = _client(FakeLed(), vision)
         assert c.post("/led/point", json={"row": 3, "col": 4, "color": "black"}).status_code == 200
-        assert c.post("/led/points", json={"points": [
-            {"row": 8, "col": 9, "color": "white"}, {"row": 6, "col": 7, "color": "remove"},
-        ]}).status_code == 200
+        assert (
+            c.post(
+                "/led/points",
+                json={
+                    "points": [
+                        {"row": 8, "col": 9, "color": "white"},
+                        {"row": 6, "col": 7, "color": "remove"},
+                    ]
+                },
+            ).status_code
+            == 200
+        )
         assert c.post("/led/clear").status_code == 200
         assert vision.lit == [
             ([(3, 4)], []),
@@ -91,7 +104,22 @@ class TestLedEndpoints:
         fake = FakeLed()
         c = _client(fake)
         assert c.post("/led/clear").status_code == 200
-        assert c.get("/led/status").json() == {"connected": True, "last_errors": []}
+        assert c.get("/led/status").json() == {
+            "connected": True,
+            "transport_connected": True,
+            "board_link": None,
+            "cc": None,
+            "ack": None,
+            "last_errors": [],
+        }
+
+    @pytest.mark.parametrize("board_connected", [True, False, None])
+    def test_status_reports_board_a_independently_of_transport(self, board_connected):
+        fake = FakeLed(board_connected=board_connected)
+        body = _client(fake).get("/led/status").json()
+        assert body["connected"] is board_connected
+        assert body["transport_connected"] is True
+        assert fake.calls == []
 
     def test_404_when_not_enabled(self):
         c = _client(None)

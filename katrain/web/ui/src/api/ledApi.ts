@@ -32,7 +32,14 @@ export const LedAPI = {
   point: (p: { row: number; col: number; color: LedColor }): Promise<LedResult> => post('/point', p),
   points: (points: { row: number; col: number; color: LedColor }[]): Promise<LedResult> => post('/points', { points }),
   clear: (): Promise<LedResult> => post('/clear'),
-  status: async (): Promise<{ connected: boolean }> => {
+  status: async (): Promise<{
+    connected: boolean | null;
+    transport_connected: boolean;
+    board_link: 'UP' | 'DOWN' | 'CABLE_ONLY' | null;
+    cc: 'OPEN' | 'RD' | 'RA' | null;
+    ack: 'OK' | 'WEAK' | 'ABSENT' | null;
+    last_errors: string[];
+  }> => {
     const res = await fetch(`${API_BASE}/status`);
     if (!res.ok) throw new Error(`led/status failed ${res.status}`);
     return res.json();

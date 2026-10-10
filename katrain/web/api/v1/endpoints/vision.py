@@ -112,6 +112,8 @@ def _consume_recovery_episode(request: Request, body: "EngineMoveRecoveryRequest
 async def vision_status(request: Request):
     """Return vision service status."""
     vision = getattr(request.app.state, "vision", None)
+    led = getattr(request.app.state, "led", None)
+    led_connected = led.is_board_connected() if led is not None else None
     if vision is None:
         return {
             "enabled": False,
@@ -123,7 +125,7 @@ async def vision_status(request: Request):
             "geometry_ready": False,
             "model_ready": False,
             "recognition_ready": False,
-            "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+            "led_connected": led_connected,
         }
 
     vision.refresh_status()
@@ -137,7 +139,7 @@ async def vision_status(request: Request):
         "geometry_ready": vision._latest_status.geometry_ready,
         "model_ready": vision._latest_status.model_ready,
         "recognition_ready": vision._latest_status.recognition_ready,
-        "led_connected": bool(getattr(request.app.state, "led", None)) and request.app.state.led.is_connected(),
+        "led_connected": led_connected,
     }
 
 

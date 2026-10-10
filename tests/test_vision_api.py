@@ -26,8 +26,31 @@ def test_status_reports_disabled_when_vision_service_is_not_configured():
         "geometry_ready": False,
         "model_ready": False,
         "recognition_ready": False,
-        "led_connected": False,
+        "led_connected": None,
     }
+
+
+@pytest.mark.parametrize("board_connected", [True, False, None])
+@pytest.mark.parametrize("has_vision", [False, True])
+def test_vision_status_led_uses_board_a_cache_even_without_camera(board_connected, has_vision):
+    from types import SimpleNamespace
+
+    app = FastAPI()
+    app.include_router(vision.router, prefix="/vision")
+    app.state.led = SimpleNamespace(is_connected=lambda: True, is_board_connected=lambda: board_connected)
+    if has_vision:
+        app.state.vision = SimpleNamespace(
+            refresh_status=lambda: None,
+            enabled=True,
+            camera_status="disconnected",
+            pose_lock_status="unlocked",
+            sync_state="idle",
+            bound_session_id=None,
+            _latest_status=SimpleNamespace(
+                camera_ready=False, geometry_ready=False, model_ready=False, recognition_ready=False
+            ),
+        )
+    assert TestClient(app).get("/vision/status").json()["led_connected"] is board_connected
 
 
 class FakeVision:
@@ -82,6 +105,8 @@ class TestMonitorPauseArmExpectedBoard:
         r = client.post("/api/v1/vision/expected-board", json={"board": board})
         assert r.status_code == 200
         assert fake.expected_boards[-1][3][3] == 1
+
+
 class _FakeOrch:
     def __init__(self):
         self.resynced = 0

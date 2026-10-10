@@ -2207,12 +2207,14 @@ def _qualified_source_anchor(engine, inv, reg, lang, display, *, owner_id=5498,
     owner = {"kind": "player", "id": owner_id}
     source_id, url, observed = (("cwa", "https://wqapi.cwql.org.cn/playerInfo/professional/list", "zh-Hans")
                                 if lang == "cn" else ("ugo", "https://db.u-go.net/1923/", "en"))
+    if lang == "tw":
+        source_id, url, observed = "haifong-fixture", "https://example.org/tw-fixture", "zh-Hant"
     source_check = check(owner=owner, source_id=source_id, url=url, observed_lang=observed,
                          query=display, candidate_name=display, body_excerpt=f"Go player {display}",
                          body_sha256=hashlib.sha256(display.encode()).hexdigest())
     found = research(owner=owner, lang=lang, registry_sha256=registry_sha256(reg),
                      candidate_name=display, source_checks=[source_check], original_name=original_name,
-                     original_language="zh-Hans", original_language_basis_url=url,
+                     original_language="zh-Hant" if lang == "tw" else "zh-Hans", original_language_basis_url=url,
                      reading=reading, reading_basis_url="https://db.u-go.net/1923/")
     row = candidate(owner=owner, lang=lang, display_name=display,
                     research_sha256=canonical_sha256(found), name_preimage_sha256=None)
@@ -2228,10 +2230,10 @@ def _qualified_source_anchor(engine, inv, reg, lang, display, *, owner_id=5498,
         name = _image(conn, KifuPlayerName.__table__, name_id)
         evidence = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
         batch = _image(conn, KifuNameBatch.__table__, receipt["batch_id"])
-    kind = "verified_chinese_display" if lang == "cn" else "verified_english_display"
+    kind = "verified_chinese_display" if lang in {"cn", "tw"} else "verified_english_display"
     content = {"reference_kind": kind, "owner": owner, "original_name": display,
-               "source_lang": "zh-Hans" if lang == "cn" else "en",
-               "source_script": "Hans" if lang == "cn" else "Latin",
+               "source_lang": "zh-Hant" if lang == "tw" else "zh-Hans" if lang == "cn" else "en",
+               "source_script": "Hant" if lang == "tw" else "Hans" if lang == "cn" else "Latin",
                "binding": {"kind": kind, "owner": owner, "source_name": name, "source_evidence": evidence,
                            "source_batch": {"id": batch["id"], "bundle_sha256": batch["bundle_sha256"],
                                             "evidence_creation_sha256": canonical_sha256(evidence)}}}
@@ -2380,6 +2382,72 @@ def test_positive_zh_ko_paired_profile_importer_reader_and_live_source(engine):
         assert owner_id not in strict_display_maps(db, [album], "ko")[0]
     assert coverage_report(engine, inv, languages=("ko",))["languages"]["ko"]["by_decision"].get("generated", 0) == 0
     assert batch_status(engine, receipt["batch_id"])["status"] == "applied"
+
+
+@pytest.mark.parametrize("owner_id", [5495, 4071])
+def test_positive_zh_ko_v2_native_write_and_file_independent_ledger_reader(engine, monkeypatch, tmp_path, owner_id):
+    from pathlib import Path
+    from katrain.web.kifu.identity import _approved_names, _qualified_name_rows
+    from katrain.web.kifu.name_batch import _image
+    from katrain.web.kifu.name_evidence import persisted_positive_zh_ko_eligible
+    from katrain.web.kifu.name_orthographic import verified_source_live
+    from tests.web_ui.test_kifu_name_candidates import positive_zh_ko_v2_fixture
+
+    research, row, reg = positive_zh_ko_v2_fixture(monkeypatch, tmp_path, owner_id)
+    han = research["original_name"]
+    with engine.begin() as conn:
+        conn.execute(KifuPlayer.__table__.insert().values(id=owner_id, canonical_name=han))
+        conn.execute(KifuAlbum.__table__.insert().values(id=12, black_player_id=owner_id,
+            player_black=han, player_white="Unknown", event="GNUGo3.8", sgf_content=f"(;PB[{han}])", source_path="v2.sgf"))
+    inv = build_inventory(engine)
+    if owner_id == 5495:
+        reg["sources"].append({"id": "haifong-fixture", "tier": "official", "language": "zh-Hant",
+                              "home_url": "https://example.org/"})
+        anchor = _qualified_source_anchor(engine, inv, reg, "tw", han, owner_id=owner_id,
+                                          original_name=han, reading=research["reading"])
+        research["positive_zh_ko"]["source_anchors"] = [anchor]
+    research["registry_sha256"] = registry_sha256(reg)
+    row["research_sha256"] = row["generated_review"]["research_sha256"] = canonical_sha256(research)
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(research["positive_zh_ko"])
+    row["name_preimage_sha256"] = None
+    bind_fixture_candidate(row)
+    row["preimage_binding"].update(captured_at="2026-10-08T21:56:00Z", bound_at="2026-10-08T21:57:00Z")
+    proposed, _ = player_bundle(inv)
+    member = {"owner": row["owner"], "lang": "ko"}
+    proposed.update(registry_sha256=registry_sha256(reg), members=[member],
+        member_set_sha256=canonical_sha256([member]), candidates=[row])
+    if owner_id == 5495:
+        path = Path(research["positive_zh_ko"]["identity"]["capture"]["pdf_path"])
+        original_bytes = path.read_bytes()
+        path.write_bytes(b"Tampered actual PDF file")
+        with pytest.raises(BatchError): apply_bundle(engine, proposed, reg, inv, [research])
+        path.write_bytes(original_bytes)
+    receipt = apply_bundle(engine, proposed, reg, inv, [research])
+    if owner_id == 5495:
+        path.unlink()
+    with engine.connect() as conn:
+        name_id = conn.scalar(select(KifuPlayerName.id).where(KifuPlayerName.player_id == owner_id, KifuPlayerName.lang == "ko"))
+        name = _image(conn, KifuPlayerName.__table__, name_id)
+        stored = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+        batch = _image(conn, KifuNameBatch.__table__, receipt["batch_id"])
+        changes = [_image(conn, KifuNameChange.__table__, change_id) for change_id in conn.scalars(
+            select(KifuNameChange.id).where(KifuNameChange.batch_id == receipt["batch_id"]))]
+        assert persisted_positive_zh_ko_eligible(name, stored, batch, reg, changes,
+                                               source_live=lambda source: verified_source_live(conn, source))
+        changed = deepcopy(stored)
+        changed["research_payload"]["research"]["positive_zh_ko"]["identity"]["basis"] += " altered"
+        assert not persisted_positive_zh_ko_eligible(name, changed, batch, reg, changes,
+                                                   source_live=lambda source: verified_source_live(conn, source))
+    with Session(engine) as db:
+        query = _approved_names(db, KifuPlayerName, "player_id", [owner_id], "ko")
+        assert [name.player_id for name, _ in _qualified_name_rows(db, query, KifuPlayerName, "player_id")] == [owner_id]
+    if owner_id == 5495:
+        with engine.begin() as conn:
+            conn.execute(KifuPlayerName.__table__.update().where(KifuPlayerName.player_id == owner_id,
+                KifuPlayerName.lang == "tw").values(display_name="Changed source"))
+        with Session(engine) as db:
+            assert _qualified_name_rows(db, _approved_names(db, KifuPlayerName, "player_id", [owner_id], "ko"),
+                                        KifuPlayerName, "player_id") == []
 
 
 def test_positive_zh_ko_persisted_gate_has_no_importer_dependency(engine, monkeypatch):

@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-02.2",
+  "version": "2026-10-09.1",
   "description": "Research starting points only. A Wikipedia article requires revisioned target-language passage and independently published identity corroboration before name adoption. Wikidata labels remain discovery leads. No language scope is yet complete enough to assert absence of a conventional name.",
   "language_tags": {
     "en": "en",
@@ -15,6 +15,7 @@
     "ua": "uk"
   },
   "sources": [
+    {"id": "uchicago-go-history-thesis", "tier": "reference", "language": "en", "home_url": "https://knowledge.uchicago.edu/records/jvfan-2am47"},
     {"id": "cwi-go", "tier": "language_go", "language": "en", "home_url": "https://homepages.cwi.nl/~aeb/go/games/"},
     {"id": "weiqi-association", "tier": "official", "language": "zh-Hans", "home_url": "https://www.weiqi.org.cn/"},
     {"id": "haifong", "tier": "official", "language": "zh-Hant", "home_url": "https://www.haifong.org/"},

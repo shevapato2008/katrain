@@ -1044,6 +1044,78 @@ POSITIVE_SCOPE = "generated_from_original"
 POSITIVE_RULE = "nikl-ja-ko-personal-name-v1"
 _POSITIVE_RULE_PAGES = {"personal_names": "P000146", "kana_table": "P000108", "japanese_details": "P000129"}
 
+_ZH_PDF_SOURCE_ID = "uchicago-go-history-thesis"
+_ZH_PDF_RECORD = "https://knowledge.uchicago.edu/records/jvfan-2am47"
+_ZH_PDF_URL = _ZH_PDF_RECORD + "/files/Zhao%20Yiyang_Thesis_Submission.pdf?download=1"
+_ZH_PDF_SHA256 = "fbd2a6d635607946a313d7b3e0707947549ac339645ea67682cb67a67efe996a"
+_ZH_PDF_SIZE = 6876614
+_ZH_PDF_PAGES = {
+    ("王學傳", "Wang Xuechuan"): (63, "a5702f521b4bc3f30a0ad3016372d94dd686b08aaf6a5c024b6243b49455bf0b"),
+    ("趙之雲", "Zhao Zhiyun"): (56, "3ed826a53c4ba4e30ea415b8b66ea7d20c87cdb29310376f49ea2c9fb3e81433"),
+}
+_ZH_CWA_URL = "https://wqapi.cwql.org.cn/playerInfo/professional/list"
+_ZH_CWI_URL = "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/index.html"
+
+
+def _validate_zh_pdf_capture(capture, record, *, verify_captured_body):
+    """Keep original PDF bytes distinct from a reviewed, bounded page extraction."""
+    _require(isinstance(capture, dict) and set(capture) == {
+        "capture_kind", "url", "final_url", "http_status", "fetched_at", "pdf_path", "pdf_sha256", "pdf_size",
+        "extraction", "name_spans", "body_excerpt", "locator", "source_role", "document_lang", "observed_lang"
+    } and capture["capture_kind"] == "pdf_text_extract"
+        and capture["url"] == capture["final_url"] == _ZH_PDF_URL and capture["http_status"] == 200
+        and _aware_timestamp(capture["fetched_at"]) and _text(capture["pdf_path"])
+        and capture["pdf_sha256"] == _ZH_PDF_SHA256 and type(capture["pdf_size"]) is int
+        and capture["pdf_size"] == _ZH_PDF_SIZE and capture["source_role"] == "go_history_thesis"
+        and capture["document_lang"] == "en" and capture["observed_lang"] == record["original_language"] == "zh-Hant"
+        and _text(capture["body_excerpt"]) and _text(capture["locator"]), "Chinese PDF capture provenance invalid")
+    extract = capture["extraction"]
+    _require(isinstance(extract, dict) and set(extract) == {
+        "tool", "version", "options", "extracted_at", "page_number", "page_text", "page_text_sha256"
+    } and _text(extract["tool"]) and _text(extract["version"])
+        and isinstance(extract["options"], list) and all(isinstance(option, str) for option in extract["options"])
+        and _aware_timestamp(extract["extracted_at"])
+        and datetime.fromisoformat(extract["extracted_at"].replace("Z", "+00:00")) >=
+            datetime.fromisoformat(capture["fetched_at"].replace("Z", "+00:00"))
+        and type(extract["page_number"]) is int and _text(extract["page_text"])
+        and extract["page_text_sha256"] == hashlib.sha256(extract["page_text"].encode("utf-8")).hexdigest()
+        and (extract["page_number"], extract["page_text_sha256"]) ==
+            _ZH_PDF_PAGES.get((record["original_name"], record["reading"]))
+        and capture["body_excerpt"] in extract["page_text"]
+        and record["original_name"] in capture["body_excerpt"] and record["reading"] in capture["body_excerpt"],
+        "Chinese PDF page, exact Han/Latin span or extracted-text hash differs")
+    spans = capture["name_spans"]
+    _require(isinstance(spans, dict) and set(spans) == {"original", "published", "original_lang"}
+             and spans["original_lang"] == "zh-Hant", "Chinese PDF needs explicit Traditional Chinese name span")
+    for key, name in (("original", record["original_name"]), ("published", record["reading"])):
+        span = spans[key]
+        _require(isinstance(span, list) and len(span) == 2 and all(type(offset) is int for offset in span)
+                 and 0 <= span[0] < span[1] <= len(extract["page_text"])
+                 and extract["page_text"][span[0]:span[1]] == name, "Chinese PDF named span differs from exact page text")
+    if verify_captured_body:
+        try:
+            raw = Path(capture["pdf_path"]).read_bytes()
+        except OSError as exc:
+            raise EvidenceError("Chinese captured PDF file unavailable") from exc
+        _require(len(raw) == capture["pdf_size"] and hashlib.sha256(raw).hexdigest() == capture["pdf_sha256"],
+                 "Chinese captured PDF original bytes differ")
+
+
+def _validate_zh_cross_source_link(link, record, original, reading):
+    _require(isinstance(link, dict) and set(link) == {
+        "method", "owner", "original_name", "published", "identity_capture_sha256", "reading_capture_sha256",
+        "identity_url", "reading_url", "identity_locator", "reading_locator", "identity_basis", "unresolved_conflicts"
+    } and link["method"] == "reviewed_cross_source" and link["owner"] == record["owner"]
+        and link["original_name"] == record["original_name"] and link["published"] == record["reading"]
+        and link["identity_capture_sha256"] == registry_sha256(original)
+        and link["reading_capture_sha256"] == registry_sha256(reading)
+        and link["identity_url"] == original["url"] == _ZH_CWA_URL
+        and link["reading_url"] == reading["url"] == _ZH_CWI_URL
+        and link["identity_locator"] == original["locator"] and link["reading_locator"] == reading["locator"]
+        and original["source_role"] == "official_roster" and reading["source_role"] == "published_go_archive"
+        and _text(link["identity_basis"]) and link["unresolved_conflicts"] == [],
+        "Chinese cross-source link must bind exact owner and both actual source captures")
+
 
 def positive_ja_ko_captures(record: dict) -> list[dict]:
     positive = record["positive_generation"]
@@ -1159,7 +1231,7 @@ def _validate_positive_ja_ko(record: dict) -> None:
              "positive source check must bind actual identity capture")
 
 
-def _validate_positive_zh_ko(record: dict) -> None:
+def _validate_positive_zh_ko(record: dict, *, verify_captured_body: bool = True) -> None:
     """Validate sourced Mandarin syllables without inferring pronunciation from Han."""
     from katrain.web.kifu.name_zh_ko import (
         CURRENT_RULE_BODY_SHA256, CURRENT_RULE_URL,
@@ -1178,7 +1250,8 @@ def _validate_positive_zh_ko(record: dict) -> None:
     positive = record.get("positive_zh_ko")
     _require(isinstance(positive, dict) and set(positive) == {
         "version", "scope", "identity", "reading", "rule", "contrary_checks", "unresolved_conflicts", "source_anchors"
-    } and positive["version"] == 1, "Chinese positive evidence fields invalid")
+    } and (positive["version"] == 1 or type(positive["version"]) is int and positive["version"] == 2),
+             "Chinese positive evidence fields invalid")
     scope = positive["scope"]
     common_scope = {"ordinary_mandarin", "personal_name", "basis", "unresolved_reading_variants"}
     _require(isinstance(scope, dict) and (
@@ -1195,9 +1268,15 @@ def _validate_positive_zh_ko(record: dict) -> None:
              and identity["status"] == "verified" and identity["method"] == "reviewed_owner_binding"
              and _text(identity["basis"]), "Chinese identity must bind exact owner and original name")
     paired = isinstance(reading, dict) and "profile_pair" in reading
+    linked = isinstance(reading, dict) and "cross_source_link" in reading
+    pdf = isinstance(identity["capture"], dict) and identity["capture"].get("capture_kind") == "pdf_text_extract"
+    _require((positive["version"] == 1 and not pdf and not linked)
+             or (positive["version"] == 2 and not paired and pdf != linked),
+             "Chinese v2 needs one explicit PDF or cross-source input, without mixed markers")
     _require(isinstance(reading, dict) and set(reading) == {
         "published", "system", "reading_words", "determination", "capture"
-    } | ({"profile_pair"} if paired else set()) and reading["published"] == record["reading"]
+    } | ({"profile_pair"} if paired else set()) | ({"cross_source_link"} if linked else set())
+             and reading["published"] == record["reading"]
              and reading["system"] == "pinyin-syllables-v1" and _text(reading["determination"]),
              "Chinese reading must be complete published Hanyu Pinyin")
     words = reading["reading_words"]
@@ -1212,7 +1291,10 @@ def _validate_positive_zh_ko(record: dict) -> None:
     except ValueError as exc:
         raise EvidenceError(str(exc)) from exc
     for capture in (identity["capture"], reading["capture"]):
-        _validate_positive_capture(capture)
+        if pdf:
+            _validate_zh_pdf_capture(capture, record, verify_captured_body=verify_captured_body)
+        else:
+            _validate_positive_capture(capture)
     original_capture, reading_capture = identity["capture"], reading["capture"]
     _require(original_capture["url"] == record["original_language_basis_url"]
              and record["original_name"] in original_capture["body_excerpt"]
@@ -1220,11 +1302,17 @@ def _validate_positive_zh_ko(record: dict) -> None:
              and (scope.get("modern_standard_mandarin") is not True
                   or original_capture["observed_lang"] == record["original_language"])
              and reading_capture["url"] == record["reading_basis_url"]
-             and (paired or record["original_name"] in reading_capture["body_excerpt"])
+             and (paired or linked or record["original_name"] in reading_capture["body_excerpt"])
              and reading["published"] in reading_capture["body_excerpt"]
-             and reading_capture["source_role"] in {"published_player_profile", "official_person_page"}
+             and reading_capture["source_role"] in (
+                 {"go_history_thesis"} if pdf else {"published_go_archive"} if linked
+                 else {"published_player_profile", "official_person_page"})
              and reading_capture["observed_lang"] in {"en", "zh", "zh-Hans", "zh-Hant"},
              "Chinese identity and published reading need exact same-person captured source rows")
+    if pdf:
+        _require(original_capture == reading_capture, "Chinese PDF identity and reading must be the same actual page")
+    if linked:
+        _validate_zh_cross_source_link(reading["cross_source_link"], record, original_capture, reading_capture)
     if paired:
         pair = reading["profile_pair"]
         _require(isinstance(pair, dict) and set(pair) == {
@@ -1334,18 +1422,23 @@ def _validate_positive_zh_ko(record: dict) -> None:
     anchors = positive["source_anchors"]
     _require(isinstance(anchors, list), "Chinese qualified source anchors must be a list")
     for anchor in anchors:
-        content = validate_primary_orthographic_anchor(anchor)
+        content = validate_primary_orthographic_anchor(anchor, _allow_traditional_chinese=pdf)
         anchored_name = record["reading"] if content.get("reference_kind") == "verified_english_display" else record["original_name"]
         _require(content["owner"] == record["owner"] and content["original_name"] == anchored_name,
                  "Chinese qualified source anchor differs from owner or published name")
+    if pdf:
+        _require(any(anchor["content"].get("reference_kind") == "verified_chinese_display"
+                     and anchor["content"].get("source_lang") == "zh-Hant"
+                     and anchor["content"]["binding"]["source_name"]["lang"] == "tw" for anchor in anchors),
+                 "Chinese PDF name requires its qualified existing TW owner preimage")
     _require(any(check["status"] == "found" and check["candidate_name"] == record["original_name"]
                  and check["url"] == original_capture["url"]
-                 and check["body_sha256"] == original_capture["body_sha256"]
+                 and check["body_sha256"] == original_capture["pdf_sha256" if pdf else "body_sha256"]
                  for check in record["source_checks"]),
              "Chinese original source check must bind the captured original row")
 
 
-def validate_research_record(record: dict, registry: dict) -> dict:
+def validate_research_record(record: dict, registry: dict, *, verify_captured_body: bool = True) -> dict:
     """Validate one candidate or negative search claim, always returning pending status."""
     _require(isinstance(record, dict), "research record must be an object")
     owner = record.get("owner")
@@ -1377,7 +1470,7 @@ def validate_research_record(record: dict, registry: dict) -> dict:
         target = "ja"
     elif zh_positive:
         try:
-            _validate_positive_zh_ko(record)
+            _validate_positive_zh_ko(record, verify_captured_body=verify_captured_body)
         except (KeyError, TypeError, StopIteration) as exc:
             raise EvidenceError("Chinese positive generation has missing or malformed evidence fields") from exc
         target = record["original_language"]
@@ -1419,7 +1512,12 @@ def validate_research_record(record: dict, registry: dict) -> dict:
         if positive:
             _require(sources[check["source_id"]]["tier"] in {
                 "official", "language_go", "encyclopedia", "wikipedia_article"
-            }, "positive original identity requires a substantive source, not discovery labels")
+            } or zh_positive and record["positive_zh_ko"]["version"] == 2
+                and record["positive_zh_ko"]["identity"]["capture"].get("capture_kind") == "pdf_text_extract"
+                and check["source_id"] == _ZH_PDF_SOURCE_ID and check["url"] == _ZH_PDF_URL
+                and sources[check["source_id"]] == {"id": _ZH_PDF_SOURCE_ID, "tier": "reference",
+                    "language": "en", "home_url": _ZH_PDF_RECORD},
+                "positive original identity requires a substantive or exact reviewed thesis source")
         if scope_status == "translated_from_original":
             _require(check["status"] == "found" and check["candidate_name"] == record["original_name"]
                      and sources[check["source_id"]]["tier"] in {
@@ -1431,6 +1529,12 @@ def validate_research_record(record: dict, registry: dict) -> dict:
             _require(_text(record.get("original_name")), "article identity needs original name")
             _validate_article_evidence(check, sources, record["original_name"])
     if positive:
+        if zh_positive and "cross_source_link" in record["positive_zh_ko"]["reading"]:
+            _require(sources.get("cwi-go") is not None and sources["cwi-go"]["tier"] == "language_go"
+                     and _source_url_matches(_ZH_CWI_URL, sources["cwi-go"])
+                     and any(check["status"] == "found" and check["url"] == _ZH_CWA_URL
+                             and sources[check["source_id"]]["tier"] == "official" for check in checks),
+                     "Chinese cross-source pair requires registered official CWA and substantive CWI Go sources")
         pass
     elif scope_status == "translated_from_original":
         _require(any(check["url"] == record["original_language_basis_url"] for check in checks),
@@ -1584,7 +1688,7 @@ def capture_source_check(
     return check
 
 
-def validate_primary_orthographic_anchor(record: dict) -> dict:
+def validate_primary_orthographic_anchor(record: dict, *, _allow_traditional_chinese: bool = False) -> dict:
     """Validate a reviewed original or an exact existing qualified display source."""
     _require(
         isinstance(record, dict)
@@ -1607,6 +1711,9 @@ def validate_primary_orthographic_anchor(record: dict) -> dict:
         "verified_japanese_display": ("jp", "ja", "Kanji"),
         "verified_english_display": ("en", "en", "Latin"),
     }
+    if (_allow_traditional_chinese and content.get("reference_kind") == "verified_chinese_display"
+            and content.get("source_lang") == "zh-Hant"):
+        verified_sources["verified_chinese_display"] = ("tw", "zh-Hant", "Hant")
     verified_display = content.get("reference_kind") in verified_sources
     original = content.get("original_name")
     _require(content.get("reference_kind") in {None, "official_hanja_preserved", *verified_sources},
@@ -2028,7 +2135,7 @@ def persisted_positive_zh_ko_eligible(name: dict, evidence: dict, batch: dict, r
                 or row["name_preimage_sha256"] != (canonical_sha256(name_changes[0]["before_image"])
                     if name_changes[0]["before_image"] is not None else None)):
             return False
-        validate_positive_zh_ko_candidate(row, research, registry)
+        validate_positive_zh_ko_candidate(row, research, registry, verify_captured_body=False)
         # Keep SQL access outside this pure helper, but require a fresh check
         # of every bound source when the research references live DB names.
         anchors = research["positive_zh_ko"]["source_anchors"]
@@ -2079,12 +2186,13 @@ def validate_positive_ja_ko_candidate(row, research, registry):
         _require(review[key] == checked[key], 'positive exact reading review mismatch')
 
 
-def validate_positive_zh_ko_candidate(row: dict, research: dict, registry: dict) -> dict:
+def validate_positive_zh_ko_candidate(row: dict, research: dict, registry: dict,
+                                      *, verify_captured_body: bool = True) -> dict:
     """Require independent approval of exact Chinese inputs, rule entries and output."""
     from katrain.web.kifu.name_zh_ko import RULE_VERSION
 
     try:
-        checked = validate_research_record(research, registry)
+        checked = validate_research_record(research, registry, verify_captured_body=verify_captured_body)
         _require(row["research_sha256"] == _positive_content_sha256(research)
                  and row["owner"] == checked["owner"] and row["lang"] == checked["lang"] == "ko"
                  and row["display_name"] == checked["candidate_name"]
@@ -2108,6 +2216,9 @@ def validate_positive_zh_ko_candidate(row: dict, research: dict, registry: dict)
         _require(all(reviewed >= datetime.fromisoformat(c.get("fetched_at", c.get("queried_at")).replace("Z", "+00:00"))
                      for c in captures if "fetched_at" in c or "queried_at" in c),
                  "Chinese candidate review predates source or contrary capture")
+        _require(all(reviewed >= datetime.fromisoformat(c["extraction"]["extracted_at"].replace("Z", "+00:00"))
+                     for c in captures if c.get("capture_kind") == "pdf_text_extract"),
+                 "Chinese candidate review predates PDF extraction")
         review = row["generated_review"]
         _require(isinstance(review, dict) and set(review) == {
             "decision", "display_name", "owner", "lang", "generation_rule_version", "research_sha256",

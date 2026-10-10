@@ -1788,6 +1788,166 @@ def positive_zh_ko_component_fixture():
         reading_case=([["wang"], ["qiu"]], "Wang Qiu", "왕추"))
 
 
+def positive_zh_ko_v2_fixture(monkeypatch, tmp_path, owner_id):
+    """Synthetic unit captures; production PDF/page pins are checked in the actual-source receipt."""
+    from katrain.web.kifu import name_evidence
+    from katrain.web.kifu.name_zh_ko import CURRENT_RULE_BODY_SHA256, CURRENT_RULE_URL, used_entries
+
+    values = {5495: ("王學傳", "Wang Xuechuan", [["wang"], ["xue", "chuan"]], "왕쉐촨", 63),
+              5940: ("趙之雲", "Zhao Zhiyun", [["zhao"], ["zhi", "yun"]], "자오즈윈", 56),
+              4071: ("华伟荣", "Hua Weirong", [["hua"], ["wei", "rong"]], "화웨이룽", None)}
+    han, latin, words, output, page = values[owner_id]
+    evidence, row, reg = positive_zh_ko_fixture()
+    owner = {"kind": "player", "id": owner_id}
+    positive = evidence["positive_zh_ko"]
+    positive.update(version=2, source_anchors=[])
+    positive["scope"] = {"modern_standard_mandarin": True, "ordinary_mandarin": True,
+        "personal_name": True, "basis": "Synthetic reviewed modern Go-person input", "unresolved_reading_variants": []}
+    original = deepcopy(positive["identity"]["capture"])
+    original.update(body_text=f"Synthetic CWA CWA001091 Z07 {han}", body_excerpt=f"Synthetic CWA CWA001091 Z07 {han}")
+    original["body_sha256"] = hashlib.sha256(original["body_text"].encode()).hexdigest()
+    reading = deepcopy(positive["reading"]["capture"])
+    reading.update(url="https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/index.html",
+        body_text=f"Synthetic professional China-Japan Go exchange table {latin}",
+        body_excerpt=f"Synthetic professional China-Japan Go exchange table {latin}", source_role="published_go_archive")
+    reading["body_sha256"] = hashlib.sha256(reading["body_text"].encode()).hexdigest()
+    if page:
+        raw = b"%PDF-1.7\nExplicitly synthetic unit-test artifact, not a captured university response.\n"
+        raw_path = tmp_path / "synthetic-thesis.pdf"
+        raw_path.write_bytes(raw)
+        text = f"Synthetic unit page: {latin} {han} professional Weiqi context\n{page}\n"
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        monkeypatch.setattr(name_evidence, "_ZH_PDF_SHA256", hashlib.sha256(raw).hexdigest(), raising=False)
+        monkeypatch.setattr(name_evidence, "_ZH_PDF_SIZE", len(raw), raising=False)
+        monkeypatch.setattr(name_evidence, "_ZH_PDF_PAGES", {(han, latin): (page, digest)}, raising=False)
+        original = {"capture_kind": "pdf_text_extract",
+            "url": "https://knowledge.uchicago.edu/records/jvfan-2am47/files/Zhao%20Yiyang_Thesis_Submission.pdf?download=1",
+            "final_url": "https://knowledge.uchicago.edu/records/jvfan-2am47/files/Zhao%20Yiyang_Thesis_Submission.pdf?download=1",
+            "http_status": 200, "fetched_at": "2026-10-08T21:50:12Z", "pdf_path": str(raw_path),
+            "pdf_sha256": hashlib.sha256(raw).hexdigest(), "pdf_size": len(raw),
+            "extraction": {"tool": "synthetic-fixture", "version": "1", "options": [],
+                "extracted_at": "2026-10-08T21:51:00Z", "page_number": page,
+                "page_text": text, "page_text_sha256": digest},
+            "name_spans": {"original": [text.index(han), text.index(han) + len(han)],
+                "published": [text.index(latin), text.index(latin) + len(latin)], "original_lang": "zh-Hant"},
+            "body_excerpt": text, "locator": f"PDF page {page}, synthetic person line",
+            "source_role": "go_history_thesis", "document_lang": "en", "observed_lang": "zh-Hant"}
+        reading = deepcopy(original)
+        reg["sources"].append({"id": "uchicago-go-history-thesis", "tier": "reference", "language": "en",
+            "home_url": "https://knowledge.uchicago.edu/records/jvfan-2am47"})
+        source_row = candidate(owner=owner, lang="tw", display_name=han, decision_kind="conventional")
+        source_research = research(owner=owner, lang="tw", candidate_name=han, scope_status="found")
+        source_row["research_sha256"] = canonical_sha256(source_research)
+        source_evidence = {"id": 11, "player_id": owner_id, "lang": "tw", "candidate_name": han,
+            "review_status": "approved", "revision": 1, "decision_kind": "conventional",
+            "generation_rule_version": "fixture-v1", "reviewed_at": "2026-10-08T20:00:00Z",
+            "research_payload": {"candidate": source_row, "research": source_research}}
+        source_name = {"id": 12, "player_id": owner_id, "lang": "tw", "display_name": han,
+            "status": "verified", "evidence_id": 11, "revision": 1, "decision_kind": "conventional",
+            "generation_rule_version": "fixture-v1"}
+        content = {"reference_kind": "verified_chinese_display", "owner": owner, "original_name": han,
+            "source_lang": "zh-Hant", "source_script": "Hant", "binding": {"kind": "verified_chinese_display",
+                "owner": owner, "source_name": source_name, "source_evidence": source_evidence,
+                "source_batch": {"id": 1, "bundle_sha256": "1" * 64,
+                    "evidence_creation_sha256": canonical_sha256(source_evidence)}}}
+        positive["source_anchors"] = [{"evidence_kind": "primary_orthographic", "version": 1, "content": content,
+            "approval": {"status": "approved", "content_sha256": canonical_sha256(content),
+                "producer_id": "source-binder", "producer_model": "gpt-6-sol", "produced_at": "2026-10-08T21:52:00Z",
+                "reviewer_id": "source-reviewer", "reviewer_model": "gpt-6-astra", "reviewed_at": "2026-10-08T21:54:00Z",
+                "conclusion": "approved_orthographic_original"}}]
+        source_id = "uchicago-go-history-thesis"
+    else:
+        reg["sources"].append({"id": "cwi-go", "tier": "language_go", "language": "en",
+            "home_url": "https://homepages.cwi.nl/~aeb/go/games/"})
+        source_id = "cwa"
+    positive["identity"].update(owner=owner, original_name=han, capture=original)
+    positive["reading"].update(published=latin, reading_words=words, capture=reading)
+    if not page:
+        positive["reading"]["cross_source_link"] = {"method": "reviewed_cross_source", "owner": owner,
+            "original_name": han, "published": latin, "identity_capture_sha256": canonical_sha256(original),
+            "reading_capture_sha256": canonical_sha256(reading), "identity_url": original["url"],
+            "reading_url": reading["url"], "identity_locator": original["locator"], "reading_locator": reading["locator"],
+            "identity_basis": "Synthetic reviewer explicitly links official professional row to Go exchange record",
+            "unresolved_conflicts": []}
+    positive["rule"].update(used_entries=used_entries(words), output=output)
+    positive["rule"]["capture"].update(url=CURRENT_RULE_URL, body_sha256=CURRENT_RULE_BODY_SHA256)
+    # Existing unavailable-result contract records the bounded check honestly.
+    for item, query in zip(positive["contrary_checks"], [latin, output]):
+        item.update(query=query, status="unavailable", relevant_matches=[], resolution="Synthetic capture unavailable",
+            capture={"url": "https://example.org/search", "queried_at": "2026-10-08T21:50:00Z",
+                "response_status": "unavailable", "source_role": "search_tool_response", "locator": "fixture request",
+                "reason": "Explicit synthetic unavailable result"})
+    evidence.update(owner=owner, original_name=han, original_language="zh-Hant" if page else "zh-Hans",
+        original_language_basis_url=original["url"], reading=latin, reading_basis_url=reading["url"], candidate_name=output,
+        registry_sha256=registry_sha256(reg), source_checks=[check(owner=owner, source_id=source_id,
+            url=original["url"], observed_lang="zh-Hant" if page else "zh-Hans", candidate_name=han,
+            body_excerpt=original["body_excerpt"], body_sha256=original.get("pdf_sha256", original.get("body_sha256")))])
+    row.update(owner=owner, display_name=output, research_sha256=canonical_sha256(evidence))
+    review = row["generated_review"]
+    review.update(owner=owner, display_name=output, original_name=han, reading=latin, reading_words=words,
+        reading_basis_url=reading["url"], used_entries=positive["rule"]["used_entries"],
+        research_sha256=row["research_sha256"], positive_zh_ko_sha256=canonical_sha256(positive),
+        reason="Explicitly approved PDF/TW binding or the cross-source same-person inference, exact rule and output")
+    return evidence, row, reg
+
+
+@pytest.mark.parametrize("owner_id", [5495, 5940, 4071])
+def test_positive_zh_ko_v2_reviewed_pdf_and_cross_source_inputs(monkeypatch, tmp_path, owner_id):
+    from katrain.web.kifu.name_evidence import validate_positive_zh_ko_candidate
+    evidence, row, reg = positive_zh_ko_v2_fixture(monkeypatch, tmp_path, owner_id)
+    assert validate_positive_zh_ko_candidate(row, evidence, reg) == row
+
+
+@pytest.mark.parametrize("damage", ["raw_hash", "raw_bytes", "page_text", "page_number", "excerpt",
+    "name_span", "missing_tw", "source_role", "mixed_pair", "v1_marker", "json_skip", "independent_review"])
+def test_positive_zh_ko_v2_pdf_rejects_changed_source_or_binding(monkeypatch, tmp_path, damage):
+    from pathlib import Path
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_positive_zh_ko_candidate
+    evidence, row, reg = positive_zh_ko_v2_fixture(monkeypatch, tmp_path, 5495)
+    positive = evidence["positive_zh_ko"]
+    capture = positive["identity"]["capture"]
+    if damage == "raw_hash": capture["pdf_sha256"] = "0" * 64
+    elif damage == "raw_bytes": Path(capture["pdf_path"]).write_bytes(b"Different actual file")
+    elif damage == "page_text":
+        capture["extraction"]["page_text"] += " altered"
+        capture["extraction"]["page_text_sha256"] = hashlib.sha256(capture["extraction"]["page_text"].encode()).hexdigest()
+    elif damage == "page_number": capture["extraction"]["page_number"] = 56
+    elif damage == "excerpt": capture["body_excerpt"] = "Invented 王學傳 Wang Xuechuan line"
+    elif damage == "name_span": capture["name_spans"]["original"][0] += 1
+    elif damage == "missing_tw": positive["source_anchors"] = []
+    elif damage == "source_role": capture["source_role"] = "official_person_page"
+    elif damage == "mixed_pair": positive["reading"]["profile_pair"] = {}
+    elif damage == "v1_marker": positive["version"] = 1
+    elif damage == "json_skip":
+        Path(capture["pdf_path"]).unlink()
+        evidence["verify_captured_body"] = False
+    else: row["generated_review"]["identity_input_review"] = "pending"
+    positive["reading"]["capture"] = deepcopy(capture)
+    row["research_sha256"] = row["generated_review"]["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(positive)
+    with pytest.raises(EvidenceError): validate_positive_zh_ko_candidate(row, evidence, reg)
+
+
+@pytest.mark.parametrize("damage", ["owner", "capture_hash", "source_url", "latin", "unresolved", "v1_marker", "registry"])
+def test_positive_zh_ko_v2_cross_source_rejects_unbound_link(monkeypatch, tmp_path, damage):
+    from katrain.web.kifu.name_evidence import EvidenceError, validate_positive_zh_ko_candidate
+    evidence, row, reg = positive_zh_ko_v2_fixture(monkeypatch, tmp_path, 4071)
+    positive = evidence["positive_zh_ko"]
+    link = positive["reading"]["cross_source_link"]
+    if damage == "owner": link["owner"] = {"kind": "player", "id": 5495}
+    elif damage == "capture_hash": link["reading_capture_sha256"] = "0" * 64
+    elif damage == "source_url": link["reading_url"] = "https://example.org/profile"
+    elif damage == "latin": link["published"] = "Hua Xueming"
+    elif damage == "unresolved": link["unresolved_conflicts"] = ["Possible homonym"]
+    elif damage == "v1_marker": positive["version"] = 1
+    else:
+        next(source for source in reg["sources"] if source["id"] == "cwi-go")["tier"] = "discovery"
+        evidence["registry_sha256"] = registry_sha256(reg)
+    row["research_sha256"] = row["generated_review"]["research_sha256"] = canonical_sha256(evidence)
+    row["generated_review"]["positive_zh_ko_sha256"] = canonical_sha256(positive)
+    with pytest.raises(EvidenceError): validate_positive_zh_ko_candidate(row, evidence, reg)
+
+
 def test_positive_zh_ko_preserves_all_thirty_frozen_entries():
     from katrain.web.kifu.name_zh_ko import LEGACY_RULE_SYLLABLES, RULE_VERSION, SOURCE_BASIS, SYLLABLES
 

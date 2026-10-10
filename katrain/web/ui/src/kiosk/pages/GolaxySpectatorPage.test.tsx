@@ -183,13 +183,23 @@ describe('Golaxy spectator', () => {
     expect(playSound).toHaveBeenCalledTimes(2);
   });
 
-  it('sounds once for each new stone in a validated two-move jump', async () => {
+  it('sounds at most once for the latest placed stone in a validated two-move jump', async () => {
     await openReadyWithFakeTimers();
     platformRoomSnapshot.mockResolvedValueOnce(sixthSnapshot);
     await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
-    expect(playSound).toHaveBeenCalledTimes(2);
-    expect(playSound).toHaveBeenNthCalledWith(1, 'stone');
-    expect(playSound).toHaveBeenNthCalledWith(2, 'stone');
+    expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  });
+
+  it('does not sound for earlier stones when a jump ends in a pass', async () => {
+    await openReadyWithFakeTimers();
+    const passed = { ...nextSnapshot, move_number: 6, last_move: { color: 'W' as const, coordinate: null },
+      history: [...nextSnapshot.history, { black_stones: nextSnapshot.black_stones,
+        white_stones: nextSnapshot.white_stones, move_number: 6,
+        last_move: { color: 'W' as const, coordinate: null } }] };
+    platformRoomSnapshot.mockResolvedValueOnce(passed);
+    await act(async () => { vi.advanceTimersByTime(2_000); await Promise.resolve(); });
+    expect(screen.getByText(/最新：白 停一手 · 第 6 手/)).toBeInTheDocument();
+    expect(playSound).not.toHaveBeenCalled();
   });
 
   it('skips a pass while sounding the later stone in a two-move jump', async () => {

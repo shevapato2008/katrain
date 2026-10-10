@@ -5,8 +5,12 @@ import { MemoryRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'r
 import PvpSpectatorPage from './PvpSpectatorPage';
 import { KioskRoutes } from '../KioskApp';
 
-const { auth } = vi.hoisted(() => ({ auth: { user: { id: 1 }, token: 'tok' as string | null, isAuthenticated: true } }));
+const { auth, playSound } = vi.hoisted(() => ({ auth: {
+  user: { id: 1 }, token: 'tok' as string | null, isAuthenticated: true,
+  status: 'authenticated' as 'authenticated' | 'guest', isGuest: false, identityKey: 'user:1', isStrictBoxKiosk: false,
+}, playSound: vi.fn() }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: playSound }) }));
 vi.mock('../components/layout/KioskLayout', () => ({ default: Outlet }));
 vi.mock('../components/vision/PlayInputGuard', () => ({ default: () => { throw new Error('Spectators must never need physical input'); } }));
 vi.mock('./LoginPage', () => ({ default: () => <div>需要登录</div> }));
@@ -14,11 +18,15 @@ const snapshot = {
   session_id: 'room-a', public_lobby: true, game_ended: false,
   player_b: '黑方棋友', player_w: '白方棋友', player_b_id: 2, player_w_id: -3,
   player_b_rank_label: '业余 2 段', player_w_rank_label: '业余 3 段',
-  state: { board_size: [19, 19], stones: [['B', [3, 15], null, 1], ['W', [15, 15], null, 2]],
+  state: { game_id: 'game-a', board_size: [19, 19], stones: [['B', [3, 15], null, 1], ['W', [15, 15], null, 2]],
     last_move: [15, 15], current_node_index: 2, player_to_move: 'B', end_result: null as string | null,
     terminal_result: null, awaiting_count: false },
 };
 const reply = (data: unknown = snapshot, status = 200) => ({ ok: status === 200, status, json: async () => data }) as Response;
+const advancedSnapshot = (index = 3, lastMove: number[] | null = [15, 3]) => ({
+  ...snapshot, state: { ...snapshot.state, current_node_index: index, last_move: lastMove,
+    stones: lastMove ? [...snapshot.state.stones, ['B', lastMove, null, index]] : snapshot.state.stones },
+});
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((yes) => { resolve = yes; });
@@ -41,10 +49,97 @@ const settle = async () => { await act(async () => { await Promise.resolve(); aw
 const open = async () => { const view = render(<App />); await settle(); return view; };
 beforeEach(() => {
   vi.useFakeTimers(); auth.user = { id: 1 }; auth.token = 'tok'; auth.isAuthenticated = true; commits.length = 0;
+  auth.status = 'authenticated'; auth.isGuest = false; auth.identityKey = 'user:1';
+  playSound.mockReset();
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply()));
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+it('sounds once for a new live stone and keeps initial, duplicate and older snapshots silent', async () => {
+  await open();
+  expect(playSound).not.toHaveBeenCalled();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot()));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  for (const data of [advancedSnapshot(), snapshot, advancedSnapshot()]) {
+    vi.mocked(fetch).mockResolvedValueOnce(reply(data));
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  }
+  expect(playSound).toHaveBeenCalledTimes(1);
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(4, [16, 3])));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledTimes(2);
+});
+
+it('plays at most one latest-stone sound on a multi-move jump and skips passes', async () => {
+  await open();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(5)));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(6, null)));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledTimes(1);
+});
+
+it('keeps visibility catch-up silent and resumes sound for the following live stone', async () => {
+  await open();
+  const visibility = vi.spyOn(document, 'visibilityState', 'get');
+  visibility.mockReturnValue('hidden');
+  fireEvent(document, new Event('visibilitychange'));
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot()));
+  visibility.mockReturnValue('visible');
+  fireEvent(document, new Event('visibilitychange'));
+  await settle();
+  expect(screen.getByText(/第 3 手/)).toBeInTheDocument();
+  expect(playSound).not.toHaveBeenCalled();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(4, [16, 3])));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+});
+
+it('keeps the first successful retry silent after a failed refresh', async () => {
+  await open();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(snapshot, 503));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot()));
+  fireEvent.click(screen.getByRole('button', { name: '重试' }));
+  await settle();
+  expect(playSound).not.toHaveBeenCalled();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(4, [16, 3])));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+});
+
+it('keeps its heard frontier through a rewind followed by error recovery', async () => {
+  await open();
+  for (const response of [reply(advancedSnapshot(5)), reply(snapshot), reply(snapshot, 503)]) {
+    vi.mocked(fetch).mockResolvedValueOnce(response);
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  }
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  fireEvent.click(screen.getByRole('button', { name: '重试' }));
+  await settle();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(advancedSnapshot(5)));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledTimes(1);
+});
+
+it('establishes a silent baseline for a replacement game and page remount', async () => {
+  const page = await open();
+  const replacement = { ...advancedSnapshot(7), state: { ...advancedSnapshot(7).state, game_id: 'game-b' } };
+  vi.mocked(fetch).mockResolvedValueOnce(reply(replacement));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).not.toHaveBeenCalled();
+  vi.mocked(fetch).mockResolvedValueOnce(reply({ ...replacement,
+    state: { ...replacement.state, current_node_index: 8, last_move: [16, 3] } }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(playSound).toHaveBeenCalledExactlyOnceWith('stone');
+  page.unmount();
+  vi.mocked(fetch).mockResolvedValueOnce(reply(replacement));
+  await open();
+  expect(playSound).toHaveBeenCalledTimes(1);
+});
 
 it('renders true metadata and core coordinates using the existing readonly spectator skeleton', async () => {
   await open();
@@ -93,6 +188,7 @@ it('clears the previous room immediately and ignores its late response', async (
   expect(screen.queryByText('黑方棋友')).not.toBeInTheDocument();
   expect(document.querySelector('[data-stone]')).toBeNull();
   expect(commits.find((entry) => entry.path.endsWith('room-b'))?.stone).toBeNull();
+  expect(playSound).not.toHaveBeenCalled();
 });
 
 it.each(['account', 'token'])('resets data and rejects pending requests on %s change', async (change) => {
@@ -106,6 +202,7 @@ it.each(['account', 'token'])('resets data and rejects pending requests on %s ch
   old.resolve(reply()); await settle(); expect(document.querySelector('[data-stone]')).toBeNull();
   fresh.resolve(reply({ ...snapshot, player_b: '新身份同步' })); await settle();
   expect(screen.getByText('新身份同步')).toBeInTheDocument();
+  expect(playSound).not.toHaveBeenCalled();
 });
 
 it('pauses while hidden, cancels pending data and resyncs on visibility restore', async () => {
@@ -160,12 +257,13 @@ it('rejects another room snapshot rather than drawing it', async () => {
 
 it.each([true, false])('uses the actual auth-guarded route without a play/camera guard (authenticated=%s)', async (authenticated) => {
   auth.isAuthenticated = authenticated;
+  auth.status = authenticated ? 'authenticated' : 'guest';
   render(<MemoryRouter initialEntries={['/kiosk/play/pvp/watch/room-a']}><Routes>
     <Route path="/kiosk/*" element={<KioskRoutes />} />
   </Routes></MemoryRouter>);
   // The routed page is lazy loaded; real timers permit its import to complete.
   vi.useRealTimers();
-  expect(await screen.findByText(authenticated ? '黑方棋友' : '需要登录')).toBeInTheDocument();
+  expect(await screen.findByText(authenticated ? '黑方棋友' : '登录后进入在线大厅')).toBeInTheDocument();
   if (!authenticated) expect(fetch).not.toHaveBeenCalled();
 });
 

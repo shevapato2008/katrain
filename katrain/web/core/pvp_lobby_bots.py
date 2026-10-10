@@ -448,12 +448,23 @@ class PvpLobbyBotRuntime:
                         or getattr(game, "end_result", None)):
                     return False
                 played = game.play(move, analyze=False)
+                sound_name = session.katrain._stone_sound_name(game, played)
                 played.ai_thoughts = thoughts
                 record_end = getattr(game, "record_two_pass_end", None)
                 if record_end is not None:
                     record_end(played)
                 session.last_state = session.katrain.get_state()
-        session.katrain.update_state()
+        post_broadcast = None
+        if sound_name is not None:
+            expected_game_id = game.game_id
+            expected_node_id = id(played)
+
+            def _play_committed_sound(state):
+                if state.get("game_id") == expected_game_id and state.get("current_node_id") == expected_node_id:
+                    session.katrain.play_stone_sound(sound_name, after_node_id=expected_node_id)
+
+            post_broadcast = _play_committed_sound
+        session.katrain.update_state(_post_broadcast=post_broadcast)
         return True
 
     async def _run_game(self, session):

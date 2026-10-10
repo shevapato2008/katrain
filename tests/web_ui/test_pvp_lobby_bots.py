@@ -1,15 +1,135 @@
 """Pure decisions for the self-owned PvP lobby bot population."""
 
 from random import Random
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 import asyncio
+import importlib.util
+import sys
 import threading
+import time
 
 import pytest
 
 from katrain.core import ladder
 from katrain.web.core import pvp_lobby_bots as bots
+from katrain.core.sgf_parser import Move
+
+
+@pytest.fixture(scope="module")
+def real_web_katrain_class():
+    # The shared web conftest stubs this module. Load the real sound/broadcast
+    # implementation separately without changing the stub used by other tests.
+    name = "katrain.web._pvp_bot_sound_test_interface"
+    spec = importlib.util.spec_from_file_location(name, Path(bots.__file__).parents[1] / "interface.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module.WebKaTrain
+
+
+@pytest.fixture
+def bot_sound_session(real_web_katrain_class):
+    katrain = real_web_katrain_class(force_package_config=True, enable_engine=False)
+    katrain.save_config = lambda *_args, **_kwargs: None
+    katrain.start()
+    katrain._do_update_state = lambda: None
+    events = []
+    katrain.update_state_callback = lambda state: events.append(("state", state["current_node_id"]))
+    katrain.message_callback = lambda kind, payload: events.append((kind, payload))
+    state = SimpleNamespace()
+    runtime = bots.PvpLobbyBotRuntime(SimpleNamespace(state=state))
+    runtime.apply_config({"version": 1, "enabled": True, "bot_game_limit": 0, "idle_targets": {}}, revision=1)
+    identity, generation = runtime.reserve_bot(bots.playable_rungs()[0].rung)
+    session = SimpleNamespace(
+        session_id="sound-game",
+        player_b_id=identity,
+        player_w_id=1,
+        game_ended=False,
+        lock=threading.Lock(),
+        katrain=katrain,
+    )
+    state.session_manager = SimpleNamespace(_lock=threading.Lock(), _sessions={session.session_id: session})
+    return runtime, session, identity, generation, events
+
+
+@pytest.mark.parametrize("capture", [False, True])
+def test_bot_placed_move_emits_one_matching_asset_sound_after_its_state(bot_sound_session, capture):
+    runtime, session, identity, generation, events = bot_sound_session
+    game = session.katrain.game
+    if capture:
+        game.play(Move((0, 1), player="B"), analyze=False)
+        game.play(Move((0, 0), player="W"), analyze=False)
+    node = game.current_node
+    move = Move((1, 0) if capture else (3, 3), player="B")
+
+    assert runtime.commit_candidate(session, identity, generation, (node, move, "certified"))
+
+    played = game.current_node
+    assert events[0] == ("state", id(played))
+    assert len(events) == 2
+    assert events[1][0] == "sound"
+    assert events[1][1]["after_node_id"] == id(played)
+    if capture:
+        assert events[1][1]["sound"] == "capturing"
+    else:
+        assert events[1][1]["sound"] in {"stone1", "stone2", "stone3", "stone4", "stone5"}
+
+
+def test_bot_pass_broadcasts_without_stone_sound(bot_sound_session):
+    runtime, session, identity, generation, events = bot_sound_session
+    node = session.katrain.game.current_node
+
+    assert runtime.commit_candidate(session, identity, generation, (node, Move(None, player="B"), "pass"))
+
+    assert events == [("state", id(session.katrain.game.current_node))]
+
+
+def test_rejected_bot_candidate_emits_neither_state_nor_sound(bot_sound_session):
+    runtime, session, identity, generation, events = bot_sound_session
+    node = session.katrain.game.current_node
+    runtime.release_bot(identity, generation)
+
+    assert not runtime.commit_candidate(session, identity, generation, (node, Move((3, 3), player="B"), "stale"))
+
+    assert session.katrain.game.current_node is node
+    assert events == []
+
+
+def test_bot_sound_waits_for_a_throttled_state_broadcast(bot_sound_session):
+    runtime, session, identity, generation, events = bot_sound_session
+    katrain = session.katrain
+    sound_sent = threading.Event()
+    katrain.message_callback = lambda kind, payload: (events.append((kind, payload)), sound_sent.set())
+    katrain._last_broadcast_time = time.time()
+
+    assert runtime.commit_candidate(
+        session, identity, generation, (katrain.game.current_node, Move((3, 3), player="B"), "certified")
+    )
+    assert events == []
+    assert sound_sent.wait(1)
+    assert len(events) == 2
+    assert events[0] == ("state", id(katrain.game.current_node))
+    assert events[1][0] == "sound"
+    assert events[1][1]["after_node_id"] == id(katrain.game.current_node)
+
+
+@pytest.mark.parametrize("mismatch", ["game", "node"])
+def test_bot_sound_is_dropped_if_its_commit_is_absent_from_the_broadcast(bot_sound_session, mismatch):
+    runtime, session, identity, generation, events = bot_sound_session
+    katrain = session.katrain
+    callbacks = []
+    katrain.update_state = lambda **kwargs: callbacks.append(kwargs.get("_post_broadcast"))
+
+    assert runtime.commit_candidate(
+        session, identity, generation, (katrain.game.current_node, Move((3, 3), player="B"), "certified")
+    )
+    state = katrain.get_state()
+    state["game_id" if mismatch == "game" else "current_node_id"] = "other" if mismatch == "game" else -1
+    assert callbacks[0] is not None
+    callbacks[0](state)
+    assert events == []
 
 
 @pytest.mark.parametrize("fail_at", ["start", "seat"])

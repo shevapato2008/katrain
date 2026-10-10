@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { verifiedSpectatorCount, type GameState } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { useSound } from '../../hooks/useSound';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { GO_COLS } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
@@ -19,7 +20,7 @@ type Snapshot = {
   player_w_id: number;
   player_b_rank_label: string | null;
   player_w_rank_label: string | null;
-  state: Pick<GameState, 'board_size' | 'stones' | 'last_move' | 'current_node_index' | 'player_to_move'
+  state: Pick<GameState, 'game_id' | 'board_size' | 'stones' | 'last_move' | 'current_node_index' | 'player_to_move'
     | 'end_result' | 'terminal_result' | 'awaiting_count'>;
 };
 type View = {
@@ -54,11 +55,13 @@ export default function PvpSpectatorPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { user, token, isAuthenticated } = useAuth();
+  const { play: playSound } = useSound();
   // Scope the rendered data as well as the request: an account/room change must not paint an old board for one frame.
   const scope = JSON.stringify([sessionId, user?.id, token, isAuthenticated]);
   const [retry, setRetry] = useState(0);
   const [view, setView] = useState<View>({ scope, phase: 'loading' });
   const viewRef = useRef(view);
+  const soundFrontierRef = useRef<{ scope: string; snapshot: Snapshot } | null>(null);
   viewRef.current = view;
   const current = view.scope === scope ? view : { scope, phase: 'loading' as const };
   const snapshot = current.snapshot;
@@ -70,6 +73,9 @@ export default function PvpSpectatorPage() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
     let previous = viewRef.current.scope === scope ? viewRef.current.snapshot : undefined;
+    let soundFrontier = soundFrontierRef.current?.scope === scope ? soundFrontierRef.current.snapshot : undefined;
+    let suppressNextSound = true;
+    const isVisible = () => document.visibilityState !== 'hidden';
     setView({ scope, phase: 'loading', snapshot: previous });
     const stop = () => {
       clearTimeout(timer);
@@ -104,11 +110,24 @@ export default function PvpSpectatorPage() {
         const data: unknown = await response.json();
         if (!isCurrent()) return;
         if (!validSnapshot(data, sessionId)) throw new Error('观战快照内容不完整，请重试。');
+        const sameGame = !!soundFrontier && soundFrontier.state.game_id === data.state.game_id;
+        const advanced = !!soundFrontier && data.state.current_node_index > soundFrontier.state.current_node_index;
+        if (sameGame && advanced && !suppressNextSound && isVisible() && data.state.last_move) {
+          playSound('stone');
+        }
+        // Keep the furthest observed move through an older response, so receiving
+        // the same live stone again after a rewind cannot sound twice.
+        if (!sameGame || advanced) {
+          soundFrontier = data;
+          soundFrontierRef.current = { scope, snapshot: data };
+        }
+        suppressNextSound = false;
         previous = data;
         setView({ scope, phase: 'ready', snapshot: data });
         timer = setTimeout(() => { void sync(); }, 2000);
       } catch (error) {
         if (!isCurrent()) return;
+        suppressNextSound = true;
         setView({ scope, phase: 'error', snapshot: previous,
           error: `${error instanceof Error ? error.message : '观战同步失败，请重试。'} 当前不是实时态。` });
       } finally {
@@ -117,14 +136,17 @@ export default function PvpSpectatorPage() {
     };
     const visibility = () => {
       stop();
-      if (document.visibilityState === 'hidden') setView({ scope, phase: 'paused', snapshot: previous });
+      if (document.visibilityState === 'hidden') {
+        suppressNextSound = true;
+        setView({ scope, phase: 'paused', snapshot: previous });
+      }
       else void sync();
     };
     document.addEventListener('visibilitychange', visibility);
     if (document.visibilityState === 'hidden') setView({ scope, phase: 'paused', snapshot: previous });
     else void sync();
     return () => { active = false; stop(); document.removeEventListener('visibilitychange', visibility); };
-  }, [sessionId, user?.id, token, isAuthenticated, scope, retry]);
+  }, [sessionId, user?.id, token, isAuthenticated, scope, retry, playSound]);
 
   const phase = snapshot ? snapshot.state.awaiting_count ? '结算中'
     : terminal(snapshot) ? `已结束${resultOf(snapshot) ? ` · ${resultOf(snapshot)}` : ''}` : '对局中' : '等待对局快照';

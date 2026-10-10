@@ -143,10 +143,9 @@ const GolaxySpectatorPage = () => {
         const sameGame = prior !== null && prior.game_id === snapshot.game_id && sameHistoryPrefix(prior, snapshot);
         const regressed = sameGame && snapshot.move_number < prior.move_number;
         if (prior && (!sameGame || regressed)) setHistoryMove(null);
-        if (sameGame && !suppressNextSound && !document.hidden && historyMoveRef.current === null && soundOnRef.current) {
-          for (const position of snapshot.history.slice(prior.move_number + 1)) {
-            if (position.last_move?.coordinate) playSound('stone');
-          }
+        if (sameGame && snapshot.move_number > prior.move_number && snapshot.last_move?.coordinate
+          && !suppressNextSound && !document.hidden && historyMoveRef.current === null && soundOnRef.current) {
+          playSound('stone');
         }
         if (!regressed) previousSnapshot = snapshot;
         suppressNextSound = false;

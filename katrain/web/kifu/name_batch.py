@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import hashlib
 import re
 
-from sqlalchemy import DateTime, func, or_, select
+from sqlalchemy import DateTime, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -468,7 +468,8 @@ def _check_album_links(conn, bundle: dict) -> None:
 
 def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
                      selected_scope: dict[str, set[int]] | None = None,
-                     selected_events: dict[int, set[int]] | None = None) -> None:
+                     selected_events: dict[int, set[int]] | None = None,
+                     research: dict | None = None) -> None:
     kind = row["owner"]["kind"]
     if "ref" in row["owner"]:
         if kind.startswith("raw_"):
@@ -488,11 +489,71 @@ def _check_raw_owner(conn, row: dict, link_targets: set[str] | None = None,
 
             _fail(eligible_raw_title_owner(owner_row),
                   "literal raw title needs an approved readable raw owner")
-            direct = conn.execute(select(KifuAlbum.id, KifuAlbum.event_id,
-                                         KifuAlbum.duplicate_of_id, KifuAlbum.list_hidden_reason)
-                                  .where(KifuAlbum.event == row["raw_value"])).all()
+            linked = isinstance(research, dict) and research.get("source_basis") == "linked_sgf_literal_v1"
+            if linked:
+                direct = conn.execute(text("SELECT id, event_id, duplicate_of_id, list_hidden_reason "
+                                           "FROM kifu_albums WHERE event = :raw"),
+                                      {"raw": row["raw_value"]}).all()
+            else:
+                direct = conn.execute(select(KifuAlbum.id, KifuAlbum.event_id,
+                                             KifuAlbum.duplicate_of_id, KifuAlbum.list_hidden_reason)
+                                      .where(KifuAlbum.event == row["raw_value"])).all()
             review = owner_row["review_metadata"] or {}
-            if owner_id == _TEAM_OWNER_ID and row["raw_value"] == _TEAM_RAW and review.get("team_scope"):
+            if linked:
+                from katrain.core.sgf_parser import SGF
+                from katrain.web.kifu.raw_event_translation import sgf_title_ref_matches, SGF_ENGLISH_LINKED_EVENT_PROFILE
+
+                _fail(row.get("generation_rule_version") == "raw-event-title-translation-v1"
+                      and review.get("sgf_literal", {}).get("source_basis") == "linked_sgf_literal_v1"
+                      and review.get("sgf_literal", {}).get("profile") == SGF_ENGLISH_LINKED_EVENT_PROFILE
+                      and review.get("sgf_literal", {}).get("legacy_name_preimages_sha256")
+                      == canonical_sha256(research.get("legacy_name_preimages")),
+                      "linked raw title needs matching owner approval")
+                name_ids = conn.scalars(select(KifuRawEventName.id).where(
+                    KifuRawEventName.raw_event_id == owner_id).order_by(KifuRawEventName.id)).all()
+                _fail([_image(conn, KifuRawEventName.__table__, name_id) for name_id in name_ids]
+                      == research.get("legacy_name_preimages"),
+                      "linked raw title complete legacy name set changed")
+                expected = research.get("sgf_literal_evidence", {}).get("scope_rows")
+                refs = research.get("original_sgf_refs")
+                albums = conn.execute(text("SELECT * FROM kifu_albums WHERE event = :raw ORDER BY id"),
+                                      {"raw": row["raw_value"]}).mappings().all()
+                _fail(isinstance(expected, list) and expected and isinstance(refs, list)
+                      and len(albums) == len(expected) == len(refs), "linked raw title physical member set changed")
+                ids = [album["id"] for album in albums]
+                _fail(ids == [item.get("id") for item in expected] == sorted(set(ids))
+                      and len({album["event_id"] for album in albums}) == 1
+                      and albums[0]["event_id"] is not None,
+                      "linked raw title member IDs or formal series changed")
+                _fail(conn.scalar(select(KifuAlbumEventSelection.album_id).where(
+                    (KifuAlbumEventSelection.album_id.in_(ids)) |
+                    (KifuAlbumEventSelection.selected_raw == row["raw_value"])).limit(1)) is None,
+                    "linked raw title gained an event selection")
+                for album, frozen, ref in zip(albums, expected, refs):
+                    _fail(album["event_id"] == frozen["event_id"]
+                          and album["event_edition_id"] == frozen["event_edition_id"]
+                          and album["duplicate_of_id"] == frozen["duplicate_of_id"] is None
+                          and album["list_hidden_reason"] == frozen["list_hidden_reason"] is None
+                          and album["source_path"] == frozen["source_path"]
+                          and album["event"] == frozen["event"]
+                          and all(album[key] == frozen[key] for key in (
+                              "round_name", "date_played", "black_rank", "white_rank")),
+                          "linked raw title physical scope changed")
+                    content = album["sgf_content"]
+                    _fail(isinstance(content, str) and hashlib.sha256(content.encode("utf-8")).hexdigest()
+                          == frozen["sgf_sha256"], "linked raw title SGF changed")
+                    try:
+                        root = SGF.parse_sgf(content)
+                        actual_ref = {"album_id": album["id"], "source_path": album["source_path"],
+                                      "sgf_sha256": frozen["sgf_sha256"],
+                                      "gn_values": root.get_list_property("GN") or [],
+                                      "ev_values": root.get_list_property("EV") or []}
+                    except Exception as exc:
+                        raise BatchError("linked raw title SGF cannot be parsed") from exc
+                    _fail(actual_ref == ref and sgf_title_ref_matches(ref, row["raw_value"],
+                                                                       SGF_ENGLISH_LINKED_EVENT_PROFILE),
+                          "linked raw title EV/GN source differs")
+            elif owner_id == _TEAM_OWNER_ID and row["raw_value"] == _TEAM_RAW and review.get("team_scope"):
                 team = _team_raw_scope(conn)
                 _fail(review["team_scope"] == team["review_scope"]
                       and review["scope_sha256"] == team["review_scope"]["album_scope_sha256"],
@@ -600,11 +661,25 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
             if incoming_literal_raw and kind == "event":
                 continue
+            payload = (evidence or {}).get("research_payload") or {}
+            prior_research = payload.get("research") if isinstance(payload, dict) else None
+            prior_linked = (isinstance(prior_research, dict)
+                            and prior_research.get("source_basis") == "linked_sgf_literal_v1")
+            linked_series = (
+                own_kind == "event" and type(own_id) is int
+                and isinstance(prior_research.get("sgf_literal_evidence"), dict)
+                and isinstance(prior_research["sgf_literal_evidence"].get("scope_rows"), list)
+                and bool(prior_research["sgf_literal_evidence"]["scope_rows"])
+                and all(scope.get("event_id") == own_id for scope in
+                        prior_research["sgf_literal_evidence"]["scope_rows"])
+            ) if prior_linked else False
             if (kind == "raw_event" and (incoming_literal_raw or own_kind == "event")
                     and eligible_literal_raw_name(existing_name, evidence or {},
-                                                  _image(conn, KifuRawEventValue.__table__, existing_id) or {})):
+                                                  _image(conn, KifuRawEventValue.__table__, existing_id) or {},
+                                                  allow_linked=linked_series)
+                    and (not prior_linked or linked_series)):
                 continue
-            previous = (evidence or {}).get("research_payload") or {}
+            previous = payload
             previous_candidate = previous.get("candidate", {}) if isinstance(previous, dict) else {}
             _fail(
                 row["decision_kind"] not in {"composed", "transliterated"}
@@ -642,8 +717,10 @@ def _inspect(
     ):
         _check_verified_sources(conn, evidence_records)
     link_targets = {_owner_ref(link["target"]) for link in bundle.get("album_links", ())}
+    research_by_hash = {canonical_sha256(record): record for record in evidence_records}
     for candidate in bundle["candidates"]:
-        _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events)
+        _check_raw_owner(conn, candidate, link_targets, selected_scope, selected_events,
+                         research_by_hash.get(candidate.get("research_sha256")))
     _check_cross_bundle_collisions(conn, bundle["candidates"])
     return {**report, "bundle_sha256": canonical_sha256(bundle),
             "affected_albums": _affected_albums(conn, bundle["candidates"], bundle.get("album_links"),

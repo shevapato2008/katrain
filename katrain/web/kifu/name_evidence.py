@@ -19,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urljoin, urlparse
 from urllib.request import Request, urlopen
 
-from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, validate_raw_title_research
+from katrain.web.kifu.raw_event_translation import SGF_LITERAL_BASIS, LINKED_SGF_LITERAL_BASIS, validate_raw_title_research
 
 
 DEFAULT_REGISTRY = Path(__file__).resolve().parents[3] / "docs/resource/kifu-name-source-registry.json"
@@ -1474,7 +1474,7 @@ def validate_research_record(record: dict, registry: dict, *, verify_captured_bo
         except (KeyError, TypeError, StopIteration) as exc:
             raise EvidenceError("Chinese positive generation has missing or malformed evidence fields") from exc
         target = record["original_language"]
-    sgf_literal = record.get("source_basis") == SGF_LITERAL_BASIS
+    sgf_literal = record.get("source_basis") in {SGF_LITERAL_BASIS, LINKED_SGF_LITERAL_BASIS}
     _require(not sgf_literal or owner["kind"] == "raw_event" and scope_status == "translated_from_original",
              "SGF literal evidence requires a translated existing raw event")
     _require(scope_status in SCOPE_STATUSES or positive, "invalid scope status")

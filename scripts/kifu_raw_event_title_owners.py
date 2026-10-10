@@ -16,7 +16,7 @@ from sqlalchemy import create_engine, select, text
 from katrain.core.sgf_parser import SGF
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumEventSelection, KifuNameBatch, KifuRawEventName, KifuRawEventValue,
+    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuNameBatch, KifuRawEventName, KifuRawEventValue,
 )
 from katrain.web.kifu.name_batch import (
     BatchError, _catalog_sha, _fail, _image, _insert, _locked_write, _record_change,
@@ -26,20 +26,22 @@ from katrain.web.kifu.name_candidates import CandidateError, _check_signature, c
 from katrain.web.kifu.name_evidence import registry_sha256
 from katrain.web.kifu.raw_event_translation import (
     SGF_CHINESE_MIXED_PROFILE, SGF_CHINESE_PROFILE, SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE,
-    SGF_LITERAL_BASIS,
+    SGF_LITERAL_BASIS, LINKED_SGF_LITERAL_BASIS, SGF_ENGLISH_LINKED_EVENT_PROFILE,
     sgf_title_ref_matches,
     validate_chinese_literal_parts, validate_chinese_mixed_literal_parts, validate_english_literal_parts,
+    validate_linked_english_literal_parts,
 )
 
 SGF_LITERAL_PROFILES = {SGF_CHINESE_PROFILE, SGF_CHINESE_MIXED_PROFILE,
-                        SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE}
+                        SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE, SGF_ENGLISH_LINKED_EVENT_PROFILE}
 
 
 def _validate_sgf_parts(profile, raw, parts):
     validator = {SGF_CHINESE_PROFILE: validate_chinese_literal_parts,
                  SGF_CHINESE_MIXED_PROFILE: validate_chinese_mixed_literal_parts,
                  SGF_ENGLISH_PROFILE: validate_english_literal_parts,
-                 SGF_ENGLISH_EVENT_PROFILE: validate_english_literal_parts}[profile]
+                 SGF_ENGLISH_EVENT_PROFILE: validate_english_literal_parts,
+                 SGF_ENGLISH_LINKED_EVENT_PROFILE: validate_linked_english_literal_parts}[profile]
     return validator(raw, parts)
 
 
@@ -81,7 +83,8 @@ PROFILE_LIMITS = {
 def _profile_limits(profile, manifest=None):
     if profile in SGF_LITERAL_PROFILES:
         _fail(isinstance(manifest, dict), "SGF literal profile requires its frozen manifest")
-        if profile in {SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE}:
+        if profile in {SGF_CHINESE_MIXED_PROFILE, SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE,
+                       SGF_ENGLISH_LINKED_EVENT_PROFILE}:
             _fail(manifest.get("profile") == profile, "SGF literal manifest profile differs")
         else:
             _fail(manifest.get("profile") in {None, SGF_CHINESE_PROFILE}, "SGF literal manifest profile differs")
@@ -93,11 +96,12 @@ def _profile_limits(profile, manifest=None):
         _fail(len(set(raws)) == len(raws) and manifest.get("raw_value_count") == len(raws)
               and manifest.get("raw_value_set_sha256") == canonical_sha256(raws),
               "SGF literal manifest raw count or set hash differs")
-        total = manifest.get("current_null_games")
+        total = manifest.get("game_total" if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE else "current_null_games")
         _fail(type(total) is int and total > 0, "fresh finite owner album total required")
         try:
             for raw in raws:
-                if profile not in {SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE}:
+                if profile not in {SGF_ENGLISH_PROFILE, SGF_ENGLISH_EVENT_PROFILE,
+                                   SGF_ENGLISH_LINKED_EVENT_PROFILE}:
                     _validate_sgf_parts(profile, raw, [{"kind": "core", "text": raw}])
         except ValueError as exc:
             raise BatchError(str(exc)) from exc
@@ -113,24 +117,32 @@ def _sgf_literal_marker(owner, profile):
         _validate_sgf_parts(profile, owner["raw_value"], parts)
     except (KeyError, TypeError, ValueError) as exc:
         raise BatchError("SGF literal owner has invalid existing parser parts") from exc
-    return {"source_basis": SGF_LITERAL_BASIS, "profile": profile,
+    return {"source_basis": LINKED_SGF_LITERAL_BASIS if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE
+            else SGF_LITERAL_BASIS, "profile": profile,
             "raw_parts_sha256": canonical_sha256(parts)}
 
 
-def _scope_rows(conn, raw):
+def _scope_rows(conn, raw, *, profile=None):
     # Native importers can omit the physical hidden/edition columns from their
     # older ORM; read the actual complete album rows before approving a scope.
     albums = conn.execute(text("SELECT * FROM kifu_albums WHERE event = :raw ORDER BY id"),
                           {"raw": raw}).mappings().all()
     _fail(bool(albums), f"no albums for raw event {raw}")
-    _fail(all(album["event_id"] is None and album["duplicate_of_id"] is None
-              and album["list_hidden_reason"] is None
-              for album in albums), f"raw event {raw} gained a link, duplicate, or hidden album")
+    linked = profile == SGF_ENGLISH_LINKED_EVENT_PROFILE
+    _fail(all((album["event_id"] is not None if linked else album["event_id"] is None)
+              and album["duplicate_of_id"] is None and album["list_hidden_reason"] is None
+              for album in albums), f"raw event {raw} has a wrong link, duplicate, or hidden album")
+    if linked:
+        event_ids = {album["event_id"] for album in albums}
+        _fail(len(event_ids) == 1 and conn.scalar(select(KifuEvent.id).where(KifuEvent.id == next(iter(event_ids)))) is not None,
+              "linked raw title needs one existing formal series")
     ids = [album["id"] for album in albums]
     selected = conn.scalar(select(KifuAlbumEventSelection.album_id).where(
         (KifuAlbumEventSelection.album_id.in_(ids)) | (KifuAlbumEventSelection.selected_raw == raw)).limit(1))
     _fail(selected is None, f"raw event {raw} gained a selected event scope")
     return [{"id": album["id"], "event": album["event"], "event_id": album["event_id"],
+             **({"event_edition_id": album["event_edition_id"], "duplicate_of_id": album["duplicate_of_id"],
+                 "list_hidden_reason": album["list_hidden_reason"], "selection": None} if linked else {}),
              "round_name": album["round_name"], "date_played": album["date_played"],
              "black_rank": album["black_rank"], "white_rank": album["white_rank"],
              "source_path": album["source_path"],
@@ -138,7 +150,7 @@ def _scope_rows(conn, raw):
             for album in albums]
 
 
-def _english_event_refs(conn, raw, scope):
+def _english_event_refs(conn, raw, scope, *, profile=SGF_ENGLISH_EVENT_PROFILE):
     """Recheck the complete physical EV/GN source under the owner transaction."""
     albums = conn.execute(text("SELECT id, source_path, sgf_content, event_edition_id, list_hidden_reason "
                                "FROM kifu_albums WHERE event = :raw ORDER BY id"), {"raw": raw}).mappings().all()
@@ -146,7 +158,8 @@ def _english_event_refs(conn, raw, scope):
           "English event title physical album scope changed")
     refs = []
     for album, row in zip(albums, scope):
-        _fail(album["event_edition_id"] is None and album["list_hidden_reason"] is None,
+        _fail((profile == SGF_ENGLISH_LINKED_EVENT_PROFILE or album["event_edition_id"] is None)
+              and album["list_hidden_reason"] is None,
               "English event title has linked or hidden album")
         content = album["sgf_content"]
         _fail(isinstance(content, str) and hashlib.sha256(content.encode("utf-8")).hexdigest() == row["sgf_sha256"],
@@ -159,10 +172,55 @@ def _english_event_refs(conn, raw, scope):
                    "ev_values": root.get_list_property("EV") or []}
         except Exception as exc:
             raise BatchError("English event title SGF root cannot be parsed") from exc
-        _fail(sgf_title_ref_matches(ref, raw, SGF_ENGLISH_EVENT_PROFILE),
+        _fail(sgf_title_ref_matches(ref, raw, profile),
               "English event title first EV/GN differs from raw")
         refs.append(ref)
     return refs
+
+
+def _linked_name_preimages(conn, owner_id):
+    ids = conn.scalars(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == owner_id)
+                       .order_by(KifuRawEventName.id)).all()
+    return [_image(conn, KifuRawEventName.__table__, row_id) for row_id in ids]
+
+
+def _check_linked_name_preimages(conn, owner_id, expected):
+    actual = _linked_name_preimages(conn, owner_id)
+    _fail(actual == expected and isinstance(expected, list) and len(expected) == 1,
+          "linked raw title existing name set changed")
+    row = actual[0]
+    _fail(row["lang"] == "cn" and row["status"] == "review"
+          and row["decision_kind"] == "direct_translation"
+          and row["evidence_id"] is None and row["revision"] is None,
+          "linked raw title needs exact legacy CN review preimage")
+    return actual
+
+
+def _check_reviewed_core_refs(record, owner, *, verify_files=True):
+    refs = record.get("reviewed_core_refs")
+    core = next((part.get("text") for part in owner["parsed_data"]["structure"]["parts"]
+                 if part.get("kind") == "core"), None)
+    _fail(isinstance(refs, list) and bool(refs) and core,
+          "linked title needs reviewed core references")
+    _fail({ref.get("lang") for ref in refs if isinstance(ref, dict)} >= {"cn", "tw", "jp", "ko", "en"},
+          "linked title core references must cover five languages")
+    for ref in refs:
+        _fail(isinstance(ref, dict) and ref.get("core") == core
+              and isinstance(ref.get("material_path"), str) and ref["material_path"]
+              and isinstance(ref.get("material_sha256"), str) and len(ref["material_sha256"]) == 64
+              and isinstance(ref.get("locator"), str) and ref["locator"]
+              and isinstance(ref.get("excerpt"), str) and ref["excerpt"]
+              and isinstance(ref.get("decision"), str) and ref["decision"],
+              "linked title core reference is incomplete")
+        if verify_files:
+            try:
+                material = Path(ref["material_path"]).read_bytes()
+                readable = material.decode("utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                raise BatchError("linked title core material is unavailable") from exc
+            _fail(hashlib.sha256(material).hexdigest() == ref["material_sha256"]
+                  and ref["excerpt"] in readable,
+                  "linked title core material bytes or excerpt changed")
 
 
 def prepare_plan(engine, manifest, environment, registry, *, producer_id, producer_model,
@@ -215,9 +273,14 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
             _fail(before == source_owner["preimage"] and before["raw_value"] == raw,
                   f"research owner preimage changed for {raw}")
             if profile in SGF_LITERAL_PROFILES:
-                _fail(before["category"] == "unclassified_pending" and before["review_status"] == "pending"
-                      and conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
-                      is None, "SGF literal owner must be pending, unclassified and unnamed")
+                _fail(before["category"] == "unclassified_pending" and before["review_status"] == "pending",
+                      "SGF literal owner must be pending and unclassified")
+                if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE:
+                    names = _check_linked_name_preimages(conn, before["id"], source_owner.get("name_preimages"))
+                    _check_reviewed_core_refs(record, before)
+                else:
+                    _fail(conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
+                          is None, "SGF literal owner must be unnamed")
             if profile == "team1":
                 _fail(raw == _TEAM_RAW and before["id"] == _TEAM_OWNER_ID,
                       "team profile requires the fixed existing raw owner")
@@ -226,26 +289,33 @@ def prepare_plan(engine, manifest, environment, registry, *, producer_id, produc
                 _fail(source_owner.get("album_scope_preimage") == scope,
                       "team complete album/source preimage differs from reviewed capture")
             else:
-                scope = _scope_rows(conn, raw)
+                scope = _scope_rows(conn, raw, profile=profile)
                 ids = [row["id"] for row in scope]
             _fail(ids == by_raw[raw]["album_ids"], f"research album scope changed for {raw}")
             if profile in SGF_LITERAL_PROFILES:
                 _fail(scope == by_raw[raw].get("scope_rows"), f"research complete scope changed for {raw}")
-                if profile == SGF_ENGLISH_EVENT_PROFILE:
-                    _fail(_english_event_refs(conn, raw, scope) == by_raw[raw].get("original_sgf_refs"),
+                if profile in {SGF_ENGLISH_EVENT_PROFILE, SGF_ENGLISH_LINKED_EVENT_PROFILE}:
+                    _fail(_english_event_refs(conn, raw, scope, profile=profile) == by_raw[raw].get("original_sgf_refs"),
                           "English event title captured GN/EV source changed")
             review = {**signature, "status": "approved", "version": OPERATION,
                       "raw_value": raw, "raw_event_id": before["id"],
                       "scope_sha256": canonical_sha256(scope),
                       "research_manifest_sha256": digest,
-                      "category_basis": "Readable literal raw event title; no event identity or link approved"}
+                      "category_basis": (
+                          "Literal SGF title for an existing formal event link; no relationship change approved"
+                          if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE else
+                          "Readable literal raw event title; no event identity or link approved")}
             if profile == "team1":
                 review["team_scope"] = team["review_scope"]
             if profile in SGF_LITERAL_PROFILES:
                 review["sgf_literal"] = _sgf_literal_marker(before, profile)
+                if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE:
+                    review["sgf_literal"]["reviewed_core_refs_sha256"] = canonical_sha256(record["reviewed_core_refs"])
+                    review["sgf_literal"]["legacy_name_preimages_sha256"] = canonical_sha256(names)
             after = {**before, "review_status": "approved", "review_metadata": review}
             plan["changes"].append({"before": before, "after": after,
-                                    "scope_rows": scope, "occurrence_album_ids": ids})
+                                    "scope_rows": scope, "occurrence_album_ids": ids,
+                                    **({"name_preimages": names} if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE else {})})
         return plan
 
 
@@ -293,15 +363,18 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
               "owner plan changes fields outside review approval")
         _fail(_image(conn, KifuRawEventValue.__table__, before["id"]) == before,
               "raw owner complete preimage changed")
-        _fail(conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
-              is None, "raw owner already has names")
+        if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE:
+            _check_linked_name_preimages(conn, before["id"], change.get("name_preimages"))
+        else:
+            _fail(conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == before["id"]).limit(1))
+                  is None, "raw owner already has names")
         if profile == "team1":
             _fail(before["id"] == _TEAM_OWNER_ID and before["raw_value"] == _TEAM_RAW,
                   "team profile owner differs")
             team = _team_raw_scope(conn)
             scope, ids = team["rows"], team["all_ids"]
         else:
-            scope = _scope_rows(conn, before["raw_value"])
+            scope = _scope_rows(conn, before["raw_value"], profile=profile)
             ids = [row["id"] for row in scope]
         _fail(scope == change["scope_rows"] and ids == change["occurrence_album_ids"],
               "raw event EV, SGF, rank, source link, or album scope changed")
@@ -311,8 +384,12 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
             _fail(source_owner["raw_event_id"] == before["id"] and source_owner["preimage"] == before
                   and member["album_ids"] == ids and member.get("scope_rows") == scope,
                   "SGF literal plan differs from frozen owner or complete member scope")
-            if profile == SGF_ENGLISH_EVENT_PROFILE:
-                _fail(_english_event_refs(conn, before["raw_value"], scope) == member.get("original_sgf_refs"),
+            if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE:
+                _fail(change.get("name_preimages") == source_owner.get("name_preimages"),
+                      "linked raw title names differ from frozen capture")
+                _check_reviewed_core_refs(source_records[before["raw_value"]], before, verify_files=False)
+            if profile in {SGF_ENGLISH_EVENT_PROFILE, SGF_ENGLISH_LINKED_EVENT_PROFILE}:
+                _fail(_english_event_refs(conn, before["raw_value"], scope, profile=profile) == member.get("original_sgf_refs"),
                       "English event title captured GN/EV source changed")
         review = after["review_metadata"]
         _fail(isinstance(review, dict) and review.get("status") == review.get("review_status") == "approved"
@@ -328,7 +405,11 @@ def inspect_plan(conn, plan, registry, expected_manifest_sha256, *, profile="fir
             _fail(review.get("team_scope") == team["review_scope"],
                   "team fixed eligible/linked partition differs from signed review")
         if profile in SGF_LITERAL_PROFILES:
-            _fail(review.get("sgf_literal") == _sgf_literal_marker(before, profile), "SGF literal approved parser parts differ")
+            marker = _sgf_literal_marker(before, profile)
+            if profile == SGF_ENGLISH_LINKED_EVENT_PROFILE:
+                marker["reviewed_core_refs_sha256"] = canonical_sha256(source_records[before["raw_value"]]["reviewed_core_refs"])
+                marker["legacy_name_preimages_sha256"] = canonical_sha256(change["name_preimages"])
+            _fail(review.get("sgf_literal") == marker, "SGF literal approved parser parts differ")
         count += len(scope)
         if profile == "first24":
             group_counts[0 if before["raw_value"] in RAW_VALUES[:7] else 1] += len(scope)

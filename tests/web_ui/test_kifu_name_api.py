@@ -29,6 +29,7 @@ from katrain.web.core.models_db import (
     KifuEventSelectionBatch,
 )
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
+from tests.web_ui.test_kifu_name_batch import engine  # noqa: F401
 from katrain.web.kifu.provenance import sgf_sha256
 
 
@@ -76,6 +77,23 @@ def _list(db, q=None, lang="cn"):
 def _preserve_stored_locale(monkeypatch):
     """Exercise historical 11-language approval rules below the new UI fallback."""
     monkeypatch.setattr(kifu, "name_display_language", lambda lang: lang)
+
+
+def test_linked_sgf_exact_title_list_detail_and_search(monkeypatch, engine):
+    from katrain.web.kifu.name_batch import apply_bundle
+    from tests.web_ui.test_kifu_name_candidates import registry
+    from tests.web_ui.test_kifu_raw_event_title_translation import linked_reviewed_bundle
+
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+    proposed, inv, research = linked_reviewed_bundle(
+        engine, raw="28th Honinbo", lang="cn", display="第28届本因坊战")
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with sessionmaker(bind=engine)() as db:
+        page = _list(db, "第28届本因坊战", "cn")
+        assert page.total == 1 and [item.id for item in page.items] == [11]
+        assert page.items[0].display_event == "第28届本因坊战"
+        detail = asyncio.run(kifu.get_kifu_album(_request(), 11, lang="cn", db=db))
+        assert detail.display_event == "第28届本因坊战"
 
 
 def test_nonprimary_ui_language_displays_english_kifu_names(monkeypatch):

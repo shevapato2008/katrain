@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventAlias, KifuEventName, KifuEventSelectionBatch,
+    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventEdition, KifuEventAlias, KifuEventName, KifuEventSelectionBatch,
     KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayer, KifuPlayerName,
     KifuRawEventName, KifuRawEventValue, KifuRawPlayerName, KifuRawPlayerValue,
 )
@@ -916,6 +916,84 @@ def test_sgf_english_event_research_accepts_ev_and_mixed_gn_scope():
     assert validate_research_record(research, registry())["raw_value"] == research["raw_value"]
 
 
+def linked_sgf_research(raw="28th Honinbo", lang="en"):
+    _, research, _ = english_sgf_literal(raw)
+    research.update(source_basis="linked_sgf_literal_v1", original_language="en",
+                    original_language_basis="reviewed_sgf_event_title",
+                    game_total=1, album_ids=[11], lang=lang,
+                    legacy_name_preimages=[{"id": 99, "raw_event_id": 8, "lang": "cn",
+                                            "display_name": "旧译", "status": "review",
+                                            "decision_kind": "direct_translation", "revision": None,
+                                            "evidence_id": None, "created_at": "2026-10-02T00:00:00Z"}],
+                    reviewed_core_refs=[{"material_path": "reviewed/honinbo.txt", "material_sha256": "a" * 64,
+                                         "locator": "Honinbo core", "core": research["original_name"],
+                                         "lang": lang, "excerpt": research["original_name"],
+                                         "decision": "Reviewed core translation"}])
+    research["sgf_literal_evidence"]["owner_profile"] = "sgf_english_linked_event"
+    scope = research["sgf_literal_evidence"]["scope_rows"]
+    scope[0].update(event_id=301, event_edition_id=None, duplicate_of_id=None,
+                    list_hidden_reason=None, selection=None)
+    research["sgf_literal_evidence"]["scope_sha256"] = canonical_sha256(scope)
+    research["original_sgf_refs"][0].update(gn_values=["Game one"], ev_values=[raw])
+    return research
+
+
+@pytest.mark.parametrize("raw", ("Oteai", "Oteai 1973", "28th Honinbo", "14th Judan"))
+def test_linked_sgf_research_accepts_actual_parts_and_core_material(raw):
+    research = linked_sgf_research(raw)
+    assert validate_research_record(research, registry())["raw_value"] == raw
+
+
+@pytest.mark.parametrize("raw,parts", (
+    ("Honinbo 1973", [{"kind": "core", "text": "Honinbo 1973"}]),
+    ("Honinbo 28th", [{"kind": "core", "text": "Honinbo 28th"}]),
+    ("28th Honinbo 1973", [{"kind": "edition", "text": "28th "},
+                            {"kind": "core", "text": "Honinbo 1973"}]),
+    ("28th Honinbo 29th", [{"kind": "edition", "text": "28th "},
+                            {"kind": "core", "text": "Honinbo 29th"}]),
+))
+def test_linked_sgf_parts_reject_residual_year_or_ordinal_in_core(raw, parts):
+    from katrain.web.kifu.raw_event_translation import validate_linked_english_literal_parts
+    with pytest.raises(ValueError):
+        validate_linked_english_literal_parts(raw, parts)
+
+
+@pytest.mark.parametrize("damage", ("wrong_profile", "missing_core", "changed_year", "unparsed_year", "scope_extra",
+                                     "mixed_series", "hidden", "duplicate", "selection", "wrong_ev"))
+def test_linked_sgf_research_rejects_unreviewed_or_drifting_scope(damage):
+    research = linked_sgf_research("Oteai 1973")
+    scope = research["sgf_literal_evidence"]["scope_rows"]
+    if damage == "wrong_profile":
+        research["sgf_literal_evidence"]["owner_profile"] = "sgf_english_event"
+    elif damage == "missing_core":
+        research["reviewed_core_refs"] = []
+    elif damage == "changed_year":
+        research["raw_parts"][1]["text"] = " 1974"
+    elif damage == "unparsed_year":
+        research["raw_parts"] = [{"kind": "core", "text": "Oteai 1973"}]
+        research["original_name"] = "Oteai 1973"
+        research["reviewed_core_refs"][0]["core"] = "Oteai 1973"
+        research["sgf_literal_evidence"]["raw_parts_sha256"] = canonical_sha256(research["raw_parts"])
+    elif damage == "scope_extra":
+        scope.append({**scope[0], "id": 12})
+    elif damage == "mixed_series":
+        scope.append({**scope[0], "id": 12, "event_id": 302})
+        research["album_ids"] = [11, 12]
+        research["game_total"] = 2
+        research["original_sgf_refs"].append({**research["original_sgf_refs"][0], "album_id": 12})
+    elif damage == "hidden":
+        scope[0]["list_hidden_reason"] = "excluded"
+    elif damage == "duplicate":
+        scope[0]["duplicate_of_id"] = 1
+    elif damage == "selection":
+        scope[0]["selection"] = {"album_id": 11}
+    else:
+        research["original_sgf_refs"][0]["ev_values"] = ["Wrong title"]
+    research["sgf_literal_evidence"]["scope_sha256"] = canonical_sha256(scope)
+    with pytest.raises(EvidenceError):
+        validate_research_record(research, registry())
+
+
 @pytest.mark.parametrize("damage", ("wrong_ev", "later_ev", "wrong_gn", "wrong_basis", "old_profile"))
 def test_sgf_english_event_rejects_wrong_source_field(damage):
     _, research, _ = english_sgf_literal("1st Tokyo Shinbun Cup")
@@ -1070,6 +1148,250 @@ def bulk_reviewed_bundle(engine, raw=BULK_PARTS[0][0], parts=None, profile="sgf_
     declaration = {"owner": row["owner"], "preimage": before, "occurrence_album_ids": [11],
                    "occurrence_sha256": canonical_sha256([11])}
     return _v2_wrap(engine, inv, proposed, [declaration], []), inv, [research]
+
+
+def linked_reviewed_bundle(engine, raw="28th Honinbo", lang="en", display="28th Honinbo"):
+    from katrain.web.kifu.name_structure import structure_event
+    from scripts.kifu_raw_event_title_owners import _english_event_refs, _scope_rows
+    from katrain.web.kifu.name_batch import name_preimage_sha256
+
+    structure = structure_event(raw)
+    parts = [{"kind": part["kind"], "text": part["text"]} for part in structure["parts"]]
+    proposed, _, research_records = bulk_reviewed_bundle(
+        engine, raw, parts, profile="sgf_english_event", structure=structure)
+    research = research_records[0]
+    candidate = proposed["candidates"][0]
+    refs = [linked_sgf_research(raw, language)["reviewed_core_refs"][0]
+            for language in ("cn", "tw", "jp", "ko", "en")]
+    event_id = 19
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=event_id, canonical_name=research["original_name"]))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(
+            event_id=event_id, sgf_content=f"(;GN[Game one]EV[{raw}])"))
+        conn.execute(KifuRawEventName.__table__.insert().values(
+            raw_event_id=8, lang="cn", display_name="旧中文译名", status="review",
+            decision_kind="direct_translation"))
+        cn_id = conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == 8))
+        old_names = [_image(conn, KifuRawEventName.__table__, cn_id)]
+        scope = _scope_rows(conn, raw, profile="sgf_english_linked_event")
+        sgf_refs = _english_event_refs(conn, raw, scope, profile="sgf_english_linked_event")
+        review = owner_review(8, raw)
+        review["scope_sha256"] = canonical_sha256(scope)
+        review["sgf_literal"] = {"source_basis": "linked_sgf_literal_v1", "profile": "sgf_english_linked_event",
+                                 "raw_parts_sha256": canonical_sha256(parts),
+                                 "reviewed_core_refs_sha256": canonical_sha256(refs),
+                                 "legacy_name_preimages_sha256": canonical_sha256(old_names)}
+        conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == 8).values(
+            review_metadata=review))
+        before = _image(conn, KifuRawEventValue.__table__, 8)
+    research.update(source_basis="linked_sgf_literal_v1", original_language="en",
+                    original_language_basis="reviewed_sgf_event_title", lang=lang, candidate_name=display,
+                    reviewed_core_refs=refs, game_total=1, album_ids=[11],
+                    original_sgf_refs=sgf_refs, legacy_name_preimages=old_names)
+    research["sgf_literal_evidence"].update(owner_profile="sgf_english_linked_event", scope_rows=scope,
+                                            scope_sha256=canonical_sha256(scope))
+    candidate.update(lang=lang, display_name=display, research_sha256=canonical_sha256(research),
+                     name_preimage_sha256=name_preimage_sha256(engine, {"kind": "raw_event", "id": 8}, lang))
+    candidate.pop("preimage_binding", None)
+    bind_fixture_candidate(candidate)
+    proposed["members"] = [{"owner": candidate["owner"], "lang": lang, "raw_value": raw}]
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    proposed["candidates"] = [candidate]
+    inv = build_inventory(engine, inventory_format=4)
+    proposed["inventory_sha256"] = inv["sha256"]
+    declaration = {"owner": candidate["owner"], "preimage": before, "occurrence_album_ids": [11],
+                   "occurrence_sha256": canonical_sha256([11])}
+    return _v2_wrap(engine, inv, proposed, [declaration], []), inv, [research]
+
+
+def test_linked_sgf_name_apply_reader_search_and_undo(engine):
+    proposed, inv, research = linked_reviewed_bundle(engine)
+    assert dry_run_bundle(engine, proposed, registry(), inv, research)["approved"] == 1
+    applied = apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1][(11, "28th Honinbo", 19)] == "28th Honinbo"
+        assert strict_display_maps(db, [album], "cn")[-1] == {}
+        name = db.scalar(select(KifuRawEventName).where(KifuRawEventName.lang == "en"))
+        assert list(db.scalars(select(KifuAlbum.id).where(strict_raw_event_search_clause(db, {name.id})))) == [11]
+        assert album.event_id == 19 and album.sgf_content == "(;GN[Game one]EV[28th Honinbo])"
+    undo_batch(engine, applied["batch_id"])
+    with Session(engine) as db:
+        assert db.scalar(select(KifuRawEventName.display_name).where(KifuRawEventName.lang == "cn")) == "旧中文译名"
+
+
+def test_linked_sgf_five_names_upgrade_exact_cn_and_keep_album_unchanged(engine):
+    from katrain.web.kifu.name_batch import name_preimage_sha256
+
+    displays = {"cn": "第28届本因坊战", "tw": "第28屆本因坊戰", "jp": "第28期本因坊戦",
+                "ko": "제28기 혼인보전", "en": "28th Honinbo"}
+    proposed, inv, records = linked_reviewed_bundle(engine)
+    base_candidate, base_research = proposed["candidates"][0], records[0]
+    with engine.connect() as conn:
+        old_cn = conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.lang == "cn"))
+        old_cn_image = _image(conn, KifuRawEventName.__table__, old_cn)
+        old_album = _image(conn, KifuAlbum.__table__, 11)
+    for lang, display in displays.items():
+        if lang == "en":
+            continue
+        research = deepcopy(base_research)
+        research.update(lang=lang, candidate_name=display)
+        row = deepcopy(base_candidate)
+        row.update(lang=lang, display_name=display, research_sha256=canonical_sha256(research),
+                   name_preimage_sha256=name_preimage_sha256(engine, row["owner"], lang))
+        bind_fixture_candidate(row)
+        records.append(research)
+        proposed["candidates"].append(row)
+        proposed["members"].append({"owner": row["owner"], "lang": lang, "raw_value": row["raw_value"]})
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    proposed = _v2_wrap(engine, inv, proposed, proposed["owners"], [])
+    assert dry_run_bundle(engine, proposed, registry(), inv, records)["approved"] == 5
+    applied = apply_bundle(engine, proposed, registry(), inv, records)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        for lang, display in displays.items():
+            assert strict_display_maps(db, [album], lang)[-1][(11, "28th Honinbo", 19)] == display
+        assert db.scalar(select(KifuRawEventName.id).where(KifuRawEventName.lang == "cn")) == old_cn
+        with engine.connect() as conn:
+            assert _image(conn, KifuAlbum.__table__, 11) == old_album
+    assert apply_bundle(engine, proposed, registry(), inv, records)["status"] == "already_applied"
+    undo_batch(engine, applied["batch_id"])
+    with engine.connect() as conn:
+        assert _image(conn, KifuRawEventName.__table__, old_cn) == old_cn_image
+
+
+def test_linked_sgf_reader_keeps_proof_to_frozen_live_member(engine):
+    from katrain.web.kifu.identity import strict_slot_approvals
+
+    proposed, inv, research = linked_reviewed_bundle(engine, raw="Oteai 1973", display="Oteai 1973")
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        name = db.scalar(select(KifuRawEventName).where(KifuRawEventName.lang == "en"))
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1][(11, "Oteai 1973", 19)] == "Oteai 1973"
+        assert strict_slot_approvals(db, [album], "en")[11][2] == ("translated", name.evidence_id)
+        old_orm_album = SimpleNamespace(id=11, event="Oteai 1973", event_id=19,
+                                        player_black="A", player_white="B",
+                                        black_player_id=None, white_player_id=None,
+                                        duplicate_of_id=None)
+        assert strict_display_maps(db, [old_orm_album], "en")[-1][(11, "Oteai 1973", 19)] == "Oteai 1973"
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=12, player_black="A", player_white="B", event="Oteai 1973", event_id=19,
+            sgf_content="(;EV[Oteai 1973])", source_path="extra-linked.sgf"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=13, player_black="A", player_white="B", event="Oteai 1973",
+            sgf_content="(;EV[Oteai 1973])", source_path="extra-unlinked.sgf"))
+    with Session(engine) as db:
+        albums = [db.get(KifuAlbum, album_id) for album_id in (11, 12, 13)]
+        from sqlalchemy import event as sqlalchemy_event
+        sql = []
+        def capture(_connection, _cursor, statement, _parameters, _context, _executemany):
+            sql.append(statement)
+        sqlalchemy_event.listen(engine, "before_cursor_execute", capture)
+        try:
+            assert strict_display_maps(db, albums, "en")[-1] == {(11, "Oteai 1973", 19): "Oteai 1973"}
+        finally:
+            sqlalchemy_event.remove(engine, "before_cursor_execute", capture)
+        assert sum("SELECT id, event, event_id, event_edition_id" in statement for statement in sql) == 1
+        assert reviewed_raw_event_hints(db, albums, "en") == {}
+        assert list(db.scalars(select(KifuAlbum.id).where(strict_raw_event_search_clause(db, {name.id})))) == [11]
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(source_path="drifted.sgf"))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1] == {}
+        assert strict_slot_approvals(db, [album], "en")[11][2] is None
+        assert list(db.scalars(select(KifuAlbum.id).where(strict_raw_event_search_clause(db, {name.id})))) == []
+
+
+@pytest.mark.parametrize("drift", ("cn", "sgf", "source", "event", "edition", "hidden"))
+def test_linked_sgf_apply_rejects_changed_name_or_physical_scope_before_writes(engine, drift):
+    proposed, inv, research = linked_reviewed_bundle(engine)
+    with engine.begin() as conn:
+        if drift == "cn":
+            conn.execute(KifuRawEventName.__table__.update().where(KifuRawEventName.lang == "cn").values(
+                display_name="更改的旧译"))
+        else:
+            if drift == "edition":
+                conn.execute(KifuEventEdition.__table__.insert().values(id=99, event_id=19, edition_number=28))
+            changes = {"sgf": {"sgf_content": "(;EV[Wrong])"},
+                       "source": {"source_path": "changed.sgf"},
+                       "event": {"event_id": None},
+                       "edition": {"event_edition_id": 99},
+                       "hidden": {"list_hidden_reason": "excluded"}}[drift]
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 11).values(**changes))
+    with pytest.raises(BatchError):
+        apply_bundle(engine, proposed, registry(), inv, research)
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuRawEventName.id).where(KifuRawEventName.lang == "en")) is None
+        assert conn.scalar(select(KifuNameBatch.id).limit(1)) is None
+
+
+def test_linked_sgf_reader_revoked_evidence_loses_exact_title(engine):
+    proposed, inv, research = linked_reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1]
+    with engine.begin() as conn:
+        conn.execute(KifuNameResearchEvidence.__table__.update().values(review_status="rejected"))
+    with Session(engine) as db:
+        album = db.get(KifuAlbum, 11)
+        assert strict_display_maps(db, [album], "en")[-1] == {}
+
+
+def test_linked_sgf_existing_name_allows_only_its_formal_series_collision(engine):
+    from katrain.web.kifu.name_batch import _check_cross_bundle_collisions
+
+    proposed, inv, research = linked_reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=20, canonical_name="Other series"))
+    incoming = {"owner": {"kind": "event", "id": 19}, "lang": "en", "display_name": "28th Honinbo",
+                "decision_kind": "conventional", "generation_rule_version": "test-v1", "review_status": "approved"}
+    with engine.connect() as conn:
+        _check_cross_bundle_collisions(conn, [incoming])
+        with pytest.raises(BatchError, match="collision"):
+            _check_cross_bundle_collisions(conn, [{**incoming, "owner": {"kind": "event", "id": 20}}])
+
+
+def test_linked_sgf_exact_search_merges_only_same_formal_owner(engine):
+    from katrain.web.core.models_db import KifuNameSourceRegistry
+
+    proposed, inv, research = linked_reviewed_bundle(engine)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    with Session(engine) as db:
+        source_id = db.scalar(select(KifuNameSourceRegistry.id))
+        evidence = KifuNameResearchEvidence(
+            event_id=19, lang="en", revision=1, source_registry_id=source_id,
+            candidate_name="28th Honinbo", decision_kind="conventional", generation_rule_version="test-v1",
+            research_payload={}, producer_id="producer", producer_model="test",
+            reviewer_id="reviewer", reviewer_model="test", reviewed_at=datetime.now(timezone.utc),
+            review_status="approved")
+        db.add(evidence)
+        db.flush()
+        db.add(KifuEventName(event_id=19, lang="en", display_name="28th Honinbo", status="verified",
+                             decision_kind="conventional", generation_rule_version="test-v1",
+                             revision=1, evidence_id=evidence.id))
+        db.commit()
+        raw_id = db.scalar(select(KifuRawEventName.id).where(KifuRawEventName.lang == "en"))
+        assert strict_matching_names(db, "28th Honinbo") == (set(), {19}, set(), {raw_id})
+        db.add(KifuEvent(id=20, canonical_name="Other series"))
+        db.flush()
+        second = KifuNameResearchEvidence(
+            event_id=20, lang="en", revision=1, source_registry_id=source_id,
+            candidate_name="28th Honinbo", decision_kind="conventional", generation_rule_version="test-v1",
+            research_payload={}, producer_id="producer", producer_model="test",
+            reviewer_id="reviewer", reviewer_model="test", reviewed_at=datetime.now(timezone.utc),
+            review_status="approved")
+        db.add(second)
+        db.flush()
+        db.add(KifuEventName(event_id=20, lang="en", display_name="28th Honinbo", status="verified",
+                             decision_kind="conventional", generation_rule_version="test-v1",
+                             revision=1, evidence_id=second.id))
+        db.commit()
+        assert strict_matching_names(db, "28th Honinbo") == (set(), set(), set(), set())
 
 
 @pytest.mark.parametrize("raw", MIXED_GAME_ROUND_RAWS)

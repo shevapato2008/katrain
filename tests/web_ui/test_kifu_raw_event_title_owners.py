@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from katrain.web.core.models_db import KifuAlbum, KifuRawEventName, KifuRawEventValue
-from katrain.web.core.models_db import KifuAlbumSource, KifuEvent, KifuSource
+from katrain.web.core.models_db import KifuAlbumSource, KifuEvent, KifuEventEdition, KifuSource
 from katrain.web.kifu.name_batch import BatchError, _image, undo_batch
 from katrain.web.kifu.name_batch import _affected_albums, _check_raw_owner, _team_raw_scope
 from katrain.web.kifu.name_candidates import canonical_sha256
@@ -705,3 +705,124 @@ def test_sgf_english_owner_rejects_manifest_or_parser_drift(engine, damage):
         plan["changes"][0]["before"]["parsed_data"]["structure"]["parts"][0]["text"] = "Different core"
     with engine.connect() as conn, pytest.raises(BatchError):
         inspect_plan(conn, plan, registry(), canonical_sha256(manifest), profile="sgf_english", manifest=manifest)
+
+
+LINKED_RAWS = ("Oteai", "Oteai 1973", "28th Honinbo", "14th Judan")
+
+
+def linked_sgf_manifest_fixture(engine, raws=LINKED_RAWS):
+    import hashlib
+    from pathlib import Path
+    from katrain.web.kifu.name_structure import structure_event
+    from scripts.kifu_raw_event_title_owners import _english_event_refs, _scope_rows
+
+    manifest = finite_fixture(engine, raws, (1,) * len(raws))
+    manifest.update(profile="sgf_english_linked_event", raw_value_count=len(raws),
+                    raw_value_set_sha256=canonical_sha256(sorted(raws)), game_total=len(raws))
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=301, canonical_name="Oteai"))
+        conn.execute(KifuEvent.__table__.insert().values(id=302, canonical_name="Honinbo"))
+        conn.execute(KifuEvent.__table__.insert().values(id=303, canonical_name="Judan"))
+        for record, member in zip(manifest["records"], manifest["member_manifest"]["TEST"]["members"]):
+            raw = record["raw_value"]
+            owner = record["owners"]["TEST"]
+            event_id = 301 if raw.startswith("Oteai") else 302 if "Honinbo" in raw else 303
+            conn.execute(KifuRawEventValue.__table__.update().where(KifuRawEventValue.id == owner["raw_event_id"]).values(
+                parsed_data={"structure": structure_event(raw)}))
+            conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == member["album_ids"][0]).values(
+                event_id=event_id, sgf_content=f"(;GN[Game one]EV[{raw}])"))
+            conn.execute(KifuRawEventName.__table__.insert().values(
+                raw_event_id=owner["raw_event_id"], lang="cn", display_name=f"旧译：{raw}",
+                status="review", decision_kind="direct_translation"))
+            owner["preimage"] = _image(conn, KifuRawEventValue.__table__, owner["raw_event_id"])
+            owner["name_preimages"] = [_image(conn, KifuRawEventName.__table__, conn.scalar(
+                select(KifuRawEventName.id).where(KifuRawEventName.raw_event_id == owner["raw_event_id"]))) ]
+            material = Path(__file__)
+            record["reviewed_core_refs"] = [
+                {"material_path": str(material), "material_sha256": hashlib.sha256(material.read_bytes()).hexdigest(),
+                 "locator": "LINKED_RAWS fixture", "core": next(part["text"] for part in
+                 structure_event(raw)["parts"] if part["kind"] == "core"), "lang": lang,
+                 "excerpt": raw, "decision": "Fixture core review"}
+                for lang in ("cn", "tw", "jp", "ko", "en")]
+            member["scope_rows"] = _scope_rows(conn, raw, profile="sgf_english_linked_event")
+            member["original_sgf_refs"] = _english_event_refs(
+                conn, raw, member["scope_rows"], profile="sgf_english_linked_event")
+    return manifest
+
+
+@pytest.mark.parametrize("raw", LINKED_RAWS)
+def test_linked_sgf_owner_preserves_exact_existing_cn_and_physical_scope(engine, raw):
+    manifest = linked_sgf_manifest_fixture(engine, (raw,))
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed linked literal title and exact old CN name"}
+    with pytest.raises(BatchError):
+        prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_event", **kwargs)
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_linked_event", **kwargs)
+    change = plan["changes"][0]
+    assert change["name_preimages"] == manifest["records"][0]["owners"]["TEST"]["name_preimages"]
+    assert change["scope_rows"][0]["event_id"] is not None
+    assert change["scope_rows"][0]["event_edition_id"] is None
+    assert change["after"]["review_metadata"]["sgf_literal"]["source_basis"] == "linked_sgf_literal_v1"
+    digest = canonical_sha256(manifest)
+    with engine.connect() as conn:
+        assert inspect_plan(conn, plan, registry(), digest, profile="sgf_english_linked_event", manifest=manifest)["albums"] == 1
+
+
+def test_linked_sgf_owner_rejects_missing_or_changed_core_material(engine):
+    manifest = linked_sgf_manifest_fixture(engine, ("Oteai",))
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact linked scope"}
+    for damage in ("missing", "wrong_hash"):
+        bad = deepcopy(manifest)
+        if damage == "missing":
+            bad["records"][0]["reviewed_core_refs"] = []
+        else:
+            bad["records"][0]["reviewed_core_refs"][0]["material_sha256"] = "0" * 64
+        with pytest.raises(BatchError):
+            prepare_plan(engine, bad, "TEST", registry(), profile="sgf_english_linked_event", **kwargs)
+
+
+def test_linked_sgf_owner_retains_valid_existing_edition_fk(engine):
+    from scripts.kifu_raw_event_title_owners import _scope_rows
+
+    manifest = linked_sgf_manifest_fixture(engine, ("28th Honinbo",))
+    with engine.begin() as conn:
+        conn.execute(KifuEventEdition.__table__.insert().values(id=401, event_id=302, edition_number=28))
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(event_edition_id=401))
+        manifest["member_manifest"]["TEST"]["members"][0]["scope_rows"] = _scope_rows(
+            conn, "28th Honinbo", profile="sgf_english_linked_event")
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed linked title and existing edition FK"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_linked_event", **kwargs)
+    assert plan["changes"][0]["scope_rows"][0]["event_edition_id"] == 401
+    apply_plan(engine, plan, registry(), canonical_sha256(manifest), canonical_sha256(plan),
+               profile="sgf_english_linked_event", manifest=manifest)
+    with engine.connect() as conn:
+        assert conn.scalar(select(KifuAlbum.event_edition_id).where(KifuAlbum.id == 2000)) == 401
+
+
+def test_linked_sgf_batch_guard_rechecks_sgf_and_fk_under_current_scope(engine):
+    from katrain.web.kifu.raw_event_translation import VERSION
+
+    manifest = linked_sgf_manifest_fixture(engine, ("28th Honinbo",))
+    kwargs = {"producer_id": "producer-1", "producer_model": "gpt-6-sol",
+              "reviewer_id": "reviewer-2", "reviewer_model": "gpt-6-astra",
+              "review_conclusion": "Reviewed exact linked scope"}
+    plan = prepare_plan(engine, manifest, "TEST", registry(), profile="sgf_english_linked_event", **kwargs)
+    apply_plan(engine, plan, registry(), canonical_sha256(manifest), canonical_sha256(plan),
+               profile="sgf_english_linked_event", manifest=manifest)
+    row = {"owner": {"kind": "raw_event", "id": 200}, "raw_value": "28th Honinbo",
+           "decision_kind": "translated", "generation_rule_version": VERSION}
+    research = {"source_basis": "linked_sgf_literal_v1", "sgf_literal_evidence": {
+        "scope_rows": manifest["member_manifest"]["TEST"]["members"][0]["scope_rows"]},
+        "legacy_name_preimages": manifest["records"][0]["owners"]["TEST"]["name_preimages"],
+        "original_sgf_refs": manifest["member_manifest"]["TEST"]["members"][0]["original_sgf_refs"]}
+    with engine.connect() as conn:
+        _check_raw_owner(conn, row, research=research)
+    with engine.begin() as conn:
+        conn.execute(KifuAlbum.__table__.update().where(KifuAlbum.id == 2000).values(sgf_content="(;EV[Other])"))
+    with engine.connect() as conn, pytest.raises(BatchError):
+        _check_raw_owner(conn, row, research=research)

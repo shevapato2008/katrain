@@ -587,7 +587,7 @@ def _validate_candidate(
         checked = _research_for(row, research, registry)
         if row["review_status"] == "approved":
             captures = []
-            if checked.get("source_basis") == SGF_LITERAL_BASIS:
+            if checked.get("source_basis") in {SGF_LITERAL_BASIS, "linked_sgf_literal_v1"}:
                 captures.append(checked["sgf_literal_evidence"]["captured_at"])
                 captures.extend(page["fetched_at"] for page in checked.get("translation_support", []))
             for source_check in checked["source_checks"]:
@@ -607,7 +607,7 @@ def _validate_candidate(
                      "translated event name needs its explicit title translation method and rule")
             if row["owner"]["kind"] == "raw_event":
                 _require(row["raw_value"] == checked["raw_value"], "translated raw event spelling differs from research")
-                if checked.get("source_basis") == SGF_LITERAL_BASIS:
+                if checked.get("source_basis") in {SGF_LITERAL_BASIS, "linked_sgf_literal_v1"}:
                     literal = checked["sgf_literal_evidence"]
                     _require(sgf_literal_owner_matches(checked, pinned, check_parser=True)
                              and [item["id"] for item in literal["scope_rows"]] == declaration["occurrence_album_ids"],

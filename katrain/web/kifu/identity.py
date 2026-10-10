@@ -5,7 +5,7 @@ import os
 import unicodedata
 from copy import deepcopy
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, bindparam, func, or_, text
 from sqlalchemy.orm import Session
 
 from katrain.core.sgf_parser import SGF
@@ -398,7 +398,7 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
         canonical_sha256, validate_archive_description_scope, validate_archive_description_candidate,
     )
     from katrain.web.kifu.name_composition import COMPOSITION_VERSION, HONINBO_EDITION, base_candidate_sha256
-    from katrain.web.kifu.raw_event_translation import eligible_literal_raw_name
+    from katrain.web.kifu.raw_event_translation import eligible_literal_raw_name, LINKED_SGF_LITERAL_BASIS
 
     query = (
         _approved_names(db, KifuRawEventName, "raw_event_id", lang=lang)
@@ -441,8 +441,12 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     result = []
     for name, raw, evidence, raw_owner in rows:
         if name.decision_kind == "translated":
-            if eligible_literal_raw_name(vars(name), vars(evidence), vars(raw_owner)):
-                result.append((name, raw, None))
+            payload = evidence.research_payload
+            research = payload.get("research") if isinstance(payload, dict) else None
+            linked = isinstance(research, dict) and research.get("source_basis") == LINKED_SGF_LITERAL_BASIS
+            if eligible_literal_raw_name(vars(name), vars(evidence), vars(raw_owner), allow_linked=linked):
+                result.append((name, raw, {"linked_literal": research["sgf_literal_evidence"]["scope_rows"]}
+                               if linked else None))
             continue
         if (raw_owner.category == ARCHIVE_DESCRIPTION_CATEGORY
                 or raw_owner.parser_version == ARCHIVE_DESCRIPTION_VERSION) and name.decision_kind != "archive_description":
@@ -554,11 +558,51 @@ def _approved_raw_event_names(db: Session, *, values=None, lang=None, display=No
     return result
 
 
-def _raw_event_map(rows, albums, selected_events, *, approvals=False, selected_ids=frozenset()):
+def _linked_live_members(db, rows, *, candidate_ids=None):
+    """Read only frozen candidate IDs, with physical columns absent from older ORM models."""
+    frozen = {}
+    for _name, raw, proof in rows:
+        if isinstance(proof, dict) and "linked_literal" in proof:
+            for row in proof["linked_literal"]:
+                if candidate_ids is None or row["id"] in candidate_ids:
+                    frozen[(row["id"], raw)] = row
+    ids = sorted({album_id for album_id, _ in frozen})
+    if not ids:
+        return set()
+    current = {row["id"]: row for row in db.execute(text(
+        "SELECT id, event, event_id, event_edition_id, duplicate_of_id, list_hidden_reason, "
+        "source_path, sgf_content FROM kifu_albums WHERE id IN :ids"
+    ).bindparams(bindparam("ids", expanding=True)), {"ids": ids}).mappings()}
+    selected = set(db.execute(text(
+        "SELECT album_id FROM kifu_album_event_selections WHERE album_id IN :ids"
+    ).bindparams(bindparam("ids", expanding=True)), {"ids": ids}).scalars())
+    result = set()
+    for (album_id, raw), scope in frozen.items():
+        live = current.get(album_id)
+        if (live is not None and album_id not in selected and live["event"] == raw
+                and live["event_id"] == scope["event_id"]
+                and live["event_edition_id"] == scope["event_edition_id"]
+                and live["duplicate_of_id"] == scope["duplicate_of_id"] is None
+                and live["list_hidden_reason"] == scope["list_hidden_reason"] is None
+                and live["source_path"] == scope["source_path"]
+                and isinstance(live["sgf_content"], str)
+                and hashlib.sha256(live["sgf_content"].encode("utf-8")).hexdigest() == scope["sgf_sha256"]):
+            result.add((album_id, raw, live["event_id"]))
+    return result
+
+
+def _raw_event_map(rows, albums, selected_events, *, approvals=False, selected_ids=frozenset(),
+                   linked_members=frozenset()):
     result = {}
     for name, raw, composition in rows:
         value = (name.decision_kind, name.evidence_id) if approvals else name.display_name
         if name.decision_kind == "translated":
+            if isinstance(composition, dict) and "linked_literal" in composition:
+                for album in albums:
+                    key = (album.id, raw, album.event_id)
+                    if key in linked_members and album.id not in selected_events and album.id not in selected_ids:
+                        result[key] = value
+                continue
             for album in albums:
                 if (album.id not in selected_events and album.id not in selected_ids
                         and album.event == raw and album.event_id is None
@@ -595,11 +639,17 @@ def _raw_event_value(values, album_id, raw, event_id, default=None):
 def strict_raw_event_search_clause(db: Session, name_ids: set[int]):
     """Restrict finite raw descriptions to their approved current direct event slots."""
     clauses = []
-    for name, raw, composition in _approved_raw_event_names(db, name_ids=name_ids):
+    rows = _approved_raw_event_names(db, name_ids=name_ids)
+    linked_members = _linked_live_members(db, rows)
+    for name, raw, composition in rows:
         if name.decision_kind == "translated":
-            clauses.append((KifuAlbum.event == raw) & KifuAlbum.event_id.is_(None)
-                           & KifuAlbum.duplicate_of_id.is_(None) & KifuAlbum.list_hidden_reason.is_(None)
-                           & ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id)))
+            if isinstance(composition, dict) and "linked_literal" in composition:
+                ids = [album_id for album_id, member_raw, _ in linked_members if member_raw == raw]
+                clauses.append(KifuAlbum.id.in_(ids))
+            else:
+                clauses.append((KifuAlbum.event == raw) & KifuAlbum.event_id.is_(None)
+                               & KifuAlbum.duplicate_of_id.is_(None) & KifuAlbum.list_hidden_reason.is_(None)
+                               & ~KifuAlbum.id.in_(db.query(KifuAlbumEventSelection.album_id)))
         elif composition is None:
             clauses.append(KifuAlbum.event == raw)
         elif name.decision_kind == "archive_description":
@@ -645,12 +695,12 @@ def strict_matching_names(
     ):
         if model is KifuRawEventName:
             matched = [
-                (name, raw)
-                for name, raw, _ in _approved_raw_event_names(db, display=query)
+                (name, raw, proof)
+                for name, raw, proof in _approved_raw_event_names(db, display=query)
                 if normalize_alias(name.display_name) == needle
             ]
-            raw_matches.append({raw for _, raw in matched})
-            raw_event_name_ids = {name.id for name, _ in matched}
+            raw_matches.append({raw for _, raw, _ in matched})
+            raw_event_name_ids = {name.id for name, _, _ in matched}
             continue
         scoped_matches = _approved_raw_player_names(db, display=query,
                                                     orthographic_batch_contexts=orthographic_batch_contexts)
@@ -665,8 +715,17 @@ def strict_matching_names(
     matches_by_owner = (*identity_matches, *raw_matches)
     raw_title_group = (not any(identity_matches) and not raw_matches[0]
                        and len(raw_matches[1]) > 1
-                       and all(name.decision_kind == "translated" for name, _ in matched))
-    if sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group:
+                       and all(name.decision_kind == "translated" for name, _, _ in matched))
+    linked_formal_group = (
+        not identity_matches[0] and len(identity_matches[1]) == 1 and not raw_matches[0]
+        and bool(matched) and all(
+            name.decision_kind == "translated" and isinstance(proof, dict)
+            and isinstance(proof.get("linked_literal"), list) and bool(proof["linked_literal"])
+            and all(scope.get("event_id") in identity_matches[1] for scope in proof["linked_literal"])
+            for name, _raw, proof in matched
+        )
+    )
+    if sum(len(matches) for matches in matches_by_owner) != 1 and not raw_title_group and not linked_formal_group:
         return set(), set(), set(), set()
     return matches_by_owner[0], matches_by_owner[1], matches_by_owner[2], raw_event_name_ids
 
@@ -823,11 +882,13 @@ def strict_display_maps(
     ):
         if model is KifuRawEventName:
             rows = _approved_raw_event_names(db, values=values, lang=lang)
+            linked_members = _linked_live_members(db, rows, candidate_ids={album.id for album in albums})
             selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
                 KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
                 if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
             raw_maps.append(
-                _raw_event_map(rows, albums, selected_events, selected_ids=selected_ids)
+                _raw_event_map(rows, albums, selected_events, selected_ids=selected_ids,
+                               linked_members=linked_members)
             )
             continue
         raw_maps.append({raw: (name.display_name, scope)
@@ -917,11 +978,13 @@ def strict_slot_approvals(
     ):
         if model is KifuRawEventName:
             rows = _approved_raw_event_names(db, values=values, lang=lang)
+            linked_members = _linked_live_members(db, rows, candidate_ids={album.id for album in albums})
             selected_ids = ({album_id for (album_id,) in db.query(KifuAlbumEventSelection.album_id).filter(
                 KifuAlbumEventSelection.album_id.in_([album.id for album in albums]))}
                 if any(name.decision_kind == "translated" for name, _, _ in rows) else set())
             raw_approvals.append(
-                _raw_event_map(rows, albums, selected_events, approvals=True, selected_ids=selected_ids)
+                _raw_event_map(rows, albums, selected_events, approvals=True, selected_ids=selected_ids,
+                               linked_members=linked_members)
             )
             continue
         raw_approvals.append({raw: ((name.decision_kind, name.evidence_id), scope)
@@ -936,7 +999,10 @@ def strict_slot_approvals(
         white = players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
         if event_id:
             event_approval = events.get(event_id)
-            if parse_event(event_raw, None).category == "formal_event_candidate":
+            linked_approval = raw_events.get((album.id, event_raw, event_id))
+            if linked_approval is not None:
+                event_approval = linked_approval
+            elif parse_event(event_raw, None).category == "formal_event_candidate":
                 event_approval = (
                     _raw_event_value(raw_events, album.id, event_raw, event_id)
                     if event_approval and canonical.get(event_id) == "Oteai"
@@ -1000,9 +1066,13 @@ def resolve_strict_display(
         players.get(album.white_player_id) if album.white_player_id else _raw_player_slot(raw_players, album, "white")
     )
     event_raw, event_id = (selected_events or {}).get(album.id, (album.event, album.event_id))
-    event_name = events.get(event_id) if event_id else _raw_event_value(raw_events, album.id, event_raw or "", event_id)
+    linked_name = raw_events.get((album.id, event_raw, event_id)) if event_id else None
+    event_name = linked_name if linked_name is not None else (
+        events.get(event_id) if event_id else _raw_event_value(raw_events, album.id, event_raw or "", event_id))
     if obscured_event_ids and album.id in obscured_event_ids:
         displayed_event = None if fallback_names else strict_unavailable_label(lang, "event")
+    elif linked_name is not None:
+        displayed_event = linked_name
     elif event_id and event_name is not None:
         if parse_event(event_raw, None).category == "formal_event_candidate":
             displayed_event = (

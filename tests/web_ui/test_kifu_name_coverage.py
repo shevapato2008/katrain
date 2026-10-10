@@ -21,6 +21,7 @@ from katrain.web.core.models_db import (
 from katrain.web.kifu.name_coverage import coverage_report
 from katrain.web.kifu.name_inventory import build_inventory
 from tests.web_ui._kifu_selection_helpers import apply_reviewed_selection
+from tests.web_ui.test_kifu_name_batch import engine  # noqa: F401
 
 
 def _catalog():
@@ -51,6 +52,19 @@ def _catalog():
         ))
         db.commit()
     return engine
+
+
+def test_linked_sgf_exact_event_slot_counts_only_frozen_album(engine):
+    from katrain.web.kifu.name_batch import apply_bundle
+    from tests.web_ui.test_kifu_name_candidates import registry
+    from tests.web_ui.test_kifu_raw_event_title_translation import linked_reviewed_bundle
+
+    proposed, inv, research = linked_reviewed_bundle(engine, raw="28th Honinbo", lang="en", display="28th Honinbo")
+    before = coverage_report(engine, inv, languages=("en",), batch_size=1)
+    apply_bundle(engine, proposed, registry(), inv, research)
+    after = coverage_report(engine, inv, languages=("en",), batch_size=1)
+    assert after["languages"]["en"]["approved"] == before["languages"]["en"]["approved"] + 1
+    assert after["languages"]["en"]["by_decision"]["translated"] == 1
 
 
 def test_coverage_counts_real_approved_slots_and_missing_fallbacks():

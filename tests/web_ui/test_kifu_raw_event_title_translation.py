@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from katrain.web.core.models_db import (
-    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventAlias, KifuEventSelectionBatch,
+    KifuAlbum, KifuAlbumEventSelection, KifuEvent, KifuEventAlias, KifuEventName, KifuEventSelectionBatch,
     KifuNameBatch, KifuNameChange, KifuNameResearchEvidence, KifuPlayer, KifuPlayerName,
     KifuRawEventName, KifuRawEventValue, KifuRawPlayerName, KifuRawPlayerValue,
 )
@@ -18,13 +18,13 @@ from katrain.web.kifu.identity import (
 )
 from katrain.web.kifu.legacy_raw_events import reviewed_raw_event_hints, reviewed_raw_event_search_clause
 from katrain.web.kifu import legacy_raw_events
-from katrain.web.kifu.name_batch import _image, apply_bundle, dry_run_bundle, undo_batch
+from katrain.web.kifu.name_batch import BatchError, _image, apply_bundle, dry_run_bundle, undo_batch
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_candidate
 from katrain.web.kifu.name_evidence import EvidenceError, registry_sha256, validate_research_record
 from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.kifu.raw_event_translation import GEOGRAPHIC39_RAW_VALUES, validate_raw_title_research
 from tests.web_ui.test_kifu_name_batch import _v2_wrap, bind_fixture_candidate, engine  # noqa: F401
-from tests.web_ui.test_kifu_name_candidates import candidate, check, inventory, registry
+from tests.web_ui.test_kifu_name_candidates import candidate, check, inventory, registry, research as conventional_research
 
 
 def owner_review(owner_id, raw):
@@ -210,6 +210,103 @@ def test_literal_raw_title_import_display_search_and_undo(engine):
     undo_batch(engine, applied["batch_id"])
     with Session(engine) as db:
         assert _approved_raw_event_names(db, values={"友情杯第１轮"}) == []
+
+
+def _literal_formal_collision_bundle(engine):
+    proposed, _, records = reviewed_bundle(engine)
+    display = proposed["candidates"][0]["display_name"]
+    with engine.begin() as conn:
+        conn.execute(KifuEvent.__table__.insert().values(id=19, canonical_name="Formal Cup"))
+        conn.execute(KifuAlbum.__table__.insert().values(
+            id=19, player_black="Alpha", player_white="Beta", event="Formal Cup", event_id=19,
+            sgf_content="(;EV[Formal Cup])", source_path="formal.sgf"))
+    inv = build_inventory(engine, inventory_format=4)
+    owner = {"kind": "event", "id": 19}
+    evidence = conventional_research(
+        owner=owner, lang="en", candidate_name=display, original_name="Formal Cup", original_language="en",
+        reading="", reading_basis_url="",
+        source_checks=[check(owner=owner, observed_lang="en", candidate_name=display,
+                             body_excerpt=f"Official event profile: {display}",
+                             identity_basis="Profile identifies formal event 19")])
+    row = bind_fixture_candidate(candidate(
+        owner=owner, lang="en", display_name=display, research_sha256=canonical_sha256(evidence),
+        name_preimage_sha256=None))
+    with engine.connect() as conn:
+        declaration = {"owner": owner, "preimage": _image(conn, KifuEvent.__table__, 19)}
+    proposed["members"].append({"owner": owner, "lang": "en"})
+    proposed["candidates"].append(row)
+    proposed["owners"].append(declaration)
+    records.append(evidence)
+    proposed["inventory_sha256"] = inv["sha256"]
+    proposed["member_set_sha256"] = canonical_sha256(proposed["members"])
+    return _v2_wrap(engine, inv, proposed, proposed["owners"], []), inv, records
+
+
+def _collision_owner_bundle(engine, proposed, kind):
+    result = deepcopy(proposed)
+    for field in ("members", "candidates", "owners"):
+        result[field] = [row for row in result[field] if row["owner"]["kind"] == kind]
+    inv = build_inventory(engine, inventory_format=4)
+    result["inventory_sha256"] = inv["sha256"]
+    result["member_set_sha256"] = canonical_sha256(result["members"])
+    return _v2_wrap(engine, inv, result, result["owners"], []), inv
+
+
+@pytest.mark.parametrize("first_kind", ["event", "raw_event"])
+def test_literal_raw_and_formal_title_coexist_in_both_insertion_orders(engine, first_kind):
+    proposed, _, records = _literal_formal_collision_bundle(engine)
+    with engine.connect() as conn:
+        before = [_image(conn, model.__table__, owner_id) for model, owner_id in (
+            (KifuRawEventValue, 8), (KifuEvent, 19), (KifuAlbum, 11), (KifuAlbum, 19))]
+    for kind in (first_kind, "raw_event" if first_kind == "event" else "event"):
+        current, inv = _collision_owner_bundle(engine, proposed, kind)
+        evidence = [row for row in records if row["owner"]["kind"] == kind]
+        assert dry_run_bundle(engine, current, registry(), inv, evidence)["approved"] == 1
+        apply_bundle(engine, current, registry(), inv, evidence)
+    with engine.connect() as conn:
+        assert [_image(conn, model.__table__, owner_id) for model, owner_id in (
+            (KifuRawEventValue, 8), (KifuEvent, 19), (KifuAlbum, 11), (KifuAlbum, 19))] == before
+        assert conn.scalar(select(KifuEventAlias.id).limit(1)) is None
+    with Session(engine) as db:
+        raw_name = db.query(KifuRawEventName).filter_by(raw_event_id=8, lang="en").one()
+        formal_name = db.query(KifuEventName).filter_by(event_id=19, lang="en").one()
+        assert raw_name.display_name == formal_name.display_name == "Friendship Cup, Round 1"
+        assert raw_name.status == formal_name.status == "verified"
+        assert _approved_raw_event_names(db, values={"友情杯第１轮"}, lang="en")
+
+
+@pytest.mark.parametrize("raw_state", ["conventional", "pending"])
+def test_formal_title_collision_rejects_nonliteral_or_unreviewed_raw_candidate(engine, raw_state):
+    proposed, _, records = _literal_formal_collision_bundle(engine)
+    formal, inv = _collision_owner_bundle(engine, proposed, "event")
+    apply_bundle(engine, formal, registry(), inv, records[1:])
+    raw, inv = _collision_owner_bundle(engine, proposed, "raw_event")
+    row = raw["candidates"][0]
+    if raw_state == "conventional":
+        evidence = deepcopy(records[1])
+        evidence["owner"] = evidence["source_checks"][0]["owner"] = row["owner"]
+        row.update(decision_kind="conventional", generation_rule_version="none",
+                   research_sha256=canonical_sha256(evidence))
+        row.pop("translation_method")
+        bind_fixture_candidate(row)
+    else:
+        evidence = records[0]
+        row.update(review_status="pending", reviewer_id="", reviewer_model="", reviewed_at="", review_conclusion="")
+        bind_fixture_candidate(row)
+    with pytest.raises(BatchError, match="collision|unreviewed"):
+        dry_run_bundle(engine, raw, registry(), inv, [evidence])
+
+
+def test_formal_title_collision_rejects_existing_unreviewed_literal_raw_name(engine):
+    proposed, _, records = _literal_formal_collision_bundle(engine)
+    raw, inv = _collision_owner_bundle(engine, proposed, "raw_event")
+    apply_bundle(engine, raw, registry(), inv, records[:1])
+    with engine.begin() as conn:
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.raw_event_id == 8).values(review_status="pending"))
+    formal, inv = _collision_owner_bundle(engine, proposed, "event")
+    with pytest.raises(BatchError, match="collision"):
+        dry_run_bundle(engine, formal, registry(), inv, records[1:])
 
 
 def test_same_literal_title_can_search_two_exact_raw_members(engine):

@@ -559,7 +559,9 @@ def _affected_albums(conn, candidates: list[dict], links: list[dict] | None = No
 
 
 def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_refs=None) -> None:
-    from katrain.web.kifu.raw_event_translation import VERSION as RAW_TITLE_VERSION, eligible_literal_raw_name
+    from katrain.web.kifu.raw_event_translation import (
+        VERSION as RAW_TITLE_VERSION, eligible_literal_raw_name, eligible_raw_title_owner,
+    )
     languages = {
         row["lang"]
         for row in candidates
@@ -583,15 +585,22 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, resolved_ref
             own_id = resolved_refs.get(_owner_ref(owner))
             _fail(type(own_id) is int and own_id > 0, "applied symbolic owner resolution is missing")
         name_key = normalize_alias(row["display_name"])
+        incoming_literal_raw = (
+            own_kind == "raw_event" and row["decision_kind"] == "translated"
+            and row["generation_rule_version"] == RAW_TITLE_VERSION
+            and row.get("translation_method") == "literal_event_title"
+            and row["review_status"] == "approved" and "id" in owner
+            and eligible_raw_title_owner(_image(conn, KifuRawEventValue.__table__, own_id) or {})
+        )
         for kind, existing_id, evidence_id, existing_name in existing_names[(row["lang"], name_key)]:
             if kind == own_kind and existing_id == own_id:
                 continue
             _fail(row.get("generation_rule_version") != "nikl-zh-ko-personal-name-v1",
                   f"Chinese generated name collides with another owner: {row['lang']}:{name_key}")
             evidence = _image(conn, KifuNameResearchEvidence.__table__, evidence_id) if evidence_id else None
-            if (own_kind == kind == "raw_event" and row["decision_kind"] == "translated"
-                    and row["generation_rule_version"] == RAW_TITLE_VERSION
-                    and row["review_status"] == "approved" and "id" in owner
+            if incoming_literal_raw and kind == "event":
+                continue
+            if (kind == "raw_event" and (incoming_literal_raw or own_kind == "event")
                     and eligible_literal_raw_name(existing_name, evidence or {},
                                                   _image(conn, KifuRawEventValue.__table__, existing_id) or {})):
                 continue

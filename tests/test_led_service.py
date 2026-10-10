@@ -1157,6 +1157,44 @@ def test_late_link_response_does_not_consume_clear_or_show_ack(late):
     assert serial.written == ["LINK", "CLEAR", "SETI 0 255 0 0", "SHOW"]
 
 
+@pytest.mark.parametrize("show_ack", [False, True])
+@pytest.mark.parametrize("tail_reads", [1, 2])
+def test_truncated_link_ack_tail_cannot_shift_command_acknowledgements(show_ack, tail_reads):
+    svc, serial, clock = _link_service("")
+    prefix, tail = _link_line().split("ack=", 1)
+
+    def write(data):
+        command = data.decode("ascii").strip()
+        serial.written.append(command)
+        if command == "LINK":
+            serial._buf.append((prefix + "ack=").encode("ascii"))  # No newline before the 200ms deadline.
+        elif command == "CLEAR":
+            if tail_reads == 2:
+                serial._buf.append(b"OK")  # The late tail can itself span a read timeout.
+                remaining_tail = tail[2:]
+            else:
+                remaining_tail = tail
+            serial._buf.extend([(remaining_tail + "\n").encode("ascii"), b"OK\n"])
+        elif command != "SHOW" or show_ack:
+            serial._buf.append(b"OK\n")
+
+    serial.write = write
+    svc._poll_board_link()
+    assert svc.is_board_connected() is None
+    assert clock() <= 1000.2 + 0.0001
+    assert serial.timeout == 2.0
+    batch = _led_service._Batch(["CLEAR", "SETI 0 255 0 0", "SHOW"], strict=True)
+    svc._run_batch(batch)
+    assert batch.result["ok"] is show_ack
+    if show_ack:
+        assert batch.result["shown_at"] is not None
+        assert batch.result["errors"] == []
+        assert serial._buf == []  # SHOW consumed its own ACK, not a shifted earlier one.
+    else:
+        assert batch.result["shown_at"] is None
+        assert batch.result["errors"] == ["SHOW -> no-ack"]
+
+
 @pytest.mark.parametrize("response,poll_interval", [(_link_line(), 2.0), ("ERR cmd", 10.0)])
 def test_worker_polls_link_between_complete_batches_and_backs_off_old_firmware(response, poll_interval):
     svc, serial, clock = _link_service(response)

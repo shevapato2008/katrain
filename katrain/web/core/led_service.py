@@ -142,6 +142,7 @@ class LedService:
         self._board_link = None  # (monotonic timestamp, link, cc, ack)
         self._next_link_poll = 0.0
         self._link_response_pending = False
+        self._link_partial_line = False
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
@@ -388,7 +389,18 @@ class LedService:
         self._serial.write((cmd + "\n").encode("ascii"))
         # Read response lines until OK/ERR or a couple of blanks (READY etc. ignored).
         for _ in range(4):
-            line = self._serial.readline().decode("ascii", errors="replace").strip()
+            raw = self._serial.readline()
+            if self._link_partial_line:
+                # LINK's timed-out prefix still owns the rest of this line,
+                # including an "OK ..." tail. Release it only at the newline.
+                if raw.endswith(b"\n"):
+                    self._link_partial_line = False
+                    self._link_response_pending = False
+                continue
+            if raw and not raw.endswith(b"\n") and self._link_response_pending:
+                self._link_partial_line = True
+                continue
+            line = raw.decode("ascii", errors="replace").strip()
             if not line:
                 continue
             if line.startswith("LINK ") or (line == "ERR cmd" and self._link_response_pending):
@@ -422,9 +434,10 @@ class LedService:
         deadline = self._clock() + _LINK_TIMEOUT
         try:
             port.timeout = _LINK_TIMEOUT
-            # Buffered late status belongs to the previous query, not a fresh
-            # measurement. Also discard old command chatter before this write.
-            self._drain_prewrite_input()
+            # Buffered late status belongs to the previous query. An unfinished
+            # line must retain its framing and be consumed through its newline.
+            if not self._link_partial_line:
+                self._drain_prewrite_input()
             self._link_response_pending = True
             port.write(b"LINK\n")
             for _ in range(8):
@@ -459,7 +472,15 @@ class LedService:
         read = getattr(port, "read", None)
         if not callable(read):
             # Minimal serial adapters used by callers/tests may only offer lines.
-            return port.readline()
+            raw = port.readline()
+            if self._link_partial_line:
+                if raw.endswith(b"\n"):
+                    self._link_partial_line = False
+                return b""
+            if raw and not raw.endswith(b"\n"):
+                self._link_partial_line = True
+                return b""
+            return raw
         # pyserial's generic readline may restart the timeout per byte. Set the
         # remaining budget for each read instead, including unterminated chatter.
         data = bytearray()
@@ -473,7 +494,12 @@ class LedService:
                 break
             data.extend(chunk)
             if chunk == b"\n":
+                if self._link_partial_line:
+                    self._link_partial_line = False
+                    data.clear()
+                    continue
                 return bytes(data)
+        self._link_partial_line = self._link_partial_line or bool(data)
         return b""
 
     def _finish(self, batch, *, ok: bool, shown_at, errors: List[str]) -> None:
@@ -548,6 +574,7 @@ class LedService:
         self._board_link = None
         self._next_link_poll = 0.0
         self._link_response_pending = False
+        self._link_partial_line = False
         if self._device_lease is None:
             # Imported here so standalone LED users can load this leaf module
             # without importing the web application package.
@@ -619,6 +646,7 @@ class LedService:
     def _close_serial(self) -> None:
         self._board_link = None
         self._link_response_pending = False
+        self._link_partial_line = False
         if self._serial is not None:
             try:
                 self._serial.close()

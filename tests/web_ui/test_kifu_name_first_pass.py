@@ -4,6 +4,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import event
 
 from katrain.web.kifu.name_candidates import CandidateError, canonical_sha256, validate_candidate
 from katrain.web.kifu.name_evidence import EvidenceError, registry_sha256, validate_research_record
@@ -12,6 +13,7 @@ from katrain.web.kifu.name_inventory import build_inventory
 from katrain.web.core.models_db import (
     KifuAlbum, KifuPlayer, KifuPlayerName, KifuEvent, KifuEventName,
     KifuRawEventValue, KifuRawEventName, KifuRawPlayerValue, KifuRawPlayerName, KifuNameResearchEvidence,
+    KifuNameChange,
 )
 from katrain.web.kifu.identity import (
     _approved_names, _qualified_name_rows, _approved_raw_event_names, _raw_event_map,
@@ -804,6 +806,44 @@ def test_first_pass_apply_read_and_retry_require_persisted_proof(engine):
         conn.execute(KifuNameResearchEvidence.__table__.update().values(
             generation_rule_version="other-rule", research_payload=changed))
         conn.execute(KifuPlayerName.__table__.update().values(generation_rule_version="other-rule"))
+    with Session(engine) as db:
+        query = _approved_names(db, KifuPlayerName, "player_id", {17}, "cn")
+        assert _qualified_name_rows(db, query, KifuPlayerName, "player_id") == []
+
+
+def test_first_pass_reader_loads_only_relevant_batch_journal_rows(engine):
+    inv, bundle, research = bound_player_bundle(engine)
+    result = apply_bundle(engine, bundle, db_registry(), inv, research)
+    with engine.begin() as conn:
+        name = conn.execute(KifuPlayerName.__table__.select()).mappings().one()
+        evidence = conn.execute(KifuNameResearchEvidence.__table__.select()).mappings().one()
+        conn.execute(KifuNameChange.__table__.insert().values(
+            batch_id=result["batch_id"], sequence=999999, target_table="kifu_raw_event_names",
+            target_row_id=999999, before_image=None, after_image={"unrelated": True},
+        ))
+
+    loaded = set()
+
+    def observe_change(change, _context):
+        loaded.add((change.target_table, change.target_row_id))
+
+    event.listen(KifuNameChange, "load", observe_change)
+    try:
+        with Session(engine) as db:
+            query = _approved_names(db, KifuPlayerName, "player_id", {17}, "cn")
+            assert len(_qualified_name_rows(db, query, KifuPlayerName, "player_id")) == 1
+    finally:
+        event.remove(KifuNameChange, "load", observe_change)
+    assert ("kifu_name_research_evidence", evidence["id"]) in loaded
+    assert ("kifu_player_names", name["id"]) in loaded
+    assert ("kifu_raw_event_names", 999999) not in loaded
+
+    with engine.begin() as conn:
+        conn.execute(KifuNameChange.__table__.update().where(
+            KifuNameChange.batch_id == result["batch_id"],
+            KifuNameChange.target_table == "kifu_player_names",
+            KifuNameChange.target_row_id == name["id"],
+        ).values(after_image={"corrupt": True}))
     with Session(engine) as db:
         query = _approved_names(db, KifuPlayerName, "player_id", {17}, "cn")
         assert _qualified_name_rows(db, query, KifuPlayerName, "player_id") == []

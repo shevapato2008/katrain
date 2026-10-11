@@ -248,7 +248,18 @@ def _qualified_name_rows(db, query, model, owner_column, *entities, orthographic
             positive_changes[change.batch_id].append(image(change))
     first_pass_changes = {key: {} for key in first_pass_batch_ids}
     if first_pass_batch_ids:
-        for change in db.query(KifuNameChange).filter(KifuNameChange.batch_id.in_(first_pass_batch_ids)):
+        # A first-pass name needs only its own name and evidence creation rows.
+        # Batches can contain thousands of other names and album changes.
+        name_ids = {name.id for name, *_ in rows}
+        for change in db.query(KifuNameChange).filter(
+            KifuNameChange.batch_id.in_(first_pass_batch_ids),
+            or_(
+                and_(KifuNameChange.target_table == "kifu_name_research_evidence",
+                     KifuNameChange.target_row_id.in_(evidence_ids)),
+                and_(KifuNameChange.target_table == model.__tablename__,
+                     KifuNameChange.target_row_id.in_(name_ids)),
+            ),
+        ):
             first_pass_changes[change.batch_id][(change.target_table, change.target_row_id)] = image(change)
     from katrain.web.kifu.name_candidates import canonical_sha256
     first_pass_members = {}

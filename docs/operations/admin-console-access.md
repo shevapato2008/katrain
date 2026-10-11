@@ -17,12 +17,15 @@ Go 保留管理业务/API、数据审计、运行时以及现有 `katrain-web:lo
 
 切换顺序：先将 provider 的 `KATRAIN_ADMIN_HOST_PORT` 改为已核实空闲的 loopback 端口（如 18010），重建 `katrain-admin`，确认旧 operator 端口释放后，console 才可使用该端口。生产旧端口 8010；home-ubuntu 测试旧端口 8012，8010 属于 `katago-calib`，不得挪用。Go 容器内依然是 8010；console 通过声明式 external network 访问 `http://katrain-admin:8010`，网络名必须使用当前 Go Compose 实际名称，不通过 `host.docker.internal` 访问宿主机 loopback。声明式挂载随容器重建保留。
 
+重建 provider 前必须先在获批 Go commit 上构建 `katrain-web:local`：只有 Compose 的 `katrain-web` 定义 build，`katrain-admin` 复用该镜像。`KATRAIN_BUILD_SHA` 仅在镜像构建时写入，单改 env 再 recreate 仍可能运行旧代码。构建前用 `docker inspect --format '{{.Image}}' katrain-admin` 记录当前 provider 的具体 image ID，并用 `docker tag '<previous-image-id>' 'katrain-web:admin-rollback-<previous-release>'`（替换占位）保留独立回退 tag；记录 ID/tag 与上一配对版本。
+
 ```sh
 docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml config -q
+KATRAIN_BUILD_SHA="$(git rev-parse HEAD)" docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml build katrain-web
 docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml up -d --no-deps --force-recreate katrain-admin
 ```
 
-容器环境修改必须 recreate；`restart` 不会注入新值。回退时先停止 console 释放 operator 端口，再恢复上一配对版本/私有 env/legacy 凭据和 host port 并重建 provider；保留 console 的持久审计卷。公开 nginx 管理路径拒绝规则不变。完整 console/platform 版本配对、迁移、独立失败和回退步骤见 SmartBox `admin-console/deploy/README.md`。
+构建只更新镜像 tag，不重建运行中的 web/cron/engine；随后仅重建 provider。容器环境修改必须 recreate；`restart` 不会注入新值。回退时先停止 console 释放 operator 端口，用 `docker tag 'katrain-web:admin-rollback-<previous-release>' katrain-web:local`（替换版本占位）恢复已记录镜像，再恢复上一配对版本/私有 env/legacy 凭据和 host port 并重建 provider；保留 console 的持久审计卷。公开 nginx 管理路径拒绝规则不变。完整 console/platform 版本配对、迁移、独立失败和回退步骤见 SmartBox `admin-console/deploy/README.md`。
 
 原生本机模式固定 Go `127.0.0.1:8010`、console `127.0.0.1:8011`。没有 local/test opt-in 时 Go CLI 默认绑定 `0.0.0.0`，因此普通原生服务应显式用 loopback factory：
 

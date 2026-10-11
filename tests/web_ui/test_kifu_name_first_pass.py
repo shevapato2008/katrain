@@ -553,6 +553,93 @@ def test_first_pass_raw_player_pending_owner_does_not_enable_old_profile(engine)
             _check_name_preimages(conn, [candidate])
 
 
+def test_bounded_first_pass_correction_requires_exact_generated_journal(engine, monkeypatch):
+    from katrain.web.kifu import name_batch
+
+    inv, bundle, records = bound_raw_player_bundle(engine)
+    applied = apply_bundle(engine, bundle, db_registry(), inv, records)
+    old = bundle["candidates"][0]
+    owner = old["owner"]
+    with engine.connect() as conn:
+        name = conn.execute(KifuRawPlayerName.__table__.select().where(
+            KifuRawPlayerName.raw_player_id == owner["id"], KifuRawPlayerName.lang == "en"
+        )).mappings().one()
+        name_image = _image(conn, KifuRawPlayerName.__table__, name["id"])
+        evidence_image = _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"])
+    source_url = "https://example.org/player/20"
+    monkeypatch.setitem(name_batch._FIRST_PASS_CORRECTION_CELLS, (20, "en"),
+                        ("李元赫九段", "Lee Wonhyuk", "Lee Won-hyuk", source_url))
+    candidate = deepcopy(old)
+    candidate["display_name"] = "Lee Won-hyuk"
+    candidate["produced_at"] = "2026-10-11T01:00:40Z"
+    candidate["name_preimage_sha256"] = canonical_sha256(name_image)
+    candidate["first_pass_correction"] = {
+        "version": "bounded-first-pass-correction-712-v1",
+        "prior_batch_id": applied["batch_id"], "prior_name_revision": name["revision"],
+        "prior_candidate_sha256": canonical_sha256(old),
+        "prior_evidence_sha256": canonical_sha256(evidence_image),
+        "source_check": {
+            "owner": owner, "source_id": "go", "query": "Lee Won-hyuk", "status": "found",
+            "url": source_url, "fetched_at": "2026-10-11T01:00:30Z", "http_status": 200,
+            "body_sha256": "a" * 64, "body_excerpt": "Lee Won-hyuk",
+            "language_basis": "html_lang", "observed_lang": "en",
+            "candidate_name": "Lee Won-hyuk",
+            "identity_basis": "Exact fixture raw owner: https://example.org/official/20",
+        },
+    }
+    monkeypatch.setitem(name_batch._FIRST_PASS_CORRECTION_IDENTITY_URLS, 20,
+                        "https://example.org/official/20")
+    with engine.connect() as conn:
+        _check_name_preimages(conn, [candidate], db_registry())
+        stale = deepcopy(candidate)
+        stale["name_preimage_sha256"] = "b" * 64
+        with pytest.raises(BatchError, match="name preimage changed"):
+            _check_name_preimages(conn, [stale], db_registry())
+        outside = deepcopy(candidate)
+        outside["owner"] = {"kind": "raw_player", "id": 21}
+        with pytest.raises(BatchError, match="outside the reviewed 712 scope"):
+            name_batch._check_first_pass_correction(conn, outside, db_registry())
+        unknown = deepcopy(candidate)
+        unknown["first_pass_correction"]["prior_evidence_sha256"] = "b" * 64
+        with pytest.raises(BatchError, match="old evidence or provenance differs"):
+            _check_name_preimages(conn, [unknown], db_registry())
+    with engine.begin() as conn:
+        payload = deepcopy(evidence_image["research_payload"])
+        payload.pop("first_pass")
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == name["evidence_id"]
+        ).values(research_payload=payload))
+    with engine.connect() as conn:
+        authority = deepcopy(candidate)
+        authority["first_pass_correction"]["prior_evidence_sha256"] = canonical_sha256(
+            _image(conn, KifuNameResearchEvidence.__table__, name["evidence_id"]))
+        with pytest.raises(BatchError, match="old evidence or provenance differs"):
+            _check_name_preimages(conn, [authority], db_registry())
+    with engine.begin() as conn:
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == name["evidence_id"]
+        ).values(research_payload=evidence_image["research_payload"]))
+
+    research = deepcopy(records[0])
+    research["candidate_name"] = candidate["display_name"]
+    research["produced_at"] = "2026-10-11T01:00:40Z"
+    candidate["research_sha256"] = canonical_sha256(research)
+    candidate["produced_at"] = research["produced_at"]
+    candidate["generated_review"].update(display_name=candidate["display_name"],
+                                         research_sha256=candidate["research_sha256"])
+    candidate["preimage_binding"].update(name_preimage_sha256=candidate["name_preimage_sha256"],
+                                         captured_at="2026-10-11T01:00:41Z",
+                                         bound_at="2026-10-11T01:00:45Z")
+    corrected = deepcopy(bundle)
+    corrected["candidates"] = [candidate]
+    assert dry_run_bundle(engine, corrected, db_registry(), inv, [research])["ready"]
+    assert apply_bundle(engine, corrected, db_registry(), inv, [research])["status"] == "applied"
+    with Session(engine) as db:
+        from katrain.web.kifu.identity import _approved_raw_player_names
+        rows = _approved_raw_player_names(db, values={"李元赫九段"}, lang="en")
+        assert len(rows) == 1 and rows[0][0].display_name == "Lee Won-hyuk"
+
+
 def test_first_pass_raw_player_rejects_existing_cross_owner_name_collision(engine):
     inv, bundle, records = bound_raw_player_bundle(engine)
     with Session(engine) as db:

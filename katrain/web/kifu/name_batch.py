@@ -53,6 +53,24 @@ _TEAM_OWNER_ID = 73686
 _TEAM_ALL_IDS_SHA256 = "39fee6c73115534d2c206b0eaa4fc834cb6bc624dafdf147a3955fb09a9ea967"
 _TEAM_ELIGIBLE_IDS_SHA256 = "8dc603a8278797dd57a271b76f2316cca40c49ed36465001c8d5d9e77f9605bb"
 _TEAM_EXCLUDED_IDS_SHA256 = "84e87533c0b750f6bbae1d9dc2df2b738f1075f9e937e65dce7c82cf91ad074b"
+_FIRST_PASS_CORRECTION_CELLS = {
+    (13923, "en"): ("長谷川直", "zhang gu chuan zhi", "Hasegawa Sunao", "https://www.goratings.org/en/players/254.html"),
+    (13923, "ko"): ("長谷川直", "하세가와 나오", "하세가와 스나오", "https://www.goratings.org/ko/players/254.html"),
+    (13939, "en"): ("长谷川直九段", "zhangguchuanzhi", "Hasegawa Sunao", "https://www.goratings.org/en/players/254.html"),
+    (13939, "ko"): ("长谷川直九段", "하 구 추아 히", "하세가와 스나오", "https://www.goratings.org/ko/players/254.html"),
+    (13938, "en"): ("长谷川直", "Hasegawa Nao", "Hasegawa Sunao", "https://www.goratings.org/en/players/254.html"),
+    (13938, "ko"): ("长谷川直", "하세가와 나오", "하세가와 스나오", "https://www.goratings.org/ko/players/254.html"),
+    (14379, "cn"): ("黃元俊HwangWonJun", "黄元俊HwangWonJun", "黄元俊", "https://www.foxwq.com/news/11772.html?lang=zh"),
+    (14379, "tw"): ("黃元俊HwangWonJun", "黃元俊HwangWonJun", "黃元俊", "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"),
+    (14379, "jp"): ("黃元俊HwangWonJun", "黃元俊HwangWonJun", "黃元俊", "https://www.goratings.org/ja/players/259.html"),
+    (14379, "en"): ("黃元俊HwangWonJun", "huang yuan jun HwangWonJun", "Hwang Weonjun", "https://www.goratings.org/en/players/259.html"),
+}
+_FIRST_PASS_CORRECTION_IDENTITY_URLS = {
+    13923: "https://kansaikiin.jp/kisi_prof/hasegawasunao.html",
+    13939: "https://kansaikiin.jp/kisi_prof/hasegawasunao.html",
+    13938: "https://kansaikiin.jp/kisi_prof/hasegawasunao.html",
+    14379: "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000026",
+}
 
 
 def _fail(condition: bool, message: str) -> None:
@@ -260,7 +278,87 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
         return _name_preimage_sha256(conn, owner, lang)
 
 
-def _check_name_preimages(conn, candidates: list[dict]) -> None:
+def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -> None:
+    """Allow only the reviewed 712 cells when the live old value is a journaled first pass."""
+    from katrain.web.kifu.name_evidence import EvidenceError, _validate_check
+    from katrain.web.kifu.name_first_pass import persisted_eligible
+
+    owner, lang = candidate["owner"], candidate["lang"]
+    marker = candidate.get("first_pass_correction")
+    allowed = _FIRST_PASS_CORRECTION_CELLS.get((owner.get("id"), lang)) if owner.get("kind") == "raw_player" else None
+    _fail(allowed is not None and isinstance(marker, dict) and set(marker) == {
+        "version", "prior_batch_id", "prior_name_revision", "prior_candidate_sha256",
+        "prior_evidence_sha256", "source_check",
+    } and marker["version"] == "bounded-first-pass-correction-712-v1"
+          and type(marker["prior_batch_id"]) is int and marker["prior_batch_id"] > 0
+          and type(marker["prior_name_revision"]) is int and marker["prior_name_revision"] > 0
+          and all(isinstance(marker[key], str) and _SHA256.fullmatch(marker[key])
+                  for key in ("prior_candidate_sha256", "prior_evidence_sha256")),
+          "first-pass correction is outside the reviewed 712 scope")
+    raw, old_display, new_display, source_url = allowed
+    _fail(candidate.get("generation_rule_version") == "user_authorized_first_pass_v1"
+          and candidate.get("decision_kind") == "generated"
+          and candidate.get("raw_value") == raw and candidate.get("display_name") == new_display
+          and candidate.get("review_status") == "approved" and registry is not None,
+          "first-pass correction rule, source, or reviewed target differs")
+    check = marker["source_check"]
+    sources = {source["id"]: source for source in registry["sources"]}
+    _fail(isinstance(check, dict) and check.get("status") == "found"
+          and check.get("candidate_name") == new_display and check.get("url") == source_url
+          and _FIRST_PASS_CORRECTION_IDENTITY_URLS[owner["id"]] in check.get("identity_basis", "")
+          and sources.get(check.get("source_id"), {}).get("tier") in {
+              "official", "language_go", "wikipedia_article", "encyclopedia"
+          },
+          "first-pass correction authority source differs")
+    try:
+        _validate_check(check, owner, registry["language_tags"][lang], sources)
+    except (EvidenceError, KeyError, TypeError) as exc:
+        raise BatchError(f"first-pass correction source invalid: {exc}") from exc
+    capture_time = datetime.fromisoformat(check["fetched_at"].replace("Z", "+00:00"))
+    _fail(datetime.fromisoformat(candidate["produced_at"].replace("Z", "+00:00")) >= capture_time
+          and datetime.fromisoformat(candidate["reviewed_at"].replace("Z", "+00:00")) >= capture_time,
+          "first-pass correction production or review predates authority source")
+
+    table = KifuRawPlayerName.__table__
+    current = conn.execute(select(table).where(table.c.raw_player_id == owner["id"],
+                                               table.c.lang == lang)).mappings().one_or_none()
+    _fail(current is not None and current["display_name"] == old_display
+          and current["revision"] == marker["prior_name_revision"]
+          and current["status"] == "verified" and current["evidence_id"] is not None,
+          "first-pass correction old live name or revision differs")
+    name = _image(conn, table, current["id"])
+    _fail(candidate.get("name_preimage_sha256") == canonical_sha256(name),
+          "first-pass correction name preimage changed")
+    evidence = _image(conn, KifuNameResearchEvidence.__table__, current["evidence_id"])
+    payload = evidence.get("research_payload") if evidence else None
+    _fail(evidence is not None and canonical_sha256(evidence) == marker["prior_evidence_sha256"]
+          and isinstance(payload, dict) and set(payload) == {
+              "candidate", "research", "first_pass", "raw_display_scope"
+          } and isinstance(payload.get("candidate"), dict)
+          and "first_pass_correction" not in payload["candidate"]
+          and canonical_sha256(payload["candidate"]) == marker["prior_candidate_sha256"],
+          "first-pass correction old evidence or provenance differs")
+    proof = payload["first_pass"]
+    _fail(isinstance(proof, dict) and proof.get("batch_id") == marker["prior_batch_id"],
+          "first-pass correction old batch proof differs")
+    batch = _image(conn, KifuNameBatch.__table__, marker["prior_batch_id"])
+    artifact = batch.get("reviewed_artifact") if batch else None
+    prior_bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+    _fail(isinstance(prior_bundle, dict) and batch["bundle_sha256"] == canonical_sha256(prior_bundle),
+          "first-pass correction old signed bundle differs")
+    changes = {(change["target_table"], change["target_row_id"]): dict(change) for change in
+               conn.execute(select(KifuNameChange.__table__).where(
+                   KifuNameChange.batch_id == marker["prior_batch_id"])).mappings()}
+    batch_members = ({canonical_sha256(item) for item in prior_bundle.get("candidates", ())},
+                     set(artifact.get("research_hashes", ())))
+    old_owner = _image(conn, KifuRawPlayerValue.__table__, owner["id"])
+    _fail(old_owner is not None and old_owner["raw_value"] == raw
+          and persisted_eligible(name, evidence, "raw_player", old_owner, batch, changes,
+                                 batch_members=batch_members),
+          "first-pass correction old name lacks complete generated journal proof")
+
+
+def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = None) -> None:
     from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION
     for candidate in candidates:
         if candidate["decision_kind"] == "composed":
@@ -275,16 +373,20 @@ def _check_name_preimages(conn, candidates: list[dict]) -> None:
               "name preimage must be null or a lowercase SHA-256")
         owner = candidate["owner"]
         if "ref" in owner:
-            _fail(expected is None, "new owner name preimage must be absent")
+            _fail(expected is None and "first_pass_correction" not in candidate,
+                  "new owner name preimage must be absent")
             continue
         actual = _name_preimage_sha256(conn, owner, candidate["lang"])
         _fail(actual == expected, f"name preimage changed: {_owner_ref(owner)}:{candidate['lang']}")
+        if "first_pass_correction" in candidate:
+            _check_first_pass_correction(conn, candidate, registry)
         if candidate.get("generation_rule_version") == FIRST_PASS_VERSION:
             _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
             target = conn.execute(select(name_model.__table__).where(
                 name_model.__table__.c[owner_column] == owner["id"],
                 name_model.lang == candidate["lang"])).mappings().one_or_none()
-            _fail(target is None or target["status"] != "verified" and target["evidence_id"] is None,
+            _fail("first_pass_correction" in candidate or target is None
+                  or target["status"] != "verified" and target["evidence_id"] is None,
                   "first pass cannot replace verified or evidence-backed name")
 
 
@@ -906,7 +1008,7 @@ def _inspect(
     if bundle["bundle_format"] in {2, 3, 4}:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
-    _check_name_preimages(conn, bundle["candidates"])
+    _check_name_preimages(conn, bundle["candidates"], registry)
     if bundle.get("primary_orthographic") is not None or any(
         row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
     ):
@@ -1021,15 +1123,18 @@ def _candidate_evidence(
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
                      batch_id: int, sequence: int, resolved: dict[str, int] | None = None,
                      composition: dict | None = None, raw_display_scope: dict | None = None,
-                     archive_description: dict | None = None) -> int:
+                     archive_description: dict | None = None, registry: dict | None = None) -> int:
     owner = row["owner"]
     owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
     name_table = name_model.__table__
     current = conn.execute(select(name_table).where(name_table.c[owner_column] == owner_id,
                                                     name_table.c.lang == row["lang"])).mappings().one_or_none()
+    if "first_pass_correction" in row:
+        _check_first_pass_correction(conn, row, registry)
     if row.get("generation_rule_version") == "user_authorized_first_pass_v1":
-        _fail(current is None or current["status"] != "verified" and current["evidence_id"] is None,
+        _fail("first_pass_correction" in row or current is None
+              or current["status"] != "verified" and current["evidence_id"] is None,
               "first pass cannot replace verified or evidence-backed name")
     before = _image(conn, name_table, current["id"]) if current else None
     revision = max(int(current["revision"] or 0), 0) + 1 if current else 1
@@ -1383,7 +1488,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 if candidate["decision_kind"] == "archive_description" else None)
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
                                         resolved if bundle["bundle_format"] in {2, 3, 4} else None,
-                                        bundle.get("composition"), raw_scope, archive)
+                                        bundle.get("composition"), raw_scope, archive, registry)
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:

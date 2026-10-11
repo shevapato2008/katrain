@@ -323,6 +323,7 @@ interface GameListItem {
   playerBlack: string;
   playerWhite: string;
   result: string;
+  rules?: string | null;
   moveCount: number;
   date: string;
   source: Category | 'public_kifu';

@@ -503,6 +503,47 @@ def test_first_pass_raw_player_applies_only_to_public_unlinked_signed_slot_and_u
                    for lang in ("en", "cn", "tw", "jp", "ko"))
 
 
+def test_existing_qualified_literal_raw_event_can_share_generated_display(engine):
+    from katrain.web.kifu.name_batch import _check_cross_bundle_collisions
+    from tests.web_ui.test_kifu_raw_event_title_translation import registry as raw_title_registry, sgf_reviewed_bundle
+
+    bundle, inv, records = sgf_reviewed_bundle(engine)
+    apply_bundle(engine, bundle, raw_title_registry(), inv, records)
+    display = bundle["candidates"][0]["display_name"]
+    with Session(engine) as db:
+        existing = db.query(KifuRawEventName).filter_by(raw_event_id=8, lang="en").one()
+        rows = _approved_raw_event_names(db, name_ids={existing.id})
+        assert len(rows) == 1 and rows[0][0].id == existing.id and rows[0][2] is None
+        assert existing.decision_kind == "translated"
+        assert existing.generation_rule_version == "raw-event-title-translation-v1"
+        evidence_id = existing.evidence_id
+
+    raw = "2020另一赛事第1轮"
+    incoming = {"owner": {"kind": "raw_event", "id": 99}, "lang": "en",
+                "display_name": display, "decision_kind": "generated",
+                "generation_rule_version": "user_authorized_first_pass_v1",
+                "review_status": "approved", "raw_value": raw,
+                "collision_decision": "shared_display",
+                "collision_basis": {"kind": "literal_title_translation", "source_text": raw,
+                                    "provenance": "signed_raw_event_literal"},
+                "research_sha256": "a" * 64}
+    research = {"source_input": {"kind": "raw_event_literal", "text": raw},
+                "raw_scope": {"raw_value": raw, "slots": [{"album_id": 99}]},
+                "candidate_name": display, "generation": {"method": "translation"}}
+    research_by_hash = {incoming["research_sha256"]: research}
+    with engine.connect() as conn:
+        _check_cross_bundle_collisions(conn, [incoming], research_by_hash=research_by_hash)
+        with pytest.raises(BatchError, match="first-pass normalized name collision"):
+            _check_cross_bundle_collisions(conn, [{**incoming, "collision_decision": "reject"}],
+                                           research_by_hash=research_by_hash)
+
+    with Session(engine) as db:
+        db.get(KifuNameResearchEvidence, evidence_id).review_status = "rejected"
+        db.commit()
+    with engine.connect() as conn, pytest.raises(BatchError, match="first-pass normalized name collision"):
+        _check_cross_bundle_collisions(conn, [incoming], research_by_hash=research_by_hash)
+
+
 @pytest.mark.parametrize("drift", ["linked", "hidden"])
 def test_first_pass_raw_player_rejects_linked_or_hidden_scope_after_apply(engine, drift):
     from katrain.web.kifu.identity import _approved_raw_player_names

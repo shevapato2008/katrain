@@ -972,8 +972,10 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
         with Session(bind=conn) as db:
             qualified_raw_events = {
                 name.id for name, _raw, proof in _approved_raw_event_names(db, name_ids=existing_raw_event_ids)
-                if isinstance(proof, dict) and not proof.get("record_label")
-                and (proof.get("first_pass") or proof.get("linked_literal"))
+                if (isinstance(proof, dict) and not proof.get("record_label")
+                    and (proof.get("first_pass") or proof.get("linked_literal")))
+                or (proof is None and name.decision_kind == "translated"
+                    and name.generation_rule_version == RAW_TITLE_VERSION)
             }
     for row in candidates:
         if row["decision_kind"] not in {"conventional", "generated", "corrected", "composed", "transliterated", "translated"}:

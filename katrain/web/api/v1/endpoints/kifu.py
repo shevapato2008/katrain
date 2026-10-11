@@ -296,12 +296,14 @@ async def list_kifu_albums(
             event_ids |= legacy_events
         exact_raw_event = bool(raw_event_name_ids) and not player_ids and not event_ids and not raw_players
         exact_player = len(player_ids) == 1 and not event_ids and not raw_players and not raw_event_name_ids
+        exact_player_with_raw = (len(player_ids) == 1 and bool(raw_players) and not event_ids
+                                 and not raw_event_name_ids and not selected_event_ids)
+        player_only_search = (exact_player or exact_player_with_raw) and not selected_event_ids
         shared_players = bool(shared_player_ids) and not event_ids and not raw_event_name_ids
         if exact_player:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
-        elif (len(player_ids) == 1 and raw_players and not event_ids
-              and not raw_event_name_ids and not selected_event_ids):
+        elif exact_player_with_raw:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id,
                          strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
@@ -348,7 +350,7 @@ async def list_kifu_albums(
             query = query.order_by(case((player_match, 0), else_=1))
         if selected_event_ids and not shared_players:
             needle = or_(needle, KifuAlbum.id.in_(selected_event_ids))
-        if not strict and lang == "cn" and not exact_raw_event and not shared_players:
+        if not strict and lang == "cn" and not exact_raw_event and not shared_players and not player_only_search:
             from katrain.web.kifu.first_pass_cn import search_raw_names, valid_override_search_ids
 
             provisional_players, provisional_events, provisional_albums = search_raw_names(q)

@@ -1008,14 +1008,20 @@ def test_first_pass_shared_display_does_not_accept_old_raw_profile(engine):
         dry_run_bundle(engine, incoming, db_registry(), inv, incoming_records)
 
 
-def test_first_pass_raw_player_can_share_existing_canonical_display(engine, monkeypatch):
-    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
+@pytest.mark.parametrize("strict", ["1", "0"])
+def test_first_pass_raw_player_can_share_existing_canonical_display(engine, monkeypatch, strict):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", strict)
     inv, bundle, records = bound_raw_player_bundle(engine)
     with Session(engine) as db:
         evidence = _evidence(db, "player", 17, "en", "Lee Wonhyuk")
+        canonical_only_evidence = _evidence(db, "player", 17, "cn", "Single Canonical")
         db.add(KifuPlayerName(player_id=17, lang="en", display_name="Lee Wonhyuk",
                               status="verified", decision_kind="conventional",
                               generation_rule_version="test-v1", revision=1, evidence_id=evidence.id))
+        db.add(KifuPlayerName(player_id=17, lang="cn", display_name="Single Canonical",
+                              status="verified", decision_kind="conventional",
+                              generation_rule_version="test-v1", revision=1,
+                              evidence_id=canonical_only_evidence.id))
         db.commit()
     _share_raw_display(bundle["candidates"][0])
     assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
@@ -1027,10 +1033,15 @@ def test_first_pass_raw_player_can_share_existing_canonical_display(engine, monk
                          source_path="unrelated-title.sgf"))
         db.commit()
         from katrain.web.kifu.identity import strict_matching_names
+        from katrain.web.kifu import first_pass_cn
+        monkeypatch.setattr(first_pass_cn, "search_raw_names", lambda _q: ({"Other"}, set(), {99}))
+        monkeypatch.setattr(first_pass_cn, "valid_override_search_ids", lambda _db, _ids: {99})
         assert strict_matching_names(db, "Lee Wonhyuk")[:3] == ({17}, set(), {"李元赫九段"})
-        listing = _list(db, "Lee Wonhyuk", "en")
-        assert listing.total == 3
-        assert {item.id for item in listing.items} == {11, 12, 15}
+        for lang in ("en", "cn"):
+            listing = _list(db, "Lee Wonhyuk", lang)
+            assert (listing.total, {item.id for item in listing.items}) == (3, {11, 12, 15})
+            canonical_only = _list(db, "Single Canonical", lang)
+            assert (canonical_only.total, {item.id for item in canonical_only.items}) == (1, {11})
 
 
 def test_first_pass_shared_display_requires_exact_literal_basis(engine):

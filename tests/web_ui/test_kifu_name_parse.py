@@ -13,6 +13,29 @@ def test_embedded_dan_is_separated_without_changing_raw_name():
     assert parsed.exceptions == ()
 
 
+def test_historical_taiwan_pin_rank_is_separated_without_converting_to_dan():
+    for raw, name, rank in (
+        ("彭景华五品", "彭景华", "五品"),
+        ("周俊勋六品", "周俊勋", "六品"),
+        ("陈永安 五品", "陈永安", "五品"),
+    ):
+        parsed = parse_player(raw, None)
+        assert parsed.raw_name == raw
+        assert parsed.name == name
+        assert parsed.embedded_rank == parsed.display_rank == rank
+        assert parsed.category == "readable_unlinked"
+        assert parsed.exceptions == ()
+
+
+def test_pin_rank_explicit_field_keeps_original_system_and_ordinary_name_text():
+    assert parse_player("彭景华", "五品").display_rank == "五品"
+    assert parse_player("彭景华五品", "五段").exceptions == ("rank_conflict",)
+    for name in ("品川五郎", "五品香", "陈品安"):
+        parsed = parse_player(name, None)
+        assert parsed.name == name
+        assert parsed.embedded_rank is None
+
+
 def test_sgf_property_fragment_is_corrupt_not_a_player_and_rank_suffix():
     parsed = parse_player("崔珪昞]BR[九段", None)
     assert parsed.raw_name == "崔珪昞]BR[九段"

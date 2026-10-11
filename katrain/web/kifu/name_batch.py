@@ -5,7 +5,10 @@ from __future__ import annotations
 from contextlib import contextmanager
 from collections import defaultdict
 from datetime import datetime, timezone
+from functools import lru_cache
 import hashlib
+import json
+from pathlib import Path
 import re
 
 from sqlalchemy import DateTime, func, or_, select, text
@@ -278,16 +281,37 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
         return _name_preimage_sha256(conn, owner, lang)
 
 
+def _raw_player_source_meaning_sha256(research: dict) -> str:
+    """Pin the original literal and generation basis while allowing a new finite scope."""
+    return canonical_sha256({key: research.get(key) for key in (
+        "original_name", "original_language", "source_input", "generation")})
+
+
+@lru_cache(maxsize=1)
+def _quarantined_raw_player_preimages() -> dict:
+    """The 121 status-only QA changes, bound to their TEST and PROD row preimages."""
+    record = json.loads((Path(__file__).parent / "data" / "kifu_firstpass_quarantine_712.json").read_text())
+    return {(cell["raw_player_id"], cell["lang"]): frozenset(cell["review_name_sha256"])
+            for cell in record["cells"]}
+
+
 def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
                                  prior_proofs: dict | None = None) -> None:
-    """Validate the reviewed player exception or a signed generated raw-title revision."""
+    """Validate a reviewed display correction or unchanged raw-player scope refresh."""
     from katrain.web.kifu.name_evidence import EvidenceError, _validate_check
     from katrain.web.kifu.name_first_pass import persisted_eligible
 
     owner, lang = candidate["owner"], candidate["lang"]
     marker = candidate.get("first_pass_correction")
     if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
-        _check_generated_raw_event_correction(conn, candidate, marker, prior_proofs)
+        _check_generated_raw_correction(conn, candidate, marker, prior_proofs, owner_kind="raw_event")
+        return
+    if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-scope-refresh-v1":
+        _check_generated_raw_correction(conn, candidate, marker, prior_proofs,
+                                        owner_kind="raw_player", scope_refresh=True)
+        return
+    if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-semantic-correction-v1":
+        _check_generated_raw_correction(conn, candidate, marker, prior_proofs, owner_kind="raw_player")
         return
     allowed = _FIRST_PASS_CORRECTION_CELLS.get((owner.get("id"), lang)) if owner.get("kind") == "raw_player" else None
     _fail(allowed is not None and isinstance(marker, dict) and set(marker) == {
@@ -362,17 +386,23 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
           "first-pass correction old name lacks complete generated journal proof")
 
 
-def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict,
-                                          prior_proofs: dict | None = None) -> None:
-    """Correct only the current signed generated raw title and its exact journaled revision."""
+def _check_generated_raw_correction(conn, candidate: dict, marker: dict,
+                                    prior_proofs: dict | None = None, *, owner_kind: str,
+                                    scope_refresh: bool = False) -> None:
+    """Revise a generated literal with its exact prior journal and a new approved scope."""
     from katrain.web.kifu.name_first_pass import VERSION, persisted_eligible
 
     owner, lang = candidate["owner"], candidate["lang"]
+    refresh = scope_refresh
+    player_correction = owner_kind == "raw_player" and not refresh
+    label = ("generated raw-player scope refresh" if refresh else
+             "generated raw-player correction" if player_correction else "generated raw-event correction")
+    extra_keys = {"source_meaning_sha256"} if refresh else set()
     _fail(set(marker) == {
         "version", "owner", "lang", "raw_value", "name_preimage_sha256",
         "prior_name_revision", "prior_candidate_sha256", "prior_evidence_sha256",
         "prior_batch_id", "prior_bundle_sha256",
-    } and owner.get("kind") == "raw_event" and marker["owner"] == owner
+    } | extra_keys and owner.get("kind") == owner_kind and marker["owner"] == owner
           and marker["lang"] == lang and marker["raw_value"] == candidate.get("raw_value")
           and marker["name_preimage_sha256"] == candidate.get("name_preimage_sha256")
           and candidate.get("decision_kind") == "generated"
@@ -381,34 +411,42 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict,
           and all(type(marker[key]) is int and marker[key] > 0
                   for key in ("prior_name_revision", "prior_batch_id"))
           and all(isinstance(marker[key], str) and _SHA256.fullmatch(marker[key])
-                  for key in ("name_preimage_sha256", "prior_candidate_sha256",
-                              "prior_evidence_sha256", "prior_bundle_sha256")),
-          "generated raw-event correction marker or target differs")
-    table = KifuRawEventName.__table__
-    current = conn.execute(select(table).where(table.c.raw_event_id == owner["id"],
+                  for key in {"name_preimage_sha256", "prior_candidate_sha256",
+                              "prior_evidence_sha256", "prior_bundle_sha256"} | extra_keys),
+          f"{label} marker or target differs")
+    owner_model, name_model, owner_column = _OWNER[owner_kind]
+    table = name_model.__table__
+    current = conn.execute(select(table).where(table.c[owner_column] == owner["id"],
                                                table.c.lang == lang)).mappings().one_or_none()
-    _fail(current is not None and current["status"] == "verified"
+    _fail(current is not None and current["status"] in ({"verified", "review"} if player_correction else {"verified"})
           and current["decision_kind"] == "generated"
           and current["generation_rule_version"] == VERSION
           and current["revision"] == marker["prior_name_revision"]
           and current["evidence_id"] is not None,
-          "generated raw-event correction old live name or revision differs")
+          f"{label} old live name or revision differs")
+    if refresh:
+        _fail(candidate.get("display_name") == current["display_name"],
+              "generated raw-player scope refresh cannot change display")
     name = _image(conn, table, current["id"])
     _fail(canonical_sha256(name) == marker["name_preimage_sha256"],
-          "generated raw-event correction name preimage changed")
+          f"{label} name preimage changed")
+    quarantined = player_correction and name["status"] == "review"
+    if quarantined:
+        _fail(marker["name_preimage_sha256"] in _quarantined_raw_player_preimages().get((owner["id"], lang), ()),
+              "generated raw-player correction is outside the recorded QA quarantine preimages")
     evidence = _image(conn, KifuNameResearchEvidence.__table__, current["evidence_id"])
     _fail(evidence is not None and evidence["review_status"] == "approved"
           and evidence["decision_kind"] == "generated"
           and evidence["generation_rule_version"] == VERSION
           and canonical_sha256(evidence) == marker["prior_evidence_sha256"],
-          "generated raw-event correction old evidence or status differs")
+          f"{label} old evidence or status differs")
     payload = evidence.get("research_payload")
     old_candidate = payload.get("candidate") if isinstance(payload, dict) else None
     proof = payload.get("first_pass") if isinstance(payload, dict) else None
     _fail(isinstance(old_candidate, dict) and isinstance(proof, dict)
           and canonical_sha256(old_candidate) == marker["prior_candidate_sha256"]
           and proof.get("batch_id") == marker["prior_batch_id"],
-          "generated raw-event correction old candidate or batch proof differs")
+          f"{label} old candidate or batch proof differs")
     proof_key = (marker["prior_batch_id"], marker["prior_bundle_sha256"])
     prior_proof = prior_proofs.get(proof_key) if prior_proofs is not None else None
     if prior_proof is None:
@@ -418,7 +456,7 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict,
         _fail(batch is not None and batch["status"] == "applied"
               and isinstance(bundle, dict)
               and batch["bundle_sha256"] == marker["prior_bundle_sha256"] == canonical_sha256(bundle),
-              "generated raw-event correction prior signed bundle differs")
+              f"{label} prior signed bundle differs")
         members = ({canonical_sha256(item) for item in bundle.get("candidates", ())},
                    set(artifact.get("research_hashes", ())))
         prior_proof = (batch, members)
@@ -429,16 +467,21 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict,
                conn.execute(select(KifuNameChange.__table__).where(
                    KifuNameChange.batch_id == marker["prior_batch_id"],
                    or_(
-                       (KifuNameChange.target_table == KifuRawEventName.__tablename__)
+                       (KifuNameChange.target_table == name_model.__tablename__)
                        & (KifuNameChange.target_row_id == name["id"]),
                        (KifuNameChange.target_table == KifuNameResearchEvidence.__tablename__)
                        & (KifuNameChange.target_row_id == evidence["id"]),
                    ))).mappings()}
-    live_owner = _image(conn, KifuRawEventValue.__table__, owner["id"])
+    live_owner = _image(conn, owner_model.__table__, owner["id"])
+    # QA changed status only. Check that exact original creation without modifying history.
+    original_name = {**name, "status": "verified"} if quarantined else name
     _fail(live_owner is not None and live_owner["raw_value"] == marker["raw_value"]
-          and persisted_eligible(name, evidence, "raw_event", live_owner, batch, changes,
+          and persisted_eligible(original_name, evidence, owner_kind, live_owner, batch, changes,
                                  batch_members=members),
-          "generated raw-event correction lacks current generated journal proof")
+          f"{label} lacks current generated journal proof")
+    if refresh:
+        _fail(marker["source_meaning_sha256"] == _raw_player_source_meaning_sha256(payload["research"]),
+              "generated raw-player scope refresh original source meaning differs")
 
 
 def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = None,
@@ -479,7 +522,7 @@ def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = 
 def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: dict[str, dict], owners: list[dict]) -> None:
     """Bind every generated source to the current complete owner/source images."""
     from katrain.web.kifu.name_first_pass import (
-        VERSION, RECORD_LABEL_MODE, READABLE_RAW_CATEGORIES, eligible_record_label, raw_scope_rows_many,
+        VERSION, RECORD_LABEL_MODE, READABLE_RAW_CATEGORIES, eligible_damaged_nec_title, eligible_record_label, raw_scope_rows_many,
         raw_player_scope_live,
     )
 
@@ -506,14 +549,22 @@ def _check_first_pass_sources(conn, candidates: list[dict], research_by_hash: di
         if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
             _fail(kind == "raw_event_literal" and research["generation"].get("method") == "translation",
                   "generated raw-event correction needs literal translation research")
+        if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-scope-refresh-v1":
+            _fail(kind == "raw_player_literal"
+                  and _raw_player_source_meaning_sha256(research) == marker.get("source_meaning_sha256"),
+                  "generated raw-player scope refresh source meaning changed")
+        if isinstance(marker, dict) and marker.get("version") == "generated-raw-player-semantic-correction-v1":
+            _fail(kind == "raw_player_literal", "generated raw-player correction needs literal research")
         if kind == "catalog_canonical":
             _fail(live_owner["canonical_name"] == source["text"], "first-pass canonical source changed")
         elif kind == "raw_event_literal":
             _fail(live_owner["raw_value"] == source["text"], "first-pass raw source changed")
             record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
             _fail(eligible_record_label(research, live_owner["category"]) if record_mode else (
-                live_owner["category"] in READABLE_RAW_CATEGORIES
-                and parse_event(source["text"], None).category in READABLE_RAW_CATEGORIES),
+                (live_owner["category"] in READABLE_RAW_CATEGORIES
+                 and parse_event(source["text"], None).category in READABLE_RAW_CATEGORIES)
+                or (eligible_damaged_nec_title(research, live_owner["category"])
+                    and parse_event(source["text"], None).category == "corrupt_data")),
                   "first-pass raw source is classified as a program, generic, damaged or archive value")
             _fail(research["raw_scope"]["slots"] == raw_scopes[source["text"]],
                   "first-pass raw occurrence scope changed")

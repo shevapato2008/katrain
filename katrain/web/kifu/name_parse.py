@@ -8,9 +8,12 @@ import re
 from dataclasses import dataclass
 
 
-_EMBEDDED_DAN = re.compile(r"(.{2,}?)\s*([一二三四五六七八九])段\Z")
+_EMBEDDED_RANK = re.compile(r"(.{2,}?)\s*([一二三四五六七八九])([段品])\Z")
 _EXPLICIT_RANK = re.compile(
-    r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*[段级級]|[1-9]\d?\s*(?:[dkp]|dan|kyu|pro)", re.IGNORECASE
+    r"(?:[一二三四五六七八九十初]|[1-9]\d?)\s*[段级級]"
+    r"|[一二三四五六七八九]\s*品"
+    r"|[1-9]\d?\s*(?:[dkp]|dan|kyu|pro)",
+    re.IGNORECASE,
 )
 _DAN_NUMBER = re.compile(r"([一二三四五六七八九]|[1-9])\s*(?:段|d)", re.IGNORECASE)
 _SGF_FRAGMENT = re.compile(r"[\[\]]")
@@ -65,8 +68,8 @@ def parse_player(raw: str | None, rank: str | None) -> PlayerParse:
     elif not text or text.casefold() in _PLACEHOLDERS:
         name, embedded, category = text, None, "placeholder"
     else:
-        match = _EMBEDDED_DAN.fullmatch(text)
-        name, embedded = (match.group(1).strip(), f"{match.group(2)}段") if match else (text, None)
+        match = _EMBEDDED_RANK.fullmatch(text)
+        name, embedded = (match.group(1).strip(), f"{match.group(2)}{match.group(3)}") if match else (text, None)
         category = "readable_unlinked"
 
     valid_explicit = bool(_EXPLICIT_RANK.fullmatch(explicit))

@@ -13,6 +13,28 @@ _SGF_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,127}(?:\.sgf|sgf)$", re.I
 RECORD_LABEL_MODE = "literal_record_label"
 RECORD_LABELS = {"cn": "棋谱标记：{raw}", "tw": "棋譜標記：{raw}",
                  "jp": "棋譜ラベル：{raw}", "ko": "기보 표기: {raw}", "en": "Record label: {raw}"}
+DAMAGED_NEC_LITERAL = "14thNECCup\\[China-JapanShinshu"
+DAMAGED_NEC_DISPLAYS = {
+    "cn": "第14届中日NEC杯新秀对抗赛三番棋",
+    "tw": "第14屆中日NEC盃新秀對抗賽三番棋",
+    "jp": "第14回中日NEC杯新秀対抗戦三番勝負",
+    "ko": "제14회 중일 NEC배 신예 대항전 3번기",
+    "en": "14th China-Japan NEC New Stars Match, Best of Three",
+}
+
+
+def eligible_damaged_nec_title(research, owner_category=None):
+    """The single reviewed damaged SGF event literal and its five exact translations."""
+    if not isinstance(research, dict):
+        return False
+    source, generation, owner = (research.get(key) for key in ("source_input", "generation", "owner"))
+    return (isinstance(source, dict) and isinstance(generation, dict) and isinstance(owner, dict)
+            and owner.get("kind") == "raw_event" and source.get("owner") == owner
+            and source.get("kind") == "raw_event_literal"
+            and source.get("text") == research.get("original_name") == DAMAGED_NEC_LITERAL
+            and research.get("candidate_name") == DAMAGED_NEC_DISPLAYS.get(research.get("lang"))
+            and generation.get("method") == "translation" and generation.get("submode") is None
+            and owner_category in (None, "corrupt_data"))
 
 
 def record_label_kind(raw):
@@ -94,7 +116,8 @@ def validate_research(record):
     if source["kind"] == "raw_event_literal":
         from katrain.web.kifu.name_parse import parse_event
         category = parse_event(source["text"], None).category
-        if not eligible_record_label(record, category) and category not in READABLE_RAW_CATEGORIES:
+        if not (eligible_record_label(record, category) or eligible_damaged_nec_title(record, category)
+                or category in READABLE_RAW_CATEGORIES):
             raise ValueError("first pass cannot rename a program, generic, damaged or archive value")
         if (generation.get("submode") == RECORD_LABEL_MODE or "record_label_basis" in source
                 or record.get("candidate_name", "").startswith(tuple(
@@ -420,7 +443,8 @@ def persisted_eligible(name, evidence, owner_kind, owner, batch, changes,
         record_mode = research["generation"].get("submode") == RECORD_LABEL_MODE
         if record_mode and not eligible_record_label(research, owner.get("category")):
             return False
-        if not record_mode and owner.get("category") not in READABLE_RAW_CATEGORIES:
+        if not record_mode and owner.get("category") not in READABLE_RAW_CATEGORIES \
+                and not eligible_damaged_nec_title(research, owner.get("category")):
             return False
     if source["kind"] == "raw_player_literal" and (owner.get("raw_value") != source["text"]
             or owner.get("category") != "readable_unlinked"

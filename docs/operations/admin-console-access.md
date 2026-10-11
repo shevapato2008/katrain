@@ -9,6 +9,32 @@
 - 上线教程管理前，必须处理现有全表替换式教程同步：先备份并核对差异，暂停或修改会覆盖后台在线编辑的路径。媒体若走对象存储，后台只允许配置中的公开媒体域名作为图片/音视频来源。
 - 每次真实数据库写入、push、测试部署、生产部署和远程连接均是独立审批动作；设计稿或本地测试通过不代表这些动作已获准。
 
+## 统一 SmartBox 后台 provider 切换
+
+Go 保留管理业务/API、数据审计、运行时以及现有 `katrain-web:local` 镜像。独立 SmartBox console 负责新登录和中央命令历史；它不是 Go/player 服务。`docker-compose.yml` 仅向 `katrain-admin` 注入可选 `KATRAIN_ADMIN_SERVICE_SECRET` 和 `KATRAIN_ADMIN_PROVIDER_ONLY`，默认 service key 为空、provider-only 为 0，旧登录/端口行为不变。启用 `KATRAIN_ADMIN_PROVIDER_ONLY=1` 后关闭旧 UI/登录，只接受新 service assertion，不再要求旧后台口令哈希或 session key。
+
+将 [provider 环境模板](../../deploy/admin-provider.env.example) 的值合并进现有私有 owner env，保留业务库、媒体、player key。新的强 service key 至少 32 字符，必须与 player key、旧后台 session key、console session key、platform service key 各不相同；console 的 `SMARTBOX_ADMIN_KATRAIN_SERVICE_SECRET` 与它一致。`KATRAIN_ADMIN_USERNAME=admin:fan`，owner 和 console 环境必须一致。
+
+切换顺序：先将 provider 的 `KATRAIN_ADMIN_HOST_PORT` 改为已核实空闲的 loopback 端口（如 18010），重建 `katrain-admin`，确认旧 operator 端口释放后，console 才可使用该端口。生产旧端口 8010；home-ubuntu 测试旧端口 8012，8010 属于 `katago-calib`，不得挪用。Go 容器内依然是 8010；console 通过声明式 external network 访问 `http://katrain-admin:8010`，网络名必须使用当前 Go Compose 实际名称，不通过 `host.docker.internal` 访问宿主机 loopback。声明式挂载随容器重建保留。
+
+重建 provider 前必须先在获批 Go commit 上构建 `katrain-web:local`：只有 Compose 的 `katrain-web` 定义 build，`katrain-admin` 复用该镜像。`KATRAIN_BUILD_SHA` 仅在镜像构建时写入，单改 env 再 recreate 仍可能运行旧代码。构建前用 `docker inspect --format '{{.Image}}' katrain-admin` 记录当前 provider 的具体 image ID，并用 `docker tag '<previous-image-id>' 'katrain-web:admin-rollback-<previous-release>'`（替换占位）保留独立回退 tag；记录 ID/tag 与上一配对版本。
+
+```sh
+docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml config -q
+KATRAIN_BUILD_SHA="$(git rev-parse HEAD)" docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml build katrain-web
+docker compose --env-file /PRIVATE/go.env --profile admin -f docker-compose.yml up -d --no-deps --force-recreate katrain-admin
+```
+
+构建只更新镜像 tag，不重建运行中的 web/cron/engine；随后仅重建 provider。容器环境修改必须 recreate；`restart` 不会注入新值。回退时先停止 console 释放 operator 端口，用 `docker tag 'katrain-web:admin-rollback-<previous-release>' katrain-web:local`（替换版本占位）恢复已记录镜像，再恢复上一配对版本/私有 env/legacy 凭据和 host port 并重建 provider；保留 console 的持久审计卷。公开 nginx 管理路径拒绝规则不变。完整 console/platform 版本配对、迁移、独立失败和回退步骤见 SmartBox `admin-console/deploy/README.md`。
+
+原生本机模式固定 Go `127.0.0.1:8010`、console `127.0.0.1:8011`。没有 local/test opt-in 时 Go CLI 默认绑定 `0.0.0.0`，因此普通原生服务应显式用 loopback factory：
+
+```sh
+python -c 'import uvicorn; from katrain.web.admin.app import create_admin_app; uvicorn.run(create_admin_app(bind_host="127.0.0.1"), host="127.0.0.1", port=8010, workers=1)'
+```
+
+本机摄像头仍要求 `local`、`KATRAIN_ADMIN_VISION_LOCAL=1` 和实际 loopback bind；训练仍遵守下节 test/Linux/已核实配置条件。Cloud/prod 两项能力保持关闭，不增加浏览器硬件向云端的隧道。
+
 ## 视觉训练：本地实现，测试机尚未启用
 
 训练 API 已实现，但默认关闭。Mac/local 和 prod 永远不能开启本旅程；页面不会自动 SSH、探测远端 GPU 或上传。真实训练采用测试机独立 loopback admin 进程，Mac 通过**另经批准的隧道**访问不同 origin/端口并独立登录。现有 Docker 后台不因此自动获得 GPU 或训练依赖。

@@ -1,6 +1,7 @@
 """Separate admin ASGI app with no public routes or database initialization."""
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlparse
@@ -110,11 +111,14 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     async def performance():
         return {**grafana, "env": config.env}
 
-    @app.get("/api/admin/health")
-    async def health():
-        return {"status": "ok", "env": config.env}
+    build = os.getenv("KATRAIN_BUILD_SHA") or "unknown"
 
-    app.include_router(auth_router)
+    @app.get("/api/admin/health", dependencies=[Depends(get_current_admin)] if config.provider_only else [])
+    async def health():
+        return {"status": "ok", "owner": "katrain", "env": config.env, "admin_contract": 1, "build": build}
+
+    if not config.provider_only:
+        app.include_router(auth_router)
     app.include_router(cron_router, prefix="/api/admin/cron", tags=["admin-cron"])
     app.include_router(vision_router, prefix="/api/admin/vision", tags=["admin-vision"])
     app.include_router(kifu_router, prefix="/api/admin/kifu", tags=["admin-kifu"])
@@ -128,6 +132,9 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, bind_
     app.include_router(tutorial_write_router, prefix="/api/admin/tutorials", tags=["admin-tutorials"])
     app.include_router(tutorial_read_router, prefix="/api/v1/tutorials", tags=["tutorial-reads"])
     app.dependency_overrides[get_db] = get_admin_db
+
+    if config.provider_only:
+        return app
 
     static_root = Path(static_dir) if static_dir is not None else DEFAULT_STATIC_DIR
     index = static_root / "admin.html"

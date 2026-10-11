@@ -216,7 +216,14 @@ async def test_admin_token_is_rejected_by_public_api_identity(admin_config, monk
 def test_admin_app_has_admin_routes_and_same_origin_tutorial_reads_and_static(client, tmp_path):
     from katrain.web.admin.app import CSP, NOT_BUILT, create_admin_app
 
-    assert client.get("/api/admin/health").json() == {"status": "ok", "env": "test"}
+    health = client.get("/api/admin/health").json()
+    assert {key: health[key] for key in ("status", "owner", "env", "admin_contract")} == {
+        "status": "ok",
+        "owner": "katrain",
+        "env": "test",
+        "admin_contract": 1,
+    }
+    assert health["build"]
     assert client.get("/").status_code == 503
     assert client.get("/").text == NOT_BUILT
     (tmp_path / "admin.html").write_text("<html>admin</html>", encoding="utf-8")

@@ -278,7 +278,8 @@ def name_preimage_sha256(engine, owner: dict, lang: str) -> str | None:
         return _name_preimage_sha256(conn, owner, lang)
 
 
-def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -> None:
+def _check_first_pass_correction(conn, candidate: dict, registry: dict | None,
+                                 prior_proofs: dict | None = None) -> None:
     """Validate the reviewed player exception or a signed generated raw-title revision."""
     from katrain.web.kifu.name_evidence import EvidenceError, _validate_check
     from katrain.web.kifu.name_first_pass import persisted_eligible
@@ -286,7 +287,7 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -
     owner, lang = candidate["owner"], candidate["lang"]
     marker = candidate.get("first_pass_correction")
     if isinstance(marker, dict) and marker.get("version") == "generated-raw-event-semantic-correction-v1":
-        _check_generated_raw_event_correction(conn, candidate, marker)
+        _check_generated_raw_event_correction(conn, candidate, marker, prior_proofs)
         return
     allowed = _FIRST_PASS_CORRECTION_CELLS.get((owner.get("id"), lang)) if owner.get("kind") == "raw_player" else None
     _fail(allowed is not None and isinstance(marker, dict) and set(marker) == {
@@ -361,7 +362,8 @@ def _check_first_pass_correction(conn, candidate: dict, registry: dict | None) -
           "first-pass correction old name lacks complete generated journal proof")
 
 
-def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict) -> None:
+def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict,
+                                          prior_proofs: dict | None = None) -> None:
     """Correct only the current signed generated raw title and its exact journaled revision."""
     from katrain.web.kifu.name_first_pass import VERSION, persisted_eligible
 
@@ -407,13 +409,22 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict) -
           and canonical_sha256(old_candidate) == marker["prior_candidate_sha256"]
           and proof.get("batch_id") == marker["prior_batch_id"],
           "generated raw-event correction old candidate or batch proof differs")
-    batch = _image(conn, KifuNameBatch.__table__, marker["prior_batch_id"])
-    artifact = batch.get("reviewed_artifact") if batch else None
-    bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
-    _fail(batch is not None and batch["status"] == "applied"
-          and isinstance(bundle, dict)
-          and batch["bundle_sha256"] == marker["prior_bundle_sha256"] == canonical_sha256(bundle),
-          "generated raw-event correction prior signed bundle differs")
+    proof_key = (marker["prior_batch_id"], marker["prior_bundle_sha256"])
+    prior_proof = prior_proofs.get(proof_key) if prior_proofs is not None else None
+    if prior_proof is None:
+        batch = _image(conn, KifuNameBatch.__table__, marker["prior_batch_id"])
+        artifact = batch.get("reviewed_artifact") if batch else None
+        bundle = artifact.get("bundle") if isinstance(artifact, dict) else None
+        _fail(batch is not None and batch["status"] == "applied"
+              and isinstance(bundle, dict)
+              and batch["bundle_sha256"] == marker["prior_bundle_sha256"] == canonical_sha256(bundle),
+              "generated raw-event correction prior signed bundle differs")
+        members = ({canonical_sha256(item) for item in bundle.get("candidates", ())},
+                   set(artifact.get("research_hashes", ())))
+        prior_proof = (batch, members)
+        if prior_proofs is not None:
+            prior_proofs[proof_key] = prior_proof
+    batch, members = prior_proof
     changes = {(change["target_table"], change["target_row_id"]): dict(change) for change in
                conn.execute(select(KifuNameChange.__table__).where(
                    KifuNameChange.batch_id == marker["prior_batch_id"],
@@ -423,8 +434,6 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict) -
                        (KifuNameChange.target_table == KifuNameResearchEvidence.__tablename__)
                        & (KifuNameChange.target_row_id == evidence["id"]),
                    ))).mappings()}
-    members = ({canonical_sha256(item) for item in bundle.get("candidates", ())},
-               set(artifact.get("research_hashes", ())))
     live_owner = _image(conn, KifuRawEventValue.__table__, owner["id"])
     _fail(live_owner is not None and live_owner["raw_value"] == marker["raw_value"]
           and persisted_eligible(name, evidence, "raw_event", live_owner, batch, changes,
@@ -432,8 +441,11 @@ def _check_generated_raw_event_correction(conn, candidate: dict, marker: dict) -
           "generated raw-event correction lacks current generated journal proof")
 
 
-def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = None) -> None:
+def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = None,
+                          prior_proofs: dict | None = None) -> None:
     from katrain.web.kifu.name_first_pass import VERSION as FIRST_PASS_VERSION
+    if prior_proofs is None:
+        prior_proofs = {}
     for candidate in candidates:
         if candidate["decision_kind"] == "composed":
             capture = candidate.get("preimage_binding", {}).get("capture_sha256")
@@ -453,7 +465,7 @@ def _check_name_preimages(conn, candidates: list[dict], registry: dict | None = 
         actual = _name_preimage_sha256(conn, owner, candidate["lang"])
         _fail(actual == expected, f"name preimage changed: {_owner_ref(owner)}:{candidate['lang']}")
         if "first_pass_correction" in candidate:
-            _check_first_pass_correction(conn, candidate, registry)
+            _check_first_pass_correction(conn, candidate, registry, prior_proofs)
         if candidate.get("generation_rule_version") == FIRST_PASS_VERSION:
             _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
             target = conn.execute(select(name_model.__table__).where(
@@ -1072,7 +1084,8 @@ def _check_cross_bundle_collisions(conn, candidates: list[dict], *, owners=(), r
 
 
 def _inspect(
-    conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict], *, approved_snapshot=None
+    conn, bundle: dict, registry: dict, inventory: dict, evidence_records: list[dict], *, approved_snapshot=None,
+    prior_proofs: dict | None = None,
 ) -> dict:
     if (
         bundle.get("transliteration") is not None or bundle.get("primary_orthographic") is not None
@@ -1088,7 +1101,7 @@ def _inspect(
     if bundle["bundle_format"] in {2, 3, 4}:
         _check_owner_manifest(conn, bundle)
         _check_album_links(conn, bundle)
-    _check_name_preimages(conn, bundle["candidates"], registry)
+    _check_name_preimages(conn, bundle["candidates"], registry, prior_proofs)
     if bundle.get("primary_orthographic") is not None or any(
         row.get("source_basis") == "normative_zh_ko_v1" for row in evidence_records
     ):
@@ -1203,7 +1216,8 @@ def _candidate_evidence(
 def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registry_id: int,
                      batch_id: int, sequence: int, resolved: dict[str, int] | None = None,
                      composition: dict | None = None, raw_display_scope: dict | None = None,
-                     archive_description: dict | None = None, registry: dict | None = None) -> int:
+                     archive_description: dict | None = None, registry: dict | None = None,
+                     prior_proofs: dict | None = None) -> int:
     owner = row["owner"]
     owner_id = resolved[_owner_ref(owner)] if resolved is not None else owner["id"]
     _owner_model, name_model, owner_column = _OWNER[owner["kind"]]
@@ -1211,7 +1225,7 @@ def _apply_candidate(conn, row: dict, research_by_hash: dict[str, dict], registr
     current = conn.execute(select(name_table).where(name_table.c[owner_column] == owner_id,
                                                     name_table.c.lang == row["lang"])).mappings().one_or_none()
     if "first_pass_correction" in row:
-        _check_first_pass_correction(conn, row, registry)
+        _check_first_pass_correction(conn, row, registry, prior_proofs)
     if row.get("generation_rule_version") == "user_authorized_first_pass_v1":
         _fail("first_pass_correction" in row or current is None
               or current["status"] != "verified" and current["evidence_id"] is None,
@@ -1522,7 +1536,9 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 _check_applied_v4(conn, previous, bundle)
             return {"status": "already_applied", "batch_id": previous["id"], "change_count": 0}
         approved_snapshot = _approved_name_snapshot(conn) if has_transliteration else None
-        report = _inspect(conn, bundle, registry, inventory, evidence_records, approved_snapshot=approved_snapshot)
+        prior_proofs = {}
+        report = _inspect(conn, bundle, registry, inventory, evidence_records,
+                          approved_snapshot=approved_snapshot, prior_proofs=prior_proofs)
         registry_id, _registry_after = _source_registry_for_batch(conn, registry, bundle)
         batch_id, _ = _insert(
             conn,
@@ -1568,7 +1584,7 @@ def apply_bundle(engine, bundle: dict, registry: dict, inventory: dict, evidence
                 if candidate["decision_kind"] == "archive_description" else None)
             sequence = _apply_candidate(conn, candidate, research_by_hash, registry_id, batch_id, sequence,
                                         resolved if bundle["bundle_format"] in {2, 3, 4} else None,
-                                        bundle.get("composition"), raw_scope, archive, registry)
+                                        bundle.get("composition"), raw_scope, archive, registry, prior_proofs)
         if bundle["bundle_format"] == 4:
             sequence = _apply_links(conn, bundle, batch_id, sequence, resolved)
         if bundle["bundle_format"] in {2, 3, 4}:

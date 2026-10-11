@@ -1236,6 +1236,76 @@ def _corrected_raw_event_bundle(engine, prior_bundle, prior_research, prior_batc
     return corrected, research
 
 
+def test_generated_raw_event_prior_proof_reused_per_transaction_with_live_cas(engine, monkeypatch):
+    from katrain.web.core.models_db import KifuNameBatch
+    from katrain.web.kifu import name_batch
+
+    inv, prior, records = bound_shared_raw_event_bundle(engine)
+    records[1]["candidate_name"] = "28th Honinbo Tournament Chinese record"
+    prior["candidates"][1]["display_name"] = records[1]["candidate_name"]
+    prior["candidates"][1]["research_sha256"] = canonical_sha256(records[1])
+    prior["candidates"][1]["generated_review"].update(
+        display_name=records[1]["candidate_name"],
+        research_sha256=prior["candidates"][1]["research_sha256"],
+    )
+    applied = apply_bundle(engine, prior, db_registry(), inv, records)
+    corrections, corrected_records = [], []
+    for index, display in enumerate(("28th Honinbo Championship", "28th Honinbo Championship Chinese record")):
+        one, one_records = _one_shared_raw_event_bundle(prior, records, index)
+        corrected, research = _corrected_raw_event_bundle(
+            engine, one, one_records[0], applied["batch_id"], display)
+        corrections.append(corrected["candidates"][0])
+        corrected_records.append(research)
+    corrected_bundle = deepcopy(prior)
+    corrected_bundle["candidates"] = corrections
+
+    original_image = name_batch._image
+    original_sha = name_batch.canonical_sha256
+    batch_reads = 0
+    prior_bundle_hashes = 0
+
+    def counted_image(conn, table, row_id):
+        nonlocal batch_reads
+        if table.name == KifuNameBatch.__tablename__ and row_id == applied["batch_id"]:
+            batch_reads += 1
+        return original_image(conn, table, row_id)
+
+    def counted_sha(value):
+        nonlocal prior_bundle_hashes
+        if value == prior:
+            prior_bundle_hashes += 1
+        return original_sha(value)
+
+    monkeypatch.setattr(name_batch, "_image", counted_image)
+    monkeypatch.setattr(name_batch, "canonical_sha256", counted_sha)
+    assert dry_run_bundle(engine, corrected_bundle, db_registry(), inv, corrected_records)["ready"]
+    assert (batch_reads, prior_bundle_hashes) == (1, 1)
+    assert dry_run_bundle(engine, corrected_bundle, db_registry(), inv, corrected_records)["ready"]
+    assert (batch_reads, prior_bundle_hashes) == (2, 2)  # A new transaction reloads the prior proof.
+
+    with engine.connect() as conn:
+        name_row = conn.execute(KifuRawEventName.__table__.select().where(
+            KifuRawEventName.raw_event_id == corrections[0]["owner"]["id"],
+            KifuRawEventName.lang == corrections[0]["lang"],
+        )).mappings().one()
+        forged = deepcopy(corrections[0])
+        forged["name_preimage_sha256"] = "b" * 64
+        with pytest.raises(BatchError, match="name preimage changed"):
+            _check_name_preimages(conn, [forged], db_registry())
+        conn.execute(KifuNameResearchEvidence.__table__.update().where(
+            KifuNameResearchEvidence.id == name_row["evidence_id"]).values(review_status="pending"))
+        with pytest.raises(BatchError, match="old evidence or status differs"):
+            _check_name_preimages(conn, [corrections[0]], db_registry())
+        conn.execute(KifuRawEventName.__table__.update().where(
+            KifuRawEventName.id == name_row["id"]).values(display_name="tampered title"))
+        with pytest.raises(BatchError, match="name preimage changed"):
+            _check_name_preimages(conn, [corrections[0]], db_registry())
+
+    result = apply_bundle(engine, corrected_bundle, db_registry(), inv, corrected_records)
+    assert result["status"] == "applied"
+    assert (batch_reads, prior_bundle_hashes) == (3, 3)  # Apply reuses proof in its write loop.
+
+
 def test_generated_raw_event_semantic_correction_twice_keeps_reader_and_journal(engine):
     from katrain.web.kifu import name_batch
 

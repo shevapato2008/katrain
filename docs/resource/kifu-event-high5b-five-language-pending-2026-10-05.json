@@ -1,0 +1,208 @@
+{
+  "status": "producer-pending-independent-review",
+  "producer_id": "/root/event10_review_apply",
+  "producer_model": "gpt-6-astra",
+  "reasoning_effort": "max",
+  "produced_at": "2026-10-05T10:38:27.933074+00:00",
+  "database_writes": false,
+  "event_ids": [
+    79,
+    71,
+    31,
+    49,
+    68
+  ],
+  "languages": [
+    "cn",
+    "tw",
+    "jp",
+    "ko",
+    "en"
+  ],
+  "candidate_count": 25,
+  "conventional_count": 16,
+  "translated_count": 9,
+  "targets": {
+    "TEST": {
+      "captured_at": "2026-10-05T10:19:18.874269+00:00",
+      "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+      "catalog_sha256": "f2e4d322966039cd8fba4dba45dad952b9f2f24611c633ebc5c61384945b7079",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/TEST/current.json",
+      "bundle_sha256": "097411b2ce5949f44208228c37fb8add0bd9621e7facefa37d68b491f4b70581",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "2b6bcb4e6dd0be06c742b9c45722a0110cfed08bc3ed48e287622438498e344f",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "79": {
+          "event_id": 79,
+          "linked_rows": 1002,
+          "unique_games": 1002,
+          "visible_unique_games": 1002
+        },
+        "71": {
+          "event_id": 71,
+          "linked_rows": 949,
+          "unique_games": 949,
+          "visible_unique_games": 949
+        },
+        "31": {
+          "event_id": 31,
+          "linked_rows": 943,
+          "unique_games": 943,
+          "visible_unique_games": 943
+        },
+        "49": {
+          "event_id": 49,
+          "linked_rows": 926,
+          "unique_games": 926,
+          "visible_unique_games": 926
+        },
+        "68": {
+          "event_id": 68,
+          "linked_rows": 922,
+          "unique_games": 922,
+          "visible_unique_games": 922
+        }
+      },
+      "unique_visible_games": 4742
+    },
+    "PROD": {
+      "captured_at": "2026-10-05T10:19:17.837725+00:00",
+      "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+      "catalog_sha256": "03cca482ef1dc3e52a109ed0a758e1fdc3f7c4a3dc061aa433b3def1e07df1a4",
+      "catalog_hash_basis_capture": "/tmp/kifu-event-next-high5-20261005/PROD/current.json",
+      "bundle_sha256": "8391ead634260d72b57fb1564ab529605fd1d2fd1c5458093c88a71056747d89",
+      "validation": {
+        "ready": false,
+        "write_ready": false,
+        "write_errors": [],
+        "inventory_sha256": "5e577196429df5f66098fd816340a147702acfb2fe475d83cf1f99c49e872d34",
+        "member_count": 25,
+        "candidate_count": 25,
+        "approved": 0,
+        "pending": 25,
+        "rejected": 0,
+        "missing": 0,
+        "errors": []
+      },
+      "counts_by_event": {
+        "79": {
+          "event_id": 79,
+          "linked_rows": 1002,
+          "unique_games": 1002,
+          "visible_unique_games": 1002
+        },
+        "71": {
+          "event_id": 71,
+          "linked_rows": 949,
+          "unique_games": 949,
+          "visible_unique_games": 949
+        },
+        "31": {
+          "event_id": 31,
+          "linked_rows": 943,
+          "unique_games": 943,
+          "visible_unique_games": 943
+        },
+        "49": {
+          "event_id": 49,
+          "linked_rows": 926,
+          "unique_games": 926,
+          "visible_unique_games": 926
+        },
+        "68": {
+          "event_id": 68,
+          "linked_rows": 922,
+          "unique_games": 922,
+          "visible_unique_games": 922
+        }
+      },
+      "unique_visible_games": 4742
+    }
+  },
+  "events": [
+    {
+      "event_id": 79,
+      "canonical_name": "台湾友士杯十段赛",
+      "unique_visible_games": 1002,
+      "names": {
+        "cn": "友士杯十段赛",
+        "tw": "友士盃十段賽",
+        "jp": "友士杯十段戦",
+        "ko": "우사배십단전",
+        "en": "Shiduan"
+      }
+    },
+    {
+      "event_id": 71,
+      "canonical_name": "日本SGW杯中庸战",
+      "unique_visible_games": 949,
+      "names": {
+        "cn": "日本SGW杯中庸战",
+        "tw": "SGW杯中庸戰",
+        "jp": "SGW杯中庸戦",
+        "ko": "SGW배 중용전",
+        "en": "SGW Cup"
+      }
+    },
+    {
+      "event_id": 31,
+      "canonical_name": "台湾海峰杯职业围棋赛",
+      "unique_visible_games": 943,
+      "names": {
+        "cn": "海峰杯职业围棋赛",
+        "tw": "海峰盃職業圍棋賽",
+        "jp": "海峰杯プロ囲碁戦",
+        "ko": "해봉배 프로바둑대회",
+        "en": "Haifong Cup"
+      }
+    },
+    {
+      "event_id": 49,
+      "canonical_name": "韩国名人战",
+      "unique_visible_games": 926,
+      "names": {
+        "cn": "韩国名人战",
+        "tw": "韓國名人戰",
+        "jp": "韓国名人戦",
+        "ko": "한국 명인전",
+        "en": "Myeongin"
+      }
+    },
+    {
+      "event_id": 68,
+      "canonical_name": "农心辛拉面杯世界围棋团体赛",
+      "unique_visible_games": 922,
+      "names": {
+        "cn": "农心辛拉面杯世界围棋团体锦标赛",
+        "tw": "農心辛拉麵盃世界圍棋團體錦標賽",
+        "jp": "農心辛ラーメン杯 世界囲碁最強戦",
+        "ko": "농심신라면배 세계바둑최강전",
+        "en": "Nongshim Cup"
+      }
+    }
+  ],
+  "translation_notes": {
+    "79-cn": "Convert the official Traditional Chinese event name to Simplified Chinese; 盃→杯, 賽→赛. Preserve 友士 and 十段.",
+    "71-cn": "Preserve the official SGW and 中庸 title; convert 戦→战 and add Japan from the official Nihon Ki-in event identity.",
+    "71-ko": "Retain the Latin sponsor initials SGW; translate 杯 as 배 and 中庸戦 as 중용전. 中庸 is the established Korean Sino-Korean word 중용 (doctrine of the mean), not 中用.",
+    "31-cn": "Simplify the official Traditional Chinese name, preserving the professional-event qualifier 職業圍棋賽→职业围棋赛 and 海峰.",
+    "31-jp": "Preserve the source proper name 海峰; render 盃職業圍棋賽 as 杯プロ囲碁戦, preserving the professional competition scope.",
+    "49-cn": "Render the Korean event title 명인전 as 名人战 and retain an explicit Korea qualifier to distinguish Chinese and Japanese namesakes.",
+    "49-tw": "Render the Korean event title 명인전 as 名人戰 with an explicit 韓國 qualifier.",
+    "68-tw": "Render the officially identified Nongshim Shin Ramyun international team championship in Traditional Chinese using 農心/辛拉麵/世界圍棋團體錦標賽 and Taiwan-style 盃. The Chinese sport authority supplies the corresponding published Chinese full title; this cell is explicitly editorial translation, not claimed local conventional evidence.",
+    "49-ko": "Add the explicit country qualifier 한국 to the native official title 명인전, identifying the Korean Myeongin competition and distinguishing it from the Japanese Meijin title whose approved Korean rendering also uses 명인전. This is a qualified translation from the captured original, not a claim of exact published target usage."
+  },
+  "scope_note": "Names and evidence for existing event types only. No album links, owners, aliases or raw EV text change. Existing type identity/linked rows are reused.",
+  "reader_note": "Existing strict display reads approved type names. Generic raw EV year/edition/round decoration is not added by this data batch."
+}

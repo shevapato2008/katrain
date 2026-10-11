@@ -1,0 +1,77 @@
+{
+  "code": 0,
+  "data": {
+    "checkTeam": 1,
+    "chessPlayer": 1,
+    "createTime": "2024-05-06 16:38:31",
+    "dataStatus": 0,
+    "lastDate": 202608,
+    "playerAwards": [],
+    "playerBirthday": "2001-10-22",
+    "playerCity": "",
+    "playerEmail": "",
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2026-01-08",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z07"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2024-06-03",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z06"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2023-09-17",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z05"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2019-09-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z04"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2018-09-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z03"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2017-11-02",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z02"
+      },
+      {
+        "playerNo": "CWA000670",
+        "upgradeDate": "2017-07-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z01"
+      }
+    ],
+    "playerGender": 1,
+    "playerGrade": "Z07",
+    "playerIdType": 1,
+    "playerImage": "https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17852266890470040469797.jpg",
+    "playerLabels": [],
+    "playerName": "陈一纯",
+    "playerNameEn": "CHEN Yichun",
+    "playerNameNa": "",
+    "playerNo": "CWA000670",
+    "playerProfile": "",
+    "playerProvince": "",
+    "playerRating": "2457.30",
+    "playerStartDate": "2017-07-23",
+    "playerStatus": 1,
+    "playerType": 1,
+    "playerUnit": "",
+    "ratingRank": 66,
+    "updateTime": "2026-09-03 10:22:12"
+  },
+  "msg": "操作成功"
+}

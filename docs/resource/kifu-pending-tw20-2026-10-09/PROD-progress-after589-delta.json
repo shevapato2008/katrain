@@ -1,0 +1,21 @@
+{
+  "base_entity_names_games": 80253,
+  "batch_id": 589,
+  "bounded_scope": {
+    "after_both": 0,
+    "after_formal": 0,
+    "after_hidden_event_both": 0,
+    "after_raw": 0,
+    "before_both": 0,
+    "before_formal": 0,
+    "before_hidden_event_both": 0,
+    "before_raw": 0,
+    "games": 1869,
+    "slots": 1918
+  },
+  "bundle_sha256": "ebc1a45c8aad3ffcc0fafa05df07861918019fa4b8c8396dc5fbb278fbfb25f1",
+  "environment": "PROD",
+  "method": "r2 product strict_slot_approvals, batch 589 preimage simulated by omitting only 20 new language slots",
+  "player_count_after": 1647,
+  "player_count_before": 1647
+}

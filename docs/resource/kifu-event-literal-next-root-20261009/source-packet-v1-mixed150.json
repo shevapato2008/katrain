@@ -1,0 +1,4027 @@
+{
+  "status": "unsigned_source_only",
+  "selection_sha256": "a56d998e3e37b41942aaf709256e5aee2feaa9dc7b9a5cd00ed08e0f640b6c6b",
+  "sources": {
+    "kifu-event-title-c76-source-only-20261009.json": {
+      "source_status": "unsigned_source_only_reconstruction",
+      "core_lexicon": {
+        "姜堰黄龙士精锻科技杯世界女子团体赛": {
+          "cn": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "tw": "姜堰黃龍士精鍛科技杯世界女子團體賽",
+          "jp": "姜堰黄龍士精鍛科技杯世界女子団体戦",
+          "ko": "장옌 황룽스 징돤커지배 세계 여자 단체전",
+          "en": "Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament"
+        },
+        "韩国天元战决赛五番棋": {
+          "cn": "韩国天元战决赛五番棋",
+          "tw": "韓國天元戰決賽五番棋",
+          "jp": "韓国天元戦決勝五番勝負",
+          "ko": "한국 천원전 결승 5번기",
+          "en": "Korea Cheonwon Tournament Best-of-Five Final"
+        },
+        "韩国国手战挑战者决定战三番棋": {
+          "cn": "韩国国手战挑战者决定战三番棋",
+          "tw": "韓國國手戰挑戰者決定戰三番棋",
+          "jp": "韓国国手戦挑戦者決定戦三番勝負",
+          "ko": "한국 국수전 도전자 결정전 3번기",
+          "en": "Korea Kuksu Tournament Best-of-Three Challenger Deciding Match"
+        },
+        "日本女流棋圣战决赛": {
+          "cn": "日本女流棋圣战决赛",
+          "tw": "日本女流棋聖戰決賽",
+          "jp": "日本女流棋聖戦決勝",
+          "ko": "일본 여류 기성전 결승",
+          "en": "Japan Women’s Kisei Tournament Final"
+        },
+        "韩国麦馨杯九段最强战": {
+          "cn": "韩国麦馨杯九段最强战",
+          "tw": "韓國麥馨杯九段最強戰",
+          "jp": "韓国マキシム杯九段最強戦",
+          "ko": "한국 맥심배 9단 최강전",
+          "en": "Korea Maxim Cup 9 Dan Strongest Tournament"
+        },
+        "韩国麦馨杯九段最强战决赛": {
+          "cn": "韩国麦馨杯九段最强战决赛",
+          "tw": "韓國麥馨杯九段最強戰決賽",
+          "jp": "韓国マキシム杯九段最強戦決勝",
+          "ko": "한국 맥심배 9단 최강전 결승",
+          "en": "Korea Maxim Cup 9 Dan Strongest Tournament Final"
+        }
+      },
+      "records": [
+        {
+          "owner_id_from_2026_10_04_snapshot": 97925,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第10局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第10局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第10局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第10局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第10局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제10국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 10"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97926,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第11局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第11局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第11局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第11局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第11局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제11국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 11"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97927,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第12局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第12局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第12局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第12局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第12局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제12국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 12"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97928,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第13局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第13局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第13局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第13局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第13局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제13국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 13"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97929,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第14局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第14局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第14局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第14局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第14局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제14국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 14"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97930,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第1局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第1局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第1局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第1局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第1局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제1국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97931,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第2局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第2局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第2局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第2局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第2局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제2국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97932,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第3局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第3局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第3局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第3局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第3局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제3국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97933,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第4局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第4局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第4局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第4局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第4局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제4국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 4"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97934,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第5局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第5局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第5局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第5局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第5局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제5국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 5"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97935,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第6局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第6局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第6局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第6局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第6局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제6국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 6"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97936,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第7局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第7局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第7局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第7局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第7局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제7국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 7"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97937,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第8局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第8局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第8局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第8局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第8局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제8국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 8"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97938,
+          "raw_value": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第9局",
+          "core": "姜堰黄龙士精锻科技杯世界女子团体赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第9届"
+            },
+            {
+              "kind": "core",
+              "text": "姜堰黄龙士精锻科技杯世界女子团体赛"
+            },
+            {
+              "kind": "game",
+              "text": "第9局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第9届姜堰黄龙士精锻科技杯世界女子团体赛第9局",
+            "tw": "第9屆姜堰黃龍士精鍛科技杯世界女子團體賽第9局",
+            "jp": "第9回姜堰黄龍士精鍛科技杯世界女子団体戦 第9局",
+            "ko": "제9회 장옌 황룽스 징돤커지배 세계 여자 단체전 제9국",
+            "en": "9th Jiangyan Huanglongshi Jingduan Technology Cup World Women’s Team Tournament, Game 9"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76546,
+          "raw_value": "第12届韩国天元战决赛五番棋第二局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第12届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第12届韩国天元战决赛五番棋第二局",
+            "tw": "第12屆韓國天元戰決賽五番棋第2局",
+            "jp": "第12回韓国天元戦決勝五番勝負 第2局",
+            "ko": "제12회 한국 천원전 결승 5번기 제2국",
+            "en": "12th Korea Cheonwon Tournament Best-of-Five Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76547,
+          "raw_value": "第12届韩国天元战决赛五番棋第四局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第12届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第四局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第12届韩国天元战决赛五番棋第四局",
+            "tw": "第12屆韓國天元戰決賽五番棋第4局",
+            "jp": "第12回韓国天元戦決勝五番勝負 第4局",
+            "ko": "제12회 한국 천원전 결승 5번기 제4국",
+            "en": "12th Korea Cheonwon Tournament Best-of-Five Final, Game 4"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76982,
+          "raw_value": "第13届韩国天元战决赛五番棋第一局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第13届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第13届韩国天元战决赛五番棋第一局",
+            "tw": "第13屆韓國天元戰決賽五番棋第1局",
+            "jp": "第13回韓国天元戦決勝五番勝負 第1局",
+            "ko": "제13회 한국 천원전 결승 5번기 제1국",
+            "en": "13th Korea Cheonwon Tournament Best-of-Five Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76983,
+          "raw_value": "第13届韩国天元战决赛五番棋第三局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第13届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第13届韩国天元战决赛五番棋第三局",
+            "tw": "第13屆韓國天元戰決賽五番棋第3局",
+            "jp": "第13回韓国天元戦決勝五番勝負 第3局",
+            "ko": "제13회 한국 천원전 결승 5번기 제3국",
+            "en": "13th Korea Cheonwon Tournament Best-of-Five Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76984,
+          "raw_value": "第13届韩国天元战决赛五番棋第二局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第13届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第13届韩国天元战决赛五番棋第二局",
+            "tw": "第13屆韓國天元戰決賽五番棋第2局",
+            "jp": "第13回韓国天元戦決勝五番勝負 第2局",
+            "ko": "제13회 한국 천원전 결승 5번기 제2국",
+            "en": "13th Korea Cheonwon Tournament Best-of-Five Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76985,
+          "raw_value": "第13届韩国天元战决赛五番棋第五局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第13届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第五局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第13届韩国天元战决赛五番棋第五局",
+            "tw": "第13屆韓國天元戰決賽五番棋第5局",
+            "jp": "第13回韓国天元戦決勝五番勝負 第5局",
+            "ko": "제13회 한국 천원전 결승 5번기 제5국",
+            "en": "13th Korea Cheonwon Tournament Best-of-Five Final, Game 5"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76986,
+          "raw_value": "第13届韩国天元战决赛五番棋第四局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第13届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第四局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第13届韩国天元战决赛五番棋第四局",
+            "tw": "第13屆韓國天元戰決賽五番棋第4局",
+            "jp": "第13回韓国天元戦決勝五番勝負 第4局",
+            "ko": "제13회 한국 천원전 결승 5번기 제4국",
+            "en": "13th Korea Cheonwon Tournament Best-of-Five Final, Game 4"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 77569,
+          "raw_value": "第14届韩国天元战决赛五番棋第一局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第14届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第14届韩国天元战决赛五番棋第一局",
+            "tw": "第14屆韓國天元戰決賽五番棋第1局",
+            "jp": "第14回韓国天元戦決勝五番勝負 第1局",
+            "ko": "제14회 한국 천원전 결승 5번기 제1국",
+            "en": "14th Korea Cheonwon Tournament Best-of-Five Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 77570,
+          "raw_value": "第14届韩国天元战决赛五番棋第三局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第14届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第14届韩国天元战决赛五番棋第三局",
+            "tw": "第14屆韓國天元戰決賽五番棋第3局",
+            "jp": "第14回韓国天元戦決勝五番勝負 第3局",
+            "ko": "제14회 한국 천원전 결승 5번기 제3국",
+            "en": "14th Korea Cheonwon Tournament Best-of-Five Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 77571,
+          "raw_value": "第14届韩国天元战决赛五番棋第二局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第14届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第14届韩国天元战决赛五番棋第二局",
+            "tw": "第14屆韓國天元戰決賽五番棋第2局",
+            "jp": "第14回韓国天元戦決勝五番勝負 第2局",
+            "ko": "제14회 한국 천원전 결승 5번기 제2국",
+            "en": "14th Korea Cheonwon Tournament Best-of-Five Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 78211,
+          "raw_value": "第15届韩国天元战决赛五番棋第一局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第15届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第15届韩国天元战决赛五番棋第一局",
+            "tw": "第15屆韓國天元戰決賽五番棋第1局",
+            "jp": "第15回韓国天元戦決勝五番勝負 第1局",
+            "ko": "제15회 한국 천원전 결승 5번기 제1국",
+            "en": "15th Korea Cheonwon Tournament Best-of-Five Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 78212,
+          "raw_value": "第15届韩国天元战决赛五番棋第三局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第15届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第15届韩国天元战决赛五番棋第三局",
+            "tw": "第15屆韓國天元戰決賽五番棋第3局",
+            "jp": "第15回韓国天元戦決勝五番勝負 第3局",
+            "ko": "제15회 한국 천원전 결승 5번기 제3국",
+            "en": "15th Korea Cheonwon Tournament Best-of-Five Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 78213,
+          "raw_value": "第15届韩国天元战决赛五番棋第二局",
+          "core": "韩国天元战决赛五番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第15届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国天元战决赛五番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第15届韩国天元战决赛五番棋第二局",
+            "tw": "第15屆韓國天元戰決賽五番棋第2局",
+            "jp": "第15回韓国天元戦決勝五番勝負 第2局",
+            "ko": "제15회 한국 천원전 결승 5번기 제2국",
+            "en": "15th Korea Cheonwon Tournament Best-of-Five Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92631,
+          "raw_value": "第51届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第51届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第51届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第51屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第51回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제51회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "51st Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92707,
+          "raw_value": "第52届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第52届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第52届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第52屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第52回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제52회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "52nd Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92708,
+          "raw_value": "第52届韩国国手战挑战者决定战三番棋第二局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第52届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第52届韩国国手战挑战者决定战三番棋第二局",
+            "tw": "第52屆韓國國手戰挑戰者決定戰三番棋第2局",
+            "jp": "第52回韓国国手戦挑戦者決定戦三番勝負 第2局",
+            "ko": "제52회 한국 국수전 도전자 결정전 3번기 제2국",
+            "en": "52nd Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92816,
+          "raw_value": "第54届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第54届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第54届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第54屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第54回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제54회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "54th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92817,
+          "raw_value": "第54届韩国国手战挑战者决定战三番棋第三局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第54届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第54届韩国国手战挑战者决定战三番棋第三局",
+            "tw": "第54屆韓國國手戰挑戰者決定戰三番棋第3局",
+            "jp": "第54回韓国国手戦挑戦者決定戦三番勝負 第3局",
+            "ko": "제54회 한국 국수전 도전자 결정전 3번기 제3국",
+            "en": "54th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92818,
+          "raw_value": "第54届韩国国手战挑战者决定战三番棋第二局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第54届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第54届韩国国手战挑战者决定战三番棋第二局",
+            "tw": "第54屆韓國國手戰挑戰者決定戰三番棋第2局",
+            "jp": "第54回韓国国手戦挑戦者決定戦三番勝負 第2局",
+            "ko": "제54회 한국 국수전 도전자 결정전 3번기 제2국",
+            "en": "54th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92867,
+          "raw_value": "第55届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第55届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第55届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第55屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第55回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제55회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "55th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92868,
+          "raw_value": "第55届韩国国手战挑战者决定战三番棋第二局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第55届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第55届韩国国手战挑战者决定战三番棋第二局",
+            "tw": "第55屆韓國國手戰挑戰者決定戰三番棋第2局",
+            "jp": "第55回韓国国手戦挑戦者決定戦三番勝負 第2局",
+            "ko": "제55회 한국 국수전 도전자 결정전 3번기 제2국",
+            "en": "55th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92934,
+          "raw_value": "第56届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第56届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第56届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第56屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第56回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제56회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "56th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 92935,
+          "raw_value": "第56届韩国国手战挑战者决定战三番棋第二局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第56届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第56届韩国国手战挑战者决定战三番棋第二局",
+            "tw": "第56屆韓國國手戰挑戰者決定戰三番棋第2局",
+            "jp": "第56回韓国国手戦挑戦者決定戦三番勝負 第2局",
+            "ko": "제56회 한국 국수전 도전자 결정전 3번기 제2국",
+            "en": "56th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93050,
+          "raw_value": "第58届韩国国手战挑战者决定战三番棋第一局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第58届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第58届韩国国手战挑战者决定战三番棋第一局",
+            "tw": "第58屆韓國國手戰挑戰者決定戰三番棋第1局",
+            "jp": "第58回韓国国手戦挑戦者決定戦三番勝負 第1局",
+            "ko": "제58회 한국 국수전 도전자 결정전 3번기 제1국",
+            "en": "58th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93051,
+          "raw_value": "第58届韩国国手战挑战者决定战三番棋第三局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第58届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第58届韩国国手战挑战者决定战三番棋第三局",
+            "tw": "第58屆韓國國手戰挑戰者決定戰三番棋第3局",
+            "jp": "第58回韓国国手戦挑戦者決定戦三番勝負 第3局",
+            "ko": "제58회 한국 국수전 도전자 결정전 3번기 제3국",
+            "en": "58th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93052,
+          "raw_value": "第58届韩国国手战挑战者决定战三番棋第二局",
+          "core": "韩国国手战挑战者决定战三番棋",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第58届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国国手战挑战者决定战三番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第58届韩国国手战挑战者决定战三番棋第二局",
+            "tw": "第58屆韓國國手戰挑戰者決定戰三番棋第2局",
+            "jp": "第58回韓国国手戦挑戦者決定戦三番勝負 第2局",
+            "ko": "제58회 한국 국수전 도전자 결정전 3번기 제2국",
+            "en": "58th Korea Kuksu Tournament Best-of-Three Challenger Deciding Match, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 91957,
+          "raw_value": "第4届日本女流棋圣战决赛第一局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第4届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第4届日本女流棋圣战决赛第一局",
+            "tw": "第4屆日本女流棋聖戰決賽第1局",
+            "jp": "第4回日本女流棋聖戦決勝 第1局",
+            "ko": "제4회 일본 여류 기성전 결승 제1국",
+            "en": "4th Japan Women’s Kisei Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 91958,
+          "raw_value": "第4届日本女流棋圣战决赛第三局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第4届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第4届日本女流棋圣战决赛第三局",
+            "tw": "第4屆日本女流棋聖戰決賽第3局",
+            "jp": "第4回日本女流棋聖戦決勝 第3局",
+            "ko": "제4회 일본 여류 기성전 결승 제3국",
+            "en": "4th Japan Women’s Kisei Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 91959,
+          "raw_value": "第4届日本女流棋圣战决赛第二局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第4届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第4届日本女流棋圣战决赛第二局",
+            "tw": "第4屆日本女流棋聖戰決賽第2局",
+            "jp": "第4回日本女流棋聖戦決勝 第2局",
+            "ko": "제4회 일본 여류 기성전 결승 제2국",
+            "en": "4th Japan Women’s Kisei Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93655,
+          "raw_value": "第5届日本女流棋圣战决赛第一局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届日本女流棋圣战决赛第一局",
+            "tw": "第5屆日本女流棋聖戰決賽第1局",
+            "jp": "第5回日本女流棋聖戦決勝 第1局",
+            "ko": "제5회 일본 여류 기성전 결승 제1국",
+            "en": "5th Japan Women’s Kisei Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93656,
+          "raw_value": "第5届日本女流棋圣战决赛第三局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届日本女流棋圣战决赛第三局",
+            "tw": "第5屆日本女流棋聖戰決賽第3局",
+            "jp": "第5回日本女流棋聖戦決勝 第3局",
+            "ko": "제5회 일본 여류 기성전 결승 제3국",
+            "en": "5th Japan Women’s Kisei Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 93657,
+          "raw_value": "第5届日本女流棋圣战决赛第二局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届日本女流棋圣战决赛第二局",
+            "tw": "第5屆日本女流棋聖戰決賽第2局",
+            "jp": "第5回日本女流棋聖戦決勝 第2局",
+            "ko": "제5회 일본 여류 기성전 결승 제2국",
+            "en": "5th Japan Women’s Kisei Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 95300,
+          "raw_value": "第6届日本女流棋圣战决赛第一局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第6届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第6届日本女流棋圣战决赛第一局",
+            "tw": "第6屆日本女流棋聖戰決賽第1局",
+            "jp": "第6回日本女流棋聖戦決勝 第1局",
+            "ko": "제6회 일본 여류 기성전 결승 제1국",
+            "en": "6th Japan Women’s Kisei Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 95301,
+          "raw_value": "第6届日本女流棋圣战决赛第三局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第6届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第6届日本女流棋圣战决赛第三局",
+            "tw": "第6屆日本女流棋聖戰決賽第3局",
+            "jp": "第6回日本女流棋聖戦決勝 第3局",
+            "ko": "제6회 일본 여류 기성전 결승 제3국",
+            "en": "6th Japan Women’s Kisei Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 95302,
+          "raw_value": "第6届日本女流棋圣战决赛第二局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第6届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第6届日本女流棋圣战决赛第二局",
+            "tw": "第6屆日本女流棋聖戰決賽第2局",
+            "jp": "第6回日本女流棋聖戦決勝 第2局",
+            "ko": "제6회 일본 여류 기성전 결승 제2국",
+            "en": "6th Japan Women’s Kisei Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96483,
+          "raw_value": "第7届日本女流棋圣战决赛第一局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届日本女流棋圣战决赛第一局",
+            "tw": "第7屆日本女流棋聖戰決賽第1局",
+            "jp": "第7回日本女流棋聖戦決勝 第1局",
+            "ko": "제7회 일본 여류 기성전 결승 제1국",
+            "en": "7th Japan Women’s Kisei Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96484,
+          "raw_value": "第7届日本女流棋圣战决赛第三局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届日本女流棋圣战决赛第三局",
+            "tw": "第7屆日本女流棋聖戰決賽第3局",
+            "jp": "第7回日本女流棋聖戦決勝 第3局",
+            "ko": "제7회 일본 여류 기성전 결승 제3국",
+            "en": "7th Japan Women’s Kisei Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96485,
+          "raw_value": "第7届日本女流棋圣战决赛第二局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届日本女流棋圣战决赛第二局",
+            "tw": "第7屆日本女流棋聖戰決賽第2局",
+            "jp": "第7回日本女流棋聖戦決勝 第2局",
+            "ko": "제7회 일본 여류 기성전 결승 제2국",
+            "en": "7th Japan Women’s Kisei Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97224,
+          "raw_value": "第8届日本女流棋圣战决赛第二局",
+          "core": "日本女流棋圣战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第8届"
+            },
+            {
+              "kind": "core",
+              "text": "日本女流棋圣战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第8届日本女流棋圣战决赛第二局",
+            "tw": "第8屆日本女流棋聖戰決賽第2局",
+            "jp": "第8回日本女流棋聖戦決勝 第2局",
+            "ko": "제8회 일본 여류 기성전 결승 제2국",
+            "en": "8th Japan Women’s Kisei Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86449,
+          "raw_value": "第2届韩国麦馨杯九段最强战第10局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第10局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第10局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第10局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第10局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제10국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 10"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86450,
+          "raw_value": "第2届韩国麦馨杯九段最强战第11局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第11局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第11局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第11局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第11局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제11국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 11"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86451,
+          "raw_value": "第2届韩国麦馨杯九段最强战第12局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第12局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第12局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第12局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第12局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제12국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 12"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86452,
+          "raw_value": "第2届韩国麦馨杯九段最强战第1局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第1局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第1局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第1局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第1局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제1국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86453,
+          "raw_value": "第2届韩国麦馨杯九段最强战第2局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第2局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第2局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第2局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第2局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제2국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86454,
+          "raw_value": "第2届韩国麦馨杯九段最强战第3局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第3局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第3局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第3局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第3局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제3국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86455,
+          "raw_value": "第2届韩国麦馨杯九段最强战第4局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第4局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第4局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第4局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第4局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제4국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 4"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86456,
+          "raw_value": "第2届韩国麦馨杯九段最强战第5局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第5局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第5局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第5局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第5局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제5국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 5"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86457,
+          "raw_value": "第2届韩国麦馨杯九段最强战第6局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第6局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第6局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第6局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第6局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제6국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 6"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86458,
+          "raw_value": "第2届韩国麦馨杯九段最强战第7局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第7局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第7局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第7局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第7局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제7국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 7"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86459,
+          "raw_value": "第2届韩国麦馨杯九段最强战第8局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第8局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第8局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第8局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第8局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제8국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 8"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 86460,
+          "raw_value": "第2届韩国麦馨杯九段最强战第9局",
+          "core": "韩国麦馨杯九段最强战",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第2届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战"
+            },
+            {
+              "kind": "game",
+              "text": "第9局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第2届韩国麦馨杯九段最强战第9局",
+            "tw": "第2屆韓國麥馨杯九段最強戰第9局",
+            "jp": "第2回韓国マキシム杯九段最強戦 第9局",
+            "ko": "제2회 한국 맥심배 9단 최강전 제9국",
+            "en": "2nd Korea Maxim Cup 9 Dan Strongest Tournament, Game 9"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 75508,
+          "raw_value": "第10届韩国麦馨杯九段最强战决赛第一局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第10届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第10届韩国麦馨杯九段最强战决赛第一局",
+            "tw": "第10屆韓國麥馨杯九段最強戰決賽第1局",
+            "jp": "第10回韓国マキシム杯九段最強戦決勝 第1局",
+            "ko": "제10회 한국 맥심배 9단 최강전 결승 제1국",
+            "en": "10th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 76076,
+          "raw_value": "第11届韩国麦馨杯九段最强战决赛第一局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第11届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第11届韩国麦馨杯九段最强战决赛第一局",
+            "tw": "第11屆韓國麥馨杯九段最強戰決賽第1局",
+            "jp": "第11回韓国マキシム杯九段最強戦決勝 第1局",
+            "ko": "제11회 한국 맥심배 9단 최강전 결승 제1국",
+            "en": "11th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 94006,
+          "raw_value": "第5届韩国麦馨杯九段最强战决赛第一局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届韩国麦馨杯九段最强战决赛第一局",
+            "tw": "第5屆韓國麥馨杯九段最強戰決賽第1局",
+            "jp": "第5回韓国マキシム杯九段最強戦決勝 第1局",
+            "ko": "제5회 한국 맥심배 9단 최강전 결승 제1국",
+            "en": "5th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 94007,
+          "raw_value": "第5届韩国麦馨杯九段最强战决赛第三局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届韩国麦馨杯九段最强战决赛第三局",
+            "tw": "第5屆韓國麥馨杯九段最強戰決賽第3局",
+            "jp": "第5回韓国マキシム杯九段最強戦決勝 第3局",
+            "ko": "제5회 한국 맥심배 9단 최강전 결승 제3국",
+            "en": "5th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 94008,
+          "raw_value": "第5届韩国麦馨杯九段最强战决赛第二局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第5届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第5届韩国麦馨杯九段最强战决赛第二局",
+            "tw": "第5屆韓國麥馨杯九段最強戰決賽第2局",
+            "jp": "第5回韓国マキシム杯九段最強戦決勝 第2局",
+            "ko": "제5회 한국 맥심배 9단 최강전 결승 제2국",
+            "en": "5th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96702,
+          "raw_value": "第7届韩国麦馨杯九段最强战决赛第一局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届韩国麦馨杯九段最强战决赛第一局",
+            "tw": "第7屆韓國麥馨杯九段最強戰決賽第1局",
+            "jp": "第7回韓国マキシム杯九段最強戦決勝 第1局",
+            "ko": "제7회 한국 맥심배 9단 최강전 결승 제1국",
+            "en": "7th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96703,
+          "raw_value": "第7届韩国麦馨杯九段最强战决赛第三局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届韩国麦馨杯九段最强战决赛第三局",
+            "tw": "第7屆韓國麥馨杯九段最強戰決賽第3局",
+            "jp": "第7回韓国マキシム杯九段最強戦決勝 第3局",
+            "ko": "제7회 한국 맥심배 9단 최강전 결승 제3국",
+            "en": "7th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 96704,
+          "raw_value": "第7届韩国麦馨杯九段最强战决赛第二局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第7届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第7届韩国麦馨杯九段最强战决赛第二局",
+            "tw": "第7屆韓國麥馨杯九段最強戰決賽第2局",
+            "jp": "第7回韓国マキシム杯九段最強戦決勝 第2局",
+            "ko": "제7회 한국 맥심배 9단 최강전 결승 제2국",
+            "en": "7th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 2"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97426,
+          "raw_value": "第8届韩国麦馨杯九段最强战决赛第一局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第8届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第一局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第8届韩国麦馨杯九段最强战决赛第一局",
+            "tw": "第8屆韓國麥馨杯九段最強戰決賽第1局",
+            "jp": "第8回韓国マキシム杯九段最強戦決勝 第1局",
+            "ko": "제8회 한국 맥심배 9단 최강전 결승 제1국",
+            "en": "8th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 1"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97427,
+          "raw_value": "第8届韩国麦馨杯九段最强战决赛第三局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第8届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第三局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第8届韩国麦馨杯九段最强战决赛第三局",
+            "tw": "第8屆韓國麥馨杯九段最強戰決賽第3局",
+            "jp": "第8回韓国マキシム杯九段最強戦決勝 第3局",
+            "ko": "제8회 한국 맥심배 9단 최강전 결승 제3국",
+            "en": "8th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 3"
+          }
+        },
+        {
+          "owner_id_from_2026_10_04_snapshot": 97428,
+          "raw_value": "第8届韩国麦馨杯九段最强战决赛第二局",
+          "core": "韩国麦馨杯九段最强战决赛",
+          "parts": [
+            {
+              "kind": "edition",
+              "text": "第8届"
+            },
+            {
+              "kind": "core",
+              "text": "韩国麦馨杯九段最强战决赛"
+            },
+            {
+              "kind": "game",
+              "text": "第二局"
+            }
+          ],
+          "snapshot_games": 1,
+          "names": {
+            "cn": "第8届韩国麦馨杯九段最强战决赛第二局",
+            "tw": "第8屆韓國麥馨杯九段最強戰決賽第2局",
+            "jp": "第8回韓国マキシム杯九段最強戦決勝 第2局",
+            "ko": "제8회 한국 맥심배 9단 최강전 결승 제2국",
+            "en": "8th Korea Maxim Cup 9 Dan Strongest Tournament Final, Game 2"
+          }
+        }
+      ]
+    },
+    "kifu-event-title-next174-han-source-only-20261009.json": {
+      "source_status": "unsigned_source_only",
+      "core_lexicon": {
+        "弘通杯国家围棋队擂台赛": {
+          "cn": "弘通杯国家围棋队擂台赛",
+          "tw": "弘通杯國家圍棋隊擂臺賽",
+          "jp": "弘通杯国家囲碁チーム勝ち抜き戦",
+          "ko": "弘通배 국가 바둑팀 연승전",
+          "en": "Hongtong Cup National Go Team Relay Tournament"
+        },
+        "GG拍卖杯绅士淑女擂台": {
+          "cn": "GG拍卖杯绅士淑女擂台",
+          "tw": "GG拍賣杯紳士淑女擂臺",
+          "jp": "GGオークション杯紳士淑女勝ち抜き",
+          "ko": "GG경매배 신사숙녀 연승",
+          "en": "GG Auction Cup Gentlemen and Ladies Relay"
+        },
+        "GG拍卖杯绅士淑女擂台赛": {
+          "cn": "GG拍卖杯绅士淑女擂台赛",
+          "tw": "GG拍賣杯紳士淑女擂臺賽",
+          "jp": "GGオークション杯紳士淑女勝ち抜き戦",
+          "ko": "GG경매배 신사숙녀 연승전",
+          "en": "GG Auction Cup Gentlemen and Ladies Relay Tournament"
+        },
+        "韩国新人王战决赛": {
+          "cn": "韩国新人王战决赛",
+          "tw": "韓國新人王戰決賽",
+          "jp": "韓国新人王戦決勝",
+          "ko": "한국 신인왕전 결승",
+          "en": "Korea Rookie King Tournament Final"
+        },
+        "乐百氏杯决赛": {
+          "cn": "乐百氏杯决赛",
+          "tw": "樂百氏杯決賽",
+          "jp": "楽百氏杯決勝",
+          "ko": "러바이쓰배 결승",
+          "en": "Lebaisi Cup Final"
+        },
+        "韩国棋圣战循环圈": {
+          "cn": "韩国棋圣战循环圈",
+          "tw": "韓國棋聖戰循環圈",
+          "jp": "韓国棋聖戦リーグ",
+          "ko": "한국 기성전 리그",
+          "en": "Korea Kiseong Tournament Round Robin"
+        },
+        "韩国国手战挑战者决定战": {
+          "cn": "韩国国手战挑战者决定战",
+          "tw": "韓國國手戰挑戰者決定戰",
+          "jp": "韓国国手戦挑戦者決定戦",
+          "ko": "한국 국수전 도전자 결정전",
+          "en": "Korea Kuksu Tournament Challenger Deciding Match"
+        },
+        "韩国第27期国手战循环圈": {
+          "cn": "韩国第27期国手战循环圈",
+          "tw": "韓國第27期國手戰循環圈",
+          "jp": "韓国第27期国手戦リーグ",
+          "ko": "한국 제27기 국수전 리그",
+          "en": "Korea Kuksu Tournament, Term 27 Round Robin"
+        },
+        "湖盘杯首尔新闻世界女子争霸赛": {
+          "cn": "湖盘杯首尔新闻世界女子争霸赛",
+          "tw": "湖盤杯首爾新聞世界女子爭霸賽",
+          "jp": "湖盤杯ソウル新聞世界女子争覇戦",
+          "ko": "호반배 서울신문 세계 여자 쟁패전",
+          "en": "Hoban Cup Seoul Shinmun World Women’s Championship"
+        },
+        "中韩天元对抗赛三番棋": {
+          "cn": "中韩天元对抗赛三番棋",
+          "tw": "中韓天元對抗賽三番棋",
+          "jp": "中韓天元対抗戦三番勝負",
+          "ko": "중한 천원 대항전 3번기",
+          "en": "China–Korea Tengen Best-of-Three Match"
+        },
+        "日本小棋圣战挑战赛": {
+          "cn": "日本小棋圣战挑战赛",
+          "tw": "日本小棋聖戰挑戰賽",
+          "jp": "日本小棋聖戦挑戦手合",
+          "ko": "일본 소기성전 도전전",
+          "en": "Japan Little Kisei Tournament Challenge Match"
+        },
+        "韩国旋风大赛": {
+          "cn": "韩国旋风大赛",
+          "tw": "韓國旋風大賽",
+          "jp": "韓国旋風大会",
+          "ko": "한국 선풍 대회",
+          "en": "Korea Whirlwind Tournament"
+        },
+        "黄龙士精锻科技世界女子擂台赛": {
+          "cn": "黄龙士精锻科技世界女子擂台赛",
+          "tw": "黃龍士精鍛科技世界女子擂臺賽",
+          "jp": "黄龍士精鍛科技世界女子勝ち抜き戦",
+          "ko": "황룽스 징돤커지 세계 여자 연승전",
+          "en": "Huanglongshi Jingduan Technology World Women’s Team Relay Tournament"
+        },
+        "韩国麦馨杯九段最强战决赛三番棋": {
+          "cn": "韩国麦馨杯九段最强战决赛三番棋",
+          "tw": "韓國麥馨杯九段最強戰決賽三番棋",
+          "jp": "韓国マキシム杯九段最強戦決勝三番勝負",
+          "ko": "한국 맥심배 9단 최강전 결승 3번기",
+          "en": "Korea Maxim Cup 9 Dan Strongest Tournament Best-of-Three Final"
+        },
+        "弈城中韩冠军争霸赛32强战2番棋": {
+          "cn": "弈城中韩冠军争霸赛32强战2番棋",
+          "tw": "弈城中韓冠軍爭霸賽32強戰2番棋",
+          "jp": "弈城中韓王者争覇戦ベスト32二番勝負",
+          "ko": "이청 한중 챔피언 쟁패전 32강 2번기",
+          "en": "Yicheng China–Korea Champion Showdown Round of 32 Best-of-Two"
+        }
+      },
+      "records": [
+        {
+          "raw_value": "2022年弈城中韩冠军争霸赛32强战2番棋第2局",
+          "raw_owner_id_hint_2026_10_04": 62450,
+          "core": "弈城中韩冠军争霸赛32强战2番棋",
+          "old_parser_parts": [
+            {
+              "kind": "year",
+              "text": "2022年"
+            },
+            {
+              "kind": "core",
+              "text": "弈城中韩冠军争霸赛32强战2番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第2局"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "2022年弈城中韩冠军争霸赛32强战2番棋第2局",
+            "tw": "2022年弈城中韓冠軍爭霸賽32強戰2番棋第2局",
+            "jp": "2022年弈城中韓王者争覇戦ベスト32二番勝負 第2局",
+            "ko": "2022년 이청 한중 챔피언 쟁패전 32강 2번기 제2국",
+            "en": "2022 Yicheng China–Korea Champion Showdown Round of 32 Best-of-Two, Game 2"
+          }
+        },
+        {
+          "raw_value": "2022年弈城中韩冠军争霸赛32强战2番棋第1局",
+          "raw_owner_id_hint_2026_10_04": 62449,
+          "core": "弈城中韩冠军争霸赛32强战2番棋",
+          "old_parser_parts": [
+            {
+              "kind": "year",
+              "text": "2022年"
+            },
+            {
+              "kind": "core",
+              "text": "弈城中韩冠军争霸赛32强战2番棋"
+            },
+            {
+              "kind": "game",
+              "text": "第1局"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "2022年弈城中韩冠军争霸赛32强战2番棋第1局",
+            "tw": "2022年弈城中韓冠軍爭霸賽32強戰2番棋第1局",
+            "jp": "2022年弈城中韓王者争覇戦ベスト32二番勝負 第1局",
+            "ko": "2022년 이청 한중 챔피언 쟁패전 32강 2번기 제1국",
+            "en": "2022 Yicheng China–Korea Champion Showdown Round of 32 Best-of-Two, Game 1"
+          }
+        }
+      ]
+    },
+    "kifu-event-title-next212-source-only-20261009.json": {
+      "source_status": "unsigned_source_only",
+      "core_lexicon": {
+        "Nihon Ki-in #1": {
+          "cn": "日本棋院第一位",
+          "tw": "日本棋院第一位",
+          "jp": "日本棋院第1位",
+          "ko": "일본기원 제1위",
+          "en": "Nihon Ki-in No. 1"
+        },
+        "Kiseong": {
+          "cn": "棋圣战",
+          "tw": "棋聖戰",
+          "jp": "棋聖戦",
+          "ko": "기성전",
+          "en": "Kiseong Tournament"
+        },
+        "All-Japan Women's Championship": {
+          "cn": "全日本女子冠军赛",
+          "tw": "全日本女子冠軍賽",
+          "jp": "全日本女子選手権",
+          "ko": "전일본 여자 선수권",
+          "en": "All-Japan Women's Championship"
+        },
+        "P'aewang": {
+          "cn": "霸王战",
+          "tw": "霸王戰",
+          "jp": "覇王戦",
+          "ko": "패왕전",
+          "en": "P'aewang Tournament"
+        },
+        "NihonKi-inChampionship": {
+          "cn": "日本棋院选手权赛",
+          "tw": "日本棋院選手權賽",
+          "jp": "日本棋院選手権戦",
+          "ko": "일본기원 선수권전",
+          "en": "Nihon Ki-in Championship"
+        },
+        "Kukgi": {
+          "cn": "国棋战",
+          "tw": "國棋戰",
+          "jp": "国棋戦",
+          "ko": "국기전",
+          "en": "Kukgi Tournament"
+        },
+        "Nihon Saikyo": {
+          "cn": "日本最强战",
+          "tw": "日本最強戰",
+          "jp": "日本最強戦",
+          "ko": "일본 최강전",
+          "en": "Nihon Saikyo Tournament"
+        },
+        "Taewang": {
+          "cn": "大王战",
+          "tw": "大王戰",
+          "jp": "大王戦",
+          "ko": "대왕전",
+          "en": "Taewang Tournament"
+        },
+        "BacchusCup": {
+          "cn": "巴克斯杯",
+          "tw": "巴克斯盃",
+          "jp": "バッカス杯",
+          "ko": "박카스배",
+          "en": "Bacchus Cup"
+        },
+        "Ch'oegowi": {
+          "cn": "最高位战",
+          "tw": "最高位戰",
+          "jp": "最高位戦",
+          "ko": "최고위전",
+          "en": "Ch'oegowi Tournament"
+        },
+        "JapaneseTengen": {
+          "cn": "日本天元战",
+          "tw": "日本天元戰",
+          "jp": "日本天元戦",
+          "ko": "일본 천원전",
+          "en": "Japanese Tengen Tournament"
+        },
+        "HayagoChampionship": {
+          "cn": "快棋选手权赛",
+          "tw": "快棋選手權賽",
+          "jp": "早碁選手権戦",
+          "ko": "속기 선수권전",
+          "en": "Hayago Championship"
+        },
+        "NECCup": {
+          "cn": "NEC杯",
+          "tw": "NEC盃",
+          "jp": "NEC杯",
+          "ko": "NEC배",
+          "en": "NEC Cup"
+        }
+      },
+      "records": [
+        {
+          "raw_value": "6th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 68087,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "6th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 71,
+          "names": {
+            "cn": "第6届日本棋院第一位",
+            "tw": "第6屆日本棋院第一位",
+            "jp": "第6回日本棋院第1位",
+            "ko": "제6회 일본기원 제1위",
+            "en": "6th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "4th Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 67268,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 68,
+          "names": {
+            "cn": "第4届日本最强战",
+            "tw": "第4屆日本最強戰",
+            "jp": "第4回日本最強戦",
+            "ko": "제4회 일본 최강전",
+            "en": "4th Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "4th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 67264,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "4th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 63,
+          "names": {
+            "cn": "第4届日本棋院第一位",
+            "tw": "第4屆日本棋院第一位",
+            "jp": "第4回日本棋院第1位",
+            "ko": "제4회 일본기원 제1위",
+            "en": "4th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "7th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 68458,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "7th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 62,
+          "names": {
+            "cn": "第7届日本棋院第一位",
+            "tw": "第7屆日本棋院第一位",
+            "jp": "第7回日本棋院第1位",
+            "ko": "제7회 일본기원 제1위",
+            "en": "7th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "5th Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 67680,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "5th "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 57,
+          "names": {
+            "cn": "第5届日本棋院第一位",
+            "tw": "第5屆日本棋院第一位",
+            "jp": "第5回日本棋院第1位",
+            "ko": "제5회 일본기원 제1위",
+            "en": "5th Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "2nd Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 65459,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "2nd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 51,
+          "names": {
+            "cn": "第2届日本棋院第一位",
+            "tw": "第2屆日本棋院第一位",
+            "jp": "第2回日本棋院第1位",
+            "ko": "제2회 일본기원 제1위",
+            "en": "2nd Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "3rd Nihon Ki-in #1",
+          "raw_owner_id_hint_2026_10_04": 66388,
+          "core": "Nihon Ki-in #1",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Ki-in #1"
+            }
+          ],
+          "saved_inventory_game_count": 49,
+          "names": {
+            "cn": "第3届日本棋院第一位",
+            "tw": "第3屆日本棋院第一位",
+            "jp": "第3回日本棋院第1位",
+            "ko": "제3회 일본기원 제1위",
+            "en": "3rd Nihon Ki-in No. 1"
+          }
+        },
+        {
+          "raw_value": "29thJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65253,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "29th"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 28,
+          "names": {
+            "cn": "第29届日本天元战",
+            "tw": "第29屆日本天元戰",
+            "jp": "第29回日本天元戦",
+            "ko": "제29회 일본 천원전",
+            "en": "29th Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "30thJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65790,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "30th"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 27,
+          "names": {
+            "cn": "第30届日本天元战",
+            "tw": "第30屆日本天元戰",
+            "jp": "第30回日本天元戦",
+            "ko": "제30회 일본 천원전",
+            "en": "30th Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "31stJapaneseTengen",
+          "raw_owner_id_hint_2026_10_04": 65908,
+          "core": "JapaneseTengen",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "JapaneseTengen"
+            }
+          ],
+          "saved_inventory_game_count": 26,
+          "names": {
+            "cn": "第31届日本天元战",
+            "tw": "第31屆日本天元戰",
+            "jp": "第31回日本天元戦",
+            "ko": "제31회 일본 천원전",
+            "en": "31st Japanese Tengen Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,11th",
+          "raw_owner_id_hint_2026_10_04": 70031,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",11th"
+            }
+          ],
+          "saved_inventory_game_count": 23,
+          "names": {
+            "cn": "第11届国棋战",
+            "tw": "第11屆國棋戰",
+            "jp": "第11回国棋戦",
+            "ko": "제11회 국기전",
+            "en": "11th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,12th",
+          "raw_owner_id_hint_2026_10_04": 70032,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",12th"
+            }
+          ],
+          "saved_inventory_game_count": 23,
+          "names": {
+            "cn": "第12届国棋战",
+            "tw": "第12屆國棋戰",
+            "jp": "第12回国棋戦",
+            "ko": "제12회 국기전",
+            "en": "12th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,1st",
+          "raw_owner_id_hint_2026_10_04": 69971,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",1st"
+            }
+          ],
+          "saved_inventory_game_count": 21,
+          "names": {
+            "cn": "第1届棋圣战",
+            "tw": "第1屆棋聖戰",
+            "jp": "第1回棋聖戦",
+            "ko": "제1회 기성전",
+            "en": "1st Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,2nd",
+          "raw_owner_id_hint_2026_10_04": 69972,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",2nd"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第2届棋圣战",
+            "tw": "第2屆棋聖戰",
+            "jp": "第2回棋聖戦",
+            "ko": "제2회 기성전",
+            "en": "2nd Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,20th",
+          "raw_owner_id_hint_2026_10_04": 70502,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",20th"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第20届霸王战",
+            "tw": "第20屆霸王戰",
+            "jp": "第20回覇王戦",
+            "ko": "제20회 패왕전",
+            "en": "20th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,22nd",
+          "raw_owner_id_hint_2026_10_04": 70504,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",22nd"
+            }
+          ],
+          "saved_inventory_game_count": 20,
+          "names": {
+            "cn": "第22届霸王战",
+            "tw": "第22屆霸王戰",
+            "jp": "第22回覇王戦",
+            "ko": "제22회 패왕전",
+            "en": "22nd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "1st Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 53261,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "1st "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第1届日本最强战",
+            "tw": "第1屆日本最強戰",
+            "jp": "第1回日本最強戦",
+            "ko": "제1회 일본 최강전",
+            "en": "1st Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,4th",
+          "raw_owner_id_hint_2026_10_04": 69974,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第4届棋圣战",
+            "tw": "第4屆棋聖戰",
+            "jp": "第4回棋聖戦",
+            "ko": "제4회 기성전",
+            "en": "4th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,9th",
+          "raw_owner_id_hint_2026_10_04": 69979,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",9th"
+            }
+          ],
+          "saved_inventory_game_count": 19,
+          "names": {
+            "cn": "第9届棋圣战",
+            "tw": "第9屆棋聖戰",
+            "jp": "第9回棋聖戦",
+            "ko": "제9회 기성전",
+            "en": "9th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,3rd",
+          "raw_owner_id_hint_2026_10_04": 69973,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",3rd"
+            }
+          ],
+          "saved_inventory_game_count": 17,
+          "names": {
+            "cn": "第3届棋圣战",
+            "tw": "第3屆棋聖戰",
+            "jp": "第3回棋聖戦",
+            "ko": "제3회 기성전",
+            "en": "3rd Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "19th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52962,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "19th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 16,
+          "names": {
+            "cn": "第19届全日本女子冠军赛",
+            "tw": "第19屆全日本女子冠軍賽",
+            "jp": "第19回全日本女子選手権",
+            "ko": "제19회 전일본 여자 선수권",
+            "en": "19th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Kukgi,10th",
+          "raw_owner_id_hint_2026_10_04": 70030,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",10th"
+            }
+          ],
+          "saved_inventory_game_count": 16,
+          "names": {
+            "cn": "第10届国棋战",
+            "tw": "第10屆國棋戰",
+            "jp": "第10回国棋戦",
+            "ko": "제10회 국기전",
+            "en": "10th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "18th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52236,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "18th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 15,
+          "names": {
+            "cn": "第18届全日本女子冠军赛",
+            "tw": "第18屆全日本女子冠軍賽",
+            "jp": "第18回全日本女子選手権",
+            "ko": "제18회 전일본 여자 선수권",
+            "en": "18th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Taewang,5th",
+          "raw_owner_id_hint_2026_10_04": 70656,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Taewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",5th"
+            }
+          ],
+          "saved_inventory_game_count": 15,
+          "names": {
+            "cn": "第5届大王战",
+            "tw": "第5屆大王戰",
+            "jp": "第5回大王戦",
+            "ko": "제5회 대왕전",
+            "en": "5th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "17th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52158,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "17th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第17届全日本女子冠军赛",
+            "tw": "第17屆全日本女子冠軍賽",
+            "jp": "第17回全日本女子選手権",
+            "ko": "제17회 전일본 여자 선수권",
+            "en": "17th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "24th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63761,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "24th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第24届全日本女子冠军赛",
+            "tw": "第24屆全日本女子冠軍賽",
+            "jp": "第24回全日本女子選手権",
+            "ko": "제24회 전일본 여자 선수권",
+            "en": "24th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "2nd Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 65464,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "2nd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第2届日本最强战",
+            "tw": "第2屆日本最強戰",
+            "jp": "第2回日本最強戦",
+            "ko": "제2회 일본 최강전",
+            "en": "2nd Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "3rd Nihon Saikyo",
+          "raw_owner_id_hint_2026_10_04": 66390,
+          "core": "Nihon Saikyo",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "3rd "
+            },
+            {
+              "kind": "core",
+              "text": "Nihon Saikyo"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第3届日本最强战",
+            "tw": "第3屆日本最強戰",
+            "jp": "第3回日本最強戦",
+            "ko": "제3회 일본 최강전",
+            "en": "3rd Nihon Saikyo Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,13th",
+          "raw_owner_id_hint_2026_10_04": 70033,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",13th"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第13届国棋战",
+            "tw": "第13屆國棋戰",
+            "jp": "第13回国棋戦",
+            "ko": "제13회 국기전",
+            "en": "13th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,14th",
+          "raw_owner_id_hint_2026_10_04": 70034,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",14th"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第14届国棋战",
+            "tw": "第14屆國棋戰",
+            "jp": "第14回国棋戦",
+            "ko": "제14회 국기전",
+            "en": "14th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "P'aewang,21st",
+          "raw_owner_id_hint_2026_10_04": 70503,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",21st"
+            }
+          ],
+          "saved_inventory_game_count": 14,
+          "names": {
+            "cn": "第21届霸王战",
+            "tw": "第21屆霸王戰",
+            "jp": "第21回覇王戦",
+            "ko": "제21회 패왕전",
+            "en": "21st P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "12th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51339,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "12th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第12届全日本女子冠军赛",
+            "tw": "第12屆全日本女子冠軍賽",
+            "jp": "第12回全日本女子選手権",
+            "ko": "제12회 전일본 여자 선수권",
+            "en": "12th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "32ndHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 66001,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "32nd"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第32届快棋选手权赛",
+            "tw": "第32屆快棋選手權賽",
+            "jp": "第32回早碁選手権戦",
+            "ko": "제32회 속기 선수권전",
+            "en": "32nd Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "Kiseong,6th",
+          "raw_owner_id_hint_2026_10_04": 69976,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",6th"
+            }
+          ],
+          "saved_inventory_game_count": 13,
+          "names": {
+            "cn": "第6届棋圣战",
+            "tw": "第6屆棋聖戰",
+            "jp": "第6回棋聖戦",
+            "ko": "제6회 기성전",
+            "en": "6th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "13th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51686,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "13th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第13届全日本女子冠军赛",
+            "tw": "第13屆全日本女子冠軍賽",
+            "jp": "第13回全日本女子選手権",
+            "ko": "제13회 전일본 여자 선수권",
+            "en": "13th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "15th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 51928,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "15th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第15届全日本女子冠军赛",
+            "tw": "第15屆全日本女子冠軍賽",
+            "jp": "第15回全日本女子選手権",
+            "ko": "제15회 전일본 여자 선수권",
+            "en": "15th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "21stHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 63507,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "21st"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第21届快棋选手权赛",
+            "tw": "第21屆快棋選手權賽",
+            "jp": "第21回早碁選手権戦",
+            "ko": "제21회 속기 선수권전",
+            "en": "21st Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,4th",
+          "raw_owner_id_hint_2026_10_04": 69256,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第4届巴克斯杯",
+            "tw": "第4屆巴克斯盃",
+            "jp": "第4回バッカス杯",
+            "ko": "제4회 박카스배",
+            "en": "4th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,14th",
+          "raw_owner_id_hint_2026_10_04": 70344,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",14th"
+            }
+          ],
+          "saved_inventory_game_count": 12,
+          "names": {
+            "cn": "第14届日本棋院选手权赛",
+            "tw": "第14屆日本棋院選手權賽",
+            "jp": "第14回日本棋院選手権戦",
+            "ko": "제14회 일본기원 선수권전",
+            "en": "14th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "10thTaewang",
+          "raw_owner_id_hint_2026_10_04": 50467,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第10届大王战",
+            "tw": "第10屆大王戰",
+            "jp": "第10回大王戦",
+            "ko": "제10회 대왕전",
+            "en": "10th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "18thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52254,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "18th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第18届NEC杯",
+            "tw": "第18屆NEC盃",
+            "jp": "第18回NEC杯",
+            "ko": "제18회 NEC배",
+            "en": "18th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "19thNECCup",
+          "raw_owner_id_hint_2026_10_04": 52983,
+          "core": "NECCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "19th"
+            },
+            {
+              "kind": "core",
+              "text": "NECCup"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第19届NEC杯",
+            "tw": "第19屆NEC盃",
+            "jp": "第19回NEC杯",
+            "ko": "제19회 NEC배",
+            "en": "19th NEC Cup"
+          }
+        },
+        {
+          "raw_value": "Kukgi,15th",
+          "raw_owner_id_hint_2026_10_04": 70035,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",15th"
+            }
+          ],
+          "saved_inventory_game_count": 11,
+          "names": {
+            "cn": "第15届国棋战",
+            "tw": "第15屆國棋戰",
+            "jp": "第15回国棋戦",
+            "ko": "제15회 국기전",
+            "en": "15th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "15thTaewang",
+          "raw_owner_id_hint_2026_10_04": 51960,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "15th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第15届大王战",
+            "tw": "第15屆大王戰",
+            "jp": "第15回大王戦",
+            "ko": "제15회 대왕전",
+            "en": "15th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "30thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 65799,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "30th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第30届霸王战",
+            "tw": "第30屆霸王戰",
+            "jp": "第30回覇王戦",
+            "ko": "제30회 패왕전",
+            "en": "30th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,7th",
+          "raw_owner_id_hint_2026_10_04": 69977,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",7th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第7届棋圣战",
+            "tw": "第7屆棋聖戰",
+            "jp": "第7回棋聖戦",
+            "ko": "제7회 기성전",
+            "en": "7th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,8th",
+          "raw_owner_id_hint_2026_10_04": 69978,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",8th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第8届棋圣战",
+            "tw": "第8屆棋聖戰",
+            "jp": "第8回棋聖戦",
+            "ko": "제8회 기성전",
+            "en": "8th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,19th",
+          "raw_owner_id_hint_2026_10_04": 70349,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",19th"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第19届日本棋院选手权赛",
+            "tw": "第19屆日本棋院選手權賽",
+            "jp": "第19回日本棋院選手権戦",
+            "ko": "제19회 일본기원 선수권전",
+            "en": "19th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "P'aewang,23rd",
+          "raw_owner_id_hint_2026_10_04": 70505,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",23rd"
+            }
+          ],
+          "saved_inventory_game_count": 10,
+          "names": {
+            "cn": "第23届霸王战",
+            "tw": "第23屆霸王戰",
+            "jp": "第23回覇王戦",
+            "ko": "제23회 패왕전",
+            "en": "23rd P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "16th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 52064,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "16th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第16届全日本女子冠军赛",
+            "tw": "第16屆全日本女子冠軍賽",
+            "jp": "第16回全日本女子選手権",
+            "ko": "제16회 전일본 여자 선수권",
+            "en": "16th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "31stHayagoChampionship",
+          "raw_owner_id_hint_2026_10_04": 65903,
+          "core": "HayagoChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "31st"
+            },
+            {
+              "kind": "core",
+              "text": "HayagoChampionship"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第31届快棋选手权赛",
+            "tw": "第31屆快棋選手權賽",
+            "jp": "第31回早碁選手権戦",
+            "ko": "제31회 속기 선수권전",
+            "en": "31st Hayago Championship"
+          }
+        },
+        {
+          "raw_value": "8thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 68706,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "8th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第8届巴克斯杯",
+            "tw": "第8屆巴克斯盃",
+            "jp": "第8回バッカス杯",
+            "ko": "제8회 박카스배",
+            "en": "8th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "9thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 68986,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第9届巴克斯杯",
+            "tw": "第9屆巴克斯盃",
+            "jp": "第9回バッカス杯",
+            "ko": "제9회 박카스배",
+            "en": "9th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "9thTaewang",
+          "raw_owner_id_hint_2026_10_04": 69020,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "9th"
+            },
+            {
+              "kind": "core",
+              "text": "Taewang"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第9届大王战",
+            "tw": "第9屆大王戰",
+            "jp": "第9回大王戦",
+            "ko": "제9회 대왕전",
+            "en": "9th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,2nd",
+          "raw_owner_id_hint_2026_10_04": 69254,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",2nd"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第2届巴克斯杯",
+            "tw": "第2屆巴克斯盃",
+            "jp": "第2回バッカス杯",
+            "ko": "제2회 박카스배",
+            "en": "2nd Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "BacchusCup,3rd",
+          "raw_owner_id_hint_2026_10_04": 69255,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            },
+            {
+              "kind": "edition",
+              "text": ",3rd"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第3届巴克斯杯",
+            "tw": "第3屆巴克斯盃",
+            "jp": "第3回バッカス杯",
+            "ko": "제3회 박카스배",
+            "en": "3rd Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,27th",
+          "raw_owner_id_hint_2026_10_04": 69281,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",27th"
+            }
+          ],
+          "saved_inventory_game_count": 9,
+          "names": {
+            "cn": "第27届最高位战",
+            "tw": "第27屆最高位戰",
+            "jp": "第27回最高位戦",
+            "ko": "제27회 최고위전",
+            "en": "27th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "10th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 50427,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "10th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第10届全日本女子冠军赛",
+            "tw": "第10屆全日本女子冠軍賽",
+            "jp": "第10回全日本女子選手権",
+            "ko": "제10회 전일본 여자 선수권",
+            "en": "10th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "22nd All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63596,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "22nd "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第22届全日本女子冠军赛",
+            "tw": "第22屆全日本女子冠軍賽",
+            "jp": "第22回全日本女子選手権",
+            "ko": "제22회 전일본 여자 선수권",
+            "en": "22nd All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "25th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 64359,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "25th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第25届全日本女子冠军赛",
+            "tw": "第25屆全日本女子冠軍賽",
+            "jp": "第25回全日本女子選手権",
+            "ko": "제25회 전일본 여자 선수권",
+            "en": "25th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "35thP'aewang",
+          "raw_owner_id_hint_2026_10_04": 66142,
+          "core": "P'aewang",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "35th"
+            },
+            {
+              "kind": "core",
+              "text": "P'aewang"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第35届霸王战",
+            "tw": "第35屆霸王戰",
+            "jp": "第35回覇王戦",
+            "ko": "제35회 패왕전",
+            "en": "35th P'aewang Tournament"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,30th",
+          "raw_owner_id_hint_2026_10_04": 69284,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",30th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第30届最高位战",
+            "tw": "第30屆最高位戰",
+            "jp": "第30回最高位戦",
+            "ko": "제30회 최고위전",
+            "en": "30th Ch'oegowi Tournament"
+          }
+        },
+        {
+          "raw_value": "Kiseong,5th",
+          "raw_owner_id_hint_2026_10_04": 69975,
+          "core": "Kiseong",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kiseong"
+            },
+            {
+              "kind": "edition",
+              "text": ",5th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第5届棋圣战",
+            "tw": "第5屆棋聖戰",
+            "jp": "第5回棋聖戦",
+            "ko": "제5회 기성전",
+            "en": "5th Kiseong Tournament"
+          }
+        },
+        {
+          "raw_value": "Kukgi,18th",
+          "raw_owner_id_hint_2026_10_04": 70038,
+          "core": "Kukgi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Kukgi"
+            },
+            {
+              "kind": "edition",
+              "text": ",18th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第18届国棋战",
+            "tw": "第18屆國棋戰",
+            "jp": "第18回国棋戦",
+            "ko": "제18회 국기전",
+            "en": "18th Kukgi Tournament"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,10th",
+          "raw_owner_id_hint_2026_10_04": 70340,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",10th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第10届日本棋院选手权赛",
+            "tw": "第10屆日本棋院選手權賽",
+            "jp": "第10回日本棋院選手権戦",
+            "ko": "제10회 일본기원 선수권전",
+            "en": "10th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,12th",
+          "raw_owner_id_hint_2026_10_04": 70342,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",12th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第12届日本棋院选手权赛",
+            "tw": "第12屆日本棋院選手權賽",
+            "jp": "第12回日本棋院選手権戦",
+            "ko": "제12회 일본기원 선수권전",
+            "en": "12th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "NihonKi-inChampionship,17th",
+          "raw_owner_id_hint_2026_10_04": 70347,
+          "core": "NihonKi-inChampionship",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "NihonKi-inChampionship"
+            },
+            {
+              "kind": "edition",
+              "text": ",17th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第17届日本棋院选手权赛",
+            "tw": "第17屆日本棋院選手權賽",
+            "jp": "第17回日本棋院選手権戦",
+            "ko": "제17회 일본기원 선수권전",
+            "en": "17th Nihon Ki-in Championship"
+          }
+        },
+        {
+          "raw_value": "Taewang,4th",
+          "raw_owner_id_hint_2026_10_04": 70655,
+          "core": "Taewang",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Taewang"
+            },
+            {
+              "kind": "edition",
+              "text": ",4th"
+            }
+          ],
+          "saved_inventory_game_count": 8,
+          "names": {
+            "cn": "第4届大王战",
+            "tw": "第4屆大王戰",
+            "jp": "第4回大王戦",
+            "ko": "제4회 대왕전",
+            "en": "4th Taewang Tournament"
+          }
+        },
+        {
+          "raw_value": "11th All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 50919,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "11th "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第11届全日本女子冠军赛",
+            "tw": "第11屆全日本女子冠軍賽",
+            "jp": "第11回全日本女子選手権",
+            "ko": "제11회 전일본 여자 선수권",
+            "en": "11th All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "12thBacchusCup",
+          "raw_owner_id_hint_2026_10_04": 51358,
+          "core": "BacchusCup",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "12th"
+            },
+            {
+              "kind": "core",
+              "text": "BacchusCup"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第12届巴克斯杯",
+            "tw": "第12屆巴克斯盃",
+            "jp": "第12回バッカス杯",
+            "ko": "제12회 박카스배",
+            "en": "12th Bacchus Cup"
+          }
+        },
+        {
+          "raw_value": "23rd All-Japan Women's Championship",
+          "raw_owner_id_hint_2026_10_04": 63675,
+          "core": "All-Japan Women's Championship",
+          "old_parser_parts": [
+            {
+              "kind": "edition",
+              "text": "23rd "
+            },
+            {
+              "kind": "core",
+              "text": "All-Japan Women's Championship"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第23届全日本女子冠军赛",
+            "tw": "第23屆全日本女子冠軍賽",
+            "jp": "第23回全日本女子選手権",
+            "ko": "제23회 전일본 여자 선수권",
+            "en": "23rd All-Japan Women's Championship"
+          }
+        },
+        {
+          "raw_value": "Ch'oegowi,25th",
+          "raw_owner_id_hint_2026_10_04": 69279,
+          "core": "Ch'oegowi",
+          "old_parser_parts": [
+            {
+              "kind": "core",
+              "text": "Ch'oegowi"
+            },
+            {
+              "kind": "edition",
+              "text": ",25th"
+            }
+          ],
+          "saved_inventory_game_count": 7,
+          "names": {
+            "cn": "第25届最高位战",
+            "tw": "第25屆最高位戰",
+            "jp": "第25回最高位戦",
+            "ko": "제25회 최고위전",
+            "en": "25th Ch'oegowi Tournament"
+          }
+        }
+      ]
+    }
+  }
+}

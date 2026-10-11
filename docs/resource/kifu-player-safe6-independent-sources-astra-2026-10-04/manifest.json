@@ -1,0 +1,104 @@
+{
+  "format": "kifu-player-safe6-independent-primary-source-manifest-v1",
+  "sources": [
+    {
+      "key": "cwa-zhao-zhelun",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000185",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000185",
+      "retrieved_at_utc": "2026-10-04T11:23:55.686082+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/cwa-zhao-zhelun.json",
+      "raw_sha256": "23f6fd8c0537138dfbb1f791df9cc68cba5ab53e052b1a3035856ec8eec7dc12",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/cwa-zhao-zhelun.txt",
+      "text_sha256": "23e1bee989a470b3014e0597f80d6254c3b3d8c0306917836c4dd20bf61ba55b"
+    },
+    {
+      "key": "nihon-yoshihara-yukari",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000346.htm",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000346.htm",
+      "retrieved_at_utc": "2026-10-04T11:23:57.594208+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-yoshihara-yukari.html",
+      "raw_sha256": "ca62bdf86f9e387e9f19a6a0337a1967e06c4bc784a28beec1af83da29ce4368",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-yoshihara-yukari.txt",
+      "text_sha256": "c80dca4b95bfed28e96b1e72d322c29d35ab57471606b99fba89d8aacc92dd82"
+    },
+    {
+      "key": "nihon-okada-yumiko",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000293.htm",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000293.htm",
+      "retrieved_at_utc": "2026-10-04T11:23:57.540828+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-okada-yumiko.html",
+      "raw_sha256": "0c96ebc0fffd79b4e550f8942deb2d20862f4b2d86f5e76dea892cbf46d8073f",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-okada-yumiko.txt",
+      "text_sha256": "9f923dce59f13bc6ab29a1f824cf76ed5ba8b29bf0a873dd6b543f2a053ef9c2"
+    },
+    {
+      "key": "nihon-muramatsu-hiroki",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000424.htm",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000424.htm",
+      "retrieved_at_utc": "2026-10-04T11:23:57.540689+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-muramatsu-hiroki.html",
+      "raw_sha256": "da03e5bc46a5a8b36976fd2d2f9edd51d16eef6513838949868ebd347d2fd174",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-muramatsu-hiroki.txt",
+      "text_sha256": "bdc22f3dfa70573ef951990334876987291b763b66b7615a21733a51d4699135"
+    },
+    {
+      "key": "nihon-ishida-atsushi",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000216.htm",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000216.htm",
+      "retrieved_at_utc": "2026-10-04T11:23:57.556544+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-ishida-atsushi.html",
+      "raw_sha256": "99f4e5bac483d7fc06f5f102fe8ee9d15dc89b0d3a2c996fb0cd18949201e5af",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-ishida-atsushi.txt",
+      "text_sha256": "e0d359e64f39a9867f3c8afa093e6861dcb755ef9ae36b6b2bf779a86b8cb2ea"
+    },
+    {
+      "key": "kansai-chen-kayui",
+      "url": "https://kansaikiin.jp/kisi_prof/chinkaei.html",
+      "resolved_url": "https://kansaikiin.jp/kisi_prof/chinkaei.html",
+      "retrieved_at_utc": "2026-10-04T11:23:57.555679+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/kansai-chen-kayui.html",
+      "raw_sha256": "936eb2b59809634d07ce629dd0dbb2240bb04a5092afe323ff96bf19d15ce097",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/kansai-chen-kayui.txt",
+      "text_sha256": "544893c4ee394c783053b7fb123494bb3442c6b45d79cb7f3bcae2394720b703"
+    },
+    {
+      "key": "wikipedia-chen-jiarui-zh",
+      "url": "https://zh.wikipedia.org/wiki/陳嘉銳",
+      "resolved_url": "https://zh.wikipedia.org/wiki/%E9%99%B3%E5%98%89%E9%8A%B3",
+      "retrieved_at_utc": "2026-10-04T11:23:57.000088+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/wikipedia-chen-jiarui-zh.html",
+      "raw_sha256": "679d7bb1b213ffed25c6cfc95f98a5c6c2ea3887744418aeb29298def0866c92",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/wikipedia-chen-jiarui-zh.txt",
+      "text_sha256": "f6bb581376b16214fa2f0fd79e1461c4ccfb323628ed120a2686fb42874230d6"
+    },
+    {
+      "key": "nihon-okada-first-win",
+      "url": "https://archive.nihonkiin.or.jp/joho/pressroom/newsrelease/20070208.htm",
+      "resolved_url": "https://archive.nihonkiin.or.jp/joho/pressroom/newsrelease/20070208.htm",
+      "retrieved_at_utc": "2026-10-04T11:23:57.376571+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-okada-first-win.html",
+      "raw_sha256": "d1aafef64d9fb0c6754d76fa7a06f828cd8f2f4558439260a56648eccb44a9a8",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/nihon-okada-first-win.txt",
+      "text_sha256": "ef1836047051576276ba76e0bbebacaef4170d3d62088bde062c94cc0112eb03"
+    },
+    {
+      "key": "cwa-chen-jiarui-homonym",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000820",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000820",
+      "retrieved_at_utc": "2026-10-04T11:24:37.973337+00:00",
+      "status": 200,
+      "raw_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/cwa-chen-jiarui-homonym.json",
+      "raw_sha256": "7f7f57758f1664d5f3ecc5813b6f94f6faa3211759920ca205aab7ae54f60a8b",
+      "text_path": "docs/resource/kifu-player-safe6-independent-sources-astra-2026-10-04/cwa-chen-jiarui-homonym.txt",
+      "text_sha256": "f0d7ef1f27ffed44ee59b18eb4cb43af16272abeb094f76d426386b0cc1303eb"
+    }
+  ]
+}

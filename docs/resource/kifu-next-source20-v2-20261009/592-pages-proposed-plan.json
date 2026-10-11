@@ -1,0 +1,464 @@
+{
+  "PROD": {
+    "368": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000734&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "3771": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C45%ED%9A%8C%20%ED%98%BC%EC%9D%B8%EB%B3%B4%EC%A0%84"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/akio-shimohira"
+      }
+    ],
+    "3820": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000613&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "3844": [
+      {
+        "language": "zh-Hant",
+        "page_context": "go_event_table",
+        "role": "wikipedia_article",
+        "source_id": "wikipedia-zh",
+        "url": "https://zh.wikipedia.org/zh-hant/%E7%AC%AC%E5%9B%9B%E5%B1%86%E4%B8%96%E7%95%8C%E6%99%BA%E5%8A%9B%E7%B2%BE%E8%8B%B1%E8%BF%90%E5%8B%95%E6%9C%83"
+      },
+      {
+        "language": "en",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret97-ugo-en",
+        "url": "https://db.u-go.net/playerdb/players/885/"
+      }
+    ],
+    "4041": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C50%ED%9A%8C%20%EC%B2%9C%EC%9B%90%EC%A0%84(%EC%9D%BC%EB%B3%B8)"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/ryo-maeda"
+      }
+    ],
+    "4340": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C49%ED%9A%8C%20(%EC%86%8C)%EA%B8%B0%EC%84%B1%EC%A0%84"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret110-goratings-ja",
+        "url": "https://www.goratings.org/ja/players/2402.html"
+      }
+    ],
+    "4568": [
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/masamichi-kawamura"
+      }
+    ],
+    "4634": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001067&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "5094": [
+      {
+        "language": "ko",
+        "page_context": "disambiguation_entry_red_person_link",
+        "role": "wikipedia_article",
+        "source_id": "wikipedia-ko",
+        "url": "https://ko.wikipedia.org/w/index.php?title=%EB%A6%AC%EA%B0%95&oldid=36505438"
+      },
+      {
+        "language": "zh-Hans",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret100-goratings-zh",
+        "url": "https://www.goratings.org/zh/players/524.html"
+      }
+    ],
+    "5133": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001661&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "5351": [
+      {
+        "language": "en",
+        "page_context": "organizer_entrant_list",
+        "role": "official",
+        "source_id": "next20-pairgo-organizer-en",
+        "url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm"
+      }
+    ],
+    "5473": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002077&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "5675": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002179&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "5790": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001948&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "6296": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001041&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "6378": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000086&Tdiv=&Sdiv=&S_nation=4"
+      }
+    ],
+    "6547": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002045&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "6635": [
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/shingo-maetani"
+      }
+    ],
+    "6642": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C1%ED%9A%8C%20%EC%8B%AD%EB%8B%A8%EC%A0%84(%EC%9D%BC%EB%B3%B8)"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/shin-tainaka"
+      }
+    ],
+    "696": [
+      {
+        "language": "ko",
+        "page_context": "opponent_row_in_other_player_page",
+        "role": "official",
+        "source_id": "korea-baduk",
+        "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408"
+      },
+      {
+        "language": "ko",
+        "page_context": "published_go_news",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo="
+      }
+    ]
+  },
+  "TEST": {
+    "10134": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C49%ED%9A%8C%20(%EC%86%8C)%EA%B8%B0%EC%84%B1%EC%A0%84"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret110-goratings-ja",
+        "url": "https://www.goratings.org/ja/players/2402.html"
+      }
+    ],
+    "10358": [
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/masamichi-kawamura"
+      }
+    ],
+    "10424": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001067&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "10876": [
+      {
+        "language": "ko",
+        "page_context": "disambiguation_entry_red_person_link",
+        "role": "wikipedia_article",
+        "source_id": "wikipedia-ko",
+        "url": "https://ko.wikipedia.org/w/index.php?title=%EB%A6%AC%EA%B0%95&oldid=36505438"
+      },
+      {
+        "language": "zh-Hans",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret100-goratings-zh",
+        "url": "https://www.goratings.org/zh/players/524.html"
+      }
+    ],
+    "10914": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001661&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "11127": [
+      {
+        "language": "en",
+        "page_context": "organizer_entrant_list",
+        "role": "official",
+        "source_id": "next20-pairgo-organizer-en",
+        "url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm"
+      }
+    ],
+    "11247": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002077&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "11448": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002179&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "11559": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001948&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "12062": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001041&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "12144": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000086&Tdiv=&Sdiv=&S_nation=4"
+      }
+    ],
+    "12311": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002045&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "12404": [
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/shingo-maetani"
+      }
+    ],
+    "12411": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C1%ED%9A%8C%20%EC%8B%AD%EB%8B%A8%EC%A0%84(%EC%9D%BC%EB%B3%B8)"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/shin-tainaka"
+      }
+    ],
+    "369": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000734&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "697": [
+      {
+        "language": "ko",
+        "page_context": "opponent_row_in_other_player_page",
+        "role": "official",
+        "source_id": "korea-baduk",
+        "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408"
+      },
+      {
+        "language": "ko",
+        "page_context": "published_go_news",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo="
+      }
+    ],
+    "9569": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C45%ED%9A%8C%20%ED%98%BC%EC%9D%B8%EB%B3%B4%EC%A0%84"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/akio-shimohira"
+      }
+    ],
+    "9618": [
+      {
+        "language": "ko",
+        "page_context": "go_player_profile",
+        "role": "language_go",
+        "source_id": "cyberoro",
+        "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000613&Tdiv=&Sdiv=&S_nation=2"
+      }
+    ],
+    "9642": [
+      {
+        "language": "zh-Hant",
+        "page_context": "go_event_table",
+        "role": "wikipedia_article",
+        "source_id": "wikipedia-zh",
+        "url": "https://zh.wikipedia.org/zh-hant/%E7%AC%AC%E5%9B%9B%E5%B1%86%E4%B8%96%E7%95%8C%E6%99%BA%E5%8A%9B%E7%B2%BE%E8%8B%B1%E8%BF%90%E5%8B%95%E6%9C%83"
+      },
+      {
+        "language": "en",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "ret97-ugo-en",
+        "url": "https://db.u-go.net/playerdb/players/885/"
+      }
+    ],
+    "9837": [
+      {
+        "language": "ko",
+        "page_context": "go_event_table",
+        "role": "encyclopedia",
+        "source_id": "next20-namu-community-encyclopedia-ko",
+        "url": "https://namu.wiki/w/%EC%A0%9C50%ED%9A%8C%20%EC%B2%9C%EC%9B%90%EC%A0%84(%EC%9D%BC%EB%B3%B8)"
+      },
+      {
+        "language": "ja",
+        "page_context": "published_player_record",
+        "role": "language_go",
+        "source_id": "igorating",
+        "url": "https://www.igorating.com/players/ryo-maeda"
+      }
+    ]
+  }
+}

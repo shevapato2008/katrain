@@ -1,0 +1,673 @@
+{
+  "content": {
+    "approved_name_snapshot_sha256": "7aff7a5ff96d021615ddc434ae8b39e9a3d4d807b467349cf3c2ee3e79635ca3",
+    "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+    "complete_name_review": [
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+8096",
+            "output": "U+8096",
+            "position": 0
+          },
+          {
+            "input": "U+6CFD",
+            "output": "U+6FA4",
+            "position": 1
+          },
+          {
+            "input": "U+5F6C",
+            "output": "U+5F6C",
+            "position": 2
+          }
+        ],
+        "display_name": "肖澤彬",
+        "lang": "tw",
+        "name_preimage_sha256": "bbc67ad6cf96d2ad085fd5f7b640a3e06c82ee1184464a104d1b6ff9b74395ac",
+        "original_name": "肖泽彬",
+        "owner": {
+          "id": 601,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "b00091faa9bc5b4e7191c01f38868b124e38cf3aea587311a81dd0fbc36d9cba",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "486eaa68f308816d5d23af5138edcecc9565743f59e3accfc08c7438cbeea806"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+53F6",
+            "output": "U+8449",
+            "position": 0
+          },
+          {
+            "input": "U+5B50",
+            "output": "U+5B50",
+            "position": 1
+          },
+          {
+            "input": "U+840C",
+            "output": "U+840C",
+            "position": 2
+          }
+        ],
+        "display_name": "葉子萌",
+        "lang": "tw",
+        "name_preimage_sha256": "ef6a3282aa7e455337044e96fc2870e3be7b6ad05865fb332021b15d682b95e4",
+        "original_name": "叶子萌",
+        "owner": {
+          "id": 230,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "4b727b14c67f46405bb043700a60c6a149998393a8fa390b7eab51fc1161670d",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "dbfebd966ac43a65c9834c34523972d0507254b843edaa33a532d28cff36fbfb"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+5468",
+            "output": "U+5468",
+            "position": 0
+          },
+          {
+            "input": "U+96E8",
+            "output": "U+96E8",
+            "position": 1
+          },
+          {
+            "input": "U+8431",
+            "output": "U+8431",
+            "position": 2
+          }
+        ],
+        "display_name": "周雨萱",
+        "lang": "tw",
+        "name_preimage_sha256": "6457ba7ddadb289fae92447869c25551b72aeaa0a4be5e92363daf9cd9b1cb20",
+        "original_name": "周雨萱",
+        "owner": {
+          "id": 596,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "98ed7899842cf9392d90f75babefb111cc52cfe7dd583af9a3e662f2bba6f247",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "ea7397c92fd7073c33cbdf677689d6f8f38a42e7f6d0ffbb8c2f2e8cdb97404e"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+884C",
+            "output": "U+884C",
+            "position": 0
+          },
+          {
+            "input": "U+6CD3",
+            "output": "U+6CD3",
+            "position": 1
+          },
+          {
+            "input": "U+4E1E",
+            "output": "U+4E1E",
+            "position": 2
+          }
+        ],
+        "display_name": "行泓丞",
+        "lang": "tw",
+        "name_preimage_sha256": "38d36aeb65634ef753eea0da29837ce3fb9499e92fbdab15af21a245cdc721e7",
+        "original_name": "行泓丞",
+        "owner": {
+          "id": 386,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "3e85187c2132982822dba03c10b61f5089a281b4ab50aa7265d4c532a98a47f3",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "a3fa15706da24b9e46e7b36dfea8c2017422926869da8d8e13d61fa63254facb"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+6731",
+            "output": "U+6731",
+            "position": 0
+          },
+          {
+            "input": "U+5F66",
+            "output": "U+5F66",
+            "position": 1
+          },
+          {
+            "input": "U+81FB",
+            "output": "U+81FB",
+            "position": 2
+          }
+        ],
+        "display_name": "朱彦臻",
+        "lang": "tw",
+        "name_preimage_sha256": "d41d108665eee9bb92dedb1470603fe896b786ef647b403cfad2dec40f3d8aba",
+        "original_name": "朱彦臻",
+        "owner": {
+          "id": 663,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "87622afee2e76dfc1644c212d47e30b9b18988dd0f08dbee7d82e4267043f2ba",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "c73c84e749f14d32a18a3dbb0d410a1a2f25165ce073b740a3c4151848a21a2f"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+6842",
+            "output": "U+6842",
+            "position": 0
+          },
+          {
+            "input": "U+8BD7",
+            "output": "U+8A69",
+            "position": 1
+          },
+          {
+            "input": "U+4E91",
+            "output": "U+96F2",
+            "position": 2
+          }
+        ],
+        "display_name": "桂詩雲",
+        "lang": "tw",
+        "name_preimage_sha256": "a1a98c1063568eb5e9ff7ecde25d0fe1380c0d6f5d73c32a37abbd5ed3972f72",
+        "original_name": "桂诗云",
+        "owner": {
+          "id": 321,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "fc6e59cd23e0d5195feee2eafde5ba89d1df54c989cadb9ce58f64a872b08211",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "495e4a717e445845632a151522c505404bf15d6a93ac8ad67a25ebcf1fc6d415"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+738B",
+            "output": "U+738B",
+            "position": 0
+          },
+          {
+            "input": "U+741B",
+            "output": "U+741B",
+            "position": 1
+          }
+        ],
+        "display_name": "王琛",
+        "lang": "tw",
+        "name_preimage_sha256": "7e4e7bc29750808fcb42a19247383e54090667d5fbdc7f81160c3c7e6b8f5145",
+        "original_name": "王琛",
+        "owner": {
+          "id": 392,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "a09552694c52a36a6c20e8998ffec7db7daff962b7b7caf4d7f0d287399efca6",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "7cadcdd127a11f769d653a61d1b596f2f4e7cdecb0e15152db86fb8fea747aae"
+      }
+    ],
+    "frozen_at": "2026-10-08T19:49:47.684285+00:00",
+    "known_aliases": [
+      {
+        "name": "Go Seigen",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Wu Qingyuan",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "吳清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "吴清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "呉清源",
+        "owner": {
+          "id": 1,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Dōsaku",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Dosaku",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊道策",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "道策",
+        "owner": {
+          "id": 2,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Jōwa",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Jowa",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "丈和",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊丈和",
+        "owner": {
+          "id": 3,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Hon'inbō Shūsaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Honinbo Shusaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Shusaku",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "本因坊秀策",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "秀策",
+        "owner": {
+          "id": 4,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Kitani Minoru",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "Minoru Kitani",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷实",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷実",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "木谷實",
+        "owner": {
+          "id": 5,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "岩田正男",
+        "owner": {
+          "id": 10310,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "前田陈二",
+        "owner": {
+          "id": 9839,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "趙善津",
+        "owner": {
+          "id": 542,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "工藤紀夫",
+        "owner": {
+          "id": 348,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "朴文尧",
+        "owner": {
+          "id": 10670,
+          "kind": "player"
+        }
+      },
+      {
+        "name": "李哲",
+        "owner": {
+          "id": 753,
+          "kind": "player"
+        }
+      }
+    ],
+    "members": [
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+8096",
+            "output": "U+8096",
+            "position": 0
+          },
+          {
+            "input": "U+6CFD",
+            "output": "U+6FA4",
+            "position": 1
+          },
+          {
+            "input": "U+5F6C",
+            "output": "U+5F6C",
+            "position": 2
+          }
+        ],
+        "display_name": "肖澤彬",
+        "lang": "tw",
+        "name_preimage_sha256": "bbc67ad6cf96d2ad085fd5f7b640a3e06c82ee1184464a104d1b6ff9b74395ac",
+        "original_name": "肖泽彬",
+        "owner": {
+          "id": 601,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "b00091faa9bc5b4e7191c01f38868b124e38cf3aea587311a81dd0fbc36d9cba",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "486eaa68f308816d5d23af5138edcecc9565743f59e3accfc08c7438cbeea806"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+53F6",
+            "output": "U+8449",
+            "position": 0
+          },
+          {
+            "input": "U+5B50",
+            "output": "U+5B50",
+            "position": 1
+          },
+          {
+            "input": "U+840C",
+            "output": "U+840C",
+            "position": 2
+          }
+        ],
+        "display_name": "葉子萌",
+        "lang": "tw",
+        "name_preimage_sha256": "ef6a3282aa7e455337044e96fc2870e3be7b6ad05865fb332021b15d682b95e4",
+        "original_name": "叶子萌",
+        "owner": {
+          "id": 230,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "4b727b14c67f46405bb043700a60c6a149998393a8fa390b7eab51fc1161670d",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "dbfebd966ac43a65c9834c34523972d0507254b843edaa33a532d28cff36fbfb"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+5468",
+            "output": "U+5468",
+            "position": 0
+          },
+          {
+            "input": "U+96E8",
+            "output": "U+96E8",
+            "position": 1
+          },
+          {
+            "input": "U+8431",
+            "output": "U+8431",
+            "position": 2
+          }
+        ],
+        "display_name": "周雨萱",
+        "lang": "tw",
+        "name_preimage_sha256": "6457ba7ddadb289fae92447869c25551b72aeaa0a4be5e92363daf9cd9b1cb20",
+        "original_name": "周雨萱",
+        "owner": {
+          "id": 596,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "98ed7899842cf9392d90f75babefb111cc52cfe7dd583af9a3e662f2bba6f247",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "ea7397c92fd7073c33cbdf677689d6f8f38a42e7f6d0ffbb8c2f2e8cdb97404e"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+884C",
+            "output": "U+884C",
+            "position": 0
+          },
+          {
+            "input": "U+6CD3",
+            "output": "U+6CD3",
+            "position": 1
+          },
+          {
+            "input": "U+4E1E",
+            "output": "U+4E1E",
+            "position": 2
+          }
+        ],
+        "display_name": "行泓丞",
+        "lang": "tw",
+        "name_preimage_sha256": "38d36aeb65634ef753eea0da29837ce3fb9499e92fbdab15af21a245cdc721e7",
+        "original_name": "行泓丞",
+        "owner": {
+          "id": 386,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "3e85187c2132982822dba03c10b61f5089a281b4ab50aa7265d4c532a98a47f3",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "a3fa15706da24b9e46e7b36dfea8c2017422926869da8d8e13d61fa63254facb"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+6731",
+            "output": "U+6731",
+            "position": 0
+          },
+          {
+            "input": "U+5F66",
+            "output": "U+5F66",
+            "position": 1
+          },
+          {
+            "input": "U+81FB",
+            "output": "U+81FB",
+            "position": 2
+          }
+        ],
+        "display_name": "朱彦臻",
+        "lang": "tw",
+        "name_preimage_sha256": "d41d108665eee9bb92dedb1470603fe896b786ef647b403cfad2dec40f3d8aba",
+        "original_name": "朱彦臻",
+        "owner": {
+          "id": 663,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "87622afee2e76dfc1644c212d47e30b9b18988dd0f08dbee7d82e4267043f2ba",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "c73c84e749f14d32a18a3dbb0d410a1a2f25165ce073b740a3c4151848a21a2f"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+6842",
+            "output": "U+6842",
+            "position": 0
+          },
+          {
+            "input": "U+8BD7",
+            "output": "U+8A69",
+            "position": 1
+          },
+          {
+            "input": "U+4E91",
+            "output": "U+96F2",
+            "position": 2
+          }
+        ],
+        "display_name": "桂詩雲",
+        "lang": "tw",
+        "name_preimage_sha256": "a1a98c1063568eb5e9ff7ecde25d0fe1380c0d6f5d73c32a37abbd5ed3972f72",
+        "original_name": "桂诗云",
+        "owner": {
+          "id": 321,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "fc6e59cd23e0d5195feee2eafde5ba89d1df54c989cadb9ce58f64a872b08211",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "495e4a717e445845632a151522c505404bf15d6a93ac8ad67a25ebcf1fc6d415"
+      },
+      {
+        "codepoint_changes": [
+          {
+            "input": "U+738B",
+            "output": "U+738B",
+            "position": 0
+          },
+          {
+            "input": "U+741B",
+            "output": "U+741B",
+            "position": 1
+          }
+        ],
+        "display_name": "王琛",
+        "lang": "tw",
+        "name_preimage_sha256": "7e4e7bc29750808fcb42a19247383e54090667d5fbdc7f81160c3c7e6b8f5145",
+        "original_name": "王琛",
+        "owner": {
+          "id": 392,
+          "kind": "player"
+        },
+        "preimage_binding_sha256": "a09552694c52a36a6c20e8998ffec7db7daff962b7b7caf4d7f0d287399efca6",
+        "reference_kind": "verified_chinese_display",
+        "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+        "source_anchor_sha256": "7cadcdd127a11f769d653a61d1b596f2f4e7cdecb0e15152db86fb8fea747aae"
+      }
+    ],
+    "members_sha256": "8e224618c1124fbdd8f351a8363e8d53956e6c9d0c2210d1c8eea26b063e59b9",
+    "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+    "sampled_members": [
+      "ee0e7ee7c463d993475344e53bdede45c2b417008299af1d9b0cf087df1212de",
+      "78e8b168c44e3b33ed11b75a44987b7ba4717f0c0d73dceede632fd684058849",
+      "58313b099887852fe94cbc1bbd940e960b36b68ab3bc9e1fe671fa3d25d28c3f",
+      "bd3264e5c777ce959517c6aa6b50b21500d7488259868452d392ce44be446ac5",
+      "15a8693d46c7326ad5f6e46175b49684ccd38132fb818513f1f5f7afff9f4b02",
+      "252151dac82bb679efa5e055a48ead521562e4b9fcaa4583f5f845f7ebdf8bdb",
+      "2fcedf771ceefd28d78fab569a504076f7265c71f7d2d456897c86b73ed39e66"
+    ],
+    "unresolved_conflicts": [],
+    "version": "primary-orthographic-v1"
+  },
+  "dependencies": {
+    "anchor_sha256": [
+      "486eaa68f308816d5d23af5138edcecc9565743f59e3accfc08c7438cbeea806",
+      "495e4a717e445845632a151522c505404bf15d6a93ac8ad67a25ebcf1fc6d415",
+      "7cadcdd127a11f769d653a61d1b596f2f4e7cdecb0e15152db86fb8fea747aae",
+      "a3fa15706da24b9e46e7b36dfea8c2017422926869da8d8e13d61fa63254facb",
+      "c73c84e749f14d32a18a3dbb0d410a1a2f25165ce073b740a3c4151848a21a2f",
+      "dbfebd966ac43a65c9834c34523972d0507254b843edaa33a532d28cff36fbfb",
+      "ea7397c92fd7073c33cbdf677689d6f8f38a42e7f6d0ffbb8c2f2e8cdb97404e"
+    ],
+    "rule_sha256": "b29420995eb5339c3dff8f919a32c7390f5c641fab6f0fc6cb34a0b7a7e1e84c",
+    "source_capture_file_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb"
+  },
+  "production": {
+    "content_sha256": "d13cdc34ec082593c06bd6e3fac7549f4c0669c7e2673c5d68f1d9a4f14a0cf8",
+    "produced_at": "2026-10-08T19:49:47.496441+00:00",
+    "producer_id": "/root/next20_packet_recovered",
+    "producer_model": "gpt-6-sol"
+  },
+  "status": "pending_root_independent_batch_approval"
+}

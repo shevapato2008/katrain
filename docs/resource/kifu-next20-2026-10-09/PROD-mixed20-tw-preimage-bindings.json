@@ -1,0 +1,411 @@
+[
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 4771,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.448941+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "c7f1e01d2f898b47a4d62fe4835d6507a816a21c406255ee734a116e8e145ccd"
+    },
+    "prod_id": 4771
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 5397,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.452669+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "b9304e6be82ec7d2d7bc1a27a9542d54e5a63cdcfcc3518b81faee0b0c6c3bf1"
+    },
+    "prod_id": 5397
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 5297,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.456359+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "ff08d064bb971683a9c76c4c498082ab22c0c52191f9299a6a0b35ca5dd0fe95"
+    },
+    "prod_id": 5297
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 6599,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.460115+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "bd7585db1b8ee9f2da35714497906395eda5a239f47b93a5a473970fb5be7753"
+    },
+    "prod_id": 6599
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 6626,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.463833+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "8fc5557df454cca3613fff349bf95fd3ec8369195db3cbbe41ecb43895f257ad"
+    },
+    "prod_id": 6626
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 4235,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.467488+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "71aff468d7e700b5a71dd98be2e2c727760115be77bffc3f7115875ae345ab02"
+    },
+    "prod_id": 4235
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 6629,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.471248+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "dacd6d5a03932cef26a10d9cb614ce2127a5c165ee2ecc7b096a2ed3b1c9627c"
+    },
+    "prod_id": 6629
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 6686,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.474990+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "2a81602b9eac3e4fac4b96a744d6d5a405b28e6a9559ca09ac1c082176dab525"
+    },
+    "prod_id": 6686
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 6259,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.478774+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": null,
+      "source_candidate_sha256": "ee01a6d42dce7fa372a73cdf43a12e99af055caff067648096314273efc3fe31"
+    },
+    "prod_id": 6259
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 600,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.482593+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "7a2a6d6e3ac1627125de3149f9fa0ebe595450d8c29563c50fb2048ec3bd8e67",
+      "source_candidate_sha256": "30f76643ab350c3b9fc5ea065a798e44adecae949607568d9e0970a664435de3",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "肖澤彬",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2995,
+        "lang": "tw",
+        "player_id": 600,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 600
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 229,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.486260+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "fbfd4761f1785cecaa9463a378db041b75020814d469b41c9375e8446ac4e28b",
+      "source_candidate_sha256": "de8a75aa32e7f7f28be1c88a3ab29ac4083bf2e99f08993abcf2c85261d475ed",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "叶子萌",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1140,
+        "lang": "tw",
+        "player_id": 229,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 229
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 595,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.489991+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "56ad49d6990da19854b9837265ebae7b100f4f3567444a53752cfd8771703507",
+      "source_candidate_sha256": "65d2b34ebbedd05c9f0e3005f416db613f066e10d30ed349d7ae44f3a7c7829b",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "周雨萱",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2970,
+        "lang": "tw",
+        "player_id": 595,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 595
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 385,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.493757+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "9593962ac687a208b7ae2780b9868fce604e9307e37e4fb2dee629449f11ba09",
+      "source_candidate_sha256": "7a7b37c36f9fda890865011f1b6d270a4da421492032bef13a579bd37608413b",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "行泓丞",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1920,
+        "lang": "tw",
+        "player_id": 385,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 385
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 662,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.497585+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "b2c944f589927b2aec4e37431f5e2cd42880a0bf1eea3b6820d3b1bde6dba68a",
+      "source_candidate_sha256": "e86c27483f4300f3d96f7b6e1f940add637972dbc419f3463279eac9546925dc",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:22.552065+00:00",
+        "decision_kind": null,
+        "display_name": "朱彥臻",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 3305,
+        "lang": "tw",
+        "player_id": 662,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 662
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 320,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.501377+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "543d1e9bbb2ab62fde2e2ec2fe63f4e1a3003f994da37bf4ff3044072a3c7962",
+      "source_candidate_sha256": "67a5728b9af838265a53887e5f91e428e5a7dff84109566c391e756dff03827b",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "桂詩雲",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1595,
+        "lang": "tw",
+        "player_id": 320,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 320
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 391,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.505133+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "0397bfb16856d49a88bc4d3a32e616bac7d9373aeeaa41a5f9a751a70e52782b",
+      "source_candidate_sha256": "72b27b4f4dd6ba8a2149ad337b8f448f8b3a5891558d833eb909cabe7f8c3e37",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "王琛",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 1950,
+        "lang": "tw",
+        "player_id": 391,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 391
+  },
+  {
+    "lang": "tw",
+    "owner": {
+      "id": 446,
+      "kind": "player"
+    },
+    "preimage_binding": {
+      "actor_id": "/root/next20_packet_recovered",
+      "actor_model": "gpt-6-sol",
+      "bound_at": "2026-10-08T19:49:55.508984+00:00",
+      "capture_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "captured_at": "2026-10-08T19:47:06.737079+00:00",
+      "name_preimage_sha256": "86e43ae79b33f3ba2d2eb98a7a4c5adf1ca8b63c120bed3c971b12e48e54f533",
+      "source_candidate_sha256": "9d1c650f8397a5a9e1173b4f8a8fd62d9f23f10edb03df857cbe55277cadc412",
+      "target_name_preimage": {
+        "created_at": "2026-09-30T19:33:17.795037+00:00",
+        "decision_kind": null,
+        "display_name": "李貞垠",
+        "evidence_id": null,
+        "generation_rule_version": null,
+        "id": 2225,
+        "lang": "tw",
+        "player_id": 446,
+        "reference_kind": "legacy_unverified",
+        "reference_url": null,
+        "revision": null,
+        "status": "review",
+        "verified_at": null
+      }
+    },
+    "prod_id": 446
+  }
+]

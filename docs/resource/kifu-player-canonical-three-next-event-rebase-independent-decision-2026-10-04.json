@@ -1,0 +1,418 @@
+{
+  "format": "kifu-player-canonical-three-next-event-rebase-independent-decision-v1",
+  "date": "2026-10-04",
+  "reviewer": "independent agent /root/three_player_event_rebase_decision",
+  "status": "PASS_EXACT_NINE_EVENT_POSTIMAGES_ONLY",
+  "review_actions": {
+    "local_artifact_reads_only": true,
+    "database_reads": false,
+    "database_writes": false,
+    "code_edits": false
+  },
+  "authorization_scope": "Accept the nine already applied event_id postimages as current player-plan preimages; preserve every frozen player approval and HOLD. This decision adds no write authorization.",
+  "input_pins": {
+    "next_event_decision": {
+      "path": "docs/resource/kifu-event-next-scope-independent-decision-astra-2026-10-04.json",
+      "file_sha256": "84eace6d50f3029fc4dcd353b1b3e31dece649376c6fccae2d595263c32d5088"
+    },
+    "next_event_compared_plan": {
+      "path": "docs/resource/kifu-event-next-scope-compared-plan-2026-10-04.json",
+      "file_sha256": "b2336ca4c02f6a26bfb3144ad5cef4c604f7776900b9b0554bd42dc78567698e",
+      "plan_sha256": "7e54d349be3e252ddc27894af82b40221567f494f05d932459ca80ffa6fd6262",
+      "identity_sha256": "e1321288e2cd91a7b510c1f241d452be97dc4f5c0b977f69bd9724a243813d51"
+    },
+    "next_event_applied_record": {
+      "path": "docs/resource/kifu-event-next-scope-applied-2026-10-04.md",
+      "file_sha256": "a7563b87c403edddde31070f2367dc9e341f78a671816b9fc643c2eee5449822"
+    },
+    "environments": {
+      "TEST": {
+        "player_review": {
+          "path": "docs/resource/kifu-player-exact-canonical-three-frozen-review-test-2026-10-04.json",
+          "file_sha256": "e2e4599263d88cf931cf9e0ac454b1f46fe7353fbc11af918c82ff7d8f8d2092",
+          "approved_slot_sha256": "497e6881cd0d6d50b46e05b89667f7fbb0f25d82f1d28f01137510a9574649f8",
+          "held_slot_sha256": "c115cd6edf3ddbc028802fdd5116e43ea3c6a133fdf9cb86fc809d453c8fce68"
+        },
+        "next_event_capture": {
+          "path": "docs/resource/kifu-event-next-scope-TEST-capture-2026-10-04.json",
+          "file_sha256": "f0550288d7a54c8b952a31c744eec5eec896898775f1bee63a9e8f7caeba6192",
+          "capture_sha256": "5d1f84a478a7562ffc8b4988556539f454d811a324de300c1b26ffe3897c8bfd"
+        },
+        "preserved_mixed11_plan": {
+          "path": "docs/resource/kifu-player-highfreq-mixed11-revised-TEST-plan-2026-10-04.json.gz",
+          "file_sha256": "1ab5318de70a4d1f0cffa0f2beb98fb5912c95efe60d4c10a7d596d5513d5321"
+        },
+        "preserved_japanese_major_capture": {
+          "path": "docs/resource/kifu-event-japanese-major-next-TEST-capture-2026-10-04.json",
+          "file_sha256": "6a33ee4f7b55ed6158ec1824c489721272845e65d3d0dd2fd2f49d0700afc6a2",
+          "capture_sha256": "fa154418e27a3cc70158ae226a7ecf4fdb1564ce3021271ae94f654d8da84d2a"
+        }
+      },
+      "PROD": {
+        "player_review": {
+          "path": "docs/resource/kifu-player-exact-canonical-three-frozen-review-prod-2026-10-04.json",
+          "file_sha256": "49379c3cca58c3a65b732c7775c22a251d04455d589847f4a9ec03be58f59ef6",
+          "approved_slot_sha256": "b205a2925dfa64e18343583936f9670f5f48c02b8ae5d7d704e6b09af13d3632",
+          "held_slot_sha256": "26df0a8c9279d4878a27cd881a1b1b3c2286a38d33b79514eb2184c77e920ccf"
+        },
+        "next_event_capture": {
+          "path": "docs/resource/kifu-event-next-scope-PROD-capture-2026-10-04.json",
+          "file_sha256": "bebc8048bda346a743be6717f9a7323c40c44753f0f4fe0020c25819e2e5cd25",
+          "capture_sha256": "eee4b9fbeea8f0adf23b21ca72db1e8e68a198524c108b6a7759b633abec9f26"
+        },
+        "preserved_mixed11_plan": {
+          "path": "docs/resource/kifu-player-highfreq-mixed11-revised-PROD-plan-2026-10-04.json.gz",
+          "file_sha256": "e49f76c817a8990978faeb5aa2e9bf4c05f35e9fb95da7001e860b1d8df284a1"
+        },
+        "preserved_japanese_major_capture": {
+          "path": "docs/resource/kifu-event-japanese-major-next-PROD-capture-2026-10-04.json",
+          "file_sha256": "98f74e646899ddaa25e404b35165543065faaa6dc94f7b24e2fee828be230db4",
+          "capture_sha256": "8038151d0959cbd58691574071195b9664ced593879b0d8c2c34a3a78a609cea"
+        }
+      }
+    }
+  },
+  "committed_target_binding": {
+    "TEST": {
+      "china_japan_regular_exchange": 75,
+      "japan_professional_best_ten": 44
+    },
+    "PROD": {
+      "china_japan_regular_exchange": 75,
+      "japan_professional_best_ten": 44
+    },
+    "evidence": "Applied record and execution owner supplied committed apply/post-commit verify stdout. Local verify payloads agree. This independent review did not query live databases.",
+    "preinsert_plan_target_is_null": true,
+    "runtime_requirement": "Read and require kifu_events.id=75, canonical_name exactly 中日围棋对抗赛 in the same database. An absent, renamed or different ID fails closed."
+  },
+  "findings": {
+    "TEST": {
+      "database": "katrain_db",
+      "new_event_id": 75,
+      "new_event_canonical_name": "中日围棋对抗赛",
+      "best_ten_event_id_in_compared_plan": 44,
+      "approved_player_slots": 1529,
+      "held_player_slots": 580,
+      "frozen_albums": 2105,
+      "new_event_intersection": [
+        36687,
+        36688,
+        36755,
+        65378,
+        65387,
+        66039,
+        66058,
+        66326,
+        103013
+      ],
+      "next_event_held_intersection": [],
+      "japanese_major_intersection_with_new_nine": [],
+      "mixed11_opponent_intersection_with_new_nine": [],
+      "new_event_nine_shared_preimages_match_frozen_review": true,
+      "japanese_major_delta_count": 47,
+      "opponent_fk_delta_count": 8,
+      "new_event_delta_count": 9,
+      "total_delta_cells": 64,
+      "total_delta_albums": 62,
+      "prior_japanese_major_and_mixed11_common_albums": [
+        134184,
+        134220
+      ]
+    },
+    "PROD": {
+      "database": "katrain_prod_20260725",
+      "new_event_id": 75,
+      "new_event_canonical_name": "中日围棋对抗赛",
+      "best_ten_event_id_in_compared_plan": 44,
+      "approved_player_slots": 1529,
+      "held_player_slots": 580,
+      "frozen_albums": 2105,
+      "new_event_intersection": [
+        36687,
+        36688,
+        36755,
+        65378,
+        65387,
+        66039,
+        66058,
+        66326,
+        103013
+      ],
+      "next_event_held_intersection": [],
+      "japanese_major_intersection_with_new_nine": [],
+      "mixed11_opponent_intersection_with_new_nine": [],
+      "new_event_nine_shared_preimages_match_frozen_review": true,
+      "japanese_major_delta_count": 47,
+      "opponent_fk_delta_count": 8,
+      "new_event_delta_count": 9,
+      "total_delta_cells": 64,
+      "total_delta_albums": 62,
+      "prior_japanese_major_and_mixed11_common_albums": [
+        134184,
+        134220
+      ]
+    }
+  },
+  "allowed_deltas": [
+    {
+      "album_id": 36687,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "790afa2cf7dcc17573172b2213dc72ebab45f647833ab09c2e85342d1b20123f",
+      "player_side": "black",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "0b38c66647d5873fafcf06a8e65e44895d85fadb8f45e9b733a7d913c63e1fe2",
+        "PROD": "8c7a4a2af2f206d1fc79a5ae35fb3b1fa00ad26ef0f04a4ffa3ad94b490049f2"
+      }
+    },
+    {
+      "album_id": 36688,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "91eeae584853f3b63eff78389cf6da0200e46bbd7bebc21db9bc9048d0a7e0fb",
+      "player_side": "white",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "e147c2965595f80205353fa63340c45e1bf73ae503021aebb9fa869d02b9b626",
+        "PROD": "3baafb63e2418257c27320fda70db558e8a29c12d1262962a0d1eabb1819b365"
+      }
+    },
+    {
+      "album_id": 36755,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "bc6df5befcd6c153989c7c54bb7eced1dd3befe62b2a972f9a9277f9f6dc7b99",
+      "player_side": "white",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "92797796efb8b7725aba2fe953cd9bf6dfe5a215bf9cb98ead0ec52da2f58208",
+        "PROD": "7f0e1fa05c3219a1e7e62fba2583761dbb0f37078fe5bbfd555e9ba61035c60a"
+      }
+    },
+    {
+      "album_id": 65378,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "00f2cf99ca550af0f3d5623b05e0cb0fcb8c0ca1c93c688ef6e4a68dac5eff57",
+      "player_side": "white",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "35a72fbae794955d5491b9b6b6ec97b0c34da4e82fc149c2cfa3ea10cbc730ac",
+        "PROD": "7fad6c2fbe9e4d398198b951ad7eabab82d75bf975ae52e460320077f91152b4"
+      }
+    },
+    {
+      "album_id": 65387,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "f4bc6c55a1b25d5bb407d7ba67f06ab5cf67c9bd1faee9944d951849f4032062",
+      "player_side": "black",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "7871ca8daa3e2c1bdd95283f1dc10a1b69535a1699341873d913a3501bb3ffa0",
+        "PROD": "d4da203cab94baa8d43ff8b6244361926b3031e0b232a071e56aebd6427eaa6c"
+      }
+    },
+    {
+      "album_id": 66039,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "ce8c2b6e44feaa5ab4a511523eb4c8daa84f40c20714fc3b633d755b79089de1",
+      "player_side": "white",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "763ca7ea6b0f72a6bdbe30a5cc41eb5580d12f2eec5f037cc612a6a728704c5d",
+        "PROD": "43b436f046a43b3c9605417add7009f08f3dbce968286d5bf2d609f43c224294"
+      }
+    },
+    {
+      "album_id": 66058,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "0494551eaf0d5f9a3e78e845c8deb01e12b35fbc60a8f0ab0257e0b13e0a81f8",
+      "player_side": "white",
+      "player_status": "HOLD",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": null,
+        "PROD": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "25d9a9046cf6e05fc4d5372f19dde1cd0bbd4586144d091fd66f128d7e75a369",
+        "PROD": "a455cc498231cbae09f6776cb1159dfde5dea6f82abfb1ea659059054aa5cd5b"
+      }
+    },
+    {
+      "album_id": 66326,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "3a8f4a83f64a09ba934052c5906bd36f20be1ca8db73ada312f4bdcbfeb4979e",
+      "player_side": "black",
+      "player_status": "approved",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": 348,
+        "PROD": 347
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "72fade5477981aab822a571ca05851d18e239cc583b34b429309e8065e23bdd5",
+        "PROD": "7e98af5050ead15a497f498f8ddea93b30039f2045735416c99e97aba465d564"
+      }
+    },
+    {
+      "album_id": 103013,
+      "column": "event_id",
+      "frozen_preimage": null,
+      "required_current_postimage": 75,
+      "target_event_key": "china_japan_regular_exchange",
+      "sgf_sha256": "5276b13432c3fbb331777cfc259a2321f80e7ad15225550af4d1e52cdcbb2321",
+      "player_side": "white",
+      "player_status": "approved",
+      "player_fk_before_three_batch": null,
+      "player_fk_after_three_batch": {
+        "TEST": 542,
+        "PROD": 541
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "2c203bfcf44c1789a569ef9fb8a3ad86e35aab2c1d9a4da7974c3eb704fe58bc",
+        "PROD": "90aa5a385d81dda21e486ffcd2924b6d8f8e4a64f95062f86b0921d37b0b15b9"
+      }
+    }
+  ],
+  "unchanged_player_scope": {
+    "approved_slots_per_environment": 1529,
+    "held_slots_per_environment": 580,
+    "approved_slots_with_new_event": [
+      [
+        66326,
+        "black"
+      ],
+      [
+        103013,
+        "white"
+      ]
+    ],
+    "held_slots_with_new_event": [
+      [
+        36687,
+        "black"
+      ],
+      [
+        36688,
+        "white"
+      ],
+      [
+        36755,
+        "white"
+      ],
+      [
+        65378,
+        "white"
+      ],
+      [
+        65387,
+        "black"
+      ],
+      [
+        66039,
+        "white"
+      ],
+      [
+        66058,
+        "white"
+      ]
+    ],
+    "held_reason_preserved": "EV_GN_missing_or_different_titles",
+    "hold_release_allowed": false,
+    "new_candidate_slots_allowed": false,
+    "frozen_review_files_may_be_rewritten": false,
+    "new_best_ten_deltas_allowed": false
+  },
+  "required_preimage_and_postimage_checks": [
+    "Load the original TEST or PROD player review with its existing exact byte SHA. Keep approved_slot_sha256 and held_slot_sha256 unchanged.",
+    "Pin next-event decision and compared-plan file bytes to the listed SHA values. Require the listed compared-plan sha256, its decision_sha256, environment/database and environment capture digest. Check canonical JSON internal digests using ensure_ascii=False, sort_keys=True, separators=(comma,colon).",
+    "Derive approved event intersection from all decision approved IDs and all 2,105 frozen album IDs; require exactly the nine listed IDs, not merely count nine. Require all target_event_key values china_japan_regular_exchange, type-only approval, before.event_id NULL, target_event_edition_id NULL and absence from event HOLD.",
+    "For these nine rows, compare every field shared by the environment compared-plan row and frozen album row exactly, including both player FKs, raw names/event, source/path, dates, result, duplicate/edition links and SGF SHA256. Compare decision identity to the compared-plan row; sgf_md5 is checked in those event artifacts and SGF SHA256 binds the original player review.",
+    "Require original event_id NULL; add only (album_id,event_id):(NULL,75). Reject an existing delta key and require the new IDs disjoint from the 47 Japanese-major album IDs and the eight mixed11 opponent-FK album IDs.",
+    "Keep the existing 55 intervening delta constraints. The combined set must have exactly 64 changed cells: 56 event_id and eight opponent-player-FK cells over 62 distinct albums. Existing Japanese-major/mixed11 album overlap is 134184 and 134220 on different columns.",
+    "During capture, require current event_id exactly 75 for every listed row. All other current album columns must match the frozen review plus the separately approved existing deltas. NULL, 44, a dry-run sequence ID or any alternate target is not an acceptable postimage.",
+    "Verify the event catalog target (75,中日围棋对抗赛) at capture and in the independent posttransaction verification; keep this row stable during dry/apply using the existing transaction/table-lock boundary extended to kifu_events.",
+    "Record the new evidence pins and target binding in each fresh player plan. Do not reuse plans captured before these event changes. Re-capture TEST and PROD separately; preserve their different player IDs.",
+    "Retain existing table-locked preimage equality, only the original 1,529 NULL-to-approved-player-ID CAS writes, complete album/source/catalog postimage verification, dry rollback and independent posttransaction verification. All 580 HOLD FKs, including these seven, stay NULL."
+  ],
+  "implementation_changes": [
+    {
+      "file": "katrain/web/kifu/player_canonical_three.py",
+      "change": "Extend approved_intervening_deltas with a constant exact nine-ID set and pinned next-event decision/compared plan; perform the specified artifact checks and append only the nine event_id deltas. Add new pins to the evidence recorded by _capture."
+    },
+    {
+      "file": "katrain/web/kifu/player_canonical_three.py",
+      "change": "Add the narrowly scoped live event catalog target guard for ID 75 to _capture and _verify_final; include kifu_events in the existing dry/apply lock boundary. Do not add event writes."
+    },
+    {
+      "file": "tests/web_ui/test_kifu_player_canonical_three.py",
+      "change": "Update expected total 55 to 64; cover exact nine membership and both environments, stale/wrong event postimage, wrong event catalog target, and attempted FK write on one of the seven HOLD slots. Reuse existing drift/rollback/CAS coverage."
+    },
+    {
+      "file": "docs/resource/kifu-player-canonical-three-capture-dry-instructions-2026-10-04.md",
+      "change": "Describe the third pinned intervening batch and nine ID75 event changes; keep the seven player HOLD slots explicit."
+    }
+  ],
+  "risk": {
+    "rating": "bounded_with_required_checks",
+    "main_failure_modes": [
+      "Treating an event approval as release of seven player HOLDs",
+      "Inferring committed ID from a pre-insertion plan or sequence value",
+      "Permitting any event_id or raw-event-wide expansion",
+      "Mixing TEST and PROD player IDs or stale plans"
+    ],
+    "remaining_gate": "The offline decision is not a fresh live player plan. The implementer must perform the established capture/dry/review/apply gates for each environment; any additional drift requires separate review."
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "GPT-6 (exact runtime variant unavailable)",
+  "reviewed_at": "2026-10-08T19:01:31.690307+00:00",
+  "hashes": {
+    "TEST": "b2aac22b8a85bb60206f42ee180d0d21005f606e6db3f528bbb15c2f47ad1ed8",
+    "PROD": "940e48a38af5fdba5bb6b17ebc6eda3c88cd1a32917b664797af243e3fae10f1"
+  },
+  "scope": "20 existing KO namebytes unchanged; sameowner JP fullkana and current positive NIKL proofs; actualpost589 boundpreimages; 80othernames/4406SGFs/FK/ranks preserved; noaliases/identitymutation",
+  "result": "approved_for_bounded_execution"
+}

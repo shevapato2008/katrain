@@ -1,0 +1,9 @@
+{
+  "status": "approved_literal_name_review",
+  "request_canonical_sha256": "17c404d0ffd25fabc79cb665526a636235c1e1b06a12c0762ce491e4f3c89924",
+  "allow_name_assembly": true,
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T22:54:46.136239+00:00",
+  "review_conclusion": "Approved all 150 exact raw first-GN literal titles and 750 five-language display cells. Reviewed the 17 shared core lexicons and edition, year, match and game suffixes against the original SGF scope; Chinese titles retained exactly. These are literal display translations, not claims of official localized event names or cross-title event identity. TEST/PROD post-owner snapshots and null name preimages are bound by exact hashes; no SGF, album FK, rank or visibility changes authorized."
+}

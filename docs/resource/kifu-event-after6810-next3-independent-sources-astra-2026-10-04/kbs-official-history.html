@@ -1,0 +1,945 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="한국기원">
+	<meta name="description" content="한국기원 공식 홈페이지. 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="한국기원">
+	<meta property="og:url" content="https://www.baduk.or.kr/">
+	<meta property="og:title" content="한국기원">
+	<meta property="og:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta property="og:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="한국기원 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="한국기원">
+	<meta name="twitter:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="twitter:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png">
+
+	<link rel="canonical" href="https://www.baduk.or.kr/">
+	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.baduk.or.kr/">
+
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "한국기원",
+		"url": "https://www.baduk.or.kr/",
+		"logo": "https://www.baduk.or.kr/images/common/logo.png"
+	}
+	</script>
+
+
+
+	
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js?ver=1"></script>
+	<script language="javascript" src="/js/jquery-3.7.1.min.js"></script>
+	<script language="javascript" src="/js/swiper.jquery.min.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+<body>
+
+<div id="wrap">
+
+	<div class="eventWrap" id="topPopup" >
+		
+		
+
+<link rel="stylesheet" href="/common/swiper.min.css">
+
+<div class="innerEvent">	
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			
+				<div class="swiper-slide">
+					<a href="https://badukland.co.kr" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/배너 시안 2.png" style="width:320px;height:150px"></a>
+				</div>
+				
+				<div class="swiper-slide">
+					<a href="https://w.baduk.or.kr/" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/무제-1.jpg" style="width:320px;height:150px"></a>
+				</div>
+				
+		</div>
+	</div>
+
+	<span class="btn_slide prev"><button type="button" class="PP"></button></span>
+	<span class="btn_slide next"><button type="button" class="NN"></button></span> 
+</div>
+
+<script>
+	var swiper = new Swiper('.swiper-container', {
+		loop: true,
+		pagination: '.swiper-pagination',
+		slidesPerView: 3,
+		paginationClickable: true,
+		prevButton: '.PP',
+		nextButton: '.NN'
+	});
+</script>
+
+	</div>
+
+	<div id="header_wrap">
+		<div class="header_topa">
+			<div class="gnb_sub" id="allMenu" style="display:none" onclick="allMenuOnOff()">
+                <div class="innerContents">
+                    <dl>
+                        <dt >
+							<a href="/about/history.asp">기원소개</a>
+						</dt>
+                        <dd>
+                            <ul>
+								<li><a href="/about/history.asp"      >한국기원약사</a></li>
+								<li><a href="/about/business.asp"     >주요사업</a></li>
+								<li><a href="/about/management.asp"   >경영공시</a></li>
+								<li><a href="/about/since.asp"        >연혁</a></li>
+								<li><a href="/about/ceo.asp"          >역대총재/이사장</a></li>
+								<li><a href="/about/executive.asp"    >임원명단</a></li>
+								<li><a href="/about/organization.asp" >조직도</a></li>
+								<li><a href="/about/charactor.asp"    >캐릭터/CI</a></li>
+								<li><a href="/about/igf.asp"          >IGF</a></li>
+								<li><a href="/about/contact.asp"      >찾아오시는길</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/news/report.asp">바둑뉴스</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/news/report.asp"     >보도자료</a></li>
+								<li><a href="/news/summary.asp"    >바둑뉴스</a></li>
+								<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+								<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+								<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+								<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/record/diary.asp">기록실</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/record/diary.asp"         >대국결과</a></li>
+								<li><a href="/record/schedule.asp"      >대국일정</a></li>
+								<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+								<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+								<li><a href="/record/rankingYears.asp"  >연도별순위</a></li>
+								<li><a href="/record/rankingYear.asp"   >단일연도순위</a></li>
+								<li><a href="/record/player.asp"        >기사정보</a></li>
+								<li><a href="/record/title.asp"         >타이틀현황</a></li>
+								<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/gibo/gibo.asp">기보감상</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/gibo/gibo.asp" >전체기보</a></li>
+								<li><a href="https://goldengibo.baduk.or.kr/" target="_blank">도약기 기보</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="nuxt-link-active">
+							<a href="/game/game.asp?etcKey=1">기전정보</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/game/game.asp?etcKey=1" >현행 기전</a></li>
+								<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/square/board.asp">바둑인광장</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/square/board.asp"        >공지사항</a></li>
+								<li><a href="/square/amaApply.asp"     >아마단급</a></li>
+								<li><a href="/square/amaGame.asp"      >대회참가신청</a></li>
+								<li><a href="/square/explain.asp"      >공개해설신청</a></li>
+								<li><a href="/square/talk.asp"         >바둑토크</a></li>
+								<li><a href="/square/studentScore.asp" >통합연구생리그</a></li>
+								<li><a href="/square/site.asp"         >관련사이트</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/story/about.asp">바둑이야기</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/story/about.asp"     >바둑이란</a></li>
+								<li><a href="/story/bHistory.asp"  >바둑의 역사</a></li>
+								<li><a href="/story/howto.asp"     >대국방법</a></li>
+								<li><a href="/story/manner.asp"    >대국예절</a></li>
+								<li><a href="/story/badukRule.asp" >바둑규칙</a></li>
+								<li><a href="/story/gameRule.asp"  >경기규정</a></li>
+								<li><a href="/story/keyword.asp"   >바둑용어</a></li>
+								<!--<li><a href="https://archives.baduk.or.kr/archives/" target="_blank">바둑아카이브즈</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+			<div class="gnba">
+				<div class="popup_isShow">
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('X')" >팝업닫기<span class="close"></span></button>
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('')"  style="display:none">팝업열기<span class="open"></span></button>
+				</div>
+				<div class="gnb">
+					<form action="/etc/search.asp" method="post" name="sForm">
+					<fieldset class="searchW">
+						<legend class="hidden">통함검색</legend>
+						<dl>
+							<dt>통합검색</dt>
+							<dd class="searchWa"><span class="inputa"><input type="searchW" name="searchKey" value="" placeholder="검색어를 입력하세요"></span><span class="btn_searcha"><button type="button" onclick="sForm.submit()"></button></span></dd>
+						</dl>
+					</fieldset>
+					</form>
+					<ul class="links">
+						<li><a href="https://www.tvbaduk.com/" target="_blank">바둑TV</a></li>
+						<li><a href="/news/monthly.asp">월간바둑</a></li>
+						<li><a href="https://www.badukmall.co.kr/" target="_blank">바둑몰</a></li>
+						<li><a href="https://badukland.co.kr/" target="_blank">바둑랜드</a></li>
+						<li><a href="https://www.facebook.com/KoreaBadukAssociation/" target="_blank" class="facebook"></a></li>
+						<li><a href="https://www.instagram.com/korea_baduk_association/" target="_blank" class="insta"></a></li>
+						<li class="spread" onclick="allMenuOnOff()"><button type="button"></button></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="header">
+			
+			
+
+			<div class="logo">
+				<h1><a href="/"><img src="/images/common/logo.png" alt="한국기원" /></a></h1>
+			</div>
+			<div class="navia">
+				<ul class="navi">
+					<li ><a href="/about/history.asp">기원소개</a></li>
+					<li ><a href="/news/report.asp">바둑뉴스</a></li>
+					<li ><a href="/record/diary.asp">기록실</a></li>
+					<li ><a href="/gibo/gibo.asp">기보감상</a></li>
+					<li class="selected"><a href="/game/game.asp">기전정보</a></li>
+					<li ><a href="/square/board.asp">바둑인광장</a></li>
+					<li ><a href="/story/about.asp">바둑이야기</a></li>
+				</ul>
+			</div> 
+		</div>
+	</div>
+       
+<div id="container">  
+          
+	<div class="subVisaul05">
+		<div class="subTitle">기전정보</div>
+	</div>
+
+	<div class="contents_wrap">
+		
+		
+
+<div class="lnb">
+	<ul>
+		
+			
+			<li><a href="/game/game.asp?etcKey=1" class="lnb_on">현행 기전</a></li>
+			<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+
+		
+	</ul>
+</div>
+
+
+		<div class="pageTitle">            
+			<h2>
+				<div class="ttbar"></div>
+				현행 기전
+			</h2>           
+		</div>
+		
+		<div class="contents">
+			<div class="subTab">
+				<ul>
+					<li><a onclick="tebMenu('1')" class="subTab_on">국내기전</a></li>
+					<li><a onclick="tebMenu('2')" >세계기전</a></li>
+					<li><a onclick="tebMenu('3')" >리그</a></li>
+				</ul>
+			</div> 
+
+			<div class="gameClm1">
+				<div class="gameTt">
+					역대우승
+				</div>
+	
+				<div class="tbstyle01">
+					<table cellpadding="0" cellspacing="0" border="0">
+					<thead>
+					<tr>
+						<th width="12%" class="ltline">회차</th>
+						<th width="17%">년도</th>
+						<th width="17%">우승</th>
+						<th width="17%">준우승</th>
+						<th width="17%">결과</th>
+						<th></th>
+					</tr>
+					</thead>
+					<tbody>
+					<form name='playerForm' action='/record/player_view.asp' method='post' target='_blank'>	<input type='hidden' name='pkey'></form><script>	function viewPage_player(pKey){		playerForm.pkey.value = pKey;		playerForm.submit();	}</script>
+						<tr>
+							<td class="no">39</td>
+							<td>2020</td>
+							<td><a onclick="viewPage_player('신진서')">신진서</a></td>
+							<td><a onclick="viewPage_player('안성준')">안성준</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('39','600','440')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">38</td>
+							<td>2019</td>
+							<td><a onclick="viewPage_player('신진서')">신진서</a></td>
+							<td><a onclick="viewPage_player('신민준')">신민준</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('38','1116','550')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">37</td>
+							<td>2019</td>
+							<td><a onclick="viewPage_player('신민준')">신민준</a></td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('37','1020','520')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">36</td>
+							<td>2018</td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td><a onclick="viewPage_player('김지석')">김지석</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('36','1212','550')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">35</td>
+							<td>2016</td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td><a onclick="viewPage_player('나현')">나현</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('35','1092','550')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">34</td>
+							<td>2016</td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('34','1212','550')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">33</td>
+							<td>2015</td>
+							<td><a onclick="viewPage_player('이동훈')">이동훈</a></td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('33','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">32</td>
+							<td>2014</td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('32','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">31</td>
+							<td>2013</td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('31','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">30</td>
+							<td>2012</td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td><a onclick="viewPage_player('백홍석')">백홍석</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('30','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">29</td>
+							<td>2011</td>
+							<td><a onclick="viewPage_player('박정환')">박정환</a></td>
+							<td><a onclick="viewPage_player('백홍석')">백홍석</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('29','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">28</td>
+							<td>2009</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('강동윤')">강동윤</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('28','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">27</td>
+							<td>2009</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('27','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">26</td>
+							<td>2007</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('조한승')">조한승</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('26','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">25</td>
+							<td>2006</td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td><a onclick="viewPage_player('최철한')">최철한</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('25','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">24</td>
+							<td>2005</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('유창혁')">유창혁</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('24','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">23</td>
+							<td>2004</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('조한승')">조한승</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('23','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">22</td>
+							<td>2003</td>
+							<td><a onclick="viewPage_player('송태곤')">송태곤</a></td>
+							<td><a onclick="viewPage_player('박병규')">박병규</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('22','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">21</td>
+							<td>2002</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('이상훈大')">이상훈大</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('21','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">20</td>
+							<td>2001</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('이세돌')">이세돌</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('20','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">19</td>
+							<td>2000</td>
+							<td><a onclick="viewPage_player('목진석')">목진석</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('19','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">18</td>
+							<td>1999</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('18','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">17</td>
+							<td>1999</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('정수현')">정수현</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('17','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">16</td>
+							<td>1998</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('16','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">15</td>
+							<td>1997</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('15','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">14</td>
+							<td>1996</td>
+							<td><a onclick="viewPage_player('유창혁')">유창혁</a></td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('14','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">13</td>
+							<td>1995</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('13','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">12</td>
+							<td>1994</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('유창혁')">유창혁</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('12','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">11</td>
+							<td>1992</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('11','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">10</td>
+							<td>1991</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('서능욱')">서능욱</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('10','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">9</td>
+							<td>1990</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('서능욱')">서능욱</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('9','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">8</td>
+							<td>1989</td>
+							<td><a onclick="viewPage_player('이창호')">이창호</a></td>
+							<td><a onclick="viewPage_player('김수장')">김수장</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('8','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">7</td>
+							<td>1988</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('서능욱')">서능욱</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('7','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">6</td>
+							<td>1987</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('김희중')">김희중</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('6','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">5</td>
+							<td>1986</td>
+							<td><a onclick="viewPage_player('하찬석')">하찬석</a></td>
+							<td><a onclick="viewPage_player('김희중')">김희중</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('5','1020','520')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">4</td>
+							<td>1985</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('서봉수')">서봉수</a></td>
+							<td>2-1</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('4','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">3</td>
+							<td>1984</td>
+							<td><a onclick="viewPage_player('서봉수')">서봉수</a></td>
+							<td><a onclick="viewPage_player('김좌기')">김좌기</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('3','800','700')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">2</td>
+							<td>1983</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('김희중')">김희중</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('2','930','520')">대진표</button>
+								
+							</td>
+						</tr>
+						
+						<tr>
+							<td class="no">1</td>
+							<td>1980</td>
+							<td><a onclick="viewPage_player('조훈현')">조훈현</a></td>
+							<td><a onclick="viewPage_player('노영하')">노영하</a></td>
+							<td>2-0</td>
+							<td>
+								
+									<button type="button" class="button" onclick="gameTablePage('1','630','520')">대진표</button>
+								
+							</td>
+						</tr>
+						
+					</tbody>
+					</table>
+					<br><br>
+					<button type="button" class="listBack" onclick="listPage()">목록</button>
+				</div>
+			</div>
+
+			<div class="gameClm2">
+				<div class="gameTt">
+					대회개요
+				</div>
+				<div class="tbstyle02">
+					
+					<table cellpadding="0" cellspacing="0" border="0"> 
+					<thead>
+					<tr>
+						<th colspan="2">
+							
+								<div style="height:100px;"></div>
+							
+						</th>
+					</tr>
+					</thead>
+					<tbody> 
+					<tr>
+						<td width="25%" class="item">대회명</td>
+						<td>KBS바둑왕전</td>
+					</tr>
+					<tr>
+						<td width="25%" class="item">주최</td>
+						<td>KBS</td>
+					</tr>
+					<tr>
+						<td class="item">후원</td>
+						<td>KBS</td>
+					</tr>
+					<tr>
+						<td class="item">우승상금</td>
+						<td>우승 : 2천만원 / 준우승 : 6백만원</td>
+					</tr>
+					<tr>
+						<td class="item">제한시간</td>
+						<td>각자 5분, 초읽기 30초 5회</td>
+					</tr>
+					
+					</tbody>
+					</table>
+				</div> 
+			</div>
+		</div> 
+
+	</div>
+</div>
+
+
+	
+	<div id="footer">
+		<div class="innerFoot">
+            <ul class="footerLinks">
+				<li><a href="/about/history.asp">한국기원소개</a></li>
+				<li><a href="/about/contact.asp">찾아오시는길</a></li>
+				<li><a href="/member/provision.asp">이용약관</a></li>
+				<li><a href="/member/privacy.asp">개인정보처리방침</a></li>
+            </ul>
+            <address>
+                주소 : 서울시 성동구 마장로 210 전화 : 02-3407-3800 팩스 : 02-3407-3875 이메일 : webmaster@baduk.or.kr 사업자등록번호 : 206-82-03412
+                출판 : 1967년 7월 7일 등록(라-906호)<br />
+                (재)한국기원 대표자: 정태순<br />
+                ⓒ 2010 ~ 2026 KOREA BADUK ASSOCIATION. All rights reserved.
+            </address>
+        </div>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+<form method="post" name="s1">	
+	<input type="hidden" name="keyColumn" value="">
+	<input type="hidden" name="keyWord"   value="">
+	<input type="hidden" name="etcKey"    value="">
+	<input type="hidden" name="etcKey2"   value="">
+
+	<input type="hidden" name="cmpt_code" value="1106">
+	<input type="hidden" name="cmpt_th">
+
+	<input type="hidden" name="cmpt_name_full" value="KBS바둑왕전">
+</form>
+
+<script>
+	function listPage(){
+		s1.action = "game.asp?#pageFocus";
+		s1.submit();
+	}
+	
+	//view에서 탭메뉴
+	function tebMenu(str){
+		s1.etcKey2.value = str;
+		s1.action = "game.asp?#pageFocus";
+		s1.submit();
+	}
+	
+	//대진표 view
+	function gameTablePage(th, width_size, height_size){
+		centerWindow2('', 'gameTable', width_size, height_size, 'yes', 'yes')
+		s1.cmpt_th.value = th
+		s1.target = "gameTable";
+		s1.action = "gameTableView.asp";
+		s1.submit();
+	}
+	
+	//사진 view
+	function gamePhotoPage(th){
+		centerWindow2('', 'gamePhoto', 700, 800, 'yes', 'yes')
+		s1.cmpt_th.value = th
+		s1.target = "gamePhoto";
+		s1.action = "gamePhotoView.asp";
+		s1.submit();
+	}
+</script>

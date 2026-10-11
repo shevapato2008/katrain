@@ -1,0 +1,1183 @@
+{
+  "artifact_kind": "readonly_source_recovery_shortlist",
+  "created_at_utc": "2026-10-08T17:24:03.444494+00:00",
+  "actor_id": "/root/next_batch_source_recovery",
+  "scope": "20 distinct next delivery candidates:18 established exact original-Han CN fallback proposals and2 prior prepared packet references;5 supplied TWmissing owners are extra held leads. Current binding and SQL remain root-owned.",
+  "counts": {
+    "next_delivery_distinct_players": 20,
+    "CNfallback_proposals": 18,
+    "prior_prepared_references": 2,
+    "TWheld_leads": 5,
+    "new_approvals": 0,
+    "database_writes": 0
+  },
+  "limitations": [
+    "Archive reuse preserves original captured timestamps/hashes; purged historical raw source bytes are not recreated.",
+    "Missing language status is archival and requires current root/binder read before mutation.",
+    "Accepted literal original-name CN fallback must use the established published form verbatim; no simplified/traditional conversion.",
+    "Existing qualified cells, aliases, player IDs, ranks, SGF and FKs must remain unchanged."
+  ],
+  "next_delivery_candidates": [
+    {
+      "prod_player_id": 5397,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "浜島久義",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "浜島久義",
+        "en": "Hamajima Hisayoshi",
+        "ko": "하마지마 히사요시"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired73-20261007-PROD.json.gz",
+      "source_archive_sha256": "20043a18939640b524555b351705c3c604738610c1bafb788857f79d401bb19c",
+      "source_batch_id": 468,
+      "original_name": "浜島久義",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/hisayoshi-hamajima",
+      "identity_note": "FH actual PROD owner 5397 canonical 浜岛久义 has 281 linked slots, 0 current names/aliases; CWI same-name Latin row 浜島久義 Hamajima Hisayoshi (6p) *1907-05-01 1p: 1942, 2p: 1953, 3p: 1955, 4p: 1957, 5p: 1959, 6p: 1965-06-10. Died 1993. ; identity bridge SHA ddefd43ea2944b5f14d6fbce05839e128ce619964d56319c7edd1ca0f00636e3. No DOB/rank concordance asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">浜島久義</h1><p class=\"page-summary\">浜島久義（はまじま ひさよし）のレートは1253です。</p>",
+          "body_sha256": "25c5b7eae3416438ce4aa42331f4f95d958edda3b1356ac01a11a032e254a664",
+          "candidate_name": "浜島久義",
+          "fetched_at": "2026-10-07T09:51:18.983913+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 5397 canonical 浜岛久义 has 281 linked slots, 0 current names/aliases; CWI same-name Latin row 浜島久義 Hamajima Hisayoshi (6p) *1907-05-01 1p: 1942, 2p: 1953, 3p: 1955, 4p: 1957, 5p: 1959, 6p: 1965-06-10. Died 1993. ; identity bridge SHA ddefd43ea2944b5f14d6fbce05839e128ce619964d56319c7edd1ca0f00636e3. No DOB/rank concordance asserted. Direct profile H1 and CWI Latin/kanji bridge.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 5397,
+            "kind": "player"
+          },
+          "query": "浜島久義",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/hisayoshi-hamajima"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 5297,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "武田博愛",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "武田博愛",
+        "en": "Takeda Hakuai",
+        "ko": "다케다 히로아이"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired74-20261007-PROD.json.gz",
+      "source_archive_sha256": "06e22ba8e55fe3fb742daefa4af6e05781621d456c8049192770f43a24d55dab",
+      "source_batch_id": 471,
+      "original_name": "武田博愛",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/hakuai-takeda",
+      "identity_note": "FH actual PROD owner 5297 canonical 武田博爱 has 203 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">武田博愛</h1><p class=\"page-summary\">武田博愛（たけだ はくあい）のレートは1251です。</p>",
+          "body_sha256": "7a94e7e18599e65085b5e9e462da54cd84a2a713b09f5f4379f777ee7aafabe7",
+          "candidate_name": "武田博愛",
+          "fetched_at": "2026-10-07T11:38:00.403176+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 5297 canonical 武田博爱 has 203 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 5297,
+            "kind": "player"
+          },
+          "query": "武田博愛",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/hakuai-takeda"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6626,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "早瀬玄堂",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "早瀬玄堂",
+        "en": "Hayase Gendo",
+        "ko": "하야세 겐도"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired74-20261007-PROD.json.gz",
+      "source_archive_sha256": "06e22ba8e55fe3fb742daefa4af6e05781621d456c8049192770f43a24d55dab",
+      "source_batch_id": 471,
+      "original_name": "早瀬玄堂",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/gendo-hayase",
+      "identity_note": "FH actual PROD owner 6626 canonical 早濑玄堂 has 118 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">早瀬玄堂</h1><p class=\"page-summary\">早瀬玄堂（はやせ げんどう）のレートは1259です。</p>",
+          "body_sha256": "5f8f54f7ae4b19fbb181ecf02d4090d5167cce4cfe96fceabdb2f3809987aaa6",
+          "candidate_name": "早瀬玄堂",
+          "fetched_at": "2026-10-07T11:37:52.444898+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6626 canonical 早濑玄堂 has 118 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6626,
+            "kind": "player"
+          },
+          "query": "早瀬玄堂",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/gendo-hayase"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 4235,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "塩入逸造",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "塩入逸造",
+        "en": "Shioiri Itsuzo",
+        "ko": "시오이리 이쓰조"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired74-20261007-PROD.json.gz",
+      "source_archive_sha256": "06e22ba8e55fe3fb742daefa4af6e05781621d456c8049192770f43a24d55dab",
+      "source_batch_id": 471,
+      "original_name": "塩入逸造",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/itsuzo-shioiri",
+      "identity_note": "FH actual PROD owner 4235 canonical 塩入逸造 has 114 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">塩入逸造</h1><p class=\"page-summary\">塩入逸造（しおいり いつぞう）のレートは1475です。</p>",
+          "body_sha256": "33c40089380fcfe558fd1e32bf8f151e558055c291d22776de7dd81275a7c106",
+          "candidate_name": "塩入逸造",
+          "fetched_at": "2026-10-07T11:37:53.223342+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 4235 canonical 塩入逸造 has 114 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 4235,
+            "kind": "player"
+          },
+          "query": "塩入逸造",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/itsuzo-shioiri"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6629,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "福原義虎",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "福原義虎",
+        "en": "Fukuhara Yoshitora",
+        "ko": "후쿠하라 요시토라"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired74-20261007-PROD.json.gz",
+      "source_archive_sha256": "06e22ba8e55fe3fb742daefa4af6e05781621d456c8049192770f43a24d55dab",
+      "source_batch_id": 471,
+      "original_name": "福原義虎",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/yoshitora-fukuhara",
+      "identity_note": "FH actual PROD owner 6629 canonical 福原义虎 has 106 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">福原義虎</h1><p class=\"page-summary\">福原義虎（ふくはら よしとら）のレートは1166です。</p>",
+          "body_sha256": "9da86a27cfee73c658a0a92ed53705201e7f6ab0de98c41934e559ab52515f72",
+          "candidate_name": "福原義虎",
+          "fetched_at": "2026-10-07T11:38:51.234789+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6629 canonical 福原义虎 has 106 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6629,
+            "kind": "player"
+          },
+          "query": "福原義虎",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/yoshitora-fukuhara"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6672,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "伊藤松次郎",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "伊藤松次郎",
+        "en": "Ito Matsujiro"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired74-20261007-PROD.json.gz",
+      "source_archive_sha256": "06e22ba8e55fe3fb742daefa4af6e05781621d456c8049192770f43a24d55dab",
+      "source_batch_id": 471,
+      "original_name": "伊藤松次郎",
+      "original_language": "ja",
+      "original_language_basis_url": "https://note.com/curon154/n/n155836d592a3",
+      "identity_note": "FH actual PROD owner 6672 canonical 伊藤松次郎 has 102 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "の度に葆真と対局し、御城碁の自筆の棋譜を届けるなど、この頃の恩に報いている。<br/> <br/>　天保八年に、坊門五段伊藤松次郎が尾道を訪れる。人に頼まれ栄斎と打つことになるが、現れた九歳の少年を見て松次郎は不快の色をかくさず、初段近く打つと聞いて「初段では座敷ホイトだ」と放言したという。ホイトとはこの地方の放言で物乞いのことで、少しくらい強いのを鼻にかけ、あちこちの座敷をまわる物乞い同然の子供だと嘲笑ったのだ。<br/>　ところが、実際に打ってみて松次郎は驚いた。初段の力を認めざる",
+          "body_sha256": "726e027599629ebdf57c60f80e4f23a19385446e44b6a179711606e2e5ee9262",
+          "candidate_name": "伊藤松次郎",
+          "fetched_at": "2026-10-07T11:42:46.862853+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6672 canonical 伊藤松次郎 has 102 linked slots, 0 current names/aliases; original and Latin published source bridge from FH file SHA feff71922ee32e85a72b6cb7964112490dca5c999aaed71fd26e38feceb4c0d5. The IgoRating JA/EN pages are one independent ratings publisher, not an official federation. No Cyberoro DOB/rank/date agreement asserted.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6672,
+            "kind": "player"
+          },
+          "query": "伊藤松次郎",
+          "source_id": "curon-go-history",
+          "status": "found",
+          "url": "https://note.com/curon154/n/n155836d592a3"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 4420,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "小杉丁",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "小杉丁",
+        "en": "Kosugi Tei"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired114-20261008-PROD.json.gz",
+      "source_archive_sha256": "a8be453901cb239d4672064d33a5d524aea639f2b1e379ae3700e32ac8921e38",
+      "source_batch_id": 541,
+      "original_name": "小杉丁",
+      "original_language": "ja",
+      "original_language_basis_url": "https://note.com/nihonkiin/n/n679bb4de0ea7",
+      "identity_note": "Actual same-source-actor finite read-only PROD4420/TEST10211 scope: 39 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1150 and CWI professional chronology explicitly tie 小杉丁 to later 小杉直楓 and Kosugi Tei; Nihon Kiin Japanese article publishes 小杉丁四段. Former name is evidence only, no alias/merge. Full Japanese kana not established, KO omitted.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "八段、岩佐銈七段、喜多文子五段ら。東軍甲組は鈴木為次郎七段、宮坂寀二六段、福田正義五段、向井一男四段、村島義勝四段、木谷實四段、前田陳爾三段。西軍甲組は瀬越憲作七段、加藤信六段、岩本薫六段、小杉丁四段、長谷川章四段、篠原正美四段、橋本宇太郎四段、井上一郎三段。四段以下の低段者を甲組乙組に分けたのは当時の成績による。</p></d",
+          "body_sha256": "3de3d0bc99db9d431814cb963c5936e65f451ab7fbc1dce7925dbe12f3fcde48",
+          "candidate_name": "小杉丁",
+          "fetched_at": "2026-10-08T02:41:53.661800+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor finite read-only PROD4420/TEST10211 scope: 39 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1150 and CWI professional chronology explicitly tie 小杉丁 to later 小杉直楓 and Kosugi Tei; Nihon Kiin Japanese article publishes 小杉丁四段. Former name is evidence only, no alias/merge. Full Japanese kana not established, KO omitted.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 4420,
+            "kind": "player"
+          },
+          "query": "小杉丁",
+          "source_id": "ret114-nihon-note",
+          "status": "found",
+          "url": "https://note.com/nihonkiin/n/n679bb4de0ea7"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 10211
+    },
+    {
+      "prod_player_id": 6712,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "岸本左一郎",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "岸本左一郎",
+        "en": "Kishimoto Saichiro"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired114-20261008-PROD.json.gz",
+      "source_archive_sha256": "a8be453901cb239d4672064d33a5d524aea639f2b1e379ae3700e32ac8921e38",
+      "source_batch_id": 541,
+      "original_name": "岸本左一郎",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.nihonkiin.or.jp/publishing/books/katsugoshinpyou.html",
+      "identity_note": "Actual same-source-actor finite read-only PROD6712/TEST12481 scope: 35 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. Nihon Kiin reprints 岸本左一郎 historical Go book and NDL authority prints the exact Japanese name with キシモト, サイチロウ. Keima Go Shusaku game row publishes Kishimoto Saichiro; finite SGF dates/sides identify same historic player. No CN/TW/KO selected; NDL catalog alone does not claim conventional KO.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "形130題が、簡潔な評とともに収められています。江戸時代の棋書といえば打碁集が多く、その中で、実戦手筋をまとめた『活碁新評』は異色なものでした。<br /> 　著者は岸本左一郎。石見国に生まれ、十代後半になると、江戸に出て本因坊丈和に弟子入り。本因坊秀和、秀策と同時代だったために、後世では隠れた存在となってしまいましたが、技量、人物ともに優れた棋士で、本因坊家では塾頭を務めました。<br /> 　岸本が精選した手筋は、現代でも勉強になるものばかり。秋山次郎九段の監修でお届けします。<br /> 　なお",
+          "body_sha256": "bd9588bc94eaaf0c3e6a4044e1a648fc59a86dc3b4ce0d692799b5230fd2d622",
+          "candidate_name": "岸本左一郎",
+          "fetched_at": "2026-10-08T02:41:55.503650+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor finite read-only PROD6712/TEST12481 scope: 35 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. Nihon Kiin reprints 岸本左一郎 historical Go book and NDL authority prints the exact Japanese name with キシモト, サイチロウ. Keima Go Shusaku game row publishes Kishimoto Saichiro; finite SGF dates/sides identify same historic player. No CN/TW/KO selected; NDL catalog alone does not claim conventional KO.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6712,
+            "kind": "player"
+          },
+          "query": "岸本左一郎",
+          "source_id": "ret114-nihon-kiin",
+          "status": "found",
+          "url": "https://www.nihonkiin.or.jp/publishing/books/katsugoshinpyou.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 12481
+    },
+    {
+      "prod_player_id": 6714,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "田村昇",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "田村昇",
+        "en": "Tamura Noboru",
+        "ko": "다무라 노보루"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired114-20261008-PROD.json.gz",
+      "source_archive_sha256": "a8be453901cb239d4672064d33a5d524aea639f2b1e379ae3700e32ac8921e38",
+      "source_batch_id": 541,
+      "original_name": "田村昇",
+      "original_language": "ja",
+      "original_language_basis_url": "https://igorating.com/players/noboru-tamura",
+      "identity_note": "Actual same-source-actor finite read-only PROD6714/TEST12483 scope: 34 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1546 prints Tamura Noboru, 田村升 and 田村昇 in one name block; Igorating own profile publishes 田村昇 with complete たむら のぼる and matching historical games. KO 다무라 노보루 is normative output; no alias/merge or guessed Han reading.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "<p class=\"page-summary\">田村昇（たむら のぼる）のレートは1426です。</p>",
+          "body_sha256": "294808aa7f3be1d1cf0b6b802dab56eccc0ff4dddbe24813f76072ad9f62cc81",
+          "candidate_name": "田村昇",
+          "fetched_at": "2026-10-08T02:41:57.949783+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor finite read-only PROD6714/TEST12483 scope: 34 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1546 prints Tamura Noboru, 田村升 and 田村昇 in one name block; Igorating own profile publishes 田村昇 with complete たむら のぼる and matching historical games. KO 다무라 노보루 is normative output; no alias/merge or guessed Han reading.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6714,
+            "kind": "player"
+          },
+          "query": "田村昇",
+          "source_id": "ret114-igorating-ja",
+          "status": "found",
+          "url": "https://igorating.com/players/noboru-tamura"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 12483
+    },
+    {
+      "prod_player_id": 6769,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "村上文祥",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "村上文祥",
+        "en": "Bunsho Murakami"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired114-20261008-PROD.json.gz",
+      "source_archive_sha256": "a8be453901cb239d4672064d33a5d524aea639f2b1e379ae3700e32ac8921e38",
+      "source_batch_id": 541,
+      "original_name": "村上文祥",
+      "original_language": "ja",
+      "original_language_basis_url": "https://note.com/nihonkiin/n/n18331e85884c",
+      "identity_note": "Actual same-source-actor finite read-only PROD6769/TEST12538 scope: 21 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1401 prints Bunsho Murakami and 村上文祥. Nihon Kiin official World Amateur table publishes both forms and Nihon Kiin news title publishes contiguous 村上文祥; amateur status preserved. No CN/TW/KO source claim.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "<title>第54回碁界の礎百人―人気のアマ・プロ十傑戦【坂田栄男⑭村上文祥】｜『棋道web』|日本棋院囲碁ニュース</title>",
+          "body_sha256": "a1e8ac2d889c67f06994c33ee244c5bbfe3fa81dcab3a96cc520e0247e5d39cc",
+          "candidate_name": "村上文祥",
+          "fetched_at": "2026-10-08T02:41:59.724583+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor finite read-only PROD6769/TEST12538 scope: 21 linked album ID/side/SGF SHA slots each, TEST no extras; target names0 aliases0, given native/former/Latin/KO source claims foreign normalized canonical/name/alias hits0. Final approved context and CAS belong to distinct binder. U-Go own1401 prints Bunsho Murakami and 村上文祥. Nihon Kiin official World Amateur table publishes both forms and Nihon Kiin news title publishes contiguous 村上文祥; amateur status preserved. No CN/TW/KO source claim.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6769,
+            "kind": "player"
+          },
+          "query": "村上文祥",
+          "source_id": "ret114-nihon-note",
+          "status": "found",
+          "url": "https://note.com/nihonkiin/n/n18331e85884c"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 12538
+    },
+    {
+      "prod_player_id": 5398,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "浦原繁治",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "浦原繁治",
+        "en": "Kanbara Shigeji"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired117-20261008-PROD.json.gz",
+      "source_archive_sha256": "9fbf37c81197db2f3c97b07f942be9ffb286b0d8e34cc19798dbeb4f94cdf04c",
+      "source_batch_id": 542,
+      "original_name": "浦原繁治",
+      "original_language": "ja",
+      "original_language_basis_url": "https://db.u-go.net/playerdb/players/1088/",
+      "identity_note": "Actual same-source-actor readonly finite PROD5398/TEST11173,11 equal fullalbumID/side/SGF slots each, aliases0 and examinednative/Latin normalizedforeignclaims0; 339actual5REVIEW/env captured, othersnames0. Not independentFH or finalapproved-context/CAS binder. ActualU-Go1088 retry200 explicitJapanese浦原繁治/preferredENKanbara Shigeji, actualCWI ownfirstcolumnsameoriginal/Latin. Target1931–1944Japaneseprofessional promotiongames coherentwithactualCWI1918entry/1973death. PureJapanese originalname publication is not relabeled as an actualCN/TW translation; bothChinese cells omittedratherthan assuming missinglocal publication. JapaneseWiki404 and Igo initialNameResolutionError thenonebounded404 preserved; noactualcompletekanareading, KOomitted and not derivedfromLatin/canonicalHan characters. Nohistoricalbiography/rank/DOB/death/merge/FK/aliaswrites.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "{\"id\":1088,\"key_name\":\"Kanbara Shigeji\",\"sex\":\"Unknown\",\"date_of_birth\":\"1891-11-10\",\"date_of_death\":\"1973\",\"citizenship\":\"JPN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"simplenames\":[{\"id\":1186,\"playername\":\"https://db.u-go.net/playerdb/names/877/\",\"name\":\"Kanbara Shigeji\",\"databases\":[\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":5005,\"playername\":\"https://db.u-go.net/playerdb/names/877/\",\"name\":\"浦原繁治\",\"databases\":[],\"languages\":[{\"language\":\"ja\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":null,\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[{\"id\":871,\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"rank\":\"1p\",\"valid_from\":\"1918\"},{\"id\":872,\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"rank\":\"2p\",\"valid_from\":\"1920\"},{\"id\":873,\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"rank\":\"3p\",\"valid_from\":\"1922\"},{\"id\":874,\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"rank\":\"5p\",\"valid_from\":\"1942\"},{\"id\":875,\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"rank\":\"6p\",\"valid_from\":\"1964\"}],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/1088/\",\"url\":\"http://senseis.xmp.net/?KanbaraShigeji\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T20:30:30.447492Z\",\"last_changed\":\"2016-12-17T11:46:38.636119Z\"}",
+          "body_sha256": "8b19fbc35de82cbf56b00536826e3a5ff095edfe4f5be896e24215057be36bbd",
+          "candidate_name": "浦原繁治",
+          "fetched_at": "2026-10-08T02:50:34.466277+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD5398/TEST11173,11 equal fullalbumID/side/SGF slots each, aliases0 and examinednative/Latin normalizedforeignclaims0; 339actual5REVIEW/env captured, othersnames0. Not independentFH or finalapproved-context/CAS binder. ActualU-Go1088 retry200 explicitJapanese浦原繁治/preferredENKanbara Shigeji, actualCWI ownfirstcolumnsameoriginal/Latin. Target1931–1944Japaneseprofessional promotiongames coherentwithactualCWI1918entry/1973death. PureJapanese originalname publication is not relabeled as an actualCN/TW translation; bothChinese cells omittedratherthan assuming missinglocal publication. JapaneseWiki404 and Igo initialNameResolutionError thenonebounded404 preserved; noactualcompletekanareading, KOomitted and not derivedfromLatin/canonicalHan characters. Nohistoricalbiography/rank/DOB/death/merge/FK/aliaswrites.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 5398,
+            "kind": "player"
+          },
+          "query": "浦原繁治",
+          "source_id": "ret97-ugo-en",
+          "status": "found",
+          "url": "https://db.u-go.net/playerdb/players/1088/"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 11173
+    },
+    {
+      "prod_player_id": 3785,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "中山季磨",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "中山季磨",
+        "en": "Nakayama Suemaro"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired133-20261008-PROD.json.gz",
+      "source_archive_sha256": "eef3f32abe90c4ff4f004a37ba3c34b6357d416107f49f67df1fcc792689d469",
+      "source_batch_id": 560,
+      "original_name": "中山季磨",
+      "original_language": "ja",
+      "original_language_basis_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "Actual same-source-actor readonly finite PROD3785/TEST9583,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CWI own first-column 中山季磨 paired with exact Latin Nakayama Suemaro, genuine historical Japanese Go record, original capture UTC retained. Target eight1934 JapanPromotionTournament SGFs3p matches limited historical period of own CWI1917entry/19223p context; those dates/DOB/death remain source metadata, not biography writes. U-Go1232 own API first and one bounded retry both ConnectTimeout; cached gzip record remains lead only, not fake decoded new API or joined native proof. JA literal original and EN literal Latin both published on actual own CWI row. Chinese Wiki CN timed out, TW404, JA Wiki404, Igo404; no complete kana captured. Two actual Naver200 original/Latin Go searches had normal no-result pages, not global absence assertion. CN/TW/KO omitted, no Japanese-original kana guessed from Latin.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "<tr><td>中山季磨</td> <td>Nakayama Suemaro</td> <td>*1897-11-28</td> <td>1p: 1917, 3p: 1922, 5p: 1964. Died 1981.</td></tr>",
+          "body_sha256": "67cb59e1110cb4c4c58c3822f54bd5f66ebb149d149fd282964b922e90c20567",
+          "candidate_name": "中山季磨",
+          "fetched_at": "2026-10-07T09:51:23.067128+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD3785/TEST9583,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CWI own first-column 中山季磨 paired with exact Latin Nakayama Suemaro, genuine historical Japanese Go record, original capture UTC retained. Target eight1934 JapanPromotionTournament SGFs3p matches limited historical period of own CWI1917entry/19223p context; those dates/DOB/death remain source metadata, not biography writes. U-Go1232 own API first and one bounded retry both ConnectTimeout; cached gzip record remains lead only, not fake decoded new API or joined native proof. JA literal original and EN literal Latin both published on actual own CWI row. Chinese Wiki CN timed out, TW404, JA Wiki404, Igo404; no complete kana captured. Two actual Naver200 original/Latin Go searches had normal no-result pages, not global absence assertion. CN/TW/KO omitted, no Japanese-original kana guessed from Latin.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 3785,
+            "kind": "player"
+          },
+          "query": "中山季磨",
+          "source_id": "ret133-cwi-history",
+          "status": "found",
+          "url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 9583
+    },
+    {
+      "prod_player_id": 5675,
+      "category": "established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "秦思玥",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "tw": "秦思玥",
+        "jp": "秦思玥",
+        "en": "Qin Siyue"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired122-20261008-PROD.json.gz",
+      "source_archive_sha256": "5b7d43b3a827969744015dabd5e880ed0dbcbf604ab5d7d502c94d34997a2c00",
+      "source_batch_id": 552,
+      "original_name": "秦思玥",
+      "original_language": "zh-Hans",
+      "original_language_basis_url": "https://yigo.org/godata/wr/f-wuqingyuan/07-2024.php",
+      "identity_note": "Actual same-actor finite read-only PROD5675/TEST11448: 14 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. Old GoRatings own2275 now returns HTTP404; this is not an identity or nonexistence conclusion. 2024-11-25 linked target SGF Qin Siyue–Kim Eunji is named by CWI English Go tournament archive and Nihon Kiin official Japanese match result; Taiwanese Yigo same 2024 Go Seigen Cup publishes 秦思玥. No qualified CN or KO main selected.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "r>\r\n<td></td>\r\n<td>金恩持九段</td>\r\n<td>韓国</td>\r\n<td>中押し</td>\r\n<td>△</td>\r\n<td>秦思玥二段</td>\r\n<td>中国</td>\r\n</tr>\r\n</tbody>\r\n</table>\r\n</div>\n\t</div>\n\t<div class=\"match",
+          "body_sha256": "6c86899a500d0463d6334f50361fb7d15806d72e6331931419c5371190bf91ab",
+          "candidate_name": "秦思玥",
+          "fetched_at": "2026-10-08T04:05:53.209709+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-actor finite read-only PROD5675/TEST11448: 14 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. Old GoRatings own2275 now returns HTTP404; this is not an identity or nonexistence conclusion. 2024-11-25 linked target SGF Qin Siyue–Kim Eunji is named by CWI English Go tournament archive and Nihon Kiin official Japanese match result; Taiwanese Yigo same 2024 Go Seigen Cup publishes 秦思玥. No qualified CN or KO main selected.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 5675,
+            "kind": "player"
+          },
+          "query": "秦思玥",
+          "source_id": "nihon-kiin",
+          "status": "found",
+          "url": "https://www.nihonkiin.or.jp/match/goseigen/007.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "archival_test_player_id": 11448
+    },
+    {
+      "prod_player_id": 6599,
+      "category": "additional_established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "小松伸昭",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "小松伸昭",
+        "en": "Komatsu Nobuaki",
+        "ko": "고마쓰 노부아키"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired75-20261007-PROD.json.gz",
+      "source_archive_sha256": "5e99f46cbd19f58154b8643c3501b6411b631c923d383ee9cb6857472834e002",
+      "source_batch_id": 473,
+      "original_name": "小松伸昭",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/nobuaki-komatsu",
+      "identity_note": "FH actual PROD owner 6599 canonical 小松伸昭 has 181 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. CWI row explicitly lists 小松伸昭/小松弘明 as Komatsu Nobuaki=Komatsu Hiroaki, DOB 1940-05-13; keep former-name relationship, do not merge owner without DB review. Source roles are recorded separately; no old-name owner merger.",
+      "source_checks": [
+        {
+          "body_excerpt": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>小松伸昭｜囲碁棋士レーティング（日本）</title><meta name=\"description\" content=\"小松伸昭（こまつ のぶあき）のレートは1360です。\"><link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"><link rel=\"icon\" href=\"/favicon.ico\" sizes=\"32x32\"><link ",
+          "body_sha256": "79affaef8431b93e4a5664bc191a187ac49ddbc13e5cebabcaecb5747f39e21c",
+          "candidate_name": "小松伸昭",
+          "fetched_at": "2026-10-07T15:37:14.670484+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6599 canonical 小松伸昭 has 181 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. CWI row explicitly lists 小松伸昭/小松弘明 as Komatsu Nobuaki=Komatsu Hiroaki, DOB 1940-05-13; keep former-name relationship, do not merge owner without DB review. Source roles are recorded separately; no old-name owner merger.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6599,
+            "kind": "player"
+          },
+          "query": "小松伸昭",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/nobuaki-komatsu"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "last_archival_linked_slots": 181,
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6633,
+      "category": "additional_established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "大澤銀次郎",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "大澤銀次郎",
+        "en": "Osawa Ginjiro"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired75-20261007-PROD.json.gz",
+      "source_archive_sha256": "5e99f46cbd19f58154b8643c3501b6411b631c923d383ee9cb6857472834e002",
+      "source_batch_id": 473,
+      "original_name": "大澤銀次郎",
+      "original_language": "ja",
+      "original_language_basis_url": "https://rendaico.jp/igo/igo_history8.htm",
+      "identity_note": "FH actual PROD owner 6633 canonical 大泽银次郎 has 91 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. NDL author authority writes 大沢 (modern glyph) and exact kana, cites 囲棋独習案内; CWI Go game uses Osawa Ginjiro. Owner 大澤 glyph variant remains explicit. NDL author authority is not a Go federation profile. Secondary Go-history chronology actually prints both 大澤銀次郎 and 大沢銀次郎 in game contexts; this is a glyph bridge, not a separate official identity key. Source roles are recorded separately; no old-name owner merger.",
+      "source_checks": [
+        {
+          "body_excerpt": "et/threadno/k00000040368\" target=\"_top\"><SPAN style=\"font-size : 120%;\">秀栄－大澤銀次郎(先)</SPAN></A><SPAN style=\"font-size : 120%;\">｣、秀栄白番４目勝。</SPAN></TD>\n    </TR>\n    <TR>\n      <TD><SPAN style=\"font-size : 120%;\">　４．１２日、吉田たか（７級３段）昇級披露会（東京両国の中村楼）。</SPAN></TD>\n    </TR>\n    <TR>\n     ",
+          "body_sha256": "1da5be2d87e8bdded872b3543ca2e4dd5dd6e6f3f01cb1c123e56d6b39fb67db",
+          "candidate_name": "大澤銀次郎",
+          "fetched_at": "2026-10-07T15:57:55.466093+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6633 canonical 大泽银次郎 has 91 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. NDL author authority writes 大沢 (modern glyph) and exact kana, cites 囲棋独習案内; CWI Go game uses Osawa Ginjiro. Owner 大澤 glyph variant remains explicit. NDL author authority is not a Go federation profile. Secondary Go-history chronology actually prints both 大澤銀次郎 and 大沢銀次郎 in game contexts; this is a glyph bridge, not a separate official identity key. Source roles are recorded separately; no old-name owner merger.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6633,
+            "kind": "player"
+          },
+          "query": "大澤銀次郎",
+          "source_id": "ret75-gohistory",
+          "status": "found",
+          "url": "https://rendaico.jp/igo/igo_history8.htm"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "last_archival_linked_slots": 91,
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6634,
+      "category": "additional_established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "窪内秀知",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "窪内秀知",
+        "en": "Kubouchi Shuchi"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired75-20261007-PROD.json.gz",
+      "source_archive_sha256": "5e99f46cbd19f58154b8643c3501b6411b631c923d383ee9cb6857472834e002",
+      "source_batch_id": 473,
+      "original_name": "窪内秀知",
+      "original_language": "ja",
+      "original_language_basis_url": "https://kansaikiin.jp/kisi_prof/kubouchisyuchi.html",
+      "identity_note": "FH actual PROD owner 6634 canonical 洼内秀知 has 89 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. Official Kansai Ki-in person profile confirms original name, kana, DOB 1920-01-25; CWI historical row bridges older 窪内敏明 / Kubouchi Toshiaki to current name. Source roles are recorded separately; no old-name owner merger.",
+      "source_checks": [
+        {
+          "body_excerpt": "ript>\n\n<script src=\"/js/game.js\" id=\"tutorial-js\" defer></script>\n\t\t<title>窪内秀知｜プロ棋士｜一般財団法人関西棋院</title>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/mainpage.css\">\n\t\t<link rel=\"stylesheet\" type=\"text/",
+          "body_sha256": "86d14e8bd059b816df35ef775cee78bd712ff4dfbcd8f31a051cff3308e94ebd",
+          "candidate_name": "窪内秀知",
+          "fetched_at": "2026-10-07T15:39:17.294162+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6634 canonical 洼内秀知 has 89 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. Official Kansai Ki-in person profile confirms original name, kana, DOB 1920-01-25; CWI historical row bridges older 窪内敏明 / Kubouchi Toshiaki to current name. Source roles are recorded separately; no old-name owner merger.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6634,
+            "kind": "player"
+          },
+          "query": "窪内秀知",
+          "source_id": "ret75-kansai-kiin",
+          "status": "found",
+          "url": "https://kansaikiin.jp/kisi_prof/kubouchisyuchi.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "last_archival_linked_slots": 89,
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6686,
+      "category": "additional_established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "九世安井算知",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "九世安井算知",
+        "en": "Yasui Sanchi IX",
+        "ko": "제9세 야스이 산치"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired75-20261007-PROD.json.gz",
+      "source_archive_sha256": "5e99f46cbd19f58154b8643c3501b6411b631c923d383ee9cb6857472834e002",
+      "source_batch_id": 473,
+      "original_name": "九世安井算知",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+      "identity_note": "FH actual PROD owner 6686 canonical 安井算知（九世） has 86 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. Nihon Ki-in historical column explicitly identifies 九世安井算知; its separate Tenpo Four Players history annotates 安井算知（さんち） in the ninth-generation period. CWI game table labels Yasui Sanchi IX. Cyberoro actual Korean professional Go column says 제9세 야스이 산치 安井算知 in an 1845 game with Honinbo Shuwa, proving this published KO form for ninth generation. Other Korean search hits for the same Hangul name explicitly refer to the second head; retain them as different-generation leads, not evidence for ninth. Display must preserve the original Korean prefix 제9세 to distinguish the same-name second-generation head. Source roles are recorded separately; no old-name owner merger.",
+      "source_checks": [
+        {
+          "body_excerpt": "した名門が安井家です。名人碁所となった二世安井算知、元祖宇宙流の七世安井仙角仙知、本因坊元丈と共に一時代を築いた八世安井知得仙知、天保四傑に数えられる九世安井算知、太田雄蔵、坂口仙得。本因坊家が中心だったとはいえ、囲碁史を紐解くと重要な場面の多くに安井家が関わっていることが分かります。<br />\n    　今回の古碁探訪はそんな安井家を開いた安井算哲と、父の名を引き継ぎ棋士として活躍しながらも天文学の道に進んだ安井二世算哲こと渋川春海の物語。父はわずか11歳で徳川家康に見いだされ専属囲碁指南役となり、息子は徳川光圀の支援を受けて天文学を極め、当時としては",
+          "body_sha256": "e55341dfb72ad5260f99cc1a36ac41fb485711239388e2335245409d50191291",
+          "candidate_name": "九世安井算知",
+          "fetched_at": "2026-10-07T15:37:21.975636+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6686 canonical 安井算知（九世） has 86 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. Nihon Ki-in historical column explicitly identifies 九世安井算知; its separate Tenpo Four Players history annotates 安井算知（さんち） in the ninth-generation period. CWI game table labels Yasui Sanchi IX. Cyberoro actual Korean professional Go column says 제9세 야스이 산치 安井算知 in an 1845 game with Honinbo Shuwa, proving this published KO form for ninth generation. Other Korean search hits for the same Hangul name explicitly refer to the second head; retain them as different-generation leads, not evidence for ninth. Display must preserve the original Korean prefix 제9세 to distinguish the same-name second-generation head. Source roles are recorded separately; no old-name owner merger.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6686,
+            "kind": "player"
+          },
+          "query": "九世安井算知",
+          "source_id": "nihon-kiin",
+          "status": "found",
+          "url": "https://www.nihonkiin.or.jp/etc/writer/column20260420.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "last_archival_linked_slots": 86,
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 6259,
+      "category": "additional_established_original_Han_CN_fallback_candidate",
+      "target_language": "cn",
+      "proposed_display_name": "鈴木越雄",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "鈴木越雄",
+        "en": "Suzuki Etsuo",
+        "ko": "스즈키 에쓰오"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired75-20261007-PROD.json.gz",
+      "source_archive_sha256": "5e99f46cbd19f58154b8643c3501b6411b631c923d383ee9cb6857472834e002",
+      "source_batch_id": 473,
+      "original_name": "鈴木越雄",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/etsuo-suzuki",
+      "identity_note": "FH actual PROD owner 6259 canonical 铃木越雄 has 77 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. CWI historical row lists 鈴木越雄/鈴木憲章 as Suzuki Etsuo=Suzuki Kensho, DOB 1915-09-11; keep former-name relationship. Source roles are recorded separately; no old-name owner merger.",
+      "source_checks": [
+        {
+          "body_excerpt": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>鈴木越雄｜囲碁棋士レーティング（日本）</title><meta name=\"description\" content=\"鈴木越雄（すずき えつお）のレートは1456です。\"><link rel=\"icon\" href=\"/favicon.svg\" type=\"image/svg+xml\"><link rel=\"icon\" href=\"/favicon.ico\" sizes=\"32x32\"><link r",
+          "body_sha256": "65aea837bb5e08a966f450599e90ea8d8f96035a00a8a6ffbabb5e3e8a595f66",
+          "candidate_name": "鈴木越雄",
+          "fetched_at": "2026-10-07T15:37:17.236506+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 6259 canonical 铃木越雄 has 77 linked slots, 0 names/aliases; exact two-DB identity bridge SHA 6d337058d56ac52ead759ad44c77717fd52b9795eac422ebf7ce872c4876fee5. CWI historical row lists 鈴木越雄/鈴木憲章 as Suzuki Etsuo=Suzuki Kensho, DOB 1915-09-11; keep former-name relationship. Source roles are recorded separately; no old-name owner merger.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6259,
+            "kind": "player"
+          },
+          "query": "鈴木越雄",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/etsuo-suzuki"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "last_archival_linked_slots": 77,
+      "archival_test_player_id": null
+    },
+    {
+      "prod_player_id": 5051,
+      "category": "previous_prepared_packet_reference",
+      "target_language": "jp",
+      "proposed_display_name": "李海",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "李海",
+        "tw": "李海",
+        "ko": "리하이",
+        "en": "Li Hai"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired144-20261008-PROD.json.gz",
+      "source_archive_sha256": "217368a5f6de68b67d2a394cf9ca12a1f4c065fffd7505059d73f5071e7e5ef4",
+      "source_batch_id": 572,
+      "original_name": "李海",
+      "original_language": "zh-Hans",
+      "original_language_basis_url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "identity_note": "Actual producer finite readonly PROD5051/TEST10833: exactly equal 5 linked album ID/side/SGF SHA slots each and TEST full scope no extras; current names0/aliases0; all actual final selected normalized native/Latin/Korean canonical/name/alias foreign hits0 in both environments. All selected target preimagesNULL. Distinct approved-context FH binder pending. Chinese Wikipedia professional roster own first-column CN/TW directly publishes 李海 in both variants, in old fifth-dan professional context; own GoRatings ID401 publishes native and exact English Li Hai plus Korean 리하이 via successful bare retry. Own source matches target1992-09-01 Chen Linxin and2009-06-30 Gu Lingyi dates/own colors/results. Its1996-08-25 own date/color/result also agrees, but source李钢 versus SGF李刚 opponent is preserved without alias/merge; two1993 targets are not claimed as exact source matches. Target6d/4P/5d rank differences are not certified as chronology. Both own Japanese capture attempts timed out, and the directly linked KBA own-profile attempt also timed out; failures preserved without invented HTTP success or global absence. JP omitted; no mechanical Han variant generated. Roster migration/birth fields remain raw publication context only, with no nationality, migration or DOB fields written.",
+      "source_checks": [
+        {
+          "article_evidence": {
+            "passage": "<tr>\n<td><a href=\"/w/index.php?title=%E6%9D%8E%E6%B5%B7_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"李海 (围棋棋手)（页面不存在）\">李海</a></td>\n<td><span style=\"display:none\"> (<span class=\"bday\">1961-05-31</span>) </span>1961年5月31日<span class=\"noprint ForceAgeToShow\">（<span class=\"currentage\"></span>65岁）</span></td>\n<td>1982</td>\n<td>1988</td>\n<td>移居<a href=\"/wiki/%E7%BE%8E%E5%9B%BD\" title=\"美国\">美国</a><sup id=\"cite&#95;ref-李海&#95;12-0\" class=\"reference\"><a href=\"#cite_note-李海-12\"><span class=\"cite-bracket\">&#91;</span>12<span class=\"cite-bracket\">&#93;</span></a></sup>\n</td></tr>",
+            "passage_sha256": "99feaf2086bbe65ad3877caa725feb78539e4623567de964865f4426c800d442",
+            "revision_id": "94658688",
+            "subject_identity": "Actual producer finite readonly PROD5051/TEST10833: exactly equal 5 linked album ID/side/SGF SHA slots each and TEST full scope no extras; current names0/aliases0; all actual final selected normalized native/Latin/Korean canonical/name/alias foreign hits0 in both environments. All selected target preimagesNULL. Distinct approved-context FH binder pending. Chinese Wikipedia professional roster own first-column CN/TW directly publishes 李海 in both variants, in old fifth-dan professional context; own GoRatings ID401 publishes native and exact English Li Hai plus Korean 리하이 via successful bare retry. Own source matches target1992-09-01 Chen Linxin and2009-06-30 Gu Lingyi dates/own colors/results. Its1996-08-25 own date/color/result also agrees, but source李钢 versus SGF李刚 opponent is preserved without alias/merge; two1993 targets are not claimed as exact source matches. Target6d/4P/5d rank differences are not certified as chronology. Both own Japanese capture attempts timed out, and the directly linked KBA own-profile attempt also timed out; failures preserved without invented HTTP success or global absence. JP omitted; no mechanical Han variant generated. Roster migration/birth fields remain raw publication context only, with no nationality, migration or DOB fields written. Own first-column professional Go roster name, independently corroborated by own named professional Go profile. Redlink destination is not an absence conclusion.",
+            "title": "围棋棋士列表"
+          },
+          "body_encoding": "utf-8",
+          "body_excerpt": "<tr>\n<td><a href=\"/w/index.php?title=%E6%9D%8E%E6%B5%B7_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"李海 (围棋棋手)（页面不存在）\">李海</a></td>\n<td><span style=\"display:none\"> (<span class=\"bday\">1961-05-31</span>) </span>1961年5月31日<span class=\"noprint ForceAgeToShow\">（<span class=\"currentage\"></span>65岁）</span></td>\n<td>1982</td>\n<td>1988</td>\n<td>移居<a href=\"/wiki/%E7%BE%8E%E5%9B%BD\" title=\"美国\">美国</a><sup id=\"cite&#95;ref-李海&#95;12-0\" class=\"reference\"><a href=\"#cite_note-李海-12\"><span class=\"cite-bracket\">&#91;</span>12<span class=\"cite-bracket\">&#93;</span></a></sup>\n</td></tr>",
+          "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+          "candidate_name": "李海",
+          "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual producer finite readonly PROD5051/TEST10833: exactly equal 5 linked album ID/side/SGF SHA slots each and TEST full scope no extras; current names0/aliases0; all actual final selected normalized native/Latin/Korean canonical/name/alias foreign hits0 in both environments. All selected target preimagesNULL. Distinct approved-context FH binder pending. Chinese Wikipedia professional roster own first-column CN/TW directly publishes 李海 in both variants, in old fifth-dan professional context; own GoRatings ID401 publishes native and exact English Li Hai plus Korean 리하이 via successful bare retry. Own source matches target1992-09-01 Chen Linxin and2009-06-30 Gu Lingyi dates/own colors/results. Its1996-08-25 own date/color/result also agrees, but source李钢 versus SGF李刚 opponent is preserved without alias/merge; two1993 targets are not claimed as exact source matches. Target6d/4P/5d rank differences are not certified as chronology. Both own Japanese capture attempts timed out, and the directly linked KBA own-profile attempt also timed out; failures preserved without invented HTTP success or global absence. JP omitted; no mechanical Han variant generated. Roster migration/birth fields remain raw publication context only, with no nationality, migration or DOB fields written.",
+          "identity_corroboration": {
+            "body_encoding": "utf-8",
+            "body_excerpt": "<h1>李海</h1>",
+            "body_sha256": "bd0946cbd0b14c44a69ad93f5ac3df64f8dc78f7fe98d863f05f6009811d170b",
+            "fetched_at": "2026-10-08T08:19:57.956805+00:00",
+            "http_status": 200,
+            "identity_basis": "Actual producer finite readonly PROD5051/TEST10833: exactly equal 5 linked album ID/side/SGF SHA slots each and TEST full scope no extras; current names0/aliases0; all actual final selected normalized native/Latin/Korean canonical/name/alias foreign hits0 in both environments. All selected target preimagesNULL. Distinct approved-context FH binder pending. Chinese Wikipedia professional roster own first-column CN/TW directly publishes 李海 in both variants, in old fifth-dan professional context; own GoRatings ID401 publishes native and exact English Li Hai plus Korean 리하이 via successful bare retry. Own source matches target1992-09-01 Chen Linxin and2009-06-30 Gu Lingyi dates/own colors/results. Its1996-08-25 own date/color/result also agrees, but source李钢 versus SGF李刚 opponent is preserved without alias/merge; two1993 targets are not claimed as exact source matches. Target6d/4P/5d rank differences are not certified as chronology. Both own Japanese capture attempts timed out, and the directly linked KBA own-profile attempt also timed out; failures preserved without invented HTTP success or global absence. JP omitted; no mechanical Han variant generated. Roster migration/birth fields remain raw publication context only, with no nationality, migration or DOB fields written. Independent own named professional Go profile, exact native own H1.",
+            "original_name": "李海",
+            "source_id": "ret110-goratings-zh",
+            "url": "https://www.goratings.org/zh/players/401.html"
+          },
+          "language_basis": "reviewed_text",
+          "observed_lang": "zh-Hans",
+          "owner": {
+            "id": 5051,
+            "kind": "player"
+          },
+          "query": "李海",
+          "source_id": "wikipedia-zh",
+          "status": "found",
+          "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "prepared_packet_label": "ret165",
+      "prepared_main_source_recovered_in_this_task": false,
+      "prepared_main_source_note": "Root supplied prior prepared KifuDepot exact2009-06-30 vs古霊益 W+R and1992-09-01 vs陳臨新 W+R; this artifact recovers archived corroboration only.",
+      "archival_test_player_id": 10833
+    },
+    {
+      "prod_player_id": 4771,
+      "category": "previous_prepared_packet_reference",
+      "target_language": "cn",
+      "proposed_display_name": "日下包夫",
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "jp": "日下包夫",
+        "en": "Kusaka Kaneo",
+        "ko": "구사카 가네오"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired73-20261007-PROD.json.gz",
+      "source_archive_sha256": "20043a18939640b524555b351705c3c604738610c1bafb788857f79d401bb19c",
+      "source_batch_id": 468,
+      "original_name": "日下包夫",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.igorating.com/players/kaneo-kusaka",
+      "identity_note": "FH actual PROD owner 4771 canonical 日下包夫 has 293 linked slots, 0 current names/aliases; CWI same-name Latin row 日下包夫 Kusaka Kaneo (7p) *1915-01-08 1p: 1936, 2p: 1950, 3p: 1951, 4p: 1952, 5p: 1955, 6p: 1960, 7p: 1963-05-23. Died 1991-08-05. ; identity bridge SHA ddefd43ea2944b5f14d6fbce05839e128ce619964d56319c7edd1ca0f00636e3. No DOB/rank concordance asserted.",
+      "source_checks": [
+        {
+          "body_excerpt": "<h1 class=\"page-title\">日下包夫</h1><p class=\"page-summary\">日下包夫（くさか かねお）のレートは1377です。</p>",
+          "body_sha256": "7f21342eb76421a3fbbdaa1895ffef9331aaf64e9bedb6d387015f34a807261d",
+          "candidate_name": "日下包夫",
+          "fetched_at": "2026-10-07T09:51:18.259096+00:00",
+          "http_status": 200,
+          "identity_basis": "FH actual PROD owner 4771 canonical 日下包夫 has 293 linked slots, 0 current names/aliases; CWI same-name Latin row 日下包夫 Kusaka Kaneo (7p) *1915-01-08 1p: 1936, 2p: 1950, 3p: 1951, 4p: 1952, 5p: 1955, 6p: 1960, 7p: 1963-05-23. Died 1991-08-05. ; identity bridge SHA ddefd43ea2944b5f14d6fbce05839e128ce619964d56319c7edd1ca0f00636e3. No DOB/rank concordance asserted. Direct profile H1 and CWI Latin/kanji bridge.",
+          "language_basis": "html_lang",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 4771,
+            "kind": "player"
+          },
+          "query": "日下包夫",
+          "source_id": "igorating",
+          "status": "found",
+          "url": "https://www.igorating.com/players/kaneo-kusaka"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "proposed_method": "literal established original Han name under accepted original-name CN fallback; native Chinese P5675 is separately identified; no glyph conversion",
+      "prepared_packet_label": "ret167",
+      "prepared_main_source_recovered_in_this_task": false,
+      "prepared_main_source_note": "Root supplied prior prepared Baidu小林觉1983-04-07 result named-game bridge; this artifact recovers archived corroboration only. No ownChineseprofile claimed.",
+      "archival_test_player_id": null
+    }
+  ],
+  "TW_held_leads": [
+    {
+      "prod_player_id": 6729,
+      "category": "TWmissing_partial_not_ready",
+      "target_language": "tw",
+      "proposed_display_name": null,
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "铃木秀子",
+        "jp": "鈴木秀子",
+        "en": "Suzuki Hideko"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired107-20261008-PROD.json.gz",
+      "source_archive_sha256": "76f8a9afc8902890b28edac6683aba849ebff069fef2334f15b70587ec4cd354",
+      "source_batch_id": 533,
+      "original_name": "鈴木秀子",
+      "original_language": "ja",
+      "original_language_basis_url": "https://db.u-go.net/playerdb/players/1333/",
+      "identity_note": "Actual same-source-actor readonly finite PROD6729/TEST12498, 32 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go1333 own鈴木秀子/铃木秀子/Suzuki Hideko and actual CWI ownfirstcolumn historicalfemaleGo record; actualSensei sameprofessionalnative/CWI1900–1949 context. Sensei TaokaFumiko original/changed-name statements kept as source-only clues, noalias ormerge. Igo guessedownpathactual404; similarly named contemporaryCatholicliterature professor/hobbyists excluded; genericfullreading from differentperson never used. CN/TWWikiSuzukiTamejiro attemptedslug404, no targetownTW orcompletekana, TW/KO leftblank; nobirth/death/rank writes.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "{\"id\":1333,\"key_name\":\"Suzuki Hideko\",\"sex\":\"Female\",\"date_of_birth\":\"1900\",\"date_of_death\":\"1949-06\",\"citizenship\":\"JPN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"simplenames\":[{\"id\":2029,\"playername\":\"https://db.u-go.net/playerdb/names/2061/\",\"name\":\"Suzuki Hideko\",\"databases\":[\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":14418,\"playername\":\"https://db.u-go.net/playerdb/names/2061/\",\"name\":\"鈴木秀子\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false},{\"id\":5167,\"playername\":\"https://db.u-go.net/playerdb/names/2061/\",\"name\":\"铃木秀子\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":null,\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[{\"id\":4074,\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"rank\":\"1p\",\"valid_from\":\"1917\"},{\"id\":4075,\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"rank\":\"2p\",\"valid_from\":\"1920\"},{\"id\":4076,\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"rank\":\"3p\",\"valid_from\":\"1922\"},{\"id\":4077,\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"rank\":\"4p\",\"valid_from\":\"1932\"}],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/1333/\",\"url\":\"http://senseis.xmp.net/?SuzukiHideko\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T21:11:20.789799Z\",\"last_changed\":\"2023-03-05T21:20:06.262624Z\"}",
+          "body_sha256": "8ddb2c585f04b42745455334c795b72d6dae8c40f738449f520d674f403177ad",
+          "candidate_name": "鈴木秀子",
+          "fetched_at": "2026-10-08T01:00:59.811036+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD6729/TEST12498, 32 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go1333 own鈴木秀子/铃木秀子/Suzuki Hideko and actual CWI ownfirstcolumn historicalfemaleGo record; actualSensei sameprofessionalnative/CWI1900–1949 context. Sensei TaokaFumiko original/changed-name statements kept as source-only clues, noalias ormerge. Igo guessedownpathactual404; similarly named contemporaryCatholicliterature professor/hobbyists excluded; genericfullreading from differentperson never used. CN/TWWikiSuzukiTamejiro attemptedslug404, no targetownTW orcompletekana, TW/KO leftblank; nobirth/death/rank writes.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6729,
+            "kind": "player"
+          },
+          "query": "鈴木秀子",
+          "source_id": "ret97-ugo-en",
+          "status": "found",
+          "url": "https://db.u-go.net/playerdb/players/1333/"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "hold_reason": "Prior applied evidence has no qualified TW source; do not infer TW availability from JP/CN Han forms. Root is separately handling a distinct TW batch.",
+      "archival_test_player_id": 12498
+    },
+    {
+      "prod_player_id": 6733,
+      "category": "TWmissing_partial_not_ready",
+      "target_language": "tw",
+      "proposed_display_name": null,
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "藤田丰次郎",
+        "jp": "藤田豊次郎",
+        "en": "Fujita Toyojiro"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired107-20261008-PROD.json.gz",
+      "source_archive_sha256": "76f8a9afc8902890b28edac6683aba849ebff069fef2334f15b70587ec4cd354",
+      "source_batch_id": 533,
+      "original_name": "藤田豊次郎",
+      "original_language": "ja",
+      "original_language_basis_url": "https://db.u-go.net/playerdb/players/971/",
+      "identity_note": "Actual same-source-actor readonly finite PROD6733/TEST12502, 30 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go971 own藤田豊次郎/藤田丰次郎/Fujita Toyojiro and CWI ownfirstcolumn historicalprofessional, Sensei ownhistorical Japaneseprofessionalbody corroborates native/Latin. ActualIgo guessedslug404, noactualfullkana; Latin does not license kana derivation. TW/KO unavailablein boundedpass, no synthetic Chineseconversion or Korean generation; sourcebirth/death/rank status only.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "{\"id\":971,\"key_name\":\"Fujita Toyojiro\",\"sex\":\"Unknown\",\"date_of_birth\":\"1890\",\"date_of_death\":\"1960\",\"citizenship\":\"JPN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/971/\",\"simplenames\":[{\"id\":962,\"playername\":\"https://db.u-go.net/playerdb/names/410/\",\"name\":\"Fujita Toyojiro\",\"databases\":[\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":4888,\"playername\":\"https://db.u-go.net/playerdb/names/410/\",\"name\":\"藤田丰次郎\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false},{\"id\":4887,\"playername\":\"https://db.u-go.net/playerdb/names/410/\",\"name\":\"藤田豊次郎\",\"databases\":[],\"languages\":[{\"language\":\"ja\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":null,\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[{\"id\":231,\"player\":\"https://db.u-go.net/playerdb/players/971/\",\"rank\":\"1p\",\"valid_from\":\"1908\"},{\"id\":232,\"player\":\"https://db.u-go.net/playerdb/players/971/\",\"rank\":\"4p\",\"valid_from\":\"1916\"}],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/971/\",\"url\":\"http://senseis.xmp.net/?FujitaToyojiro\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T20:30:21.537803Z\",\"last_changed\":\"2016-12-17T11:36:53.368376Z\"}",
+          "body_sha256": "e65ff8a0b4e4eccc0f8c57e7d02b58a257b268d369836593791e4b9749d15b2a",
+          "candidate_name": "藤田豊次郎",
+          "fetched_at": "2026-10-08T01:01:00.578033+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD6733/TEST12502, 30 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go971 own藤田豊次郎/藤田丰次郎/Fujita Toyojiro and CWI ownfirstcolumn historicalprofessional, Sensei ownhistorical Japaneseprofessionalbody corroborates native/Latin. ActualIgo guessedslug404, noactualfullkana; Latin does not license kana derivation. TW/KO unavailablein boundedpass, no synthetic Chineseconversion or Korean generation; sourcebirth/death/rank status only.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6733,
+            "kind": "player"
+          },
+          "query": "藤田豊次郎",
+          "source_id": "ret97-ugo-en",
+          "status": "found",
+          "url": "https://db.u-go.net/playerdb/players/971/"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "hold_reason": "Prior applied evidence has no qualified TW source; do not infer TW availability from JP/CN Han forms. Root is separately handling a distinct TW batch.",
+      "archival_test_player_id": 12502
+    },
+    {
+      "prod_player_id": 6736,
+      "category": "TWmissing_partial_not_ready",
+      "target_language": "tw",
+      "proposed_display_name": null,
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "小岛春一",
+        "jp": "小島春一",
+        "en": "Kojima Shunichi"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired107-20261008-PROD.json.gz",
+      "source_archive_sha256": "76f8a9afc8902890b28edac6683aba849ebff069fef2334f15b70587ec4cd354",
+      "source_batch_id": 533,
+      "original_name": "小島春一",
+      "original_language": "ja",
+      "original_language_basis_url": "https://db.u-go.net/playerdb/players/1137/",
+      "identity_note": "Actual same-source-actor readonly finite PROD6736/TEST12505, 29 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go1137 own小島春一/小岛春一/Kojima Shunichi and independentCWI ownfirstcolumn historicalJapaneseprofessional, actualSensei ownnameKojima Shun'ichi/小島春一 1909–1945. CandidateEN staysliterally U-Go Kojima Shunichi, no inventedformat. U-Go also contains小岛村一 clue, neither automatic alias nor substitution. ActualIgo404 and noactualfullkana, TW/KO leftblank; unrelatedfilm/patent searchresults excluded. No DOB/rank/alias/FK changes.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "{\"id\":1137,\"key_name\":\"Kojima Shunichi\",\"sex\":\"Unknown\",\"date_of_birth\":\"1909\",\"date_of_death\":\"1945-02\",\"citizenship\":\"JPN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1137/\",\"simplenames\":[{\"id\":1278,\"playername\":\"https://db.u-go.net/playerdb/names/1090/\",\"name\":\"Kojima Shunichi\",\"databases\":[\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":5031,\"playername\":\"https://db.u-go.net/playerdb/names/1090/\",\"name\":\"小岛春一\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false},{\"id\":5032,\"playername\":\"https://db.u-go.net/playerdb/names/1090/\",\"name\":\"小岛村一\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false},{\"id\":14358,\"playername\":\"https://db.u-go.net/playerdb/names/1090/\",\"name\":\"小島春一\",\"databases\":[],\"languages\":[],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":null,\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[{\"id\":1123,\"player\":\"https://db.u-go.net/playerdb/players/1137/\",\"rank\":\"1p\",\"valid_from\":\"1925\"},{\"id\":1124,\"player\":\"https://db.u-go.net/playerdb/players/1137/\",\"rank\":\"4p\",\"valid_from\":\"1931\"}],\"links\":[{\"player\":\"https://db.u-go.net/playerdb/players/1137/\",\"url\":\"http://senseis.xmp.net/?KojimaShunichi\",\"affiliation\":false,\"wikipedia\":\"\",\"senseislibrary\":true}],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T20:30:34.056399Z\",\"last_changed\":\"2023-03-05T17:07:06.059030Z\"}",
+          "body_sha256": "c16a380da627158aed38d99e1207735c6ac5e334007741747b8e09d37b0fa7ff",
+          "candidate_name": "小島春一",
+          "fetched_at": "2026-10-08T01:01:01.239865+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD6736/TEST12505, 29 equal full albumID/side/SGF slots each, targetnames0 aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; not independentFH or finalapproved-context/CAS binder. Actual U-Go1137 own小島春一/小岛春一/Kojima Shunichi and independentCWI ownfirstcolumn historicalJapaneseprofessional, actualSensei ownnameKojima Shun'ichi/小島春一 1909–1945. CandidateEN staysliterally U-Go Kojima Shunichi, no inventedformat. U-Go also contains小岛村一 clue, neither automatic alias nor substitution. ActualIgo404 and noactualfullkana, TW/KO leftblank; unrelatedfilm/patent searchresults excluded. No DOB/rank/alias/FK changes.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6736,
+            "kind": "player"
+          },
+          "query": "小島春一",
+          "source_id": "ret97-ugo-en",
+          "status": "found",
+          "url": "https://db.u-go.net/playerdb/players/1137/"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "hold_reason": "Prior applied evidence has no qualified TW source; do not infer TW availability from JP/CN Han forms. Root is separately handling a distinct TW batch.",
+      "archival_test_player_id": 12505
+    },
+    {
+      "prod_player_id": 4340,
+      "category": "TWmissing_partial_not_ready",
+      "target_language": "tw",
+      "proposed_display_name": null,
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "安东阳向",
+        "jp": "安東陽向",
+        "en": "Ando Hinata"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired120-20261008-PROD.json.gz",
+      "source_archive_sha256": "95a2ac1c2e7bfdd799d6ae6a0427bb9b303dfb59a07abf9aacabc596ca358e4e",
+      "source_batch_id": 549,
+      "original_name": "安東陽向",
+      "original_language": "ja",
+      "original_language_basis_url": "https://www.goratings.org/ja/players/2402.html",
+      "identity_note": "Actual same-actor finite read-only PROD4340/TEST10134: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2402 publishes 安东阳向 / 安東陽向 / Ando Hinata. Korean own locale is only Latin fallback; no Korean candidate. Kansai Kiin official URL attempts timed out; indexed claims are not used as captured source evidence.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "<h1>安東陽向</h1>",
+          "body_sha256": "d44faed6aa6b31ed57ff4be1452cd9f678c929c1967a8f096eacfb8e36076c46",
+          "candidate_name": "安東陽向",
+          "fetched_at": "2026-10-08T03:42:18.004255+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-actor finite read-only PROD4340/TEST10134: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2402 publishes 安东阳向 / 安東陽向 / Ando Hinata. Korean own locale is only Latin fallback; no Korean candidate. Kansai Kiin official URL attempts timed out; indexed claims are not used as captured source evidence.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 4340,
+            "kind": "player"
+          },
+          "query": "安東陽向",
+          "source_id": "ret110-goratings-ja",
+          "status": "found",
+          "url": "https://www.goratings.org/ja/players/2402.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "hold_reason": "Prior applied evidence has no qualified TW source; do not infer TW availability from JP/CN Han forms. Root is separately handling a distinct TW batch.",
+      "archival_test_player_id": 10134
+    },
+    {
+      "prod_player_id": 6519,
+      "category": "TWmissing_partial_not_ready",
+      "target_language": "tw",
+      "proposed_display_name": null,
+      "proposal_is_new_approval": false,
+      "latest_live_cell_preimage_checked": false,
+      "existing_archival_qualified_names": {
+        "cn": "黄丽萍",
+        "jp": "黄丽萍",
+        "en": "Huang Liping"
+      },
+      "source_archive": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5retired125-20261008-PROD.json.gz",
+      "source_archive_sha256": "ef72e43cc611e071c6d05ed4f9f7d9534f892e390eee0ae7d488b04d71e259de",
+      "source_batch_id": 551,
+      "original_name": "黄丽萍",
+      "original_language": "zh",
+      "original_language_basis_url": "https://db.u-go.net/playerdb/players/1779/",
+      "identity_note": "Actual same-source-actor readonly finite PROD6519/TEST12283,9 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualU-Go1779 literalChineseoriginal黄丽萍/preferredENHuang Liping andexplicitGOR1446; actualGORZH/JA ownh1黄丽萍 literalSimplified. Target1977–1989 ChinesehistoricalwomenGo scope, actualGOR1985-10-11blackloss丰云/1985-10-07blackwin芮乃伟/1985-10-01whiteloss华学明 matchactualSGF. SourceGOR1989-04-15 differs target1989-04-01 for张成华; not claimedsame dated game. CN/TWownarticle404 excluded; no actualTWpublishedspelling or Koreanpublication body established, bothcells omitted. GORKOh1HuangLiping Latin fallback NOTKoreanname. U-GoCHNcitizenship/Unknownaffiliation andGORdate1956 source status only, no nationality/DOB/rank writes. InitialU-GoEN/GORENtimeout andsingleboundedretry200 retained.",
+      "source_checks": [
+        {
+          "body_encoding": "utf-8",
+          "body_excerpt": "<h1>黄丽萍</h1>",
+          "body_sha256": "d76563acde54c388cc0bd3f4a0c127d9692d1e4f022f9af1261517577d0d0134",
+          "candidate_name": "黄丽萍",
+          "fetched_at": "2026-10-08T03:59:56.867488+00:00",
+          "http_status": 200,
+          "identity_basis": "Actual same-source-actor readonly finite PROD6519/TEST12283,9 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualU-Go1779 literalChineseoriginal黄丽萍/preferredENHuang Liping andexplicitGOR1446; actualGORZH/JA ownh1黄丽萍 literalSimplified. Target1977–1989 ChinesehistoricalwomenGo scope, actualGOR1985-10-11blackloss丰云/1985-10-07blackwin芮乃伟/1985-10-01whiteloss华学明 matchactualSGF. SourceGOR1989-04-15 differs target1989-04-01 for张成华; not claimedsame dated game. CN/TWownarticle404 excluded; no actualTWpublishedspelling or Koreanpublication body established, bothcells omitted. GORKOh1HuangLiping Latin fallback NOTKoreanname. U-GoCHNcitizenship/Unknownaffiliation andGORdate1956 source status only, no nationality/DOB/rank writes. InitialU-GoEN/GORENtimeout andsingleboundedretry200 retained.",
+          "language_basis": "reviewed_text",
+          "observed_lang": "ja",
+          "owner": {
+            "id": 6519,
+            "kind": "player"
+          },
+          "query": "黄丽萍",
+          "source_id": "ret100-goratings-ja",
+          "status": "found",
+          "url": "https://www.goratings.org/ja/players/1446.html"
+        }
+      ],
+      "archival_source_reused": true,
+      "raw_source_bytes_recovered": false,
+      "fresh_web_search_performed": false,
+      "hold_reason": "Prior applied evidence has no qualified TW source; do not infer TW availability from JP/CN Han forms. Root is separately handling a distinct TW batch.",
+      "archival_test_player_id": 12283
+    }
+  ]
+}

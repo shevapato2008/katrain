@@ -1,0 +1,504 @@
+19th Japan-China Go Exchange, 1991
+Up
+Prev
+Next
+19th Japan-China Go Exchange, 1991
+Go World 64 writes:
+This year a team of young Japanese players
+touring China in the 19th Japan-China Go Exchange suffered
+the first defeat ever by a Japanese touring team.
+The team of eight players, all under 26 and 8-dan, was only able
+to win 20 games in the eight matches it played on the tour,
+which lasted from 21 May to 5 June. It suffered 35 losses
+and one game was declared no-result.
+The one consolation for the Japanese was the outstanding performance
+of their 'captain', Moriyama Naoki 7-dan of the Kansai Ki-in.
+Moriyama, aged 25, became the third Japanese player,
+after Hashimoto Shoji and Kobayashi Koichi, to win all seven of his games
+on a tour of China.
+Apart from Moriyama, only two players had a plus record:
+Nakaonoda 5-dan with 4-3 and Ryu Shikun 4-dan (a Korean member of
+the Nihon Ki-in) with 4-2-1 no result.
+1: 5/23
+2: 5/24
+3: 5/26
+4: 5/29
+5: 5/30
+6: 6/1
+7: 6/4
+Score
+Moriyama Naoki
+7p
+Liao Guiyong 7p
+B+R
+Che Zewu 7p
+W+0.5
+Yang Hui 7p
+B+1.5
+7p
+W+4.5
+Kang Zhanbin 6p
+B+1.5
+Wu Zhaoyi 7p
+W+3.5
+Feng Yun 7p
+B+R
+7-0
+Nakaonoda Tomomi
+5p
+Wang Yimin 6p
+W+0.5
+Yang Hui 7p
+B+R
+Ma Shi 6p
+W−7.5
+7p
+B+R
+Liu Jing 3p
+W−R
+4p
+B−R
+Chang Hao 4p
+W+R
+4-3
+Ryu Shikun
+4p
+Ma Shi 6p
+B−R
+Yang Shihai 4p
+W+R
+Che Zewu 7p
+B−4.5
+4p
+W+0.5
+Chang Hao 4p
+BNR
+Kang Zhanbin 6p
+W+2.5
+Zhang Wendong 7p
+B+R
+4-2-1
+Arimura Hiroshi
+4p
+Yang Shihai 4p
+W+0.5
+Wang Yimin 6p
+B−R
+Zhang Wendong 7p
+W−R
+3p
+B−5.5
+Feng Yun 7p
+W−R
+付利 3p
+B+R
+Shao Weigang 4p
+W−R
+2-5
+Sakakibara Fumiko
+3p
+Xu Ying 3p
+B−6.5
+Yu Ping 2p
+W−R
+Duan Rong 4p
+B−R
+王存 2p
+B−R
+Liu Jun 3p
+B−R
+4p
+W−5.5
+Liu Jing 3p
+B−7.5
+0-7
+Sekiyama Toshimichi
+3p
+Duan Rong 4p
+W−5.5
+Zhong Chenguang 3p
+B+1.5
+Zhao Dong 3p
+W−R
+3p
+B−2.5
+朱燕铭 3p
+W+R
+2p
+B−R
+孙志刚 2p
+W−R
+2-5
+Miyazaki Ryutaro
+3p
+Yu Ping 2p
+B−R
+Zhang Xin 3p
+W−R
+Wang Bogang 3p
+B−4.5
+Li Yachun 2p
+W−1.5
+回敬辰 2p
+B−R
+3p
+W−R
+3p
+B−7.5
+0-7
+Nakazawa Ayako
+1p
+Luo Xihe 2p
+W−1.5
+Liang Yadi 2p
+B+R
+Wang Lei (b) 2p
+W−R
+刘涛 1p
+B−4.5
+Yang Shuang 1p
+W−0.5
+史鸿奕 2p
+B−2.5
+2p
+W−R
+1-6
+Result
+3-5
+5-3
+1-7
+3-5
+2-5-1
+3-5
+3-5
+20-35-1
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1991-05-23
+Miyazaki Ryutaro
+Yu Ping
+W+R
+126
+sgf
+1991-05-23
+Ryu Shikun
+Ma Shi
+W+R
+190
+sgf
+1991-05-23
+Wang Yimin
+Nakaonoda Tomomi
+W+0.5
+231
+sgf
+1991-05-23
+Moriyama Naoki
+Liao Guiyong
+B+R
+235
+sgf
+1991-05-23
+Duan Rong
+Sekiyama Toshimichi
+B+5.5
+244
+sgf
+1991-05-23
+Luo Xihe
+Nakazawa Ayako
+B+1.5
+245
+sgf
+1991-05-23
+Yang Shihai
+Arimura Hiroshi
+W+0.5
+307
+sgf
+1991-05-23
+Sakakibara Fumiko
+Xu Ying
+W+6.5
+307
+sgf
+1991-05-24
+Yu Ping
+Sakakibara Fumiko
+B+R
+129
+sgf
+1991-05-24
+Yang Shihai
+Ryu Shikun
+W+R
+132
+sgf
+1991-05-24
+Zhang Xin
+Miyazaki Ryutaro
+B+R
+149
+sgf
+1991-05-24
+Arimura Hiroshi
+Wang Yimin
+W+R
+204
+sgf
+1991-05-24
+Nakaonoda Tomomi
+Yang Hui
+B+R
+215
+sgf
+1991-05-24
+Sekiyama Toshimichi
+Zhong Chenguang
+B+1.5
+241
+sgf
+1991-05-24
+Nakazawa Ayako
+Liang Yadi
+B+R
+247
+sgf
+1991-05-24
+Che Zewu
+Moriyama Naoki
+W+0.5
+308
+sgf
+1991-05-26
+Sakakibara Fumiko
+Duan Rong
+W+R
+172
+sgf
+1991-05-26
+Zhao Dong
+Sekiyama Toshimichi
+B+R
+183
+sgf
+1991-05-26
+Ma Shi
+Nakaonoda Tomomi
+B+7.5
+219
+sgf
+1991-05-26
+Wang Lei (b)
+Nakazawa Ayako
+B+R
+241
+sgf
+1991-05-26
+Moriyama Naoki
+Yang Hui
+B+1.5
+250
+sgf
+1991-05-26
+Miyazaki Ryutaro
+Wang Bogang
+W+4.5
+255
+sgf
+1991-05-26
+Zhang Wendong
+Arimura Hiroshi
+B+R
+257
+sgf
+1991-05-26
+Ryu Shikun
+Che Zewu
+W+4.5
+272
+sgf
+1991-05-29
+Li Yachun
+Miyazaki Ryutaro
+B+1.5
+249
+sgf
+1991-05-29
+Arimura Hiroshi
+Liu Jing
+W+4.5
+242
+sgf
+1991-05-29
+王存
+Sakakibara Fumiko
+B+R
+205
+sgf
+1991-05-29
+Zhang Wendong
+Moriyama Naoki
+W+4.5
+252
+sgf
+1991-05-29
+Nakaonoda Tomomi
+Wu Zhaoyi
+B+R
+177
+sgf
+1991-05-29
+Sekiyama Toshimichi
+Fu Li
+W+4.5
+250
+sgf
+1991-05-29
+Nakazawa Ayako
+刘涛
+W+4.5
+279
+sgf
+1991-05-30
+朱燕铭
+Sekiyama Toshimichi
+W+R
+248
+sgf
+1991-05-30
+Sakakibara Fumiko
+Liu Jun
+W+R
+136
+sgf
+1991-05-30
+Feng Yun
+Arimura Hiroshi
+B+R
+223
+sgf
+1991-05-30
+Liu Jing
+Nakaonoda Tomomi
+B+R
+229
+sgf
+1991-05-30
+Moriyama Naoki
+Kang Zhanbin
+B+1.5
+270
+sgf
+1991-05-30
+Yang Shuang
+Nakazawa Ayako
+B+1.5
+275
+sgf
+1991-05-30
+Ryu Shikun
+Chang Hao
+Jigo
+188
+sgf
+1991-05-30
+Miyazaki Ryutaro
+回敬辰
+W+R
+196
+sgf
+1991-06-01
+Kang Zhanbin
+Ryu Shikun
+W+2.5
+256
+sgf
+1991-06-01
+Wu Zhaoyi
+Moriyama Naoki
+W+2.5
+270
+sgf
+1991-06-01
+Arimura Hiroshi
+付利
+B+R
+175
+sgf
+1991-06-01
+Nakaonoda Tomomi
+Shao Weigang
+W+R
+134
+sgf
+1991-06-01
+Sekiyama Toshimichi
+Li Yuchuan
+W+R
+176
+sgf
+1991-06-01
+Zhou Heyang
+Miyazaki Ryutaro
+B+R
+109
+sgf
+1991-06-01
+Chang Hao
+Sakakibara Fumiko
+B+5.5
+266
+sgf
+1991-06-04
+Moriyama Naoki
+Feng Yun
+B+R
+111
+sgf
+1991-06-04
+Shao Weigang
+Arimura Hiroshi
+B+R
+161
+sgf
+1991-06-04
+Ryu Shikun
+Zhang Wendong
+B+R
+177
+sgf
+1991-06-04
+Chang Hao
+Nakaonoda Tomomi
+W+R
+202
+sgf
+1991-06-04
+Sakakibara Fumiko
+Liu Jing
+W+6.5
+274
+sgf
+1991-06-04
+Zhou Heyang
+Nakazawa Ayako
+B+R
+185
+sgf
+1991-06-04
+孙志刚
+Sekiyama Toshimichi
+B+R
+177
+sgf
+No Result
+In the game between Ryu Shikun and Chang Hao, the latter was winning
+(black's big dragon was killed, see the above image), but the referee
+did not start his byo-yomi counting on time, Ryu protested, and the game
+was ruled No Result.

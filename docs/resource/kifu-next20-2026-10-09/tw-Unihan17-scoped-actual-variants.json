@@ -1,0 +1,794 @@
+{
+  "complete_member_sha256": "3f23cd71872633f3350875d25bd388e83b60fa71807634c9a600ec26f38a68ab",
+  "limitations": [
+    "Finite exact Japanese original retention only; semantic variants are not conversion authority.",
+    "human_name_applicable is an unsigned finite reviewer assertion, not a Unicode publication claim."
+  ],
+  "scoped_characters": [
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4771,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10560,
+          "position": 1
+        }
+      ],
+      "input": "下",
+      "kTraditionalVariant_record": null,
+      "output": "下",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 1
+        }
+      ],
+      "input": "世",
+      "kTraditionalVariant_record": null,
+      "output": "世",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5397,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11172,
+          "position": 2
+        }
+      ],
+      "input": "久",
+      "kTraditionalVariant_record": null,
+      "output": "久",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+4E5D\tkSemanticVariant\tU+7396<kLau,kMatthews,kMeyerWempe"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 0
+        }
+      ],
+      "input": "九",
+      "kTraditionalVariant_record": null,
+      "output": "九",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+4E95\tkSpecializedSemanticVariant\tU+4E3C"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 3
+        }
+      ],
+      "input": "井",
+      "kTraditionalVariant_record": null,
+      "output": "井",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6599,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12363,
+          "position": 2
+        }
+      ],
+      "input": "伸",
+      "kTraditionalVariant_record": null,
+      "output": "伸",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4235,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10030,
+          "position": 1
+        }
+      ],
+      "input": "入",
+      "kTraditionalVariant_record": null,
+      "output": "入",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+5305\tkSemanticVariant\tU+52F9<kMatthews"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4771,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10560,
+          "position": 2
+        }
+      ],
+      "input": "包",
+      "kTraditionalVariant_record": null,
+      "output": "包",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+535A\tkSemanticVariant\tU+613D<kMatthews"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5297,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11074,
+          "position": 2
+        }
+      ],
+      "input": "博",
+      "kTraditionalVariant_record": null,
+      "output": "博",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+539F\tkSemanticVariant\tU+20AA5<kKangXi:T"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6629,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12393,
+          "position": 1
+        }
+      ],
+      "input": "原",
+      "kTraditionalVariant_record": null,
+      "output": "原",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6626,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12390,
+          "position": 3
+        }
+      ],
+      "input": "堂",
+      "kTraditionalVariant_record": null,
+      "output": "堂",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+5869\tkSemanticVariant\tU+9E7D<kMatthews"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4235,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10030,
+          "position": 0
+        }
+      ],
+      "input": "塩",
+      "kTraditionalVariant_record": null,
+      "output": "塩",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4771,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10560,
+          "position": 3
+        }
+      ],
+      "input": "夫",
+      "kTraditionalVariant_record": null,
+      "output": "夫",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 2
+        }
+      ],
+      "input": "安",
+      "kTraditionalVariant_record": null,
+      "output": "安",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6599,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12363,
+          "position": 0
+        }
+      ],
+      "input": "小",
+      "kTraditionalVariant_record": null,
+      "output": "小",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+5CF6\tkSimplifiedVariant\tU+5C9B"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5397,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11172,
+          "position": 1
+        }
+      ],
+      "input": "島",
+      "kTraditionalVariant_record": null,
+      "output": "島",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+611B\tkSimplifiedVariant\tU+7231"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5297,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11074,
+          "position": 3
+        }
+      ],
+      "input": "愛",
+      "kTraditionalVariant_record": null,
+      "output": "愛",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4771,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10560,
+          "position": 0
+        }
+      ],
+      "input": "日",
+      "kTraditionalVariant_record": null,
+      "output": "日",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6626,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12390,
+          "position": 0
+        }
+      ],
+      "input": "早",
+      "kTraditionalVariant_record": null,
+      "output": "早",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6599,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12363,
+          "position": 3
+        }
+      ],
+      "input": "昭",
+      "kTraditionalVariant_record": null,
+      "output": "昭",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6259,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12025,
+          "position": 1
+        }
+      ],
+      "input": "木",
+      "kTraditionalVariant_record": null,
+      "output": "木",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": false,
+      "all_actual_variant_records": [
+        "U+677E\tkSimplifiedVariant\tU+677E",
+        "U+677E\tkTraditionalVariant\tU+677E U+9B06"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6599,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12363,
+          "position": 1
+        }
+      ],
+      "input": "松",
+      "kTraditionalVariant_record": "U+677E\tkTraditionalVariant\tU+677E U+9B06",
+      "output": "松",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5297,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11074,
+          "position": 0
+        }
+      ],
+      "input": "武",
+      "kTraditionalVariant_record": null,
+      "output": "武",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5397,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11172,
+          "position": 0
+        }
+      ],
+      "input": "浜",
+      "kTraditionalVariant_record": null,
+      "output": "浜",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6626,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12390,
+          "position": 1
+        }
+      ],
+      "input": "瀬",
+      "kTraditionalVariant_record": null,
+      "output": "瀬",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+7384\tkSemanticVariant\tU+4F2D<kMatthews"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6626,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12390,
+          "position": 2
+        }
+      ],
+      "input": "玄",
+      "kTraditionalVariant_record": null,
+      "output": "玄",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+7530\tkSpoofingVariant\tU+2BB42"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5297,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11074,
+          "position": 1
+        }
+      ],
+      "input": "田",
+      "kTraditionalVariant_record": null,
+      "output": "田",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 5
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 5
+        }
+      ],
+      "input": "知",
+      "kTraditionalVariant_record": null,
+      "output": "知",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6629,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12393,
+          "position": 0
+        }
+      ],
+      "input": "福",
+      "kTraditionalVariant_record": null,
+      "output": "福",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+7B97\tkSemanticVariant\tU+7B6D<kMatthews"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6686,
+          "position": 4
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12455,
+          "position": 4
+        }
+      ],
+      "input": "算",
+      "kTraditionalVariant_record": null,
+      "output": "算",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+7FA9\tkSemanticVariant\tU+4E49<kFenn",
+        "U+7FA9\tkSimplifiedVariant\tU+4E49"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 5397,
+          "position": 3
+        },
+        {
+          "environment": "PROD",
+          "player_id": 6629,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 11172,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12393,
+          "position": 2
+        }
+      ],
+      "input": "義",
+      "kTraditionalVariant_record": null,
+      "output": "義",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6629,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12393,
+          "position": 3
+        }
+      ],
+      "input": "虎",
+      "kTraditionalVariant_record": null,
+      "output": "虎",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6259,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12025,
+          "position": 2
+        }
+      ],
+      "input": "越",
+      "kTraditionalVariant_record": null,
+      "output": "越",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4235,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10030,
+          "position": 3
+        }
+      ],
+      "input": "造",
+      "kTraditionalVariant_record": null,
+      "output": "造",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+9038\tkZVariant\tU+284DC"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 4235,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 10030,
+          "position": 2
+        }
+      ],
+      "input": "逸",
+      "kTraditionalVariant_record": null,
+      "output": "逸",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [
+        "U+9234\tkSimplifiedVariant\tU+94C3"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6259,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12025,
+          "position": 0
+        }
+      ],
+      "input": "鈴",
+      "kTraditionalVariant_record": null,
+      "output": "鈴",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    },
+    {
+      "absence_checked_against_complete_file": true,
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 6259,
+          "position": 3
+        },
+        {
+          "environment": "TEST",
+          "player_id": 12025,
+          "position": 3
+        }
+      ],
+      "input": "雄",
+      "kTraditionalVariant_record": null,
+      "output": "雄",
+      "retention_basis": "Exact codepoint retention of actual qualified Japanese personal-name source; no inferred traditional counterpart and no conventional TW publication claim."
+    }
+  ],
+  "source_member": "Unihan_Variants.txt",
+  "source_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+  "source_zip_sha256": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e"
+}

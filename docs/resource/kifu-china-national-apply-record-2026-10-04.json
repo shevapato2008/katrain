@@ -1,0 +1,183 @@
+{
+  "date": "2026-10-04",
+  "test": {
+    "operations": [
+      {
+        "env": "test",
+        "group": "individual",
+        "mode": "apply",
+        "sha": "9169afe627e0ce2cead75ecaa2e5d8d7c49027c707852b058b315eb570728691",
+        "result": {
+          "plan_sha256": "9169afe627e0ce2cead75ecaa2e5d8d7c49027c707852b058b315eb570728691",
+          "selected_series": [
+            "中国全国围棋个人赛"
+          ],
+          "album_count": 670,
+          "existing_links": {},
+          "new_type_count": 1,
+          "distinct_edition_keys": 11,
+          "database_mode": "apply",
+          "new_alias_count": 2,
+          "updated_albums": 670,
+          "event_ids": {
+            "中国全国围棋个人赛": 72
+          }
+        }
+      },
+      {
+        "verified": 670,
+        "group": "individual",
+        "holds": [
+          [
+            68822,
+            "2000年中国围棋团体赛",
+            null,
+            null
+          ],
+          [
+            75789,
+            "中国围棋团体赛",
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "env": "test",
+        "group": "team",
+        "mode": "apply",
+        "sha": "f1b5e3e5209cb512b38a31b10b95b8cf179d2f96f4498f7f7b506d1ac794fb9a",
+        "result": {
+          "plan_sha256": "f1b5e3e5209cb512b38a31b10b95b8cf179d2f96f4498f7f7b506d1ac794fb9a",
+          "selected_series": [
+            "中国全国围棋团体赛"
+          ],
+          "album_count": 419,
+          "existing_links": {},
+          "new_type_count": 1,
+          "distinct_edition_keys": 8,
+          "database_mode": "apply",
+          "new_alias_count": 3,
+          "updated_albums": 419,
+          "event_ids": {
+            "中国全国围棋团体赛": 73
+          }
+        }
+      },
+      {
+        "verified": 419,
+        "group": "team",
+        "holds": [
+          [
+            68822,
+            "2000年中国围棋团体赛",
+            null,
+            null
+          ],
+          [
+            75789,
+            "中国围棋团体赛",
+            null,
+            null
+          ]
+        ]
+      }
+    ],
+    "coverage": {
+      "total": 173025,
+      "event_linked": 81926,
+      "edition_linked": 78650,
+      "event_types": 73
+    }
+  },
+  "prod": {
+    "operations": [
+      {
+        "env": "prod",
+        "group": "individual",
+        "mode": "apply",
+        "sha": "bf0dd3e8458e0ff8e1bf6e2750257aac1921d021694d28636a2118306294d314",
+        "result": {
+          "plan_sha256": "bf0dd3e8458e0ff8e1bf6e2750257aac1921d021694d28636a2118306294d314",
+          "selected_series": [
+            "中国全国围棋个人赛"
+          ],
+          "album_count": 670,
+          "existing_links": {},
+          "new_type_count": 1,
+          "distinct_edition_keys": 11,
+          "database_mode": "apply",
+          "new_alias_count": 2,
+          "updated_albums": 670,
+          "event_ids": {
+            "中国全国围棋个人赛": 72
+          }
+        }
+      },
+      {
+        "verified": 670,
+        "group": "individual",
+        "holds": [
+          [
+            68822,
+            "2000年中国围棋团体赛",
+            null,
+            null
+          ],
+          [
+            75789,
+            "中国围棋团体赛",
+            null,
+            null
+          ]
+        ]
+      },
+      {
+        "env": "prod",
+        "group": "team",
+        "mode": "apply",
+        "sha": "2b777c9a8078aad869c540c0b18f5dcc2406dd5197d78a43a7c92a4ea02b0e35",
+        "result": {
+          "plan_sha256": "2b777c9a8078aad869c540c0b18f5dcc2406dd5197d78a43a7c92a4ea02b0e35",
+          "selected_series": [
+            "中国全国围棋团体赛"
+          ],
+          "album_count": 419,
+          "existing_links": {},
+          "new_type_count": 1,
+          "distinct_edition_keys": 8,
+          "database_mode": "apply",
+          "new_alias_count": 3,
+          "updated_albums": 419,
+          "event_ids": {
+            "中国全国围棋团体赛": 73
+          }
+        }
+      },
+      {
+        "verified": 419,
+        "group": "team",
+        "holds": [
+          [
+            68822,
+            "2000年中国围棋团体赛",
+            null,
+            null
+          ],
+          [
+            75789,
+            "中国围棋团体赛",
+            null,
+            null
+          ]
+        ]
+      }
+    ],
+    "coverage": {
+      "total": 173025,
+      "event_linked": 82408,
+      "edition_linked": 78650,
+      "event_types": 73
+    }
+  }
+}

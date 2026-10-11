@@ -1,0 +1,107 @@
+{
+  "scope": "514 candidates plus 637 already linked event ID75 context rows",
+  "pairs": [
+    {
+      "album_ids": [
+        42422,
+        47367
+      ],
+      "moves": [
+        237,
+        224
+      ],
+      "best_transform_second_sequence": {
+        "reflect_x": false,
+        "clockwise_90_turns": 0
+      },
+      "identical_prefix_moves": 136,
+      "mismatch_moves_within_common_length": [
+        137
+      ],
+      "shorter_is_exact_prefix": false,
+      "rows": [
+        {
+          "id": 42422,
+          "event": "新体育杯",
+          "event_id": null,
+          "event_edition_id": null,
+          "date_played": "1993-03-06",
+          "player_black": "陈临新",
+          "player_white": "俞斌",
+          "result": "B+7.5",
+          "move_count": 237,
+          "source_path": "data/kifu-album/19x19/41307402.sgf",
+          "duplicate_of_id": null
+        },
+        {
+          "id": 47367,
+          "event": "新体育杯",
+          "event_id": null,
+          "event_edition_id": null,
+          "date_played": "1992-12-31",
+          "player_black": "聂卫平",
+          "player_white": "陈祖德",
+          "result": "W+0.5",
+          "move_count": 224,
+          "source_path": "data/kifu-album/19x19/41328819.sgf",
+          "duplicate_of_id": null
+        }
+      ],
+      "sgf_sha256": [
+        "13fdcee217a4d85cc4fbf0de0b95fc01b5762c6ec69fa74d662dcec23c8bfccd",
+        "20e7094410db0569d73492c13aae33d8dfd0e9cc0a867d5811b795cefb266f65"
+      ]
+    },
+    {
+      "album_ids": [
+        113607,
+        113606
+      ],
+      "moves": [
+        177,
+        176
+      ],
+      "best_transform_second_sequence": {
+        "reflect_x": false,
+        "clockwise_90_turns": 1
+      },
+      "identical_prefix_moves": 176,
+      "mismatch_moves_within_common_length": [],
+      "shorter_is_exact_prefix": true,
+      "rows": [
+        {
+          "id": 113607,
+          "event": "中日对抗赛",
+          "event_id": null,
+          "event_edition_id": null,
+          "date_played": "1991-06-04",
+          "player_black": "柳时熏",
+          "player_white": "张文东",
+          "result": "B+R",
+          "move_count": 177,
+          "source_path": "data/kifu-album/19x19/41429049.sgf",
+          "duplicate_of_id": null
+        },
+        {
+          "id": 113606,
+          "event": "中日围棋对抗赛",
+          "event_id": 75,
+          "event_edition_id": null,
+          "date_played": "1991-06-01",
+          "player_black": "柳时熏",
+          "player_white": "张文东",
+          "result": "B+R",
+          "move_count": 176,
+          "source_path": "data/kifu-album/19x19/41429048.sgf",
+          "duplicate_of_id": null
+        }
+      ],
+      "sgf_sha256": [
+        "ffa3c256b5797a1a60c52e62f1fe13d36d975adb2ec1f276d19f0ea0be4efc45",
+        "7bb4ebe114ceb222d8f5defcd45bd1c3b7fb26b0f779a7e5c7ad8e40e2429f7c"
+      ]
+    }
+  ],
+  "no_global_dedup_claim": true,
+  "database_writes": 0
+}

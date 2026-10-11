@@ -1,0 +1,18 @@
+{
+  "approved": 20,
+  "bundle_sha256": "3c5cc62fbb9034a712be60c67b5545afdc54b158db5e8df8e1bfe3843384525d",
+  "environment": "TEST",
+  "file_sha256": {
+    "TEST-mixed20-approved-input.json.gz": "27eae76a17a409cdab7730727c0ab6c72af4a779cfe7cc5fc70502db00e701cf",
+    "TEST-mixed20-approved-name-snapshot.json.gz": "a9cbca976b78b5ff000dca9c036e43c409410cff5ab7c716e2af24378070722e",
+    "TEST-mixed20-evidence.jsonl": "cdc1fc0cb3563779c666667398259c2a0682a42dbd1d2256964158fc234fe908",
+    "TEST-mixed20-fresh-post590-pages.json.gz": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+    "TEST-mixed20-inventory.json.gz": "a2f87704802a71e01fae55a032ac8ad9c79e932f1b14890b3a04e9fac2ad958a",
+    "TEST-mixed20-source-registry.json": "98f2368d2a2dd6e941156f59b3267180fd7702fffe15e6f38fe74a3e4fed3bd8",
+    "TEST-mixed20-unsigned-bundle.json.gz": "695cf090588f1b3c923f0de6aaefa3f1cf476d5819ee3414227b627849c2b7dc",
+    "TEST-mixed20-unsigned-evidence.json.gz": "144605c5b20a96334869eb9deaf8df1bea1b4a358cdb350d91301bc0ed9bc711",
+    "TEST-mixed20-unsigned-summary.json": "13639446eb31dc59421b92684129b7465d041f51d2c25f38088164ba2319f5b5"
+  },
+  "source_records": 20,
+  "status": "unsigned_transport_ready_outer_execution_approval_pending"
+}

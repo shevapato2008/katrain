@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+
+<form method="post" name="s1">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<ul class="sortMode">
+	<li class="on"><button type="button" onclick="pageMove_search4('2','왕','','A')">✔가나다순</button></li>
+	<li ><button type="button" onclick="pageMove_search4('2','왕','','R')">✔서열순</button></li>
+</ul>                                                
+<div class="searchOptions frt">
+	<div class="select">
+		<select name="S_nation">
+			<option value="ALL" >구분</option>
+			
+				<option value="1" >한국</option>
+			
+				<option value="2"  selected >중국</option>
+			
+				<option value="3" >일본</option>
+			
+				<option value="4" >대만</option>
+			
+				<option value="6" >북미/유럽</option>
+			
+				<option value="7" >은퇴</option>
+			
+		</select>
+	</div>
+	<div class="select bdlt_no">
+		<select name="S_ob_forc">
+			<option value=""  selected >단</option>
+			
+				<option value="9" >9단</option>
+			
+				<option value="8" >8단</option>
+			
+				<option value="7" >7단</option>
+			
+				<option value="6" >6단</option>
+			
+				<option value="5" >5단</option>
+			
+				<option value="4" >4단</option>
+			
+				<option value="3" >3단</option>
+			
+				<option value="2" >2단</option>
+			
+				<option value="1" >1단</option>
+			
+		</select>
+	</div>                                                             	
+	<input type="text" placeholder="기사명" class="player" name="S_prpl_name" value="왕" >
+	<button type="button" class="search" onclick="pageMove_search4(S_nation.value, S_prpl_name.value, S_ob_forc.value, 'A')">검색</button>
+</div>
+</form>
+
+<div class="recordTab">
+	<ul>
+		<li><button type="button"  onclick="pageMove_search4('1','왕','','A')">한국</button></li>
+		<li><button type="button" class="on" onclick="pageMove_search4('2','왕','','A')">중국</button></li>
+		<li><button type="button"  onclick="pageMove_search4('3','왕','','A')">일본</button></li>
+		<li><button type="button"  onclick="pageMove_search4('4','왕','','A')">대만</button></li>
+		<!--<li><button type="button"  onclick="pageMove_search4('5','왕','','A')">기타</button></li>-->
+		<li><button type="button"  onclick="pageMove_search4('6','왕','','A')">북미/유럽</button></li>
+		<li><button type="button"  onclick="pageMove_search4('7','왕','','A')">은퇴</button></li>
+	</ul>
+</div>
+
+
+	<div class="playerArea">
+		<ul>
+			
+			<li class="lvList">
+				<div class="lv">
+					<dl>
+						<dt><span>9</span>段</dt>
+						<dd id="cnt9"></dd>
+					</dl>
+				</div>
+				<div class="players">
+					<ul>
+						
+							<li><a onclick="viewPage_player('10000360')">왕시</a></li>
+							
+							<li><a onclick="viewPage_player('20001653')">왕싱하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000042')">왕젠훙</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt9.innerHTML = "3명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>8</span>段</dt>
+												<dd id="cnt8"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000007')">왕레이</a></li>
+							
+							<li><a onclick="viewPage_player('20000147')">왕루난</a></li>
+							
+							<li><a onclick="viewPage_player('20001033')">왕스이</a></li>
+							
+							<li><a onclick="viewPage_player('20002161')">왕추쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20002134')">왕춘후이</a></li>
+							
+							<li><a onclick="viewPage_player('20000595')">왕췬</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt8.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>7</span>段</dt>
+												<dd id="cnt7"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002064')">왕숴03</a></li>
+							
+							<li><a onclick="viewPage_player('20000956')">왕시루</a></li>
+							
+							<li><a onclick="viewPage_player('20000145')">왕위후이</a></li>
+							
+							<li><a onclick="viewPage_player('10000351')">왕이민</a></li>
+							
+							<li><a onclick="viewPage_player('20000589')">왕젠쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20000804')">왕쩌진</a></li>
+							
+							<li><a onclick="viewPage_player('20000331')">왕하오양</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt7.innerHTML = "7명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>6</span>段</dt>
+												<dd id="cnt6"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000790')">왕둥량</a></li>
+							
+							<li><a onclick="viewPage_player('20000318')">왕레이(雷)</a></li>
+							
+							<li><a onclick="viewPage_player('20002356')">왕순보</a></li>
+							
+							<li><a onclick="viewPage_player('20000979')">왕숴94</a></li>
+							
+							<li><a onclick="viewPage_player('10000357')">왕야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000384')">왕천싱</a></li>
+							
+							<li><a onclick="viewPage_player('20000463')">왕타오</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt6.innerHTML = "7명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>5</span>段</dt>
+												<dd id="cnt5"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002338')">왕뤄위</a></li>
+							
+							<li><a onclick="viewPage_player('20000627')">왕솽</a></li>
+							
+							<li><a onclick="viewPage_player('10000358')">왕양</a></li>
+							
+							<li><a onclick="viewPage_player('20000709')">왕옌하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000976')">왕위보</a></li>
+							
+							<li><a onclick="viewPage_player('20001721')">왕쩌위</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt5.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>4</span>段</dt>
+												<dd id="cnt4"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000348')">왕샹윈</a></li>
+							
+							<li><a onclick="viewPage_player('20000695')">왕웨이(&#29614;)</a></li>
+							
+							<li><a onclick="viewPage_player('20002082')">왕이페이</a></li>
+							
+							<li><a onclick="viewPage_player('20002074')">왕자난</a></li>
+							
+							<li><a onclick="viewPage_player('20001265')">왕쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002376')">왕쩌쉬안</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt4.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>3</span>段</dt>
+												<dd id="cnt3"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001074')">왕루</a></li>
+							
+							<li><a onclick="viewPage_player('20000148')">왕루이</a></li>
+							
+							<li><a onclick="viewPage_player('20002408')">왕수야오</a></li>
+							
+							<li><a onclick="viewPage_player('20000388')">왕여우샤</a></li>
+							
+							<li><a onclick="viewPage_player('20000624')">왕위쯔</a></li>
+							
+							<li><a onclick="viewPage_player('20000707')">왕이신</a></li>
+							
+							<li><a onclick="viewPage_player('20000854')">왕이천</a></li>
+							
+							<li><a onclick="viewPage_player('10000714')">왕저밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002363')">왕쥔량</a></li>
+							
+							<li><a onclick="viewPage_player('20001075')">왕쯔앙</a></li>
+							
+							<li><a onclick="viewPage_player('10000715')">왕천판</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt3.innerHTML = "11명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>2</span>段</dt>
+												<dd id="cnt2"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001034')">왕뤄란</a></li>
+							
+							<li><a onclick="viewPage_player('20001204')">왕쓰인</a></li>
+							
+							<li><a onclick="viewPage_player('20002322')">왕원충</a></li>
+							
+							<li><a onclick="viewPage_player('20002113')">왕위청</a></li>
+							
+							<li><a onclick="viewPage_player('20001256')">왕인링쉐이</a></li>
+							
+							<li><a onclick="viewPage_player('20001065')">왕즈궈</a></li>
+							
+							<li><a onclick="viewPage_player('20000449')">왕판</a></li>
+							
+							<li><a onclick="viewPage_player('20002294')">왕펑페이</a></li>
+							
+							<li><a onclick="viewPage_player('20000671')">왕후이</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt2.innerHTML = "9명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>1</span>段</dt>
+												<dd id="cnt1"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002075')">왕관쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20000815')">왕니차오</a></li>
+							
+							<li><a onclick="viewPage_player('20002530')">왕뤄시</a></li>
+							
+							<li><a onclick="viewPage_player('20002115')">왕메이청</a></li>
+							
+							<li><a onclick="viewPage_player('20002289')">왕미엔</a></li>
+							
+							<li><a onclick="viewPage_player('20002077')">왕보강</a></li>
+							
+							<li><a onclick="viewPage_player('20002079')">왕빈</a></li>
+							
+							<li><a onclick="viewPage_player('20002571')">왕샤오룽</a></li>
+							
+							<li><a onclick="viewPage_player('20000754')">왕샹루</a></li>
+							
+							<li><a onclick="viewPage_player('20002080')">왕예훙이</a></li>
+							
+							<li><a onclick="viewPage_player('20001610')">왕웨이(偉)</a></li>
+							
+							<li><a onclick="viewPage_player('20002081')">왕위안</a></li>
+							
+							<li><a onclick="viewPage_player('10001256')">왕이</a></li>
+							
+							<li><a onclick="viewPage_player('20002589')">왕이(逸)</a></li>
+							
+							<li><a onclick="viewPage_player('20002177')">왕이루</a></li>
+							
+							<li><a onclick="viewPage_player('20001196')">왕자바오</a></li>
+							
+							<li><a onclick="viewPage_player('20001203')">왕자치</a></li>
+							
+							<li><a onclick="viewPage_player('20000932')">왕쥔치</a></li>
+							
+							<li><a onclick="viewPage_player('20002367')">왕징레이</a></li>
+							
+							<li><a onclick="viewPage_player('20001855')">왕쩐</a></li>
+							
+							<li><a onclick="viewPage_player('20001729')">왕쯔선</a></li>
+							
+							<li><a onclick="viewPage_player('20001080')">왕차오</a></li>
+							
+							<li><a onclick="viewPage_player('20002083')">왕청</a></li>
+							
+							<li><a onclick="viewPage_player('20001762')">왕첸위</a></li>
+							
+							<li><a onclick="viewPage_player('20001806')">왕췬샤오</a></li>
+							
+							<li><a onclick="viewPage_player('20002078')">왕판(凡)</a></li>
+							
+							<li><a onclick="viewPage_player('20002086')">왕하오</a></li>
+							
+							<li><a onclick="viewPage_player('20001816')">왕하오톈</a></li>
+							
+							<li><a onclick="viewPage_player('20002085')">왕하이쥔</a></li>
+							
+							<li><a onclick="viewPage_player('20002052')">왕혜</a></li>
+							
+							<li><a onclick="viewPage_player('20002076')">왕훙위에</a></li>
+							
+							<li><a onclick="viewPage_player('20002102')">왕훙쥔</a></li>
+							
+						<script>document.all.cnt1.innerHTML = "32명"</script>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</div>
+
+
+<script>
+	document.all.search_loading.style.display = 'none';
+</script>
+
+

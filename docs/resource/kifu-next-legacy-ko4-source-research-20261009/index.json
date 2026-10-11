@@ -1,0 +1,35 @@
+{
+  "artifact_kind": "legacy_generated_ko4_source_only_index",
+  "read_only": true,
+  "source_snapshot": "docs/resource/kifu-next-throughput-2026-10-09/old-ko28-frequency-readonly.json",
+  "source_snapshot_sha256": "82b1c7c30f3df7caf9c9681ed23ab4a1dd35c91546f9170fac6c8aa44ab61d59",
+  "reports": {
+    "5244": {
+      "file": "5244.json",
+      "disposition": "community_Korean_Go_context_reference_available; not itself a qualification approval"
+    },
+    "4499": {
+      "file": "4499.json",
+      "disposition": "no_direct_conflict_found_in_saved_bounded_sources"
+    },
+    "6496": {
+      "file": "6496.json",
+      "disposition": "hold_for_Korean_name_conflict_review"
+    },
+    "3900": {
+      "file": "3900.json",
+      "disposition": "hold_for_Korean_name_conflict_review"
+    }
+  },
+  "hold_ids": [
+    6496,
+    3900
+  ],
+  "notes": [
+    "5244 has matching NamuWiki Korean Go-context reference, community only.",
+    "4499 no direct same-player Korean Go source in saved bounded searches.",
+    "6496 Hangame search result proposes a conflicting Korean form; page body not captured.",
+    "3900 Korean Wikipedia directly publishes conflicting form; hold.",
+    "All four have KO excluded from product_qualified_languages in the saved snapshot; this does not audit latest live owner preimages or signatures."
+  ]
+}

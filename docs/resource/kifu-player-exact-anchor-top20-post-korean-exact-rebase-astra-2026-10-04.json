@@ -1,0 +1,275 @@
+{
+  "commit_receipt": {
+    "file_sha256": "a59f0bbc5f4b5ba0e908e18073a56083e3dd743e355e0d5159571a867a76f4cf",
+    "path": "docs/resource/kifu-event-korean-two-applied-2026-10-04.md"
+  },
+  "database_writes": 0,
+  "environments": {
+    "PROD": {
+      "additional_context_album_ids": [
+        30561,
+        35049,
+        40058,
+        43159,
+        45056,
+        72248,
+        86473,
+        99683,
+        104496,
+        104497,
+        111922,
+        115152,
+        115950,
+        116009,
+        124220,
+        128971,
+        134679,
+        137786,
+        137796,
+        139783,
+        145381,
+        147592
+      ],
+      "additional_owner_ids": [
+        3781,
+        4638
+      ],
+      "all_other_original_fields_equal": true,
+      "database": "katrain_prod_20260725",
+      "exact_event_deltas": [
+        {
+          "after": 92,
+          "after_full_row_sha256": "789fe2f181ce16f7609c22ac0e55599e047d2aa9253f6afc0a92eadb7c2cb5c0",
+          "album_id": 70944,
+          "before": null,
+          "before_full_row_sha256": "89370bbc78600fe949abc16520e9649f0a92b749513b27eeca029bbfab20407f",
+          "field": "event_id",
+          "korean_approved_record_sha256": "89baa5c2fe4639dd33f230e1f015b6c3de8b0ceb8e501481cc073b7310597fe2",
+          "table_scope": "albums"
+        },
+        {
+          "after": 92,
+          "after_full_row_sha256": "789fe2f181ce16f7609c22ac0e55599e047d2aa9253f6afc0a92eadb7c2cb5c0",
+          "album_id": 70944,
+          "before": null,
+          "before_full_row_sha256": "89370bbc78600fe949abc16520e9649f0a92b749513b27eeca029bbfab20407f",
+          "field": "event_id",
+          "korean_approved_record_sha256": "89baa5c2fe4639dd33f230e1f015b6c3de8b0ceb8e501481cc073b7310597fe2",
+          "table_scope": "existing_owner_context.albums"
+        }
+      ],
+      "expanded_owner_ids": [
+        20,
+        81,
+        156,
+        166,
+        182,
+        191,
+        215,
+        244,
+        246,
+        295,
+        308,
+        347,
+        352,
+        377,
+        392,
+        491,
+        513,
+        537,
+        541,
+        571,
+        573,
+        630,
+        668,
+        747,
+        843,
+        3781,
+        4193,
+        4638,
+        6606,
+        6644
+      ],
+      "expansion_added_only_context_and_scan_metadata": true,
+      "final_catalog_sha256": "7b09ab41fd10b44d86fdfebe8e0c5a8797a751de58c6c1fb05efe8df818e017c",
+      "final_expanded_preimage": {
+        "file_sha256": "638e83f0018f608bcaaa33656e71c75117aee4e9d3f8d2a301db8ccdf9971a83",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-PROD-post-korean-expanded-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "final_scope_sha256": "2efda4056f1b763e906cea0949805ac0b6ccb58353826a95306865e84e237fdd",
+      "global_counts_after": {
+        "event_links": 103528,
+        "games": 173025,
+        "player_links": 309942
+      },
+      "global_counts_before": {
+        "event_links": 102791,
+        "games": 173025,
+        "player_links": 309942
+      },
+      "korean_applied_plan": {
+        "file_sha256": "bdcda31f78fae21cd4d1087110acc2d04eef0a78d577faaf2da731a268e9d99d",
+        "path": "docs/resource/kifu-event-korean-two-PROD-applied-plan-2026-10-04.json.gz"
+      },
+      "new_full_event_rows": [
+        {
+          "canonical_name": "韩国GS加德士杯",
+          "created_at": "2026-10-04T12:04:13.112211+00:00",
+          "id": 92
+        },
+        {
+          "canonical_name": "韩国女子国手战",
+          "created_at": "2026-10-04T12:04:13.112211+00:00",
+          "id": 93
+        }
+      ],
+      "original_catalog_sha256": "7b09ab41fd10b44d86fdfebe8e0c5a8797a751de58c6c1fb05efe8df818e017c",
+      "original_preimage": {
+        "file_sha256": "077cdf4b5b656e44a79bc8a5db753ec4e99f0f578e89346f9cb7e52f87d52cdc",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-PROD-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "original_scope_sha256": "2efda4056f1b763e906cea0949805ac0b6ccb58353826a95306865e84e237fdd",
+      "post_korean_preimage": {
+        "file_sha256": "eda422fcea2df4a98d908b00ad6d44f000d0720bebefc423bffe16aec72919eb",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-PROD-post-korean-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "scope_unchanged": true
+    },
+    "TEST": {
+      "additional_context_album_ids": [
+        30561,
+        35049,
+        40058,
+        43159,
+        45056,
+        72248,
+        86473,
+        99683,
+        104496,
+        104497,
+        111922,
+        115152,
+        115950,
+        116009,
+        124220,
+        128971,
+        134679,
+        137786,
+        137796,
+        139783,
+        145381,
+        147592
+      ],
+      "additional_owner_ids": [
+        9579,
+        10428
+      ],
+      "all_other_original_fields_equal": true,
+      "database": "katrain_db",
+      "exact_event_deltas": [
+        {
+          "after": 92,
+          "after_full_row_sha256": "84080ad4c94864fae839ff6b4a61f180569c6f587d67842e416e9cbda390b188",
+          "album_id": 70944,
+          "before": null,
+          "before_full_row_sha256": "5cc355f0d9323c9515f40c13f52cdd3fc2840761d22d0c74ddc987ca91d8592e",
+          "field": "event_id",
+          "korean_approved_record_sha256": "89baa5c2fe4639dd33f230e1f015b6c3de8b0ceb8e501481cc073b7310597fe2",
+          "table_scope": "albums"
+        },
+        {
+          "after": 92,
+          "after_full_row_sha256": "84080ad4c94864fae839ff6b4a61f180569c6f587d67842e416e9cbda390b188",
+          "album_id": 70944,
+          "before": null,
+          "before_full_row_sha256": "5cc355f0d9323c9515f40c13f52cdd3fc2840761d22d0c74ddc987ca91d8592e",
+          "field": "event_id",
+          "korean_approved_record_sha256": "89baa5c2fe4639dd33f230e1f015b6c3de8b0ceb8e501481cc073b7310597fe2",
+          "table_scope": "existing_owner_context.albums"
+        }
+      ],
+      "expanded_owner_ids": [
+        20,
+        81,
+        157,
+        167,
+        183,
+        192,
+        216,
+        245,
+        247,
+        296,
+        309,
+        348,
+        353,
+        378,
+        393,
+        492,
+        514,
+        538,
+        542,
+        572,
+        574,
+        631,
+        669,
+        748,
+        844,
+        1048,
+        9579,
+        10428,
+        12370,
+        12413
+      ],
+      "expansion_added_only_context_and_scan_metadata": true,
+      "final_catalog_sha256": "fcfd9c7aee50c7a1e44be596c20967dcc48d121a81bd380ba6e16205fbde65e6",
+      "final_expanded_preimage": {
+        "file_sha256": "34e2900168bdbc16ff3825ea69afef5be7a5f5255e11942cb020dbf1aacfc037",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-TEST-post-korean-expanded-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "final_scope_sha256": "c0dbaf4e9a5c78f1851b7d9e36a4ba309f4a697efbca2643514195bd14e8a9e1",
+      "global_counts_after": {
+        "event_links": 103046,
+        "games": 173025,
+        "player_links": 308337
+      },
+      "global_counts_before": {
+        "event_links": 102309,
+        "games": 173025,
+        "player_links": 308337
+      },
+      "korean_applied_plan": {
+        "file_sha256": "58ab0b967f1a1feb78d99bf9b27f63acf99f2537f3280d643aa693ba0d1d3352",
+        "path": "docs/resource/kifu-event-korean-two-TEST-applied-plan-2026-10-04.json.gz"
+      },
+      "new_full_event_rows": [
+        {
+          "canonical_name": "韩国GS加德士杯",
+          "created_at": "2026-10-04T12:03:58.542835+00:00",
+          "id": 92
+        },
+        {
+          "canonical_name": "韩国女子国手战",
+          "created_at": "2026-10-04T12:03:58.542835+00:00",
+          "id": 93
+        }
+      ],
+      "original_catalog_sha256": "fcfd9c7aee50c7a1e44be596c20967dcc48d121a81bd380ba6e16205fbde65e6",
+      "original_preimage": {
+        "file_sha256": "41b1b3b1ca6ecb9a62da4a0a3a1760a5e9483096243190daa150e34d3f55ad51",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-TEST-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "original_scope_sha256": "c0dbaf4e9a5c78f1851b7d9e36a4ba309f4a697efbca2643514195bd14e8a9e1",
+      "post_korean_preimage": {
+        "file_sha256": "f82839af66b47686cfb6d9a7f6fc9abf5c50a9c70ee77e4da0ed3e024d9361b1",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-TEST-post-korean-full-preimage-astra-2026-10-04.json.gz"
+      },
+      "scope_unchanged": true
+    }
+  },
+  "format": "kifu-player-anchor-top20-exact-post-korean-rebase-astra-v1",
+  "korean_decision": {
+    "file_sha256": "749e066920dcdc0fc181074f15c10128e7f277ba87d98d699e87bc5638595d80",
+    "path": "docs/resource/kifu-event-next-after-china-ahan-independent-decision-astra-2026-10-04.json"
+  },
+  "reviewed_at_utc": "2026-10-04T12:24:44.782035+00:00"
+}

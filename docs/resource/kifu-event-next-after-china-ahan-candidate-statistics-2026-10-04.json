@@ -1,0 +1,69 @@
+{
+  "candidate_albums": 756,
+  "candidate_groups": [
+    {
+      "albums": 399,
+      "basegame_replay_valid": 399,
+      "candidate_canonical_name": "韩国GS加德士杯",
+      "date_max": "2026-01-09",
+      "date_min": "2005-09-08",
+      "existing_catalog_or_alias_key_collisions": [],
+      "family_key": "kr_gs_caltex",
+      "identity_status": "UNDECIDED_REQUIRES_INDEPENDENT_REVIEW",
+      "raw_values": 227,
+      "root_event_contains_raw": 399,
+      "source_associations": 399
+    },
+    {
+      "albums": 357,
+      "basegame_replay_valid": 357,
+      "candidate_canonical_name": "韩国女子国手战",
+      "date_max": "2025-12-18",
+      "date_min": "1996-07-29",
+      "existing_catalog_or_alias_key_collisions": [],
+      "family_key": "kr_womens_guksu",
+      "identity_status": "UNDECIDED_REQUIRES_INDEPENDENT_REVIEW",
+      "raw_values": 144,
+      "root_event_contains_raw": 357,
+      "source_associations": 357
+    }
+  ],
+  "candidate_raw_values": 371,
+  "checks": {
+    "all_basegame_replays_valid": true,
+    "all_ids_match_exact_raw_group": true,
+    "only_expected_environment_album_differences": true,
+    "prod_all_event_and_edition_null": true,
+    "prod_all_existing_holds_null": true,
+    "prod_candidate_ids_exact": true,
+    "prod_hold_ids_exact": true,
+    "prod_read_only": true,
+    "same_candidate_sgf_between_environments": true,
+    "test_all_event_and_edition_null": true,
+    "test_all_existing_holds_null": true,
+    "test_candidate_ids_exact": true,
+    "test_hold_ids_exact": true,
+    "test_read_only": true
+  },
+  "duplicate_review": {
+    "exact_sgf_album_members": 0,
+    "exact_sgf_groups": 0,
+    "same_mainline_album_members": 8,
+    "same_mainline_groups": 4
+  },
+  "environment_statistics": {
+    "PROD": {
+      "albums": 173025,
+      "edition_links": 79661,
+      "event_links": 101998
+    },
+    "TEST": {
+      "albums": 173025,
+      "edition_links": 79661,
+      "event_links": 101516
+    }
+  },
+  "existing_hold_slots": 4273,
+  "format": "kifu-event-next-after-china-ahan-candidate-statistics-v1",
+  "scope_file_sha256": "fd0b4c21fb85d642e2a8286de3ec53e16e7d0617096206a98d0e5e62460b66cc"
+}

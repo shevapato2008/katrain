@@ -1,0 +1,663 @@
+{
+  "candidate_file_sha256": "5953662107172baa393a6b5803511809e0a16f2f63f09a232d75fe7e56665e8d",
+  "candidate_id_sha256": "0519af82c75727d1f569e7799b49571ea60669dd58fdba0cda6996291feab540",
+  "counts": {
+    "holds": 258,
+    "new_type_proposals": 3,
+    "prior_hold_intersection": 19,
+    "proposed_edition_writes": 0,
+    "raw_values": 642,
+    "scope_albums": 2421,
+    "type_candidates": 2163
+  },
+  "format": "kifu-event-after6810-next3-producer-v1",
+  "full_preimage": {
+    "albums": 2421,
+    "contains": "full SGF, all selected album rows, album associations, both global source rows, complete event catalog/aliases/editions, all remaining nonNULL raw event inventory",
+    "file_sha256": "f80d7a7eef4b9b0477b62f4b067f8dadbae3109c8a08fd387119517907c5e7af",
+    "path": "docs/resource/kifu-event-after6810-next3-PROD-full-preimage-2026-10-04.json.gz"
+  },
+  "global_hold_reasons": {
+    "UMC_rapid_championship_is_separate_type": 122,
+    "Yude_sponsor_successor_identity_not_reviewed": 2,
+    "distinct_team_invitation_training_or_other_competition": 57,
+    "explicit_edition_vs_official_year_conflict_requires_review": 1,
+    "filename_only_title_not_competition_identity": 34,
+    "outside_selected_type_or_ambiguous_title": 235,
+    "prior_independent_HOLD_preserved": 19,
+    "root_alternate_title_identity_unclear_or_conflicting": 3
+  },
+  "groups": [
+    {
+      "candidate_albums": 1002,
+      "canonical_name": "台湾友士杯十段赛",
+      "explicit_edition_groups": [
+        {
+          "candidate_games": 27,
+          "edition_numbers": [
+            1
+          ],
+          "official_year": 2011
+        },
+        {
+          "candidate_games": 133,
+          "edition_numbers": [
+            10
+          ],
+          "official_year": 2020
+        },
+        {
+          "candidate_games": 129,
+          "edition_numbers": [
+            11
+          ],
+          "official_year": 2021
+        },
+        {
+          "candidate_games": 65,
+          "edition_numbers": [
+            12
+          ],
+          "official_year": 2022
+        },
+        {
+          "candidate_games": 62,
+          "edition_numbers": [
+            13
+          ],
+          "official_year": 2023
+        },
+        {
+          "candidate_games": 65,
+          "edition_numbers": [
+            14
+          ],
+          "official_year": 2024
+        },
+        {
+          "candidate_games": 66,
+          "edition_numbers": [
+            15
+          ],
+          "official_year": 2025
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            2
+          ],
+          "official_year": 2012
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            3
+          ],
+          "official_year": 2013
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            4
+          ],
+          "official_year": 2014
+        },
+        {
+          "candidate_games": 23,
+          "edition_numbers": [
+            5
+          ],
+          "official_year": 2015
+        },
+        {
+          "candidate_games": 101,
+          "edition_numbers": [
+            6
+          ],
+          "official_year": 2016
+        },
+        {
+          "candidate_games": 87,
+          "edition_numbers": [
+            7
+          ],
+          "official_year": 2017
+        },
+        {
+          "candidate_games": 116,
+          "edition_numbers": [
+            8
+          ],
+          "official_year": 2018
+        },
+        {
+          "candidate_games": 117,
+          "edition_numbers": [
+            9
+          ],
+          "official_year": 2019
+        }
+      ],
+      "family_key": "tw_youshi_tendan",
+      "held_albums": 20,
+      "hold_reasons": {
+        "explicit_edition_vs_official_year_conflict_requires_review": 1,
+        "prior_independent_HOLD_preserved": 19
+      },
+      "raw_values": 202,
+      "scope_albums": 1022
+    },
+    {
+      "candidate_albums": 758,
+      "canonical_name": "韩国KBS杯棋王战",
+      "explicit_edition_groups": [
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "official_year": null
+        },
+        {
+          "candidate_games": 8,
+          "edition_numbers": [
+            10
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            11
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            12
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 6,
+          "edition_numbers": [
+            13
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            14
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            15
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            16
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 6,
+          "edition_numbers": [
+            17
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            18
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 20,
+          "edition_numbers": [
+            19
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [
+            2
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 30,
+          "edition_numbers": [
+            20
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 36,
+          "edition_numbers": [
+            21
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 35,
+          "edition_numbers": [
+            22
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 14,
+          "edition_numbers": [
+            23
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 20,
+          "edition_numbers": [
+            24
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 13,
+          "edition_numbers": [
+            25
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 15,
+          "edition_numbers": [
+            26
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 24,
+          "edition_numbers": [
+            27
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 41,
+          "edition_numbers": [
+            28
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 41,
+          "edition_numbers": [
+            29
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            3
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 40,
+          "edition_numbers": [
+            30
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 43,
+          "edition_numbers": [
+            31
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 44,
+          "edition_numbers": [
+            32
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 41,
+          "edition_numbers": [
+            33
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 49,
+          "edition_numbers": [
+            34
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 42,
+          "edition_numbers": [
+            35
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 30,
+          "edition_numbers": [
+            36
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 30,
+          "edition_numbers": [
+            37
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 26,
+          "edition_numbers": [
+            38
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 8,
+          "edition_numbers": [
+            39
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 9,
+          "edition_numbers": [
+            4
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 9,
+          "edition_numbers": [
+            40
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            41
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            5
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 9,
+          "edition_numbers": [
+            6
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            7
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 8,
+          "edition_numbers": [
+            8
+          ],
+          "official_year": null
+        },
+        {
+          "candidate_games": 7,
+          "edition_numbers": [
+            9
+          ],
+          "official_year": null
+        }
+      ],
+      "family_key": "kr_kbs_badukwang",
+      "held_albums": 3,
+      "hold_reasons": {
+        "root_alternate_title_identity_unclear_or_conflicting": 3
+      },
+      "raw_values": 229,
+      "scope_albums": 761
+    },
+    {
+      "candidate_albums": 403,
+      "canonical_name": "台湾联电杯职业围棋赛",
+      "explicit_edition_groups": [
+        {
+          "candidate_games": 106,
+          "edition_numbers": [
+            1
+          ],
+          "official_year": 2020
+        },
+        {
+          "candidate_games": 100,
+          "edition_numbers": [
+            2
+          ],
+          "official_year": 2021
+        },
+        {
+          "candidate_games": 96,
+          "edition_numbers": [
+            3
+          ],
+          "official_year": 2022
+        },
+        {
+          "candidate_games": 101,
+          "edition_numbers": [
+            4
+          ],
+          "official_year": 2023
+        }
+      ],
+      "family_key": "tw_umc_pro",
+      "held_albums": 0,
+      "hold_reasons": {},
+      "raw_values": 97,
+      "scope_albums": 403
+    },
+    {
+      "candidate_albums": 0,
+      "canonical_name": "边界／未识别",
+      "explicit_edition_groups": [],
+      "family_key": null,
+      "held_albums": 235,
+      "hold_reasons": {
+        "UMC_rapid_championship_is_separate_type": 122,
+        "Yude_sponsor_successor_identity_not_reviewed": 2,
+        "distinct_team_invitation_training_or_other_competition": 57,
+        "filename_only_title_not_competition_identity": 34,
+        "outside_selected_type_or_ambiguous_title": 235
+      },
+      "raw_values": 114,
+      "scope_albums": 235
+    }
+  ],
+  "held_id_sha256": "74811a9d6823acbdba9a241022899315dfdfce883bb23f26431fe4320af1c9c0",
+  "live_statistics": {
+    "edition_linked": 79661,
+    "event_linked": 99371,
+    "null_event_with_raw": 70843,
+    "null_event_without_raw": 2811,
+    "total_albums": 173025
+  },
+  "metadata": {
+    "database": "katrain_prod_20260725",
+    "read_only": "on",
+    "snapshot": "1726082:1726082:",
+    "time": "2026-10-04T09:08:36.932058+00:00"
+  },
+  "new_type_proposals": [
+    {
+      "TEST_target": "NOT_READ_MUST_CAPTURE_AND_RESOLVE_SEPARATELY",
+      "canonical_name": "台湾友士杯十段赛",
+      "existing_PROD_alias_matches": [],
+      "existing_PROD_catalog_matches": [],
+      "family_key": "tw_youshi_tendan",
+      "status": "PROPOSE_NEW_TYPE_REQUIRES_INDEPENDENT_DECISION"
+    },
+    {
+      "TEST_target": "NOT_READ_MUST_CAPTURE_AND_RESOLVE_SEPARATELY",
+      "canonical_name": "韩国KBS杯棋王战",
+      "existing_PROD_alias_matches": [],
+      "existing_PROD_catalog_matches": [],
+      "family_key": "kr_kbs_badukwang",
+      "status": "PROPOSE_NEW_TYPE_REQUIRES_INDEPENDENT_DECISION"
+    },
+    {
+      "TEST_target": "NOT_READ_MUST_CAPTURE_AND_RESOLVE_SEPARATELY",
+      "canonical_name": "台湾联电杯职业围棋赛",
+      "existing_PROD_alias_matches": [],
+      "existing_PROD_catalog_matches": [],
+      "family_key": "tw_umc_pro",
+      "status": "PROPOSE_NEW_TYPE_REQUIRES_INDEPENDENT_DECISION"
+    }
+  ],
+  "pending_player_rebase": {
+    "approved_overlap_sha256": "56c67c43256b2560cb4572109d3af946c74379257604324e3e2ec0b8fa52ed3a",
+    "approved_slot_members_sha256": "3bcb302a5487b52b1556852a4aec1a4d690ee6f59933d1e4d0caded4ca2015ba",
+    "approved_slot_targets_sha256": {
+      "prod": "4f3ed01d8f752085a0cb569f880a02024e991b93e66beac250ed1ee5c4c34764",
+      "test": "60c11c1189b5c04dd2fa71bceca4d0313b4f8b665063b28e9b19c9788be1d00f"
+    },
+    "decision_file_sha256": "71ea900692f13ba6c499e13c9777d17c607a5a7721c5e469303ec34766cda684",
+    "decision_path": "docs/resource/kifu-player-existing17-independent-decision-astra-2026-10-04.json",
+    "event_candidate_overlap_slots": 26,
+    "event_held_overlap_slots": 1,
+    "overlap_albums": 27,
+    "overlap_slots": 27,
+    "player_context_held_overlap": [],
+    "player_held_overlap": [],
+    "rule": "After independently verified existing17 apply, rebaseline only these exact NULL-to-target player FK cells with pinned decision/applied-plan evidence, live target catalog binding and unchanged SGF/raw/date/source identities. Reject all other drift. TEST requires its own full capture; all 27 current PROD preimages are NULL.",
+    "status": "EXISTING17_APPROVED_BUT_NOT_AN_APPLY_RECEIPT_SNAPSHOT_PRECEDES_BATCH",
+    "target_bindings": {
+      "姜升旼": {
+        "prod": {
+          "canonical_name": "姜升旼",
+          "id": 398
+        },
+        "test": {
+          "canonical_name": "姜升旼",
+          "id": 399
+        }
+      },
+      "朴键昊": {
+        "prod": {
+          "canonical_name": "朴键昊",
+          "id": 145
+        },
+        "test": {
+          "canonical_name": "朴键昊",
+          "id": 146
+        }
+      },
+      "李昌锡": {
+        "prod": {
+          "canonical_name": "李昌锡",
+          "id": 193
+        },
+        "test": {
+          "canonical_name": "李昌锡",
+          "id": 194
+        }
+      },
+      "金升宰": {
+        "prod": {
+          "canonical_name": "金升宰",
+          "id": 146
+        },
+        "test": {
+          "canonical_name": "金升宰",
+          "id": 147
+        }
+      },
+      "金庭贤": {
+        "prod": {
+          "canonical_name": "金庭贤",
+          "id": 34
+        },
+        "test": {
+          "canonical_name": "金庭贤",
+          "id": 34
+        }
+      },
+      "高根台": {
+        "prod": {
+          "canonical_name": "高根台",
+          "id": 484
+        },
+        "test": {
+          "canonical_name": "高根台",
+          "id": 485
+        }
+      }
+    }
+  },
+  "priority_backlog": [
+    {
+      "albums": 1022,
+      "family_hint": "台湾友士杯十段赛",
+      "raw_values": 202,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    },
+    {
+      "albums": 846,
+      "family_hint": "中国衢州烂柯杯",
+      "raw_values": 192,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    },
+    {
+      "albums": 815,
+      "family_hint": "韩国KBS杯棋王战",
+      "raw_values": 280,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    },
+    {
+      "albums": 801,
+      "family_hint": "中国阿含桐山杯",
+      "raw_values": 154,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    },
+    {
+      "albums": 745,
+      "family_hint": "韩国GS加德士／LG精油",
+      "raw_values": 364,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    },
+    {
+      "albums": 403,
+      "family_hint": "台湾联电杯职业围棋赛",
+      "raw_values": 97,
+      "scope": "DISCOVERY_ONLY_NOT_APPROVED_MEMBERS"
+    }
+  ],
+  "status": "PRODUCER_CANDIDATES_ONLY_NOT_APPROVED_FOR_WRITE"
+}

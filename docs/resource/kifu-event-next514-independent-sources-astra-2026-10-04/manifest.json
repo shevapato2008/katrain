@@ -1,0 +1,178 @@
+[
+  {
+    "key": "cwi-cj-1976",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1976/index.html",
+    "error": "404 Client Error: Not Found for url: https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1976/index.html"
+  },
+  {
+    "key": "cwi-cj-1987",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1987/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1987/index.html",
+    "retrieved_utc": "2026-10-04T09:58:46.254406+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1987.html",
+    "file_sha256": "fddf3d501d31f2f749848b8d487286fc4da221355c883ab1814940f3a8328d8e",
+    "bytes": 11298,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1987.txt",
+    "text_sha256": "b6eff2b3b54493ae07436c755d67e20bb8faf22e4ae6d50005e579d24e8ff25d"
+  },
+  {
+    "key": "cwi-cj-1990",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1990/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1990/index.html",
+    "retrieved_utc": "2026-10-04T09:58:46.267634+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1990.html",
+    "file_sha256": "b0bb3cb7931d259b8333b006c47ac27f54ce7d7721bf3ce449910d3ce6a0d862",
+    "bytes": 11328,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1990.txt",
+    "text_sha256": "82ec6e039c79b7e8748690d4f6b398a60ad07432b0541a6b0b8d35ed24e8a4f8"
+  },
+  {
+    "key": "cwi-cj-main",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/index.html",
+    "retrieved_utc": "2026-10-04T09:58:46.664190+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-main.html",
+    "file_sha256": "85717989f55f04540c116cee7c22621cefe279139875f89d67775ab14aeca25b",
+    "bytes": 179430,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-main.txt",
+    "text_sha256": "c637fa83f47c10777c492fba2b89bdeb57c50a3da4ed541bb9d0191c53c45eea"
+  },
+  {
+    "key": "cwi-shuko",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJShuko/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJShuko/index.html",
+    "retrieved_utc": "2026-10-04T09:58:47.478086+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-shuko.html",
+    "file_sha256": "305bc02f3309f8795b4ccad7e7aa792c9a87eb69c6f13bdc8c42e76baa39519f",
+    "bytes": 15727,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-shuko.txt",
+    "text_sha256": "6b0620775058dd20772c4b1847dd4ec2765e2f038dd43bcfd0d0144ad64978d6"
+  },
+  {
+    "key": "olympic-go-history",
+    "url": "https://www.olympic.cn/sports/other/2003/0918/24504.html",
+    "error": "403 Client Error: Forbidden for url: https://www.olympic.cn/sports/other/2003/0918/24504.html"
+  },
+  {
+    "key": "bawang-contemporary-report",
+    "url": "https://cn.govopendata.com/renminribao/1994/06/07/4/",
+    "final_url": "https://cn.govopendata.com/renminribao/1994/06/07/4/",
+    "retrieved_utc": "2026-10-04T09:59:00.562189+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-contemporary-report.html",
+    "file_sha256": "abf36902ca59dbee655aee046a390bbfc01ccc04250c7b12073d23350aee50dd",
+    "bytes": 69973,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-contemporary-report.txt",
+    "text_sha256": "a9e1e646fdfde118b0334592dc62145712adf7ade224395a067e0e873b3af169"
+  },
+  {
+    "key": "bawang-fox-history",
+    "url": "https://foxwq.com/news/listid/id/16201.html",
+    "final_url": "https://foxwq.com/news/listid/id/16201.html",
+    "retrieved_utc": "2026-10-04T09:58:59.729670+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-fox-history.html",
+    "file_sha256": "dd21972cf3cee0eb5765dd56ca2067ecb392b11ae654db9a66cdfa10507ac4f6",
+    "bytes": 38183,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-fox-history.txt",
+    "text_sha256": "ed8957fa8a35c0acb139c065a6e427a39204f4ac707bbe4bb1e67e6b70e53f74"
+  },
+  {
+    "key": "xin-sport-official",
+    "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22729544/content.html",
+    "final_url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c22729544/content.html",
+    "retrieved_utc": "2026-10-04T09:58:47.727290+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-sport-official.html",
+    "file_sha256": "c5c7b9e158612359e4f8dcebf66bf4096cd0230354f545d59d3d51d2687138ca",
+    "bytes": 16230,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-sport-official.txt",
+    "text_sha256": "256c4ed9778c7a11fcfd3af03be8dab319e0b5dc0bd26d20cdabae41e167194d"
+  },
+  {
+    "key": "xin-fox-history",
+    "url": "https://www.foxwq.com/news/11524.html",
+    "final_url": "https://www.foxwq.com/news/11524.html",
+    "retrieved_utc": "2026-10-04T09:59:02.211798+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-fox-history.html",
+    "file_sha256": "d5b02ddb8945da8c83ce5c300331a8e4a2225545e83d33cdea2e5b6960d1f6e5",
+    "bytes": 100683,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-fox-history.txt",
+    "text_sha256": "0513ddbdab480b0be1da9a7088241ec121225a7170abc19b14226b1be72161b5"
+  },
+  {
+    "key": "xin-contemporary-1990",
+    "url": "https://rmrb.zhouenlai.info/%E4%BA%BA%E6%B0%91%E6%97%A5%E6%8A%A5%EF%BC%881946-2003%EF%BC%89/1990/12/1990-12-12.htm",
+    "final_url": "https://rmrb.zhouenlai.info/%E4%BA%BA%E6%B0%91%E6%97%A5%E6%8A%A5%EF%BC%881946-2003%EF%BC%89/1990/12/1990-12-12.htm",
+    "retrieved_utc": "2026-10-04T09:59:01.596884+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-contemporary-1990.html",
+    "file_sha256": "4d5ef83682ceba739468c6828926639e26dab7a7eb798e53fdf3bbdf0e2a0a10",
+    "bytes": 153011,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-contemporary-1990.txt",
+    "text_sha256": "b4716a8fe9a9bf0ca2b798827bba3a7074fb5b0ef6886f936dc244ade3fc5d86"
+  },
+  {
+    "key": "cwi-cj-1989",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1989/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1989/index.html",
+    "retrieved_utc": "2026-10-04T10:01:12.519442+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1989.html",
+    "file_sha256": "b443956769d8139370657469d3e6d52d22c985d7cf6916933317d7b1a1c1fd03",
+    "bytes": 11779,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1989.txt",
+    "text_sha256": "75613ab2c8bb42b32c388f9f5450a91bdcd551c3910ad07460ed04f5cfa4034c",
+    "previous_attempt": {
+      "key": "cwi-cj-1989",
+      "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1989/index.html",
+      "error": "HTTPSConnectionPool(host='homepages.cwi.nl', port=443): Max retries exceeded with url: /~aeb/go/games/games/CJGoExchange/1989/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host='homepages.cwi.nl', port=443) at 0x10587e5d0>, 'Connection to homepages.cwi.nl timed out. (connect timeout=30)'))"
+    }
+  },
+  {
+    "key": "cwi-cj-1991",
+    "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1991/index.html",
+    "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1991/index.html",
+    "retrieved_utc": "2026-10-04T10:01:12.532453+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1991.html",
+    "file_sha256": "0e24698d759dec4f9f6a0a052b30c8ec4f6dd60beb7ab3dc38e7fc28311f156b",
+    "bytes": 11956,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/cwi-cj-1991.txt",
+    "text_sha256": "ae3577cffd751ef515d28653a3c90740725f5b4e59117ca72be122719254d282",
+    "previous_attempt": {
+      "key": "cwi-cj-1991",
+      "url": "https://homepages.cwi.nl/~aeb/go/games/games/CJGoExchange/1991/index.html",
+      "error": "HTTPSConnectionPool(host='homepages.cwi.nl', port=443): Max retries exceeded with url: /~aeb/go/games/games/CJGoExchange/1991/index.html (Caused by ConnectTimeoutError(<HTTPSConnection(host='homepages.cwi.nl', port=443) at 0x10587e990>, 'Connection to homepages.cwi.nl timed out. (connect timeout=30)'))"
+    }
+  },
+  {
+    "key": "xin-final-1993",
+    "url": "https://www.foxwq.com/news/listid/id/11568.html",
+    "final_url": "https://www.foxwq.com/news/listid/id/11568.html",
+    "retrieved_utc": "2026-10-04T10:01:15.266821+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-final-1993.html",
+    "file_sha256": "5805f302497f9d6434f3ebce745d990ab598653d94c0d3b4848625a7df6d338f",
+    "bytes": 91349,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/xin-final-1993.txt",
+    "text_sha256": "5dab130ce37c5fe6726e9200a75ef2715293fc6a1b5b34ff64888b31c6d668e1"
+  },
+  {
+    "key": "bawang-third-contemporary",
+    "url": "https://www.rmrb.zhouenlai.info/%E4%BA%BA%E6%B0%91%E6%97%A5%E6%8A%A5%EF%BC%881946-2003%EF%BC%89/1996/06/1996-06-20.htm",
+    "final_url": "https://www.rmrb.zhouenlai.info/%E4%BA%BA%E6%B0%91%E6%97%A5%E6%8A%A5%EF%BC%881946-2003%EF%BC%89/1996/06/1996-06-20.htm",
+    "retrieved_utc": "2026-10-04T10:01:14.644163+00:00",
+    "status_code": 200,
+    "path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-third-contemporary.html",
+    "file_sha256": "82961552bf0a65e8632590ef64afb3ded562f6e630ad7510ab9a7135c488cfeb",
+    "bytes": 198679,
+    "text_path": "docs/resource/kifu-event-next514-independent-sources-astra-2026-10-04/bawang-third-contemporary.txt",
+    "text_sha256": "45985c1431b2a1bca5e5d4e08fdaa80704fd725942dd6bd689279300471d29b8"
+  }
+]

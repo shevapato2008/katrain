@@ -1,0 +1,291 @@
+{
+  "artifact_kind": "zh_ko_source_components_prepared_actual",
+  "approval_status": "source_inputs_only_not_candidate_approved",
+  "source_basis": "normative_zh_ko_v1",
+  "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+  "owner": {
+    "kind": "player",
+    "id": 5498,
+    "environment": "PROD readonly source reference; root will rebind TEST separately"
+  },
+  "scope": {
+    "modern_mainland": true,
+    "ordinary_mandarin": true,
+    "personal_name": true,
+    "status": "source_inputs_approved_fresh_owner_binding_pending",
+    "basis": "U-Go same-person Han+Latin profile with citizenship CHN plus exact Han name in the Chinese association professional roster; ordinary Hanyu Pinyin is a reviewer determination from complete published Latin form in this mainland Go context.",
+    "unresolved_reading_variants": []
+  },
+  "identity": {
+    "owner": {
+      "kind": "player",
+      "id": 5498,
+      "environment": "PROD readonly source reference; root will rebind TEST separately"
+    },
+    "original_name": "王宏伟",
+    "original_language": "zh-Hans",
+    "status": "source_identity_supported_owner_binding_pending",
+    "method": "cross_checked_official_roster_and_published_go_profile",
+    "basis": "CWA record CWA000406 has the exact Han name; U-Go profile /1923/ publishes the same Han/Latin name and CHN citizenship. This does not bind the local database owner ID.",
+    "capture": {
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "http_status": 200,
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9",
+      "body_bytes": 181403,
+      "body_file": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/cwa-roster.json",
+      "publisher": "Chinese Weiqi Association",
+      "source_role": "official_professional_roster_identity_context",
+      "fetched_at_utc": "2026-10-04T09:31:54.283371+00:00",
+      "locator": "$.data.Z02[94]",
+      "body_excerpt": "{\"playerNo\":\"CWA000406\",\"playerName\":\"王宏伟\",\"playerGrade\":\"Z02\",\"playerImage\":\"\",\"playerGender\":1,\"playerBirthday\":\"1985-01-07\",\"playerRating\":\"2215.00\"}"
+    },
+    "supporting_captures": [
+      {
+        "url": "https://db.u-go.net/?q=Wang+Hongwei",
+        "http_status": 200,
+        "body_sha256": "4a3ef8b3cd7563de46fbd5fcf4deaac25c307323228839f5c3ee1680beeda4ec",
+        "body_bytes": 23583,
+        "body_file": "docs/resource/kifu-zh-ko-firstbatch-20261009/captures/ugo-5498-search.html",
+        "publisher": "U-Go / GoGoD / Go4go database",
+        "source_role": "professional_go_search_same_person_han_latin",
+        "fetched_at_utc": "2026-10-08T21:50:11.330703+00:00",
+        "locator": "Raw HTML lines 218, 233, 245; result links /1923/; provenance legend lines 353-366.",
+        "body_excerpt": "218:                 <input class=\"textInput form-control\" style=\"width: 150px;\" id=\"id_search\" maxlength=\"100\" name=\"q\" value=\"Wang Hongwei\" type=\"text\" required />\n233: <a href=\"/1923/\"> Wang Hongwei<sup>4</sup></a>\n245: <span > 王宏伟<sup></sup></span></nobr>"
+      },
+      {
+        "url": "https://db.u-go.net/1923/",
+        "http_status": 200,
+        "body_sha256": "e8bd7f2f4910baac35b43889ba0f6455b3a27ed99d43a44d1ef0dddf42600df8",
+        "body_bytes": 3951,
+        "body_file": "docs/resource/kifu-zh-ko-firstbatch-20261009/captures/ugo-5498-profile.html",
+        "publisher": "U-Go / GoGoD / Go4go database",
+        "source_role": "published_player_profile_han_latin_citizenship",
+        "fetched_at_utc": "2026-10-08T21:50:12.700400+00:00",
+        "locator": "Raw HTML lines 75 (Latin), 82 (Han), 112 (Citizenship: CHN).",
+        "body_excerpt": "75: <span > Wang Hongwei<sup>4</sup> &bull;</span></nobr>\n82: <span > 王宏伟<sup></sup></span></nobr>\n112: <p>Citizenship: CHN</p>"
+      }
+    ],
+    "owner_binding_placeholder": {
+      "status": "not_validated_not_eligible",
+      "note": "Root must bind fresh post-592 CN/EN evidence, exact owner preimages, and absent KO target before candidate eligibility."
+    }
+  },
+  "reading": {
+    "published": "Wang Hongwei",
+    "system": "pinyin-syllables-v1",
+    "reading_words": [
+      [
+        "wang"
+      ],
+      [
+        "hong",
+        "wei"
+      ]
+    ],
+    "determination": "Complete ordinary Hanyu Pinyin spelling as published; surname/given boundary is the actual word break in the Latin source. Reviewer determination from mainland Han-name context; U-Go does not explicitly label the system Hanyu Pinyin.",
+    "capture": {
+      "url": "https://db.u-go.net/1923/",
+      "http_status": 200,
+      "body_sha256": "e8bd7f2f4910baac35b43889ba0f6455b3a27ed99d43a44d1ef0dddf42600df8",
+      "body_bytes": 3951,
+      "body_file": "docs/resource/kifu-zh-ko-firstbatch-20261009/captures/ugo-5498-profile.html",
+      "publisher": "U-Go / GoGoD / Go4go database",
+      "source_role": "published_player_profile_han_latin_citizenship",
+      "fetched_at_utc": "2026-10-08T21:50:12.700400+00:00",
+      "locator": "Raw HTML lines 75 (Latin), 82 (Han), 112 (Citizenship: CHN).",
+      "body_excerpt": "75: <span > Wang Hongwei<sup>4</sup> &bull;</span></nobr>\n82: <span > 王宏伟<sup></sup></span></nobr>\n112: <p>Citizenship: CHN</p>"
+    }
+  },
+  "rule": {
+    "capture": {
+      "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "http_status": 200,
+      "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "body_bytes": 456809,
+      "body_file": "docs/resource/kifu-nikl-cn-ko-research-20261009/captures/foreign-regulation-full.html",
+      "publisher": "National Institute of Korean Language",
+      "source_role": "official_normative_chinese_transcription_rule",
+      "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+      "locator": "Chapter 2 Table 5 raw HTML line 1573; note line 1578; contemporary Chinese personal-name scope Chapter 4 section 2 item 1 raw line 13706; tone treatment Chapter 3 Chinese section item 1 raw line 6666.",
+      "body_excerpt": "Official NIKL response pinned by body hash. Per-syllable locator mappings below cite the actual Table 5 rows.",
+      "table_excerpt": [
+        {
+          "raw_html_line": 1573,
+          "table_row_text_excerpt": "l ㄹ 설치성 舌齒聲 z [zi] ㅉ [쯔]"
+        },
+        {
+          "raw_html_line": 1573,
+          "table_row_text_excerpt": "yu (u) 위 ying (ing) 잉"
+        },
+        {
+          "raw_html_line": 1573,
+          "table_row_text_excerpt": "ou 어우 wei (ui) 웨이 (우이)"
+        },
+        {
+          "raw_html_line": 1573,
+          "table_row_text_excerpt": "ang 앙 wang (uang) 왕"
+        },
+        {
+          "raw_html_line": 1573,
+          "table_row_text_excerpt": "eng 엉 weng (ong) 웡 (웅)"
+        }
+      ]
+    },
+    "used_entries": [
+      {
+        "syllable": "wang",
+        "hangul": "왕",
+        "kind": "direct_table_entry",
+        "locator": "Table 5 finals: wang (uang) -> 왕, zero-initial form.",
+        "rule_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b"
+      },
+      {
+        "syllable": "hong",
+        "hangul": "훙",
+        "kind": "reviewed_composition",
+        "locator": "Table 5 initial h -> ㅎ plus final weng (ong) -> 웡 (웅); the parenthetical ong -> 웅 follows an initial, giving 훙. Table note at raw line 1578.",
+        "rule_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b"
+      },
+      {
+        "syllable": "wei",
+        "hangul": "웨이",
+        "kind": "direct_table_entry",
+        "locator": "Table 5 finals: wei (ui) -> 웨이 (우이); select unparenthesized zero-initial wei.",
+        "rule_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b"
+      }
+    ],
+    "output": "왕훙웨이",
+    "format": "joined_surname_given_project_format",
+    "display_spacing_note": "Project output joins surname and given name; no Chinese-specific NIKL spacing mandate is asserted."
+  },
+  "contrary_checks": [
+    {
+      "role": "original_go",
+      "query": "Wang Hongwei",
+      "search_scope": "U-Go professional Go player database search; literal Latin query recorded by captured query input and URL",
+      "status": "found_same_person_han_latin",
+      "capture": {
+        "url": "https://db.u-go.net/?q=Wang+Hongwei",
+        "http_status": 200,
+        "body_sha256": "4a3ef8b3cd7563de46fbd5fcf4deaac25c307323228839f5c3ee1680beeda4ec",
+        "body_bytes": 23583,
+        "body_file": "docs/resource/kifu-zh-ko-firstbatch-20261009/captures/ugo-5498-search.html",
+        "publisher": "U-Go / GoGoD / Go4go database",
+        "source_role": "professional_go_search_same_person_han_latin",
+        "fetched_at_utc": "2026-10-08T21:50:11.330703+00:00",
+        "locator": "Raw HTML lines 218, 233, 245; result links /1923/; provenance legend lines 353-366.",
+        "body_excerpt": "218:                 <input class=\"textInput form-control\" style=\"width: 150px;\" id=\"id_search\" maxlength=\"100\" name=\"q\" value=\"Wang Hongwei\" type=\"text\" required />\n233: <a href=\"/1923/\"> Wang Hongwei<sup>4</sup></a>\n245: <span > 王宏伟<sup></sup></span></nobr>"
+      },
+      "relevant_matches": [
+        "王宏伟 Wang Hongwei"
+      ],
+      "resolution": "Same-person row links to captured profile; no conflicting spelling or reading appears there.",
+      "conventional_gate_qualified": false
+    },
+    {
+      "role": "candidate_go",
+      "query": "왕훙웨이",
+      "additional_literal_queries": [
+        "王宏伟"
+      ],
+      "search_scope": "Literal scan of saved Daum Chinese Go player roster body; not a current or exhaustive web search",
+      "status": "found_matching_community_reference",
+      "capture": {
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "publisher": "Daum Cafe community roster (2012)",
+        "source_role": "community_reference_positive_usage_not_official_name_source",
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "locator": "Raw response line 893; exact matching Korean/Han row.",
+        "body_excerpt": "893: <P class=바탕글><SPAN style=\"FONT-FAMILY: 바탕; FONT-WEIGHT: bold\">왕훙웨이</SPAN><SPAN style=\"mso-fareast-font-family: 바탕\"> 王宏伟/王宏偉 </SPAN></P>"
+      },
+      "relevant_matches": [
+        "왕훙웨이 王宏伟"
+      ],
+      "resolution": "Known positive community reading matches the rule output. Retained as a positive reference; it is community evidence, not an official conventional-name source.",
+      "conventional_gate_qualified": false
+    },
+    {
+      "role": "candidate_go_official_roster",
+      "query": "왕훙웨이",
+      "search_scope": "KBA China player roster POST with exact candidate Hangul in the player-name field",
+      "status": "not_found_in_captured_response",
+      "capture": {
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "http_status": 200,
+        "body_sha256": "03e6b80aaa651d1c56d24e57aba21a10cb72ce21f8dcca15653b93c5c35f83a1",
+        "body_bytes": 3318,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-5498.body",
+        "publisher": "Korean Baduk Association (KBA)",
+        "source_role": "official_china_roster_exact_candidate_query",
+        "capture_time_note": "filesystem mtime 2026-10-09T05:23:26.952421+08:00; request start time was not persisted separately",
+        "request": {
+          "method": "POST",
+          "request_body": "pageNo=1&keyColumn=2&keyWord=%EC%99%95%ED%9B%99%EC%9B%A8%EC%9D%B4&etcKey=&etcKey2=A&etcKey3=",
+          "request_parameters": {
+            "pageNo": "1",
+            "keyColumn": "2 (Chinese roster)",
+            "keyWord": "왕훙웨이",
+            "etcKey": "",
+            "etcKey2": "A",
+            "etcKey3": ""
+          }
+        },
+        "locator": "Captured response preserves exact S_prpl_name input; no result/profile row is present.",
+        "body_excerpt": "\t<li class=\"on\"><button type=\"button\" onclick=\"pageMove_search4('2','왕훙웨이','','A')\">✔가나다순</button></li>\n\t<li ><button type=\"button\" onclick=\"pageMove_search4('2','왕훙웨이','','R')\">✔서열순</button></li>\n\t<input type=\"text\" placeholder=\"기사명\" class=\"player\" name=\"S_prpl_name\" value=\"왕훙웨이\" >\n\t\t<li><button type=\"button\"  onclick=\"pageMove_search4('1','왕훙웨이','','A')\">한국</button></li>\n\t\t<li><button type=\"button\" class=\"on\" onclick=\"pageMove_search4('2','왕훙웨이','','A')\">중국</button></li>\n\t\t<li><button type=\"button\"  onclick=\"pageMove_search4('3','왕훙웨이','','A')\">일본</button></li>\n\t\t<li><button type=\"button\"  onclick=\"pageMove_search4('4','왕훙웨이','','A')\">대만</button></li>\n\t\t<!--<li><button type=\"button\"  onclick=\"pageMove_search4('5','왕훙웨이','','A')\">기타</button></li>-->\n\t\t<li><button type=\"button\"  onclick=\"pageMove_search4('6','왕훙웨이','','A')\">북미/유럽</button></li>\n\t\t<li><button type=\"button\"  onclick=\"pageMove_search4('7','왕훙웨이','','A')\">은퇴</button></li>"
+      },
+      "relevant_matches": [],
+      "resolution": "No same-Hangul KBA profile row in this captured response. Capture note records filesystem mtime; request start time was not persisted. Bounded to this query/response."
+    },
+    {
+      "role": "candidate_go_professional_index",
+      "query": "왕훙웨이",
+      "additional_literal_queries": [
+        "王宏伟",
+        "Wang Hongwei"
+      ],
+      "search_scope": "Literal scan of saved TVBaduk China professional roster index body; bounded to this exact response",
+      "status": "not_found_in_this_capture",
+      "capture": {
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "http_status": 200,
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "publisher": "TVBaduk",
+        "source_role": "professional_go_china_roster_bounded_literal_scan",
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "locator": "Full captured China player index scanned literally for the proposed Hangul, original Han and published Pinyin; bounded to this response.",
+        "body_excerpt": "No occurrence of the proposed Hangul, original Han or published Pinyin was found in this saved China-index body; body hash pins the response."
+      },
+      "relevant_matches": [],
+      "resolution": "No proposed Hangul/Han/Pinyin occurrence found in this saved index. Bounded body scan, not a source-wide negative claim."
+    }
+  ],
+  "source_anchors": [],
+  "root_preimage_bindings": {
+    "status": "placeholder_not_validated_not_eligible",
+    "required": "Fresh current CN and EN name/evidence hashes, applied source batch status, owner creation/preimage identity and KO target preimage, supplied by root from new capture."
+  },
+  "provenance_notes": {
+    "source_captures_reused": true,
+    "new_website_fetches": false,
+    "web_search_global_negative_closure": false,
+    "candidate_signature_created": false,
+    "source_publications": {
+      "CWA": "official association professional roster context",
+      "KBA": "official Korean Baduk Association China roster; absence here does not erase Daum hit",
+      "TVBaduk": "professional Go roster; finite response scan only",
+      "U-Go": "Go database; Han/Latin and CHN profile",
+      "Daum": "community/reference roster positive usage only"
+    }
+  },
+  "prepared_at_utc": "2026-10-08T22:26:22Z",
+  "producer_model": "gpt-6-luna"
+}

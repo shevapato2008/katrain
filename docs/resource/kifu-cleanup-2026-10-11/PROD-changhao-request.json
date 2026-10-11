@@ -1,0 +1,17 @@
+{
+  "delete_ids": [],
+  "patches": [
+    {
+      "id": 40432,
+      "player_white": "常昊",
+      "white_player_id": 877,
+      "white_player_name": "常昊"
+    },
+    {
+      "id": 40556,
+      "player_black": "常昊",
+      "black_player_id": 877,
+      "black_player_name": "常昊"
+    }
+  ]
+}

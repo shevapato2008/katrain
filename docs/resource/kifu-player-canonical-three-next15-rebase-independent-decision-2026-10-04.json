@@ -1,0 +1,773 @@
+{
+  "format": "kifu-player-canonical-three-next15-rebase-independent-decision-v1",
+  "date": "2026-10-04",
+  "reviewer": "independent agent /root/three_player_event_rebase_decision",
+  "status": "PASS_EXACT_19_OPPONENT_FK_POSTIMAGES_ONLY",
+  "review_actions": {
+    "local_artifact_reads_only": true,
+    "database_reads": false,
+    "database_writes": false,
+    "code_edits": false
+  },
+  "authorization_scope": "Accept only the 19 already applied next15 opponent-FK postimages as current plan preimages. Preserve all original three-player approvals, HOLDs and ancillary preimages. No new write authorization.",
+  "input_pins": {
+    "next15_decision": {
+      "path": "docs/resource/kifu-player-next15-independent-decision-astra-2026-10-04.json",
+      "file_sha256": "a3f3f0661de87d949216bd23269016c2e920d1540ae466392a1ce23b88726560"
+    },
+    "next15_applied_record": {
+      "path": "docs/resource/kifu-player-next15-applied-2026-10-04.md",
+      "file_sha256": "5a815e46041e2deccf470274a9ed000d861ed645285218c3f4affa2ffaa0bb13"
+    },
+    "prior_nine_event_rebase": {
+      "path": "docs/resource/kifu-player-canonical-three-next-event-rebase-independent-decision-2026-10-04.json",
+      "file_sha256": "aa2e104ca58ee2f884a1566fe38b664d74298960ed3616af1d51c6b3625d78b9"
+    }
+  },
+  "environments": {
+    "TEST": {
+      "database": "katrain_db",
+      "player_review": {
+        "path": "docs/resource/kifu-player-exact-canonical-three-frozen-review-test-2026-10-04.json",
+        "file_sha256": "e2e4599263d88cf931cf9e0ac454b1f46fe7353fbc11af918c82ff7d8f8d2092",
+        "approved_slot_sha256": "497e6881cd0d6d50b46e05b89667f7fbb0f25d82f1d28f01137510a9574649f8",
+        "held_slot_sha256": "c115cd6edf3ddbc028802fdd5116e43ea3c6a133fdf9cb86fc809d453c8fce68"
+      },
+      "next15_plan": {
+        "path": "docs/resource/kifu-player-next15-TEST-plan-2026-10-04.json.gz",
+        "file_sha256": "c4d65f3a1a0fab1462bb2314b7e8462bc32ec564c64d33219996bdfc55ed0ef5"
+      },
+      "targets": {
+        "周俊勋": {
+          "id": 12553,
+          "canonical_name": "周俊勋"
+        },
+        "李志贤": {
+          "id": 152,
+          "canonical_name": "李志贤"
+        },
+        "沟上知亲": {
+          "id": 276,
+          "canonical_name": "溝上知親"
+        },
+        "岛村俊广": {
+          "id": 10302,
+          "canonical_name": "岛村俊宏"
+        },
+        "崔明勋": {
+          "id": 189,
+          "canonical_name": "崔明勋"
+        }
+      },
+      "candidate_slot_count": 19,
+      "candidate_album_count": 19,
+      "three_player_approved_slots_on_changed_albums": 15,
+      "three_player_held_slots_on_changed_albums": 4,
+      "new_delta_sha256": "96067e441e438dfbff41091169017edac428da12c39bf85cce5978ffff7d2e1d",
+      "next15_slot_held_intersection": [],
+      "next15_whole_raw_held_intersection": [
+        [
+          22114,
+          "black"
+        ],
+        [
+          66115,
+          "black"
+        ],
+        [
+          143310,
+          "black"
+        ],
+        [
+          143324,
+          "white"
+        ],
+        [
+          143328,
+          "white"
+        ],
+        [
+          143343,
+          "black"
+        ],
+        [
+          143345,
+          "black"
+        ],
+        [
+          143353,
+          "black"
+        ],
+        [
+          143363,
+          "black"
+        ],
+        [
+          143364,
+          "black"
+        ],
+        [
+          143368,
+          "white"
+        ]
+      ],
+      "prior_delta_album_intersection": [],
+      "permitted_ancillary_deltas": [],
+      "frozen_ancillary_counts": {
+        "catalog_preimage": 3,
+        "catalog_alias_preimage": 2,
+        "catalog_names_preimage": 15,
+        "raw_staging_preimage": 3,
+        "album_sources_preimage": 2107,
+        "sources_preimage": 1
+      }
+    },
+    "PROD": {
+      "database": "katrain_prod_20260725",
+      "player_review": {
+        "path": "docs/resource/kifu-player-exact-canonical-three-frozen-review-prod-2026-10-04.json",
+        "file_sha256": "49379c3cca58c3a65b732c7775c22a251d04455d589847f4a9ec03be58f59ef6",
+        "approved_slot_sha256": "b205a2925dfa64e18343583936f9670f5f48c02b8ae5d7d704e6b09af13d3632",
+        "held_slot_sha256": "26df0a8c9279d4878a27cd881a1b1b3c2286a38d33b79514eb2184c77e920ccf"
+      },
+      "next15_plan": {
+        "path": "docs/resource/kifu-player-next15-PROD-plan-2026-10-04.json.gz",
+        "file_sha256": "eccf4a8a38595ceea6d33d8a33f719818560d3cb62e189e0bca9ac06ea2b0076"
+      },
+      "targets": {
+        "周俊勋": {
+          "id": 6784,
+          "canonical_name": "周俊勋"
+        },
+        "李志贤": {
+          "id": 151,
+          "canonical_name": "李志贤"
+        },
+        "沟上知亲": {
+          "id": 275,
+          "canonical_name": "溝上知親"
+        },
+        "岛村俊广": {
+          "id": 4511,
+          "canonical_name": "岛村俊宏"
+        },
+        "崔明勋": {
+          "id": 188,
+          "canonical_name": "崔明勋"
+        }
+      },
+      "candidate_slot_count": 19,
+      "candidate_album_count": 19,
+      "three_player_approved_slots_on_changed_albums": 15,
+      "three_player_held_slots_on_changed_albums": 4,
+      "new_delta_sha256": "d78586198a41a7f2bda21793c13e730ed1581bfb0c831a2f7808c8f0f9ef35b2",
+      "next15_slot_held_intersection": [],
+      "next15_whole_raw_held_intersection": [
+        [
+          22114,
+          "black"
+        ],
+        [
+          66115,
+          "black"
+        ],
+        [
+          143310,
+          "black"
+        ],
+        [
+          143324,
+          "white"
+        ],
+        [
+          143328,
+          "white"
+        ],
+        [
+          143343,
+          "black"
+        ],
+        [
+          143345,
+          "black"
+        ],
+        [
+          143353,
+          "black"
+        ],
+        [
+          143363,
+          "black"
+        ],
+        [
+          143364,
+          "black"
+        ],
+        [
+          143368,
+          "white"
+        ]
+      ],
+      "prior_delta_album_intersection": [],
+      "permitted_ancillary_deltas": [],
+      "frozen_ancillary_counts": {
+        "catalog_preimage": 3,
+        "catalog_alias_preimage": 2,
+        "catalog_names_preimage": 10,
+        "raw_staging_preimage": 3,
+        "album_sources_preimage": 2107,
+        "sources_preimage": 1
+      }
+    }
+  },
+  "allowed_deltas": [
+    {
+      "album_id": 49152,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "崔明勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 189,
+        "PROD": 188
+      },
+      "date_played": "1998-06-18",
+      "player_black": "工藤纪夫",
+      "player_white": "崔明勋",
+      "sgf_sha256": "1d52d8eb9897743d9c95fba09781549dae238930689af954149f5094943ad491",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "工藤纪夫",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "42a8e4c0db0f5682ad6e3eab80ded9ea6a698a18f656722cad0af84cfef84569",
+        "PROD": "42a8e4c0db0f5682ad6e3eab80ded9ea6a698a18f656722cad0af84cfef84569"
+      }
+    },
+    {
+      "album_id": 49171,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "崔明勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 189,
+        "PROD": 188
+      },
+      "date_played": "1997-04-12",
+      "player_black": "崔明勋",
+      "player_white": "周鹤洋",
+      "sgf_sha256": "a065cda93351da22876703a6702cf05d87b93bd1a645a6feaba5ab72daa13e2e",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "1178b463fb4fdf5f188316b5005317af0dcf39121f4da5cefd790662c55af69d",
+        "PROD": "1178b463fb4fdf5f188316b5005317af0dcf39121f4da5cefd790662c55af69d"
+      }
+    },
+    {
+      "album_id": 49198,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "崔明勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 189,
+        "PROD": 188
+      },
+      "date_played": "1998-01-21",
+      "player_black": "崔明勋",
+      "player_white": "周鹤洋",
+      "sgf_sha256": "a00e43b7c5e6e8cbed7725788e2ba35f66b21f8a9cd40d78d567e7528984a4ec",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "b2c9ed4ba19457ab633f57607d9124f921e5586bfcb6d5bbfc96c3835e19c915",
+        "PROD": "b2c9ed4ba19457ab633f57607d9124f921e5586bfcb6d5bbfc96c3835e19c915"
+      }
+    },
+    {
+      "album_id": 55993,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "岛村俊广",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 10302,
+        "PROD": 4511
+      },
+      "date_played": "1978-01-19",
+      "player_black": "工藤纪夫",
+      "player_white": "岛村俊广",
+      "sgf_sha256": "6f8d0486662abe9e275b9277fcfc6e4b1005a4b4f569c0af3a4dcd61d3e29686",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "工藤纪夫",
+        "status": "HOLD",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "1c23a9fb582b167b035a71ed4bac56f4cfd14b4f673e1d2668e1d26e5041991e",
+        "PROD": "1c23a9fb582b167b035a71ed4bac56f4cfd14b4f673e1d2668e1d26e5041991e"
+      }
+    },
+    {
+      "album_id": 56239,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "岛村俊广",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 10302,
+        "PROD": 4511
+      },
+      "date_played": "1977-01-06",
+      "player_black": "工藤纪夫",
+      "player_white": "岛村俊广",
+      "sgf_sha256": "e305f9b34d69d3ca78d24589f4e5e8fddea88e78fe3f4abadca1a4c49ca8158d",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "工藤纪夫",
+        "status": "HOLD",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "f4f57556a5e58e837837f04a38965f1d05bdece43a3c87c92a838b40b04ec9cf",
+        "PROD": "f4f57556a5e58e837837f04a38965f1d05bdece43a3c87c92a838b40b04ec9cf"
+      }
+    },
+    {
+      "album_id": 56605,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "岛村俊广",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 10302,
+        "PROD": 4511
+      },
+      "date_played": "1975-02-27",
+      "player_black": "岛村俊广",
+      "player_white": "工藤纪夫",
+      "sgf_sha256": "4fb78efdf6e20bb205e2ed6d651f6d8a14c27f413b15a186c89d8e86914d049d",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "工藤纪夫",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "52e661c527ee33142c4b06a358ddd71f46f88f05d5ef9ec106b7239dd45c9473",
+        "PROD": "52e661c527ee33142c4b06a358ddd71f46f88f05d5ef9ec106b7239dd45c9473"
+      }
+    },
+    {
+      "album_id": 56729,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "岛村俊广",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 10302,
+        "PROD": 4511
+      },
+      "date_played": "1972-06-01",
+      "player_black": "岛村俊广",
+      "player_white": "工藤纪夫",
+      "sgf_sha256": "5ebf3f4319a6c1245907c4b976afd92e5aaed832ae306063f427f1f32548975d",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "工藤纪夫",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "58f5aaf046294210010a55816b31de3d6a5e7a42345d71fa120e3eb46632a691",
+        "PROD": "58f5aaf046294210010a55816b31de3d6a5e7a42345d71fa120e3eb46632a691"
+      }
+    },
+    {
+      "album_id": 56787,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "岛村俊广",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 10302,
+        "PROD": 4511
+      },
+      "date_played": "1972-05-18",
+      "player_black": "工藤纪夫",
+      "player_white": "岛村俊广",
+      "sgf_sha256": "4582468f398d670bdd1684a6bc3a39ddc8a5e83889797d4d0896132ff80db977",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "工藤纪夫",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "6384f5c5582462ee530e5913501505cf7138ec49dd13ec079995deac7889fc2b",
+        "PROD": "6384f5c5582462ee530e5913501505cf7138ec49dd13ec079995deac7889fc2b"
+      }
+    },
+    {
+      "album_id": 66180,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "2014-03-20",
+      "player_black": "工藤纪夫",
+      "player_white": "沟上知亲",
+      "sgf_sha256": "38c45fab8819122d8d24abd5fd74530a3e1b12459907f00b62e73c8ac8c99ec6",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "工藤纪夫",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "d1645f24df06616f12561dd3d43e92d8a20c6a755780e1d8c8b00df952586099",
+        "PROD": "d1645f24df06616f12561dd3d43e92d8a20c6a755780e1d8c8b00df952586099"
+      }
+    },
+    {
+      "album_id": 66984,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "2004-08-21",
+      "player_black": "沟上知亲",
+      "player_white": "周鹤洋",
+      "sgf_sha256": "72c85ab73bab07f8a63e6402f421e65239efbc16071cb13b26345fdc0c76da8f",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "7794795c788e70c6d987b96b8facc192b2a5ca1e5f1cc07cb3d679cbb581e2b6",
+        "PROD": "7794795c788e70c6d987b96b8facc192b2a5ca1e5f1cc07cb3d679cbb581e2b6"
+      }
+    },
+    {
+      "album_id": 67004,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "2007-08-09",
+      "player_black": "沟上知亲",
+      "player_white": "赵善津",
+      "sgf_sha256": "b266abf0da520a6b2fedce8bca90b08c8a9f7b18ec73b424affe551cfe1076a6",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "赵善津",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "391cdf2d87bffe2c18f3dc3b7b51b2cbdb581ff20ccd09715603dc1ea6cd386d",
+        "PROD": "391cdf2d87bffe2c18f3dc3b7b51b2cbdb581ff20ccd09715603dc1ea6cd386d"
+      }
+    },
+    {
+      "album_id": 67120,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "2007-11-15",
+      "player_black": "赵善津",
+      "player_white": "沟上知亲",
+      "sgf_sha256": "7a7ff8e3c516caf1da46c66e242951cad05b0ec6eaa2738fb2aa139bdfed9063",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "赵善津",
+        "status": "HOLD",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "d1feac5807633a524a2ceb39189df4f568603c8a65b1b6a69c282e75b3988ef1",
+        "PROD": "d1feac5807633a524a2ceb39189df4f568603c8a65b1b6a69c282e75b3988ef1"
+      }
+    },
+    {
+      "album_id": 67951,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "2021-04-05",
+      "player_black": "沟上知亲",
+      "player_white": "赵善津",
+      "sgf_sha256": "093063da1a310cc01e81936d4cec3a2c7d57c11aa50301561dcd1fa53c659249",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "赵善津",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "67b5fb1481610e7c54c5670de06c7b703a71768bbb583800a136960af3eb32d0",
+        "PROD": "67b5fb1481610e7c54c5670de06c7b703a71768bbb583800a136960af3eb32d0"
+      }
+    },
+    {
+      "album_id": 68306,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "沟上知亲",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 276,
+        "PROD": 275
+      },
+      "date_played": "1993-08-24",
+      "player_black": "周鹤洋",
+      "player_white": "沟上知亲",
+      "sgf_sha256": "62a8071b0bfde421cce8724faf39325c20dadfd8c4ca36abf9c319eeee4b96f1",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "d65a6d5c33efc3400611ed46a5363717ad644804482516f8883411957d74c230",
+        "PROD": "d65a6d5c33efc3400611ed46a5363717ad644804482516f8883411957d74c230"
+      }
+    },
+    {
+      "album_id": 104900,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "李志贤",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 152,
+        "PROD": 151
+      },
+      "date_played": "2012-02-28",
+      "player_black": "周鹤洋",
+      "player_white": "李志贤",
+      "sgf_sha256": "96c937606c635fa58da80cc7d57f2ce9e368df4ddfebe7b9144a700c0bd46a47",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "b130dd7428ec25084bf206052c47998bbc93ae770e0f6269815cd1ac604165b4",
+        "PROD": "b130dd7428ec25084bf206052c47998bbc93ae770e0f6269815cd1ac604165b4"
+      }
+    },
+    {
+      "album_id": 148433,
+      "side": "black",
+      "column": "black_player_id",
+      "raw_name": "周俊勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 12553,
+        "PROD": 6784
+      },
+      "date_played": "2005-12-20",
+      "player_black": "周俊勋",
+      "player_white": "周鹤洋",
+      "sgf_sha256": "f020b90ff7caa5b2fac45f704d45f8167bbefe3d4052c8917cd57ff744f077b1",
+      "three_player_opposite_slot": {
+        "side": "white",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "b52b40911293a8a391f177795e0cfae6b778fe8b04354aaeeb05c1298d98b917",
+        "PROD": "b52b40911293a8a391f177795e0cfae6b778fe8b04354aaeeb05c1298d98b917"
+      }
+    },
+    {
+      "album_id": 148435,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "周俊勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 12553,
+        "PROD": 6784
+      },
+      "date_played": "2009-05-30",
+      "player_black": "周鹤洋",
+      "player_white": "周俊勋",
+      "sgf_sha256": "7d5b7994b8b8adb6117bd92a14d7dc58d6a4c71e21f95b8a73558ad9ab6d79ea",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "dab84395b15705f18d984a7b16686923c7a24c05313510683e5063e2cb54e9c0",
+        "PROD": "dab84395b15705f18d984a7b16686923c7a24c05313510683e5063e2cb54e9c0"
+      }
+    },
+    {
+      "album_id": 148440,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "周俊勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 12553,
+        "PROD": 6784
+      },
+      "date_played": "1998-02-16",
+      "player_black": "周鹤洋",
+      "player_white": "周俊勋",
+      "sgf_sha256": "4e3086f450db8a1e872175f52bfdd54823315b1b31cf0b2ec7fbe26465fecf17",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "周鹤洋",
+        "status": "HOLD",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "2b53fe28fe9b874776970463b1c94213454c2f272db0f0cfff5011b5c8866c07",
+        "PROD": "2b53fe28fe9b874776970463b1c94213454c2f272db0f0cfff5011b5c8866c07"
+      }
+    },
+    {
+      "album_id": 148444,
+      "side": "white",
+      "column": "white_player_id",
+      "raw_name": "周俊勋",
+      "frozen_preimage": null,
+      "required_current_postimage": {
+        "TEST": 12553,
+        "PROD": 6784
+      },
+      "date_played": "1992-08-01",
+      "player_black": "周鹤洋",
+      "player_white": "周俊勋",
+      "sgf_sha256": "ff52b52b40f77d651dc68d37d42f11440d171e8efd666c6b5854df1efffb11b8",
+      "three_player_opposite_slot": {
+        "side": "black",
+        "raw_name": "周鹤洋",
+        "status": "approved",
+        "frozen_fk": null
+      },
+      "frozen_album_row_sha256": {
+        "TEST": "65e098b2568a3e860efea753bfae4516d6463a9611cfe70741b6726559ff53d6",
+        "PROD": "65e098b2568a3e860efea753bfae4516d6463a9611cfe70741b6726559ff53d6"
+      }
+    }
+  ],
+  "scope_preserved": {
+    "approved_player_slots_per_environment": 1529,
+    "held_player_slots_per_environment": 580,
+    "frozen_albums": 2105,
+    "three_player_slot_overlap_with_next15_delta_cells": [],
+    "three_player_hold_slots_on_changed_albums": [
+      [
+        55993,
+        "black"
+      ],
+      [
+        56239,
+        "black"
+      ],
+      [
+        67120,
+        "black"
+      ],
+      [
+        148440,
+        "black"
+      ]
+    ],
+    "next15_whole_raw_hold_slots_in_frozen_scope": 11,
+    "next15_slot_holds_in_frozen_scope": 0,
+    "hold_release_allowed": false,
+    "ancillary_delta_count": 0
+  },
+  "combined_delta_counts": {
+    "prior_cells": 64,
+    "new_opponent_fk_cells": 19,
+    "total_cells": 83,
+    "event_id_cells": 56,
+    "opponent_player_fk_cells": 27,
+    "prior_albums": 62,
+    "new_albums": 19,
+    "total_albums": 81
+  },
+  "catalog_findings": {
+    "three_player_target_catalog_ids_affected": [],
+    "three_player_alias_display_name_or_raw_staging_rows_affected": [],
+    "source_rows_or_album_source_associations_affected": [],
+    "evidence": "next15 inserts six unrelated canonical players; reuses seven existing IDs without updating their canonical/alias/name rows; its approved/raw target sets are disjoint from the three-player targets. This follows the pinned plans, applied record and inspected next15 writer; no live ancillary equality is asserted by this offline review.",
+    "zhou_junxun_binding": "Applied record gives TEST 12552..12557 / PROD 6783..6788 in insertion order 林士勋,周俊勋,黄世元,张凯馨,韩尚勋,张哲豪; execution owner confirmed 周俊勋=12553/6784. Require live exact catalog identity too.",
+    "runtime_catalog_guard": "Require the five environment-specific (id,canonical_name) pairs exactly as environments.targets. Preserve old canonical 溝上知親 and 岛村俊宏; this decision does not rename them.",
+    "permitted_three_player_ancillary_deltas": []
+  },
+  "required_checks": [
+    "Pin this decision, next15 independent decision, each environment compressed plan bytes and applied record. Keep all previous pins unchanged. Require next15 format/environment/database, review_sha256 and exact counts 5423 candidate,31 held,811 whole-raw held,0 protected.",
+    "Derive the intersection from all next15 candidate_slots and all frozen three-player album IDs. Require exactly these 19 (album_id,side) pairs and the listed raw names, not only the count or matching raw text.",
+    "Require every intersecting side absent from both three-player candidate_slots and held_slots. Require opposite side present in exactly one original three-player partition. The four specified opposite HOLDs remain NULL; no next15 HOLD is released.",
+    "For each exact candidate row [album_id,side,raw,date,black,white,duplicate,sources,old_fk], require old_fk NULL, frozen same-side FK NULL, exact frozen raw/date/both names/duplicate. Check plan.sgf record [album_id,sha256,source_path,event] against frozen album. Reconstruct and match source rows from frozen album_sources_preimage and sources_preimage, including source_key.",
+    "Require next15 identity entry approved_exact_identity_subject_to_slot_guards. Four existing target IDs come from environment_target and target_players in the pinned plan; 周俊勋 comes only from this committed-ID binding (12553/6784). Require current target catalog canonical names exactly; no new player creation in the three-player runner.",
+    "Reject any overlap with an existing permitted delta key; the exact 19 album IDs are also disjoint from all 62 earlier delta albums. Append only the specified player-ID field NULL-to-target pairs. Final combined cardinality is 83 cells:56 event fields+27 opponent FKs,81 albums.",
+    "Capture must require every current opponent FK equal to its listed target. Keep all other album values equal to frozen review plus the previously approved 64 cells, and keep all ancillary tables exactly equal to the original review. Retain full SGF, source, dates, event and target-player catalog guards.",
+    "Record the new pins and five target catalog bindings in each fresh plan. Use the existing kifu_players lock boundary to stabilize new catalog guards in dry/apply, and repeat the guard in independent posttransaction verification.",
+    "Keep write selection limited to the original 1529 three-player NULL slots; all 580 three-player HOLDs stay NULL. Re-capture and dry-run each environment, preserving the existing compare-and-swap, full scope, rollback and posttransaction checks."
+  ],
+  "implementation_changes": [
+    {
+      "file": "katrain/web/kifu/player_canonical_three.py",
+      "change": "Add pinned next15 evidence and an exact 19-cell opponent delta map; validate the intersections/preimages above, then append them after the existing64 checks and require final83/56/27/81 counts."
+    },
+    {
+      "file": "katrain/web/kifu/player_canonical_three.py",
+      "change": "Add a narrow five-pair environment-specific player catalog guard to capture and final verification; existing kifu_players lock already provides the required concurrency boundary. Keep TABLES and frozen ancillary equality unchanged."
+    },
+    {
+      "file": "tests/web_ui/test_kifu_player_canonical_three.py",
+      "change": "Extend the exact allowed-delta assertion to83. Check each environment target mapping; reject a stale/wrong next15 postimage, altered source/SGF preimage, wrong new-player catalog identity and a mutation of one of the four opposite HOLD slots. Reuse existing CAS/rollback coverage."
+    }
+  ],
+  "risk": "The catalog target and side must be exact: only the opponent FK is a permitted intervening change. Existing three-player HOLDs and the 11 小松英树 next15 whole-raw HOLD slots remain protected; unrelated drift fails capture."
+}

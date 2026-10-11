@@ -1,0 +1,415 @@
+{
+  "format": "kifu-player-nonhan-ranks-281-300-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 281–300; earlier ranks excluded",
+  "snapshot_note": "TEST/PROD read-only repeatable-read SQL on 2026-10-04: all 20 exact raw counts identical and all FK NULL; current catalog IDs read separately in both environments. Importer must rebind live ID/name and FK before writing.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 627,
+    "approved_raw_values": 18,
+    "approved_slots_each_environment": 566,
+    "held_raw_values": 2,
+    "held_slots_each_environment": 61,
+    "new_catalog_players": 9
+  },
+  "rows": [
+    {
+      "rank": 281,
+      "raw_value": "KatoShin",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "1952-03-20",
+      "canonical_chinese_name": "加藤信",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4053
+        ],
+        "test": [
+          9849
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "与第145名 Kato Shin 同人，沿用已核实 ID。"
+    },
+    {
+      "rank": 282,
+      "raw_value": "OyamaKunio",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1970-03-01",
+      "last_raw_date": "1999-02-18",
+      "canonical_chinese_name": "大山国夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4246
+        ],
+        "test": [
+          10041
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列大山国夫/Oyama Kunio。"
+    },
+    {
+      "rank": 283,
+      "raw_value": "Tsutsui Katsumi",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1953-05-13,14",
+      "last_raw_date": "1978-09-13",
+      "canonical_chinese_name": "筒井胜美",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5705
+        ],
+        "test": [
+          11476
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000189.htm",
+      "identity_note": "日本棋院本人资料直接列筒井勝美/TSUTSUI Katsumi。"
+    },
+    {
+      "rank": 284,
+      "raw_value": "Hayashi Genbi",
+      "slots_each_environment": 32,
+      "current_unlinked_slots_each_environment": 32,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1795-06-01",
+      "last_raw_date": "c. 1810",
+      "canonical_chinese_name": "林元美",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/teach/history/history02.html",
+      "identity_note": "日本棋院列十一世林元美；CWI 丈和棋谱列 Hayashi Genbi。"
+    },
+    {
+      "rank": 285,
+      "raw_value": "Kikuchi Yasuro",
+      "slots_each_environment": 32,
+      "current_unlinked_slots_each_environment": 32,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1952",
+      "last_raw_date": "1978-06-11",
+      "canonical_chinese_name": "菊池康郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list21.html",
+      "identity_note": "日本棋院殿堂列业余棋手菊池康郎；1950年代赛事年代吻合。"
+    },
+    {
+      "rank": 286,
+      "raw_value": "Suzuki Hideko",
+      "slots_each_environment": 32,
+      "current_unlinked_slots_each_environment": 32,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1928-03-07,08",
+      "last_raw_date": "1941-10-01,02",
+      "canonical_chinese_name": "铃木秀子",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列鈴木秀子/Suzuki Hideko，活跃于1928–1941。"
+    },
+    {
+      "rank": 287,
+      "raw_value": "Takeda Misawo",
+      "slots_each_environment": 32,
+      "current_unlinked_slots_each_environment": 32,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-09-28",
+      "last_raw_date": "1978-12-06",
+      "canonical_chinese_name": "武田美佐绪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000188.htm",
+      "identity_note": "日本棋院直接列武田みさを/TAKEDA Misawo；Go Ratings 同人页面采用汉字译写“武田美佐绪”，留日文原名作别名。",
+      "additional_evidence_urls": [
+        "https://www.goratings.org/ja/players/2074.html"
+      ]
+    },
+    {
+      "rank": 288,
+      "raw_value": "YiYeong-sin",
+      "slots_each_environment": 32,
+      "current_unlinked_slots_each_environment": 32,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1993-12-20",
+      "last_raw_date": "2003-05-07",
+      "canonical_chinese_name": "李英信",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5078
+        ],
+        "test": [
+          10860
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000131",
+      "identity_note": "韩国棋院直接列이영신/李英信，1990入段。"
+    },
+    {
+      "rank": 289,
+      "raw_value": "BaekSeongHo",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-11-23",
+      "last_raw_date": "1999-12-03",
+      "canonical_chinese_name": "白成豪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5608
+        ],
+        "test": [
+          11381
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000010",
+      "identity_note": "韩国棋院直接列백성호/白成豪。"
+    },
+    {
+      "rank": 290,
+      "raw_value": "Hayashi Yugen",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1758-12-17",
+      "last_raw_date": "1787-12-26",
+      "canonical_chinese_name": "林祐元",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html",
+      "identity_note": "日本棋院历代家元表列八世林門入（祐元）；1758–1787棋谱吻合。"
+    },
+    {
+      "rank": 291,
+      "raw_value": "Honinbo Dochi",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1703-01-11",
+      "last_raw_date": "1723-08-01",
+      "canonical_chinese_name": "本因坊道知",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html",
+      "identity_note": "日本棋院历代家元表列五世本因坊道知。"
+    },
+    {
+      "rank": 292,
+      "raw_value": "MiyamotoYoshihisa",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1963-02-21",
+      "last_raw_date": "2005-01-13",
+      "canonical_chinese_name": "宫本义久",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列宮本義久/Miyamoto Yoshihisa；1963–2005棋谱吻合。"
+    },
+    {
+      "rank": 293,
+      "raw_value": "SoYokoku",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1992-05-28",
+      "last_raw_date": "2005-04-14",
+      "canonical_chinese_name": "苏耀国",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列蘇耀国/So Yokoku；目录有苏耀国167/168与蘇耀国316/317两个现存 ID，先去重。"
+    },
+    {
+      "rank": 294,
+      "raw_value": "TainakaShin",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "1981-03-26",
+      "canonical_chinese_name": "鲷中新",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6642
+        ],
+        "test": [
+          12411
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "与第169名 Tainaka Shin 同人；两库新 ID 已出现，沿用。"
+    },
+    {
+      "rank": 295,
+      "raw_value": "Watanabe Shokichi",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1929-03-27",
+      "last_raw_date": "1978-01-26",
+      "canonical_chinese_name": "渡边升吉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5410
+        ],
+        "test": [
+          11185
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列渡辺昇吉/Watanabe Shokichi。"
+    },
+    {
+      "rank": 296,
+      "raw_value": "金寅KimIn",
+      "slots_each_environment": 31,
+      "current_unlinked_slots_each_environment": 31,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-04-19",
+      "last_raw_date": "1992-01-07",
+      "canonical_chinese_name": "金寅",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6139
+        ],
+        "test": [
+          11907
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://archives.baduk.or.kr/archives/record/relic_list4.asp",
+      "identity_note": "与第224名 KimIn 同人，韩国棋院档案列金寅。"
+    },
+    {
+      "rank": 297,
+      "raw_value": "Fujita Toyojiro",
+      "slots_each_environment": 30,
+      "current_unlinked_slots_each_environment": 30,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1925-06-19",
+      "last_raw_date": "1940-04-10",
+      "canonical_chinese_name": "藤田丰次郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列藤田豊次郎/Fujita Toyojiro。"
+    },
+    {
+      "rank": 298,
+      "raw_value": "Higuchi Kenryo",
+      "slots_each_environment": 30,
+      "current_unlinked_slots_each_environment": 30,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1883-10-28",
+      "last_raw_date": "1887-05-08",
+      "canonical_chinese_name": "樋口贤良（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/Shusaku-number/shusaku-number.html",
+      "identity_note": "CWI 只见 Higuchi Kenryo 罗马字，未找到可靠汉字姓名，暂缓。"
+    },
+    {
+      "rank": 299,
+      "raw_value": "IshikuraNoboru",
+      "slots_each_environment": 30,
+      "current_unlinked_slots_each_environment": 30,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1981-03-25",
+      "last_raw_date": "2004-12-23",
+      "canonical_chinese_name": "石仓升",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000142.htm",
+      "identity_note": "日本棋院本人资料直接列石倉昇/Ishikura Noboru。"
+    },
+    {
+      "rank": 300,
+      "raw_value": "Koizumi Shigeo",
+      "slots_each_environment": 30,
+      "current_unlinked_slots_each_environment": 30,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1933-03-08",
+      "last_raw_date": "1949",
+      "canonical_chinese_name": "小泉重郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4434
+        ],
+        "test": [
+          10225
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列小泉重郎/Koizumi Shigeo。"
+    }
+  ]
+}

@@ -1,0 +1,446 @@
+{
+  "format": "kifu-player-nonhan-ranks-181-200-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 181–200; ranks 1–180 excluded",
+  "snapshot_note": "TEST and PROD read-only repeatable-read SQL on 2026-10-04; all 20 raw counts identical and every observed FK NULL. Catalog IDs from prior read-only snapshots must be checked again in live dry-run.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 1245,
+    "approved_raw_values": 18,
+    "approved_slots_each_environment": 1124,
+    "held_raw_values": 2,
+    "held_slots_each_environment": 121,
+    "new_catalog_players": 7
+  },
+  "rows": [
+    {
+      "rank": 181,
+      "raw_value": "Hattori Rittetsu",
+      "slots_each_environment": 67,
+      "current_unlinked_slots_each_environment": 67,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1812-05-25",
+      "last_raw_date": "1818-10-14",
+      "canonical_chinese_name": "井上幻庵因硕",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 历史棋谱姓名表直接把 Hattori Rittetsu 列为 Inoue Gennan Inseki 的旧名；1812–1818 年代吻合。"
+    },
+    {
+      "rank": 182,
+      "raw_value": "Hirano Masaaki",
+      "slots_each_environment": 67,
+      "current_unlinked_slots_each_environment": 67,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-05-09,10",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "平野正明",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000121.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列平野正明 / HIRANO, Masaaki；两库目录无同名 ID。"
+    },
+    {
+      "rank": 183,
+      "raw_value": "Honinbo Retsugen",
+      "slots_each_environment": 67,
+      "current_unlinked_slots_each_environment": 67,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1771-01-02",
+      "last_raw_date": "1804-12-18",
+      "canonical_chinese_name": "本因坊烈元",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.city.satte.lg.jp/material/files/group/2/12honinbou.pdf",
+      "additional_evidence_urls": [],
+      "identity_note": "日本幸手市史料确认十世本因坊烈元（1750–1808）；原值年代一致，两库目录无 ID。"
+    },
+    {
+      "rank": 184,
+      "raw_value": "Takenaka Kotaro",
+      "slots_each_environment": 67,
+      "current_unlinked_slots_each_environment": 67,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1929-04-06",
+      "last_raw_date": "1977-06-01",
+      "canonical_chinese_name": "竹中幸太郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5697
+        ],
+        "test": [
+          11469
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列竹中幸太郎 / Takenaka Kotaro；1929 年少年对局早于入段但在围棋棋谱语境。"
+    },
+    {
+      "rank": 185,
+      "raw_value": "Yasui Chitetsu",
+      "slots_each_environment": 67,
+      "current_unlinked_slots_each_environment": 67,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1666-06",
+      "last_raw_date": "ca. 1675",
+      "canonical_chinese_name": "安井知哲",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Dosaku/",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 道策棋谱专题列安井知哲的 45 盘对局，注明 1644–1700 年及安井家第三代；本批年代一致。"
+    },
+    {
+      "rank": 186,
+      "raw_value": "ChoSeonJin",
+      "slots_each_environment": 66,
+      "current_unlinked_slots_each_environment": 66,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-05-09",
+      "last_raw_date": "2004-02-05",
+      "canonical_chinese_name": "趙善津",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          541
+        ],
+        "test": [
+          542
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000187.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列趙善津 / CHO, Sun Jin，韩国出生、1984 年入段；韩式 Seon Jin 拼写对应同一姓名。"
+    },
+    {
+      "rank": 187,
+      "raw_value": "Hisajima Kunio",
+      "slots_each_environment": 65,
+      "current_unlinked_slots_each_environment": 65,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-03",
+      "last_raw_date": "1978-07-19",
+      "canonical_chinese_name": "久岛国夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000056.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列久島国夫 / HISAJIMA, Kunio；1959 年早期棋谱为少年对局，目录无同名 ID。"
+    },
+    {
+      "rank": 188,
+      "raw_value": "Miyazaki Hiroshi",
+      "slots_each_environment": 65,
+      "current_unlinked_slots_each_environment": 65,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1978-10-11",
+      "canonical_chinese_name": "宫崎洋",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4390
+        ],
+        "test": [
+          10182
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列宮崎洋 / Miyazaki Hiroshi。"
+    },
+    {
+      "rank": 189,
+      "raw_value": "Morikawa Masao",
+      "slots_each_environment": 65,
+      "current_unlinked_slots_each_environment": 65,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-20,21",
+      "last_raw_date": "1978-11-08",
+      "canonical_chinese_name": "森川正夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5272
+        ],
+        "test": [
+          11051
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列森川正夫 / Morikawa Masao。"
+    },
+    {
+      "rank": 190,
+      "raw_value": "Imai Kinemon",
+      "slots_each_environment": 64,
+      "current_unlinked_slots_each_environment": 64,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1879-12-14",
+      "last_raw_date": "1886-07-20",
+      "canonical_chinese_name": "今井金右卫门（候选）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "identity_evidence_insufficient",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Hoensha/",
+      "additional_evidence_urls": [
+        "https://adeac.jp/hamamatsu-city/texthtml/d100020/mp010020-100020/ht009770"
+      ],
+      "identity_note": "CWI 方圆社档案列 Imai Kinemon；浜松市史记 1865 年今井金右衛門初段披露，但尚无直接资料确认二者同一人，暂缓。"
+    },
+    {
+      "rank": 191,
+      "raw_value": "Watanabe Reiji",
+      "slots_each_environment": 64,
+      "current_unlinked_slots_each_environment": 64,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1956-05-02",
+      "last_raw_date": "1977-06-08",
+      "canonical_chinese_name": "渡边礼二",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5412
+        ],
+        "test": [
+          11187
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列渡辺礼二、渡辺礼而 / Watanabe Reiji；目录只有礼二 ID。"
+    },
+    {
+      "rank": 192,
+      "raw_value": "Baba Shigeru",
+      "slots_each_environment": 63,
+      "current_unlinked_slots_each_environment": 63,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1969-12-25",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "马场滋",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6441
+        ],
+        "test": [
+          12205
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列馬場滋 / Baba Shigeru。"
+    },
+    {
+      "rank": 193,
+      "raw_value": "Hirose Heijiro",
+      "slots_each_environment": 62,
+      "current_unlinked_slots_each_environment": 62,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1893-06-11",
+      "last_raw_date": "1918-02-24..03-11",
+      "canonical_chinese_name": "广濑平治郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html",
+      "additional_evidence_urls": [
+        "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+      ],
+      "identity_note": "CWI 秀哉棋谱多盘列 Hirose Heijiro，升段目录直接列広瀬平治郎；无现有目录 ID。"
+    },
+    {
+      "rank": 194,
+      "raw_value": "Suzuki Tsuna",
+      "slots_each_environment": 58,
+      "current_unlinked_slots_each_environment": 58,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1953-06-10,11",
+      "last_raw_date": "1978-11-22",
+      "canonical_chinese_name": "铃木津奈",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6258
+        ],
+        "test": [
+          12024
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列鈴木津奈、旧名大代津奈子 / Suzuki Tsuna；保留现有铃木津奈 ID。"
+    },
+    {
+      "rank": 195,
+      "raw_value": "Kitani Reiko",
+      "slots_each_environment": 57,
+      "current_unlinked_slots_each_environment": 57,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-07",
+      "last_raw_date": "1973",
+      "canonical_chinese_name": "小林礼子",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000112.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院明确小林禮子旧姓木谷；现目录小林礼子 / 木谷礼子双 ID（PROD 4431/4832），与第 106 名同一归并依赖。"
+    },
+    {
+      "rank": 196,
+      "raw_value": "Nakayama Noriyuki",
+      "slots_each_environment": 57,
+      "current_unlinked_slots_each_environment": 57,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-05-16,17",
+      "last_raw_date": "1978-10-11",
+      "canonical_chinese_name": "中山典之",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3784
+        ],
+        "test": [
+          9582
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列中山典之 / Nakayama Noriyuki。"
+    },
+    {
+      "rank": 197,
+      "raw_value": "Ezura Yuichi",
+      "slots_each_environment": 56,
+      "current_unlinked_slots_each_environment": 56,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-05-30,31",
+      "last_raw_date": "1978-11-16",
+      "canonical_chinese_name": "江面雄一",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5323
+        ],
+        "test": [
+          11100
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列江面雄一 / Ezura Yuichi。"
+    },
+    {
+      "rank": 198,
+      "raw_value": "Iwasaki Kenzo",
+      "slots_each_environment": 56,
+      "current_unlinked_slots_each_environment": 56,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1882-06-18",
+      "last_raw_date": "1900-05-09,06-06",
+      "canonical_chinese_name": "巌崎健造",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Hoensha/",
+      "additional_evidence_urls": [
+        "https://www.lib.keio.ac.jp/collection/files/mita/igo_collection.pdf"
+      ],
+      "identity_note": "CWI 方圆社棋谱列 Iwasaki Kenzo；庆应大学围棋文献目录收录巌崎健造打碁集，历史方圆社棋手身份一致。"
+    },
+    {
+      "rank": 199,
+      "raw_value": "KatoMasao",
+      "slots_each_environment": 56,
+      "current_unlinked_slots_each_environment": 56,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1971-12-02",
+      "last_raw_date": "2001-04-12",
+      "canonical_chinese_name": "加藤正夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          878
+        ],
+        "test": [
+          1090
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "与第 89 名 Kato Masao 同人；日本棋院档案直接列加藤正夫 / Kato Masao，沿用同一现有 ID。"
+    },
+    {
+      "rank": 200,
+      "raw_value": "Kawai Tetsuyuki",
+      "slots_each_environment": 56,
+      "current_unlinked_slots_each_environment": 56,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1977-09-28",
+      "canonical_chinese_name": "河合哲之",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5354
+        ],
+        "test": [
+          11130
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列河合哲之 / Kawai Tetsuyuki。"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"mode": "dry", "environment": "test", "sha256": "3030e7a0822b915b7a6fd7ce5eda6fb8a3321e58d8a70bebfac1bca885b974a6", "result": {"held_slots": 0, "new_fk_slots": 1280, "protected_slots": 0, "raw_values": 3, "applied": false}}

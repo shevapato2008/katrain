@@ -1,0 +1,568 @@
+
+<!DOCTYPE HTML>
+<html lang="ko">
+<head>
+	<title>기사정보 | 한국기원</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+	<meta name="title" content="한국기원 모바일 웹사이트">
+	<meta name="keywords" content="기사정보, 한국기원">
+	<meta name="description" content="한국기원">
+	<meta name="Robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:url" content="">
+	<meta property="og:title" content="기사정보 - 한국기원">
+	<meta property="og:description" content="한국기원 - 기사정보">
+	<meta property="og:image" content="">
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:url" content="">
+	<meta name="twitter:title" content="기사정보 - 한국기원">
+	<meta name="twitter:description" content="한국기원 - 기사정보">
+	<meta name="twitter:image" content="">
+
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+KR">
+	<link rel="stylesheet" href="../common/css/themify-icons.css">
+	<link rel="stylesheet" href="../common/css/reset.css?v=0.5">
+	<link rel="stylesheet" href="../common/css/layout.css?v=0.5">
+	<link rel="stylesheet" href="../common/css/common.css?v=0.5">
+	<link rel="stylesheet" href="../common/css/sub.css?v=0.5">
+
+	<script src="../common/js/common.js"></script>
+    <script src="../common/js/jquery-3.3.1.min.js"></script>
+</head>
+
+    <script type="text/javascript">
+
+
+    function gibo_viewer(snum) {
+        centerWindow(BADUKCH_GIBO_VIEWER + snum , screen.availWidth, screen.availHeight);        
+    }
+    
+    $(document).ready(function () {        
+
+        onAddList();
+        onAddVideoList();
+
+        function getLocalIsoDate(dtString) {
+            if (dtString == "" && String(dtString).length >= 16)
+                return "";            
+            return dtString.substr(0, 10).replace(/-/gi, ".");
+        }
+
+        function getResult(idEnd, moves, winner, wkind, diffv) {
+            if (idEnd == 0) return '-';
+
+            var win,kind, resultString;
+            switch (winner) {
+                case 1 :
+                    win = '흑';
+                    break;
+                case 2 :
+                    win = '백';
+                    break;
+                case 3 :
+                    win = '';
+                    break;
+            }
+
+            switch (wkind) {
+                case 0 :
+                    kind = '무승부';
+                    break;
+                case 1 :
+                    kind = '계가';
+                    break;
+                case 2 :
+                    kind = '불계';
+                    break;
+                case 3 :
+                    kind = '시간';
+                    break;
+                case 4 :
+                    kind = '반칙';
+                    break;
+                case 5 :
+                    kind = '무효';
+                    break;
+                case 6 :
+                    kind = '양자패';
+                    break;
+                case 7 :
+                    kind = '기타';
+                    break;
+            }
+
+            if (wkind == 1) kind = diffv + '집';
+
+            switch (wkind) {
+                case 0 :
+                    resultString = '무승부';
+                    break;
+                case 5 :
+                    resultString = '무효';
+                    break;
+                case 6 :
+                    resultString = '양자패';
+                    break;
+                case 7 :
+                    resultString = '기타';
+                    break;
+                default :
+                    resultString = moves + '수 ' + win + ' ' + kind + '승';
+                    break;
+
+            }
+
+                return resultString
+        }
+
+        // 기보 가져오기
+        function onAddList() {
+            var html = '';            
+            var tr_class = '';
+
+            $.ajax({
+                url: BADUKCH_GIBO_PLAYER + '10000600' ,   // 요청 할 주소
+                async: true,                            // false 일 경우 동기 요청으로 변경
+                type: 'GET',                            // GET, PUT
+                beforeSend: function (jqXHR) { },       // 서버 요청 전 호출 되는 함수 return false; 일 경우 요청 중단
+                success: function (jqXHR) {
+
+                    var recordsets = jqXHR.recordset3;
+                    if (recordsets.length == 0) {
+                        $(".gisa-record").hide();
+                    }
+                    else {
+                        for (var i = 0; i < recordsets.length; i++) {
+
+                            if (i % 2 == 1) tr_class = 'bg-row';
+                            else tr_class = '';
+
+                            if (recordsets[i].winner != null) {
+                                html = '<tr class="' + tr_class + '">';
+                                html = html + '<th rowspan="2" class="tb-date">' + getLocalIsoDate(recordsets[i].gdate) + '</th>';
+                                html = html + '<td colspan="2"><a href="javascript:gibo_viewer(\'' + recordsets[i].snum + '\');\">' + recordsets[i].gtitle + '&nbsp;<span class="btn-record-view">기보보기</span></a></td>';
+                                html = html + '<td rowspan="2">' + getResult(recordsets[i].isend, recordsets[i].moves, recordsets[i].winner, recordsets[i].wkind, recordsets[i].diffv) + '</td>';
+                                html = html + '</tr>';
+                                html = html + '<tr class="' + tr_class + '">';
+                                html = html + '<td>' + recordsets[i].bname + '</td>';
+                                html = html + '<td>' + recordsets[i].wname + '</td>';
+                                html = html + '</tr>';
+
+
+                                if (html != '') {
+                                    $("#basic4-tb").append(html);	    //여기다 데이터를 저장해서 불러오기
+                                }
+                            }
+                        }
+                    }
+
+                },                                      // 요청 완료 시
+                error: function (jqXHR) { },            // 요청 실패.
+                complete: function (jqXHR) { }          // 요청의 실패, 성공과 상관 없이 완료 될 경우 호출
+            });
+        }
+
+        // 바둑영상 가져오기
+        function onAddVideoList() {
+            var html = '';            
+            var main_maxresults = 4;
+            var youtube_url = YOUTUBE_SEARCH + main_maxresults + '&channelId=' + YOUTUBE_CHANNELID + '&q=강승민&part=snippet&key=' + YOUTUBE_APIKEY;
+
+            $.ajax({
+                url: youtube_url,                       // 요청 할 주소
+                async: true,                            // false 일 경우 동기 요청으로 변경
+                type: 'GET',                            // GET, PUT
+                dataType : "json",
+                beforeSend: function (jqXHR) { },       // 서버 요청 전 호출 되는 함수 return false; 일 경우 요청 중단
+                success: function (jqXHR) {
+
+                    if (!$.isEmptyObject(jqXHR)) {
+
+                        if (jqXHR.kind == 'youtube#searchListResponse') {      // 검색일 경우
+
+                            nextPageToken = jqXHR.nextPageToken
+
+                            var items = jqXHR.items;
+                            if (items.length == 0) {
+                                $(".gisa-mov").hide();
+                            }
+                            else {
+                                for (var i = 0; i < items.length; i++) {
+
+                                    publishedAt = getLocalIsoDateTime(items[i].snippet.publishedAt);
+                                    videoId = items[i].id.videoId;
+
+                                    html = "<li>";
+                                    html = html + " <a href=\"javascript:centerWindow('./gisa_video_view.asp?videoId=" + videoId + "') \" class=\"baduk-mov-link\">";
+                                    html = html + "    <figure class=\"baduk-mov-cont\">";
+                                    html = html + "         <p class=\"baduk-mov-thumb\"><span class=\"icon-play\"><i class=\"fas fa-play\"></i></span><img src='" + items[i].snippet.thumbnails.medium.url + "' alt=\"" + items[i].snippet.title + "\"></p>";
+                                    html = html + "         <figcaption class=\"baduk-mov-title\">" + items[i].snippet.title + "</figcaption>";
+                                    html = html + "         <p class=\"baduk-mov-meta\"><i class=\"far fa-clock\"></i>" + publishedAt + "</p>";
+                                    html = html + "    </figure>"
+                                    html = html + " </a>"
+                                    html = html + "</li>"
+
+                                    $("ul.baduk-mov-list").append(html);	    //여기다 데이터를 저장해서 불러오기
+                                }
+                            }
+                        }
+                    }
+                },                                      // 요청 완료 시
+                error: function (jqXHR) { },            // 요청 실패.
+                complete: function (jqXHR) { }          // 요청의 실패, 성공과 상관 없이 완료 될 경우 호출
+            });
+        }
+
+    });
+
+</script>
+
+<body>
+	<div id="skipNavi">
+		<a href="#"></a><a href="#"></a><a href="#"></a>
+	</div>
+	<div id="wrap">
+		<header class="header-gisa">
+			<a href="/" class="home-logo"><img src="../images/common/logo_trans.png" height="22" alt=""></a>
+			<h1 class="page-title-login"><span>기사정보</span></h1>
+			<a href="javascript:history.back(-1);"><i class="ti-close"></i></a>
+		</header>
+
+		<div class="container pg-gisa-view">
+			<article>
+				<div class="gisa-preview">
+					<p class="gisa-pic"><img src="https://www.baduk.or.kr/FileUpDown/player/KangSungM.jpg" alt="강승민姜昇旼"></p>
+					<div class="gisa-view-info">
+						<h2 class="gisa-name"><em>9단</em> 강승민 (姜昇旼)</h2>
+						<dl class="gisa-belong">
+							<dt>생년월일</dt>
+							<dd>1994년 11월 29일</dd>
+							<dt>소속</dt>
+							<dd>한국</dd>
+						</dl>
+					</div>
+
+                    
+					<div class="gisa-go-info">
+						<div class="gisa-go-detail">
+							<h4>통산전적</h4>
+							<p class="gisa-go-val">승률 <em>58.73</em>%</p>
+							<p class="gisa-go-refer">911전 535승 376패</p>
+						</div>
+						<div class="gisa-go-detail">
+							<h4>기사랭킹</h4>
+							<p class="gisa-go-val"><em>40위</em></p>
+							<p class="gisa-go-refer">(2026년 10월 현재)</p>
+						</div>
+					</div><!-- end .gisa-go-info -->
+                    
+				</div>
+
+				<section class="gisa-special-note">
+					<div class="title-area">
+						<h3 class="title-text">특기사항</h3>
+					</div>
+					<ul class="gisa-detail-list" style="-webkit-overflow-scrolling : touch">
+						<li>◆ 양천대일 바둑도장 출신</br>◆ 이붕배, 단군배, 고양시장배, 한바연 우승.</li>
+					</ul>
+				</section>
+
+                
+				<section class="gisa-promotion">
+					<div class="title-area">
+						<h3 class="title-text">승단이력</h3>
+					</div>
+					<ul class="gisa-detail-list" style="-webkit-overflow-scrolling : touch">
+                        
+						<li>9단 / 2023.05.08 / 9단 승단</li>
+                        
+						<li>8단 / 2022.03.03 / 8단 승단</li>
+                        
+						<li>7단 / 2020.08.25 / 7단 승단</li>
+                        
+						<li>6단 / 2018.04.23 / 6단 승단</li>
+                        
+						<li>5단 / 2016.07.21 / 2016 KB국민은행 바둑리그</li>
+                        
+						<li>4단 / 2015.07.13 / 제17회 농심배 </li>
+                        
+						<li>3단 / 2013.06.28 / 제41기 하이원리조트배 명인전</li>
+                        
+						<li>2단 / 2011.07.18 / 제39기 명인전</li>
+                        
+						<li>1단 / 2010.11.17 / 제127회 입단대회 입단</li>
+                        
+					</ul>
+				</section>
+
+				<section class="gisa-career">
+					<div class="title-area">
+						<h3 class="title-text">경력사항</h3>
+					</div>
+					<div class="gisa-cont">
+						<ul class="gisa-detail-list" style="-webkit-overflow-scrolling : touch">
+							<li>2011년</br>- 제16회 삼성화재배 본선</br>- 제7기 원익배 십단전 본선</br>- 2011 KB국민은행 한국바둑리그 출전</br></br>2012년</br>- 2012 락스타리그 출전</br>- 제17기 천원전 본선</br></br>2013년</br>- 제4회 인천 실내&무도 아시안게임 바둑 혼성페어 동메달 [오정아]</br>- 제4회 인천 실내&무도 아시안게임 바둑 남자단체 금메달 ★</br>- 2013 락스타리그 출전</br>- 2013 olleh배 본선</br></br>2014년</br>- 2014 삼성화재배 본선</br>- 제19기 천원전 본선</br>- 2014 퓨처스 리그 출전</br></br>2015년</br>- 2015 렛츠런파크배 본선</br>- 제19기 박카스배 천원전 본선 4강</br></br>2016년</br>- 제21회 GS칼텍스배 본선</br>- 2016 삼성화재배 월드바둑마스터스 본선</br>- KB국민은행 한국바둑리그 출전-SK엔크린(5지명)</br></br>2017년</br>- 제22회 LG배 조선일보 기왕전 본선</br>- 2017 크라운해태배 본선</br>- KB국민은행 한국바둑리그 출전-Kixx(4지명)</br></br>2018년</br>- 제23기 GS칼텍스배 본선</br>- 2018 크라운해태배 본선 16강</br>- KB국민은행 한국바둑리그 출전-Kixx(4지명)</br></br>2019년</br>- 제24기 GS칼텍스배 본선 16강</br>- 제3기 안동시 참저축은행배 프로아마오픈전 본선 32강</br>- 2019 KB국민은행 바둑리그 출전 </br>- 2019 크라운해태배 본선 16강 </br>- KB국민은행 한국바둑리그 출전-Kixx(4지명)</br></br>2020년 </br>- 제25기 GS칼텍스배 프로기전 본선 16강 </br>- 2020 KB국민은행 바둑리그 출전 </br>- KB국민은행 한국바둑리그 출전-셀트리온(4지명)</br></br>2021년</br>- 제2기 쏘팔 코사놀 최고기사 결정전 본선</br>- 제1기 우슬봉조 한국기원 선수권전 본선 </br>- 2021 KB국민은행 바둑리그 출전 </br>- 2021 중국 을조리그 출전 </br>- KB국민은행 한국바둑리그 출전-셀트리온(3지명)</br></br>2022년</br>- 제5기 용성전 본선 32강 </br>- 제45기 SG배 한국일보 명인전 본선 </br>- 제8기 국수산맥 국내 프로토너먼트 본선 16강 </br>- 제4기 안동시 백암배 바둑 오픈 최강전 본선 16강</br>- KB국민은행 한국바둑리그 출전-한국물가정보(3지명)</br></br>2024년</br>- 제10회 국수산맥 국제바둑대회 세계바둑최강전 본선 8강</br>- 제6기 안동시 백암배 바둑 오픈 최강전 본선 24강</br>- KB국민은행 한국바둑리그 출전-영림프라임창호(4지명) 우승 ★</br></br>-KB국민은행 한국바둑리그 출전-영림프라임창호(4지명)</br>
+							</li>
+						</ul>
+						<!--<div class="btn-more"><a href="#"><i class="fas fa-caret-down"></i>더보기</a></div>-->
+					</div>
+				</section>
+
+                
+				<section class="gisa-news">
+					<div class="title-area">
+						<h3 class="title-text">최근뉴스</h3>
+					</div>
+					<div class="gisa-cont">
+						<ul class="news-list">
+
+                        
+							<li>
+								<a href="/news/B02_view.asp?news_sum_no=13888" class="news-list-link">
+									<figure class="news-list-thumb"><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/DSC01394.jpg' alt="강승민 "변상일 선수는 워낙 세서 두기 편해 ""></figure>
+									<div class="news-list-txt">
+										<h2 class="news-list-title"><span class="news-list-title-msg">강승민 "변상일 선수는 워낙 세서 두기 편해 "</span></h2>
+										<p class="news-list-cont">에이스결정전 없었던 에결 전문팀들의 대결...'물가' 웃었다 </p>
+										<p class="news-list-meta"><span class="news-cate">KB바둑리그</span><i class="far fa-clock"></i>2023.02.05</p>
+									</div>
+								</a>
+							</li>
+                        
+							<li>
+								<a href="/news/B02_view.asp?news_sum_no=11384" class="news-list-link">
+									<figure class="news-list-thumb"><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/DSC00047.jpg' alt="강승민, 박정환 꺾고 셀트리온 구했다 "></figure>
+									<div class="news-list-txt">
+										<h2 class="news-list-title"><span class="news-list-title-msg">강승민, 박정환 꺾고 셀트리온 구했다 </span></h2>
+										<p class="news-list-cont">셀트리온, 수려한합천에 2연패 후 1승 </p>
+										<p class="news-list-meta"><span class="news-cate">KB바둑리그</span><i class="far fa-clock"></i>2022.05.09</p>
+									</div>
+								</a>
+							</li>
+                        
+							<li>
+								<a href="/news/B02_view.asp?news_sum_no=3925" class="news-list-link">
+									<figure class="news-list-thumb"><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/DSC00187 (1).JPG' alt="강승민, 변상일 잡고 포스코 울렸다 "></figure>
+									<div class="news-list-txt">
+										<h2 class="news-list-title"><span class="news-list-title-msg">강승민, 변상일 잡고 포스코 울렸다 </span></h2>
+										<p class="news-list-cont">Kixx, 포스코케미칼에 2패 후 3연승 </p>
+										<p class="news-list-meta"><span class="news-cate">KB바둑리그</span><i class="far fa-clock"></i>2019.12.09</p>
+									</div>
+								</a>
+							</li>
+                        
+							<li>
+								<a href="/news/B02_view.asp?news_sum_no=159" class="news-list-link">
+									<figure class="news-list-thumb"><img src='https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/_1015014 (1)(0).JPG' alt="'저격수' 강승민 , 이동훈 잡고 CU 잡았다 "></figure>
+									<div class="news-list-txt">
+										<h2 class="news-list-title"><span class="news-list-title-msg">'저격수' 강승민 , 이동훈 잡고 CU 잡았다 </span></h2>
+										<p class="news-list-cont">Kixx, PS 향한 외다리 승부에서 CU에 대역전승</p>
+										<p class="news-list-meta"><span class="news-cate">KB바둑리그</span><i class="far fa-clock"></i>2017.09.29</p>
+									</div>
+								</a>
+							</li>
+                        
+						</ul>
+						<!--<div class="btn-more"><a href="#"><i class="fas fa-caret-down"></i>최근뉴스 더보기</a></div>-->
+					</div>
+				</section>
+                
+				<section class="gisa-go">
+					<div class="title-area">
+						<h3 class="title-text">최근대국</h3>
+					</div>
+					<div class="gisa-cont">
+						<div class="table-wrap">
+							<table class="basic4-tb">
+								<thead>
+									<tr>
+										<th rowspan="2">날짜</th>
+										<th colspan="2">대회명</th>
+										<th rowspan="2">결과</th>
+									</tr>
+									<tr>
+										<th>승</th>
+										<th>패</th>
+									</tr>
+								</thead>
+								<tbody>
+                                    
+									<tr class="">
+										<th rowspan="2" class="tb-date">2026.10.02</th>
+										<td colspan="2">제16회 한국 프로기사협회 리그 2조</td>
+										<td rowspan="2">흑 불계승</td>
+									</tr>
+									<tr class="">
+										<td>강승민</td>
+										<td>김승구</td>
+									</tr>
+                                    
+									<tr class="bg-row">
+										<th rowspan="2" class="tb-date">2026.09.11</th>
+										<td colspan="2">제16회 한국 프로기사협회 리그 2조</td>
+										<td rowspan="2">백 불계승</td>
+									</tr>
+									<tr class="bg-row">
+										<td>박지현</td>
+										<td>강승민</td>
+									</tr>
+                                    
+									<tr class="">
+										<th rowspan="2" class="tb-date">2026.09.04</th>
+										<td colspan="2">제16회 한국 프로기사협회 리그 본선 2조</td>
+										<td rowspan="2">백 불계승</td>
+									</tr>
+									<tr class="">
+										<td>강승민</td>
+										<td>한태희</td>
+									</tr>
+                                    
+								</tbody>
+							</table>
+						</div>						
+					</div>
+				</section>
+                
+
+				<section class="gisa-record">
+					<div class="title-area">
+						<h3 class="title-text">최근기보</h3>
+					</div>
+					<div class="gisa-cont">
+						<div class="table-wrap">
+							<table class="basic4-tb" id="basic4-tb">
+								<thead>
+									<tr>
+										<th rowspan="2">날짜</th>
+										<th colspan="2">대회명</th>
+										<th rowspan="2">결과</th>
+									</tr>
+									<tr>
+										<th>흑</th>
+										<th>백</th>
+									</tr>
+								</thead>
+								<tbody>
+								</tbody>
+							</table>
+						</div>
+						<!--<div class="btn-more"><a href="#"><i class="fas fa-caret-down"></i>최근기보 더보기</a></div>-->
+					</div>
+				</section>
+
+                
+
+				<section class="gisa-mov">
+					<div class="title-area">
+						<h3 class="title-text">바둑영상</h3>
+						<!--<a href="#" title="더보기" class="more"><i class="fas fa-plus"></i></a>-->
+					</div>
+					<div class="gisa-cont">
+						<ul class="baduk-mov-list">
+						</ul>
+					</div>
+				</section>
+			</article>
+		</div><!-- end .container -->
+        <!--컨텐츠 들어가는 부분 종료-->
+
+	</div>
+	<footer id="footer" class="footer">
+		<div class="footer-links">
+			<ul>
+				<li><a href="/about/A01.asp">한국기원소개</a></li>
+				<li><a href="/about/A05.asp">찾아오시는 길</a></li>
+				<li><a href="/etc/H01.asp">이용약관</a></li>
+				<li><a href="/etc/H02.asp">개인정보처리방침</a></li>
+			</ul>
+		</div>
+		<!--
+	            <div class="footer-btns">
+					<a href="#" class="btn btn-login">로그인</a>
+					<a href="#" class="btn btn-join">회원가입</a>
+					<a href="#" target="_blank" class="btn btn-fb"><i class="fab fa-facebook-f"></i></a>
+				</div>-->
+		<div class="footer-address">
+			<span>주소: 서울시 성동구 마장로 210</span>
+			<a href="tel:02-3407-3800">전화: 02-3407-3800</a><br>
+			<span>팩스: 02-3407-3875</span>
+			<a href="mailto:webmaster@baduk.or.kr">이메일: webmaster@baduk.or.kr</a>
+			<br><span>(재)한국기원 대표자: 정태순</span>
+		</div>
+		<p class="copyright">ⓒ 2010 ~ 2019 KOREA BADUK ASSOCIATION. All rights reserved.</p>
+	</footer>
+
+	<!-- Top Button -->
+	<a href="#" class="btn btn-top" id="btnTop">
+		<i class="ti-download"></i>
+		<span>Top</span>
+	</a>
+
+	<div id="layerSNS" class="layer-wrap hidden">
+		<section class="layer">
+			<div class="close text-right"><button type="button" id="btnClose"><i class="ti-close"></i></button></div>
+			<div class="news-sns">
+				<ul class="news-sns-list">
+					<li><button type="button" class="btn-sns-fb">페이스북</button></li>
+					<li><button type="button" class="btn-sns-tw">트위터</button></li>
+					<li><button type="button" class="btn-sns-nblog">네이버블로그</button></li>
+					<li><button type="button" class="btn-sns-band">밴드</button></li>
+					<li><button type="button" class="btn-sns-kakaos">카카오스토리</button></li>
+					<li><button type="button" class="btn-sns-kakaot">카카오톡</button></li>
+					<li><button type="button" class="btn-sns-line">라인</button></li>
+					<li><button type="button" class="btn-sns-etc">기타</button></li>
+				</ul>
+			</div>
+		</section>
+	</div>
+
+	<script>
+		$(function(){
+      // GNB 스크롤시 고정 or 해제
+      var checkGnb = document.getElementById("gnb");
+
+      if( checkGnb ) {
+        var gnbOffset = $("#gnb").offset();
+        $(window).on('scroll', function (e) {
+          if ($(document).scrollTop() > gnbOffset.top) {
+            $("#gnb").addClass("gnb-fix");
+            //console.log('고정');
+          } else {
+            $("#gnb").removeClass("gnb-fix");
+            //console.log('원위치!!');
+          }
+
+          // Top 버튼 보이기, 숨기기
+          // if ($(this).scrollTop() > 400) {
+          //   $("#btnTop").show(500);
+          // } else {
+          //   $("#btnTop").hide(500);
+          // }
+        });
+      } else {
+        console.log('Not found #gnb');
+			}
+
+      // Top 버튼 위로 이동
+      // $("#btnTop").on("click", function(){
+      //   $("html, body").animate({
+      //     scrollTop: 0
+      //   }, 400);
+      //   return false;
+      // });
+
+			$('#btnShare1, #btnShare2').on('click', function(){
+				$('#layerSNS').removeClass('hidden');
+			});
+			$('#btnClose').on('click', function(){
+				$('#layerSNS').addClass('hidden');
+			});
+		})
+	</script>
+  
+</body>
+</html>

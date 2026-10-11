@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "title": "Top 10 five-language event name audit: source-verified corrections and holds",
+  "created_date": "2026-10-05",
+  "scope": "Top 10 event types by weighted PROD game count in kifu-event-five-lang-next-2026-10-05.json. Tournament type only; no edition, year, stage, or round.",
+  "read_only_audit": true,
+  "events": {
+    "41": {
+      "canonical_chinese": "中国围棋甲级联赛",
+      "verified_cells": {
+        "ko": {
+          "name": "중국 갑조리그",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000386",
+          "source_text": "한국기원 player record lists 2026 중국 갑조리그 and prior 중국갑조리그 appearances; name is year/stage-free here."
+        },
+        "en": {
+          "name": "Chinese A League",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "source_text": "The English-language professional Go tournaments list labels the Chinese league ‘Chinese A League’."
+        }
+      },
+      "holds": {
+        "ja": "Existing URL is an English Wikipedia URL and returns 404; no exact Japanese-language title page verified in this pass. Do not retain 中国囲碁甲級リーグ as source-attested yet.",
+        "zh_tw": "Traditional-character conversion only; no distinct Taiwan official form verified."
+      }
+    },
+    "22": {
+      "canonical_chinese": "大手合",
+      "verified_cells": {
+        "en": {
+          "name": "Oteai",
+          "source_url": "https://en.wikipedia.org/wiki/Oteai",
+          "source_text": "English Wikipedia page title is ‘Oteai’; its article identifies 大手合 (Ōteai) and describes the historic Go tournament/ranking system. This is the English interlanguage target of the Japanese page."
+        }
+      },
+      "holds": {
+        "ko": "오테아이 is an unsupported transliteration in this pass; no Korean-language title text from the Korean Go association verified."
+      }
+    },
+    "24": {
+      "canonical_chinese": "日本本因坊战",
+      "verified_cells": {
+        "en": {
+          "name": "Honinbo",
+          "source_url": "https://en.wikipedia.org/wiki/Honinbo_(competition)",
+          "source_text": "The English page gives ‘Full name: Honinbo’ and calls it a Go competition; the cell should use the name, without the added descriptive word ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 본인방전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "25": {
+      "canonical_chinese": "日本十段战",
+      "verified_cells": {
+        "en": {
+          "name": "Judan",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "source_text": "The English-language Japan major tournament table lists ‘Judan’; omit the added descriptive word ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 십단전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "28": {
+      "canonical_chinese": "日本王座战",
+      "verified_cells": {
+        "en": {
+          "name": "Ōza",
+          "source_url": "https://en.wikipedia.org/wiki/%C5%8Cza_(Go)",
+          "source_text": "The English page title is ‘Ōza (Go)’ and its text identifies the competition as ‘Ōza’; use that name without ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 왕좌전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "26": {
+      "canonical_chinese": "日本棋圣战",
+      "verified_cells": {
+        "en": {
+          "name": "Kisei",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "source_text": "The English-language Japan major tournament table lists ‘Kisei’; omit the added descriptive word ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 기성전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "27": {
+      "canonical_chinese": "日本名人战",
+      "verified_cells": {
+        "en": {
+          "name": "Meijin",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "source_text": "The English-language Japan major tournament table lists ‘Meijin’; omit the added descriptive word ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 명인전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "29": {
+      "canonical_chinese": "日本天元战",
+      "verified_cells": {
+        "en": {
+          "name": "Tengen",
+          "source_url": "https://en.wikipedia.org/wiki/List_of_professional_Go_tournaments",
+          "source_text": "The English-language Japan major tournament table lists ‘Tengen’; omit the added descriptive word ‘tournament’."
+        }
+      },
+      "holds": {
+        "ko": "일본 천원전 is a descriptive rendering; no exact Korean-language name from the Korean Go association or a Korean interlanguage page verified."
+      }
+    },
+    "42": {
+      "canonical_chinese": "中国女子围棋甲级联赛",
+      "verified_cells": {
+        "ko": {
+          "name": "중국 여자 갑조리그",
+          "source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001666",
+          "source_text": "Korean Go association player record uses ‘중국 여자 갑조리그’ in game history."
+        }
+      },
+      "holds": {
+        "ja": "中国女子囲碁甲級リーグ is an unsupported descriptive rendering in this pass; no Japanese-language target text verified.",
+        "en": "Chinese Women’s Weiqi A League is a descriptive rendering; no exact English interlanguage title or official English event name verified."
+      }
+    }
+  },
+  "audit_notes": [
+    "Event 41 existing Japanese source URL https://en.wikipedia.org/wiki/Chinese_Weiqi_League is an English-language URL and currently returns 404.",
+    "For events 25, 26, 27, and 29, the existing English URL is a general list, but it does contain the exact labels Judan, Kisei, Meijin, and Tengen in the Japan major table.",
+    "Current Japanese official pages for events 24 through 29 were checked; their page headings match the existing Japanese names 本因坊戦, 十段戦, 王座戦, 棋聖戦, 名人戦, 天元戦."
+  ]
+}

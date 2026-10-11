@@ -1,0 +1,11 @@
+{
+  "key": "kba-han-jongjin",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-jongjin.html",
+  "raw_sha256": "896c27d6ca2f4f603880b5f64e8d09f124211493814ed19d848222b8d490875e",
+  "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000109",
+  "retrieved_at_utc": "2026-10-04T12:03:18.798962+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-jongjin.txt",
+  "text_sha256": "525905a2bb59085f352857ae4a358598ca56adb4fe45c027c193f5d0b81881ad",
+  "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000109"
+}

@@ -1,0 +1,1238 @@
+{
+  "packet_kind": "post591_source_only_pending_final20",
+  "produced_at": "2026-10-08T20:38:59.000928+00:00",
+  "based_on_immutable_source_packet": "source20-v2.json",
+  "based_on_immutable_source_packet_file_sha256": "1b3daad048fecb681bce47d039cc0865f3352b9595b174078e63d85855a644df",
+  "replaced_held_owner": {
+    "prod_player_id": 339,
+    "test_player_id": 340,
+    "reason": "Japanese official reading チン ハクショウ maps to 친 하쿠쇼 under current NIKL JA-to-KO rule, while Korean Jstart article directly publishes 진 하쿠쇼 at reference tier. Do not claim them equivalent or force conventional gate."
+  },
+  "source_registry_proposal": "source-registry-proposed-pending.json",
+  "source_registry_status": "pending_root_review",
+  "current591_readonly_capture": {
+    "original_19": [
+      "PROD-current591-exact20-readonly.json.gz",
+      "TEST-current591-exact20-readonly.json.gz"
+    ],
+    "replacement_696": [
+      "PROD-replacement696-current591-readonly.json.gz",
+      "TEST-replacement696-current591-readonly.json.gz"
+    ]
+  },
+  "players": [
+    {
+      "prod_player_id": 3771,
+      "test_player_id": 9569,
+      "linked_slots_per_environment": 111,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "下平昭夫",
+        "en": "Shimohira Akio",
+        "jp": "下平昭夫",
+        "tw": "下平昭夫"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "시모히라 아키오",
+      "evidence_kind": "direct_korean_go_tournament_table",
+      "source_quality": "Korean community Go tournament page directly prints the whole Hangul name; Japanese specialist profile gives exact kanji and complete kana.",
+      "identity_note": "Korean table has the full Korean reading in Go competition context; original Japanese identity and kana are retained in the earlier source-only record.",
+      "sources": [
+        {
+          "url": "https://namu.wiki/w/%EC%A0%9C45%ED%9A%8C%20%ED%98%BC%EC%9D%B8%EB%B3%B4%EC%A0%84",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/3771-namu.md",
+          "content_sha256": "fbeb37311b241cc46c62cd36fcba19c9541cb1984ed217ab59491d1c472506be",
+          "retained_at_utc": "2026-10-08T20:14:26.926251+00:00",
+          "scrape_id": "01a11d27-200a-71ab-85bb-156fb5316d1d",
+          "direct_visible_excerpt": "시모히라 아키오"
+        },
+        {
+          "content_type": "text/html",
+          "fetched_at": "2026-10-08T20:01:02.007645+00:00",
+          "final_url": "https://www.igorating.com/players/akio-shimohira",
+          "http_status": 200,
+          "raw_body_bytes": 26798,
+          "raw_body_file": "sources/3771-igo.body",
+          "raw_body_sha256": "b0c8fe4fbeb9461dc3960f67299768f962ce5d4ff73d3325347be7a3a1c170ea",
+          "url": "https://www.igorating.com/players/akio-shimohira"
+        }
+      ],
+      "legacy_research_ref": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/source-only-20-research.json"
+    },
+    {
+      "prod_player_id": 6642,
+      "test_player_id": 12411,
+      "linked_slots_per_environment": 105,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "鲷中新",
+        "en": "Tainaka Shin",
+        "jp": "鯛中新",
+        "tw": "鯛中新"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "다이나카 신",
+      "evidence_kind": "direct_korean_go_tournament_table",
+      "source_quality": "Korean community Go tournament page directly prints the whole Hangul name; Japanese specialist profile gives exact kanji and complete kana.",
+      "identity_note": "Korean table has the full Korean reading in Go competition context; original Japanese identity and kana are retained in the earlier source-only record.",
+      "sources": [
+        {
+          "url": "https://namu.wiki/w/%EC%A0%9C1%ED%9A%8C%20%EC%8B%AD%EB%8B%A8%EC%A0%84(%EC%9D%BC%EB%B3%B8)",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/6642-namu.md",
+          "content_sha256": "2cbd3a443740740f212d826fc96aa8aff88428d76a2c24c8a82afe4cf69fa257",
+          "retained_at_utc": "2026-10-08T20:14:26.831764+00:00",
+          "scrape_id": "01a11d27-2015-775d-9bc9-c84ba2e88aaf",
+          "direct_visible_excerpt": "다이나카 신"
+        },
+        {
+          "content_type": "text/html",
+          "fetched_at": "2026-10-08T20:01:02.057238+00:00",
+          "final_url": "https://www.igorating.com/players/shin-tainaka",
+          "http_status": 200,
+          "raw_body_bytes": 24925,
+          "raw_body_file": "sources/6642-igo.body",
+          "raw_body_sha256": "a54235494905a7a925c60337cd95ee549d7bd342939fe6065769197777f75ac5",
+          "url": "https://www.igorating.com/players/shin-tainaka"
+        }
+      ],
+      "legacy_research_ref": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/source-only-20-research.json"
+    },
+    {
+      "prod_player_id": 6635,
+      "test_player_id": 12404,
+      "linked_slots_per_environment": 84,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "前谷信吾",
+        "en": "Maetani Shingo",
+        "jp": "前谷信吾",
+        "tw": "前谷信吾"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "마에타니 신고",
+      "evidence_kind": "generated_korean_from_complete_japanese_kana",
+      "source_quality": "Actual Japanese specialist profile prints full kanji plus kana; retained NIKL rules support syllable mapping. Two limited Korean web queries were run, but this does not prove global nonpublication.",
+      "identity_note": "No direct same-person Korean publication found in the two recorded queries; generated spelling remains for root review.",
+      "sources": [
+        {
+          "content_type": "text/html",
+          "fetched_at": "2026-10-08T20:01:02.044105+00:00",
+          "final_url": "https://www.igorating.com/players/shingo-maetani",
+          "http_status": 200,
+          "raw_body_bytes": 24154,
+          "raw_body_file": "sources/6635-igo.body",
+          "raw_body_sha256": "dcdc6876ff0162f9b7a952797b7cb0f7a0635cc600c4618dbc36ecdebe224139",
+          "url": "https://www.igorating.com/players/shingo-maetani"
+        },
+        {
+          "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+          "rules": [
+            {
+              "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+              "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+            },
+            {
+              "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+              "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+            },
+            {
+              "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+              "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+            }
+          ]
+        }
+      ],
+      "limited_conflict_queries": [
+        {
+          "query_capture": "docs/resource/kifu-next-source20-v2-20261009/search-6635-jp.json",
+          "file_sha256": "242ef90255537c316d6e9487abef4dc653743e3eef5c7e96f474c1e979498542",
+          "search_id": "01a11d26-ece5-76cd-b37d-cf3c6670e01d",
+          "returned_result_count": 5
+        },
+        {
+          "query_capture": "docs/resource/kifu-next-source20-v2-20261009/search-6635-spell.json",
+          "file_sha256": "5fd78e634f3d98724ab6b2d481dae8f32eeae665369462d20be72cf47c30da52",
+          "search_id": "01a11d26-f29b-763b-9ea4-d753dcdb9c88",
+          "returned_result_count": 5
+        }
+      ],
+      "legacy_research_ref": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/source-only-20-research.json"
+    },
+    {
+      "prod_player_id": 4568,
+      "test_player_id": 10358,
+      "linked_slots_per_environment": 78,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "川村匡迪",
+        "en": "Kawamura Masamichi",
+        "jp": "川村匡迪",
+        "tw": "川村匡迪"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "가와무라 마사미치",
+      "evidence_kind": "generated_korean_from_complete_japanese_kana",
+      "source_quality": "Actual Japanese specialist profile prints full kanji plus kana; retained NIKL rules support syllable mapping. Two limited Korean web queries were run, but this does not prove global nonpublication.",
+      "identity_note": "No direct same-person Korean publication found in the two recorded queries; generated spelling remains for root review.",
+      "sources": [
+        {
+          "content_type": "text/html",
+          "fetched_at": "2026-10-08T20:01:02.042644+00:00",
+          "final_url": "https://www.igorating.com/players/masamichi-kawamura",
+          "http_status": 200,
+          "raw_body_bytes": 26809,
+          "raw_body_file": "sources/4568-igo.body",
+          "raw_body_sha256": "27aceb647dca2926a3aa98047ad87487fe2890bcd56438d13e2ff9a671395b29",
+          "url": "https://www.igorating.com/players/masamichi-kawamura"
+        },
+        {
+          "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+          "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+          "rules": [
+            {
+              "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+              "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+            },
+            {
+              "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+              "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+            },
+            {
+              "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+              "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+            }
+          ]
+        }
+      ],
+      "limited_conflict_queries": [
+        {
+          "query_capture": "docs/resource/kifu-next-source20-v2-20261009/search-4568-jp.json",
+          "file_sha256": "6ffb9f5646dc21509f3e60ce98650b4c53e1ce6e8f56ad3e6303a7b7b473f6b1",
+          "search_id": "01a11d26-f2d2-7358-b2de-0ea27ec90d1f",
+          "returned_result_count": 1
+        },
+        {
+          "query_capture": "docs/resource/kifu-next-source20-v2-20261009/search-4568-spell.json",
+          "file_sha256": "e3a1a18b2da0681c86591a48cda04c01a35398282a733ad1cde59e33e6c2b9d1",
+          "search_id": "01a11d26-f2e3-735c-b433-0d30b27b0c7a",
+          "returned_result_count": 5
+        }
+      ],
+      "legacy_research_ref": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/source-only-20-research.json"
+    },
+    {
+      "prod_player_id": 5094,
+      "test_player_id": 10876,
+      "linked_slots_per_environment": 12,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "李钢",
+        "en": "Li Gang",
+        "jp": "李钢",
+        "tw": "李鋼"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "리강",
+      "evidence_kind": "direct_korean_wikipedia_disambiguation",
+      "source_quality": "Korean Wikipedia disambiguation body explicitly says 리강 (李钢, 1954 ~ ) is a Chinese Go player. The person link is a red link, not an existing biography.",
+      "identity_note": "Exact Hanzi, 1954 birth year and Go occupation disambiguate this person.",
+      "sources": [
+        {
+          "url": "https://ko.wikipedia.org/w/index.php?title=%EB%A6%AC%EA%B0%95&oldid=36505438",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/5094-kowiki.md",
+          "content_sha256": "ca9a962a42c9fa813791ecc75084b5f3fbf7905831623e52db700a1f1abb3209",
+          "retained_at_utc": "2026-10-08T20:14:29.232564+00:00",
+          "scrape_id": "01a11d27-201f-71e8-99fb-777248f0e2ee",
+          "direct_visible_excerpt": "리강 (바둑 기사)"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 368,
+      "test_player_id": 369,
+      "linked_slots_per_environment": 18,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "赵健男",
+        "en": "Zhao Jiannan",
+        "jp": "趙健男",
+        "tw": "趙健男"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "자오젠난",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 趙健男 matches existing JP/TW; stable prpl_code=20000734; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "자오젠난"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 368,
+            "name_in_index": "자오젠난",
+            "prpl_code": "20000734",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20000734"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:12.645534+00:00",
+            "body_file": "tvbaduk-368.body",
+            "body_bytes": 15905,
+            "body_sha256": "dd8c57ddbe8c844984cac28dc5cd0f0b35d9e31cf0be0d0b9869f2b9897149ab",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 자오젠난 2段 [趙健男] 생일 : 승단이력 - 1단 / 2012.04.02 / - 2단 / 2014.03.13 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-0",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-368.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 368,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000734&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000734&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:51.107517+00:00",
+            "body_file": "cyberoro-368.body",
+            "body_bytes": 26093,
+            "body_sha256": "a343cb05e6dbf237ab8585eca07a742da277e12a80e5145cd2991aed10428518",
+            "prpl_code": "20000734",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-368.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 3820,
+      "test_player_id": 9618,
+      "linked_slots_per_environment": 22,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "乔诗尧",
+        "en": "Qiao Shiyao",
+        "jp": "乔诗尧",
+        "tw": "喬詩堯"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "차오스야오",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "partial Hanja 乔诗; third character absent; Daum line pairs 乔诗尧; stable prpl_code=20000613; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "차오스야오"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 3820,
+            "name_in_index": "차오스야오",
+            "prpl_code": "20000613",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20000613"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:12.591232+00:00",
+            "body_file": "tvbaduk-3820.body",
+            "body_bytes": 15830,
+            "body_sha256": "73177c1cab9c676757308339f125c17d1c22a810201fe2efa78fe8fb368e87c6",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 차오스야오 1段 [乔诗] 생일 : 승단이력 - 1단 / 2012.03.12 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-3820.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 3820,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000613&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000613&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:50.953215+00:00",
+            "body_file": "cyberoro-3820.body",
+            "body_bytes": 25961,
+            "body_sha256": "cd267d8dc9107d0308fd5974505d9bd1203193b8b1c0e5f1a3fc42b68a87fb1c",
+            "prpl_code": "20000613",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-3820.body"
+          }
+        }
+      ],
+      "review_flag": "partial_hanzi_identity_review"
+    },
+    {
+      "prod_player_id": 4634,
+      "test_player_id": 10424,
+      "linked_slots_per_environment": 10,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "张家尧",
+        "en": "Zhang Jiayao",
+        "jp": "张家尧",
+        "tw": "張家堯"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "장자야오",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 張家尧 matches existing name variants; stable prpl_code=20001067; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "장자야오"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 4634,
+            "name_in_index": "장자야오",
+            "prpl_code": "20001067",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20001067"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:17.700029+00:00",
+            "body_file": "tvbaduk-4634.body",
+            "body_bytes": 15995,
+            "body_sha256": "d1858d0b3e9a24f90b8a53bae79201053e33a85684731f2c8c90fec171e1eeba",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 장자야오 3段 [張家尧] 생일 : 승단이력 - 1단 / 2015.05.26 / - 2단 / 2016.05.25 / - 3단 / 2018.08.22 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-4634.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 4634,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001067&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001067&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:51.495872+00:00",
+            "body_file": "cyberoro-4634.body",
+            "body_bytes": 26245,
+            "body_sha256": "88ba19b7c2770cd64379f2e9b3cdcf1b8c0eb7af6d9e940b236612cb28fcca8b",
+            "prpl_code": "20001067",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-4634.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 5133,
+      "test_player_id": 10914,
+      "linked_slots_per_environment": 7,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "杨文铠",
+        "en": "Yang Wenkai",
+        "jp": "杨文铠",
+        "tw": "楊文鎧"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "양원카이",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 楊文铠 matches existing name variants; stable prpl_code=20001661; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "양원카이"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 5133,
+            "name_in_index": "양원카이",
+            "prpl_code": "20001661",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20001661"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:19.207601+00:00",
+            "body_file": "tvbaduk-5133.body",
+            "body_bytes": 16044,
+            "body_sha256": "9d146c0ab0fb297ca5a715aa16d68d3f68cfaf2ff03fe790b32acf3dec79e8eb",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 양원카이 3段 [楊文铠] 생일 : 승단이력 - 1단 / 2017.03.02 / - 3단 / 2025.06.13 / 제3회 취저우 란커배 세계바둑오픈전 - 2단 / 2025.06.13 / 목록 [2026-10-09  13:30] 제4회 취저우 ",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-5133.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 5133,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001661&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001661&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:51.461441+00:00",
+            "body_file": "cyberoro-5133.body",
+            "body_bytes": 26279,
+            "body_sha256": "2878e7b392e58f668f17cb6e39dc93d8c9ae4a727fc8b87c274b25b58da61825",
+            "prpl_code": "20001661",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-5133.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 5473,
+      "test_player_id": 11247,
+      "linked_slots_per_environment": 18,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "王伯刚",
+        "en": "Wang Bogang",
+        "jp": "王伯刚",
+        "tw": "王伯剛"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "왕보강",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "partial Hanja 王伯; third character absent; Daum line pairs 王伯刚; stable prpl_code=20002077; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "왕보강"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 5473,
+            "name_in_index": "왕보강",
+            "prpl_code": "20002077",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20002077"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:14.256589+00:00",
+            "body_file": "tvbaduk-5473.body",
+            "body_bytes": 15805,
+            "body_sha256": "98c54af330301169493c12505f3d6609c310ceefba749f31c8592c0f08e0f027",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 왕보강 1段 [王伯 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-5473.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 5473,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002077&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002077&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:52.006111+00:00",
+            "body_file": "cyberoro-5473.body",
+            "body_bytes": 25942,
+            "body_sha256": "2bed0af41550f0e6cc68a6331257fddbcf99451114360f1fda9591adb50b82ae",
+            "prpl_code": "20002077",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-5473.body"
+          }
+        }
+      ],
+      "review_flag": "partial_hanzi_identity_review"
+    },
+    {
+      "prod_player_id": 5675,
+      "test_player_id": 11448,
+      "linked_slots_per_environment": 14,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "秦思玥",
+        "en": "Qin Siyue",
+        "jp": "秦思玥",
+        "tw": "秦思玥"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "친쓰웨",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 秦思玥 matches existing name; stable prpl_code=20002179; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "친쓰웨"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 5675,
+            "name_in_index": "친쓰웨",
+            "prpl_code": "20002179",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20002179"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:17.519150+00:00",
+            "body_file": "tvbaduk-5675.body",
+            "body_bytes": 15952,
+            "body_sha256": "ff76f85efca64da45afdf3d5a2f319e544cd38edec695ea808c81b6080cd97d3",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 친쓰웨 2段 [秦思玥] 생일 : 승단이력 - 1단 / 2022.11.16 / - 2단 / 2024.09.26 / 제7회 오청원배 세계여자바둑대회 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 v",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-5675.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 5675,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002179&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002179&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:52.174674+00:00",
+            "body_file": "cyberoro-5675.body",
+            "body_bytes": 26126,
+            "body_sha256": "c4db7c67b68cc6956d4a12e1b3ad8b0922a1adaaacda961087bb1ecaebfba59c",
+            "prpl_code": "20002179",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-5675.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 5790,
+      "test_player_id": 11559,
+      "linked_slots_per_environment": 14,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "范希钰",
+        "en": "Fan Xiyu",
+        "jp": "范希鈺",
+        "tw": "范希鈺"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "판시위",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 範希鈺 matches existing JP/TW; stable prpl_code=20001948; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "판시위"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 5790,
+            "name_in_index": "판시위",
+            "prpl_code": "20001948",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20001948"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:15.946565+00:00",
+            "body_file": "tvbaduk-5790.body",
+            "body_bytes": 15807,
+            "body_sha256": "b8fa9171234e1c18eeb7d0c0f6925210e8c8868b31fe5acf7f2221d323204f86",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 판시위 1段 [範希鈺] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-5790.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 5790,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001948&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001948&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:52.510091+00:00",
+            "body_file": "cyberoro-5790.body",
+            "body_bytes": 25943,
+            "body_sha256": "dde083c4616373367a04441f63dd70f47300e64e910f63d0c2e9cee16c93bd61",
+            "prpl_code": "20001948",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-5790.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 6296,
+      "test_player_id": 12062,
+      "linked_slots_per_environment": 11,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "陈亚峰",
+        "en": "Chen Yafeng",
+        "jp": "陈亚峰",
+        "tw": "陳亞峰"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "천야펑",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "full Hanja 陳亚峰 matches existing name variants; stable prpl_code=20001041; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "천야펑"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 6296,
+            "name_in_index": "천야펑",
+            "prpl_code": "20001041",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20001041"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:17.651801+00:00",
+            "body_file": "tvbaduk-6296.body",
+            "body_bytes": 15822,
+            "body_sha256": "1dbd7d0af70059da77111e074996033b3ccf5664a44a182c36a56241ef661e71",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 천야펑 1段 [陳亚峰] 생일 : 승단이력 - 1단 / 2014.08.15 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-6296.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 6296,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001041&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20001041&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:53.050138+00:00",
+            "body_file": "cyberoro-6296.body",
+            "body_bytes": 25949,
+            "body_sha256": "045a58ac79cc9e6d04242585f6e7cc30e4f8a11daa1df3d6a438f030665cec05",
+            "prpl_code": "20001041",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-6296.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 6378,
+      "test_player_id": 12144,
+      "linked_slots_per_environment": 11,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "陈长清",
+        "en": "Chen Changqing",
+        "jp": "陳長清",
+        "tw": "陳長清"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "천창칭",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "Hanja 陳長淸 uses variant 淸 where existing name has 清; other characters match; stable prpl_code=20000086; profile lists Taiwan Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=4",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=4",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:10.867290+00:00",
+            "body_file": "tvbaduk-nation4-index.body",
+            "body_bytes": 30800,
+            "body_sha256": "3e3e53fb065bcf5e67c6d4580ffdb9aeeca07b6211bb940f63c0eeb7f8fff09a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation4-index.body"
+          },
+          "name_as_published": "천창칭"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 6378,
+            "name_in_index": "천창칭",
+            "prpl_code": "20000086",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "4",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20000086"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:19.346788+00:00",
+            "body_file": "tvbaduk-6378.body",
+            "body_bytes": 15817,
+            "body_sha256": "0c692c0387eee499c2fd38d61255c9fcd7d4c5ce8ee9aa7c0d8d5d4ad86d52e6",
+            "visible_profile_excerpt": "소속 : 대만기원 이름 : 천창칭 7段 [陳長淸] 생일 : 승단이력 - 7단 / 1992.07.13 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-6378.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 6378,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000086&Tdiv=&Sdiv=&S_nation=4",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20000086&Tdiv=&Sdiv=&S_nation=4",
+            "fetched_at": "2026-10-08T20:21:53.072870+00:00",
+            "body_file": "cyberoro-6378.body",
+            "body_bytes": 25943,
+            "body_sha256": "68a61509536ca3b04c14dfd6e8dd4dd165c69de06eb33028201a1717eeffa554",
+            "prpl_code": "20000086",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-6378.body"
+          }
+        }
+      ],
+      "review_flag": null
+    },
+    {
+      "prod_player_id": 6547,
+      "test_player_id": 12311,
+      "linked_slots_per_environment": 28,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "黄良玉",
+        "en": "Huang Liangyu",
+        "jp": "黄良玉",
+        "tw": "黃良玉"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "황량위",
+      "evidence_kind": "direct_korean_professional_go_player_profile",
+      "source_quality": "Korea Baduk Association affiliated Baduk TV index and player profile publish complete Hangul name; profile bracket Hanja quality varies and is described separately.",
+      "identity_note": "mixed bracket 황良玉 is not full Hanja; two given-name characters match 黄良玉; Daum pairs them; stable prpl_code=20002045; profile lists China Go association and dan rank.",
+      "sources": [
+        {
+          "role": "index",
+          "capture": {
+            "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+            "body_file": "tvbaduk-nation2-index.body",
+            "body_bytes": 119151,
+            "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-nation2-index.body"
+          },
+          "name_as_published": "황량위"
+        },
+        {
+          "role": "profile",
+          "capture": {
+            "prod_player_id": 6547,
+            "name_in_index": "황량위",
+            "prpl_code": "20002045",
+            "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "method": "POST",
+            "post_data": {
+              "S_nation": "2",
+              "S_ob_forc": "",
+              "S_sort_mode": "A",
+              "prpl_code": "20002045"
+            },
+            "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+            "http_status": 200,
+            "fetched_at": "2026-10-08T20:21:12.582294+00:00",
+            "body_file": "tvbaduk-6547.body",
+            "body_bytes": 15808,
+            "body_sha256": "b1bb1527b1a1dd012f5a4216ba71b67b13f26f48192ca2fa37189d5cf7f01731",
+            "visible_profile_excerpt": "소속 : 중국기원 이름 : 황량위 1段 [황良玉 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 ",
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/tvbaduk-6547.body"
+          }
+        },
+        {
+          "role": "same-code public GET profile; same underlying data, not independent corroboration",
+          "capture": {
+            "prod_player_id": 6547,
+            "url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002045&Tdiv=&Sdiv=&S_nation=2",
+            "method": "GET",
+            "http_status": 200,
+            "final_url": "https://www.cyberoro.com/info/N_player_view.oro?prpl_code=20002045&Tdiv=&Sdiv=&S_nation=2",
+            "fetched_at": "2026-10-08T20:21:53.223159+00:00",
+            "body_file": "cyberoro-6547.body",
+            "body_bytes": 25944,
+            "body_sha256": "b2b3fefcb00c6fc4c199b24ead2b734139cacbee87295785a85f2303f775122c",
+            "prpl_code": "20002045",
+            "same_player_code_as_tvbaduk": true,
+            "body_path": "docs/resource/kifu-next-source20-v2-20261009/cyberoro-6547.body"
+          }
+        }
+      ],
+      "review_flag": "partial_hanzi_identity_review"
+    },
+    {
+      "prod_player_id": 5351,
+      "test_player_id": 11127,
+      "linked_slots_per_environment": 19,
+      "missing_language": "en",
+      "existing_qualified_names": {
+        "cn": "沙星宇",
+        "jp": "沙星宇",
+        "ko": "사성우",
+        "tw": "沙星宇"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "Sha Xingyu",
+      "evidence_kind": "direct_english_organizer_roster",
+      "source_quality": "World Pair Go Association organizer roster prints Sha Xingyu, 6 dan, China, Shanghai International Studies University; a separate tournament schedule pairs Sha,Xingyu with 沙星宇.",
+      "identity_note": "Published Hanzi and English paired in the Sina schedule; organizer roster independently identifies same named Chinese Go player and university.",
+      "sources": [
+        {
+          "id": "5351-pairgo",
+          "url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm",
+          "fetched_at": "2026-10-08T20:23:00.937597+00:00",
+          "body_file": "5351-pairgo.body",
+          "body_bytes": 33624,
+          "body_sha256": "98321548e3eda94569aadb1e92ffcb1928f584dabbd40c07bc358c3be96aac7c",
+          "content_type": "text/html",
+          "body_path": "docs/resource/kifu-next-source20-v2-20261009/5351-pairgo.body"
+        },
+        {
+          "id": "5351-sina",
+          "url": "https://blog.sina.com.cn/s/blog_53a2e03d0102wg73.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://blog.sina.com.cn/s/blog_53a2e03d0102wg73.html",
+          "fetched_at": "2026-10-08T20:22:58.913388+00:00",
+          "body_file": "5351-sina.body",
+          "body_bytes": 211861,
+          "body_sha256": "56e8fd7d3065ad20284be8ef68ce3a1844ad873ca6377e203ae7a89f2360addd",
+          "content_type": "text/html",
+          "body_path": "docs/resource/kifu-next-source20-v2-20261009/5351-sina.body"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4340,
+      "test_player_id": 10134,
+      "linked_slots_per_environment": 15,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "安东阳向",
+        "en": "Ando Hinata",
+        "jp": "安東陽向",
+        "tw": "安東陽向"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "안도 히나타",
+      "evidence_kind": "direct_korean_go_tournament_table",
+      "source_quality": "Korean Go competition table directly prints full Hangul name. Japanese original profile prints full kanji, kana and Go-player context.",
+      "identity_note": "Direct tournament spelling matches the independently published complete Japanese reading.",
+      "sources": [
+        {
+          "url": "https://namu.wiki/w/%EC%A0%9C49%ED%9A%8C%20(%EC%86%8C)%EA%B8%B0%EC%84%B1%EC%A0%84",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/4340-namu.md",
+          "content_sha256": "47d5dc4467b66b8d6e0edd15446c9e96285fd6ab455d69e629fbde9f74b4f80d",
+          "retained_at_utc": "2026-10-08T20:22:33.121033+00:00",
+          "scrape_id": "01a11d2e-8a50-7707-b27a-04744276941f",
+          "direct_visible_excerpt": "안도 히나타"
+        },
+        {
+          "id": "4340-kansai",
+          "url": "https://kansaikiin.jp/kisi_prof/andohinata.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://kansaikiin.jp/kisi_prof/andohinata.html",
+          "fetched_at": "2026-10-08T20:23:01.356278+00:00",
+          "body_file": "4340-kansai.body",
+          "body_bytes": 16692,
+          "body_sha256": "acc4ec6d1b4f3c48b978406b870e8df78e2d414fd9c3b3a7f2a67570a6f43982",
+          "content_type": "text/html; charset=UTF-8",
+          "body_path": "docs/resource/kifu-next-source20-v2-20261009/4340-kansai.body"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 4041,
+      "test_player_id": 9837,
+      "linked_slots_per_environment": 6,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "前田亮",
+        "en": "Maeda Ryo",
+        "jp": "前田亮",
+        "tw": "前田亮"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "마에다 료",
+      "evidence_kind": "direct_korean_go_tournament_table",
+      "source_quality": "Korean Go competition table directly prints full Hangul name. Japanese original profile prints full kanji, kana and Go-player context.",
+      "identity_note": "Direct tournament spelling matches the independently published complete Japanese reading.",
+      "sources": [
+        {
+          "url": "https://namu.wiki/w/%EC%A0%9C50%ED%9A%8C%20%EC%B2%9C%EC%9B%90%EC%A0%84(%EC%9D%BC%EB%B3%B8)",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/4041-namu.md",
+          "content_sha256": "a63ffa21227b2cc1e9bfc82045b74a77a35d8513cafcc04800bb457c9485941c",
+          "retained_at_utc": "2026-10-08T20:22:33.130197+00:00",
+          "scrape_id": "01a11d2e-8a3f-702b-a5e0-408352bdeadd",
+          "direct_visible_excerpt": "마에다 료"
+        },
+        {
+          "id": "4041-igo",
+          "url": "https://www.igorating.com/players/ryo-maeda",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.igorating.com/players/ryo-maeda",
+          "fetched_at": "2026-10-08T20:23:00.010775+00:00",
+          "body_file": "4041-igo.body",
+          "body_bytes": 32037,
+          "body_sha256": "5fbfb592be7e2c137db1d74dd74a7489ed2eb66bfc6d03bc45a9b49a40a4eebc",
+          "content_type": "text/html",
+          "body_path": "docs/resource/kifu-next-source20-v2-20261009/4041-igo.body"
+        }
+      ]
+    },
+    {
+      "prod_player_id": 3844,
+      "test_player_id": 9642,
+      "linked_slots_per_environment": 6,
+      "missing_language": "tw",
+      "existing_qualified_names": {
+        "cn": "亚历山大迪那斯塔因",
+        "en": "Alexander Dinerchtein",
+        "jp": "アレキサンダー・ディナーシュタイン",
+        "ko": "알렉산드르 디네르시테인"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "亞歷山大·迪那斯塔因",
+      "evidence_kind": "direct_zh_hant_wikipedia_go_event_table",
+      "source_quality": "Traditional Chinese Wikipedia view directly prints this complete name in several Go match results. The same page also uses 迪納斯塔因 once; this is a real spelling variation, so root should choose the preferred form.",
+      "identity_note": "Matches Alexander Dinerchtein as the European Go participant in the event; existing CN name uses 迪那斯塔因 without the middle dot.",
+      "sources": [
+        {
+          "url": "https://zh.wikipedia.org/zh-hant/%E7%AC%AC%E5%9B%9B%E5%B1%86%E4%B8%96%E7%95%8C%E6%99%BA%E5%8A%9B%E7%B2%BE%E8%8B%B1%E8%BF%90%E5%8B%95%E6%9C%83",
+          "method": "GET via Firecrawl scrape",
+          "transport": "extracted_markdown",
+          "content_file": "docs/resource/kifu-next-source20-v2-20261009/3844-zhtw-wiki.md",
+          "content_sha256": "fb4698d681398bba40613c8f60ad8b5dd76158fb15457d91f530f049b84f81df",
+          "retained_at_utc": "2026-10-08T20:16:48.089701+00:00",
+          "scrape_id": "01a11d29-3a7f-75b8-80c5-dab097646668",
+          "direct_visible_excerpt": "亞歷山大·迪那斯塔因"
+        }
+      ],
+      "review_flag": "same_page_tw_spelling_variant_迪納"
+    },
+    {
+      "prod_player_id": 696,
+      "test_player_id": 697,
+      "linked_slots_per_environment": 25,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "高若环",
+        "en": "Gao Ruohuan",
+        "jp": "高若环",
+        "tw": "高若環"
+      },
+      "source_only": true,
+      "no_owner_binding_or_approval": true,
+      "proposed_name": "가오뤄환",
+      "evidence_kind": "direct_korean_go_official_opponent_and_specialist_news",
+      "source_quality": "Korea Baduk Association official opponent row and Cyberoro specialist Go reporting both publish the complete Hangul name. An older TV Baduk bracket has a wrong last Hanzi and is not used as an original-name anchor.",
+      "identity_note": "Chinese woman Go professional of first dan in Cyberoro report; official Korean Go game result uses the same Hangul name. Exact original 高若环, existing four qualified names and 25 linked games require final root same-person review.",
+      "sources": [
+        {
+          "id": "696-kba-opponent",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002408",
+          "fetched_at": "2026-10-08T20:36:53.184189+00:00",
+          "body_sha256": "22743051f9363704a9f24df36b501588a1d4c12063f558ae0882a6766c7c443d",
+          "body_bytes": 18036,
+          "body_file": "696-kba-opponent.body",
+          "body_excerpt": "2024.06.04 / ◆ 3단 / 2026.04.08 / 경력사항 최근대국 더보기 제6회 몽백합배 세계바둑오픈전 여자조 예선 3회차 가오뤄환 VS 왕수야오 0수 흑 집승 제6회 몽백합배 세계바둑오픈전 여자조 예선 2회차 왕수야오 VS 김민서 0수 흑 집승 제4회 취저우 란커배 세계바둑오픈전 통합예선 2회차(여자1조) 최서비 VS 왕수야오 0수 흑 집승 한국기원소개 찾아오시는길 이용약관 개인정보처리방침 주소 : 서울시",
+          "content_type": "text/html; Charset=UTF-8"
+        },
+        {
+          "id": "696-cyberoro-news",
+          "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo=",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530349&pageNo=",
+          "fetched_at": "2026-10-08T20:36:55.613695+00:00",
+          "body_sha256": "167e02a6b207301697222b9dbd21e81f2e570cab5d3819cee551a7b89a3b4d2b",
+          "body_bytes": 54728,
+          "body_file": "696-cyberoro-news.body",
+          "body_excerpt": "있을 것 같다. 많이 응원 부탁드린다.”고 소감을 말했다. ▲ 후지사와 리나-최정(승). ▲ 국후 복기. ▲ 녜웨이핑 9단(오른쪽)과 가오뤄환 초단의 공개해설 두 사람의 상대전적은 최정 9단이 1승을 추가하며 12승 4패로 한발 더 앞서 갔다. 오청원배 결승2국은 3일 같은 장소에서 속행된다. 최정 9단은 이번 대회를 포함한 여섯 번의 오청원배에서 총 4번 결승 무대에 올랐다. 1회 대회에서는 준우승을 차지했으며, 2",
+          "content_type": "text/html"
+        }
+      ],
+      "review_flag": "replace_unqualified_legacy_review_고_약환"
+    }
+  ],
+  "scope": {
+    "distinct_players": 20,
+    "linked_slots_per_environment": 614
+  },
+  "status": "unsigned_pending_source_identity_rule_review"
+}

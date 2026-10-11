@@ -1,0 +1,599 @@
+{
+  "format": "kifu-player-provisional20-exact-plan-v1",
+  "environment": "PROD",
+  "database": "katrain_prod_20260725",
+  "review_artifact": "docs/resource/kifu-player-provisional-timed-pilot-independent-review-2026-10-04.md",
+  "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+  "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+  "counts": {
+    "raw_rows": 20,
+    "linked_slots": 13633,
+    "album_fk_updates": 0,
+    "canonical_creates": 0,
+    "canonical_renames": 0
+  },
+  "items": [
+    {
+      "raw_id": 11410,
+      "raw_value": "朴廷桓",
+      "expected_slots": 1526,
+      "player_id": 54,
+      "canonical_name": "朴廷桓",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 54,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 54,
+          "canonical_name": "朴廷桓",
+          "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%B4%E5%BB%B7%E6%A1%93",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "同名韩国职业棋手；2007-06-11 起对洪性志等韩国职业对局，时间线连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 11547,
+      "raw_value": "李世石",
+      "expected_slots": 1405,
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4944,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4944,
+          "canonical_name": "李世石",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "韩国棋院李世乭档案与通行中文名李世石同人；1991 儿童赛至 2020 对局连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 10721,
+      "raw_value": "山下敬吾",
+      "expected_slots": 1371,
+      "player_id": 242,
+      "canonical_name": "山下敬吾",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 242,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 242,
+          "canonical_name": "山下敬吾",
+          "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000322.htm",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "日本棋院本人档案；最早有效日期为 1986 小学生名人赛，符合 1978 年出生及其少年履历。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 9972,
+      "raw_value": "古力",
+      "expected_slots": 1353,
+      "player_id": 201,
+      "canonical_name": "古力",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 201,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 201,
+          "canonical_name": "古力",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "中国职业棋手同名唯一；1995 定段赛至 2025 职业对局连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 10910,
+      "raw_value": "常昊",
+      "expected_slots": 1319,
+      "player_id": 877,
+      "canonical_name": "常昊",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 877,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 877,
+          "canonical_name": "常昊",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "1985 与陈祖德教学/书中棋、1986 神童杯，早于 1986 入段不构成矛盾；其后职业履历连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 10265,
+      "raw_value": "大竹英雄",
+      "expected_slots": 1303,
+      "player_id": 879,
+      "canonical_name": "大竹英雄",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 879,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 879,
+          "canonical_name": "大竹英雄",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E7%AB%B9%E8%8B%B1%E9%9B%84",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "日本棋院职业棋手；1957 晋段赛/大手合起始，非占位日期与本人履历一致。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 13169,
+      "raw_value": "藤泽秀行",
+      "expected_slots": 1258,
+      "player_id": 880,
+      "canonical_name": "藤泽秀行",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 880,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 880,
+          "canonical_name": "藤泽秀行",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E7%A7%80%E8%A1%8C",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "日本职业棋手；1937 院生联赛起始，符合 1925 年出生及院生经历。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 11119,
+      "raw_value": "徐奉洙",
+      "expected_slots": 1257,
+      "player_id": 108,
+      "canonical_name": "徐奉洙",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 108,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 108,
+          "canonical_name": "徐奉洙",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "韩国职业棋手；1972 名人战决赛对赵南哲，符合 1970 入段。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 10812,
+      "raw_value": "崔哲瀚",
+      "expected_slots": 1194,
+      "player_id": 4535,
+      "canonical_name": "崔哲瀚",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4535,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4535,
+          "canonical_name": "崔哲瀚",
+          "source_url": "https://zh.wikipedia.org/wiki/%E5%B4%94%E5%93%B2%E7%80%9A",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "韩国职业棋手；1998 三星杯预选，符合 1997 入段。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 12984,
+      "raw_value": "聂卫平",
+      "expected_slots": 1190,
+      "player_id": 5744,
+      "canonical_name": "聂卫平",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5744,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5744,
+          "canonical_name": "聂卫平",
+          "source_url": "https://zh.wikipedia.org/wiki/%E8%81%82%E5%8D%AB%E5%B9%B3",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "同名中国棋手；最早有效记录为 1964 北京少儿赛，符合 1952 年出生；后续时间线连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 12771,
+      "raw_value": "知念熏",
+      "expected_slots": 84,
+      "player_id": 5632,
+      "canonical_name": "知念熏",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5632,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5632,
+          "canonical_name": "知念熏",
+          "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000323.htm",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "日本棋院知念かおり本人档案；中文棋谱固定写作知念熏，1993 翠宝杯后女子赛事连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 13640,
+      "raw_value": "金大熙",
+      "expected_slots": 45,
+      "player_id": 6129,
+      "canonical_name": "金大熙",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6129,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6129,
+          "canonical_name": "金大熙",
+          "source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000401",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "推翻 pilot HOLD：韩国棋院专页明确 `김대희 金大熙`、1989-08-15 生、2003 入段；2006 新锐战至 2019 的 45 槽时间线吻合。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 11549,
+      "raw_value": "李世石九段",
+      "expected_slots": 35,
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 4944,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 4944,
+          "canonical_name": "李世石",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "`九段` 为段位后缀；2006–2012 全为李世石韩国职业对局，与无后缀 raw 共用唯一 canonical 正确。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 13358,
+      "raw_value": "赵斐",
+      "expected_slots": 22,
+      "player_id": 411,
+      "canonical_name": "赵斐",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 411,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 411,
+          "canonical_name": "赵斐",
+          "source_url": "https://www.sohu.com/a/335939651_114977",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "2015 少儿赛、2018 晚报杯冲段少年、2019 定段及此后职业赛事形成同一履历；2019 定段名单明确赵斐。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 13834,
+      "raw_value": "金茜倩",
+      "expected_slots": 32,
+      "player_id": 6221,
+      "canonical_name": "金茜倩",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6221,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6221,
+          "canonical_name": "金茜倩",
+          "source_url": "https://www.foxwq.com/news/12721.html",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "推翻 pilot HOLD：1979 全运会权威回顾明确浙江女队为朱菊菲、金茜倩；库内 1979–1998 女子/段位赛事及 2011 女子名人战同一职业履历，无现代同名人跳接。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 14262,
+      "raw_value": "高宇",
+      "expected_slots": 21,
+      "player_id": 6468,
+      "canonical_name": "高宇",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6468,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6468,
+          "canonical_name": "高宇",
+          "source_url": "https://sports.sina.cn/sa/2008-11-11/detail-ikftssap6622122.d.html?vt=4",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "推翻 pilot HOLD：2008 钻石杯报道明确个人第三高宇并获六段，2009 全国定段名单含高宇；库内随即进入职业网选、升段赛至 2021 三段组，时间线唯一连续。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 14442,
+      "raw_value": "黄进先",
+      "expected_slots": 18,
+      "player_id": 6552,
+      "canonical_name": "黄进先",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 6552,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 6552,
+          "canonical_name": "黄进先",
+          "source_url": "https://sports.sina.cn/others/qipai/2019-11-19/detail-iihnzahi1942006.d.html?wm=3049_0015",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "1964 全国赛名册明确广西黄进先、20 岁；2019 元老赛报道明确 75 岁黄进先（1944-09-25 生），正好闭合 55 年跨度，不是假时间线。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 12323,
+      "raw_value": "洪性志五段",
+      "expected_slots": 19,
+      "player_id": 175,
+      "canonical_name": "洪性志",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 175,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 175,
+          "canonical_name": "洪性志",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000280",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "韩国棋院洪性志本人档案；`五段` 为段位后缀，2006–2007 韩国职业对局一致。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 12477,
+      "raw_value": "玄釉斌",
+      "expected_slots": 115,
+      "player_id": 5460,
+      "canonical_name": "玄釉斌",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 5460,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 5460,
+          "canonical_name": "玄釉斌",
+          "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000882",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "韩国棋院 `현유빈 玄釉斌` 本人档案；2016 利民杯起的青年职业履历一致。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    },
+    {
+      "raw_id": 10067,
+      "raw_value": "吴树浩",
+      "expected_slots": 66,
+      "player_id": 131,
+      "canonical_name": "吴树浩",
+      "before": {
+        "review_status": "pending",
+        "review_metadata": {
+          "kind": "provisional_person_link",
+          "player_id": 131,
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845"
+        }
+      },
+      "after": {
+        "review_status": "approved",
+        "review_metadata": {
+          "kind": "verified_person",
+          "player_id": 131,
+          "canonical_name": "吴树浩",
+          "source_url": "https://sports.sina.com.cn/o/2004-08-03/16111042007.shtml",
+          "reviewer": "codex-independent-review",
+          "identity_reason": "2004 年中国棋院消息报道吴树浩刚入段，此前曾在第 17 届名人战取得突出成绩；库内 2004 年起的对局时间线与之吻合。两库该 ID 均只关联“吴树浩”原名，未混入娄玺或娄洛宁。",
+          "inventory_sha256": "51102a1992e24aec038cb0d04d7c65a2fd5ffb1083e0e528e931e53cefca1845",
+          "review_sha256": "f165db1532009e04f927f4769b75a64fd38b950af542e9a2cd69a28942963fe7",
+          "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+        }
+      }
+    }
+  ],
+  "independent_decision_artifact": "docs/resource/kifu-player-provisional20-independent-decision-astra-2026-10-04.md",
+  "independent_decision_sha256": "836f8a1f3ff7fb74f30cf1e2bb2aeddc03fd1a9e34af63fcdf6830527f576d35"
+}

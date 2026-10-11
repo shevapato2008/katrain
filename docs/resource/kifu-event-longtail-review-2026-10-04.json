@@ -1,0 +1,2304 @@
+{
+  "format": "kifu-event-longtail-fresh-evidence-review-v1",
+  "started_at": "2026-10-04T14:13:18.643405+00:00",
+  "completed_at": "2026-10-04T14:19:31.148701+00:00",
+  "review_wall_clock_minutes": 6.208,
+  "minutes_per_core": 0.207,
+  "measurement_scope": "Separate fresh-evidence review by same research agent, NOT independent second human/model reviewer. Covers production SGF read through source review and artifact creation; excludes first pass 5.433min, DB ingestion, translations and future HOLD research.",
+  "summary": {
+    "reviewed": 30,
+    "type_approved": 15,
+    "hold": 15,
+    "non_event_terminal": 0,
+    "label_insufficient_gn_gc_named_context": 13,
+    "all_have_root_EV": false
+  },
+  "scope": "Exact album IDs/raw/core listed only; no pattern aliases, no core-wide propagation to new games, no dedup. Type approval may coexist with metadata HOLD. All underlying records have named tournament context in GN/GC, so no safe no-event terminal disposal.",
+  "provenance": "PROD stored sgf_content exported by golaxy, not independently downloaded original organizer SGF. GN multi-values retained losslessly by repository SGF parser; GC from same file is supplemental context, NOT an independent second source.",
+  "sgf_root_EV_count": 0,
+  "sgf_root_GN_multiple_count": 26,
+  "label_insufficient_game_ids": [
+    142468,
+    72554,
+    64645,
+    125773,
+    148486,
+    72254,
+    139417,
+    64277,
+    93118,
+    135942,
+    96107,
+    88111,
+    29383
+  ],
+  "source_capture_sha256": "887db74e24ee205645191f1be96a7c583fd6a55c8651439ed7de53b8c8f6a91d",
+  "database_writes": 0,
+  "translations": 0,
+  "dedup_merges": 0,
+  "rows": [
+    {
+      "sample_index": 1,
+      "album_id": 82103,
+      "exact_raw": "第2届台湾UMC联电杯快棋争霸战8强战",
+      "exact_series_core": "台湾UMC联电杯快棋争霸战8强战",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "e4024ba59f76bfefb5c9609fee38744ace97d5d0bf30ae86daa699dafc606d4f",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "杨博崴"
+        ],
+        "PW": [
+          "简靖庭"
+        ],
+        "BR": [
+          "七段"
+        ],
+        "WR": [
+          "六段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第2届台湾UMC联电杯快棋争霸战8强战",
+          "第2届台湾UMC联电杯快棋争霸战8强战"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2021-11-26"
+        ],
+        "GC": [
+          "第2届台湾UMC联电杯快棋争霸战8强战 | 结果: W+R | 236手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41374168.sgf",
+      "source_urls": [
+        "https://www.haifong.org/news/content/F3914781A7088AA194160D9AC5EA7463"
+      ],
+      "canonical_type_zh": "台湾UMC联电杯快棋争霸战",
+      "edition_candidate": 2,
+      "round_candidate": "8强战",
+      "reason": "Organizer report identifies second rapid championship and same player pairing; distinct from 联电杯职业围棋赛.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 2,
+      "album_id": 6753,
+      "exact_raw": "2022日本关西围棋公开赛决赛",
+      "exact_series_core": "2022日本关西围棋公开赛决赛",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "fe551c67f46620e6d535087d3a79e43d7aaf1f4851f7af68d423c135b2278809",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+0.5"
+        ],
+        "PB": [
+          "村川大介"
+        ],
+        "PW": [
+          "井山裕太"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2022日本关西围棋公开赛决赛",
+          "第3期日本关西围棋公开赛S组决赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2022-12-11"
+        ],
+        "GC": [
+          "第3期日本关西围棋公开赛S组决赛 | 结果: B+0.5 | 286手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41333940.sgf",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/k_open/003.html"
+      ],
+      "canonical_type_zh": "日本关西围棋公开赛",
+      "edition_candidate": 3,
+      "round_candidate": "决赛",
+      "reason": "Official third edition, 2022 final pairing/date; 2022 retained by parser core is year, not identity.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 3,
+      "album_id": 142468,
+      "exact_raw": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+      "exact_series_core": "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "5e8224a0ea5cf0d9714f875a7e7edf0a9c74215d368e20304d4131c3ebdd7750",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "5.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "中野宽也"
+        ],
+        "PW": [
+          "小林光一"
+        ],
+        "BR": [
+          "9p"
+        ],
+        "WR": [
+          "9p"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "KobayashiKoichi(w)_NakanoHironari(b)2000-04-05_a",
+          "日本第38期十段战"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2000-04-05"
+        ],
+        "GC": [
+          "日本第38期十段战 | 结果: W+R | 248手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41567236.sgf",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/jyudan/038.htm"
+      ],
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": 38,
+      "round_candidate": "挑战赛第3局",
+      "reason": "GN后值日本第38期十段战；日本棋院同日同棋手同黑白胜负，原文件名可按此exact album补全。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 4,
+      "album_id": 72554,
+      "exact_raw": "46jp-10duan-heshansgf",
+      "exact_series_core": "46jp-10duan-heshansgf",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "364878545d4af39a4199727916658f788b7426b4c3dfcf79c0099e03b30822bf",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "河野临"
+        ],
+        "PW": [
+          "山城宏"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "46jp-10duan-heshansgf",
+          "第46期日本十段战第一轮"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-05-31"
+        ],
+        "GC": [
+          "第46期日本十段战第一轮 | 结果: B+R | 179手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41359349.sgf",
+      "source_urls": [
+        "https://www.kifudepot.net/kifucontents.php?id=jVWo0UXmj2PF8k6fakkLlg%3D%3D",
+        "https://archive.nihonkiin.or.jp/match/jyudan/046.html"
+      ],
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": 46,
+      "round_candidate": "本赛第1轮",
+      "reason": "日本棋院档案本赛首轮河野临对山城宏5/31，原SGF后GN明示第46期。赛事年度2008，实际本赛对局2007，分开保存。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 5,
+      "album_id": 74482,
+      "exact_raw": "2014世界智力精英运动会女子4-5名战",
+      "exact_series_core": "2014世界智力精英运动会女子4-5名战",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "3145ba8cc9aa01eed625c1a70160a30f085593c4863df6377f3e555b58e2bba3",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+3.5"
+        ],
+        "PB": [
+          "张凯馨"
+        ],
+        "PW": [
+          "黑嘉嘉"
+        ],
+        "BR": [
+          "四段"
+        ],
+        "WR": [
+          "六段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2014世界智力精英运动会女子4-5名战",
+          "2014世界智力精英运动会女子4-5名战"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2014-12-14"
+        ],
+        "GC": [
+          "2014世界智力精英运动会女子4-5名战 | 结果: B+3.5 | 273手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41362345.sgf",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2014-12-14/17547447128.shtml",
+        "https://zh.wikipedia.org/wiki/第四届世界智力精英运动会"
+      ],
+      "canonical_type_zh": "世界智力精英运动会",
+      "edition_candidate": 4,
+      "round_candidate": "女子个人4、5名战",
+      "reason": "Contemporaneous exact date/pairing and placing; edition 4 additionally documented in event history. Do not merge with later IMSA elite games by 智英 abbreviation.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 6,
+      "album_id": 64645,
+      "exact_raw": "32jp-ming-f-6sgf",
+      "exact_series_core": "32jp-ming-f-6sgf",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "41d1ee10833037861b32337d817decdcd57236095fbfad6905c40efc62934df3",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+0.5"
+        ],
+        "PB": [
+          "张栩"
+        ],
+        "PW": [
+          "高尾绅路"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "32jp-ming-f-6sgf",
+          "第32期日本名人战挑战赛七番胜负第六局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-11-01"
+        ],
+        "GC": [
+          "第32期日本名人战挑战赛七番胜负第六局 | 结果: W+0.5 | 265手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41349575.sgf",
+      "source_urls": [
+        "https://archive.nihonkiin.or.jp/match/meijin/032.html"
+      ],
+      "canonical_type_zh": "日本名人战",
+      "edition_candidate": 32,
+      "round_candidate": "挑战赛第6局",
+      "reason": "Official schedule: November 1–2, Takao white versus Cho black; shorthand ming-f-6 resolves. DB has start date only.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 7,
+      "album_id": 628,
+      "exact_raw": "45届韩国SG名人败者决赛",
+      "exact_series_core": "韩国SG名人败者决赛",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "a08d26d875ecab06217539cf3409ab75cce9025491cf1f2af5661b0c1e52e691",
+      "sgf_root_properties": {
+        "GM": [
+          "1"
+        ],
+        "FF": [
+          "4"
+        ],
+        "CA": [
+          "UTF-8"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "jp"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "PB": [
+          "申旻埈",
+          "申旻埈"
+        ],
+        "PW": [
+          "朴廷桓",
+          "朴廷桓"
+        ],
+        "SO": [
+          "弈客直播员",
+          "https://19x19.com"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "RE": [
+          "黑中盘胜"
+        ],
+        "GN": [
+          "45届韩国SG名人败者决赛"
+        ],
+        "DT": [
+          "2022-09-21"
+        ],
+        "GC": [
+          "45届韩国SG名人败者决赛 | 结果: 黑中盘胜 | 211手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/18224350.sgf",
+      "source_urls": [
+        "https://kifubara.app/zh/players/a42b2257-fad2-4fc5-b978-b76b607239ee?year=2022"
+      ],
+      "canonical_type_zh": "韩国名人战",
+      "edition_candidate": 45,
+      "round_candidate": "败者组决赛",
+      "reason": "原SGF核准同日同配对，但外部仍以二手目录为主；严格门槛下HOLD，不能把两份目录或源内GC视作独立权威。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 8,
+      "album_id": 79620,
+      "exact_raw": "第26期日本女子本因坊战,round2",
+      "exact_series_core": "日本女子本因坊战,round2",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "bb0c29deb9c011a4e85195359de5b606cfeec8c1c15962085d94611af83f94fd",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "谢依旻"
+        ],
+        "PW": [
+          "吉田美香"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第26期日本女子本因坊战,round2",
+          "第26期日本女子本因坊战,round2"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-06-07"
+        ],
+        "GC": [
+          "第26期日本女子本因坊战,round2 | 结果: B+R | 235手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41370751.sgf",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/fhoninbo/archive.html",
+        "https://archive.nihonkiin.or.jp/match/fhoninbo/026.html"
+      ],
+      "canonical_type_zh": "日本女子本因坊战",
+      "edition_candidate": 26,
+      "round_candidate": "本赛第2轮",
+      "reason": "官方本赛表6/7谢依旻对吉田美香，round2确认为本赛第二轮；不是挑战赛第2局。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 9,
+      "album_id": 56109,
+      "exact_raw": "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局",
+      "exact_series_core": "台湾大森杯女子围棋名人赛决赛反则3番棋",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "ec01911ee1110743ec2a3ba6e81c346cf1a7b64c30c4121bfa0ec73df32d2099",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "8"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+5"
+        ],
+        "PB": [
+          "卢钰桦"
+        ],
+        "PW": [
+          "党希昀"
+        ],
+        "BR": [
+          "初段"
+        ],
+        "WR": [
+          "二段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局",
+          "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2019-10-18"
+        ],
+        "GC": [
+          "第2届台湾大森杯女子围棋名人赛决赛反则3番棋第1局 | 结果: B+5 | 311手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41339305.sgf",
+      "source_urls": [
+        "https://taiwangorg.blogspot.com/2019/10/blog-post_24.html"
+      ],
+      "canonical_type_zh": "台湾大森杯女子名人赛",
+      "edition_candidate": 2,
+      "round_candidate": "决赛变则三番棋；实际对局序号待核",
+      "reason": "官方台湾棋院同日同配对同结果确认第2届大森杯女子名人赛，因此仅类型可批准；原GN第1局与官方第2局冲突，所有局序/关联仍HOLD。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 10,
+      "album_id": 125773,
+      "exact_raw": "weijia-9-qiuzhangsgf",
+      "exact_series_core": "weijia-9-qiuzhangsgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "00e5a3d95db9c14a1669c3c937b4f01bb89a4b5e2580c2c2132b546cf86b92ec",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "5.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "邱峻"
+        ],
+        "PW": [
+          "张东岳"
+        ],
+        "BR": [
+          "六段"
+        ],
+        "WR": [
+          "三段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "weijia-9-qiuzhangsgf",
+          "2001年中国围棋甲级联赛第九轮"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2001-06-17"
+        ],
+        "GC": [
+          "2001年中国围棋甲级联赛第九轮 | 结果: B+R | 269手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41444733.sgf",
+      "source_urls": [],
+      "canonical_type_zh": "中国围棋甲级联赛",
+      "edition_candidate": null,
+      "round_candidate": "第9轮",
+      "reason": "后GN与GC明示2001中国围甲第9轮，真实赛事待查；具体日期/对阵尚未外部核准。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 11,
+      "album_id": 9200,
+      "exact_raw": "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+      "exact_series_core": "衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "cf6892cd371b5ed4687e821eac56fbab04ffb67fd039b124cb34d744bb773273",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "李立言"
+        ],
+        "PW": [
+          "杨凯文"
+        ],
+        "BR": [
+          "三段"
+        ],
+        "WR": [
+          "初段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛",
+          "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2022-11-01"
+        ],
+        "GC": [
+          "第1届衢州烂柯杯世界围棋公开赛北美选拔赛决赛 | 结果: W+R | 176手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41403142.sgf",
+      "source_urls": [
+        "https://k.sina.com.cn/article_1730866981_672aef25019018aei.html"
+      ],
+      "canonical_type_zh": "衢州烂柯杯世界围棋公开赛",
+      "edition_candidate": 1,
+      "round_candidate": "北美选拔赛决赛（原文）",
+      "reason": "Contemporaneous first-edition roster confirms North American Kevin Yang, but no exact November 1 selector final corroboration. Selection took place in 2022 for event later spanning 2023.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 12,
+      "album_id": 941,
+      "exact_raw": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+      "exact_series_core": "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "ac2bb6140e51bb5a78939881736ba65e5a6e7d155855429baee72b29284801ad",
+      "sgf_root_properties": {
+        "GM": [
+          "1"
+        ],
+        "FF": [
+          "4"
+        ],
+        "CA": [
+          "UTF-8"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "cn"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "PB": [
+          "韩恩溢",
+          "韩恩溢"
+        ],
+        "PW": [
+          "许一笛",
+          "许一笛"
+        ],
+        "SO": [
+          "",
+          "https://19x19.com"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "RE": [
+          "黑中盘胜"
+        ],
+        "GN": [
+          "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4"
+        ],
+        "DT": [
+          "2022-11-21"
+        ],
+        "GC": [
+          "华锐教育杯2022围乙6浙江云林棋禅-云南体彩4 | 结果: 黑中盘胜 | 217手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/20618802.sgf",
+      "source_urls": [
+        "https://www.ttplus.cn/publish/app/data/2022/11/23/449346/os_news.html"
+      ],
+      "canonical_type_zh": "中国围棋乙级联赛",
+      "edition_candidate": null,
+      "round_candidate": "第6轮/第4台（原文候选）",
+      "reason": "League/year/teams supported; exact Nov21 pairing/round not checked. 6 and 4 are round/board hints, never editions.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 13,
+      "album_id": 148486,
+      "exact_raw": "2007cn-duan-5-zhoukzhuangysgf",
+      "exact_series_core": "2007cn-duan-5-zhoukzhuangysgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "f83c92e41b9f37aa67a9e259309fadd5f212a73cb1386a6fb38b52a121c388df",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "周逵"
+        ],
+        "PW": [
+          "庄园"
+        ],
+        "BR": [
+          "三段"
+        ],
+        "WR": [
+          "三段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2007cn-duan-5-zhoukzhuangysgf",
+          "2007年中国围棋段位赛第五轮半决赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-07-16"
+        ],
+        "GC": [
+          "2007年中国围棋段位赛第五轮半决赛 | 结果: B+R | 209手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41609929.sgf",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2007-07-16/20543044188.shtml"
+      ],
+      "canonical_type_zh": "全国围棋段位赛",
+      "edition_candidate": null,
+      "round_candidate": "第5轮；半决赛字样待查",
+      "reason": "后GN/GC明示2007段位赛；专业报道当日升段赛第5轮且列两位棋手，但未核准本局配对，半决赛或错误，HOLD。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 14,
+      "album_id": 72254,
+      "exact_raw": "44jp-10duan-sanhesgf",
+      "exact_series_core": "44jp-10duan-sanhesgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "b1c33546e51d287e974d191766d802797a02354180cef2d80264fea8953c5e6f",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+0.5"
+        ],
+        "PB": [
+          "三村智保"
+        ],
+        "PW": [
+          "河野临"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "七段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "44jp-10duan-sanhesgf",
+          "第44期日本十段战第一轮"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2005-05-26"
+        ],
+        "GC": [
+          "第44期日本十段战第一轮 | 结果: B+0.5 | 229手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41359026.sgf",
+      "source_urls": [
+        "https://igorating.com/compare/rin-kono/tomoyasu-mimura",
+        "https://archive.nihonkiin.or.jp/match/jyudan/044.htm"
+      ],
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": 44,
+      "round_candidate": "本赛第1轮",
+      "reason": "官方本赛期间2005-05-19至2006-01-26；首轮三村智保胜河野临5/26，与SGF吻合。届次44赛事年度2006、对局日期2005独立保存。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 15,
+      "album_id": 74570,
+      "exact_raw": "第2届世界智英会女子快棋季军战",
+      "exact_series_core": "世界智英会女子快棋季军战",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "3c6d0c19e4f8d94e31a056858ba0ff40ab2a143ad48070a57ca22f7a57b6b55b",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "黑嘉嘉"
+        ],
+        "PW": [
+          "藤泽里菜"
+        ],
+        "BR": [
+          "七段"
+        ],
+        "WR": [
+          "三段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第2届世界智英会女子快棋季军战",
+          "2017世界智英会女子快棋季军战"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2017-12-15"
+        ],
+        "GC": [
+          "2017世界智英会女子快棋季军战 | 结果: W+R | 196手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41362438.sgf",
+      "source_urls": [
+        "https://sports.sohu.com/20171215/n525382838.shtml",
+        "https://zh.wikipedia.org/wiki/2017国际智力运动联盟智力运动精英赛",
+        "https://www.sohu.com/a/210719469_509310"
+      ],
+      "canonical_type_zh": "国际智力运动联盟智力运动精英赛",
+      "edition_candidate": 2,
+      "round_candidate": "女子快棋季军战",
+      "reason": "弈城当日报道2017-12-15该赛事藤泽季军、黑嘉嘉第四；SGF后GN给2017。类型/日期核准，届次2仅原值及历史列表候选，不写届次关联。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 16,
+      "album_id": 56156,
+      "exact_raw": "2014太阳谷避暑季四城市围棋赛决赛",
+      "exact_series_core": "2014太阳谷避暑季四城市围棋赛决赛",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "4958b209cd23a2536b1b7f520d3b51048638bed60dff320c413129c69eaf5cb8",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "党毅飞"
+        ],
+        "PW": [
+          "唐韦星"
+        ],
+        "BR": [
+          "四段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2014太阳谷避暑季四城市围棋赛决赛",
+          "2014太阳谷避暑季四城市围棋赛决赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2014-09-27"
+        ],
+        "GC": [
+          "2014太阳谷避暑季四城市围棋赛决赛 | 结果: W+R | 174手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41339352.sgf",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/suncityweiqi2014/"
+      ],
+      "canonical_type_zh": "太阳谷避暑季四城市围棋巅峰对决",
+      "edition_candidate": null,
+      "round_candidate": "决赛",
+      "reason": "Contemporaneous event feature exact Sept27 final/pairing; one-off event is valid identity, not generic fixture description.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 17,
+      "album_id": 23368,
+      "exact_raw": "第2届晋城职业围棋公开赛8强",
+      "exact_series_core": "晋城职业围棋公开赛8强",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "7f13cf6896946bcaf1864226170f338efa208cff5ece23ee4628e4fe4197252d",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "PB": [
+          "赵晨宇"
+        ],
+        "PW": [
+          "丁浩"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "GN": [
+          "第2届晋城职业围棋公开赛8强"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2025-12-12"
+        ],
+        "GC": [
+          "第2届晋城职业围棋公开赛8强 | 结果: B+R | 335手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/73296088.sgf",
+      "source_urls": [
+        "https://m.sohu.com/a/964216341_121609438/"
+      ],
+      "canonical_type_zh": "晋城职业围棋公开赛",
+      "edition_candidate": 2,
+      "round_candidate": "8强战",
+      "reason": "专业原始来源不足；另二手报道丁浩胜赵晨宇，而SGF RE[B+R]表示赵晨宇胜，出现对局结果冲突。类型候选保留、整行HOLD。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 18,
+      "album_id": 139417,
+      "exact_raw": "22cn-ty-3-wangwangsgf",
+      "exact_series_core": "22cn-ty-3-wangwangsgf",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "5aef26ce2a91a93d309b8b85f500a186816f074327ee990870b72134999879b5",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "王煜辉"
+        ],
+        "PW": [
+          "王檄"
+        ],
+        "BR": [
+          "七段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "22cn-ty-3-wangwangsgf",
+          "第22届同里杯中国天元战八强赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2008-02-02"
+        ],
+        "GC": [
+          "第22届同里杯中国天元战八强赛 | 结果: W+R | 268手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41560626.sgf",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2008-02-02/16193457972.shtml"
+      ],
+      "canonical_type_zh": "中国天元赛",
+      "edition_candidate": 22,
+      "round_candidate": "本赛第3轮（8强战）",
+      "reason": "Exact contemporary edition/date/pairing corroborates cryptic 22cn-ty-3 filename; 3 is round, 22 edition.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 19,
+      "album_id": 122955,
+      "exact_raw": "2019韩国英才-女子冠军对抗第5局",
+      "exact_series_core": "2019韩国英才-女子冠军对抗",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "c268aa2cda5e25ac6c092a264d6f44cb6d5d490930e1bd571a8b5d99e4ab7b42",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "朴炫洙"
+        ],
+        "PW": [
+          "吴侑珍"
+        ],
+        "BR": [
+          "三段"
+        ],
+        "WR": [
+          "六段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2019韩国英才-女子冠军对抗第5局",
+          "2019韩国历届英才-女子冠军对抗第5局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2019-06-01"
+        ],
+        "GC": [
+          "2019韩国历届英才-女子冠军对抗第5局 | 结果: B+R | 243手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41441281.sgf",
+      "source_urls": [
+        "https://sports.sina.cn/others/qipai/2020-07-08/detail-iircuyvk2717641.d.html"
+      ],
+      "canonical_type_zh": "韩国历届英才战冠军对顶尖女子擂台赛",
+      "edition_candidate": null,
+      "round_candidate": "第5局（原文）",
+      "reason": "2020 retrospective establishes 2019 inaugural event and teams, but exact June1 game5 unverified; seventh 영재 event edition should not automatically become confrontation edition.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 20,
+      "album_id": 5114,
+      "exact_raw": "20届韩国KB联赛6轮陕川-元益决胜5局",
+      "exact_series_core": "韩国KB联赛6轮陕川-元益决胜",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "130b97a30a1d59b1497235a37f155c690880116a931f7cb775940dd703016087",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "PB": [
+          "元晟溱"
+        ],
+        "PW": [
+          "李志贤"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "GN": [
+          "20届韩国KB联赛6轮陕川-元益决胜5局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2024-02-03"
+        ],
+        "GC": [
+          "20届韩国KB联赛6轮陕川-元益决胜5局 | 结果: W+R | 246手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/39341379.sgf",
+      "source_urls": [
+        "https://www.ntdtv.com/gb/2024/02/07/a103850093.html"
+      ],
+      "canonical_type_zh": "韩国KB围棋联赛",
+      "edition_candidate": 20,
+      "round_candidate": "第6轮/决胜第5局",
+      "reason": "Exact match/day supported, season is 2023–2024. Article says Lee black versus Won white; DB colors reversed. Hold before any album association or dedup decision.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 21,
+      "album_id": 64277,
+      "exact_raw": "61byf-f-6sgf",
+      "exact_series_core": "61byf-f-6sgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "4142f6bafe6178e392fc88d77bb2a5565470b8d25bf81a0d110986ccd4c3ed01",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "高尾绅路"
+        ],
+        "PW": [
+          "山田规三生"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "61byf-f-6sgf",
+          "第61期日本本因坊战挑战赛第六局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2006-07-10"
+        ],
+        "GC": [
+          "第61期日本本因坊战挑战赛第六局 | 结果: B+R | 179手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41349121.sgf",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/honinbo/061.html"
+      ],
+      "canonical_type_zh": "日本本因坊战",
+      "edition_candidate": 61,
+      "round_candidate": "挑战赛第6局",
+      "reason": "Official exact pairing/edition confirms shorthand but game6 dated July11–12; DB July10 conflicts. No automatic date correction or duplicate merge.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 22,
+      "album_id": 9957,
+      "exact_raw": "第1届龙华杯世界围棋传奇大师赛决赛",
+      "exact_series_core": "龙华杯世界围棋传奇大师赛决赛",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "1b24f1ebf51cee13105ba7faeadba88bad5c234ec8c3a7ba48e4cd91d1e03790",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+3.5"
+        ],
+        "PB": [
+          "马晓春"
+        ],
+        "PW": [
+          "刘昌赫"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "九段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第1届龙华杯世界围棋传奇大师赛决赛",
+          "第1届龙华杯世界围棋传奇大师赛决赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2023-11-26"
+        ],
+        "GC": [
+          "第1届龙华杯世界围棋传奇大师赛决赛 | 结果: B+3.5 | 266手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41426223.sgf",
+      "source_urls": [
+        "https://www.foxwq.com/news/14902.html?lang=th",
+        "https://www.epochtimes.com/gb/23/11/28/n14125373.htm",
+        "https://www.sz.gov.cn/cn/xxgk/zfxxgj/gqdt/content/post_11005921.html"
+      ],
+      "canonical_type_zh": "龙华杯世界围棋传奇大师赛",
+      "edition_candidate": 1,
+      "round_candidate": "决赛",
+      "reason": "深圳政府/龙华区当日官方报道确认首届11月26日决赛马晓春对刘昌赫，马晓春冠军，与原SGF一致。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 23,
+      "album_id": 93118,
+      "exact_raw": "2kr-gglt-10-lijinsgf",
+      "exact_series_core": "2kr-gglt-10-lijinsgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "33f81493c7a4930fd3d54ff17e60bb1e3ee67be922a184211c8c69ff37821510",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "金钟秀"
+        ],
+        "PW": [
+          "李玟真"
+        ],
+        "BR": [
+          "六段"
+        ],
+        "WR": [
+          "五段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2kr-gglt-10-lijinsgf",
+          "第2届GG拍卖杯元老与女棋手擂台赛第10局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2008-05-29"
+        ],
+        "GC": [
+          "第2届GG拍卖杯元老与女棋手擂台赛第10局 | 结果: B+R | 315手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41392452.sgf",
+      "source_urls": [
+        "https://zh.wikipedia.org/wiki/GG拍卖杯元老与女将擂台赛"
+      ],
+      "canonical_type_zh": "GG拍卖杯元老与女棋手擂台赛",
+      "edition_candidate": 2,
+      "round_candidate": "第10局",
+      "reason": "后GN/GC明确类型及届次；百科目录同日配对仅旁证，专业/官方原始赛事页未核准，真实赛事HOLD。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 24,
+      "album_id": 135942,
+      "exact_raw": "Tengen80_1.13*",
+      "exact_series_core": "Tengen80_1.13*",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "c6b364c6a60350cd09c6ee64f1b1cc2722e92ee383cdab73850a092eb6081fca",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "5.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "赵治勋"
+        ],
+        "PW": [
+          "FujisawaShuko"
+        ],
+        "BR": [
+          "8dan"
+        ],
+        "WR": [
+          "9dan"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "Tengen80_1.13*",
+          "日本天元战,6th"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "1980-05-01"
+        ],
+        "GC": [
+          "日本天元战,6th | 结果: B+R | 85手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41550442.sgf",
+      "source_urls": [],
+      "canonical_type_zh": "日本天元战",
+      "edition_candidate": 6,
+      "round_candidate": null,
+      "reason": "后GN/GC为日本天元战,6th；类型已有原SGF线索，但1980-05-01配对未外部核准；不解读文件1.13*为日期。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 25,
+      "album_id": 96107,
+      "exact_raw": "32jp-xrw-kongsongsgf",
+      "exact_series_core": "32jp-xrw-kongsongsgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "522c1162b2ac76bad4898323e62c3a994fb472383340dcd0a89127387d59482f",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "孔令文"
+        ],
+        "PW": [
+          "松本武久"
+        ],
+        "BR": [
+          "五段"
+        ],
+        "WR": [
+          "六段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "32jp-xrw-kongsongsgf",
+          "第32期日本新人王战本赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-02-01"
+        ],
+        "GC": [
+          "第32期日本新人王战本赛 | 结果: W+R | 230手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41396355.sgf",
+      "source_urls": [
+        "https://archive.nihonkiin.or.jp/match/shinjin/032.html"
+      ],
+      "canonical_type_zh": "日本新人王战",
+      "edition_candidate": 32,
+      "round_candidate": "本赛第1轮",
+      "reason": "后GN明示第32期；官方本赛首轮孔令文对松本武久2/1，松本胜，原SGF同日同胜负。",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "CONFIRMED_SCOPE; no DB action",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 26,
+      "album_id": 32858,
+      "exact_raw": "日本十段战.败者",
+      "exact_series_core": "日本十段战.败者",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "a54ad174edbcf213ee918f7fe25927e267af1bcf4b0d330a17ceb822d9ea8ffd",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "5.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+0.5"
+        ],
+        "PB": [
+          "坂田荣男"
+        ],
+        "PW": [
+          "久岛国夫"
+        ],
+        "BR": [
+          "九段"
+        ],
+        "WR": [
+          "七段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "日本十段战.败者",
+          "1987日本十段战.败者"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "1987-08-06"
+        ],
+        "GC": [
+          "1987日本十段战.败者 | 结果: W+0.5 | 239手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41295997.sgf",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/match/jyudan/043.htm"
+      ],
+      "canonical_type_zh": "日本十段战",
+      "edition_candidate": null,
+      "round_candidate": "败者组（原文）",
+      "reason": "Raw clearly names Japanese 十段战; official page confirms identity only, not 1987 edition/date/round. Do not map 1987 blindly to edition25: qualifying cycles cross years.",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 27,
+      "album_id": 88111,
+      "exact_raw": "7kr-xrls-9-piaojinsgf",
+      "exact_series_core": "7kr-xrls-9-piaojinsgf",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "24892bfe62cc779c877f5da0825c34a9afb36a8c1bf2795913c2d6ba7206405b",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "朴升哲"
+        ],
+        "PW": [
+          "金恩善"
+        ],
+        "BR": [
+          "五段"
+        ],
+        "WR": [
+          "三段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "7kr-xrls-9-piaojinsgf",
+          "第7届韩国新锐连胜最强战第九局"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2007-07-02"
+        ],
+        "GC": [
+          "第7届韩国新锐连胜最强战第九局 | 结果: B+R | 165手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41383554.sgf",
+      "source_urls": [],
+      "canonical_type_zh": "韩国新锐连胜最强战",
+      "edition_candidate": 7,
+      "round_candidate": "第9局",
+      "reason": "后GN/GC明确名称与届次，已从来源标签改为真实赛事待查；未核准2007-07-02配对与赛事连续性。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    },
+    {
+      "sample_index": 28,
+      "album_id": 11785,
+      "exact_raw": "2024年“金陵无想杯”全国业余围棋公开赛第四轮",
+      "exact_series_core": "“金陵无想杯”全国业余围棋公开赛",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "SAFE",
+      "sgf_sha256": "b66d28236c0011dd9e7e00c132762fc1fe7085278321d379493b3932626eac8b",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "7.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+R"
+        ],
+        "PB": [
+          "山峻哲"
+        ],
+        "PW": [
+          "司马旭"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2024年“金陵无想杯”全国业余围棋公开赛第四轮",
+          "2024年“金陵无想杯”全国业余围棋公开赛第四轮"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2024-04-05"
+        ],
+        "GC": [
+          "2024年“金陵无想杯”全国业余围棋公开赛第四轮 | 结果: W+R | 206手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/42171280.sgf",
+      "source_urls": [
+        "https://blog.19x19.com/archives/2024_04_08_17_15_30_1031"
+      ],
+      "canonical_type_zh": "金陵无想杯全国业余围棋公开赛",
+      "edition_candidate": null,
+      "round_candidate": "第4轮（原文）",
+      "reason": "Chinese Go Association report reposted by source establishes exact 2024 event and explicit rename from 金陵杯. Round from raw; no implied edition1 or rename dedup.",
+      "type_decision": "APPROVE_EXACT_TYPE",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 29,
+      "album_id": 31125,
+      "exact_raw": "第3届世界未来之星新锐最强战16强战",
+      "exact_series_core": "世界未来之星新锐最强战16强战",
+      "first_pass_original_decision": "SAFE",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "a9286525ebdcf7fb84bd8cad09602850fc8e61aab3dc2ded8a2ae1641462ced1",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "W+3.5"
+        ],
+        "PB": [
+          "白现宇"
+        ],
+        "PW": [
+          "王星昊"
+        ],
+        "BR": [
+          "アマ"
+        ],
+        "WR": [
+          "初段"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "第3届世界未来之星新锐最强战16强战",
+          "第3届世界未来之星新锐最强战16强战"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2018-01-16"
+        ],
+        "GC": [
+          "第3届世界未来之星新锐最强战16强战 | 结果: W+3.5 | 282手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41293202.sgf",
+      "source_urls": [
+        "https://kifudepot.net/index.php?event=&move=&page=3&player=%E7%99%BD%E7%8F%BE%E5%AE%87&sort="
+      ],
+      "canonical_type_zh": "世界未来之星新锐最强战",
+      "edition_candidate": 3,
+      "round_candidate": "16强战",
+      "reason": "原SGF同日同配对与二手棋谱目录吻合；专业报道可确认赛事系列存在但未核准本届本局上下文，HOLD。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": false
+    },
+    {
+      "sample_index": 30,
+      "album_id": 29383,
+      "exact_raw": "2004-12-25",
+      "exact_series_core": "2004-12-25",
+      "first_pass_original_decision": "HOLD",
+      "strict_first_pass_decision": "HOLD",
+      "sgf_sha256": "09fb90d7737ddd22d63c6bf1b9eec026a8b608cb0cc66736089556fa320abb7d",
+      "sgf_root_properties": {
+        "CA": [
+          "utf8"
+        ],
+        "FF": [
+          "4"
+        ],
+        "AP": [
+          "golaxy"
+        ],
+        "SZ": [
+          "19"
+        ],
+        "RU": [
+          "chinese"
+        ],
+        "KM": [
+          "6.5"
+        ],
+        "HA": [
+          "0"
+        ],
+        "RE": [
+          "B+R"
+        ],
+        "PB": [
+          "YunChun-sang"
+        ],
+        "PW": [
+          "AnCho-yeong"
+        ],
+        "BR": [
+          "3d"
+        ],
+        "WR": [
+          "8d"
+        ],
+        "PL": [
+          "B"
+        ],
+        "GN": [
+          "2004-12-25",
+          "2004年韩国围棋联赛"
+        ],
+        "SO": [
+          "https://19x19.com"
+        ],
+        "DT": [
+          "2004-12-25"
+        ],
+        "GC": [
+          "2004年韩国围棋联赛 | 结果: B+R | 223手"
+        ]
+      },
+      "source_path": "data/kifu-album/19x19/41291087.sgf",
+      "source_urls": [
+        "https://www.goratings.org/en/players/267.html"
+      ],
+      "canonical_type_zh": "韩国围棋联赛",
+      "edition_candidate": null,
+      "round_candidate": null,
+      "reason": "日期GN后值与GC为2004韩国围棋联赛；rating同日同配对胜负只是旁证，赛事身份尚需官方源。不能终态归类“无赛事”。",
+      "type_decision": "HOLD",
+      "association_decision": "NOT_AUTHORIZED",
+      "metadata_decision": "HOLD",
+      "underlying_context": "real_event_candidate",
+      "non_event_terminal": false,
+      "label_insufficient_but_gn_gc_supplies_named_context": true
+    }
+  ],
+  "recommended_minimal_batch_process": [
+    "Read-only snapshot export album_id, album.event, raw exact/core, sgf_content SHA, source_path; current unlinked/unclassified exact scope.",
+    "Use existing SGF.parse_sgf root.properties; retain every EV/GN/GC/DT/RO/PB/PW/RE/SO value and ordering, including multiple GN values; never take only first GN.",
+    "Extract proposed named context from later GN values and GC before result/手数 delimiter; retain raw text and field provenance; same-source repetitions do not count independent evidence.",
+    "Join named candidates only to verified existing event catalog/aliases; emit review JSON with proposed type, explicit edition/year/round and conflicts. Filenames/date-only candidates use the named context for research, not deletion.",
+    "Review exact match/day/color/result against professional/organizer event source. Approve type separately from edition/round; unresolved conflict HOLD. No translations, association changes or dedup in extraction phase."
+  ],
+  "source_capture_artifact": "kifu-event-longtail-review-2026-10-04-sgf-capture.json",
+  "verification": "30 distinct exact IDs/raw/core; all event_id NULL in read-only capture; root properties parsed with existing SGF parser; 0 EV roots; 13 insufficient labels have named GN/GC context; no DB write commands."
+}

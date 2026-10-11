@@ -1,0 +1,11 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T19:54:53.301057+00:00",
+  "hashes": {
+    "TEST": "3c5cc62fbb9034a712be60c67b5545afdc54b158db5e8df8e1bfe3843384525d",
+    "PROD": "a5abce84c7daeef1337dca515591b0066825f25e7df2f04b7cbc6b25f85ee690"
+  },
+  "result": "approved_for_bounded_execution",
+  "scope": "20 distinct existing players;17 generatedTW +3 positive generatedKO;fresh actual post590/page source/bindings signed;no aliases/identity/FK/SGF/rank/list/hidden changes;oldqualified names preserved"
+}

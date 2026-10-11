@@ -1,0 +1,538 @@
+{
+  "format": "kifu-player-existing17-identity-proposal-v1",
+  "generated_utc": "2026-10-04T08:38:13.774632+00:00",
+  "scope": "Current exact NULL raw only, 17 unique PROD catalog-owner leads from prior top50; person-level decision only.",
+  "read_only": true,
+  "snapshot_sha256": {
+    "test": "17178db194329557276db69cdb4180c556fd139bb7bf8b6bfc3a2b89402ec26b",
+    "prod": "cbcf9db6d2575bfc4db84bcc12eaf218a65b698b2fd4b329ba48f37ba1bea3c2"
+  },
+  "counts": {
+    "identity_pass": 14,
+    "hold": 3,
+    "identity_pass_null_slots_per_database": 3722,
+    "hold_null_slots_per_database": 661
+  },
+  "entries": [
+    {
+      "raw": "李昌锡",
+      "proposed_chinese_canonical": "李昌锡",
+      "official_name": "李昌錫",
+      "official_source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000829",
+      "test": {
+        "null_slots": 408,
+        "normalized_owner_ids": [
+          194
+        ],
+        "canonical_by_owner": {
+          "194": "李昌锡"
+        },
+        "proposed_target_id": 194,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 408,
+        "normalized_owner_ids": [
+          193
+        ],
+        "canonical_by_owner": {
+          "193": "李昌锡"
+        },
+        "proposed_target_id": 193,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "金庭贤",
+      "proposed_chinese_canonical": "金庭贤",
+      "official_name": "金庭賢",
+      "official_source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000522",
+      "test": {
+        "null_slots": 368,
+        "normalized_owner_ids": [
+          34
+        ],
+        "canonical_by_owner": {
+          "34": "金庭贤"
+        },
+        "proposed_target_id": 34,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 368,
+        "normalized_owner_ids": [
+          34
+        ],
+        "canonical_by_owner": {
+          "34": "金庭贤"
+        },
+        "proposed_target_id": 34,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only",
+      "disambiguation": "Official older Kim Jeong-hyeon is 金庭賢; younger namesake is 金楨玹, so exact Chinese raw distinguishes them."
+    },
+    {
+      "raw": "姜升旼",
+      "proposed_chinese_canonical": "姜升旼",
+      "official_name": "姜昇旼",
+      "official_source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000600",
+      "test": {
+        "null_slots": 354,
+        "normalized_owner_ids": [
+          399
+        ],
+        "canonical_by_owner": {
+          "399": "姜升旼"
+        },
+        "proposed_target_id": 399,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 354,
+        "normalized_owner_ids": [
+          398
+        ],
+        "canonical_by_owner": {
+          "398": "姜升旼"
+        },
+        "proposed_target_id": 398,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "金升宰",
+      "proposed_chinese_canonical": "金升宰",
+      "official_name": "金昇宰",
+      "official_source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000468",
+      "test": {
+        "null_slots": 354,
+        "normalized_owner_ids": [
+          147
+        ],
+        "canonical_by_owner": {
+          "147": "金升宰"
+        },
+        "proposed_target_id": 147,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 354,
+        "normalized_owner_ids": [
+          146
+        ],
+        "canonical_by_owner": {
+          "146": "金升宰"
+        },
+        "proposed_target_id": 146,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "小县真树",
+      "proposed_chinese_canonical": "小县真树",
+      "official_name": "小県真樹",
+      "official_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000100.htm",
+      "test": {
+        "null_slots": 306,
+        "normalized_owner_ids": [
+          443
+        ],
+        "canonical_by_owner": {
+          "443": "小県真樹"
+        },
+        "proposed_target_id": 443,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 306,
+        "normalized_owner_ids": [
+          442
+        ],
+        "canonical_by_owner": {
+          "442": "小県真樹"
+        },
+        "proposed_target_id": 442,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "朴键昊",
+      "proposed_chinese_canonical": "朴键昊",
+      "official_name": "朴鍵昊",
+      "official_source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000831",
+      "test": {
+        "null_slots": 305,
+        "normalized_owner_ids": [
+          146
+        ],
+        "canonical_by_owner": {
+          "146": "朴键昊"
+        },
+        "proposed_target_id": 146,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 305,
+        "normalized_owner_ids": [
+          145
+        ],
+        "canonical_by_owner": {
+          "145": "朴键昊"
+        },
+        "proposed_target_id": 145,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "鹤山淳志",
+      "proposed_chinese_canonical": "鹤山淳志",
+      "official_name": "鶴山淳志",
+      "official_source_url": "https://archive.nihonkiin.or.jp/player/htm/ki000365.htm",
+      "test": {
+        "null_slots": 280,
+        "normalized_owner_ids": [
+          537,
+          1008
+        ],
+        "canonical_by_owner": {
+          "537": "鶴山淳志",
+          "1008": "鹤山淳志"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 280,
+        "normalized_owner_ids": [
+          536
+        ],
+        "canonical_by_owner": {
+          "536": "鶴山淳志"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "decision": "HOLD",
+      "reason": "TEST has two normalized owners (537,1008); duplicate-ID decision required"
+    },
+    {
+      "raw": "宫泽吾朗",
+      "proposed_chinese_canonical": "宫泽吾朗",
+      "official_name": "宮沢吾朗",
+      "official_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000057.htm",
+      "test": {
+        "null_slots": 250,
+        "normalized_owner_ids": [
+          543
+        ],
+        "canonical_by_owner": {
+          "543": "宮沢吾朗"
+        },
+        "proposed_target_id": 543,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 250,
+        "normalized_owner_ids": [
+          542
+        ],
+        "canonical_by_owner": {
+          "542": "宮沢吾朗"
+        },
+        "proposed_target_id": 542,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "梶原武雄",
+      "proposed_chinese_canonical": "梶原武雄",
+      "official_name": "梶原武雄",
+      "official_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000012.html",
+      "test": {
+        "null_slots": 240,
+        "normalized_owner_ids": [
+          12342
+        ],
+        "canonical_by_owner": {
+          "12342": "梶原武雄"
+        },
+        "proposed_target_id": 12342,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 240,
+        "normalized_owner_ids": [
+          6578
+        ],
+        "canonical_by_owner": {
+          "6578": "梶原武雄"
+        },
+        "proposed_target_id": 6578,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "高根台",
+      "proposed_chinese_canonical": "高根台",
+      "official_name": "高根台",
+      "official_source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000385",
+      "test": {
+        "null_slots": 215,
+        "normalized_owner_ids": [
+          485
+        ],
+        "canonical_by_owner": {
+          "485": "高根台"
+        },
+        "proposed_target_id": 485,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 215,
+        "normalized_owner_ids": [
+          484
+        ],
+        "canonical_by_owner": {
+          "484": "高根台"
+        },
+        "proposed_target_id": 484,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "大桥拓文",
+      "proposed_chinese_canonical": "大桥拓文",
+      "official_name": "大橋拓文",
+      "official_source_url": "https://archive.nihonkiin.or.jp/player/htm/ki000382.htm",
+      "test": {
+        "null_slots": 214,
+        "normalized_owner_ids": [
+          463,
+          1086
+        ],
+        "canonical_by_owner": {
+          "463": "大橋拓文",
+          "1086": "大桥拓文"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 214,
+        "normalized_owner_ids": [
+          462
+        ],
+        "canonical_by_owner": {
+          "462": "大橋拓文"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "decision": "HOLD",
+      "reason": "TEST has two normalized owners (463,1086); duplicate-ID decision required"
+    },
+    {
+      "raw": "加藤启子",
+      "proposed_chinese_canonical": "加藤启子",
+      "official_name": "加藤啓子",
+      "official_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000364.html",
+      "test": {
+        "null_slots": 200,
+        "normalized_owner_ids": [
+          422
+        ],
+        "canonical_by_owner": {
+          "422": "加藤啓子"
+        },
+        "proposed_target_id": 422,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 200,
+        "normalized_owner_ids": [
+          421
+        ],
+        "canonical_by_owner": {
+          "421": "加藤啓子"
+        },
+        "proposed_target_id": 421,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "桥本昌二",
+      "proposed_chinese_canonical": "桥本昌二",
+      "official_name": "橋本昌二",
+      "official_source_url": "https://kansaikiin.jp/subpage/kiinjouhou.html",
+      "test": {
+        "null_slots": 199,
+        "normalized_owner_ids": [
+          12346
+        ],
+        "canonical_by_owner": {
+          "12346": "桥本昌二"
+        },
+        "proposed_target_id": 12346,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 199,
+        "normalized_owner_ids": [
+          6582
+        ],
+        "canonical_by_owner": {
+          "6582": "桥本昌二"
+        },
+        "proposed_target_id": 6582,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "金东烨",
+      "proposed_chinese_canonical": "金东烨",
+      "official_name": "金東燁",
+      "official_source_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000044",
+      "test": {
+        "null_slots": 194,
+        "normalized_owner_ids": [
+          12545
+        ],
+        "canonical_by_owner": {
+          "12545": "金东烨"
+        },
+        "proposed_target_id": 12545,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 194,
+        "normalized_owner_ids": [
+          6776
+        ],
+        "canonical_by_owner": {
+          "6776": "金东烨"
+        },
+        "proposed_target_id": 6776,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "东野弘昭",
+      "proposed_chinese_canonical": "东野弘昭",
+      "official_name": "東野弘昭",
+      "official_source_url": "https://kansaikiin.jp/kisi_prof/tonohiroaki.html",
+      "test": {
+        "null_slots": 189,
+        "normalized_owner_ids": [
+          12456
+        ],
+        "canonical_by_owner": {
+          "12456": "东野弘昭"
+        },
+        "proposed_target_id": 12456,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 189,
+        "normalized_owner_ids": [
+          6687
+        ],
+        "canonical_by_owner": {
+          "6687": "东野弘昭"
+        },
+        "proposed_target_id": 6687,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    },
+    {
+      "raw": "李小溪",
+      "proposed_chinese_canonical": "李小溪",
+      "official_name": "李小溪(大)",
+      "official_source_url": "https://www.weiqi.org.cn/player/professional",
+      "test": {
+        "null_slots": 167,
+        "normalized_owner_ids": [
+          378
+        ],
+        "canonical_by_owner": {
+          "378": "李小溪94"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 167,
+        "normalized_owner_ids": [
+          377
+        ],
+        "canonical_by_owner": {
+          "377": "李小溪94"
+        },
+        "proposed_target_id": null,
+        "raw_staging_status": "pending"
+      },
+      "decision": "HOLD",
+      "reason": "Two Chinese professional players share literal 李小溪; raw lacks 1994/2005 discriminator",
+      "conflict_sources": [
+        "https://www.weiqi.org.cn/player/professional",
+        "https://www.weiqi.org.cn/home"
+      ]
+    },
+    {
+      "raw": "上村阳生",
+      "proposed_chinese_canonical": "上村阳生",
+      "official_name": "上村陽生",
+      "official_source_url": "https://www.nihonkiin.or.jp/player/htm/ki000063.htm",
+      "test": {
+        "null_slots": 140,
+        "normalized_owner_ids": [
+          12454
+        ],
+        "canonical_by_owner": {
+          "12454": "上村阳生"
+        },
+        "proposed_target_id": 12454,
+        "raw_staging_status": "pending"
+      },
+      "prod": {
+        "null_slots": 140,
+        "normalized_owner_ids": [
+          6685
+        ],
+        "canonical_by_owner": {
+          "6685": "上村阳生"
+        },
+        "proposed_target_id": 6685,
+        "raw_staging_status": "pending"
+      },
+      "decision": "approved_exact_identity_subject_to_slot_guards",
+      "reason": "Official person name maps to one catalog owner in each environment; exact raw only"
+    }
+  ],
+  "execution_gate": "No FK write approved. Independently freeze per-slot provenance/date/SGF and HOLD exceptions, target catalog + alias/name/raw staging, then capture/dry per environment."
+}

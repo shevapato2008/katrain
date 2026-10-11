@@ -1,0 +1,12 @@
+{
+  "PROD": {
+    "path": "PROD-post591-final20-pending-conventional18.json.gz",
+    "sha256": "171f8a34550238df9cb20b7dfa0742dc5526ade1d88bfbde239cccec95e1f04d",
+    "validated_pending_research_count": 18
+  },
+  "TEST": {
+    "path": "TEST-post591-final20-pending-conventional18.json.gz",
+    "sha256": "2ad69519470700cdd5bc3d12f3dbcfd03c8aa4c491371872a92f4acb78eec3a9",
+    "validated_pending_research_count": 18
+  }
+}

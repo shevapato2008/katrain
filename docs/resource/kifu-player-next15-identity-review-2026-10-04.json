@@ -1,0 +1,27 @@
+{
+  "format": "kifu-player-exact-identity-review-v1",
+  "date": "2026-10-04",
+  "status": "identity research only; no database write authorized",
+  "scope": "exact raw only; slot counts from 173025-game production frozen inventory",
+  "candidate_exact_slots": 5820,
+  "held_exact_slots": 445,
+  "entries": [
+    {"raw":"林士勋","slots":655,"canonical":"林士勋","official_name":"林士勛","prod_target":"new","test_target":"new","decision":"candidate","source":"https://haifong.org/profession/venue/39DB6A531FEBD95C2829A32DA88CCCE0"},
+    {"raw":"周俊勋","slots":567,"canonical":"周俊勋","official_name":"周俊勛","prod_target":"new","test_target":"new","decision":"candidate","source":"https://haifong.org/profession/venue/524D63AB167F4AC82887FD1660977B3E"},
+    {"raw":"李志贤","slots":486,"canonical":"李志贤","official_name":"李志賢","prod_target":151,"test_target":152,"decision":"candidate","source":"https://www.baduk.or.kr/record/player_view.asp?pkey=10000570"},
+    {"raw":"小松英树","slots":445,"canonical":"小松英樹","prod_target":535,"test_target":536,"conflicting_test_target":1017,"decision":"hold","hold_reason":"TEST duplicate person IDs 536 小松英樹 and 1017 小松英树 require merge/identity decision","source":"https://archive.nihonkiin.or.jp/player/htm/ki000148.htm"},
+    {"raw":"沟上知亲","slots":442,"canonical":"溝上知親","prod_target":275,"test_target":276,"decision":"candidate","source":"https://www.nihonkiin.or.jp/news/docs/h26_godohyosyo.pdf"},
+    {"raw":"蔡丞韦","slots":423,"canonical":"蔡丞韦","official_name":"蔡丞韋","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.haifong.org/profession"},
+    {"raw":"偰玹准","slots":399,"canonical":"偰玹准","official_name":"偰玹準","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.baduk.or.kr/record/player_view.asp?pkey=10000767"},
+    {"raw":"黄世元","slots":380,"canonical":"黄世元","official_name":"黃世元","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.haifong.org/profession/venue/4CE8E505BBEEC3B5C043C1C50291CDD9"},
+    {"raw":"林彦丞","slots":366,"canonical":"林彦丞","official_name":"林彥丞","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.haifong.org/profession"},
+    {"raw":"张凯馨","slots":364,"canonical":"张凯馨","official_name":"張凱馨","prod_target":"new","test_target":"new","decision":"candidate","source":"https://haifong.org/profession/venue/C69D6010E6103B10BE46C2050F1B73ED"},
+    {"raw":"岛村俊广","slots":362,"canonical":"岛村俊广","official_name":"島村俊廣","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.nihonkiin.or.jp/profile/enkaku/jyokun.html"},
+    {"raw":"崔明勋","slots":351,"canonical":"崔明勋","official_name":"崔明勳","prod_target":188,"test_target":189,"decision":"candidate","source":"https://www.baduk.or.kr/record/player_view.asp?pkey=10000065"},
+    {"raw":"韩尚勋","slots":351,"canonical":"韩尚勋","official_name":"韓尙勳","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.baduk.or.kr/record/player_view.asp?pkey=10000467"},
+    {"raw":"安国铉","slots":337,"canonical":"安国铉","official_name":"安國鉉","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.baduk.or.kr/record/player_view.asp?pkey=10000548"},
+    {"raw":"张哲豪","slots":337,"canonical":"张哲豪","official_name":"張哲豪","prod_target":"new","test_target":"new","decision":"candidate","source":"https://www.haifong.org/profession/venue/A171DFC04906431680FC73EB858CC94A"}
+  ],
+  "global_holds": ["all rank-suffixed variants","placeholder or impossible dates","same-person opponents","source or opponent conflicts","any live catalog drift"],
+  "next_step": "independent identity review, then live TEST/PROD capture with slot-level holds"
+}

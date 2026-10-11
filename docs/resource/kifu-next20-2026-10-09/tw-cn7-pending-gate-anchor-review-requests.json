@@ -1,0 +1,2825 @@
+{
+  "rows": [
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 600,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "be064e71e1bbc4ddb01372cfb7fe74fb60c877317d49ca04c209b4c4f33a37cd",
+            "evidence_creation_sha256": "682f0a91645c95b16d914f110222fe2e3641d0d2b42be13117a1aca9ded19bae",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "肖泽彬",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61568,
+            "lang": "cn",
+            "player_id": 600,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "肖泽彬",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "9a14feb7d2c0b9afad5e0e3774bf176efc6bc4de89ad438facbb7f14db52e4b1",
+                "owner": {
+                  "id": 600,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:43.318902+00:00",
+                  "capture_sha256": "9d9fc1380061e3189e98e4d30642eb718ab8e290cb5d196330e796ff25da6e42",
+                  "captured_at": "2026-10-08T04:39:34.339901+00:00",
+                  "name_preimage_sha256": "9a14feb7d2c0b9afad5e0e3774bf176efc6bc4de89ad438facbb7f14db52e4b1",
+                  "source_candidate_sha256": "1e56f62e0eec5b332f605176c5f98f10f2c0e3dbcd80fac1deb1b568c43d7a66"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "c7e012a9641b01759d86e6d1966afd69f3485bdc252bc2765ef628eeede68904",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "肖泽彬",
+                "identity_note": "Actual same-actor finite read-only PROD600/TEST601: 18 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2276 zh/ja/en publish 肖泽彬 and Xiao Zebin; Korean Baduk Association own pkey20002142 publishes 샤오쩌빈(肖泽彬). Earlier REVIEW KO 샤오 쩨빈 is not selected. No qualified TW publication captured, so old REVIEW TW remains.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2276.html",
+                "original_name": "肖泽彬",
+                "owner": {
+                  "id": 600,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_sha256": "83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf",
+                    "candidate_name": "肖泽彬",
+                    "fetched_at": "2026-10-08T03:58:32.783179+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD600/TEST601: 18 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2276 zh/ja/en publish 肖泽彬 and Xiao Zebin; Korean Baduk Association own pkey20002142 publishes 샤오쩌빈(肖泽彬). Earlier REVIEW KO 샤오 쩨빈 is not selected. No qualified TW publication captured, so old REVIEW TW remains.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 600,
+                      "kind": "player"
+                    },
+                    "query": "肖泽彬",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2276.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf.body",
+                    "body_sha256": "83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "169d087d124fd604e1259f26f2a97b9d6182cc637d579452b64fbb955160ad85",
+                    "fetched_at": "2026-10-08T03:58:32.783179+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/b09ad4808195b3bdc68655d8b9e4649afff3b99aaae74faf8e89ec35ed13917d.body",
+                    "body_sha256": "b09ad4808195b3bdc68655d8b9e4649afff3b99aaae74faf8e89ec35ed13917d",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "169d087d124fd604e1259f26f2a97b9d6182cc637d579452b64fbb955160ad85",
+                    "fetched_at": "2026-10-08T03:58:32.804288+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ja/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Xiao Zebin</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/f90064d2de28050516c91541f6df3dff1fb666508dd97d8e341c58dacb0b3ca9.body",
+                    "body_sha256": "f90064d2de28050516c91541f6df3dff1fb666508dd97d8e341c58dacb0b3ca9",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "b4691b81cdcbd0102070a976c401836f2a7b2b1ec36a65ad68db70327eb43530",
+                    "fetched_at": "2026-10-08T03:58:32.757894+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>샤오쩌빈(<em>肖&#27901;彬</em>)</span> 5단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08.body",
+                    "body_sha256": "56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "bfb4db7231026658227b0cb3d3d20378f76d7906545a69ac1fd344642a002a44",
+                    "fetched_at": "2026-10-08T04:03:19.075642+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002142"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>샤오쩌빈(<em>肖&#27901;彬</em>)</span> 5단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08.body",
+                    "body_sha256": "56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "bfb4db7231026658227b0cb3d3d20378f76d7906545a69ac1fd344642a002a44",
+                    "fetched_at": "2026-10-08T04:03:19.075642+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002142"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:22.552065+00:00",
+            "decision_kind": "conventional",
+            "display_name": "肖泽彬",
+            "evidence_id": 61568,
+            "generation_rule_version": "none",
+            "id": 2994,
+            "lang": "cn",
+            "player_id": 600,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "肖泽彬",
+        "owner": {
+          "id": 600,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "e78bac526f2fd2646e64b687e411a33cd84c6335f8c6673fde6d76141923ccc2",
+        "produced_at": "2026-10-08T19:12:35.221239+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 229,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "be064e71e1bbc4ddb01372cfb7fe74fb60c877317d49ca04c209b4c4f33a37cd",
+            "evidence_creation_sha256": "281db184db56d3ad0be7c888be60163ff96ab7e9c404c8232f7067e17714100e",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "叶子萌",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61572,
+            "lang": "cn",
+            "player_id": 229,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "叶子萌",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "d720d60954b69cfa065fabdc68f465f32b6c36da7b158221c10b82ac83bbbc3a",
+                "owner": {
+                  "id": 229,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:43.318902+00:00",
+                  "capture_sha256": "9d9fc1380061e3189e98e4d30642eb718ab8e290cb5d196330e796ff25da6e42",
+                  "captured_at": "2026-10-08T04:39:34.339901+00:00",
+                  "name_preimage_sha256": "d720d60954b69cfa065fabdc68f465f32b6c36da7b158221c10b82ac83bbbc3a",
+                  "source_candidate_sha256": "83df1932e4df715cd5e79880c192ca06d1041a151c357d4c703315d710008adb"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "3c3eed2ba3ef63f5caf4318e84cf52919d938d83926483d22a1e119f9a072c4c",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "叶子萌",
+                "identity_note": "Actual same-actor finite read-only PROD229/TEST230: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2451 zh/ja/en publish 叶子萌/Ye Zimeng; Korean Baduk Association own pkey20002358 publishes 예쯔멍(葉子萌). REVIEW KO 엽자맹 is not selected. TW old REVIEW 叶子萌 is not supported as a Taiwanese published spelling in this pass.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://goratings.org/zh/players/2451.html",
+                "original_name": "叶子萌",
+                "owner": {
+                  "id": 229,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_sha256": "fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41",
+                    "candidate_name": "叶子萌",
+                    "fetched_at": "2026-10-08T04:01:10.601177+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD229/TEST230: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2451 zh/ja/en publish 叶子萌/Ye Zimeng; Korean Baduk Association own pkey20002358 publishes 예쯔멍(葉子萌). REVIEW KO 엽자맹 is not selected. TW old REVIEW 叶子萌 is not supported as a Taiwanese published spelling in this pass.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 229,
+                      "kind": "player"
+                    },
+                    "query": "叶子萌",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://goratings.org/zh/players/2451.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41.body",
+                    "body_sha256": "fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "dd7149f577c6fa78dcdb2abaff7d5ef769245563bdf94714f07a875576a6bae9",
+                    "fetched_at": "2026-10-08T04:01:10.601177+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://goratings.org/zh/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e0e531cd21fe523b3a6e0eb666557f55cb7240b3a9a8b5c94847afd0e7ee648e.body",
+                    "body_sha256": "e0e531cd21fe523b3a6e0eb666557f55cb7240b3a9a8b5c94847afd0e7ee648e",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "dd7149f577c6fa78dcdb2abaff7d5ef769245563bdf94714f07a875576a6bae9",
+                    "fetched_at": "2026-10-08T04:01:06.207629+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://goratings.org/ja/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Ye Zimeng</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/6ab3b73a0e08265e9355287f7138dd56aa3ff9271e39d0416239971d41215b71.body",
+                    "body_sha256": "6ab3b73a0e08265e9355287f7138dd56aa3ff9271e39d0416239971d41215b71",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "95f3c8e68a4a65551ce4b4e3b736f22efad706337554abb787f23d6ae64c3ded",
+                    "fetched_at": "2026-10-08T03:58:33.446131+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>예쯔멍(<em>葉子萌</em>)</span> 4단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd>\r\n\t\t\t\t",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb.body",
+                    "body_sha256": "e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "53a3a9b5cbd29d8559cc80e2a32a89c6cc3d22d5dc084f5ef473e44fbbae2f55",
+                    "fetched_at": "2026-10-08T04:03:19.191810+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002358"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>예쯔멍(<em>葉子萌</em>)</span> 4단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd>\r\n\t\t\t\t",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb.body",
+                    "body_sha256": "e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "53a3a9b5cbd29d8559cc80e2a32a89c6cc3d22d5dc084f5ef473e44fbbae2f55",
+                    "fetched_at": "2026-10-08T04:03:19.191810+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002358"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:17.795037+00:00",
+            "decision_kind": "conventional",
+            "display_name": "叶子萌",
+            "evidence_id": 61572,
+            "generation_rule_version": "none",
+            "id": 1139,
+            "lang": "cn",
+            "player_id": 229,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "叶子萌",
+        "owner": {
+          "id": 229,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "368bec4e67e429548e2e3dd4710dd5bd9b647976664f7af177eccd031829dba8",
+        "produced_at": "2026-10-08T19:12:35.221416+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 595,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "be064e71e1bbc4ddb01372cfb7fe74fb60c877317d49ca04c209b4c4f33a37cd",
+            "evidence_creation_sha256": "59bae31732fb1ed9bb8c60e5b2d0f4f599c203116e7213b3231992984e0fc9b9",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "周雨萱",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61576,
+            "lang": "cn",
+            "player_id": 595,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "周雨萱",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "00486a5dacdf0bf7bb29090da165c3b103473fac11d8b7347f6f02aa32bb4b1a",
+                "owner": {
+                  "id": 595,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:43.318902+00:00",
+                  "capture_sha256": "9d9fc1380061e3189e98e4d30642eb718ab8e290cb5d196330e796ff25da6e42",
+                  "captured_at": "2026-10-08T04:39:34.339901+00:00",
+                  "name_preimage_sha256": "00486a5dacdf0bf7bb29090da165c3b103473fac11d8b7347f6f02aa32bb4b1a",
+                  "source_candidate_sha256": "c6d80708b34645ac86e69e9ff43c34d06fe1cd022f77f3476a5aa2dd458ff8ab"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "eea15d5bda70700bed94965ebba438d2f2a57a8a33eaad317601c5d5eb770348",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "周雨萱",
+                "identity_note": "Actual same-actor finite read-only PROD595/TEST596: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2253 zh/en publish 周雨萱/Zhou Yuxuan; captured Japanese GoRatings opponent row links own2253 as 周雨萱. Korean Baduk Association own pkey20002118 publishes 저우위쉔(周雨萱), matching GR KO. REVIEW JP シュウ ユーシュエン and REVIEW KO 저우 위 hsuan are not adopted. TW remains unsupported.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2253.html",
+                "original_name": "周雨萱",
+                "owner": {
+                  "id": 595,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>周雨萱</h1>",
+                    "body_sha256": "f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f",
+                    "candidate_name": "周雨萱",
+                    "fetched_at": "2026-10-08T03:58:33.550094+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD595/TEST596: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2253 zh/en publish 周雨萱/Zhou Yuxuan; captured Japanese GoRatings opponent row links own2253 as 周雨萱. Korean Baduk Association own pkey20002118 publishes 저우위쉔(周雨萱), matching GR KO. REVIEW JP シュウ ユーシュエン and REVIEW KO 저우 위 hsuan are not adopted. TW remains unsupported.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 595,
+                      "kind": "player"
+                    },
+                    "query": "周雨萱",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2253.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>周雨萱</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f.body",
+                    "body_sha256": "f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "f1a009e05de0bb513f843d194101430effa9ed855dc628200703850ff4f04ffd",
+                    "fetched_at": "2026-10-08T03:58:33.550094+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2253.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<a href=\"2253.html\">周雨萱</a>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/77a5b547e53053e0cd94eeca5388c680c915a7658c62b3f530614a6d4ddd8149.body",
+                    "body_sha256": "77a5b547e53053e0cd94eeca5388c680c915a7658c62b3f530614a6d4ddd8149",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "c712ddd8a2bcc0f5036c1ea38739611a9f3d029ca5f6ddf4beeda963bb05b840",
+                    "fetched_at": "2026-10-08T03:41:11.480861+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_exact_own_linked_opponent_row",
+                    "url": "https://www.goratings.org/ja/players/2309.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Zhou Yuxuan</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/a75ff5ae892cb8afd652a6f9da44918e68f6fe735775f89461244aa9eb3d8177.body",
+                    "body_sha256": "a75ff5ae892cb8afd652a6f9da44918e68f6fe735775f89461244aa9eb3d8177",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "665814aa2b2c061350277842ff4d05cff6360e3cbcf7099a79280130214fb45a",
+                    "fetched_at": "2026-10-08T03:58:34.258618+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2253.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>저우위쉔(<em>周雨萱</em>)</span> 2단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd>2007년 02월 0",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a.body",
+                    "body_sha256": "9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "55b3698fe21fbf59372935c07d6a7e87778c186618d7af67508aa75644f87651",
+                    "fetched_at": "2026-10-08T04:03:19.007513+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002118"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>저우위쉔(<em>周雨萱</em>)</span> 2단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd>2007년 02월 0",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a.body",
+                    "body_sha256": "9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "55b3698fe21fbf59372935c07d6a7e87778c186618d7af67508aa75644f87651",
+                    "fetched_at": "2026-10-08T04:03:19.007513+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002118"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:22.552065+00:00",
+            "decision_kind": "conventional",
+            "display_name": "周雨萱",
+            "evidence_id": 61576,
+            "generation_rule_version": "none",
+            "id": 2969,
+            "lang": "cn",
+            "player_id": 595,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "周雨萱",
+        "owner": {
+          "id": 595,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "b97028fd23bb51bf4c24edabea4bf7c51bb457f8d871906dc50ed8c481517c90",
+        "produced_at": "2026-10-08T19:12:35.221530+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 385,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "5aa4b935d6c49430220fe65f96e0af75c4f7e752674e8c495a00d80590856a61",
+            "evidence_creation_sha256": "908da33c3998dd4a946a0bbbc835459613d906982a575157f4c6ae93a7c2dd14",
+            "id": 545
+          },
+          "source_evidence": {
+            "candidate_name": "行泓丞",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61330,
+            "lang": "cn",
+            "player_id": 385,
+            "produced_at": "2026-10-08T03:33:04.573825+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "行泓丞",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "d16835de8e5590909c4b4b928510785d81b35bab9a28d1750d518a2abb3f4af6",
+                "owner": {
+                  "id": 385,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T03:37:08.946808+00:00",
+                  "capture_sha256": "9951b415a2db077f85512767b7ec7df7dbc8f89b92d8bd74186f23b74c18ca82",
+                  "captured_at": "2026-10-08T03:35:26.962779+00:00",
+                  "name_preimage_sha256": "d16835de8e5590909c4b4b928510785d81b35bab9a28d1750d518a2abb3f4af6",
+                  "source_candidate_sha256": "e3b7bdc93b74cb8e87f2d8294c3b7d604530c693d6dc36db518ce07d99ba0686"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "81b2446d70d2e42bc627b3ef76f6b961c3d51bfe46389d731f69d07846abcb33",
+                "review_conclusion": "Root actually read20 main+16unique support rawSHA/decoded contiguous excerpts: GORownlocaleheaders and2026/2025/2023 datedtargetgames;5214 Haifong officialroster ownprofilehref andGORsameexactofficiallink,0GORgamecount notfake datedgame;3906 actualcachedChineseGORindex own2324 anchor andEN/JA/KOownheaders,ZHown two realtimeouts preserved.20published0generated,5partial missing385/662/3906/6447TW and5214KO omitted.8realREVIEW CAS+12NULL;2unselectedTW REVIEW preservedfullfields (10original/direct22/qualified20). ActualFH6solbinder79 exactSGF/FKslots/currentcatalog post531 preserved.5572/5573nearspelling cluster excluded,3906 rootguarded substitute;nocanonical/alias/merge/biography/rank/FK writes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "行泓丞",
+                "identity_note": "Actual same-source-actor read-only PROD385/TEST386: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2528 four locale pages publish 行泓丞 / Xing Hongcheng / 싱홍청. Actual 2026-01-23 Qiu Yuran dated GoRatings row corresponds to target SGF scope. Existing five REVIEW per environment include Hangul 행홍승, not selected because published Korean GoRatings prints 싱홍청; unselected TW REVIEW remains. No alias or transliteration invented.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2528.html",
+                "original_name": "行泓丞",
+                "owner": {
+                  "id": 385,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "de501e09fc92d713437eddc77d8dbf9415210db99cba5a1139473da909bdd0b7",
+                "registry_version": "2026-10-08-ret118-partial20-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>行泓丞</h1>",
+                    "body_sha256": "0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1",
+                    "candidate_name": "行泓丞",
+                    "fetched_at": "2026-10-08T03:25:59.949491+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor read-only PROD385/TEST386: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2528 four locale pages publish 行泓丞 / Xing Hongcheng / 싱홍청. Actual 2026-01-23 Qiu Yuran dated GoRatings row corresponds to target SGF scope. Existing five REVIEW per environment include Hangul 행홍승, not selected because published Korean GoRatings prints 싱홍청; unselected TW REVIEW remains. No alias or transliteration invented.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 385,
+                      "kind": "player"
+                    },
+                    "query": "行泓丞",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2528.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr><td>2026-01-23</td><td>3012</td>\n<td>Black</td>\n<td>Loss</td>\n<td><a href=\"2325.html\">Qiu Yuran</a></td>\n<td>3370</td>\n<td class=\"c\"><span style=\"color:#0295FF\">♂</span></td><td class=\"c\"><img alt=\"cn flag\" src=\"/flags/cn.svg\" style=\"height:1em;vertical-align:middle\"/></td><td>\n | <a href =\"https://www.weiqi.org.cn/competition/kifu/2026010000102914\">cwa</a> | <a href =\"https://www.go4go.net/go/games/sgfview/125534\">go4go</a> | </td>\n</tr>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee.body",
+                    "body_sha256": "142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "a9cb914da86fda8f4f235a36c028bc77dbeaf70c9dffeb07ec862a8da0667603",
+                    "fetched_at": "2026-10-08T03:25:59.929636+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_actual_dated_target_game",
+                    "url": "https://www.goratings.org/en/players/2528.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>行泓丞</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1.body",
+                    "body_sha256": "0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "f6077f6b4340f079239caafbb7d2e636e770714d6a6967e7f810362ead594ade",
+                    "fetched_at": "2026-10-08T03:25:59.949491+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2528.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Xing Hongcheng</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee.body",
+                    "body_sha256": "142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "b4b9405352febe470f777b8a5de10f01203d40ba4ab0671c15c2b30b3b5a3f23",
+                    "fetched_at": "2026-10-08T03:25:59.929636+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2528.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 334
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:17.795037+00:00",
+            "decision_kind": "conventional",
+            "display_name": "行泓丞",
+            "evidence_id": 61330,
+            "generation_rule_version": "none",
+            "id": 1919,
+            "lang": "cn",
+            "player_id": 385,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T03:42:30.849019+00:00"
+          }
+        },
+        "original_name": "行泓丞",
+        "owner": {
+          "id": 385,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "7a89146fee4fac11f7643c00046cf9cdb4f2f504ff9908e1edd04e52b657b224",
+        "produced_at": "2026-10-08T19:12:35.221638+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 662,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "5aa4b935d6c49430220fe65f96e0af75c4f7e752674e8c495a00d80590856a61",
+            "evidence_creation_sha256": "c75decd90f5d657326a5abfc3c85368ec88bec54965a878600ac2a8d3aa3c9c1",
+            "id": 545
+          },
+          "source_evidence": {
+            "candidate_name": "朱彦臻",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61334,
+            "lang": "cn",
+            "player_id": 662,
+            "produced_at": "2026-10-08T03:33:04.573825+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "朱彦臻",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "df0969a82a88f57a12eda8058e4ef0327eca6b1febe8d7c21b65078b415253c3",
+                "owner": {
+                  "id": 662,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T03:37:08.946808+00:00",
+                  "capture_sha256": "9951b415a2db077f85512767b7ec7df7dbc8f89b92d8bd74186f23b74c18ca82",
+                  "captured_at": "2026-10-08T03:35:26.962779+00:00",
+                  "name_preimage_sha256": "df0969a82a88f57a12eda8058e4ef0327eca6b1febe8d7c21b65078b415253c3",
+                  "source_candidate_sha256": "1ad9e4ae9e1f86e800ad7db892f4fdf2f405ff3d2f0f649e029b53eebb7254b1"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "e7e22328e20885e7992752fa0ebcced6dea917718fa3d7b6f20fba7ae0e94a82",
+                "review_conclusion": "Root actually read20 main+16unique support rawSHA/decoded contiguous excerpts: GORownlocaleheaders and2026/2025/2023 datedtargetgames;5214 Haifong officialroster ownprofilehref andGORsameexactofficiallink,0GORgamecount notfake datedgame;3906 actualcachedChineseGORindex own2324 anchor andEN/JA/KOownheaders,ZHown two realtimeouts preserved.20published0generated,5partial missing385/662/3906/6447TW and5214KO omitted.8realREVIEW CAS+12NULL;2unselectedTW REVIEW preservedfullfields (10original/direct22/qualified20). ActualFH6solbinder79 exactSGF/FKslots/currentcatalog post531 preserved.5572/5573nearspelling cluster excluded,3906 rootguarded substitute;nocanonical/alias/merge/biography/rank/FK writes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "朱彦臻",
+                "identity_note": "Actual same-source-actor read-only PROD662/TEST663: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2287 four locale pages publish 朱彦臻 / Zhu Yanzhen / 주옌쩐. Actual 2025-07-01 Liao Yuanhe dated row corresponds to target SGF scope. Existing REVIEW Hangul 주 옌전 is not selected; TW REVIEW 朱彥臻 has no qualified TW source in this finite pass and remains untouched.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2287.html",
+                "original_name": "朱彦臻",
+                "owner": {
+                  "id": 662,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "de501e09fc92d713437eddc77d8dbf9415210db99cba5a1139473da909bdd0b7",
+                "registry_version": "2026-10-08-ret118-partial20-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>朱彦臻</h1>",
+                    "body_sha256": "0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79",
+                    "candidate_name": "朱彦臻",
+                    "fetched_at": "2026-10-08T03:26:48.560888+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor read-only PROD662/TEST663: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2287 four locale pages publish 朱彦臻 / Zhu Yanzhen / 주옌쩐. Actual 2025-07-01 Liao Yuanhe dated row corresponds to target SGF scope. Existing REVIEW Hangul 주 옌전 is not selected; TW REVIEW 朱彥臻 has no qualified TW source in this finite pass and remains untouched.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 662,
+                      "kind": "player"
+                    },
+                    "query": "朱彦臻",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2287.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr><td>2025-07-01</td><td>3211</td>\n<td>White</td>\n<td>Loss</td>\n<td><a href=\"1427.html\">Liao Yuanhe</a></td>\n<td>3598</td>\n<td class=\"c\"><span style=\"color:#0295FF\">♂</span></td><td class=\"c\"><img alt=\"cn flag\" src=\"/flags/cn.svg\" style=\"height:1em;vertical-align:middle\"/></td><td>\n | <a href =\"https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3koshurankahai1kaisen_liao_shuhiko_20250701.sgf\">nihon_kiin</a> | <a href =\"https://www.weiqi.org.cn/competition/kifu/2025070000101160\">cwa</a> | <a href =\"https://www.go4go.net/go/games/sgfview/121846\">go4go</a> | </td>\n</tr>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b.body",
+                    "body_sha256": "40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "d2269ded26e4ef6bc0afb9fdb7992ab7cd7467eceb5f776246e61065cd69d3a9",
+                    "fetched_at": "2026-10-08T03:26:48.559134+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_actual_dated_target_game",
+                    "url": "https://www.goratings.org/en/players/2287.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>朱彦臻</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79.body",
+                    "body_sha256": "0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "ca84464b8d4809051b26eb7631006b92519613cb56b32a6c89852ab36b348b01",
+                    "fetched_at": "2026-10-08T03:26:48.560888+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2287.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Zhu Yanzhen</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b.body",
+                    "body_sha256": "40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "2ae7358eaa156d318aacd4f31b52726b2c33bbe5d40baece374024bc6ea45431",
+                    "fetched_at": "2026-10-08T03:26:48.559134+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2287.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 334
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:22.552065+00:00",
+            "decision_kind": "conventional",
+            "display_name": "朱彦臻",
+            "evidence_id": 61334,
+            "generation_rule_version": "none",
+            "id": 3304,
+            "lang": "cn",
+            "player_id": 662,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T03:42:30.849019+00:00"
+          }
+        },
+        "original_name": "朱彦臻",
+        "owner": {
+          "id": 662,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "c0d5196c32610dc6d19fdadefe9a41f86c701a21718130700f650b0969ed9de0",
+        "produced_at": "2026-10-08T19:12:35.221735+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 320,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "9940a0fdc64881f416266ebd739e5fe7a7b431fef09dd3357897b7a8ebed774d",
+            "evidence_creation_sha256": "bbb67d6fe8d9ecf4196edce94d462f9e5fb22000e9e1e1ef191d288b2d7dbb84",
+            "id": 549
+          },
+          "source_evidence": {
+            "candidate_name": "桂诗云",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61512,
+            "lang": "cn",
+            "player_id": 320,
+            "produced_at": "2026-10-08T03:51:53.326703+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "桂诗云",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "bb09659769fbe7f5b31781309f5c81752634c4029ab5e4a517c74937e66e543d",
+                "owner": {
+                  "id": 320,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:30:50.491945+00:00",
+                  "capture_sha256": "81b077160784ad2237f41aeafe81c08b3dc80885a8e4d6b3211a29b01afadb58",
+                  "captured_at": "2026-10-08T04:29:12.260418+00:00",
+                  "name_preimage_sha256": "bb09659769fbe7f5b31781309f5c81752634c4029ab5e4a517c74937e66e543d",
+                  "source_candidate_sha256": "b8000bb3727d89f7f7848e620624573c948e9fb5de25a3608841714bb440453a"
+                },
+                "produced_at": "2026-10-08T03:51:53.326703+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "e7fe4e41ed0654b07ef6bb125588311033e896bd62881f7575894462d094483b",
+                "review_conclusion": "Root read16main+17unique support rawSHA/decoded contiguous excerpts. Own GOR2398/2402/2194/2309 headers withactualdatedSGFopponent bridges; KBA10001082 own최은규(崔殷奎); actualTaiwanKiinofficial徐銘均profile andEnglishHsu Ming-Chun plusHaifongownpage, no inventedChinesesimplification. 16published0generated/fivepartial;4REVIEW CAS+12NULL and1unselectedTW REVIEW preservedfullrow, direct17/read16. 75 unchangedSGF/FKslots;actualparallel6solsource/FH6solbinder post547 originalcontext time. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T05:01:14.563327+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "桂诗云",
+                "identity_note": "Actual same-actor finite read-only PROD320/TEST321: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2398 publishes simplified CN/JP, Gui Shiyun and Korean 구이쓰윈(桂詩云). Korean candidate is the published Hangul portion; P320/T321 existing REVIEW ko 계시운 is not adopted. No TW locale evidence chosen.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2398.html",
+                "original_name": "桂诗云",
+                "owner": {
+                  "id": 320,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:51:53.326703+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "5706e8d72422ea07f59c547074e43a5b8667d51307ee7d3fb918f7feb3e026c2",
+                "registry_version": "2026-10-08-ret120-partial16-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_sha256": "76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9",
+                    "candidate_name": "桂诗云",
+                    "fetched_at": "2026-10-08T03:41:10.607334+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD320/TEST321: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2398 publishes simplified CN/JP, Gui Shiyun and Korean 구이쓰윈(桂詩云). Korean candidate is the published Hangul portion; P320/T321 existing REVIEW ko 계시운 is not adopted. No TW locale evidence chosen.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 320,
+                      "kind": "player"
+                    },
+                    "query": "桂诗云",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2398.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9.body",
+                    "body_sha256": "76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "1df0705647bddc9388e9cd2c7e839db92a14c1f8be602e56a0b31dac14420b00",
+                    "fetched_at": "2026-10-08T03:41:10.607334+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/22ac6cd8421267bb373ea0322754c07b4869cb183c26b27b614c2ebd78616a85.body",
+                    "body_sha256": "22ac6cd8421267bb373ea0322754c07b4869cb183c26b27b614c2ebd78616a85",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "1df0705647bddc9388e9cd2c7e839db92a14c1f8be602e56a0b31dac14420b00",
+                    "fetched_at": "2026-10-08T03:41:11.562813+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ja/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Gui Shiyun</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/cc70cd1e710b3842c429ab25963c6f485934eb2f9fd4db8e0a209c14bd421d44.body",
+                    "body_sha256": "cc70cd1e710b3842c429ab25963c6f485934eb2f9fd4db8e0a209c14bd421d44",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "af728d2bd6f4dc59052a7512b32b46cc716466686caa19b94fc20320c6bbf44e",
+                    "fetched_at": "2026-10-08T03:41:11.546408+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>구이쓰윈(桂詩云)</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/b964814c99741c096d64516e6671c4a24564b409364010c04b14ad71d251b764.body",
+                    "body_sha256": "b964814c99741c096d64516e6671c4a24564b409364010c04b14ad71d251b764",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "970aef7ebac7ccf2f4e1f0d36274d8b4166816f6459a541187b8592fea12274d",
+                    "fetched_at": "2026-10-08T03:41:10.631924+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ko/players/2398.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T05:01:14.563327+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 337
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:17.795037+00:00",
+            "decision_kind": "conventional",
+            "display_name": "桂诗云",
+            "evidence_id": 61512,
+            "generation_rule_version": "none",
+            "id": 1594,
+            "lang": "cn",
+            "player_id": 320,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T05:01:14.563327+00:00"
+          }
+        },
+        "original_name": "桂诗云",
+        "owner": {
+          "id": 320,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "9ebf47fbd77d65cb4c5f5007e20016d903102ba686d569fa188a408eacea3670",
+        "produced_at": "2026-10-08T19:12:35.221833+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 391,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "bdbb81023a722463ebf0138a561fce80be43da2c977f84c8f827a4f0be301639",
+            "evidence_creation_sha256": "a21343a11d99767444e068d29bb25344ff80326ec2a9d3930e5ed282b2850d37",
+            "id": 540
+          },
+          "source_evidence": {
+            "candidate_name": "王琛",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61259,
+            "lang": "cn",
+            "player_id": 391,
+            "produced_at": "2026-10-08T02:43:19.521936+00:00",
+            "producer_id": "/root/next_players_sources_resume",
+            "producer_model": "gpt-6.1-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "王琛",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "6f3c340f83a1eff3464dc15dc9148582d4f09e566e849197679b769e55bd9fba",
+                "owner": {
+                  "id": 391,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T02:46:31.438160+00:00",
+                  "capture_sha256": "61555fe47fd592415a7fcf43b53e3258588c5131815fae75b5ba7e58188cc38e",
+                  "captured_at": "2026-10-08T02:46:26.491542+00:00",
+                  "name_preimage_sha256": "6f3c340f83a1eff3464dc15dc9148582d4f09e566e849197679b769e55bd9fba",
+                  "source_candidate_sha256": "a1739a23de786592e853baef66fde90097f1e46dda33da335b7c030e81dec325"
+                },
+                "produced_at": "2026-10-08T02:43:19.521936+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "research_sha256": "6265384f525aab2fd5fe9cd8ac1f7a1c1d7cadf20f1bc7a9fcdf43b6941d1202",
+                "review_conclusion": "Root actually read21 main and20 unique support byteSHA/decoding/excerpts. ActualWiki own漆圣颐/AlexanderQi andGoRatings/KBApublished알렉산더치; actualKansai professionalMeyerFrancis andUGo552 ownEnglishFrancisMeyer,Traditionalroster梅耶．弗朗西斯. MaTianfang/WangChen ownUGo dictionary plusNihonKiin amateurreport avoids claimedprofessionalstatus. Hamanaka officialfullreading has spacedoriginal andIgo timeout,KOomitted withoutcomposite/source/gatechange.21published0generated,2full607/4612+3partial.15genuineREVIEW captured,12selectedCAS+9NULL,3unselectedREVIEW preserveallfields;59unchangedslots. Genuine next6.1producer/FH6-solbinder,actualpost531 context timing/path reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T02:54:02.207217+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "王琛",
+                "identity_note": "Actual same-source-actor readonly finite PROD391/TEST392, 11 equal full albumID/side/SGF slots each, aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; targetnames5REVIEW eachenv for364/607/391 and names0 for4612/5396. Not independentFH or finalapproved-context/CAS binder. ActualU-Go496 ownChinese王琛/preferredENWang Chen/explicitpublishedKorean왕천; actualJapanese棋院2019worldamateurchampionship namedreport王琛 and target2021–2025amateurSGFs coherent. Actual2021CNnationalgames row王琛/白宝祥/马天放 matches target2021-09-23白宝祥vs王琛 amateurfinalcontext, no claimedexactsourcegame-result. ActualWikipedia王琛 is a disambiguationpage and own1992Goentry redlink means absentpersonarticle, never used as biography/name main authority. TWboundednationalgames querytimeout thenretrytimeout;TW omitted. Actor/director/politician/footballer/entertainmentexecutive同名王琛 excluded. Existing5REVIEW rows eachenv captured; fourselectedcells require realCAS, omittedTW staysunchanged. NoDOB/rank/age/biographywrites.",
+                "lang": "cn",
+                "original_language": "zh",
+                "original_language_basis_url": "https://db.u-go.net/playerdb/players/496/",
+                "original_name": "王琛",
+                "owner": {
+                  "id": 391,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T02:43:19.521936+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "registry_sha256": "2be2262bbd2a1d64dd8f06163a99277415224207d6afd423648a9b4c0b354b42",
+                "registry_version": "2026-10-08-ret115-partial21-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "{\"id\":496,\"key_name\":\"Wang Chen\",\"sex\":\"Male\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":\"Q25252575\",\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/496/\",\"simplenames\":[{\"id\":14630,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"왕천\",\"databases\":[],\"languages\":[{\"language\":\"ko\",\"preferred\":false}],\"incorrect\":false,\"order_reversed\":false},{\"id\":446,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"Wang Chen\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7545,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"王琛\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1340\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T13:48:49.080007Z\",\"last_changed\":\"2025-02-15T18:41:03.269205Z\"}",
+                    "body_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "candidate_name": "王琛",
+                    "fetched_at": "2026-10-08T01:48:48.105218+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor readonly finite PROD391/TEST392, 11 equal full albumID/side/SGF slots each, aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; targetnames5REVIEW eachenv for364/607/391 and names0 for4612/5396. Not independentFH or finalapproved-context/CAS binder. ActualU-Go496 ownChinese王琛/preferredENWang Chen/explicitpublishedKorean왕천; actualJapanese棋院2019worldamateurchampionship namedreport王琛 and target2021–2025amateurSGFs coherent. Actual2021CNnationalgames row王琛/白宝祥/马天放 matches target2021-09-23白宝祥vs王琛 amateurfinalcontext, no claimedexactsourcegame-result. ActualWikipedia王琛 is a disambiguationpage and own1992Goentry redlink means absentpersonarticle, never used as biography/name main authority. TWboundednationalgames querytimeout thenretrytimeout;TW omitted. Actor/director/politician/footballer/entertainmentexecutive同名王琛 excluded. Existing5REVIEW rows eachenv captured; fourselectedcells require realCAS, omittedTW staysunchanged. NoDOB/rank/age/biographywrites.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 391,
+                      "kind": "player"
+                    },
+                    "query": "王琛",
+                    "source_id": "ret97-ugo-en",
+                    "status": "found",
+                    "url": "https://db.u-go.net/playerdb/players/496/"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "{\"id\":496,\"key_name\":\"Wang Chen\",\"sex\":\"Male\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":\"Q25252575\",\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/496/\",\"simplenames\":[{\"id\":14630,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"왕천\",\"databases\":[],\"languages\":[{\"language\":\"ko\",\"preferred\":false}],\"incorrect\":false,\"order_reversed\":false},{\"id\":446,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"Wang Chen\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7545,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"王琛\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1340\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T13:48:49.080007Z\",\"last_changed\":\"2025-02-15T18:41:03.269205Z\"}",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227.body",
+                    "body_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "fetched_at": "2026-10-08T01:48:48.105218+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "en+zh+ja",
+                    "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                    "url": "https://db.u-go.net/playerdb/players/496/"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr>\n<td>男子个人业余\n</td>\n<td>王琛（上海队）\n</td>\n<td>白宝祥\n</td>\n<td>马天放\n</td></tr>",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/161a3114109673b1ca7df1e6bc7413eec5c9c27550f9df4be6add7af844b857d.body",
+                    "body_sha256": "161a3114109673b1ca7df1e6bc7413eec5c9c27550f9df4be6add7af844b857d",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "a17077d6e0fbf6252bd1b6c4cee39a7c6c4f64d86a1038453e3ec7053d951c3c",
+                    "fetched_at": "2026-10-08T01:51:09.229474+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "zh-Hans",
+                    "source_role": "actual_named_amateur_Go_medalists_row",
+                    "url": "https://zh.wikipedia.org/zh-cn/中华人民共和国第十四届运动会围棋比赛"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<p class=\"mb1\">世界59カ国・地域の代表が参加した<a href=\"https://www.nihonkiin.or.jp/event/amakisen/worldama/40/index.html\">第40回世界アマチュア囲碁選手権戦 島根・松江大会</a>6月2日（日）から5日（水）まで、島根県松江市の「<a href=\"https://www.cul-shimane.jp/hall/\" target=\"_blank\" class=\"blank\">島根県民会館</a>」で行われ、中国の王琛選手が8戦全勝で優勝となった。<br />日本代表の川口飛翔選手は第5戦で中国の王琛選手、第7戦で韓国の李宰成選手、第8戦で中国香港の陳乃申選手に敗れ8位だった。</p>",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/39ec00963e5331b5d17c85e22b6c1a576c5340b0a40e724b0a646ecdebca82ea.body",
+                    "body_sha256": "39ec00963e5331b5d17c85e22b6c1a576c5340b0a40e724b0a646ecdebca82ea",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "25f333be732e6284d5d05c0964cc16ee719b3aab00a6da1f7d78e88badb4a806",
+                    "fetched_at": "2026-10-08T01:51:19.765389+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "ja",
+                    "source_role": "official_named_world_amateur_Go_championship_report_own_王琛",
+                    "url": "https://www.nihonkiin.or.jp/event/area/other/40_34.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T02:54:02.207217+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 329
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:33:17.795037+00:00",
+            "decision_kind": "conventional",
+            "display_name": "王琛",
+            "evidence_id": 61259,
+            "generation_rule_version": "none",
+            "id": 1949,
+            "lang": "cn",
+            "player_id": 391,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T02:54:02.207217+00:00"
+          }
+        },
+        "original_name": "王琛",
+        "owner": {
+          "id": 391,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "PROD",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "3a18e1fb0c6cbf01b5471ad760365c230929ddf5258fa9e22a8580973ba3be80",
+        "produced_at": "2026-10-08T19:12:35.221928+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 601,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "f6c437f7b9bce52c949c87f752eec40735423c05f67aab08bcf55962b286eaa7",
+            "evidence_creation_sha256": "6c937fefeee9949fc4bf8ec2e88559243c881ac43e021e6f19348ee8146dc2a4",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "肖泽彬",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61563,
+            "lang": "cn",
+            "player_id": 601,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "肖泽彬",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "edeb2bb03744ff2f456055cddbec366c6f5cbd5f0a2ed06fa440b2851ac8e51d",
+                "owner": {
+                  "id": 601,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:40.418172+00:00",
+                  "capture_sha256": "7e3b6ddcdfbcc87e7908ac2a6ccbaaf561d5e5aa3b8cc4dfb201c72ada37ed17",
+                  "captured_at": "2026-10-08T04:39:32.160064+00:00",
+                  "name_preimage_sha256": "edeb2bb03744ff2f456055cddbec366c6f5cbd5f0a2ed06fa440b2851ac8e51d",
+                  "source_candidate_sha256": "094873bbd795242058c2f9c831610261a9e4d17a36984effcc52cda322d43fa6"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "2f555f8610e99ca5aa6423d2579dcdc22507cec070c421ab1aec150a27577092",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "肖泽彬",
+                "identity_note": "Actual same-actor finite read-only PROD600/TEST601: 18 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2276 zh/ja/en publish 肖泽彬 and Xiao Zebin; Korean Baduk Association own pkey20002142 publishes 샤오쩌빈(肖泽彬). Earlier REVIEW KO 샤오 쩨빈 is not selected. No qualified TW publication captured, so old REVIEW TW remains.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2276.html",
+                "original_name": "肖泽彬",
+                "owner": {
+                  "id": 601,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_sha256": "83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf",
+                    "candidate_name": "肖泽彬",
+                    "fetched_at": "2026-10-08T03:58:32.783179+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD600/TEST601: 18 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2276 zh/ja/en publish 肖泽彬 and Xiao Zebin; Korean Baduk Association own pkey20002142 publishes 샤오쩌빈(肖泽彬). Earlier REVIEW KO 샤오 쩨빈 is not selected. No qualified TW publication captured, so old REVIEW TW remains.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 601,
+                      "kind": "player"
+                    },
+                    "query": "肖泽彬",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2276.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf.body",
+                    "body_sha256": "83530b16358143f7743f695313fdc9765d470ce93c3ad6ad373c09289fee6fcf",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "169d087d124fd604e1259f26f2a97b9d6182cc637d579452b64fbb955160ad85",
+                    "fetched_at": "2026-10-08T03:58:32.783179+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>肖泽彬</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/b09ad4808195b3bdc68655d8b9e4649afff3b99aaae74faf8e89ec35ed13917d.body",
+                    "body_sha256": "b09ad4808195b3bdc68655d8b9e4649afff3b99aaae74faf8e89ec35ed13917d",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "169d087d124fd604e1259f26f2a97b9d6182cc637d579452b64fbb955160ad85",
+                    "fetched_at": "2026-10-08T03:58:32.804288+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ja/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Xiao Zebin</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/f90064d2de28050516c91541f6df3dff1fb666508dd97d8e341c58dacb0b3ca9.body",
+                    "body_sha256": "f90064d2de28050516c91541f6df3dff1fb666508dd97d8e341c58dacb0b3ca9",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "b4691b81cdcbd0102070a976c401836f2a7b2b1ec36a65ad68db70327eb43530",
+                    "fetched_at": "2026-10-08T03:58:32.757894+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2276.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>샤오쩌빈(<em>肖&#27901;彬</em>)</span> 5단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08.body",
+                    "body_sha256": "56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "bfb4db7231026658227b0cb3d3d20378f76d7906545a69ac1fd344642a002a44",
+                    "fetched_at": "2026-10-08T04:03:19.075642+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002142"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>샤오쩌빈(<em>肖&#27901;彬</em>)</span> 5단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08.body",
+                    "body_sha256": "56a4756a7ab2da3f9a26cd79d6ecaa6baf98c90bd8fe2512a01c4c50cc4eed08",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "bfb4db7231026658227b0cb3d3d20378f76d7906545a69ac1fd344642a002a44",
+                    "fetched_at": "2026-10-08T04:03:19.075642+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002142"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:38.079214+00:00",
+            "decision_kind": "conventional",
+            "display_name": "肖泽彬",
+            "evidence_id": 61563,
+            "generation_rule_version": "none",
+            "id": 2999,
+            "lang": "cn",
+            "player_id": 601,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "肖泽彬",
+        "owner": {
+          "id": 601,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "0dc1befae8bab045eab2d6a55e30e55b805ee142b0e74a69f1522133e7fa12b3",
+        "produced_at": "2026-10-08T19:12:35.228485+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 230,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "f6c437f7b9bce52c949c87f752eec40735423c05f67aab08bcf55962b286eaa7",
+            "evidence_creation_sha256": "1b1f0b7d40e40d0130747ce58fd00369fe35d87b30f4218c9f16339d11f07534",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "叶子萌",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61567,
+            "lang": "cn",
+            "player_id": 230,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "叶子萌",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "c6d927c7c0d0de21dca69eee51d0c624da4661b81e4621f9d29adf25a216c4dc",
+                "owner": {
+                  "id": 230,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:40.418172+00:00",
+                  "capture_sha256": "7e3b6ddcdfbcc87e7908ac2a6ccbaaf561d5e5aa3b8cc4dfb201c72ada37ed17",
+                  "captured_at": "2026-10-08T04:39:32.160064+00:00",
+                  "name_preimage_sha256": "c6d927c7c0d0de21dca69eee51d0c624da4661b81e4621f9d29adf25a216c4dc",
+                  "source_candidate_sha256": "cb1f3c99d5446a81a41ffd57587ed1f4f0c28f650440c732c9307c8fc5583983"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "ced4734f0f0290c4f875bb94f36d88767ad24da17c408e2c81dd1fcac803c644",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "叶子萌",
+                "identity_note": "Actual same-actor finite read-only PROD229/TEST230: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2451 zh/ja/en publish 叶子萌/Ye Zimeng; Korean Baduk Association own pkey20002358 publishes 예쯔멍(葉子萌). REVIEW KO 엽자맹 is not selected. TW old REVIEW 叶子萌 is not supported as a Taiwanese published spelling in this pass.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://goratings.org/zh/players/2451.html",
+                "original_name": "叶子萌",
+                "owner": {
+                  "id": 230,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_sha256": "fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41",
+                    "candidate_name": "叶子萌",
+                    "fetched_at": "2026-10-08T04:01:10.601177+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD229/TEST230: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2451 zh/ja/en publish 叶子萌/Ye Zimeng; Korean Baduk Association own pkey20002358 publishes 예쯔멍(葉子萌). REVIEW KO 엽자맹 is not selected. TW old REVIEW 叶子萌 is not supported as a Taiwanese published spelling in this pass.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 230,
+                      "kind": "player"
+                    },
+                    "query": "叶子萌",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://goratings.org/zh/players/2451.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41.body",
+                    "body_sha256": "fc0009740509fb553919d41404c97ab80b015edc3c5b2c020e6bd0408e476a41",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "dd7149f577c6fa78dcdb2abaff7d5ef769245563bdf94714f07a875576a6bae9",
+                    "fetched_at": "2026-10-08T04:01:10.601177+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://goratings.org/zh/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>叶子萌</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e0e531cd21fe523b3a6e0eb666557f55cb7240b3a9a8b5c94847afd0e7ee648e.body",
+                    "body_sha256": "e0e531cd21fe523b3a6e0eb666557f55cb7240b3a9a8b5c94847afd0e7ee648e",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "dd7149f577c6fa78dcdb2abaff7d5ef769245563bdf94714f07a875576a6bae9",
+                    "fetched_at": "2026-10-08T04:01:06.207629+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://goratings.org/ja/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Ye Zimeng</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/6ab3b73a0e08265e9355287f7138dd56aa3ff9271e39d0416239971d41215b71.body",
+                    "body_sha256": "6ab3b73a0e08265e9355287f7138dd56aa3ff9271e39d0416239971d41215b71",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "95f3c8e68a4a65551ce4b4e3b736f22efad706337554abb787f23d6ae64c3ded",
+                    "fetched_at": "2026-10-08T03:58:33.446131+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2451.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>예쯔멍(<em>葉子萌</em>)</span> 4단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd>\r\n\t\t\t\t",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb.body",
+                    "body_sha256": "e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "53a3a9b5cbd29d8559cc80e2a32a89c6cc3d22d5dc084f5ef473e44fbbae2f55",
+                    "fetched_at": "2026-10-08T04:03:19.191810+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002358"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>예쯔멍(<em>葉子萌</em>)</span> 4단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd></dd>\r\n\t\t\t\t",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb.body",
+                    "body_sha256": "e74c02736cb59d73f7919cec79db97476b40a12aa90d60330f75f22ee36e8cdb",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "53a3a9b5cbd29d8559cc80e2a32a89c6cc3d22d5dc084f5ef473e44fbbae2f55",
+                    "fetched_at": "2026-10-08T04:03:19.191810+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002358"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:34.382137+00:00",
+            "decision_kind": "conventional",
+            "display_name": "叶子萌",
+            "evidence_id": 61567,
+            "generation_rule_version": "none",
+            "id": 1144,
+            "lang": "cn",
+            "player_id": 230,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "叶子萌",
+        "owner": {
+          "id": 230,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "1e360f7d7d2fde031ab7ce6facaaeee19573108211c9fe7f4a07b1356fb660b6",
+        "produced_at": "2026-10-08T19:12:35.228616+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 596,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "f6c437f7b9bce52c949c87f752eec40735423c05f67aab08bcf55962b286eaa7",
+            "evidence_creation_sha256": "23a3e77199bafe70379b166365f15e19b96a04650b2107e3e4b589a2c45e4d6e",
+            "id": 552
+          },
+          "source_evidence": {
+            "candidate_name": "周雨萱",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61571,
+            "lang": "cn",
+            "player_id": 596,
+            "produced_at": "2026-10-08T04:11:00.488344+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "周雨萱",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "fb6765361ba6695a0dcab30d216b2b00c93f84e2046d59319e94706afb3d5bea",
+                "owner": {
+                  "id": 596,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:40:40.418172+00:00",
+                  "capture_sha256": "7e3b6ddcdfbcc87e7908ac2a6ccbaaf561d5e5aa3b8cc4dfb201c72ada37ed17",
+                  "captured_at": "2026-10-08T04:39:32.160064+00:00",
+                  "name_preimage_sha256": "fb6765361ba6695a0dcab30d216b2b00c93f84e2046d59319e94706afb3d5bea",
+                  "source_candidate_sha256": "3b9b2586e58f82ba0c147e23569476f13cdeb41cffa7808e4c3ee525966de9f8"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "9d9865c3dd73c46c23a3eab1b326b7a6b3138e283986e48388460bc851ba4518",
+                "review_conclusion": "Root read19main+19unique supports actualrawSHA/decoded excerpts: GORown2276/2451/2253/2317headings, officialKBAown샤오쩌빈/예쯔멍/저우위쉔/자신이 profiles withnativeHanja;595JPactualGOR2309 datedopponent2253linkedownname,notwrongplayerheader. 5675actualYigoTWCP9502024row,Nihonofficial2024KimEunji–秦思玥match,andCWI2024GoSeigenCupownENQinSiyue;GOR404excludednotnameproof. 19published0generated/fivepartial;12trueREVIEWCAS+7NULL/3unselectedTW REVIEW preservedfullfields/direct22/read19. 80unchangedSGF/FKslots/actualparallel6solsource/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "周雨萱",
+                "identity_note": "Actual same-actor finite read-only PROD595/TEST596: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2253 zh/en publish 周雨萱/Zhou Yuxuan; captured Japanese GoRatings opponent row links own2253 as 周雨萱. Korean Baduk Association own pkey20002118 publishes 저우위쉔(周雨萱), matching GR KO. REVIEW JP シュウ ユーシュエン and REVIEW KO 저우 위 hsuan are not adopted. TW remains unsupported.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2253.html",
+                "original_name": "周雨萱",
+                "owner": {
+                  "id": 596,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T04:11:00.488344+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "3d0772377c92af9cc87f15d0dbe2f6b00b0f14b8e230cfe4672f7c666bc829f4",
+                "registry_version": "2026-10-08-ret122-partial19-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>周雨萱</h1>",
+                    "body_sha256": "f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f",
+                    "candidate_name": "周雨萱",
+                    "fetched_at": "2026-10-08T03:58:33.550094+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD595/TEST596: 17 exactly equal linked album ID/side/SGF SHA slots each, TEST no extras; aliases0. Actual selected native/Latin/Korean normalized foreign canonical/name/alias collisions0. P600/P229/P595 and T601/T230/T596 each have five real REVIEW rows; P5675/P5933 and T11448/T11702 names0. Distinct approved-context binder pending. GoRatings own2253 zh/en publish 周雨萱/Zhou Yuxuan; captured Japanese GoRatings opponent row links own2253 as 周雨萱. Korean Baduk Association own pkey20002118 publishes 저우위쉔(周雨萱), matching GR KO. REVIEW JP シュウ ユーシュエン and REVIEW KO 저우 위 hsuan are not adopted. TW remains unsupported.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 596,
+                      "kind": "player"
+                    },
+                    "query": "周雨萱",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2253.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>周雨萱</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f.body",
+                    "body_sha256": "f315ac963326c186f69ebd3d8c6a0a78ed2deeef45db0025cc9c26cc5cceac0f",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "f1a009e05de0bb513f843d194101430effa9ed855dc628200703850ff4f04ffd",
+                    "fetched_at": "2026-10-08T03:58:33.550094+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2253.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<a href=\"2253.html\">周雨萱</a>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/77a5b547e53053e0cd94eeca5388c680c915a7658c62b3f530614a6d4ddd8149.body",
+                    "body_sha256": "77a5b547e53053e0cd94eeca5388c680c915a7658c62b3f530614a6d4ddd8149",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "c712ddd8a2bcc0f5036c1ea38739611a9f3d029ca5f6ddf4beeda963bb05b840",
+                    "fetched_at": "2026-10-08T03:41:11.480861+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_exact_own_linked_opponent_row",
+                    "url": "https://www.goratings.org/ja/players/2309.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Zhou Yuxuan</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/a75ff5ae892cb8afd652a6f9da44918e68f6fe735775f89461244aa9eb3d8177.body",
+                    "body_sha256": "a75ff5ae892cb8afd652a6f9da44918e68f6fe735775f89461244aa9eb3d8177",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "665814aa2b2c061350277842ff4d05cff6360e3cbcf7099a79280130214fb45a",
+                    "fetched_at": "2026-10-08T03:58:34.258618+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2253.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>저우위쉔(<em>周雨萱</em>)</span> 2단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd>2007년 02월 0",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a.body",
+                    "body_sha256": "9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "55b3698fe21fbf59372935c07d6a7e87778c186618d7af67508aa75644f87651",
+                    "fetched_at": "2026-10-08T04:03:19.007513+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002118"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "class=\"playerTxt\">\r\n\t\t\t\t\t\t<p><span>저우위쉔(<em>周雨萱</em>)</span> 2단</p>\r\n\t\t\t\t\t\t<dl>\r\n\t\t\t\t\t\t\t<dt>생년월일</dt>\r\n\t\t\t\t\t\t\t<dd>2007년 02월 0",
+                    "body_path": "/tmp/kifu-player-next5retired122-20261008/source-producer-frozen19-final-v1/sources/9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a.body",
+                    "body_sha256": "9e2fe1efda9cfb02b8f046ed3a26db39d838818949e797db27216618b075709a",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_body",
+                    "excerpt_sha256": "55b3698fe21fbf59372935c07d6a7e87778c186618d7af67508aa75644f87651",
+                    "fetched_at": "2026-10-08T04:03:19.007513+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "official_korean_baduk_own_player_profile",
+                    "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002118"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T04:51:11.204642+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 340
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:38.079214+00:00",
+            "decision_kind": "conventional",
+            "display_name": "周雨萱",
+            "evidence_id": 61571,
+            "generation_rule_version": "none",
+            "id": 2974,
+            "lang": "cn",
+            "player_id": 596,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T04:51:11.204642+00:00"
+          }
+        },
+        "original_name": "周雨萱",
+        "owner": {
+          "id": 596,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "2385de3372815b655f15b07bffd1a6fc25032c0bc012309c408557d5e107ab14",
+        "produced_at": "2026-10-08T19:12:35.228725+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 386,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "3bf7ea31338ac96258a24a84630d03da1c04c2f8ea7b76f76113a7c8b91bd8cc",
+            "evidence_creation_sha256": "995fde361a4436f4d2da0e82b7d1664658cb8fe41546b643bd85315767865d2b",
+            "id": 545
+          },
+          "source_evidence": {
+            "candidate_name": "行泓丞",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61325,
+            "lang": "cn",
+            "player_id": 386,
+            "produced_at": "2026-10-08T03:33:04.573825+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "行泓丞",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "167bafa1652d1eb19ece34a9c23ae0d9990fe5d1864aeb70806fe6dbd6053f8b",
+                "owner": {
+                  "id": 386,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T03:37:05.942471+00:00",
+                  "capture_sha256": "2755ab02e2273ee3b4921aba439cef76d00c6e7aa303995b06b7f8528f2ae728",
+                  "captured_at": "2026-10-08T03:35:24.588305+00:00",
+                  "name_preimage_sha256": "167bafa1652d1eb19ece34a9c23ae0d9990fe5d1864aeb70806fe6dbd6053f8b",
+                  "source_candidate_sha256": "fe595ad108b2e18ec55e3f88272c3d200b5dcf5b6284ac20655da27bed4fe8ff"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "1cc3065d5ea41d3d0058cceed818d8db4b9658b59e700724911c78fea16ef791",
+                "review_conclusion": "Root actually read20 main+16unique support rawSHA/decoded contiguous excerpts: GORownlocaleheaders and2026/2025/2023 datedtargetgames;5214 Haifong officialroster ownprofilehref andGORsameexactofficiallink,0GORgamecount notfake datedgame;3906 actualcachedChineseGORindex own2324 anchor andEN/JA/KOownheaders,ZHown two realtimeouts preserved.20published0generated,5partial missing385/662/3906/6447TW and5214KO omitted.8realREVIEW CAS+12NULL;2unselectedTW REVIEW preservedfullfields (10original/direct22/qualified20). ActualFH6solbinder79 exactSGF/FKslots/currentcatalog post531 preserved.5572/5573nearspelling cluster excluded,3906 rootguarded substitute;nocanonical/alias/merge/biography/rank/FK writes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "行泓丞",
+                "identity_note": "Actual same-source-actor read-only PROD385/TEST386: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2528 four locale pages publish 行泓丞 / Xing Hongcheng / 싱홍청. Actual 2026-01-23 Qiu Yuran dated GoRatings row corresponds to target SGF scope. Existing five REVIEW per environment include Hangul 행홍승, not selected because published Korean GoRatings prints 싱홍청; unselected TW REVIEW remains. No alias or transliteration invented.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2528.html",
+                "original_name": "行泓丞",
+                "owner": {
+                  "id": 386,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "de501e09fc92d713437eddc77d8dbf9415210db99cba5a1139473da909bdd0b7",
+                "registry_version": "2026-10-08-ret118-partial20-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>行泓丞</h1>",
+                    "body_sha256": "0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1",
+                    "candidate_name": "行泓丞",
+                    "fetched_at": "2026-10-08T03:25:59.949491+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor read-only PROD385/TEST386: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2528 four locale pages publish 行泓丞 / Xing Hongcheng / 싱홍청. Actual 2026-01-23 Qiu Yuran dated GoRatings row corresponds to target SGF scope. Existing five REVIEW per environment include Hangul 행홍승, not selected because published Korean GoRatings prints 싱홍청; unselected TW REVIEW remains. No alias or transliteration invented.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 386,
+                      "kind": "player"
+                    },
+                    "query": "行泓丞",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2528.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr><td>2026-01-23</td><td>3012</td>\n<td>Black</td>\n<td>Loss</td>\n<td><a href=\"2325.html\">Qiu Yuran</a></td>\n<td>3370</td>\n<td class=\"c\"><span style=\"color:#0295FF\">♂</span></td><td class=\"c\"><img alt=\"cn flag\" src=\"/flags/cn.svg\" style=\"height:1em;vertical-align:middle\"/></td><td>\n | <a href =\"https://www.weiqi.org.cn/competition/kifu/2026010000102914\">cwa</a> | <a href =\"https://www.go4go.net/go/games/sgfview/125534\">go4go</a> | </td>\n</tr>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee.body",
+                    "body_sha256": "142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "a9cb914da86fda8f4f235a36c028bc77dbeaf70c9dffeb07ec862a8da0667603",
+                    "fetched_at": "2026-10-08T03:25:59.929636+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_actual_dated_target_game",
+                    "url": "https://www.goratings.org/en/players/2528.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>行泓丞</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1.body",
+                    "body_sha256": "0571770b9871d922559f299cbbe09102ecd5e5a09667df81a24955fa174f44a1",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "f6077f6b4340f079239caafbb7d2e636e770714d6a6967e7f810362ead594ade",
+                    "fetched_at": "2026-10-08T03:25:59.949491+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2528.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Xing Hongcheng</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee.body",
+                    "body_sha256": "142c08b343ce4235e34eb6893df8fdf3646c477a52a201a5d02851e5f4a67bee",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "b4b9405352febe470f777b8a5de10f01203d40ba4ab0671c15c2b30b3b5a3f23",
+                    "fetched_at": "2026-10-08T03:25:59.929636+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2528.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 334
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:34.382137+00:00",
+            "decision_kind": "conventional",
+            "display_name": "行泓丞",
+            "evidence_id": 61325,
+            "generation_rule_version": "none",
+            "id": 1924,
+            "lang": "cn",
+            "player_id": 386,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T03:42:30.849019+00:00"
+          }
+        },
+        "original_name": "行泓丞",
+        "owner": {
+          "id": 386,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "c2f401776c80fb80588ee4db93408818f628d4d531661a2d09855aeda54f7e28",
+        "produced_at": "2026-10-08T19:12:35.228831+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 663,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "3bf7ea31338ac96258a24a84630d03da1c04c2f8ea7b76f76113a7c8b91bd8cc",
+            "evidence_creation_sha256": "124027c07fbaa3b98e051df9339c1ef9707c82e9875d820719daf3267d7c17d7",
+            "id": 545
+          },
+          "source_evidence": {
+            "candidate_name": "朱彦臻",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61329,
+            "lang": "cn",
+            "player_id": 663,
+            "produced_at": "2026-10-08T03:33:04.573825+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "朱彦臻",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "7cd348d27b0eddeda907bdc1db7ab7a63a6206914cabc8d2949c2370bfd40688",
+                "owner": {
+                  "id": 663,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T03:37:05.942471+00:00",
+                  "capture_sha256": "2755ab02e2273ee3b4921aba439cef76d00c6e7aa303995b06b7f8528f2ae728",
+                  "captured_at": "2026-10-08T03:35:24.588305+00:00",
+                  "name_preimage_sha256": "7cd348d27b0eddeda907bdc1db7ab7a63a6206914cabc8d2949c2370bfd40688",
+                  "source_candidate_sha256": "21f8a87f65974138e7ef94a2d1dcff572325b32474499e8294c9a653f63e0cc8"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "b8a1cb7ee754ceb29558a9a95026ff71d20bdb8957d56e79ebfd679e5c9c2908",
+                "review_conclusion": "Root actually read20 main+16unique support rawSHA/decoded contiguous excerpts: GORownlocaleheaders and2026/2025/2023 datedtargetgames;5214 Haifong officialroster ownprofilehref andGORsameexactofficiallink,0GORgamecount notfake datedgame;3906 actualcachedChineseGORindex own2324 anchor andEN/JA/KOownheaders,ZHown two realtimeouts preserved.20published0generated,5partial missing385/662/3906/6447TW and5214KO omitted.8realREVIEW CAS+12NULL;2unselectedTW REVIEW preservedfullfields (10original/direct22/qualified20). ActualFH6solbinder79 exactSGF/FKslots/currentcatalog post531 preserved.5572/5573nearspelling cluster excluded,3906 rootguarded substitute;nocanonical/alias/merge/biography/rank/FK writes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "朱彦臻",
+                "identity_note": "Actual same-source-actor read-only PROD662/TEST663: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2287 four locale pages publish 朱彦臻 / Zhu Yanzhen / 주옌쩐. Actual 2025-07-01 Liao Yuanhe dated row corresponds to target SGF scope. Existing REVIEW Hangul 주 옌전 is not selected; TW REVIEW 朱彥臻 has no qualified TW source in this finite pass and remains untouched.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2287.html",
+                "original_name": "朱彦臻",
+                "owner": {
+                  "id": 663,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:33:04.573825+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "de501e09fc92d713437eddc77d8dbf9415210db99cba5a1139473da909bdd0b7",
+                "registry_version": "2026-10-08-ret118-partial20-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>朱彦臻</h1>",
+                    "body_sha256": "0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79",
+                    "candidate_name": "朱彦臻",
+                    "fetched_at": "2026-10-08T03:26:48.560888+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor read-only PROD662/TEST663: 16 exactly equal linked album ID/side/SGF SHA slots each, no extra TEST, aliases0. Full source-claim normalized foreign canonical/name/alias0. P385/P662 have real five REVIEW rows per env; others target names0. Independent approved context and CAS binder pending. GoRatings own2287 four locale pages publish 朱彦臻 / Zhu Yanzhen / 주옌쩐. Actual 2025-07-01 Liao Yuanhe dated row corresponds to target SGF scope. Existing REVIEW Hangul 주 옌전 is not selected; TW REVIEW 朱彥臻 has no qualified TW source in this finite pass and remains untouched.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 663,
+                      "kind": "player"
+                    },
+                    "query": "朱彦臻",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2287.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr><td>2025-07-01</td><td>3211</td>\n<td>White</td>\n<td>Loss</td>\n<td><a href=\"1427.html\">Liao Yuanhe</a></td>\n<td>3598</td>\n<td class=\"c\"><span style=\"color:#0295FF\">♂</span></td><td class=\"c\"><img alt=\"cn flag\" src=\"/flags/cn.svg\" style=\"height:1em;vertical-align:middle\"/></td><td>\n | <a href =\"https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/3koshurankahai1kaisen_liao_shuhiko_20250701.sgf\">nihon_kiin</a> | <a href =\"https://www.weiqi.org.cn/competition/kifu/2025070000101160\">cwa</a> | <a href =\"https://www.go4go.net/go/games/sgfview/121846\">go4go</a> | </td>\n</tr>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b.body",
+                    "body_sha256": "40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "d2269ded26e4ef6bc0afb9fdb7992ab7cd7467eceb5f776246e61065cd69d3a9",
+                    "fetched_at": "2026-10-08T03:26:48.559134+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_actual_dated_target_game",
+                    "url": "https://www.goratings.org/en/players/2287.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>朱彦臻</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79.body",
+                    "body_sha256": "0265474c5f937e4abad8efd78a12246a1a53735ffcd1d0dc40530dbc3c15ba79",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "ca84464b8d4809051b26eb7631006b92519613cb56b32a6c89852ab36b348b01",
+                    "fetched_at": "2026-10-08T03:26:48.560888+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2287.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Zhu Yanzhen</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired118-20261008/source-producer-frozen20-final-v1/sources/40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b.body",
+                    "body_sha256": "40f92b0b6d3c7c14e4b2ce88f50501dd2f5dcc2870a85f4085184048355da22b",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "2ae7358eaa156d318aacd4f31b52726b2c33bbe5d40baece374024bc6ea45431",
+                    "fetched_at": "2026-10-08T03:26:48.559134+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2287.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T03:42:30.849019+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 334
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:38.079214+00:00",
+            "decision_kind": "conventional",
+            "display_name": "朱彦臻",
+            "evidence_id": 61329,
+            "generation_rule_version": "none",
+            "id": 3309,
+            "lang": "cn",
+            "player_id": 663,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T03:42:30.849019+00:00"
+          }
+        },
+        "original_name": "朱彦臻",
+        "owner": {
+          "id": 663,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "624de7229ec2f8d5470db8903a6d671957fba3db674e02ac07b3419aff962763",
+        "produced_at": "2026-10-08T19:12:35.228926+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 321,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "fbc41e7477102da2fe735cd454dea65b43cb589d611eded0b65998c7cb16e106",
+            "evidence_creation_sha256": "a973a94fc3b29f04e501df34e37a5f32246e5d2e62e568542287c25e3a71cd92",
+            "id": 549
+          },
+          "source_evidence": {
+            "candidate_name": "桂诗云",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61507,
+            "lang": "cn",
+            "player_id": 321,
+            "produced_at": "2026-10-08T03:51:53.326703+00:00",
+            "producer_id": "/root/parallel_player_sources88",
+            "producer_model": "gpt-6-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "桂诗云",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "1caf4bdcb80c36e208a1c33786f41727fe9d4d32f97b08076547d631b570ef2d",
+                "owner": {
+                  "id": 321,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T04:30:47.393159+00:00",
+                  "capture_sha256": "f81daa1ea9b350cac4904e36b0240a4cba470fe28c551e34b8c84e721dd20425",
+                  "captured_at": "2026-10-08T04:29:10.122031+00:00",
+                  "name_preimage_sha256": "1caf4bdcb80c36e208a1c33786f41727fe9d4d32f97b08076547d631b570ef2d",
+                  "source_candidate_sha256": "60ae5266d364e2cdee7821b60e97c0b246b61575c21e54722e8d621dbd317bd9"
+                },
+                "produced_at": "2026-10-08T03:51:53.326703+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "research_sha256": "9844c7287b6c599ef7eb1616aa1e76d3c49f7d30e4c37d1efab22d504d19305e",
+                "review_conclusion": "Root read16main+17unique support rawSHA/decoded contiguous excerpts. Own GOR2398/2402/2194/2309 headers withactualdatedSGFopponent bridges; KBA10001082 own최은규(崔殷奎); actualTaiwanKiinofficial徐銘均profile andEnglishHsu Ming-Chun plusHaifongownpage, no inventedChinesesimplification. 16published0generated/fivepartial;4REVIEW CAS+12NULL and1unselectedTW REVIEW preservedfullrow, direct17/read16. 75 unchangedSGF/FKslots;actualparallel6solsource/FH6solbinder post547 originalcontext time. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T05:01:14.563327+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "桂诗云",
+                "identity_note": "Actual same-actor finite read-only PROD320/TEST321: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2398 publishes simplified CN/JP, Gui Shiyun and Korean 구이쓰윈(桂詩云). Korean candidate is the published Hangul portion; P320/T321 existing REVIEW ko 계시운 is not adopted. No TW locale evidence chosen.",
+                "lang": "cn",
+                "original_language": "zh-Hans",
+                "original_language_basis_url": "https://www.goratings.org/zh/players/2398.html",
+                "original_name": "桂诗云",
+                "owner": {
+                  "id": 321,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T03:51:53.326703+00:00",
+                "producer_id": "/root/parallel_player_sources88",
+                "producer_model": "gpt-6-sol",
+                "registry_sha256": "5706e8d72422ea07f59c547074e43a5b8667d51307ee7d3fb918f7feb3e026c2",
+                "registry_version": "2026-10-08-ret120-partial16-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_sha256": "76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9",
+                    "candidate_name": "桂诗云",
+                    "fetched_at": "2026-10-08T03:41:10.607334+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-actor finite read-only PROD320/TEST321: 15 exactly equal linked album ID/side/SGF SHA slots each; no extra TEST; aliases0. Full actual native/Latin/Korean selected-claim normalized foreign canonical/name/alias collisions0. P320/T321 have genuine five REVIEW rows each; other targets names0. Distinct final binder and approved-name context pending. GoRatings same own player2398 publishes simplified CN/JP, Gui Shiyun and Korean 구이쓰윈(桂詩云). Korean candidate is the published Hangul portion; P320/T321 existing REVIEW ko 계시운 is not adopted. No TW locale evidence chosen.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 321,
+                      "kind": "player"
+                    },
+                    "query": "桂诗云",
+                    "source_id": "ret110-goratings-zh",
+                    "status": "found",
+                    "url": "https://www.goratings.org/zh/players/2398.html"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9.body",
+                    "body_sha256": "76581b4193b6ed2da4193c7fd727f2685e87cc1e71474de1f43e6e587a6ac8e9",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "1df0705647bddc9388e9cd2c7e839db92a14c1f8be602e56a0b31dac14420b00",
+                    "fetched_at": "2026-10-08T03:41:10.607334+00:00",
+                    "http_status": 200,
+                    "source_language": "zh-Hans-CN",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/zh/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>桂诗云</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/22ac6cd8421267bb373ea0322754c07b4869cb183c26b27b614c2ebd78616a85.body",
+                    "body_sha256": "22ac6cd8421267bb373ea0322754c07b4869cb183c26b27b614c2ebd78616a85",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "1df0705647bddc9388e9cd2c7e839db92a14c1f8be602e56a0b31dac14420b00",
+                    "fetched_at": "2026-10-08T03:41:11.562813+00:00",
+                    "http_status": 200,
+                    "source_language": "ja",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ja/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>Gui Shiyun</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/cc70cd1e710b3842c429ab25963c6f485934eb2f9fd4db8e0a209c14bd421d44.body",
+                    "body_sha256": "cc70cd1e710b3842c429ab25963c6f485934eb2f9fd4db8e0a209c14bd421d44",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "af728d2bd6f4dc59052a7512b32b46cc716466686caa19b94fc20320c6bbf44e",
+                    "fetched_at": "2026-10-08T03:41:11.546408+00:00",
+                    "http_status": 200,
+                    "source_language": "en",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/en/players/2398.html"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<h1>구이쓰윈(桂詩云)</h1>",
+                    "body_path": "/tmp/kifu-player-next5retired120-20261008/source-producer-frozen16-final-v1/sources/b964814c99741c096d64516e6671c4a24564b409364010c04b14ad71d251b764.body",
+                    "body_sha256": "b964814c99741c096d64516e6671c4a24564b409364010c04b14ad71d251b764",
+                    "capture_actor": "/root/parallel_player_sources88",
+                    "capture_model": "gpt-6-sol",
+                    "excerpt_kind": "contiguous_decoded_utf8_body",
+                    "excerpt_sha256": "970aef7ebac7ccf2f4e1f0d36274d8b4166816f6459a541187b8592fea12274d",
+                    "fetched_at": "2026-10-08T03:41:10.631924+00:00",
+                    "http_status": 200,
+                    "source_language": "ko",
+                    "source_role": "independent_go_rating_own_locale_name",
+                    "url": "https://www.goratings.org/ko/players/2398.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T05:01:14.563327+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 337
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:34.382137+00:00",
+            "decision_kind": "conventional",
+            "display_name": "桂诗云",
+            "evidence_id": 61507,
+            "generation_rule_version": "none",
+            "id": 1599,
+            "lang": "cn",
+            "player_id": 321,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T05:01:14.563327+00:00"
+          }
+        },
+        "original_name": "桂诗云",
+        "owner": {
+          "id": 321,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "8086a4254a038afa862fb9176b97537d231964c4f6b8908ea3ddec06cfcdee68",
+        "produced_at": "2026-10-08T19:12:35.229019+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    },
+    {
+      "content": {
+        "binding": {
+          "kind": "verified_chinese_display",
+          "owner": {
+            "id": 392,
+            "kind": "player"
+          },
+          "source_batch": {
+            "bundle_sha256": "97611ecfc328f8aac496975056bc38fb1e348ee96745344f44d3c0faab241e20",
+            "evidence_creation_sha256": "6f037ca5a9831eb6ad9a6d7e8bd5f07c98d6e0b84d6cfc5d0c01199e44311781",
+            "id": 540
+          },
+          "source_evidence": {
+            "candidate_name": "王琛",
+            "decision_kind": "conventional",
+            "event_id": null,
+            "generation_rule_version": "none",
+            "id": 61254,
+            "lang": "cn",
+            "player_id": 392,
+            "produced_at": "2026-10-08T02:43:19.521936+00:00",
+            "producer_id": "/root/next_players_sources_resume",
+            "producer_model": "gpt-6.1-sol",
+            "raw_event_id": null,
+            "raw_player_id": null,
+            "research_payload": {
+              "candidate": {
+                "decision_kind": "conventional",
+                "display_name": "王琛",
+                "generation_rule_version": "none",
+                "lang": "cn",
+                "name_preimage_sha256": "53b44b53250fe6bd7c2cddbb43689c9260ea2557e811aab49e01cc946828d8dd",
+                "owner": {
+                  "id": 392,
+                  "kind": "player"
+                },
+                "preimage_binding": {
+                  "actor_id": "/root/mixed76_binding_resume",
+                  "actor_model": "gpt-6-sol",
+                  "bound_at": "2026-10-08T02:46:28.089025+00:00",
+                  "capture_sha256": "bb985f2fab46ffe39992f475344eacfb9f5d09ff12afd1686b31303d21046b94",
+                  "captured_at": "2026-10-08T02:46:20.068378+00:00",
+                  "name_preimage_sha256": "53b44b53250fe6bd7c2cddbb43689c9260ea2557e811aab49e01cc946828d8dd",
+                  "source_candidate_sha256": "920b311da000e94b2ca2021fdbda1f6561fd61822393e8dbafe4a8f18e90a372"
+                },
+                "produced_at": "2026-10-08T02:43:19.521936+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "research_sha256": "a020a2db13135a0a674b8ded8366ac9732bbf3c882f1d426e599dd5e7d53e935",
+                "review_conclusion": "Root actually read21 main and20 unique support byteSHA/decoding/excerpts. ActualWiki own漆圣颐/AlexanderQi andGoRatings/KBApublished알렉산더치; actualKansai professionalMeyerFrancis andUGo552 ownEnglishFrancisMeyer,Traditionalroster梅耶．弗朗西斯. MaTianfang/WangChen ownUGo dictionary plusNihonKiin amateurreport avoids claimedprofessionalstatus. Hamanaka officialfullreading has spacedoriginal andIgo timeout,KOomitted withoutcomposite/source/gatechange.21published0generated,2full607/4612+3partial.15genuineREVIEW captured,12selectedCAS+9NULL,3unselectedREVIEW preserveallfields;59unchangedslots. Genuine next6.1producer/FH6-solbinder,actualpost531 context timing/path reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T02:54:02.207217+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6"
+              },
+              "research": {
+                "candidate_name": "王琛",
+                "identity_note": "Actual same-source-actor readonly finite PROD391/TEST392, 11 equal full albumID/side/SGF slots each, aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; targetnames5REVIEW eachenv for364/607/391 and names0 for4612/5396. Not independentFH or finalapproved-context/CAS binder. ActualU-Go496 ownChinese王琛/preferredENWang Chen/explicitpublishedKorean왕천; actualJapanese棋院2019worldamateurchampionship namedreport王琛 and target2021–2025amateurSGFs coherent. Actual2021CNnationalgames row王琛/白宝祥/马天放 matches target2021-09-23白宝祥vs王琛 amateurfinalcontext, no claimedexactsourcegame-result. ActualWikipedia王琛 is a disambiguationpage and own1992Goentry redlink means absentpersonarticle, never used as biography/name main authority. TWboundednationalgames querytimeout thenretrytimeout;TW omitted. Actor/director/politician/footballer/entertainmentexecutive同名王琛 excluded. Existing5REVIEW rows eachenv captured; fourselectedcells require realCAS, omittedTW staysunchanged. NoDOB/rank/age/biographywrites.",
+                "lang": "cn",
+                "original_language": "zh",
+                "original_language_basis_url": "https://db.u-go.net/playerdb/players/496/",
+                "original_name": "王琛",
+                "owner": {
+                  "id": 392,
+                  "kind": "player"
+                },
+                "produced_at": "2026-10-08T02:43:19.521936+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "registry_sha256": "2be2262bbd2a1d64dd8f06163a99277415224207d6afd423648a9b4c0b354b42",
+                "registry_version": "2026-10-08-ret115-partial21-source-final-v1",
+                "review_status": "pending",
+                "scope_status": "found",
+                "source_checks": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "{\"id\":496,\"key_name\":\"Wang Chen\",\"sex\":\"Male\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":\"Q25252575\",\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/496/\",\"simplenames\":[{\"id\":14630,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"왕천\",\"databases\":[],\"languages\":[{\"language\":\"ko\",\"preferred\":false}],\"incorrect\":false,\"order_reversed\":false},{\"id\":446,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"Wang Chen\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7545,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"王琛\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1340\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T13:48:49.080007Z\",\"last_changed\":\"2025-02-15T18:41:03.269205Z\"}",
+                    "body_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "candidate_name": "王琛",
+                    "fetched_at": "2026-10-08T01:48:48.105218+00:00",
+                    "http_status": 200,
+                    "identity_basis": "Actual same-source-actor readonly finite PROD391/TEST392, 11 equal full albumID/side/SGF slots each, aliases0 and all examinednative/Latin/Korean normalizedforeignclaims0; targetnames5REVIEW eachenv for364/607/391 and names0 for4612/5396. Not independentFH or finalapproved-context/CAS binder. ActualU-Go496 ownChinese王琛/preferredENWang Chen/explicitpublishedKorean왕천; actualJapanese棋院2019worldamateurchampionship namedreport王琛 and target2021–2025amateurSGFs coherent. Actual2021CNnationalgames row王琛/白宝祥/马天放 matches target2021-09-23白宝祥vs王琛 amateurfinalcontext, no claimedexactsourcegame-result. ActualWikipedia王琛 is a disambiguationpage and own1992Goentry redlink means absentpersonarticle, never used as biography/name main authority. TWboundednationalgames querytimeout thenretrytimeout;TW omitted. Actor/director/politician/footballer/entertainmentexecutive同名王琛 excluded. Existing5REVIEW rows eachenv captured; fourselectedcells require realCAS, omittedTW staysunchanged. NoDOB/rank/age/biographywrites.",
+                    "language_basis": "reviewed_text",
+                    "observed_lang": "zh-Hans",
+                    "owner": {
+                      "id": 392,
+                      "kind": "player"
+                    },
+                    "query": "王琛",
+                    "source_id": "ret97-ugo-en",
+                    "status": "found",
+                    "url": "https://db.u-go.net/playerdb/players/496/"
+                  }
+                ],
+                "translation_support": [
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "{\"id\":496,\"key_name\":\"Wang Chen\",\"sex\":\"Male\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":\"Q25252575\",\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/496/\",\"simplenames\":[{\"id\":14630,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"왕천\",\"databases\":[],\"languages\":[{\"language\":\"ko\",\"preferred\":false}],\"incorrect\":false,\"order_reversed\":false},{\"id\":446,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"Wang Chen\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":7545,\"playername\":\"https://db.u-go.net/playerdb/names/2235/\",\"name\":\"王琛\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1340\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-10T13:48:49.080007Z\",\"last_changed\":\"2025-02-15T18:41:03.269205Z\"}",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227.body",
+                    "body_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "d14cc6d646c162571e7b84c156303192e97d2de99de312c87475c86e25d18227",
+                    "fetched_at": "2026-10-08T01:48:48.105218+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "en+zh+ja",
+                    "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                    "url": "https://db.u-go.net/playerdb/players/496/"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<tr>\n<td>男子个人业余\n</td>\n<td>王琛（上海队）\n</td>\n<td>白宝祥\n</td>\n<td>马天放\n</td></tr>",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/161a3114109673b1ca7df1e6bc7413eec5c9c27550f9df4be6add7af844b857d.body",
+                    "body_sha256": "161a3114109673b1ca7df1e6bc7413eec5c9c27550f9df4be6add7af844b857d",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "a17077d6e0fbf6252bd1b6c4cee39a7c6c4f64d86a1038453e3ec7053d951c3c",
+                    "fetched_at": "2026-10-08T01:51:09.229474+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "zh-Hans",
+                    "source_role": "actual_named_amateur_Go_medalists_row",
+                    "url": "https://zh.wikipedia.org/zh-cn/中华人民共和国第十四届运动会围棋比赛"
+                  },
+                  {
+                    "body_encoding": "utf-8",
+                    "body_excerpt": "<p class=\"mb1\">世界59カ国・地域の代表が参加した<a href=\"https://www.nihonkiin.or.jp/event/amakisen/worldama/40/index.html\">第40回世界アマチュア囲碁選手権戦 島根・松江大会</a>6月2日（日）から5日（水）まで、島根県松江市の「<a href=\"https://www.cul-shimane.jp/hall/\" target=\"_blank\" class=\"blank\">島根県民会館</a>」で行われ、中国の王琛選手が8戦全勝で優勝となった。<br />日本代表の川口飛翔選手は第5戦で中国の王琛選手、第7戦で韓国の李宰成選手、第8戦で中国香港の陳乃申選手に敗れ8位だった。</p>",
+                    "body_path": "/tmp/kifu-player-next5retired115-20261008/source-producer-frozen21-final-v1/sources/39ec00963e5331b5d17c85e22b6c1a576c5340b0a40e724b0a646ecdebca82ea.body",
+                    "body_sha256": "39ec00963e5331b5d17c85e22b6c1a576c5340b0a40e724b0a646ecdebca82ea",
+                    "capture_actor": "/root/next_players_sources_resume",
+                    "capture_model": "gpt-6.1-sol",
+                    "excerpt_kind": "contiguous_decoded_utf-8_body",
+                    "excerpt_sha256": "25f333be732e6284d5d05c0964cc16ee719b3aab00a6da1f7d78e88badb4a806",
+                    "fetched_at": "2026-10-08T01:51:19.765389+00:00",
+                    "http_status": 200,
+                    "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                    "source_language": "ja",
+                    "source_role": "official_named_world_amateur_Go_championship_report_own_王琛",
+                    "url": "https://www.nihonkiin.or.jp/event/area/other/40_34.html"
+                  }
+                ]
+              }
+            },
+            "review_status": "approved",
+            "reviewed_at": "2026-10-08T02:54:02.207217+00:00",
+            "reviewer_id": "/root",
+            "reviewer_model": "gpt-6",
+            "revision": 1,
+            "source_registry_id": 329
+          },
+          "source_name": {
+            "created_at": "2026-09-30T19:52:34.382137+00:00",
+            "decision_kind": "conventional",
+            "display_name": "王琛",
+            "evidence_id": 61254,
+            "generation_rule_version": "none",
+            "id": 1954,
+            "lang": "cn",
+            "player_id": 392,
+            "reference_kind": "legacy_unverified",
+            "reference_url": null,
+            "revision": 1,
+            "status": "verified",
+            "verified_at": "2026-10-08T02:54:02.207217+00:00"
+          }
+        },
+        "original_name": "王琛",
+        "owner": {
+          "id": 392,
+          "kind": "player"
+        },
+        "reference_kind": "verified_chinese_display",
+        "source_lang": "zh-Hans",
+        "source_script": "Hans"
+      },
+      "environment": "TEST",
+      "evidence_kind": "primary_orthographic",
+      "production": {
+        "content_sha256": "60ccaeb92280b670b446dbe60341d23c9a3e9e26c212f8b0cc7a16c4822eafa9",
+        "produced_at": "2026-10-08T19:12:35.229113+00:00",
+        "producer_id": "/root/next_batch_source_recovery",
+        "producer_model": "GPT-6; exact runtime variant unavailable"
+      },
+      "version": 1
+    }
+  ],
+  "status": "sources_valid_but_target_REVIEW_gate_unresolved"
+}

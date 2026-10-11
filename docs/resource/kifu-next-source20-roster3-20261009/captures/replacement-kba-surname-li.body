@@ -1,0 +1,362 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+
+<form method="post" name="s1">
+<input type="hidden" name="S_sort_mode" value="A">
+<input type="hidden" name="prpl_code">
+
+<ul class="sortMode">
+	<li class="on"><button type="button" onclick="pageMove_search4('2','리','','A')">✔가나다순</button></li>
+	<li ><button type="button" onclick="pageMove_search4('2','리','','R')">✔서열순</button></li>
+</ul>                                                
+<div class="searchOptions frt">
+	<div class="select">
+		<select name="S_nation">
+			<option value="ALL" >구분</option>
+			
+				<option value="1" >한국</option>
+			
+				<option value="2"  selected >중국</option>
+			
+				<option value="3" >일본</option>
+			
+				<option value="4" >대만</option>
+			
+				<option value="6" >북미/유럽</option>
+			
+				<option value="7" >은퇴</option>
+			
+		</select>
+	</div>
+	<div class="select bdlt_no">
+		<select name="S_ob_forc">
+			<option value=""  selected >단</option>
+			
+				<option value="9" >9단</option>
+			
+				<option value="8" >8단</option>
+			
+				<option value="7" >7단</option>
+			
+				<option value="6" >6단</option>
+			
+				<option value="5" >5단</option>
+			
+				<option value="4" >4단</option>
+			
+				<option value="3" >3단</option>
+			
+				<option value="2" >2단</option>
+			
+				<option value="1" >1단</option>
+			
+		</select>
+	</div>                                                             	
+	<input type="text" placeholder="기사명" class="player" name="S_prpl_name" value="리" >
+	<button type="button" class="search" onclick="pageMove_search4(S_nation.value, S_prpl_name.value, S_ob_forc.value, 'A')">검색</button>
+</div>
+</form>
+
+<div class="recordTab">
+	<ul>
+		<li><button type="button"  onclick="pageMove_search4('1','리','','A')">한국</button></li>
+		<li><button type="button" class="on" onclick="pageMove_search4('2','리','','A')">중국</button></li>
+		<li><button type="button"  onclick="pageMove_search4('3','리','','A')">일본</button></li>
+		<li><button type="button"  onclick="pageMove_search4('4','리','','A')">대만</button></li>
+		<!--<li><button type="button"  onclick="pageMove_search4('5','리','','A')">기타</button></li>-->
+		<li><button type="button"  onclick="pageMove_search4('6','리','','A')">북미/유럽</button></li>
+		<li><button type="button"  onclick="pageMove_search4('7','리','','A')">은퇴</button></li>
+	</ul>
+</div>
+
+
+	<div class="playerArea">
+		<ul>
+			
+			<li class="lvList">
+				<div class="lv">
+					<dl>
+						<dt><span>9</span>段</dt>
+						<dd id="cnt9"></dd>
+					</dl>
+				</div>
+				<div class="players">
+					<ul>
+						
+							<li><a onclick="viewPage_player('20000151')">구리</a></li>
+							
+							<li><a onclick="viewPage_player('10000553')">리쉬안하오</a></li>
+							
+							<li><a onclick="viewPage_player('20000990')">리웨이칭</a></li>
+							
+							<li><a onclick="viewPage_player('20000526')">리친청</a></li>
+							
+							<li><a onclick="viewPage_player('20000354')">펑리야오</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt9.innerHTML = "5명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>8</span>段</dt>
+												<dd id="cnt8"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001779')">리하오퉁</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt8.innerHTML = "1명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>7</span>段</dt>
+												<dd id="cnt7"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001727')">리쩌루이</a></li>
+							
+							<li><a onclick="viewPage_player('20001079')">리청선</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt7.innerHTML = "2명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>6</span>段</dt>
+												<dd id="cnt6"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20001775')">루리옌</a></li>
+							
+							<li><a onclick="viewPage_player('20000451')">리밍</a></li>
+							
+							<li><a onclick="viewPage_player('20002111')">리샤오시05</a></li>
+							
+							<li><a onclick="viewPage_player('20000585')">리샹위</a></li>
+							
+							<li><a onclick="viewPage_player('20001615')">리싱</a></li>
+							
+							<li><a onclick="viewPage_player('20002109')">리쓰쉬안</a></li>
+							
+							<li><a onclick="viewPage_player('20000229')">리저</a></li>
+							
+							<li><a onclick="viewPage_player('20000422')">리캉</a></li>
+							
+							<li><a onclick="viewPage_player('20000359')">리허</a></li>
+							
+							<li><a onclick="viewPage_player('20000478')">장리</a></li>
+							
+							<li><a onclick="viewPage_player('10000356')">주쑹리</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt6.innerHTML = "11명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>5</span>段</dt>
+												<dd id="cnt5"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000505')">리샤오시94</a></li>
+							
+							<li><a onclick="viewPage_player('20002162')">리신천</a></li>
+							
+							<li><a onclick="viewPage_player('20000231')">리제</a></li>
+							
+							<li><a onclick="viewPage_player('20000094')">리춘화</a></li>
+							
+							<li><a onclick="viewPage_player('20000721')">리하오제</a></li>
+							
+							<li><a onclick="viewPage_player('20000487')">쑨리</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt5.innerHTML = "6명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>4</span>段</dt>
+												<dd id="cnt4"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002065')">리둥팡</a></li>
+							
+							<li><a onclick="viewPage_player('20000716')">리러</a></li>
+							
+							<li><a onclick="viewPage_player('20002370')">리린푸</a></li>
+							
+							<li><a onclick="viewPage_player('20002329')">리싱퉁</a></li>
+							
+							<li><a onclick="viewPage_player('20001719')">리위앙</a></li>
+							
+							<li><a onclick="viewPage_player('20002335')">리충더</a></li>
+							
+							<li><a onclick="viewPage_player('20000719')">리화쑹</a></li>
+							
+							<li><a onclick="viewPage_player('20002287')">천투리</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt4.innerHTML = "8명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>3</span>段</dt>
+												<dd id="cnt3"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000963')">리비치</a></li>
+							
+							<li><a onclick="viewPage_player('20000703')">리샹</a></li>
+							
+							<li><a onclick="viewPage_player('20000816')">리슈촨</a></li>
+							
+							<li><a onclick="viewPage_player('20001754')">리신이</a></li>
+							
+							<li><a onclick="viewPage_player('20000614')">리앙</a></li>
+							
+							<li><a onclick="viewPage_player('20000723')">리충</a></li>
+							
+							<li><a onclick="viewPage_player('20000697')">지리리</a></li>
+							
+							<li><a onclick="viewPage_player('20000462')">치리허</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt3.innerHTML = "8명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>2</span>段</dt>
+												<dd id="cnt2"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20000812')">리둥</a></li>
+							
+							<li><a onclick="viewPage_player('20000855')">리완펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002279')">리위안치</a></li>
+							
+							<li><a onclick="viewPage_player('20000783')">리이</a></li>
+							
+							<li><a onclick="viewPage_player('20000565')">리잉70</a></li>
+							
+							<li><a onclick="viewPage_player('20000654')">리장위안</a></li>
+							
+							<li><a onclick="viewPage_player('20000850')">리젠위</a></li>
+							
+							<li><a onclick="viewPage_player('20002057')">리쩌하오</a></li>
+							
+							<li><a onclick="viewPage_player('20002305')">리청저</a></li>
+							
+							<li><a onclick="viewPage_player('20001068')">리판</a></li>
+							
+									</ul></div></li>
+									<script>document.all.cnt2.innerHTML = "10명"</script>
+									<li class="lvList">
+										<div class="lv">
+											<dl>
+												<dt><span>1</span>段</dt>
+												<dd id="cnt1"></dd>
+											</dl>
+										</div>
+										<div class="players">
+											<ul>
+									
+							<li><a onclick="viewPage_player('20002097')">류리</a></li>
+							
+							<li><a onclick="viewPage_player('20002096')">류첸리</a></li>
+							
+							<li><a onclick="viewPage_player('20001877')">리둥양</a></li>
+							
+							<li><a onclick="viewPage_player('20001878')">리량</a></li>
+							
+							<li><a onclick="viewPage_player('20002321')">리보타오</a></li>
+							
+							<li><a onclick="viewPage_player('20001887')">리쉰정</a></li>
+							
+							<li><a onclick="viewPage_player('20002277')">리쉰펑</a></li>
+							
+							<li><a onclick="viewPage_player('20002605')">리신</a></li>
+							
+							<li><a onclick="viewPage_player('20001880')">리야춘</a></li>
+							
+							<li><a onclick="viewPage_player('20000755')">리웨이한</a></li>
+							
+							<li><a onclick="viewPage_player('20000988')">리위안쿤</a></li>
+							
+							<li><a onclick="viewPage_player('20001882')">리위촨</a></li>
+							
+							<li><a onclick="viewPage_player('20001883')">리윈성</a></li>
+							
+							<li><a onclick="viewPage_player('20001881')">리융강</a></li>
+							
+							<li><a onclick="viewPage_player('20000977')">리이롱</a></li>
+							
+							<li><a onclick="viewPage_player('20001886')">리잉80</a></li>
+							
+							<li><a onclick="viewPage_player('20002377')">리자이</a></li>
+							
+							<li><a onclick="viewPage_player('20000849')">리자치</a></li>
+							
+							<li><a onclick="viewPage_player('20000975')">리젠</a></li>
+							
+							<li><a onclick="viewPage_player('20001885')">리주</a></li>
+							
+							<li><a onclick="viewPage_player('20001875')">리쥔카이</a></li>
+							
+							<li><a onclick="viewPage_player('20001879')">리천숴</a></li>
+							
+							<li><a onclick="viewPage_player('20001874')">리쿠이</a></li>
+							
+							<li><a onclick="viewPage_player('20001943')">리하이</a></li>
+							
+							<li><a onclick="viewPage_player('20002027')">주리리</a></li>
+							
+							<li><a onclick="viewPage_player('20001907')">탕리</a></li>
+							
+						<script>document.all.cnt1.innerHTML = "26명"</script>
+					</ul>
+				</div>
+			</li>
+		</ul>
+	</div>
+
+
+<script>
+	document.all.search_loading.style.display = 'none';
+</script>
+
+

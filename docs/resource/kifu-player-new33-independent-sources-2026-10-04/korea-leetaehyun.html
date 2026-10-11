@@ -1,0 +1,661 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="한국기원">
+	<meta name="description" content="한국기원 공식 홈페이지. 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="한국기원">
+	<meta property="og:url" content="https://www.baduk.or.kr/">
+	<meta property="og:title" content="한국기원">
+	<meta property="og:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta property="og:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="한국기원 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="한국기원">
+	<meta name="twitter:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="twitter:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png">
+
+	<link rel="canonical" href="https://www.baduk.or.kr/">
+	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.baduk.or.kr/">
+
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "한국기원",
+		"url": "https://www.baduk.or.kr/",
+		"logo": "https://www.baduk.or.kr/images/common/logo.png"
+	}
+	</script>
+
+
+
+	
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js?ver=1"></script>
+	<script language="javascript" src="/js/jquery-3.7.1.min.js"></script>
+	<script language="javascript" src="/js/swiper.jquery.min.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+<body>
+
+<div id="wrap">
+
+	<div class="eventWrap" id="topPopup" >
+		
+		
+
+<link rel="stylesheet" href="/common/swiper.min.css">
+
+<div class="innerEvent">	
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			
+				<div class="swiper-slide">
+					<a href="https://badukland.co.kr" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/배너 시안 2.png" style="width:320px;height:150px"></a>
+				</div>
+				
+				<div class="swiper-slide">
+					<a href="https://w.baduk.or.kr/" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/무제-1.jpg" style="width:320px;height:150px"></a>
+				</div>
+				
+		</div>
+	</div>
+
+	<span class="btn_slide prev"><button type="button" class="PP"></button></span>
+	<span class="btn_slide next"><button type="button" class="NN"></button></span> 
+</div>
+
+<script>
+	var swiper = new Swiper('.swiper-container', {
+		loop: true,
+		pagination: '.swiper-pagination',
+		slidesPerView: 3,
+		paginationClickable: true,
+		prevButton: '.PP',
+		nextButton: '.NN'
+	});
+</script>
+
+	</div>
+
+	<div id="header_wrap">
+		<div class="header_topa">
+			<div class="gnb_sub" id="allMenu" style="display:none" onclick="allMenuOnOff()">
+                <div class="innerContents">
+                    <dl>
+                        <dt >
+							<a href="/about/history.asp">기원소개</a>
+						</dt>
+                        <dd>
+                            <ul>
+								<li><a href="/about/history.asp"      >한국기원약사</a></li>
+								<li><a href="/about/business.asp"     >주요사업</a></li>
+								<li><a href="/about/management.asp"   >경영공시</a></li>
+								<li><a href="/about/since.asp"        >연혁</a></li>
+								<li><a href="/about/ceo.asp"          >역대총재/이사장</a></li>
+								<li><a href="/about/executive.asp"    >임원명단</a></li>
+								<li><a href="/about/organization.asp" >조직도</a></li>
+								<li><a href="/about/charactor.asp"    >캐릭터/CI</a></li>
+								<li><a href="/about/igf.asp"          >IGF</a></li>
+								<li><a href="/about/contact.asp"      >찾아오시는길</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/news/report.asp">바둑뉴스</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/news/report.asp"     >보도자료</a></li>
+								<li><a href="/news/summary.asp"    >바둑뉴스</a></li>
+								<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+								<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+								<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+								<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="nuxt-link-active">
+                            <a href="/record/diary.asp">기록실</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/record/diary.asp"         >대국결과</a></li>
+								<li><a href="/record/schedule.asp"      >대국일정</a></li>
+								<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+								<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+								<li><a href="/record/rankingYears.asp"  >연도별순위</a></li>
+								<li><a href="/record/rankingYear.asp"   >단일연도순위</a></li>
+								<li><a href="/record/player.asp"        class="nuxt-link-exact-active nuxt-link-active">기사정보</a></li>
+								<li><a href="/record/title.asp"         >타이틀현황</a></li>
+								<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/gibo/gibo.asp">기보감상</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/gibo/gibo.asp" >전체기보</a></li>
+								<li><a href="https://goldengibo.baduk.or.kr/" target="_blank">도약기 기보</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/game/game.asp?etcKey=1">기전정보</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/game/game.asp?etcKey=1" >현행 기전</a></li>
+								<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/square/board.asp">바둑인광장</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/square/board.asp"        >공지사항</a></li>
+								<li><a href="/square/amaApply.asp"     >아마단급</a></li>
+								<li><a href="/square/amaGame.asp"      >대회참가신청</a></li>
+								<li><a href="/square/explain.asp"      >공개해설신청</a></li>
+								<li><a href="/square/talk.asp"         >바둑토크</a></li>
+								<li><a href="/square/studentScore.asp" >통합연구생리그</a></li>
+								<li><a href="/square/site.asp"         >관련사이트</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/story/about.asp">바둑이야기</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/story/about.asp"     >바둑이란</a></li>
+								<li><a href="/story/bHistory.asp"  >바둑의 역사</a></li>
+								<li><a href="/story/howto.asp"     >대국방법</a></li>
+								<li><a href="/story/manner.asp"    >대국예절</a></li>
+								<li><a href="/story/badukRule.asp" >바둑규칙</a></li>
+								<li><a href="/story/gameRule.asp"  >경기규정</a></li>
+								<li><a href="/story/keyword.asp"   >바둑용어</a></li>
+								<!--<li><a href="https://archives.baduk.or.kr/archives/" target="_blank">바둑아카이브즈</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+			<div class="gnba">
+				<div class="popup_isShow">
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('X')" >팝업닫기<span class="close"></span></button>
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('')"  style="display:none">팝업열기<span class="open"></span></button>
+				</div>
+				<div class="gnb">
+					<form action="/etc/search.asp" method="post" name="sForm">
+					<fieldset class="searchW">
+						<legend class="hidden">통함검색</legend>
+						<dl>
+							<dt>통합검색</dt>
+							<dd class="searchWa"><span class="inputa"><input type="searchW" name="searchKey" value="" placeholder="검색어를 입력하세요"></span><span class="btn_searcha"><button type="button" onclick="sForm.submit()"></button></span></dd>
+						</dl>
+					</fieldset>
+					</form>
+					<ul class="links">
+						<li><a href="https://www.tvbaduk.com/" target="_blank">바둑TV</a></li>
+						<li><a href="/news/monthly.asp">월간바둑</a></li>
+						<li><a href="https://www.badukmall.co.kr/" target="_blank">바둑몰</a></li>
+						<li><a href="https://badukland.co.kr/" target="_blank">바둑랜드</a></li>
+						<li><a href="https://www.facebook.com/KoreaBadukAssociation/" target="_blank" class="facebook"></a></li>
+						<li><a href="https://www.instagram.com/korea_baduk_association/" target="_blank" class="insta"></a></li>
+						<li class="spread" onclick="allMenuOnOff()"><button type="button"></button></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="header">
+			
+			
+
+			<div class="logo">
+				<h1><a href="/"><img src="/images/common/logo.png" alt="한국기원" /></a></h1>
+			</div>
+			<div class="navia">
+				<ul class="navi">
+					<li ><a href="/about/history.asp">기원소개</a></li>
+					<li ><a href="/news/report.asp">바둑뉴스</a></li>
+					<li class="selected"><a href="/record/diary.asp">기록실</a></li>
+					<li ><a href="/gibo/gibo.asp">기보감상</a></li>
+					<li ><a href="/game/game.asp">기전정보</a></li>
+					<li ><a href="/square/board.asp">바둑인광장</a></li>
+					<li ><a href="/story/about.asp">바둑이야기</a></li>
+				</ul>
+			</div> 
+		</div>
+	</div>
+       
+<div id="container">  
+	  
+	<div class="subVisaul03">
+		<div class="subTitle">기록실</div>
+	</div>
+
+	<div class="contents_wrap"> 
+		
+		
+
+<div class="lnb">
+	<ul>
+		
+
+			<li><a href="/record/diary.asp"         >대국결과</a></li>
+			<li><a href="/record/schedule.asp"      >대국일정</a></li>
+			<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+			<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+			<li><a href="/record/rankingYear1.asp"  >부문별 순위</a></li>
+			<li><a href="/record/player.asp"        class="lnb_on">기사정보</a></li>
+			<li><a href="/record/title.asp"         >타이틀현황</a></li>
+			<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+
+		
+	</ul>
+</div>
+
+
+		<div class="pageTitle">            
+			<h2>
+				<div class="ttbar"></div>
+				기사정보 상세
+			</h2>
+		</div>
+		
+		<div class="contents">
+			<div class="playerInfo">
+				<div class="playerPf">
+					<figure><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg"></figure>
+					<div class="playerTxt">
+						<p><span>이태현(<em>李泰賢</em>)</span> 8단</p>
+						<dl>
+							<dt>생년월일</dt>
+							<dd>1990년 01월 01일</dd>
+							<dt class="belong">소속</dt>
+							<dd class="belong">한국</dd>
+						</dl>
+					</div>
+				</div>
+				<div>
+					<table cellpadding="0" cellspacing="0" border="0" class="tb_player">
+					<thead>
+					<tr>
+						<th scope="col" class="back1">통산전적</th>
+						<th scope="col" class="back2">기사랭킹</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr>
+						<td><p class="point">승률 0.567</p>647전 367승 280패</td>
+						<td height="80"><p class="point">--</p>(2026년 10월 현재)</td>
+					</tr>
+					</tbody>
+					</table>
+				</div> 
+			</div>
+
+			<div class="careera">
+				<dl class="career">
+					<dt><h3>특기사항</h3></dt>
+					<dd>
+						허장회 도장 출신<br>
+충암고등학교 출신
+					</dd>
+				</dl>
+				<dl class="career">
+					<dt><h3>승단이력</h3></dt>
+					<dd>
+						◆ 1단 <font color='#d5d5d5'> / </font>2007.05.19<font color='#d5d5d5'> / </font>제109회 입단대회(9승 2패)<br>◆ 2단 <font color='#d5d5d5'> / </font>2008.11.25<font color='#d5d5d5'> / </font>제14기 GS칼텍스배 예선<br>◆ 3단 <font color='#d5d5d5'> / </font>2010.01.12<font color='#d5d5d5'> / </font>제2회 비씨카드배 월드바둑챔피언십 예선<br>◆ 4단 <font color='#d5d5d5'> / </font>2011.02.07<font color='#d5d5d5'> / </font>제15회 박카스배 준우승 - 당김승단<br>◆ 5단 <font color='#d5d5d5'> / </font>2013.03.15<font color='#d5d5d5'> / </font>2013 KB바둑리그<br>◆ 6단 <font color='#d5d5d5'> / </font>2015.08.27<font color='#d5d5d5'> / </font>제43회 명인전 예선<br>◆ 7단 <font color='#d5d5d5'> / </font>2016.10.13<font color='#d5d5d5'> / </font>7단 승단<br>◆ 8단 <font color='#d5d5d5'> / </font>2021.04.22<font color='#d5d5d5'> / </font>8단 승단<br>
+					</dd>
+				</dl>
+				<dl class="career end">
+					<dt><h3>경력사항</h3></dt>
+					<dd>
+						2007년<br>
+5월 19일 입단<br>
+<br>
+2008년<br>
+제12회 SK가스배 신예프로10걸전 본선진출<br>
+05.23 제8회 오스람배 본선진출<br>
+12.12 2단 승단<br>
+<br>
+2009년<br>
+05.06 2009KB국민은행 한국바둑리그 출전(신안 태평천일염)<br>
+06.01 제14회 박카스배 천원전 본선 진출<br>
+<br>
+2010년<br>
+01.13 3단 승단<br>
+11.16 제15기 박카스배 천원전 결승5번기 진출(대 윤준상)<br>
+<br>
+2011년<br>
+01.27 제15기 박카스배 천원전 준우승 (대 최철한)<br>
+01.27 천원전 준우승 점수로 4단 승단<br>
+03.29 제7기 한국물가정보배 본선 진출<br>
+07.26 제39기 하이원리조트배 명인전 본선 진출<br>
+08.19 제1기 KC&A배 신인왕전 본선 진출<br>
+09.07 제7기 원익배 십단전 본선 진출<br>
+<br>
+2012년<br>
+06.07 제17기 박카스배 천원전 본선진출(전기 시드)<br>
+<br>
+2013<br>
+03.19 5단으로 승단<br>
+05.10 제18기 박카스배 천원전 본선16강 진출<br>
+<br>
+2014년<br>
+03.18 제2회 백령배 본선32강 진출<br>
+08.08 2014렛츠런파크배 본선32강<br>
+<br>
+2016년<br>
+- KB국민은행 한국바둑리그 출전-SK엔크린(4지명)<br>
+- 제21회 LG배 조선일보 기왕전 본선<br>
+- 제3회 바이링배 본선<br>
+- 제35회 KBS바둑왕전 본선<br>
+<br>
+2017년<br>
+- KB국민은행 한국바둑리그 출전-SK엔크린(4지명)<br>
+<br>
+2020년 <br>
+- 제25회 LG배 조선일보 기왕전 본선 8강<br>
+- 2020 KB국민은행 바둑리그 출전 <br>
+- KB국민은행 한국바둑리그 출전-셀트리온(5지명)<br>
+<br>
+2021년<br>
+- KB국민은행 한국바둑리그 출전-YOU WHO(5지명)
+					</dd>
+				</dl>
+			</div>
+			
+
+			
+				<div class="playerNews">
+					<h4>최근뉴스</h4>
+					<div class="more"><a href="/news/summary.asp?keyWord=이태현">더보기</a></div>
+					<ul>
+						
+							<li>
+								<a onclick="viewPage_summary('KBL','474')">
+								<div class="newsList">
+									<figure><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/old/DSC08190.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>강동윤 "처참했던 전반기, 반대로 바꿔 보겠다" </dt>
+											<dd>전반기의 리턴매치가 세 판이나 됐다. 이 모두를 한국물가정보가 가져갔다. 이영구 9단이 이창호 9단에게 2연승, 김정현 7단과 송지훈 7단은 각각 이태현 8단과 안국현 9단을 상대로 설욕했다.</dd>
+										</dl>
+										<p class="foot"><span class="date">2022-02-05</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('KBL','426')">
+								<div class="newsList">
+									<figure><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/old/DSC06253.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>원성진 13연승,  '전승'에 1승 남았다 </dt>
+											<dd>농심배를 앞둔 신진서의 컨디션엔 이상이 없었고 원성진은 개막 13연승을 내달렸다. 결혼을 앞둔 이태현과 바통터치한 금지우는 또 한번 금쪽 같은 승리를 거뒀다. </dd>
+										</dl>
+										<p class="foot"><span class="date">2021-02-21</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('KBL','45')">
+								<div class="newsList">
+									<figure><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/old/P1014140.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>이태현의 '진땀', 이동훈도 녹였다 </dt>
+											<dd>저러다 탈나지 않을까 싶을 정도로 매판 비지땀을 흘리며 물고 늘어진다. 이 때문에 그의 바둑은 100수부터가 진짜고, 동료들은 그것을 '이태현 타임'이라고 부른다. 역전은 그의 전매특허요, 악바리 근성은 그를 지탱해주는 최고의 원동력이다. 
+</dd>
+										</dl>
+										<p class="foot"><span class="date">2016-08-27</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('KBL','41')">
+								<div class="newsList">
+									<figure><img src="https://kbleague.baduk.or.kr/WEB_FileUpLoad/knews/old/P1013403.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>이태현의 '진땀'이 아름다운 이유  </dt>
+											<dd>"아무 것도 하지 않으면 되는데 자꾸 맞장구를 치네요"라는 김만수 해설자의 멘트가 가뜩이나 불안한 심리를 부채질했다. 그 때문에 국가대표 판정단에서 '90퍼센트 승리 확실'이라는 메시지를 띄웠어도 안심이 안 됐다. 
+    
+</dd>
+										</dl>
+										<p class="foot"><span class="date">2016-08-20</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+					</ul>
+				</div>
+			
+				<div class="latestGame">
+					<h4>최근대국</h4>
+					<div class="more"><a href="/record/diary.asp?foreignKey=10000475">더보기</a></div>
+					<ul class="gameList">
+						
+							<li>
+								<dl>
+									<dt>제27회 농심신라면배 세계바둑최강전 1차예선 1회전</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/KangChangB.jpg"></p>
+												<figcaption>강창배</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg" alt=""></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">0수 백&nbsp;불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li>
+								<dl>
+									<dt>2025 하나은행 바둑 SUPER MATCH 16강</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LeeJiH.jpg"></p>
+												<figcaption>이지현(남)</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg" alt=""></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">180수 백&nbsp;불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li>
+								<dl>
+									<dt>2025 하나은행 바둑 SUPER MATCH 예선 결승</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg"></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/OYuJ.jpg" alt=""></p>
+												<figcaption>오유진</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">208수 백&nbsp;불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+					</ul>
+				</div> 
+			
+				<div class="latestGame">
+					<h4>최근기보</h4>
+					<div class="more"><a href="/gibo/gibo.asp?foreignKey=이태현">더보기</a></div>
+					<ul class="gameList">
+						
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202504/hana16lee.sgf','48161','LiTeH.jpg','LeeJiH.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2025 하나은행배 16강</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg"></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LeeJiH.jpg"></p>
+												<figcaption>이지현(남)</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">180수 백불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202502/fhana.sgf','47839','OYuJ.jpg','LiTeH.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2025 하나은행배 예선결승</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/OYuJ.jpg"></p>
+												<figcaption>오유진</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg"></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">208수 백불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202204/kbf-9r3g-3.sgf','40112','LiTeH.jpg','SulHyunJ.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2021-2022 KB바둑리그 (후)9R3G-3</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/LiTeH.jpg"></p>
+												<figcaption>이태현</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/SulHyunJ.jpg"></p>
+												<figcaption>설현준</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">180수 백불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+					</ul>
+				</div>
+			
+
+		</div>
+	</div>
+</div>
+
+
+	
+	<div id="footer">
+		<div class="innerFoot">
+            <ul class="footerLinks">
+				<li><a href="/about/history.asp">한국기원소개</a></li>
+				<li><a href="/about/contact.asp">찾아오시는길</a></li>
+				<li><a href="/member/provision.asp">이용약관</a></li>
+				<li><a href="/member/privacy.asp">개인정보처리방침</a></li>
+            </ul>
+            <address>
+                주소 : 서울시 성동구 마장로 210 전화 : 02-3407-3800 팩스 : 02-3407-3875 이메일 : webmaster@baduk.or.kr 사업자등록번호 : 206-82-03412
+                출판 : 1967년 7월 7일 등록(라-906호)<br />
+                (재)한국기원 대표자: 정태순<br />
+                ⓒ 2010 ~ 2026 KOREA BADUK ASSOCIATION. All rights reserved.
+            </address>
+        </div>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+<form method="post" name="f_summary">	
+	<input type="hidden" name="tabMenu">
+	<input type="hidden" name="news_div">
+	<input type="hidden" name="news_no">
+</form>
+
+<script>
+	//최근뉴스
+	function viewPage_summary(news_div, news_no){
+		f_summary.tabMenu.value = news_div;
+		f_summary.news_div.value = news_div;
+		f_summary.news_no.value = news_no;
+		f_summary.action = "/news/summary_view.asp";
+		f_summary.submit();
+	}
+	
+	//사진아카이브
+	function viewPage_picture(img, title, wdate){
+		document.all.bicPhoto.style.display = "block";
+		document.all.bicPhoto_img.src = img;
+		document.all.bicPhoto_title.innerHTML = title;
+		document.all.bicPhoto_wdate.innerHTML = wdate;
+	}
+</script>

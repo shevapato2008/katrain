@@ -1,0 +1,186 @@
+{
+  "format": "kifu-player-nonhan-ranks-101-120-safe14-exact-allowlist-v1",
+  "isolated_rename": [
+    {
+      "catalog_action": "rename_existing_catalog_player",
+      "chinese_name": "杉内寿子",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 161,
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000048.html",
+      "new_player_needed": false,
+      "raw_value": "Sugiuchi Kazuko",
+      "target_player_id_prod": 4836,
+      "target_player_id_test": 10622
+    }
+  ],
+  "reviewed_against_live_fk": {
+    "existing_fk_conflict_slots_prod": 0,
+    "existing_fk_conflict_slots_test": 0,
+    "test_prod_counts_identical": true
+  },
+  "rows": [
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "松冈辉夫",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 176,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Matsuoka Teruo",
+      "target_player_id_prod": 5155,
+      "target_player_id_test": 10936
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "森岛薰",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 169,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Morishima Kaoru",
+      "target_player_id_prod": 5271,
+      "target_player_id_test": 11050
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "尾崎春美",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 168,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Ozaki Harumi",
+      "target_player_id_prod": 4485,
+      "target_player_id_test": 10276
+    },
+    {
+      "catalog_action": "create_catalog_player",
+      "chinese_name": "西条雅孝",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 168,
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000055.html",
+      "new_player_needed": true,
+      "raw_value": "Saijo Masataka",
+      "target_player_id_prod": null,
+      "target_player_id_test": null
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "本间明男",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 166,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Honma Akio",
+      "target_player_id_prod": 4842,
+      "target_player_id_test": 10628
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "西上好彦",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 166,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Nishigami Yoshihiko",
+      "target_player_id_prod": 5877,
+      "target_player_id_test": 11646
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "横山孝一",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 164,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Yokoyama Koichi",
+      "target_player_id_prod": 5286,
+      "target_player_id_test": 11064
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "小杉清",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 162,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Kosugi Kiyoshi",
+      "target_player_id_prod": 4421,
+      "target_player_id_test": 10212
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "福田正义",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 161,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Fukuda Masayoshi",
+      "target_player_id_prod": 5668,
+      "target_player_id_test": 11441
+    },
+    {
+      "catalog_action": "create_catalog_player",
+      "chinese_name": "村岛谊纪",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 159,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": true,
+      "raw_value": "Murashima Yoshinori",
+      "target_player_id_prod": null,
+      "target_player_id_test": null
+    },
+    {
+      "catalog_action": "create_catalog_player",
+      "chinese_name": "菅野清规",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 157,
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000083.htm",
+      "new_player_needed": true,
+      "raw_value": "Kanno Kiyonori",
+      "target_player_id_prod": null,
+      "target_player_id_test": null
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "上村邦夫",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 155,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Kamimura Kunio",
+      "target_player_id_prod": 3764,
+      "target_player_id_test": 9562
+    },
+    {
+      "catalog_action": "retain_observed_id",
+      "chinese_name": "佐藤馨",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 155,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": false,
+      "raw_value": "Sato Kaoru",
+      "target_player_id_prod": 3902,
+      "target_player_id_test": 9699
+    },
+    {
+      "catalog_action": "create_catalog_player",
+      "chinese_name": "细川千仞",
+      "expected_existing_fk": "NULL",
+      "expected_slots_each_environment": 150,
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "new_player_needed": true,
+      "raw_value": "Hosokawa Senjin",
+      "target_player_id_prod": null,
+      "target_player_id_test": null
+    }
+  ],
+  "scope": "exact raw reviewed subset; Sugiuchi Kazuko catalog rename isolated pending separate review",
+  "source_allowlist_sha256": "cc67ef4d8226a77583411aaaccf950ec1a7cf4ead412770497f29293f3e620e2",
+  "summary": {
+    "isolated_rename_raw_values": 1,
+    "isolated_rename_slots": 161,
+    "new_catalog_players": 4,
+    "raw_values": 14,
+    "slots_each_environment": 2276
+  }
+}

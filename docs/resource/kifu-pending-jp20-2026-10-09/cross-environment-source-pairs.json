@@ -1,0 +1,148 @@
+{
+  "pairs": [
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 8,
+      "original_name": "中山季磨",
+      "prod_id": 3785,
+      "test_id": 9583
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 114,
+      "original_name": "塩入逸造",
+      "prod_id": 4235,
+      "test_id": 10030
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 15,
+      "original_name": "安东阳向",
+      "prod_id": 4340,
+      "test_id": 10134
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 39,
+      "original_name": "小杉丁",
+      "prod_id": 4420,
+      "test_id": 10211
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 293,
+      "original_name": "日下包夫",
+      "prod_id": 4771,
+      "test_id": 10560
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 203,
+      "original_name": "武田博愛",
+      "prod_id": 5297,
+      "test_id": 11074
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 281,
+      "original_name": "浜島久義",
+      "prod_id": 5397,
+      "test_id": 11172
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 11,
+      "original_name": "浦原繁治",
+      "prod_id": 5398,
+      "test_id": 11173
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 14,
+      "original_name": "秦思玥",
+      "prod_id": 5675,
+      "test_id": 11448
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 77,
+      "original_name": "鈴木越雄",
+      "prod_id": 6259,
+      "test_id": 12025
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 181,
+      "original_name": "小松伸昭",
+      "prod_id": 6599,
+      "test_id": 12363
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 118,
+      "original_name": "早瀬玄堂",
+      "prod_id": 6626,
+      "test_id": 12390
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 106,
+      "original_name": "福原義虎",
+      "prod_id": 6629,
+      "test_id": 12393
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 91,
+      "original_name": "大澤銀次郎",
+      "prod_id": 6633,
+      "test_id": 12402
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 89,
+      "original_name": "窪内秀知",
+      "prod_id": 6634,
+      "test_id": 12403
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 102,
+      "original_name": "伊藤松次郎",
+      "prod_id": 6672,
+      "test_id": 12441
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 86,
+      "original_name": "九世安井算知",
+      "prod_id": 6686,
+      "test_id": 12455
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 35,
+      "original_name": "岸本左一郎",
+      "prod_id": 6712,
+      "test_id": 12481
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 34,
+      "original_name": "田村昇",
+      "prod_id": 6714,
+      "test_id": 12483
+    },
+    {
+      "equal_original_game_scope": true,
+      "linked_games": 21,
+      "original_name": "村上文祥",
+      "prod_id": 6769,
+      "test_id": 12538
+    }
+  ],
+  "source_capture_files": {
+    "PROD-jp-source-readonly.json": "51ea500d3cffe140e065db27af07d0b6b3d6ca4f93bc518e3ba84294c08648fb",
+    "TEST-jp-source-readonly.json": "3d1f6462fd9eecd1bf24b33307d0025500e46ee091a179a6a733072ab060efc9"
+  }
+}

@@ -1,0 +1,797 @@
+{
+  "candidate_artifact": "kifu-event-after743-leagues-candidates-2026-10-04.json.gz",
+  "candidate_file_sha256": "4513c32bde3c2923622f6091ee96f7d9ff64c9aec0e723422aa478c0dc552a62",
+  "candidate_id_sha256": "b83294be18311c1c17f4e926ed7b9191ec48ec29b947fd41c53d15d2e85f7bd5",
+  "counts": {
+    "holds": 1598,
+    "proposed_edition_writes": 0,
+    "proposed_new_event_types": 0,
+    "raw_values": 3938,
+    "scope_albums": 8594,
+    "type_candidates": 6996
+  },
+  "database": {
+    "database": "katrain_prod_20260725",
+    "read_only": "on",
+    "snapshot": "1723761:1723761:",
+    "time": "2026-10-04 08:19:50.772435+00"
+  },
+  "execution_boundary": "Independent identity review and separately frozen TEST/PROD full preimages required. Only exact approved IDs may receive event_id. All edition proposals remain HOLD. No raw strings, aliases, catalog, SGF, players, sources, or dates may be written by this proposal.",
+  "format": "kifu-event-after743-six-leagues-producer-v1",
+  "groups": [
+    {
+      "candidate_albums": 5062,
+      "candidate_id_sha256": "160aa80b8ff3d132ee2114c286190fbf25b5b3f9ab670559a88efb6df929dae9",
+      "candidate_raw_values": 2727,
+      "canonical_name": "中国围棋甲级联赛",
+      "date_max": "2026-01-25",
+      "date_min": "1999-04-16",
+      "edition_groups": [
+        {
+          "candidate_games": 1198,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 595,
+          "edition_numbers": [
+            26
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 428,
+          "edition_numbers": [
+            18
+          ],
+          "existing_edition_id_candidate": 796,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2016
+          ]
+        },
+        {
+          "candidate_games": 289,
+          "edition_numbers": [
+            25
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 266,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2010
+          ]
+        },
+        {
+          "candidate_games": 256,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2009
+          ]
+        },
+        {
+          "candidate_games": 256,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2011
+          ]
+        },
+        {
+          "candidate_games": 255,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2012
+          ]
+        },
+        {
+          "candidate_games": 254,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2008
+          ]
+        },
+        {
+          "candidate_games": 234,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2013
+          ]
+        },
+        {
+          "candidate_games": 233,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2014
+          ]
+        },
+        {
+          "candidate_games": 165,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2015
+          ]
+        },
+        {
+          "candidate_games": 134,
+          "edition_numbers": [
+            24
+          ],
+          "existing_edition_id_candidate": 802,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 128,
+          "edition_numbers": [
+            21
+          ],
+          "existing_edition_id_candidate": 799,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2019
+          ]
+        },
+        {
+          "candidate_games": 126,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2002
+          ]
+        },
+        {
+          "candidate_games": 49,
+          "edition_numbers": [
+            27
+          ],
+          "existing_edition_id_candidate": 803,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 43,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2016
+          ]
+        },
+        {
+          "candidate_games": 34,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2004
+          ]
+        },
+        {
+          "candidate_games": 27,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2005
+          ]
+        },
+        {
+          "candidate_games": 26,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2003
+          ]
+        },
+        {
+          "candidate_games": 22,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2006
+          ]
+        },
+        {
+          "candidate_games": 21,
+          "edition_numbers": [
+            23
+          ],
+          "existing_edition_id_candidate": 801,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 5,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2000
+          ]
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            24
+          ],
+          "existing_edition_id_candidate": 802,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2022
+          ]
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            22
+          ],
+          "existing_edition_id_candidate": 800,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2020
+          ]
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            19
+          ],
+          "existing_edition_id_candidate": 797,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2017
+          ]
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            20
+          ],
+          "existing_edition_id_candidate": 798,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2001
+          ]
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2007
+          ]
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2017
+          ]
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2021
+          ]
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2025
+          ]
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [
+            19
+          ],
+          "existing_edition_id_candidate": 797,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 1,
+          "edition_numbers": [
+            21
+          ],
+          "existing_edition_id_candidate": 799,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        }
+      ],
+      "event_id": 41,
+      "held_albums": 14,
+      "hold_reasons": {
+        "root_DT_missing_or_conflicting": 1,
+        "root_alternate_event_identity_conflict_or_unclear": 13,
+        "selection_special_training_or_ambiguous_subcompetition": 8,
+        "unknown_or_noncanonical_date": 1
+      },
+      "raw_values": 2731,
+      "scope_albums": 5076
+    },
+    {
+      "candidate_albums": 415,
+      "candidate_id_sha256": "0500e9466c0339a6bb184604a530676f12fe59e3b91d374c86bf3436c87cf3e0",
+      "candidate_raw_values": 393,
+      "canonical_name": "中国女子围棋甲级联赛",
+      "date_max": "2025-09-02",
+      "date_min": "2016-09-02",
+      "edition_groups": [
+        {
+          "candidate_games": 98,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 93,
+          "edition_numbers": [
+            10
+          ],
+          "existing_edition_id_candidate": 813,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 89,
+          "edition_numbers": [
+            9
+          ],
+          "existing_edition_id_candidate": 812,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 71,
+          "edition_numbers": [
+            11
+          ],
+          "existing_edition_id_candidate": 814,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 30,
+          "edition_numbers": [
+            7
+          ],
+          "existing_edition_id_candidate": 810,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2019
+          ]
+        },
+        {
+          "candidate_games": 21,
+          "edition_numbers": [
+            12
+          ],
+          "existing_edition_id_candidate": 815,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 10,
+          "edition_numbers": [
+            8
+          ],
+          "existing_edition_id_candidate": 811,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            4
+          ],
+          "existing_edition_id_candidate": 807,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        }
+      ],
+      "event_id": 42,
+      "held_albums": 0,
+      "hold_reasons": {},
+      "raw_values": 393,
+      "scope_albums": 415
+    },
+    {
+      "candidate_albums": 192,
+      "candidate_id_sha256": "a1bebdd74e53c5328a6da3c2bf77e9b64f3a058178e0d083b2cd7baee67788f1",
+      "candidate_raw_values": 44,
+      "canonical_name": "韩国围棋联赛",
+      "date_max": "2023-06-03",
+      "date_min": "2013-03-20",
+      "edition_groups": [
+        {
+          "candidate_games": 146,
+          "edition_numbers": [
+            18
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 31,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 15,
+          "edition_numbers": [
+            19
+          ],
+          "existing_edition_id_candidate": 1038,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        }
+      ],
+      "event_id": 50,
+      "held_albums": 27,
+      "hold_reasons": {
+        "root_alternate_event_identity_conflict_or_unclear": 27,
+        "selection_special_training_or_ambiguous_subcompetition": 27
+      },
+      "raw_values": 59,
+      "scope_albums": 219
+    },
+    {
+      "candidate_albums": 722,
+      "candidate_id_sha256": "d67e7f625fe55c3eb3073d0a7b77ec9f8f0c4b702007ca1b28e63245b019805b",
+      "candidate_raw_values": 242,
+      "canonical_name": "韩国女子围棋联赛",
+      "date_max": "2025-11-20",
+      "date_min": "2015-01-16",
+      "edition_groups": [
+        {
+          "candidate_games": 180,
+          "edition_numbers": [
+            7
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2021
+          ]
+        },
+        {
+          "candidate_games": 144,
+          "edition_numbers": [
+            1
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 102,
+          "edition_numbers": [
+            2
+          ],
+          "existing_edition_id_candidate": 1040,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 101,
+          "edition_numbers": [
+            8
+          ],
+          "existing_edition_id_candidate": 1045,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 82,
+          "edition_numbers": [
+            8
+          ],
+          "existing_edition_id_candidate": 1045,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2022
+          ]
+        },
+        {
+          "candidate_games": 65,
+          "edition_numbers": [
+            9
+          ],
+          "existing_edition_id_candidate": 1046,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 19,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 13,
+          "edition_numbers": [
+            4
+          ],
+          "existing_edition_id_candidate": 1042,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 5,
+          "edition_numbers": [
+            11
+          ],
+          "existing_edition_id_candidate": 1048,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 3,
+          "edition_numbers": [
+            5
+          ],
+          "existing_edition_id_candidate": 1043,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2019
+          ]
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            3
+          ],
+          "existing_edition_id_candidate": 1041,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            5
+          ],
+          "existing_edition_id_candidate": 1043,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            7
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 2,
+          "edition_numbers": [
+            9
+          ],
+          "existing_edition_id_candidate": 1046,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2023
+          ]
+        }
+      ],
+      "event_id": 51,
+      "held_albums": 0,
+      "hold_reasons": {},
+      "raw_values": 242,
+      "scope_albums": 722
+    },
+    {
+      "candidate_albums": 419,
+      "candidate_id_sha256": "437e5bd992eba04dc4c81515db7e46d8cf853b32a511a346437f48c333e0befb",
+      "candidate_raw_values": 105,
+      "canonical_name": "韩国元老围棋联赛",
+      "date_max": "2025-12-09",
+      "date_min": "2016-03-21",
+      "edition_groups": [
+        {
+          "candidate_games": 183,
+          "edition_numbers": [
+            4
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2019
+          ]
+        },
+        {
+          "candidate_games": 182,
+          "edition_numbers": [
+            5
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2020
+          ]
+        },
+        {
+          "candidate_games": 15,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2016
+          ]
+        },
+        {
+          "candidate_games": 13,
+          "edition_numbers": [
+            2
+          ],
+          "existing_edition_id_candidate": 1050,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 10,
+          "edition_numbers": [
+            10
+          ],
+          "existing_edition_id_candidate": 1056,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 8,
+          "edition_numbers": [
+            3
+          ],
+          "existing_edition_id_candidate": 1051,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            6
+          ],
+          "existing_edition_id_candidate": 1052,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2021
+          ]
+        },
+        {
+          "candidate_games": 4,
+          "edition_numbers": [
+            9
+          ],
+          "existing_edition_id_candidate": 1055,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": []
+        }
+      ],
+      "event_id": 52,
+      "held_albums": 0,
+      "hold_reasons": {},
+      "raw_values": 105,
+      "scope_albums": 419
+    },
+    {
+      "candidate_albums": 186,
+      "candidate_id_sha256": "545a9c1dfdf7befdd1fca649cd19e9db5b7bd1d2f226e372e6ce54ffa0c227d1",
+      "candidate_raw_values": 65,
+      "canonical_name": "韩国围乙联赛",
+      "date_max": "2025-08-25",
+      "date_min": "2012-04-13",
+      "edition_groups": [
+        {
+          "candidate_games": 153,
+          "edition_numbers": [
+            18
+          ],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2020,
+            2021
+          ]
+        },
+        {
+          "candidate_games": 33,
+          "edition_numbers": [],
+          "existing_edition_id_candidate": null,
+          "status": "HOLD_NO_EDITION_WRITE",
+          "years": [
+            2019,
+            2020
+          ]
+        }
+      ],
+      "event_id": 57,
+      "held_albums": 1025,
+      "hold_reasons": {
+        "prior_independent_hold_requires_new_decision": 1025
+      },
+      "raw_values": 249,
+      "scope_albums": 1211
+    },
+    {
+      "candidate_albums": 0,
+      "candidate_id_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "candidate_raw_values": 0,
+      "canonical_name": "未定类型／跨组歧义",
+      "date_max": "2025-09-08",
+      "date_min": "1999-04-16",
+      "edition_groups": [],
+      "event_id": null,
+      "held_albums": 532,
+      "hold_reasons": {
+        "country_or_exact_league_identity_not_explicit": 532,
+        "selection_special_training_or_ambiguous_subcompetition": 46
+      },
+      "raw_values": 159,
+      "scope_albums": 532
+    }
+  ],
+  "held_id_sha256": "4123f6893fc118d4ea47e4aeed078076f7429ad391fcb25a6c7e68aaa5d15bd1",
+  "inventory_metadata": {
+    "database": "katrain_prod_20260725",
+    "read_only": "on",
+    "snapshot": "1723556:1723556:",
+    "time": "2026-10-04 08:15:28.033497+00"
+  },
+  "live_statistics": {
+    "linked_editions": 79661,
+    "linked_events": 92561,
+    "null_nonempty_event": 77653,
+    "total": 173025
+  },
+  "status": "PRODUCER_CANDIDATES_ONLY_NOT_APPROVED_FOR_WRITE"
+}

@@ -1,0 +1,39 @@
+{
+  "artifact_kind": "ko17_source_research_index",
+  "read_only": true,
+  "latest_batch": 597,
+  "status": "first-five source-only completed; remaining 12 still pending research",
+  "order_rule": "slots descending; ties preserve shortlist order",
+  "completed_ids": [
+    6531,
+    5806,
+    5115,
+    5214,
+    5543
+  ],
+  "remaining_ids": [
+    5814,
+    6045,
+    5940,
+    6345,
+    6356,
+    3857,
+    4100,
+    4208,
+    5038,
+    6062,
+    6298,
+    4993
+  ],
+  "files": [
+    "6531.json",
+    "5806.json",
+    "5115.json",
+    "5214.json",
+    "5543.json",
+    "summary.md",
+    "search-capture-index.json",
+    "authority-capture-index.json"
+  ],
+  "source_policy": "Only actual saved response bodies and source timestamps are recorded; bounded searches do not assert global absence; no Korean spelling inferred."
+}

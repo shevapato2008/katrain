@@ -1,0 +1,481 @@
+{
+  "decision_version": 1,
+  "reviewer_task": "/root/samsung_event_decision",
+  "decision": "approved_finite_event_and_edition_identity_scope",
+  "database": "ucloud-v100 / katrain-ucloud-postgres-1 / katrain_prod_20260725",
+  "reviewed_source_artifact": "docs/resource/kifu-event-samsung-read-only-review-2026-10-04.json",
+  "source_file_sha256": "5077a90a92e4fa4aaa111c38e6a3629810e07ac864e3aa795455df513a8c2a2b",
+  "approved_tuple_columns": [
+    "album_id",
+    "raw_event",
+    "date_played",
+    "current_event_id",
+    "current_event_edition_id",
+    "source_path",
+    "duplicate_of_id",
+    "desired_event_id",
+    "desired_edition_key"
+  ],
+  "approved_tuples_reference": "reviewed_source_artifact.albums; exact ordered array, no broad regex re-selection",
+  "approved_tuples_canonical_serialization": "UTF-8 json.dumps(albums, ensure_ascii=False, sort_keys=True, separators=(comma,colon)); no trailing newline; album_id ascending",
+  "approved_tuples_canonical_sha256": "81ec9f4131ca0e2d516348782e143ba1c1012fe6a5312379765349e4aef78a3f",
+  "candidate_claimed_pg_tuple_sha256": "619d91c42e308c15370bcab45cdf5bcd4279bc6585863fe4dd157a8003c7bba4",
+  "candidate_claimed_pg_tuple_hash_note": "Original PostgreSQL byte serialization not independently reproduced; independent approval binds source file bytes and canonical exact tuple array above.",
+  "counts": {
+    "event_links": 1017,
+    "exact_raws": 264,
+    "edition_links": 1011,
+    "type_only_links": 6,
+    "training_holds": 13,
+    "new_identity_holds": 0
+  },
+  "event": {
+    "id": 43,
+    "canonical_name": "三星杯世界围棋大师赛"
+  },
+  "edition_resolution": [
+    {
+      "id": 816,
+      "event_id": 43,
+      "edition_number": 1,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 817,
+      "event_id": 43,
+      "edition_number": 2,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 818,
+      "event_id": 43,
+      "edition_number": 3,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 819,
+      "event_id": 43,
+      "edition_number": 4,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 820,
+      "event_id": 43,
+      "edition_number": 5,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 821,
+      "event_id": 43,
+      "edition_number": 6,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 822,
+      "event_id": 43,
+      "edition_number": 7,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 823,
+      "event_id": 43,
+      "edition_number": 8,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 824,
+      "event_id": 43,
+      "edition_number": 9,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 825,
+      "event_id": 43,
+      "edition_number": 10,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 826,
+      "event_id": 43,
+      "edition_number": 11,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 827,
+      "event_id": 43,
+      "edition_number": 12,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 828,
+      "event_id": 43,
+      "edition_number": 13,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 829,
+      "event_id": 43,
+      "edition_number": 14,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 830,
+      "event_id": 43,
+      "edition_number": 15,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 831,
+      "event_id": 43,
+      "edition_number": 16,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 832,
+      "event_id": 43,
+      "edition_number": 17,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 833,
+      "event_id": 43,
+      "edition_number": 18,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 834,
+      "event_id": 43,
+      "edition_number": 19,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 835,
+      "event_id": 43,
+      "edition_number": 20,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 836,
+      "event_id": 43,
+      "edition_number": 21,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 837,
+      "event_id": 43,
+      "edition_number": 22,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 838,
+      "event_id": 43,
+      "edition_number": 23,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 839,
+      "event_id": 43,
+      "edition_number": 24,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 840,
+      "event_id": 43,
+      "edition_number": 25,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 841,
+      "event_id": 43,
+      "edition_number": 26,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 842,
+      "event_id": 43,
+      "edition_number": 27,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 843,
+      "event_id": 43,
+      "edition_number": 28,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 844,
+      "event_id": 43,
+      "edition_number": 29,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    },
+    {
+      "id": 845,
+      "event_id": 43,
+      "edition_number": 30,
+      "edition_label": null,
+      "year": null,
+      "season": null
+    }
+  ],
+  "type_only_album_ids": [
+    28773,
+    84471,
+    92080,
+    97284,
+    119166,
+    138885
+  ],
+  "training_holds": [
+    {
+      "id": 20594,
+      "event": "2025衢州青训三星杯预选训练赛",
+      "date_played": "2025-08-15",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67327529.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20595,
+      "event": "2025衢州青训三星杯预选训练赛",
+      "date_played": "2025-08-15",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67327530.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20688,
+      "event": "2025衢州青训三星杯预选训练赛",
+      "date_played": "2025-08-16",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67619999.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20701,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-08-17",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67620043.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20706,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-08-18",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67620056.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20707,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-08-18",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67620058.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20711,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-08-18",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67620136.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20839,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-08-24",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/67887816.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 20940,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-09-04",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/68036859.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 21272,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-09-16",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/68679286.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 21686,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-10-02",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/70046204.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 21807,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-10-07",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/70372109.sgf",
+      "duplicate_of_id": null
+    },
+    {
+      "id": 22037,
+      "event": "2025三星杯免选棋手野狐训练赛",
+      "date_played": "2025-10-20",
+      "event_id": null,
+      "event_edition_id": null,
+      "source_path": "data/kifu-album/19x19/70740786.sgf",
+      "duplicate_of_id": null
+    }
+  ],
+  "capture_start": {
+    "kind": "start",
+    "db": "katrain_prod_20260725",
+    "at": "2026-10-04T05:14:40.667313+00:00",
+    "read_only": "on",
+    "isolation": "repeatable read",
+    "snapshot": "1711292:1711292:"
+  },
+  "capture_end": {
+    "kind": "end",
+    "db": "katrain_prod_20260725",
+    "at": "2026-10-04T05:14:41.9574+00:00",
+    "read_only": "on",
+    "snapshot": "1711292:1711292:"
+  },
+  "capture_file": "/Users/fan/.local/share/kifu-name-audit/2026-10-04/samsung-independent-decision/capture.jsonl.gz",
+  "capture_file_sha256": "383031150ae9f40a962f227da4b2e2e6e6683026525142c6d36319b67cef5abb",
+  "findings": {
+    "live_seven_field_preimage_differences": 0,
+    "sgf_roots_parsed": 1017,
+    "sgf_root_EV_present": 0,
+    "database_event_equals_first_GN": 1017,
+    "database_date_equals_first_DT": 1017,
+    "edition_parsing_counts": {
+      "arabic": 987,
+      "han": 6,
+      "english": 18
+    },
+    "explicit_raw_edition_to_candidate_mismatches": 0,
+    "finite_raw_edition_to_date_year_mismatches": 0,
+    "hidden_training_or_exhibition_markers_in_EV_GN_GC_C_PB_PW": 0,
+    "album_418_player_error": {
+      "black_raw": "吴依铭",
+      "white_raw": "吴依铭",
+      "same_196_move_mainline_album_id": 10153,
+      "other_album_black_raw": "陆敏全",
+      "other_album_white_raw": "吴依铭",
+      "moves_sha256": "2e92e537321fa608700585edc2b7039767aecb85683659ad03df5f4367a61284",
+      "event_identity_decision": "retain approved event43/edition27; existing player metadata error is outside this link operation"
+    }
+  },
+  "constraints": [
+    "Use only the exact approved album tuples and existing event43/edition keys; recheck current preimages before apply.",
+    "Resolve editions from explicit reviewed raw edition, with date year as consistency evidence only. Samsung Cup historical finals can cross calendar years.",
+    "Keep the six type-only edition links null; no date-derived edition inference in this scope.",
+    "Official qualifying and regional selection stages belong to the same Samsung Cup series and explicit edition; preserve stage/round raw text.",
+    "Do not add generic Samsung/三星 regex mappings or global aliases for full stage/round raw strings.",
+    "Preserve raw event, all SGF content, dates, players, source paths, duplicate markers, and existing linked1270 rows; change only authorized event/edition associations.",
+    "Do not treat this identity review as an execution receipt; no database write occurred."
+  ],
+  "primary_sources": [
+    {
+      "url": "https://baduk.or.kr/game/game_view.asp?cmpt_code=2104&etcKey=2",
+      "supports": "Organizer history maps editions1..30 to season years1996..2025."
+    },
+    {
+      "url": "https://www.haifong.org/game/classes/B0A85C728A240460DBA68725773324CF",
+      "supports": "Historical sponsor-name variants and seasons including cross-year finals."
+    },
+    {
+      "url": "https://taiwangorg.blogspot.com/2021/08/2021.html",
+      "supports": "Korea Baduk Association tournament regulations republished by Taiwan organizer explicitly include China/Korea/Japan/Chinese Taipei selection stages."
+    },
+    {
+      "url": "https://www.sport.gov.cn/n20001280/n20067662/n20067613/c23424226/content.html",
+      "supports": "26th Samsung Cup China selection is a preliminary stage; nine-round male selection and national quota allocations."
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/report_view.asp?news_no=5070",
+      "supports": "29th Samsung Cup unified qualifiers return2024 after last held2019 and qualify directly into the same main event."
+    },
+    {
+      "url": "https://www.baduk.or.kr/news/report_view.asp?news_no=5551",
+      "supports": "30th2025 Samsung Cup unified qualifiers feed the same32-player main event."
+    }
+  ]
+}

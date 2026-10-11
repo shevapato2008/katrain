@@ -1,0 +1,76 @@
+{
+  "content": {
+    "exceptions_checked": true,
+    "excluded_characters": [
+      "于",
+      "傑",
+      "升",
+      "岳",
+      "嶽",
+      "於",
+      "昇",
+      "杰",
+      "鍾",
+      "鐘",
+      "钟"
+    ],
+    "excluded_names": [
+      "孔傑",
+      "孔杰",
+      "胡子扬",
+      "胡子揚",
+      "鬍子揚"
+    ],
+    "lang": "tw",
+    "mappings": [
+      {
+        "human_name_applicable": true,
+        "input": "东",
+        "location": "PDF physical page 5: 东－東",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "東"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "向",
+        "location": "Unihan_Variants.txt: U+5411 kTraditionalVariant",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "向"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "安",
+        "location": "Unihan_Variants.txt: U+5B89 has no kTraditionalVariant record",
+        "normative_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+        "normative_version": "Unicode 17.0.0 Unihan_Variants.txt",
+        "output": "安"
+      },
+      {
+        "human_name_applicable": true,
+        "input": "阳",
+        "location": "PDF physical page 7: 阳－陽",
+        "normative_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+        "normative_version": "臺灣教育部《簡化字對照標準字表》筆畫序",
+        "output": "陽"
+      }
+    ],
+    "source_lang": "zh-Hans",
+    "source_script": "Hans",
+    "target_region": "TW",
+    "target_script": "Hant",
+    "version": "primary-orthographic-v1"
+  },
+  "approval": {
+    "content_sha256": "e32a99668a71237b88328d815d0c5677924efaf9d1b1c6c223c3296435f10386",
+    "produced_at": "2026-10-08T17:56:19.142839+00:00",
+    "producer_id": "/root/next_batch_source_recovery",
+    "producer_model": "GPT-6 (exact runtime variant unavailable)",
+    "status": "approved",
+    "reviewer_id": "/root",
+    "reviewer_model": "gpt-6",
+    "reviewed_at": "2026-10-08T18:02:34.794858+00:00",
+    "conclusion": "approved_orthographic_rule"
+  }
+}

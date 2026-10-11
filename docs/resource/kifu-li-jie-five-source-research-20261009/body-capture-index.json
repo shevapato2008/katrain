@@ -1,0 +1,202 @@
+{
+  "status": "source_only_identity_bridge_and_normative_ko_candidate",
+  "captures": [
+    {
+      "player_id": 4970,
+      "key": "zh-hans-wiki",
+      "requested_url": "https://zh.wikipedia.org/zh-hans/李劼_(围棋棋手)",
+      "final_url": "https://zh.wikipedia.org/zh-hans/%E6%9D%8E%E5%8A%BC_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:05.134298+00:00",
+      "body_file": "bodies/4970-zh-hans-wiki.body",
+      "body_bytes": 80017,
+      "body_sha256": "dfcbd1fbbd67dffecd39911ff2625330a5bd50388703ef053b088354403f9b02",
+      "decoded_as": "utf-8",
+      "title": "李劼 (围棋棋手) - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "李劼",
+          "excerpt": "李劼 (围棋棋手) - 维基百科，自由的百科全书 跳转到内容 主菜单 主菜单 移至侧栏 隐藏 导航 首页 分类索引 特色内容 新闻动态 随机条目 联络我们 关于维基百科 贡献 帮助 维基社群 编辑入门 互助客栈 IRC即时聊天 最近更改 特殊页面 搜索 搜索 外观 资助维基百科 创建账号 登录 个人工具 资助维基百科 创建账号 登录 目录 移至侧栏 隐藏 序"
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "zh-hant-wiki",
+      "requested_url": "https://zh.wikipedia.org/zh-hant/李劼_(围棋棋手)",
+      "final_url": "https://zh.wikipedia.org/zh-hant/%E6%9D%8E%E5%8A%BC_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:06.254228+00:00",
+      "body_file": "bodies/4970-zh-hant-wiki.body",
+      "body_bytes": 80344,
+      "body_sha256": "d8ea03d3713b3b873f3bd8e31d8046235e3af0684368a61ea0afbc8e115d6068",
+      "decoded_as": "utf-8",
+      "title": "李劼 (圍棋棋手) - 維基百科，自由的百科全書",
+      "excerpts": [
+        {
+          "needle": "李劼",
+          "excerpt": "李劼 (圍棋棋手) - 維基百科，自由的百科全書 跳至內容 主選單 主選單 移至側邊欄 隱藏 導覽 首頁 分類索引 特色內容 新聞動態 隨機條目 聯絡我們 關於維基百科 貢獻 說明 維基社群 編輯入門 互助客棧 IRC即時聊天 近期變更 特殊頁面 搜尋 搜尋 外觀 資助維基百科 建立帳號 登入 個人工具 資助維基百科 建立帳號 登入 目次 移至側邊欄 隱藏 "
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "nihon-samsung",
+      "requested_url": "https://www.nihonkiin.or.jp/match/sansei/008.htm",
+      "final_url": "https://www.nihonkiin.or.jp/match/sansei/008.htm",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:08.165704+00:00",
+      "body_file": "bodies/4970-nihon-samsung.body",
+      "body_bytes": 104338,
+      "body_sha256": "9c3ac9e7775dd35f39605fda3beff9e90e44583fe834da365b69977ad9728bf0",
+      "decoded_as": "utf-8",
+      "title": "第8期 三星杯 本戦 | 棋戦 | 囲碁の日本棋院",
+      "excerpts": [
+        {
+          "needle": "李",
+          "excerpt": "姜東潤九段 韓国 中押し △ 朴常鎭九段 韓国 勝者 結果 相手 △ 檀嘯九段 中国 中押し 黄明宇八段 中国 △ 丁浩九段 中国 中押し 李志賢九段 韓国 廖元赫九段 中国 中押し △ 申眞諝九段 韓国 傳健恒七段 中国 中押し △ 睦鎭碩九段 韓国 決勝 準決勝 準々決勝 二回戦 一回戦 出場棋士 一回戦 対局日：2025年11月9日（日）（左側勝ち、△は先番） 勝者 結果 相手 △ 党毅飛九段 中国 中押し 申旻埈九段 韓国 楊鼎新九段 中国 中押し △ 許家元九段 日本 △ 芝野虎丸九段"
+        },
+        {
+          "needle": "劼",
+          "excerpt": "半 金 宋俊 五段 I組 大沢奈留美 二段 中押 △裵 允眞 初段 A組 梁 宰豪 九段 中押 △望月研一 四段 I組 張 豊猷 六段 李 劼 四段 B組 朴 昇賢 三段 中押 △祷 陽子 五段 J組 曹 大元 九段 井山裕太 三段 B組 △江 鋳久 九段 2目半 河野 臨 七段 J組 李 相澈 七段 山田晋次 三段 B組 △梁 建 六段 中押 金 賢貞 三段 J組 小松英樹 九段 金 孝貞 二段 D組 △高尾紳路 八段 中押 鄭 弘 九段 K組 円田秀樹 九段 高 在熙 七段 D組 △大場惇也"
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "goratings-21-en",
+      "requested_url": "https://www.goratings.org/en/players/21.html",
+      "final_url": "https://www.goratings.org/en/players/21.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:18.870032+00:00",
+      "body_file": "bodies/4970-goratings-21-en.body",
+      "body_bytes": 121065,
+      "body_sha256": "42cea90ada41463ffe4840fbbda23a33659ed63ec2539206e21957605e87cbbd",
+      "decoded_as": "utf-8",
+      "title": "Li Jie",
+      "excerpts": [
+        {
+          "needle": "Li Jie",
+          "excerpt": "Li Jie Li Jie Back to main list Graph Data Wins 160 Losses 195 Total 355 Date of Birth 1983-12-04 Game List Date Rating Color Result Opponent Kifu 2016-12-28 3223 White Loss Zhang "
+        },
+        {
+          "needle": "2008-05-15",
+          "excerpt": "n 3213 ♂ | go4go | 2008-06-05 3244 Black Win Pan Fei 3223 ♂ | go4go | 2008-05-15 3244 White Loss Luo Xihe 3333 ♂ | go4go | 2008-04-17 3244 White Loss Piao Wenyao 3461 ♂ | go4go | 2008-04-05 3244 Black Loss Ding Wei 3400 ♂ | go4go | 2008-03-27 3244 Wh"
+        },
+        {
+          "needle": "2013-01-21",
+          "excerpt": "White Win Lan Tian 3266 ♂ 2013-03-09 3252 Black Loss Gu Lingyi 3466 ♂ 2013-01-21 3254 White Loss Byun Sangil 3392 ♂ | go4go | 2012-10-17 3258 Black Loss Tuo Jiaxi 3548 ♂ | go4go | 2012-08-14 3260 White Win Rui Naiwei 3202 ♀ | cwa | 2012-08-13 3260 Wh"
+        },
+        {
+          "needle": "2005-10-12",
+          "excerpt": "68 ♂ | go4go | 2005-10-15 3256 White Win Hong Minpyo 3300 ♂ | go4go | 2005-10-12 3255 White Loss Chen Yaoye 3428 ♂ | go4go | 2005-10-08 3255 White Loss Ma Xiaochun 3327 ♂ | go4go | 2005-09-25 3255 Black Loss Zhu Yi 3171 ♂ 2005-09-24 3255 Black Loss Z"
+        }
+      ]
+    },
+    {
+      "key": "nikl-regulation-direct-fetch",
+      "requested_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "http_status": 403,
+      "fetched_at_utc": "2026-10-09T00:38:39.087238+00:00",
+      "body_file": "bodies/nikl-regulation.body",
+      "body_bytes": 225,
+      "body_sha256": "472651c6e715d726dabae2658cc538c85c2dfee38b11cdeb6d174a4099270f77",
+      "title": "403 response; no rule body captured",
+      "excerpts": []
+    },
+    {
+      "key": "nikl-foreign-word-transcription-examples",
+      "requested_url": "https://www.korean.go.kr/common/download.do;front=1903023FA3A0466669D88C37B0D596FF?c_file_name=4c70b234-e349-44c7-bf96-0c63ae692848_0.pdf&file_path=reportData&o_file_name=%EC%99%B8%EB%9E%98%EC%96%B4%20%ED%91%9C%EA%B8%B0%20%EA%B7%9C%EB%B2%94%20%EC%98%81%ED%96%A5%20%ED%8F%89%EA%B0%80.pdf",
+      "final_url": "https://www.korean.go.kr/common/download.do;front=1903023FA3A0466669D88C37B0D596FF?c_file_name=4c70b234-e349-44c7-bf96-0c63ae692848_0.pdf&file_path=reportData&o_file_name=%EC%99%B8%EB%9E%98%EC%96%B4%20%ED%91%9C%EA%B8%B0%20%EA%B7%9C%EB%B2%94%20%EC%98%81%ED%96%A5%20%ED%8F%89%EA%B0%80.pdf",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:41:20.719519+00:00",
+      "body_file": "bodies/nikl-foreign-word-transcription-study.pdf",
+      "body_bytes": 11936324,
+      "body_sha256": "d6ec4a79d5bfe053e658a94534efed989703c9f5d2bd6cfa8a6dc5db1ff4bb12",
+      "title": "외래어 표기 규범 영향 평가 (국립국어원)",
+      "excerpts": [
+        {
+          "needle": "李連傑, Li Lianjie",
+          "excerpt": " 영화배우, 가수. 영화  ‘천장지구’로 유명함. 元, yuan, 중국의 화폐단위 7 ①리롄졔     ②리롄제  8 ①청룽        ②청롱 李連傑, Li Lianjie, <인명> 중국의  영화배우, 무술인 영화 ‘소림사’로  유명함. 成龍, Cheng Long, <인명> 중국 홍콩  출신의 영화배우, 감독. 영화 ‘취권’으 로 유명함. 9 ①장쯔이     ②장찌이 10 ①덩샤오핑    ②덩사오핑 章子怡, Zhang Ziyi, <인명> 중국의  영화배우. ‘영화 ‘와호장룡’으로 유 명함. 鄧小平, Deng Xiaoping <인명>"
+        },
+        {
+          "needle": "리롄졔",
+          "excerpt": "劉德華, Liu Dehua, <인명> 중국  홍콩 출신의 영화배우, 가수. 영화  ‘천장지구’로 유명함. 元, yuan, 중국의 화폐단위 7 ①리롄졔     ②리롄제  8 ①청룽        ②청롱 李連傑, Li Lianjie, <인명> 중국의  영화배우, 무술인 영화 ‘소림사’로  유명함. 成龍, Cheng Long, <인명> 중국 홍콩  출신의 영화배우, 감독. 영화 ‘취권’으 로 유명함. 9 ①장쯔이     ②장찌이 10 ①덩샤오핑    ②덩사오핑 章子怡, Zhang Ziyi, <인명> 중국의  영화배우. ‘영화 ‘와호장룡’으"
+        },
+        {
+          "needle": "리롄제",
+          "excerpt": "Dehua, <인명> 중국  홍콩 출신의 영화배우, 가수. 영화  ‘천장지구’로 유명함. 元, yuan, 중국의 화폐단위 7 ①리롄졔     ②리롄제  8 ①청룽        ②청롱 李連傑, Li Lianjie, <인명> 중국의  영화배우, 무술인 영화 ‘소림사’로  유명함. 成龍, Cheng Long, <인명> 중국 홍콩  출신의 영화배우, 감독. 영화 ‘취권’으 로 유명함. 9 ①장쯔이     ②장찌이 10 ①덩샤오핑    ②덩사오핑 章子怡, Zhang Ziyi, <인명> 중국의  영화배우. ‘영화 ‘와호장룡’으로 유 명함. 鄧"
+        }
+      ]
+    },
+    {
+      "key": "goratings-21-zh",
+      "requested_url": "https://www.goratings.org/zh/players/21.html",
+      "final_url": "https://www.goratings.org/zh/players/21.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:56:05.322659+00:00",
+      "date_header": "Fri, 09 Oct 2026 00:56:07 GMT",
+      "body_file": "bodies/4970-goratings-21-zh.body",
+      "body_sha256": "38606c4181710513ed6c3fcfb8a3bb3e66f6835934679e10a78e5399cb84a4a3",
+      "body_bytes": 120543,
+      "title": "李劼",
+      "excerpts": [
+        {
+          "needle": "李劼",
+          "excerpt": "李劼 李劼 返回首页 等级分曲线 数据 胜 160 负 195 总计 355 生日 1983-12-04 对局列表 日期 等级分 黑白 对局结果 对手 棋谱 2016-12-28 3223 执白 负 张东岳 3151 ♂ | go4go | 2016-12-27 3223 执黑 胜 王爽 3057 ♀ | go4go | 2016-12-18 3224 执黑"
+        },
+        {
+          "needle": "1983-12-04",
+          "excerpt": "李劼 李劼 返回首页 等级分曲线 数据 胜 160 负 195 总计 355 生日 1983-12-04 对局列表 日期 等级分 黑白 对局结果 对手 棋谱 2016-12-28 3223 执白 负 张东岳 3151 ♂ | go4go | 2016-12-27 3223 执黑 胜 王爽 3057 ♀ | go4go | 2016-12-18 3224 执黑 负 许嘉阳 3535 ♂ | go4go | 2016-05-06 3227 执黑"
+        },
+        {
+          "needle": "2013-01-21",
+          "excerpt": "05 ♂ 2013-03-18 3252 执黑 负 吴树浩 3223 ♂ 2013-03-16 3252 执白 胜 蓝天 3266 ♂ 2013-03-09 3252 执黑 负 古灵益 3466 ♂ 2013-01-21 3254 执白 负 卞相壹 3392 ♂ | go4go | 2012-10-17 3258 执黑 负 柁嘉熹 3548 ♂ | go4go | 2012-08-14 3260 执白 胜 芮乃伟 3202 ♀ | cwa | 2012-08-13 3260 执白 胜 秦悦欣 3298 ♂ | cwa | 2012-08-10 3260 "
+        },
+        {
+          "needle": "卞相壹",
+          "excerpt": "执黑 负 吴树浩 3223 ♂ 2013-03-16 3252 执白 胜 蓝天 3266 ♂ 2013-03-09 3252 执黑 负 古灵益 3466 ♂ 2013-01-21 3254 执白 负 卞相壹 3392 ♂ | go4go | 2012-10-17 3258 执黑 负 柁嘉熹 3548 ♂ | go4go | 2012-08-14 3260 执白 胜 芮乃伟 3202 ♀ | cwa | 2012-08-13 3260 执白 胜 秦悦欣 3298 ♂ | cwa | 2012-08-10 3260 执黑 负 柯洁 3433 ♂ | go4g"
+        },
+        {
+          "needle": "160",
+          "excerpt": "李劼 李劼 返回首页 等级分曲线 数据 胜 160 负 195 总计 355 生日 1983-12-04 对局列表 日期 等级分 黑白 对局结果 对手 棋谱 2016-12-28 3223 执白 负 张东岳 3151 ♂ | go4go | 2016-12-27 3223 执黑 胜 王爽 3057 ♀ | go4go | 2016-12-18 3224 执黑 负 许嘉阳 3535 ♂ | go4go "
+        }
+      ]
+    },
+    {
+      "key": "nikl-foreign-regulation-full",
+      "requested_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+      "date_header": "Thu, 08 Oct 2026 21:30:16 GMT",
+      "body_file": "bodies/nikl-foreign-regulation-full.html",
+      "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "body_bytes": 456809,
+      "title": "외래어 표기법 — 한국어 어문 규범",
+      "excerpts": [
+        {
+          "needle": "Table 4 l, j initials",
+          "excerpt": "Table 4 (raw HTML line 1573): pinyin initials l → ㄹ; j → ㅈ."
+        },
+        {
+          "needle": "Table 5 yi (i), ye (ie)",
+          "excerpt": "Table 5 (raw HTML line 1573): yi (i) → 이; ye (ie) → 예. Note (raw HTML line 1578): parenthesized form applies when a consonant precedes."
+        },
+        {
+          "needle": "jie adjustment 졔→제",
+          "excerpt": "Chapter 3, Section 7 (raw HTML lines 6707–6711): after the listed j/zh/z/q/ch/c initials, ㅖ is written ㅔ; example 졔→제."
+        },
+        {
+          "needle": "tones",
+          "excerpt": "Chapter 3, Section 7, item 1 (raw HTML line 6666): tones are not distinguished in writing."
+        },
+        {
+          "needle": "modern Chinese personal names",
+          "excerpt": "Chapter 4 (raw HTML line 13706): modern Chinese personal names follow the Chinese transcription rules in principle."
+        }
+      ]
+    }
+  ]
+}

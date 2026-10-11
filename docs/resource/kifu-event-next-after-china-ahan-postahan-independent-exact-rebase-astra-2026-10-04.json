@@ -1,0 +1,151 @@
+{
+  "format": "kifu-event-next-after-china-ahan-independent-exact-rebase-v1",
+  "review_date": "2026-10-04",
+  "database_writes": 0,
+  "candidate_request": {
+    "path": "docs/resource/kifu-event-next-after-china-ahan-candidate-request-2026-10-04.json",
+    "file_sha256": "505d364ebba4e80ae4578212f9702bf07abf6c788c47ad4423475dabe501d74e",
+    "bytes": 61335
+  },
+  "candidate_scope": {
+    "path": "docs/resource/kifu-event-next-after-china-ahan-candidate-scope-2026-10-04.json.gz",
+    "file_sha256": "fd0b4c21fb85d642e2a8286de3ec53e16e7d0617096206a98d0e5e62460b66cc",
+    "bytes": 225913
+  },
+  "admitted_change": "Only the exact independently committed China Ahan event row and +793 global event links; no candidate, source, player, alias, edition or HOLD drift.",
+  "unrelated_drift_accepted": false,
+  "environments": {
+    "TEST": {
+      "original_preimage": {
+        "path": "docs/resource/kifu-event-next-after-china-ahan-TEST-full-preimage-2026-10-04.json.gz",
+        "file_sha256": "4639f68fa868c69e2be52f5b35b91cf6e23b3f44d7f171c6a0f9900f83c6aa13",
+        "bytes": 382356
+      },
+      "post_ahan_preimage": {
+        "path": "docs/resource/kifu-event-next-after-china-ahan-TEST-postahan-independent-preimage-astra-2026-10-04.json.gz",
+        "file_sha256": "25f8a768566d70531c4b56d3a1129c00643c0aab2fb893499aac069c5f1c6a49",
+        "bytes": 382373
+      },
+      "ahan_applied_plan": {
+        "path": "docs/resource/kifu-event-china-ahan-TEST-applied-plan-2026-10-04.json.gz",
+        "file_sha256": "dd96d3f50ea7f7458f2b9116f1bb7d0d45a0635c24147c36e80b9c75a4859fb4",
+        "bytes": 403242
+      },
+      "ahan_committed_event_postimage": {
+        "path": "docs/resource/kifu-event-china-ahan-TEST-postimage-2026-10-04.json",
+        "file_sha256": "72d7c994c4349d47cb6ad04a87cc342ce61a1cf8797c0bcbace3533f4d659829",
+        "bytes": 7202
+      },
+      "added_event_row": {
+        "canonical_name": "中国阿含桐山杯",
+        "created_at": "2026-10-04T11:38:01.548469+00:00",
+        "id": 89
+      },
+      "added_event_row_sha256": "d368f1cc6a00998c2bd46e43eb32940becefb2f4c86ca446076e37f89d0d7349",
+      "catalog_before_sha256": "3cd2c8baed323dce26f345bbeea0af7da58c463f19fde5cce95aebc398743edc",
+      "catalog_after_sha256": "40c348655aa719c864c3c33f86eacd53676d835bbf1b881552c3f8920b928473",
+      "statistics_before": {
+        "albums": 173025,
+        "edition_links": 79661,
+        "event_links": 101516
+      },
+      "statistics_after": {
+        "albums": 173025,
+        "edition_links": 79661,
+        "event_links": 102309
+      },
+      "unchanged_keys": [
+        "album_sources",
+        "albums",
+        "aliases",
+        "candidate_groups",
+        "candidate_ids",
+        "candidate_request_sha256",
+        "editions",
+        "environment",
+        "existing_hold_event_slots",
+        "format",
+        "players",
+        "sources"
+      ],
+      "unchanged_rows_sha256": {
+        "albums": "50eb8833df83b234f28da1fd2873c4578e93027cf9526523c778b00cedd8d801",
+        "album_sources": "a12649339a12cfa88c7d592bb59dadf91cace1d8306c9a9a6ca35d55c16a5ea3",
+        "aliases": "60274e37312ca2c010b6287c36091dad1806371a9fc0b9eb6e4027978d633c1c",
+        "editions": "96481c6a0ac51d3921a9dca24993b22dcc07e4857ab6fb5ac4ff994aa4775413",
+        "sources": "f4098a77d1e7876d980835eaebab569f88f4ee7b634bac36746665d581240d0a",
+        "players": "e78f87d8418f4d70132b2307fd0492800884eef574a9f6540e0924bdf28f4812",
+        "existing_hold_event_slots": "67fe1ca921b7c9560f86a80f912fe03628b6bc60101801ccc7caf1f3916d1adc"
+      },
+      "candidate_overlap_with_ahan_approved_ids": [],
+      "candidate_album_drift": [],
+      "all_4273_hold_slots_unchanged": true
+    },
+    "PROD": {
+      "original_preimage": {
+        "path": "docs/resource/kifu-event-next-after-china-ahan-PROD-full-preimage-2026-10-04.json.gz",
+        "file_sha256": "5e919068df3f5cd773fbc13ae7ccf1eaf5aad7ee7a98268cb631d5c134a7b3ee",
+        "bytes": 382452
+      },
+      "post_ahan_preimage": {
+        "path": "docs/resource/kifu-event-next-after-china-ahan-PROD-postahan-independent-preimage-astra-2026-10-04.json.gz",
+        "file_sha256": "aef54aaa158b040fd7a002bf55656cd64554a382fa69a8f51a999e9eafbc3599",
+        "bytes": 382467
+      },
+      "ahan_applied_plan": {
+        "path": "docs/resource/kifu-event-china-ahan-PROD-applied-plan-2026-10-04.json.gz",
+        "file_sha256": "3d8f3fe5bdb7110a2b2ff7ec2c32910e2ae7eed689a4fd7b925ba0995da245f1",
+        "bytes": 403136
+      },
+      "ahan_committed_event_postimage": {
+        "path": "docs/resource/kifu-event-china-ahan-PROD-postimage-2026-10-04.json",
+        "file_sha256": "0ac97c1f309e0777e5ab3bf944850c170cc89b416f0128fae2633bdf3350fda0",
+        "bytes": 7212
+      },
+      "added_event_row": {
+        "canonical_name": "中国阿含桐山杯",
+        "created_at": "2026-10-04T11:38:15.334018+00:00",
+        "id": 89
+      },
+      "added_event_row_sha256": "4c6fa3ec386827cd5f94783ec4ce6c511098639bc345dfe28770edc619f98ee5",
+      "catalog_before_sha256": "ca6e103592ed88d4f9eb60ef097f37942f7c92498ae6ee06c6803937b136f435",
+      "catalog_after_sha256": "2551ea830aea61ac37f4820c504f90c40c591dfb58b0aa1044b47c1372ad1234",
+      "statistics_before": {
+        "albums": 173025,
+        "edition_links": 79661,
+        "event_links": 101998
+      },
+      "statistics_after": {
+        "albums": 173025,
+        "edition_links": 79661,
+        "event_links": 102791
+      },
+      "unchanged_keys": [
+        "album_sources",
+        "albums",
+        "aliases",
+        "candidate_groups",
+        "candidate_ids",
+        "candidate_request_sha256",
+        "editions",
+        "environment",
+        "existing_hold_event_slots",
+        "format",
+        "players",
+        "sources"
+      ],
+      "unchanged_rows_sha256": {
+        "albums": "ea91c4a1594a7f73e9a8e91fc4c8166fe181e6d6842bffa9e9b2659cafd5466f",
+        "album_sources": "21b30b24e1e8e4c8a4bce2016dd19dba8e24eb4e1fda5528e68dfb88d57b080e",
+        "aliases": "2763713b8dd37696246de60b08fbd95574e4e6f0cd0cd0e9428eebe1b031fa54",
+        "editions": "19176ce9df1de1d459a9e7b065fe48ae93d20db4732dad88b84fc46a403796eb",
+        "sources": "1bcd34ed7d11a485d5755db14419b7eacabe7a8d49c433ee9d77b5ceda3f463b",
+        "players": "194f72fdb45e6981b759d1ec8d8abac50a00d15b18b02026585112514f667e0b",
+        "existing_hold_event_slots": "67fe1ca921b7c9560f86a80f912fe03628b6bc60101801ccc7caf1f3916d1adc"
+      },
+      "candidate_overlap_with_ahan_approved_ids": [],
+      "candidate_album_drift": [],
+      "all_4273_hold_slots_unchanged": true
+    }
+  }
+}

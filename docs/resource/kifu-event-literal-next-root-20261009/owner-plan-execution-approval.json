@@ -1,0 +1,20 @@
+{
+  "status": "approved_owner_plan_execution",
+  "allow_apply": true,
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:10:36.947580+00:00",
+  "review_conclusion": "Actual two native prepared plans and successful live dry runs reviewed; 122 exact raw owner before/after rows, only review_status+review_metadata differ, all 938 physical SGF/FK/rank/visibility fields unchanged. Literal SGF title recognition only, no name or formal identity writes. Astra max apply wrapper PASS, complete physical check under original table locks; TEST apply/verify must pass before PROD.",
+  "environments": {
+    "TEST": {
+      "image_id": "sha256:b606992b2f6c6ce6a7c00bd6c49f1a9fcc7330fc5ee44dd426bd6ecf30267e48",
+      "manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+      "plan_canonical_sha256": "209692416d4fe9d17980fb120bf2b8e33ea9495edd2ebcb58d56a3ff725f5e27"
+    },
+    "PROD": {
+      "image_id": "sha256:02e58b41bac1ca2bdb4cd0aa1d15a319c63781e098b0cb1523dbbc318f2bc7bc",
+      "manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+      "plan_canonical_sha256": "8cd9ac7dae4d183e63049646a5f2627a1b5c092d4606d5d21ed857e9bc06b017"
+    }
+  }
+}

@@ -1,0 +1,8199 @@
+Japan-China Go Exchange
+Up
+1960
+1961
+1962
+1963
+1964
+1965
+1966
+1972
+1973
+1974
+1975
+1976
+1977
+1978
+1979
+1980
+1981
+1982
+1983
+1984
+1985
+1986
+1987
+1988
+1989
+1990
+1991
+1992
+Japan-China Go Exchange
+In 1960-1966, and again from 1972, there has been a yearly visit
+of Japanese players to China, or of Chinese players to Japan.
+Here the games from 1960-1984.
+In 1984 the
+China-Japan Supergo
+Series started.
+There is also the
+Fujisawa China-Japan Exchange
+(1981-1988).
+1960
+In 1960, China's Foreign Minister, Chen Yi, a fanatical go player,
+arranged for five Japanese professional players to visit.
+The government had by then recognized go as a national sport
+and established go institutes in Beijing and Shanghai; however,
+the Japanese team won 32 of its 35 games.
+Go World 10 writes:
+1960: First postwar tour of China made by a Japanese team led by
+Segoe Kensaku 9-dan (other members Hashimoto Utaro 9-dan, Sakata Eio 9-dan,
+Segawa Yoshio 7-dan, Suzuki Goro 7-dan).
+Result Japan: 32 wins, 2 losses, 1 jigo.
+6/6
+6/7
+6/12
+6/14
+6/16
+6/17
+Score
+Segoe (hon. 9p)
+Huang Y.
+=
+Jin
++
+Liu
++
+Wang Y.
+−
+Gu
+Unfinished
+Yao
++
+3.5-1.5
+Hashimoto (9p)
+Jin
++
+Cui
++
+Zhao
++
+Wang Z.
++
+Wang Y.
++
+Zhang
++
+6-0
+Sakata (9p)
+Guo
++
+Qi
++
+Chen
++
+Zhao
++
+Liu
++
+Zheng
++
+6-0
+Segawa (7p)
+Cui
++
+Guo
++
+Wang Z.
++
+Liu
+−
+Chen
++
+Wu
++
+5-1
+Suzuki (6p)
+Qi
++
+Huang Y.
++
+Wang Y.
++
+Chen
++
+Wei
++
+Huang C.
++
+6-0
+(Chen = Chen Zude, Cui = Cui Yunzhi, Gu = Gu Shuiru, Guo = Guo Tisheng,
+Huang C. = Huang Chengchen, Huang Y. = Huang Yongji, Jin = Jin Yaxian,
+Liu = Liu Dihuai, Qi = Qi Zengju, Wang Y. = Wang Youchen, Wang Z. = Wang Zhenxiong,
+Wei = Wei Haihong, Wu = Wu Songsheng, Yao = Yao Xi,
+Zhang = Zhang Liyuan, Zhao = Zhao Zhihua, Zheng = Zheng Huaide)
+It looks like there was one further day, for which the data is missing.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1960-06-06
+Guo Tisheng
+Sakata Eio
+W+R
+156
+sgf
+J
+1960-06-07
+Qi Zengju
+Sakata Eio
+W+7
+200
+sgf
+J
+1960-06-07
+Cui Yunzhi
+Hashimoto Utaro
+W+R
+162
+sgf
+J
+1960-06-12
+Zhao Zhihua
+Hashimoto Utaro
+W+R
+180
+sgf
+J
+1960-06-12
+Chen Zude
+Sakata Eio
+W+R
+220
+sgf
+J
+1960-06-14
+Liu Dihuai
+Segawa Yoshio
+B+R
+199
+sgf
+C
+1960-06-14
+Chen Zude
+Suzuki Goro
+W+R
+200
+sgf
+J
+1960-06-14
+Wang Youchen
+Segoe Kensaku
+B+1
+260
+sgf
+C
+1960-06-14
+Wang Zhenxiong
+Hashimoto Utaro
+B+7
+189
+sgf
+1960-06-17
+Zhang Liyuan
+Hashimoto Utaro
+W+R
+166
+sgf
+J
+1960-06-19
+Wang Youchen
+Hashimoto Utaro
+W+R
+186
+sgf
+J
+According to the above table, Hashimoto Utaro won his 1960-06-14 game.
+1961
+Go World 10 writes:
+1961: A team led by Arimitsu Jiro tours China.
+Result Japan: 34 wins, 5 losses, 1 jigo.
+The other members were Magari Reiki (8p), Koyama Yasuo (7p),
+Ito Tomoe (5p), Kikuchi Yasuro (ama), and Ando Hideo (ama).
+9/15
+9/17
+9/19
+9/21
+9/23
+9/25
+9/27
+9/29
+Score
+Magari (8p)
+Liu
++
+Liu
++
+Liu
++
+Liu
++
+Liu
++
+Zhang
++
+Pang
++
+Guo X.
++
+8-0
+Koyama (7p)
+Huang
++
+Huang
+−
+Huang
++
+Huang
++
+Huang
++
+Pang
++
+Chen
++
+Zhao
++
+7-1
+Ito (5p)
+Wang
++
+Wang
++
+Wang
++
+Wang
++
+Cui
++
+Wei
++
+Guo T.
++
+Liu
++
+8-0
+Kikuchi (ama)
+Guo T.
++
+Guo T.
++
+Guo T.
++
+Guo T.
+−
+Wang
++
+Jin
++
+Zhao
++
+Huang
++
+7-1
+Ando (ama)
+Chen
++
+Chen
++
+Chen
++
+Chen
+−
+Chen
+−
+Zhao
+−
+Cui
++
+Wang
+=
+4.5-3.5
+(Chen = Chen Zude, Cui = Cui Yunzhi, Guo T. = Guo Tisheng, Guo X. = Guo Xuchu, Huang = Huang Yongji, Jin = Jin Yaxian,
+Liu = Liu Dihuai, Pang = Pang Fengyuan, Wang = Wang Youchen, Wei = Wei Haihong, Zhang = Zhang Futian, Zhao = Zhao Zhihua)
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1961-09-15
+Ito Tomoe
+Wang Youchen
+B+15
+113
+sgf
+J
+1961-09-15
+Magari Reiki
+Liu Dihuai
+B+19
+149
+sgf
+J
+1961-09-17
+Huang Yongji
+Koyama Yasuo
+B+3
+237
+sgf
+C
+1961-09-17
+Wang Youchen
+Ito Tomoe
+W+3
+248
+sgf
+J
+1961-09-19
+Ito Tomoe
+Wang Youchen
+B+1.5
+244
+sgf
+J
+1961-09-19
+Magari Reiki
+Liu Dihuai
+B+35
+179
+sgf
+J
+1961-09-21
+Chen Zude
+Ando Hideo
+B+R
+125
+sgf
+C
+1961-09-21
+Guo Tisheng
+Kikuchi Yasuro
+B+R
+215
+sgf
+C
+1961-09-21
+Wang Youchen
+Ito Tomoe
+W+R
+164
+sgf
+J
+1961-09-23
+Ito Tomoe
+Cui Yunzhi
+B+28
+263
+sgf
+J
+1961-09-25
+Ando Hideo
+Zhao Zhihua
+W+R
+156
+sgf
+C
+1961-09-25
+Ito Tomoe
+Wei Haihong
+B+R
+179
+sgf
+J
+1961-09-27
+Chen Zude
+Koyama Yasuo
+W+R
+225
+sgf
+J
+1961-09-27
+Ito Tomoe
+Guo Tisheng
+B+
+247
+sgf
+J
+1961-09-29
+Kikuchi Yasuro
+Huang Yongji
+B+12
+145
+sgf
+J
+1961-09-29
+Liu Dihuai
+Ito Tomoe
+W+R
+180
+sgf
+J
+1962
+Go World 10 writes:
+1962: Chinese team (including Chen Zude) tours Japan.
+Results China: 12 wins, 23 losses.
+1: 7/11
+2: 7/13
+3: 7/15
+4: 7/19
+5: 7/20,21
+6: 7/25
+7: 7/26
+Score
+Huang Yongji
+Maeda (8p)
+−
+Chino (5p)
+−
+上月武志 (ama)
+−
+Hosokawa (8p)
+−
+Hashimoto (9p)
+− (*)
+Ando (ama)
++
+Kitani (9p)
+− (*)
+1-6
+Chen Zude
+Chino (5p)
+−
+Kajiwara (7p)
+−
+Fukui (ama)
++
+Nishimura (ama)
+−
+Hashimoto (9p)
++ (*)
+Kikuchi (ama)
++
+千田陈尔 (8p)
++ (*)
+4-3
+Guo Tisheng
+Kajiwara (7p)
+−
+Maeda (8p)
+−
+吉田晃 (ama)
++
+Sato (8p)
+−
+Kubouchi (9p)
+− (*)
+Takehara (ama)
++
+Fujisawa H. (9p)
+− (*)
+2-5
+Zhang Futian
+Hirata (ama)
+−
+Murakami (ama)
+−
+Sakakihara (ama)
+−
+高木直昌 (ama)
+−
+Tainaka (8p)
++ (*)
+Harada (ama)
++
+Kuwahara (7p)
++ (*)
+3-4
+Chen Ximing
+Murakami (ama)
+−
+Hirata (ama)
+−
+明乐昌夫 (ama)
+−
+Taguchi (ama)
++
+Nabeshima (6p)
+− (*)
+Onda (ama)
++
+Magari (8p)
+− (*)
+2-5
+*) Played with 2-stone handicap, without komi.
+Maybe komi was 5 in rounds 1, 2, 4 and 4.5 in rounds 3, 6 and 0 in rounds 5, 7.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1962-07-11
+Hirata Hironori
+Zhang Futian
+B+R
+135
+sgf
+J
+1962-07-11
+Chino Tadahiko
+Chen Zude
+B+R
+139
+sgf
+J
+1962-07-11
+Kajiwara Takeo
+Guo Tisheng
+B+R
+151
+sgf
+J
+1962-07-11
+Maeda Nobuaki
+Huang Yongji
+B+R
+225
+sgf
+J
+1962-07-11
+Murakami Bunsho
+Chen Ximing
+B+7
+253
+sgf
+J
+1962-07-13
+Guo Tisheng
+Maeda Nobuaki
+W+14
+148
+sgf
+J
+1962-07-13
+Zhang Futian
+Murakami Bunsho
+W+16
+212
+sgf
+J
+1962-07-13
+Chen Ximing
+Hirata Hironori
+W+6
+219
+sgf
+J
+1962-07-13
+Chen Zude
+Kajiwara Takeo
+W+R
+222
+sgf
+J
+1962-07-13
+Huang Yongji
+Chino Tadahiko
+W+7
+262
+sgf
+J
+1962-07-15
+Zhang Futian
+Sakakihara Kanenji
+W+7.5
+138
+sgf
+J
+1962-07-15
+福井正一
+Chen Zude
+W+R
+150
+sgf
+C
+1962-07-15
+Kozuki Takeshi
+Huang Yongji
+B+3.5
+181
+sgf
+J
+1962-07-15
+Chen Ximing
+明楽昌夫
+W+11.5
+197
+sgf
+J
+1962-07-15
+Guo Tisheng
+Yoshida Akira
+B+R
+199
+sgf
+C
+1962-07-19
+Guo Tisheng
+Sato Sunao
+W+16
+150
+sgf
+J
+1962-07-19
+Chen Zude
+Nishimura Osamu
+W+3
+158
+sgf
+J
+1962-07-19
+Hosokawa Senjin
+Huang Yongji
+B+R
+179
+sgf
+J
+1962-07-19
+高木直昌
+Zhang Futian
+B+R
+221
+sgf
+J
+1962-07-19
+Chen Ximing
+Taguchi Tetsuro
+B+4
+242
+sgf
+C
+1962-07-20
+Zhang Futian
+Tainaka Shin
+B+6
+248
+sgf
+C
+1962-07-20
+Huang Yongji
+Hashimoto Utaro
+W+9
+301
+sgf
+J
+1962-07-21
+Chen Zude
+Hashimoto Shoji
+B+R
+200
+sgf
+C
+1962-07-25
+Ando Hideo
+Huang Yongji
+W+R
+124
+sgf
+C
+1962-07-25
+Takehara Kintaro
+Guo Tisheng
+W+7.5
+178
+sgf
+C
+1962-07-25
+Onda Kisaburo
+Chen Ximing
+W+5.5
+204
+sgf
+C
+1962-07-25
+Kikuchi Yasuro
+Chen Zude
+W+R
+210
+sgf
+C
+1962-07-25
+Zhang Futian
+Harada Minoru
+B+R
+239
+sgf
+C
+1962-07-26
+Guo Tisheng
+Fujisawa Hosai
+W+10
+157
+sgf
+J
+1962-07-26
+Huang Yongji
+Kitani Minoru
+W+5
+282
+sgf
+J
+1962-07-26
+Chen Ximing
+Magari Reiki
+W+2
+284
+sgf
+J
+1962-07-26
+Zhang Futian
+Kuwahara Munehisa
+B+2
+244
+sgf
+C
+1963
+Go World 10 writes:
+1963: Sugiuchi 9-dan team (incl. Miyamoto Naoki 8-dan) tours China.
+Results Japan: 33 wins, 19 losses, 1 jigo.
+The team members are  Sugiuchi Masao (9p), Miyamoto Naoki (8p), Kuwahara Munehisa (7p),
+Murakami Bunsho (6d ama), Taoka Keiichi (5d ama).
+Rounds 1-2 were played in Hangzhou, 3-5 in Shanghai, 6-11 in Beijing.
+Chen Zude writes:
+The 1 point win over Sugiuchi Masao on 1963-09-27 (no komi being given) was historically important:
+it was the first time a Chinese player defeated a Japanese 9-dan.
+1: 9/13
+2: 9/15
+3: 9/19
+4: 9/21
+5: 9/23
+6: 9/27
+7: 9/29
+8: 10/2
+9: 10/4
+10: 10/6
+11: 10/8
+Score
+Sugiuchi
+HuangY
++
+Shen
++ (*)
+Wang
++
+Wu
++
+Luo
++ (*)
+ChenZ
+−
+Guo
++
+Wu
++
+ZhuJ
++
+ChenX
++ (*)
+Shen
++ (*)
+10-1
+Miyamoto
+Wu
++
+ZhuJ
+− (*)
+HuangY
++
+ChenX
++
+Shen
+− (*)
+Wu
+−
+Luo
++
+ChenZ
+−
+Zhang
++
+HuangL
++ (*)
+ZhuY
++ (*)
+7-4
+Kuwahara
+Shen
++
+ChenX
++ (*)
+Wu
+−
+ChenZ
+−
+Zhang
+− (*)
+ChenX
++
+ZhuJ
++
+HuangY
++
+Shen
+−
+Zheng
+− (*)
+Luo
+− (*)
+5-6
+Murakami
+Zhang
++
+Wu
+=
+ChenZ
+−
+ZhuJ
+−
+HuangY
++
+Jin
++
+Shen
+−
+Qi
++
+Wang
++
+Shao
++
+Wu
++
+7-3-1
+Taoka
+ZhuY
++
+ChenZ
+−
+Luo
+−
+Zheng
++
+Wang
+−
+Shao
++
+HuangY
+−
+HuangL
++
+ChenX
+−
+4-5
+*) Played with 2-stone handicap.
+(ChenX = Chen Ximing, ChenZ = Chen Zude, Guo = Guo Tisheng, HuangL = Huang Liangliu, HuangY = Huang Yongji,
+Jin = Jin Yaxian, Luo = Luo Jianwen, Qi = Qi Zengju, Shao = Shao Futang, Shen = Shen Guosun, Wang = Wang Youchen,
+Wu = Wu Songsheng, Zhang = Zhang Futian, Zheng = Zheng Huaide, ZhuJ = Zhu Jinzhao, ZhuY = Zhu Yuanzhi)
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1963-07-13
+Murakami Bunsho
+Zhu Jinzhao
+W+R
+158
+sgf
+1963-09-13
+Huang Yongji
+Sugiuchi Masao
+W+9
+142
+sgf
+J
+1963-09-13
+Wu Songsheng
+Miyamoto Naoki
+W+R
+166
+sgf
+J
+1963-09-13
+Shen Guosun
+Kuwahara Munehisa
+W+3
+168
+sgf
+J
+1963-09-13
+Zhang Futian
+Murakami Bunsho
+W+6
+246
+sgf
+J
+1963-09-13
+Zhu Yuanzhi
+Taoka Keiichi
+W+4
+250
+sgf
+J
+1963-09-15
+Taoka Keiichi
+Chen Zude
+W+12
+230
+sgf
+C
+1963-09-15
+Murakami Bunsho
+Wu Songsheng
+Jigo
+262
+sgf
+=
+1963-09-19
+Huang Yongji
+Miyamoto Naoki
+W+5
+150
+sgf
+J
+1963-09-19
+Wu Songsheng
+Kuwahara Munehisa
+B+R
+155
+sgf
+C
+1963-09-19
+Chen Zude
+Murakami Bunsho
+B+6
+185
+sgf
+C
+1963-09-19
+Wang Youchen
+Sugiuchi Masao
+W+13
+186
+sgf
+J
+1963-09-19
+Luo Jianwen
+Taoka Keiichi
+B+2
+241
+sgf
+C
+1963-09-21
+Wu Songsheng
+Sugiuchi Masao
+W+9
+186
+sgf
+J
+1963-09-21
+Chen Ximing
+Miyamoto Naoki
+W+3
+220
+sgf
+J
+1963-09-21
+Chen Zude
+Kuwahara Munehisa
+B+2
+251
+sgf
+C
+1963-09-21
+Taoka Keiichi
+Zheng Huaide
+B+10
+199
+sgf
+J
+1963-09-27
+Taoka Keiichi
+Shao Futang
+B+6
+143
+sgf
+J
+1963-09-27
+Chen Ximing
+Kuwahara Munehisa
+W+11
+172
+sgf
+J
+1963-09-27
+Wu Songsheng
+Miyamoto Naoki
+B+R
+177
+sgf
+C
+1963-09-27
+Murakami Bunsho
+Jin Yaxian
+B+R
+207
+sgf
+J
+1963-09-27
+Chen Zude
+Sugiuchi Masao
+B+1
+272
+sgf
+C
+1963-09-29
+Guo Tisheng
+Sugiuchi Masao
+W+13
+150
+sgf
+J
+1963-09-29
+Luo Jianwen
+Miyamoto Naoki
+W+5
+256
+sgf
+J
+1963-09-29
+Zhu Jinzhao
+Kuwahara Munehisa
+W+7
+214
+sgf
+J
+1963-09-29
+Shen Guosun
+Murakami Bunsho
+B+R
+227
+sgf
+C
+1963-10-02
+Murakami Bunsho
+Qi Zengju
+B+10
+129
+sgf
+J
+1963-10-02
+Chen Zude
+Miyamoto Naoki
+B+11
+173
+sgf
+C
+1963-10-02
+Huang Yongji
+Kuwahara Munehisa
+W+5
+174
+sgf
+J
+1963-10-02
+Wu Songsheng
+Sugiuchi Masao
+W+R
+230
+sgf
+J
+1963-10-04
+Zhang Futian
+Miyamoto Naoki
+W+17
+100
+sgf
+J
+1963-10-04
+Zhu Jinzhao
+Sugiuchi Masao
+W+R
+116
+sgf
+J
+1963-10-04
+Shen Guosun
+Kuwahara Munehisa
+B+R
+125
+sgf
+C
+1963-10-04
+Chen Ximing
+Taoka Keiichi
+B+R
+129
+sgf
+C
+1963-10-06
+Murakami Bunsho
+Shao Futang
+B+R
+171
+sgf
+J
+1963-10-06
+Chen Ximing
+Sugiuchi Masao
+W+R
+167
+sgf
+J
+1963-11-04
+Chen Zude
+Miyamoto Naoki
+B+R
+169
+sgf
+1963-12-01
+Luo Jianwen
+Yasunaga Hajime
+W+19
+190
+sgf
+1963-12-01
+Chen Zude
+Yasunaga Hajime
+B+R
+222
+sgf
+1963-12-03
+Chen Zude
+Ishige Kakuo
+W+1
+260
+sgf
+1964
+Go World 10 writes:
+1964: Chinese team (incl. Chen Zude, Shen Guosun, Wu Songsheng) tours Japan.
+Results China: 20 wins, 30 losses, 4 jigo.
+1: 6/29
+2: 7/1
+3: 7/3
+4: 7/5
+5: 7/7
+6: 7/9
+7: 7/11
+8: 7/13
+9: 7/17
+Score
+Chen Zude
+Kajiwara (8p)
+−
+Murakami (ama)
++
+Okubo (7p)
+−
+Otake (6p)
++
+Takagawa (9p)
++ (*)
+Hashimoto S. (9p)
+−
+Tainaka (8p)
++
+Miyamoto (7p)
+−
+Kikuchi (ama)
++
+5-4
+Wu Songsheng
+Kano (7p)
++
+Kikuchi (ama)
+−
+Kajiwara (8p)
+−
+Chino (6p)
++
+Fujisawa H. (9p)
+− (*)
+Hisai (7p)
++
+Sumino (8p)
+−
+Shiraishi (6p)
+−
+Murakami (ama)
++
+4-5
+Shen Guosun
+Sugiuchi K. (6p)
+−
+Taoka (ama)
++
+Kano (7p)
+−
+Sanno (5p)
+=
+Maeda (9p)
++ (*)
+二口外义 (ama)
+−
+Sato (9p)
++ (*)
+Minami (6p)
+−
+Imamura (ama)
+=
+3-4-2
+Wang Runan
+Harada (ama)
+−
+平田兴 (ama)
++
+Sugiuchi K. (6p)
+−
+Kitani R.(4p)
+−
+Yamabe (9p)
+− (*)
+Nishimura (ama)
++
+Kariya (9p)
++ (*)
+Ishii K. (6p)
+−
+Taoka (ama)
++
+4-5
+Luo Jianwen
+Okubo (7p)
++
+Imamura (ama)
+−
+Hirata (ama)
+−
+Kudo (6p)
++
+Fujisawa H. (9p)
+− (*)
+Sekiyama T. (8p)
+−
+Handa (9p)
++ (*)
+Hashimoto Y. (7p)
+−
+Tada (ama)
+−
+3-6
+Chen Ximing
+Hirata (ama)
+−
+Tada (ama)
+=
+Harada (ama)
+−
+Abe (4p)
+=
+Sugiuchi M. (9p)
+− (*)
+Tono (7p)
+−
+Kubouchi (9p)
+− (*)
+Ishii S. (6p)
++
+大村直三 (ama)
+−
+1-6-2
+Result
+2-4
+3-2-1
+0-6
+3-1-2
+2-4
+2-4
+4-2
+1-5
+3-2-1
+20-30-4
+(*) Played with 2-stone handicap.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1964-06-29
+Chen Zude
+Kajiwara Takeo
+W+R
+198
+sgf
+J
+1964-06-29
+Wu Songsheng
+Kano Yoshinori
+B+R
+151
+sgf
+C
+1964-06-29
+Shen Guosun
+Sugiuchi Kazuko
+W+R
+171
+sgf
+J
+1964-06-29
+Wang Runan
+Harada Minoru
+W+R
+140
+sgf
+J
+1964-06-29
+Luo Jianwen
+Okubo Ichigen
+B+R
+157
+sgf
+C
+1964-06-29
+Chen Ximing
+Hirata Hironori
+W+14
+248
+sgf
+J
+1964-07-01
+Shen Guosun
+Taoka Keiichi
+B+1
+199
+sgf
+C
+1964-07-01
+Imamura Masamichi
+Luo Jianwen
+B+R
+152
+sgf
+J
+1964-07-03
+Wu Songsheng
+Kajiwara Takeo
+W+R
+238
+sgf
+J
+1964-07-03
+Shen Guosun
+Kano Yoshinori
+W+R
+110
+sgf
+J
+1964-07-05
+Chen Zude
+Otake Hideo
+B+3
+307
+sgf
+C
+1964-07-05
+Chino Tadahiko
+Wu Songsheng
+W+8
+277
+sgf
+C
+1964-07-05
+Sanno Hirotaka
+Shen Guosun
+Jigo
+199
+sgf
+=
+1964-07-05
+Wang Runan
+Kitani Reiko
+W+R
+178
+sgf
+J
+1964-07-05
+Luo Jianwen
+Kudo Norio
+B+1
+237
+sgf
+C
+1964-07-05
+Abe Yoshiteru
+Chen Ximing
+Jigo
+224
+sgf
+=
+1964-07-07
+Chen Ximing
+Sugiuchi Masao
+W+1
+206
+sgf
+J
+1964-07-07
+Chen Zude
+Takagawa Shukaku
+B+R
+140
+sgf
+C
+1964-07-07
+Luo Jianwen
+Fujisawa Hosai
+W+R
+189
+sgf
+J
+1964-07-09
+Chen Zude
+Hashimoto Shoji
+W+7
+285
+sgf
+J
+1964-07-09
+Nishimura Osamu
+Wang Runan
+W+R
+176
+sgf
+C
+1964-07-09
+Chen Ximing
+Tono Hiroaki
+W+12
+186
+sgf
+J
+1964-07-09
+Wu Songsheng
+Hisai Keishi
+B+3
+151
+sgf
+C
+1964-07-09
+Nishimura Osamu
+Wang Runan
+W+R
+176
+sgf
+C
+1964-07-09
+Luo Jianwen
+Sekiyama Toshio
+W+R
+218
+sgf
+J
+1964-07-11
+Chen Zude
+Tainaka Shin
+B+R
+177
+sgf
+C
+1964-07-11
+Wu Songsheng
+Sumino Tsunehiro
+W+R
+168
+sgf
+J
+1964-07-11
+Wang Runan
+Kariya Hiraku
+B+R
+176
+sgf
+C
+1964-07-13
+Miyamoto Yoshihisa
+Chen Zude
+B+R
+167
+sgf
+J
+1964-07-13
+Wu Songsheng
+Shiraishi Yutaka
+W+12
+171
+sgf
+J
+1964-07-13
+Ishii Kunio
+Wang Runan
+B+R
+146
+sgf
+J
+1964-07-13
+Luo Jianwen
+Hashimoto Yoshimi
+W+R
+121
+sgf
+J
+1964-07-13
+Chen Ximing
+Ishii Shinzo
+B+R
+105
+sgf
+C
+1964-07-17
+Chen Zude
+Kikuchi Yasuro
+B+R
+227
+sgf
+C
+1964-07-17
+Murakami Bunsho
+Wu Songsheng
+W+R
+169
+sgf
+C
+1964-07-17
+Shen Guosun
+Imamura Masamichi
+Jigo
+220
+sgf
+=
+1965
+Go World 10 writes:
+1965: Kajiwara 9-dan team (incl. Kudo 6-dan, Abe Yoshiteru 5-dan) tours China.
+Results Japan: 19 wins, 6 losses, 2 jigo.
+1965: Ito Tomoe 5-dan team (with 12 woman amateurs) tours China.
+Results Japan : 7 wins, 28 losses, 1 jigo.
+1965: Chinese team (incl. Chen Zude, Wu Songsheng) tours Japan.
+Results China: 11 wins, 22 losses, 2 jigo.
+1965: Iwata Tatsuaki 9-dan team tours China.
+Results Japan: 40 wins, 17 losses, 3 jigo.
+For the 1st mentioned tour, in April, the individual results were
+Kajiwara Takeo (8p) 6-2-1, Kudo Norio (6p) 7-2, Abe Yoshiteru (5p) 6-2-1,
+total 19-6-2.
+For the 3rd mentioned tour, in July/August,  the individual results were
+Chen Zude 2-5, Wu Songsheng 4-3, Wang Runan 4-2-1, Jiang Guozhen 1-6,
+Huang Jinxian 0-6-1, total 11-22-2.
+For the 4th mentioned tour, in October/November, the individual results were
+Iwata Tatsuaki (9p) 9-1, Kariya Hiraku (8p) 7-3, Tanimiya Teiji (5p) 8-1-1,
+Kitani Reiko (4p) 5-5, Harada Minoru 5-5, Nishimura Osamu 6-2-2, total 40-17-3.
+(But see below.)
+1: 7/18
+2: 7/20
+3: 7/22
+4: 7/25
+5: 7/28
+6: 7/31
+7: 8/2
+Score
+Chen Zude
+Harada M. (ama)
++
+Kada (8p)
+−
+Tozawa (6p)
+−
+Kuwahara (7p)
+−
+Sakai M. (8p)
++
+Hirata H. (ama)
+−
+Otake (7p)
+−
+2-5
+Wu Songsheng
+Imamura M. (ama)
++
+Otake (7p)
+−
+Sanno (6p)
+−
+Oeda (6p)
++
+Isogawa (7p)
+−
+Kikuchi Y. (ama)
++
+Kada (8p)
++
+4-3
+Wang Runan
+大沢敏行 (ama)
++
+Murakami B. (ama)
+−
+Ishigure (5p)
++
+Tanimiya (5p)
+−
+Ishii K. (6p)
++
+Ando Hideo (ama)
++
+Nakaoka (6p)
+=
+4-2-1
+Jiang Guozhen
+平田興 (ama)
++
+Hirata H. (ama)
+−
+Takagi S. (4p)
+−
+Kojima T. (5p)
+−
+Nishimura O. (ama)
+−
+野中泰延 (ama)
+−
+Murakami B. (ama)
+−
+1-6
+Huang Jinxian
+野中泰延 (ama)
+−
+Nakaoka (6p)
+−
+Haruyama (5p)
+−
+Suzuki T. (5p)
+=
+二口外義 (ama)
+−
+嗚海直 (ama)
+−
+Ando Hideo (ama)
+−
+0-6-1
+Result
+4-1
+0-5
+1-4
+1-3-1
+2-3
+2-3
+1-3-1
+11-22-2
+1: 10/13
+2: 10/15
+3: 10/17
+4: 10/19
+5: 10/23
+6: 10/25
+7: 10/27
+8: 10/29
+9: 10/31
+10: 11/2
+Score
+Iwata
+ChenZ
++
+ChenZ
++
+Wu
++
+ChenZ
++
+ChenZ
++
+ChenZ
+−
+Wu
++
+ChenZ
++
+ChenZ
++
+Wang
++
+9-1
+Kariya
+Wu
+−
+Wu
++
+ChenZ
+−
+Wang
++
+Wu
+−
+Wu
++
+ChenZ
++
+Wu
++
+Wu
++
+Shen
++
+7-3
+Tanimiya
+Luo
+=
+Wang
++
+ChenX
++
+Wu
+−
+Wang
++
+Luo
++
+Shen
++
+HuangJ
++
+Qiu
++
+ChenZ
++
+8-1-1
+Kitani R.
+Wang
+−
+HuangJ
+−
+Jiang
++
+Shen
++
+ChenX
+−
+Zhu
++
+Luo
++
+Wang
+−
+Cao
++
+HuangL
++
+6-4
+Harada M.
+Shen
+−
+HuangL
++
+Luo
++
+Luo
++
+HuangL
++
+Wang
+−
+HuangJ
+−
+Shen
+−
+Hua
+−
+HuangJ
+−
+4-6
+Nishimura O.
+Jiang
++
+Shen
++
+翟燕生
++
+HuangL
+−
+HuangJ
++
+ChenX
++
+Wang
+=
+Jiang
+−
+Xie
++
+Wu
+=
+6-2-2
+Result
+2-3-1
+5-1
+5-1
+4-2
+4-2
+4-2
+4-1-1
+3-3
+5-1
+4-1-1
+40-17-3
+(Cao = Cao Zhilin, ChenX = Chen Ximing, ChenZ = Chen Zude, Hua = Hua Yigang, HuangJ = Huang Jinxian, HuangL = Huang Liangliu, Jiang = Jiang Guozhen, Luo = Luo Jianwen, Qiu = Qiu Xin, Shen = Shen Guosun, Wang = Wang Runan, Wu = Wu Songsheng, Xie = Xie Yuguo, Zhu = Zhu Yuanzhi)
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1965-04-03
+Kajiwara Takeo
+Chen Zude
+W+R
+220
+sgf
+C
+1965-04-03
+Abe Yoshiteru
+Luo Jianwen
+B+6
+243
+sgf
+J
+1965-04-03
+Kudo Norio
+Wu Songsheng
+B+10
+173
+sgf
+J
+1965-04-05
+Shen Guosun
+Abe Yoshiteru
+W+R
+200
+sgf
+J
+1965-04-05
+Wu Songsheng
+Kajiwara Takeo
+W+R
+186
+sgf
+J
+1965-04-09
+Chen Zude
+Kajiwara Takeo
+W+R
+164
+sgf
+J
+1965-04-09
+Wu Songsheng
+Abe Yoshiteru
+B+R
+143
+sgf
+C
+1965-04-12
+Kajiwara Takeo
+Chen Zude
+B+R
+229
+sgf
+J
+1965-04-14
+Chen Zude
+Kudo Norio
+B+1
+287
+sgf
+C
+1965-04-18
+Kudo Norio
+Wu Songsheng
+B+R
+195
+sgf
+J
+1965-04-18
+Kajiwara Takeo
+Chen Zude
+Jigo
+275
+sgf
+=
+1965-04-20
+Chen Zude
+Kajiwara Takeo
+B+R
+125
+sgf
+C
+1965-04-23
+Jiang Guozhen
+Abe Yoshiteru
+B+2
+244
+sgf
+C
+1965-07-20
+Nakaoka Jiro
+Huang Jinxian
+B+7
+258
+sgf
+J
+1965-07-20
+Otake Hideo
+Wu Songsheng
+B+3
+185
+sgf
+J
+1965-07-25
+Kojima Takaho
+Jiang Guozhen
+B+R
+119
+sgf
+J
+1965-07-28
+Wang Runan
+Ishii Kunio
+B+R
+187
+sgf
+C
+1965-07-28
+Chen Zude
+Sakai Michiharu
+B+2
+230
+sgf
+C
+1965-08-02
+Chen Zude
+Otake Hideo
+W+R
+186
+sgf
+J
+1965-10-13
+Tanimiya Teiji
+Luo Jianwen
+Jigo
+204
+sgf
+=
+1965-10-13
+Wu Songsheng
+Kariya Hiraku
+B+R
+195
+sgf
+C
+1965-10-15
+Chen Zude
+Iwata Tatsuaki
+W+R
+224
+sgf
+J
+1965-10-17
+Jiang Guozhen
+Kobayashi Reiko
+W+R
+268
+sgf
+J
+1965-10-17
+Iwata Tatsuaki
+Wu Songsheng
+B+8
+256
+sgf
+J
+1965-10-19
+Wu Songsheng
+Tanimiya Teiji
+B+R
+141
+sgf
+C
+1965-10-19
+Nishimura Osamu
+Huang Liangliu
+W+4
+222
+sgf
+C
+1965-10-23
+Wu Songsheng
+Kariya Hiraku
+B+2
+282
+sgf
+C
+1965-10-25
+Nishimura Osamu
+Chen Ximing
+B+14
+229
+sgf
+J
+1965-10-25
+Chen Zude
+Iwata Tatsuaki
+B+10
+296
+sgf
+C
+1965-10-27
+Luo Jianwen
+Kobayashi Reiko
+W+4
+233
+sgf
+J
+1965-10-29
+Kobayashi Reiko
+Wang Runan
+W+10
+184
+sgf
+C
+1965-10-29
+Huang Jinxian
+Tanimiya Teiji
+W+R
+130
+sgf
+J
+1965-10-31
+Iwata Tatsuaki
+Chen Zude
+B+4
+284
+sgf
+J
+1965-11-02
+Chen Zude
+Tanimiya Teiji
+W+R
+212
+sgf
+J
+1966
+Go World 10 writes:
+1966: Chinese team (incl. Wu, Ch'en Kuo-sun) tours Japan.
+Results China: 6 wins, 19 losses.
+1966: Shimamura Toshihiro 9-dan team (members Miyamoto Yoshihisa 8-dan,
+Uchida 7-dan, Ishida Yoshio 4-dan, Kato 4-dan, Takemiya 2-dan) tours China.
+Results Japan: 24 wins, 9 losses, 3 jigo.
+For the former tour, in June, the individual results were Wu Songsheng 2-3, Wang Runan 3-2,
+Huang Liangliu 1-4, Shen Guosun 0-5, Huang Jinxian 0-5, total 6-19.
+For the latter tour, in November, the individual results were Shimamura Toshihiro (9p) 6-0,
+Miyamoto Yoshihisa (8p) 1-4-1, Ieda Ryuji (5p) 4-2, Ishida Yoshio (4p) 5-0-1,
+Kato Masao (4p) 5-1, Takemiya Masaki (2p) 4-2.
+These scores do not add up to 24-9-3, so some details are incorrect.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1966-06-29
+Wang Runan
+Kajiwara Takeo
+B+3
+230
+sgf
+C
+1966-11-15
+Miyamoto Yoshihisa
+Chen Zude
+W+2
+246
+sgf
+C
+1966-11-17
+Chen Zude
+Shimamura Toshihiro
+W+R
+120
+sgf
+J
+1966-11-19
+Ishida Yoshio
+Chen Zude
+B+R
+197
+sgf
+J
+1966-11-22
+Shimamura Toshihiro
+Chen Zude
+Jigo
+194
+sgf
+=
+1967
+-
+1972
+Intermission due to the Chinese Cultural Revolution.
+
+Game record:
+Date
+Black
+White
+Result
+#mv
+SGF
+1972-11
+Wu Songsheng
+Yasunaga Hajime
+B+R
+203
+sgf
+C
+1973
+Go World 10 writes:
+1973: a Chinese team consisting only of Chen Zude and a non-playing captain tours Japan.
+Results China: 3 wins, 6 losses.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1973-04-21
+Chen Zude
+Kato Masao
+B+3
+262
+sgf
+C
+1973-04-22
+Kikuchi Yasuro
+Chen Zude
+W+R
+198
+sgf
+C
+1973-05-02
+Chen Zude
+Hashimoto Utaro
+W+R
+196
+sgf
+J
+1973-05-10
+Chen Zude
+Takagawa Kaku
+W+R
+92
+sgf
+J
+1973-05-12
+Chen Zude
+Ishida Yoshio
+W+R
+214
+sgf
+J
+Go World 10 writes:
+1973: 2nd Arimitsu Jiro team (incl. Sakata 9-dan, Honda 9-dan, Ishii 8-dan,
+Kato 7-dan, Ogawa Tomoko 2-dan) tours China.
+Results Japan: 40 wins, 14 losses, 2 jigo.
+(A game between Ogawa and K'ung Shang-ming is given in 'Go Review', Autumn 1973).
+1: 7/24
+2: 7/26
+3: 7/28
+4: 7/31
+5: 8/2
+6: 8/6
+7: 8/8
+Score
+Sakata 9p
+Chen Z.
++
+Wang
++
+Wu
++
+Luo
++
+Huang D.
++
+Shen
+−
+Chen A.
++
+6-1
+Honda 9p
+Wu
++
+Chen Z.
++
+Huang L.
++
+Huang D.
+−
+Huang J.
++
+Wang
++
+Shen
++
+6-1
+Ishii 8p
+Wang
++
+Luo
++
+Shen
++
+Wu
++
+Chen Z.
+−
+Chen A.
++
+Qiu
++
+6-1
+Kato 7p
+Hua
++
+Wu
++
+Chen Z.
++
+Nie
++
+Chen X.
++
+Chen Z.
+−
+Huang J.
++
+6-1
+Ota 6p
+Luo
++
+Qiu
++
+Chen A.
++
+Chen Z.
+−
+Jiang
++
+Huang D.
++
+Huang L.
+−
+5-2
+Ogawa 2p
+Kong
++
+Chen H.
+−
+Zhang
++
+Wei
+=
+Nie
+−
+Kong
+−
+Chen H.
++
+3.5-3.5
+Kikuchi 7d
+Huang D.
+=
+Hua
++
+Cao
++
+Wang
++
+Luo
++
+Wu
++
+Chen Z.
+−
+5.5-1.5
+Nishimura 7d
+Nie
++
+Chen A.
+−
+Huang D.
+−
+Huang J.
+−
+Qiu
+−
+Hua
++
+Luo
++
+3-4
+Result
+7.5-0.5
+6-2
+7-1
+4.5-3.5
+5-3
+5-3
+6-2
+41-15
+According to some sources, Nishimura lost against Nie.
+The players here were Sakata Eio, Honda Kunihisa, Ishii Kunio,
+Kato Masao, Ota Seido, Ogawa Tomoko and the amateurs
+Kikuchi Yasuro, Nishimura Osamu on the Japanese side, and
+Cao Zhilin, Chen Anqi, Chen Huifang, Chen Ximing, Chen Zude,
+Hua Yigang, Huang Dexun, Huang Jinxian, Huang Liangyu, Jiang Guozhen,
+Kong Xiangming, Luo Jianwen, Nie Weiping, Qiu Xin, Shen Guosun,
+Wang Runan, Wei Xin, Wu Songsheng, Zhang Chenghua on the Chinese side.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1973-07-24
+Chen Zude
+Sakata Eio
+W+R
+202
+sgf
+J
+1973-07-24
+Honda Kunihisa
+Wu Songsheng
+W+8
+158
+sgf
+C*
+1973-07-24
+Kato Masao
+Hua Yigang
+B+8
+236
+sgf
+J
+1973-07-24
+Nishimura Osamu
+Nie Weiping
+B+R
+217
+sgf
+J
+1973-07-24
+Huang Dexun
+Kikuchi Yasuro
+Jigo
+260
+sgf
+=
+1973-07-26
+Ishii Kunio
+Luo Jianwen
+B+8
+214
+sgf
+J
+1973-07-26
+Chen Huifang
+Ogawa Tomoko
+B+2
+249
+sgf
+C
+1973-07-26
+Ota Seido
+Qiu Xin
+B+2
+216
+sgf
+J
+1973-07-26
+Chen Anqi
+Nishimura Osamu
+B+R
+229
+sgf
+C
+1973-07-26
+Sakata Eio
+Wang Runan
+B+R
+127
+sgf
+J
+1973-07-26
+Kikuchi Yasuro
+Hua Yigang
+B+2
+300
+sgf
+J
+1973-07-28
+Wu Songsheng
+Sakata Eio
+W+10
+176
+sgf
+J
+1973-07-28
+Ogawa Tomoko
+Zhang Chenghua
+B+R
+122
+sgf
+J
+1973-07-28
+Chen Anqi
+Ota Seido
+W+2
+223
+sgf
+J
+1973-07-28
+Cao Zhilin
+Kikuchi Yasuro
+W+R
+152
+sgf
+J
+1973-07-28
+Nishimura Osamu
+Huang Dexun
+W+2
+294
+sgf
+C
+1973-07-28
+Kato Masao
+Chen Zude
+B+R
+145
+sgf
+J
+1973-07-31
+Ishii Kunio
+Wu Songsheng
+B+R
+164
+sgf
+J
+1973-07-31
+Wei Xin
+Ogawa Tomoko
+Jigo
+250
+sgf
+=
+1973-07-31
+Nie Weiping
+Kato Masao
+W+10
+213
+sgf
+J
+1973-07-31
+Ota Seido
+Chen Zude
+W+R
+154
+sgf
+C
+1973-07-31
+Huang Dexun
+Honda Kunihisa
+B+R
+168
+sgf
+C
+1973-07-31
+Sakata Eio
+Luo Jianwen
+B+R
+185
+sgf
+J
+1973-07-31
+Huang Jinxian
+Nishimura Osamu
+B+R
+197
+sgf
+C
+1973-08-02
+Jiang Guozhen
+Ota Seido
+W+4
+209
+sgf
+J
+1973-08-02
+Chen Zude
+Ishii Kunio
+B+R
+177
+sgf
+C
+1973-08-02
+Ogawa Tomoko
+Nie Weiping
+W+R
+148
+sgf
+C
+1973-08-02
+Kato Masao
+Chen Ximing
+B+14
+254
+sgf
+J
+1973-08-02
+Nishimura Osamu
+Qiu Xin
+W+R
+168
+sgf
+C
+1973-08-06
+Kong Xiangming
+Ogawa Tomoko
+B+R
+210
+sgf
+C
+1973-08-06
+Wang Runan
+Honda Kunihisa
+W+16
+151
+sgf
+J
+1973-08-06
+Sakata Eio
+Shen Guosun
+W+R
+240
+sgf
+C
+1973-08-06
+Chen Zude
+Kato Masao
+B+R
+187
+sgf
+C
+1973-08-06
+Hua Yigang
+Nishimura Osamu
+W+12
+180
+sgf
+J
+1973-08-08
+Honda Kunihisa
+Shen Guosun
+B+4
+244
+sgf
+J
+1973-08-08
+Huang Liangliu
+Ota Seido
+B+2
+251
+sgf
+C
+1973-08-08
+Chen Zude
+Kikuchi Yasuro
+B+R
+209
+sgf
+C
+*) According to the above table, Honda won this game.
+1974
+Go World 10 writes:
+1974: Chinese team (incl. Chen Zude, Wu, K'ung) tours Japan.
+Results China: 25 wins, 29 losses, 2 jigo.
+1: 4/6
+2: 4/8
+3: 4/11
+4: 4/15
+5: 4/17
+6: 4/20
+7: 4/23
+Score
+Chen Zude
+Fujisawa H. (9p)
+−
+Takagi (7p)
+−
+Murakami Bunsho (ama)
+−
+Aoyagi (7p)
++
+Hashimoto Y. (9p)
+−
+Nishimura Osamu (ama)
++
+Iwamoto (9p)
+−
+2-5
+Wu Songsheng
+Takagawa (9p)
+−
+Noguchi (4p)
++
+Hirata Hironori (ama)
++
+Hashimoto S. (Judan)
++
+Hane (8p)
++
+岩城公顺
++
+Kudo (8p)
++
+6-1
+Wang Runan
+Yamabe (9p)
+−
+Iwata (3p)
++
+Miura Hiroshi (ama)
++
+Oyama (8p)
+−
+Taniguchi (2p)
++
+丰田洸夫
+−
+Sato M. (5p)
+−
+3-4
+Huang Dexun
+Fujisawa S. (9p)
+−
+Sakai (7p)
+−
+Nakazono Seizo (ama)
+−
+Kishimoto (6p)
++
+Kondo Heizo (ama)
++
+Muraoka Toshihiko (ama)
+−
+Ishida (6p)
+−
+2-5
+Qiu Xin
+Kajiwara (9p)
+−
+Harada Minoru (ama)
++
+河野靖 (ama)
+−
+Ushikubo (7p)
++
+Akedo (4p)
++
+Shimoji Genchu (ama)
+−
+Abe (7p)
+=
+3-3-1
+Hua Yigang
+Miyashita (9p)
+−
+Haruyama (6p)
++
+Kikuchi Yasuro (ama)
++
+Hashimoto U. (9p)
+−
+Taguchi Tetsuro (ama)
++
+涉田晃士
++
+Kada (9p)
++
+5-2
+Kong Xiangming
+Otake (9p)
+− (*)
+Ito Tomoe (5p)
+−
+Yoshimura Masayuki (ama)
++
+Ito K. (5p)
+=
+Kanazawa Moriei (ama)
++
+久保恒
++
+Imamura Masamichi (ama)
+−
+3-3-1
+Chen Huifang
+Ohira (9p)
+− (*)
+Kanai Kazuko (ama)
++
+中村哲启
+−
+Yanagiuchi (4p)
+−
+Inoue Kaname (0p)
+−
+Tamayama Mitsuo (ama)
+−
+明楽昌夫 (ama)
+−
+1-6
+Result
+0-8
+5-3
+4-4
+4-3-1
+6-2
+4-4
+2-5-1
+25-29-2
+(*) Played with 2-stone handicap.
+Extra games:
+Chen Zude beats Kobayashi (6p),
+Wu loses against Ishii (8p),
+Kong (with 2-stone handicap) loses against Sakata (9p),
+Chen Huifang loses against Kobayashi Chizu (2p).
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1974-04-06
+Hua Yigang
+Miyashita Shuyo
+W+R
+184
+sgf
+J
+1974-04-06
+Chen Huifang
+Ohira Shuzo
+W+R
+125
+sgf
+J
+1974-04-06
+Huang Dexun
+Fujisawa Shuko
+W+R
+156
+sgf
+J
+1974-04-06
+Chen Zude
+Fujisawa Hosai
+W+R
+216
+sgf
+J
+1974-04-06
+Wang Runan
+Yamabe Toshiro
+W+R
+128
+sgf
+J
+1974-04-06
+Qiu Xin
+Kajiwara Takeo
+W+R
+138
+sgf
+J
+1974-04-06
+Kong Xiangming
+Otake Hideo
+W+R
+187
+sgf
+J
+1974-04-06
+Wu Songsheng
+Takagawa Shukaku
+W+R
+220
+sgf
+J
+1974-04-08
+Kanai Kazuko
+Chen Huifang
+W+R
+236
+sgf
+C
+1974-04-08
+Ito Tomoe
+Kong Xiangming
+B+R
+169
+sgf
+J
+1974-04-08
+Iwata Hajime
+Wang Runan
+W+R
+258
+sgf
+C
+1974-04-08
+Hua Yigang
+Haruyama Isamu
+B+1
+274
+sgf
+C
+1974-04-08
+Wu Songsheng
+Noguchi Hitoshi
+B+6
+262
+sgf
+C
+1974-04-08
+Qiu Xin
+Harada Minoru
+B+18
+235
+sgf
+C
+1974-04-08
+Chen Zude
+Takagi Shoichi
+W+5
+288
+sgf
+J
+1974-04-08
+Sakai Takeshi
+Huang Dexun
+B+R
+197
+sgf
+J
+1974-04-09
+Kobayashi Koichi
+Chen Zude
+W+3
+212
+sgf
+C
+1974-04-10
+Kong Xiangming
+Sakata Eio
+W+R
+238
+sgf
+J
+1974-04-10
+Chen Huifang
+Kobayashi Chizu
+W+3
+221
+sgf
+J
+1974-04-11
+Kong Xiangming
+Yoshimura Masayuki
+B+R
+235
+sgf
+C
+1974-04-11
+Nakazono Seizo
+Huang Dexun
+B+R
+201
+sgf
+J
+1974-04-11
+中村哲启
+Chen Huifang
+B+R
+117
+sgf
+J
+1974-04-11
+Hirata Hironori
+Wu Songsheng
+W+1
+209
+sgf
+C
+1974-04-11
+Qiu Xin
+河野靖
+W+5
+268
+sgf
+J
+1974-04-11
+Wang Runan
+Miura Hiroshi
+B+8
+242
+sgf
+C
+1974-04-11
+Kikuchi Yasuro
+Hua Yigang
+W+3
+230
+sgf
+C
+1974-04-11
+Chen Zude
+Murakami Bunsho
+W+6
+294
+sgf
+J
+1974-04-15
+Hashimoto Utaro
+Hua Yigang
+B+R
+171
+sgf
+J
+1974-04-15
+Ushikubo Yoshitaka
+Qiu Xin
+W+R
+202
+sgf
+C
+1974-04-15
+Huang Dexun
+Kishimoto Kazuo
+B+3
+226
+sgf
+C
+1974-04-15
+Ito Kazuteru
+Kong Xiangming
+Jigo
+233
+sgf
+=
+1974-04-15
+Chen Zude
+Aoyagi Hideo
+B+1
+243
+sgf
+C
+1974-04-15
+Chen Huifang
+Yanagiuchi Emiko
+W+6
+248
+sgf
+J
+1974-04-15
+Wu Songsheng
+Hashimoto Shoji
+B+2
+253
+sgf
+C
+1974-04-15
+Oyama Kunio
+Wang Runan
+B+R
+167
+sgf
+J
+1974-04-17
+Chen Zude
+Hashimoto Yoshimi
+W+F
+187
+sgf
+J
+1974-04-17
+Hane Yasumasa
+Wu Songsheng
+W+2
+212
+sgf
+C
+1974-04-17
+Taniguchi Toshinori
+Wang Runan
+W+R
+142
+sgf
+C
+1974-04-17
+Taguchi Tetsuro
+Hua Yigang
+W+R
+212
+sgf
+C
+1974-04-17
+金泽盛荣
+Kong Xiangming
+W+R
+222
+sgf
+C
+1974-04-17
+Huang Dexun
+Kondo Heizo
+B+11
+233
+sgf
+C
+1974-04-17
+Qiu Xin
+明户和已
+B+4
+233
+sgf
+C
+1974-04-17
+Chen Huifang
+Inoue Kaname
+W+11
+253
+sgf
+J
+1974-04-20
+Chen Zude
+Nishimura Osamu
+B+R
+175
+sgf
+C
+1974-04-20
+涉田晃士
+Hua Yigang
+W+R
+154
+sgf
+C
+1974-04-20
+Muraoka Toshihiko
+Huang Dexun
+B+R
+195
+sgf
+J
+1974-04-20
+Tamayama Mitsuo
+Chen Huifang
+B+5
+231
+sgf
+J
+1974-04-20
+Wang Runan
+丰田洸夫
+W+10
+235
+sgf
+J
+1974-04-20
+岩城公顺
+Wu Songsheng
+W+11
+268
+sgf
+C
+1974-04-20
+Kong Xiangming
+久保恒
+B+6
+274
+sgf
+C
+1974-04-20
+Qiu Xin
+Shimoji Genchu
+W+10
+288
+sgf
+J
+1974-04-23
+Hua Yigang
+Kada Katsuji
+B+4
+224
+sgf
+C
+1974-04-23
+Kudo Norio
+Wu Songsheng
+W+R
+134
+sgf
+C
+1974-04-23
+Qiu Xin
+Abe Yoshiteru
+Jigo
+195
+sgf
+=
+1974-04-23
+Wang Runan
+Sato Masaharu
+W+7
+300
+sgf
+J
+1974-04-23
+Iwamoto Kaoru
+Chen Zude
+B+R
+257
+sgf
+J
+1974-04-23
+明乐昌夫
+Chen Huifang
+B+R
+117
+sgf
+J
+1974-04-23
+Ishida Akira
+Huang Dexun
+B+R
+209
+sgf
+J
+1974-04-23
+Kong Xiangming
+Imamura Masamichi
+W+13
+278
+sgf
+J
+Go World 10 and other sources write:
+1974: Miyamoto Naoki 9-dan team (other members Kurahashi Shozo 7-dan,
+Sonoda Yuichi 7-dan, Yanagiuchi Emiko 4-dan, Kubo Katsuaki 3-dan,
+amateurs Murakami Bunsho, Miura Hiroshi, Nakazono Seizo) tours China.
+Results Japan: 24 wins, 30 losses.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1974-11-21
+Huang Dexun
+Sonoda Yuichi
+W+4
+254
+sgf
+J
+1974-11-21
+Kurahashi Shozo
+Wu Songsheng
+W+2
+205
+sgf
+C
+1974-11-21
+Murakami Bunsho
+Nie Weiping
+B+6
+269
+sgf
+J
+1974-11-23
+Miyamoto Naoki
+Wang Runan
+B+8
+229
+sgf
+J
+1974-11-23
+Chen Huifang
+Yanagiuchi Emiko
+B+R
+188
+sgf
+C
+1974-11-23
+Sonoda Yuichi
+Chen Zude
+W+R
+210
+sgf
+C
+1974-11-27
+Nie Weiping
+Sonoda Yuichi
+W+R
+200
+sgf
+C
+1974-11-29
+Chen Zude
+Kurahashi Shozo
+B+R
+203
+sgf
+C
+1974-11-29
+Sonoda Yuichi
+Wu Songsheng
+W+R
+213
+sgf
+C
+1974-11-29
+Wang Runan
+Murakami Bunsho
+B+6
+219
+sgf
+C
+1974-12-03
+Kurahashi Shozo
+Cao Zhilin
+B+8
+184
+sgf
+J
+1974-12-09
+Nie Weiping
+Miyamoto Naoki
+B+4
+255
+sgf
+C
+1975
+Go World 10 writes:
+1975: Takagawa 9-dan team (incl. Kubouchi 9-dan, Ishigure 8-dan, Tozawa 7-dan) tours China.
+Results Japan: 30 wins, 23 losses, 3 jigo.
+1: 10/23
+2: 10/25
+3: 10/28
+4: 11/1
+5: 11/5
+6: 11/8
+7: 11/12
+Score
+Takagawa Shukaku 9p
+Chen Z.
+=
+Wu S.
++
+Nie W.
+−
+Hua Y.
++
+Wang R.
+=
+Nie W.
++
+Chen Z.
++
+4-1-2
+Kubouchi Shuchi 9p
+Nie W.
+−
+Luo J.
++
+Hua Y.
+−
+Chen Z.
++
+Huang D.
++
+Shen G.
++
+Wu S.
++
+5-2
+Ishigure Ikuro 8p
+Wu S.
+−
+Chen Z.
+−
+Huang D.
++
+Nie W.
+−
+Qiu X.
+−
+Wang R.
++
+Shen G.
++
+3-4
+Tozawa Akinobu 7p
+Wang R.
++
+Nie W.
+−
+Cao Z.
++
+Wu S.
++
+Chen Z.
+−
+Qiu X.
++
+Hua Y.
++
+5-2
+Shiratori Sumiko 3p
+Kong X.
++
+Wang Q.
+−
+Lei Z.
++
+Kong X.
++
+Yang Y.
+−
+Xu R.
+−
+Chin K.
+−
+3-4
+Ashida Isoko 1p
+He X.
++
+Kong X.
+−
+Huang M.
++
+Jiang M.
+−
+Wang Q.
+−
+Zhang C.
++
+Kong X.
+−
+3-4
+Muraoka Toshihiko
+Hua Y.
+−
+Qiu X.
+=
+Zhao Z.
++
+Wang R.
+−
+Cao Z.
+−
+Huang D.
++
+Wang Q.
+−
+2-4-1
+Imamura Fumiaki
+Shen G.
+−
+Wu Y.
++
+Chen Zh.
++
+Huang J.
++
+Luo J.
++
+Hua Y.
+−
+Qiu X.
++
+5-2
+Result
+3-4-1
+3-4-1
+6-2
+5-3
+2-5-1
+6-2
+5-3
+30-23-3
+The players here were Cao Zhilin, Chen Zhigang, Chen Zude, Chin Kaei, He Xiaoren, Hua Yigang,
+Huang Dexun, Huang Jinxian, Huang Miaoling, Jiang Mingjiu, Kong Xiangming, Lei Zhenti, Luo Jianwen,
+Nie Weiping, Qiu Xin, Shen Guosun, Wang Qun, Wang Runan, Wu Songsheng, Wu Yulin, Xu Rongxin,
+Yang Yilun, Zhang Chenghua, Zhao Zhiyun.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1975-10-23
+Chen Zude
+Takagawa Shukaku
+Jigo
+261
+sgf
+=
+1975-10-23
+Kubouchi Shuchi
+Nie Weiping
+W+R
+208
+sgf
+C
+1975-10-23
+Tozawa Akinobu
+Wang Runan
+B+R
+193
+sgf
+J
+1975-10-23
+Kong Xiangming
+Shiratori Sumiko
+W+R
+183
+sgf
+J
+1975-10-23
+Ashida Isoko
+He Xiaoren
+B+12
+225
+sgf
+J
+1975-10-23
+Hua Yigang
+Muraoka Toshihiko
+B+2
+250
+sgf
+C
+1975-10-23
+Imamura Fumiaki
+Shen Guosun
+W+10
+250
+sgf
+C
+1975-10-23
+Wu Songsheng
+Ishigure Ikuro
+B+2
+250
+sgf
+C
+1975-10-25
+Takagawa Shukaku
+Wu Songsheng
+B+4
+248
+sgf
+J
+1975-10-25
+Kong Xiangming
+Ashida Isoko
+B+R
+162
+sgf
+C
+1975-10-25
+Nie Weiping
+Tozawa Akinobu
+B+R
+194
+sgf
+C
+1975-10-25
+Ishigure Ikuro
+Chen Zude
+W+R
+118
+sgf
+C
+1975-10-25
+Luo Jianwen
+Kubouchi Shuchi
+W+8
+221
+sgf
+J
+1975-10-25
+Wu Yulin
+Imamura Fumiaki
+W+10
+248
+sgf
+J
+1975-10-25
+Shiratori Sumiko
+Wang Qun
+W+R
+240
+sgf
+C
+1975-10-25
+Muraoka Toshihiko
+Qiu Xin
+Jigo
+289
+sgf
+=
+1975-10-28
+Nie Weiping
+Takagawa Shukaku
+B+4
+189
+sgf
+C
+1975-10-28
+Huang Dexun
+Ishigure Ikuro
+W+2
+240
+sgf
+J
+1975-10-28
+Lei Zhenti
+Shiratori Sumiko
+W+R
+143
+sgf
+J
+1975-10-28
+Ashida Isoko
+Huang Miaoling
+B+12
+250
+sgf
+J
+1975-10-28
+Tozawa Akinobu
+Cao Zhilin
+B+R
+195
+sgf
+J
+1975-10-28
+Zhao Zhiyun
+Muraoka Toshihiko
+W+R
+194
+sgf
+J
+1975-10-28
+Imamura Fumiaki
+Chen Zhigang
+B+10
+222
+sgf
+J
+1975-11-01
+Jiang Mingjiu
+Ashida Isoko
+B+R
+172
+sgf
+C
+1975-11-01
+Takagawa Shukaku
+Hua Yigang
+B+R
+174
+sgf
+J
+1975-11-01
+Wu Songsheng
+Tozawa Akinobu
+W+4
+229
+sgf
+J
+1975-11-01
+Ishigure Ikuro
+Nie Weiping
+W+R
+138
+sgf
+C
+1975-11-01
+Shiratori Sumiko
+Kong Xiangming
+B+16
+189
+sgf
+J
+1975-11-01
+Muraoka Toshihiko
+Wang Runan
+W+R
+198
+sgf
+C
+1975-11-01
+Huang Jinxian
+Imamura Fumiaki
+W+14
+250
+sgf
+J
+1975-11-01
+Chen Zude
+Kubouchi Shuchi
+W+R
+166
+sgf
+J
+1975-11-05
+Tozawa Akinobu
+Chen Zude
+W+R
+164
+sgf
+C
+1975-11-05
+Qiu Xin
+Ishigure Ikuro
+B+R
+132
+sgf
+C
+1975-11-05
+Wang Runan
+Takagawa Shukaku
+B+1?
+271
+sgf
+C
+1975-11-05
+Kubouchi Shuchi
+Huang Dexun
+B+R
+217
+sgf
+J
+1975-11-05
+Imamura Fumiaki
+Luo Jianwen
+B+10
+250
+sgf
+J
+1975-11-05
+Cao Zhilin
+Muraoka Toshihiko
+B+2
+292
+sgf
+C
+1975-11-05
+Ashida Isoko
+Wang Qun
+W+12
+217
+sgf
+C
+1975-11-05
+Yang Yilun
+Shiratori Sumiko
+B+6
+248
+sgf
+C
+1975-11-08
+Shiratori Sumiko
+Xu Rongxin
+W+R
+235
+sgf
+C
+1975-11-08
+Takagawa Shukaku
+Nie Weiping
+B+5
+240
+sgf
+J
+1975-11-08
+Ishigure Ikuro
+Wang Runan
+B+4
+288
+sgf
+J
+1975-11-08
+Hua Yigang
+Imamura Fumiaki
+B+8
+249
+sgf
+C
+1975-11-08
+Zhang Chenghua
+Ashida Isoko
+W+10
+248
+sgf
+J
+1975-11-08
+Qiu Xin
+Tozawa Akinobu
+W+R
+146
+sgf
+J
+1975-11-08
+Muraoka Toshihiko
+Huang Dexun
+B+R
+221
+sgf
+J
+1975-11-12
+Tozawa Akinobu
+Hua Yigang
+B+R
+184
+sgf
+J
+1975-11-12
+Chen Zude
+Takagawa Shukaku
+W+R
+298
+sgf
+J
+1975-11-12
+Imamura Fumiaki
+Qiu Xin
+B+R
+147
+sgf
+J
+1975-11-12
+Wang Qun
+Muraoka Toshihiko
+B+R
+247
+sgf
+C
+1975-11-12
+Chin Kaei
+Shiratori Sumiko
+B+R
+237
+sgf
+C
+1975-11-12
+Shen Guosun
+Ishigure Ikuro
+W+R
+220
+sgf
+J
+1975-11-12
+Kubouchi Shuchi
+Wu Songsheng
+B+8
+243
+sgf
+J
+1975-11-12
+Ashida Isoko
+Kong Xiangming
+W+4
+248
+sgf
+C
+1975-11-28
+Kubouchi Shuchi
+Hua Yigang
+W+2
+280
+sgf
+C
+1975-11-28
+Shen Guosun
+Kubouchi Shuchi
+W+R
+173
+sgf
+J
+1976
+Go World 9 and 10 write:
+1976: Chinese team (incl. Chen Zude, Nieh, Wu, K'ung) tours Japan.
+Results China: 27 wins, 24 losses, 5 jigo.
+The touring Chinese team won a majority of its games, with the
+outstanding role being played by a new star, Nieh Wei-p'ing,
+who steamrollered his opposition (winning six of his seven games).
+K'ung Shangming won all her games.
+1: 4/5
+2: 4/7
+3: 4/10
+4: 4/13
+5: 4/15
+6: 4/17
+7: 4/19
+Score
+Chen Zude
+Ishida Akira (7p)
+−
+Hirata Hironori (ama)
++
+Ishii Kunio (8p)
+−
+Tono Hiroaki (9p)
+−
+Sonoda Yuichi (7p)
+−
+Sakai Michiharu (8p)
+−
+Tanimiya Teiji (7p)
++
+2-5
+Nie Weiping
+Fujisawa Hideyuki (9p)
++
+Murakami Bunsho (ama)
++
+Kada Katsuji (9p)
++
+Hashimoto Shoji (9p)
+−
+Segawa Yoshio (8p)
++
+Iwata Tatsuaki (9p)
++
+Ishida Yoshio (9p)
++
+6-1
+Wu Songsheng
+Sato Masaharu (6p)
+−
+Miura Hiroshi (ama)
++
+Iino Seiho (6p)
+=
+Sekiyama Toshio (9p)
+=
+Hisai Keishi (8p)
+−
+Ito Makoto (5p)
++
+Ohira Shuzo (9p)
+−
+2-3-2
+Wang Runan
+Miyazawa Goro (5p)
+−
+Nakazono Seizo (ama)
+−
+Oka Mitsuo (5p)
+=
+Ishii Shinzo (9p)
+−
+Nishimura Osamu (ama)
+−
+后藤胜彦 (ama)
++
+Awaji Shuzo (6p)
++
+2-4-1
+Hua Yigang
+Kobayashi Koichi (7p)
+−
+Kikuchi Yasuro (ama)
+−
+Muraoka Toshihiko (ama)
+=
+Honda Kunihisa (9p)
+−
+Taguchi Tetsuro (ama)
+=
+Takabayashi Kyohei (ama)
+−
+Kamimura Kunio (6p)
+−
+0-5-2
+Cao Zhilin
+Tokimoto Hajime (4p)
+−
+Harada Minoru (ama)
++
+Kamimura Haruo (5p)
++
+Miyamoto Yoshihisa (9p)
++
+Tono Masaharu (8p)
+−
+Saijo Masataka (6p)
+−
+Imamura Masamichi (ama)
++
+4-3
+Wang Qun
+Kobayashi Satoru (3p)
+−
+沢口剛一
+(ama)
++
+脇元安 (ama)
++
+Matsuura Yoshihiro (9p)
+−
+Kori Toshio (3p)
+−
+Ito Yoji (1p)
++
+Ishikura Noboru (ama)
++
+4-3
+Kong Xiangming
+Kobayashi Chizu (3p)
++
+Imamura (ama)
++
+Yanagiuchi Emiko (4p)
++
+Ashida Isoko (1p)
++
+Tanaka Chieko (1p)
++
+Hattori Nayoko (1p)
++
+Ogawa Tomoko (4p)
++
+7-0
+Result
+2-6
+6-2
+4-1-3
+2-5-1
+2-5-1
+5-3
+6-2
+27-24-5
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1976-04-05
+Nie Weiping
+Fujisawa Hideyuki
+B+2
+241
+sgf
+C
+1976-04-05
+Sato Masaharu
+Wu Songsheng
+B+1
+224
+sgf
+J
+1976-04-05
+Kong Xiangming
+Kobayashi Chizu
+B+R
+185
+sgf
+C
+1976-04-05
+Kobayashi Koichi
+Hua Yigang
+B+R
+167
+sgf
+J
+1976-04-05
+Chen Zude
+Ishida Akira
+W+R
+160
+sgf
+J
+1976-04-05
+Kobayashi Satoru
+Wang Qun
+B+R
+221
+sgf
+J
+1976-04-05
+Wang Runan
+Miyazawa Goro
+W+7
+255
+sgf
+J
+1976-04-05
+Tokimoto Hajime
+Cao Zhilin
+B+R
+161
+sgf
+J
+1976-04-06
+Nie Weiping
+Takagi Shoichi
+B+R
+209
+sgf
+C
+1976-04-07
+Wang Runan
+Nakazono Seizo
+W+R
+230
+sgf
+J
+1976-04-07
+Hua Yigang
+Kikuchi Yasuro
+W+R
+182
+sgf
+J
+1976-04-07
+Murakami Bunsho
+Nie Weiping
+W+1
+225
+sgf
+C
+1976-04-07
+Miura Hiroshi
+Wu Songsheng
+W+4
+200
+sgf
+C
+1976-04-07
+沢口剛一
+Wang Qun
+W+2
+236
+sgf
+C
+1976-04-07
+Cao Zhilin
+Harada Minoru
+B+1
+306
+sgf
+C
+1976-04-07
+Hirata Hironori
+Chen Zude
+W+7
+273
+sgf
+C
+1976-04-07
+Kong Xiangming
+今村启子
+B+R
+151
+sgf
+C
+1976-04-10
+Cao Zhilin
+Kamimura Haruo
+B+R
+171
+sgf
+C
+1976-04-10
+Ishii Kunio
+Chen Zude
+B+R
+185
+sgf
+J
+1976-04-10
+Nie Weiping
+Kada Katsuji
+B+6
+262
+sgf
+C
+1976-04-10
+Yanagiuchi Emiko
+Kong Xiangming
+W+R
+162
+sgf
+C
+1976-04-10
+Wu Songsheng
+Iino Seiho
+Jigo
+246
+sgf
+=
+1976-04-10
+胁元安
+Wang Qun
+W+R
+224
+sgf
+C
+1976-04-10
+Hua Yigang
+Muraoka Toshihiko
+Jigo
+256
+sgf
+=
+1976-04-10
+冈光雄
+Wang Runan
+Jigo
+224
+sgf
+=
+1976-04-13
+Honda Kunihisa
+Hua Yigang
+B+7
+167
+sgf
+J
+1976-04-13
+Hashimoto Shoji
+Nie Weiping
+B+2
+227
+sgf
+J
+1976-04-13
+Wu Songsheng
+Sekiyama Toshio
+Jigo
+244
+sgf
+=
+1976-04-13
+Miyamoto Yoshihisa
+Cao Zhilin
+W+2
+284
+sgf
+C
+1976-04-13
+Kong Xiangming
+Ashida Isoko
+B+R
+200
+sgf
+C
+1976-04-13
+Ishii Shinzo
+Wang Runan
+B+R
+161
+sgf
+J
+1976-04-13
+Wang Qun
+Matsuura Yoshihiro
+W+R
+222
+sgf
+J
+1976-04-13
+Chen Zude
+Tono Hiroaki
+W+R
+136
+sgf
+J
+1976-04-14
+Chen Zude
+Hashimoto Utaro
+Jigo
+235
+sgf
+=
+1976-04-15
+Nie Weiping
+Segawa Yoshio
+B+R
+183
+sgf
+C
+1976-04-15
+Wang Runan
+Nishimura Osamu
+W+4
+198
+sgf
+J
+1976-04-15
+Taguchi Tetsuro
+Hua Yigang
+Jigo
+254
+sgf
+=
+1976-04-15
+Cao Zhilin
+Tono Masaharu
+W+R
+194
+sgf
+J
+1976-04-15
+Sonoda Yuichi
+Chen Zude
+B+2
+282
+sgf
+J
+1976-04-15
+Tanaka Chieko
+Kong Xiangming
+W+R
+176
+sgf
+C
+1976-04-15
+Hisai Keishi
+Wu Songsheng
+B+R
+121
+sgf
+J
+1976-04-15
+Wang Qun
+Kori Toshio
+W+R
+140
+sgf
+J
+1976-04-17
+Kong Xiangming
+Hattori Nayoko
+B+R
+67
+sgf
+C
+1976-04-17
+Wu Songsheng
+Ito Makoto
+B+4
+197
+sgf
+C
+1976-04-17
+Chen Zude
+Sakai Michiharu
+W+R
+206
+sgf
+J
+1976-04-17
+Iwata Tatsuaki
+Nie Weiping
+W+2
+219
+sgf
+C
+1976-04-17
+Saijo Masataka
+Cao Zhilin
+B+R
+179
+sgf
+J
+1976-04-17
+后藤胜彦
+Wang Runan
+W+R
+184
+sgf
+C
+1976-04-17
+Ito Yoji
+Wang Qun
+W+R
+126
+sgf
+C
+1976-04-17
+Hua Yigang
+Takabayashi Kyohei
+W+2
+244
+sgf
+J
+1976-04-19
+Nie Weiping
+Ishida Yoshio
+B+7
+171
+sgf
+C
+1976-04-19
+Kamimura Kunio
+Hua Yigang
+B+R
+187
+sgf
+J
+1976-04-19
+Chen Zude
+Tanimiya Teiji
+B+2
+244
+sgf
+C
+1976-04-19
+Ohira Shuzo
+Wu Songsheng
+B+9
+191
+sgf
+J
+1976-04-19
+Wang Runan
+Awaji Shuzo
+B+R
+141
+sgf
+C
+1976-04-19
+Ogawa Tomoko
+Kong Xiangming
+W+R
+188
+sgf
+C
+1976-04-19
+Ishikura Noboru
+Wang Qun
+W+R
+192
+sgf
+C
+1976-04-19
+Cao Zhilin
+Imamura Masamichi
+B+13
+189
+sgf
+C
+1977
+Go World 10 writes:
+1977: Hashimoto Utaro 9-dan team (incl. Tono 9-dan, Uchida 7-dan, Ishida Akira 7-dan) tours China.
+Results Japan: 30 wins, 23 losses, 3 jigo.
+1: 4/14
+2: 4/16
+3: 4/20
+4: 4/22
+5: 4/25
+6: 4/28
+7: 5/2
+Score
+Hashimoto Utaro (9p)
+Nie
++
+Wu
+=
+Chen Z.
++
+Nie
+−
+Hua
++
+Shen
++
+Wang R.
+−
+4-2-1
+Tono Hiroaki (9p)
+Chen Z.
++
+Shen
++
+Luo
++
+Wu
++
+Nie
+−
+Wang R.
+=
+Hua
++
+5-1-1
+Ishida Akira (7p)
+Wu
+=
+Hua
++
+Nie
+−
+Huang
++
+Jiang
++
+Nie
++
+Chen Z.
++
+5-1-1
+Ieda Ryuji (7p)
+Wang R.
++
+Chen Z.
+−
+Jiang
++
+Hua
+−
+Shen
+−
+Chen Zh.
++
+Nie
+−
+3-4
+Sato Masaharu (6p)
+Huang
++
+Nie
+−
+Wang Q.
++
+Wang R.
++
+Luo
++
+Chen Z.
++
+Wu
+−
+5-2
+Inoue Machiko (1p)
+Kong
+−
+He
+−
+Chen H.
++
+Kong
+−
+He
++
+Chen H.
+−
+Liu X.
+−
+2-5
+Kikuchi Yasuro (ama)
+Jiang
+−
+Chen Zh.
++
+Xu
++
+Liu Q.
++
+Huang
+−
+Wu
+−
+Yang J.
+−
+3-4
+Miura Hiroshi (ama)
+Hua
+−
+Cheng
+−
+Yang Y.
++
+Chin Kaei
++
+Wang Q.
+−
+Kong
++
+Qiu Xin
+−
+3-4
+Result
+4-3-1
+3-4-1
+7-1
+5-3
+4-4
+5-2-1
+2-6
+30-23-3
+Chinese players:
+Chen Huifang, Chen Zhigang, Chen Zude, Chin Kaei, He Xiaoren, Hua Yigang,
+Huang Dexun, Jiang Mingjiu, Kong Xiangming, Liu Qianli, Liu Xiaoguang,
+Luo Jianwen, Nie Weiping, Qiu Xin, Shen Guosun, Wang Qun, Wang Runan,
+Wu Songsheng, Xu Rongxin, Yang Jinhua, Yang Yilun.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1977-04-14
+Nie Weiping
+Hashimoto Utaro
+W+2
+243
+sgf
+J
+1977-04-14
+Wu Songsheng
+Ishida Akira
+Jigo
+255
+sgf
+=
+1977-04-14
+Tono Hiroaki
+Chen Zude
+B+8
+276
+sgf
+J
+1977-04-14
+Huang Dexun
+Sato Masaharu
+W+R
+202
+sgf
+J
+1977-04-14
+Ieda Ryuji
+Wang Runan
+B+10
+250
+sgf
+J
+1977-04-14
+Miura Hiroshi
+Hua Yigang
+W+10
+238
+sgf
+C
+1977-04-14
+Sato Machiko
+Kong Xiangming
+W+2
+297
+sgf
+C
+1977-04-14
+Jiang Mingjiu
+Kikuchi Yasuro
+B+4
+260
+sgf
+C
+1977-04-16
+Chen Zude
+Ieda Ryuji
+B+10
+167
+sgf
+C
+1977-04-16
+He Xiaoren
+Inoue Machiko
+B+R
+150
+sgf
+C
+1977-04-16
+Sato Masaharu
+Nie Weiping
+W+2
+241
+sgf
+C
+1977-04-16
+Hashimoto Utaro
+Wu Songsheng
+Jigo
+235
+sgf
+=
+1977-04-16
+Shen Guosun
+Tono Hiroaki
+W+4
+251
+sgf
+J
+1977-04-16
+Cheng Xiaoliu
+Miura Hiroshi
+B+2
+272
+sgf
+C
+1977-04-16
+Kikuchi Yasuro
+Chen Zhigang
+B+R
+189
+sgf
+J
+1977-04-16
+Ishida Akira
+Hua Yigang
+B+R
+117
+sgf
+J
+1977-04-17
+Nie Weiping
+Tono Hiroaki
+W+2
+286
+sgf
+1977-04-18
+Kikuchi Yasuro
+Nie Weiping
+Unfinished
+121
+sgf
+1977-04-20
+Inoue Machiko
+Chen Huifang
+B+4
+266
+sgf
+J
+1977-04-20
+Nie Weiping
+Ishida Akira
+B+2
+267
+sgf
+C
+1977-04-20
+Chen Zude
+Hashimoto Utaro
+W+R
+212
+sgf
+J
+1977-04-20
+Ieda Ryuji
+Jiang Mingjiu
+B+4
+200
+sgf
+J
+1977-04-20
+Miura Hiroshi
+Yang Yilun
+B+R
+205
+sgf
+J
+1977-04-20
+Wang Qun
+Sato Masaharu
+W+14
+250
+sgf
+J
+1977-04-20
+Tono Hiroaki
+Luo Jianwen
+B+4
+234
+sgf
+J
+1977-04-20
+Xu Rongxin
+Kikuchi Yasuro
+W+R
+196
+sgf
+J
+1977-04-22
+Sato Masaharu
+Wang Runan
+B+4
+234
+sgf
+J
+1977-04-22
+Wu Songsheng
+Tono Hiroaki
+W+R
+177
+sgf
+J
+1977-04-22
+Hashimoto Utaro
+Nie Weiping
+W+6
+299
+sgf
+C
+1977-04-22
+Kong Xiangming
+Inoue Machiko
+B+R
+208
+sgf
+C
+1977-04-22
+Hua Yigang
+Ieda Ryuji
+B+6
+290
+sgf
+C
+1977-04-22
+Ishida Akira
+Huang Dexun
+B+R
+172
+sgf
+J
+1977-04-22
+Kikuchi Yasuro
+Liu Qianli
+B+2
+275
+sgf
+J
+1977-04-22
+Chin Kaei
+Miura Hiroshi
+W+6
+269
+sgf
+J
+1977-04-25
+Tono Hiroaki
+Nie Weiping
+W+2
+255
+sgf
+C
+1977-04-25
+Hua Yigang
+Hashimoto Utaro
+W+R
+135
+sgf
+J
+1977-04-25
+Inoue Machiko
+He Xiaoren
+B+2
+211
+sgf
+J
+1977-04-25
+Luo Jianwen
+Sato Masaharu
+W+R
+189
+sgf
+J
+1977-04-25
+Jiang Mingjiu
+Ishida Akira
+W+R
+128
+sgf
+J
+1977-04-25
+Miura Hiroshi
+Wang Qun
+W+4
+234
+sgf
+C
+1977-04-25
+Ieda Ryuji
+Shen Guosun
+W+R
+238
+sgf
+C
+1977-04-25
+Huang Dexun
+Kikuchi Yasuro
+B+6
+263
+sgf
+C
+1977-04-28
+Wang Runan
+Tono Hiroaki
+Jigo
+236
+sgf
+=
+1977-04-28
+Chen Zhigang
+Ieda Ryuji
+W+R
+275
+sgf
+J
+1977-04-28
+Ishida Akira
+Nie Weiping
+B+2
+250
+sgf
+J
+1977-04-28
+Chen Huifang
+Inoue Machiko
+B+R
+154
+sgf
+C
+1977-04-28
+Kikuchi Yasuro
+Wu Songsheng
+W+R
+222
+sgf
+C
+1977-04-28
+Kong Xiangming
+Miura Hiroshi
+W+2
+281
+sgf
+J
+1977-04-28
+Sato Masaharu
+Chen Zude
+B+R
+111
+sgf
+J
+1977-04-28
+Hashimoto Utaro
+Shen Guosun
+B+8
+250
+sgf
+J
+1977-05-02
+Wang Runan
+Hashimoto Utaro
+B+2
+268
+sgf
+C
+1977-05-02
+Chen Zude
+Ishida Akira
+W+R
+246
+sgf
+J
+1977-05-02
+Wu Songsheng
+Sato Masaharu
+B+4
+252
+sgf
+C
+1977-05-02
+Yang Jinhua
+Kikuchi Yasuro
+B+6
+248
+sgf
+C
+1977-05-02
+Sato Machiko
+Liu Xiaoguang
+W+R
+92
+sgf
+C
+1977-05-02
+Tono Hiroaki
+Hua Yigang
+B+R
+195
+sgf
+J
+1977-05-02
+Miura Hiroshi
+Qiu Xin
+W+4
+270
+sgf
+C
+1977-05-02
+Ieda Ryuji
+Nie Weiping
+W+12
+245
+sgf
+C
+1978
+Go World 9 and 10 write:
+From the 6th to the 27th June a ten-member Chinese team, consisting of eight players, the team
+leader and a secretary, toured Japan and played seven team matches with Japanese players.
+The final result was a tie, 28 to 28.
+The Chinese players were Chen Zude, Nieh Wei-p'ing, Wu Sung-Sheng, Hua I-kang,
+Ch'en Chih-kang, Yang I-lun, Chiang Ming-chiu, K'ung Shang-ming (F).
+A new feature of this tour was a special three-match series (the 3rd to 5th matches)
+in which the same Japanese team played the Chinese team.
+In the 28-28 score, public haya-go (fast games) are not included.
+The 1978 tour began with a haya-go between Takemiya and Nieh in Tokyo.
+Takemiya won by 20.5 points.
+Another haya-go, in which Hashimoto Shoji 9-dan defeated Ch'en
+Tsu-te by resignation, was played in Osaka.
+Round 2 was in Sapporo, with strong amateurs as opponents.
+1: 6/9
+2: 6/12
+3,4,5: 6/14,17,20
+6: 6/22
+7: 6/24
+Score
+Chen Zude
+Ohira 9d
+−5.5
+Miura
++7.5
+Okubo 9d
+−R, −R, −R
+Fujiki 8d
++12.5
+Iwata 9d
++10.5
+3-4
+Nieh
+Fujisawa H. 9d
+−R
+Kikuchi
++R
+Ishii 9d
++4.5, −R, −0.5
+Sekiyama 9d
+−10.5
+Shiraishi 9d
++11.5
+3-4
+Wu
+Kojima 8d
+−R
+Murakami
++5.5
+Ushinohama 9d
++3.5, +R, −8.5
+Sato 9d
++4.5
+Sakai 8d
+−15.5
+4-3
+Hua
+Nakamura 7d
++4.5
+Harada
++R
+Hane 8d
++R, −R, −9.5
+Yoshida 9d
++R
+Baba 6d
++1.5
+5-2
+Ch'en
+Kamimura K. 6d
+−R
+Ishikura
+−6.5
+Morino 7d
+−5.5, +0.5, −R
+Shimada
+−9.5
+Takabayashi
+−11.5
+1-6
+Yang
+Miyazawa 6d
+−R
+Kamimura
++R
+Abe 8d
++R, −5.5, −3.5
+Kadokura
++8.5
+Hoshikawa 6d
++3.5
+4-3
+Chiang
+Kamimura H. 5d
+−7.5
+Nakazono
++R
+Tokimoto 6d
+−R, +R, −6.5
+Kawamura 7d
++R
+Takeuchi
+−3.5
+3-4
+K'ung
+Ogawa 4d
+−0.5
+Nishizaki
++R
+Kobayashi 5d
++R, +R, +R
+Sakaguchi 7d
+−R
+Yamashiro 6d
++R
+5-2
+Result
+1-7
+7-1
+5-3, 4-4, 1-7
+5-3
+5-3
+28-28
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1978-06-08
+Takemiya Masaki
+Nie Weiping
+B+20.5
+297
+sgf
+J
+hayago
+1978-06-09
+Nie Weiping
+Fujisawa Hosai
+W+R
+210
+sgf
+J
+1978-06-09
+Wu Songsheng
+Kojima Takaho
+W+R
+226
+sgf
+J
+1978-06-09
+Ohira Shuzo
+Chen Zude
+B+5.5
+239
+sgf
+J
+1978-06-09
+Nakamura Hidehito
+Hua Yigang
+W+4.5
+302
+sgf
+C
+1978-06-09
+Jiang Mingjiu
+Kamimura Haruo
+W+7.5
+258
+sgf
+J
+1978-06-09
+Ogawa Tomoko
+Kong Xiangming
+B+0.5
+249
+sgf
+J
+1978-06-09
+Chen Zhigang
+Kamimura Kunio
+W+R
+171
+sgf
+J
+1978-06-09
+Miyazawa Goro
+Yang Yilun
+B+R
+147
+sgf
+J
+1978-06-11
+Kikuchi Yasuro
+Nie Weiping
+W+R
+204
+sgf
+C
+1978-06-12
+上村收藏
+Yang Yilun
+W+R
+162
+sgf
+C
+1978-06-12
+Kong Xiangming
+西崎保彦
+B+R
+189
+sgf
+C
+1978-06-12
+Chen Zhigang
+Ishikura Noboru
+W+6.5
+225
+sgf
+J
+1978-06-12
+Nakazono Seizo
+Jiang Mingjiu
+W+R
+170
+sgf
+C
+1978-06-12
+Chen Zude
+Miura Hiroshi
+B+7.5
+235
+sgf
+C
+1978-06-12
+Harada Minoru
+Hua Yigang
+W+R
+176
+sgf
+C
+1978-06-12
+Wu Songsheng
+Murakami Bunsho
+B+5.5
+248
+sgf
+C
+1978-06-14
+Nie Weiping
+Ishii Kunio
+B+4.5
+235
+sgf
+C
+1978-06-14
+Chen Zude
+Okubo Ichigen
+W+R
+200
+sgf
+J
+1978-06-14
+Hua Yigang
+Hane Yasumasa
+B+R
+213
+sgf
+C
+1978-06-14
+Ushinohama Satsuo
+Wu Songsheng
+W+3.5
+207
+sgf
+C
+1978-06-14
+Jiang Mingjiu
+Tokimoto Hajime
+W+R
+179
+sgf
+J
+1978-06-14
+Kobayashi Chizu
+Kong Xiangming
+W+R
+223
+sgf
+C
+1978-06-14
+Morino Setsuo
+Chen Zhigang
+B+5.5
+254
+sgf
+J
+1978-06-14
+Abe Yoshiteru
+Yang Yilun
+W+R
+208
+sgf
+C
+1978-06-17
+Okubo Ichigen
+Chen Zude
+B+R
+157
+sgf
+J
+1978-06-17
+Kong Xiangming
+Kobayashi Chizu
+B+R
+131
+sgf
+C
+1978-06-17
+Ishii Kunio
+Nie Weiping
+B+R
+225
+sgf
+J
+1978-06-17
+Wu Songsheng
+Ushinohama Satsuo
+B+R
+250
+sgf
+C
+1978-06-17
+Tokimoto Hajime
+Jiang Mingjiu
+W+R
+190
+sgf
+C
+1978-06-17
+Hane Yasumasa
+Hua Yigang
+B+R
+195
+sgf
+J
+1978-06-17
+Chen Zhigang
+Morino Setsuo
+B+0.5
+243
+sgf
+C
+1978-06-17
+Yang Yilun
+Abe Yoshiteru
+W+5.5
+240
+sgf
+J
+1978-06-20
+Okubo Ichigen
+Chen Zude
+B+R
+173
+sgf
+J
+1978-06-20
+Yang Yilun
+Abe Yoshiteru
+W+3.5
+274
+sgf
+J
+1978-06-20
+Chen Zhigang
+Morino Setsuo
+W+R
+103
+sgf
+J
+1978-06-20
+Ishii Kunio
+Nie Weiping
+B+0.5
+312
+sgf
+J
+1978-06-20
+Wu Songsheng
+Ushinohama Satsuo
+W+8.5
+234
+sgf
+J
+1978-06-20
+Hane Yasumasa
+Hua Yigang
+B+9.5
+237
+sgf
+J
+1978-06-20
+Kong Xiangming
+Kobayashi Chizu
+B+R
+195
+sgf
+C
+1978-06-20
+Tokimoto Hajime
+Jiang Mingjiu
+B+6.5
+246
+sgf
+J
+1978-06-21
+Hashimoto Shoji
+Chen Zude
+B+R
+177
+sgf
+J
+hayago
+1978-06-22
+Fujiki Hitomi
+Chen Zude
+W+12.5
+239
+sgf
+C
+1978-06-22
+Sekiyama Toshio
+Nie Weiping
+B+10.5
+317
+sgf
+J
+1978-06-22
+Wu Songsheng
+Sato Sunao
+B+4.5
+235
+sgf
+C
+1978-06-22
+Hua Yigang
+Yoshida Yoichi
+B+R
+228
+sgf
+C
+1978-06-22
+Shimada Yoshikuni
+Chen Zhigang
+B+9.5
+235
+sgf
+J
+1978-06-22
+Jiang Mingjiu
+Kawamura Masamichi
+B+R
+101
+sgf
+C
+1978-06-22
+Sakaguchi Ryuzo
+Kong Xiangming
+B+R
+185
+sgf
+J
+1978-06-22
+Yang Yilun
+角仓康之
+B+8.5
+238
+sgf
+C
+1978-06-24
+Shiraishi Yutaka
+Nie Weiping
+W+11.5
+161
+sgf
+C
+1978-06-24
+Yang Yilun
+Hoshikawa Nobuaki
+B+3.5
+251
+sgf
+C
+1978-06-24
+Chen Zude
+Iwata Tatsuaki
+B+10.5
+265
+sgf
+C
+1978-06-24
+Yamashiro Hiroshi
+Kong Xiangming
+W+R
+192
+sgf
+C
+1978-06-24
+Baba Shigeru
+Hua Yigang
+W+1.5
+216
+sgf
+C
+1978-06-24
+Takeuchi Kazuo
+Jiang Mingjiu
+B+3.5
+264
+sgf
+J
+1978-06-24
+Chen Zhigang
+Takabayashi Kyohei
+W+11.5
+273
+sgf
+J
+1978-06-24
+Wu Songsheng
+Sakai Michiharu
+W+15.5
+277
+sgf
+J
+Games listed in the above table were played in Japan with 5.5 komi.
+Those below in China, with 5 komi.
+Date
+Black
+White
+Result
+#mv
+SGF
+1978-08
+Kong Xiangming
+Mizuta Yoshihiro
+W+4
+170
+sgf
+J
+1978-08-13
+Chen Zude
+Hashimoto Utaro
+W+R
+160
+sgf
+J
+1978-08-15
+Tono Hiroaki
+Nie Weiping
+Jigo
+245
+sgf
+=
+1978-08-15
+Wang Runan
+Tono Hiroaki
+B+R
+203
+sgf
+C
+1978-08-15
+Hashimoto Utaro
+Hua Yigang
+W+2
+259
+sgf
+C
+1978-08-21
+Wu Songsheng
+Tono Hiroaki
+B+8
+297
+sgf
+C
+1978-08-21
+Wang Qun
+Honda Mitsuhiko
+B+6
+154
+sgf
+C
+In Nov/Dec 1978 a team led by Yasunaga Hajime visited China. They played 71 games. Chinese players won 37, lost 28, and played jigo 6 times.
+Komi was 5, except for Yasunaga's last three games, that were played under josen handicap.
+11/26
+11/29
+12/1
+12/4
+12/6
+12/8
+Yasunaga Hajime
+Yang Jinhua
+B+
+Cheng Xiaoliu
+W−
+Du Weixin
+B+
+许鸿林
+B+
+Qian Yuping
+B+
+Kurahashi Shozo (7p)
+Nie Weiping
+W−
+Huang Dexun
+B+
+Luo Jianwen
+W+
+Chen Zhigang
+B+
+Cheng Xiaoliu
+W+
+Wu Songsheng
+B−
+Ogawa Tomoko (4p)
+Kong Xiangming
+B−
+He Xiaoren
+W−
+Chen Huifang
+B+
+Kong Xiangming
+W+
+Zhu Jufei
+B−
+Yang Hui
+W+
+Kondo Sachiko (3p)
+Chen Huifang
+W−
+Kong Xiangming
+B+
+He Xiaoren
+W−
+李扬
+B+
+郭鹏
+W−
+Ma Yalan
+B−
+Kikuchi Yasuro (ama)
+Chin Kaei
+B+
+Jiang Mingjiu
+W+
+Cheng Xiaoliu
+B+
+Huang Dexun
+W−
+Luo Jianwen
+B−
+Yang Yilun
+W−
+Murakami Bunsho (ama)
+Jiang Mingjiu
+W+
+Yang Jinhua
+B−
+Chen Zhigang
+W−
+Xu Rongxin
+B=
+Liu Xiaoguang
+W=
+Hua Yigang
+B−
+二口外美 (ama)
+Huang Dexun
+B−
+Xu Rongxin
+W=
+Jiang Zhujiu
+B+
+Chin Kaei
+W−
+Liang Henian
+B+
+Cao Dayuan
+W−
+Takabayashi Kyohei (ama)
+Liu Xiaoguang
+W−
+Chin Kaei
+B+
+Yang Jinhua
+W+
+Jiang Mingjiu
+B+
+Huang Dexun
+W−
+Wang Qun
+B+
+Takeuchi Kazuo (ama)
+Cheng Xiaoliu
+B=
+Chen Zhigang
+W+
+Liu Xiaoguang
+B=
+Luo Jianwen
+W−
+Xu Rongxin
+B−
+Xie Yuguo
+W+
+藤井明一 (ama)
+Wu Yulin
+W−
+Wang Yehui
+B−
+Song Xuelin
+W−
+Liang Henian
+B−
+Qin Baoping
+W−
+Li Qinghai
+B+
+Iwaki Kimimasa (ama)
+Luo Jianwen
+B−
+Lei Zhenti
+W−
+Ma Xiaochun
+B=
+Wang Yehui
+W−
+Chin Kaei
+B−
+夏胜浩
+W+
+Shimoji Genchu (ama)
+Tan Yanwu
+W−
+Chen Anqi
+B+
+Xu Rongxin
+W−
+Liu Xiaoguang
+B−
+Yang Jinhua
+W−
+Hua Weirong
+B−
+1978-11-26
+Ogawa Tomoko
+Kong Xiangming
+W+4
+222
+sgf
+C
+1978-11-26
+Nie Weiping
+Kurahashi Shozo
+B+R
+165
+sgf
+C
+1978-11-29
+Murakami Bunsho
+Yang Jinhua
+W+1
+198
+sgf
+C
+1978-11-29
+He Xiaoren
+Ogawa Tomoko
+B+2
+184
+sgf
+C
+1978-12-01
+He Xiaoren
+Kondo Sachiko
+B+6
+203
+sgf
+C
+1978-12-01
+Luo Jianwen
+Kurahashi Shozo
+W+R
+237
+sgf
+J
+1978-12-01
+Ogawa Tomoko
+Chen Huifang
+B+R
+180
+sgf
+J
+1978-12-06
+Cheng Xiaoliu
+Kurahashi Shozo
+W+4
+320
+sgf
+J
+Around the same time, a team led by Sugiuchi Masao visited China.
+They played 20 games. Japanese players won 11, lost 6, and played jigo 3 times.
+Komi was 5.
+1: 11/27
+2: 12/1
+3: 12/5
+4: 12/7
+Score
+Sugiuchi Masao
+Nie
+=
+Wu
++
+Hua
++
+Chen
+−
+2-1-1
+Awaji Shuzo
+Wang R.
+−
+Chen
++
+Shen
++
+Nie
+=
+2-1-1
+Yamashiro Hiroshi
+Wu
+−
+Yang Y.
+=
+Chen
+−
+Wang R.
++
+1-2-1
+Kamimura Haruo
+Wang Q.
++
+Hua
++
+Yang Y.
+−
+Shen
++
+3-1
+Ishikura Noboru
+Tan Yanwu
++
+Rong
++
+Shao Z.
+−
+Qiu Xin
++
+3-1
+Result
+2-2-1
+4-0-1
+2-3
+3-1-1
+11-6-3
+1978-11-27
+Kamimura Haruo
+Wang Qun
+B+R
+95
+sgf
+J
+1978-11-27
+Nie Weiping
+Sugiuchi Masao
+Jigo
+241
+sgf
+=
+1978-11-27
+Awaji Shuzo
+Wang Runan
+W+4
+212
+sgf
+C
+1978-12-01
+Ishikura Noboru
+Rong Jianxing
+B+4
+189
+sgf
+J
+1978-12-05
+Awaji Shuzo
+Shen Guosun
+B+2
+230
+sgf
+J
+1978-12-05
+Hua Yigang
+Sugiuchi Masao
+W+R
+177
+sgf
+J
+1978-12-05
+Chen Zude
+Yamashiro Hiroshi
+B+3
+257
+sgf
+C
+1978-12-07
+Sugiuchi Masao
+Chen Zude
+W+4
+288
+sgf
+C
+1978-12-07
+Shen Guosun
+Kamimura Haruo
+W+R
+111
+sgf
+J
+1978-12-07
+Nie Weiping
+Awaji Shuzo
+Jigo
+284
+sgf
+=
+1979
+Go World 14 writes:
+1979: A team of eight Japanese professionals, led by
+Okubo Ichigen 9-dan, toured China from the 7th to the 27th June.
+Result Japan: 22 wins, 21 losses, 5 jigo.
+1: 6/9
+2: 6/11
+3: 6/14
+4: 6/16
+5: 6/21
+6: 6/25
+Score
+Okubo Ichigen
+Nie
+−
+Chen Z.
++
+Huang D.
++
+Xu
++
+Wang R.
++
+Hua
+−
+4-2
+Shiraishi Yutaka
+Chen Z.
+−
+Chin Kaei
+−
+Wang R.
++
+Wu
+=
+Yang J.
++
+Nie
+−
+2-3-1
+Hane Yasumasa
+Wu
++
+Luo
++
+Nie
+−
+Shen
++
+Liu
+−
+Chin Kaei
++
+4-2
+Nakamura Hidehito
+Wang R.
++
+Cheng
+=
+Shen
++
+Huang D.
+−
+Nie
+−
+Wu
+−
+2-3-1
+Tokimoto Hajime
+Hua
+−
+Xu
++
+Liu
+−
+Yang J.
+=
+Chen Zh.
++
+Yang Y.
++
+3-2-1
+Hoshikawa Nobuaki
+Cheng
++
+Jiang
+=
+Chen Zh.
+−
+Kong
+−
+Rong
++
+Wang Q.
++
+3-2-1
+Kobayashi Chizu
+Kong
+−
+Jin
+=
+He
+−
+Huang L.
+−
+Zhu
+−
+Yang H.
++
+1-4-1
+Kobayashi Satoru
+Shao
+−
+Ma
++
+Song
++
+Jiang
+−
+Fang
++
+Cao
+−
+3-3
+Results
+3-5
+4-1-3
+4-4
+2-4-2
+5-3
+4-4
+22-21-5
+Chinese players:
+Cao Dayuan, Chen Zhigang, Chen Zude, Cheng Xiaoliu, Chin Kaei, Fang Tianfeng,
+He Xiaoren, Hua Yigang, Huang Dexun, Huang Liping, Jiang Mingjiu, Jin Qianqian,
+Kong Xiangming, Liu Xiaoguang, Luo Jianwen, Ma Xiaochun, Nie Weiping,
+Rong Jianxing, Shao Zhenzhong, Shen Guosun, Song Xuelin, Wang Qun, Wang Runan,
+Wu Songsheng, Xu Rongxin, Yang Hui, Yang Jinhua, Yang Yilun, Zhu Jufei.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1979-03-23
+Tsuchida Masamitsu
+Chen Zude
+W+5.5
+262
+sgf
+C
+1979-03-28
+Sonoda Yuichi
+Nie Weiping
+W+R
+60
+sgf
+C
+1979-06-09
+Nie Weiping
+Okubo Ichigen
+B+R
+177
+sgf
+C
+1979-06-09
+Wu Songsheng
+Hane Yasumasa
+W+8
+283
+sgf
+J
+1979-06-09
+Hua Yigang
+Tokimoto Hajime
+B+R
+166
+sgf
+C
+1979-06-09
+Shiraishi Yutaka
+Chen Zude
+W+6
+305
+sgf
+C
+1979-06-11
+Hane Yasumasa
+Luo Jianwen
+B+6
+298
+sgf
+J
+1979-06-14
+Huang Dexun
+Okubo Ichigen
+W+R
+199
+sgf
+J
+1979-06-14
+Nie Weiping
+Hane Yasumasa
+B+R
+247
+sgf
+C
+1979-06-16
+Hane Yasumasa
+Shen Guosun
+B+2
+244
+sgf
+J
+1979-06-17
+Zhu Jufei
+Kobayashi Chizu
+B+8
+193
+sgf
+C
+1979-06-21
+Nakamura Hidehito
+Nie Weiping
+W+2
+310
+sgf
+C
+1979-06-21
+Liu Xiaoguang
+Hane Yasumasa
+B+2
+268
+sgf
+C
+1979-06-25
+Nie Weiping
+Shiraishi Yutaka
+B+6
+260
+sgf
+C
+1979-06-25
+Wang Qun
+Hoshikawa Nobuaki
+W+R
+181
+sgf
+J
+1979-06-25
+Wu Songsheng
+Nakamura Hidehito
+B+4
+225
+sgf
+C
+1979-06-25
+Cao Dayuan
+Kobayashi Satoru
+B+R
+162
+sgf
+C
+1979-06-25
+Hane Yasumasa
+Chin Kaei
+B+R
+241
+sgf
+J
+1979-12-09
+Nie Weiping
+Takemiya Masaki
+W+4
+220
+sgf
+J
+1979-12-11
+Nie Weiping
+Kajiwara Takeo
+B+R
+175
+sgf
+C
+1979-12-13
+Kataoka Satoshi
+Nie Weiping
+B+1
+206
+sgf
+J
+1980
+Go World 20 and 21 write:
+1980: A team of eight Chinese go players toured Japan in June this year to play a series of goodwill matches.
+Result China: 32 wins, 24 losses.
+The Chinese players were Nieh Wei-p'ing, Wu Sung-Sheng, Hua I-kang, Huang Te-hsun,
+K'ung Shang-ming, Ts'ao Ta-yuan, Chiang Chu-chiu, Yang Hui.
+1: 6/7
+2: 6/10
+3: 6/12
+4: 6/16
+5: 6/18
+6: 6/20
+7: 6/22
+Score
+Nieh
+Kobayashi Koichi 9d
+−
+Ishida Yoshio 9d
+−
+Imamura Fumiaki
++
+Yamashiro 6d
+−
+Ishii Shinzo 9d
++
+Hisai 9d
++
+Honda 9d
+−
+3-4
+Wu
+Takagi 8d
++
+Sanno 9d
++
+Takabayashi
+−
+Baba 7d
+−
+Mizuno 9d
++
+Nabeshima 8d
++
+Hashimoto Yoshimi 9d
+−
+4-3
+Hua
+Kudo 9d
+−
+Kageyama 7d
++
+Futakuchi
++
+Iwata 9d
+−
+Sekiyama 9d
+−
+Ishii Kunio 9d
+−
+Sumino 8d
+−
+2-5
+Huang
+Fukui 7d
+−
+Awaji 7d
+−
+Miura
++
+Hane 8d
+−
+Tainaka 9d
+−
+Hayase 7d
++
+lino 7d
++
+3-4
+K'ung
+Kobayashi Reiko 6d
+−
+Kataoka 5d
+−
+Nakazono
++
+Morishima 6d
+−
+Minami 9d
++
+Nishigami 7d
+−
+Kiyonari 5d
++
+3-4
+Ts'ao
+Kanno 6d
+−
+Kamimura K. 6d
++
+Noro
++
+Ikezaki 2d
++
+Yamazaki 7d
++
+Nishimura
++
+Yamashita 5d
++
+6-1
+Chiang
+Kobayashi Kenji 4d
++
+Aragaki 5d
++
+Morizaki
++
+Morikawa 2d
++
+Tanita 7d
+−
+Karaki
++
+Tanaka
++
+6-1
+Yang
+Shinkai Hiroko 1d
++
+Kanda 4d
++
+Tsuchida
+−
+Ueda
++
+Matsuura 6d
++
+Taguchi
+−
+Hayashi
++
+5-2
+Results
+3-5
+5-3
+6-2
+3-5
+5-3
+5-3
+5-3
+32-24
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1980-06-07
+Kobayashi Koichi
+Nie Weiping
+B+9.5
+241
+sgf
+J
+1980-06-07
+Jiang Zhujiu
+Kobayashi Kenji
+B+R
+159
+sgf
+C
+1980-06-07
+Hua Yigang
+Kudo Norio
+W+1.5
+264
+sgf
+J
+1980-06-07
+Shinkai Hiroko
+Yang Hui
+W+R
+228
+sgf
+C
+1980-06-07
+Fukui Masaaki
+Huang Dexun
+B+R
+223
+sgf
+J
+1980-06-07
+Wu Songsheng
+Takagi Shoichi
+B+2.5
+243
+sgf
+C
+1980-06-07
+Kanno Kiyonori
+Cao Dayuan
+B+5.5
+280
+sgf
+J
+1980-06-07
+Kong Xiangming
+Kobayashi Reiko
+W+R
+242
+sgf
+J
+1980-06-09
+Sanno Hirotaka
+Wu Songsheng
+W+2.5
+264
+sgf
+C
+1980-06-09
+Kanda Ei
+Yang Hui
+W+R
+172
+sgf
+C
+1980-06-09
+Cao Dayuan
+Kamimura Kunio
+B+R
+129
+sgf
+C
+1980-06-09
+Awaji Shuzo
+Huang Dexun
+B+R
+179
+sgf
+J
+1980-06-09
+Aragaki Takeshi
+Jiang Zhujiu
+W+R
+242
+sgf
+C
+1980-06-09
+Hua Yigang
+Kageyama Toshiro
+B+7.5
+272
+sgf
+J
+1980-06-10
+Nie Weiping
+Ishida Yoshio
+W+R
+288
+sgf
+J
+1980-06-10
+Kong Xiangming
+Kataoka Satoshi
+W+9.5
+241
+sgf
+J
+1980-06-12
+Nie Weiping
+Imamura Fumiaki
+B+3.5
+191
+sgf
+C
+1980-06-18
+Minami Yoshimi
+Kong Xiangming
+W+1.5
+237
+sgf
+C
+1980-06-18
+Cao Dayuan
+Yamazaki Yoshihiro
+B+R
+149
+sgf
+C
+1980-06-18
+Wu Songsheng
+Mizuno Hiroshi
+B+R
+149
+sgf
+C
+1980-06-20
+Kong Xiangming
+Nishigami Yoshihiko
+W+R
+250
+sgf
+J
+1980-06-20
+Ishii Kunio
+Hua Yigang
+B+5.5
+159
+sgf
+J
+1980-06-22
+Nie Weiping
+Honda Kunihisa
+W+R
+278
+sgf
+J
+1980-06-22
+Kong Xiangming
+Kiyonari Tetsuya
+B+1.5
+173
+sgf
+C
+1981
+Go World writes:
+1981: Hashimoto Shoji team toured China, won 30-26 (Hashimoto 7-0 , Kataoka and Miyazawa 5-2).
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1981-05-27
+Hashimoto Shoji
+Nie Weiping
+B+7.5
+278
+sgf
+J
+1981-05-28
+Liu Xiaoguang
+Hashimoto Shoji
+W+0.5
+265
+sgf
+J
+1981-05-31
+Nie Weiping
+Kojima Takaho
+B+3.5
+283
+sgf
+C
+1981-06-02
+Kataoka Satoshi
+Nie Weiping
+B+R
+267
+sgf
+J
+1981-06-09
+Ma Xiaochun
+Kojima Takaho
+B+R
+121
+sgf
+C
+1981-06-13
+Nie Weiping
+Fukui Masaaki
+B+R
+213
+sgf
+C
+1981-10-08
+Cao Dayuan
+Fujisawa Hideyuki
+B+R
+199
+sgf
+C
+1981-11-06
+Liu Xiaoguang
+Kataoka Satoshi
+W+3.5
+272
+sgf
+J
+1982
+Go World 28 and 29 write:
+1982:  A team of Chinese professional players, led by Nieh Wei-p'ing, made a tour
+of Japan in June this year. The team won six out of seven matches, scoring a total
+of 43 wins to 13 losses. The remaining match was a draw.
+Go World 52 adds:
+13 of the wins were against amateurs
+1: 6/10
+2: 6/12
+3: 6/15
+4: 6/18
+5: 6/22
+6: 6/24
+7: 6/26
+Score
+Nieh 9d
+Kudo 9d
++4.5
+Kato 9d
+−7.5
+Takabayashi
++R
+Oyama 9d
++5.5
+Saijo 8d
++R
+Sonoda 9d
++R
+Hashimoto Y. 9d
++10.5
+6-1
+Ma 7d
+Tozawa 9d
++3.5
+Ohira 9d
++R
+Kanazawa M.
++R
+Ishii 9d
+−R
+Hane 9d
+−R
+Sekiyama 9d
+−R
+Hayase 8d
++R
+4-3
+Tsao 6d
+Abe 8d
++R
+Takagi 9d
++0.5
+Imamura
++1.5
+Tanita 7d
++R
+Yamashiro 7d
+−R
+Honda 9d
+−R
+Sakaguchi 8d
++R
+5-2
+Yang 5d
+Ishigure 8d
+−R
+Nakamura 8d
+−R
+Nakazono
+−1.5
+Tokunaga 7d
++R
+Kuwata 7d
++0.5
+Shiraishi 9d
+−R
+Kori 6d
++1.5
+3-4
+Chiang M. 5d
+Inoue 7d
+−0.5
+Asano 6d
++R
+Miura
++R
+Oka 6d
++R
+Morikawa 4d
++R
+Endo 8d
++R
+Yanagawa 3d
++R
+6-1
+Chiang C. 5d
+Hashimoto 5d
++1.5
+Umeki 6d
++2.5
+Kasai
++R
+Tanimura 3d
++R
+Ito 5d
++R
+Hasegawa 7d
++R
+Shimada
++6.5
+7-0
+Ch'ien 4d
+Sonoda 5d
++0.5
+Iwata 6d
+−R
+Aoki
++R
+Yamashita
++R
+Takeuchi
++R
+Imamura 4d
+−0.5
+Ikeda
++R
+5-2
+Jui 4d
+Shiratori 4d
++R
+Doi 5d
++0.5
+Fujita
++10.5
+Komori
++2.5
+Kusunoki 6d
++3.5
+Ashida 5d
++R
+Yukimatsu
++R
+7-0
+Result
+6-2
+5-3
+7-1
+7-1
+6-2
+4-4
+8-0
+43-13
+Here Nieh = Nie Weiping, Ma = Ma Xiaochun, Tsao = Cao Dayuan, Yang = Yang Jinhua, Chiang M. = Jiang Mingjiu,
+Chiang C. = Jiang Zhujiu, Ch'ien = Qian Yuping, Jui = Rui Naiwei.
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1982-01-29
+Yoda Norimoto
+Qian Yuping
+B+R
+254
+sgf
+J
+1982-01-31
+Qian Yuping
+Yoda Norimoto
+B+R
+195
+sgf
+C
+1982-02-02
+Qian Yuping
+Yoda Norimoto
+W+R
+140
+sgf
+J
+1982-03-23
+Cao Dayuan
+Kobayashi Satoru
+W+0.5
+225
+sgf
+J
+1982-03-25
+Kobayashi Satoru
+Cao Dayuan
+B+R
+177
+sgf
+J
+1982-05
+Hua Yigang
+Kiyonari Tetsuya
+B+R
+109
+sgf
+J
+1982-05-15
+Yang Hui
+Komatsu Hideki
+W+R
+136
+sgf
+J
+1982-05-18
+Fujisawa Kazunari
+Chen Mingchuan
+B+R
+179
+sgf
+J
+1982-05-18
+Cao Dayuan
+Kiyonari Tetsuya
+B+R
+119
+sgf
+C
+1982-05-19
+Shao Zhenzhong
+Yasuda Yasutoshi
+B+R
+109
+sgf
+C
+1982-06-10
+Hashimoto Yujiro
+Jiang Zhujiu
+W+1.5
+235
+sgf
+C
+1982-06-10
+Nie Weiping
+Kudo Norio
+B+4.5
+244
+sgf
+C
+1982-06-10
+Jiang Mingjiu
+Inoue Kunio
+W+0.5
+306
+sgf
+J
+1982-06-10
+Shiratori Sumiko
+Rui Naiwei
+W+R
+156
+sgf
+C
+1982-06-10
+Cao Dayuan
+Abe Yoshiteru
+B+R
+189
+sgf
+C
+1982-06-10
+Ishigure Ikuro
+Yang Jinhua
+B+R
+169
+sgf
+J
+1982-06-10
+Tozawa Akinobu
+Ma Xiaochun
+W+3.5
+246
+sgf
+C
+1982-06-11
+Ma Xiaochun
+Awaji Shuzo
+W+1.5
+262
+sgf
+J
+hayago
+1982-06-12
+Takagi Shoichi
+Cao Dayuan
+W+0.5
+276
+sgf
+C
+1982-06-12
+Yang Jinhua
+Nakamura Hidehito
+W+R
+128
+sgf
+J
+1982-06-12
+Asano Hideaki
+Jiang Mingjiu
+W+R
+126
+sgf
+C
+1982-06-12
+Kato Masao
+Nie Weiping
+B+7.5
+203
+sgf
+J
+1982-06-12
+Ma Xiaochun
+Ohira Shuzo
+B+R
+227
+sgf
+C
+1982-06-12
+Rui Naiwei
+Doi Makoto
+B+0.5
+234
+sgf
+C
+1982-06-12
+Jiang Zhujiu
+Umeki Suguru
+B+2.5
+241
+sgf
+C
+1982-06-13
+Nie Weiping
+Fujisawa Hideyuki
+W+R
+136
+sgf
+J
+hayago
+1982-06-18
+Nie Weiping
+Oyama Kunio
+B+5.5
+225
+sgf
+C
+1982-06-18
+Yang Jinhua
+Tokunaga Hirohisa
+B+R
+163
+sgf
+C
+1982-06-18
+Tanida Harumi
+Cao Dayuan
+W+R
+238
+sgf
+C
+1982-06-22
+Ito Yoji
+Jiang Zhujiu
+W+R
+186
+sgf
+C
+1982-06-22
+Qian Yuping
+Takeuchi Kazuo
+B+R
+203
+sgf
+C
+1982-06-22
+Kusunoki Teruko
+Rui Naiwei
+W+3.5
+225
+sgf
+C
+1982-06-22
+Saijo Masataka
+Nie Weiping
+W+R
+228
+sgf
+C
+1982-06-22
+Jiang Mingjiu
+Morikawa Mitsuo
+B+R
+217
+sgf
+C
+1982-06-22
+Kuwata Yasuaki
+Yang Jinhua
+W+0.5
+223
+sgf
+C
+1982-06-22
+Cao Dayuan
+Yamashiro Hiroshi
+W+R
+226
+sgf
+J
+1982-06-22
+Ma Xiaochun
+Hane Yasumasa
+W+R
+224
+sgf
+J
+1982-06-24
+Hasegawa Sunao
+Jiang Zhujiu
+W+R
+194
+sgf
+C
+1982-06-24
+Rui Naiwei
+Ashida Isoko
+B+R
+115
+sgf
+C
+1982-06-24
+Sonoda Yuichi
+Nie Weiping
+W+R
+214
+sgf
+C
+1982-06-24
+Shiraishi Yutaka
+Yang Jinhua
+B+R
+183
+sgf
+J
+1982-06-24
+Ma Xiaochun
+Sekiyama Toshio
+W+R
+280
+sgf
+J
+1982-06-24
+Cao Dayuan
+Honda Kunihisa
+W+R
+112
+sgf
+J
+1982-06-24
+Imamura Toshiya
+Qian Yuping
+B+0.5
+262
+sgf
+J
+1982-06-24
+Jiang Mingjiu
+Endo Takahiro
+B+R
+147
+sgf
+C
+1982-06-26
+Nie Weiping
+Hashimoto Yoshimi
+B+10.5
+231
+sgf
+C
+1982-06-26
+Hayase Hiroshi
+Ma Xiaochun
+W+R
+172
+sgf
+C
+1982-06-26
+Sakaguchi Ryuzo
+Cao Dayuan
+W+R
+182
+sgf
+C
+1982-06-26
+Qian Yuping
+池田吉行
+B+R
+233
+sgf
+C
+1982-06-26
+Yang Jinhua
+Kori Toshio
+B+1.5
+259
+sgf
+C
+1982-06-26
+行松靖
+Rui Naiwei
+W+R
+132
+sgf
+C
+1982-06-26
+Yanagawa Hiromasa
+Jiang Mingjiu
+W+R
+172
+sgf
+C
+1982-06-26
+Jiang Zhujiu
+Shimada Yoshikuni
+B+6.5
+290
+sgf
+C
+1982-06-29
+Kanda Ei
+Shao Zhenzhong
+W+6.5
+174
+sgf
+C
+1982-07-01
+Shao Zhenzhong
+Kanda Ei
+B+R
+115
+sgf
+C
+1982-09-01
+Ma Xiaochun
+Yamashiro Hiroshi
+W+R
+196
+sgf
+J
+1982-09-03
+Yamashiro Hiroshi
+Ma Xiaochun
+B+R
+187
+sgf
+J
+1982-09-04
+Yamashiro Hiroshi
+Nie Weiping
+W+R
+117
+sgf
+C
+hayago
+1983
+Go World 33 writes:
+In China there are ten professionals:
+9-dan: Nieh Wei-p'ing, Chen Zude, Wu Sung-sheng;
+8-dan: Wang Ju-nan, Hua I-kang;
+7-dan: Ch'en Kuo-sun, Lo Chien-wen, Huang Te-hsun, K'ung Shang-ming;
+5-dan: Ho Hsiao-jen.
+And strong amateurs:
+8-dan: Ma; 7-dan:  Shao Chen-chung, Liu Xiaoguang and Tsao Ta-yuan.
+Eight more amateurs participated:
+6-dan: Chiang [Jiang Zhujiu], Ch'eng [Cheng Xiaoliu], Hsu;
+5-dan Ch'ien Yu-p'ing [Qian Yuping], Ch'en [Chen Linxin], Sung, Wang C. [Wang Qun], Wang Y.
+1: 6/14
+2: 6/16
+3: 6/19
+4: 6/23
+5: 6/25
+6: 6/29
+7: 7/1
+Score
+Ishida 9d
+Nieh 9d
+−
+Tsao 7d
++
+Shao 7d
++
+Ch'eng
+−
+Ma
++
+Nieh
+−
+Wu
++
+4-3
+Ishii 9d
+Tsao 7d
++
+Nieh 9d
+−
+K'ung
++
+Chiang
++
+Wang C. 5d
+−
+Tsao
++
+Shao
+−
+4-3
+Kobayashi 9d
+Shao 7d
++
+Ma 8d
++
+Liu
++
+Shao
++
+Tsao
++
+Chiang
++
+Nieh
++
+7-0
+Sonoda 9d
+Ma 8d
++
+Wang 8d
++
+Lo 7d
++
+Ma
+−
+Sung
++
+Liu
++
+Hua
++
+6-1
+Sato 8d
+Hua 8d
++
+Chiang
+−
+Ma
+−
+Sung
+−
+K'ung
+−
+Wu
++
+Ch'ien
+−
+2-5
+Nakamura 8d
+Liu 7d
+−
+Ch'eng 6d
+−
+Hsu 6d
+−
+Hua
++
+Ch'en
+−
+Shao
+−
+Ma
+−
+1-6
+Yamashiro 8d
+Chiang 6d
+−
+Shao
++
+Ch'ien 5d
+−
+Liu
++
+Wu 9d
++
+Wang 8d
+−
+Tsao
++
+4-3
+Hasegawa 8d
+Huang 7d
+−
+Sung 5d
++
+Nieh
+−
+Ch'en 5d
+−
+Ch'ien
+−
+Wang Y. 5d
++
+Wang C. 5d
++
+3-4
+Result
+4-4
+5-3
+4-4
+4-4
+4-4
+5-3
+5-3
+31-25
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1983-06-14
+Yamashiro Hiroshi
+Jiang Zhujiu
+W+6.5
+288
+sgf
+C
+1983-06-14
+Ishida Yoshio
+Nie Weiping
+W+6.5
+268
+sgf
+C
+1983-06-14
+Kobayashi Koichi
+Shao Chen-chung
+B+R
+149
+sgf
+J
+1983-06-16
+Ma Xiaochun
+Kobayashi Koichi
+W+R
+190
+sgf
+J
+1983-06-16
+Jiang Zhujiu
+Sato Masaharu
+B+R
+225
+sgf
+C
+1983-06-16
+Ishii Kunio
+Nie Weiping
+W+R
+249
+sgf
+C
+1983-06-16
+Sonoda Yuichi
+Wang Runan
+B+3.5
+255
+sgf
+J
+1983-06-19
+Yamashiro Hiroshi
+Qian Yuping
+W+4.5
+200
+sgf
+C
+1983-06-19
+Kobayashi Koichi
+Liu Xiaoguang
+B+R
+156
+sgf
+J
+1983-06-19
+Kong Xiangming
+Ishii Kunio
+W+5.5
+291
+sgf
+J
+1983-06-19
+Ishida Yoshio
+Shao Zhenzhong
+B+2.5
+228
+sgf
+J
+1983-06-19
+Nie Weiping
+Hasegawa Sunao
+B+R
+153
+sgf
+C
+1983-06-23
+Sonoda Yuichi
+Ma Xiaochun
+W+R
+182
+sgf
+C
+1983-06-23
+Hasegawa Sunao
+Chen Linxin
+W+R
+192
+sgf
+C
+1983-06-23
+Cheng Xiaoliu
+Ishida Yoshio
+B+5.5
+236
+sgf
+C
+1983-06-24
+Nie Weiping
+Hashimoto Shoji
+B+R
+211
+sgf
+C
+1983-06-25
+Sato Masaharu
+Kong Xiangming
+W+R
+183
+sgf
+C
+1983-06-25
+Qian Yuping
+Hasegawa Sunao
+B+R
+189
+sgf
+C
+1983-06-25
+Song Xuelin
+Sonoda Yuichi
+W+R
+167
+sgf
+J
+1983-06-25
+Wang Qun
+Ishii Kunio
+B+5.5
+204
+sgf
+C
+1983-06-25
+Kobayashi Koichi
+Cao Dayuan
+B+0.5
+277
+sgf
+J
+1983-06-29
+Nakamura Hidehito
+Shao Zhenzhong
+W+R
+146
+sgf
+C
+1983-06-29
+Nie Weiping
+Ishida Yoshio
+B+0.5
+317
+sgf
+C
+1983-06-29
+Jiang Zhujiu
+Kobayashi Koichi
+W+R
+180
+sgf
+J
+1983-06-29
+Hasegawa Sunao
+Wang Yuan
+B+R
+221
+sgf
+J
+1983-07-01
+Shao Zhenzhong
+Ishii Kunio
+B+R
+138
+sgf
+C
+1983-07-01
+Yamashiro Hiroshi
+Cao Dayuan
+B+5.5
+309
+sgf
+J
+1983-07-01
+Kobayashi Koichi
+Nie Weiping
+B+R
+221
+sgf
+J
+1983-07-01
+Hua I-kang
+Sonoda Yuichi
+W+0.5
+233
+sgf
+J
+1983-07-01
+Nie Weiping
+Ishida Yoshio
+W+R
+218
+sgf
+J
+hayago
+1983-11-03
+Kataoka Satoshi
+Ma Xiaochun
+B+R
+227
+sgf
+J
+1984
+Go World 35 and 37 write:
+1984: The unique feature of this tour was two best-of-three individual series.
+If a best-of-three was decided 2--0, then the pairings were changed in the 3rd round
+and the players played 'exhibition' games.
+Result for Japan: 33 wins, 22 losses, 1 no result.
+Japan won 11 of the 16 best-of-three series played.
+Kato played six games against the tourists, winning all six.
+Liu Xiaoguang won both his best-of-three matches.
+Nieh won only twice, but did have the consolation
+of beating Sakata in a haya-go exhibition game.
+The Chinese players were the top eight from a qualifying tournament, namely
+1. Ch'ien Yu-ping 6-dan (age 17),   
+2. Nieh Wei-p'ing 9-dan (age 31),  
+3. Ma Hsiao-ch'un 9-dan (age 19),  
+4. K'ung Shang-ming 7-dan (age 28),
+5. Wang Yuan 5-dan (age 24),
+6. Liu Xiaoguang 7-dan (age 24),
+7. Ts'ao Ta-yuan 7-dan (age 22),
+8. Sung Hsueh-lin 6-dan (age 22).
+1: 5/24
+2: 5/26
+3: 5/28
+4: 5/30
+5: 6/3
+6: 6/5
+7: 6/7
+Score
+Nieh 9d
+Cho
+−3.5
+Cho
+−1.5
+Sakai
++R
+Takemiya
+−R
+Kato
+−8.5
+Kato
+−3.5
+Hashimoto
++R
+2-5
+Ma 9d
+Kato
+−R
+Kato
+−R
+Kobayashi S.
+−R
+Takagi
++R
+Hashimoto S.
++R
+Hashimoto
++1.5
+Tono H.
+−R
+3-4
+Ts'ao 7d
+Sakai
+−R
+Sakai
+−7.5
+Ohira
++R
+Kudo
+−R
+Hane
+−R
+Hane
++0.5
+Hane
+−4.5
+2-5
+Liu 7d
+Ohira
++R
+Ohira
++R
+Kato
+−R
+Yamabe
++R
+Honda
++3.5
+Honda
+−R
+Honda
++R
+5-2
+K'ung 7d
+Kobayashi S.
+−10.5
+Kobayashi
+−8.5
+Miyazawa
++2.5
+Kamimura H.
++R
+Tono
+−1.5
+Tono
+−R
+Ushinohama
+−R
+2-5
+Ch'ien 6d
+Kataoka
+Void
+Kataoka
++R
+Kataoka
+−R
+Kataoka
+−R
+Yamashiro
++R
+Yamashiro
+−R
+Yamashiro
++R
+3-3
+Sung
+Miyazawa
+−R
+Miyazawa
+−R
+Yoda
+−R
+Fukui M.
++0.5
+Ishii K.
++1.5
+Ishii
+−R
+Ishii
+−R
+2-5
+Wang 5d
+Kamimura K.
+−R
+Kamimura
++R
+Kamimura
+−4.5
+Tokimoto
+−R
+Ushinohama
++3.5
+Ushinohama
++5.5
+Kato
+−R
+3-4
+Result
+1-6
+3-5
+3-5
+4-4
+5-3
+3-5
+3-5
+22-33
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1984-05-24
+Qian Yuping
+Kataoka Satoshi
+Void
+307
+sgf
+-
+1984-05-24
+Cho Chikun
+Nie Weiping
+B+3.5
+275
+sgf
+J
+1984-05-24
+Kato Masao
+Ma Xiaochun
+B+R
+179
+sgf
+J
+1984-05-24
+Liu Xiaoguang
+Ohira Shuzo
+B+R
+173
+sgf
+C
+1984-05-24
+Wang Yuan
+Kamimura Kunio
+W+R
+122
+sgf
+J
+1984-05-24
+Sakai Takeshi
+Cao Dayuan
+B+R
+119
+sgf
+J
+1984-05-24
+Kong Xiangming
+Kobayashi Satoru
+W+10.5
+272
+sgf
+J
+1984-05-24
+Miyazawa Goro
+Song Xuelin
+B+R
+251
+sgf
+J
+1984-05-26
+Ohira Shuzo
+Liu Xiaoguang
+W+R
+174
+sgf
+C
+1984-05-26
+Nie Weiping
+Cho Chikun
+W+1.5
+231
+sgf
+J
+1984-05-26
+Kobayashi Satoru
+Kong Xiangming
+B+8.5
+277
+sgf
+J
+1984-05-26
+Kataoka Satoshi
+Qian Yuping
+W+R
+146
+sgf
+C
+1984-05-26
+Song Xuelin
+Miyazawa Goro
+W+R
+180
+sgf
+J
+1984-05-26
+Cao Dayuan
+Sakai Takeshi
+W+7.5
+279
+sgf
+J
+1984-05-26
+Ma Xiaochun
+Kato Masao
+W+R
+174
+sgf
+J
+1984-05-26
+Kamimura Kunio
+Wang Yuan
+W+R
+82
+sgf
+C
+1984-05-28
+Nie Weiping
+Sakai Takeshi
+B+R
+161
+sgf
+C
+1984-05-28
+Ma Xiaochun
+Kobayashi Satoru
+W+R
+260
+sgf
+J
+1984-05-28
+Qian Yuping
+Kataoka Satoshi
+W+R
+212
+sgf
+J
+1984-05-28
+Cao Dayuan
+Ohira Shuzo
+B+R
+161
+sgf
+C
+1984-05-28
+Song Xuelin
+Yoda Norimoto
+W+R
+208
+sgf
+J
+1984-05-28
+Kong Xiangming
+Miyazawa Goro
+B+2.5
+265
+sgf
+C
+1984-05-28
+Liu Xiaoguang
+Kato Masao
+W+R
+206
+sgf
+J
+1984-05-28
+Kamimura Kunio
+Wang Yuan
+B+4.5
+246
+sgf
+J
+1984-05-30
+Kong Xiangming
+Kamimura Haruo
+B+R
+183
+sgf
+C
+1984-05-30
+Cao Dayuan
+Kudo Norio
+W+R
+208
+sgf
+J
+1984-05-30
+Takemiya Masaki
+Nie Weiping
+B+R
+257
+sgf
+J
+1984-05-30
+Ma Xiaochun
+Takagi Shoichi
+B+R
+225
+sgf
+C
+1984-05-30
+Tokimoto Hajime
+Wang Yuan
+B+R
+235
+sgf
+J
+1984-05-30
+Yamabe Toshiro
+Liu Xiaoguang
+W+R
+260
+sgf
+C
+1984-05-30
+Fukui Masaaki
+Song Xuelin
+W+0.5
+316
+sgf
+C
+1984-05-30
+Kataoka Satoshi
+Qian Yuping
+B+R
+263
+sgf
+J
+1984-06-01
+Nie Weiping
+Sakata Eio
+B+6.5
+203
+sgf
+C
+hayago
+1984-06-03
+Kato Masao
+Nie Weiping
+B+8.5
+234
+sgf
+J
+1984-06-03
+Ushinohama Satsuo
+Wang Yuan
+W+3.5
+314
+sgf
+C
+1984-06-03
+Tono Hiroaki
+Kong Xiangming
+B+1.5
+237
+sgf
+J
+1984-06-03
+Ma Xiaochun
+Hashimoto Shoji
+B+R
+219
+sgf
+C
+1984-06-03
+Hane Yasumasa
+Cao Dayuan
+B+R
+179
+sgf
+J
+1984-06-03
+Song Xuelin
+Ishii Kunio
+B+1.5
+255
+sgf
+C
+1984-06-03
+Liu Xiaoguang
+Honda Kunihisa
+B+3.5
+292
+sgf
+C
+1984-06-03
+Qian Yuping
+Yamashiro Hiroshi
+B+R
+201
+sgf
+C
+1984-06-05
+Hashimoto Shoji
+Ma Xiaochun
+W+1.5
+262
+sgf
+C
+1984-06-05
+Wang Yuan
+Ushinohama Satsuo
+B+5.5
+215
+sgf
+C
+1984-06-05
+Nie Weiping
+Kato Masao
+W+3.5
+256
+sgf
+J
+1984-06-05
+Ishii Kunio
+Song Xuelin
+B+R
+197
+sgf
+J
+1984-06-05
+Liu Xiaoguang
+Honda Kunihisa
+B+R
+225
+sgf
+C
+1984-06-05
+Cao Dayuan
+Hane Yasumasa
+B+0.5
+254
+sgf
+C
+1984-06-05
+Kong Xiangming
+Tono Hiroaki
+W+R
+228
+sgf
+J
+1984-06-05
+Yamashiro Hiroshi
+Qian Yuping
+B+R
+199
+sgf
+J
+1984-06-07
+Hashimoto Shoji
+Nie Weiping
+W+R
+212
+sgf
+C
+1984-06-07
+Qian Yuping
+Yamashiro Hiroshi
+B+R
+179
+sgf
+C
+1984-06-07
+Honda Kunihisa
+Liu Xiaoguang
+W+R
+197
+sgf
+C
+1984-06-07
+Ushinohama Satsuo
+Kong Xiangming
+B+R
+187
+sgf
+J
+1984-06-07
+Wang Yuan
+Kato Masao
+W+R
+66
+sgf
+J
+1984-06-07
+Song Xuelin
+Ishii Kunio
+W+R
+256
+sgf
+J
+1984-06-07
+Tono Hiroaki
+Ma Xiaochun
+B+R
+199
+sgf
+J
+1984-06-07
+Hane Yasumasa
+Cao Dayuan
+B+4.5
+238
+sgf
+J
+1984-10-07
+Sakata Eio
+Nie Weiping
+W+7.5
+275
+sgf
+C
+In October 1984 the
+Japan-China Super Go
+tournament series started.
+For later Japan-China Go Exchanges, see
+1985
+,
+1986
+,
+1987
+,
+1988
+,
+1989
+,
+1990
+,
+1991
+,
+1992
+.

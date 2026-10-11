@@ -1,0 +1,17 @@
+{
+  "PROD-mixed20-evidence.jsonl": "3b81b96b9d069f006980ca51a870491fdba3aab470e8aa227cd8e14f7b48d7ef",
+  "PROD-mixed20-inventory.json.gz": "63f8233665d95b6a92b4b1b557263d77fd5f0065a410e8696e4495dc15a45c24",
+  "PROD-mixed20-source-registry.json": "98f2368d2a2dd6e941156f59b3267180fd7702fffe15e6f38fe74a3e4fed3bd8",
+  "PROD-mixed20-transport-file-sha256.json": "29372d669d539ed6f5555c8d0914f17eff84a89f7b2940dac7c3995da54a11f2",
+  "PROD-mixed20-unsigned-bundle.json.gz": "475c2ca097985b6ed55df1237df4bf35ce15c8ab9dce5980f425cd5971f9eaa1",
+  "PROD-mixed20-unsigned-summary.json": "94ab0bfff90d4ee1aefd96b96860ee07522721c9d4f544a0763e066a4fe4ede4",
+  "TEST-mixed20-evidence.jsonl": "cdc1fc0cb3563779c666667398259c2a0682a42dbd1d2256964158fc234fe908",
+  "TEST-mixed20-inventory.json.gz": "a2f87704802a71e01fae55a032ac8ad9c79e932f1b14890b3a04e9fac2ad958a",
+  "TEST-mixed20-source-registry.json": "98f2368d2a2dd6e941156f59b3267180fd7702fffe15e6f38fe74a3e4fed3bd8",
+  "TEST-mixed20-transport-file-sha256.json": "7198d98950adf498932190c44d98606e8960cadf47fc8e3dd30f1bbbf00657ed",
+  "TEST-mixed20-unsigned-bundle.json.gz": "695cf090588f1b3c923f0de6aaefa3f1cf476d5819ee3414227b627849c2b7dc",
+  "TEST-mixed20-unsigned-summary.json": "13639446eb31dc59421b92684129b7465d041f51d2c25f38088164ba2319f5b5",
+  "inner.py": "3e61500506888ea0faa49a903a1e178297fb0224598f09302ce2484b345ba5ae",
+  "root-mixed20-execution-approval.json": "7454de1a49b80036eb07092bdf6df01998001efe887c884d827a045559469703",
+  "run.py": "fd5db5e2fc121e980f3e0bce1d2dffb6b5d8f50210ffc937b5574fda1eb116bf"
+}

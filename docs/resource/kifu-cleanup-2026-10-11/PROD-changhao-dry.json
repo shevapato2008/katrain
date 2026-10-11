@@ -1,0 +1,20 @@
+{
+  "committed": false,
+  "deleted": 0,
+  "updated": 2,
+  "rank_changes": 0,
+  "dependencies": {
+    "kifu_album_sources": 0,
+    "kifu_dedup_changes": 0,
+    "kifu_album_event_selections": 0,
+    "kifu_analysis_jobs": 0,
+    "kifu_analysis_moves": 0
+  },
+  "environment": "PROD",
+  "phase": "dry",
+  "plan_sha256": "ebe51ffad4992006da0f77d27e5926b9b47df6531a7dead0f26342b7fdb5a827",
+  "backup_sha256": "f84c985b08629f7aa433dd19414973369dd31f86c54aa3057760cf60ea81cb43",
+  "album_total": 171272,
+  "source_sgf_preserved": true,
+  "elapsed_seconds": 0.37
+}

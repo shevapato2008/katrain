@@ -1,0 +1,2082 @@
+{
+  "format": "kifu-player-second-batch-review-v2",
+  "input": {
+    "inventory_sha256": "dcc4f547ec196bbe850b79b6ce11a97dfda64e92343fcb2640dbd1aebaaad743",
+    "catalog_sha256": "6290eee1aeb7fa9ea4b8374e4e31a8f5192604b407775f5f0d62e4ff129a2e59",
+    "hold_batch_sha256": "98ffa44c59304dd58f6918509c53dffb9eef78692e69a9cb64243a1424bd9f00",
+    "top20_review_document": "docs/resource/kifu-player-top20-variant-identity-review-2026-10-04.md"
+  },
+  "scope": "catalog identity and frozen 19x19 game-slot binding reviewed; execution requires fresh post-first-batch snapshot preflight",
+  "rules": {
+    "raw_matching": "exact allowlist only; no prefix matching, OpenCC-wide replacement, or qualifier stripping",
+    "catalog_merges": "move aliases/translations/references to target in transaction after live preflight; do not delete until checked",
+    "game_fk": "approved rows may be backfilled only after fresh snapshot scope hash and FK conflict preflight; exclude non-allowlisted raw values"
+  },
+  "summary": {
+    "groups": 20,
+    "raw_allowlist_values": 95,
+    "raw_allowlist_slots": 26015,
+    "catalog_duplicate_ids_to_fold": 7,
+    "existing_id_renames": 3,
+    "new_player_ids_needed": 1,
+    "excluded_prefix_raw_values": 42,
+    "game_fk_approved_slots_on_frozen_scope": 26015,
+    "game_fk_pending_conflict_slots": 0,
+    "sentinel_1900_slots": 39,
+    "pre_professional_context_slots": 11,
+    "timestamp_formatted_date_slots": 11,
+    "already_correct_fk_slots": 20,
+    "new_fk_slots_if_fresh_scope_unchanged": 25995
+  },
+  "decisions": [
+    {
+      "rank": 1,
+      "canonical_chinese_name": "李昌镐",
+      "source_main_group": "李昌镐",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 143,
+        "current_canonical_name": "李昌镐",
+        "new_canonical_name": "李昌镐"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "143": 5
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "李昌镐",
+          "slots": 2140,
+          "parsed_base_name": "李昌镐",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐九段",
+          "slots": 36,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌鎬",
+          "slots": 9,
+          "parsed_base_name": "李昌鎬",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐七段",
+          "slots": 7,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐六段",
+          "slots": 7,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐　九段",
+          "slots": 2,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐三段",
+          "slots": 2,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐五段",
+          "slots": 2,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐四段",
+          "slots": 2,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "李昌镐　",
+          "slots": 1,
+          "parsed_base_name": "李昌镐",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 2208,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "李昌镐大王",
+          "slots": 7
+        },
+        {
+          "raw_value": "李昌镐挑战者",
+          "slots": 5
+        },
+        {
+          "raw_value": "李昌镐国棋",
+          "slots": 3
+        },
+        {
+          "raw_value": "李昌镐leechangho",
+          "slots": 2
+        },
+        {
+          "raw_value": "李昌镐leechanghao",
+          "slots": 1
+        },
+        {
+          "raw_value": "李昌镐天元",
+          "slots": 1
+        },
+        {
+          "raw_value": "李昌镐最高位",
+          "slots": 1
+        },
+        {
+          "raw_value": "李昌镐朴志恩",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000001",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/李昌鎬"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "8c89554f69330140ee7c55bcd5fc766237f5d875816a81d1aff40763ba523ab9",
+        "slot_count": 2208,
+        "source_key_counts": {
+          "19x19": 2208
+        },
+        "first_real_date": "1984-01-27",
+        "last_real_date": "2026-01-09",
+        "birth_year": 1975,
+        "professional_entry_year": 1986,
+        "sentinel_1900_album_ids": [
+          98115
+        ],
+        "timestamp_formatted_date_slots": 4,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 98268,
+            "date": "1984-01-27",
+            "opponent_raw": "柳时熏",
+            "event_raw": "第3届韩国少儿围棋王战"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 5,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 2,
+      "canonical_chinese_name": "赵治勋",
+      "source_main_group": "赵治勋",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 608,
+        "current_canonical_name": "赵治勋",
+        "new_canonical_name": "赵治勋"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "608": 5
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "赵治勋",
+          "slots": 2052,
+          "parsed_base_name": "赵治勋",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "赵治勋九段",
+          "slots": 10,
+          "parsed_base_name": "赵治勋",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "赵治勋七段",
+          "slots": 1,
+          "parsed_base_name": "赵治勋",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "赵治勋五段",
+          "slots": 1,
+          "parsed_base_name": "赵治勋",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "赵治勋六段",
+          "slots": 1,
+          "parsed_base_name": "赵治勋",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "趙治勳",
+          "slots": 1,
+          "parsed_base_name": "趙治勳",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 2066,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "赵治勋赵治勋",
+          "slots": 7
+        },
+        {
+          "raw_value": "赵治勋挑战者",
+          "slots": 3
+        },
+        {
+          "raw_value": "赵治勋本因坊",
+          "slots": 2
+        },
+        {
+          "raw_value": "赵治勋棋圣",
+          "slots": 2
+        },
+        {
+          "raw_value": "赵治勋,九段,棋圣",
+          "slots": 1
+        },
+        {
+          "raw_value": "赵治勋名人",
+          "slots": 1
+        },
+        {
+          "raw_value": "趙治勳(",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000020",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/趙治勳"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "3cfe7e4a058213383112ec2ef436388e77558937d7b9c696ec342d43725c12ba",
+        "slot_count": 2066,
+        "source_key_counts": {
+          "19x19": 2066
+        },
+        "first_real_date": "1962-08-02",
+        "last_real_date": "2026-01-15",
+        "birth_year": 1956,
+        "professional_entry_year": 1968,
+        "sentinel_1900_album_ids": [
+          31258,
+          58720,
+          64309,
+          94592,
+          121241,
+          138567,
+          142877
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 38841,
+            "date": "1965-10-23",
+            "opponent_raw": "曹薰铉",
+            "event_raw": "JapanInseiTouranment,1965"
+          },
+          {
+            "album_id": 107597,
+            "date": "1962-08-02",
+            "opponent_raw": "林海峰",
+            "event_raw": "teaching,5stonehandicap"
+          },
+          {
+            "album_id": 118402,
+            "date": "1962-08-31",
+            "opponent_raw": "木谷实",
+            "event_raw": "teaching,5stonehandicap"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 5,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 3,
+      "canonical_chinese_name": "曹薰铉",
+      "source_main_group": "曹薰铉",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 46,
+        "current_canonical_name": "曹薰铉",
+        "new_canonical_name": "曹薰铉"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "46": 5
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "曹薰铉",
+          "slots": 1937,
+          "parsed_base_name": "曹薰铉",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "曹薰铉九段",
+          "slots": 31,
+          "parsed_base_name": "曹薰铉",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "曹薰铉　九段",
+          "slots": 2,
+          "parsed_base_name": "曹薰铉",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "曹薰鉉",
+          "slots": 1,
+          "parsed_base_name": "曹薰鉉",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1971,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "曹薰铉挑战者",
+          "slots": 2
+        },
+        {
+          "raw_value": "曹薰铉]BR[九段",
+          "slots": 1
+        },
+        {
+          "raw_value": "曹薰铉九段chohunxuan",
+          "slots": 1
+        },
+        {
+          "raw_value": "曹薰铉王位",
+          "slots": 1
+        },
+        {
+          "raw_value": "曹薰铉赵惠连",
+          "slots": 1
+        },
+        {
+          "raw_value": "曹薰铉霸王",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000002",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/曹薰铉"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "9ceac2d791cb8870a9365adeb98655f0c42b17aa6a0fc48b4bf1e281e5f666a5",
+        "slot_count": 1971,
+        "source_key_counts": {
+          "19x19": 1971
+        },
+        "first_real_date": "1963-01-06",
+        "last_real_date": "2025-10-06",
+        "birth_year": 1953,
+        "professional_entry_year": 1962,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 5,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 4,
+      "canonical_chinese_name": "林海峰",
+      "source_main_group": "林海峰",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "rename_player",
+        "player_id": 298,
+        "current_canonical_name": "林海峯名誉",
+        "new_canonical_name": "林海峰"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "298": 5
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "林海峰",
+          "slots": 1669,
+          "parsed_base_name": "林海峰",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "林海峰九段",
+          "slots": 15,
+          "parsed_base_name": "林海峰",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "林海峯",
+          "slots": 6,
+          "parsed_base_name": "林海峯",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "林海峰七段",
+          "slots": 3,
+          "parsed_base_name": "林海峰",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "林海峰六段",
+          "slots": 2,
+          "parsed_base_name": "林海峰",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "林海峰五段",
+          "slots": 1,
+          "parsed_base_name": "林海峰",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1696,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "林海峰RinKaiho",
+          "slots": 22
+        },
+        {
+          "raw_value": "林海峰名人",
+          "slots": 3
+        },
+        {
+          "raw_value": "林海峰,九段,天元",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000009.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/林海峰_(围棋)"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "c51de4e2506f4be45c92a27aefc1058e675c5fbf22ca54d77d669c57fd2510ba",
+        "slot_count": 1696,
+        "source_key_counts": {
+          "19x19": 1696
+        },
+        "first_real_date": "1956-11-16",
+        "last_real_date": "2026-01-22",
+        "birth_year": 1942,
+        "professional_entry_year": 1955,
+        "sentinel_1900_album_ids": [
+          52372,
+          52408,
+          56578,
+          67211,
+          81589,
+          107543,
+          107624,
+          107627,
+          107633,
+          107639,
+          107647
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 5,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 5,
+      "canonical_chinese_name": "依田纪基",
+      "source_main_group": "依田纪基",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 57,
+        "current_canonical_name": "依田纪基",
+        "new_canonical_name": "依田纪基"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        488
+      ],
+      "catalog_id_fk_slot_counts": {
+        "57": 0,
+        "488": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "依田纪基",
+          "slots": 1385,
+          "parsed_base_name": "依田纪基",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "依田紀基",
+          "slots": 14,
+          "parsed_base_name": "依田紀基",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "依田纪基九段",
+          "slots": 6,
+          "parsed_base_name": "依田纪基",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "依田纪基八段",
+          "slots": 3,
+          "parsed_base_name": "依田纪基",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "依田纪基　八段",
+          "slots": 1,
+          "parsed_base_name": "依田纪基",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "依田纪基三段",
+          "slots": 1,
+          "parsed_base_name": "依田纪基",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1410,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "依田纪基,九段,碁圣",
+          "slots": 4
+        },
+        {
+          "raw_value": "依田纪基YodaNorimoto",
+          "slots": 4
+        },
+        {
+          "raw_value": "依田纪基九段(棋圣)",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000101.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/依田纪基"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "491c1f5410d8bfc9bdfe40900913988f6c9bfc27d5759ac8b3176537a2bec329",
+        "slot_count": 1410,
+        "source_key_counts": {
+          "19x19": 1410
+        },
+        "first_real_date": "1980-09-18",
+        "last_real_date": "2025-12-04",
+        "birth_year": 1966,
+        "professional_entry_year": 1980,
+        "sentinel_1900_album_ids": [
+          66080,
+          73550,
+          131955,
+          141418,
+          142561,
+          145125
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 6,
+      "canonical_chinese_name": "刘昌赫",
+      "source_main_group": "刘昌赫",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 69,
+        "current_canonical_name": "刘昌赫",
+        "new_canonical_name": "刘昌赫"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "69": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "刘昌赫",
+          "slots": 1291,
+          "parsed_base_name": "刘昌赫",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "刘昌赫九段",
+          "slots": 27,
+          "parsed_base_name": "刘昌赫",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "劉昌赫",
+          "slots": 2,
+          "parsed_base_name": "劉昌赫",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "刘昌赫　九段",
+          "slots": 1,
+          "parsed_base_name": "刘昌赫",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "刘昌赫五段",
+          "slots": 1,
+          "parsed_base_name": "刘昌赫",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1322,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "刘昌赫挑战者",
+          "slots": 3
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000003",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/刘昌赫"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "1d414257475d37f1ed9380512a0aed63161bf522e506b05bd0b5a7237a58e1c5",
+        "slot_count": 1322,
+        "source_key_counts": {
+          "19x19": 1322
+        },
+        "first_real_date": "1984-04-12",
+        "last_real_date": "2026-01-07",
+        "birth_year": 1966,
+        "professional_entry_year": 1985,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 111644,
+            "date": "1984-04-12",
+            "opponent_raw": "王群",
+            "event_raw": "第6届世界业余围棋锦标赛决赛"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 7,
+      "canonical_chinese_name": "武宫正树",
+      "source_main_group": "武宫正树",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "rename_player",
+        "player_id": 490,
+        "current_canonical_name": "武宮正樹",
+        "new_canonical_name": "武宫正树"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "490": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "武宫正树",
+          "slots": 1284,
+          "parsed_base_name": "武宫正树",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "武宮正樹",
+          "slots": 13,
+          "parsed_base_name": "武宮正樹",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "武宫正树九段",
+          "slots": 5,
+          "parsed_base_name": "武宫正树",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "武宫正树七段",
+          "slots": 4,
+          "parsed_base_name": "武宫正树",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "武宮正树",
+          "slots": 3,
+          "parsed_base_name": "武宮正树",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "武宫正树六段",
+          "slots": 1,
+          "parsed_base_name": "武宫正树",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1310,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "武宫正树TakemiyaMasaki",
+          "slots": 9
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000003.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/武宮正樹"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "ff33ad2fffff8a6ffd48730b5ceab54910fe1704301d903b42551d2d5aecbc92",
+        "slot_count": 1310,
+        "source_key_counts": {
+          "19x19": 1310
+        },
+        "first_real_date": "1963-06-09",
+        "last_real_date": "2025-12-11",
+        "birth_year": 1951,
+        "professional_entry_year": 1965,
+        "sentinel_1900_album_ids": [
+          33549,
+          54784,
+          54937,
+          56615,
+          136056,
+          138574,
+          141418
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 80801,
+            "date": "1963-06-09",
+            "opponent_raw": "加藤正夫",
+            "event_raw": "JapanPromotionTournament,1963"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 8,
+      "canonical_chinese_name": "张栩",
+      "source_main_group": "张栩",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 80,
+        "current_canonical_name": "张栩",
+        "new_canonical_name": "张栩"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        313
+      ],
+      "catalog_id_fk_slot_counts": {
+        "80": 0,
+        "313": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "张栩",
+          "slots": 1269,
+          "parsed_base_name": "张栩",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "張栩",
+          "slots": 5,
+          "parsed_base_name": "張栩",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "张栩九段",
+          "slots": 3,
+          "parsed_base_name": "张栩",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1277,
+      "excluded_prefix_raw_values": [],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000331_4.html",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/張栩"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "3ce73fd312fae12543ebdc1d1f23375d02ffd106413d4c1c0af83c53abeb98a2",
+        "slot_count": 1277,
+        "source_key_counts": {
+          "19x19": 1277
+        },
+        "first_real_date": "1993-10-03",
+        "last_real_date": "2025-11-09",
+        "birth_year": 1980,
+        "professional_entry_year": 1994,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 133760,
+            "date": "1993-10-03",
+            "opponent_raw": "SoYokoku",
+            "event_raw": "Oteai"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 9,
+      "canonical_chinese_name": "王立诚",
+      "source_main_group": "王立诚",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 17,
+        "current_canonical_name": "王立诚",
+        "new_canonical_name": "王立诚"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        353
+      ],
+      "catalog_id_fk_slot_counts": {
+        "17": 0,
+        "353": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "王立诚",
+          "slots": 1237,
+          "parsed_base_name": "王立诚",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王立誠",
+          "slots": 7,
+          "parsed_base_name": "王立誠",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王立诚九段",
+          "slots": 6,
+          "parsed_base_name": "王立诚",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王立诚　九段",
+          "slots": 1,
+          "parsed_base_name": "王立诚",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王立诚七段",
+          "slots": 1,
+          "parsed_base_name": "王立诚",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王立诚二段",
+          "slots": 1,
+          "parsed_base_name": "王立诚",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1253,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "王立诚ORissei",
+          "slots": 2
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000065.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/王立诚"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "4db3fe483a6986593ab946875c8deadfcc76978a90324bb8dad4af0eaf2ae758",
+        "slot_count": 1253,
+        "source_key_counts": {
+          "19x19": 1253
+        },
+        "first_real_date": "1975-04-16",
+        "last_real_date": "2026-01-19",
+        "birth_year": 1958,
+        "professional_entry_year": 1972,
+        "sentinel_1900_album_ids": [
+          138567,
+          138574
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 10,
+      "canonical_chinese_name": "朴永训",
+      "source_main_group": "朴永训",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 66,
+        "current_canonical_name": "朴永训",
+        "new_canonical_name": "朴永训"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "66": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "朴永训",
+          "slots": 1100,
+          "parsed_base_name": "朴永训",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "朴永训九段",
+          "slots": 44,
+          "parsed_base_name": "朴永训",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "朴永训　九段",
+          "slots": 2,
+          "parsed_base_name": "朴永训",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "朴永訓",
+          "slots": 1,
+          "parsed_base_name": "朴永訓",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "朴永训三段",
+          "slots": 1,
+          "parsed_base_name": "朴永训",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "朴永训四段",
+          "slots": 1,
+          "parsed_base_name": "朴永训",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1149,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "朴永训PakYeong-hun",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000256",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/朴永训"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "2f63a7c379e0981280376d88df8b3e6c35b093e2cab9a9cfdb47cdf858eb3642",
+        "slot_count": 1149,
+        "source_key_counts": {
+          "19x19": 1149
+        },
+        "first_real_date": "2000-07-21",
+        "last_real_date": "2025-10-25",
+        "birth_year": 1985,
+        "professional_entry_year": 1999,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 11,
+      "canonical_chinese_name": "羽根直树",
+      "source_main_group": "羽根直树",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 323,
+        "current_canonical_name": "羽根直树",
+        "new_canonical_name": "羽根直树"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        612
+      ],
+      "catalog_id_fk_slot_counts": {
+        "323": 0,
+        "612": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "羽根直树",
+          "slots": 1104,
+          "parsed_base_name": "羽根直树",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "羽根直樹",
+          "slots": 4,
+          "parsed_base_name": "羽根直樹",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "羽根直树七段",
+          "slots": 1,
+          "parsed_base_name": "羽根直树",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "羽根直树九段",
+          "slots": 1,
+          "parsed_base_name": "羽根直树",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1110,
+      "excluded_prefix_raw_values": [],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000307.html",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/羽根直树"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "83d019c00dee9307b9737d4610a863ff748ac04aa9f653d326ac54e333b41a8b",
+        "slot_count": 1110,
+        "source_key_counts": {
+          "19x19": 1110
+        },
+        "first_real_date": "1987-07-01",
+        "last_real_date": "2026-01-22",
+        "birth_year": 1976,
+        "professional_entry_year": 1991,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 55527,
+            "date": "1990-09-01",
+            "opponent_raw": "InagakiYo",
+            "event_raw": "InseiLeague"
+          },
+          {
+            "album_id": 64689,
+            "date": "1987-07-01",
+            "opponent_raw": "高尾绅路",
+            "event_raw": "Inseitraininggame"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 12,
+      "canonical_chinese_name": "申真谞",
+      "source_main_group": "申真谞",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 70,
+        "current_canonical_name": "申真谞",
+        "new_canonical_name": "申真谞"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "70": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "申真谞",
+          "slots": 1105,
+          "parsed_base_name": "申真谞",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "申真諝",
+          "slots": 1,
+          "parsed_base_name": "申真諝",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1106,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "申真谞吴侑珍",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000735",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/申真谞"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "b6144f33008103d956c4130ef99e964dfed095fa5700407b8e40f7fae7d091b6",
+        "slot_count": 1106,
+        "source_key_counts": {
+          "19x19": 1106
+        },
+        "first_real_date": "2012-09-11",
+        "last_real_date": "2026-01-25",
+        "birth_year": 2000,
+        "professional_entry_year": 2012,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 1,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 13,
+      "canonical_chinese_name": "金志锡",
+      "source_main_group": "金志锡",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 105,
+        "current_canonical_name": "金志锡",
+        "new_canonical_name": "金志锡"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "105": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "金志锡",
+          "slots": 1059,
+          "parsed_base_name": "金志锡",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡四段",
+          "slots": 20,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡三段",
+          "slots": 14,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志錫",
+          "slots": 3,
+          "parsed_base_name": "金志錫",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡　六段",
+          "slots": 2,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡　",
+          "slots": 1,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡　五段",
+          "slots": 1,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡二段",
+          "slots": 1,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "金志锡六段",
+          "slots": 1,
+          "parsed_base_name": "金志锡",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1102,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "金志锡9段P",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000408",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/金志錫"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "1b82776cf46a7d0547eccd96187043fa0e2387f04469dce151fa6b4066195224",
+        "slot_count": 1102,
+        "source_key_counts": {
+          "19x19": 1102
+        },
+        "first_real_date": "2004-07-07",
+        "last_real_date": "2025-12-24",
+        "birth_year": 1989,
+        "professional_entry_year": 2003,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 14,
+      "canonical_chinese_name": "高尾绅路",
+      "source_main_group": "高尾绅路",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 584,
+        "current_canonical_name": "高尾绅路",
+        "new_canonical_name": "高尾绅路"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        440
+      ],
+      "catalog_id_fk_slot_counts": {
+        "584": 0,
+        "440": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "高尾绅路",
+          "slots": 1089,
+          "parsed_base_name": "高尾绅路",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "高尾紳路",
+          "slots": 7,
+          "parsed_base_name": "高尾紳路",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "高尾绅路九段",
+          "slots": 4,
+          "parsed_base_name": "高尾绅路",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "高尾绅路七段",
+          "slots": 1,
+          "parsed_base_name": "高尾绅路",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1101,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "高尾绅路谢依旻",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000305_7.html",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/高尾绅路"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "d185f08b54802bc1985c99eb93adcf5fd5dc8f84109835685bc869b6fe8835cf",
+        "slot_count": 1101,
+        "source_key_counts": {
+          "19x19": 1101
+        },
+        "first_real_date": "1986-08-05",
+        "last_real_date": "2025-10-20",
+        "birth_year": 1976,
+        "professional_entry_year": 1991,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [
+          {
+            "album_id": 64689,
+            "date": "1987-07-01",
+            "opponent_raw": "羽根直树",
+            "event_raw": "Inseitraininggame"
+          },
+          {
+            "album_id": 64702,
+            "date": "1986-08-05",
+            "opponent_raw": "山下敬吾",
+            "event_raw": "7thNationalElementarySchoolChampionshipFinal"
+          }
+        ],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 15,
+      "canonical_chinese_name": "王铭琬",
+      "source_main_group": "王铭琬",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "rename_player",
+        "player_id": 420,
+        "current_canonical_name": "王銘エン",
+        "new_canonical_name": "王铭琬"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "420": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "王铭琬",
+          "slots": 1041,
+          "parsed_base_name": "王铭琬",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王銘琬",
+          "slots": 13,
+          "parsed_base_name": "王銘琬",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王铭琬九段",
+          "slots": 5,
+          "parsed_base_name": "王铭琬",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王铭琬　九段",
+          "slots": 1,
+          "parsed_base_name": "王铭琬",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "王铭琬五段",
+          "slots": 1,
+          "parsed_base_name": "王铭琬",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1061,
+      "excluded_prefix_raw_values": [],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000066.html",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/王銘琬"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "cfce83631941bf6d5db967cd827f25e8b9b098a327d825881eeb8e585e187c28",
+        "slot_count": 1061,
+        "source_key_counts": {
+          "19x19": 1061
+        },
+        "first_real_date": "1979-09-01",
+        "last_real_date": "2026-01-22",
+        "birth_year": 1961,
+        "professional_entry_year": 1977,
+        "sentinel_1900_album_ids": [
+          34038,
+          64236,
+          75344
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 16,
+      "canonical_chinese_name": "芈昱廷",
+      "source_main_group": "芈昱廷",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 396,
+        "current_canonical_name": "芈昱廷",
+        "new_canonical_name": "芈昱廷"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "396": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "芈昱廷",
+          "slots": 1006,
+          "parsed_base_name": "芈昱廷",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "羋昱廷",
+          "slots": 1,
+          "parsed_base_name": "羋昱廷",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 1007,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "芈昱廷/於之莹",
+          "slots": 4
+        },
+        {
+          "raw_value": "芈昱廷王晨星",
+          "slots": 4
+        },
+        {
+          "raw_value": "芈昱廷初段",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.weiqi.org.cn/player/professional",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/芈昱廷"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "70d438117b49f63fc64aff47fb2401cd66ecae7e28020dcac38909b9847544cb",
+        "slot_count": 1007,
+        "source_key_counts": {
+          "19x19": 1007
+        },
+        "first_real_date": "2008-01-20",
+        "last_real_date": "2026-01-25",
+        "birth_year": 1996,
+        "professional_entry_year": 2007,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 3,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 17,
+      "canonical_chinese_name": "一力辽",
+      "source_main_group": "一力辽",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 42,
+        "current_canonical_name": "一力辽",
+        "new_canonical_name": "一力辽"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        539
+      ],
+      "catalog_id_fk_slot_counts": {
+        "42": 0,
+        "539": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "一力辽",
+          "slots": 997,
+          "parsed_base_name": "一力辽",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "一力遼",
+          "slots": 1,
+          "parsed_base_name": "一力遼",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 998,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "一力辽藤泽里菜",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://archive.nihonkiin.or.jp/player/htm/ki000435.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/一力辽"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "104eec571b8ed239ef3c2c5c64f1840bf1afaec28b7459cc64d1372ee6ac7be4",
+        "slot_count": 998,
+        "source_key_counts": {
+          "19x19": 998
+        },
+        "first_real_date": "2010-10-04",
+        "last_real_date": "2026-01-24",
+        "birth_year": 1997,
+        "professional_entry_year": 2010,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 18,
+      "canonical_chinese_name": "河野临",
+      "source_main_group": "河野临",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 58,
+        "current_canonical_name": "河野临",
+        "new_canonical_name": "河野临"
+      },
+      "duplicate_catalog_ids_to_fold": [
+        565
+      ],
+      "catalog_id_fk_slot_counts": {
+        "58": 0,
+        "565": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "河野临",
+          "slots": 980,
+          "parsed_base_name": "河野临",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "河野臨",
+          "slots": 8,
+          "parsed_base_name": "河野臨",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "河野临九段",
+          "slots": 4,
+          "parsed_base_name": "河野临",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 992,
+      "excluded_prefix_raw_values": [],
+      "evidence": {
+        "association_url": "https://www.nihonkiin.or.jp/player/htm/ki000345.htm",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/河野臨"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "14f78cea00bdbdf6d82f656e0324b543309099aecfd3a389406c480163904cf7",
+        "slot_count": 992,
+        "source_key_counts": {
+          "19x19": 992
+        },
+        "first_real_date": "1997-06-05",
+        "last_real_date": "2025-12-15",
+        "birth_year": 1981,
+        "professional_entry_year": 1996,
+        "sentinel_1900_album_ids": [
+          72763
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 19,
+      "canonical_chinese_name": "陈诗渊",
+      "source_main_group": "陈诗渊",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "create_player",
+        "player_id": null,
+        "current_canonical_name": null,
+        "new_canonical_name": "陈诗渊"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {},
+      "raw_allowlist": [
+        {
+          "raw_value": "陈诗渊",
+          "slots": 953,
+          "parsed_base_name": "陈诗渊",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "陳詩淵",
+          "slots": 4,
+          "parsed_base_name": "陳詩淵",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "陈诗渊七段",
+          "slots": 1,
+          "parsed_base_name": "陈诗渊",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "陈诗渊八段",
+          "slots": 1,
+          "parsed_base_name": "陈诗渊",
+          "relation": "rank_or_spacing_variant",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 959,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "陳詩淵(",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.haifong.org/venue/248B7B2EE622C94D9B841530AE46D9FF",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/陳詩淵"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "b207e24efc814ff7868eb3a61d5a47225a9b2e1bdf3f58a911dcaac1821dbb71",
+        "slot_count": 959,
+        "source_key_counts": {
+          "19x19": 959
+        },
+        "first_real_date": "2002-09-09",
+        "last_real_date": "2026-01-23",
+        "birth_year": 1985,
+        "professional_entry_year": 2000,
+        "sentinel_1900_album_ids": [
+          43554
+        ],
+        "timestamp_formatted_date_slots": 0,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    },
+    {
+      "rank": 20,
+      "canonical_chinese_name": "范廷钰",
+      "source_main_group": "范廷钰",
+      "reviewed_name_identity": "same_person_for_allowlisted_raw_values",
+      "proposed_target": {
+        "action": "retain_player",
+        "player_id": 206,
+        "current_canonical_name": "范廷钰",
+        "new_canonical_name": "范廷钰"
+      },
+      "duplicate_catalog_ids_to_fold": [],
+      "catalog_id_fk_slot_counts": {
+        "206": 0
+      },
+      "raw_allowlist": [
+        {
+          "raw_value": "范廷钰",
+          "slots": 916,
+          "parsed_base_name": "范廷钰",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        },
+        {
+          "raw_value": "范廷鈺",
+          "slots": 1,
+          "parsed_base_name": "范廷鈺",
+          "relation": "plain_name",
+          "name_identity_decision": "same_person"
+        }
+      ],
+      "allowlisted_slots": 917,
+      "excluded_prefix_raw_values": [
+        {
+          "raw_value": "范廷钰王爽",
+          "slots": 3
+        },
+        {
+          "raw_value": "范廷钰9段P",
+          "slots": 1
+        },
+        {
+          "raw_value": "范廷钰:范廷钰:P9段)",
+          "slots": 1
+        }
+      ],
+      "evidence": {
+        "association_url": "https://www.weiqi.org.cn/player/professional",
+        "wikipedia_url": "https://zh.wikipedia.org/wiki/范廷钰"
+      },
+      "game_fk_decision": "approved_after_fresh_snapshot_preflight",
+      "scope_review": {
+        "frozen_scope_sha256": "198ec8e44fa70f70c6194e9d57f8676f53366cfcb8055bd84ab9d4d355824854",
+        "slot_count": 917,
+        "source_key_counts": {
+          "19x19": 917
+        },
+        "first_real_date": "2008-09-16",
+        "last_real_date": "2026-01-25",
+        "birth_year": 1996,
+        "professional_entry_year": 2008,
+        "sentinel_1900_album_ids": [],
+        "timestamp_formatted_date_slots": 3,
+        "pre_professional_album_ids_with_context": [],
+        "date_parse_error_album_ids": [],
+        "pre_birth_album_ids": [],
+        "under_five_album_ids": [],
+        "self_play_album_ids": [],
+        "duplicate_album_ids": [],
+        "conflicting_existing_fk_album_ids": [],
+        "existing_target_fk_slots": 0,
+        "existing_duplicate_fk_slots": 0,
+        "source_scope_checked": "all exact raw slots in frozen inventory"
+      },
+      "game_fk_approval_conditions": [
+        "fresh inventory has identical album_id/side/raw/date/source scope hash",
+        "current FK is null, target ID, or an approved duplicate ID",
+        "catalog target and reviewed raw identity remain valid"
+      ]
+    }
+  ]
+}

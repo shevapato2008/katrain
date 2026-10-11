@@ -1,0 +1,9 @@
+{
+  "allow_apply": true,
+  "manifest_sha256": "e8dac9c84a9a4cf21003f977550b33352a2fa80906c2249d785dc371ce0c6c62",
+  "preview_sha256": {
+    "PROD": "ed4e0775b7e5aba4dd480a55c803a7e82d1dc16e17d3ba8d518a48136bcbe8f2",
+    "TEST": "faa070f344ac807ad5b6b351fd3c5ea4a2bc66c0432e9c4fc2e31f90397c5dd2"
+  },
+  "reviewer_id": "/root"
+}

@@ -1,0 +1,196 @@
+{
+  "format": "kifu-player-nonhan-ranks-181-200-exact-allowlist-v1",
+  "scope": "18 reviewed exact raw values only; live importer dry-run must recheck FK, catalog ID, and catalog name",
+  "reviewed_against_live_fk": {
+    "test_prod_counts_identical": true,
+    "existing_fk_conflict_slots_prod": 0,
+    "existing_fk_conflict_slots_test": 0
+  },
+  "summary": {
+    "raw_values": 18,
+    "slots_each_environment": 1124,
+    "new_catalog_players": 7
+  },
+  "rows": [
+    {
+      "raw_value": "Hattori Rittetsu",
+      "expected_slots_each_environment": 67,
+      "chinese_name": "井上幻庵因硕",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/"
+    },
+    {
+      "raw_value": "Hirano Masaaki",
+      "expected_slots_each_environment": 67,
+      "chinese_name": "平野正明",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000121.htm"
+    },
+    {
+      "raw_value": "Honinbo Retsugen",
+      "expected_slots_each_environment": 67,
+      "chinese_name": "本因坊烈元",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.city.satte.lg.jp/material/files/group/2/12honinbou.pdf"
+    },
+    {
+      "raw_value": "Takenaka Kotaro",
+      "expected_slots_each_environment": 67,
+      "chinese_name": "竹中幸太郎",
+      "target_player_id_prod": 5697,
+      "target_player_id_test": 11469,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Yasui Chitetsu",
+      "expected_slots_each_environment": 67,
+      "chinese_name": "安井知哲",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Dosaku/"
+    },
+    {
+      "raw_value": "ChoSeonJin",
+      "expected_slots_each_environment": 66,
+      "chinese_name": "趙善津",
+      "target_player_id_prod": 541,
+      "target_player_id_test": 542,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000187.htm"
+    },
+    {
+      "raw_value": "Hisajima Kunio",
+      "expected_slots_each_environment": 65,
+      "chinese_name": "久岛国夫",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000056.htm"
+    },
+    {
+      "raw_value": "Miyazaki Hiroshi",
+      "expected_slots_each_environment": 65,
+      "chinese_name": "宫崎洋",
+      "target_player_id_prod": 4390,
+      "target_player_id_test": 10182,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Morikawa Masao",
+      "expected_slots_each_environment": 65,
+      "chinese_name": "森川正夫",
+      "target_player_id_prod": 5272,
+      "target_player_id_test": 11051,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Watanabe Reiji",
+      "expected_slots_each_environment": 64,
+      "chinese_name": "渡边礼二",
+      "target_player_id_prod": 5412,
+      "target_player_id_test": 11187,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Baba Shigeru",
+      "expected_slots_each_environment": 63,
+      "chinese_name": "马场滋",
+      "target_player_id_prod": 6441,
+      "target_player_id_test": 12205,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Hirose Heijiro",
+      "expected_slots_each_environment": 62,
+      "chinese_name": "广濑平治郎",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html"
+    },
+    {
+      "raw_value": "Suzuki Tsuna",
+      "expected_slots_each_environment": 58,
+      "chinese_name": "铃木津奈",
+      "target_player_id_prod": 6258,
+      "target_player_id_test": 12024,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Nakayama Noriyuki",
+      "expected_slots_each_environment": 57,
+      "chinese_name": "中山典之",
+      "target_player_id_prod": 3784,
+      "target_player_id_test": 9582,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Ezura Yuichi",
+      "expected_slots_each_environment": 56,
+      "chinese_name": "江面雄一",
+      "target_player_id_prod": 5323,
+      "target_player_id_test": 11100,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "Iwasaki Kenzo",
+      "expected_slots_each_environment": 56,
+      "chinese_name": "巌崎健造",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html"
+    },
+    {
+      "raw_value": "KatoMasao",
+      "expected_slots_each_environment": 56,
+      "chinese_name": "加藤正夫",
+      "target_player_id_prod": 878,
+      "target_player_id_test": 1090,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000002.htm"
+    },
+    {
+      "raw_value": "Kawai Tetsuyuki",
+      "expected_slots_each_environment": 56,
+      "chinese_name": "河合哲之",
+      "target_player_id_prod": 5354,
+      "target_player_id_test": 11130,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    }
+  ]
+}

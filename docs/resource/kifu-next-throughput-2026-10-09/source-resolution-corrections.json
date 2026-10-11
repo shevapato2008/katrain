@@ -1,0 +1,52 @@
+{
+  "changed_at": "2026-10-08T18:41:59.417187+00:00",
+  "research_array_before_sha256": "8eacfbcfdbb030c2c93eae4e232ac3846eacef6563675f413ed06e7e2a2d6206",
+  "research_array_after_sha256": "3b4ffeea0d138105af67c86958d9ade1423f7229af4938eb68c013587a9145fa",
+  "raw_capture_contents_unchanged": true,
+  "names_readings_and_existing_preimages_unchanged": true,
+  "review_status": "unsigned_pending_independent_review",
+  "changes": [
+    {
+      "prod_id": 6270,
+      "role": "original_go",
+      "url": "https://www.wikidata.org/wiki/Q11653942",
+      "before": "The actual bounded result uses the same Korean output in a Go tournament/profile context; it creates no alternative spelling conflict. The Japanese profile supplies owner identity and reading.",
+      "after": "Wikidata is retained as an identity/discovery lead. This captured passage supplies no published Korean-name evidence for this owner; it is not a Korean Go profile or Korean-name authority."
+    },
+    {
+      "prod_id": 4121,
+      "role": "original_go",
+      "url": "https://media.naver.com/press/353",
+      "before": "This captured result mentions the exact Japanese original in Go context but provides no different complete Korean name. It is a contextual lead, not the owner identity authority.",
+      "after": "This publisher/news landing-page lead is retained as finite search context, without claiming that the landing page publishes a complete Korean personal name for this Go player. It is excluded as player identity and Korean-name authority. Political-news context is not linked to the player."
+    },
+    {
+      "prod_id": 4121,
+      "role": "candidate_go",
+      "url": "https://thewiki.kr/w/%EC%A0%9C24%ED%9A%8C%20%ED%98%BC%EC%9D%B8%EB%B3%B4%EC%A0%84",
+      "before": "The actual bounded result uses the same Korean output in a Go tournament/profile context; it creates no alternative spelling conflict. The Japanese profile supplies owner identity and reading.",
+      "after": "TheWiki mirror is retained only as a contextual search lead. No player identity or independently published complete Korean name is established from this mirrored lead; the separately captured Japanese source binds the owner and reading."
+    },
+    {
+      "prod_id": 5413,
+      "role": "candidate_go",
+      "url": "https://media.naver.com/press/277",
+      "before": "The result uses exactly 와타나베 히데오. Go-research context and political news context are retained as separate leads; neither supplies a competing spelling, and the political item is not used to identify this player.",
+      "after": "This publisher/news landing-page lead is retained as finite search context, without claiming that the landing page publishes a complete Korean personal name for this Go player. It is excluded as player identity and Korean-name authority. Political-news context is not linked to the player."
+    },
+    {
+      "prod_id": 5877,
+      "role": "candidate_go",
+      "url": "https://thewiki.kr/w/%EC%A0%9C24%ED%9A%8C%20%ED%98%BC%EC%9D%B8%EB%B3%B4%EC%A0%84",
+      "before": "The actual bounded result uses the same Korean output in a Go tournament/profile context; it creates no alternative spelling conflict. The Japanese profile supplies owner identity and reading.",
+      "after": "TheWiki mirror is retained only as a contextual search lead. No player identity or independently published complete Korean name is established from this mirrored lead; the separately captured Japanese source binds the owner and reading."
+    },
+    {
+      "prod_id": 6631,
+      "role": "candidate_go",
+      "url": "https://lib.paju.go.kr/ghlib/menu/10744/program/30004/plusSearchResultDetail.do?recKey=3090474738&bookKey=3090474740&publishFormCode=BO",
+      "before": "The Go profile gives surname 사카이 with 酒井利雄; the historical four-brothers article prints 사카이도시오(酒井利雄), the same Hangul sequence as 사카이 도시오 with the surname/given divider omitted. No competing Hangul transcription is present.",
+      "after": "This marketing-book catalogue result is an unrelated author/namesake lead. It is excluded as this Go player's identity and Korean-name authority; the historical Go article does not establish that the book author is this player."
+    }
+  ]
+}

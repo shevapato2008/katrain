@@ -1,0 +1,480 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 3857,
+  "queue_order_slots": 9,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 3857,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "付斌芳",
+  "available_non_ko_anchor_names": {
+    "cn": "付斌芳",
+    "en": "Fu Binfang",
+    "jp": "付斌芳",
+    "tw": "付斌芳",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 3857,
+        "canonical_name": "付斌芳",
+        "published_latin": "Fu Binfang",
+        "source_id": "ret110-goratings-en",
+        "source_language": "en",
+        "source_role": "language_go",
+        "url": "https://www.goratings.org/en/players/510.html",
+        "evidence_ids": [
+          61314
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.goratings.org/en/players/510.html",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:08:01.282618+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:02.873138+00:00",
+        "body_bytes": 9096,
+        "body_sha256": "9e63af3618c14cd18b67b94a86543fbf13cc7e0ec90b451c47d6982770f29b76",
+        "body_file": "captures/3857-authority-ret110-goratings-en.body",
+        "publisher": "Go Ratings",
+        "body_text_excerpt": "Fu Binfang Fu Binfang Back to main list Graph Data Wins 4 Losses 11 Total 15 Date of Birth 1975-12-19 Game List Date Rating Color Result Opponent Kifu 1998-09-22 2749 Black Loss Hua Xueming 3058 ♀ | cwa | 1998-09-20 2749 White Loss Li Ying (b) 2818 ♀ | cwa | 1998-09-18 2749 Black Loss Liang Yadi 2900 ♀ | cwa | 1996-07-14 2774 Black Loss Wu Qi Sr. 2885 ♂ | cwa | 1995-09-24 2786 White Loss Chen Huifang 2880 ♀ 1995-09-23 2786 Black Loss Du Yufeng 3024 ♀ 1995-09-22 2786 White Loss Xu Ying 3072 ♀ 1995-09-20 2786 Black Win Shen Jing 2911 ♀ 1995-09-19 2786 White Win Li Ying (b) 2837 ♀ 1995-09-17 2786 Black Win Liang Yadi 2894 ♀ 1995-09-16 2786 White Loss Gu Ping 2820 ♀ 1995-09-14 2786 White Loss Chen Qianwei 2928 ♀ 1995-03-07 2792 Black Loss Qiu Jihong 2965 ♂ 1995-03-06 2792 W",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [
+      {
+        "capture": {
+          "player_id": 3857,
+          "canonical_name": "付斌芳",
+          "published_latin": "Fu Binfang",
+          "source_id": "GoRatings-Korean-language-path",
+          "source_language": "ko",
+          "source_role": "language_go_localized_profile",
+          "url": "https://www.goratings.org/ko/players/510.html",
+          "derived_from_capture_url": "https://www.goratings.org/en/players/510.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/ko/players/510.html",
+          "content_type": "text/html",
+          "request_started_at_utc": "2026-10-08T23:08:24.359483+00:00",
+          "fetched_at_utc": "2026-10-08T23:08:26.154907+00:00",
+          "body_bytes": 9128,
+          "body_sha256": "ab3e28c0d60e9649d2776c033781b3475298a8277b1b7c1158a56edda2813fee",
+          "body_file": "captures/3857-authority-goratings-ko.body",
+          "publisher": "Go Ratings",
+          "body_text_excerpt": "Fu Binfang Fu Binfang 메인 페이지로 돌아가기 그래프 데이터 승리 4 패배 11 합계 15 생년월일 1975-12-19 대국 기록 날짜 레이팅 흑백 결과 상대 기보 1998-09-22 2749 흑번 패 화쉐밍 3058 ♀ | cwa | 1998-09-20 2749 백번 패 Li Ying (b) 2818 ♀ | cwa | 1998-09-18 2749 흑번 패 량야디 2900 ♀ | cwa | 1996-07-14 2774 흑번 패 Wu Qi Sr. 2885 ♂ | cwa | 1995-09-24 2786 백번 패 천후이팡 2880 ♀ 1995-09-23 2786 흑번 패 두위펑 3024 ♀ 1995-09-22 2786 백번 패 쉬잉 3072 ♀ 1995-09-20 2786 흑번 승 Shen Jing 2911 ♀ 1995-09-19 2786 백번 승 Li Ying (b) 2837 ♀ 1995-09-17 2786 흑번 승 량야디 2894 ♀ 1995-09-16 2786 백번 패 Gu Ping 2820 ♀ 1995-09-14 2786 백번 패 천첸웨이 2928 ♀ 1995-03-07 2792 흑번 패 Qiu Jihong 2965 ♂ 1995-03-06 2792 백번 승 량허녠 2914 ♂ | cwa | 1992-09-06 2805 흑번 패 리춘화 3040 ♀ | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+          "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+          "subject_role": "target_same_person_localized_path_check",
+          "capture_kind": "authority_page_capture"
+        },
+        "observation": "Korean-locale page heading is the same profile rendered as Latin; it does not publish a Korean Hangul player name.",
+        "observed_profile_heading_excerpt": "Fu Binfang Fu Binfang"
+      }
+    ],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "The Korean-locale GoRatings pages captured here use Latin or Han fallback for the profile name, not a Hangul transliteration.",
+    "queue_latin_query": "Fu Binfang"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "付斌芳",
+          "Fu Binfang"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "付斌芳",
+          "Fu Binfang"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "付斌芳",
+          "Fu Binfang"
+        ],
+        "exact_matches_present": [
+          "付斌芳"
+        ],
+        "status": "found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: [\"付斌芳\"]."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 3857,
+        "engine": "naver",
+        "query": "\"付斌芳\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:10.059265+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:11.494459+00:00",
+        "body_bytes": 28561,
+        "body_sha256": "a3e96acd0274023a11d0ba533c95b379eadde7689230669a1eea4ba1eae5c4e7",
+        "body_file": "captures/3857-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 3857,
+        "engine": "naver",
+        "query": "\"Fu Binfang\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 403,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:10.288837+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:11.743118+00:00",
+        "body_bytes": 28563,
+        "body_sha256": "72e4b5b5f46416050b0729b8bb4a35f7b91a65df0ebb3775dd0e0b6e76838bc7",
+        "body_file": "captures/3857-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+        "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+        "relevance_assessment": "unavailable_http_403",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 3857,
+        "engine": "bing",
+        "query": "\"付斌芳\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:55.300489+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:56.925501+00:00",
+        "body_bytes": 121770,
+        "body_sha256": "0eab298b35afbfecfea174100e7e867aac41b3b48ac3edd2c016312269d5527a",
+        "body_file": "captures/3857-search-bing-han.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"付斌芳\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 1,290 results Open links in new tab Any time choicehotels.com https:// www.choicehotels.com › minnesota › bloomington › ... Hotel in Bloomington , MN | Radisson Blu Mall of America Reserve your stay steps from Mall of America® at the iconic Radisson Blu. We offer on-site dining, an indoor saltwater pool, and a … mallofamerica.com https:// www.mallofamerica.com › directory › radisson-blu-hotel Radisson Blu Hotel - Mall of America Radisson Blu Mall of America is conveniently connected directly to Mall of America, the largest indoor entertainment and shopping … booking.com https:// www.booking.com › hotel › us › hotel- mall - of-america .html Radisson Blu Mall of America, Bloomington (updated prices) Featuring an indoor pool and a restaurant and bar, this Bloomington, Minnesota hotel is adjacent to the famous Mall of America. Free … mallofamerica.com https://reservations. mallofamerica .com › hotel › single Radisson Blu Mall of America Bundle your stay at a Mall of America Preferred Hotel in Bloomington, MN with tickets to top attractions like Nickelodeon Un",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 3857,
+        "engine": "bing",
+        "query": "\"Fu Binfang\" 바둑",
+        "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+        "url": "https://www.bing.com/search?q=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://www.bing.com/search?q=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=utf-8",
+        "request_started_at_utc": "2026-10-08T23:08:55.300854+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:56.989595+00:00",
+        "body_bytes": 119721,
+        "body_sha256": "5b4db4de4e2f175be1e0c23f9eb66e99efc312308b35d24c58f5f23760946c59",
+        "body_file": "captures/3857-search-bing-latin.html",
+        "publisher": "Bing search",
+        "body_text_excerpt": "\"Fu Binfang\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 622,000 results Open links in new tab Any time wikipedia.org https:// en.wikipedia.org › wiki › Fu_(character ) Fu (character ) - Wikipedia The Chinese character fu (福; fú ⓘ), meaning 'fortune' or 'good luck', is represented both as a Chinese ideograph and, at times, … wikipedia.org https:// en.wikipedia.org › wiki › Fu Fu - Wikipedia This disambiguation page lists articles associated with the title Fu. If an internal link incorrectly led you here, you may wish to change … youtube.com https:// www.youtube.com › watch FU - YouTube Nov 8, 2014 · Provided to YouTube by RCA Records Label FU · Miley Cyrus · French Montana Bangerz (Deluxe Version) ℗ 2013 … fubo.tv https://www.fubo.tv fubo - Watch Live Sports & TV Without Cable TV | Try It Free Not only does Fubo have the NFL, NBA and MLB, but you can also watch NHL, NASCAR, MLS, golf, tennis, boxing, MMA, college … yelp.com https:// www.yelp.com › biz FU RESTAURANT - Updated October 2026 - 76 Reviews - Yelp What's the vibe? Where Every Bite Feels Like Home… Portions look small from pictures....is it smal",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Fu Binfang",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 3857,
+      "canonical_name": "付斌芳",
+      "published_latin": "Fu Binfang",
+      "source_id": "ret110-goratings-en",
+      "source_language": "en",
+      "source_role": "language_go",
+      "url": "https://www.goratings.org/en/players/510.html",
+      "evidence_ids": [
+        61314
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.goratings.org/en/players/510.html",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:08:01.282618+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:02.873138+00:00",
+      "body_bytes": 9096,
+      "body_sha256": "9e63af3618c14cd18b67b94a86543fbf13cc7e0ec90b451c47d6982770f29b76",
+      "body_file": "captures/3857-authority-ret110-goratings-en.body",
+      "publisher": "Go Ratings",
+      "body_text_excerpt": "Fu Binfang Fu Binfang Back to main list Graph Data Wins 4 Losses 11 Total 15 Date of Birth 1975-12-19 Game List Date Rating Color Result Opponent Kifu 1998-09-22 2749 Black Loss Hua Xueming 3058 ♀ | cwa | 1998-09-20 2749 White Loss Li Ying (b) 2818 ♀ | cwa | 1998-09-18 2749 Black Loss Liang Yadi 2900 ♀ | cwa | 1996-07-14 2774 Black Loss Wu Qi Sr. 2885 ♂ | cwa | 1995-09-24 2786 White Loss Chen Huifang 2880 ♀ 1995-09-23 2786 Black Loss Du Yufeng 3024 ♀ 1995-09-22 2786 White Loss Xu Ying 3072 ♀ 1995-09-20 2786 Black Win Shen Jing 2911 ♀ 1995-09-19 2786 White Win Li Ying (b) 2837 ♀ 1995-09-17 2786 Black Win Liang Yadi 2894 ♀ 1995-09-16 2786 White Loss Gu Ping 2820 ♀ 1995-09-14 2786 White Loss Chen Qianwei 2928 ♀ 1995-03-07 2792 Black Loss Qiu Jihong 2965 ♂ 1995-03-06 2792 W",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 3857,
+      "engine": "naver",
+      "query": "\"付斌芳\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:10.059265+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:11.494459+00:00",
+      "body_bytes": 28561,
+      "body_sha256": "a3e96acd0274023a11d0ba533c95b379eadde7689230669a1eea4ba1eae5c4e7",
+      "body_file": "captures/3857-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Fu Binfang",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 3857,
+      "engine": "naver",
+      "query": "\"Fu Binfang\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:10.288837+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:11.743118+00:00",
+      "body_bytes": 28563,
+      "body_sha256": "72e4b5b5f46416050b0729b8bb4a35f7b91a65df0ebb3775dd0e0b6e76838bc7",
+      "body_file": "captures/3857-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "HTTP 403 response body from the recorded Naver query; response is unavailable for name-content review.",
+      "body_text_locator": "Entire captured HTTP 403 response body; do not infer not-found.",
+      "relevance_assessment": "unavailable_http_403",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query used the exact queue Han or Latin string plus 바둑. HTTP 403 means unavailable for content review, not no results.",
+      "exact_latin_name_also_searched": "Fu Binfang",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 3857,
+      "engine": "bing",
+      "query": "\"付斌芳\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E4%BB%98%E6%96%8C%E8%8A%B3%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:55.300489+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:56.925501+00:00",
+      "body_bytes": 121770,
+      "body_sha256": "0eab298b35afbfecfea174100e7e867aac41b3b48ac3edd2c016312269d5527a",
+      "body_file": "captures/3857-search-bing-han.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"付斌芳\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 1,290 results Open links in new tab Any time choicehotels.com https:// www.choicehotels.com › minnesota › bloomington › ... Hotel in Bloomington , MN | Radisson Blu Mall of America Reserve your stay steps from Mall of America® at the iconic Radisson Blu. We offer on-site dining, an indoor saltwater pool, and a … mallofamerica.com https:// www.mallofamerica.com › directory › radisson-blu-hotel Radisson Blu Hotel - Mall of America Radisson Blu Mall of America is conveniently connected directly to Mall of America, the largest indoor entertainment and shopping … booking.com https:// www.booking.com › hotel › us › hotel- mall - of-america .html Radisson Blu Mall of America, Bloomington (updated prices) Featuring an indoor pool and a restaurant and bar, this Bloomington, Minnesota hotel is adjacent to the famous Mall of America. Free … mallofamerica.com https://reservations. mallofamerica .com › hotel › single Radisson Blu Mall of America Bundle your stay at a Mall of America Preferred Hotel in Bloomington, MN with tickets to top attractions like Nickelodeon Un",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Fu Binfang",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 3857,
+      "engine": "bing",
+      "query": "\"Fu Binfang\" 바둑",
+      "search_scope": "literal exact name plus 바둑, one alternative search after Naver 403; bounded discovery only",
+      "url": "https://www.bing.com/search?q=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22Fu%20Binfang%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "request_started_at_utc": "2026-10-08T23:08:55.300854+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:56.989595+00:00",
+      "body_bytes": 119721,
+      "body_sha256": "5b4db4de4e2f175be1e0c23f9eb66e99efc312308b35d24c58f5f23760946c59",
+      "body_file": "captures/3857-search-bing-latin.html",
+      "publisher": "Bing search",
+      "body_text_excerpt": "\"Fu Binfang\" 바둑 - Search Skip to content Accessibility Feedback All Web Search Images Videos Maps More News Shopping Flights Tools About 622,000 results Open links in new tab Any time wikipedia.org https:// en.wikipedia.org › wiki › Fu_(character ) Fu (character ) - Wikipedia The Chinese character fu (福; fú ⓘ), meaning 'fortune' or 'good luck', is represented both as a Chinese ideograph and, at times, … wikipedia.org https:// en.wikipedia.org › wiki › Fu Fu - Wikipedia This disambiguation page lists articles associated with the title Fu. If an internal link incorrectly led you here, you may wish to change … youtube.com https:// www.youtube.com › watch FU - YouTube Nov 8, 2014 · Provided to YouTube by RCA Records Label FU · Miley Cyrus · French Montana Bangerz (Deluxe Version) ℗ 2013 … fubo.tv https://www.fubo.tv fubo - Watch Live Sports & TV Without Cable TV | Try It Free Not only does Fubo have the NFL, NBA and MLB, but you can also watch NHL, NASCAR, MLS, golf, tennis, boxing, MMA, college … yelp.com https:// www.yelp.com › biz FU RESTAURANT - Updated October 2026 - 76 Reviews - Yelp What's the vibe? Where Every Bite Feels Like Home… Portions look small from pictures....is it smal",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Fu Binfang",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "付斌芳",
+        "Fu Binfang"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "付斌芳",
+        "Fu Binfang"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "付斌芳",
+        "Fu Binfang"
+      ],
+      "exact_matches_present": [
+        "付斌芳"
+      ],
+      "status": "found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 付斌芳; Fu Binfang. Exact matching strings present: [\"付斌芳\"]."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

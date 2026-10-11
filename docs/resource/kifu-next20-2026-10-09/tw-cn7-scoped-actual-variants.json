@@ -1,0 +1,406 @@
+{
+  "moe_source_sha256": "5e7173d5aa11064d3d5662d5ce4723626f2b4d2122da264f7d63e946a5815434",
+  "moe_source_url": "https://ws.moe.edu.tw/001/Upload/userfiles/%E9%99%84%E8%A1%A8-%E7%B0%A1%E5%8C%96%E5%AD%97%E5%B0%8D%E7%85%A7%E6%A8%99%E6%BA%96%E5%AD%97-%E7%AD%86%E7%95%AB%E5%BA%8F.pdf",
+  "scoped_characters": [
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 385,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 386,
+          "position": 2
+        }
+      ],
+      "input": "丞",
+      "moe_locator": null,
+      "output": "丞"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+4E91\tkSimplifiedVariant\tU+4E91",
+        "U+4E91\tkTraditionalVariant\tU+4E91 U+96F2"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 320,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 321,
+          "position": 2
+        }
+      ],
+      "input": "云",
+      "moe_locator": {
+        "actual_extracted_line": "亏－虧        云－雲云        凤－ 鳳",
+        "pdf_physical_page": 4
+      },
+      "output": "雲"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+53F6\tkSimplifiedVariant\tU+53F6",
+        "U+53F6\tkTraditionalVariant\tU+53F6 U+8449"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 229,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 230,
+          "position": 0
+        }
+      ],
+      "input": "叶",
+      "moe_locator": {
+        "actual_extracted_line": "办－辦     叶－ 葉        汇－匯彙",
+        "pdf_physical_page": 5
+      },
+      "output": "葉"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+5468\tkSemanticVariant\tU+9031<kLau"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 595,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 596,
+          "position": 0
+        }
+      ],
+      "input": "周",
+      "moe_locator": null,
+      "output": "周"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+5B50\tkSemanticVariant\tU+53EA<kLau"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 229,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 230,
+          "position": 1
+        }
+      ],
+      "input": "子",
+      "moe_locator": null,
+      "output": "子"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+5F66\tkSimplifiedVariant\tU+5F66",
+        "U+5F66\tkTraditionalVariant\tU+5F65 U+5F66"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 662,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 663,
+          "position": 1
+        }
+      ],
+      "input": "彦",
+      "moe_locator": null,
+      "output": "彦"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+5F6C\tkSemanticVariant\tU+658C<kMatthews,kMeyerWempe"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 600,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 601,
+          "position": 2
+        }
+      ],
+      "input": "彬",
+      "moe_locator": null,
+      "output": "彬"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+6731\tkSimplifiedVariant\tU+6731",
+        "U+6731\tkTraditionalVariant\tU+6731 U+7843"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 662,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 663,
+          "position": 0
+        }
+      ],
+      "input": "朱",
+      "moe_locator": null,
+      "output": "朱"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 320,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 321,
+          "position": 0
+        }
+      ],
+      "input": "桂",
+      "moe_locator": null,
+      "output": "桂"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 385,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 386,
+          "position": 1
+        }
+      ],
+      "input": "泓",
+      "moe_locator": null,
+      "output": "泓"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+6CFD\tkTraditionalVariant\tU+6FA4"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 600,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 601,
+          "position": 1
+        }
+      ],
+      "input": "泽",
+      "moe_locator": {
+        "actual_extracted_line": "泽－澤    诠－ 詮        绅－ 紳",
+        "pdf_physical_page": 13
+      },
+      "output": "澤"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 391,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 392,
+          "position": 0
+        }
+      ],
+      "input": "王",
+      "moe_locator": null,
+      "output": "王"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 391,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 392,
+          "position": 1
+        }
+      ],
+      "input": "琛",
+      "moe_locator": null,
+      "output": "琛"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 600,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 601,
+          "position": 0
+        }
+      ],
+      "input": "肖",
+      "moe_locator": null,
+      "output": "肖"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 662,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 663,
+          "position": 2
+        }
+      ],
+      "input": "臻",
+      "moe_locator": null,
+      "output": "臻"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 229,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 230,
+          "position": 2
+        }
+      ],
+      "input": "萌",
+      "moe_locator": null,
+      "output": "萌"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+8431\tkSemanticVariant\tU+8432<kMatthews U+857F<kSMSZD2003Index:T U+8610<kSMSZD2003Index:T"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 595,
+          "position": 2
+        },
+        {
+          "environment": "TEST",
+          "player_id": 596,
+          "position": 2
+        }
+      ],
+      "input": "萱",
+      "moe_locator": null,
+      "output": "萱"
+    },
+    {
+      "all_actual_variant_records": [],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 385,
+          "position": 0
+        },
+        {
+          "environment": "TEST",
+          "player_id": 386,
+          "position": 0
+        }
+      ],
+      "input": "行",
+      "moe_locator": null,
+      "output": "行"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+8BD7\tkTraditionalVariant\tU+8A69"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 320,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 321,
+          "position": 1
+        }
+      ],
+      "input": "诗",
+      "moe_locator": {
+        "actual_extracted_line": "诗－詩    隶－ 隸        驼－ 駝",
+        "pdf_physical_page": 13
+      },
+      "output": "詩"
+    },
+    {
+      "all_actual_variant_records": [
+        "U+96E8\tkSpecializedSemanticVariant\tU+99AD<kFenn"
+      ],
+      "examples": [
+        {
+          "environment": "PROD",
+          "player_id": 595,
+          "position": 1
+        },
+        {
+          "environment": "TEST",
+          "player_id": 596,
+          "position": 1
+        }
+      ],
+      "input": "雨",
+      "moe_locator": null,
+      "output": "雨"
+    }
+  ],
+  "source_url": "https://www.unicode.org/Public/17.0.0/ucd/Unihan.zip",
+  "source_zip_sha256": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e"
+}

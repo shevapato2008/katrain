@@ -1,0 +1,248 @@
+{
+  "kind": "roster3_native16_scoped_capture_request",
+  "status": "16 primary qualifying conventional sources, four Daum reference-only records held; requires fresh current read",
+  "source_packet_sha256": "b364f186711f82ee13ef65d8f1508610c34f2c820e18bfb069aacff12e810422",
+  "test_mapping_source": "../kifu-next-source20-v2-20261009/TEST-post591-global-readonly.json.gz",
+  "rows": [
+    {
+      "prod_player_id": 6366,
+      "test_player_id": 12132,
+      "missing_language": "ko",
+      "proposed_display_name": "천루이",
+      "existing_qualified_names": {
+        "cn": "陈瑞",
+        "en": "Chen Rui",
+        "jp": "陳瑞",
+        "tw": "陳瑞"
+      },
+      "post591_linked_slots": 30,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5349,
+      "test_player_id": 11125,
+      "missing_language": "ko",
+      "proposed_display_name": "선징",
+      "existing_qualified_names": {
+        "cn": "沈静",
+        "en": "Shen Jing",
+        "jp": "沈静",
+        "tw": "沈靜"
+      },
+      "post591_linked_slots": 15,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5952,
+      "test_player_id": 11721,
+      "missing_language": "ko",
+      "proposed_display_name": "자오쯔지",
+      "existing_qualified_names": {
+        "cn": "赵子骥",
+        "en": "Zhao Ziji",
+        "jp": "赵子骥",
+        "tw": "趙子驥"
+      },
+      "post591_linked_slots": 15,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 6322,
+      "test_player_id": 12088,
+      "missing_language": "ko",
+      "proposed_display_name": "천더룽",
+      "existing_qualified_names": {
+        "cn": "陈德龙",
+        "en": "Chen Delong",
+        "jp": "陈德龙",
+        "tw": "陳德龍"
+      },
+      "post591_linked_slots": 12,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 6550,
+      "test_player_id": 12314,
+      "missing_language": "ko",
+      "proposed_display_name": "황번",
+      "existing_qualified_names": {
+        "cn": "黄贲",
+        "en": "Huang Bi",
+        "jp": "黄贲",
+        "tw": "黃賁"
+      },
+      "post591_linked_slots": 12,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 4593,
+      "test_player_id": 10383,
+      "missing_language": "ko",
+      "proposed_display_name": "팡옌",
+      "existing_qualified_names": {
+        "cn": "庞延",
+        "en": "Pang Yan",
+        "jp": "庞延",
+        "tw": "龐延"
+      },
+      "post591_linked_slots": 11,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 6571,
+      "test_player_id": 12335,
+      "missing_language": "ko",
+      "proposed_display_name": "궁스윈",
+      "existing_qualified_names": {
+        "cn": "龚世运",
+        "en": "Gong Shiyun",
+        "jp": "龚世运",
+        "tw": "龔世運"
+      },
+      "post591_linked_slots": 10,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5915,
+      "test_player_id": 11684,
+      "missing_language": "ko",
+      "proposed_display_name": "셰위궈",
+      "existing_qualified_names": {
+        "cn": "谢裕国",
+        "en": "Xie Yuguo",
+        "jp": "谢裕国",
+        "tw": "謝裕國"
+      },
+      "post591_linked_slots": 7,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 6367,
+      "test_player_id": 12133,
+      "missing_language": "ko",
+      "proposed_display_name": "천잉",
+      "existing_qualified_names": {
+        "cn": "陈盈",
+        "en": "Chen Ying",
+        "jp": "陈盈",
+        "tw": "陳盈"
+      },
+      "post591_linked_slots": 6,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 6278,
+      "test_player_id": 12044,
+      "missing_language": "ko",
+      "proposed_display_name": "옌안",
+      "existing_qualified_names": {
+        "cn": "阎安",
+        "en": "Yan An",
+        "jp": "阎安",
+        "tw": "閻安"
+      },
+      "post591_linked_slots": 6,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5912,
+      "test_player_id": 11681,
+      "missing_language": "ko",
+      "proposed_display_name": "셰펑",
+      "existing_qualified_names": {
+        "cn": "谢峰",
+        "en": "Xie Feng",
+        "jp": "谢峰",
+        "tw": "謝峰"
+      },
+      "post591_linked_slots": 6,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5350,
+      "test_player_id": 11126,
+      "missing_language": "ko",
+      "proposed_display_name": "선잉",
+      "existing_qualified_names": {
+        "cn": "沈颖",
+        "en": "Shen Ying",
+        "jp": "沈颖",
+        "tw": "沈穎"
+      },
+      "post591_linked_slots": 6,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 4031,
+      "test_player_id": 9827,
+      "missing_language": "ko",
+      "proposed_display_name": "류위신",
+      "existing_qualified_names": {
+        "cn": "刘禹欣",
+        "en": "Liu Yuxin",
+        "jp": "刘禹欣",
+        "tw": "劉禹欣"
+      },
+      "post591_linked_slots": 5,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5034,
+      "test_player_id": 10816,
+      "missing_language": "jp",
+      "proposed_display_name": "李晨碩",
+      "existing_qualified_names": {
+        "cn": "李晨硕",
+        "en": "Li Chenshuo",
+        "ko": "리천숴",
+        "tw": "李晨碩"
+      },
+      "post591_linked_slots": 5,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5036,
+      "test_player_id": 10818,
+      "missing_language": "en",
+      "proposed_display_name": "Li Jingbin",
+      "existing_qualified_names": {
+        "cn": "李晶彬",
+        "jp": "李晶彬",
+        "ko": "이정빈",
+        "tw": "李晶彬"
+      },
+      "post591_linked_slots": 7,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    },
+    {
+      "prod_player_id": 5296,
+      "test_player_id": 11073,
+      "missing_language": "tw",
+      "proposed_display_name": "武珺",
+      "existing_qualified_names": {
+        "cn": "武珺",
+        "en": "Wu Jun",
+        "jp": "武君",
+        "ko": "우쥔"
+      },
+      "post591_linked_slots": 7,
+      "source_level_status": "independent_source_level_pass_pending_root_binding",
+      "native_conventional_gate": "professional_source_available"
+    }
+  ]
+}

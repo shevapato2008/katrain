@@ -1,0 +1,54 @@
+{
+  "status": "approved",
+  "reviewer_id": "/root/cleanup_final_review_astra",
+  "reviewer_model": "gpt-6-astra",
+  "reviewed_at": "2026-10-11T15:17:23.945855+00:00",
+  "review_basis": [
+    "Both backed-up SGFs explicitly name 常昊 in the affected PB/PW literal (Roman duplication only).",
+    "Canonical target IDs checked in the actual captured player catalogs: TEST 1089, PROD 877 both canonical 常昊.",
+    "Exactly two existing album name/ID patches, no deletes, rank changes, source fields or SGF changes. Complete album preimages and empty dependency snapshots bound by valid plan SHA.",
+    "Existing native helper must retain its live canonical-name check, full preimage CAS and single transaction."
+  ],
+  "environments": [
+    {
+      "environment": "TEST",
+      "request_sha256": "b582ae75247e42e0a09576ee3f9b6b8dd3c6f1e0134de366b388a837d9f4f15f",
+      "backup_file_sha256": "cb14ac77743809d8099554c47efac03a10fff6ccfae538b88d0bfea6fa500f3c",
+      "backup_plan_sha256": "fd5734eea79a117c92c0dd1987a35b9bfa5f89b9da3351b97de4fa5b223c671b",
+      "patches": [
+        {
+          "id": 40432,
+          "player_white": "常昊",
+          "white_player_id": 1089,
+          "white_player_name": "常昊"
+        },
+        {
+          "id": 40556,
+          "player_black": "常昊",
+          "black_player_id": 1089,
+          "black_player_name": "常昊"
+        }
+      ]
+    },
+    {
+      "environment": "PROD",
+      "request_sha256": "ed8c1133d0397b53e48f7b65233f100f6b820212e02bc4b4ea691a65d575a14f",
+      "backup_file_sha256": "f84c985b08629f7aa433dd19414973369dd31f86c54aa3057760cf60ea81cb43",
+      "backup_plan_sha256": "ebe51ffad4992006da0f77d27e5926b9b47df6531a7dead0f26342b7fdb5a827",
+      "patches": [
+        {
+          "id": 40432,
+          "player_white": "常昊",
+          "white_player_id": 877,
+          "white_player_name": "常昊"
+        },
+        {
+          "id": 40556,
+          "player_black": "常昊",
+          "black_player_id": 877,
+          "black_player_name": "常昊"
+        }
+      ]
+    }
+  ]
+}

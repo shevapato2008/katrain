@@ -1,0 +1,187 @@
+{
+  "batch_id": 590,
+  "environment": "PROD",
+  "observed_at": "2026-10-08T19:23:43.595819+00:00",
+  "rows": [
+    {
+      "decision_kind": "generated",
+      "display_name": "나카오카 지로",
+      "evidence_id": 64045,
+      "lang": "ko",
+      "owner_id": 3778,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나카가와 신지",
+      "evidence_id": 64037,
+      "lang": "ko",
+      "owner_id": 3792,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "사토 가오루",
+      "evidence_id": 64049,
+      "lang": "ko",
+      "owner_id": 3902,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "무카이 가즈오",
+      "evidence_id": 64043,
+      "lang": "ko",
+      "owner_id": 4121,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "아마야케 노부오",
+      "evidence_id": 64055,
+      "lang": "ko",
+      "owner_id": 4266,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "고스기 기요시",
+      "evidence_id": 64048,
+      "lang": "ko",
+      "owner_id": 4421,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "히로에 가쓰히코",
+      "evidence_id": 64052,
+      "lang": "ko",
+      "owner_id": 4587,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "혼마 아키오",
+      "evidence_id": 64047,
+      "lang": "ko",
+      "owner_id": 4842,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "마쓰모토 도쿠지",
+      "evidence_id": 64044,
+      "lang": "ko",
+      "owner_id": 5158,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "구와하라 무네히사",
+      "evidence_id": 64038,
+      "lang": "ko",
+      "owner_id": 5237,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "와타나베 히데오",
+      "evidence_id": 64046,
+      "lang": "ko",
+      "owner_id": 5413,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "니시가미 요시히코",
+      "evidence_id": 64050,
+      "lang": "ko",
+      "owner_id": 5877,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "스즈키 고로",
+      "evidence_id": 64041,
+      "lang": "ko",
+      "owner_id": 6252,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나베시마 이치로",
+      "evidence_id": 64040,
+      "lang": "ko",
+      "owner_id": 6260,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나베시마 아키라",
+      "evidence_id": 64053,
+      "lang": "ko",
+      "owner_id": 6261,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "하세가와 아키라",
+      "evidence_id": 64039,
+      "lang": "ko",
+      "owner_id": 6270,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "호시노 도시",
+      "evidence_id": 64042,
+      "lang": "ko",
+      "owner_id": 6581,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "호소카와 센진",
+      "evidence_id": 64051,
+      "lang": "ko",
+      "owner_id": 6608,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "오노다 지요타로",
+      "evidence_id": 64054,
+      "lang": "ko",
+      "owner_id": 6627,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "사카이 도시오",
+      "evidence_id": 64056,
+      "lang": "ko",
+      "owner_id": 6631,
+      "reference_url": null,
+      "status": "verified"
+    }
+  ]
+}

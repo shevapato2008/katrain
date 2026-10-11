@@ -1,0 +1,219 @@
+{
+  "artifact_kind": "zh_ko_source_anchor_review_manifest",
+  "reviewer_id": "/root/zh_ko_task2_review_astra",
+  "reviewer_model": "gpt-6-astra",
+  "reviewed_at": "2026-10-08T22:39:02Z",
+  "anchor_review_status": "PASS",
+  "approved_anchor_count": 8,
+  "candidate_approval": false,
+  "files": {
+    "PROD-approved-anchors.json": "4c204902bdfb4eac42abf57bede20ac648d650025207e0513cb75cfcd04ba036",
+    "TEST-approved-anchors.json": "a18311336c36f323fdcab32eb77692a43e905ae4680968407072197a071ff2c0"
+  },
+  "pending_manifest_file_sha256": "902bcbcf726c7ea7169d1dca1b543e748d2c5c0a238370fe2def2ae99b057f7e",
+  "source_capture_script": {
+    "path": "/tmp/kifu-zh-ko-first2-source-proof-root-20261009.py",
+    "file_sha256": "3d6a9e7576d3487f70edfd7419e95e66e878ec75647ecdc7585f0593e373181a"
+  },
+  "anchors": [
+    {
+      "environment": "PROD",
+      "owner_id": 5498,
+      "prod_owner_id": 5498,
+      "lang": "cn",
+      "name": "王宏伟",
+      "name_id": 10757,
+      "evidence_id": 62034,
+      "source_batch_id": 563,
+      "content_sha256": "5f1d88555f1a68ce39c4944298361b6c20962f7933613cd118f201fb0d959ecc",
+      "approved_anchor_sha256": "ea1d7b6bc868d1fbffe44ecd41ab60609a65d2043df6f88aa7f208bc4dac9b12"
+    },
+    {
+      "environment": "PROD",
+      "owner_id": 5498,
+      "prod_owner_id": 5498,
+      "lang": "en",
+      "name": "Wang Hongwei",
+      "name_id": 10760,
+      "evidence_id": 62037,
+      "source_batch_id": 563,
+      "content_sha256": "5e2275a3bb6983a24cf6068ae0cc07fb78e89188523a2af6afcd8f122631cc91",
+      "approved_anchor_sha256": "cb158fed6cb71781f56e9c5f550dcf788964d76a676b20d2a102c9022b249fde"
+    },
+    {
+      "environment": "PROD",
+      "owner_id": 5739,
+      "prod_owner_id": 5739,
+      "lang": "cn",
+      "name": "翁子瑜",
+      "name_id": 10645,
+      "evidence_id": 61642,
+      "source_batch_id": 555,
+      "content_sha256": "9105fd325852a813bdb54009a49516c4fbe95aacd84a055c7d3ff814f56b2592",
+      "approved_anchor_sha256": "b9454a99325b7d70335ddfd07889bbbff5a8d07ee62bda26d4b2608826e3e7b4"
+    },
+    {
+      "environment": "PROD",
+      "owner_id": 5739,
+      "prod_owner_id": 5739,
+      "lang": "en",
+      "name": "Weng Ziyu",
+      "name_id": 10648,
+      "evidence_id": 61645,
+      "source_batch_id": 555,
+      "content_sha256": "41bd554d3cd9ff39baa573a248290c0f0838e6f9c48c4ad70219b7deb9ea6080",
+      "approved_anchor_sha256": "e7d17265be45c308db029e2dc0f13fedafda000c4178194bddbad11d2cb4c646"
+    },
+    {
+      "environment": "TEST",
+      "owner_id": 11272,
+      "prod_owner_id": 5498,
+      "lang": "cn",
+      "name": "王宏伟",
+      "name_id": 11678,
+      "evidence_id": 62029,
+      "source_batch_id": 563,
+      "content_sha256": "5ebf47bba5cf7ca5609c464c600fdcf8cd6409bbf23f4d4eb8750c750283bf13",
+      "approved_anchor_sha256": "d01d60489b6ff674d5bbf94fd89653341819bc617363845bc297c0f96f011e8b"
+    },
+    {
+      "environment": "TEST",
+      "owner_id": 11272,
+      "prod_owner_id": 5498,
+      "lang": "en",
+      "name": "Wang Hongwei",
+      "name_id": 11681,
+      "evidence_id": 62032,
+      "source_batch_id": 563,
+      "content_sha256": "2f51947d33168b313b112a840cba70d95613650e3cb961c642a42fc3b57fdba7",
+      "approved_anchor_sha256": "11113bb158442121e513815dd24e09365cee5586d1753ed4092eb57d384da83e"
+    },
+    {
+      "environment": "TEST",
+      "owner_id": 11508,
+      "prod_owner_id": 5739,
+      "lang": "cn",
+      "name": "翁子瑜",
+      "name_id": 11566,
+      "evidence_id": 61637,
+      "source_batch_id": 555,
+      "content_sha256": "b02bfe75aade6d8c4dd6986dd6ccc05359136a7a2a5a792340dd73230d66ee8c",
+      "approved_anchor_sha256": "5cfecbb3ec17e4120407a821d189d8a4c006609bdbd3b453f36d9498c79276b1"
+    },
+    {
+      "environment": "TEST",
+      "owner_id": 11508,
+      "prod_owner_id": 5739,
+      "lang": "en",
+      "name": "Weng Ziyu",
+      "name_id": 11569,
+      "evidence_id": 61640,
+      "source_batch_id": 555,
+      "content_sha256": "49f6c31bcbe1921f5241389ed5b47c9272d3f50e00ad3e3d0fd6cbcce387ae64",
+      "approved_anchor_sha256": "386a6ec2379b90bf3e4af2c5b91024e4893b51a94ecfa60cbbc801b7dc01bed0"
+    }
+  ],
+  "external_source_body_verification": [
+    {
+      "id": "ugo-5498-search",
+      "url": "https://db.u-go.net/?q=Wang+Hongwei",
+      "body_file": "captures/ugo-5498-search.html",
+      "body_sha256": "4a3ef8b3cd7563de46fbd5fcf4deaac25c307323228839f5c3ee1680beeda4ec",
+      "fetched_at": "2026-10-08T21:50:11.330703+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "ugo-5498-profile",
+      "url": "https://db.u-go.net/1923/",
+      "body_file": "captures/ugo-5498-profile.html",
+      "body_sha256": "e8bd7f2f4910baac35b43889ba0f6455b3a27ed99d43a44d1ef0dddf42600df8",
+      "fetched_at": "2026-10-08T21:50:12.700400+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "ugo-5739-search",
+      "url": "https://db.u-go.net/?q=Weng+Ziyu",
+      "body_file": "captures/ugo-5739-search.html",
+      "body_sha256": "1420642895fb83bb2cc144cc592bebd7b16e7e6772fe29c9903b859a68fd2e10",
+      "fetched_at": "2026-10-08T21:50:14.118657+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "ugo-5739-profile",
+      "url": "https://db.u-go.net/1942/",
+      "body_file": "captures/ugo-5739-profile.html",
+      "body_sha256": "f83f810003cc0b6fde9d53ff5558aab68152583a80fa718c6c650f1ee3cc993d",
+      "fetched_at": "2026-10-08T21:50:15.502476+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "cwa-professional-roster",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list",
+      "body_file": "../kifu-player-new33-independent-sources-2026-10-04/cwa-roster.json",
+      "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9",
+      "fetched_at": "2026-10-04T09:31:54.283371+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "daum-chinese-player-roster",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "body_file": "../kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "tvbaduk-china-index",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "body_file": "../kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+      "raw_bytes_hash_verified": true
+    },
+    {
+      "id": "nikl-full-foreign-regulation",
+      "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "body_file": "../kifu-nikl-cn-ko-research-20261009/captures/foreign-regulation-full.html",
+      "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "fetched_at": "2026-10-08T21:30:16.085366+00:00",
+      "raw_bytes_hash_verified": true
+    }
+  ],
+  "candidate_dispositions": [
+    {
+      "prod_owner_id": 5739,
+      "test_owner_id": 11508,
+      "name": "翁子瑜",
+      "status": "ready_for_exact_candidate_review",
+      "reading": "Weng Ziyu",
+      "reading_words": [
+        [
+          "weng"
+        ],
+        [
+          "zi",
+          "yu"
+        ]
+      ],
+      "rule_output": "웡쯔위"
+    },
+    {
+      "prod_owner_id": 5498,
+      "test_owner_id": 11272,
+      "name": "王宏伟",
+      "status": "hold_known_unresolved_korean_variant",
+      "reading": "Wang Hongwei",
+      "rule_output": "왕훙웨이",
+      "known_contrary_url": "https://www.goratings.org/ko/players/477.html",
+      "known_contrary_name": "왕훙위에",
+      "prior_recorded_body_sha256": "6f28f59f9cb6495d35d4e37f12ceb73ee7b478d1fc56662a7c044f256cf26e91",
+      "evidence_basis": "Known same-owner contrary capture retained inside the current qualified CN/EN source evidence. The old root decision deferred KO. The old temporary body file was not available for a fresh byte check in this review; the new pending research omits any explicit resolution.",
+      "resolution_required": "Resolve the known published Korean discrepancy explicitly before a generated candidate can claim unresolved_conflicts is empty. Do not infer that GOR is machine-translated or incorrect without evidence."
+    }
+  ],
+  "limits": [
+    "No candidate, final research hash, bundle, database write, cloud operation, Git operation or deployment is approved by these source-anchor signatures.",
+    "The raw-body checks use eight actual saved source responses. TVBaduk absence is bounded to its saved index. Daum rows are positive community reference usage. KBA mtime-only capture remains omitted.",
+    "The same-person CN/EN anchors remain approved for both owners; the Wang hold concerns the generated KO candidate only."
+  ]
+}

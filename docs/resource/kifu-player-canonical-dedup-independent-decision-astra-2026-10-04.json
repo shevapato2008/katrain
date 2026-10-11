@@ -1,0 +1,149 @@
+{
+  "canonical_only": [
+    {
+      "existing_fk_slots_per_environment": 66,
+      "new": "赵善津",
+      "old": "趙善津",
+      "prod_id": 541,
+      "source": "https://www.nihonkiin.or.jp/player/htm/ki000187.htm",
+      "test_id": 542
+    },
+    {
+      "existing_fk_slots_per_environment": 366,
+      "new": "工藤纪夫",
+      "old": "工藤紀夫",
+      "prod_id": 347,
+      "source": "https://www.nihonkiin.or.jp/player/htm/ki000026.htm",
+      "test_id": 348
+    }
+  ],
+  "databases": {
+    "prod": "katrain_prod_20260725",
+    "test": "katrain_db"
+  },
+  "date": "2026-10-04",
+  "evidence_directory": "/Users/fan/.local/share/kifu-name-audit/2026-10-04/player-canonical-dedup-independent-decision",
+  "evidence_sha256": {
+    "prod-catalog.json": "0d801c07049f726164f578ec9acbb8a5c4a1f973b7844e8713e55bed04ae084b",
+    "prod-linked-albums.json": "22e9197b5d3520dada4179d49925715fa20ec28a8e48f103a69f606131d28758",
+    "test-catalog.json": "55a4bd3084b6dbd66d90a0fa30b97a0ab28ca4b19e3484ec2430762cf78fa877",
+    "test-linked-albums.json": "510b9dc8e3d64c81df17c8ce7c052689f461364f2966e46539541122475f67a7",
+    "web-source-index.json": "6cc8dfec932c123096760eb95907875fff0b633de5f1c852582da7b203f18ee3"
+  },
+  "format": "kifu-player-canonical-dedup-identity-decision-v1",
+  "holds": [
+    "Unlinked raw slots including 860 周鹤洋, 679 赵善津, 570 工藤纪夫 and their spelling/rank variants; separate SGF scope required.",
+    "All legacy five-language status promotions or jp/ko conflict resolution.",
+    "Global aliasing of 周鹤样 and 周鹤羊; SGF/raw text edits; environment ID arithmetic."
+  ],
+  "official_zhou_anchor": {
+    "body_sha256": "18ba2a04efdca69d47528cbe703d9c54e1005b7f986af782434cbc3f1dd316f9",
+    "captured_at_utc": "2026-10-02T17:23:45.968698+00:00",
+    "live_refetch": "timed out; retained official response independently read and SHA-verified",
+    "playerBirthday": "1976-06-18",
+    "playerName": "周鹤洋",
+    "playerNo": "CWA000014",
+    "url": "https://wqapi.cwql.org.cn/playerInfo/professional/list"
+  },
+  "preconditions": [
+    "Fresh capture must match full player, name, alias, evidence and album preimages before application.",
+    "Lock/CAS exact rows and assert no new canonical/alias collision or incoming FK/metadata reference.",
+    "Archive deleted player/name rows and map old IDs to survivors before physical duplicate removal.",
+    "Retire/delete old IDs only after incoming FKs and live raw review_metadata references are zero."
+  ],
+  "reviewer": "independent gpt-6-astra max",
+  "scope": "identity decisions only; no database or code changes; execution needs frozen environment-specific plan",
+  "test_traditional_duplicate": {
+    "decision": "PASS identity merge 1028 into 1048",
+    "name_policy": "Archive full source name preimages, retain survivor five review/legacy_unverified rows unchanged; do not overwrite or promote jp/ko. Delete source names and duplicate player only after exact CAS and no other incoming references.",
+    "source_fk_slots": 0,
+    "source_id": 1028,
+    "source_name_ids": [
+      5133,
+      5134,
+      5135,
+      5136,
+      5137
+    ],
+    "survivor_id": 1048,
+    "survivor_name_ids": [
+      5233,
+      5234,
+      5235,
+      5236,
+      5237
+    ]
+  },
+  "zhou_exact_typo_batch": {
+    "alias_policy": "Do not create aliases 周鹤样 or 周鹤羊; approval is exact frozen slots only.",
+    "decision": "PASS only two exact slots per environment",
+    "evidence_limit": "Professional event reports plus dated color/result records establish identity; no external full-move equality claim.",
+    "prod_retire_ids": [
+      4194
+    ],
+    "prod_survivor_id": 4193,
+    "prod_survivor_rename": [
+      "周鹤样",
+      "周鹤洋"
+    ],
+    "raw_metadata_policy": "CAS entire old JSON; preserve kind, inventory_sha256, parsed_data, raw text and pending status. This decision does not grant global alias or pending-to-approved promotion.",
+    "raw_metadata_repoints": {
+      "prod": [
+        [
+          10148,
+          4194,
+          4193
+        ]
+      ],
+      "test": [
+        [
+          10145,
+          9988,
+          1048
+        ],
+        [
+          10148,
+          9989,
+          1048
+        ]
+      ]
+    },
+    "slots": [
+      {
+        "album_id": 87152,
+        "date": "2005-10-14",
+        "moves": 150,
+        "opponent": "金承俊",
+        "prod_new_fk": 4193,
+        "prod_old_fk": 4193,
+        "raw": "周鹤样",
+        "result": "W+R",
+        "sgf_sha256": "30aa83fc32380a89161e660551a22b941cb2bf1e7855645438b983806651eaa6",
+        "side": "white",
+        "source": "https://sports.sohu.com/20051015/n227203560.shtml",
+        "test_new_fk": 1048,
+        "test_old_fk": 9988
+      },
+      {
+        "album_id": 148135,
+        "date": "2006-06-15",
+        "moves": 211,
+        "opponent": "赵守洵",
+        "prod_new_fk": 4193,
+        "prod_old_fk": 4194,
+        "raw": "周鹤羊",
+        "result": "B+R",
+        "sgf_sha256": "6af57520297a303ac5cb4aa81ee01e04d5f49d49754a9209f43195c4871771f6",
+        "side": "black",
+        "source": "https://sports.sohu.com/20060615/n243752547.shtml",
+        "test_new_fk": 1048,
+        "test_old_fk": 9989
+      }
+    ],
+    "test_retire_ids": [
+      9988,
+      9989
+    ],
+    "test_survivor_id": 1048
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "format": "kifu-event-next-after-china-ahan-independent-source-observations-v1",
+  "review_date": "2026-10-04",
+  "sources": [
+    {
+      "key": "gs-kba-history",
+      "url": "https://www.baduk.or.kr/news/monthly_view.asp?news_no=215",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2025-02-28",
+      "title": "GS칼텍스배 프로기전, 30기 본선 막 올라",
+      "authority": "official tournament organizer",
+      "facts": [
+        "The Korean domestic series began as Techron in September 1995; editions 1–3 used Techron, 4–9 LG Refined Oil, and 10 onward GS Caltex.",
+        "The series is continuous across these sponsor names. The article separately describes the later creation of the LG international cup."
+      ],
+      "supports": [
+        "GS domestic identity and historical boundary; no LG World Cup merge"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "gs-kba-30-main-draw",
+      "url": "https://www.baduk.or.kr/news/report_view.asp?news_no=5400",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2025-07-15",
+      "title": "GS칼텍스배, 30번째 우승컵 주인공 가린다",
+      "authority": "official tournament organizer",
+      "facts": [
+        "The 30th final was a best-of-five between Shin Jinseo and An Seongjun, scheduled July 19–24, 2025.",
+        "An advanced through a losers bracket; that bracket is part of this GS Caltex edition. Maeil, MBN and KBA jointly organized it with GS Caltex sponsorship."
+      ],
+      "supports": [
+        "30th-edition losers-bracket scope and domestic event identity"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "gs-kba-31-qualifying",
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=5664",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2026-01-19",
+      "title": "GS칼텍스배 예선종료...16강 명단 확정",
+      "authority": "official tournament organizer",
+      "facts": [
+        "The 31st GS Caltex qualifying rounds ran January 5–17, 2026, with 290 Korean professional players.",
+        "Qualifiers joined seeded players in a 16-player main draw."
+      ],
+      "supports": [
+        "2026 qualifying labels in frozen GS scope; no edition assignment"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "women-kba-30-identity",
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=5388",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2025-07-02",
+      "title": "하림배 여자국수전, 서른 번째 시즌 막 올려",
+      "authority": "official tournament administrator",
+      "facts": [
+        "The professional Women’s Guksu began in 1994 and reached its 30th edition in 2025.",
+        "The 30th qualifying event included 47 female professionals and four top finishers from a separate amateur Women’s Guksu; eleven qualifiers joined five seeded players in the professional main draw."
+      ],
+      "supports": [
+        "Professional Women’s Guksu identity, integrated qualifying scope, separate amateur-tournament boundary"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "women-kba-22-crossover",
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=2485",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2018-02-21",
+      "title": "최정, 입신 만들어 준 여자국수 시상식 열려",
+      "authority": "official tournament administrator",
+      "facts": [
+        "The 22nd professional Women’s Guksu began November 1, 2017, and the final ended January 23, 2018.",
+        "Choi Jeong beat Kim Chaeyoung 2–0; the second game ended in a 195-move Black resignation win."
+      ],
+      "supports": [
+        "Do not hold legitimate 22nd-edition January 2018 games merely for crossing a year boundary; exact album 48902 anchor"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "women-organizer-16-completed",
+      "url": "https://www.hankyung.com/article/2011042707871",
+      "publisher": "The Korea Economic Daily",
+      "published_date": "2011-04-27",
+      "title": "가그린배 여류국수전 시상",
+      "authority": "tournament organizer contemporaneous report",
+      "facts": [
+        "The 16th Gagreen professional Women’s Guksu award ceremony took place April 27, 2011.",
+        "Rui Naiwei was champion and Kim Yunyeong runner-up."
+      ],
+      "supports": [
+        "Album 88408’s raw 16th-edition label conflicts with its October 2012 date; HOLD without repair"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "women-28-exact-semifinal",
+      "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=530238&pageNo=",
+      "publisher": "Cyberoro",
+      "published_date": "2023-10-27",
+      "title": "오유진 꺾은 김채영, 결승서 최정과 격돌한다",
+      "authority": "contemporaneous specialist match reporting",
+      "facts": [
+        "On October 26, 2023, Kim Chaeyoung defeated Oh Yujin by Black resignation in 231 moves in the 28th professional Women’s Guksu semifinal."
+      ],
+      "supports": [
+        "Album 3900 matches date, players, result and moves, but raw/GN says 27th: HOLD ordinal conflict"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "drg-exact-705",
+      "url": "https://www.cyberoro.com/news/N_news_view.oro?cmt_n=&div_no=A1&num=529187&pageNo=",
+      "publisher": "Cyberoro",
+      "published_date": "2022-10-07",
+      "title": "다크호스 박지연, 김은지 꺾고 2연승",
+      "authority": "contemporaneous match reporter and live-relay provider",
+      "facts": [
+        "On October 7, 2022, Park Jiyoun defeated Kim Eunji as White by resignation in 250 moves in game six of the Dr.G Women’s Best Player round robin."
+      ],
+      "supports": [
+        "Album 705 matches that game; its Women’s Guksu raw/GN is a different-event mislabel. HOLD; no remap to an out-of-scope type"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "drg-kba-separate-series",
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4445",
+      "publisher": "Korea Baduk Association",
+      "published_date": "2023-01-07",
+      "title": "최정, 닥터지로 새해 첫 타이틀 획득",
+      "authority": "official tournament organizer",
+      "facts": [
+        "The 2022 Dr.G Women’s Best Player competition had an eight-player round robin followed by a best-of-five final.",
+        "Park Jiyoun and Kim Eunji participated; the event was organized by KBA, sponsored by Gowoonsesang Cosmetics, and broadcast by K-Baduk."
+      ],
+      "supports": [
+        "Independent identity boundary for the event implicated by album 705"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "gs-24-round-wording-exception",
+      "url": "https://cyberoro.com/board/N_noti_view.oro?act_num=next&bd_num=2241&pageNo=71",
+      "publisher": "Cyberoro",
+      "published_date": "2019-03-25",
+      "title": "프라임 대국 안내(3월25일~3월31일)",
+      "authority": "contemporaneous live-relay schedule",
+      "facts": [
+        "The schedule identifies March 29, 2019, Park Yeonghun versus Byun Sangil as the 24th GS Caltex quarterfinal."
+      ],
+      "supports": [
+        "Album 34783’s same date and players establish GS series identity, while raw/GN says round of 16; approve type only with round wording preserved and explicitly unendorsed"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "women-27-eight-finalists",
+      "url": "https://www.cyberoro.com/news/N_news_view.oro?agree=1&num=528990",
+      "publisher": "Cyberoro",
+      "published_date": "2022-08-10",
+      "title": "조승아·허서현·김혜림·김혜민, 여자국수전 8강 진입",
+      "authority": "contemporaneous specialist match reporting",
+      "facts": [
+        "Park Jiyoun was eliminated by Jo Seunga in the 27th Women’s Guksu round of 16 on August 10, 2022."
+      ],
+      "supports": [
+        "Additional independent contradiction to album 705’s October quarterfinal label"
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and/or rendered page; factual observations, not a full-text archive"
+    }
+  ],
+  "retrieval_limits": [
+    "Firecrawl search returned HTTP 402; web browsing supplied the evidence.",
+    "No claim is made to external game-by-game verification of all 756 records."
+  ]
+}

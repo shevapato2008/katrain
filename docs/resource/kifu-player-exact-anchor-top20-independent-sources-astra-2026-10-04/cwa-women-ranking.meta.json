@@ -1,0 +1,11 @@
+{
+  "key": "cwa-women-ranking",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-women-ranking.json",
+  "raw_sha256": "3fcff8519612f696606a167db7421c47bb816f878e16c9f7db185db629ac8dbc",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/rank/list?pageSize=1000&page=1&playerGender=2&playerStatus=1&updateCycle=202608",
+  "retrieved_at_utc": "2026-10-04T12:10:37.840524+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-women-ranking.txt",
+  "text_sha256": "45b07d534de254e6d2a495a4ffabfe7ba575bb674642dc71d6dc976f841868f1",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/rank/list?pageSize=1000&page=1&playerGender=2&playerStatus=1&updateCycle=202608"
+}

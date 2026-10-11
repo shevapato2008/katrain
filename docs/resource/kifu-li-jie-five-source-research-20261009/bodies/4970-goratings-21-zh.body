@@ -1,0 +1,2846 @@
+<!DOCTYPE html>
+<html lang="zh"><head><title>李劼</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>李劼</h1><div id="lang-ctn"><div><a href="../../en/players/21.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/21.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/21.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/21.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">返回首页</a></p><h2>等级分曲线</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-21.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>数据</h2><table><tr><th class="r">胜</th><td class="r">160</td></tr><tr><th class="r">负</th><td class="r">195</td></tr><tr><th class="r">总计</th><td class="r">355</td></tr><tr><th class="r">生日</th><td class="r">1983-12-04</td></tr></table><h2>对局列表</h2><table><tr><th>日期</th><th>等级分</th><th>黑白</th><th>对局结果</th><th colspan="4">对手</th><th>棋谱</th></tr><tr><td>2016-12-28</td><td>3223</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="113.html">张东岳</a></td>
+<td>3151</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61507">go4go</a> | </td>
+</tr>
+<tr><td>2016-12-27</td><td>3223</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="1287.html">王爽</a></td>
+<td>3057</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61481">go4go</a> | </td>
+</tr>
+<tr><td>2016-12-18</td><td>3224</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1399.html">许嘉阳</a></td>
+<td>3535</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61211">go4go</a> | </td>
+</tr>
+<tr><td>2016-05-06</td><td>3227</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1253.html">辜梓豪</a></td>
+<td>3573</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2014-04-01</td><td>3243</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="120.html">牛雨田</a></td>
+<td>3398</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/41437">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-06</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1276.html">谢尔豪</a></td>
+<td>3450</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2013060000045979">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35661">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-05</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="379.html">王昊洋</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2013060000045961">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35614">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-05</td><td>3252</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="456.html">王鹭</a></td>
+<td>3189</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34081">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-23</td><td>3252</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="74.html">王群</a></td>
+<td>2942</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-21</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1633.html">高宇</a></td>
+<td>3105</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-18</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="660.html">吴树浩</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-16</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="423.html">蓝天</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-09</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="178.html">古灵益</a></td>
+<td>3466</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-01-21</td><td>3254</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1290.html">卞相壹</a></td>
+<td>3392</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/31701">go4go</a> | </td>
+</tr>
+<tr><td>2012-10-17</td><td>3258</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="433.html">柁嘉熹</a></td>
+<td>3548</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/30586">go4go</a> | </td>
+</tr>
+<tr><td>2012-08-14</td><td>3260</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="115.html">芮乃伟</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012080000043204">cwa</a> | </td>
+</tr>
+<tr><td>2012-08-13</td><td>3260</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="1046.html">秦悦欣</a></td>
+<td>3298</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012080000043185">cwa</a> | </td>
+</tr>
+<tr><td>2012-08-10</td><td>3260</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1195.html">柯洁</a></td>
+<td>3433</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/55733">go4go</a> | </td>
+</tr>
+<tr><td>2012-06-27</td><td>3261</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="971.html">潘非</a></td>
+<td>3310</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012060000041843">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35732">go4go</a> | </td>
+</tr>
+<tr><td>2012-05-14</td><td>3263</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="241.html">陳詩淵</a></td>
+<td>3349</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-13</td><td>3263</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="481.html">涂清</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-11</td><td>3263</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3220</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-10</td><td>3263</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="1408.html">陈润韬</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-08</td><td>3263</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="1275.html">范胤</a></td>
+<td>3247</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-07</td><td>3263</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="74.html">王群</a></td>
+<td>2953</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-04-02</td><td>3264</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1082.html">连笑</a></td>
+<td>3505</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012040000040730">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/33424">go4go</a> | </td>
+</tr>
+<tr><td>2011-09-25</td><td>3268</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="382.html">张立</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-24</td><td>3268</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="970.html">汪涛</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-22</td><td>3268</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="447.html">佟禹林</a></td>
+<td>3356</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-21</td><td>3268</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="1284.html">戎毅</a></td>
+<td>3274</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-19</td><td>3269</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="468.html">毛睿龙</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-18</td><td>3269</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="433.html">柁嘉熹</a></td>
+<td>3498</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-16</td><td>3269</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="897.html">唐韦星</a></td>
+<td>3458</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-15</td><td>3269</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="410.html">孟泰龄</a></td>
+<td>3438</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-14</td><td>3269</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="23.html">李康</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-22</td><td>3268</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="481.html">涂清</a></td>
+<td>3196</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2011060000037650">cwa</a> | </td>
+</tr>
+<tr><td>2011-06-17</td><td>3268</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="421.html">施洲</a></td>
+<td>2748</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-16</td><td>3268</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="185.html">韩晔</a></td>
+<td>3019</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-14</td><td>3268</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="692.html">张弛</a></td>
+<td>3182</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-13</td><td>3268</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="971.html">潘非</a></td>
+<td>3298</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-11</td><td>3268</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="480.html">杨潜</a></td>
+<td>3106</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-10</td><td>3268</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="94.html">赵兴华</a></td>
+<td>3105</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-03-14</td><td>3267</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1207.html">范蕴若</a></td>
+<td>3445</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25624">go4go</a> | </td>
+</tr>
+<tr><td>2011-01-06</td><td>3266</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="981.html">李赫</a></td>
+<td>3192</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-12-18</td><td>3266</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="970.html">汪涛</a></td>
+<td>3352</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25156">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-11</td><td>3266</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="897.html">唐韦星</a></td>
+<td>3418</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25126">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-04</td><td>3265</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49723">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-21</td><td>3263</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="380.html">朴文垚</a></td>
+<td>3476</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24651">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-16</td><td>3263</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="419.html">黄晨</a></td>
+<td>3314</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24612">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-09</td><td>3262</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1194.html">范廷钰</a></td>
+<td>3452</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24598">go4go</a> | </td>
+</tr>
+<tr><td>2010-09-25</td><td>3262</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="1027.html">严欢</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-21</td><td>3262</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="174.html">付冲</a></td>
+<td>3306</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-19</td><td>3262</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="995.html">檀啸</a></td>
+<td>3470</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-18</td><td>3262</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="423.html">蓝天</a></td>
+<td>3248</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-15</td><td>3262</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="23.html">李康</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-14</td><td>3262</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="449.html">时越</a></td>
+<td>3491</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-06</td><td>3261</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="433.html">柁嘉熹</a></td>
+<td>3480</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24517">go4go</a> | </td>
+</tr>
+<tr><td>2010-09-04</td><td>3261</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="967.html">孙腾宇</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24417">go4go</a> | </td>
+</tr>
+<tr><td>2010-07-15</td><td>3257</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="72.html">王雷</a></td>
+<td>3392</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2010070000034038">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/24062">go4go</a> | </td>
+</tr>
+<tr><td>2010-06-29</td><td>3256</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1392.html">张一鸣</a></td>
+<td>3159</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2010060000033888">cwa</a> | </td>
+</tr>
+<tr><td>2010-06-19</td><td>3255</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="382.html">张立</a></td>
+<td>3389</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23988">go4go</a> | </td>
+</tr>
+<tr><td>2010-06-03</td><td>3254</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="436.html">朱元豪</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23709">go4go</a> | </td>
+</tr>
+<tr><td>2010-05-29</td><td>3254</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="69.html">王磊</a></td>
+<td>3328</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23652">go4go</a> | </td>
+</tr>
+<tr><td>2010-04-25</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="967.html">孙腾宇</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23447">go4go</a> | </td>
+</tr>
+<tr><td>2010-03-30</td><td>3250</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35495">go4go</a> | </td>
+</tr>
+<tr><td>2010-03-14</td><td>3250</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="76.html">王檄</a></td>
+<td>3492</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-01-19</td><td>3248</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1411.html">李响</a></td>
+<td>3120</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/45870">go4go</a> | </td>
+</tr>
+<tr><td>2009-12-05</td><td>3247</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="23.html">李康</a></td>
+<td>3351</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22519">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-23</td><td>3247</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="20.html">李华嵩</a></td>
+<td>3139</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22372">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-21</td><td>3247</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3489</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22350">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-20</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="423.html">蓝天</a></td>
+<td>3238</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22345">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-19</td><td>3247</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="993.html">彭立尧</a></td>
+<td>3432</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22328">go4go</a> | </td>
+</tr>
+<tr><td>2009-10-10</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="76.html">王檄</a></td>
+<td>3485</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21968">go4go</a> | </td>
+</tr>
+<tr><td>2009-09-25</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1051.html">张涛</a></td>
+<td>3307</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-24</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="411.html">陶忻</a></td>
+<td>3329</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-22</td><td>3247</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="458.html">邬光亚</a></td>
+<td>3402</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-21</td><td>3247</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="97.html">赵哲伦</a></td>
+<td>3229</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-19</td><td>3247</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="483.html">陈潇楠</a></td>
+<td>3258</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-18</td><td>3247</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="468.html">毛睿龙</a></td>
+<td>3343</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-16</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="449.html">时越</a></td>
+<td>3466</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-15</td><td>3247</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="423.html">蓝天</a></td>
+<td>3236</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-14</td><td>3247</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="995.html">檀啸</a></td>
+<td>3434</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-07-20</td><td>3246</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="342.html">张维</a></td>
+<td>3283</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21362">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-30</td><td>3245</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3318</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34326">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-30</td><td>3245</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="187.html">杭天鹏</a></td>
+<td>3139</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34311">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-13</td><td>3245</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="423.html">蓝天</a></td>
+<td>3230</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21085">go4go</a> | </td>
+</tr>
+<tr><td>2009-05-28</td><td>3246</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="92.html">俞斌</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20932">go4go</a> | </td>
+</tr>
+<tr><td>2009-05-23</td><td>3246</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="970.html">汪涛</a></td>
+<td>3321</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20877">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-29</td><td>3246</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="381.html">周睿羊</a></td>
+<td>3457</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20688">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-07</td><td>3246</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="411.html">陶忻</a></td>
+<td>3320</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20521">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-05</td><td>3246</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3336</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35533">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-03</td><td>3246</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="130.html">朱松力</a></td>
+<td>3230</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35543">go4go</a> | </td>
+</tr>
+<tr><td>2009-03-14</td><td>3245</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3467</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-02-17</td><td>3244</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="381.html">周睿羊</a></td>
+<td>3457</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20370">go4go</a> | </td>
+</tr>
+<tr><td>2008-12-13</td><td>3242</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="467.html">钟文靖</a></td>
+<td>3412</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19735">go4go</a> | </td>
+</tr>
+<tr><td>2008-12-04</td><td>3242</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="967.html">孙腾宇</a></td>
+<td>3387</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19681">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-29</td><td>3242</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3471</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19622">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-22</td><td>3242</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19570">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-21</td><td>3243</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="381.html">周睿羊</a></td>
+<td>3462</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18402">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-16</td><td>3243</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="436.html">朱元豪</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2008-06-14</td><td>3243</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="96.html">赵守洵</a></td>
+<td>3213</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18332">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-05</td><td>3244</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="971.html">潘非</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18260">go4go</a> | </td>
+</tr>
+<tr><td>2008-05-15</td><td>3244</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3333</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17986">go4go</a> | </td>
+</tr>
+<tr><td>2008-04-17</td><td>3244</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="380.html">朴文垚</a></td>
+<td>3461</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17641">go4go</a> | </td>
+</tr>
+<tr><td>2008-04-05</td><td>3244</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3400</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17538">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-27</td><td>3244</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="178.html">古灵益</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17473">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-26</td><td>3244</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="69.html">王磊</a></td>
+<td>3371</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17471">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-25</td><td>3244</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="76.html">王檄</a></td>
+<td>3436</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2008-02-27</td><td>3244</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3325</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49640">go4go</a> | </td>
+</tr>
+<tr><td>2008-02-25</td><td>3244</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="72.html">王雷</a></td>
+<td>3335</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35580">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-29</td><td>3245</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3441</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17074">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-28</td><td>3245</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="434.html">唐奕</a></td>
+<td>3094</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17076">go4go</a> | </td>
+</tr>
+<tr><td>2007-12-24</td><td>3245</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="436.html">朱元豪</a></td>
+<td>3368</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/16885">go4go</a> | </td>
+</tr>
+<tr><td>2007-09-25</td><td>3248</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="473.html">王幼侠</a></td>
+<td>3191</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-24</td><td>3248</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="118.html">彭荃</a></td>
+<td>3365</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-22</td><td>3248</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="410.html">孟泰龄</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-21</td><td>3248</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="72.html">王雷</a></td>
+<td>3317</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-19</td><td>3248</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3270</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-18</td><td>3248</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="449.html">时越</a></td>
+<td>3388</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-16</td><td>3248</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="462.html">庄园</a></td>
+<td>3152</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-15</td><td>3248</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="210.html">孟磊</a></td>
+<td>3195</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-19</td><td>3251</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="66.html">吴新宇</a></td>
+<td>3126</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-17</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="96.html">赵守洵</a></td>
+<td>3241</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/15597">go4go</a> | </td>
+</tr>
+<tr><td>2007-07-16</td><td>3251</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="327.html">李喆</a></td>
+<td>3440</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-15</td><td>3251</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="342.html">张维</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/15573">go4go</a> | </td>
+</tr>
+<tr><td>2007-07-13</td><td>3251</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="23.html">李康</a></td>
+<td>3334</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-12</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="72.html">王雷</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-11</td><td>3251</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3278</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-26</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="456.html">王鹭</a></td>
+<td>3172</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-25</td><td>3251</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="432.html">荆上</a></td>
+<td>3040</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-23</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="455.html">桂文波</a></td>
+<td>3199</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-20</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3318</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-19</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="1027.html">严欢</a></td>
+<td>3281</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-18</td><td>3252</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="444.html">白光源</a></td>
+<td>3102</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-05-09</td><td>3251</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3205</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14745">go4go</a> | </td>
+</tr>
+<tr><td>2007-04-02</td><td>3250</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3206</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14382">go4go</a> | </td>
+</tr>
+<tr><td>2007-03-13</td><td>3251</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="91.html">余平</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14286">go4go</a> | </td>
+</tr>
+<tr><td>2007-03-13</td><td>3251</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="92.html">俞斌</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14282">go4go</a> | </td>
+</tr>
+<tr><td>2006-09-25</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-24</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3438</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-22</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="113.html">张东岳</a></td>
+<td>3146</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-21</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="473.html">王幼侠</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-19</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="97.html">赵哲伦</a></td>
+<td>3253</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-18</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="136.html">周俊勛</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-16</td><td>3252</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="130.html">朱松力</a></td>
+<td>3208</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-15</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3381</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-14</td><td>3252</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="372.html">张英挺</a></td>
+<td>3147</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-07-12</td><td>3256</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11949">go4go</a> | </td>
+</tr>
+<tr><td>2006-06-08</td><td>3257</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3516</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11616">go4go</a> | </td>
+</tr>
+<tr><td>2006-04-20</td><td>3259</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="377.html">朱剑舜</a></td>
+<td>3131</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-16</td><td>3259</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="187.html">杭天鹏</a></td>
+<td>3125</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-14</td><td>3259</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="1396.html">贾依凡</a></td>
+<td>3253</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-13</td><td>3259</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="419.html">黄晨</a></td>
+<td>3272</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-12</td><td>3259</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="966.html">郑淼鑫</a></td>
+<td>3134</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-10</td><td>3259</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="184.html">胡耀宇</a></td>
+<td>3448</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10837">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-24</td><td>3260</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3214</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10604">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-16</td><td>3260</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="76.html">王檄</a></td>
+<td>3461</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11073">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-16</td><td>3260</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="380.html">朴文垚</a></td>
+<td>3413</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11076">go4go</a> | </td>
+</tr>
+<tr><td>2006-02-06</td><td>3259</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="381.html">周睿羊</a></td>
+<td>3449</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10343">go4go</a> | </td>
+</tr>
+<tr><td>2006-01-17</td><td>3259</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="109.html">张璇</a></td>
+<td>3124</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10398">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-31</td><td>3259</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="72.html">王雷</a></td>
+<td>3305</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10118">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-24</td><td>3258</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3307</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10054">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-03</td><td>3257</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3302</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/9942">go4go</a> | </td>
+</tr>
+<tr><td>2005-11-05</td><td>3256</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="458.html">邬光亚</a></td>
+<td>3268</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/9428">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-15</td><td>3256</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="325.html">洪旼杓</a></td>
+<td>3300</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8957">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-12</td><td>3255</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71569">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-08</td><td>3255</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="11.html">马晓春</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8930">go4go</a> | </td>
+</tr>
+<tr><td>2005-09-25</td><td>3255</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="131.html">朱毅</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-24</td><td>3255</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="136.html">周俊勛</a></td>
+<td>3271</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-22</td><td>3255</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="178.html">古灵益</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-21</td><td>3255</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3425</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-19</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-18</td><td>3255</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-16</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="97.html">赵哲伦</a></td>
+<td>3250</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-15</td><td>3255</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="342.html">张维</a></td>
+<td>3246</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-14</td><td>3255</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="383.html">崔灿</a></td>
+<td>3158</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-08-20</td><td>3254</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="76.html">王檄</a></td>
+<td>3447</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6607">go4go</a> | </td>
+</tr>
+<tr><td>2005-08-13</td><td>3253</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="92.html">俞斌</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/52035">go4go</a> | </td>
+</tr>
+<tr><td>2005-08-06</td><td>3253</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="379.html">王昊洋</a></td>
+<td>3216</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6524">go4go</a> | </td>
+</tr>
+<tr><td>2005-07-09</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6401">go4go</a> | </td>
+</tr>
+<tr><td>2005-06-25</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3374</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8942">go4go</a> | </td>
+</tr>
+<tr><td>2005-05-21</td><td>3251</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="155.html">常昊</a></td>
+<td>3440</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6082">go4go</a> | </td>
+</tr>
+<tr><td>2005-05-07</td><td>3251</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="325.html">洪旼杓</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5993">go4go</a> | </td>
+</tr>
+<tr><td>2005-04-16</td><td>3251</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3388</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/51952">go4go</a> | </td>
+</tr>
+<tr><td>2004-12-16</td><td>3253</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="76.html">王檄</a></td>
+<td>3439</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-12-09</td><td>3253</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="11.html">马晓春</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5394">go4go</a> | </td>
+</tr>
+<tr><td>2004-12-03</td><td>3253</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="174.html">付冲</a></td>
+<td>3180</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-22</td><td>3254</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3363</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-18</td><td>3254</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="96.html">赵守洵</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-11</td><td>3254</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="136.html">周俊勛</a></td>
+<td>3274</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8439">go4go</a> | </td>
+</tr>
+<tr><td>2004-11-04</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="201.html">金承俊</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-10-28</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="113.html">张东岳</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5229">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-21</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="77.html">汪洋</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5181">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-14</td><td>3255</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5147">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-09</td><td>3255</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="184.html">胡耀宇</a></td>
+<td>3448</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-26</td><td>3255</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3363</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-24</td><td>3256</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-23</td><td>3256</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="118.html">彭荃</a></td>
+<td>3377</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-21</td><td>3256</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="23.html">李康</a></td>
+<td>3295</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-20</td><td>3256</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="120.html">牛雨田</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-18</td><td>3256</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="72.html">王雷</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-17</td><td>3256</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="371.html">马笑冰</a></td>
+<td>3233</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-15</td><td>3256</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="69.html">王磊</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-14</td><td>3256</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="26.html">刘世振</a></td>
+<td>3322</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-07-24</td><td>3254</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="72.html">王雷</a></td>
+<td>3273</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-07-08</td><td>3253</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="264.html">孟昭玉</a></td>
+<td>2969</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4762">go4go</a> | </td>
+</tr>
+<tr><td>2004-07-01</td><td>3253</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3437</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4718">go4go</a> | </td>
+</tr>
+<tr><td>2004-06-24</td><td>3252</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="11.html">马晓春</a></td>
+<td>3338</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4680">go4go</a> | </td>
+</tr>
+<tr><td>2004-06-17</td><td>3252</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="174.html">付冲</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-06-10</td><td>3252</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3393</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-06-03</td><td>3251</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="96.html">赵守洵</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-27</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="97.html">赵哲伦</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-20</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="327.html">李喆</a></td>
+<td>3342</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-13</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="89.html">岳亮</a></td>
+<td>3179</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-10</td><td>3251</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-04-29</td><td>3250</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3271</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4461">go4go</a> | </td>
+</tr>
+<tr><td>2004-04-15</td><td>3249</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="26.html">刘世振</a></td>
+<td>3329</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-04-05</td><td>3248</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3324</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-03-05</td><td>3247</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-02-19</td><td>3246</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3432</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-02-01</td><td>3244</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3360</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-12-18</td><td>3241</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="78.html">王垚</a></td>
+<td>3312</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-12-11</td><td>3240</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="365.html">岳嵩</a></td>
+<td>3165</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3880">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-27</td><td>3239</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="94.html">赵兴华</a></td>
+<td>3083</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3828">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-20</td><td>3239</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3385</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-11-13</td><td>3239</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="112.html">张学斌</a></td>
+<td>3275</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/81265">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-06</td><td>3239</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="35.html">林锋</a></td>
+<td>3207</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-10-30</td><td>3239</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3325</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3709">go4go</a> | </td>
+</tr>
+<tr><td>2003-10-22</td><td>3239</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="364.html">周逵</a></td>
+<td>3166</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-10-16</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="249.html">王亦民</a></td>
+<td>3060</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3647">go4go</a> | </td>
+</tr>
+<tr><td>2003-10-09</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="110.html">张文东</a></td>
+<td>3215</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3622">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-27</td><td>3239</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3357</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-26</td><td>3239</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="342.html">张维</a></td>
+<td>3222</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-24</td><td>3239</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="136.html">周俊勛</a></td>
+<td>3264</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-22</td><td>3239</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="34.html">林朝华</a></td>
+<td>3221</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-20</td><td>3239</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="23.html">李康</a></td>
+<td>3278</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-19</td><td>3239</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="208.html">孔杰</a></td>
+<td>3488</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-18</td><td>3239</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="297.html">陈耀烨</a></td>
+<td>3285</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-16</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="179.html">古力</a></td>
+<td>3496</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-15</td><td>3239</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="24.html">刘星</a></td>
+<td>3356</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-14</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="78.html">王垚</a></td>
+<td>3308</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-11</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="13.html">李永刚</a></td>
+<td>3093</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-07</td><td>3238</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3415</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3499">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-04</td><td>3238</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="184.html">胡耀宇</a></td>
+<td>3425</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3485">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-02</td><td>3238</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="45.html">邱峻</a></td>
+<td>3379</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/75931">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-31</td><td>3238</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/75934">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-21</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="187.html">杭天鹏</a></td>
+<td>3130</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3412">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-11</td><td>3236</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="332.html">金亨奐</a></td>
+<td>3175</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3374">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-07</td><td>3236</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3343">go4go</a> | </td>
+</tr>
+<tr><td>2003-07-29</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="839.html">下島陽平</a></td>
+<td>3017</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-24</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3411</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-17</td><td>3234</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="153.html">陈祖德</a></td>
+<td>3059</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3236">go4go</a> | </td>
+</tr>
+<tr><td>2003-07-10</td><td>3234</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3319</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-03</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3319</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-26</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-24</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-19</td><td>3232</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="29.html">刘菁</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-16</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="153.html">陈祖德</a></td>
+<td>3061</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-05-26</td><td>3232</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="67.html">吴肇毅</a></td>
+<td>3002</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88370">go4go</a> | </td>
+</tr>
+<tr><td>2003-05-23</td><td>3232</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="72.html">王雷</a></td>
+<td>3259</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88359">go4go</a> | </td>
+</tr>
+<tr><td>2003-05-21</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3380</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3068">go4go</a> | </td>
+</tr>
+<tr><td>2003-04-23</td><td>3233</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="343.html">景石</a></td>
+<td>3007</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3255">go4go</a> | </td>
+</tr>
+<tr><td>2003-04-17</td><td>3233</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="130.html">朱松力</a></td>
+<td>3170</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-04-07</td><td>3232</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="208.html">孔杰</a></td>
+<td>3477</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-03-23</td><td>3232</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="168.html">董彦</a></td>
+<td>3279</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3022">go4go</a> | </td>
+</tr>
+<tr><td>2003-02-22</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="91.html">余平</a></td>
+<td>3235</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-12-01</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="155.html">常昊</a></td>
+<td>3410</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-11-28</td><td>3232</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="cwa_CWA000228.html">曹恒廷</a></td>
+<td>3098</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-11-21</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3272</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/2061">go4go</a> | </td>
+</tr>
+<tr><td>2002-11-14</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="110.html">张文东</a></td>
+<td>3239</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/2031">go4go</a> | </td>
+</tr>
+<tr><td>2002-11-07</td><td>3232</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3273</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/57981">go4go</a> | </td>
+</tr>
+<tr><td>2002-10-31</td><td>3232</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="92.html">俞斌</a></td>
+<td>3402</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-24</td><td>3232</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="79.html">王东亮</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-17</td><td>3232</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-10</td><td>3232</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="78.html">王垚</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-15</td><td>3233</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-12</td><td>3233</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="168.html">董彦</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-05</td><td>3234</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="29.html">刘菁</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-07-17</td><td>3234</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="106.html">张欣</a></td>
+<td>3055</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-07-15</td><td>3234</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="53.html">谢赫</a></td>
+<td>3379</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76701">go4go</a> | </td>
+</tr>
+<tr><td>2002-06-27</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1370">go4go</a> | </td>
+</tr>
+<tr><td>2002-06-20</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="197.html">金榮桓</a></td>
+<td>3247</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-06-13</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="220.html">阮云生</a></td>
+<td>3053</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-06-06</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="35.html">林锋</a></td>
+<td>3180</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1263">go4go</a> | </td>
+</tr>
+<tr><td>2002-05-23</td><td>3235</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3280</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/57991">go4go</a> | </td>
+</tr>
+<tr><td>2002-05-13</td><td>3236</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="11.html">马晓春</a></td>
+<td>3345</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-05-09</td><td>3236</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="79.html">王东亮</a></td>
+<td>3122</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-25</td><td>3236</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="170.html">方天丰</a></td>
+<td>3018</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-18</td><td>3236</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="69.html">王磊</a></td>
+<td>3424</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-08</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="22.html">李君凯</a></td>
+<td>3089</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-04</td><td>3237</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="121.html">睦鎭碩</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71185">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-13</td><td>3238</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="45.html">邱峻</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/37">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-11</td><td>3238</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="208.html">孔杰</a></td>
+<td>3420</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/62062">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-09</td><td>3238</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="155.html">常昊</a></td>
+<td>3414</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-07</td><td>3238</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="110.html">张文东</a></td>
+<td>3242</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-02-04</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3326</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-01-22</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="118.html">彭荃</a></td>
+<td>3339</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-12-17</td><td>3237</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="126.html">朴正祥</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/178">go4go</a> | </td>
+</tr>
+<tr><td>2001-11-29</td><td>3237</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="110.html">张文东</a></td>
+<td>3244</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-22</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="233.html">张蛟</a></td>
+<td>3035</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-15</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="134.html">周波</a></td>
+<td>3183</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-08</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="46.html">许书祥</a></td>
+<td>3051</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58199">go4go</a> | </td>
+</tr>
+<tr><td>2001-11-01</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="120.html">牛雨田</a></td>
+<td>3257</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-10-25</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="118.html">彭荃</a></td>
+<td>3324</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58052">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-18</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="79.html">王东亮</a></td>
+<td>3130</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58067">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-14</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="121.html">睦鎭碩</a></td>
+<td>3371</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58075">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-11</td><td>3237</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58108">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-24</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="184.html">胡耀宇</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/300">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-23</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="76.html">王檄</a></td>
+<td>3301</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/309">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-22</td><td>3237</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="190.html">黄奕中</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/317">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-20</td><td>3237</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3296</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/327">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-19</td><td>3237</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3338</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/334">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-16</td><td>3237</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="187.html">杭天鹏</a></td>
+<td>3110</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/349">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-10</td><td>3237</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="197.html">金榮桓</a></td>
+<td>3256</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58113">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-06</td><td>3237</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="184.html">胡耀宇</a></td>
+<td>3368</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58117">go4go</a> | </td>
+</tr>
+<tr><td>2001-06-28</td><td>3236</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="110.html">张文东</a></td>
+<td>3246</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-06-21</td><td>3236</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3286</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-06-14</td><td>3236</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="168.html">董彦</a></td>
+<td>3306</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/595">go4go</a> | </td>
+</tr>
+<tr><td>2001-06-07</td><td>3236</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="20.html">李华嵩</a></td>
+<td>3108</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-05-31</td><td>3236</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="23.html">李康</a></td>
+<td>3218</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-05-24</td><td>3236</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="43.html">罗洗河</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/675">go4go</a> | </td>
+</tr>
+<tr><td>2001-05-17</td><td>3235</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="76.html">王檄</a></td>
+<td>3282</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/696">go4go</a> | </td>
+</tr>
+<tr><td>2001-05-10</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/716">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-26</td><td>3235</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="166.html">丁伟</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58168">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-19</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="150.html">曹大元</a></td>
+<td>3219</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/794">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-05</td><td>3235</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58151">go4go</a> | </td>
+</tr>
+<tr><td>2001-03-26</td><td>3235</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3312</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56914">go4go</a> | </td>
+</tr>
+<tr><td>2001-03-16</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3289</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-02-18</td><td>3235</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3399</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1020">go4go</a> | </td>
+</tr>
+<tr><td>2001-02-16</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="26.html">刘世振</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-02-15</td><td>3235</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="124.html">聂卫平</a></td>
+<td>3279</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-30</td><td>3234</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="762.html">王程</a></td>
+<td>2871</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-23</td><td>3234</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="373.html">刘帆</a></td>
+<td>2877</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-16</td><td>3234</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="45.html">邱峻</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-09</td><td>3233</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="150.html">曹大元</a></td>
+<td>3210</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-02</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="135.html">周鹤洋</a></td>
+<td>3415</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-26</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="208.html">孔杰</a></td>
+<td>3337</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-12</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="22.html">李君凯</a></td>
+<td>3084</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-09</td><td>3233</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="7.html">马石</a></td>
+<td>2915</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-10</td><td>3233</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-07</td><td>3233</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="37.html">梁伟棠</a></td>
+<td>3120</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-04</td><td>3233</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="24.html">刘星</a></td>
+<td>3269</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-08-31</td><td>3234</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76331">go4go</a> | </td>
+</tr>
+<tr><td>2000-08-01</td><td>3236</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="11.html">马晓春</a></td>
+<td>3367</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/7152">go4go</a> | </td>
+</tr>
+<tr><td>2000-06-29</td><td>3238</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="75.html">王煜辉</a></td>
+<td>3258</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-06-22</td><td>3238</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="63.html">史金帛</a></td>
+<td>2931</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-06-19</td><td>3238</td>
+<td>执白</td>
+<td>负</td>
+<td><a href="57.html">邵炜刚</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/62290">go4go</a> | </td>
+</tr>
+<tr><td>2000-06-08</td><td>3238</td>
+<td>执黑</td>
+<td>负</td>
+<td><a href="209.html">邹俊杰</a></td>
+<td>3251</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-05-25</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="92.html">俞斌</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/72345">go4go</a> | </td>
+</tr>
+<tr><td>2000-05-18</td><td>3240</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="227.html">王伯刚</a></td>
+<td>3056</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76622">go4go</a> | </td>
+</tr>
+<tr><td>2000-05-04</td><td>3240</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="22.html">李君凯</a></td>
+<td>3083</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82426">go4go</a> | </td>
+</tr>
+<tr><td>2000-04-25</td><td>3240</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="7.html">马石</a></td>
+<td>2920</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/81707">go4go</a> | </td>
+</tr>
+<tr><td>2000-04-20</td><td>3240</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="34.html">林朝华</a></td>
+<td>3176</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1999-07-23</td><td>3239</td>
+<td>执白</td>
+<td>胜</td>
+<td><a href="118.html">彭荃</a></td>
+<td>3235</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1999-07-20</td><td>3238</td>
+<td>执黑</td>
+<td>胜</td>
+<td><a href="cwa_CWA001142.html">王治国</a></td>
+<td>2865</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+</table>
+<p><small>联系：<a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://www.joedb.org/intro.html">joedb, the C++ database</a>.</small></p></body></html>

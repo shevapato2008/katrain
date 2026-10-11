@@ -886,6 +886,7 @@ def _v2_scope(bundle: dict, inventory: dict, registry: dict) -> tuple[dict[str, 
                    for row in _selection_rows(inventory)} if v4 else {})
     raw_scope_hashes = {}
     declarations = {}
+    raw_player_contexts = None
     for number, declaration in enumerate(owners):
         try:
             _require(isinstance(declaration, dict), "owner declaration must be an object")
@@ -922,12 +923,13 @@ def _v2_scope(bundle: dict, inventory: dict, registry: dict) -> tuple[dict[str, 
                     validate_archive_description_scope(archive_description_scope(inventory["sha256"], declaration),
                                                        registry=registry, inventory=inventory, check_files=True)
                 if owner["kind"] == "raw_player" and "raw_display_scope" in declaration:
-                    contexts = {album_id: {field: album[field] for field in CONTEXT_FIELDS}
-                                for album_id, album in associations.items()}
+                    if raw_player_contexts is None:
+                        raw_player_contexts = {album_id: {field: album[field] for field in CONTEXT_FIELDS}
+                                               for album_id, album in associations.items()}
                     slots = {(album_id, slot) for album_id, slot in player_slots.get(raw, [])
-                             if contexts[album_id][f"{slot}_player_id"] is None}
+                             if raw_player_contexts[album_id][f"{slot}_player_id"] is None}
                     validate_raw_player_scope(declaration["raw_display_scope"], inventory["sha256"], raw,
-                                              slots, contexts)
+                                              slots, raw_player_contexts)
                 if is_new and not archive:
                     parsed = parse_player(raw, None) if owner["kind"] == "raw_player" else parse_event(raw, None)
                     _require(pinned.get("category") == parsed.category,

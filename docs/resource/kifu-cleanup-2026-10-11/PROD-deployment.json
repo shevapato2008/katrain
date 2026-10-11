@@ -1,0 +1,9 @@
+{
+  "environment": "PROD",
+  "source_commit": "a53f20678d099ae7304e425a0b944802a7890186",
+  "status": "verified",
+  "image": "sha256:c37cf428020f82bb43028dbf4c3acd0c986a2da5d1a5599d07d7105feb75ab63",
+  "container": "c924eecf93cdd15e4a00b3f76fc615d7a8a8cc3473057a9b2f6d7d1ea3a44f3a",
+  "public_total": 171013,
+  "siblings_unchanged": true
+}

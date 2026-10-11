@@ -165,6 +165,11 @@ def isolated_session_factory(tmp_path):
 
     engine = create_engine(f"sqlite:///{tmp_path / 'isolated.db'}", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
+    # create_all does not install the catalog's immutable-history triggers.
+    # Startup verifies them for any existing database, including this fixture.
+    from katrain.web.core.migrations import install_kifu_name_change_immutability
+
+    install_kifu_name_change_immutability(engine)
     try:
         yield sessionmaker(autocommit=False, autoflush=False, bind=engine)
     finally:

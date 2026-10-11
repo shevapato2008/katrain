@@ -1,0 +1,424 @@
+{
+  "format": "kifu-player-nonhan-ranks-201-220-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 201–220; ranks 1–200 excluded",
+  "snapshot_note": "TEST/PROD read-only repeatable-read SQL on 2026-10-04: all 20 exact raw counts identical and all FK NULL. Target IDs must be rechecked in live dry-run.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 1057,
+    "approved_raw_values": 17,
+    "approved_slots_each_environment": 897,
+    "held_raw_values": 3,
+    "held_slots_each_environment": 160,
+    "new_catalog_players": 5
+  },
+  "rows": [
+    {
+      "rank": 201,
+      "raw_value": "CheongSu-hyeon",
+      "slots_each_environment": 55,
+      "current_unlinked_slots_each_environment": 55,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1977-03-12",
+      "last_raw_date": "2000-06-28",
+      "canonical_chinese_name": "郑寿铉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6028
+        ],
+        "test": [
+          11796
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000012",
+      "identity_note": "韩国棋院列 정수현/鄭壽鉉，1973 年入段；韩式拼音、对局年代一致。"
+    },
+    {
+      "rank": 202,
+      "raw_value": "HongTaeSeon",
+      "slots_each_environment": 55,
+      "current_unlinked_slots_each_environment": 55,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-04-19",
+      "last_raw_date": "1997-09-27",
+      "canonical_chinese_name": "洪太善",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5376
+        ],
+        "test": [
+          11152
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000040",
+      "identity_note": "韩国棋院列 홍태선/洪太善，1954 年生、1975 年入段；区别于同名建筑师。"
+    },
+    {
+      "rank": 203,
+      "raw_value": "Miyazawa Goro",
+      "slots_each_environment": 55,
+      "current_unlinked_slots_each_environment": 55,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-07",
+      "last_raw_date": "1978-10-23",
+      "canonical_chinese_name": "宫泽吾郎",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 列宮沢吾朗，但双库各有宮沢吾朗与宫泽吾郎两个同人目录 ID；先归并目录。"
+    },
+    {
+      "rank": 204,
+      "raw_value": "Sato Sunao",
+      "slots_each_environment": 55,
+      "current_unlinked_slots_each_environment": 55,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1951-06-07",
+      "last_raw_date": "1978-02-23",
+      "canonical_chinese_name": "佐藤直男",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3900
+        ],
+        "test": [
+          9697
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列佐藤直男/Sato Sunao，年代与职业生涯吻合。"
+    },
+    {
+      "rank": 205,
+      "raw_value": "Ito Kotaro",
+      "slots_each_environment": 54,
+      "current_unlinked_slots_each_environment": 54,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1895-02-04",
+      "last_raw_date": "1910-10-13..24",
+      "canonical_chinese_name": "伊藤小太郎（候选）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html",
+      "identity_note": "CWI 秀哉棋谱确认 roman exact raw；伊藤小太郎汉字暂未从棋院或 CWI 直接同列证实，暂缓新建。"
+    },
+    {
+      "rank": 206,
+      "raw_value": "Ito Showa",
+      "slots_each_environment": 54,
+      "current_unlinked_slots_each_environment": 54,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1827",
+      "last_raw_date": "1872-02-29",
+      "canonical_chinese_name": "伊藤松次郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 丈和棋谱姓名对照明确列伊藤松次郎 = Ito Showa；年份相合。"
+    },
+    {
+      "rank": 207,
+      "raw_value": "Kanashima Tadashi",
+      "slots_each_environment": 54,
+      "current_unlinked_slots_each_environment": 54,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-01",
+      "last_raw_date": "1978-08-31",
+      "canonical_chinese_name": "金岛忠",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000060.html",
+      "identity_note": "日本棋院直接列金島忠/KANASHIMA, Tadashi；1959 年为少年棋谱。"
+    },
+    {
+      "rank": 208,
+      "raw_value": "Sekiyama Sendayu",
+      "slots_each_environment": 54,
+      "current_unlinked_slots_each_environment": 54,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1812-09-11",
+      "last_raw_date": "1857",
+      "canonical_chinese_name": "关山仙太夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 丈和棋谱姓名表直接列関山仙太夫/Sekiyama Sendayu；年代相合。"
+    },
+    {
+      "rank": 209,
+      "raw_value": "Izumitani Masanori",
+      "slots_each_environment": 53,
+      "current_unlinked_slots_each_environment": 53,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1961-09-10",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "泉谷政宪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000118.htm",
+      "identity_note": "日本棋院档案直接列泉谷政憲/Izumitani Masanori，1961 年入段；勿与儿子泉谷英雄混淆。"
+    },
+    {
+      "rank": 210,
+      "raw_value": "Mizuno Ichiro",
+      "slots_each_environment": 53,
+      "current_unlinked_slots_each_environment": 53,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-05-20",
+      "last_raw_date": "1978-11-16",
+      "canonical_chinese_name": "水野一郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5315
+        ],
+        "test": [
+          11092
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列水野一郎/Mizuno Ichiro。"
+    },
+    {
+      "rank": 211,
+      "raw_value": "YoonKihyun",
+      "slots_each_environment": 53,
+      "current_unlinked_slots_each_environment": 53,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-01-25",
+      "last_raw_date": "2001-12-28",
+      "canonical_chinese_name": "尹奇铉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4452
+        ],
+        "test": [
+          10243
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000006",
+      "identity_note": "韩国棋院列 윤기현/尹奇鉉，1959 年入段；韩式拼音与年代一致。"
+    },
+    {
+      "rank": 212,
+      "raw_value": "ChoiGyuByeong",
+      "slots_each_environment": 52,
+      "current_unlinked_slots_each_environment": 52,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1986-11-30",
+      "last_raw_date": "2000-07-13",
+      "canonical_chinese_name": "崔珪昞",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4558
+        ],
+        "test": [
+          10348
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000016",
+      "identity_note": "韩国棋院列 최규병/崔珪昞，1975 年入段；韩式拼音与年代一致。"
+    },
+    {
+      "rank": 213,
+      "raw_value": "KimSuJang",
+      "slots_each_environment": 52,
+      "current_unlinked_slots_each_environment": 52,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-06-01",
+      "last_raw_date": "2001-07-02",
+      "canonical_chinese_name": "金秀壮",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6213
+        ],
+        "test": [
+          11979
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000014",
+      "identity_note": "韩国棋院列 김수장/金秀壯，1974 年入段；韩式拼音与年代一致。"
+    },
+    {
+      "rank": 214,
+      "raw_value": "Okatani Mitsuo",
+      "slots_each_environment": 52,
+      "current_unlinked_slots_each_environment": 52,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1949-05-04,05",
+      "last_raw_date": "1977-10-27",
+      "canonical_chinese_name": "冈谷三男",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3985
+        ],
+        "test": [
+          9782
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列岡谷三男/Okatani Mitsuo。"
+    },
+    {
+      "rank": 215,
+      "raw_value": "Yasui Sanei",
+      "slots_each_environment": 52,
+      "current_unlinked_slots_each_environment": 52,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1861-01-18",
+      "last_raw_date": "1903-01-18",
+      "canonical_chinese_name": "安井算英",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/teach/history/rekidai.html",
+      "identity_note": "日本棋院历史表列十世安井算英；CWI 秀哉/方圆社棋谱列 Yasui Sanei，时代一致。"
+    },
+    {
+      "rank": 216,
+      "raw_value": "Miyamoto Naoki",
+      "slots_each_environment": 51,
+      "current_unlinked_slots_each_environment": 51,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-04-15",
+      "last_raw_date": "1978-09-14",
+      "canonical_chinese_name": "宫本直毅（候选）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列宮本直毅与宮本直道两个写法，需核实旧名/改名时间及目录规范名后再建。"
+    },
+    {
+      "rank": 217,
+      "raw_value": "Noguchi Hitoshi",
+      "slots_each_environment": 51,
+      "current_unlinked_slots_each_environment": 51,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1967-09-20",
+      "last_raw_date": "1978-05-18",
+      "canonical_chinese_name": "野口仁",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6080
+        ],
+        "test": [
+          11848
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000159.htm",
+      "identity_note": "日本棋院直接列野口仁/NOGUCHI, Hitoshi，1967 年入段。"
+    },
+    {
+      "rank": 218,
+      "raw_value": "Oka Mitsuo",
+      "slots_each_environment": 51,
+      "current_unlinked_slots_each_environment": 51,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962",
+      "last_raw_date": "1977-06-02",
+      "canonical_chinese_name": "冈光雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3983
+        ],
+        "test": [
+          9780
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列岡光雄/Oka Mitsuo，1962 年入段。"
+    },
+    {
+      "rank": 219,
+      "raw_value": "Otani Motohiro",
+      "slots_each_environment": 51,
+      "current_unlinked_slots_each_environment": 51,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1948-04-14",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "大谷素弘",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4263
+        ],
+        "test": [
+          10058
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列大谷素弘/Otani Motohiro。"
+    },
+    {
+      "rank": 220,
+      "raw_value": "ImSeonKeun",
+      "slots_each_environment": 50,
+      "current_unlinked_slots_each_environment": 50,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-06-11",
+      "last_raw_date": "1999-03-25",
+      "canonical_chinese_name": "林宣根",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5176
+        ],
+        "test": [
+          10957
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000018",
+      "identity_note": "韩国棋院列 임선근/林宣根；韩式拼音与对局年代一致。"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "reason": "Exclude six Kansai First Place commemorative games and one LG Cup special game from championship type and edition links",
+  "expected_total_albums": 173025,
+  "rows": [
+    {"album_id": 33426, "raw_event": "第2期日本关西棋院第一位获得纪念对局", "date_played": "1958-12-29", "event_id": 63, "event_edition_id": 1254, "event_name": "日本关西棋院第一位决定战"},
+    {"album_id": 33427, "raw_event": "第4期日本关西棋院第一位获得纪念对局", "date_played": "1961-02-28", "event_id": 63, "event_edition_id": 1256, "event_name": "日本关西棋院第一位决定战"},
+    {"album_id": 33428, "raw_event": "第5期日本关西棋院第一位决定战获得纪念对局", "date_played": "1962-01-11", "event_id": 63, "event_edition_id": 1257, "event_name": "日本关西棋院第一位决定战"},
+    {"album_id": 48851, "raw_event": "第21届LG杯世界棋王战特别对局", "date_played": "2017-02-05", "event_id": 66, "event_edition_id": 1379, "event_name": "LG杯世界棋王赛"},
+    {"album_id": 65756, "raw_event": "第3期日本关西棋院第一位获得纪念对局", "date_played": "1960-02-11", "event_id": 63, "event_edition_id": 1255, "event_name": "日本关西棋院第一位决定战"},
+    {"album_id": 125013, "raw_event": "第1期日本关西棋院第一位获得纪念对局", "date_played": "1958-01-20", "event_id": 63, "event_edition_id": 1253, "event_name": "日本关西棋院第一位决定战"},
+    {"album_id": 125014, "raw_event": "第6期日本关西棋院第一位获得纪念对局", "date_played": "1963-01-01", "event_id": 63, "event_edition_id": 1258, "event_name": "日本关西棋院第一位决定战"}
+  ]
+}

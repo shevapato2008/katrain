@@ -1,0 +1,176 @@
+{
+  "format": "kifu-player-nonhan-ranks-341-360-exact-allowlist-v1",
+  "scope": "reviewed exact raw values only; importer dry-run must recheck FK, catalog ID and canonical name",
+  "reviewed_against_live_fk": {
+    "test_prod_counts_identical": true,
+    "existing_fk_conflict_slots_prod": 0,
+    "existing_fk_conflict_slots_test": 0
+  },
+  "summary": {
+    "raw_values": 16,
+    "slots_each_environment": 376,
+    "new_catalog_players": 3
+  },
+  "rows": [
+    {
+      "raw_value": "Inoue Shuntatsu",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "井上春达因硕",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html"
+    },
+    {
+      "raw_value": "Kataoka Satoshi",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "片冈聪",
+      "target_player_id_prod": 5447,
+      "target_player_id_test": 11222,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "KimIlHwan",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "金日焕",
+      "target_player_id_prod": 6162,
+      "target_player_id_test": 11930,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000013"
+    },
+    {
+      "raw_value": "KimSeung-chun",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "金承俊",
+      "target_player_id_prod": 163,
+      "target_player_id_test": 164,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000059"
+    },
+    {
+      "raw_value": "Kobayashi Satoru",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "小林觉",
+      "target_player_id_prod": 4432,
+      "target_player_id_test": 10223,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "NoYeong-ha",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "卢永夏",
+      "target_player_id_prod": 4085,
+      "target_player_id_test": 9881,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000023"
+    },
+    {
+      "raw_value": "Oyama Kunio",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "大山国夫",
+      "target_player_id_prod": 4246,
+      "target_player_id_test": 10041,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "ParkYeongChan",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "朴映璨",
+      "target_player_id_prod": 4890,
+      "target_player_id_test": 10675,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000116"
+    },
+    {
+      "raw_value": "Yasui San'ei",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "安井算英",
+      "target_player_id_prod": 6676,
+      "target_player_id_test": 12445,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://archive.nihonkiin.or.jp/history/rekidai.html"
+    },
+    {
+      "raw_value": "Yoshida Hanjuro",
+      "expected_slots_each_environment": 24,
+      "chinese_name": "吉田半十郎",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://kifubara.app/zh/players/573ba160-e290-4f64-a452-1e9c5a885b30"
+    },
+    {
+      "raw_value": "Chen Zude",
+      "expected_slots_each_environment": 23,
+      "chinese_name": "陈祖德",
+      "target_player_id_prod": 6371,
+      "target_player_id_test": 12137,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://www.weiqi.org.cn/player/professional"
+    },
+    {
+      "raw_value": "Hanawa Yasutoki",
+      "expected_slots_each_environment": 23,
+      "chinese_name": "塙保时",
+      "target_player_id_prod": null,
+      "target_player_id_test": null,
+      "new_player_needed": true,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "JeongHyeonSan",
+      "expected_slots_each_environment": 23,
+      "chinese_name": "丁铉山",
+      "target_player_id_prod": 3741,
+      "target_player_id_test": 9539,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000054"
+    },
+    {
+      "raw_value": "Matsuoka Akira",
+      "expected_slots_each_environment": 23,
+      "chinese_name": "松冈章",
+      "target_player_id_prod": 5154,
+      "target_player_id_test": 10935,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+    },
+    {
+      "raw_value": "HongChong-hyeon",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "洪钟贤",
+      "target_player_id_prod": 5391,
+      "target_player_id_test": 11166,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000024"
+    },
+    {
+      "raw_value": "HwangWeon-chun",
+      "expected_slots_each_environment": 22,
+      "chinese_name": "黄元俊",
+      "target_player_id_prod": 6523,
+      "target_player_id_test": 12287,
+      "new_player_needed": false,
+      "expected_existing_fk": "NULL",
+      "identity_evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000026"
+    }
+  ]
+}

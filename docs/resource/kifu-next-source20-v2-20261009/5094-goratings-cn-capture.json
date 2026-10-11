@@ -1,0 +1,12 @@
+{
+  "url": "https://www.goratings.org/zh/players/524.html",
+  "method": "GET",
+  "http_status": 200,
+  "final_url": "https://www.goratings.org/zh/players/524.html",
+  "fetched_at": "2026-10-08T20:32:53.616714+00:00",
+  "body_sha256": "865bee4072786da40f6223d5e175db739418a667bd181f19ec2157da90d150d6",
+  "body_bytes": 11371,
+  "body_file": "5094-goratings-cn.body",
+  "body_excerpt": "李钢 李钢 返回首页 等级分曲线 数据 胜 6 负 13 总计 19 链接 http://senseis.xmp.net/?L... 生日 1954-01-28",
+  "excerpt_basis": "BeautifulSoup HTML text extraction from retained raw response"
+}

@@ -1,0 +1,1564 @@
+{
+  "format": "kifu-selected-semantic-rollback-review-v1",
+  "selected_batch_sha256": "84a3ec089e5ef3eb44d2391c644ee10d754c434811bbf23487e72575eec3bb22",
+  "inventory_sha256": "dcc4f547ec196bbe850b79b6ce11a97dfda64e92343fcb2640dbd1aebaaad743",
+  "previously_reported": {
+    "groups": 52,
+    "slots": 139,
+    "overlap_with_new": 0
+  },
+  "additional": {
+    "groups": 98,
+    "slots": 203,
+    "reason_counts": {
+      "ai_engine_name": {
+        "groups": 3,
+        "slots": 10
+      },
+      "embedded_pin_rank": {
+        "groups": 18,
+        "slots": 65
+      },
+      "student_status_suffix": {
+        "groups": 5,
+        "slots": 5
+      },
+      "team_or_place_prefix": {
+        "groups": 45,
+        "slots": 58
+      },
+      "title_suffix": {
+        "groups": 7,
+        "slots": 15
+      },
+      "two_player_concatenation": {
+        "groups": 20,
+        "slots": 50
+      }
+    }
+  },
+  "policy": "Only exact raw values listed; do not strip prefixes, suffixes, or split pairs into individual people automatically. No database writes performed.",
+  "rows": [
+    {
+      "base_name": "彭景华五品",
+      "canonical_name": "彭景华五品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "彭景华五品",
+          "slots": 12
+        }
+      ],
+      "slots": 12,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "周俊勋六品",
+      "canonical_name": "周俊勋六品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "周俊勋六品",
+          "slots": 8
+        }
+      ],
+      "slots": 8,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "星阵",
+      "canonical_name": "星阵",
+      "reason": "ai_engine_name",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "星阵",
+          "slots": 8
+        }
+      ],
+      "slots": 8,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "李昌镐大王",
+      "canonical_name": "李昌镐大王",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "李昌镐大王",
+          "slots": 7
+        }
+      ],
+      "slots": 7,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈永安五品",
+      "canonical_name": "陈永安五品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈永安五品",
+          "slots": 7
+        }
+      ],
+      "slots": 7,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈思胡煜清",
+      "canonical_name": "陈思胡煜清",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "陈思",
+        "胡煜清"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "陈思胡煜清",
+          "slots": 6
+        }
+      ],
+      "slots": 6,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "彭荃战鹰",
+      "canonical_name": "彭荃战鹰",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "彭荃",
+        "战鹰"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "彭荃战鹰",
+          "slots": 5
+        }
+      ],
+      "slots": 5,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "戴嘉伸三品",
+      "canonical_name": "戴嘉伸三品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "戴嘉伸三品",
+          "slots": 5
+        }
+      ],
+      "slots": 5,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "林圣贤四品",
+      "canonical_name": "林圣贤四品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "林圣贤四品",
+          "slots": 5
+        }
+      ],
+      "slots": 5,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "郑璐郑彦杰",
+      "canonical_name": "郑璐郑彦杰",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "郑璐",
+        "郑彦杰"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "郑璐郑彦杰",
+          "slots": 5
+        }
+      ],
+      "slots": 5,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上财高恬亮",
+      "canonical_name": "上财高恬亮",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上财高恬亮",
+          "slots": 4
+        }
+      ],
+      "slots": 4,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "朴廷桓崔精",
+      "canonical_name": "朴廷桓崔精",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "朴廷桓",
+        "崔精"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "朴廷桓崔精",
+          "slots": 4
+        }
+      ],
+      "slots": 4,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "丁浩周泓余",
+      "canonical_name": "丁浩周泓余",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "丁浩",
+        "周泓余"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "丁浩周泓余",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上交孙远",
+      "canonical_name": "上交孙远",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上交孙远",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "周俊勋三品",
+      "canonical_name": "周俊勋三品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "周俊勋三品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "周俊勋四品",
+      "canonical_name": "周俊勋四品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "周俊勋四品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "复旦杨梓",
+      "canonical_name": "复旦杨梓",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "复旦杨梓",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "李轩豪李赫",
+      "canonical_name": "李轩豪李赫",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "李轩豪",
+        "李赫"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "李轩豪李赫",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "杨志德七品",
+      "canonical_name": "杨志德七品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "杨志德七品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "林海峰名人",
+      "canonical_name": "林海峰名人",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "林海峰名人",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "柯洁於之莹",
+      "canonical_name": "柯洁于之莹",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "柯洁",
+        "於之莹"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "柯洁於之莹",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "檀啸方若曦",
+      "canonical_name": "檀啸方若曦",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "檀啸",
+        "方若曦"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "檀啸方若曦",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "罗洗河张璇",
+      "canonical_name": "罗洗河张璇",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "罗洗河",
+        "张璇"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "罗洗河张璇",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "范廷钰王爽",
+      "canonical_name": "范廷钰王爽",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "范廷钰",
+        "王爽"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "范廷钰王爽",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈国兴六品",
+      "canonical_name": "陈国兴六品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈国兴六品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈士七品",
+      "canonical_name": "陈士七品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈士七品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈秋龙八品",
+      "canonical_name": "陈秋龙八品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈秋龙八品",
+          "slots": 3
+        }
+      ],
+      "slots": 3,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上外李豪杰",
+      "canonical_name": "上外李豪杰",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上外李豪杰",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上外杨啸天",
+      "canonical_name": "上外杨啸天",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上外杨啸天",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "华师刘世振",
+      "canonical_name": "华师刘世振",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "华师刘世振",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "周俊勋五品",
+      "canonical_name": "周俊勋五品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "周俊勋五品",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "周咸亨四品",
+      "canonical_name": "周咸亨四品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "周咸亨四品",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "建桥李维清",
+      "canonical_name": "建桥李维清",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "建桥李维清",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "徐汇吴振宇",
+      "canonical_name": "徐汇吴振宇",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "徐汇吴振宇",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "时越储可儿",
+      "canonical_name": "时越储可儿",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "时越",
+        "储可儿"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "时越储可儿",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "曹泽霖八品",
+      "canonical_name": "曹泽霖八品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "曹泽霖八品",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "蔚昭任欣远",
+      "canonical_name": "蔚昭任欣远",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "蔚昭任欣远",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈浩陈盈",
+      "canonical_name": "陈浩陈盈",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "陈浩",
+        "陈盈"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "陈浩陈盈",
+          "slots": 2
+        }
+      ],
+      "slots": 2,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上交张维",
+      "canonical_name": "上交张维",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上交张维",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上体李泽豪",
+      "canonical_name": "上体李泽豪",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上体李泽豪",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上体王晶磊",
+      "canonical_name": "上体王晶磊",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上体王晶磊",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上外沙星宇",
+      "canonical_name": "上外沙星宇",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上外沙星宇",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上外苏广悦",
+      "canonical_name": "上外苏广悦",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上外苏广悦",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上外陈笑天",
+      "canonical_name": "上外陈笑天",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上外陈笑天",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上海方捷",
+      "canonical_name": "上海方捷",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上海方捷",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "上海邱峻",
+      "canonical_name": "上海邱峻",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "上海邱峻",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "中国上海",
+      "canonical_name": "中国上海",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "中国上海",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "中国刘小光",
+      "canonical_name": "中国刘小光",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "中国刘小光九段",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "中财孙力",
+      "canonical_name": "中财孙力",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "中财孙力",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "付利唐盈",
+      "canonical_name": "付利唐盈",
+      "reason": "two_player_concatenation",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "付利唐盈",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "伊了院生",
+      "canonical_name": "伊了院生",
+      "reason": "student_status_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "伊了院生",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "假日孙力",
+      "canonical_name": "假日孙力",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "假日孙力",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "储可儿时越",
+      "canonical_name": "储可儿时越",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "储可儿",
+        "时越"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "储可儿时越",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "北京聂卫平",
+      "canonical_name": "北京聂卫平",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "北京聂卫平",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "北大范蔚菁",
+      "canonical_name": "北大范蔚菁",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "北大范蔚菁",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "古力徐晶琪",
+      "canonical_name": "古力徐晶琪",
+      "reason": "two_player_concatenation",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "古力徐晶琪",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "四川宋雪林",
+      "canonical_name": "四川宋雪林",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "四川宋雪林",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "复旦李源鲲",
+      "canonical_name": "复旦李源鲲",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "复旦李源鲲",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "复旦陈潇楠",
+      "canonical_name": "复旦陈潇楠",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "复旦陈潇楠",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "山东周睿羊",
+      "canonical_name": "山东周睿羊",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "山东周睿羊",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "山东毛睿龙",
+      "canonical_name": "山东毛睿龙",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "山东毛睿龙",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "山东江维杰",
+      "canonical_name": "山东江维杰",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "山东江维杰",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "山东范廷钰",
+      "canonical_name": "山东范廷钰",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "山东范廷钰",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "崔精李昌镐",
+      "canonical_name": "崔精李昌镐",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "崔精",
+        "李昌镐"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "崔精李昌镐",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "广州梁伟棠",
+      "canonical_name": "广州梁伟棠",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "广州梁伟棠八段",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "建桥李元祺",
+      "canonical_name": "建桥李元祺",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "建桥李元祺",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "建桥汪逸尘",
+      "canonical_name": "建桥汪逸尘",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "建桥汪逸尘",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "彭景华六品",
+      "canonical_name": "彭景华六品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "彭景华六品",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "徐晶琪古力",
+      "canonical_name": "徐晶琪古力",
+      "reason": "two_player_concatenation",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "徐晶琪古力",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "星阵新模型",
+      "canonical_name": "星阵新模型",
+      "reason": "ai_engine_name",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "星阵新模型",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "星阵旧模型",
+      "canonical_name": "星阵旧模型",
+      "reason": "ai_engine_name",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "星阵旧模型",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "曹薰铉王位",
+      "canonical_name": "曹薰铉王位",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "曹薰铉王位",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "曹薰铉霸王",
+      "canonical_name": "曹薰铉霸王",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "曹薰铉霸王",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "李昌镐天元",
+      "canonical_name": "李昌镐天元",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "李昌镐天元",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "杨梓丁烈",
+      "canonical_name": "杨梓丁烈",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "杨梓",
+        "丁烈"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "杨梓丁烈",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "武井院生",
+      "canonical_name": "武井院生",
+      "reason": "student_status_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "武井院生",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "池本院生",
+      "canonical_name": "池本院生",
+      "reason": "student_status_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "池本院生",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "浙江刘星",
+      "canonical_name": "浙江刘星",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "浙江刘星",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "湖北叶桂",
+      "canonical_name": "湖北叶桂",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "湖北叶桂",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "湖北李喆",
+      "canonical_name": "湖北李喆",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "湖北李喆",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "湖北鲁佳",
+      "canonical_name": "湖北鲁佳",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "湖北鲁佳",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "片冈聪天元",
+      "canonical_name": "片冈聪天元",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "片冈聪天元",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "王学传八品",
+      "canonical_name": "王学传八品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "王学传八品",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "王爽周睿羊",
+      "canonical_name": "王爽周睿羊",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "王爽",
+        "周睿羊"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "王爽周睿羊",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "聂卫平张璇",
+      "canonical_name": "聂卫平张璇",
+      "reason": "two_player_concatenation",
+      "split_players": [
+        "聂卫平",
+        "张璇"
+      ],
+      "raw_values": [
+        {
+          "raw_value": "聂卫平张璇",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "贵州时越",
+      "canonical_name": "贵州时越",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "贵州时越",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "贵州李赫",
+      "canonical_name": "贵州李赫",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "贵州李赫",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "贵州陈一鸣",
+      "canonical_name": "贵州陈一鸣",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "贵州陈一鸣",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "赵治勋名人",
+      "canonical_name": "赵治勋名人",
+      "reason": "title_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "赵治勋名人",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "辻华院生",
+      "canonical_name": "辻华院生",
+      "reason": "student_status_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "辻华院生",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "辻院生",
+      "canonical_name": "辻院生",
+      "reason": "student_status_suffix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "辻院生",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "重庆古力",
+      "canonical_name": "重庆古力",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "重庆古力",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "重庆李轩豪",
+      "canonical_name": "重庆李轩豪",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "重庆李轩豪",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "重庆王檄",
+      "canonical_name": "重庆王檄",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "重庆王檄",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "重庆谢赫",
+      "canonical_name": "重庆谢赫",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "重庆谢赫",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈明进九品",
+      "canonical_name": "陈明进九品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈明进九品",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陈永奇九品",
+      "canonical_name": "陈永奇九品",
+      "reason": "embedded_pin_rank",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陈永奇九品",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    },
+    {
+      "base_name": "陕西王昊洋",
+      "canonical_name": "陕西王昊洋",
+      "reason": "team_or_place_prefix",
+      "split_players": null,
+      "raw_values": [
+        {
+          "raw_value": "陕西王昊洋",
+          "slots": 1
+        }
+      ],
+      "slots": 1,
+      "selected_existing_player_id": null,
+      "action": "remove_from_player_selected_and_revert_only_exact_raw_fk"
+    }
+  ]
+}

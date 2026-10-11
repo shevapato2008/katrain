@@ -1,0 +1,45 @@
+{
+  "baseline_batch_id": 595,
+  "baseline_literal_owner_count": 9650,
+  "batch_id": 597,
+  "environment": "PROD",
+  "global_album_counts_unchanged": {
+    "games": 173025,
+    "hidden_games": 250,
+    "linked_event_games": 105977,
+    "linked_player_slots": 312982
+  },
+  "ledger_targets": {
+    "kifu_name_research_evidence": 750,
+    "kifu_raw_event_names": 750
+  },
+  "new_597_owner_count": 150,
+  "new_597_scope": {
+    "both_players_before_and_after": 148,
+    "event_after_qualified": 174,
+    "event_before_none": 174,
+    "games": 174,
+    "raw_cards_after": 148
+  },
+  "note": "Existing 597 bounded output remains a diagnostic; this adds the exact r5→r6 old-owner delta.",
+  "older_r6_restoration_scope": {
+    "candidate_public_null_albums": 1246,
+    "eligible_public_null_albums": 1246,
+    "event_after_qualified": 1246,
+    "excluded_selection_or_obscured": 0,
+    "raw_cards_after": 1059
+  },
+  "older_restored_owner_count": 1241,
+  "older_restored_owner_ids_sha256": "b68517dd2f0606c160df2183f42550d2937a2def6fb0db776679c1d1a7ef6dfb",
+  "older_restored_qualified_album_ids_sha256": "e923b222217b5bb4f76e3227b7a62d50ceaac104152c6c564fb65c494149c651",
+  "older_restored_raw_values_sha256": "553fb3c24d6caca5d1ae4f3f0786044af8019636288a567d73eb13e0f9715270",
+  "r5_raw_event_translation_sha256": "d97e8e88a4e484b684106e0b06296b372066645961b79647425154b5c5102499",
+  "r6_raw_event_translation_sha256": "0aab89aa5a93541dde26381254d3e9ff1a1a1dc6707b6089ba6fd6f473506b1f",
+  "raw_title_coverage": {
+    "distinct_album_raw_event_values": 50222,
+    "five_language_literal_raw_title_owner_ids_sha256": "ae4a543a75112900b3faa9eec8e3d7770eb1cf795ccf6d93e11fca7e85e9f449",
+    "five_language_literal_raw_title_owners": 11041,
+    "raw_event_owner_rows": 50223
+  },
+  "read_only": true
+}

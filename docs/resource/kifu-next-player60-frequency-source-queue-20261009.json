@@ -1,0 +1,1503 @@
+{
+  "read_only": true,
+  "baseline_qualified_players_batch": 597,
+  "selection": "frequency of visible slots excluding actual1723 qualified players; all source-only, fresh exact qualification required",
+  "rows": [
+    {
+      "id": 5244,
+      "canonical_name": "桥本谊",
+      "authoritative_pages": [
+        {
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000021.htm",
+          "source_id": "nihon-kiin",
+          "language": "ja",
+          "role": "official",
+          "evidence_ids": [
+            22357,
+            22358,
+            22359,
+            22361
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            22357
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            22358
+          ]
+        }
+      ],
+      "slots": 333,
+      "names": [
+        {
+          "id": 6692,
+          "lang": "cn",
+          "display_name": "桥本谊",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 22357
+        },
+        {
+          "id": 6696,
+          "lang": "en",
+          "display_name": "Hashimoto Yoshimi",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 22361
+        },
+        {
+          "id": 6694,
+          "lang": "jp",
+          "display_name": "橋本 誼",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 22359
+        },
+        {
+          "id": 6695,
+          "lang": "ko",
+          "display_name": "하시모토 요시미",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+          "evidence_id": 22360
+        },
+        {
+          "id": 6693,
+          "lang": "tw",
+          "display_name": "橋本誼",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 22358
+        }
+      ]
+    },
+    {
+      "id": 4499,
+      "canonical_name": "山崎祐男",
+      "authoritative_pages": [
+        {
+          "url": "https://archive.nihonkiin.or.jp/player/index.html",
+          "source_id": "nihon-kiin-archive",
+          "language": "ja",
+          "role": "official",
+          "evidence_ids": [
+            25604
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            25602
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            25603
+          ]
+        }
+      ],
+      "slots": 255,
+      "names": [
+        {
+          "id": 6917,
+          "lang": "cn",
+          "display_name": "山崎祐男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 25602
+        },
+        {
+          "id": 6921,
+          "lang": "en",
+          "display_name": "Yamazaki Masuo",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 25606
+        },
+        {
+          "id": 6919,
+          "lang": "jp",
+          "display_name": "山崎祐男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 25604
+        },
+        {
+          "id": 6920,
+          "lang": "ko",
+          "display_name": "야마자키 마스오",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+          "evidence_id": 25605
+        },
+        {
+          "id": 6918,
+          "lang": "tw",
+          "display_name": "山崎祐男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 25603
+        }
+      ]
+    },
+    {
+      "id": 4485,
+      "canonical_name": "尾崎春美",
+      "authoritative_pages": [],
+      "slots": 176,
+      "names": []
+    },
+    {
+      "id": 4969,
+      "canonical_name": "李劫",
+      "authoritative_pages": [],
+      "slots": 169,
+      "names": []
+    },
+    {
+      "id": 5385,
+      "canonical_name": "洪爽义",
+      "authoritative_pages": [],
+      "slots": 162,
+      "names": []
+    },
+    {
+      "id": 460,
+      "canonical_name": "大場惇也",
+      "authoritative_pages": [],
+      "slots": 134,
+      "names": [
+        {
+          "id": 2294,
+          "lang": "cn",
+          "display_name": "大场惇也",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2293,
+          "lang": "en",
+          "display_name": "Junya Ohba",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2296,
+          "lang": "jp",
+          "display_name": "大場 惇也",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2297,
+          "lang": "ko",
+          "display_name": "오오바 아츠야",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2295,
+          "lang": "tw",
+          "display_name": "大場惇也",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 4892,
+      "canonical_name": "朴智恩",
+      "authoritative_pages": [],
+      "slots": 127,
+      "names": []
+    },
+    {
+      "id": 6496,
+      "canonical_name": "高见泽忠夫",
+      "authoritative_pages": [
+        {
+          "url": "https://www.igorating.com/en/players/tadao-takamizawa",
+          "source_id": "igorating",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            33081
+          ]
+        },
+        {
+          "url": "https://www.igorating.com/players/tadao-takamizawa",
+          "source_id": "igorating",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            33079
+          ]
+        },
+        {
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki000111.html",
+          "source_id": "nihon-kiin",
+          "language": "ja",
+          "role": "official",
+          "evidence_ids": [
+            33079
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            33077
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            33078
+          ]
+        }
+      ],
+      "slots": 127,
+      "names": [
+        {
+          "id": 7517,
+          "lang": "cn",
+          "display_name": "高见泽忠夫",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 33077
+        },
+        {
+          "id": 7521,
+          "lang": "en",
+          "display_name": "Takamizawa Tadao",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 33081
+        },
+        {
+          "id": 7519,
+          "lang": "jp",
+          "display_name": "高見沢忠夫",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 33079
+        },
+        {
+          "id": 7520,
+          "lang": "ko",
+          "display_name": "다카미자와 다다오",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+          "evidence_id": 33080
+        },
+        {
+          "id": 7518,
+          "lang": "tw",
+          "display_name": "高見澤忠夫",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 33078
+        }
+      ]
+    },
+    {
+      "id": 5961,
+      "canonical_name": "赵惠莲",
+      "authoritative_pages": [],
+      "slots": 125,
+      "names": []
+    },
+    {
+      "id": 3900,
+      "canonical_name": "佐藤直男",
+      "authoritative_pages": [
+        {
+          "url": "https://www.igorating.com/players/sunao-sato",
+          "source_id": "igorating",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            26490
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-cn",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hans",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            26488
+          ]
+        },
+        {
+          "url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8?variant=zh-tw",
+          "source_id": "wikipedia-zh",
+          "language": "zh-Hant",
+          "role": "wikipedia_article",
+          "evidence_ids": [
+            26489
+          ]
+        }
+      ],
+      "slots": 118,
+      "names": [
+        {
+          "id": 7037,
+          "lang": "cn",
+          "display_name": "佐藤直男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 26488
+        },
+        {
+          "id": 7041,
+          "lang": "en",
+          "display_name": "Sato Sunao",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 26492
+        },
+        {
+          "id": 7039,
+          "lang": "jp",
+          "display_name": "佐藤直男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 26490
+        },
+        {
+          "id": 7040,
+          "lang": "ko",
+          "display_name": "사토 스나오",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+          "evidence_id": 26491
+        },
+        {
+          "id": 7038,
+          "lang": "tw",
+          "display_name": "佐藤直男",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 26489
+        }
+      ]
+    },
+    {
+      "id": 6630,
+      "canonical_name": "石井千治",
+      "authoritative_pages": [],
+      "slots": 106,
+      "names": []
+    },
+    {
+      "id": 6672,
+      "canonical_name": "伊藤松次郎",
+      "authoritative_pages": [
+        {
+          "url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+          "source_id": "cwi-go",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            54176
+          ]
+        },
+        {
+          "url": "https://note.com/curon154/n/n155836d592a3",
+          "source_id": "curon-go-history",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            54175
+          ]
+        }
+      ],
+      "slots": 102,
+      "names": [
+        {
+          "id": 10996,
+          "lang": "cn",
+          "display_name": "伊藤松次郎",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "primary-orthographic-v1",
+          "evidence_id": 64031
+        },
+        {
+          "id": 9634,
+          "lang": "en",
+          "display_name": "Ito Matsujiro",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54176
+        },
+        {
+          "id": 9633,
+          "lang": "jp",
+          "display_name": "伊藤松次郎",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54175
+        }
+      ]
+    },
+    {
+      "id": 6633,
+      "canonical_name": "大泽银次郎",
+      "authoritative_pages": [
+        {
+          "url": "https://homepages.cwi.nl/~aeb/go/games/games/Hoensha/indexC.html",
+          "source_id": "cwi-go",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            54182
+          ]
+        },
+        {
+          "url": "https://rendaico.jp/igo/igo_history8.htm",
+          "source_id": "ret75-gohistory",
+          "language": "ja",
+          "role": "language_go",
+          "evidence_ids": [
+            54181
+          ]
+        }
+      ],
+      "slots": 91,
+      "names": [
+        {
+          "id": 10994,
+          "lang": "cn",
+          "display_name": "大澤銀次郎",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "primary-orthographic-v1",
+          "evidence_id": 64029
+        },
+        {
+          "id": 9640,
+          "lang": "en",
+          "display_name": "Osawa Ginjiro",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54182
+        },
+        {
+          "id": 9639,
+          "lang": "jp",
+          "display_name": "大澤銀次郎",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54181
+        }
+      ]
+    },
+    {
+      "id": 803,
+      "canonical_name": "渡边宽大",
+      "authoritative_pages": [],
+      "slots": 90,
+      "names": [
+        {
+          "id": 4009,
+          "lang": "cn",
+          "display_name": "渡边宽大",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4008,
+          "lang": "en",
+          "display_name": "Hiroshi Watanabe",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4011,
+          "lang": "jp",
+          "display_name": "渡辺寛大",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4012,
+          "lang": "ko",
+          "display_name": "와타나베 히로시",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4010,
+          "lang": "tw",
+          "display_name": "渡邊寬大",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 5853,
+      "canonical_name": "藤泽库之助",
+      "authoritative_pages": [],
+      "slots": 89,
+      "names": []
+    },
+    {
+      "id": 4558,
+      "canonical_name": "崔珪昞",
+      "authoritative_pages": [],
+      "slots": 88,
+      "names": []
+    },
+    {
+      "id": 6634,
+      "canonical_name": "洼内秀知",
+      "authoritative_pages": [
+        {
+          "url": "https://kansaikiin.jp/kisi_prof/kubouchisyuchi.html",
+          "source_id": "ret75-kansai-kiin",
+          "language": "ja",
+          "role": "official",
+          "evidence_ids": [
+            54183
+          ]
+        },
+        {
+          "url": "https://www.igorating.com/en/players/shuchi-kubouchi",
+          "source_id": "igorating-en",
+          "language": "en",
+          "role": "language_go",
+          "evidence_ids": [
+            54184
+          ]
+        }
+      ],
+      "slots": 87,
+      "names": [
+        {
+          "id": 10995,
+          "lang": "cn",
+          "display_name": "窪内秀知",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "generated",
+          "generation_rule_version": "primary-orthographic-v1",
+          "evidence_id": 64030
+        },
+        {
+          "id": 9642,
+          "lang": "en",
+          "display_name": "Kubouchi Shuchi",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54184
+        },
+        {
+          "id": 9641,
+          "lang": "jp",
+          "display_name": "窪内秀知",
+          "status": "verified",
+          "reference_url": null,
+          "reference_kind": null,
+          "decision_kind": "conventional",
+          "generation_rule_version": "none",
+          "evidence_id": 54183
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "canonical_name": "柳原咲辉",
+      "authoritative_pages": [],
+      "slots": 84,
+      "names": [
+        {
+          "id": 49,
+          "lang": "cn",
+          "display_name": "柳原咲辉",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 48,
+          "lang": "en",
+          "display_name": "Yanagihara Saki",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 51,
+          "lang": "jp",
+          "display_name": "柳原 咲輝",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 52,
+          "lang": "ko",
+          "display_name": "야나기하라 사키",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 50,
+          "lang": "tw",
+          "display_name": "柳原咲輝",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 5632,
+      "canonical_name": "知念熏",
+      "authoritative_pages": [],
+      "slots": 84,
+      "names": []
+    },
+    {
+      "id": 5662,
+      "canonical_name": "祷阳子",
+      "authoritative_pages": [],
+      "slots": 83,
+      "names": []
+    },
+    {
+      "id": 3769,
+      "canonical_name": "上野爱笑美",
+      "authoritative_pages": [],
+      "slots": 79,
+      "names": []
+    },
+    {
+      "id": 4431,
+      "canonical_name": "小林礼子",
+      "authoritative_pages": [],
+      "slots": 79,
+      "names": []
+    },
+    {
+      "id": 4446,
+      "canonical_name": "尹俊相",
+      "authoritative_pages": [],
+      "slots": 79,
+      "names": []
+    },
+    {
+      "id": 3882,
+      "canonical_name": "伊藤弘",
+      "authoritative_pages": [],
+      "slots": 76,
+      "names": []
+    },
+    {
+      "id": 5793,
+      "canonical_name": "范杨波",
+      "authoritative_pages": [],
+      "slots": 76,
+      "names": []
+    },
+    {
+      "id": 3973,
+      "canonical_name": "关山利夫",
+      "authoritative_pages": [],
+      "slots": 75,
+      "names": []
+    },
+    {
+      "id": 5697,
+      "canonical_name": "竹中幸太郎",
+      "authoritative_pages": [],
+      "slots": 72,
+      "names": []
+    },
+    {
+      "id": 6643,
+      "canonical_name": "宫坂寀二",
+      "authoritative_pages": [],
+      "slots": 72,
+      "names": []
+    },
+    {
+      "id": 6645,
+      "canonical_name": "酒井安次郎",
+      "authoritative_pages": [],
+      "slots": 70,
+      "names": []
+    },
+    {
+      "id": 544,
+      "canonical_name": "田中佑樹",
+      "authoritative_pages": [],
+      "slots": 69,
+      "names": [
+        {
+          "id": 2714,
+          "lang": "cn",
+          "display_name": "田中佑树",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2713,
+          "lang": "en",
+          "display_name": "Yuki Tanaka",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2716,
+          "lang": "jp",
+          "display_name": "田中佑樹",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2717,
+          "lang": "ko",
+          "display_name": "다나카 유키",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2715,
+          "lang": "tw",
+          "display_name": "田中佑樹",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 4232,
+      "canonical_name": "堀本满成",
+      "authoritative_pages": [],
+      "slots": 68,
+      "names": []
+    },
+    {
+      "id": 6668,
+      "canonical_name": "安井知哲",
+      "authoritative_pages": [],
+      "slots": 67,
+      "names": []
+    },
+    {
+      "id": 4538,
+      "canonical_name": "崔圭炳",
+      "authoritative_pages": [],
+      "slots": 66,
+      "names": []
+    },
+    {
+      "id": 179,
+      "canonical_name": "村本涉",
+      "authoritative_pages": [],
+      "slots": 65,
+      "names": [
+        {
+          "id": 889,
+          "lang": "cn",
+          "display_name": "村本涉",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 888,
+          "lang": "en",
+          "display_name": "Muramoto Wataru",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 891,
+          "lang": "jp",
+          "display_name": "村本涉",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 892,
+          "lang": "ko",
+          "display_name": "무라모토 와타루",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 890,
+          "lang": "tw",
+          "display_name": "村本涉",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 6190,
+      "canonical_name": "金渭斌",
+      "authoritative_pages": [],
+      "slots": 65,
+      "names": []
+    },
+    {
+      "id": 117,
+      "canonical_name": "尹炫皙",
+      "authoritative_pages": [],
+      "slots": 64,
+      "names": [
+        {
+          "id": 579,
+          "lang": "cn",
+          "display_name": "尹炫皙",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 578,
+          "lang": "en",
+          "display_name": "Yoon Hyun-seok",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 581,
+          "lang": "jp",
+          "display_name": "尹 炫皙",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 582,
+          "lang": "ko",
+          "display_name": "윤현석",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 580,
+          "lang": "tw",
+          "display_name": "尹炫皙",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 3879,
+      "canonical_name": "伊藤友惠",
+      "authoritative_pages": [],
+      "slots": 63,
+      "names": []
+    },
+    {
+      "id": 4692,
+      "canonical_name": "彭立峣",
+      "authoritative_pages": [],
+      "slots": 62,
+      "names": []
+    },
+    {
+      "id": 5563,
+      "canonical_name": "琴沚玕",
+      "authoritative_pages": [],
+      "slots": 62,
+      "names": []
+    },
+    {
+      "id": 3972,
+      "canonical_name": "关山利一",
+      "authoritative_pages": [],
+      "slots": 61,
+      "names": []
+    },
+    {
+      "id": 6670,
+      "canonical_name": "广濑平治郎",
+      "authoritative_pages": [],
+      "slots": 61,
+      "names": []
+    },
+    {
+      "id": 827,
+      "canonical_name": "俞旿成",
+      "authoritative_pages": [],
+      "slots": 60,
+      "names": [
+        {
+          "id": 4129,
+          "lang": "cn",
+          "display_name": "俞旿成",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4128,
+          "lang": "en",
+          "display_name": "Yu Wucheng",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4131,
+          "lang": "jp",
+          "display_name": "ユ・ウチョウ",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4132,
+          "lang": "ko",
+          "display_name": "유오성",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 4130,
+          "lang": "tw",
+          "display_name": "俞旿成",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 3839,
+      "canonical_name": "井口丰秀",
+      "authoritative_pages": [],
+      "slots": 60,
+      "names": []
+    },
+    {
+      "id": 5569,
+      "canonical_name": "田中不二男",
+      "authoritative_pages": [],
+      "slots": 59,
+      "names": []
+    },
+    {
+      "id": 160,
+      "canonical_name": "三户秀平",
+      "authoritative_pages": [],
+      "slots": 57,
+      "names": [
+        {
+          "id": 794,
+          "lang": "cn",
+          "display_name": "三户秀平",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 793,
+          "lang": "en",
+          "display_name": "Hidehira Mikado",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 796,
+          "lang": "jp",
+          "display_name": "三戸秀平",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 797,
+          "lang": "ko",
+          "display_name": "미카도 히데히라",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 795,
+          "lang": "tw",
+          "display_name": "三戶秀平",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 4804,
+      "canonical_name": "曹恒梃",
+      "authoritative_pages": [],
+      "slots": 57,
+      "names": []
+    },
+    {
+      "id": 5803,
+      "canonical_name": "菅野尚美",
+      "authoritative_pages": [],
+      "slots": 57,
+      "names": []
+    },
+    {
+      "id": 487,
+      "canonical_name": "大谷直輝",
+      "authoritative_pages": [],
+      "slots": 56,
+      "names": [
+        {
+          "id": 2429,
+          "lang": "cn",
+          "display_name": "大谷直辉",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2428,
+          "lang": "en",
+          "display_name": "Naoki Otani",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2431,
+          "lang": "jp",
+          "display_name": "大谷直輝",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2432,
+          "lang": "ko",
+          "display_name": "오오타니 나오키",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 2430,
+          "lang": "tw",
+          "display_name": "大谷直輝",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 5451,
+      "canonical_name": "牛之浜撮雄",
+      "authoritative_pages": [],
+      "slots": 56,
+      "names": []
+    },
+    {
+      "id": 6671,
+      "canonical_name": "巌崎健造",
+      "authoritative_pages": [],
+      "slots": 56,
+      "names": []
+    },
+    {
+      "id": 6673,
+      "canonical_name": "金岛忠",
+      "authoritative_pages": [],
+      "slots": 54,
+      "names": []
+    },
+    {
+      "id": 6674,
+      "canonical_name": "关山仙太夫",
+      "authoritative_pages": [],
+      "slots": 54,
+      "names": []
+    },
+    {
+      "id": 5526,
+      "canonical_name": "王海军",
+      "authoritative_pages": [],
+      "slots": 51,
+      "names": []
+    },
+    {
+      "id": 4615,
+      "canonical_name": "张丰猷",
+      "authoritative_pages": [],
+      "slots": 50,
+      "names": []
+    },
+    {
+      "id": 6684,
+      "canonical_name": "岩佐銈",
+      "authoritative_pages": [],
+      "slots": 49,
+      "names": []
+    },
+    {
+      "id": 161,
+      "canonical_name": "岩田纱绘加",
+      "authoritative_pages": [],
+      "slots": 48,
+      "names": [
+        {
+          "id": 799,
+          "lang": "cn",
+          "display_name": "岩田纱绘加",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 798,
+          "lang": "en",
+          "display_name": "Iwata Saeka",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 801,
+          "lang": "jp",
+          "display_name": "岩田紗絵加",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 802,
+          "lang": "ko",
+          "display_name": "이와타 사에카",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        },
+        {
+          "id": 800,
+          "lang": "tw",
+          "display_name": "岩田紗繪加",
+          "status": "review",
+          "reference_url": null,
+          "reference_kind": "legacy_unverified",
+          "decision_kind": null,
+          "generation_rule_version": null,
+          "evidence_id": null
+        }
+      ]
+    },
+    {
+      "id": 5171,
+      "canonical_name": "林圣弈",
+      "authoritative_pages": [],
+      "slots": 48,
+      "names": []
+    },
+    {
+      "id": 5674,
+      "canonical_name": "秦士",
+      "authoritative_pages": [],
+      "slots": 46,
+      "names": []
+    },
+    {
+      "id": 5812,
+      "canonical_name": "董友棠",
+      "authoritative_pages": [],
+      "slots": 46,
+      "names": []
+    },
+    {
+      "id": 4029,
+      "canonical_name": "刘熙",
+      "authoritative_pages": [],
+      "slots": 45,
+      "names": []
+    }
+  ]
+}

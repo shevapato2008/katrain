@@ -1,0 +1,31 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:46:52.466303+00:00",
+  "source_level_decision": "astra-native16-and-zh-ko-next-step.md",
+  "scope": "exact16conventional; fourreference-onlyheld; registrytierunchanged; KBAandTVsamepublication",
+  "environments": [
+    {
+      "environment": "TEST",
+      "draft_file_sha256": "20b483899b0d56a31853e556c5b4048e86395a0a3b9be29c20df139029b767d5",
+      "reviewed_file_sha256": "c3e1fca13ec352a9bc527ad8bf6c531576a813f6c444f5abf284168b2506487d",
+      "capture_sha256": "3375a5f91daefc6a0dc1f142c0b0f2b092d3f33a792a52f976bb9d6dc7a0ab16",
+      "catalog_sha256": "7b17a5440205ee895ef10afc87faa0b72ba18ad19544d013936ebcabd38662d0",
+      "inventory_sha256": "f7a702fd82b79237f846f712ec62a3aeb8e66d55c08a47189f286e07f216c23c",
+      "unique_albums": 158,
+      "game_slots": 160,
+      "candidate_count": 16
+    },
+    {
+      "environment": "PROD",
+      "draft_file_sha256": "894aaf51af93d0ea96892c1b45500390e9901a447e9824e78e95790cbdf8b885",
+      "reviewed_file_sha256": "1092eca215628d272c359071b4f3937d747fc6aeaa1dc01f3d15fe38dc9fb5af",
+      "capture_sha256": "709b1ad8d6dc7ed14f5d302ea9d8bc8ef908df66ba53c10d8850c721758c5bac",
+      "catalog_sha256": "d872c53d390d15dd1cf9197704047ec910210b30f62a214e7d5d5a0611377b4d",
+      "inventory_sha256": "4f387112f2506f4714d9cf65d4d748bd4248eb1d6da01f4617c28dd0ff07f040",
+      "unique_albums": 158,
+      "game_slots": 160,
+      "candidate_count": 16
+    }
+  ]
+}

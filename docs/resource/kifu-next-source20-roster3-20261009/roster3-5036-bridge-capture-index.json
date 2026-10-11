@@ -1,0 +1,41 @@
+[
+  {
+    "pid": 5036,
+    "kind": "haifong-profile",
+    "url": "https://haifong.org/venue/13457E7445F9AFA1EFBB5651322429FE",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://haifong.org/venue/13457E7445F9AFA1EFBB5651322429FE",
+    "fetched_at_utc": "2026-10-08T21:12:56.225919+00:00",
+    "body_file": "captures/roster3-5036-haifong-profile.body.gz",
+    "body_bytes": 18623,
+    "body_sha256": "f86a1efb11c891099acb02ed85bac579a1e98e114b43236034e163219f4a5fb5",
+    "excerpt": "海峰棋院-李晶彬 棋譜 關於海峰 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 影片專區 關於海峰 關於海峰 創辦人簡介 大事紀 行事曆 聯絡方式 最新消息 職業棋士 世界賽 職業賽 院生天地 業餘賽 相關活動 其它 精銳隊/道場 "
+  },
+  {
+    "pid": 5036,
+    "kind": "haifong-2016-news",
+    "url": "https://www.haifong.org/news/content/0BBF8AB9E726D26C7D0D5E8FF2BFDCDF",
+    "method": "GET",
+    "status": 200,
+    "final_url": "https://www.haifong.org/news/content/0BBF8AB9E726D26C7D0D5E8FF2BFDCDF",
+    "fetched_at_utc": "2026-10-08T21:12:58.473160+00:00",
+    "body_file": "captures/roster3-5036-haifong-2016-news.body.gz",
+    "body_bytes": 20037,
+    "body_sha256": "10f508a33bb84ea20d406bb0e97879566b856ddeb402daa8f3c9a6cd5701662f",
+    "excerpt": "麗的比賽「女子圍棋最強戰」第二屆將於明天上午10:00亮麗登場！本賽集合了國內所有女子職業棋士，以及今年全國女子賽6-7段組優勝的業餘高手，加上旅日王景怡及韓籍李晶彬，可說是目前台灣最強的女子圍棋陣容。 明天上午第一場比賽，除了黨希昀與李晶彬一局是職業對抗外，另七局是職業與業餘棋士的對陣。去年業餘棋士表現不錯，今年業餘棋士如何突破職業棋士的壁壘，仍是大家關心的焦點。 海峰棋院為服務棋友，每場比賽將選四局在棋城網路直播"
+  },
+  {
+    "pid": 5036,
+    "kind": "go4go-tianyuan",
+    "url": "https://www.go4go.net/go/games/tournament/88/870",
+    "method": "GET",
+    "status": 500,
+    "final_url": "https://www.go4go.net/go/games/tournament/88/870",
+    "fetched_at_utc": "2026-10-08T21:13:00.350143+00:00",
+    "body_file": "captures/roster3-5036-go4go-tianyuan.body.gz",
+    "body_bytes": 4091,
+    "body_sha256": "2fa0f174288351c34668a61eef2cbc79f8ce395f5ec9491c88507998ba26a3ac",
+    "excerpt": "Error | Drupal Skip to main content Error The website encountered an unexpected error. Please try again later. Error message PDOException : SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/lib/mysql/mysql.sock' (111) in"
+  }
+]

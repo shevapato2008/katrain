@@ -1,0 +1,110 @@
+{
+  "artifact_kind": "legacy_generated_ko_source_only_review",
+  "read_only": true,
+  "prod_id": 4499,
+  "slots": 255,
+  "shortlist_scope": "Frequency queue row only; five physical language names do not prove qualification.",
+  "identity": {
+    "queue_canonical_name": "山崎祐男",
+    "Japanese_original_name": "山崎祐男",
+    "identity_bridge": "The retained Japanese profile uses this exact original name and its reading/romanization. Queue JP/CN names align by glyph variant; no additional identity audit performed.",
+    "profile_capture": {
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000071.htm",
+      "publisher": "official_person_page",
+      "observed_lang": "ja",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T18:22:09.831875+00:00",
+      "body_sha256": "955cbcb220a54878da05a3f65791ed980bca066ea82d95f8cee509fc8178c2b7",
+      "locator": "Complete retained known-source HTTP response",
+      "excerpt": "山崎　祐男 | 棋士 | 囲碁の日本棋院 English(Information) MENU Language 検索 PCサイト ようこそ ゲスト さん 日本棋院IDマイページ ログイン 棋士コメント用ログイン 新規ID登録 (日本棋院IDマイページ) ホームページに設定する お知らせ 棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 山崎　祐男 山崎　祐男 （ヤマザキ　マスオ / YAMAZAKI, Masuo） 性別 男 棋士段位 八段 出身地 東京都中野区 所属 日本棋院東京本院 プロフィール 大正9年（1920年）5月4日生。東京都中野区出身。昭和11年故関山利一九段に入門。 昭和17年入段、22年二段、23年三段、30年四段、31年五段、41年六段、51年七段 力強い棋風 本名「徳」 平成12年12月25日逝去。追贈八段。 棋士成績（直近のテレビ棋戦を除く） 更新日時： 対局数 勝数 負数 持碁 無勝負 通算成績 本年成績 昨年成績 対局結果と今後の予定（テレビ棋戦を除く） 更新日時： 対局日 勝敗 対局相手 棋戦 名称 回期 段階 棋戦主要履歴 大手合入賞4回 棋士のお知らせ 棋士情報 段位順 五十音順 所属別 移籍・退役・物故棋士 その他の棋士 昇段規定 棋士を目指す 棋士試験結果 棋士志願者募集 院生序列 院生募集 日本棋院研修会のご案内 ナショナルチーム ナショナルチームについて 募金のお願い 棋士の情報発信 ホームページ 棋士ブログ FACEBOOK X（旧Twitter） Instagram カテゴリ 棋戦 棋士 囲碁大会・イベント 施設案内 出版・販売 会員情報 囲碁学習・普及活動 棋院概要 ログイン 囲碁入門 日本棋院IDマイページ ネット対局 情報会員サービス オンラインショップ お知らせ コラム 棋戦 新着情報 国内棋戦 女性棋戦 国際棋戦 その他の棋戦 対局結果・予定 棋戦カレンダー 日本囲碁規約 棋士 新着情報 棋士一覧 ナショナルチーム 棋士採用試験 院生序列 棋士 ［HP］ ［Blog］ ［Facebook］ ［X（旧twitter）］ 囲碁大会・イベント 新着情報 囲碁大会 解説会・イベント アマ大会一覧 後援申請 棋士派遣 施設案内 東京本院 有楽町囲碁センター 中部総本部 関西総本部 梅田囲碁サロン 海外施設 出版・販売 新着情報 碁ワールド 棋道web 週刊碁（バックナンバー） 囲碁未来（バックナンバー） 書籍 オンラインショップ 会員組織 個人会員 法人会員 囲碁学習・普及活動 楽しい囲碁入門 Kiin Editor スマホアプリ 全国の囲碁教室 免状の取得 普及事業 指導者育成 囲碁大使 リンク 日本棋院支部 学校囲碁部・教室 国内の囲碁団体 国外の囲碁団体 頭脳スポーツ 文化庁・海外普及 棋院概要 組織概要 事業内容 沿革 公式アカウント一覧 スポンサー よくあるご質問 お問い合わせ サイトポリシー 棋院概要 棋譜使用・リンクについて 個人情報保護方針 お問い合わせ サイトマップ PCサイト Copyright (c) 1996- Nihonkiin all rights reserved.",
+      "body_bytes": 34486
+    },
+    "local_capture_packet": "docs/resource/kifu-next-throughput-2026-10-09/fresh-known-source-captures/4499.json.gz",
+    "local_capture_packet_sha256": "00876d3f242b1400869b6bb23660eb741a8f8dd89361ca0280def7ffaa5dc6a6"
+  },
+  "reading": {
+    "published_Japanese_reading": "ヤマザキ マスオ",
+    "published_romanization": "Yamazaki Masuo",
+    "citation": "Japanese professional profile body excerpt; no reading inferred from Kanji.",
+    "romanization_capture_status": "Direct Japanese profile body includes the romanization."
+  },
+  "current_KO": {
+    "display_name": "야마자키 마스오",
+    "status": "verified",
+    "decision_kind": "generated",
+    "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+    "evidence_id": 25605,
+    "reference_url": null,
+    "reference_kind": null
+  },
+  "legacy_proof_gap_clues": {
+    "shortlist_snapshot": "KO row is stored as verified/generated under nikl-ja-ko-personal-name-v1, but reference_url and reference_kind are null in this queue snapshot. That is a traceability cue, not proof that a separate signed review bundle is absent. The matched old throughput snapshot explicitly lists product_qualified_languages as cn, en, jp, tw and omits ko.",
+    "saved_legacy_explanation": "や→야; word-medial ま→마; ざ→자; き→키; word-initial ま→마; す→스; お→오. やまざき→야마자키; ますお→마스오. Reviewer verifies against saved NIKL rule.",
+    "audit_limit": "No signed candidate/evidence ledger or latest owner preimage audit was performed in this source-only task.",
+    "snapshot_reference": {
+      "path": "docs/resource/kifu-next-throughput-2026-10-09/old-ko28-frequency-readonly.json",
+      "sha256": "82b1c7c30f3df7caf9c9681ed23ab4a1dd35c91546f9170fac6c8aa44ab61d59",
+      "product_qualified_languages": [
+        "cn",
+        "en",
+        "jp",
+        "tw"
+      ]
+    }
+  },
+  "Korean_cross_checks": {
+    "finding": "no_direct_Korean_same_person_form_in_saved_bounded_queries",
+    "note": "The saved exact Han query results were unrelated/noisy, and the exact current-Hangul query did not surface a same-player Go source in the captured result text. No direct conflict was found. This is a bounded search observation, not global absence. Japanese official profile directly prints 山崎 祐男 / ヤマザキ マスオ / YAMAZAKI, Masuo.",
+    "references": [],
+    "queries": [
+      {
+        "query": "\"山崎祐男\" 바둑",
+        "url": "https://search.naver.com/search.naver?where=nexearch&query=%22%E5%B1%B1%E5%B4%8E%E7%A5%90%E7%94%B7%22+%EB%B0%94%EB%91%91",
+        "http_status": 200,
+        "fetched_at": "2026-10-08T18:22:11.903829+00:00",
+        "body_sha256": "88de8cf89aee36875629ac67d23559b16b56c311cc148ed396d31b510dee2878",
+        "locator": "Actual first Naver result page for this exact quoted name plus 바둑",
+        "publisher": "Naver search",
+        "source_role": "bounded discovery capture; not publisher body",
+        "body_excerpt": "<!doctype html> <html lang=\"ko\"><head> <meta charset=\"utf-8\"> <meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">  <meta name=\"format-detection\" content=\"telephone=no,address=no,email=no\"> <meta property=\"og:title\" content=\"&quot;山崎祐男&quot; 바둑 : 네이버 검색\"/> <meta property=\"og:image\" content=\"https://ssl.pstatic.net/sstatic/search/common/og_v3.png\"> <meta property=\"og:description\" content=\"'&quot;山崎祐男&quot; 바둑'의 네이버 검색 결과입니다.\"> <meta name=\"description\" lang=\"ko\" content=\"'&quot;山崎祐男&quot; 바둑'의 네이버 검색 결과입니다.\"> <title>&quot;山崎祐男&quot; 바둑 : 네이버 검색</title> <link rel=\"shortcut icon\" href=\"https://ssl.pstatic.net/sstatic/search/favicon/favicon_32x32_240820.ico\">  <link rel=\"search\" type=\"application/opensearchdescription+xml\" href=\"https://ssl.pstatic.net/sstatic/search/opensearch-description.https.xml\" title=\"Naver\" /><script>try{performance.mark('nx-head-start')}catch(e){}</script><link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstatic/search/pc/css/search1_261007.css?o=search\"> <link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstatic/se",
+        "body_bytes": 277253,
+        "visible_result_locators": [],
+        "body_text_locator": "Saved exact response body; metadata is in this record. Search-result evidence is limited to named visible anchors/snippets where listed; see adjacent_visible_text, not raw script text."
+      },
+      {
+        "query": "\"야마자키 마스오\" 바둑",
+        "url": "https://search.naver.com/search.naver?where=nexearch&query=%22%EC%95%BC%EB%A7%88%EC%9E%90%ED%82%A4+%EB%A7%88%EC%8A%A4%EC%98%A4%22+%EB%B0%94%EB%91%91",
+        "http_status": 200,
+        "fetched_at": "2026-10-08T18:22:14.275457+00:00",
+        "body_sha256": "1c9e0d2be213d24171a4d0a9bf32efce0b5b63ccafafc349e27a0ea65d42ba53",
+        "locator": "Actual first Naver result page for this exact quoted name plus 바둑",
+        "publisher": "Naver search",
+        "source_role": "bounded discovery capture; not publisher body",
+        "body_excerpt": "<!doctype html> <html lang=\"ko\"><head> <meta charset=\"utf-8\"> <meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">  <meta name=\"format-detection\" content=\"telephone=no,address=no,email=no\"> <meta property=\"og:title\" content=\"&quot;야마자키 마스오&quot; 바둑 : 네이버 검색\"/> <meta property=\"og:image\" content=\"https://ssl.pstatic.net/sstatic/search/common/og_v3.png\"> <meta property=\"og:description\" content=\"'&quot;야마자키 마스오&quot; 바둑'의 네이버 검색 결과입니다.\"> <meta name=\"description\" lang=\"ko\" content=\"'&quot;야마자키 마스오&quot; 바둑'의 네이버 검색 결과입니다.\"> <title>&quot;야마자키 마스오&quot; 바둑 : 네이버 검색</title> <link rel=\"shortcut icon\" href=\"https://ssl.pstatic.net/sstatic/search/favicon/favicon_32x32_240820.ico\">  <link rel=\"search\" type=\"application/opensearchdescription+xml\" href=\"https://ssl.pstatic.net/sstatic/search/opensearch-description.https.xml\" title=\"Naver\" /><script>try{performance.mark('nx-head-start')}catch(e){}</script><link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstatic.net/sstatic/search/pc/css/search1_261007.css?o=search\"> <link rel=\"stylesheet\" type=\"text/css\" href=\"https://ssl.pstati",
+        "body_bytes": 568496,
+        "visible_result_locators": [],
+        "body_text_locator": "Saved exact response body; metadata is in this record. Search-result evidence is limited to named visible anchors/snippets where listed; see adjacent_visible_text, not raw script text."
+      }
+    ],
+    "search_scope": "Only saved exact Japanese Han and exact current-Hangul plus 바둑 query response bodies; bounded results, not a global absence claim."
+  },
+  "minimal_reusable_authority_page": {
+    "url": "https://www.nihonkiin.or.jp/player/htm/ki000071.htm",
+    "publisher": "official_person_page",
+    "body_sha256": "955cbcb220a54878da05a3f65791ed980bca066ea82d95f8cee509fc8178c2b7",
+    "fetched_at": "2026-10-08T18:22:09.831875+00:00",
+    "reuse": "This single same-person Japanese professional profile already contains the source reading and Latin form; use it as the minimal identity/reading anchor, with the Korean reference above adjudicated separately."
+  },
+  "disposition": "no_direct_conflict_found_in_saved_bounded_sources",
+  "qualification_snapshot": {
+    "snapshot_path": "docs/resource/kifu-next-throughput-2026-10-09/old-ko28-frequency-readonly.json",
+    "snapshot_sha256": "82b1c7c30f3df7caf9c9681ed23ab4a1dd35c91546f9170fac6c8aa44ab61d59",
+    "product_qualified_languages": [
+      "cn",
+      "en",
+      "jp",
+      "tw"
+    ],
+    "interpretation": "At this read-only throughput snapshot, KO is absent from product_qualified_languages despite a KO row marked verified/generated. This is a qualification/read-path gap clue, not a current live read or a claim about why the old proof failed."
+  }
+}

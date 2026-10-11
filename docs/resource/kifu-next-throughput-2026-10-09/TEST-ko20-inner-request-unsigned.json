@@ -1,0 +1,885 @@
+{
+  "candidates": [
+    {
+      "decision_kind": "generated",
+      "display_name": "나카가와 신지",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "bcdd021814361f064f0f41d38a0bdd8ecffe182024f9a7f549ba8f8788239138",
+      "owner": {
+        "id": 9590,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.256710+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "9dabb1dec91147f6c52149a39d18cd39a4cae1e76373884d85e431939d0ffeff",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "구와하라 무네히사",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "43dd5b136ca6df079f432917e53ddef1fc4c00c828ae75c4eb5aeb244ef17beb",
+      "owner": {
+        "id": 11016,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.290170+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "20b605f4e356ebce48ddb36fbbfbcd0741cd0d7dc865484aeb0406928a9ea518",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "하세가와 아키라",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "fe852b4889cb7bb0181d3ce7ce58229fdedb845731a0db309b402f88f2a0cd1f",
+      "owner": {
+        "id": 12036,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.374808+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "9fb93aaae51defcf82b1cdc5c9aa93f6f42d1651bf2cf2a345d23228bf371974",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나베시마 이치로",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "c3deaaecb0f596e2ca214a7e1093f9550bebb649e909df2b150758c08082c047",
+      "owner": {
+        "id": 12026,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.438733+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "501a28f5248df0f23506710db61cfb9def24c14b29e6df81e9f568e8d232177d",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "스즈키 고로",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "a3415411584e95f10cce7ee8211bb3d2ac78c1db3b041cb0b04a3987fbe69ffb",
+      "owner": {
+        "id": 12018,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.497141+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "fc2d1b63da2b16888de47a2c39b6af5a14781c9ac53c33185fca5cbf3618a298",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "호시노 도시",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "adb934522f98f6973b41ab7f650afe41457b7d5d6226fa870ec4b87b3761eb9d",
+      "owner": {
+        "id": 12345,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.581836+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "8e50798fd36f75434fa4852f9e792bf931d61b50ac71550b2160b342b24064de",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "무카이 가즈오",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "108fe9ed1d41536796c180e15b39a2af5acaa35b499a939a1019d96982cf2f8c",
+      "owner": {
+        "id": 9917,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.652496+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "ffbd576a0f91381e8754aa3c273c94ef0905e902514fa6ce3bbe2f26097f46e8",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "마쓰모토 도쿠지",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "987a279b6ce8ca3cd3670ccdeccb0f9183821a9daa2f23ece9eeae2a43082cc7",
+      "owner": {
+        "id": 10939,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.712471+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "6384dc29ac3afc5df3506810cacb15053521a03b61292abbaeb3dd3699c272a0",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나카오카 지로",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "5a0173e6acacca56682904d29e434e017443aca2a99ebc8d6c2b3feb4fda767f",
+      "owner": {
+        "id": 9576,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.770002+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "3d7e80a65b38dfdabb6b63790a6b1060e8de5bec65e29baa93a368e5e16da8ba",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "와타나베 히데오",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "7547c80f4ddc37c874d72ce5e598b25b08765fa2a1638b63dec954f6536ab887",
+      "owner": {
+        "id": 11188,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.842278+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "b03b391e00ceed02bf2dd970dd4491a3f5996ff6af972f29b153d0284551ff41",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "혼마 아키오",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "dd0f248049d6b822668e4033c56325ab1acdd49bf17283331f7c38f5228c8517",
+      "owner": {
+        "id": 10628,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.903382+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "2ea2cf0cdc46f20409cb7118140ce56d8272e698c820ab262d6063ccd04a827f",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "고스기 기요시",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "c02693aaf41129d74ba12ae5efb1f187629c27c5012da8de122e0e33b8a79f0b",
+      "owner": {
+        "id": 10212,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:00.987061+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "d1415e9096f126190ab69a3a206f516823245926aa091f34c3dff0df147218d4",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "사토 가오루",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "4f0d0673d20fd16f18568bb88fc50c92afbbfb62b519b46b4e0c62f547ba5eb1",
+      "owner": {
+        "id": 9699,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.068833+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "38f88f22683dd774ee5233e963e79b4ff98bd19103430b4dd849fd4ee25bffbb",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "니시가미 요시히코",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "3a3a5885ae6c84443d5db289a5bba84d2a41a9db28c2094a60f9cafacb90e712",
+      "owner": {
+        "id": 11646,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.133587+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "44097aad275762c71691540258fc0ffb01ac40b93c07564c3196823bb1d99ebc",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "호소카와 센진",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "80ef22bfa2f2c579c2137a036431f5b4f3d501bc104a29e6e884ce52f24588ea",
+      "owner": {
+        "id": 12372,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.167383+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "5886a89ed3dafe4070cf9fcef655c23918e420b0847c8a668e93e25cf25da2e4",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "히로에 가쓰히코",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "9c38a76e58eb621bff15fe705111461caf7a21c4339857e2941bc5ec28fd63df",
+      "owner": {
+        "id": 10377,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.204496+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "720295453560538ef330aa93899cc77ac9387913bc6f18abf40284d7daad8959",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "나베시마 아키라",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "bc1fa6fca1450ef059b676f0a0189de54f2676b487f31ccd126a3de781660d29",
+      "owner": {
+        "id": 12027,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.262570+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "c7c5d80dc1e1817468d290233bf3013721d4547d641b079c2ff8fec70d203503",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "오노다 지요타로",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "08bb8ea78655ae88c9b456b439940c281b3542d55769a784d592a97a0087bd24",
+      "owner": {
+        "id": 12391,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.290795+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "897eeb6e91ef036c7da0bc5e0060d617c8522c9eb3d18fb251abd602adacd852",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "아마야케 노부오",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "361f1d4fc222c8a8a16dc2dec966361c996c39632f0297a35c830381b4a0ef71",
+      "owner": {
+        "id": 10061,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.323680+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "2c4dc6092b9acd83433677e6cb7ccf322a2686379cc3bcc692bb43ab1616fb19",
+      "review_status": "pending"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "사카이 도시오",
+      "generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "lang": "ko",
+      "name_preimage_sha256": "68520b57b8e8586952bc7926b66177ff0d4fbf88e91d0ccdbf9e5b15bfb79671",
+      "owner": {
+        "id": 12400,
+        "kind": "player"
+      },
+      "produced_at": "2026-10-08T18:35:01.383446+00:00",
+      "producer_id": "/root/next_batch_source_recovery",
+      "producer_model": "gpt-6.1-sol",
+      "research_sha256": "ec2b81ba64085d9a811f6a064fcf04290e6ec5a22a64962bcd8318ba52d4ccc2",
+      "review_status": "pending"
+    }
+  ],
+  "capture_actor": "/root/next_batch_source_recovery",
+  "capture_model": "gpt-6.1-sol",
+  "current_ko_strictly_unqualified_members": 20,
+  "current_name_bytes_preserved": true,
+  "environment": "TEST",
+  "expected_new_full_five_if_applied_and_verified": 20,
+  "game_slots": 4663,
+  "generated_review_requests": [
+    {
+      "display_name": "나카가와 신지",
+      "lang": "ko",
+      "original_name": "中川新之",
+      "owner": {
+        "id": 9590,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "c3f447e4e4bdc8bc5c9b7f6be60a807007a6b3bf9f08494ba060afe9a5399517",
+      "reading": "なかがわ しんじ",
+      "reading_basis_url": "https://www.igorating.com/players/shinji-nakagawa",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "9dabb1dec91147f6c52149a39d18cd39a4cae1e76373884d85e431939d0ffeff",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "구와하라 무네히사",
+      "lang": "ko",
+      "original_name": "桑原宗久",
+      "owner": {
+        "id": 11016,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "a431284def81be24495a87f3623c2c6eb0b35189449c5bb25fe676cc0ca1084e",
+      "reading": "くわはら むねひさ",
+      "reading_basis_url": "https://www.igorating.com/players/munehisa-kuwahara",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "20b605f4e356ebce48ddb36fbbfbcd0741cd0d7dc865484aeb0406928a9ea518",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "하세가와 아키라",
+      "lang": "ko",
+      "original_name": "長谷川章",
+      "owner": {
+        "id": 12036,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "8996147c8f24fec76a3795186933c261c51fc0db90958c5043d4cb8b4f90ff35",
+      "reading": "ハセガワ アキラ",
+      "reading_basis_url": "https://kotobank.jp/word/%E9%95%B7%E8%B0%B7%E5%B7%9D%E7%AB%A0-1100972",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "9fb93aaae51defcf82b1cdc5c9aa93f6f42d1651bf2cf2a345d23228bf371974",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "나베시마 이치로",
+      "lang": "ko",
+      "original_name": "鍋島一郎",
+      "owner": {
+        "id": 12026,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "f8b8410be7d054e4630e92e6a8598a7b0151a07c8c4ef4c37f1dc911799ce718",
+      "reading": "なべしま いちろう",
+      "reading_basis_url": "https://igorating.com/players/ichiro-nabeshima",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "501a28f5248df0f23506710db61cfb9def24c14b29e6df81e9f568e8d232177d",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "스즈키 고로",
+      "lang": "ko",
+      "original_name": "鈴木五良",
+      "owner": {
+        "id": 12018,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "12a140097d9e0e2527548e6a5cbd8caf592ed5e1d0e8940cd2fdee886760d169",
+      "reading": "すずき ごろう",
+      "reading_basis_url": "https://igorating.com/players/goro-suzuki",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "fc2d1b63da2b16888de47a2c39b6af5a14781c9ac53c33185fca5cbf3618a298",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "호시노 도시",
+      "lang": "ko",
+      "original_name": "星野紀",
+      "owner": {
+        "id": 12345,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "f0c9beb19413abe6db0c678981c128992d0f9beda7c5ff4c108ec44245e32438",
+      "reading": "ほしの とし",
+      "reading_basis_url": "https://igorating.com/players/toshi-hoshino",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "8e50798fd36f75434fa4852f9e792bf931d61b50ac71550b2160b342b24064de",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "무카이 가즈오",
+      "lang": "ko",
+      "original_name": "向井一男",
+      "owner": {
+        "id": 9917,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "21ee4f6f25c452c5c14e0ae3cd66ca0f073f0ac9befeceabdb63602d1729c04a",
+      "reading": "むかい かずお",
+      "reading_basis_url": "https://www.igorating.com/players/kazuo-mukai",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "ffbd576a0f91381e8754aa3c273c94ef0905e902514fa6ce3bbe2f26097f46e8",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "마쓰모토 도쿠지",
+      "lang": "ko",
+      "original_name": "松本篤二",
+      "owner": {
+        "id": 10939,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "f77086c005addea23bcdb12fc39e972a1a774415a33ed5e78072a7b0d24cba83",
+      "reading": "まつもと とくじ",
+      "reading_basis_url": "https://www.igorating.com/players/tokuji-matsumoto",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "6384dc29ac3afc5df3506810cacb15053521a03b61292abbaeb3dd3699c272a0",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "나카오카 지로",
+      "lang": "ko",
+      "original_name": "中岡二郎",
+      "owner": {
+        "id": 9576,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "7991dc3a66a5586e33f8da8ee614e00c68cf0703d5ec32d4539e3a022871ee25",
+      "reading": "なかおか じろう",
+      "reading_basis_url": "https://www.igorating.com/players/jiro-nakaoka",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "3d7e80a65b38dfdabb6b63790a6b1060e8de5bec65e29baa93a368e5e16da8ba",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "와타나베 히데오",
+      "lang": "ko",
+      "original_name": "渡辺英夫",
+      "owner": {
+        "id": 11188,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "b79ec85702122f097eef001520c9e02ede34f26ebbb6aa1327ff0e4950379540",
+      "reading": "わたなべ ひでお",
+      "reading_basis_url": "https://www.igorating.com/players/hideo-watanabe",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "b03b391e00ceed02bf2dd970dd4491a3f5996ff6af972f29b153d0284551ff41",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "혼마 아키오",
+      "lang": "ko",
+      "original_name": "本間明男",
+      "owner": {
+        "id": 10628,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "27d99c61ae951e29c4e9dc32fdeda521b5c30f6663efea9b32ba60c7561c5845",
+      "reading": "ほんま あきお",
+      "reading_basis_url": "https://www.igorating.com/players/akio-honma",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "2ea2cf0cdc46f20409cb7118140ce56d8272e698c820ab262d6063ccd04a827f",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "고스기 기요시",
+      "lang": "ko",
+      "original_name": "小杉清",
+      "owner": {
+        "id": 10212,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "d5897b0e7bdef284cb1efb1dd659f171d0bdae491ffaee097fe315dc745000dc",
+      "reading": "こすぎ きよし",
+      "reading_basis_url": "https://www.igorating.com/players/kiyoshi-kosugi",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "d1415e9096f126190ab69a3a206f516823245926aa091f34c3dff0df147218d4",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "사토 가오루",
+      "lang": "ko",
+      "original_name": "佐藤馨",
+      "owner": {
+        "id": 9699,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "6ddcc68ebcf4cfca136c47f97de7e29ab3cbd07c0ced50f532b4e96dba77785a",
+      "reading": "さとう かおる",
+      "reading_basis_url": "https://www.igorating.com/players/kaoru-sato",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "38f88f22683dd774ee5233e963e79b4ff98bd19103430b4dd849fd4ee25bffbb",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "니시가미 요시히코",
+      "lang": "ko",
+      "original_name": "西上好彦",
+      "owner": {
+        "id": 11646,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "863f970e4a1c0d9bee24b8fef82f4ca57997c337408ae10b7c9db038c258d6ed",
+      "reading": "にしがみ よしひこ",
+      "reading_basis_url": "https://www.igorating.com/players/yoshihiko-nishigami",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "44097aad275762c71691540258fc0ffb01ac40b93c07564c3196823bb1d99ebc",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "호소카와 센진",
+      "lang": "ko",
+      "original_name": "細川千仭",
+      "owner": {
+        "id": 12372,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "eab71155097153d971106288455a0e14d1eeccfa65f1ede980716cd9ae97489b",
+      "reading": "ほそかわ せんじん",
+      "reading_basis_url": "https://igorating.com/players/senjin-hosokawa",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "5886a89ed3dafe4070cf9fcef655c23918e420b0847c8a668e93e25cf25da2e4",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "히로에 가쓰히코",
+      "lang": "ko",
+      "original_name": "広江勝彦",
+      "owner": {
+        "id": 10377,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "a26747345aa62f79b5c737488c2d190ab665a09b2cab4e4877bf40f7e1252370",
+      "reading": "ひろえ かつひこ",
+      "reading_basis_url": "https://www.igorating.com/players/katsuhiko-hiroe",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "720295453560538ef330aa93899cc77ac9387913bc6f18abf40284d7daad8959",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "나베시마 아키라",
+      "lang": "ko",
+      "original_name": "鍋島昭",
+      "owner": {
+        "id": 12027,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "cd8d57c98ea362def15ec6a3fd4dc0af212ec61b8dc48d46a34866a4394ec3e8",
+      "reading": "なべしま あきら",
+      "reading_basis_url": "https://www.igorating.com/players/akira-nabeshima",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "c7c5d80dc1e1817468d290233bf3013721d4547d641b079c2ff8fec70d203503",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "오노다 지요타로",
+      "lang": "ko",
+      "original_name": "小野田千代太郎",
+      "owner": {
+        "id": 12391,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "0da3b2a3525906cd4a285b9724eaa12e05a8c100fad3ccf1601134a62ec295d8",
+      "reading": "おのだ ちよたろう",
+      "reading_basis_url": "https://www.igorating.com/players/chiyotaro-onoda",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "897eeb6e91ef036c7da0bc5e0060d617c8522c9eb3d18fb251abd602adacd852",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "아마야케 노부오",
+      "lang": "ko",
+      "original_name": "天宅信雄",
+      "owner": {
+        "id": 10061,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "8e7e6a3cb17e92077343459dca0cc2e3857a717525578a7757d67be5cdcfd4ce",
+      "reading": "あまやけ のぶお",
+      "reading_basis_url": "https://www.igorating.com/players/nobuo-amayake",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "2c4dc6092b9acd83433677e6cb7ccf322a2686379cc3bcc692bb43ab1616fb19",
+      "status": "pending_independent_root_review"
+    },
+    {
+      "display_name": "사카이 도시오",
+      "lang": "ko",
+      "original_name": "酒井利雄",
+      "owner": {
+        "id": 12400,
+        "kind": "player"
+      },
+      "positive_generation_sha256": "3229d4da8fd9e6045351d479963287fbac558a8444696f9ff05d75a997e9494b",
+      "reading": "さかい としお",
+      "reading_basis_url": "https://www.igorating.com/players/toshio-sakai",
+      "required_generation_decision": "approve_generated",
+      "required_review_conclusion": "approved_generated_display_and_rule",
+      "research_sha256": "ec2b81ba64085d9a811f6a064fcf04290e6ec5a22a64962bcd8318ba52d4ccc2",
+      "status": "pending_independent_root_review"
+    }
+  ],
+  "global_context_status": "awaiting_PROD589_and_TEST589_after_state_before_root_signed_bundle",
+  "owners": [
+    {
+      "owner": {
+        "id": 9590,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "中川新之",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 9590
+      }
+    },
+    {
+      "owner": {
+        "id": 11016,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "桑原宗久",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 11016
+      }
+    },
+    {
+      "owner": {
+        "id": 12036,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "长谷川章",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 12036
+      }
+    },
+    {
+      "owner": {
+        "id": 12026,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "锅岛一郎",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 12026
+      }
+    },
+    {
+      "owner": {
+        "id": 12018,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "铃木五良",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 12018
+      }
+    },
+    {
+      "owner": {
+        "id": 12345,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "星野纪",
+        "created_at": "2026-10-03T23:20:17.097964+00:00",
+        "id": 12345
+      }
+    },
+    {
+      "owner": {
+        "id": 9917,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "向井一男",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 9917
+      }
+    },
+    {
+      "owner": {
+        "id": 10939,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "松本笃二",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 10939
+      }
+    },
+    {
+      "owner": {
+        "id": 9576,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "中冈二郎",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 9576
+      }
+    },
+    {
+      "owner": {
+        "id": 11188,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "渡边英夫",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 11188
+      }
+    },
+    {
+      "owner": {
+        "id": 10628,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "本间明男",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 10628
+      }
+    },
+    {
+      "owner": {
+        "id": 10212,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "小杉清",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 10212
+      }
+    },
+    {
+      "owner": {
+        "id": 9699,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "佐藤馨",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 9699
+      }
+    },
+    {
+      "owner": {
+        "id": 11646,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "西上好彦",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 11646
+      }
+    },
+    {
+      "owner": {
+        "id": 12372,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "细川千仞",
+        "created_at": "2026-10-03T23:51:21.892602+00:00",
+        "id": 12372
+      }
+    },
+    {
+      "owner": {
+        "id": 10377,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "广江胜彦",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 10377
+      }
+    },
+    {
+      "owner": {
+        "id": 12027,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "锅岛昭",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 12027
+      }
+    },
+    {
+      "owner": {
+        "id": 12391,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "小野田千代太郎",
+        "created_at": "2026-10-04T00:04:47.824907+00:00",
+        "id": 12391
+      }
+    },
+    {
+      "owner": {
+        "id": 10061,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "天宅信雄",
+        "created_at": "2026-10-03T22:12:48.587490+00:00",
+        "id": 10061
+      }
+    },
+    {
+      "owner": {
+        "id": 12400,
+        "kind": "player"
+      },
+      "preimage": {
+        "canonical_name": "酒井利雄",
+        "created_at": "2026-10-04T00:07:59.776161+00:00",
+        "id": 12400
+      }
+    }
+  ],
+  "read_only_capture_file": "TEST-ko20-current-preimages.json.gz",
+  "read_only_capture_file_sha256": "78f4625a72609d7a3eefc7ac79409b26cad9357101defb4025b6391754e4a7d5",
+  "read_only_captured_at": "2026-10-08T18:33:36.850703+00:00",
+  "request_kind": "normative_ja_ko_existing_name_proof_restoration",
+  "research_array_sha256": "43601ea331d39d39f35852aae71e915e1e735d6c40a919fe85c5dfdb30622f65",
+  "research_file": "TEST-ko20-unsigned-research.json.gz",
+  "review_status": "pending",
+  "source_registry_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "unique_albums": 4406
+}

@@ -1,0 +1,15 @@
+{
+  "status": "published_deployed_and_live_verified",
+  "source_commit": "a53f20678d099ae7304e425a0b944802a7890186",
+  "parent_commit": "b7212f7530ca849da207541b6d19a170b4ac5f29",
+  "last_name_batch": 724,
+  "both_clouds_verified": true,
+  "public_display_complete": 171013,
+  "public_display_total": 171013,
+  "generated_at": "2026-10-11T17:01:18.847790+00:00",
+  "search_totals": {
+    "TEST": 1231,
+    "PROD": 1231
+  },
+  "name_coverage_is_not_full_manual_semantic_verification": true
+}

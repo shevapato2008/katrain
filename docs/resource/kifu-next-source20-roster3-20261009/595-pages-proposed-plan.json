@@ -1,0 +1,313 @@
+{
+  "environments": {
+    "PROD": {
+      "bundle_file_sha256": "d37c6d4e76a27871191a2d4c262088e57f3389fb9d30a3128277ea4188639472",
+      "bundle_sha256": "7e9436ea7fbbe11de6e67006541e557ba32d4fbfaed3fa4a25da988ade7f59c7",
+      "evidence_file_sha256": "6caab72057b45ad43f757af4e2a5b1a8b3bd1520f0e9a82a6d3a214948d8bbbe",
+      "registry_file_sha256": "4c171bcc34a3d84d5622c9b19aeb8c43dd842836115a467c207f1ca97cd055d2",
+      "rows": {
+        "4031": {
+          "display_name": "류위신",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099"
+        },
+        "4593": {
+          "display_name": "팡옌",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001947"
+        },
+        "5034": {
+          "display_name": "李晨碩",
+          "lang": "jp",
+          "language": "ja",
+          "page_context": "dated_go_sgf",
+          "role": "language_go",
+          "source_id": "ret157-kifudepot-ja",
+          "url": "https://kifudepot.net/kifucontents.php?id=GU0anneFeRnP%2BSHKyee0nw%3D%3D"
+        },
+        "5036": {
+          "display_name": "Li Jingbin",
+          "lang": "en",
+          "language": "en",
+          "page_context": "go_person_record",
+          "role": "language_go",
+          "source_id": "ret97-ugo-en",
+          "url": "https://db.u-go.net/2082/"
+        },
+        "5296": {
+          "display_name": "武珺",
+          "lang": "tw",
+          "language": "zh-Hant",
+          "page_context": "published_taiwan_team_roster",
+          "role": "language_go",
+          "source_id": "ret110-taiwango-tw",
+          "url": "https://taiwangorg.blogspot.com/2009/05/513.html"
+        },
+        "5349": {
+          "display_name": "선징",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002031"
+        },
+        "5350": {
+          "display_name": "선잉",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002030"
+        },
+        "5912": {
+          "display_name": "셰펑",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001951"
+        },
+        "5915": {
+          "display_name": "셰위궈",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001952"
+        },
+        "5952": {
+          "display_name": "자오쯔지",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002000"
+        },
+        "6278": {
+          "display_name": "옌안",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001969"
+        },
+        "6322": {
+          "display_name": "천더룽",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002015"
+        },
+        "6366": {
+          "display_name": "천루이",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002017"
+        },
+        "6367": {
+          "display_name": "천잉",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002019"
+        },
+        "6550": {
+          "display_name": "황번",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002047"
+        },
+        "6571": {
+          "display_name": "궁스윈",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001900"
+        }
+      }
+    },
+    "TEST": {
+      "bundle_file_sha256": "a9645b347fe85e748edac71ddd517f80da0e80645f86302e505344ff7bba17b6",
+      "bundle_sha256": "7d23b5cb5ad326b667933acbae44b744112eb5b6e8cf1bef4c941c1862dbba05",
+      "evidence_file_sha256": "aa7f70f1887441a5f82939f7d3cb7fcc7bbabfbc1929ad53aedc293d0dd97c46",
+      "registry_file_sha256": "4c171bcc34a3d84d5622c9b19aeb8c43dd842836115a467c207f1ca97cd055d2",
+      "rows": {
+        "10383": {
+          "display_name": "팡옌",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001947"
+        },
+        "10816": {
+          "display_name": "李晨碩",
+          "lang": "jp",
+          "language": "ja",
+          "page_context": "dated_go_sgf",
+          "role": "language_go",
+          "source_id": "ret157-kifudepot-ja",
+          "url": "https://kifudepot.net/kifucontents.php?id=GU0anneFeRnP%2BSHKyee0nw%3D%3D"
+        },
+        "10818": {
+          "display_name": "Li Jingbin",
+          "lang": "en",
+          "language": "en",
+          "page_context": "go_person_record",
+          "role": "language_go",
+          "source_id": "ret97-ugo-en",
+          "url": "https://db.u-go.net/2082/"
+        },
+        "11073": {
+          "display_name": "武珺",
+          "lang": "tw",
+          "language": "zh-Hant",
+          "page_context": "published_taiwan_team_roster",
+          "role": "language_go",
+          "source_id": "ret110-taiwango-tw",
+          "url": "https://taiwangorg.blogspot.com/2009/05/513.html"
+        },
+        "11125": {
+          "display_name": "선징",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002031"
+        },
+        "11126": {
+          "display_name": "선잉",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002030"
+        },
+        "11681": {
+          "display_name": "셰펑",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001951"
+        },
+        "11684": {
+          "display_name": "셰위궈",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001952"
+        },
+        "11721": {
+          "display_name": "자오쯔지",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002000"
+        },
+        "12044": {
+          "display_name": "옌안",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001969"
+        },
+        "12088": {
+          "display_name": "천더룽",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002015"
+        },
+        "12132": {
+          "display_name": "천루이",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002017"
+        },
+        "12133": {
+          "display_name": "천잉",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002019"
+        },
+        "12314": {
+          "display_name": "황번",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002047"
+        },
+        "12335": {
+          "display_name": "궁스윈",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20001900"
+        },
+        "9827": {
+          "display_name": "류위신",
+          "lang": "ko",
+          "language": "ko",
+          "page_context": "official_person_profile",
+          "role": "official",
+          "source_id": "korea-baduk",
+          "url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002099"
+        }
+      }
+    }
+  },
+  "excluded_research_source_ids": [
+    "roster3-daum-community-ko-reference"
+  ],
+  "kind": "next16_player_pages_exact_url_plan_v1",
+  "pinned_player_pages_sha256": "3b45ca6dcb80885bb13a7a7e70616bfdc7f7df444bc800e2d1003d46795dbc39"
+}

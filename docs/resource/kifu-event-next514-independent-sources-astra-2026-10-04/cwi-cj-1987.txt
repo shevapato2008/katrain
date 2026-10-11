@@ -1,0 +1,518 @@
+15th Japan-China Go Exchange, 1987
+Up
+Prev
+Next
+15th Japan-China Go Exchange, 1987
+Go World 48 writes:
+In late May and early June this year an eight-man Japanese team
+headed by Kato Masao toured China as the 15th in the series of
+annual goodwill tours. The Japanese team won 32 of the 56 games
+they played, making this the most successful visit to China
+since the first tour in 1973 (when they won 40 games).
+The meetings were in Beijing (5/20, 5/22, 5/24), Chongqing (5/26), Yangtze (5/28, 5/31) and Wuhan (6/3).
+1: 5/20
+2: 5/22
+3: 5/24
+4: 5/26
+5: 5/28
+6: 5/31
+7: 6/3
+Score
+Kato
+Nie
+−R
+Nie
+−3.5
+Shao
++R
+Jiang
+−R
+Ma
+−R
+Ma
++R
+Ma
+−R
+2-5
+Awaji
+Ma
++R
+Ma
++2.5
+Fang
++R
+Qian
+−R
+Jiang
+−R
+Jiang
++R
+Jiang
++R
+5-2
+Sonoda
+Cao
+−4.5
+Cao
++R
+Cao
+−3.5
+Chen
++R
+Liu
+−R
+Liu
++R
+Liu
++3.5
+4-3
+Kamimura
+Wang Qun
++R
+Wang Q.
+−R
+Wang Q.
++6.5
+Rui
+−R
+Cao
++0.5
+Cao
+−R
+Cao
++R
+4-3
+Hikosaka
+Qian
+−1.5
+Qian
++R
+Qian
+−0.5
+Yang Hui
+−0.5
+Shao
++R
+Shao
++R
+Rui
+−R
+3-4
+Imamura
+Song
++R
+Song
++R
+Zhang X.
++R
+Wang J.
+−R
+Chen
+−2.5
+Chen
++R
+Chen
++R
+5-2
+Yoda
+Rui
+−6.5
+Rui
++R
+Rui
+−R
+Liu
+−R
+Fang
++R
+Fang
++R
+Yu Bin
++R
+4-3
+Oya
+Zhang W.
++R
+Zhang W.
++R
+Wang J.
++R
+Liang
++R
+Yu Bin
+−1.5
+Yu Bin
+−1.5
+Yang Hui
++1.5
+5-2
+Result
+4-4
+6-2
+5-3
+2-6
+3-5
+6-2
+6-2
+32-24
+Game records:
+Date
+Black
+White
+Result
+#mv
+SGF
+1987-04-27
+Cao Dayuan
+Sakata Eio
+B+12.5
+274
+sgf
+1987-05-20
+Nie Weiping
+Kato Masao
+B+R
+213
+sgf
+1987-05-20
+Oya Koichi
+Zhang Wendong
+B+R
+119
+sgf
+1987-05-20
+Awaji Shuzo
+Ma Xiaochun
+B+R
+163
+sgf
+1987-05-20
+Cao Dayuan
+Sonoda Yuichi
+B+3.5
+225
+sgf
+1987-05-20
+Kamimura Haruo
+Wang Qun
+B+R
+229
+sgf
+1987-05-20
+Imamura Toshiya
+Song Xuelin
+B+R
+232
+sgf
+1987-05-20
+Qian Yuping
+Hikosaka Naoto
+B+1.5
+306
+sgf
+1987-05-20
+Rui Naiwei
+Yoda Norimoto
+B+7.5
+230
+sgf
+1987-05-22
+Yoda Norimoto
+Rui Naiwei
+B+R
+157
+sgf
+1987-05-22
+Wang Qun
+Kamimura Haruo
+B+R
+167
+sgf
+1987-05-22
+Sonoda Yuichi
+Cao Dayuan
+B+R
+183
+sgf
+1987-05-22
+Ma Xiaochun
+Awaji Shuzo
+W+2.5
+206
+sgf
+1987-05-22
+Zhang Wendong
+Oya Koichi
+W+R
+210
+sgf
+1987-05-22
+Hikosaka Naoto
+Qian Yuping
+B+R
+223
+sgf
+1987-05-22
+Song Xuelin
+Imamura Toshiya
+W+R
+240
+sgf
+1987-05-22
+Kato Masao
+Nie Weiping
+W+2.5
+244
+sgf
+1987-05-24
+Hikosaka Naoto
+Qian Yuping
+W+2.5
+249
+sgf
+1987-05-24
+Zhang Xuan
+Imamura Toshiya
+W+R
+154
+sgf
+1987-05-24
+Awaji Shuzo
+Fang Tianfeng
+B+R
+161
+sgf
+1987-05-24
+Rui Naiwei
+Yoda Norimoto
+B+R
+173
+sgf
+1987-05-24
+Oya Koichi
+Wang Jianhong
+B+R
+183
+sgf
+1987-05-24
+Kato Masao
+Shao Zhenzhong
+B+R
+185
+sgf
+1987-05-24
+Cao Dayuan
+Sonoda Yuichi
+B+3.5
+220
+sgf
+1987-05-24
+Wang Qun
+Kamimura Haruo
+W+6.5
+273
+sgf
+1987-05-26
+Qian Yuping
+Awaji Shuzo
+B+R
+205
+sgf
+1987-05-26
+Wang Jianhong
+Imamura Toshiya
+B+R
+173
+sgf
+1987-05-26
+Yoda Norimoto
+Liu Xiaoguang
+W+R
+176
+sgf
+1987-05-26
+Sonoda Yuichi
+Chen Linxin
+B+R
+201
+sgf
+1987-05-26
+Liang Weitang
+Oya Koichi
+W+R
+214
+sgf
+1987-05-26
+Hikosaka Naoto
+Yang Hui
+W+0.5
+244
+sgf
+1987-05-26
+Kato Masao
+Jiang Zhujiu
+W+R
+252
+sgf
+1987-05-26
+Rui Naiwei
+Kamimura Haruo
+B+R
+255
+sgf
+1987-05-28
+Jiang Zhujiu
+Awaji Shuzo
+B+R
+225
+sgf
+1987-05-28
+Hikosaka Naoto
+Shao Zhenzhong
+B+R
+107
+sgf
+1987-05-28
+Kato Masao
+Ma Xiaochun
+W+R
+216
+sgf
+1987-05-28
+Chen Linxin
+Imamura Toshiya
+B+3.5
+261
+sgf
+1987-05-28
+Cao Dayuan
+Kamimura Haruo
+W+0.5
+269
+sgf
+1987-05-28
+Yu Bin
+Oya Koichi
+B+1.5
+315
+sgf
+1987-05-28
+Yoda Norimoto
+Fang Tianfeng
+B+R
+325
+sgf
+1987-05-28
+Sonoda Yuichi
+Liu Xiaoguang
+W+R
+224
+sgf
+1987-05-31
+Shao Zhenzhong
+Hikosaka Naoto
+W+R
+158
+sgf
+1987-05-31
+Ma Xiaochun
+Kato Masao
+W+R
+192
+sgf
+1987-05-31
+Kamimura Haruo
+Cao Dayuan
+W+R
+210
+sgf
+1987-05-31
+Imamura Toshiya
+Chen Linxin
+B+R
+225
+sgf
+1987-05-31
+Fang Tianfeng
+Yoda Norimoto
+W+R
+226
+sgf
+1987-05-31
+Liu Xiaoguang
+Sonoda Yuichi
+W+R
+242
+sgf
+1987-05-31
+Oya Koichi
+Yu Bin
+W+0.5
+266
+sgf
+1987-05-31
+Awaji Shuzo
+Jiang Zhujiu
+B+R
+171
+sgf
+1987-06-03
+Cao Dayuan
+Kamimura Haruo
+W+R
+166
+sgf
+1987-06-03
+Ma Xiaochun
+Kato Masao
+B+R
+219
+sgf
+1987-06-03
+Chen Linxin
+Imamura Toshiya
+W+R
+220
+sgf
+1987-06-03
+Yu Bin
+Yoda Norimoto
+W+R
+224
+sgf
+1987-06-03
+Hikosaka Naoto
+Rui Naiwei
+W+R
+238
+sgf
+1987-06-03
+Awaji Shuzo
+Jiang Zhujiu
+B+R
+281
+sgf
+1987-06-03
+Oya Koichi
+Yang Hui
+B+1.5
+308
+sgf
+1987-06-03
+Liu Xiaoguang
+Sonoda Yuichi
+W+2.5
+213
+sgf
+1987-06-28
+Kataoka Satoshi
+Ma Xiaochun
+B+R
+225
+sgf
+1987-10-17
+Ma Xiaochun
+Takemiya Masaki
+B+5.5
+198
+sgf

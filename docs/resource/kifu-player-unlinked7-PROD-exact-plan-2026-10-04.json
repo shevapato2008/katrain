@@ -1,0 +1,4882 @@
+{
+  "format": "kifu-player-unlinked7-reuse-exact-plan-v1",
+  "environment": "PROD",
+  "database": "katrain_prod_20260725",
+  "decision_artifact": "docs/resource/kifu-player-unlinked20-independent-decision-astra-2026-10-04.json",
+  "decision_sha256": "21823dad57eb648ff1b23dcc6b10bb3926bd217bb456cf367a6d7e409e831238",
+  "items": [
+    {
+      "raw_id": 14163,
+      "raw_value": "韩升周",
+      "expected_slots": 317,
+      "player_id": 513,
+      "canonical_name": "韩升周",
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10000744"
+      ],
+      "identity_reason": "韩国棋院韩昇周/한승주资料与2013起职业时间线一致；双库各有唯一对应目标。六的等段位原文异常不影响此姓名身份决定，不予修正文案。"
+    },
+    {
+      "raw_id": 7862,
+      "raw_value": "Iwata Tatsuaki",
+      "expected_slots": 255,
+      "player_id": 4519,
+      "canonical_name": "岩田达明",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000016.htm"
+      ],
+      "identity_reason": "日本棋院确认岩田達明/Iwata Tatsuaki且旧名正男；双库现有岩田达明及岩田正男alias属于同一人。1960–1978槽位支持；Chubu 1st是头衔样式标签，不能当初段。"
+    },
+    {
+      "raw_id": 7306,
+      "raw_value": "Aoyagi Hideo",
+      "expected_slots": 14,
+      "player_id": 6400,
+      "canonical_name": "青柳英雄",
+      "source_urls": [
+        "https://kansaikiin.jp/wp/prokisi/",
+        "https://homepages.cwi.nl/~aeb/go/misc/progression.html"
+      ],
+      "identity_reason": "关西棋院名单确认青柳英雄；CWI姓名及六段1959、七段1966晋段表吻合本批1960–1978记录，唯一对应目录。"
+    },
+    {
+      "raw_id": 12601,
+      "raw_value": "王祥云初段",
+      "expected_slots": 8,
+      "player_id": 559,
+      "canonical_name": "王祥云",
+      "source_urls": [
+        "https://sports.sina.com.cn/go/2008-11-18/13404077916.shtml",
+        "https://zh.wikipedia.org/wiki/%E7%8E%8B%E7%A5%A5%E4%BA%91"
+      ],
+      "identity_reason": "准确去除身份之外的初段后缀；现有王祥云目录与2006–2008女子赛事/对手上下文吻合，2008建桥杯当时报道有同一对手/执色证据。"
+    },
+    {
+      "raw_id": 8586,
+      "raw_value": "OnoYutaka",
+      "expected_slots": 2,
+      "player_id": 4440,
+      "canonical_name": "小野丰",
+      "source_urls": [
+        "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+        "https://igorating.com/players/yutaka-ono"
+      ],
+      "identity_reason": "CWI明确小野豊=Ono Yutaka，1968-09-20二段、1971-06-04四段恰合两条SGF；专门棋手页 corroborates 小野豊。现有唯一小野丰目录12槽1970–1993一致。不是大野伸行(Ono Nobuyuki)。"
+    },
+    {
+      "raw_id": 8578,
+      "raw_value": "OkumuraNoboru",
+      "expected_slots": 1,
+      "player_id": 4274,
+      "canonical_name": "奥村登",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000193.html"
+      ],
+      "identity_reason": "官方奥村登/OKUMURA Noboru，1971四段，匹配1977四段槽；同一目录既有1978/1980四段棋谱。不得混同奥村英夫/奥村靖。"
+    },
+    {
+      "raw_id": 9490,
+      "raw_value": "久島国夫",
+      "expected_slots": 1,
+      "player_id": 6669,
+      "canonical_name": "久岛国夫",
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/player/htm/ki000056.htm"
+      ],
+      "identity_reason": "日本棋院久島国夫/HISAJIMA Kunio与1991九段槽明确一致。既有65个Hisajima Kunio槽中的1959/1960两局均对木谷实且无段位/赛事；官方1957拜木谷实，故未发现入段前即冒充职业赛的身份冲突。这两局并未因此获历史真实性认证。"
+    }
+  ],
+  "slots": [
+    {
+      "album_id": 413,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-08-29",
+      "source_path": "data/kifu-album/19x19/17189794.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1066,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-12-26",
+      "source_path": "data/kifu-album/19x19/22001474.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1169,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-01-13",
+      "source_path": "data/kifu-album/19x19/22804672.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1248,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-01",
+      "source_path": "data/kifu-album/19x19/23576083.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1293,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-04",
+      "source_path": "data/kifu-album/19x19/23709294.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1430,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-10",
+      "source_path": "data/kifu-album/19x19/23952624.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1576,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-24",
+      "source_path": "data/kifu-album/19x19/24491038.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1593,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-26",
+      "source_path": "data/kifu-album/19x19/24573358.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1630,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-28",
+      "source_path": "data/kifu-album/19x19/24650935.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1742,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-03-11",
+      "source_path": "data/kifu-album/19x19/25094420.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1757,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-03-13",
+      "source_path": "data/kifu-album/19x19/25169647.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 1831,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-03-20",
+      "source_path": "data/kifu-album/19x19/25505401.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2246,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-24",
+      "source_path": "data/kifu-album/19x19/27062326.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2257,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-25",
+      "source_path": "data/kifu-album/19x19/27102594.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2301,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-05-05",
+      "source_path": "data/kifu-album/19x19/27521028.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2521,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-05-29",
+      "source_path": "data/kifu-album/19x19/28500830.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2537,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-05-31",
+      "source_path": "data/kifu-album/19x19/28578883.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2657,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-06-10",
+      "source_path": "data/kifu-album/19x19/29002550.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2894,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-07-10",
+      "source_path": "data/kifu-album/19x19/30245877.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 2923,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-07-14",
+      "source_path": "data/kifu-album/19x19/30432803.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4450,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-12-11",
+      "source_path": "data/kifu-album/19x19/36947548.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4671,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-12-28",
+      "source_path": "data/kifu-album/19x19/37708230.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4692,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-01",
+      "source_path": "data/kifu-album/19x19/37882228.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4738,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-05",
+      "source_path": "data/kifu-album/19x19/38056280.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4839,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-13",
+      "source_path": "data/kifu-album/19x19/38403396.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4924,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-21",
+      "source_path": "data/kifu-album/19x19/38750984.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4964,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-23",
+      "source_path": "data/kifu-album/19x19/38820312.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 4979,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-25",
+      "source_path": "data/kifu-album/19x19/38929461.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5075,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-02-02",
+      "source_path": "data/kifu-album/19x19/39292372.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5149,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-02-10",
+      "source_path": "data/kifu-album/19x19/39633932.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5170,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-02-15",
+      "source_path": "data/kifu-album/19x19/39809284.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5260,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-02-25",
+      "source_path": "data/kifu-album/19x19/40262084.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5303,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-03-02",
+      "source_path": "data/kifu-album/19x19/40507481.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5372,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-03-08",
+      "source_path": "data/kifu-album/19x19/40762499.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 5424,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-03-14",
+      "source_path": "data/kifu-album/19x19/41010002.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 6739,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-28",
+      "source_path": "data/kifu-album/19x19/41333649.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7547,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-03-17",
+      "source_path": "data/kifu-album/19x19/41357876.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7562,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-08-30",
+      "source_path": "data/kifu-album/19x19/41358009.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7563,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-10-14",
+      "source_path": "data/kifu-album/19x19/41358012.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7564,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-12-29",
+      "source_path": "data/kifu-album/19x19/41358015.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7565,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-01-01",
+      "source_path": "data/kifu-album/19x19/41358016.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7567,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-01-01",
+      "source_path": "data/kifu-album/19x19/41358020.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7568,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-12-30",
+      "source_path": "data/kifu-album/19x19/41358022.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7570,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-01-24",
+      "source_path": "data/kifu-album/19x19/41358028.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7572,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-01",
+      "source_path": "data/kifu-album/19x19/41358032.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7575,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-02-10",
+      "source_path": "data/kifu-album/19x19/41358040.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7579,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-03-31",
+      "source_path": "data/kifu-album/19x19/41358057.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7580,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-08",
+      "source_path": "data/kifu-album/19x19/41358062.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7582,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-12",
+      "source_path": "data/kifu-album/19x19/41358065.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7583,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-04-22",
+      "source_path": "data/kifu-album/19x19/41358071.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7584,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2023-05-19",
+      "source_path": "data/kifu-album/19x19/41358073.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7585,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2023-06-09",
+      "source_path": "data/kifu-album/19x19/41358078.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7589,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-01-25",
+      "source_path": "data/kifu-album/19x19/41358096.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 7591,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-02-25",
+      "source_path": "data/kifu-album/19x19/41358103.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 10652,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-03-24",
+      "source_path": "data/kifu-album/19x19/41521806.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 11572,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-03-30",
+      "source_path": "data/kifu-album/19x19/41786953.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 11666,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-04-03",
+      "source_path": "data/kifu-album/19x19/41934569.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 11707,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-04-04",
+      "source_path": "data/kifu-album/19x19/41991024.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 12043,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-04-20",
+      "source_path": "data/kifu-album/19x19/42635467.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 12394,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-05-08",
+      "source_path": "data/kifu-album/19x19/43449744.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 13300,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-06-19",
+      "source_path": "data/kifu-album/19x19/45160810.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 13656,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-07-15",
+      "source_path": "data/kifu-album/19x19/46258094.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 13670,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-07-16",
+      "source_path": "data/kifu-album/19x19/46311796.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 14330,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-08-31",
+      "source_path": "data/kifu-album/19x19/48783265.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 16061,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-11-25",
+      "source_path": "data/kifu-album/19x19/52913464.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 16376,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2024-12-08",
+      "source_path": "data/kifu-album/19x19/53583037.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 16544,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-12-20",
+      "source_path": "data/kifu-album/19x19/54170700.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 16707,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2024-12-26",
+      "source_path": "data/kifu-album/19x19/54594734.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 16747,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-01-02",
+      "source_path": "data/kifu-album/19x19/54952702.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17160,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-01-24",
+      "source_path": "data/kifu-album/19x19/56478014.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17182,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-01-28",
+      "source_path": "data/kifu-album/19x19/56478045.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17252,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-02-18",
+      "source_path": "data/kifu-album/19x19/57369708.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17366,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-02-13",
+      "source_path": "data/kifu-album/19x19/57539235.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17584,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-03-02",
+      "source_path": "data/kifu-album/19x19/58200668.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17642,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-03-07",
+      "source_path": "data/kifu-album/19x19/58216183.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17749,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-03-09",
+      "source_path": "data/kifu-album/19x19/58824488.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 17911,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-03-22",
+      "source_path": "data/kifu-album/19x19/59184341.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 18055,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-04-02",
+      "source_path": "data/kifu-album/19x19/59571168.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 18805,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-05-09",
+      "source_path": "data/kifu-album/19x19/61765442.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 19105,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-05-30",
+      "source_path": "data/kifu-album/19x19/62540180.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 20613,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-08-24",
+      "source_path": "data/kifu-album/19x19/67348444.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 22746,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-08-19",
+      "source_path": "data/kifu-album/19x19/72515305.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 23553,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2025-12-24",
+      "source_path": "data/kifu-album/19x19/73936798.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 23618,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2025-12-27",
+      "source_path": "data/kifu-album/19x19/74078924.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 23735,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2026-01-06",
+      "source_path": "data/kifu-album/19x19/74851141.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25122,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-03-19",
+      "source_path": "data/kifu-album/19x19/10284833.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25179,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-03-27",
+      "source_path": "data/kifu-album/19x19/10536068.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25236,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-04-01",
+      "source_path": "data/kifu-album/19x19/10688017.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25411,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-04-23",
+      "source_path": "data/kifu-album/19x19/11347234.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25429,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-04-24",
+      "source_path": "data/kifu-album/19x19/11375874.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25465,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-04-27",
+      "source_path": "data/kifu-album/19x19/11469041.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 25698,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-06-08",
+      "source_path": "data/kifu-album/19x19/13078127.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 27317,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-07-25",
+      "source_path": "data/kifu-album/19x19/41286798.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 27440,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-08",
+      "source_path": "data/kifu-album/19x19/41286929.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 27453,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-02-27",
+      "source_path": "data/kifu-album/19x19/41286943.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 28352,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-15",
+      "source_path": "data/kifu-album/19x19/41289642.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 28363,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-09-29",
+      "source_path": "data/kifu-album/19x19/41289654.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 28520,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-06-22",
+      "source_path": "data/kifu-album/19x19/41289860.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 28558,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-09-18",
+      "source_path": "data/kifu-album/19x19/41289900.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 29170,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-11-29",
+      "source_path": "data/kifu-album/19x19/41290848.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 29635,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-06-08",
+      "source_path": "data/kifu-album/19x19/41291356.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 30763,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-06-20",
+      "source_path": "data/kifu-album/19x19/41292727.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 30796,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-11-08",
+      "source_path": "data/kifu-album/19x19/41292762.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 30804,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-07",
+      "source_path": "data/kifu-album/19x19/41292770.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 30867,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-11-08",
+      "source_path": "data/kifu-album/19x19/41292839.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 31460,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-31",
+      "source_path": "data/kifu-album/19x19/41293833.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34580,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-08-29",
+      "source_path": "data/kifu-album/19x19/41298013.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34582,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-09-12",
+      "source_path": "data/kifu-album/19x19/41298015.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34614,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-08-20",
+      "source_path": "data/kifu-album/19x19/41298051.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34639,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-06-03",
+      "source_path": "data/kifu-album/19x19/41298083.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34659,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-08-27",
+      "source_path": "data/kifu-album/19x19/41298104.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34714,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-12-30",
+      "source_path": "data/kifu-album/19x19/41298163.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 34828,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-02-06",
+      "source_path": "data/kifu-album/19x19/41298282.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 41165,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-04-14",
+      "source_path": "data/kifu-album/19x19/41305783.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 41728,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-05-03",
+      "source_path": "data/kifu-album/19x19/41306486.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 44157,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-04-03",
+      "source_path": "data/kifu-album/19x19/41324463.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 44193,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-05-19",
+      "source_path": "data/kifu-album/19x19/41324502.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 44702,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-04-27",
+      "source_path": "data/kifu-album/19x19/41325717.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 48067,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-09-02",
+      "source_path": "data/kifu-album/19x19/41329760.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 48100,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-12-17",
+      "source_path": "data/kifu-album/19x19/41329793.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 48139,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-05-23",
+      "source_path": "data/kifu-album/19x19/41329832.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49040,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-02-27",
+      "source_path": "data/kifu-album/19x19/41330843.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49541,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-14",
+      "source_path": "data/kifu-album/19x19/41331416.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49809,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-01-11",
+      "source_path": "data/kifu-album/19x19/41331944.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49819,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-23",
+      "source_path": "data/kifu-album/19x19/41331954.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49840,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-12-16",
+      "source_path": "data/kifu-album/19x19/41331976.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49864,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-08-17",
+      "source_path": "data/kifu-album/19x19/41332001.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49924,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-24",
+      "source_path": "data/kifu-album/19x19/41332067.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 49963,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-03",
+      "source_path": "data/kifu-album/19x19/41332107.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 50896,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-09-17",
+      "source_path": "data/kifu-album/19x19/41333158.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 51075,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-11-17",
+      "source_path": "data/kifu-album/19x19/41333341.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 51113,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-08-03",
+      "source_path": "data/kifu-album/19x19/41333382.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 56012,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-10-15",
+      "source_path": "data/kifu-album/19x19/41339208.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 56138,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-08-16",
+      "source_path": "data/kifu-album/19x19/41339334.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 62900,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-04-09",
+      "source_path": "data/kifu-album/19x19/41347540.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70491,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-04-21",
+      "source_path": "data/kifu-album/19x19/41356958.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70494,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-05-19",
+      "source_path": "data/kifu-album/19x19/41356961.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70497,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-06-02",
+      "source_path": "data/kifu-album/19x19/41356964.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70502,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-06-19",
+      "source_path": "data/kifu-album/19x19/41356969.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70506,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-06-24",
+      "source_path": "data/kifu-album/19x19/41356973.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70510,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-07-17",
+      "source_path": "data/kifu-album/19x19/41356977.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70517,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-09-14",
+      "source_path": "data/kifu-album/19x19/41356984.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70526,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-10-04",
+      "source_path": "data/kifu-album/19x19/41356994.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70531,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-10-12",
+      "source_path": "data/kifu-album/19x19/41356999.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70536,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-10-26",
+      "source_path": "data/kifu-album/19x19/41357004.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70540,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-11-03",
+      "source_path": "data/kifu-album/19x19/41357008.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70553,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-11-10",
+      "source_path": "data/kifu-album/19x19/41357021.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70557,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2013-11-15",
+      "source_path": "data/kifu-album/19x19/41357025.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70564,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-11-22",
+      "source_path": "data/kifu-album/19x19/41357032.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70576,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2013-12-29",
+      "source_path": "data/kifu-album/19x19/41357044.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70585,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-04-19",
+      "source_path": "data/kifu-album/19x19/41357053.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70599,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-04-27",
+      "source_path": "data/kifu-album/19x19/41357067.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70607,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-06-06",
+      "source_path": "data/kifu-album/19x19/41357075.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70614,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-07-04",
+      "source_path": "data/kifu-album/19x19/41357082.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70622,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-07-11",
+      "source_path": "data/kifu-album/19x19/41357090.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70630,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-07-18",
+      "source_path": "data/kifu-album/19x19/41357098.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70641,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-07-25",
+      "source_path": "data/kifu-album/19x19/41357109.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70650,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-08-04",
+      "source_path": "data/kifu-album/19x19/41357118.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70654,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-08-24",
+      "source_path": "data/kifu-album/19x19/41357122.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70660,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-09-21",
+      "source_path": "data/kifu-album/19x19/41357128.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70667,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-10-01",
+      "source_path": "data/kifu-album/19x19/41357135.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70675,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-10-03",
+      "source_path": "data/kifu-album/19x19/41357143.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70683,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-10-02",
+      "source_path": "data/kifu-album/19x19/41357151.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70692,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-10-05",
+      "source_path": "data/kifu-album/19x19/41357160.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70705,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-06-20",
+      "source_path": "data/kifu-album/19x19/41357173.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70715,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2014-05-18",
+      "source_path": "data/kifu-album/19x19/41357183.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70726,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-10-19",
+      "source_path": "data/kifu-album/19x19/41357195.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70739,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-11-02",
+      "source_path": "data/kifu-album/19x19/41357210.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70748,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2014-11-14",
+      "source_path": "data/kifu-album/19x19/41357220.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70755,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-04-24",
+      "source_path": "data/kifu-album/19x19/41357228.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70762,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-05-01",
+      "source_path": "data/kifu-album/19x19/41357235.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70768,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-05-09",
+      "source_path": "data/kifu-album/19x19/41357241.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70779,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-06-12",
+      "source_path": "data/kifu-album/19x19/41357252.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70787,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-07-19",
+      "source_path": "data/kifu-album/19x19/41357260.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70790,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-16",
+      "source_path": "data/kifu-album/19x19/41357263.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70794,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2015-08-14",
+      "source_path": "data/kifu-album/19x19/41357267.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70799,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-09-05",
+      "source_path": "data/kifu-album/19x19/41357272.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70806,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-05-28",
+      "source_path": "data/kifu-album/19x19/41357279.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70816,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2015-09-03",
+      "source_path": "data/kifu-album/19x19/41357289.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70822,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-04-27",
+      "source_path": "data/kifu-album/19x19/41357295.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70826,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-05-19",
+      "source_path": "data/kifu-album/19x19/41357299.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70833,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-06-11",
+      "source_path": "data/kifu-album/19x19/41357306.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70842,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-06-19",
+      "source_path": "data/kifu-album/19x19/41357315.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70849,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-06-23",
+      "source_path": "data/kifu-album/19x19/41357322.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70856,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-07-08",
+      "source_path": "data/kifu-album/19x19/41357329.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70864,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-07-17",
+      "source_path": "data/kifu-album/19x19/41357337.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70871,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-10-13",
+      "source_path": "data/kifu-album/19x19/41357344.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70876,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2016-10-07",
+      "source_path": "data/kifu-album/19x19/41357349.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70880,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-09-02",
+      "source_path": "data/kifu-album/19x19/41357353.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70890,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-08-21",
+      "source_path": "data/kifu-album/19x19/41357363.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70898,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-09-15",
+      "source_path": "data/kifu-album/19x19/41357371.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70903,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-09-25",
+      "source_path": "data/kifu-album/19x19/41357376.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70910,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-10-01",
+      "source_path": "data/kifu-album/19x19/41357383.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70914,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-11-06",
+      "source_path": "data/kifu-album/19x19/41357387.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70920,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-11-10",
+      "source_path": "data/kifu-album/19x19/41357393.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70928,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-11-21",
+      "source_path": "data/kifu-album/19x19/41357401.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70935,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2016-11-18",
+      "source_path": "data/kifu-album/19x19/41357408.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70938,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-01-08",
+      "source_path": "data/kifu-album/19x19/41357411.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70947,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-01-12",
+      "source_path": "data/kifu-album/19x19/41357420.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70954,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-03-27",
+      "source_path": "data/kifu-album/19x19/41357427.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70959,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-04-04",
+      "source_path": "data/kifu-album/19x19/41357432.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70965,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-06-02",
+      "source_path": "data/kifu-album/19x19/41357439.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70969,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-06-19",
+      "source_path": "data/kifu-album/19x19/41357443.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70973,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-06-28",
+      "source_path": "data/kifu-album/19x19/41357448.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70979,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-11",
+      "source_path": "data/kifu-album/19x19/41357454.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70984,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-07-13",
+      "source_path": "data/kifu-album/19x19/41357460.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70988,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-08-06",
+      "source_path": "data/kifu-album/19x19/41357464.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70994,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-08-10",
+      "source_path": "data/kifu-album/19x19/41357470.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 70999,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-08-17",
+      "source_path": "data/kifu-album/19x19/41357476.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71004,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-08-26",
+      "source_path": "data/kifu-album/19x19/41357481.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71009,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-09-02",
+      "source_path": "data/kifu-album/19x19/41357487.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71014,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-09-23",
+      "source_path": "data/kifu-album/19x19/41357492.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71021,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-10-05",
+      "source_path": "data/kifu-album/19x19/41357501.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71029,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-10-22",
+      "source_path": "data/kifu-album/19x19/41357510.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71030,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-10-29",
+      "source_path": "data/kifu-album/19x19/41357511.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71036,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-12-01",
+      "source_path": "data/kifu-album/19x19/41357517.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71042,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-12-02",
+      "source_path": "data/kifu-album/19x19/41357523.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71049,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2017-12-03",
+      "source_path": "data/kifu-album/19x19/41357531.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71057,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-01-20",
+      "source_path": "data/kifu-album/19x19/41357539.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71062,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-06-16",
+      "source_path": "data/kifu-album/19x19/41357545.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71070,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-06-21",
+      "source_path": "data/kifu-album/19x19/41357554.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71077,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-07-01",
+      "source_path": "data/kifu-album/19x19/41357562.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71080,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-07-03",
+      "source_path": "data/kifu-album/19x19/41357565.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71086,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-07-13",
+      "source_path": "data/kifu-album/19x19/41357571.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71091,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-07-19",
+      "source_path": "data/kifu-album/19x19/41357576.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71097,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-08-02",
+      "source_path": "data/kifu-album/19x19/41357582.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71106,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-08-26",
+      "source_path": "data/kifu-album/19x19/41357592.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71114,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-09-15",
+      "source_path": "data/kifu-album/19x19/41357600.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71118,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-09-23",
+      "source_path": "data/kifu-album/19x19/41357604.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71123,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2018-09-30",
+      "source_path": "data/kifu-album/19x19/41357609.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71132,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-10-06",
+      "source_path": "data/kifu-album/19x19/41357620.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71143,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-11-11",
+      "source_path": "data/kifu-album/19x19/41357631.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71152,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2018-12-22",
+      "source_path": "data/kifu-album/19x19/41357640.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71159,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-04-09",
+      "source_path": "data/kifu-album/19x19/41357647.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71168,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-08-04",
+      "source_path": "data/kifu-album/19x19/41357656.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71175,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-08-04",
+      "source_path": "data/kifu-album/19x19/41357663.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71178,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-08-05",
+      "source_path": "data/kifu-album/19x19/41357667.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71184,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-09-29",
+      "source_path": "data/kifu-album/19x19/41357674.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71188,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-10-20",
+      "source_path": "data/kifu-album/19x19/41357678.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71191,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-10-25",
+      "source_path": "data/kifu-album/19x19/41357681.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71196,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-11-03",
+      "source_path": "data/kifu-album/19x19/41357686.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71201,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-11-14",
+      "source_path": "data/kifu-album/19x19/41357692.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71206,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-11-23",
+      "source_path": "data/kifu-album/19x19/41357698.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71211,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-12-01",
+      "source_path": "data/kifu-album/19x19/41357705.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71218,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-16",
+      "source_path": "data/kifu-album/19x19/41357713.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71223,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-12-05",
+      "source_path": "data/kifu-album/19x19/41357719.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71227,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-05-11",
+      "source_path": "data/kifu-album/19x19/41357723.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71233,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-04-20",
+      "source_path": "data/kifu-album/19x19/41357730.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71235,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-04-30",
+      "source_path": "data/kifu-album/19x19/41357732.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71241,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-12-15",
+      "source_path": "data/kifu-album/19x19/41357739.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71245,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2019-12-19",
+      "source_path": "data/kifu-album/19x19/41357744.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71249,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2019-12-28",
+      "source_path": "data/kifu-album/19x19/41357748.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71254,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-02",
+      "source_path": "data/kifu-album/19x19/41357753.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71259,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-11",
+      "source_path": "data/kifu-album/19x19/41357759.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71261,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-08-30",
+      "source_path": "data/kifu-album/19x19/41357761.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71266,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-04-22",
+      "source_path": "data/kifu-album/19x19/41357766.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71272,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-19",
+      "source_path": "data/kifu-album/19x19/41357774.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71276,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-01-30",
+      "source_path": "data/kifu-album/19x19/41357779.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71280,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-04",
+      "source_path": "data/kifu-album/19x19/41357783.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71285,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-11",
+      "source_path": "data/kifu-album/19x19/41357789.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71290,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-12-06",
+      "source_path": "data/kifu-album/19x19/41357794.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71292,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-12-10",
+      "source_path": "data/kifu-album/19x19/41357797.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71299,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-12-27",
+      "source_path": "data/kifu-album/19x19/41357804.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71304,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-01",
+      "source_path": "data/kifu-album/19x19/41357810.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71309,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-14",
+      "source_path": "data/kifu-album/19x19/41357815.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71313,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-01-21",
+      "source_path": "data/kifu-album/19x19/41357820.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71318,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-02-07",
+      "source_path": "data/kifu-album/19x19/41357826.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71322,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-02-11",
+      "source_path": "data/kifu-album/19x19/41357830.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71327,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-02-25",
+      "source_path": "data/kifu-album/19x19/41357835.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71333,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-04-11",
+      "source_path": "data/kifu-album/19x19/41357841.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71337,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-04-29",
+      "source_path": "data/kifu-album/19x19/41357846.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71342,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-03-06",
+      "source_path": "data/kifu-album/19x19/41357851.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71350,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-05-05",
+      "source_path": "data/kifu-album/19x19/41357861.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71355,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-07-10",
+      "source_path": "data/kifu-album/19x19/41357866.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71359,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-08-14",
+      "source_path": "data/kifu-album/19x19/41357870.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71365,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-08-25",
+      "source_path": "data/kifu-album/19x19/41357877.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71370,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-02",
+      "source_path": "data/kifu-album/19x19/41357882.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71376,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-09-07",
+      "source_path": "data/kifu-album/19x19/41357888.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71381,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-06",
+      "source_path": "data/kifu-album/19x19/41357893.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71391,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-18",
+      "source_path": "data/kifu-album/19x19/41357906.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71394,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-13",
+      "source_path": "data/kifu-album/19x19/41357909.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71399,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-11-21",
+      "source_path": "data/kifu-album/19x19/41357914.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71403,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-21",
+      "source_path": "data/kifu-album/19x19/41357920.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71405,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2020-11-12",
+      "source_path": "data/kifu-album/19x19/41357922.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71409,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2020-09-03",
+      "source_path": "data/kifu-album/19x19/41357927.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71413,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-28",
+      "source_path": "data/kifu-album/19x19/41357932.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71415,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-29",
+      "source_path": "data/kifu-album/19x19/41357934.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71417,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-02-20",
+      "source_path": "data/kifu-album/19x19/41357937.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71422,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-30",
+      "source_path": "data/kifu-album/19x19/41357943.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71434,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-24",
+      "source_path": "data/kifu-album/19x19/41357959.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71437,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2017-01-07",
+      "source_path": "data/kifu-album/19x19/41357962.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71440,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-30",
+      "source_path": "data/kifu-album/19x19/41357965.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71444,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-05",
+      "source_path": "data/kifu-album/19x19/41357970.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71446,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-09",
+      "source_path": "data/kifu-album/19x19/41357973.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71449,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-13",
+      "source_path": "data/kifu-album/19x19/41357977.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71452,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-17",
+      "source_path": "data/kifu-album/19x19/41357980.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71454,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-22",
+      "source_path": "data/kifu-album/19x19/41357982.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71457,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-02-03",
+      "source_path": "data/kifu-album/19x19/41357985.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71461,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-02-10",
+      "source_path": "data/kifu-album/19x19/41357989.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71463,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-02-12",
+      "source_path": "data/kifu-album/19x19/41357991.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71465,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-02-24",
+      "source_path": "data/kifu-album/19x19/41357993.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71467,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-03-05",
+      "source_path": "data/kifu-album/19x19/41357995.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 71470,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-03-13",
+      "source_path": "data/kifu-album/19x19/41357998.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150144,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-16",
+      "source_path": "data/kifu-album/19x19/6564591.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150210,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-21",
+      "source_path": "data/kifu-album/19x19/6672855.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150221,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-22",
+      "source_path": "data/kifu-album/19x19/6696247.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150238,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-10-26",
+      "source_path": "data/kifu-album/19x19/6784717.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150445,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-11-30",
+      "source_path": "data/kifu-album/19x19/7574895.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150526,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-06",
+      "source_path": "data/kifu-album/19x19/7708401.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150551,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-10",
+      "source_path": "data/kifu-album/19x19/7786555.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150597,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2021-12-19",
+      "source_path": "data/kifu-album/19x19/7991089.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150763,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-07",
+      "source_path": "data/kifu-album/19x19/8378518.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150764,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-09",
+      "source_path": "data/kifu-album/19x19/8412647.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150826,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-13",
+      "source_path": "data/kifu-album/19x19/8503412.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150920,
+      "side": "black",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-24",
+      "source_path": "data/kifu-album/19x19/8785721.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150925,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-26",
+      "source_path": "data/kifu-album/19x19/8840020.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 150932,
+      "side": "white",
+      "raw_value": "韩升周",
+      "date_played": "2022-01-27",
+      "source_path": "data/kifu-album/19x19/8866025.sgf",
+      "player_id": 513
+    },
+    {
+      "album_id": 24915,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-12-20,21",
+      "source_path": "data/kifu-album/Go_Seigen/1961-12-20.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 156867,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/01/5.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 156872,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-10-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/01/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157002,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-05-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/02/X01.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157045,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-09-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/03/P19.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157118,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-08-30",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/04/25.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157129,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-03-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/04/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157474,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-04-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/CJGoExchange/1976/1976-04-17a.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157677,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1974-02-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Cho_Chikun/1974-02-14.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157776,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-08-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Chubu_1st/02/F2.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157777,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-09-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Chubu_1st/02/F3.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157791,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-09-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Chubu_1st/03/F1.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157792,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-09-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Chubu_1st/03/F2.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157793,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-10-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Chubu_1st/03/F3.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158012,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-02-19",
+      "source_path": "data/kifu-album/CWI_1950_1978/Gosei/02/P20.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158019,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-04-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/Gosei/02/P27.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158024,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-12-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/Gosei/03/3.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158095,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-09-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Hayago/03/9.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158137,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-05-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Hayago_Meijin/05/17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158142,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-06-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/Hayago_Meijin/05/21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158148,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-12-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Hayago_Meijin/06/15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158159,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-05-31",
+      "source_path": "data/kifu-album/CWI_1950_1978/Hayago_Meijin/06/25.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158264,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-04-13,14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/16/Q17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158287,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-06-29,30",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/16/Q40.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158372,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-07-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/18/P04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158379,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-07-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/18/P11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158440,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-12-04,05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/19/03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158445,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-07-04",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/19/P05.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158464,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-09-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/19/P24.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158524,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-10-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/20/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158535,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-07-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/20/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158543,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-08-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/20/P25.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158613,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-07-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/21/P08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158622,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-08-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/21/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158709,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-09-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/22/P23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158777,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-07-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/23/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158786,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-08-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/23/P18.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158864,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-07-25",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/24/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158951,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-10-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/25/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158975,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-08-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/26/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 158986,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-09-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/26/P28.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159062,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-10-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/27/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159068,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-07-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/27/P13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159188,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-09-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/28/P23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159191,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-10-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/28/P26.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159285,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-08-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/29/P18.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159293,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-11-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/29/P26.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159390,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1974-09-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/30/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159395,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1974-10-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/30/P22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159496,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-08-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/31/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159508,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-10-30",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/31/P21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159620,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-07-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/33/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159628,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-08-25",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/33/P23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159670,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-04-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/34/Q11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159689,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-09-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/01/P05.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159698,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-08-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/01/Q04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159716,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-08-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/01/Q22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159744,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-09-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/01/Q50.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159750,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-11-30",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/01/W07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159755,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-06-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/02/L10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159892,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-12-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/03/W04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159902,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-12-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/04/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159906,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-01-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/04/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 159976,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-12-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/05/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160085,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-07-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/06/Q34.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160155,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-06-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/07/Q31.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160179,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-08-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/07/Q55.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160198,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-12-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/08/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160208,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-08-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/08/Q02.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160236,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-07-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/08/Q30.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160269,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-09-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/08/Q63.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160325,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-07-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/09/Q38.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160345,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-08-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/09/Q58.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160370,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-12-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/10/P02.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160416,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-07-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/10/Q45.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160438,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-09-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/10/Q67.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160449,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-11-19",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/10/Q78.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160500,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-07-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/11/Q35.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160528,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-08-19",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/11/Q63.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160552,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-03-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/12/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160558,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-02-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/12/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160618,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-09-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/12/Q61.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160629,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-09-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/12/Q72.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160644,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-11-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/12/Q87.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160871,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-06-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/15/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160872,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-06-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/15/P13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 160978,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-11-18",
+      "source_path": "data/kifu-album/CWI_1950_1978/Judan/16/Q02.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161182,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-01-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/01/F9e.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161215,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-12-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/02/F9a.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161283,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-04-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/03/F9aa.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161345,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-01-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/01/P11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161361,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-05-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/01/Q09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161440,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1976-09-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/02/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161454,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-09-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/03/P05.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161465,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-10-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/03/P16.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161497,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-11-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/04/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 161514,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-08-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/Meijin/04/Q15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162058,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-05-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/04/21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162061,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-10-31",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/04/24.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162103,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-03-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/04/P36.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162110,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-07-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/05/12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162172,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-02-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/06/17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162182,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-11-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/06/27.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162248,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-10-19",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/07/21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162260,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-04-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/NK1st/07/8.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162301,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-06-15,16",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/08/10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162302,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-02-24,25",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/08/11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162433,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-12-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/10/P29.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162440,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-09-18,19",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/11/13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162449,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-04-04",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/11/22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162458,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-07-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/11/30.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162471,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-09-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/11/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162483,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-11-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/11/P22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162523,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-06-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/12/23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162637,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-11-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/13/P31.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162650,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-03-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/14/16.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162724,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-03-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/15/15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162791,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/16/1.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162793,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-02-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/16/12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162809,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-09-19",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/16/27.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162811,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/16/4.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162874,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-02-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/17/12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162964,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-07-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/18/20.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162967,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-08-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/18/23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 162973,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-10-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/18/29.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163059,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-06-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/19/23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163062,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-07-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/19/26.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163066,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/19/4.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163143,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-10-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/20/10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163157,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-07-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/20/23.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163160,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-09-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/20/26.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163258,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-09-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/21/25.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163261,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-11-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/NKCh/21/8.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163490,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-07-26,27",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/01/32.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163492,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-01-24,25",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/01/77.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163563,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-06-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/03/P13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163567,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-08-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/03/P17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163632,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-05-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/04/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163640,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-07-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/04/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163644,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-02-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/04/Q04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163712,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-06-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/05/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163718,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-08-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/05/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163722,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-08-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/05/P16.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163731,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-03-18",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/05/Q10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163797,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-06-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/06/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163804,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-07-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/06/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163806,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-08-18",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/06/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163886,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-06-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/07/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163892,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-07-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/07/P16.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 163895,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-08-31",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/07/P19.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164071,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-07-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/09/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164091,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-05-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/09/Q08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164192,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-05-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/10/Q04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164276,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-08-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/11/P11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164289,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-05-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/11/Q08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164372,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-08-31",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/12/P08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164384,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-07-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/12/Q09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164472,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-09-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/13/P13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164474,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-10-18",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/13/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164486,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-07-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/13/Q13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164571,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1974-10-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/14/P18.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164705,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-08-04",
+      "source_path": "data/kifu-album/CWI_1950_1978/Okan/early/4.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 164714,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-01-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Okan/early/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165156,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-10-11,12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1961/34.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165192,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-05-02,03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1962/127.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165227,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-05-30,31",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1962/162.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165246,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-06-13,14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1962/180.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165278,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-09-19,20",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1962/213.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165395,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-11-21,22",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1962/63.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165440,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-06-19,20",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/108.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165461,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-09-25,26",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/129.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165486,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-10-16,17",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/155.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165522,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-04-24,25",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/192.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165535,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-11-06,07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/205.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165550,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-11-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/220.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165608,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-05-29,30",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/279.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165642,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-04-17,18",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1963/35.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165749,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-06-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1964/143.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165827,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-10-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1964/221.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165847,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-10-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1964/241.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165957,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-05-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1964/68.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 165984,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-05-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oteai/1964/95.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169582,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-03-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/10/P11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169648,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-08-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/11/Q22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169663,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-09-06",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/11/Q37.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169724,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-09-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/12/Q40.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169729,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-10-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/12/Q45.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169746,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-02-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/13/P11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169784,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-08-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/13/Q33.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169802,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-11-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/13/Q51.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169803,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-11-12",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/13/Q52.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169878,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-11-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/15/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 169951,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-11-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/16/P01.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170013,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-09-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/16/Q49.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170020,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-10-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/16/Q56.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170039,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-01-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/17/P08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170080,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-09-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/17/Q31.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170115,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-12-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/17/Q66.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170123,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-11-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/18/P01.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170175,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-09-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/18/Q43.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170197,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-10-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/18/Q65.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170210,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-01-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/19/P04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170267,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-09-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/19/Q47.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170296,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-12-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/19/Q76.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170299,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-12-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/20/P02.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170309,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-02-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/20/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170376,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-10-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/20/Q65.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170385,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-11-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/20/Q74.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170395,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-12-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/21/P04.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170468,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-10-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/21/Q64.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170479,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-11-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/21/Q75.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170563,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-10-04",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/22/Q62.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170595,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-11-29",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/22/Q94.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170601,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-01-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/23/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170757,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-07-24",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/24/Q44.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170797,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-01-20",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/25/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170800,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-02-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/25/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170838,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1978-12-14",
+      "source_path": "data/kifu-album/CWI_1950_1978/Oza/27/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170897,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-08-15",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/01/P09.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170931,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1963-07-18",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/01/Q24.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 170975,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-09-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/02/P06.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171015,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-07-30",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/02/Q31.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171027,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-09-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/02/Q43.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171036,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-11-25",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/03/12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171057,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-09-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/03/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171110,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1965-09-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/03/Q50.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171132,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-08-25",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/04/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171221,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1967-09-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/05/P14.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171312,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1968-09-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/06/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171386,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-10-16",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/07/10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171412,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1969-08-28",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/07/P13.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171495,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-09-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/08/P05.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171502,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-10-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/08/P12.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171580,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-12-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/09/20.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171582,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/09/6.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171591,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-08-05",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/09/P08.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171604,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1971-10-07",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/09/P21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171695,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-08-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/10/P10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171700,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1972-08-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/10/P15.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171804,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-09-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/11/P18.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171891,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1973-08-09",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/11/Q87.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 171899,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1974-08-22",
+      "source_path": "data/kifu-album/CWI_1950_1978/ProBest10/12/P07.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172061,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1960-07-06,07",
+      "source_path": "data/kifu-album/CWI_1950_1978/Saikoi/06/01.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172335,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970",
+      "source_path": "data/kifu-album/CWI_1950_1978/Tatsujin/21.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172438,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-01-23",
+      "source_path": "data/kifu-album/CWI_1950_1978/Tengen/01/P97.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172527,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1975-12-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/Tengen/02/P86.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172544,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1977-02-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/Tengen/03/P03.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172613,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1961-11-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/06/11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172628,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-08-01",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/07/17.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172671,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-10-08",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/09/10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172683,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1964-06-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/09/22.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172748,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-08-11",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/11/10.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172749,
+      "side": "black",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1966-02-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/TokyoShinbun/11/11.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 172959,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1970-06-17",
+      "source_path": "data/kifu-album/CWI_1950_1978/people/Takagawa/Tak-0906.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 173011,
+      "side": "white",
+      "raw_value": "Iwata Tatsuaki",
+      "date_played": "1962-04-18,19",
+      "source_path": "data/kifu-album/CWI_1950_1978/unusual/illegal_ko_18.sgf",
+      "player_id": 4519
+    },
+    {
+      "album_id": 157117,
+      "side": "black",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1973-08-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/AJ1st/04/24.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 157806,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1974-10-03",
+      "source_path": "data/kifu-album/CWI_1950_1978/EastWest/1974/15.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 157812,
+      "side": "black",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1974-12-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/EastWest/1974/20.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 158224,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1960-04-13",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/16/K01.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 158530,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1964-06-25",
+      "source_path": "data/kifu-album/CWI_1950_1978/Honinbo/20/P12.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161055,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1960",
+      "source_path": "data/kifu-album/CWI_1950_1978/KK/KKHayago_Meijin/07/3.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161090,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1967",
+      "source_path": "data/kifu-album/CWI_1950_1978/KK1st/11/2.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161101,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1976",
+      "source_path": "data/kifu-album/CWI_1950_1978/KK1st/20/8.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161162,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1976-01-21",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/01/F7f.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161204,
+      "side": "black",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1976-12-02",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/02/F7e.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 161265,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1978-01-26",
+      "source_path": "data/kifu-album/CWI_1950_1978/Kisei/03/F7h.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 164070,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1969-07-10",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/09/P06.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 164175,
+      "side": "white",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1970-07-30",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/10/P04.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 164182,
+      "side": "black",
+      "raw_value": "Aoyagi Hideo",
+      "date_played": "1970-08-27",
+      "source_path": "data/kifu-album/CWI_1950_1978/OMeijin/10/P11.sgf",
+      "player_id": 6400
+    },
+    {
+      "album_id": 37877,
+      "side": "white",
+      "raw_value": "王祥云初段",
+      "date_played": "2007-05-30",
+      "source_path": "data/kifu-album/19x19/41302094.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 76676,
+      "side": "white",
+      "raw_value": "王祥云初段",
+      "date_played": "2006-10-22",
+      "source_path": "data/kifu-album/19x19/41365710.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 114735,
+      "side": "black",
+      "raw_value": "王祥云初段",
+      "date_played": "2008-11-19",
+      "source_path": "data/kifu-album/19x19/41430527.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 114736,
+      "side": "black",
+      "raw_value": "王祥云初段",
+      "date_played": "2008-11-18",
+      "source_path": "data/kifu-album/19x19/41430528.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 114737,
+      "side": "white",
+      "raw_value": "王祥云初段",
+      "date_played": "2008-11-17",
+      "source_path": "data/kifu-album/19x19/41430529.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 133268,
+      "side": "black",
+      "raw_value": "王祥云初段",
+      "date_played": "2007-05-31",
+      "source_path": "data/kifu-album/19x19/41544284.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 134728,
+      "side": "black",
+      "raw_value": "王祥云初段",
+      "date_played": "2007-05-25",
+      "source_path": "data/kifu-album/19x19/41548930.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 139551,
+      "side": "black",
+      "raw_value": "王祥云初段",
+      "date_played": "2007-05-23",
+      "source_path": "data/kifu-album/19x19/41560918.sgf",
+      "player_id": 559
+    },
+    {
+      "album_id": 143513,
+      "side": "white",
+      "raw_value": "OnoYutaka",
+      "date_played": "1968-09-25",
+      "source_path": "data/kifu-album/19x19/41569053.sgf",
+      "player_id": 4440
+    },
+    {
+      "album_id": 143514,
+      "side": "white",
+      "raw_value": "OnoYutaka",
+      "date_played": "1971-10-27",
+      "source_path": "data/kifu-album/19x19/41569054.sgf",
+      "player_id": 4440
+    },
+    {
+      "album_id": 29761,
+      "side": "black",
+      "raw_value": "OkumuraNoboru",
+      "date_played": "1977-09-21",
+      "source_path": "data/kifu-album/19x19/41291526.sgf",
+      "player_id": 4274
+    },
+    {
+      "album_id": 94444,
+      "side": "black",
+      "raw_value": "久島国夫",
+      "date_played": "1991-07-21",
+      "source_path": "data/kifu-album/19x19/41394166.sgf",
+      "player_id": 6669
+    }
+  ],
+  "counts": {
+    "raw_rows": 7,
+    "new_fk_slots": 598,
+    "catalog_creates": 0,
+    "catalog_renames": 0,
+    "translations": 0
+  }
+}

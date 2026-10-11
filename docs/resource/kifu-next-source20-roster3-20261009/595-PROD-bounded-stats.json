@@ -1,0 +1,22 @@
+{
+  "base_entity_names_games": 84523,
+  "baseline_batch_id": 594,
+  "batch_id": 595,
+  "bounded_scope": {
+    "after_both": 135,
+    "after_formal": 4,
+    "after_raw": 76,
+    "games": 158,
+    "slots": 160
+  },
+  "bundle_sha256": "7e9436ea7fbbe11de6e67006541e557ba32d4fbfaed3fa4a25da988ade7f59c7",
+  "environment": "PROD",
+  "ledger_targets": {
+    "kifu_name_research_evidence": 16,
+    "kifu_player_names": 16
+  },
+  "method": "r5 native strict_slot_approvals with only 16 target name cells masked before",
+  "players_done_after": 1723,
+  "players_done_before": 1707,
+  "read_only": true
+}

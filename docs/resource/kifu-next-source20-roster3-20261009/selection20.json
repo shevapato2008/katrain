@@ -1,0 +1,260 @@
+{
+  "artifact_kind": "source20_selection",
+  "source_packet_sha256": "9d6bfab35dd5dbca5d1bcc79f49cfa022c304c77e769e6008fa00cf5a7aa3b1a",
+  "captured_at": "2026-10-08T20:49:29.266394+00:00",
+  "status": "selected_from_post591_readonly_snapshot",
+  "exclusions": {
+    "pending_source_review_ids": [
+      368,
+      696,
+      3771,
+      3820,
+      3844,
+      4041,
+      4340,
+      4568,
+      4634,
+      5094,
+      5133,
+      5351,
+      5473,
+      5675,
+      5790,
+      6296,
+      6378,
+      6547,
+      6635,
+      6642
+    ],
+    "held_ids": [
+      339,
+      5244,
+      4499,
+      6496,
+      3900
+    ]
+  },
+  "selection_rule": "highest linked-slot count among player owners missing exactly one of cn/tw/jp/ko/en; only one-hole owners included",
+  "selection20": [
+    {
+      "prod_player_id": 4071,
+      "linked_slots_per_environment": 38,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "华伟荣",
+        "en": "Hua Weirong",
+        "jp": "华伟荣",
+        "tw": "華偉榮"
+      }
+    },
+    {
+      "prod_player_id": 6714,
+      "linked_slots_per_environment": 34,
+      "missing_language": "tw",
+      "existing_qualified_names": {
+        "cn": "田村昇",
+        "en": "Tamura Noboru",
+        "jp": "田村昇",
+        "ko": "다무라 노보루"
+      }
+    },
+    {
+      "prod_player_id": 6366,
+      "linked_slots_per_environment": 30,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "陈瑞",
+        "en": "Chen Rui",
+        "jp": "陳瑞",
+        "tw": "陳瑞"
+      }
+    },
+    {
+      "prod_player_id": 6531,
+      "linked_slots_per_environment": 29,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "黄家胤",
+        "en": "Huang Jia-Yin",
+        "jp": "黄家胤",
+        "tw": "黃家胤"
+      }
+    },
+    {
+      "prod_player_id": 5101,
+      "linked_slots_per_environment": 26,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "李青海",
+        "en": "Li Qinghai",
+        "jp": "李青海",
+        "tw": "李青海"
+      }
+    },
+    {
+      "prod_player_id": 6329,
+      "linked_slots_per_environment": 22,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "陈惠民",
+        "en": "Chen Huimin",
+        "jp": "陳惠民",
+        "tw": "陳惠民"
+      }
+    },
+    {
+      "prod_player_id": 5495,
+      "linked_slots_per_environment": 19,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "王学传",
+        "en": "Wang Xuezhuan",
+        "jp": "王學傳",
+        "tw": "王學傳"
+      }
+    },
+    {
+      "prod_player_id": 5806,
+      "linked_slots_per_environment": 19,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "萧睿杉",
+        "en": "Wesley Hsiao",
+        "jp": "蕭睿杉",
+        "tw": "蕭睿杉"
+      }
+    },
+    {
+      "prod_player_id": 6552,
+      "linked_slots_per_environment": 18,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "黄进先",
+        "en": "Huang Jinxian",
+        "jp": "黄进先",
+        "tw": "黃進先"
+      }
+    },
+    {
+      "prod_player_id": 5115,
+      "linked_slots_per_environment": 17,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "杨以伦",
+        "en": "Yang Yilun",
+        "jp": "杨以伦",
+        "tw": "楊以倫"
+      }
+    },
+    {
+      "prod_player_id": 5214,
+      "linked_slots_per_environment": 16,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "柯沛辰",
+        "en": "Ke Peichen",
+        "jp": "柯沛辰",
+        "tw": "柯沛辰"
+      }
+    },
+    {
+      "prod_player_id": 5349,
+      "linked_slots_per_environment": 15,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "沈静",
+        "en": "Shen Jing",
+        "jp": "沈静",
+        "tw": "沈靜"
+      }
+    },
+    {
+      "prod_player_id": 5468,
+      "linked_slots_per_environment": 15,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "王业辉",
+        "en": "Wang Yehui",
+        "jp": "王业辉",
+        "tw": "王業輝"
+      }
+    },
+    {
+      "prod_player_id": 5952,
+      "linked_slots_per_environment": 15,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "赵子骥",
+        "en": "Zhao Ziji",
+        "jp": "赵子骥",
+        "tw": "趙子驥"
+      }
+    },
+    {
+      "prod_player_id": 5543,
+      "linked_slots_per_environment": 14,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "王紫涵",
+        "en": "Wang Zihan",
+        "jp": "王紫涵",
+        "tw": "王紫涵"
+      }
+    },
+    {
+      "prod_player_id": 5814,
+      "linked_slots_per_environment": 14,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "董天怡",
+        "en": "Dong Tianyi",
+        "jp": "董天怡",
+        "tw": "董天怡"
+      }
+    },
+    {
+      "prod_player_id": 5940,
+      "linked_slots_per_environment": 12,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "赵之云",
+        "en": "Zhao Zhiyun",
+        "jp": "赵之云",
+        "tw": "趙之雲"
+      }
+    },
+    {
+      "prod_player_id": 6045,
+      "linked_slots_per_environment": 12,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "郑铭琦",
+        "en": "Cheng Ming Chi",
+        "jp": "鄭銘琦",
+        "tw": "鄭銘琦"
+      }
+    },
+    {
+      "prod_player_id": 6322,
+      "linked_slots_per_environment": 12,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "陈德龙",
+        "en": "Chen Delong",
+        "jp": "陈德龙",
+        "tw": "陳德龍"
+      }
+    },
+    {
+      "prod_player_id": 6550,
+      "linked_slots_per_environment": 12,
+      "missing_language": "ko",
+      "existing_qualified_names": {
+        "cn": "黄贲",
+        "en": "Huang Bi",
+        "jp": "黄贲",
+        "tw": "黃賁"
+      }
+    }
+  ]
+}

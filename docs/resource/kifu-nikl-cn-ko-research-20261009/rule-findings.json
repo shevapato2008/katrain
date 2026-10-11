@@ -1,0 +1,505 @@
+{
+  "artifact_kind": "nikl_chinese_to_korean_rule_research",
+  "status": "source findings only; no product rule approved",
+  "captured_at_utc": "2026-10-08T21:30:29.399408+00:00",
+  "proposed_review_tag_only": "nikl-cn-ko-mandarin-name-transcription-v1",
+  "scope": "Official NIKL evidence for contemporary Mainland Mandarin Chinese personal names, syllable conversion from verified Hanyu Pinyin, tones, spacing, and limits. No transliteration implementation or database decision.",
+  "captures": [
+    {
+      "id": "foreign-regulation-full",
+      "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "method": "GET",
+      "request_headers": {
+        "User-Agent": "Mozilla/5.0 (compatible; source research)"
+      },
+      "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+      "http_status": 200,
+      "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+      "content_type": "text/html;charset=UTF-8",
+      "date_header": "Thu, 08 Oct 2026 21:30:16 GMT",
+      "body_bytes": 456809,
+      "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "body_file": "captures/foreign-regulation-full.html"
+    },
+    {
+      "id": "nikl-chinese-diaspora-name-guidance",
+      "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=&pageIndex=1&qna_seq=328375",
+      "method": "GET",
+      "request_headers": {
+        "User-Agent": "Mozilla/5.0 (compatible; source research)"
+      },
+      "fetched_at_utc": "2026-10-08T21:30:19.278502+00:00",
+      "http_status": 200,
+      "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=&pageIndex=1&qna_seq=328375",
+      "content_type": "text/html;charset=UTF-8",
+      "date_header": "Thu, 08 Oct 2026 21:30:20 GMT",
+      "body_bytes": 86002,
+      "body_sha256": "75f6b4f4ad61654f3a0f72aac9bbfc03eb57f76bebcb99738476be007f51af9b",
+      "body_file": "captures/nikl-chinese-diaspora-name-guidance.html"
+    },
+    {
+      "id": "nikl-simplified-traditional-guidance",
+      "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=261&pageIndex=1&qna_seq=325065",
+      "method": "GET",
+      "request_headers": {
+        "User-Agent": "Mozilla/5.0 (compatible; source research)"
+      },
+      "fetched_at_utc": "2026-10-08T21:30:22.449293+00:00",
+      "http_status": 200,
+      "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=261&pageIndex=1&qna_seq=325065",
+      "content_type": "text/html;charset=UTF-8",
+      "date_header": "Thu, 08 Oct 2026 21:30:23 GMT",
+      "body_bytes": 93690,
+      "body_sha256": "f52bdf67b89693ff519f06c5e30e036fbb91845a450790288f36eb218fd8bb15",
+      "body_file": "captures/nikl-simplified-traditional-guidance.html"
+    },
+    {
+      "id": "nikl-chinese-phonology-guidance",
+      "url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=97&pageIndex=1&qna_seq=334794",
+      "method": "GET",
+      "request_headers": {
+        "User-Agent": "Mozilla/5.0 (compatible; source research)"
+      },
+      "fetched_at_utc": "2026-10-08T21:30:26.047244+00:00",
+      "http_status": 200,
+      "final_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=97&pageIndex=1&qna_seq=334794",
+      "content_type": "text/html;charset=UTF-8",
+      "date_header": "Thu, 08 Oct 2026 21:30:27 GMT",
+      "body_bytes": 85651,
+      "body_sha256": "e02f9d089f28be35a1ae265c1910df7c2a8c65bbce458be524f0f37390674106",
+      "body_file": "captures/nikl-chinese-phonology-guidance.html"
+    },
+    {
+      "id": "nikl-east-asian-name-principle",
+      "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146",
+      "method": "GET",
+      "request_headers": {
+        "User-Agent": "Mozilla/5.0 (compatible; source research)"
+      },
+      "fetched_at_utc": "2026-10-08T21:30:29.399408+00:00",
+      "http_status": 200,
+      "final_url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146",
+      "content_type": "text/html;charset=UTF-8",
+      "date_header": "Thu, 08 Oct 2026 21:30:30 GMT",
+      "body_bytes": 87121,
+      "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+      "body_file": "captures/nikl-east-asian-name-principle.html"
+    }
+  ],
+  "normative_rules": {
+    "modern_chinese_personal_names": "중국 인명은 과거인과 현대인을 구분하여 과거인은 종전의 한자음대로 표기하고, 현대인은 원칙적으로 중국어 표기법에 따라 표기하되, 필요한 경우 한자를 병기한다.",
+    "tones": "성조는 구별하여 적지 아니한다.",
+    "tones_effect": "Do not mark tone distinctions in Hangul output.",
+    "pinyin_table_title": "중국어의 발음 부호와 한글 대조표 (표 5)",
+    "table_rows": {
+      "initials": [
+        [
+          "성 모 (聲母)"
+        ],
+        [
+          "음의 분류",
+          "한어 병음 자모",
+          "주음 부호",
+          "한글",
+          "음의 분류",
+          "한어 병음 자모",
+          "주음 부호",
+          "한글"
+        ],
+        [
+          "중순성 重脣聲",
+          "b",
+          "",
+          "ㅂ",
+          "설면성 舌面聲",
+          "j",
+          "",
+          "ㅈ"
+        ],
+        [
+          "p",
+          "",
+          "ㅍ",
+          "q",
+          "",
+          "ㅊ"
+        ],
+        [
+          "m",
+          "",
+          "ㅁ",
+          "x",
+          "",
+          "ㅅ"
+        ],
+        [
+          "순치성*",
+          "f",
+          "",
+          "ㅍ",
+          "교설첨성 翹舌尖聲",
+          "zh [zhi]",
+          "",
+          "ㅈ [즈]"
+        ],
+        [
+          "설첨성 舌尖聲",
+          "d",
+          "",
+          "ㄷ",
+          "ch [chi]",
+          "",
+          "ㅊ [츠]"
+        ],
+        [
+          "t",
+          "",
+          "ㅌ",
+          "sh [shi]",
+          "",
+          "ㅅ [스]"
+        ],
+        [
+          "n",
+          "",
+          "ㄴ",
+          "r [ri]",
+          "ㄖ",
+          "ㄹ [르]"
+        ],
+        [
+          "l",
+          "",
+          "ㄹ",
+          "설치성 舌齒聲",
+          "z [zi]",
+          "",
+          "ㅉ [쯔]"
+        ],
+        [
+          "설근성 舌根聲",
+          "g",
+          "",
+          "ㄱ",
+          "c [ci]",
+          "",
+          "ㅊ [츠]"
+        ],
+        [
+          "k",
+          "",
+          "ㅋ",
+          "s [si]",
+          "",
+          "ㅆ [쓰]"
+        ],
+        [
+          "h",
+          "",
+          "ㅎ",
+          "",
+          "",
+          "",
+          ""
+        ]
+      ],
+      "finals": [
+        [
+          "운 모 (韻母)"
+        ],
+        [
+          "음의 분류",
+          "한어 병음 자모",
+          "주음 부호",
+          "한글",
+          "음의 분류",
+          "한어 병음 자모",
+          "주음 부호",
+          "한글"
+        ],
+        [
+          "단운 單韻",
+          "a",
+          "",
+          "아",
+          "결 합 운 모 結 合 韻 母",
+          "제 치 류 齊 齒 類",
+          "yai",
+          "",
+          "야이"
+        ],
+        [
+          "o",
+          "",
+          "오",
+          "yao (iao)",
+          "",
+          "야오"
+        ],
+        [
+          "e",
+          "",
+          "어",
+          "you (iou, iu)",
+          "",
+          "유"
+        ],
+        [
+          "ê",
+          "",
+          "에",
+          "yan (ian)",
+          "",
+          "옌"
+        ],
+        [
+          "yi (i)",
+          "",
+          "이",
+          "yin(in)",
+          "",
+          "인"
+        ],
+        [
+          "wu (u)",
+          "",
+          "우",
+          "yang (iang)",
+          "",
+          "양"
+        ],
+        [
+          "yu (u)",
+          "",
+          "위",
+          "ying (ing)",
+          "",
+          "잉"
+        ],
+        [
+          "복운 複韻",
+          "ai",
+          "",
+          "아이",
+          "합 구 류 合 口 類",
+          "wa (ua)",
+          "",
+          "와"
+        ],
+        [
+          "ei",
+          "",
+          "에이",
+          "wo (uo)",
+          "",
+          "워"
+        ],
+        [
+          "ao",
+          "",
+          "아오",
+          "wai (uai)",
+          "",
+          "와이"
+        ],
+        [
+          "ou",
+          "",
+          "어우",
+          "wei (ui)",
+          "",
+          "웨이 (우이)"
+        ],
+        [
+          "부성운 附聲韻",
+          "an",
+          "",
+          "안",
+          "wan (uan)",
+          "",
+          "완"
+        ],
+        [
+          "en",
+          "",
+          "언",
+          "wen (un)",
+          "",
+          "원 (운)"
+        ],
+        [
+          "ang",
+          "",
+          "앙",
+          "wang (uang)",
+          "",
+          "왕"
+        ],
+        [
+          "eng",
+          "",
+          "엉",
+          "weng (ong)",
+          "",
+          "웡 (웅)"
+        ],
+        [
+          "권설운*",
+          "er (r)",
+          "",
+          "얼",
+          "촬 구 류 撮 口 類",
+          "yue (ue)",
+          "",
+          "웨"
+        ],
+        [
+          "",
+          "",
+          "ya (ia)",
+          "",
+          "야",
+          "yuan (uan)",
+          "",
+          "위안"
+        ],
+        [
+          "yo",
+          "",
+          "요",
+          "yun (un)",
+          "",
+          "윈"
+        ],
+        [
+          "ye (ie)",
+          "",
+          "예",
+          "yong (iong)",
+          "",
+          "융"
+        ]
+      ]
+    },
+    "chinese_syllable_rule": "'ㅈ, ㅉ, ㅊ'으로 표기되는 자음(ㄐ, ㄓ, ㄗ, ㄑ, ㄔ, ㄘ) 뒤의 'ㅑ, ㅖ, ㅛ, ㅠ' 음은 'ㅏ, ㅔ, ㅗ, ㅜ'로 적는다.",
+    "general_spacing": {
+      "text": "원어에서 띄어 쓴 말은 띄어 쓴 대로 한글 표기를 하되, 붙여 쓸 수도 있다.",
+      "scope_note": "General foreign-word spelling provision; not a dedicated Chinese personal-name rule. It allows retaining original spaces or joining the Hangul form."
+    }
+  },
+  "official_guidance": [
+    {
+      "source_id": "nikl-chinese-diaspora-name-guidance",
+      "answer_date": "2026-03-23",
+      "finding": "No clearly defined separate transcription rule for overseas Chinese names. In absence of one, use the person’s actual language and pronunciation; consider how the person or close associates say the name. Chinese versus Malay/Indonesian transcription may differ.",
+      "body_capture_id": "nikl-chinese-diaspora-name-guidance"
+    },
+    {
+      "source_id": "nikl-simplified-traditional-guidance",
+      "answer_date": "2025-12-15",
+      "finding": "NIKL does not separately regulate character script choice. Its dictionaries use traditional Chinese forms for Chinese place names, but that editorial practice is not a mandatory rule.",
+      "body_capture_id": "nikl-simplified-traditional-guidance"
+    },
+    {
+      "source_id": "nikl-chinese-phonology-guidance",
+      "answer_date": "2026-08-14",
+      "finding": "The six initials ㄐ, ㄓ, ㄗ, ㄑ, ㄔ, ㄘ are represented as ㅈ, ㅉ, ㅊ; after these, the specific medial sequence ㅑ, ㅖ, ㅛ, ㅠ is written ㅏ, ㅔ, ㅗ, ㅜ.",
+      "body_capture_id": "nikl-chinese-phonology-guidance"
+    }
+  ],
+  "surname_cases": [
+    {
+      "hanzi": "王",
+      "pinyin": "Wáng",
+      "table_basis": [
+        "wang (uang) → 왕 (explicit final row)"
+      ],
+      "derived_hangul": "왕",
+      "status": "direct_table_mapping"
+    },
+    {
+      "hanzi": "黄 / 黃",
+      "pinyin": "Huáng",
+      "table_basis": [
+        "h → ㅎ (initial table)",
+        "uang → 왕 (parenthetical final under wang)"
+      ],
+      "derived_hangul": "황",
+      "status": "component_composition_from_table"
+    },
+    {
+      "hanzi": "陈 / 陳",
+      "pinyin": "Chén",
+      "table_basis": [
+        "ch → ㅊ (initial table)",
+        "en → 언 (final table)"
+      ],
+      "derived_hangul": "천",
+      "status": "component_composition_from_table"
+    },
+    {
+      "hanzi": "谢 / 謝",
+      "pinyin": "Xiè",
+      "table_basis": [
+        "x → ㅅ (initial table)",
+        "ie → 예 (shown as ye (ie) → 예 in final table)"
+      ],
+      "derived_hangul": "셰",
+      "status": "component_composition_from_table"
+    },
+    {
+      "hanzi": "赵 / 趙",
+      "pinyin": "Zhào",
+      "table_basis": [
+        "zh → ㅈ (initial table)",
+        "ao → 아오 (final table)"
+      ],
+      "derived_hangul": "자오",
+      "status": "component_composition_from_table"
+    },
+    {
+      "hanzi": "徐",
+      "pinyin": "Xú",
+      "table_basis": [
+        "x → ㅅ (initial table)",
+        "u after x is the pinyin spelling of ü, represented by yu (u) → 위 in final table)"
+      ],
+      "derived_hangul": "쉬",
+      "status": "component_composition_from_table"
+    }
+  ],
+  "conservative_use_limits": [
+    "This is a contemporary-Mandarin reading rule: apply it only after a reliable source confirms that the person uses Mandarin and provides or validates Hanyu Pinyin.",
+    "English spelling alone is not sufficient to identify Hanyu Pinyin versus Wade-Giles or another romanization. Ambiguous forms such as Chun/Chung remain on hold until pinyin and reading are independently verified.",
+    "The mapping cases above are direct table entries or explicitly identified component compositions; they are not a general surname dictionary and do not decide published/conventional-name status.",
+    "The Chinese diaspora guidance means the Mandarin table must not be applied mechanically to a Chinese-heritage person who uses another language or pronunciation."
+  ],
+  "japanese_capture_reuse_reference": {
+    "artifact": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+    "entries": [
+      {
+        "role": "personal_names",
+        "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146",
+        "http_status": 200,
+        "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+        "fetched_at": "2026-10-07T10:50:30.509998+00:00"
+      },
+      {
+        "role": "kana_table",
+        "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108",
+        "http_status": 200,
+        "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+        "fetched_at": "2026-10-07T10:50:08.300012+00:00"
+      },
+      {
+        "role": "japanese_details",
+        "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129",
+        "http_status": 200,
+        "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+        "fetched_at": "2026-10-07T10:50:09.323421+00:00"
+      }
+    ],
+    "note": "Existing Japanese name/transcription capture metadata is reusable only for the Japanese rule; the Chinese rule evidence in this packet is freshly fetched and separately hashed."
+  },
+  "decision_boundary": "This packet reports official facts and transparent derivations only; it does not authorize a production generated name or data approval."
+}

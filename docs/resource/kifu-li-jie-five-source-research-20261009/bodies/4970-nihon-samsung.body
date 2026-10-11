@@ -1,0 +1,4460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	
+	<meta name="description" content="日本の囲碁を代表する団体、日本棋院の囲碁公式ホームページです。／囲碁の総本山、日本棋院の棋戦情報です。">
+<meta name="twitter:description" content="日本の囲碁を代表する団体、日本棋院の囲碁公式ホームページです。／囲碁の総本山、日本棋院の棋戦情報です。" />
+
+	<meta name="keywords" content=",棋聖戦,名人戦,本因坊戦,十段戦,天元戦,王座戦,富士通杯,碁聖戦,">
+
+
+
+
+	
+		
+		<title>第8期 三星杯 本戦&nbsp;|&nbsp;棋戦&nbsp;|&nbsp;囲碁の日本棋院</title>
+		<meta name="twitter:title" content="第8期 三星杯 本戦&nbsp;|&nbsp;棋戦&nbsp;|&nbsp;囲碁の日本棋院" />
+		
+	
+	
+
+
+	
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="shortcut icon" href="/common/images/favicon.ico">
+	
+	<link rel="alternate" type="application/atom+xml" title="Recent Entries" href="https://www.nihonkiin.or.jp/atom.xml" />
+	
+	
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@Nihonkiin_pr">
+    <meta name="twitter:creator" content="@Nihonkiin_pr">
+
+
+    <meta name="twitter:image" content="https://www.nihonkiin.or.jp/images/twitter_card.jpg" />
+
+
+    
+	<!-- Open Graph Protocol -->
+	<meta property="og:type" content="article">
+	<meta property="og:locale" content="ja_JP">
+	<meta property="og:title" content="囲碁の日本棋院">
+	<meta property="og:url" content="https://www.nihonkiin.or.jp/match/sansei/008.html">
+	
+	<meta property="og:description" content="日本の囲碁を代表する団体、日本棋院の囲碁公式ホームページです。">
+	<meta property="og:site_name" content="囲碁の日本棋院">
+	
+	<meta itemprop="description" content="日本の囲碁を代表する団体、日本棋院の囲碁公式ホームページです。">
+	<meta itemprop="name" content="囲碁の日本棋院">
+	<link rel="test" itemprop="url" href="https://www.nihonkiin.or.jp/">
+	
+	
+	<link href="/common/css/reset.css" media="all" rel="stylesheet">
+	<link href="/common/css/common.css?date=20260428" media="all" rel="stylesheet">
+	<link href="/common/css/sp.css?date=20260907" media="all" rel="stylesheet">
+	<link href="/common/css/screen.css?date=20260828" media="all" rel="stylesheet">
+    <link href="/common/css/newcarousel.css" media="all" rel="stylesheet">
+	<link href="/common/css/font.css" rel="alternate stylesheet" title="default">
+	<link href="/common/css/fontL.css" rel="alternate stylesheet" title="large">
+	<link href="/common/css/thickbox.css" media="all" rel="stylesheet">
+	<link href="/common/css/print.css" media="print" rel="stylesheet">
+	<script type="text/javascript" src="/common/js/jquery-1.8.3.min.js"></script>
+	<!--[if lt IE 9]>
+		<script src="/common/js/html5shiv-printshiv.js"></script>
+		<script src="/common/js/respond.js"></script>
+	<![endif]-->
+	<script type="text/javascript" src="/common/js/styleswitcher.js"></script>
+	<script type="text/javascript" src="/common/js/yuga.js"></script>
+	<script type="text/javascript" src="/common/js/thickbox.js"></script>
+	<script type="text/javascript" src="/common/js/jquery.bxslider.min.js"></script>
+	
+	<script type="text/javascript" src="/mt.js"></script>
+	<script type="text/javascript" src="/common/js/url.js"></script>
+	
+	
+	
+	
+		<script type="text/javascript" src="/common/js/fit_ifr3.0.js?auto=1"></script>
+	
+	
+	
+
+
+
+
+<!-- IEの場合、Edge強制移行 Start 2022.6.22 mat -->
+<script>
+	if(navigator.userAgent.indexOf('Trident') > 0){
+		location.href = "microsoft-edge:" + location.href;
+		setTimeout(autoClose,100);
+	}
+	function autoClose(){
+		top.window.opener = top;
+		top.window.open('','_parent', '');
+		top.window.close();
+	}
+</script>
+<!-- IEの場合、Edge強制移行 End 2022.6.22 mat -->
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SPK3YLGDB6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-SPK3YLGDB6');
+</script>
+
+</head>
+
+
+	<body>
+<header id="header">
+	<div id="headerMiddle" class="inner">
+		<div id="headerLogo">
+			<h1 class="cl-norewrite"><a href="/"><img src="/common/images/logo.png" alt="日本棋院"></a></h1>
+			<ul>
+                <li class="sp_none"> <a href="/english" onclick="ga('send', 'event', 'ヘッダー', 'クリック', 'English(Information)')">English(Information)</a> </li>
+                <li class="pc_none" id="menu"><a href="javascript:void(0);">MENU</a></li>
+				<li class="pc_none" id="language"> <a href="/language/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', 'スマホ - Language')">Language</a></li>
+				<li class="pc_none" id="search"> <a href="/search/sp_search.html" target="_blank">検索</a></li>
+				<li class="pc_none" id="pc"><a class="pcSiteChange" href="javascript:void(0);">PCサイト</a></li>
+			</ul>
+    </div>
+		<!-- / #headerLogo -->
+		<div id="headerRight" class="pt34">
+            <div id="liLogin"><a href="#"><img src="/common/images/unav_login.png" alt="ログイン" class="btn"></a>
+                <div id="dLogin">
+					<p>ようこそ<span>ゲスト</span>さん</p>
+					<ul>
+						<li class="li_login li_no_bdr"><a href="https://mypage.nihonkiin.or.jp/login" target="_blank" onclick="ga('send', 'event', 'ログインメニュー', 'クリック', '日本棋院ID マイページ ログイン')">日本棋院IDマイページ<br>ログイン</a></li>
+						<li><a href="/member/login/" onclick="ga('send', 'event', 'ログインメニュー', 'クリック', 'ログイン')">棋士コメント用ログイン</a></li>
+						<li><a href="https://mypage.nihonkiin.or.jp/user/agreement" target="_blank" onclick="ga('send', 'event', 'ログインメニュー', 'クリック', '日本棋院ID マイページ')">新規ID登録 </a><br>(日本棋院IDマイページ)</li>
+						<li><a href="javascript:setStartPage('https://www.nihonkiin.or.jp/')">ホームページに設定する</a></li>
+					</ul>
+				</div>
+			</div>
+			<div id="headerSearch">
+                <iframe src="/search/search.html" scrolling="no"></iframe>
+			</div>
+			<!-- / #headerSearch -->
+		</div>
+		<!-- / #headerRight --> 
+	</div>
+	<!-- / #headerMiddle .inner -->
+	<nav>
+		<ul class="inner">
+			<li class="li00 slidebox"><a href="/news/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', 'お知らせ')"><span>お知らせ</span></a></li>
+			<li class="li01 slidebox"><a href="/match/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '棋戦')"><span>棋戦</span></a></li>
+			<li class="li02 slidebox"><a href="/player/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '棋士')"><span>棋士</span></a></li>
+			<li class="li03 slidebox"><a href="/event/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '大会・イベント')"><span>大会・イベント</span></a></li>
+			<li class="li04 slidebox"><a href="/sisetsu/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '施設案内')"><span>施設案内</span></a></li>
+			<li class="li05 slidebox"><a href="/publishing/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '出版・販売')"><span>出版・販売</span></a></li>
+			<li class="li06 slidebox"><a href="/member/" onclick="ga('send', 'event', 'ヘッダー', 'クリック', '会員・免状')"><span>会員・免状</span></a></li>
+		</ul>
+	</nav>
+</header>
+
+
+
+
+
+
+
+	
+		
+		
+	
+
+
+
+
+	
+	
+
+
+
+
+
+
+<div id="container" class="match_detail full international sansei">
+
+	
+	
+	
+	
+	<div class="sub_catlist_area">
+		<ul class="sub_catlist column1_1_1_1_1 inner">
+		
+			
+			<li>
+				<a href="/match/internal/">国内棋戦</a>
+				<span class="pc_none">国内棋戦</span>
+				
+				<ul class="dropdown_menu link_list" style="display:none;">
+					<li class="pc_none  dropdown_parent"><a href="/match/internal/">国内棋戦TOPへ</a></li>
+					
+					
+					
+						<li class="">
+			<a href="/match/kisei/051.html">棋聖戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/meijin/052.html?第51期">名人戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/oza/075.html?第74期">王座戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/tengen/053.html?第52期">天元戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/honinbo/082.html">本因坊戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/gosei/052.html">碁聖戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/jyudan/065.html">十段戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kiriyama/032.html">阿含･桐山杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ryusei/035.html">竜星戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/nhk/074.html">NHK杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/shinjin/052.html?第51期">新人王戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/teikei_s/006.html">テイケイグループ杯俊英戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/wakagoi/021.html">若鯉戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/okan/068.html?第67期">王冠戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/sgw/009.html">SGW杯中庸戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/teikei_l/005.html">テイケイグループ杯レジェンド戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+				</ul>
+			</li>
+		
+			
+			<li>
+				<a href="/match/female/">女性棋戦</a>
+				<span class="pc_none">女性棋戦</span>
+				
+				<ul class="dropdown_menu link_list" style="display:none;">
+					<li class="pc_none  dropdown_parent"><a href="/match/female/">女性棋戦TOPへ</a></li>
+					
+					
+					
+						<li class="">
+			<a href="/match/fhoninbo/046.html?第45期">女流本因坊戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fmeijin/038.html">女流名人戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fkisei/030.html">女流棋聖戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/senko/011.html">扇興杯女流囲碁最強戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fumakilla_bm/001.html">フマキラー囲碁女流ブレーンズマッチ</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/teikei_f/005.html">テイケイグループ杯女流レジェンド戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/japanleague_f/002.html">日本女子囲碁リーグ</a>
+		</li>
+
+
+
+
+
+
+
+					
+				</ul>
+			</li>
+		
+			
+			<li class="select">
+				<a href="/match/international/">国際棋戦</a>
+				<span class="pc_none">国際棋戦</span>
+				
+				<ul class="dropdown_menu link_list" style="display:none;">
+					<li class="pc_none  dropdown_parent"><a href="/match/international/">国際棋戦TOPへ</a></li>
+					
+					
+					
+						<li class="">
+			<a href="/match/tv-asia/031.html">TVアジア</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/senkocupwgwc/008.html">SENKO CUP</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/globis/011.html">グロービス杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/shunran/016.html">春蘭杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/noshin/028.html">農心杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class=" select">
+			<a href="/match/sansei/030.html">三星杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/lg/031.html">LG杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ohshihai/010.html">応氏杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/mlily/006.html">夢百合杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ranka/004.html">爛柯杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/nanyo/001.html">南洋杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/hokkai/001.html">北海新繹杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kisensen/001.html">新韓銀行世界棋仙戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/youmeihai/001.html">陽明杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/hyakurei/004.html">百霊杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/shinoku/001.html">新奥杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/tenpu/001.html">天府杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kokusyusanmyaku/011.html">国手山脈世界プロ最強戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/gasai/008.html">賀歳杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/sekaimeijin/005.html">世界囲碁名人争覇戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/heisei/010.html">穹窿山 兵聖杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/chugokuleague/015.html">中国男子団体リーグ</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kouryu/010.html">黄竜士杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kacho/009.html">天台山天境雲廬杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/goseigen/008.html">呉清源杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/shuko/002.html">金竜城杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/giseifu/001.html">議政府国際囲碁新鋭団体戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/hoban/001.html">湖盤杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/noshin_h/004.html">農心白山水杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ibk/001.html">IBK企業銀行杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+				</ul>
+			</li>
+		
+			
+			<li>
+				<a href="/match/others/">その他の棋戦</a>
+				<span class="pc_none">その他の棋戦</span>
+				
+				<ul class="dropdown_menu link_list" style="display:none;">
+					<li class="pc_none  dropdown_parent"><a href="/match/others/">その他の棋戦TOPへ</a></li>
+					
+					
+					
+						<li class="">
+			<a href="/match/shinryusei/004.html">新竜星戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kisenyusyo/006.html">グランドチャンピオン戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ys_cup/007.html">ワイズアカデミー杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/k_open/007.html">関西囲碁オープン</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/iwamotokaorukinen/004.html">岩本薫記念益田杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/ibero/005.html">イベロ・ジャパン杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/tleogroup_touryusen/001.html">この道杯・登龍戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/tleogroup_zyoryuzuikousen/001.html">この道杯・女流瑞光戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/tleogroup_hisyousen/001.html">この道杯・飛翔戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/pro_pair/031.html">プロ棋士ペア碁選手権</a>
+		</li>
+
+
+
+
+
+
+
+					
+				</ul>
+			</li>
+		
+			
+			<li>
+				<a href="/match/past/">終了した棋戦</a>
+				<span class="pc_none">終了した棋戦</span>
+				
+				<ul class="dropdown_menu link_list" style="display:none;">
+					<li class="pc_none  dropdown_parent"><a href="/match/past/">終了した棋戦TOPへ</a></li>
+					
+					
+					
+						<li class="">
+			<a href="/match/wgc/003.html">ワールド碁チャンピオンシップ</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/trycup/002.html">トライカップ プロ囲碁団体戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/wakatake/010.html">若竹杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/aidu/012.html">女流立葵杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/discovery/005.html">ディスカバリー杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/okage_w/006.html">おかげ国際</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kamachi/001.html">博多・カマチ杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/okage/011.html">おかげ杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/masters/009.html">マスターズカップ</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/over40/003.html">OVER40 早碁トーナメント戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/wshinei/002.html">国際新鋭囲碁対抗戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/yucho/003.html">ゆうちょ杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class=""><a href="/match/igo13ro/archive.html">13路トーナメント</a></li>
+	
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/meoto/002.html">夫婦杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/13ro_proama/001.html">13路盤プロアマトーナメント</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/chisato/001.html">千里杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/nakano/010.html">中野杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/daiwa/008.html">大和証券杯ネット囲碁オープン</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/bc/004.html">BCカード杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/nec/031.html">NECカップ</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fujitsu/024.html">富士通杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/chonkanjan/009.html">正官庄杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/u-gen/004.html">幽玄杯・精鋭リーグ戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class=""><a href="http://u-gen.nihonkiin.or.jp/daiwa/" target="_blank" class="blank fdaiwa">大和証券杯ネット囲碁レディース</a></li>
+	
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fsaikyo/010.html">東京精密杯女流プロ最強戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/toyota/004.html">トヨタ＆デンソー杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/sinoocean/001.html">遠洋地産杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/chukan/003.html">中環杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/dairi/001.html">大理杯</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/kakusei/025.html">鶴聖戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+						<li class="">
+			<a href="/match/fkakusei/024.html">女流鶴聖戦</a>
+		</li>
+
+
+
+
+
+
+
+					
+				</ul>
+			</li>
+		
+		</ul>
+	</div>
+	
+	
+  
+	
+	<div class="catlist_area bg_blue4">
+		<ul class="category_list inner">
+		
+		
+			<li class="left">
+			<a href="/match/tv-asia/031.html">TVアジア</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/senkocupwgwc/008.html">SENKO CUP</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/globis/011.html">グロービス杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/shunran/016.html">春蘭杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/noshin/028.html">農心杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left select">
+			<a href="/match/sansei/030.html">三星杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/lg/031.html">LG杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/ohshihai/010.html">応氏杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/mlily/006.html">夢百合杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/ranka/004.html">爛柯杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/nanyo/001.html">南洋杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/hokkai/001.html">北海新繹杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/kisensen/001.html">新韓銀行世界棋仙戦</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/youmeihai/001.html">陽明杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/hyakurei/004.html">百霊杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/shinoku/001.html">新奥杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/tenpu/001.html">天府杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/kokusyusanmyaku/011.html">国手山脈世界プロ最強戦</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/gasai/008.html">賀歳杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/sekaimeijin/005.html">世界囲碁名人争覇戦</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/heisei/010.html">穹窿山 兵聖杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/chugokuleague/015.html">中国男子団体リーグ</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/kouryu/010.html">黄竜士杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/kacho/009.html">天台山天境雲廬杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/goseigen/008.html">呉清源杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/shuko/002.html">金竜城杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/giseifu/001.html">議政府国際囲碁新鋭団体戦</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/hoban/001.html">湖盤杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/noshin_h/004.html">農心白山水杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+			<li class="left">
+			<a href="/match/ibk/001.html">IBK企業銀行杯</a>
+		</li>
+
+
+
+
+
+
+
+		
+		</ul>
+	</div>
+	
+	
+	<ul class="breadcrumb inner">
+		<li><a href="/">日本棋院ホーム</a></li>
+		<li><a href="/match/">棋戦</a></li>
+		<li><a href="/match/international">国際棋戦</a></li>
+		<li>第8期 三星杯 本戦</li>
+	</ul>
+	
+	<div class="h1_wrapper"><h1>三星杯</h1></div>
+
+
+	
+	
+	
+	
+	
+		<div id="match_tabbox">
+			
+			<ul class="sub_catlist inner">
+
+		<li><a href="https://www.nihonkiin.or.jp/match/sansei/030.html">第30回</a></li>
+	<li><a href="https://www.nihonkiin.or.jp/match/sansei/029.html">第29回</a></li>
+	<li><a href="https://www.nihonkiin.or.jp/match/sansei/028.html">第28回</a></li>
+	
+	
+	<li><a href="/match/sansei/archive.html">歴代記録</a></li>
+</ul>
+			
+			
+
+
+
+		</div>
+		
+	
+			
+	<div id="content_outside">
+		<div id="content">
+			
+			
+			<link href="/common_static_page/css/match.css" rel="stylesheet">
+			<link href="/common_static_page/css/match/sansei.css" rel="stylesheet">
+			
+			<div class="tab_box">
+
+
+
+
+
+	<div class="tab_display">
+		<h2 class="inner">第30回　三星火災杯世界囲碁マスターズ</h2>
+		<div class="kisen_free01 inner">
+	<div class="column1_1 full">
+<table class="table1">
+<tbody>
+<tr><th>棋戦名称</th>
+<td>三星火災杯　世界囲碁マスターズ</td>
+</tr>
+<tr><th>主催</th>
+<td>中央日報</td>
+</tr>
+<tr><th>主管</th>
+<td>韓国棋院</td>
+</tr>
+<tr><th>後援</th>
+<td>三星火災海上保険株式会社</td>
+</tr>
+<tr><th>特別協賛</th>
+<td>－</td>
+</tr>
+<tr><th>協賛</th>
+<td>－</td>
+</tr>
+<tr><th>特別協力</th>
+<td>－</td>
+</tr>
+<tr><th>協力</th>
+<td>－</td>
+</tr>
+<tr><th>優勝賞金</th>
+<td>3億ウォン</td>
+</tr>
+</tbody>
+</table>
+<table class="table1">
+<tbody>
+<tr><th>挑戦手合・決勝</th>
+<td>決勝三番勝負</td>
+</tr>
+<tr><th>棋戦形式</th>
+<td>32名によるトーナメント方式</td>
+</tr>
+<tr><th>持ち時間</th>
+<td>2時間</td>
+</tr>
+<tr><th>秒読み</th>
+<td>使い切った後、一手60秒5回</td>
+</tr>
+<tr><th>コミ</th>
+<td>6目半</td>
+</tr>
+<tr><th>出場資格</th>
+<td>－</td>
+</tr>
+<tr><th>残留・シード規定</th>
+<td>－</td>
+</tr>
+<tr><th>創設年</th>
+<td>1996年</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="caution inner">※ タイトル、段位は抽選時のものです</p>
+		<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_06" class="match_subtitle inner">決勝</h3>
+	<div class="inner match_dtl_block blc06">
+		対局日：2025年11月16日（日）、17日（月）、18日（火）（左側勝ち、△は先番）
+<table class="table2 table_w">
+<tbody>
+<tr><th></th><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td class="th_pale">第1局</td>
+<td>△</td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第2局</td>
+<td></td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第3局</td>
+<td></td>
+<td>―</td>
+<td>―</td>
+<td>―</td>
+<td></td>
+<td>―</td>
+<td>―</td>
+</tr>
+</tbody>
+</table>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_05" class="match_subtitle inner">準決勝</h3>
+	<div class="inner match_dtl_block blc05">
+		対局日：2025年11月14日（金）、15日（土）（左側勝ち、△は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>金志錫九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_04" class="match_subtitle inner">準々決勝</h3>
+	<div class="inner match_dtl_block blc04">
+		対局日：2025年11月12日（水）、13日（木）（左側勝ち、△は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>傳健恒七段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>半目</td>
+<td>△</td>
+<td>檀嘯九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>楊鼎新九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>金志錫九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_03" class="match_subtitle inner">二回戦</h3>
+	<div class="inner match_dtl_block blc03">
+		対局日：2025年11月10日（月）、11日（火）（左側勝ち、△は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>芝野虎丸九段</td>
+<td>日本</td>
+</tr>
+<tr>
+<td></td>
+<td>金志錫九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>連笑九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>楊鼎新九段</td>
+<td>中国</td>
+<td>時間切れ</td>
+<td></td>
+<td>党毅飛九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>朴常鎭九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>檀嘯九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>黄明宇八段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>李志賢九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>傳健恒七段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>睦鎭碩九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_02" class="match_subtitle inner">一回戦</h3>
+	<div class="inner match_dtl_block blc02">
+		<p>対局日：2025年11月9日（日）（左側勝ち、△は先番）</p>
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>申旻埈九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>楊鼎新九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>許家元九段</td>
+<td>日本</td>
+</tr>
+<tr>
+<td>△</td>
+<td>芝野虎丸九段</td>
+<td>日本</td>
+<td>中押し</td>
+<td></td>
+<td>劉宇航八段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>金志錫九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>王星昊九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>葉長欣七段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>廖元赫九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>唐嘉雯六段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>黄明宇八段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>卞相壹九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>楊楷文九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>李志賢九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>安成浚九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>Quynh Anh Haアマ</td>
+<td>ベトナム</td>
+</tr>
+<tr>
+<td>△</td>
+<td>睦鎭碩九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>彭立堯九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>朴常鎭九段</td>
+<td>韓国</td>
+<td>半目</td>
+<td></td>
+<td>謝科九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>傳健恒七段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>金禹丞九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>李欽誠九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>時越九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>檀嘯九段</td>
+<td>中国</td>
+<td>時間切れ</td>
+<td>△</td>
+<td>許皓鋐九段</td>
+<td>中華台北</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a030_06">決勝</a></li>
+			<li><a href="#a030_05">準決勝</a></li>
+			<li><a href="#a030_04">準々決勝</a></li>
+			<li><a href="#a030_03">二回戦</a></li>
+			<li><a href="#a030_02">一回戦</a></li>
+			<li><a href="#a030_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a030_01" class="match_subtitle inner">出場棋士</h3>
+	<div class="inner match_dtl_block blc01">
+		<table class="table2 table_w">
+<tbody>
+<tr><th>日本</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li><a href="/player/htm/ki000459.html">芝野虎丸九段</a></li>
+<li><a href="/player/htm/ki000451.html">許家元九段</a></li>
+</ul>
+</td>
+</tr>
+<tr><th>韓国</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>申眞諝九段</li>
+<li>卞相壹九段</li>
+<li>姜東潤九段</li>
+<li>朴廷桓九段</li>
+<li>申旻埈九段</li>
+<li>安成浚九段</li>
+<li>金志錫九段</li>
+<li>朴常鎭九段</li>
+<li>睦鎮碩九段</li>
+<li>李志賢九段</li>
+</ul>
+</td>
+</tr>
+<tr><th>中国</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>丁浩九段</li>
+<li>党毅飛九段</li>
+<li>連笑九段</li>
+<li>金禹丞九段</li>
+<li>王星昊九段</li>
+<li>楊楷文九段</li>
+<li>李欽誠九段</li>
+<li>檀嘯九段</li>
+<li>時越九段</li>
+<li>楊鼎新九段</li>
+<li>謝科九段</li>
+<li>廖元赫九段</li>
+<li>彭立堯九段</li>
+<li>劉宇航八段</li>
+<li>黄明宇八段</li>
+<li>葉長欣七段</li>
+<li>傳健恒七段</li>
+<li>唐嘉雯六段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">中華台北</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>許皓鋐九段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">ワールド</th>
+<td class="t_left">Quynh　Anh Ha アマ（ベトナム）</td>
+</tr>
+</tbody>
+</table>
+	</div>
+<div class="match_body inner">
+</div>
+	</div>
+	<div class="tab_display">
+		<h2 class="inner">第29回　三星火災杯世界囲碁マスターズ</h2>
+		<div class="kisen_free01 inner">
+	<div class="column1_1 full">
+<table class="table1">
+<tbody>
+<tr><th>棋戦名称</th>
+<td>三星火災杯　世界囲碁マスターズ</td>
+</tr>
+<tr><th>主催</th>
+<td>中央日報</td>
+</tr>
+<tr><th>主管</th>
+<td>韓国棋院</td>
+</tr>
+<tr><th>後援</th>
+<td>三星火災海上保険株式会社</td>
+</tr>
+<tr><th>特別協賛</th>
+<td>－</td>
+</tr>
+<tr><th>協賛</th>
+<td>－</td>
+</tr>
+<tr><th>特別協力</th>
+<td>－</td>
+</tr>
+<tr><th>協力</th>
+<td>－</td>
+</tr>
+<tr><th>優勝賞金</th>
+<td>3億ウォン</td>
+</tr>
+</tbody>
+</table>
+<table class="table1">
+<tbody>
+<tr><th>挑戦手合・決勝</th>
+<td>決勝三番勝負</td>
+</tr>
+<tr><th>棋戦形式</th>
+<td>32名によるトーナメント方式</td>
+</tr>
+<tr><th>持ち時間</th>
+<td>2時間</td>
+</tr>
+<tr><th>秒読み</th>
+<td>使い切った後、一手60秒5回</td>
+</tr>
+<tr><th>コミ</th>
+<td>6目半</td>
+</tr>
+<tr><th>出場資格</th>
+<td>－</td>
+</tr>
+<tr><th>残留・シード規定</th>
+<td>－</td>
+</tr>
+<tr><th>創設年</th>
+<td>1996年</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="caution inner">※ タイトル、段位は抽選時のものです</p>
+		<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_06" class="match_subtitle inner">決勝</h3>
+	<div class="inner match_dtl_block blc06">
+		<p>対局日：2024年11月20日（水）、21日（木）、22日（金）（左側が勝者、△印は先番）</p>
+<table class="table2 table_w">
+<tbody>
+<tr><th></th><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td class="th_pale">第1局</td>
+<td>△</td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第2局</td>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>時間切れ</td>
+<td></td>
+<td>党毅飛九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第3局</td>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>党毅飛九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_05" class="match_subtitle inner">準決勝</h3>
+	<div class="inner match_dtl_block blc05">
+		<p>対局日：2024年11月18日（月）、19日（火）（左側が勝者、△印は先番）</p>
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>金禹丞八段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>連笑九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+<tbody></tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_04" class="match_subtitle inner">準々決勝</h3>
+	<div class="inner match_dtl_block blc04">
+		<p>対局日：2024年11月16日（土）、17（日）（左側が勝者、△印は先番）</p>
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>金禹丞八段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>李軒豪九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>半目</td>
+<td></td>
+<td>謝科九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+<tbody></tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_03" class="match_subtitle inner">二回戦</h3>
+	<div class="inner match_dtl_block blc03">
+		<p>対局日：2024年11月14日（木）、15日（金）（左側が勝者、△印は先番）</p>
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>金禹丞八段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>芝野虎丸九段</td>
+<td>日本</td>
+</tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>崔精九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>謝科九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>金恩持九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>安正己八段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+</tbody>
+<tbody>
+<tr>
+<td>△</td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+<td>5目半</td>
+<td></td>
+<td>申旻埈九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>李軒豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>范胤八段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+<td>半目</td>
+<td></td>
+<td>柯潔九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>1目半</td>
+<td>△</td>
+<td>陳賢八段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_02" class="match_subtitle inner">一回戦</h3>
+	<div class="inner match_dtl_block blc02">
+		<p>対局日：2024年11月12日（火）、13日（水）（左側が勝者、△印は先番）</p>
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>范胤八段</td>
+<td>中国</td>
+<td>9目半</td>
+<td>△</td>
+<td>ポンサカランソーナラ アマ</td>
+<td>ワールド</td>
+</tr>
+<tr>
+<td></td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>許皓鋐九段</td>
+<td>中華台北</td>
+</tr>
+<tr>
+<td>△</td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>王星昊九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>金恩持九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>李軒豪九段</td>
+<td>中国</td>
+<td>14目半</td>
+<td>△</td>
+<td>崔明勲九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>安正己八段</td>
+<td>韓国</td>
+<td>半目</td>
+<td></td>
+<td>陳正勲八段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>崔精九段</td>
+<td>韓国</td>
+<td>半目</td>
+<td></td>
+<td>辜梓豪九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>謝科九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>劉昌赫九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+</tbody>
+<tbody>
+<tr>
+<td></td>
+<td>申旻埈九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>韓一洲八段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>金禹丞八段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>偰玹準九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>陳賢八段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>金明訓九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>芝野虎丸九段</td>
+<td>日本</td>
+<td>中押し</td>
+<td></td>
+<td>檀嘯九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>柯潔九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>卞相壹九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>3目半</td>
+<td>△</td>
+<td>一力遼九段</td>
+<td>日本</td>
+</tr>
+<tr>
+<td></td>
+<td>党毅飛九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a029_06">決勝</a></li>
+			<li><a href="#a029_05">準決勝</a></li>
+			<li><a href="#a029_04">準々決勝</a></li>
+			<li><a href="#a029_03">二回戦</a></li>
+			<li><a href="#a029_02">一回戦</a></li>
+			<li><a href="#a029_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a029_01" class="match_subtitle inner">出場棋士</h3>
+	<div class="inner match_dtl_block blc01">
+		<table class="table2 table_w">
+<tbody>
+<tr><th>日本</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li><a href="/player/htm/ki000435.html">一力遼九段</a></li>
+<li><a href="/player/htm/ki000459.html">芝野虎丸九段</a></li>
+</ul>
+</td>
+</tr>
+<tr><th>韓国</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>劉昌赫九段</li>
+<li>崔明勲九段</li>
+<li>姜東潤九段</li>
+<li>朴廷桓九段</li>
+<li>崔精九段</li>
+<li>卞相壹九段</li>
+<li>申旻埈九段</li>
+<li>申眞諝九段</li>
+<li>金明訓九段</li>
+<li>安正己八段</li>
+<li>金恩持九段</li>
+</ul>
+</td>
+</tr>
+<tr><th>中国</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>檀嘯九段</li>
+<li>連笑九段</li>
+<li>党毅飛九段</li>
+<li>柯潔九段</li>
+<li>李軒豪九段</li>
+<li>辜梓豪九段</li>
+<li>謝爾豪九段</li>
+<li>許嘉陽九段</li>
+<li>丁浩九段</li>
+<li>謝科九段</li>
+<li>王星昊九段</li>
+<li>韓一洲八段</li>
+<li>陳賢八段</li>
+<li>范胤八段</li>
+<li>陳正勲八段</li>
+<li>金禹丞八段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">中華台北</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>許皓鋐九段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">ワイルドカード</th>
+<td class="t_left">Pongsakarn Sornarraアマ（タイ）</td>
+</tr>
+<tr><th nowrap="nowrap">主催者推薦</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>偰玹準九段（韓国）</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+	</div>
+<div class="match_body inner">
+</div>
+	</div>
+	<div class="tab_display">
+		<h2 class="inner">第28回　三星火災杯世界囲碁マスターズ</h2>
+		<div class="kisen_free01 inner">
+	<div class="column1_1 full">
+<table class="table1">
+<tbody>
+<tr><th>棋戦名称</th>
+<td>三星火災杯　世界囲碁マスターズ</td>
+</tr>
+<tr><th>主催</th>
+<td>中央日報</td>
+</tr>
+<tr><th>主管</th>
+<td>韓国棋院</td>
+</tr>
+<tr><th>後援</th>
+<td>三星火災海上保険株式会社</td>
+</tr>
+<tr><th>特別協賛</th>
+<td>－</td>
+</tr>
+<tr><th>協賛</th>
+<td>－</td>
+</tr>
+<tr><th>特別協力</th>
+<td>－</td>
+</tr>
+<tr><th>協力</th>
+<td>－</td>
+</tr>
+<tr><th>優勝賞金</th>
+<td>3億ウォン</td>
+</tr>
+</tbody>
+</table>
+<table class="table1">
+<tbody>
+<tr><th>挑戦手合・決勝</th>
+<td>決勝三番勝負</td>
+</tr>
+<tr><th>棋戦形式</th>
+<td>32名によるトーナメント方式</td>
+</tr>
+<tr><th>持ち時間</th>
+<td>2時間</td>
+</tr>
+<tr><th>秒読み</th>
+<td>使い切った後、一手60秒5回</td>
+</tr>
+<tr><th>コミ</th>
+<td>6目半</td>
+</tr>
+<tr><th>出場資格</th>
+<td>－</td>
+</tr>
+<tr><th>残留・シード規定</th>
+<td>－</td>
+</tr>
+<tr><th>創設年</th>
+<td>1996年</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p class="caution inner">※ タイトル、段位は抽選時のものです</p>
+		<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_06" class="match_subtitle inner">決勝</h3>
+	<div class="inner match_dtl_block blc06">
+		対局日 ： 11月25日、11月27日、11月28日（左側が勝者、△印は先番）
+<table class="table2 table_w">
+<tbody>
+<tr><th></th><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td class="th_pale">第1局</td>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第2局</td>
+<td>△</td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td class="th_pale">第3局</td>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_05" class="match_subtitle inner">準決勝</h3>
+	<div class="inner match_dtl_block blc05">
+		対局日 ：2023年11月23日（木祝）、11月24日（金） （左側が勝者、△印は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_04" class="match_subtitle inner">準々決勝</h3>
+	<div class="inner match_dtl_block blc04">
+		対局日 ：2023年11月21日（火）、11月22日（水） （左側が勝者、△印は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>時間切れ</td>
+<td></td>
+<td>連笑九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>辜梓豪九段</td>
+<td>中国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td>△</td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>金明訓九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_03" class="match_subtitle inner">二回戦</h3>
+	<div class="inner match_dtl_block blc03">
+		対局日 ：2023年11月19日（日）、20日 （左側が勝者、△印は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>許皓鋐九段</td>
+<td>中華台北</td>
+</tr>
+<tr>
+<td></td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>辜梓豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>申旻埈九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>金昇珍四段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>金ヌリ四段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>檀嘯九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>金明訓九段</td>
+<td>韓国</td>
+<td>半目</td>
+<td>△</td>
+<td>黄雲嵩九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>韓雄奎九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_02" class="match_subtitle inner">一回戦</h3>
+	<div class="inner match_dtl_block blc02">
+		対局日 ：2023年11月16日（木）、17日（金） （左側が勝者、△印は先番）
+<div class="column1_1">
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>金明訓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td><a href="https://www.nihonkiin.or.jp/player/htm/ki000385.html">井山裕太九段</a></td>
+<td>日本</td>
+</tr>
+<tr>
+<td>△</td>
+<td>金昇珍四段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td><a href="https://www.nihonkiin.or.jp/player/htm/ki000451.html">許家元九段</a></td>
+<td>日本</td>
+</tr>
+<tr>
+<td></td>
+<td>韓雄奎九段</td>
+<td>韓国</td>
+<td>2目半</td>
+<td>△</td>
+<td><a href="https://www.nihonkiin.or.jp/player/htm/ki000101.html">依田紀基九段</a></td>
+<td>日本</td>
+</tr>
+<tr>
+<td>△</td>
+<td>金ヌリ四段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td><a href="https://www.nihonkiin.or.jp/player/htm/ki000441.html">本木克弥八段</a></td>
+<td>日本</td>
+</tr>
+<tr>
+<td>△</td>
+<td>黄雲嵩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>金恩持八段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>姜東潤九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td></td>
+<td>周泓余七段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td></td>
+<td>朴廷桓九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>Andrii Kravets初段</td>
+<td>ウクライナ</td>
+</tr>
+<tr>
+<td>△</td>
+<td>謝爾豪九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>崔精九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+<table class="table2 table_w">
+<tbody>
+<tr><th colspan="3" class="bg_blue5">勝者</th><th>結果</th><th colspan="3">相手</th></tr>
+<tr>
+<td></td>
+<td>申眞諝九段</td>
+<td>韓国</td>
+<td>中押し</td>
+<td>△</td>
+<td>王星昊九段</td>
+<td>中国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>檀嘯九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>安成浚九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>許皓鋐九段</td>
+<td>中華台北</td>
+<td>中押し</td>
+<td></td>
+<td>安正己七段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>許嘉陽九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td></td>
+<td>金庭賢九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>丁浩九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>洪性志九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td>△</td>
+<td>辜梓豪九段</td>
+<td>中国</td>
+<td>半目</td>
+<td></td>
+<td>卞相壹九段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>連笑九段</td>
+<td>中国</td>
+<td>中押し</td>
+<td>△</td>
+<td>康又赫七段</td>
+<td>韓国</td>
+</tr>
+<tr>
+<td></td>
+<td>申旻埈九段</td>
+<td>韓国</td>
+<td>半目</td>
+<td>△</td>
+<td>李昌鎬九段</td>
+<td>韓国</td>
+</tr>
+</tbody>
+</table>
+</div>
+	</div>
+	<div class="match_anchr bg_blue4">
+		<ul class="inner">
+			<li><a href="#a028_06">決勝</a></li>
+			<li><a href="#a028_05">準決勝</a></li>
+			<li><a href="#a028_04">準々決勝</a></li>
+			<li><a href="#a028_03">二回戦</a></li>
+			<li><a href="#a028_02">一回戦</a></li>
+			<li><a href="#a028_01">出場棋士</a></li>
+		</ul>
+	</div>
+	<h3 id="a028_01" class="match_subtitle inner">出場棋士</h3>
+	<div class="inner match_dtl_block blc01">
+		<table class="table2 table_w">
+<tbody>
+<tr><th>日本（4人）</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li><a href="/player/htm/ki000385.html">井山裕太九段</a></li>
+<li><a href="/player/htm/ki000451.html">許家元九段</a></li>
+<li><a href="/player/htm/ki000101.html">依田紀基九段</a></li>
+<li><a href="/player/htm/ki000441.html">本木克弥八段</a></li>
+</ul>
+</td>
+</tr>
+<tr><th>韓国（17人）</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>申眞諝九段</li>
+<li>崔精九段</li>
+<li>卞相壹九段</li>
+<li>金明訓九段</li>
+<li>申旻埈九段</li>
+<li>朴廷桓九段</li>
+<li>安成浚九段</li>
+<li>姜東潤九段</li>
+<li>金庭賢九段</li>
+<li>洪性志九段</li>
+<li>韓雄奎九段</li>
+<li>李昌鎬九段</li>
+<li>康又赫七段</li>
+<li>安正己七段</li>
+<li>金恩持八段</li>
+<li>金昇珍四段</li>
+<li>金ヌリ四段</li>
+</ul>
+</td>
+</tr>
+<tr><th>中国（9人）</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>丁浩九段</li>
+<li>辜梓豪九段</li>
+<li>連笑九段</li>
+<li>許嘉陽九段</li>
+<li>黄云嵩九段</li>
+<li>王星昊九段</li>
+<li>謝爾豪九段</li>
+<li>檀嘯九段</li>
+<li>周泓余七段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">中華台北（1人）</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>許皓鋐九段</li>
+</ul>
+</td>
+</tr>
+<tr><th nowrap="nowrap">ワイルドカード（1人）</th>
+<td class="t_left">
+<ul class="no_list_flat">
+<li>Andrii Kravets初段（ウクライナ）</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+	</div>
+<div class="match_body inner">
+</div>
+	</div>
+
+
+</div>
+
+
+
+
+		
+			<h2 class="inner">第8期 三星杯 本戦</h2>
+			<div class="kisen_free01 inner">
+	
+</div>
+<p class="caution inner">※ タイトル、段位は抽選時のものです</p>
+			<div class="match_body inner">
+	
+  
+  ・ 全互先　先番6目半コミ出し<br />
+  ・ 持時間　各3時間<br />
+  ・ 秒読み　残り5分前より　一手60秒
+  <div class="win">趙治勲九段（日本）が2勝1敗で優勝！</div>
+  <h3>決勝3番勝負</h3>
+  （対局日 ： 2003/12/8・9・11）
+  <table cellpadding="3">
+    <tr>
+      <td class="menu">&nbsp;</td>
+      <td class="menu">趙 治勲九段（日本）対 朴 永訓四段（韓国）</td>
+    </tr>
+    <tr>
+      <td>第1局（2003/12/8）</td>
+      <td>朴永訓　白番4目半勝</td>
+    </tr>
+    <tr>
+      <td>第2局（2003/12/9）</td>
+      <td>趙治勲　白番中押勝</td>
+    </tr>
+    <tr>
+      <td>第3局（2003/12/11）</td>
+      <td>趙治勲　白番中押勝</td>
+    </tr>
+  </table>
+        
+  <br />
+  <div class="win">趙治勲九段決勝進出！</div>
+  <h3>準決勝</h3>（対局日 ： 2003/11/4・5）
+  <table cellpadding="3">
+    <tr>
+      <td class="menu">&nbsp;</td>
+      <td class="menu">趙 治勲九段（日本）対 胡 耀宇七段（中国）</td>
+      <td class="menu">謝 赫五段（中国）対 朴 永訓四段（韓国）</td>
+    </tr>
+    <tr>
+      <td>第1局（2003/11/4）</td>
+      <td>趙治勲 白番中押勝</td>
+      <td>朴永訓　白番3目半勝</td>
+    </tr>
+    <tr>
+      <td>第2局（2003/11/5）</td>
+      <td>趙治勲 黒番半目勝</td>
+      <td>朴永訓　黒番半目勝</td>
+    </tr>
+    <tr>
+      <td class="none">第3局（2003/11/7）</td>
+      <td class="none">―</td>
+      <td class="none">―</td>
+    </tr>
+  </table>
+        
+  <br />
+  <div class="win">趙治勲九段が準決勝進出！</div>
+  <h3>準々決勝（8強戦）</h3>
+  （対局日 ： 2003年10月15・16日） △ ： 先番
+  <table cellpadding="3">
+    <tr>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>△朴　永訓 四段（韓国）</td>
+      <td>中押し</td>
+      <td>山田規三生 八段（日本）</td>
+    </tr>
+    <tr>
+      <td>△謝　赫 五段（中国）</td>
+      <td>半目</td>
+      <td>李　昌鎬 九段（韓国）</td>
+    </tr>
+    <tr>
+      <td>△趙　治勲 九段（日本）</td>
+      <td>中押し</td>
+      <td>曺　薫鉉 九段（韓国）</td>
+    </tr>
+    <tr>
+      <td>胡　耀宇 七段（中国）</td>
+      <td>中押し</td>
+      <td>△李　世ドル 九段（韓国）</td>
+    </tr>
+  </table>
+        
+  <br />
+        
+  <div class="win">趙治勲九段、山田規三生八段が準々決勝進出！</div>
+  <h3>2回戦（16強戦）</h3>
+  （対局日 ： 2003年8月31日） △ ： 先番
+  <table cellpadding="3">
+    <tr>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+      <th rowspan="5" class="waku">&nbsp;</th>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>△朴　永訓 四段（韓国）</td>
+      <td>半目</td>
+      <td>丁　偉 八段（中国）</td>
+      <td>△胡　耀宇 七段（中国）</td>
+      <td>3目半</td>
+      <td>劉　昌赫 九段（韓国）</td>
+    </tr>
+    <tr>
+      <td>李　昌鎬 九段（韓国）</td>
+      <td>中押し</td>
+      <td>△王　煜輝 七段（中国）</td>
+      <td>趙　治勲 九段（日本）</td>
+      <td>中押し</td>
+      <td>△元　晟秦 五段（韓国）</td>
+    </tr>
+    <tr>
+      <td>△曺　薫鉉 九段（韓国）</td>
+      <td>中押し</td>
+      <td>宋　泰坤 五段（韓国）</td>
+      <td>謝　赫 五段（中国）</td>
+      <td>中押し</td>
+      <td>△崔　哲瀚 五段（韓国）</td>
+    </tr>
+    <tr>
+      <td>山田規三生 八段（日本）</td>
+      <td>1目半</td>
+      <td>△江　鋳久 九段（韓国）</td>
+      <td>△李　世ドル 九段（韓国）</td>
+      <td>中押し</td>
+      <td>韓　鐘振 五段（韓国）</td>
+    </tr>
+  </table>
+        
+  <br />
+  <div class="win">日本からはシード選手4名が出場！<br />羽根直樹天元、趙治勲九段、加藤正夫九段、山田規三生八段</div>
+  <h3>一回戦（32強戦）</h3>
+  （対局日 ： 2003年8月27日） △ ： 先番
+  <table cellpadding="3">
+    <tr>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+      <th rowspan="9" class="waku">&nbsp;</th>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>朴　永訓 四段（韓国）</td>
+      <td>中押し</td>
+      <td>△李　喆 三段（中国）</td>
+      <td>江　鋳久 九段（韓国）</td>
+      <td>時間切</td>
+      <td>△劉　菁 八段（中国）</td>
+    </tr>
+    <tr>
+      <td>△王　煜輝 七段（中国）</td>
+      <td>5目半</td>
+      <td>ゼイ廼偉 九段（韓国）</td>
+      <td>△崔　哲瀚 五段（韓国）</td>
+      <td>2目半</td>
+      <td>常　昊 九段（中国）</td>
+    </tr>
+    <tr>
+      <td>曺　薫鉉 九段（韓国）</td>
+      <td>中押し</td>
+      <td>△張　文東 九段（中国）</td>
+      <td>△李　昌鎬 九段（韓国）</td>
+      <td>1目半</td>
+      <td>彭　セン 五段（中国）</td>
+    </tr>
+    <tr>
+      <td>△山田規三生 八段（日本）</td>
+      <td>中押し</td>
+      <td>兪　斌 九段（中国）</td>
+      <td>△元　晟秦 五段（韓国）</td>
+      <td>中押し</td>
+      <td>王　磊 八段（中国）</td>
+    </tr>
+    <tr>
+      <td>△劉　昌赫 九段（韓国）</td>
+      <td>半目</td>
+      <td>羽根直樹 九段（日本）</td>
+      <td>△丁　偉 八段（中国）</td>
+      <td>中押し</td>
+      <td>金　鍾秀 五段（韓国）</td>
+    </tr>
+    <tr>
+      <td>胡　耀宇 七段（中国）</td>
+      <td>中押し</td>
+      <td>△趙　漢乗 六段（韓国）</td>
+      <td>謝　赫 五段（中国）</td>
+      <td>半目</td>
+      <td>△李　載雄 二段（韓国）</td>
+    </tr>
+    <tr>
+      <td>△宋　泰坤 五段（韓国）</td>
+      <td>中押し</td>
+      <td>邱　キン 六段（中国）</td>
+      <td>△韓　鐘振 五段（韓国）</td>
+      <td>4目半</td>
+      <td>加藤正夫 九段（日本）</td>
+    </tr>
+    <tr>
+      <td>△趙　治勲 九段（日本）</td>
+      <td>中押し</td>
+      <td>金　主鎬 四段（韓国）</td>
+      <td>李　世ドル 九段（韓国）</td>
+      <td>中押し</td>
+      <td>△孔　傑 七段（中国）</td>
+    </tr>
+  </table>
+        
+  <br /><br>
+  <HR>
+  <br>
+    
+  <h3>予選</h3>
+  ・ 全互先　先番6目半コミ出し<br />
+  ・ 持時間　各3時間<br />
+  ・ 秒読み　残り5分前より　一手60秒
+  <div class="win">日本より49名の選手が予選に挑む<br />
+    本戦シード選手（4名）：羽根直樹天元、趙治勲九段、加藤正夫九段、山田規三生八段<br>
+    日本勢予選突破者なし</div>
+  <table cellpadding="3">
+    <tr>
+      <th colspan="7" class="tl p14" style="font-weight:normal"><b>■ 決勝戦結果</b>（対局日 <span class="tl p14" style="font-weight:normal">： </span>8月4日）　△ ： 先番</th>
+    </tr>
+    <tr>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+      <th rowspan="9" class="waku">&nbsp;</th>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>Ａ組</td>
+      <td>孔　傑七段（中）</td>
+      <td>梁　宰豪九段（韓）</td>
+      <td>Ｉ組</td>
+      <td>張　文東九段（中）</td>
+      <td>李　映九二段（韓）</td>
+    </tr>
+    <tr>
+      <td>Ｂ組</td>
+      <td>江　鋳久九段（韓）</td>
+      <td>梁　建六段（韓）</td>
+      <td>Ｊ組</td>
+      <td>李　喆三段（中）</td>
+      <td>山田晋次三段（日）</td>
+    </tr>
+    <tr>
+      <td>Ｃ組</td>
+      <td>韓　鐘振五段（韓）</td>
+      <td>高尾紳路八段（日）</td>
+      <td>Ｋ組</td>
+      <td>李　載雄二段（韓）</td>
+      <td>安　祚永七段（韓）</td>
+    </tr>
+    <tr>
+      <td>Ｄ組</td>
+      <td>劉　菁八段（中）</td>
+      <td>李　康四段（中）</td>
+      <td>Ｌ組</td>
+      <td>趙　漢乗六段（韓）</td>
+      <td>鶴山淳志五段（日）</td>
+    </tr>
+    <tr>
+      <td>Ｅ組</td>
+      <td>崔　哲瀚五段（韓）</td>
+      <td>李　相勲四段（韓）</td>
+      <td>Ｍ組</td>
+      <td>金　錘秀五段（韓）</td>
+      <td>李　相勲七段（韓）</td>
+    </tr>
+    <tr>
+      <td>Ｆ組</td>
+      <td>金　主鎬三段（韓）</td>
+      <td>安　達勲五段（韓）</td>
+      <td>Ｎ組</td>
+      <td>邱　峻六段（中）</td>
+      <td>王　雷三段（中）</td>
+    </tr>
+    <tr>
+      <td>Ｇ組</td>
+      <td>ゼイ廼偉九段（韓）</td>
+      <td>安　永吉五段（韓）</td>
+      <td>Ｏ組</td>
+      <td>彭　筌六段（中）</td>
+      <td>睦　鎮碩七段（韓）</td>
+    </tr>
+    <tr>
+      <td>Ｈ組</td>
+      <td>丁　偉八段（中）</td>
+      <td>中野寬也九段（日）</td>
+      <td>Ｐ組</td>
+      <td>元　晟秦五段（韓）</td>
+      <td>陳　耀燁三段（中）</td>
+    </tr>
+    <tr>
+      <th colspan="7" class="tl p14" style="font-weight:normal">
+      <div class="fm p12">※ 4回戦以前は日本勢のみを掲載</div>
+      <div class="win">日本勢4名が決勝戦進出<br></div>
+      <b>■ 4回戦結果</b>（対局日 ： 8月2日）　△ ： 先番<br />
+      日本勢12名（うち1対局が日本勢同士）</th>
+    </tr>
+    <tr>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+      <th rowspan="7" class="waku">&nbsp;</th>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>A組</td>
+      <td>梁　宰豪九段（韓）</td>
+      <td>石田篤司九段（日）</td>
+      <td>J組</td>
+      <td>山田晋次三段（日）</td>
+      <td>安　官旭五段（韓）</td>
+    </tr>
+    <tr>
+      <td>C組</td>
+      <td>高尾紳路八段（日）</td>
+      <td>大場惇也初段（日）</td>
+      <td>J組</td>
+      <td>李　喆三段（中）</td>
+      <td>小松英樹九段（日）</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>金　主鎬三段（韓）</td>
+      <td>武井孝志五段（日）</td>
+      <td>L組</td>
+      <td>鶴山淳志五段（日）</td>
+      <td>兪　在星二段（韓）</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>丁　偉八段（中）</td>
+      <td>大橋拓文三段（日）</td>
+      <td>L組</td>
+      <td>趙　漢乗六段（韓）</td>
+      <td>Ｍ．レドモンド九段（日）</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>中野寬也九段（日）</td>
+      <td>李　熙星五段（韓）</td>
+      <td>N組</td>
+      <td>王　雷三段（中）</td>
+      <td>靑葉かおり四段（日）</td>
+    </tr>
+    <tr>
+      <td>I組</td>
+      <td>李　映九二段（韓）</td>
+      <td>張　豊猷六段（日）</td>
+      <th colspan="3">&nbsp;</th>
+    </tr>
+    <tr>
+      <th colspan="7" class="tl p14" style="font-weight:normal"><br />
+      <div class="win">日本勢12名が4回戦進出</div>
+      <b>■ 3回戦結果</b>（8月1日）　△ ： 先番<br />
+      日本勢24名（うち2対局が日本勢同士）</th>
+    </tr>
+    <tr>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+      <th rowspan="12" class="waku">&nbsp;</th>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">敗者</td>
+    </tr><tr>
+      <td>A組</td>
+      <td>石田篤司九段（日）</td>
+      <td>李　　眞三段（韓）</td>
+      <td>I組</td>
+      <td>張　豊猷六段（日）</td>
+      <td>陳　逸達三段（台）</td>
+    </tr>
+    <tr>
+      <td>C組</td>
+      <td>高尾紳路八段（日）</td>
+      <td>權　五敏三段（韓）</td>
+      <td>J組</td>
+      <td>山田晋次三段（日）</td>
+      <td>井山裕太三段（日）</td>
+    </tr>
+    <tr>
+      <td>C組</td>
+      <td>大場惇也初段（日）</td>
+      <td>許　壯會九段（韓）</td>
+      <td>J組</td>
+      <td>小松英樹九段（日）</td>
+      <td>朴　昇哲三段（韓）</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>白　大鉉五段（韓）</td>
+      <td>林　漢傑五段（日）</td>
+      <td>K組</td>
+      <td>羅　洗河九段（中）</td>
+      <td>円田秀樹九段（日）</td>
+    </tr>
+    <tr>
+      <td>E組</td>
+      <td>崔　哲瀚五段（韓）</td>
+      <td>蘇　耀國七段（日）</td>
+      <td>K組</td>
+      <td>李　載雄二段（韓）</td>
+      <td>光永淳造五段（日）</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>方　捷　七段（中）</td>
+      <td>松本武久六段（日）</td>
+      <td>K組</td>
+      <td>許　暎皓二段（韓）</td>
+      <td>河野貴至七段（日）</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>武井孝志五段（日）</td>
+      <td>朴　進率二段（韓）</td>
+      <td>L組</td>
+      <td>鶴山淳志五段（日）</td>
+      <td>文　明根八段（韓）</td>
+    </tr>
+    <tr>
+      <td>G組</td>
+      <td>安　永吉五段（韓）</td>
+      <td>溝上知親七段（日）</td>
+      <td>L組</td>
+      <td>Ｍ．レドモンド九段（日）</td>
+      <td>徐　能旭九段（韓）</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>大橋拓文三段（日）</td>
+      <td>劉　丙虎八段（韓）</td>
+      <td>N組</td>
+      <td>靑葉かおり四段（日）</td>
+      <td>杉本　明七段（日）</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>中野寬也九段（日）</td>
+      <td>金　承俊八段（韓）</td>
+      <td>O組</td>
+      <td>彭　筌　六段（中）</td>
+      <td>万波佳奈二段（日）</td>
+    </tr>
+    <tr>
+      <td>I組</td>
+      <td>李　永九二段（韓）</td>
+      <td>大澤奈留美二段（日）</td>
+      <td>P組</td>
+      <td>陳　耀樺三段（中）</td>
+      <td>大矢浩一九段（日）</td>
+    </tr>
+  </table>
+  <br />
+  <table cellpadding="3">
+    <tr>
+      <th colspan="9" class="tl p14" style="font-weight:normal">
+      <div class="win">日本勢、3回戦進出は24名（49名中）</div>
+      <b>■ 2回戦結果</b>（7月30・31日）　△ ： 先番</th>
+    </tr>
+    <tr>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+      <th rowspan="23" class="waku">&nbsp;</th>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>A組</td>
+      <td>△孔　傑 七段</td>
+      <td>3目半</td>
+      <td>秋山次郎 八段</td>
+      <td>H組</td>
+      <td>△玄　味眞 二段</td>
+      <td>7目半</td>
+      <td>金澤秀男 六段</td>
+    </tr>
+    <tr>
+      <td>A組</td>
+      <td>△石田篤司 九段</td>
+      <td>1目半</td>
+      <td>金　宋俊 五段</td>
+      <td>I組</td>
+      <td>大沢奈留美 二段</td>
+      <td>中押</td>
+      <td>△裵　允眞 初段</td>
+    </tr>
+    <tr>
+      <td>A組</td>
+      <td>梁　宰豪 九段</td>
+      <td>中押</td>
+      <td>△望月研一 四段</td>
+      <td>I組</td>
+      <td>張　豊猷 六段</td>
+      <td>&nbsp;</td>
+      <td>李　劼 四段</td>
+    </tr>
+    <tr>
+      <td>B組</td>
+      <td>朴　昇賢 三段</td>
+      <td>中押</td>
+      <td>△祷　陽子 五段</td>
+      <td>J組</td>
+      <td>曹　大元 九段</td>
+      <td>&nbsp;</td>
+      <td>井山裕太 三段</td>
+    </tr>
+    <tr>
+      <td>B組</td>
+      <td>△江　鋳久 九段</td>
+      <td>2目半</td>
+      <td>河野　臨 七段</td>
+      <td>J組</td>
+      <td>李　相澈 七段</td>
+      <td>&nbsp;</td>
+      <td>山田晋次 三段</td>
+    </tr>
+    <tr>
+      <td>B組</td>
+      <td>△梁　建 六段</td>
+      <td>中押</td>
+      <td>金　賢貞 三段</td>
+      <td>J組</td>
+      <td>小松英樹 九段</td>
+      <td>&nbsp;</td>
+      <td>金　孝貞 二段</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>△高尾紳路 八段</td>
+      <td>中押</td>
+      <td>鄭　弘 九段</td>
+      <td>K組</td>
+      <td>円田秀樹 九段</td>
+      <td>&nbsp;</td>
+      <td>高　在熙 七段</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>△大場惇也 初段</td>
+      <td>中押</td>
+      <td>姜　東潤 二段</td>
+      <td>K組</td>
+      <td>　光永淳造 五段</td>
+      <td>&nbsp;</td>
+      <td>尹　泳珉 二段</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>　劉　菁 八段</td>
+      <td>中押</td>
+      <td>△阪本寧生 初段</td>
+      <td>K組</td>
+      <td>河野貴至 七段</td>
+      <td>&nbsp;</td>
+      <td>張　斗軫 七段</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>△林　漢傑 五段</td>
+      <td>中押</td>
+      <td>李　東奎 八段</td>
+      <td>L組</td>
+      <td>金　德奎 七段</td>
+      <td>&nbsp;</td>
+      <td>鶴山淳志 五段</td>
+    </tr>
+    <tr>
+      <td>D組</td>
+      <td>李　康 四段</td>
+      <td>中押</td>
+      <td>△星野正樹 八段</td>
+      <td>L組</td>
+      <td>Ｍ．レドモンド 九段</td>
+      <td>&nbsp;</td>
+      <td>李　炯魯 四段</td>
+    </tr>
+    <tr>
+      <td>E組</td>
+      <td>蘇　耀国 七段</td>
+      <td>&nbsp;</td>
+      <td>張　明翰 七段</td>
+      <td>L組</td>
+      <td>中野泰宏 八段</td>
+      <td>&nbsp;</td>
+      <td>李　賢旭 五段</td>
+    </tr>
+    <tr>
+      <td>E組</td>
+      <td>黄　焔 三段</td>
+      <td>&nbsp;</td>
+      <td>潘　坤鈺 初段</td>
+      <td>M組</td>
+      <td>金　鍾洙 五段</td>
+      <td>&nbsp;</td>
+      <td>小松英子 三段</td>
+    </tr>
+    <tr>
+      <td>E組</td>
+      <td>金　万樹 四段</td>
+      <td>&nbsp;</td>
+      <td>三谷哲也 二段</td>
+      <td>M組</td>
+      <td>　柳　時熏 九段</td>
+      <td>&nbsp;</td>
+      <td>尹　盛鉉 八段</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>古　力 七段</td>
+      <td>中押</td>
+      <td>△榊原史子 六段</td>
+      <td>N組</td>
+      <td>杉本　明 七段</td>
+      <td>&nbsp;</td>
+      <td>李　廷宇 四段</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>松本武久 六段</td>
+      <td>&nbsp;</td>
+      <td>羅　鍾勲 五段</td>
+      <td>N組</td>
+      <td>沈　宗植 六段</td>
+      <td>&nbsp;</td>
+      <td>青葉かおり 四段</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>武井孝志 五段</td>
+      <td>&nbsp;</td>
+      <td>徐　奉洙 九段</td>
+      <td>N組</td>
+      <td>首藤　瞬 四段</td>
+      <td>&nbsp;</td>
+      <td>王　雷 三段</td>
+    </tr>
+    <tr>
+      <td>F組</td>
+      <td>金　秀眞 初段</td>
+      <td>中押</td>
+      <td>△黄　翊祖 三段</td>
+      <td>O組</td>
+      <td>佐々木毅 五段</td>
+      <td>&nbsp;</td>
+      <td>金　世實 初段</td>
+    </tr>
+    <tr>
+      <td>G組</td>
+      <td>△溝上知親 七段</td>
+      <td>6目半</td>
+      <td>武宮陽光 四段</td>
+      <td>O組</td>
+      <td>万波佳奈 二段</td>
+      <td>&nbsp;</td>
+      <td>金　兌郷 初段</td>
+    </tr>
+    <tr>
+      <td>G組</td>
+      <td>ユ　炅旻 三段</td>
+      <td>中押</td>
+      <td>△山田至宝 六段</td>
+      <td>P組</td>
+      <td>金　榮三 六段</td>
+      <td>&nbsp;</td>
+      <td>安斎伸彰 初段</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>△大橋拓文 三段</td>
+      <td>中押</td>
+      <td>張　秀英 九段</td>
+      <td>P組</td>
+      <td>大矢浩一 九段</td>
+      <td>&nbsp;</td>
+      <td>洪　太善 八段</td>
+    </tr>
+    <tr>
+      <td>H組</td>
+      <td>△中野寛也 九段</td>
+      <td>中押</td>
+      <td>王　洋 五段</td>
+      <td>P組</td>
+      <td>元　晟秦 五段</td>
+      <td>&nbsp;</td>
+      <td>川田晃平 三段</td>
+    </tr>
+    <tr>
+      <th colspan="9" class="tl p14" style="font-weight:normal"><br />
+        <br />
+      <b>■ 1回戦結果</b>（7月29日）　△：先番</td>
+    </tr>
+    <tr>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+      <th rowspan="4" class="waku">&nbsp;</th>
+      <td class="menu">組</td>
+      <td class="menu">勝者</td>
+      <td class="menu">結果</td>
+      <td class="menu">敗者</td>
+    </tr>
+    <tr>
+      <td>A組</td>
+      <td>段　嶸 七段</td>
+      <td>4目半</td>
+      <td>△中根直行 七段</td>
+      <td>I組</td>
+      <td>△李　劼 四段</td>
+      <td>中押</td>
+      <td>下島陽平 七段</td>
+    </tr>
+    <tr>
+      <td>C組</td>
+      <td>韓　鍾振 四段</td>
+      <td>中押</td>
+      <td>△後藤俊午 九段</td>
+      <td>O組</td>
+      <td>金　亨奐 初段</td>
+      <td>中押</td>
+      <td>△潘　善琪 六段</td>
+    </tr>
+    <tr>
+      <td>G組</td>
+      <td>△武宮陽光 四段</td>
+      <td>6目半</td>
+      <td>王　群 八段</td>
+      <th colspan="4">&nbsp;</th>
+    </tr>
+  </table>
+</div>
+<!-- InstanceEndEditable -->
+
+<div>
+  <address></address>
+</div>
+
+
+</div>
+
+		
+
+
+
+			
+		
+		</div>
+		<aside class="pc_none" id="sidenav"><section id="secCatSidenav" class="pc_none">
+	<h2><span>カテゴリ</span></h2>
+	<h2><a href="/match/">棋戦</a></h2>
+	<h2><a href="/player/">棋士</a></h2>
+	<h2><a href="/event/">囲碁大会・イベント</a></h2>
+	<h2><a href="/sisetsu/">施設案内</a></h2>
+	<h2><a href="/publishing/">出版・販売</a></h2>
+	<h2><a href="/member/">会員情報</a></h2>
+	<h2><a href="/teach/">囲碁学習・普及活動</a></h2>
+	<h2><a href="/profile/">棋院概要</a></h2>
+	<h2 id="liLoginSP"><a href="/member/login/">ログイン</a></h2>
+</section></aside>		
+	</div>
+	
+</div><!-- end #container -->
+
+<footer id="footer">
+
+
+	<div id="goTop"><a href="#"></a></div>
+	
+	
+		<iframe class="frm_foot_bnr" src="/footer_banner.html" width="100%" frameborder="0"></iframe>
+	
+		
+
+	<div class="footer_ad_wrap_wrap">
+    <div class="footer_ad_wrap clearfix">
+<!--
+<script async 
+src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6375018206692817"
+      crossorigin="anonymous"></script>
+ WWWフッター横長 
+<ins class="adsbygoogle"
+      style="display:block"
+      data-ad-client="ca-pub-6375018206692817"
+      data-ad-slot="5673677749"
+      data-ad-format="auto"
+      data-full-width-responsive="true"></ins>
+<script>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+-->
+
+    </div><!-- / .footer_ad_wrap -->
+    </div><!-- / .footer_ad_wrap_wrap -->
+	
+	
+	
+	
+	
+	<div id="footerSitemap">
+		<ul>
+			<li><a href="/learn/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁入門')">囲碁入門</a></li>
+			<li><a href="https://mypage.nihonkiin.or.jp/" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '日本棋院ID マイページ')">日本棋院IDマイページ</a></li>
+			<li><a href="http://u-gen.nihonkiin.or.jp/" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'ネット対局')">ネット対局</a></li>
+			<li><a href="http://njk.nihonkiin.or.jp/index_top.html" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '情報会員サービス')">情報会員サービス</a></li>
+			<li><a href="http://www.rakuten.co.jp/nihonkiin/" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-オンラインショップ')">オンラインショップ</a></li>
+			<li><a href="/news/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'お知らせ')">お知らせ</a></li>
+			<li><a href="/etc/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'コラム')">コラム</a></li>
+		</ul>
+		<ul>
+			<li><a href="/match/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦')">棋戦</a>
+				<ul>
+					<li><a href="/match_news/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-新着情報')">新着情報</a></li>
+					<li><a href="/match/internal/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-国内棋戦')">国内棋戦</a></li>
+					<li><a href="/match/female/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-女性棋戦')">女性棋戦</a></li>
+					<li><a href="/match/international/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-国際棋戦')">国際棋戦</a></li>
+					<li><a href="/match/others/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-その他の棋戦')">その他の棋戦</a></li>
+					<li><a href="/match/2week.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-対局結果・予定')">対局結果・予定</a></li>
+					<li><a href="/match/calendar.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-棋戦カレンダー')">棋戦カレンダー</a></li>
+					<li><a href="/match/kiyaku/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋戦-日本囲碁規約')">日本囲碁規約</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/player/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士')">棋士</a>
+				<ul>
+					<li><a href="/player_news/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-新着情報')">新着情報</a></li>
+					<li><a href="/player/dan/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士一覧')">棋士一覧</a></li>
+					<li><a href="/player/national/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-ナショナルチーム')">ナショナルチーム</a></li>
+					<li><a href="/player/saiyou/result/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士採用試験')">棋士採用試験</a></li>
+					<li><a href="/player/insei/joretu/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-院生序列')">院生序列</a></li>
+					<!--<li><a href="/player/kishikai.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士会')">棋士会</a></li>-->
+					<li class="player_info">棋士<a href="/player/links.html#homepage" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士[HP]')">［HP］</a> <a href="/player/links.html#blog" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士[Blog]')">［Blog］</a> <a href="/player/links.html#fb" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士[Facebook]')">［Facebook］</a> <a href="/player/links.html#twitter" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋士-棋士[X（旧twitter）]')">［X（旧twitter）］</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/event/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会・イベント')">囲碁大会・イベント</a>
+				<ul>
+					<li><a href="/event/news/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-新着情報')">新着情報</a></li>
+					<li><a href="/event/taikai/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-囲碁大会')">囲碁大会</a></li>
+					<li><a href="/event/events/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-解説会・イベント')">解説会・イベント</a></li>
+					<li><a href="/event/amakisen/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-アマ大会一覧')">アマ大会一覧</a></li>
+					<li><a href="/event/support/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-後援申請')">後援申請</a></li>
+					<li><a href="/event/support/kishi_haken.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁大会イベント-棋士派遣')">棋士派遣</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/sisetsu/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内')">施設案内</a>
+				<ul>
+					<li><a href="/sisetsu/ichigaya/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-市ヶ谷本院')">東京本院</a></li>
+					<li><a href="/sisetsu/yurakucho/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-有楽町囲碁センター')">有楽町囲碁センター</a></li>
+					<li><a href="/sisetsu/chubu/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-中部総本部')">中部総本部</a></li>
+					<li><a href="/sisetsu/kansai/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-関西総本部')">関西総本部</a></li>
+					<li><a href="/sisetsu/umeda/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-梅田囲碁サロン')">梅田囲碁サロン</a></li>
+					<li><a href="/profile/sisetsu/kaigai.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '施設案内-海外施設')">海外施設</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/publishing/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売')">出版・販売</a>
+				<ul>
+					<li><a href="/publishing/news/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売情報-新着情報')">新着情報</a></li>
+					<li><a href="/publishing/go_world/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-碁ワールド')">碁ワールド</a></li>
+                	<li><a href="https://nihonkiin.net/" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-棋道web')">棋道web</a></li>
+					<li><a href="/publishing/go_weekly/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-週刊碁（バックナンバー）')">週刊碁（バックナンバー）</a></li>
+					<li><a href="/publishing/igo_mirai/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-囲碁未来（バックナンバー）')">囲碁未来（バックナンバー）</a></li>
+					<li><a href="/publishing/books/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-書籍')">書籍</a></li>
+                    <!-- li><a href="/publishing/books/ebook/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '電子書籍')">電子書籍</a></li -->
+					<li><a href="http://www.rakuten.co.jp/nihonkiin/" target="_blank" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '出版・販売-オンラインショップ')">オンラインショップ</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/member/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '会員組織')">会員組織</a>
+				<ul>
+					<li><a href="/member/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '会員情報-個人会員')">個人会員</a></li>
+					<li><a href="/member/index.html#houjinMember" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '会員情報-法人会員')">法人会員</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/teach/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動')">囲碁学習・普及活動</a>
+				<ul>
+					<li><a href="/teach/lesson/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-楽しい囲碁入門')">楽しい囲碁入門</a></li>
+					<li><a href="/teach/kiin_editor/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-Kiin Editor')">Kiin Editor</a></li>
+					<li><a href="/teach/app/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-スマホアプリ')">スマホアプリ</a></li>
+					<li><a href="/teach/school/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-全国の囲碁教室')">全国の囲碁教室</a></li>
+					<li><a href="/teach/menjo.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-免状の取得')">免状の取得</a></li>
+					<li><a href="/teach/gakkouigo/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-普及事業')">普及事業</a></li>
+					<li><a href="/teach/hukyu.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-指導者育成')">指導者育成</a></li>
+					<li><a href="/teach/igotaishi_profile.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '囲碁学習・普及活動-囲碁大使')">囲碁大使</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/link/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク')">リンク</a>
+				<ul>
+					<li><a href="/link/index.html#kiin" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-日本棋院支部')">日本棋院支部</a></li>
+					<li><a href="/link/index.html#school" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-学校囲碁部・教室')">学校囲碁部・教室</a></li>
+					<li><a href="/link/index.html#domestic" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-国内の囲碁団体')">国内の囲碁団体</a></li>
+					<li><a href="/link/index.html#abroad" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-国外の囲碁団')">国外の囲碁団体</a></li>
+					<li><a href="/link/index.html#sports" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-頭脳スポーツ')">頭脳スポーツ</a></li>
+					<li><a href="/link/index.html#abroad2" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', 'リンク-文化庁・海外普及')">文化庁・海外普及</a></li>
+				</ul>
+			</li>
+		</ul>
+		<ul>
+			<li><a href="/profile/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要')">棋院概要</a>
+				<ul>
+					<li><a href="/profile/gaiyou" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-組織概要')">組織概要</a></li>
+					<li><a href="/profile/service/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-事業内容')">事業内容</a></li>
+					<li><a href="/profile/enkaku/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-沿革')">沿革</a></li>
+					<li><a href="/profile/info/officialaccount.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-公式アカウント一覧')">公式アカウント一覧</a></li>
+					<li><a href="/profile/partner/kisen.html" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-スポンサー')">スポンサー</a></li>
+					<li><a href="/profile/faq/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-よくあるご質問')">よくあるご質問</a></li>
+					<li><a href="/profile/inquiry/" onclick="ga('send', 'event', 'フッターサイトマップ', 'クリック', '棋院概要-お問い合わせ')">お問い合わせ</a></li>
+				</ul>
+			</li>
+		</ul>
+	</div>
+	<!-- / #footer_sitemap -->
+	<div id="footerBottom">
+		<div class="inner">
+			<p id="footerLogo" class="sp_none"><img src="/common/images/logo_footer.png" alt="日本棋院"></p>
+			<div id="footerRight">
+				<ul>
+					<li><a href="/sitepolicy/" onclick="ga('send', 'event', 'フッター', 'クリック', 'サイトポリシー')">サイトポリシー</a></li>
+					<li class="pc_none"><a href="/profile/" onclick="ga('send', 'event', 'フッター', 'クリック', '棋院概要')">棋院概要</a></li>
+					<li><a href="/sitepolicy/link.html" onclick="ga('send', 'event', 'フッター', 'クリック', '棋譜使用・リンクについて')">棋譜使用・リンクについて</a></li>
+					<li><a href="/privacy/" onclick="ga('send', 'event', 'フッター', 'クリック', '個人情報保護方針')">個人情報保護方針</a></li>
+					<!-- li><a href="/socialmediapolicy/" onclick="ga('send', 'event', 'フッター', 'クリック', 'SNS活用ガイドライン')">SNS活用ガイドライン</a></li -->
+					<!-- li class="pc_none"><a href="/link/" onclick="ga('send', 'event', 'フッター', 'クリック', 'リンク')">リンク</a></li -->
+					<li><a href="/profile/inquiry/" onclick="ga('send', 'event', 'フッター', 'クリック', 'お問い合わせ')">お問い合わせ</a></li>
+					<li><a href="/sitemap/" onclick="ga('send', 'event', 'フッター', 'クリック', 'サイトマップ')">サイトマップ</a></li>
+				</ul>
+				<p id="pcView" class="pc_none"><a class="pcSiteChange" href="javascript:void(0);">PCサイト</a></p>
+				<p class="copyright">Copyright (c) 1996-<script>D = new Date();Y = D.getFullYear();document.write(Y);</script> Nihonkiin all rights reserved.</p>
+			</div>
+		</div>
+		<!-- / #footer_right --> 
+	</div>
+	<!-- / #footer_bottom --> 
+</footer>
+<!-- Footer -->
+<!--<aside id="sidenav_sp" class="sidenav_sub pc_none">
+	<section id="secCatSidenav">
+		<h2><span>カテゴリ</span></h2>
+		<h2><a href="/match/">棋戦</a></h2>
+		<h2><a href="/player/">棋士</a></h2>
+		<h2><a href="/event/">囲碁大会・イベント</a></h2>
+		<h2><a href="/sisetsu/">施設案内</a></h2>
+		<h2><a href="/publishing/">出版・販売</a></h2>
+		<h2><a href="/member/">会員情報</a></h2>
+		<h2><a href="/teach/">囲碁学習・普及活動</a></h2>
+		<h2><a href="/profile/">棋院概要</a></h2>
+		<h2 id="liLoginSP"><a href="/member/login/">ログイン</a></h2>
+	</section>
+</aside>
+-->
+
+<script type="text/javascript" src="/common/js/main.js?date=20250526"></script> 
+<script>
+	$(function(){
+		//メインバナー0件の場合はバナーエリアを非表示にする
+		if( $('.slider1 li').length < 1 ){
+			$('#bnrHeader').css('display','none');
+		}
+		//メインバナー1件の場合はスライドOFF
+		var n = $(".slider1 li").length;
+		if( n > 1 ){
+			var mainBnr = $('.slider1').bxSlider({
+				auto: true,
+				pause: 8000,
+				speed: 500,
+				onSlideAfter: function(){
+				mainBnr.startAuto();
+				}
+			});
+		}
+		$('.slider2').bxSlider({
+			auto: true,
+			pager:false,
+			minSlides: 5,
+			maxSlides: 5,
+			slideWidth: 160,
+			slideMargin: 30,
+			moveSlides: 1,
+			speed: 1000,
+		});
+	});
+</script>
+
+
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-2296944-1', 'auto');
+  ga('require', 'displayfeatures');
+  ga('send', 'pageview');
+
+</script>
+
+<script type="text/javascript">
+piAId = '347981';
+piCId = '1277';
+
+(function() {
+ function async_load(){
+  var s = document.createElement('script'); s.type = 'text/javascript';
+  s.src = ('https:' == document.location.protocol ? 'https://pi' : 'http://cdn') + '.pardot.com/pd.js';
+  var c = document.getElementsByTagName('script')[0]; c.parentNode.insertBefore(s, c);
+ }
+ if(window.attachEvent) { window.attachEvent('onload', async_load); }
+ else { window.addEventListener('load', async_load, false); }
+})();
+</script>
+
+<!-- 20200715 HM delete ST
+<script>
+window.addEventListener("wovnLangChanged", function() {
+	console.log("called");
+	var e = WOVN.io.getCurrentLang();
+	ga('send', 'event', 'WOVN', 'Change language',
+   		'changet to:' + e.name, e);
+});
+</script>
+20200715 HM delete ED -->
+
+</body>
+</html>

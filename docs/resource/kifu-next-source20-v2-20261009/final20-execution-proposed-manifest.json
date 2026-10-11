@@ -1,0 +1,32 @@
+{
+  "PROD": {
+    "bundle_file_sha256": "f273d205a757e3ba3f09fabb522071fcc4e253a156ffd79b4ead4faa100b3c60",
+    "bundle_sha256": "ebc710e18a440e875a6e7d0d6fc3e86aaac647fc956f853440c942903622d1aa",
+    "evidence_file_sha256": "c1f4cc4524c5a12f7eac3696c6a9539bbd6aa4f22be73e083cdaa0fcd92aadb1",
+    "inventory_file_sha256": "fee3fc53dddbe8736dd02b844bb01bdf242de032bb5b57cd7ab3d7e7a45d0274",
+    "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "registry_file_sha256": "612791156bd1131c9efe1f6b577a1c0825d54276496f24354c9e0a8156087617",
+    "registry_sha256": "612791156bd1131c9efe1f6b577a1c0825d54276496f24354c9e0a8156087617",
+    "root_fresh_file_sha256": "38aae05d8d53de87b165a472023d2cfbe9842eb8e2b9a31a7d8755029d007218",
+    "source_review_file_sha256": "aff73d066736d8e9883bbb0e984852f36e2ab85acc3794481adecfcbe751bf0d"
+  },
+  "TEST": {
+    "bundle_file_sha256": "9ab3ce67b18974c53ef0503f1ba62801213cdcb07ed419603ca06b029e6ce6bb",
+    "bundle_sha256": "e13e4eb7a338450304141601cd7b3c89a500e59daf4e0fb4cf9fb55d633413d5",
+    "evidence_file_sha256": "477bf40f14167741755e62ee64c490b06732bb0dbe0146ad4c07ab3ef54fe85d",
+    "inventory_file_sha256": "e807cc1819e27f75ffdb6d8b733b4ae5b7768f7d774a6b8c591ad6287f7febf1",
+    "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+    "registry_file_sha256": "612791156bd1131c9efe1f6b577a1c0825d54276496f24354c9e0a8156087617",
+    "registry_sha256": "612791156bd1131c9efe1f6b577a1c0825d54276496f24354c9e0a8156087617",
+    "root_fresh_file_sha256": "e522ec017492dcb7997879d6b4d0bf310b5aea134a9ba88ccb84ce374e13af88",
+    "source_review_file_sha256": "aff73d066736d8e9883bbb0e984852f36e2ab85acc3794481adecfcbe751bf0d"
+  },
+  "helper_sha256": {
+    "final20-inner.py": "24bbd887c17d6aa60db852f5f1ce3e777a62bbd3fb9b7e44d2d396cae3a62f3b",
+    "final20-run.py": "2748bad7774933f6086e57ef09504eda5b65e1f657febc53f6c214469884dc29"
+  },
+  "required_image_ids": {
+    "PROD": "sha256:6ffe9b6dad44ae280dc756d8468f1695337ca786541976413b515e614ebab3c5",
+    "TEST": "sha256:61ffcb3f86e9733b63eb7b25c2e34005e651e5ab1da4e7ad353d64f5815df1f1"
+  }
+}

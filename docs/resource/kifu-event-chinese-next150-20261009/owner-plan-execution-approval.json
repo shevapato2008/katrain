@@ -1,0 +1,20 @@
+{
+  "allow_apply": true,
+  "environments": {
+    "PROD": {
+      "image_id": "sha256:6eb7597b5b478c082fe91405c0223531a46380bf53b9d7dc33e8e74cfb642b02",
+      "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+      "plan_canonical_sha256": "fbf4c39b37280942a41f5ad290e69d0964ba6c557c69a1604fe4c276f9362dae"
+    },
+    "TEST": {
+      "image_id": "sha256:82124209ad6425190d587fec10b06eb7cab8b80067cd345cc523bd9a760523c4",
+      "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+      "plan_canonical_sha256": "f08ed309ffbc17444e3c46846728e8ff7be46e9e778019877e26d19500fc0d9a"
+    }
+  },
+  "review_conclusion": "approve both exact native owner-only plans after successful dry runs; 150 literal raw-title review updates, no name, FK or SGF writes",
+  "reviewed_at": "2026-10-08T22:44:54.703703+00:00",
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "status": "approved_owner_plan_execution"
+}

@@ -1,0 +1,1025 @@
+{
+  "artifact_kind": "zh_ko_independently_approved_source_anchors",
+  "environment": "PROD",
+  "approval_scope": "exact_current_conventional_cn_en_source_anchors_only",
+  "reviewer_id": "/root/zh_ko_task2_review_astra",
+  "reviewer_model": "gpt-6-astra",
+  "reviewed_at": "2026-10-08T22:39:02Z",
+  "pending_packet_file": "pending-root-assembly/PROD-pending.json",
+  "pending_packet_file_sha256": "d762a02d53b700c65a5b3c3fc2d6289332c668412b44677ed86ea3bcf98ad82b",
+  "source_snapshot_file": "PROD-first2-current-readonly.json.gz",
+  "source_snapshot_file_sha256": "c2a16842282b31ebdffb2321a6c13ec7a3c1c57e68490b9d10ba2928069dbb71",
+  "source_proof_receipt_file": "PROD-first2-source-proof-readonly.json.gz",
+  "source_proof_receipt_file_sha256": "8458b3f1681fb8a488fb3e42564d085138fc2e975afa806918e8263e3bb18309",
+  "source_proof_captured_at": "2026-10-08T22:38:15.360753+00:00",
+  "items": [
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5498
+      },
+      "prod_owner_id": 5498,
+      "source_anchors": [
+        {
+          "evidence_kind": "primary_orthographic",
+          "version": 1,
+          "content": {
+            "reference_kind": "verified_chinese_display",
+            "owner": {
+              "kind": "player",
+              "id": 5498
+            },
+            "original_name": "王宏伟",
+            "source_lang": "zh-Hans",
+            "source_script": "Hans",
+            "binding": {
+              "kind": "verified_chinese_display",
+              "owner": {
+                "kind": "player",
+                "id": 5498
+              },
+              "source_batch": {
+                "bundle_sha256": "b67bce22f17bbe08d90239f37ec048b59bee602ebaacb69165ebccf6793ab442",
+                "evidence_creation_sha256": "73bcca61670642c62d22dcf1557002359564e602aeb1ad6caf0767409c061dd1",
+                "id": 563
+              },
+              "source_evidence": {
+                "candidate_name": "王宏伟",
+                "decision_kind": "conventional",
+                "event_id": null,
+                "generation_rule_version": "none",
+                "id": 62034,
+                "lang": "cn",
+                "player_id": 5498,
+                "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "raw_event_id": null,
+                "raw_player_id": null,
+                "research_payload": {
+                  "candidate": {
+                    "decision_kind": "conventional",
+                    "display_name": "王宏伟",
+                    "generation_rule_version": "none",
+                    "lang": "cn",
+                    "name_preimage_sha256": null,
+                    "owner": {
+                      "id": 5498,
+                      "kind": "player"
+                    },
+                    "preimage_binding": {
+                      "actor_id": "/root/mixed76_binding_resume",
+                      "actor_model": "gpt-6-sol",
+                      "bound_at": "2026-10-08T07:38:04.250683+00:00",
+                      "capture_sha256": "697e6b1459e2b7c0b8f57a05c2b65aa4ddf539e567b6d6959ed9c6abc80bc3ed",
+                      "captured_at": "2026-10-08T07:16:13.129524+00:00",
+                      "name_preimage_sha256": null,
+                      "source_candidate_sha256": "8130aa95d19acee17c7d89d101dd6473a7ee20b14f5e255783aeaf9471f62ad3"
+                    },
+                    "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "research_sha256": "5bbe5264c9352866552a3a97075552285543546a713fefaafd5e44af197cdc7c",
+                    "review_conclusion": "Root read23main+32unique supports actualrawSHA/decoded excerpts: ownWikiCN/TWprofessionalrosters,U-Go852/1216/2304/1955 preferrednames,Igo/Nihon/Kansai full readings, ownGOR477/1687/711. ActualAstra00154323512b4944a3279ba956c6e295980b5e8e94eda4c6e96ad73840200f22 permitsONLY4523publishedKO미네마츠 마사키 via actualHangameJapaneseprofessionalroster+Nihonfullreading/UGo/finiteSGFidentity; cross-source finite inference notownHangameprofile success(seq1633actualtimeout). 5498KO왕훙위에 vs candidate왕훙웨이 unresolved under same finiteAstra decision omitted,5915KO unavailable omitted. Corrected23-v2 addsonepublishedcellonly/22published+1normative5108;old22-v1 retained.23NULL/35unchangedSGF/FKslots,3full+2partial. Actualnext6.1 source/FH6sol binder genuinepost556context UTCretained;Astra notwholepacketreview. No alias/merge/biography/rank/FK/SGF changes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                    "review_status": "approved",
+                    "reviewed_at": "2026-10-08T07:50:18.499711+00:00",
+                    "reviewer_id": "/root",
+                    "reviewer_model": "gpt-6"
+                  },
+                  "research": {
+                    "candidate_name": "王宏伟",
+                    "identity_note": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CN/TW globalprofessional Wiki own王宏伟/王宏偉, actualGOR477 JA ownh1王宏伟 and ENownh1Wang Hongwei. U-Go1923 initialtimeout and singleboundedretrytimeout preserved, cachedarchivelead not fabricated freshAPI nativeproof. Actualsame-ID GOR KO200 h1왕훙위에 differs in pronunciation from Chinese/Latin Hongwei; root explicitlydeferredKO cell, no autocorrection왕훙웨이/no different-person or merge claim. Naver original200 containspositive KO Wikipedia disambiguation snippet왕훙웨이 withGoentry原字王宏伟, not retrievedownarticle/notselectedmain. ActualGOR2005-07-25 blacklossZheng Yan and2005-07-15 blacklossMeng Zhaoyu match targetexactSGF dates/side/opponents. Otherfive targetDT1900-01-01 are literal placeholder/unknown-date trainingrecords, not biography/career-year evidence. ActualChineseprofessional source names only; noDOB/rank/canonical/alias merge writes.",
+                    "lang": "cn",
+                    "original_language": "zh",
+                    "original_language_basis_url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+                    "original_name": "王宏伟",
+                    "owner": {
+                      "id": 5498,
+                      "kind": "player"
+                    },
+                    "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "registry_sha256": "a4ce11333bacf14c60277958bfa4b1ec003b8781114b904c3b4dc6d188f18834",
+                    "registry_version": "2026-10-08-ret137-partial23-source-corrected-final-v2",
+                    "review_status": "pending",
+                    "scope_status": "found",
+                    "source_checks": [
+                      {
+                        "article_evidence": {
+                          "edition": "",
+                          "passage": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏伟 (围棋棋手)（页面不存在）\">王宏伟</a>",
+                          "passage_sha256": "cc7e72389c0ba7119377162e491897be4bc18e924c9a05ff982cfc8deb144879",
+                          "revision_id": "94658688",
+                          "subject_identity": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual own named Go person/list entry/history, not borrowed adjacent biography. Actual CN/TW globalprofessional Wiki own王宏伟/王宏偉, actualGOR477 JA ownh1王宏伟 and ENownh1Wang Hongwei. U-Go1923 initialtimeout and singleboundedretrytimeout preserved, cachedarchivelead not fabricated freshAPI nativeproof. Actualsame-ID GOR KO200 h1왕훙위에 differs in pronunciation from Chinese/Latin Hongwei; root explicitlydeferredKO cell, no autocorrection왕훙웨이/no different-person or merge claim. Naver original200 containspositive KO Wikipedia disambiguation snippet왕훙웨이 withGoentry原字王宏伟, not retrievedownarticle/notselectedmain. ActualGOR2005-07-25 blacklossZheng Yan and2005-07-15 blacklossMeng Zhaoyu match targetexactSGF dates/side/opponents. Otherfive targetDT1900-01-01 are literal placeholder/unknown-date trainingrecords, not biography/career-year evidence. ActualChineseprofessional source names only; noDOB/rank/canonical/alias merge writes.",
+                          "title": "围棋棋士列表 - 维基百科，自由的百科全书"
+                        },
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏伟 (围棋棋手)（页面不存在）\">王宏伟</a>",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "candidate_name": "王宏伟",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "identity_basis": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CN/TW globalprofessional Wiki own王宏伟/王宏偉, actualGOR477 JA ownh1王宏伟 and ENownh1Wang Hongwei. U-Go1923 initialtimeout and singleboundedretrytimeout preserved, cachedarchivelead not fabricated freshAPI nativeproof. Actualsame-ID GOR KO200 h1왕훙위에 differs in pronunciation from Chinese/Latin Hongwei; root explicitlydeferredKO cell, no autocorrection왕훙웨이/no different-person or merge claim. Naver original200 containspositive KO Wikipedia disambiguation snippet왕훙웨이 withGoentry原字王宏伟, not retrievedownarticle/notselectedmain. ActualGOR2005-07-25 blacklossZheng Yan and2005-07-15 blacklossMeng Zhaoyu match targetexactSGF dates/side/opponents. Otherfive targetDT1900-01-01 are literal placeholder/unknown-date trainingrecords, not biography/career-year evidence. ActualChineseprofessional source names only; noDOB/rank/canonical/alias merge writes.",
+                        "identity_corroboration": {
+                          "body_encoding": "utf-8",
+                          "body_excerpt": "<h1>王宏伟</h1>",
+                          "body_sha256": "8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed",
+                          "fetched_at": "2026-10-08T06:59:00.458921+00:00",
+                          "http_status": 200,
+                          "identity_basis": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual independent ownnative Go name corroboration, roles and limits above.",
+                          "original_name": "王宏伟",
+                          "source_id": "ret100-goratings-ja",
+                          "url": "https://www.goratings.org/ja/players/477.html"
+                        },
+                        "language_basis": "reviewed_text",
+                        "observed_lang": "zh-Hans",
+                        "owner": {
+                          "id": 5498,
+                          "kind": "player"
+                        },
+                        "query": "王宏伟",
+                        "source_id": "wikipedia-zh",
+                        "status": "found",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      }
+                    ],
+                    "translation_support": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>王宏伟</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed.body",
+                        "body_sha256": "8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "661363a57479ca6a3905f83d727c1ab4403dbb3359905e8e96a1a968f359dce6",
+                        "fetched_at": "2026-10-08T06:59:00.458921+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/477.html"
+                      },
+                      {
+                        "article_title": "围棋棋士列表 - 维基百科，自由的百科全书",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏伟 (围棋棋手)（页面不存在）\">王宏伟</a>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98.body",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "cc7e72389c0ba7119377162e491897be4bc18e924c9a05ff982cfc8deb144879",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hans-CN",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "article_title": "圍棋棋士列表 - 維基百科，自由的百科全書",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏偉 (圍棋棋手)（頁面不存在）\">王宏偉</a>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27.body",
+                        "body_sha256": "834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "3e280c9b3d79a41d30e1a77cc1cf93543818e723e1f58ba5a96e719e03c808e4",
+                        "fetched_at": "2026-10-05T22:36:06.136459+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hant-TW",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>Wang Hongwei</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/6b274443c616e3909b728dde0e5ce6b8a661a25319accc7fb6bc573e2d919974.body",
+                        "body_sha256": "6b274443c616e3909b728dde0e5ce6b8a661a25319accc7fb6bc573e2d919974",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "463db4bb6648ffb541e61f329f5acd55fb18badc6c3da6638fd51bb897ed8d94",
+                        "fetched_at": "2026-10-08T06:59:01.862209+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/en/players/477.html"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>王宏伟</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed.body",
+                        "body_sha256": "8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "661363a57479ca6a3905f83d727c1ab4403dbb3359905e8e96a1a968f359dce6",
+                        "fetched_at": "2026-10-08T06:59:00.458921+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/477.html"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>왕훙위에</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/6f28f59f9cb6495d35d4e37f12ceb73ee7b478d1fc56662a7c044f256cf26e91.body",
+                        "body_sha256": "6f28f59f9cb6495d35d4e37f12ceb73ee7b478d1fc56662a7c044f256cf26e91",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "2d284b4403cf95832180ff9768fbd11d35dc6465887bf0bc9857771ed87cd996",
+                        "fetched_at": "2026-10-08T06:59:01.124725+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ko",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ko/players/477.html"
+                      }
+                    ]
+                  }
+                },
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T07:50:18.499711+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6",
+                "revision": 1,
+                "source_registry_id": 350
+              },
+              "source_name": {
+                "created_at": "2026-10-08T07:51:43.857494+00:00",
+                "decision_kind": "conventional",
+                "display_name": "王宏伟",
+                "evidence_id": 62034,
+                "generation_rule_version": "none",
+                "id": 10757,
+                "lang": "cn",
+                "player_id": 5498,
+                "reference_kind": null,
+                "reference_url": null,
+                "revision": 1,
+                "status": "verified",
+                "verified_at": "2026-10-08T07:50:18.499711+00:00"
+              }
+            }
+          },
+          "approval": {
+            "status": "approved",
+            "content_sha256": "5f1d88555f1a68ce39c4944298361b6c20962f7933613cd118f201fb0d959ecc",
+            "producer_id": "zh-ko-task2-implementation",
+            "producer_model": "gpt-6-sol",
+            "produced_at": "2026-10-08T22:32:05Z",
+            "reviewer_id": "/root/zh_ko_task2_review_astra",
+            "reviewer_model": "gpt-6-astra",
+            "reviewed_at": "2026-10-08T22:39:02Z",
+            "conclusion": "approved_orthographic_original"
+          }
+        },
+        {
+          "evidence_kind": "primary_orthographic",
+          "version": 1,
+          "content": {
+            "reference_kind": "verified_english_display",
+            "owner": {
+              "kind": "player",
+              "id": 5498
+            },
+            "original_name": "Wang Hongwei",
+            "source_lang": "en",
+            "source_script": "Latin",
+            "binding": {
+              "kind": "verified_english_display",
+              "owner": {
+                "kind": "player",
+                "id": 5498
+              },
+              "source_batch": {
+                "bundle_sha256": "b67bce22f17bbe08d90239f37ec048b59bee602ebaacb69165ebccf6793ab442",
+                "evidence_creation_sha256": "e52c4c95c63408242d5b210573a428aed91ea5b512c48afd633ca7b96068c2ca",
+                "id": 563
+              },
+              "source_evidence": {
+                "candidate_name": "Wang Hongwei",
+                "decision_kind": "conventional",
+                "event_id": null,
+                "generation_rule_version": "none",
+                "id": 62037,
+                "lang": "en",
+                "player_id": 5498,
+                "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "raw_event_id": null,
+                "raw_player_id": null,
+                "research_payload": {
+                  "candidate": {
+                    "decision_kind": "conventional",
+                    "display_name": "Wang Hongwei",
+                    "generation_rule_version": "none",
+                    "lang": "en",
+                    "name_preimage_sha256": null,
+                    "owner": {
+                      "id": 5498,
+                      "kind": "player"
+                    },
+                    "preimage_binding": {
+                      "actor_id": "/root/mixed76_binding_resume",
+                      "actor_model": "gpt-6-sol",
+                      "bound_at": "2026-10-08T07:38:04.250683+00:00",
+                      "capture_sha256": "697e6b1459e2b7c0b8f57a05c2b65aa4ddf539e567b6d6959ed9c6abc80bc3ed",
+                      "captured_at": "2026-10-08T07:16:13.129524+00:00",
+                      "name_preimage_sha256": null,
+                      "source_candidate_sha256": "739123d2c4522e75dc474657f69036cdfa6e5e0e84cbd4c9bb79f59bad1ffc38"
+                    },
+                    "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "research_sha256": "a3fed386bc25ecbeb85e302df8fa528ade568a935a22004a35ecd6d4a25d3d05",
+                    "review_conclusion": "Root read23main+32unique supports actualrawSHA/decoded excerpts: ownWikiCN/TWprofessionalrosters,U-Go852/1216/2304/1955 preferrednames,Igo/Nihon/Kansai full readings, ownGOR477/1687/711. ActualAstra00154323512b4944a3279ba956c6e295980b5e8e94eda4c6e96ad73840200f22 permitsONLY4523publishedKO미네마츠 마사키 via actualHangameJapaneseprofessionalroster+Nihonfullreading/UGo/finiteSGFidentity; cross-source finite inference notownHangameprofile success(seq1633actualtimeout). 5498KO왕훙위에 vs candidate왕훙웨이 unresolved under same finiteAstra decision omitted,5915KO unavailable omitted. Corrected23-v2 addsonepublishedcellonly/22published+1normative5108;old22-v1 retained.23NULL/35unchangedSGF/FKslots,3full+2partial. Actualnext6.1 source/FH6sol binder genuinepost556context UTCretained;Astra notwholepacketreview. No alias/merge/biography/rank/FK/SGF changes. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                    "review_status": "approved",
+                    "reviewed_at": "2026-10-08T07:50:18.499711+00:00",
+                    "reviewer_id": "/root",
+                    "reviewer_model": "gpt-6"
+                  },
+                  "research": {
+                    "candidate_name": "Wang Hongwei",
+                    "identity_note": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CN/TW globalprofessional Wiki own王宏伟/王宏偉, actualGOR477 JA ownh1王宏伟 and ENownh1Wang Hongwei. U-Go1923 initialtimeout and singleboundedretrytimeout preserved, cachedarchivelead not fabricated freshAPI nativeproof. Actualsame-ID GOR KO200 h1왕훙위에 differs in pronunciation from Chinese/Latin Hongwei; root explicitlydeferredKO cell, no autocorrection왕훙웨이/no different-person or merge claim. Naver original200 containspositive KO Wikipedia disambiguation snippet왕훙웨이 withGoentry原字王宏伟, not retrievedownarticle/notselectedmain. ActualGOR2005-07-25 blacklossZheng Yan and2005-07-15 blacklossMeng Zhaoyu match targetexactSGF dates/side/opponents. Otherfive targetDT1900-01-01 are literal placeholder/unknown-date trainingrecords, not biography/career-year evidence. ActualChineseprofessional source names only; noDOB/rank/canonical/alias merge writes.",
+                    "lang": "en",
+                    "original_language": "zh",
+                    "original_language_basis_url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+                    "original_name": "王宏伟",
+                    "owner": {
+                      "id": 5498,
+                      "kind": "player"
+                    },
+                    "produced_at": "2026-10-08T07:28:01.069218+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "registry_sha256": "a4ce11333bacf14c60277958bfa4b1ec003b8781114b904c3b4dc6d188f18834",
+                    "registry_version": "2026-10-08-ret137-partial23-source-corrected-final-v2",
+                    "review_status": "pending",
+                    "scope_status": "found",
+                    "source_checks": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>Wang Hongwei</h1>",
+                        "body_sha256": "6b274443c616e3909b728dde0e5ce6b8a661a25319accc7fb6bc573e2d919974",
+                        "candidate_name": "Wang Hongwei",
+                        "fetched_at": "2026-10-08T06:59:01.862209+00:00",
+                        "http_status": 200,
+                        "identity_basis": "Actual same-source-actor readonly finite PROD5498/TEST11272,7 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual CN/TW globalprofessional Wiki own王宏伟/王宏偉, actualGOR477 JA ownh1王宏伟 and ENownh1Wang Hongwei. U-Go1923 initialtimeout and singleboundedretrytimeout preserved, cachedarchivelead not fabricated freshAPI nativeproof. Actualsame-ID GOR KO200 h1왕훙위에 differs in pronunciation from Chinese/Latin Hongwei; root explicitlydeferredKO cell, no autocorrection왕훙웨이/no different-person or merge claim. Naver original200 containspositive KO Wikipedia disambiguation snippet왕훙웨이 withGoentry原字王宏伟, not retrievedownarticle/notselectedmain. ActualGOR2005-07-25 blacklossZheng Yan and2005-07-15 blacklossMeng Zhaoyu match targetexactSGF dates/side/opponents. Otherfive targetDT1900-01-01 are literal placeholder/unknown-date trainingrecords, not biography/career-year evidence. ActualChineseprofessional source names only; noDOB/rank/canonical/alias merge writes.",
+                        "language_basis": "reviewed_text",
+                        "observed_lang": "en",
+                        "owner": {
+                          "id": 5498,
+                          "kind": "player"
+                        },
+                        "query": "Wang Hongwei",
+                        "source_id": "ret100-goratings-en",
+                        "status": "found",
+                        "url": "https://www.goratings.org/en/players/477.html"
+                      }
+                    ],
+                    "translation_support": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>王宏伟</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed.body",
+                        "body_sha256": "8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "661363a57479ca6a3905f83d727c1ab4403dbb3359905e8e96a1a968f359dce6",
+                        "fetched_at": "2026-10-08T06:59:00.458921+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/477.html"
+                      },
+                      {
+                        "article_title": "围棋棋士列表 - 维基百科，自由的百科全书",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏伟 (围棋棋手)（页面不存在）\">王宏伟</a>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98.body",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "cc7e72389c0ba7119377162e491897be4bc18e924c9a05ff982cfc8deb144879",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hans-CN",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "article_title": "圍棋棋士列表 - 維基百科，自由的百科全書",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%8E%8B%E5%AE%8F%E4%BC%9F_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"王宏偉 (圍棋棋手)（頁面不存在）\">王宏偉</a>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27.body",
+                        "body_sha256": "834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "3e280c9b3d79a41d30e1a77cc1cf93543818e723e1f58ba5a96e719e03c808e4",
+                        "fetched_at": "2026-10-05T22:36:06.136459+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hant-TW",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>Wang Hongwei</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/6b274443c616e3909b728dde0e5ce6b8a661a25319accc7fb6bc573e2d919974.body",
+                        "body_sha256": "6b274443c616e3909b728dde0e5ce6b8a661a25319accc7fb6bc573e2d919974",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "463db4bb6648ffb541e61f329f5acd55fb18badc6c3da6638fd51bb897ed8d94",
+                        "fetched_at": "2026-10-08T06:59:01.862209+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/en/players/477.html"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>王宏伟</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed.body",
+                        "body_sha256": "8f08900fe25189b9a16439a5c30c57ec2ecc300d9c9ea0b0e3cb92b003c218ed",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "661363a57479ca6a3905f83d727c1ab4403dbb3359905e8e96a1a968f359dce6",
+                        "fetched_at": "2026-10-08T06:59:00.458921+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/477.html"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>왕훙위에</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired137-20261008/source-producer-frozen23-corrected-final-v2/sources/6f28f59f9cb6495d35d4e37f12ceb73ee7b478d1fc56662a7c044f256cf26e91.body",
+                        "body_sha256": "6f28f59f9cb6495d35d4e37f12ceb73ee7b478d1fc56662a7c044f256cf26e91",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "2d284b4403cf95832180ff9768fbd11d35dc6465887bf0bc9857771ed87cd996",
+                        "fetched_at": "2026-10-08T06:59:01.124725+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ko",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ko/players/477.html"
+                      }
+                    ]
+                  }
+                },
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T07:50:18.499711+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6",
+                "revision": 1,
+                "source_registry_id": 350
+              },
+              "source_name": {
+                "created_at": "2026-10-08T07:51:43.857494+00:00",
+                "decision_kind": "conventional",
+                "display_name": "Wang Hongwei",
+                "evidence_id": 62037,
+                "generation_rule_version": "none",
+                "id": 10760,
+                "lang": "en",
+                "player_id": 5498,
+                "reference_kind": null,
+                "reference_url": null,
+                "revision": 1,
+                "status": "verified",
+                "verified_at": "2026-10-08T07:50:18.499711+00:00"
+              }
+            }
+          },
+          "approval": {
+            "status": "approved",
+            "content_sha256": "5e2275a3bb6983a24cf6068ae0cc07fb78e89188523a2af6afcd8f122631cc91",
+            "producer_id": "zh-ko-task2-implementation",
+            "producer_model": "gpt-6-sol",
+            "produced_at": "2026-10-08T22:32:05Z",
+            "reviewer_id": "/root/zh_ko_task2_review_astra",
+            "reviewer_model": "gpt-6-astra",
+            "reviewed_at": "2026-10-08T22:39:02Z",
+            "conclusion": "approved_orthographic_original"
+          }
+        }
+      ],
+      "generated_candidate_approved": false,
+      "next_candidate_disposition": "hold_known_unresolved_korean_variant"
+    },
+    {
+      "owner": {
+        "kind": "player",
+        "id": 5739
+      },
+      "prod_owner_id": 5739,
+      "source_anchors": [
+        {
+          "evidence_kind": "primary_orthographic",
+          "version": 1,
+          "content": {
+            "reference_kind": "verified_chinese_display",
+            "owner": {
+              "kind": "player",
+              "id": 5739
+            },
+            "original_name": "翁子瑜",
+            "source_lang": "zh-Hans",
+            "source_script": "Hans",
+            "binding": {
+              "kind": "verified_chinese_display",
+              "owner": {
+                "kind": "player",
+                "id": 5739
+              },
+              "source_batch": {
+                "bundle_sha256": "bfd04d3e52255b3f69f6627e935bccb92a3e1bbd4d69e8494c37ef8e5d0a6012",
+                "evidence_creation_sha256": "80652a031842d724cdb795f769eae580965fbe9b6a46c21957929608015f5bf3",
+                "id": 555
+              },
+              "source_evidence": {
+                "candidate_name": "翁子瑜",
+                "decision_kind": "conventional",
+                "event_id": null,
+                "generation_rule_version": "none",
+                "id": 61642,
+                "lang": "cn",
+                "player_id": 5739,
+                "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "raw_event_id": null,
+                "raw_player_id": null,
+                "research_payload": {
+                  "candidate": {
+                    "decision_kind": "conventional",
+                    "display_name": "翁子瑜",
+                    "generation_rule_version": "none",
+                    "lang": "cn",
+                    "name_preimage_sha256": null,
+                    "owner": {
+                      "id": 5739,
+                      "kind": "player"
+                    },
+                    "preimage_binding": {
+                      "actor_id": "/root/mixed76_binding_resume",
+                      "actor_model": "gpt-6-sol",
+                      "bound_at": "2026-10-08T05:03:30.483886+00:00",
+                      "capture_sha256": "5c45b47c38e3faafb19b54140b23a71a927f327a8d5a2816b6e02534ca6119eb",
+                      "captured_at": "2026-10-08T05:03:06.021559+00:00",
+                      "name_preimage_sha256": null,
+                      "source_candidate_sha256": "3ed4065baa1ad58b5fee79b02f64732514214f5015e1e808b1a7b7d8b99d1007"
+                    },
+                    "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "research_sha256": "3d38b6d113f840e26f1b10b0280016ba59588c74b00a855195957d500a050108",
+                    "review_conclusion": "Root read24main+32unique supports rawSHA/decoded passages: actualU-Go1157/1191/1873/1942/2167 preferrednamearrays, WikiCN/TWJapanese/globalGoownnames, Kansai/Igo/CWI native/readings,GORsameowners/dateopponents. 3815Wiki1972 versusofficial/UGo1982 DOB inconsistency retainedsourceonly, noDOB/biographywrites. 5453actualCyberoro2014 WuQingyuans secretaryarticle뉴리리(牛力力) usedonlyrareoriginalname/professionalGocontext withUGo/Wiki/GORownplayer andfinitehistoric1987/1985SGFs; notclaimarticleownprofileorSGFsource. 6134ENactualGOR668KimHyokon retained withUGoKimHyo-kon variant,KOpublished김효곤/native originalChinese dictionary language notnationality. 22published+2NIKLKO,24NULL/40unchangedSGF/FKslots,4full+1partial;5739KO Latinfallback omitted. Actualnext6.1source/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                    "review_status": "approved",
+                    "reviewed_at": "2026-10-08T05:10:41.603761+00:00",
+                    "reviewer_id": "/root",
+                    "reviewer_model": "gpt-6"
+                  },
+                  "research": {
+                    "candidate_name": "翁子瑜",
+                    "identity_note": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualCN/TWglobalprofessionalWikiown翁子瑜, U-Go1942 exactChineseoriginal/preferredENWeng Ziyu/GOR1444, actualGORJAownh1翁子瑜 literaloriginalaspublished. ActualGOR1990-06-21blackwin华学明/1988-06-20blackloss程晓流 matchesactualtargetSGF, target1976–1990historicalChineseGo. ActualGORKOh1Weng Ziyu Latin fallback not Koreanpublication; twoactual200Naveroriginal/LatinGosearches withnoactualownKoreanmain captured, KOomitted,noChinese-to-Korean generationorabsenceclaim. CachedprofessionalRosterownnamesclear; sourceDOB1961/Unknownaffiliationcitizenship fields statusonly, no biographywrites orTaiwan/Japan nativeassumption.",
+                    "lang": "cn",
+                    "original_language": "zh",
+                    "original_language_basis_url": "https://db.u-go.net/playerdb/players/1942/",
+                    "original_name": "翁子瑜",
+                    "owner": {
+                      "id": 5739,
+                      "kind": "player"
+                    },
+                    "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "registry_sha256": "1534a5f5902c367003a8be10624a699cf3975af3c6cfd221c779be3ade98cdd9",
+                    "registry_version": "2026-10-08-ret129-partial24-source-final-v1",
+                    "review_status": "pending",
+                    "scope_status": "found",
+                    "source_checks": [
+                      {
+                        "article_evidence": {
+                          "edition": "",
+                          "passage": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（页面不存在）\">翁子瑜</a>",
+                          "passage_sha256": "ef0e8332139eb16283b0103e0e015dec89d851d50043fd65b95abfdc682f07ba",
+                          "revision_id": "94658688",
+                          "subject_identity": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual own named Go person/list entry/history, not borrowed adjacent biography. ActualCN/TWglobalprofessionalWikiown翁子瑜, U-Go1942 exactChineseoriginal/preferredENWeng Ziyu/GOR1444, actualGORJAownh1翁子瑜 literaloriginalaspublished. ActualGOR1990-06-21blackwin华学明/1988-06-20blackloss程晓流 matchesactualtargetSGF, target1976–1990historicalChineseGo. ActualGORKOh1Weng Ziyu Latin fallback not Koreanpublication; twoactual200Naveroriginal/LatinGosearches withnoactualownKoreanmain captured, KOomitted,noChinese-to-Korean generationorabsenceclaim. CachedprofessionalRosterownnamesclear; sourceDOB1961/Unknownaffiliationcitizenship fields statusonly, no biographywrites orTaiwan/Japan nativeassumption.",
+                          "title": "围棋棋士列表 - 维基百科，自由的百科全书"
+                        },
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（页面不存在）\">翁子瑜</a>",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "candidate_name": "翁子瑜",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "identity_basis": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualCN/TWglobalprofessionalWikiown翁子瑜, U-Go1942 exactChineseoriginal/preferredENWeng Ziyu/GOR1444, actualGORJAownh1翁子瑜 literaloriginalaspublished. ActualGOR1990-06-21blackwin华学明/1988-06-20blackloss程晓流 matchesactualtargetSGF, target1976–1990historicalChineseGo. ActualGORKOh1Weng Ziyu Latin fallback not Koreanpublication; twoactual200Naveroriginal/LatinGosearches withnoactualownKoreanmain captured, KOomitted,noChinese-to-Korean generationorabsenceclaim. CachedprofessionalRosterownnamesclear; sourceDOB1961/Unknownaffiliationcitizenship fields statusonly, no biographywrites orTaiwan/Japan nativeassumption.",
+                        "identity_corroboration": {
+                          "body_encoding": "utf-8",
+                          "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                          "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                          "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                          "http_status": 200,
+                          "identity_basis": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. Actual independent ownnative Go name corroboration, roles and limits above.",
+                          "original_name": "翁子瑜",
+                          "source_id": "ret97-ugo-en",
+                          "url": "https://db.u-go.net/playerdb/players/1942/"
+                        },
+                        "language_basis": "reviewed_text",
+                        "observed_lang": "zh-Hans",
+                        "owner": {
+                          "id": 5739,
+                          "kind": "player"
+                        },
+                        "query": "翁子瑜",
+                        "source_id": "wikipedia-zh",
+                        "status": "found",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      }
+                    ],
+                    "translation_support": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca.body",
+                        "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en+zh",
+                        "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                        "url": "https://db.u-go.net/playerdb/players/1942/"
+                      },
+                      {
+                        "article_title": "围棋棋士列表 - 维基百科，自由的百科全书",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（页面不存在）\">翁子瑜</a>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98.body",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "ef0e8332139eb16283b0103e0e015dec89d851d50043fd65b95abfdc682f07ba",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hans-CN",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "article_title": "圍棋棋士列表 - 維基百科，自由的百科全書",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（頁面不存在）\">翁子瑜</a>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27.body",
+                        "body_sha256": "834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "1b34ffcc7484b01b2f79b1d70d73a9169b2b1599c72a02debe27a9b674f6d3b6",
+                        "fetched_at": "2026-10-05T22:36:06.136459+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hant-TW",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca.body",
+                        "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en+zh",
+                        "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                        "url": "https://db.u-go.net/playerdb/players/1942/"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>翁子瑜</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/98a4276fd22164128be1aaa6bace86aa357809a357bde2898533a0080d9799c4.body",
+                        "body_sha256": "98a4276fd22164128be1aaa6bace86aa357809a357bde2898533a0080d9799c4",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "f51108305b2268b5820788113ff331e0e3566ef163ba952304c42c5a7afdefef",
+                        "fetched_at": "2026-10-08T04:50:38.243461+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/1444.html"
+                      }
+                    ]
+                  }
+                },
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T05:10:41.603761+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6",
+                "revision": 1,
+                "source_registry_id": 343
+              },
+              "source_name": {
+                "created_at": "2026-10-08T05:22:09.689992+00:00",
+                "decision_kind": "conventional",
+                "display_name": "翁子瑜",
+                "evidence_id": 61642,
+                "generation_rule_version": "none",
+                "id": 10645,
+                "lang": "cn",
+                "player_id": 5739,
+                "reference_kind": null,
+                "reference_url": null,
+                "revision": 1,
+                "status": "verified",
+                "verified_at": "2026-10-08T05:10:41.603761+00:00"
+              }
+            }
+          },
+          "approval": {
+            "status": "approved",
+            "content_sha256": "9105fd325852a813bdb54009a49516c4fbe95aacd84a055c7d3ff814f56b2592",
+            "producer_id": "zh-ko-task2-implementation",
+            "producer_model": "gpt-6-sol",
+            "produced_at": "2026-10-08T22:32:05Z",
+            "reviewer_id": "/root/zh_ko_task2_review_astra",
+            "reviewer_model": "gpt-6-astra",
+            "reviewed_at": "2026-10-08T22:39:02Z",
+            "conclusion": "approved_orthographic_original"
+          }
+        },
+        {
+          "evidence_kind": "primary_orthographic",
+          "version": 1,
+          "content": {
+            "reference_kind": "verified_english_display",
+            "owner": {
+              "kind": "player",
+              "id": 5739
+            },
+            "original_name": "Weng Ziyu",
+            "source_lang": "en",
+            "source_script": "Latin",
+            "binding": {
+              "kind": "verified_english_display",
+              "owner": {
+                "kind": "player",
+                "id": 5739
+              },
+              "source_batch": {
+                "bundle_sha256": "bfd04d3e52255b3f69f6627e935bccb92a3e1bbd4d69e8494c37ef8e5d0a6012",
+                "evidence_creation_sha256": "2620c3f84996c6411856b1771a2411698c46666fdd95e984110ded81c035bab8",
+                "id": 555
+              },
+              "source_evidence": {
+                "candidate_name": "Weng Ziyu",
+                "decision_kind": "conventional",
+                "event_id": null,
+                "generation_rule_version": "none",
+                "id": 61645,
+                "lang": "en",
+                "player_id": 5739,
+                "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                "producer_id": "/root/next_players_sources_resume",
+                "producer_model": "gpt-6.1-sol",
+                "raw_event_id": null,
+                "raw_player_id": null,
+                "research_payload": {
+                  "candidate": {
+                    "decision_kind": "conventional",
+                    "display_name": "Weng Ziyu",
+                    "generation_rule_version": "none",
+                    "lang": "en",
+                    "name_preimage_sha256": null,
+                    "owner": {
+                      "id": 5739,
+                      "kind": "player"
+                    },
+                    "preimage_binding": {
+                      "actor_id": "/root/mixed76_binding_resume",
+                      "actor_model": "gpt-6-sol",
+                      "bound_at": "2026-10-08T05:03:30.483886+00:00",
+                      "capture_sha256": "5c45b47c38e3faafb19b54140b23a71a927f327a8d5a2816b6e02534ca6119eb",
+                      "captured_at": "2026-10-08T05:03:06.021559+00:00",
+                      "name_preimage_sha256": null,
+                      "source_candidate_sha256": "06c84846c33e1b4f937817415581eecd5a505580fe6fa6b40943993b3ed80bd3"
+                    },
+                    "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "research_sha256": "248e218cb6842633c6e9bc02c4bb3300097f6187ddfb10134602552419ce651e",
+                    "review_conclusion": "Root read24main+32unique supports rawSHA/decoded passages: actualU-Go1157/1191/1873/1942/2167 preferrednamearrays, WikiCN/TWJapanese/globalGoownnames, Kansai/Igo/CWI native/readings,GORsameowners/dateopponents. 3815Wiki1972 versusofficial/UGo1982 DOB inconsistency retainedsourceonly, noDOB/biographywrites. 5453actualCyberoro2014 WuQingyuans secretaryarticle뉴리리(牛力力) usedonlyrareoriginalname/professionalGocontext withUGo/Wiki/GORownplayer andfinitehistoric1987/1985SGFs; notclaimarticleownprofileorSGFsource. 6134ENactualGOR668KimHyokon retained withUGoKimHyo-kon variant,KOpublished김효곤/native originalChinese dictionary language notnationality. 22published+2NIKLKO,24NULL/40unchangedSGF/FKslots,4full+1partial;5739KO Latinfallback omitted. Actualnext6.1source/FH6solbinder post547context reused. No alias/merge/biography/rank/SGF/FK writes; current catalog/preimage baseline required.",
+                    "review_status": "approved",
+                    "reviewed_at": "2026-10-08T05:10:41.603761+00:00",
+                    "reviewer_id": "/root",
+                    "reviewer_model": "gpt-6"
+                  },
+                  "research": {
+                    "candidate_name": "Weng Ziyu",
+                    "identity_note": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualCN/TWglobalprofessionalWikiown翁子瑜, U-Go1942 exactChineseoriginal/preferredENWeng Ziyu/GOR1444, actualGORJAownh1翁子瑜 literaloriginalaspublished. ActualGOR1990-06-21blackwin华学明/1988-06-20blackloss程晓流 matchesactualtargetSGF, target1976–1990historicalChineseGo. ActualGORKOh1Weng Ziyu Latin fallback not Koreanpublication; twoactual200Naveroriginal/LatinGosearches withnoactualownKoreanmain captured, KOomitted,noChinese-to-Korean generationorabsenceclaim. CachedprofessionalRosterownnamesclear; sourceDOB1961/Unknownaffiliationcitizenship fields statusonly, no biographywrites orTaiwan/Japan nativeassumption.",
+                    "lang": "en",
+                    "original_language": "zh",
+                    "original_language_basis_url": "https://db.u-go.net/playerdb/players/1942/",
+                    "original_name": "翁子瑜",
+                    "owner": {
+                      "id": 5739,
+                      "kind": "player"
+                    },
+                    "produced_at": "2026-10-08T05:02:02.789941+00:00",
+                    "producer_id": "/root/next_players_sources_resume",
+                    "producer_model": "gpt-6.1-sol",
+                    "registry_sha256": "1534a5f5902c367003a8be10624a699cf3975af3c6cfd221c779be3ade98cdd9",
+                    "registry_version": "2026-10-08-ret129-partial24-source-final-v1",
+                    "review_status": "pending",
+                    "scope_status": "found",
+                    "source_checks": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                        "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "candidate_name": "Weng Ziyu",
+                        "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                        "http_status": 200,
+                        "identity_basis": "Actual same-source-actor readonly finite PROD5739/TEST11508,8 exactfullalbumID/side/SGF slots each, targetnames0 aliases0 and selectednative-Latin-KO normalizedforeignclaims0. Actual initial and finalclaims capturetimes preserved; not independentFH or finalapprovedcontext/CAS bundle. ActualCN/TWglobalprofessionalWikiown翁子瑜, U-Go1942 exactChineseoriginal/preferredENWeng Ziyu/GOR1444, actualGORJAownh1翁子瑜 literaloriginalaspublished. ActualGOR1990-06-21blackwin华学明/1988-06-20blackloss程晓流 matchesactualtargetSGF, target1976–1990historicalChineseGo. ActualGORKOh1Weng Ziyu Latin fallback not Koreanpublication; twoactual200Naveroriginal/LatinGosearches withnoactualownKoreanmain captured, KOomitted,noChinese-to-Korean generationorabsenceclaim. CachedprofessionalRosterownnamesclear; sourceDOB1961/Unknownaffiliationcitizenship fields statusonly, no biographywrites orTaiwan/Japan nativeassumption.",
+                        "language_basis": "reviewed_text",
+                        "observed_lang": "en",
+                        "owner": {
+                          "id": 5739,
+                          "kind": "player"
+                        },
+                        "query": "Weng Ziyu",
+                        "source_id": "ret97-ugo-en",
+                        "status": "found",
+                        "url": "https://db.u-go.net/playerdb/players/1942/"
+                      }
+                    ],
+                    "translation_support": [
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca.body",
+                        "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en+zh",
+                        "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                        "url": "https://db.u-go.net/playerdb/players/1942/"
+                      },
+                      {
+                        "article_title": "围棋棋士列表 - 维基百科，自由的百科全书",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（页面不存在）\">翁子瑜</a>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98.body",
+                        "body_sha256": "e2e14d7b08011a579d399b27b78e0cf525abfd1f04050531e3cb3f1772b41f98",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "ef0e8332139eb16283b0103e0e015dec89d851d50043fd65b95abfdc682f07ba",
+                        "fetched_at": "2026-10-05T22:36:05.818892+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hans-CN",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-cn/%E5%9B%B4%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "article_title": "圍棋棋士列表 - 維基百科，自由的百科全書",
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<a href=\"/w/index.php?title=%E7%BF%81%E5%AD%90%E7%91%9C&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"翁子瑜（頁面不存在）\">翁子瑜</a>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27.body",
+                        "body_sha256": "834ad5e400fe56d9614b66b2f1c56113af0f121576e47132f61c0616f4604c27",
+                        "capture_actor": null,
+                        "capture_model": null,
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "1b34ffcc7484b01b2f79b1d70d73a9169b2b1599c72a02debe27a9b674f6d3b6",
+                        "fetched_at": "2026-10-05T22:36:06.136459+00:00",
+                        "http_status": 200,
+                        "revision_id": "94658688",
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "zh-Hant-TW",
+                        "source_role": "wikipedia_go_roster_actual_own_named_entry",
+                        "url": "https://zh.wikipedia.org/zh-tw/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "{\"id\":1942,\"key_name\":\"Weng Ziyu\",\"sex\":\"Unknown\",\"date_of_birth\":\"\",\"date_of_death\":\"\",\"citizenship\":\"CHN\",\"affiliation\":\"Unknown\",\"wikidata\":null,\"names\":[{\"player\":\"https://db.u-go.net/playerdb/players/1942/\",\"simplenames\":[{\"id\":6510,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"Weng Ziyu\",\"databases\":[\"Go4go\",\"GoGoD\"],\"languages\":[{\"language\":\"en\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false},{\"id\":6511,\"playername\":\"https://db.u-go.net/playerdb/names/2320/\",\"name\":\"翁子瑜\",\"databases\":[],\"languages\":[{\"language\":\"zh\",\"preferred\":true}],\"incorrect\":false,\"order_reversed\":false}],\"goratings\":\"1444\",\"valid_from\":\"\",\"valid_to\":\"\",\"typ\":\"Unknown\",\"standard\":true}],\"ranks\":[],\"links\":[],\"creator\":\"ug\",\"last_changed_by\":\"ug\",\"added\":\"2016-12-12T12:40:35.599679Z\",\"last_changed\":\"2016-12-17T12:14:10.464850Z\"}",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca.body",
+                        "body_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "c7ee9ae34e7e6b5bb1f238e31bcf36fd4ab57995c0812bfa789259ac831f64ca",
+                        "fetched_at": "2026-10-08T04:50:39.670570+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "en+zh",
+                        "source_role": "independent_go_player_name_dictionary_actual_own_JSON_API_record_native_latin",
+                        "url": "https://db.u-go.net/playerdb/players/1942/"
+                      },
+                      {
+                        "body_encoding": "utf-8",
+                        "body_excerpt": "<h1>翁子瑜</h1>",
+                        "body_path": "/tmp/kifu-player-next5retired129-20261008/source-producer-frozen24-final-v1/sources/98a4276fd22164128be1aaa6bace86aa357809a357bde2898533a0080d9799c4.body",
+                        "body_sha256": "98a4276fd22164128be1aaa6bace86aa357809a357bde2898533a0080d9799c4",
+                        "capture_actor": "/root/next_players_sources_resume",
+                        "capture_model": "gpt-6.1-sol",
+                        "excerpt_kind": "contiguous_decoded_utf-8_body",
+                        "excerpt_sha256": "f51108305b2268b5820788113ff331e0e3566ef163ba952304c42c5a7afdefef",
+                        "fetched_at": "2026-10-08T04:50:38.243461+00:00",
+                        "http_status": 200,
+                        "scope_note": "Actual own published name from stated source role; historical DOB/rank/entry/age are source status only, no biography writes.",
+                        "source_language": "ja",
+                        "source_role": "independent_go_rating_own_locale_name",
+                        "url": "https://www.goratings.org/ja/players/1444.html"
+                      }
+                    ]
+                  }
+                },
+                "review_status": "approved",
+                "reviewed_at": "2026-10-08T05:10:41.603761+00:00",
+                "reviewer_id": "/root",
+                "reviewer_model": "gpt-6",
+                "revision": 1,
+                "source_registry_id": 343
+              },
+              "source_name": {
+                "created_at": "2026-10-08T05:22:09.689992+00:00",
+                "decision_kind": "conventional",
+                "display_name": "Weng Ziyu",
+                "evidence_id": 61645,
+                "generation_rule_version": "none",
+                "id": 10648,
+                "lang": "en",
+                "player_id": 5739,
+                "reference_kind": null,
+                "reference_url": null,
+                "revision": 1,
+                "status": "verified",
+                "verified_at": "2026-10-08T05:10:41.603761+00:00"
+              }
+            }
+          },
+          "approval": {
+            "status": "approved",
+            "content_sha256": "41bd554d3cd9ff39baa573a248290c0f0838e6f9c48c4ad70219b7deb9ea6080",
+            "producer_id": "zh-ko-task2-implementation",
+            "producer_model": "gpt-6-sol",
+            "produced_at": "2026-10-08T22:32:05Z",
+            "reviewer_id": "/root/zh_ko_task2_review_astra",
+            "reviewer_model": "gpt-6-astra",
+            "reviewed_at": "2026-10-08T22:39:02Z",
+            "conclusion": "approved_orthographic_original"
+          }
+        }
+      ],
+      "generated_candidate_approved": false,
+      "next_candidate_disposition": "ready_for_exact_candidate_review"
+    }
+  ]
+}

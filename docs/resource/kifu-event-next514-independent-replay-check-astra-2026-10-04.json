@@ -1,0 +1,455 @@
+{
+  "scope_albums": 514,
+  "checks": [
+    "19x19 coordinates",
+    "alternating B/W",
+    "no occupied intersection",
+    "capture application",
+    "no suicide"
+  ],
+  "not_checked": [
+    "ko",
+    "superko",
+    "scoring",
+    "whether the game is actually the recorded historical game"
+  ],
+  "issues": [
+    {
+      "id": 36533,
+      "errors": [
+        [
+          265,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 36630,
+      "errors": [
+        [
+          232,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 36717,
+      "errors": [
+        [
+          240,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 41115,
+      "errors": [
+        [
+          246,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 47301,
+      "errors": [
+        [
+          190,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 47367,
+      "errors": [
+        [
+          137,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 52821,
+      "errors": [
+        [
+          96,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 58792,
+      "errors": [
+        [
+          101,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 59027,
+      "errors": [
+        [
+          160,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 59258,
+      "errors": [
+        [
+          153,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 60040,
+      "errors": [
+        [
+          169,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 60045,
+      "errors": [
+        [
+          209,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 60058,
+      "errors": [
+        [
+          174,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 80724,
+      "errors": [
+        [
+          235,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 82917,
+      "errors": [
+        [
+          194,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 106141,
+      "errors": [
+        [
+          132,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 111921,
+      "errors": [
+        [
+          258,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 112432,
+      "errors": [
+        [
+          90,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 116419,
+      "errors": [
+        [
+          161,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 119251,
+      "errors": [
+        [
+          134,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 119316,
+      "errors": [
+        [
+          267,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 120329,
+      "errors": [
+        [
+          207,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 124044,
+      "errors": [
+        [
+          212,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 125173,
+      "errors": [
+        [
+          190,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 127911,
+      "errors": [
+        [
+          268,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 128762,
+      "errors": [
+        [
+          54,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 130272,
+      "errors": [
+        [
+          207,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 137049,
+      "errors": [
+        [
+          113,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 137786,
+      "errors": [
+        [
+          108,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 139773,
+      "errors": [
+        [
+          150,
+          "occupied"
+        ]
+      ]
+    },
+    {
+      "id": 145079,
+      "errors": [
+        [
+          132,
+          "occupied"
+        ]
+      ]
+    }
+  ],
+  "app_BaseGame_independent_confirmation": [
+    {
+      "id": 36533,
+      "move": 265,
+      "error": "Space occupied"
+    },
+    {
+      "id": 36630,
+      "move": 232,
+      "error": "Space occupied"
+    },
+    {
+      "id": 36717,
+      "move": 240,
+      "error": "Space occupied"
+    },
+    {
+      "id": 41115,
+      "move": 246,
+      "error": "Space occupied"
+    },
+    {
+      "id": 47301,
+      "move": 190,
+      "error": "Space occupied"
+    },
+    {
+      "id": 47367,
+      "move": 137,
+      "error": "Space occupied"
+    },
+    {
+      "id": 52821,
+      "move": 96,
+      "error": "Space occupied"
+    },
+    {
+      "id": 58792,
+      "move": 101,
+      "error": "Space occupied"
+    },
+    {
+      "id": 59027,
+      "move": 160,
+      "error": "Space occupied"
+    },
+    {
+      "id": 59258,
+      "move": 153,
+      "error": "Space occupied"
+    },
+    {
+      "id": 60040,
+      "move": 169,
+      "error": "Space occupied"
+    },
+    {
+      "id": 60045,
+      "move": 209,
+      "error": "Space occupied"
+    },
+    {
+      "id": 60058,
+      "move": 174,
+      "error": "Space occupied"
+    },
+    {
+      "id": 80724,
+      "move": 235,
+      "error": "Space occupied"
+    },
+    {
+      "id": 82917,
+      "move": 194,
+      "error": "Space occupied"
+    },
+    {
+      "id": 106141,
+      "move": 132,
+      "error": "Space occupied"
+    },
+    {
+      "id": 111921,
+      "move": 258,
+      "error": "Space occupied"
+    },
+    {
+      "id": 112432,
+      "move": 90,
+      "error": "Space occupied"
+    },
+    {
+      "id": 116419,
+      "move": 161,
+      "error": "Space occupied"
+    },
+    {
+      "id": 119251,
+      "move": 134,
+      "error": "Space occupied"
+    },
+    {
+      "id": 119316,
+      "move": 267,
+      "error": "Space occupied"
+    },
+    {
+      "id": 120329,
+      "move": 207,
+      "error": "Space occupied"
+    },
+    {
+      "id": 124044,
+      "move": 212,
+      "error": "Space occupied"
+    },
+    {
+      "id": 125173,
+      "move": 190,
+      "error": "Space occupied"
+    },
+    {
+      "id": 127911,
+      "move": 268,
+      "error": "Space occupied"
+    },
+    {
+      "id": 128762,
+      "move": 54,
+      "error": "Space occupied"
+    },
+    {
+      "id": 130272,
+      "move": 207,
+      "error": "Space occupied"
+    },
+    {
+      "id": 137049,
+      "move": 113,
+      "error": "Space occupied"
+    },
+    {
+      "id": 137786,
+      "move": 108,
+      "error": "Space occupied"
+    },
+    {
+      "id": 139773,
+      "move": 150,
+      "error": "Space occupied"
+    },
+    {
+      "id": 145079,
+      "move": 132,
+      "error": "Space occupied"
+    }
+  ],
+  "app_confirmed_same_id_move_pairs": true
+}

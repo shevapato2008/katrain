@@ -1,0 +1,382 @@
+{
+  "china_index": {
+    "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+    "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:21:09.198388+00:00",
+    "body_file": "tvbaduk-nation2-index.body",
+    "body_bytes": 119151,
+    "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a"
+  },
+  "taiwan_index": {
+    "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=4",
+    "final_url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=4",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:21:10.867290+00:00",
+    "body_file": "tvbaduk-nation4-index.body",
+    "body_bytes": 30800,
+    "body_sha256": "3e3e53fb065bcf5e67c6d4580ffdb9aeeca07b6211bb940f63c0eeb7f8fff09a"
+  },
+  "profiles": [
+    {
+      "prod_player_id": 368,
+      "name_in_index": "자오젠난",
+      "prpl_code": "20000734",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20000734"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:12.645534+00:00",
+      "body_file": "tvbaduk-368.body",
+      "body_bytes": 15905,
+      "body_sha256": "dd8c57ddbe8c844984cac28dc5cd0f0b35d9e31cf0be0d0b9869f2b9897149ab",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 자오젠난 2段 [趙健男] 생일 : 승단이력 - 1단 / 2012.04.02 / - 2단 / 2014.03.13 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-0"
+    },
+    {
+      "prod_player_id": 3820,
+      "name_in_index": "차오스야오",
+      "prpl_code": "20000613",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20000613"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:12.591232+00:00",
+      "body_file": "tvbaduk-3820.body",
+      "body_bytes": 15830,
+      "body_sha256": "73177c1cab9c676757308339f125c17d1c22a810201fe2efa78fe8fb368e87c6",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 차오스야오 1段 [乔诗] 생일 : 승단이력 - 1단 / 2012.03.12 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은"
+    },
+    {
+      "prod_player_id": 4634,
+      "name_in_index": "장자야오",
+      "prpl_code": "20001067",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20001067"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:17.700029+00:00",
+      "body_file": "tvbaduk-4634.body",
+      "body_bytes": 15995,
+      "body_sha256": "d1858d0b3e9a24f90b8a53bae79201053e33a85684731f2c8c90fec171e1eeba",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 장자야오 3段 [張家尧] 생일 : 승단이력 - 1단 / 2015.05.26 / - 2단 / 2016.05.25 / - 3단 / 2018.08.22 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진"
+    },
+    {
+      "prod_player_id": 5133,
+      "name_in_index": "양원카이",
+      "prpl_code": "20001661",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20001661"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:19.207601+00:00",
+      "body_file": "tvbaduk-5133.body",
+      "body_bytes": 16044,
+      "body_sha256": "9d146c0ab0fb297ca5a715aa16d68d3f68cfaf2ff03fe790b32acf3dec79e8eb",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 양원카이 3段 [楊文铠] 생일 : 승단이력 - 1단 / 2017.03.02 / - 3단 / 2025.06.13 / 제3회 취저우 란커배 세계바둑오픈전 - 2단 / 2025.06.13 / 목록 [2026-10-09  13:30] 제4회 취저우 "
+    },
+    {
+      "prod_player_id": 5349,
+      "name_in_index": "선징",
+      "prpl_code": "20002031",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002031"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:14.263614+00:00",
+      "body_file": "tvbaduk-5349.body",
+      "body_bytes": 15800,
+      "body_sha256": "5af786a81ef4b6d8e6c00345cc9bf507b2f6a7f221af67950b2628a0a6af49d6",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 선징 1段 [沈? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+    },
+    {
+      "prod_player_id": 5468,
+      "name_in_index": "왕예훙이",
+      "prpl_code": "20002080",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002080"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:14.269008+00:00",
+      "body_file": "tvbaduk-5468.body",
+      "body_bytes": 15805,
+      "body_sha256": "d44b019c84e7ba8274667426cc16fab205fcfe379bea72dfcbcfa772873c4db6",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 왕예훙이 1段 [王 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포"
+    },
+    {
+      "prod_player_id": 5473,
+      "name_in_index": "왕보강",
+      "prpl_code": "20002077",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002077"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:14.256589+00:00",
+      "body_file": "tvbaduk-5473.body",
+      "body_bytes": 15805,
+      "body_sha256": "98c54af330301169493c12505f3d6609c310ceefba749f31c8592c0f08e0f027",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 왕보강 1段 [王伯 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포"
+    },
+    {
+      "prod_player_id": 5675,
+      "name_in_index": "친쓰웨",
+      "prpl_code": "20002179",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002179"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:17.519150+00:00",
+      "body_file": "tvbaduk-5675.body",
+      "body_bytes": 15952,
+      "body_sha256": "ff76f85efca64da45afdf3d5a2f319e544cd38edec695ea808c81b6080cd97d3",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 친쓰웨 2段 [秦思玥] 생일 : 승단이력 - 1단 / 2022.11.16 / - 2단 / 2024.09.26 / 제7회 오청원배 세계여자바둑대회 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 v"
+    },
+    {
+      "prod_player_id": 5790,
+      "name_in_index": "판시위",
+      "prpl_code": "20001948",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20001948"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:15.946565+00:00",
+      "body_file": "tvbaduk-5790.body",
+      "body_bytes": 15807,
+      "body_sha256": "b8fa9171234e1c18eeb7d0c0f6925210e8c8868b31fe5acf7f2221d323204f86",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 판시위 1段 [範希鈺] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포"
+    },
+    {
+      "prod_player_id": 5890,
+      "name_in_index": "쉬젠잉",
+      "prpl_code": "20000820",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20000820"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:17.660755+00:00",
+      "body_file": "tvbaduk-5890.body",
+      "body_bytes": 15817,
+      "body_sha256": "8a4cd28fd24ddf9c30e556f0df8d367eb5b6f2050cc20823292d0ebb35e1e44b",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 쉬젠잉 1段 [許儉潁] 생일 : 승단이력 - 1단 / 2013.05.21 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행"
+    },
+    {
+      "prod_player_id": 5952,
+      "name_in_index": "자오쯔지",
+      "prpl_code": "20002000",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002000"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:15.885743+00:00",
+      "body_file": "tvbaduk-5952.body",
+      "body_bytes": 15801,
+      "body_sha256": "9aaafd54cc1b29e64e4def4ef1c182d2eff6b95b9e4a38b9110cfa83ddf5f702",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 자오쯔지 1段 [] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트"
+    },
+    {
+      "prod_player_id": 6296,
+      "name_in_index": "천야펑",
+      "prpl_code": "20001041",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20001041"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:17.651801+00:00",
+      "body_file": "tvbaduk-6296.body",
+      "body_bytes": 15822,
+      "body_sha256": "1dbd7d0af70059da77111e074996033b3ccf5664a44a182c36a56241ef661e71",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 천야펑 1段 [陳亚峰] 생일 : 승단이력 - 1단 / 2014.08.15 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행"
+    },
+    {
+      "prod_player_id": 6322,
+      "name_in_index": "천더룽",
+      "prpl_code": "20002015",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002015"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:15.963098+00:00",
+      "body_file": "tvbaduk-6322.body",
+      "body_bytes": 15802,
+      "body_sha256": "5dc6f8a0b7a491ccf2c7c9c678e3585ed25811a9819162169f7768c3137ecf0c",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 천더룽 1段 [德 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+    },
+    {
+      "prod_player_id": 6366,
+      "name_in_index": "천루이",
+      "prpl_code": "20002017",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002017"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:12.633364+00:00",
+      "body_file": "tvbaduk-6366.body",
+      "body_bytes": 15798,
+      "body_sha256": "4d4578355e7f22ad959227212b8963b44d6d93daaf680aae1517f3e9c4b0f252",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 천루이 1段 [] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트시"
+    },
+    {
+      "prod_player_id": 6378,
+      "name_in_index": "천창칭",
+      "prpl_code": "20000086",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "4",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20000086"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:19.346788+00:00",
+      "body_file": "tvbaduk-6378.body",
+      "body_bytes": 15817,
+      "body_sha256": "0c692c0387eee499c2fd38d61255c9fcd7d4c5ce8ee9aa7c0d8d5d4ad86d52e6",
+      "visible_profile_excerpt": "소속 : 대만기원 이름 : 천창칭 7段 [陳長淸] 생일 : 승단이력 - 7단 / 1992.07.13 / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행"
+    },
+    {
+      "prod_player_id": 6547,
+      "name_in_index": "황량위",
+      "prpl_code": "20002045",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002045"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:12.582294+00:00",
+      "body_file": "tvbaduk-6547.body",
+      "body_bytes": 15808,
+      "body_sha256": "b1bb1527b1a1dd012f5a4216ba71b67b13f26f48192ca2fa37189d5cf7f01731",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 황량위 1段 [황良玉 ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 "
+    },
+    {
+      "prod_player_id": 6550,
+      "name_in_index": "황번",
+      "prpl_code": "20002047",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002047"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:15.968933+00:00",
+      "body_file": "tvbaduk-6550.body",
+      "body_bytes": 15798,
+      "body_sha256": "cea9966d603849ab3aeaffd86918531fc13bf0d05bccf9e19dbd24bda4a0e3e6",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 황번 1段 [?? ] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스"
+    },
+    {
+      "prod_player_id": 6552,
+      "name_in_index": "황진쉬안",
+      "prpl_code": "20002048",
+      "url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "method": "POST",
+      "post_data": {
+        "S_nation": "2",
+        "S_ob_forc": "",
+        "S_sort_mode": "A",
+        "prpl_code": "20002048"
+      },
+      "final_url": "https://www.tvbaduk.com/info/gisa_view.asp",
+      "http_status": 200,
+      "fetched_at": "2026-10-08T20:21:14.231746+00:00",
+      "body_file": "tvbaduk-6552.body",
+      "body_bytes": 15801,
+      "body_sha256": "6d7341b10332eee9be2107ae250e26680441819a63b9b64b06d12bb67d5b9aa4",
+      "visible_profile_excerpt": "소속 : 중국기원 이름 : 황진쉬안 1段 [] 생일 : 승단이력 - 1단 / / 목록 [2026-10-09  13:30] 제4회 취저우 란커배 세계바둑오픈 본선 16강 신진서 vs 양카이원 [2026-10-09  19:00] 2026 NH농협은행 한국여자바둑리그 포스트"
+    }
+  ]
+}

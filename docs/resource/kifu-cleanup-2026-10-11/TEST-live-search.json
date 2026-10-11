@@ -1,0 +1,46 @@
+[
+  {
+    "environment": "TEST",
+    "language": "cn",
+    "query": "吴清源",
+    "total": 1231,
+    "seconds": 7.304,
+    "ids": [
+      140859,
+      124442
+    ]
+  },
+  {
+    "environment": "TEST",
+    "language": "cn",
+    "query": "Go Seigen",
+    "total": 1231,
+    "seconds": 7.299,
+    "ids": [
+      140859,
+      124442
+    ]
+  },
+  {
+    "environment": "TEST",
+    "language": "en",
+    "query": "吴清源",
+    "total": 1231,
+    "seconds": 4.16,
+    "ids": [
+      140859,
+      124442
+    ]
+  },
+  {
+    "environment": "TEST",
+    "language": "en",
+    "query": "Go Seigen",
+    "total": 1231,
+    "seconds": 4.156,
+    "ids": [
+      140859,
+      124442
+    ]
+  }
+]

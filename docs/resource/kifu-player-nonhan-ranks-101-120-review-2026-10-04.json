@@ -1,0 +1,447 @@
+{
+  "format": "kifu-player-nonhan-ranks-101-120-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 101–120; ranks 1–100 excluded; live unlinked ranking has shifted after earlier imports",
+  "snapshot_note": "TEST and PROD read-only repeatable-read SQL on 2026-10-04; all 20 raw counts identical and every observed FK NULL. Catalog IDs from prior read-only snapshots must be checked again in live dry-run.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 3210,
+    "approved_raw_values": 15,
+    "approved_slots_each_environment": 2437,
+    "held_raw_values": 5,
+    "held_slots_each_environment": 773,
+    "new_catalog_players": 4,
+    "approved_existing_catalog_rename": 1
+  },
+  "rows": [
+    {
+      "rank": 101,
+      "raw_value": "Matsuoka Teruo",
+      "slots_each_environment": 176,
+      "current_unlinked_slots_each_environment": 176,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1957-05-23,24",
+      "last_raw_date": "1978-09-14",
+      "canonical_chinese_name": "松冈辉夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5155
+        ],
+        "test": [
+          10936
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列松岡輝夫 / Matsuoka Teruo。"
+    },
+    {
+      "rank": 102,
+      "raw_value": "Morishima Kaoru",
+      "slots_each_environment": 169,
+      "current_unlinked_slots_each_environment": 169,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1961-05-04",
+      "last_raw_date": "1978-11-02",
+      "canonical_chinese_name": "森岛薰",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5271
+        ],
+        "test": [
+          11050
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列森島薫 / Morishima Kaoru。"
+    },
+    {
+      "rank": 103,
+      "raw_value": "Ozaki Harumi",
+      "slots_each_environment": 168,
+      "current_unlinked_slots_each_environment": 168,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-13,14",
+      "last_raw_date": "1978-11-09",
+      "canonical_chinese_name": "尾崎春美",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4485
+        ],
+        "test": [
+          10276
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列尾崎春美 / Ozaki Harumi。"
+    },
+    {
+      "rank": 104,
+      "raw_value": "Saijo Masataka",
+      "slots_each_environment": 168,
+      "current_unlinked_slots_each_environment": 168,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1964-07-22",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "西条雅孝",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000055.html",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列西條雅孝 / SAIJO, Masataka；两环境无现有同名 ID。"
+    },
+    {
+      "rank": 105,
+      "raw_value": "Honma Akio",
+      "slots_each_environment": 166,
+      "current_unlinked_slots_each_environment": 166,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1954-04-21",
+      "last_raw_date": "1978-06-15",
+      "canonical_chinese_name": "本间明男",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4842
+        ],
+        "test": [
+          10628
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列本間明男 / Honma Akio；1954 年少年对局略早于 1955 年入段。"
+    },
+    {
+      "rank": 106,
+      "raw_value": "Kobayashi Reiko",
+      "slots_each_environment": 166,
+      "current_unlinked_slots_each_environment": 166,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1978-08-16",
+      "canonical_chinese_name": "小林礼子",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000112.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院确认旧姓木谷；现目录小林礼子 / 木谷礼子两个 ID（PROD 4431/4832），先合并。"
+    },
+    {
+      "rank": 107,
+      "raw_value": "Nishigami Yoshihiko",
+      "slots_each_environment": 166,
+      "current_unlinked_slots_each_environment": 166,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1978-12-07",
+      "canonical_chinese_name": "西上好彦",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5877
+        ],
+        "test": [
+          11646
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列西上好彦 / Nishigami Yoshihiko。"
+    },
+    {
+      "rank": 108,
+      "raw_value": "Murase Yakichi",
+      "slots_each_environment": 164,
+      "current_unlinked_slots_each_environment": 164,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1848-05-09",
+      "last_raw_date": "1860-12-26",
+      "canonical_chinese_name": "村濑秀甫",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "depends_on_rank70_new_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/profile/sisetsu/dendou/list04.html",
+      "additional_evidence_urls": [
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/"
+      ],
+      "identity_note": "日本棋院确认村瀬弥吉为十八世本因坊秀甫本名；与第 70 名 Murase Shuho 同人，新目录 ID 须共享，避免双建。"
+    },
+    {
+      "rank": 109,
+      "raw_value": "Yokoyama Koichi",
+      "slots_each_environment": 164,
+      "current_unlinked_slots_each_environment": 164,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-03-16,17",
+      "last_raw_date": "1978-11-30",
+      "canonical_chinese_name": "横山孝一",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5286
+        ],
+        "test": [
+          11064
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列横山孝一 / Yokoyama Koichi。"
+    },
+    {
+      "rank": 110,
+      "raw_value": "Kosugi Kiyoshi",
+      "slots_each_environment": 162,
+      "current_unlinked_slots_each_environment": 162,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-05-18,19",
+      "last_raw_date": "1978-10-12",
+      "canonical_chinese_name": "小杉清",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4421
+        ],
+        "test": [
+          10212
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列小杉清 / Kosugi Kiyoshi。"
+    },
+    {
+      "rank": 111,
+      "raw_value": "Fukuda Masayoshi",
+      "slots_each_environment": 161,
+      "current_unlinked_slots_each_environment": 161,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1920-08-29..09-07",
+      "last_raw_date": "1968-07-04",
+      "canonical_chinese_name": "福田正义",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5668
+        ],
+        "test": [
+          11441
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列福田正義 / Fukuda Masayoshi。"
+    },
+    {
+      "rank": 112,
+      "raw_value": "Sugiuchi Kazuko",
+      "slots_each_environment": 161,
+      "current_unlinked_slots_each_environment": 161,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1954-10-06,07",
+      "last_raw_date": "1978-08-17",
+      "canonical_chinese_name": "杉内寿子",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4836
+        ],
+        "test": [
+          10622
+        ]
+      },
+      "proposed_catalog_action": "rename_existing_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000048.html",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列杉内寿子 / SUGIUCHI, Kazuko，旧姓本田；沿用现有「本田寿子」ID 并改规范名。与其妹「本田幸子」是不同人。PROD 现有本田寿子原值 FK 两槽均指该 ID。"
+    },
+    {
+      "rank": 113,
+      "raw_value": "Murashima Yoshinori",
+      "slots_each_environment": 159,
+      "current_unlinked_slots_each_environment": 159,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1924-01",
+      "last_raw_date": "1966-04-14",
+      "canonical_chinese_name": "村岛谊纪",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [
+        "https://www.nihonkiin.or.jp/profile/enkaku/jyokun.html"
+      ],
+      "identity_note": "CWI 同行列村島誼紀 / Murashima Yoshinori；日本棋院勋章目录证实村島誼紀为名誉九段。"
+    },
+    {
+      "rank": 114,
+      "raw_value": "Hashimoto Shoji",
+      "slots_each_environment": 157,
+      "current_unlinked_slots_each_environment": 157,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1950-04-05",
+      "last_raw_date": "1978-10-19",
+      "canonical_chinese_name": "桥本昌二",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "depends_on_rank27_new_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "与第 27 名精确原值 HashimotoShoji 同人，前批新建桥本昌二 ID 后再用同一 ID，避免双建。"
+    },
+    {
+      "rank": 115,
+      "raw_value": "Kanno Kiyonori",
+      "slots_each_environment": 157,
+      "current_unlinked_slots_each_environment": 157,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1962-08-16",
+      "last_raw_date": "1978-12-14",
+      "canonical_chinese_name": "菅野清规",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000083.htm",
+      "additional_evidence_urls": [],
+      "identity_note": "日本棋院直接列菅野清規 / KANNO, Kiyonori；两环境无同名 ID。"
+    },
+    {
+      "rank": 116,
+      "raw_value": "Kamimura Kunio",
+      "slots_each_environment": 155,
+      "current_unlinked_slots_each_environment": 155,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1959-04",
+      "last_raw_date": "1978-12-07",
+      "canonical_chinese_name": "上村邦夫",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3764
+        ],
+        "test": [
+          9562
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列上村邦夫 / Kamimura Kunio；唯一 1959 年早期棋谱为 13 岁时与木谷实对局。"
+    },
+    {
+      "rank": 117,
+      "raw_value": "Sato Kaoru",
+      "slots_each_environment": 155,
+      "current_unlinked_slots_each_environment": 155,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-02-17",
+      "last_raw_date": "1978-11-23",
+      "canonical_chinese_name": "佐藤馨",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3902
+        ],
+        "test": [
+          9699
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列佐藤馨 / Sato Kaoru。"
+    },
+    {
+      "rank": 118,
+      "raw_value": "Hosokawa Senjin",
+      "slots_each_environment": 150,
+      "current_unlinked_slots_each_environment": 150,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1927-08",
+      "last_raw_date": "1967-11-09",
+      "canonical_chinese_name": "细川千仞",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "additional_evidence_urls": [],
+      "identity_note": "CWI 同行列細川千仭 / Hosokawa Senjin；中文规范名采用仭的通行字形仞。"
+    },
+    {
+      "rank": 119,
+      "raw_value": "SeoPong-su",
+      "slots_each_environment": 144,
+      "current_unlinked_slots_each_environment": 144,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1979-03-03",
+      "last_raw_date": "2004-09-23",
+      "canonical_chinese_name": "徐奉洙",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "consolidate_catalog_first",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000008",
+      "additional_evidence_urls": [],
+      "identity_note": "韩国棋院确认徐奉洙；现目录徐奉洙 / 错字徐奉诛两个 ID（PROD 108/4705），先确认关联及合并。"
+    },
+    {
+      "rank": 120,
+      "raw_value": "Nakagawa Kamesaburo",
+      "slots_each_environment": 142,
+      "current_unlinked_slots_each_environment": 142,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1866-04-18",
+      "last_raw_date": "1917-01-28..02-06",
+      "canonical_chinese_name": "中川龟三郎（一世／二世）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "true_homonym_split",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html",
+      "additional_evidence_urls": [
+        "https://homepages.cwi.nl/~aeb/go/games/games/Hoensha/"
+      ],
+      "identity_note": "CWI 秀哉棋谱明确二世中川龟三郎原名石井千治；原值 1866–1897 年 136 槽属一世时期，1910–1917 年 6 槽属二世时期，不可整体指向一人。"
+    }
+  ]
+}

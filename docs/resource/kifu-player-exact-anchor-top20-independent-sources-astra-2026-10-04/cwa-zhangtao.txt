@@ -1,0 +1,102 @@
+{
+  "code": 0,
+  "data": {
+    "checkTeam": 1,
+    "chessPlayer": 1,
+    "createTime": "2024-05-06 16:38:31",
+    "dataStatus": 0,
+    "lastDate": 202607,
+    "playerAwards": [
+      {
+        "awardsChampion": 1,
+        "awardsChampionValue": "冠军",
+        "awardsDate": "2017-01-01",
+        "awardsEvents": "第30届当湖十局杯",
+        "awardsRank": 0,
+        "awardsType": 100000,
+        "playerNo": "CWA000126"
+      },
+      {
+        "awardsChampion": 2,
+        "awardsChampionValue": "亚军",
+        "awardsDate": "2017-01-01",
+        "awardsEvents": "第13届无锡棋王争霸战",
+        "awardsRank": 0,
+        "awardsType": 100000,
+        "playerNo": "CWA000126"
+      }
+    ],
+    "playerBirthday": "1991-03-23",
+    "playerCity": "嘉兴市",
+    "playerEmail": "",
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2021-11-17",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z08"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2019-07-03",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z07"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2017-08-15",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z06"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2016-09-19",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z05"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2013-07-23",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z04"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2008-07-11",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z03"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2007-07-11",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z02"
+      },
+      {
+        "playerNo": "CWA000126",
+        "upgradeDate": "2004-07-24",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z01"
+      }
+    ],
+    "playerGender": 1,
+    "playerGrade": "Z08",
+    "playerIdType": 1,
+    "playerImage": "https://cwa-web.oss-cn-beijing.aliyuncs.com/player/17852263927975141103649.jpg",
+    "playerLabels": [],
+    "playerName": "张涛",
+    "playerNameEn": "ZHANG Tao",
+    "playerNameNa": "",
+    "playerNo": "CWA000126",
+    "playerProfile": "",
+    "playerProvince": "浙江省",
+    "playerRating": "2511.60",
+    "playerStartDate": "2004-07-24",
+    "playerStatus": 1,
+    "playerType": 1,
+    "playerUnit": "",
+    "ratingRank": 39,
+    "updateTime": "2026-08-05 10:12:34"
+  },
+  "msg": "操作成功"
+}

@@ -1,0 +1,10 @@
+{
+  "manifest_canonical_sha256": "aa8e33006d43f0b23736555a4b0a072e0f3c1311354a703f55d3ff300816f2e4",
+  "name_matrix_canonical_sha256": "5ff473a4fe24c7aedfc6b5283601d7996b2343341445ebb36fe50496de6a635d",
+  "request_canonical_sha256": "04e470f3d31c09e570617a83dab2ee8be0c24942c5738d07c5d5430c0f37bf05",
+  "review_conclusion": "approve exact 150 literal SGF raw-title owners across 174 public NULL-event games; preserve editions/games/core parts and SGFs, no formal event identity, name or FK writes",
+  "reviewed_at": "2026-10-08T22:41:32.132300+00:00",
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "status": "approved_owner_review"
+}

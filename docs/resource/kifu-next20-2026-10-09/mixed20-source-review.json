@@ -1,0 +1,782 @@
+{
+  "ko": [
+    {
+      "display_name": "하마나카 다카미쓰",
+      "igo_body_sha256": "c69a3f4f773387679852b461676b0a58dc74de5ec039cd0878ea3fa90eeb605c",
+      "igo_url": "https://www.igorating.com/players/takamitsu-hamanaka",
+      "official_body_sha256": "a309f2d5ed237c110aa5f0b2f42392b535bac1b0b08695868c07a382af190d18",
+      "official_url": "https://www.nihonkiin.or.jp/player/htm/ki000173.html",
+      "original_name": "浜中隆光",
+      "prod_id": 5396,
+      "reading": "はまなか たかみつ",
+      "research_sha256": "d825c4a337b40b815696af113a196332b8494ff232a0af0393ca0aab1524ea8c"
+    },
+    {
+      "display_name": "오쿠무라 야스시",
+      "igo_body_sha256": "e86cc496fe619fd4e6087ae45e2a23793bd9ae1b71c7f8a83042aa6281d54f41",
+      "igo_url": "https://igorating.com/players/yasushi-okumura",
+      "official_body_sha256": "c434068b393ed003436075e5fcdca3830476ecf0802aba8fb6865d27f5a041ff",
+      "official_url": "https://www.nihonkiin.or.jp/player/htm/ki000240.htm",
+      "original_name": "奥村靖",
+      "prod_id": 4276,
+      "reading": "おくむら やすし",
+      "research_sha256": "0a80f01f5ecc87e36dd20a2ee6d08b982d5b12bc7757170a071ddd3392afa6af"
+    },
+    {
+      "display_name": "아케도 가즈미",
+      "igo_body_sha256": "c69ddf45c245b0a2982fedb8c3857e744b048acd9323be3279c84fdfb25c59c5",
+      "igo_url": "https://www.igorating.com/players/kazumi-akedo",
+      "official_body_sha256": "ab0af9f2f8e169d859b9e44ae269e5a2cb05ecea3a91fbad80559969c7a0fcc9",
+      "official_url": "https://archive.nihonkiin.or.jp/player/htm/ki000129.htm",
+      "original_name": "明戸和巳",
+      "prod_id": 4782,
+      "reading": "あけど かずみ",
+      "research_sha256": "a44a9795d692977ee0a227d229527b1d866d363c24333d7bfed2756158025bf8"
+    }
+  ],
+  "ko_positive_generated": 3,
+  "limits": [
+    "No Taiwanese personal-name publication asserted for generated TW orthography.",
+    "JP names retain exact source codepoints, including 浜, 瀬, 塩.",
+    "彦 is retained exactly; no inferred 彥 personal-name output.",
+    "李 U+F9E1 is retained only from the actual KBA Hanja source.",
+    "Existing REVIEW TW target rows require complete fresh target_name_preimage in candidate binding.",
+    "KO conflict searches are two bounded first-page queries per person.",
+    "No candidate has been bound to post-590/page context or independently approved."
+  ],
+  "source_file_sha256": {
+    "ko3-actual-source-captures.json.gz": "e8c6054bb28e3432d2bf57eab277fb699e7c79ffe8ec9c764dd4e102ae9bb4a4",
+    "ko3-unsigned-research.json.gz": "fb05ad09ce8935cbaccbbcf792ae53cc987837c01dbb5b9fa2e31dc1b9c09aee",
+    "tw-Unihan-17.0.0.zip": "f7a48b2b545acfaa77b2d607ae28747404ce02baefee16396c5d2d7a8ef34b5e",
+    "tw-cn7-finite-rule-request.json": "a8a6d810bfba7c5ae3511d36132c02b7145ad0c18cf545bd1dcebaab5e52b464",
+    "tw-cn7-pending-gate-anchor-review-requests.json": "e66cb3a5de226be7945a91ea157107539a8385ea1d5d6da45e3228bc10f4d588",
+    "tw-jp-retention-rule-request.json": "4e02c68900023a5afba4362bd738d0d5b3d7adab3fd7765d1628c519c1c3fc2d",
+    "tw-kba446-actual-capture.json.gz": "b6cee28ed4b2eb74565dada659e6db97e93c99c059de5a6d36a3cc53149ee6e9",
+    "tw-moe-strokes.pdf": "5e7173d5aa11064d3d5662d5ce4723626f2b4d2122da264f7d63e946a5815434",
+    "tw-official-hanja-rule-request.json": "949d24175030249bfe1caa09fc716b57659b1da21cc7f2e30bca8ded1b93eb27",
+    "tw-unsigned-anchor-review-requests.json": "46329fad180d8c43706092d634318ec01d006b6101d39f95747849498db1e232"
+  },
+  "status": "unsigned_pending_root_source_rule_review_and_fresh_post590_pages_binding",
+  "target_count_per_environment": 20,
+  "tw": [
+    {
+      "anchor_content_sha256": "81b7885a94d3342d65f63636c65d1d214e896f042aecf1c323000dddc9f1c140",
+      "canonical_name": "日下包夫",
+      "display_name": "日下包夫",
+      "environment": "PROD",
+      "original_name": "日下包夫",
+      "owner_id": 4771,
+      "prod_id": 4771,
+      "source_batch_id": 468,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "c8b772ac667863434e5911c3c236ee4d2c1c275f7becc7041edb86bb37cc1810",
+      "source_evidence_id": 53937,
+      "source_lang": "jp",
+      "source_name_id": 9610,
+      "source_urls": [
+        "https://www.igorating.com/players/kaneo-kusaka",
+        "https://www.igorating.com/en/players/kaneo-kusaka"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "338c8e088c2dba5e837c1cd05ec88b6774c7e7396328164db6ace82d9ad8bed5",
+      "canonical_name": "浜岛久义",
+      "display_name": "浜島久義",
+      "environment": "PROD",
+      "original_name": "浜島久義",
+      "owner_id": 5397,
+      "prod_id": 5397,
+      "source_batch_id": 468,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "5b84d1c19c88bad3ff636b208446521619ec87125ec4fdddb5bbd80bab49e8ef",
+      "source_evidence_id": 53942,
+      "source_lang": "jp",
+      "source_name_id": 9615,
+      "source_urls": [
+        "https://www.igorating.com/players/hisayoshi-hamajima",
+        "https://www.igorating.com/en/players/hisayoshi-hamajima"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "4814cc4d07fe1c9bb1271d3e3bebd077e2961ddc317fa24d92560467c2fdcb53",
+      "canonical_name": "武田博爱",
+      "display_name": "武田博愛",
+      "environment": "PROD",
+      "original_name": "武田博愛",
+      "owner_id": 5297,
+      "prod_id": 5297,
+      "source_batch_id": 471,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "7bc1dbd23762c167e1273d23f2cf4ac8b92caa3bb789412618d27be665ea46a5",
+      "source_evidence_id": 54163,
+      "source_lang": "jp",
+      "source_name_id": 9621,
+      "source_urls": [
+        "https://www.igorating.com/players/hakuai-takeda",
+        "https://www.cyberoro.com/info/player_view.oro?prpl_code=20001283"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "343f496d94fb10314f674c2b84c57fa018c4b4bab38150bb878cc364e4544dc5",
+      "canonical_name": "小松伸昭",
+      "display_name": "小松伸昭",
+      "environment": "PROD",
+      "original_name": "小松伸昭",
+      "owner_id": 6599,
+      "prod_id": 6599,
+      "source_batch_id": 473,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "d46297ee08c6fa1933258b1f8675ee172bf498ebbfaa0bc7fd694b3fe31bc9f7",
+      "source_evidence_id": 54178,
+      "source_lang": "jp",
+      "source_name_id": 9636,
+      "source_urls": [
+        "https://www.igorating.com/players/nobuaki-komatsu",
+        "https://www.igorating.com/en/players/nobuaki-komatsu"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "430f4252fffcebf510d18bdee89f763c48c5a10159902a3da585770c59a989d1",
+      "canonical_name": "早濑玄堂",
+      "display_name": "早瀬玄堂",
+      "environment": "PROD",
+      "original_name": "早瀬玄堂",
+      "owner_id": 6626,
+      "prod_id": 6626,
+      "source_batch_id": 471,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "b9e1b29ec50c9957edb2b2d1e9a09e08f5f41307d49fcab50306bfd5f277ce8e",
+      "source_evidence_id": 54166,
+      "source_lang": "jp",
+      "source_name_id": 9624,
+      "source_urls": [
+        "https://www.igorating.com/players/gendo-hayase",
+        "https://www.igorating.com/en/players/gendo-hayase"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "76af4aa208c8b18f12e65dbc125f3a462c55f2343a52f62b39dba640af3c104a",
+      "canonical_name": "塩入逸造",
+      "display_name": "塩入逸造",
+      "environment": "PROD",
+      "original_name": "塩入逸造",
+      "owner_id": 4235,
+      "prod_id": 4235,
+      "source_batch_id": 471,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "7d02b574dc6eacab1bc47acd970b842fecb8a880b3adca14c48402e49e35bee2",
+      "source_evidence_id": 54169,
+      "source_lang": "jp",
+      "source_name_id": 9627,
+      "source_urls": [
+        "https://www.igorating.com/players/itsuzo-shioiri",
+        "https://www.igorating.com/en/players/itsuzo-shioiri"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "589bed9de3a4933748fbd2e14a541a802a8b19981aa28bb6fe31161c31305686",
+      "canonical_name": "福原义虎",
+      "display_name": "福原義虎",
+      "environment": "PROD",
+      "original_name": "福原義虎",
+      "owner_id": 6629,
+      "prod_id": 6629,
+      "source_batch_id": 471,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "15427d6f29461d3fd5248a4d00eabc44fe1df7c40608e9e8dabe8363193773aa",
+      "source_evidence_id": 54172,
+      "source_lang": "jp",
+      "source_name_id": 9630,
+      "source_urls": [
+        "https://www.igorating.com/players/yoshitora-fukuhara",
+        "https://www.igorating.com/en/players/yoshitora-fukuhara"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "2400bd1970c5ec67684844545c1858786b05273a62f9714ceab7f8d1f15f3f0a",
+      "canonical_name": "安井算知（九世）",
+      "display_name": "九世安井算知",
+      "environment": "PROD",
+      "original_name": "九世安井算知",
+      "owner_id": 6686,
+      "prod_id": 6686,
+      "source_batch_id": 473,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "dbc62b925ca4d93469defe1e77952338d85af6490f85d6190d710cc7bf7acef5",
+      "source_evidence_id": 54185,
+      "source_lang": "jp",
+      "source_name_id": 9643,
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/index.html"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "55fb8e0558fc7d2f7536dbc87da4b28660af3f422433943dd743ea3f314e9a9e",
+      "canonical_name": "铃木越雄",
+      "display_name": "鈴木越雄",
+      "environment": "PROD",
+      "original_name": "鈴木越雄",
+      "owner_id": 6259,
+      "prod_id": 6259,
+      "source_batch_id": 473,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "e04001e6893157e6e7da86872041d1e00a1b84d4df766f3101b82ed8f90b4745",
+      "source_evidence_id": 54188,
+      "source_lang": "jp",
+      "source_name_id": 9646,
+      "source_urls": [
+        "https://www.igorating.com/players/etsuo-suzuki",
+        "https://www.igorating.com/en/players/etsuo-suzuki"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "e78bac526f2fd2646e64b687e411a33cd84c6335f8c6673fde6d76141923ccc2",
+      "canonical_name": "肖泽彬",
+      "display_name": "肖澤彬",
+      "environment": "PROD",
+      "original_name": "肖泽彬",
+      "owner_id": 600,
+      "prod_id": 600,
+      "source_batch_id": 552,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "682f0a91645c95b16d914f110222fe2e3641d0d2b42be13117a1aca9ded19bae",
+      "source_evidence_id": 61568,
+      "source_lang": "cn",
+      "source_name_id": 2994,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2276.html",
+        "https://www.goratings.org/ja/players/2276.html"
+      ],
+      "target_preimage_sha256": "7a2a6d6e3ac1627125de3149f9fa0ebe595450d8c29563c50fb2048ec3bd8e67",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "368bec4e67e429548e2e3dd4710dd5bd9b647976664f7af177eccd031829dba8",
+      "canonical_name": "叶子萌",
+      "display_name": "葉子萌",
+      "environment": "PROD",
+      "original_name": "叶子萌",
+      "owner_id": 229,
+      "prod_id": 229,
+      "source_batch_id": 552,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "281db184db56d3ad0be7c888be60163ff96ab7e9c404c8232f7067e17714100e",
+      "source_evidence_id": 61572,
+      "source_lang": "cn",
+      "source_name_id": 1139,
+      "source_urls": [
+        "https://goratings.org/zh/players/2451.html",
+        "https://goratings.org/ja/players/2451.html"
+      ],
+      "target_preimage_sha256": "fbfd4761f1785cecaa9463a378db041b75020814d469b41c9375e8446ac4e28b",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "b97028fd23bb51bf4c24edabea4bf7c51bb457f8d871906dc50ed8c481517c90",
+      "canonical_name": "周雨萱",
+      "display_name": "周雨萱",
+      "environment": "PROD",
+      "original_name": "周雨萱",
+      "owner_id": 595,
+      "prod_id": 595,
+      "source_batch_id": 552,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "59bae31732fb1ed9bb8c60e5b2d0f4f599c203116e7213b3231992984e0fc9b9",
+      "source_evidence_id": 61576,
+      "source_lang": "cn",
+      "source_name_id": 2969,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2253.html",
+        "https://www.goratings.org/ja/players/2309.html"
+      ],
+      "target_preimage_sha256": "56ad49d6990da19854b9837265ebae7b100f4f3567444a53752cfd8771703507",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "7a89146fee4fac11f7643c00046cf9cdb4f2f504ff9908e1edd04e52b657b224",
+      "canonical_name": "行泓丞",
+      "display_name": "行泓丞",
+      "environment": "PROD",
+      "original_name": "行泓丞",
+      "owner_id": 385,
+      "prod_id": 385,
+      "source_batch_id": 545,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "908da33c3998dd4a946a0bbbc835459613d906982a575157f4c6ae93a7c2dd14",
+      "source_evidence_id": 61330,
+      "source_lang": "cn",
+      "source_name_id": 1919,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2528.html",
+        "https://www.goratings.org/ja/players/2528.html"
+      ],
+      "target_preimage_sha256": "9593962ac687a208b7ae2780b9868fce604e9307e37e4fb2dee629449f11ba09",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "c0d5196c32610dc6d19fdadefe9a41f86c701a21718130700f650b0969ed9de0",
+      "canonical_name": "朱彦臻",
+      "display_name": "朱彦臻",
+      "environment": "PROD",
+      "original_name": "朱彦臻",
+      "owner_id": 662,
+      "prod_id": 662,
+      "source_batch_id": 545,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "c75decd90f5d657326a5abfc3c85368ec88bec54965a878600ac2a8d3aa3c9c1",
+      "source_evidence_id": 61334,
+      "source_lang": "cn",
+      "source_name_id": 3304,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2287.html",
+        "https://www.goratings.org/ja/players/2287.html"
+      ],
+      "target_preimage_sha256": "b2c944f589927b2aec4e37431f5e2cd42880a0bf1eea3b6820d3b1bde6dba68a",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "9ebf47fbd77d65cb4c5f5007e20016d903102ba686d569fa188a408eacea3670",
+      "canonical_name": "桂诗云",
+      "display_name": "桂詩雲",
+      "environment": "PROD",
+      "original_name": "桂诗云",
+      "owner_id": 320,
+      "prod_id": 320,
+      "source_batch_id": 549,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "bbb67d6fe8d9ecf4196edce94d462f9e5fb22000e9e1e1ef191d288b2d7dbb84",
+      "source_evidence_id": 61512,
+      "source_lang": "cn",
+      "source_name_id": 1594,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2398.html",
+        "https://www.goratings.org/ja/players/2398.html"
+      ],
+      "target_preimage_sha256": "543d1e9bbb2ab62fde2e2ec2fe63f4e1a3003f994da37bf4ff3044072a3c7962",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "600672bb3d4fc3e5303ccdb0a13ec92d6c4efb8b85699e8fa2ec7837bcb5c03a",
+      "canonical_name": "李贞垠",
+      "display_name": "李貞垠",
+      "environment": "PROD",
+      "original_name": "李貞垠",
+      "owner_id": 446,
+      "prod_id": 446,
+      "source_batch_id": 553,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "41a28581e4bce1d2206b74d248c7b064fd15ab5d2bbfa722b354958dba6c7350",
+      "source_evidence_id": 61594,
+      "source_lang": "ko",
+      "source_name_id": 2224,
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10001264",
+        "https://www.goratings.org/zh/players/2516.html"
+      ],
+      "target_preimage_sha256": "86e43ae79b33f3ba2d2eb98a7a4c5adf1ca8b63c120bed3c971b12e48e54f533",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "3a18e1fb0c6cbf01b5471ad760365c230929ddf5258fa9e22a8580973ba3be80",
+      "canonical_name": "王琛",
+      "display_name": "王琛",
+      "environment": "PROD",
+      "original_name": "王琛",
+      "owner_id": 391,
+      "prod_id": 391,
+      "source_batch_id": 540,
+      "source_capture_file": "PROD-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "a21343a11d99767444e068d29bb25344ff80326ec2a9d3930e5ed282b2850d37",
+      "source_evidence_id": 61259,
+      "source_lang": "cn",
+      "source_name_id": 1949,
+      "source_urls": [
+        "https://db.u-go.net/playerdb/players/496/",
+        "https://www.nihonkiin.or.jp/event/area/other/40_34.html"
+      ],
+      "target_preimage_sha256": "0397bfb16856d49a88bc4d3a32e616bac7d9373aeeaa41a5f9a751a70e52782b",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "a7f2ac0dca798e509c5c086604b0f2339b456ad6c57d04bc5211d8872034dc48",
+      "canonical_name": "日下包夫",
+      "display_name": "日下包夫",
+      "environment": "TEST",
+      "original_name": "日下包夫",
+      "owner_id": 10560,
+      "prod_id": 4771,
+      "source_batch_id": 468,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "049895f2510927429ec1b43997817dded266f602c83c9c384a2f760832d4327b",
+      "source_evidence_id": 53932,
+      "source_lang": "jp",
+      "source_name_id": 10535,
+      "source_urls": [
+        "https://www.igorating.com/players/kaneo-kusaka",
+        "https://www.igorating.com/en/players/kaneo-kusaka"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "74e7bc4fc959db4cab11f15554a3ac492f8c19cc8800235a5292da7e32b79204",
+      "canonical_name": "浜岛久义",
+      "display_name": "浜島久義",
+      "environment": "TEST",
+      "original_name": "浜島久義",
+      "owner_id": 11172,
+      "prod_id": 5397,
+      "source_batch_id": 468,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "e750b85223950771f0ed2452da5f7ffa2d4c5cab0cb672edbc1d1872ad75e02c",
+      "source_evidence_id": 53937,
+      "source_lang": "jp",
+      "source_name_id": 10540,
+      "source_urls": [
+        "https://www.igorating.com/players/hisayoshi-hamajima",
+        "https://www.igorating.com/en/players/hisayoshi-hamajima"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "d1ff8b3b1fa99023d151dc6432bbdcd9fc0911fe7388c5848bd9d967573a8507",
+      "canonical_name": "武田博爱",
+      "display_name": "武田博愛",
+      "environment": "TEST",
+      "original_name": "武田博愛",
+      "owner_id": 11074,
+      "prod_id": 5297,
+      "source_batch_id": 471,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "cf9de9691119b0de7f7df18a6e4e71c1ffc1bcb6b1fabe70cf1131ed540cad60",
+      "source_evidence_id": 54158,
+      "source_lang": "jp",
+      "source_name_id": 10546,
+      "source_urls": [
+        "https://www.igorating.com/players/hakuai-takeda",
+        "https://www.cyberoro.com/info/player_view.oro?prpl_code=20001283"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "0911ed2d2d0f9a1feb000f1595c30463b77bee0869739bf80e50fd00c4488ebe",
+      "canonical_name": "小松伸昭",
+      "display_name": "小松伸昭",
+      "environment": "TEST",
+      "original_name": "小松伸昭",
+      "owner_id": 12363,
+      "prod_id": 6599,
+      "source_batch_id": 473,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "33a2804b1047697b5edc53969a27180be2f4621f937c9e2b000852f78a0648cd",
+      "source_evidence_id": 54173,
+      "source_lang": "jp",
+      "source_name_id": 10561,
+      "source_urls": [
+        "https://www.igorating.com/players/nobuaki-komatsu",
+        "https://www.igorating.com/en/players/nobuaki-komatsu"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "504b1dcb22e05035418dafb772a61e2d3fa6de6ae01b37cdacdcbfdcd687c009",
+      "canonical_name": "早濑玄堂",
+      "display_name": "早瀬玄堂",
+      "environment": "TEST",
+      "original_name": "早瀬玄堂",
+      "owner_id": 12390,
+      "prod_id": 6626,
+      "source_batch_id": 471,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "8c60924f8851e92e91c576897d66181a1a721941cbfcf4499a8616d7f6d21acc",
+      "source_evidence_id": 54161,
+      "source_lang": "jp",
+      "source_name_id": 10549,
+      "source_urls": [
+        "https://www.igorating.com/players/gendo-hayase",
+        "https://www.igorating.com/en/players/gendo-hayase"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "b496edab0ae3a70278d6d29548fb12f48764845e7b84e28a27b3d1cf1617b693",
+      "canonical_name": "塩入逸造",
+      "display_name": "塩入逸造",
+      "environment": "TEST",
+      "original_name": "塩入逸造",
+      "owner_id": 10030,
+      "prod_id": 4235,
+      "source_batch_id": 471,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "8b431d3b992ca0867e5cdd48cbe812dd80d39d9840813d6ea839962390ad87c7",
+      "source_evidence_id": 54164,
+      "source_lang": "jp",
+      "source_name_id": 10552,
+      "source_urls": [
+        "https://www.igorating.com/players/itsuzo-shioiri",
+        "https://www.igorating.com/en/players/itsuzo-shioiri"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "465a60fa6d6b75276e46754b82b394553d6b81b225ab3833070f092dcf64ae7d",
+      "canonical_name": "福原义虎",
+      "display_name": "福原義虎",
+      "environment": "TEST",
+      "original_name": "福原義虎",
+      "owner_id": 12393,
+      "prod_id": 6629,
+      "source_batch_id": 471,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "ce2cf7e9b30259c51fb7d1f429d9d3125ff78373ee0b51767c0fbe84f33abd83",
+      "source_evidence_id": 54167,
+      "source_lang": "jp",
+      "source_name_id": 10555,
+      "source_urls": [
+        "https://www.igorating.com/players/yoshitora-fukuhara",
+        "https://www.igorating.com/en/players/yoshitora-fukuhara"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "0b7b92bae6779218e49f7f0fc27003241847d598a19529be5a77d12b5af5af26",
+      "canonical_name": "安井算知（九世）",
+      "display_name": "九世安井算知",
+      "environment": "TEST",
+      "original_name": "九世安井算知",
+      "owner_id": 12455,
+      "prod_id": 6686,
+      "source_batch_id": 473,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "8b4b4c093b700d828bca91498bc0273b823d8df62c79e09c1f92aa85dd5b294d",
+      "source_evidence_id": 54180,
+      "source_lang": "jp",
+      "source_name_id": 10568,
+      "source_urls": [
+        "https://www.nihonkiin.or.jp/etc/writer/column20260420.html",
+        "https://homepages.cwi.nl/~aeb/go/games/games/Shusaku/index.html"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "e6ab23497a607272f13654544d8cec446d385111cceec252c2e7958fd528994f",
+      "canonical_name": "铃木越雄",
+      "display_name": "鈴木越雄",
+      "environment": "TEST",
+      "original_name": "鈴木越雄",
+      "owner_id": 12025,
+      "prod_id": 6259,
+      "source_batch_id": 473,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "3b8aa7449cce62c7d73ce82d76ff359c0c485ea1c50af2c7bfe546ce7d17654c",
+      "source_evidence_id": 54183,
+      "source_lang": "jp",
+      "source_name_id": 10571,
+      "source_urls": [
+        "https://www.igorating.com/players/etsuo-suzuki",
+        "https://www.igorating.com/en/players/etsuo-suzuki"
+      ],
+      "target_preimage_sha256": null,
+      "target_preimage_status": "NULL"
+    },
+    {
+      "anchor_content_sha256": "0dc1befae8bab045eab2d6a55e30e55b805ee142b0e74a69f1522133e7fa12b3",
+      "canonical_name": "肖泽彬",
+      "display_name": "肖澤彬",
+      "environment": "TEST",
+      "original_name": "肖泽彬",
+      "owner_id": 601,
+      "prod_id": 600,
+      "source_batch_id": 552,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "6c937fefeee9949fc4bf8ec2e88559243c881ac43e021e6f19348ee8146dc2a4",
+      "source_evidence_id": 61563,
+      "source_lang": "cn",
+      "source_name_id": 2999,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2276.html",
+        "https://www.goratings.org/ja/players/2276.html"
+      ],
+      "target_preimage_sha256": "bbc67ad6cf96d2ad085fd5f7b640a3e06c82ee1184464a104d1b6ff9b74395ac",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "1e360f7d7d2fde031ab7ce6facaaeee19573108211c9fe7f4a07b1356fb660b6",
+      "canonical_name": "叶子萌",
+      "display_name": "葉子萌",
+      "environment": "TEST",
+      "original_name": "叶子萌",
+      "owner_id": 230,
+      "prod_id": 229,
+      "source_batch_id": 552,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "1b1f0b7d40e40d0130747ce58fd00369fe35d87b30f4218c9f16339d11f07534",
+      "source_evidence_id": 61567,
+      "source_lang": "cn",
+      "source_name_id": 1144,
+      "source_urls": [
+        "https://goratings.org/zh/players/2451.html",
+        "https://goratings.org/ja/players/2451.html"
+      ],
+      "target_preimage_sha256": "ef6a3282aa7e455337044e96fc2870e3be7b6ad05865fb332021b15d682b95e4",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "2385de3372815b655f15b07bffd1a6fc25032c0bc012309c408557d5e107ab14",
+      "canonical_name": "周雨萱",
+      "display_name": "周雨萱",
+      "environment": "TEST",
+      "original_name": "周雨萱",
+      "owner_id": 596,
+      "prod_id": 595,
+      "source_batch_id": 552,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "23a3e77199bafe70379b166365f15e19b96a04650b2107e3e4b589a2c45e4d6e",
+      "source_evidence_id": 61571,
+      "source_lang": "cn",
+      "source_name_id": 2974,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2253.html",
+        "https://www.goratings.org/ja/players/2309.html"
+      ],
+      "target_preimage_sha256": "6457ba7ddadb289fae92447869c25551b72aeaa0a4be5e92363daf9cd9b1cb20",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "c2f401776c80fb80588ee4db93408818f628d4d531661a2d09855aeda54f7e28",
+      "canonical_name": "行泓丞",
+      "display_name": "行泓丞",
+      "environment": "TEST",
+      "original_name": "行泓丞",
+      "owner_id": 386,
+      "prod_id": 385,
+      "source_batch_id": 545,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "995fde361a4436f4d2da0e82b7d1664658cb8fe41546b643bd85315767865d2b",
+      "source_evidence_id": 61325,
+      "source_lang": "cn",
+      "source_name_id": 1924,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2528.html",
+        "https://www.goratings.org/ja/players/2528.html"
+      ],
+      "target_preimage_sha256": "38d36aeb65634ef753eea0da29837ce3fb9499e92fbdab15af21a245cdc721e7",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "624de7229ec2f8d5470db8903a6d671957fba3db674e02ac07b3419aff962763",
+      "canonical_name": "朱彦臻",
+      "display_name": "朱彦臻",
+      "environment": "TEST",
+      "original_name": "朱彦臻",
+      "owner_id": 663,
+      "prod_id": 662,
+      "source_batch_id": 545,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "124027c07fbaa3b98e051df9339c1ef9707c82e9875d820719daf3267d7c17d7",
+      "source_evidence_id": 61329,
+      "source_lang": "cn",
+      "source_name_id": 3309,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2287.html",
+        "https://www.goratings.org/ja/players/2287.html"
+      ],
+      "target_preimage_sha256": "d41d108665eee9bb92dedb1470603fe896b786ef647b403cfad2dec40f3d8aba",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "8086a4254a038afa862fb9176b97537d231964c4f6b8908ea3ddec06cfcdee68",
+      "canonical_name": "桂诗云",
+      "display_name": "桂詩雲",
+      "environment": "TEST",
+      "original_name": "桂诗云",
+      "owner_id": 321,
+      "prod_id": 320,
+      "source_batch_id": 549,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "a973a94fc3b29f04e501df34e37a5f32246e5d2e62e568542287c25e3a71cd92",
+      "source_evidence_id": 61507,
+      "source_lang": "cn",
+      "source_name_id": 1599,
+      "source_urls": [
+        "https://www.goratings.org/zh/players/2398.html",
+        "https://www.goratings.org/ja/players/2398.html"
+      ],
+      "target_preimage_sha256": "a1a98c1063568eb5e9ff7ecde25d0fe1380c0d6f5d73c32a37abbd5ed3972f72",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "452df242a8126c6b67c8a9e5aa7ab3ee17ca8f53b72cb190fa32896d6884dd0d",
+      "canonical_name": "李贞垠",
+      "display_name": "李貞垠",
+      "environment": "TEST",
+      "original_name": "李貞垠",
+      "owner_id": 447,
+      "prod_id": 446,
+      "source_batch_id": 553,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "97272324bbf7a86447d3e2ce23ab0cd6cc1effbe6e70580151c63e03d896d3fc",
+      "source_evidence_id": 61589,
+      "source_lang": "ko",
+      "source_name_id": 2229,
+      "source_urls": [
+        "https://www.baduk.or.kr/record/player_view.asp?pkey=10001264",
+        "https://www.goratings.org/zh/players/2516.html"
+      ],
+      "target_preimage_sha256": "93e3cf3e41e63f65f3d5bc2d42bae711d6cd1377de914c3fc12161302700c572",
+      "target_preimage_status": "review"
+    },
+    {
+      "anchor_content_sha256": "60ccaeb92280b670b446dbe60341d23c9a3e9e26c212f8b0cc7a16c4822eafa9",
+      "canonical_name": "王琛",
+      "display_name": "王琛",
+      "environment": "TEST",
+      "original_name": "王琛",
+      "owner_id": 392,
+      "prod_id": 391,
+      "source_batch_id": 540,
+      "source_capture_file": "TEST-tw-source-readonly.json.gz",
+      "source_evidence_creation_sha256": "6f037ca5a9831eb6ad9a6d7e8bd5f07c98d6e0b84d6cfc5d0c01199e44311781",
+      "source_evidence_id": 61254,
+      "source_lang": "cn",
+      "source_name_id": 1954,
+      "source_urls": [
+        "https://db.u-go.net/playerdb/players/496/",
+        "https://www.nihonkiin.or.jp/event/area/other/40_34.html"
+      ],
+      "target_preimage_sha256": "7e4e7bc29750808fcb42a19247383e54090667d5fbdc7f81160c3c7e6b8f5145",
+      "target_preimage_status": "review"
+    }
+  ],
+  "tw_groups": {
+    "cn_finite_orthography_existing_review": 7,
+    "jp_exact_codepoint_retention": 9,
+    "official_hanja_exact_preservation_existing_review": 1
+  }
+}

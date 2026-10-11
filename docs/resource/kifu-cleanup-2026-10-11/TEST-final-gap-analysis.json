@@ -1,0 +1,433 @@
+{
+  "assessment": "These are absent name cells, not invalidated old finite scopes. Canonical-name matches reuse already qualified displays without linking album identities. Janice Kim uses existing decision displays only for EN/JP/KO.",
+  "context_capture_at": "2026-10-11T15:23:44.683272+00:00",
+  "environment": "TEST",
+  "event_gap_keys": 0,
+  "metric_capture_at": "2026-10-11T16:02:47.025968+00:00",
+  "public_missing_games": 1307,
+  "rows": [
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 21,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "杨鼎新",
+      "public_album_count": 864,
+      "public_album_ids_sha256": "65e1c9f513cf16ed46fe99b5f48d79f5db9d1d194019a5902af3ac75a2e5282d",
+      "public_slot_count": 864,
+      "raw": "杨鼎新",
+      "raw_owner_id": 11916,
+      "source_evidence_refs": {
+        "cn": 132133,
+        "en": 132137,
+        "jp": 132135,
+        "ko": 132136,
+        "tw": 132134
+      },
+      "suggested_display_names": {
+        "cn": "杨鼎新",
+        "en": "Yang Dingxin",
+        "jp": "ヤン・ディンシン",
+        "ko": "양딩신",
+        "tw": "楊鼎新"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "parsed_rank_base_exact_canonical_name",
+      "canonical_player_id": 1,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "吴清源",
+      "public_album_count": 149,
+      "public_album_ids_sha256": "02eaa4da2c8b831f3188b5f6006a9bbc81d9c3e1cad7608b8835f68d6b926cb0",
+      "public_slot_count": 149,
+      "raw": "吴清源九段",
+      "raw_owner_id": 10077,
+      "source_evidence_refs": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "suggested_display_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 1045,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "田中佑树",
+      "public_album_count": 69,
+      "public_album_ids_sha256": "e5ba2f28fa86a1660f4a86d83f3607d13567768e3b9992ea8c313c4824392542",
+      "public_slot_count": 69,
+      "raw": "田中佑树",
+      "raw_owner_id": 12663,
+      "source_evidence_refs": {
+        "cn": 129478,
+        "en": 129482,
+        "jp": 129480,
+        "ko": 129481,
+        "tw": 129479
+      },
+      "suggested_display_names": {
+        "cn": "田中佑树",
+        "en": "Yuki Tanaka",
+        "jp": "田中 佑樹",
+        "ko": "유키 타나카",
+        "tw": "田中佑樹"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 1049,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "大谷直辉",
+      "public_album_count": 56,
+      "public_album_ids_sha256": "854b1a0b992e7865d4814008629115aed49639d6f0d4f2794132e950b56ac44e",
+      "public_slot_count": 56,
+      "raw": "大谷直辉",
+      "raw_owner_id": 10280,
+      "source_evidence_refs": {
+        "cn": 129563,
+        "en": 129567,
+        "jp": 129565,
+        "ko": 129566,
+        "tw": 129564
+      },
+      "suggested_display_names": {
+        "cn": "大谷直辉",
+        "en": "Naoki Otani",
+        "jp": "大谷 直輝",
+        "ko": "오오타니 나오키",
+        "tw": "大谷直輝"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "parsed_rank_base_exact_canonical_name",
+      "canonical_player_id": 1,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "吴清源",
+      "public_album_count": 41,
+      "public_album_ids_sha256": "e61910636231bd26ae2a4b7728f4b3c827f2640e73ba2d2b93d3aaf23ecf8c34",
+      "public_slot_count": 41,
+      "raw": "吴清源八段",
+      "raw_owner_id": 10079,
+      "source_evidence_refs": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "suggested_display_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 1069,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "西冈正织",
+      "public_album_count": 37,
+      "public_album_ids_sha256": "5699d3197d90899e8c49fe107d89ca6e90d21789c0666308b797a0c844734601",
+      "public_slot_count": 37,
+      "raw": "西冈正织",
+      "raw_owner_id": 13210,
+      "source_evidence_refs": {
+        "cn": 129728,
+        "en": 129732,
+        "jp": 129730,
+        "ko": 129731,
+        "tw": 129729
+      },
+      "suggested_display_names": {
+        "cn": "西冈正织",
+        "en": "Masao Nishioka",
+        "jp": "西岡 正織",
+        "ko": "니시오카 마사오",
+        "tw": "西岡正織"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 1065,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "后藤一",
+      "public_album_count": 33,
+      "public_album_ids_sha256": "4c7aba8b73e452e278576b0cf95b47b33b2ffcddab32e600dd16eb1fcd54b15e",
+      "public_slot_count": 33,
+      "raw": "后藤一",
+      "raw_owner_id": 10017,
+      "source_evidence_refs": {
+        "cn": 129483,
+        "en": 129487,
+        "jp": 129485,
+        "ko": 129486,
+        "tw": 129484
+      },
+      "suggested_display_names": {
+        "cn": "后藤一",
+        "en": "Goto Hajime",
+        "jp": "後藤 一",
+        "ko": "고토 하지메",
+        "tw": "後藤一"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 996,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "日野胜太",
+      "public_album_count": 28,
+      "public_album_ids_sha256": "02cb8f19e59925a3bd027d7d750ff77adb86dc2e7719f2921202c07b02a9a88f",
+      "public_slot_count": 28,
+      "raw": "日野胜太",
+      "raw_owner_id": 11232,
+      "source_evidence_refs": {
+        "cn": 70273,
+        "en": 70277,
+        "jp": 70275,
+        "ko": 70276,
+        "tw": 70274
+      },
+      "suggested_display_names": {
+        "cn": "日野胜太",
+        "en": "Hino Shota",
+        "jp": "日野 勝太",
+        "ko": "히노 쇼타",
+        "tw": "日野勝太"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "parsed_rank_base_exact_canonical_name",
+      "canonical_player_id": 1,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "吴清源",
+      "public_album_count": 15,
+      "public_album_ids_sha256": "4ef840ba0ffa110dd36781daebab0c32f2fafe3b74b875457c1a791957b68061",
+      "public_slot_count": 15,
+      "raw": "吴清源七段",
+      "raw_owner_id": 10076,
+      "source_evidence_refs": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "suggested_display_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "exact_canonical_name",
+      "canonical_player_id": 845,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "滨角响",
+      "public_album_count": 14,
+      "public_album_ids_sha256": "a8db0b93041b737ac6429cef78c378921c1f8ee08bae4dc3028e64e0b9bcf379",
+      "public_slot_count": 14,
+      "raw": "滨角响",
+      "raw_owner_id": 12398,
+      "source_evidence_refs": {
+        "cn": 132213,
+        "en": 132217,
+        "jp": 132215,
+        "ko": 132216,
+        "tw": 132214
+      },
+      "suggested_display_names": {
+        "cn": "滨角响",
+        "en": "Hibiki Hamakado",
+        "jp": "濱角響",
+        "ko": "하마카도 히비키",
+        "tw": "濱角響"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "parsed_rank_base_exact_canonical_name",
+      "canonical_player_id": 1,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "吴清源",
+      "public_album_count": 2,
+      "public_album_ids_sha256": "5dcf982a71640be2a0a263c689a6cced3a50894eb2cc4c835c4c60557534deaa",
+      "public_slot_count": 2,
+      "raw": "吴清源六段",
+      "raw_owner_id": 10080,
+      "source_evidence_refs": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "suggested_display_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "existing_reviewed_decision_display_reuse_no_identity_claim",
+      "canonical_player_id": null,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "en",
+        "jp",
+        "ko"
+      ],
+      "parsed_base_name": "Janice Kim",
+      "public_album_count": 1,
+      "public_album_ids_sha256": "1ac0f269ea441a8c3e61df00849d5b73b0f38e79947ad559f099e093d0d22d71",
+      "public_slot_count": 1,
+      "raw": "Janice Kim",
+      "raw_owner_id": 14506,
+      "source_evidence_refs": {
+        "decision_raw": "詹妮斯·金JaniceKim",
+        "decision_raw_id": 13226
+      },
+      "suggested_display_names": {
+        "en": "Janice Kim",
+        "jp": "ジャニス・キム",
+        "ko": "재니스 김"
+      }
+    },
+    {
+      "action": "signed_raw_player_first_pass_new_names_with_current_finite_scope; no album link or authority overwrite",
+      "canonical_match_basis": "parsed_rank_base_exact_canonical_name",
+      "canonical_player_id": 1,
+      "capture_name_rows": [],
+      "failing_languages": [
+        "cn",
+        "en",
+        "jp",
+        "ko",
+        "tw"
+      ],
+      "parsed_base_name": "吴清源",
+      "public_album_count": 1,
+      "public_album_ids_sha256": "6dad60a0c23e47907c2e7c589b3940f0fcb76e865fbfc7e50f348fafa7db1ff2",
+      "public_slot_count": 1,
+      "raw": "吴清源五段",
+      "raw_owner_id": 10078,
+      "source_evidence_refs": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "suggested_display_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      }
+    }
+  ],
+  "unique_missing_raw_player_literals": 13
+}

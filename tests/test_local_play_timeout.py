@@ -109,7 +109,7 @@ def test_move_after_clock_exhausted_judges_loss_before_changing_turn(client, mon
     session.katrain.main_time_used_by_player[turn_player] = 60
     session.katrain.next_player_info.periods_used = 1
 
-    r = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    r = _confirm(client, session)
 
     assert r.status_code == 200, r.text
     state = r.json()["state"]
@@ -123,14 +123,14 @@ def test_move_cannot_resume_local_game_after_timeout_result(client, monkeypatch)
     turn_player = session.katrain.next_player_info.player
     session.katrain.main_time_used_by_player[turn_player] = 60
     session.katrain.next_player_info.periods_used = 1
-    first = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    first = _confirm(client, session)
     assert first.status_code == 200, first.text
     state = first.json()["state"]
 
-    second = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    second = _confirm(client, session, request_id="resume-ended-game")
 
     assert second.status_code == 409, second.text
-    assert second.json()["detail"] == "Game is already over"
+    assert "no longer current" in second.json()["detail"]
     assert _recorded_results(client) == [state["end_result"]]
 
 
@@ -170,3 +170,24 @@ def test_free_game_timeout_unchanged_regardless_of_clock(client, monkeypatch):
     state = r.json()["state"]
     assert state["end_result"].endswith("+T")
     assert _recorded_results(client) == [state["end_result"]]
+
+
+def _confirm(client, session, request_id=None):
+    state = session.katrain.get_state()
+    client.post(
+        "/api/local/ready",
+        json={"session_id": session.session_id, "expected_game_id": state["game_id"], "input": "screen"},
+    )
+    return client.post(
+        "/api/local/confirm",
+        json={
+            "session_id": session.session_id,
+            "expected_game_id": state["game_id"],
+            "expected_node_id": state["current_node_id"],
+            "color": state["player_to_move"],
+            "request_id": request_id or f"confirm-{state['current_node_id']}",
+            "input": "screen",
+            "action": "move",
+            "coords": [3, 3],
+        },
+    )

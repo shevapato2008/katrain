@@ -1,0 +1,430 @@
+{
+  "format": "kifu-player-nonhan-ranks-261-280-review-v1",
+  "scope": "frozen post7 inventory exact raw ranks 261–280; ranks 1–260 excluded",
+  "snapshot_note": "TEST/PROD read-only repeatable-read SQL on 2026-10-04: all 20 exact raw counts identical and all FK NULL. Target IDs from prior catalog snapshot require live rebind.",
+  "summary": {
+    "raw_values": 20,
+    "slots_each_environment": 706,
+    "approved_raw_values": 16,
+    "approved_slots_each_environment": 564,
+    "held_raw_values": 4,
+    "held_slots_each_environment": 142,
+    "new_catalog_players": 4
+  },
+  "rows": [
+    {
+      "rank": 261,
+      "raw_value": "Honinbo Satsugen",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1752-01-18",
+      "last_raw_date": "ca. 1760",
+      "canonical_chinese_name": "本因坊察元",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://www.nihonkiin.or.jp/teach/history/rekidai.html",
+      "identity_note": "日本棋院历史表列九世本因坊察元；CWI 历史棋谱年代吻合。"
+    },
+    {
+      "rank": 262,
+      "raw_value": "ImSeon-keun",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-06-28",
+      "last_raw_date": "2001-08-14",
+      "canonical_chinese_name": "林宣根",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5176
+        ],
+        "test": [
+          10957
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000018",
+      "identity_note": "与第 220 名 ImSeonKeun 同一位韩国棋院棋手 임선근/林宣根，沿用同 ID。"
+    },
+    {
+      "rank": 263,
+      "raw_value": "Kosugi Tei",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1920-11-23",
+      "last_raw_date": "1934-11-28,29",
+      "canonical_chinese_name": "小杉丁",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4420
+        ],
+        "test": [
+          10211
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列小杉丁/Kosugi Tei，又名小杉直楓；沿用现有丁 ID。"
+    },
+    {
+      "rank": 264,
+      "raw_value": "Nagahara Yoshiaki",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-05-11,12",
+      "last_raw_date": "1978-01-26",
+      "canonical_chinese_name": "长原芳明",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6262
+        ],
+        "test": [
+          12028
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000116.html",
+      "identity_note": "日本棋院直接列長原芳明/NAGAHARA, Yoshiaki，1959 入段。"
+    },
+    {
+      "rank": 265,
+      "raw_value": "OtakeHideo",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1971-02-04",
+      "last_raw_date": "2000-04-03",
+      "canonical_chinese_name": "大竹英雄",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          879
+        ],
+        "test": [
+          1091
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://archive.nihonkiin.or.jp/player/htm/ki000008.htm",
+      "identity_note": "日本棋院直接列大竹英雄/Otake Hideo。"
+    },
+    {
+      "rank": 266,
+      "raw_value": "Yasui Shuntetsu",
+      "slots_each_environment": 37,
+      "current_unlinked_slots_each_environment": 37,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1828-01-03",
+      "last_raw_date": "1838-01-24",
+      "canonical_chinese_name": "安井俊哲算知（九世）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "identity_note": "CWI 丈和棋谱列安井俊哲/Yasui Shuntetsu，后来为九世安井算知；与第 226 名同人，应待共享 ID。"
+    },
+    {
+      "rank": 267,
+      "raw_value": "Honinbo Shusai",
+      "slots_each_environment": 36,
+      "current_unlinked_slots_each_environment": 36,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1908-03-02,04-12",
+      "last_raw_date": "1938-06-26..12-04",
+      "canonical_chinese_name": "本因坊秀哉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4833
+        ],
+        "test": [
+          10619
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/teach/history/rekidai.html",
+      "identity_note": "日本棋院历史表列二十一世本因坊秀哉；CWI 秀哉棋谱直接列其对局。"
+    },
+    {
+      "rank": 268,
+      "raw_value": "IshigureIkuro",
+      "slots_each_environment": 36,
+      "current_unlinked_slots_each_environment": 36,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "2000-03-23",
+      "canonical_chinese_name": "石榑郁郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          5645
+        ],
+        "test": [
+          11418
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.nihonkiin.or.jp/player/htm/ki000033.html",
+      "identity_note": "日本棋院直接列石榑郁郎/ISHIGURE, Ikuro；1 槽 1900-01-01 新锐赛日期占位，其余 35 槽 1968–2000。"
+    },
+    {
+      "rank": 269,
+      "raw_value": "TakahashiShigeyuki",
+      "slots_each_environment": 36,
+      "current_unlinked_slots_each_environment": 36,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1900-01-01",
+      "last_raw_date": "1957-10-13",
+      "canonical_chinese_name": "高桥重行（后高桥俊光）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列高橋重行=高橋俊光；双库现有两套同人目录 ID（PROD 6485/6481），先归并。2 槽 1900 为日期占位。"
+    },
+    {
+      "rank": 270,
+      "raw_value": "Hayashi Hakuei",
+      "slots_each_environment": 35,
+      "current_unlinked_slots_each_environment": 35,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1828-12-23",
+      "last_raw_date": "1861-12-18",
+      "canonical_chinese_name": "林伯荣／林柏荣（待核）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://www.nihonkiin.or.jp/teach/history/rekidai.html",
+      "identity_note": "日本棋院历史表写林門入（伯栄），CWI 丈和棋谱姓名表写林柏栄/Hayashi Hakuei；关键字伯/柏冲突，暂不建 ID。"
+    },
+    {
+      "rank": 271,
+      "raw_value": "Kishimoto Saichiro",
+      "slots_each_environment": 35,
+      "current_unlinked_slots_each_environment": 35,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1839-06-29",
+      "last_raw_date": "1854-08-29,09-06",
+      "canonical_chinese_name": "岸本左一郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://id.ndl.go.jp/auth/ndlna/00270461",
+      "identity_note": "日本国会图书馆权威记录直接列岸本左一郎/Kishimoto Saichiro；CWI 秀策棋谱年代相符。"
+    },
+    {
+      "rank": 272,
+      "raw_value": "Nakane Hojiro",
+      "slots_each_environment": 35,
+      "current_unlinked_slots_each_environment": 35,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1882-05-13",
+      "last_raw_date": "1910-11-06",
+      "canonical_chinese_name": "中根凤次郎",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://ndlsearch.ndl.go.jp/file/rnavi/humanities/post_789/segoshi.pdf",
+      "identity_note": "日本国会图书馆瀬越围棋文库目录列中根鳳次郎著作；CWI 秀哉/方圆社棋谱列 Nakane Hojiro。"
+    },
+    {
+      "rank": 273,
+      "raw_value": "O Rissei",
+      "slots_each_environment": 35,
+      "current_unlinked_slots_each_environment": 35,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1972",
+      "last_raw_date": "1978-12-21",
+      "canonical_chinese_name": "王立诚",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          17
+        ],
+        "test": [
+          17
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列王立誠/O Rissei，1972 年少年棋谱。"
+    },
+    {
+      "rank": 274,
+      "raw_value": "Yamamoto Masato",
+      "slots_each_environment": 35,
+      "current_unlinked_slots_each_environment": 35,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1973-04-11",
+      "last_raw_date": "1978-11-23",
+      "canonical_chinese_name": "山本正人",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4502
+        ],
+        "test": [
+          10293
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列山本正人/Yamamoto Masato，1972 入段。"
+    },
+    {
+      "rank": 275,
+      "raw_value": "JeongSuHyun",
+      "slots_each_environment": 34,
+      "current_unlinked_slots_each_environment": 34,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1984-11-23",
+      "last_raw_date": "2000-01-11",
+      "canonical_chinese_name": "郑寿铉",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6028
+        ],
+        "test": [
+          11796
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000012",
+      "identity_note": "与第 201 名 CheongSu-hyeon 同一位韩国棋院棋手 정수현/鄭壽鉉，沿用同 ID。"
+    },
+    {
+      "rank": 276,
+      "raw_value": "Tamura Noboru",
+      "slots_each_environment": 34,
+      "current_unlinked_slots_each_environment": 34,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1928-06-16",
+      "last_raw_date": "1976-05-20",
+      "canonical_chinese_name": "田村升",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "create_catalog_player",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列田村昇/Tamura Noboru，1926 入段；区别于早期本因坊秀哉本名田村保寿。"
+    },
+    {
+      "rank": 277,
+      "raw_value": "YiSang-hun",
+      "slots_each_environment": 34,
+      "current_unlinked_slots_each_environment": 34,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1990-12-28",
+      "last_raw_date": "2003-10-31",
+      "canonical_chinese_name": "李相勋（同名未分）",
+      "review_status": "hold",
+      "observed_target_ids": {
+        "prod": [],
+        "test": []
+      },
+      "proposed_catalog_action": "hold_for_identity_or_catalog",
+      "evidence_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000079",
+      "identity_note": "韩国棋院同时有 이상훈(大) 与 이상훈(小) 两名职业棋手，原文无区分符，不可凭名字自动合并。"
+    },
+    {
+      "rank": 278,
+      "raw_value": "Ch'oeKyu-pyeong",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1989-05-23",
+      "last_raw_date": "2004-10-28",
+      "canonical_chinese_name": "崔珪昞",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          4558
+        ],
+        "test": [
+          10348
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000016",
+      "identity_note": "与第 212 名 ChoiGyuByeong 同一位韩国棋院棋手 최규병/崔珪昞，沿用同 ID。"
+    },
+    {
+      "rank": 279,
+      "raw_value": "HwangWonJun",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1985-04-11",
+      "last_raw_date": "1996-02-14",
+      "canonical_chinese_name": "黄元俊",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          6523
+        ],
+        "test": [
+          12287
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000026",
+      "identity_note": "韩国棋院棋手页直接列황원준/黃元俊；拼写与 1985–1996 对局年代相符。"
+    },
+    {
+      "rank": 280,
+      "raw_value": "Ito Tamotsu",
+      "slots_each_environment": 33,
+      "current_unlinked_slots_each_environment": 33,
+      "current_existing_fk_slots_each_environment": 0,
+      "first_raw_date": "1960-04-27,28",
+      "last_raw_date": "1978-09-21",
+      "canonical_chinese_name": "伊藤有",
+      "review_status": "approve",
+      "observed_target_ids": {
+        "prod": [
+          3883
+        ],
+        "test": [
+          9680
+        ]
+      },
+      "proposed_catalog_action": "retain_observed_id",
+      "evidence_url": "https://homepages.cwi.nl/~aeb/go/misc/progression.html",
+      "identity_note": "CWI 同行列伊藤有/Ito Tamotsu，区别于同姓其他伊藤棋手。"
+    }
+  ],
+  "additional_evidence_urls": {
+    "Nakane_CWI": "https://homepages.cwi.nl/~aeb/go/games/games/Shusai/index.html",
+    "Hayashi_CWI": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+    "Yasui_history": "https://www.nihonkiin.or.jp/teach/history/rekidai.html",
+    "Yi_Sang_hun_other_profile": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000100"
+  }
+}

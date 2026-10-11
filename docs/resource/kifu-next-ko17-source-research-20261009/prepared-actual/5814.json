@@ -1,0 +1,380 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 5814,
+  "queue_order_slots": 14,
+  "selection_scope": "Batch 597 read-only shortlist: KO missing and four physically verified primary rows; this shortlist is not final qualification proof.",
+  "owner_binding": {
+    "status": "placeholder_not_validated_not_eligible",
+    "queue_id_read_only": 5814,
+    "note": "Fresh CN/EN anchor bindings and latest owner preimages are intentionally left for root to bind from the new current capture; this source packet does not qualify the owner."
+  },
+  "canonical_name": "董天怡",
+  "available_non_ko_anchor_names": {
+    "cn": "董天怡",
+    "en": "Dong Tianyi",
+    "jp": "董天怡",
+    "tw": "董天怡",
+    "binding_status": "queue labels only; not current owner preimages"
+  },
+  "status": "pending_no_direct_same_person_Korean_Hangul_name_identified_in_bounded_sources",
+  "scope": {
+    "shortlist_context": "queue selection is prioritization only",
+    "language_scope": "not assigned from name characters alone",
+    "eligibility": "not established by this source-only packet"
+  },
+  "identity": {
+    "capture": [
+      {
+        "player_id": 5814,
+        "canonical_name": "董天怡",
+        "published_latin": "Dong Tianyi",
+        "source_id": "ret104-goratings-ja",
+        "source_language": "ja",
+        "source_role": "language_go",
+        "url": "https://goratings.org/ja/players/2062.html",
+        "evidence_ids": [
+          60331
+        ],
+        "method": "GET",
+        "http_status": 200,
+        "final_url": "https://www.goratings.org/ja/players/2062.html",
+        "content_type": "text/html",
+        "request_started_at_utc": "2026-10-08T23:07:59.725836+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:03.384948+00:00",
+        "body_bytes": 21778,
+        "body_sha256": "9749813e5d8eb08620d035fae88876b887a1ee8e02cbf35ad20e9e372716479f",
+        "body_file": "captures/5814-authority-ret104-goratings-ja.body",
+        "publisher": "Go Ratings",
+        "body_text_excerpt": "董天怡 董天怡 トップへ戻る 推移グラフ データ 勝利 18 敗北 35 合計 53 生年月日 2004-03-28 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2023-07-30 2820 黒番 勝利 叶子涵 2926 ♂ 2023-07-29 2820 白番 敗北 桂诗云 2840 ♀ 2023-07-28 2820 黒番 勝利 许重 2825 ♂ 2023-07-27 2820 白番 勝利 康鹏 2514 ♂ 2023-07-25 2820 黒番 敗北 祝菲鸿 2945 ♀ 2023-07-24 2819 白番 敗北 杭小童 2845 ♀ 2023-07-23 2819 黒番 敗北 张何源 2922 ♂ 2023-07-22 2820 白番 敗北 吕洵锋 2967 ♂ 2022-08-16 2827 黒番 敗北 曾楚典 2808 ♀ 2022-08-15 2827 黒番 勝利 魏欣桐 2851 ♀ 2022-08-14 2827 白番 敗北 汪美成 2740 ♀ 2022-08-13 2827 白番 勝利 文兆京 2718 ♀ 2022-08-12 2827 黒番 敗北 周雨萱 2764 ♀ 2022-08-10 2827 白番 勝利 高若环 2818 ♀ 2022-08-09 2827 黒番 敗北 冯韵嘉 2945 ♀ 2021-07-29 2845 白番 勝利 胡世奇 2971 ♂ 2021-07-28 2845 黒番 敗北 朱彦臻 3102 ♂ 2021-07-27 2845 白番 勝利 林家翾 3017 ♂ 2021-07-26 2845 黒番 敗北 许一笛 3258 ♂ 2021-07-25 2845 黒番 敗北 苏广悦 3185 ♂ 2021-07-22 2845 黒番 敗北 李欣宸 3242 ",
+        "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+        "subject_role": "target_same_person_profile_or_roster",
+        "capture_kind": "authority_page_capture"
+      }
+    ],
+    "conclusion": "Captured Go-source bodies associate the queue Han spelling with the profiled Go player. A Latin form is described only when it appears in that specific captured body; otherwise the queue Latin string remains a search term only. Binding the profile to the current owner remains pending root validation."
+  },
+  "reading": {
+    "capture": [
+      {
+        "capture": {
+          "player_id": 5814,
+          "canonical_name": "董天怡",
+          "published_latin": "Dong Tianyi",
+          "source_id": "GoRatings-Korean-language-path",
+          "source_language": "ko",
+          "source_role": "language_go_localized_profile",
+          "url": "https://www.goratings.org/ko/players/2062.html",
+          "derived_from_capture_url": "https://www.goratings.org/ja/players/2062.html",
+          "method": "GET",
+          "http_status": 200,
+          "final_url": "https://www.goratings.org/ko/players/2062.html",
+          "content_type": "text/html",
+          "request_started_at_utc": "2026-10-08T23:08:24.358992+00:00",
+          "fetched_at_utc": "2026-10-08T23:08:26.304924+00:00",
+          "body_bytes": 21687,
+          "body_sha256": "2e4457df7978d1392a75645425a93c4e3ae0f6e7bb477dee60f0d83078dc20be",
+          "body_file": "captures/5814-authority-goratings-ko.body",
+          "publisher": "Go Ratings",
+          "body_text_excerpt": "Dong Tianyi Dong Tianyi 메인 페이지로 돌아가기 그래프 데이터 승리 18 패배 35 합계 53 생년월일 2004-03-28 대국 기록 날짜 레이팅 흑백 결과 상대 기보 2023-07-30 2820 흑번 승 예쯔한 2926 ♂ 2023-07-29 2820 백번 패 구이쓰윈(桂詩云) 2840 ♀ 2023-07-28 2820 흑번 승 许重 2825 ♂ 2023-07-27 2820 백번 승 캉펑 2514 ♂ 2023-07-25 2820 흑번 패 주페이홍 2945 ♀ 2023-07-24 2819 백번 패 Hang Xiaotong 2845 ♀ 2023-07-23 2819 흑번 패 张何源 2922 ♂ 2023-07-22 2820 백번 패 리쉰펑 2967 ♂ 2022-08-16 2827 흑번 패 쩡추뎬 2808 ♀ 2022-08-15 2827 흑번 승 웨이신퉁 2851 ♀ 2022-08-14 2827 백번 패 왕메이청 2740 ♀ 2022-08-13 2827 백번 승 원자오징 2718 ♀ 2022-08-12 2827 흑번 패 저우위쉔 2764 ♀ 2022-08-10 2827 백번 승 Gao Ruohuan 2818 ♀ 2022-08-09 2827 흑번 패 펑윈자 2945 ♀ 2021-07-29 2845 백번 승 Hu Shiqi 2971 ♂ 2021-07-28 2845 흑번 패 주옌쩐 3102 ♂ 2021-07-27 2845 백번 승 린자쉔 3017 ♂ 2021-07-26 2845 흑번 패 쉬이디 3258 ♂ 2021-07-25 2845 흑번 패 쑤광웨 3185 ♂ 2021",
+          "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+          "subject_role": "target_same_person_localized_path_check",
+          "capture_kind": "authority_page_capture"
+        },
+        "observation": "Korean-locale page heading is the same profile rendered as Latin; it does not publish a Korean Hangul player name.",
+        "observed_profile_heading_excerpt": "Dong Tianyi Dong Tianyi"
+      }
+    ],
+    "published_latin": null,
+    "status": "No Korean reading or Hangul form is established. The Latin string is included solely as the queue-provided exact search query; this packet does not claim it was published as the player preferred spelling.",
+    "note": "The Korean-locale GoRatings pages captured here use Latin or Han fallback for the profile name, not a Hangul transliteration.",
+    "queue_latin_query": "Dong Tianyi"
+  },
+  "rule": {
+    "capture": {
+      "status": "not_applied_to_this_owner",
+      "source_basis": "normative_zh_ko_v1",
+      "generation_rule_version": "nikl-zh-ko-personal-name-v1",
+      "decision_reference": "docs/resource/kifu-zh-ko-firstbatch-20261009/source-and-rule-decision.json",
+      "decision_sha256": "dca4e25367ede21a4b162e7ebe4551d6a13a499b084322ebcd44c04f43cdee00",
+      "rule_capture_index": "docs/resource/kifu-nikl-cn-ko-research-20261009/capture-index.json",
+      "rule_capture_index_sha256": "38cacb787678bec8e6d051d90c957f1ea203c2bcb6d58b94eec620f780763609",
+      "pinned_full_rule_body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+      "approved_owner_ids_in_rule_decision": [
+        5498,
+        5739
+      ],
+      "note": "The finite six-map approval is specific to two different owners and their reviewed readings. No spelling/output has been generated or declared verified for this queue owner; any future rule extension is separate.",
+      "normative_source_capture": {
+        "id": "foreign-regulation-full",
+        "url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "method": "GET",
+        "fetched_at_utc": "2026-10-08T21:30:16.085366+00:00",
+        "http_status": 200,
+        "final_url": "https://korean.go.kr/kornorms/m/m_regltn.do?regltn_code=0003",
+        "content_type": "text/html;charset=UTF-8",
+        "body_bytes": 456809,
+        "body_sha256": "92977a7c4e2d255aa62d91011372bea1a198f5c3ee6f92db5b02fa6366fb9d9b",
+        "body_file": "captures/foreign-regulation-full.html"
+      },
+      "rule_excerpt_locator": "Foreign-language table 5 at saved original HTML line 1573; notation note at line 1578. The six approved mappings apply only to owners 5498 and 5739 in source-and-rule-decision.json; no mapping is applied here.",
+      "original_rule_excerpt": "The saved NIKL full-body response is the normative reference. This packet intentionally records no generated reading/output for this owner."
+    }
+  },
+  "contrary_checks": {
+    "saved_roster_scans": [
+      {
+        "publisher": "Korean Baduk Association",
+        "url": "https://www.baduk.or.kr/record/player_in.asp",
+        "method": "POST",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+        "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+        "body_bytes": 80097,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+        "source_role": "official_China_player_roster_bounded_literal_scan",
+        "literal_scan_terms": [
+          "董天怡",
+          "Dong Tianyi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "TVBaduk",
+        "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+        "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+        "body_bytes": 119151,
+        "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+        "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+        "literal_scan_terms": [
+          "董天怡",
+          "Dong Tianyi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+      },
+      {
+        "publisher": "Daum Cafe community roster (2012)",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "method": "GET",
+        "http_status": 200,
+        "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+        "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "body_bytes": 153004,
+        "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+        "source_role": "community_reference_only_not_official",
+        "literal_scan_terms": [
+          "董天怡",
+          "Dong Tianyi"
+        ],
+        "exact_matches_present": [],
+        "status": "not_found_in_this_capture",
+        "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+        "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+      }
+    ],
+    "web_search_captures": [
+      {
+        "player_id": 5814,
+        "engine": "naver",
+        "query": "\"董天怡\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22%E8%91%A3%E5%A4%A9%E6%80%A1%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22%E8%91%A3%E5%A4%A9%E6%80%A1%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:06.246490+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:08.464314+00:00",
+        "body_bytes": 173047,
+        "body_sha256": "64af877a125e8147634576bff8dfd7b875062ceb9a4b93e564b3481d446e4ff2",
+        "body_file": "captures/5814-search-naver-han.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"董天怡\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"董天怡\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"董天怡\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 kakaocdn.net blog.kakaocdn.net › 국조인물지1(國朝人物志一).pdf PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 국조인물지(國朝人物志) 새 창 열림 587페이지 4MB 국조인물지(國朝人物志) 조선후기부터 일제강점기까지 생존한 학자 안종화가 태조부터 철종 때까지의 주요 인물의 행적을을 모아 1909년에 편찬한 전기. 3책. 인본. 제1책은 태조 때부터 중종 때까지 약 900인, 제2책은 중종 때부터 인조 때까지 약 1,000인, 제3책은 인조 때부터 철종 때까지 약 1,100인, 모두 3,000여인의 인물을 수록하였다. 이 수치는 『인물고... 새 창 열림 새 창 열림 경주이씨 월성군파 계통, 행력 및 유적 (慶州李氏 月城君派 系統, 行歷 및 遺跡) 새 창 열림 - 목차 [1] - 경주이씨 월성군파 계통, 행력 및 유적 (慶州李氏 月城君派 系統, 行歷 및 遺跡) 목차(目次) □경주이씨 상세 실전 계통도(慶州李氏 上世 失傳 系統圖) ······································· 3 □경주이씨 항렬제차(慶州李氏 行列第次)... 관련문서 더보기 네이버 가격비교 이 정보가 표시된 이유 다른 사이트를 보시려면 클릭 하세요 찾으시는 상품과 유사한 상품을 노출합니다. N배송 빠르게 받기 빠른배송 배송지 설정 새 창으로 열기 벧엘 대나무 바둑 판 장기판 최저 24,920 원 배송비 3,000원 배송비포함 혜택가 26,420 원 4.83 ( 35 ) 찜 4 판매처 109 벧엘 바둑 판 장기판 1.5cm 기원용 최저 11,570 원 배송비 3,000원 배송",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      },
+      {
+        "player_id": 5814,
+        "engine": "naver",
+        "query": "\"Dong Tianyi\" 바둑",
+        "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+        "url": "https://search.naver.com/search.naver?query=%22Dong%20Tianyi%22%20%EB%B0%94%EB%91%91",
+        "final_url": "https://search.naver.com/search.naver?query=%22Dong%20Tianyi%22%20%EB%B0%94%EB%91%91",
+        "method": "GET",
+        "http_status": 200,
+        "content_type": "text/html; charset=UTF-8",
+        "request_started_at_utc": "2026-10-08T23:08:06.246615+00:00",
+        "fetched_at_utc": "2026-10-08T23:08:08.833386+00:00",
+        "body_bytes": 478705,
+        "body_sha256": "c646e679f90ae2a7c7de1587ba61ae1cbb975fa0bb158b990e99f3ba9ac99dd5",
+        "body_file": "captures/5814-search-naver-latin.html",
+        "publisher": "Naver search",
+        "body_text_excerpt": "\"Dong Tianyi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Dong Tianyi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Dong Tianyi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org › players 새 창 열림 AI 출처 정보 Go Ratings는 전 세계 바둑 기사들의 Elo 레이팅 순위를 제공하는 사이트입니다. 최신 경기 기록과 통계, 전체 선수 수 등을 확인할 수 있어 바둑 실력 비교에 활용됩니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 탕자원 - Go Ratings 새 창 열림 데이터 ; 승리 : 241, 패배 : 163, 합계 : 404, 링크 : https://www.baduk.or.kr/r... 생년월일 : 2004-02-18 새 창 열림 후쯔하오 - Go Ratings 새 창 열림 데이터 ; 승리 : 161, 패배 : 149, 합계 : 310, 링크 : https://www.baduk.or.kr/r... 생년월일 : 2006-10-08 관련문서 더보기 daos.or.kr www.daos.or.kr › file PDF 새 창 열림 AI 출처 정보 대순사상학술원은 대순사상을 기반으로 융합 학술 연구를 수행하는 기관으로, 학술 논문과 연구 성과를 제공하고 논문 투고 서비스를 운영합니다. 또한 대순사상논총 등 학술지를 통해 최신 연구 소식을 확인할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 The Schedule of the 4th World SangSaeng Forum In",
+        "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+        "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+        "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+        "capture_kind": "web_search_capture",
+        "bounded_result_note": "This literal Han-or-published-Latin query capture is discovery-only; inspected result excerpts did not establish a same-person published Hangul name."
+      }
+    ],
+    "coverage_note": "Exact Han and exact published Latin searches were captured where available. HTTP 403 is preserved as unavailable; an alternative Bing capture is included when available. Results are bounded and do not support global absence. Similar names were not accepted without a same-person Go identity bridge."
+  },
+  "source_reading": {
+    "queue_latin_query": "Dong Tianyi",
+    "queue_string_source": "read-only shortlist row, not current source/owner binding",
+    "observed_romanization": null,
+    "interpretation": "No Korean spelling or reading generated or inferred. The literal queue Latin string is used only as the second search query."
+  },
+  "identity_bridges": [
+    {
+      "player_id": 5814,
+      "canonical_name": "董天怡",
+      "published_latin": "Dong Tianyi",
+      "source_id": "ret104-goratings-ja",
+      "source_language": "ja",
+      "source_role": "language_go",
+      "url": "https://goratings.org/ja/players/2062.html",
+      "evidence_ids": [
+        60331
+      ],
+      "method": "GET",
+      "http_status": 200,
+      "final_url": "https://www.goratings.org/ja/players/2062.html",
+      "content_type": "text/html",
+      "request_started_at_utc": "2026-10-08T23:07:59.725836+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:03.384948+00:00",
+      "body_bytes": 21778,
+      "body_sha256": "9749813e5d8eb08620d035fae88876b887a1ee8e02cbf35ad20e9e372716479f",
+      "body_file": "captures/5814-authority-ret104-goratings-ja.body",
+      "publisher": "Go Ratings",
+      "body_text_excerpt": "董天怡 董天怡 トップへ戻る 推移グラフ データ 勝利 18 敗北 35 合計 53 生年月日 2004-03-28 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 2023-07-30 2820 黒番 勝利 叶子涵 2926 ♂ 2023-07-29 2820 白番 敗北 桂诗云 2840 ♀ 2023-07-28 2820 黒番 勝利 许重 2825 ♂ 2023-07-27 2820 白番 勝利 康鹏 2514 ♂ 2023-07-25 2820 黒番 敗北 祝菲鸿 2945 ♀ 2023-07-24 2819 白番 敗北 杭小童 2845 ♀ 2023-07-23 2819 黒番 敗北 张何源 2922 ♂ 2023-07-22 2820 白番 敗北 吕洵锋 2967 ♂ 2022-08-16 2827 黒番 敗北 曾楚典 2808 ♀ 2022-08-15 2827 黒番 勝利 魏欣桐 2851 ♀ 2022-08-14 2827 白番 敗北 汪美成 2740 ♀ 2022-08-13 2827 白番 勝利 文兆京 2718 ♀ 2022-08-12 2827 黒番 敗北 周雨萱 2764 ♀ 2022-08-10 2827 白番 勝利 高若环 2818 ♀ 2022-08-09 2827 黒番 敗北 冯韵嘉 2945 ♀ 2021-07-29 2845 白番 勝利 胡世奇 2971 ♂ 2021-07-28 2845 黒番 敗北 朱彦臻 3102 ♂ 2021-07-27 2845 白番 勝利 林家翾 3017 ♂ 2021-07-26 2845 黒番 敗北 许一笛 3258 ♂ 2021-07-25 2845 黒番 敗北 苏广悦 3185 ♂ 2021-07-22 2845 黒番 敗北 李欣宸 3242 ",
+      "body_text_locator": "Visible heading/profile excerpt around exact target name in captured publisher response.",
+      "subject_role": "target_same_person_profile_or_roster",
+      "capture_kind": "authority_page_capture"
+    }
+  ],
+  "searches": [
+    {
+      "player_id": 5814,
+      "engine": "naver",
+      "query": "\"董天怡\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22%E8%91%A3%E5%A4%A9%E6%80%A1%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E8%91%A3%E5%A4%A9%E6%80%A1%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:06.246490+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:08.464314+00:00",
+      "body_bytes": 173047,
+      "body_sha256": "64af877a125e8147634576bff8dfd7b875062ceb9a4b93e564b3481d446e4ff2",
+      "body_file": "captures/5814-search-naver-han.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"董天怡\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"董天怡\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"董天怡\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 kakaocdn.net blog.kakaocdn.net › 국조인물지1(國朝人物志一).pdf PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 국조인물지(國朝人物志) 새 창 열림 587페이지 4MB 국조인물지(國朝人物志) 조선후기부터 일제강점기까지 생존한 학자 안종화가 태조부터 철종 때까지의 주요 인물의 행적을을 모아 1909년에 편찬한 전기. 3책. 인본. 제1책은 태조 때부터 중종 때까지 약 900인, 제2책은 중종 때부터 인조 때까지 약 1,000인, 제3책은 인조 때부터 철종 때까지 약 1,100인, 모두 3,000여인의 인물을 수록하였다. 이 수치는 『인물고... 새 창 열림 새 창 열림 경주이씨 월성군파 계통, 행력 및 유적 (慶州李氏 月城君派 系統, 行歷 및 遺跡) 새 창 열림 - 목차 [1] - 경주이씨 월성군파 계통, 행력 및 유적 (慶州李氏 月城君派 系統, 行歷 및 遺跡) 목차(目次) □경주이씨 상세 실전 계통도(慶州李氏 上世 失傳 系統圖) ······································· 3 □경주이씨 항렬제차(慶州李氏 行列第次)... 관련문서 더보기 네이버 가격비교 이 정보가 표시된 이유 다른 사이트를 보시려면 클릭 하세요 찾으시는 상품과 유사한 상품을 노출합니다. N배송 빠르게 받기 빠른배송 배송지 설정 새 창으로 열기 벧엘 대나무 바둑 판 장기판 최저 24,920 원 배송비 3,000원 배송비포함 혜택가 26,420 원 4.83 ( 35 ) 찜 4 판매처 109 벧엘 바둑 판 장기판 1.5cm 기원용 최저 11,570 원 배송비 3,000원 배송",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Dong Tianyi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    },
+    {
+      "player_id": 5814,
+      "engine": "naver",
+      "query": "\"Dong Tianyi\" 바둑",
+      "search_scope": "literal exact name plus 바둑 in Naver search; bounded discovery only",
+      "url": "https://search.naver.com/search.naver?query=%22Dong%20Tianyi%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Dong%20Tianyi%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "request_started_at_utc": "2026-10-08T23:08:06.246615+00:00",
+      "fetched_at_utc": "2026-10-08T23:08:08.833386+00:00",
+      "body_bytes": 478705,
+      "body_sha256": "c646e679f90ae2a7c7de1587ba61ae1cbb975fa0bb158b990e99f3ba9ac99dd5",
+      "body_file": "captures/5814-search-naver-latin.html",
+      "publisher": "Naver search",
+      "body_text_excerpt": "\"Dong Tianyi\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Dong Tianyi\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Dong Tianyi\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 Go Ratings www.goratings.org › players 새 창 열림 AI 출처 정보 Go Ratings는 전 세계 바둑 기사들의 Elo 레이팅 순위를 제공하는 사이트입니다. 최신 경기 기록과 통계, 전체 선수 수 등을 확인할 수 있어 바둑 실력 비교에 활용됩니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 탕자원 - Go Ratings 새 창 열림 데이터 ; 승리 : 241, 패배 : 163, 합계 : 404, 링크 : https://www.baduk.or.kr/r... 생년월일 : 2004-02-18 새 창 열림 후쯔하오 - Go Ratings 새 창 열림 데이터 ; 승리 : 161, 패배 : 149, 합계 : 310, 링크 : https://www.baduk.or.kr/r... 생년월일 : 2006-10-08 관련문서 더보기 daos.or.kr www.daos.or.kr › file PDF 새 창 열림 AI 출처 정보 대순사상학술원은 대순사상을 기반으로 융합 학술 연구를 수행하는 기관으로, 학술 논문과 연구 성과를 제공하고 논문 투고 서비스를 운영합니다. 또한 대순사상논총 등 학술지를 통해 최신 연구 소식을 확인할 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 The Schedule of the 4th World SangSaeng Forum In",
+      "body_text_locator": "Visible search result text around the literal query in the captured search response; bounded discovery results.",
+      "relevance_assessment": "captured_results_reviewed_no_same_person_Korean_Hangul_name_identified",
+      "subject_role": "search_scope_target_identity_query; individual result items require their own identity check",
+      "capture_kind": "web_search_capture",
+      "bounded_result_note": "Literal query uses the exact queue Han or Latin string plus 바둑. Capture is discovery-only; inspected result excerpt does not establish a same-person published Hangul name.",
+      "exact_latin_name_also_searched": "Dong Tianyi",
+      "literal_query_basis": "exact read-only queue Han/Latin string; queue string is not represented here as a current owner source binding"
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "literal_scan_terms": [
+        "董天怡",
+        "Dong Tianyi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "literal_scan_terms": [
+        "董天怡",
+        "Dong Tianyi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+    },
+    {
+      "publisher": "Daum Cafe community roster (2012)",
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_bytes": 153004,
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "literal_scan_terms": [
+        "董天怡",
+        "Dong Tianyi"
+      ],
+      "exact_matches_present": [],
+      "status": "not_found_in_this_capture",
+      "locator": "Whole saved response literal-scanned for exact queue Han name and published Latin string; result is bounded to this captured body.",
+      "body_text_excerpt": "Literal scan terms: 董天怡; Dong Tianyi. Exact matching strings present: []."
+    }
+  ],
+  "conclusion": "Source-only research packet. No Korean name candidate, reviewer signature, eligibility claim, or target preimage validation.",
+  "review_status": "source assembly only; independent candidate review/signature not performed"
+}

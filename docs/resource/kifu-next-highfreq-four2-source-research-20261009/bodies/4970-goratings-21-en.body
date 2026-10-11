@@ -1,0 +1,2846 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>Li Jie</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>Li Jie</h1><div id="lang-ctn"><div><a href="../../en/players/21.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/21.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/21.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/21.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">Back to main list</a></p><h2>Graph</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-21.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>Data</h2><table><tr><th class="r">Wins</th><td class="r">160</td></tr><tr><th class="r">Losses</th><td class="r">195</td></tr><tr><th class="r">Total</th><td class="r">355</td></tr><tr><th class="r">Date of Birth</th><td class="r">1983-12-04</td></tr></table><h2>Game List</h2><table><tr><th>Date</th><th>Rating</th><th>Color</th><th>Result</th><th colspan="4">Opponent</th><th>Kifu</th></tr><tr><td>2016-12-28</td><td>3223</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="113.html">Zhang Dongyue</a></td>
+<td>3151</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61507">go4go</a> | </td>
+</tr>
+<tr><td>2016-12-27</td><td>3223</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1287.html">Wang Shuang</a></td>
+<td>3057</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61481">go4go</a> | </td>
+</tr>
+<tr><td>2016-12-18</td><td>3224</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1399.html">Xu Jiayang</a></td>
+<td>3535</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/61211">go4go</a> | </td>
+</tr>
+<tr><td>2016-05-06</td><td>3227</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1253.html">Gu Zihao</a></td>
+<td>3573</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2014-04-01</td><td>3243</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="120.html">Niu Yutian</a></td>
+<td>3398</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/41437">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-06</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1276.html">Xie Erhao</a></td>
+<td>3450</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2013060000045979">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35661">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-05</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="379.html">Wang Haoyang</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2013060000045961">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35614">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-05</td><td>3252</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="456.html">Wang Lu</a></td>
+<td>3189</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34081">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-23</td><td>3252</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="74.html">Wang Qun</a></td>
+<td>2942</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-21</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1633.html">Gao Yu</a></td>
+<td>3105</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-18</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="660.html">Wu Shuhao</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-16</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="423.html">Lan Tian</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-03-09</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="178.html">Gu Lingyi</a></td>
+<td>3466</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2013-01-21</td><td>3254</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1290.html">Byun Sangil</a></td>
+<td>3392</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/31701">go4go</a> | </td>
+</tr>
+<tr><td>2012-10-17</td><td>3258</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="433.html">Tuo Jiaxi</a></td>
+<td>3548</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/30586">go4go</a> | </td>
+</tr>
+<tr><td>2012-08-14</td><td>3260</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="115.html">Rui Naiwei</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012080000043204">cwa</a> | </td>
+</tr>
+<tr><td>2012-08-13</td><td>3260</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1046.html">Qin Yuexin</a></td>
+<td>3298</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012080000043185">cwa</a> | </td>
+</tr>
+<tr><td>2012-08-10</td><td>3260</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1195.html">Ke Jie</a></td>
+<td>3433</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/55733">go4go</a> | </td>
+</tr>
+<tr><td>2012-06-27</td><td>3261</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="971.html">Pan Fei</a></td>
+<td>3310</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012060000041843">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/35732">go4go</a> | </td>
+</tr>
+<tr><td>2012-05-14</td><td>3263</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="241.html">Chen Shiyuan</a></td>
+<td>3349</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-13</td><td>3263</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="481.html">Tu Qing</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-11</td><td>3263</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3220</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-10</td><td>3263</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="1408.html">Chen Runtao</a></td>
+<td>3197</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-08</td><td>3263</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1275.html">Fan Yin</a></td>
+<td>3247</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-05-07</td><td>3263</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="74.html">Wang Qun</a></td>
+<td>2953</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2012-04-02</td><td>3264</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1082.html">Lian Xiao</a></td>
+<td>3505</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2012040000040730">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/33424">go4go</a> | </td>
+</tr>
+<tr><td>2011-09-25</td><td>3268</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="382.html">Zhang Li</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-24</td><td>3268</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="970.html">Wang Tao</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-22</td><td>3268</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="447.html">Tong Yulin</a></td>
+<td>3356</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-21</td><td>3268</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1284.html">Rong Yi</a></td>
+<td>3274</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-19</td><td>3269</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="468.html">Mao Ruilong</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-18</td><td>3269</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="433.html">Tuo Jiaxi</a></td>
+<td>3498</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-16</td><td>3269</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="897.html">Tang Weixing</a></td>
+<td>3458</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-15</td><td>3269</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="410.html">Meng Tailing</a></td>
+<td>3438</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-09-14</td><td>3269</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-22</td><td>3268</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="481.html">Tu Qing</a></td>
+<td>3196</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2011060000037650">cwa</a> | </td>
+</tr>
+<tr><td>2011-06-17</td><td>3268</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="421.html">Shi Zhou</a></td>
+<td>2748</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-16</td><td>3268</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="185.html">Han Ye</a></td>
+<td>3019</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-14</td><td>3268</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="692.html">Zhang Chi</a></td>
+<td>3182</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-13</td><td>3268</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="971.html">Pan Fei</a></td>
+<td>3298</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-11</td><td>3268</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="480.html">Yang Qian</a></td>
+<td>3106</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-06-10</td><td>3268</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="94.html">Zhao Xinghua</a></td>
+<td>3105</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2011-03-14</td><td>3267</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1207.html">Fan Yunruo</a></td>
+<td>3445</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25624">go4go</a> | </td>
+</tr>
+<tr><td>2011-01-06</td><td>3266</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="981.html">Li He</a></td>
+<td>3192</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-12-18</td><td>3266</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="970.html">Wang Tao</a></td>
+<td>3352</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25156">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-11</td><td>3266</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="897.html">Tang Weixing</a></td>
+<td>3418</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/25126">go4go</a> | </td>
+</tr>
+<tr><td>2010-12-04</td><td>3265</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49723">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-21</td><td>3263</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="380.html">Piao Wenyao</a></td>
+<td>3476</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24651">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-16</td><td>3263</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="419.html">Huang Chen</a></td>
+<td>3314</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24612">go4go</a> | </td>
+</tr>
+<tr><td>2010-10-09</td><td>3262</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1194.html">Fan Tingyu</a></td>
+<td>3452</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24598">go4go</a> | </td>
+</tr>
+<tr><td>2010-09-25</td><td>3262</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="1027.html">Yan Huan</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-21</td><td>3262</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="174.html">Fu Chong</a></td>
+<td>3306</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-19</td><td>3262</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="995.html">Tan Xiao</a></td>
+<td>3470</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-18</td><td>3262</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="423.html">Lan Tian</a></td>
+<td>3248</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-15</td><td>3262</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-14</td><td>3262</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="449.html">Shi Yue</a></td>
+<td>3491</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-09-06</td><td>3261</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="433.html">Tuo Jiaxi</a></td>
+<td>3480</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24517">go4go</a> | </td>
+</tr>
+<tr><td>2010-09-04</td><td>3261</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="967.html">Sun Tengyu</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/24417">go4go</a> | </td>
+</tr>
+<tr><td>2010-07-15</td><td>3257</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3392</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2010070000034038">cwa</a> | <a href ="https://www.go4go.net/go/games/sgfview/24062">go4go</a> | </td>
+</tr>
+<tr><td>2010-06-29</td><td>3256</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1392.html">Zhang Yiming</a></td>
+<td>3159</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.weiqi.org.cn/competition/kifu/2010060000033888">cwa</a> | </td>
+</tr>
+<tr><td>2010-06-19</td><td>3255</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="382.html">Zhang Li</a></td>
+<td>3389</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23988">go4go</a> | </td>
+</tr>
+<tr><td>2010-06-03</td><td>3254</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="436.html">Zhu Yuanhao</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23709">go4go</a> | </td>
+</tr>
+<tr><td>2010-05-29</td><td>3254</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="69.html">Wang Lei (b)</a></td>
+<td>3328</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23652">go4go</a> | </td>
+</tr>
+<tr><td>2010-04-25</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="967.html">Sun Tengyu</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/23447">go4go</a> | </td>
+</tr>
+<tr><td>2010-03-30</td><td>3250</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35495">go4go</a> | </td>
+</tr>
+<tr><td>2010-03-14</td><td>3250</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3492</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2010-01-19</td><td>3248</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1411.html">Li Xiang</a></td>
+<td>3120</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/45870">go4go</a> | </td>
+</tr>
+<tr><td>2009-12-05</td><td>3247</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3351</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22519">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-23</td><td>3247</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="20.html">Li Huasong</a></td>
+<td>3139</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22372">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-21</td><td>3247</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3489</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22350">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-20</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="423.html">Lan Tian</a></td>
+<td>3238</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22345">go4go</a> | </td>
+</tr>
+<tr><td>2009-11-19</td><td>3247</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="993.html">Peng Liyao</a></td>
+<td>3432</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/22328">go4go</a> | </td>
+</tr>
+<tr><td>2009-10-10</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3485</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21968">go4go</a> | </td>
+</tr>
+<tr><td>2009-09-25</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1051.html">Zhang Tao</a></td>
+<td>3307</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-24</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="411.html">Tao Xin</a></td>
+<td>3329</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-22</td><td>3247</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="458.html">Wu Guangya</a></td>
+<td>3402</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-21</td><td>3247</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="97.html">Zhao Zhelun</a></td>
+<td>3229</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-19</td><td>3247</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="483.html">Chen Xiaonan</a></td>
+<td>3258</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-18</td><td>3247</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="468.html">Mao Ruilong</a></td>
+<td>3343</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-16</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="449.html">Shi Yue</a></td>
+<td>3466</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-15</td><td>3247</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="423.html">Lan Tian</a></td>
+<td>3236</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-09-14</td><td>3247</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="995.html">Tan Xiao</a></td>
+<td>3434</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-07-20</td><td>3246</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="342.html">Zhang Wei</a></td>
+<td>3283</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21362">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-30</td><td>3245</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3318</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34326">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-30</td><td>3245</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="187.html">Hang Tianpeng</a></td>
+<td>3139</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/34311">go4go</a> | </td>
+</tr>
+<tr><td>2009-06-13</td><td>3245</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="423.html">Lan Tian</a></td>
+<td>3230</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/21085">go4go</a> | </td>
+</tr>
+<tr><td>2009-05-28</td><td>3246</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="92.html">Yu Bin</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20932">go4go</a> | </td>
+</tr>
+<tr><td>2009-05-23</td><td>3246</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="970.html">Wang Tao</a></td>
+<td>3321</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20877">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-29</td><td>3246</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="381.html">Zhou Ruiyang</a></td>
+<td>3457</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20688">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-07</td><td>3246</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="411.html">Tao Xin</a></td>
+<td>3320</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20521">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-05</td><td>3246</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3336</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35533">go4go</a> | </td>
+</tr>
+<tr><td>2009-04-03</td><td>3246</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="130.html">Zhu Songli</a></td>
+<td>3230</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35543">go4go</a> | </td>
+</tr>
+<tr><td>2009-03-14</td><td>3245</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3467</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2009-02-17</td><td>3244</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="381.html">Zhou Ruiyang</a></td>
+<td>3457</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/20370">go4go</a> | </td>
+</tr>
+<tr><td>2008-12-13</td><td>3242</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="467.html">Zhong Wenjing</a></td>
+<td>3412</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19735">go4go</a> | </td>
+</tr>
+<tr><td>2008-12-04</td><td>3242</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="967.html">Sun Tengyu</a></td>
+<td>3387</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19681">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-29</td><td>3242</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3471</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19622">go4go</a> | </td>
+</tr>
+<tr><td>2008-11-22</td><td>3242</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19570">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-21</td><td>3243</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="381.html">Zhou Ruiyang</a></td>
+<td>3462</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18402">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-16</td><td>3243</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="436.html">Zhu Yuanhao</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2008-06-14</td><td>3243</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="96.html">Zhao Shouxun</a></td>
+<td>3213</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18332">go4go</a> | </td>
+</tr>
+<tr><td>2008-06-05</td><td>3244</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="971.html">Pan Fei</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/18260">go4go</a> | </td>
+</tr>
+<tr><td>2008-05-15</td><td>3244</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3333</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17986">go4go</a> | </td>
+</tr>
+<tr><td>2008-04-17</td><td>3244</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="380.html">Piao Wenyao</a></td>
+<td>3461</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17641">go4go</a> | </td>
+</tr>
+<tr><td>2008-04-05</td><td>3244</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3400</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17538">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-27</td><td>3244</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="178.html">Gu Lingyi</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17473">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-26</td><td>3244</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="69.html">Wang Lei (b)</a></td>
+<td>3371</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17471">go4go</a> | </td>
+</tr>
+<tr><td>2008-03-25</td><td>3244</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3436</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2008-02-27</td><td>3244</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3325</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/49640">go4go</a> | </td>
+</tr>
+<tr><td>2008-02-25</td><td>3244</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3335</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/35580">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-29</td><td>3245</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3441</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17074">go4go</a> | </td>
+</tr>
+<tr><td>2008-01-28</td><td>3245</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="434.html">Tang Yi</a></td>
+<td>3094</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/17076">go4go</a> | </td>
+</tr>
+<tr><td>2007-12-24</td><td>3245</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="436.html">Zhu Yuanhao</a></td>
+<td>3368</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/16885">go4go</a> | </td>
+</tr>
+<tr><td>2007-09-25</td><td>3248</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="473.html">Wang Youxia</a></td>
+<td>3191</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-24</td><td>3248</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="118.html">Peng Quan</a></td>
+<td>3365</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-22</td><td>3248</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="410.html">Meng Tailing</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-21</td><td>3248</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3317</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-19</td><td>3248</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3270</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-18</td><td>3248</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="449.html">Shi Yue</a></td>
+<td>3388</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-16</td><td>3248</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="462.html">Zhuang Yuan</a></td>
+<td>3152</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-09-15</td><td>3248</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="210.html">Meng Lei</a></td>
+<td>3195</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-19</td><td>3251</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="66.html">Wu Xinyu</a></td>
+<td>3126</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-17</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="96.html">Zhao Shouxun</a></td>
+<td>3241</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/15597">go4go</a> | </td>
+</tr>
+<tr><td>2007-07-16</td><td>3251</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="327.html">Li Zhe</a></td>
+<td>3440</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-15</td><td>3251</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="342.html">Zhang Wei</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/15573">go4go</a> | </td>
+</tr>
+<tr><td>2007-07-13</td><td>3251</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3334</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-12</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-07-11</td><td>3251</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3278</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-26</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="456.html">Wang Lu</a></td>
+<td>3172</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-25</td><td>3251</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="432.html">Jing Shang</a></td>
+<td>3040</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-23</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="455.html">Gui Wenbo</a></td>
+<td>3199</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-20</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3318</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-19</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="1027.html">Yan Huan</a></td>
+<td>3281</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-06-18</td><td>3252</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="444.html">Bai Guangyuan</a></td>
+<td>3102</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2007-05-09</td><td>3251</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3205</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14745">go4go</a> | </td>
+</tr>
+<tr><td>2007-04-02</td><td>3250</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3206</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14382">go4go</a> | </td>
+</tr>
+<tr><td>2007-03-13</td><td>3251</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="91.html">Yu Ping</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14286">go4go</a> | </td>
+</tr>
+<tr><td>2007-03-13</td><td>3251</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="92.html">Yu Bin</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/14282">go4go</a> | </td>
+</tr>
+<tr><td>2006-09-25</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-24</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3438</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-22</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="113.html">Zhang Dongyue</a></td>
+<td>3146</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-21</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="473.html">Wang Youxia</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-19</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="97.html">Zhao Zhelun</a></td>
+<td>3253</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-18</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="136.html">Zhou Junxun</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-16</td><td>3252</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="130.html">Zhu Songli</a></td>
+<td>3208</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-15</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3381</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-09-14</td><td>3252</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="372.html">Zhang Yingting</a></td>
+<td>3147</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-07-12</td><td>3256</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11949">go4go</a> | </td>
+</tr>
+<tr><td>2006-06-08</td><td>3257</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3516</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11616">go4go</a> | </td>
+</tr>
+<tr><td>2006-04-20</td><td>3259</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="377.html">Zhu Jianshun</a></td>
+<td>3131</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-16</td><td>3259</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="187.html">Hang Tianpeng</a></td>
+<td>3125</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-14</td><td>3259</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="1396.html">Jia Yifan</a></td>
+<td>3253</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-13</td><td>3259</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="419.html">Huang Chen</a></td>
+<td>3272</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-12</td><td>3259</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="966.html">Zheng Miaoxin</a></td>
+<td>3134</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2006-04-10</td><td>3259</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="184.html">Hu Yaoyu</a></td>
+<td>3448</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10837">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-24</td><td>3260</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3214</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10604">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-16</td><td>3260</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3461</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11073">go4go</a> | </td>
+</tr>
+<tr><td>2006-03-16</td><td>3260</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="380.html">Piao Wenyao</a></td>
+<td>3413</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/11076">go4go</a> | </td>
+</tr>
+<tr><td>2006-02-06</td><td>3259</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="381.html">Zhou Ruiyang</a></td>
+<td>3449</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10343">go4go</a> | </td>
+</tr>
+<tr><td>2006-01-17</td><td>3259</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="109.html">Zhang Xuan</a></td>
+<td>3124</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10398">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-31</td><td>3259</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3305</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10118">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-24</td><td>3258</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3307</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/10054">go4go</a> | </td>
+</tr>
+<tr><td>2005-12-03</td><td>3257</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3302</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/9942">go4go</a> | </td>
+</tr>
+<tr><td>2005-11-05</td><td>3256</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="458.html">Wu Guangya</a></td>
+<td>3268</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/9428">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-15</td><td>3256</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="325.html">Hong Minpyo</a></td>
+<td>3300</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8957">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-12</td><td>3255</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71569">go4go</a> | </td>
+</tr>
+<tr><td>2005-10-08</td><td>3255</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="11.html">Ma Xiaochun</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8930">go4go</a> | </td>
+</tr>
+<tr><td>2005-09-25</td><td>3255</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="131.html">Zhu Yi</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-24</td><td>3255</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="136.html">Zhou Junxun</a></td>
+<td>3271</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-22</td><td>3255</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="178.html">Gu Lingyi</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-21</td><td>3255</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3425</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-19</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-18</td><td>3255</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-16</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="97.html">Zhao Zhelun</a></td>
+<td>3250</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-15</td><td>3255</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="342.html">Zhang Wei</a></td>
+<td>3246</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-09-14</td><td>3255</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="383.html">Cui Can</a></td>
+<td>3158</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2005-08-20</td><td>3254</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3447</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6607">go4go</a> | </td>
+</tr>
+<tr><td>2005-08-13</td><td>3253</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="92.html">Yu Bin</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/52035">go4go</a> | </td>
+</tr>
+<tr><td>2005-08-06</td><td>3253</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="379.html">Wang Haoyang</a></td>
+<td>3216</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6524">go4go</a> | </td>
+</tr>
+<tr><td>2005-07-09</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6401">go4go</a> | </td>
+</tr>
+<tr><td>2005-06-25</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3374</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8942">go4go</a> | </td>
+</tr>
+<tr><td>2005-05-21</td><td>3251</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="155.html">Chang Hao</a></td>
+<td>3440</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/6082">go4go</a> | </td>
+</tr>
+<tr><td>2005-05-07</td><td>3251</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="325.html">Hong Minpyo</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5993">go4go</a> | </td>
+</tr>
+<tr><td>2005-04-16</td><td>3251</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3388</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/51952">go4go</a> | </td>
+</tr>
+<tr><td>2004-12-16</td><td>3253</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3439</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-12-09</td><td>3253</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="11.html">Ma Xiaochun</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5394">go4go</a> | </td>
+</tr>
+<tr><td>2004-12-03</td><td>3253</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="174.html">Fu Chong</a></td>
+<td>3180</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-22</td><td>3254</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3363</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-18</td><td>3254</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="96.html">Zhao Shouxun</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-11-11</td><td>3254</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="136.html">Zhou Junxun</a></td>
+<td>3274</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/8439">go4go</a> | </td>
+</tr>
+<tr><td>2004-11-04</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="201.html">Kim Seungjun</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-10-28</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="113.html">Zhang Dongyue</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5229">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-21</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="77.html">Wang Yang</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5181">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-14</td><td>3255</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/5147">go4go</a> | </td>
+</tr>
+<tr><td>2004-10-09</td><td>3255</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="184.html">Hu Yaoyu</a></td>
+<td>3448</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-26</td><td>3255</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3363</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-24</td><td>3256</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3262</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-23</td><td>3256</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="118.html">Peng Quan</a></td>
+<td>3377</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-21</td><td>3256</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3295</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-20</td><td>3256</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="120.html">Niu Yutian</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-18</td><td>3256</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-17</td><td>3256</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="371.html">Ma Xiaobing</a></td>
+<td>3233</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-15</td><td>3256</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="69.html">Wang Lei (b)</a></td>
+<td>3406</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-09-14</td><td>3256</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="26.html">Liu Shizhen</a></td>
+<td>3322</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-07-24</td><td>3254</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3273</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-07-08</td><td>3253</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="264.html">Meng Zhaoyu</a></td>
+<td>2969</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4762">go4go</a> | </td>
+</tr>
+<tr><td>2004-07-01</td><td>3253</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3437</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4718">go4go</a> | </td>
+</tr>
+<tr><td>2004-06-24</td><td>3252</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="11.html">Ma Xiaochun</a></td>
+<td>3338</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4680">go4go</a> | </td>
+</tr>
+<tr><td>2004-06-17</td><td>3252</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="174.html">Fu Chong</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-06-10</td><td>3252</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3393</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-06-03</td><td>3251</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="96.html">Zhao Shouxun</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-27</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="97.html">Zhao Zhelun</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-20</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="327.html">Li Zhe</a></td>
+<td>3342</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-13</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="89.html">Yue Liang</a></td>
+<td>3179</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-05-10</td><td>3251</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-04-29</td><td>3250</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3271</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/4461">go4go</a> | </td>
+</tr>
+<tr><td>2004-04-15</td><td>3249</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="26.html">Liu Shizhen</a></td>
+<td>3329</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-04-05</td><td>3248</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3324</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-03-05</td><td>3247</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-02-19</td><td>3246</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3432</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2004-02-01</td><td>3244</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3360</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-12-18</td><td>3241</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="78.html">Wang Yao</a></td>
+<td>3312</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-12-11</td><td>3240</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="365.html">Yue Song</a></td>
+<td>3165</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3880">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-27</td><td>3239</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="94.html">Zhao Xinghua</a></td>
+<td>3083</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3828">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-20</td><td>3239</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3385</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-11-13</td><td>3239</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="112.html">Zhang Xuebin</a></td>
+<td>3275</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/81265">go4go</a> | </td>
+</tr>
+<tr><td>2003-11-06</td><td>3239</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="35.html">Lin Feng</a></td>
+<td>3207</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-10-30</td><td>3239</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3325</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3709">go4go</a> | </td>
+</tr>
+<tr><td>2003-10-22</td><td>3239</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="364.html">Zhou Kui</a></td>
+<td>3166</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-10-16</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="249.html">Wang Yimin</a></td>
+<td>3060</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3647">go4go</a> | </td>
+</tr>
+<tr><td>2003-10-09</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="110.html">Zhang Wendong</a></td>
+<td>3215</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3622">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-27</td><td>3239</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3357</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-26</td><td>3239</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="342.html">Zhang Wei</a></td>
+<td>3222</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-24</td><td>3239</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="136.html">Zhou Junxun</a></td>
+<td>3264</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="tw flag" src="/flags/tw.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-22</td><td>3239</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="34.html">Lin Chaohua</a></td>
+<td>3221</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-20</td><td>3239</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3278</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-19</td><td>3239</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="208.html">Kong Jie</a></td>
+<td>3488</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-18</td><td>3239</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="297.html">Chen Yaoye</a></td>
+<td>3285</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-16</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="179.html">Gu Li</a></td>
+<td>3496</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-15</td><td>3239</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3356</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-14</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="78.html">Wang Yao</a></td>
+<td>3308</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-11</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="13.html">Li Yonggang</a></td>
+<td>3093</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-09-07</td><td>3238</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3415</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3499">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-04</td><td>3238</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="184.html">Hu Yaoyu</a></td>
+<td>3425</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3485">go4go</a> | </td>
+</tr>
+<tr><td>2003-09-02</td><td>3238</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="45.html">Qiu Jun</a></td>
+<td>3379</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/75931">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-31</td><td>3238</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/75934">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-21</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="187.html">Hang Tianpeng</a></td>
+<td>3130</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3412">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-11</td><td>3236</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="332.html">Kim Hyeongwan</a></td>
+<td>3175</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3374">go4go</a> | </td>
+</tr>
+<tr><td>2003-08-07</td><td>3236</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3343">go4go</a> | </td>
+</tr>
+<tr><td>2003-07-29</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="839.html">Shimojima Yohei</a></td>
+<td>3017</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-24</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3411</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-17</td><td>3234</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="153.html">Chen Zude</a></td>
+<td>3059</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3236">go4go</a> | </td>
+</tr>
+<tr><td>2003-07-10</td><td>3234</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3319</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-07-03</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3319</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-26</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3382</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-24</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3428</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-19</td><td>3232</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="29.html">Liu Jing</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-06-16</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="153.html">Chen Zude</a></td>
+<td>3061</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-05-26</td><td>3232</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="67.html">Wu Zhaoyi</a></td>
+<td>3002</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88370">go4go</a> | </td>
+</tr>
+<tr><td>2003-05-23</td><td>3232</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="72.html">Wang Lei (s)</a></td>
+<td>3259</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88359">go4go</a> | </td>
+</tr>
+<tr><td>2003-05-21</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3380</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3068">go4go</a> | </td>
+</tr>
+<tr><td>2003-04-23</td><td>3233</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="343.html">Jing Shi</a></td>
+<td>3007</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3255">go4go</a> | </td>
+</tr>
+<tr><td>2003-04-17</td><td>3233</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="130.html">Zhu Songli</a></td>
+<td>3170</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-04-07</td><td>3232</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="208.html">Kong Jie</a></td>
+<td>3477</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2003-03-23</td><td>3232</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="168.html">Dong Yan</a></td>
+<td>3279</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/3022">go4go</a> | </td>
+</tr>
+<tr><td>2003-02-22</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="91.html">Yu Ping</a></td>
+<td>3235</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-12-01</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="155.html">Chang Hao</a></td>
+<td>3410</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-11-28</td><td>3232</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="cwa_CWA000228.html">曹恒廷</a></td>
+<td>3098</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-11-21</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3272</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/2061">go4go</a> | </td>
+</tr>
+<tr><td>2002-11-14</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="110.html">Zhang Wendong</a></td>
+<td>3239</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/2031">go4go</a> | </td>
+</tr>
+<tr><td>2002-11-07</td><td>3232</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3273</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/57981">go4go</a> | </td>
+</tr>
+<tr><td>2002-10-31</td><td>3232</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="92.html">Yu Bin</a></td>
+<td>3402</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-24</td><td>3232</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="79.html">Wang Dongliang</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-17</td><td>3232</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-10-10</td><td>3232</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="78.html">Wang Yao</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-15</td><td>3233</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-12</td><td>3233</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="168.html">Dong Yan</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-09-05</td><td>3234</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="29.html">Liu Jing</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-07-17</td><td>3234</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="106.html">Zhang Xin</a></td>
+<td>3055</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-07-15</td><td>3234</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="53.html">Xie He</a></td>
+<td>3379</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76701">go4go</a> | </td>
+</tr>
+<tr><td>2002-06-27</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1370">go4go</a> | </td>
+</tr>
+<tr><td>2002-06-20</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="197.html">Kim Yeonghwan</a></td>
+<td>3247</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-06-13</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="220.html">Ruan Yunsheng</a></td>
+<td>3053</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-06-06</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="35.html">Lin Feng</a></td>
+<td>3180</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1263">go4go</a> | </td>
+</tr>
+<tr><td>2002-05-23</td><td>3235</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3280</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/57991">go4go</a> | </td>
+</tr>
+<tr><td>2002-05-13</td><td>3236</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="11.html">Ma Xiaochun</a></td>
+<td>3345</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-05-09</td><td>3236</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="79.html">Wang Dongliang</a></td>
+<td>3122</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-25</td><td>3236</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="170.html">Fang Tianfeng</a></td>
+<td>3018</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-18</td><td>3236</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="69.html">Wang Lei (b)</a></td>
+<td>3424</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-08</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="22.html">Li Junkai</a></td>
+<td>3089</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-04-04</td><td>3237</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="121.html">Mok Jinseok</a></td>
+<td>3372</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/71185">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-13</td><td>3238</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="45.html">Qiu Jun</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/37">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-11</td><td>3238</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="208.html">Kong Jie</a></td>
+<td>3420</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/62062">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-09</td><td>3238</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="155.html">Chang Hao</a></td>
+<td>3414</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/19">go4go</a> | </td>
+</tr>
+<tr><td>2002-03-07</td><td>3238</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="110.html">Zhang Wendong</a></td>
+<td>3242</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-02-04</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3326</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2002-01-22</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="118.html">Peng Quan</a></td>
+<td>3339</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-12-17</td><td>3237</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="126.html">Park Cheongsang</a></td>
+<td>3276</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/178">go4go</a> | </td>
+</tr>
+<tr><td>2001-11-29</td><td>3237</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="110.html">Zhang Wendong</a></td>
+<td>3244</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-22</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="233.html">Zhang Jiao</a></td>
+<td>3035</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-15</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="134.html">Zhou Bo</a></td>
+<td>3183</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-11-08</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="46.html">Xu Shuxiang</a></td>
+<td>3051</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58199">go4go</a> | </td>
+</tr>
+<tr><td>2001-11-01</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="120.html">Niu Yutian</a></td>
+<td>3257</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-10-25</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="118.html">Peng Quan</a></td>
+<td>3324</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58052">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-18</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="79.html">Wang Dongliang</a></td>
+<td>3130</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58067">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-14</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="121.html">Mok Jinseok</a></td>
+<td>3371</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58075">go4go</a> | </td>
+</tr>
+<tr><td>2001-10-11</td><td>3237</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3315</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58108">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-24</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="184.html">Hu Yaoyu</a></td>
+<td>3369</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/300">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-23</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3301</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/309">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-22</td><td>3237</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="190.html">Huang Yizhong</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/317">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-20</td><td>3237</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3296</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/327">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-19</td><td>3237</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3338</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/334">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-16</td><td>3237</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="187.html">Hang Tianpeng</a></td>
+<td>3110</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/349">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-10</td><td>3237</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="197.html">Kim Yeonghwan</a></td>
+<td>3256</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58113">go4go</a> | </td>
+</tr>
+<tr><td>2001-09-06</td><td>3237</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="184.html">Hu Yaoyu</a></td>
+<td>3368</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58117">go4go</a> | </td>
+</tr>
+<tr><td>2001-06-28</td><td>3236</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="110.html">Zhang Wendong</a></td>
+<td>3246</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-06-21</td><td>3236</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3286</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-06-14</td><td>3236</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="168.html">Dong Yan</a></td>
+<td>3306</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/595">go4go</a> | </td>
+</tr>
+<tr><td>2001-06-07</td><td>3236</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="20.html">Li Huasong</a></td>
+<td>3108</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-05-31</td><td>3236</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="23.html">Li Kang</a></td>
+<td>3218</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-05-24</td><td>3236</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="43.html">Luo Xihe</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/675">go4go</a> | </td>
+</tr>
+<tr><td>2001-05-17</td><td>3235</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="76.html">Wang Xi</a></td>
+<td>3282</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/696">go4go</a> | </td>
+</tr>
+<tr><td>2001-05-10</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3390</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/716">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-26</td><td>3235</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="166.html">Ding Wei</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58168">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-19</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="150.html">Cao Dayuan</a></td>
+<td>3219</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/794">go4go</a> | </td>
+</tr>
+<tr><td>2001-04-05</td><td>3235</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/58151">go4go</a> | </td>
+</tr>
+<tr><td>2001-03-26</td><td>3235</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3312</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56914">go4go</a> | </td>
+</tr>
+<tr><td>2001-03-16</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3289</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-02-18</td><td>3235</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3399</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/1020">go4go</a> | </td>
+</tr>
+<tr><td>2001-02-16</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="26.html">Liu Shizhen</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2001-02-15</td><td>3235</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="124.html">Nie Weiping</a></td>
+<td>3279</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-30</td><td>3234</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="762.html">Wang Cheng</a></td>
+<td>2871</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-23</td><td>3234</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="373.html">Liu Fan</a></td>
+<td>2877</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-16</td><td>3234</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="45.html">Qiu Jun</a></td>
+<td>3266</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-09</td><td>3233</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="150.html">Cao Dayuan</a></td>
+<td>3210</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-11-02</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="135.html">Zhou Heyang</a></td>
+<td>3415</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-26</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="208.html">Kong Jie</a></td>
+<td>3337</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-12</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="22.html">Li Junkai</a></td>
+<td>3084</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-10-09</td><td>3233</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="7.html">Ma Shi</a></td>
+<td>2915</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-10</td><td>3233</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-07</td><td>3233</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="37.html">Liang Weitang</a></td>
+<td>3120</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-09-04</td><td>3233</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="24.html">Liu Xing</a></td>
+<td>3269</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-08-31</td><td>3234</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76331">go4go</a> | </td>
+</tr>
+<tr><td>2000-08-01</td><td>3236</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="11.html">Ma Xiaochun</a></td>
+<td>3367</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/7152">go4go</a> | </td>
+</tr>
+<tr><td>2000-06-29</td><td>3238</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="75.html">Wang Yuhui</a></td>
+<td>3258</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-06-22</td><td>3238</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="63.html">Shi Jinbo</a></td>
+<td>2931</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-06-19</td><td>3238</td>
+<td>White</td>
+<td>Loss</td>
+<td><a href="57.html">Shao Weigang</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/62290">go4go</a> | </td>
+</tr>
+<tr><td>2000-06-08</td><td>3238</td>
+<td>Black</td>
+<td>Loss</td>
+<td><a href="209.html">Zou Junjie</a></td>
+<td>3251</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2000-05-25</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="92.html">Yu Bin</a></td>
+<td>3370</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/72345">go4go</a> | </td>
+</tr>
+<tr><td>2000-05-18</td><td>3240</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="227.html">Wang Bogang</a></td>
+<td>3056</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76622">go4go</a> | </td>
+</tr>
+<tr><td>2000-05-04</td><td>3240</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="22.html">Li Junkai</a></td>
+<td>3083</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/82426">go4go</a> | </td>
+</tr>
+<tr><td>2000-04-25</td><td>3240</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="7.html">Ma Shi</a></td>
+<td>2920</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/81707">go4go</a> | </td>
+</tr>
+<tr><td>2000-04-20</td><td>3240</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="34.html">Lin Chaohua</a></td>
+<td>3176</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1999-07-23</td><td>3239</td>
+<td>White</td>
+<td>Win</td>
+<td><a href="118.html">Peng Quan</a></td>
+<td>3235</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>1999-07-20</td><td>3238</td>
+<td>Black</td>
+<td>Win</td>
+<td><a href="cwa_CWA001142.html">王治国</a></td>
+<td>2865</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="cn flag" src="/flags/cn.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+</table>
+<p><small>Contact: <a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://github.com/Remi-Coulom/joedb">joedb, the C++ database</a>.</small></p></body></html>

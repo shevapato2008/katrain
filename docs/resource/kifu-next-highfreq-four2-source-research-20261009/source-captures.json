@@ -1,0 +1,464 @@
+{
+  "status": "source_only_unapproved",
+  "captures": [
+    {
+      "player_id": 6634,
+      "key": "kansai",
+      "requested_url": "https://kansaikiin.jp/kisi_prof/kubouchisyuchi.html",
+      "final_url": "https://kansaikiin.jp/kisi_prof/kubouchisyuchi.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:10.183066+00:00",
+      "body_file": "bodies/6634-kansai.body",
+      "body_bytes": 16903,
+      "body_sha256": "86d14e8bd059b816df35ef775cee78bd712ff4dfbcd8f31a051cff3308e94ebd",
+      "decoded_as": "utf-8",
+      "title": "窪内秀知｜プロ棋士｜一般財団法人関西棋院",
+      "excerpts": [
+        {
+          "needle": "窪内秀知",
+          "excerpt": "窪内秀知｜プロ棋士｜一般財団法人関西棋院 ﻿ 施設・催事 大会・イベント 囲碁サロン 囲碁教室・さーくる こども囲碁道場 棋士・棋戦 プロ棋士 プロ棋戦 対局履歴検索 昇段基準 指導碁・棋力検定 棋士派遣 ネット利用 まいど！ 囲碁ネット中継 囲碁入門ゲーム 販売・各制度 通信販売 会員 支部 公認インストラクター 院生 囲碁文化継承基金 囲碁免状 関西棋院"
+        }
+      ]
+    },
+    {
+      "player_id": 6634,
+      "key": "en-wiki",
+      "requested_url": "https://en.wikipedia.org/wiki/Shuchi_Kubouchi",
+      "final_url": "https://en.wikipedia.org/wiki/Shuchi_Kubouchi",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:11.328493+00:00",
+      "body_file": "bodies/6634-en-wiki.body",
+      "body_bytes": 88275,
+      "body_sha256": "5b7598a5cb47cfb8fd104cf9c84f3edc90257901767819022b1df82e340c1435",
+      "decoded_as": "utf-8",
+      "title": "Shuchi Kubouchi - Wikipedia",
+      "excerpts": [
+        {
+          "needle": "Shuchi Kubouchi",
+          "excerpt": "Shuchi Kubouchi - Wikipedia Jump to content Main menu Main menu move to sidebar hide Navigation Main page Contents Current events Random article About Wikipedia Contact us Contribu"
+        },
+        {
+          "needle": "窪内秀知",
+          "excerpt": "o player (1920–2020) Shuchi Kubouchi Personal information Native name 窪内秀知 ( Japanese ) Full name Shuchi Kubouchi Born ( 1920-01-25 ) January 25, 1920 Japan Died January 21, 2020 (2020-01-21) (aged 99) Sport Turned pro 1935 Teacher Katsukiyo Kubomats"
+        }
+      ]
+    },
+    {
+      "player_id": 6634,
+      "key": "zh-list",
+      "requested_url": "https://zh.wikipedia.org/wiki/日本圍棋棋士列表",
+      "final_url": "https://zh.wikipedia.org/wiki/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:15.453660+00:00",
+      "body_file": "bodies/6634-zh-list.body",
+      "body_bytes": 740514,
+      "body_sha256": "08f8cc1c81964c35b4de8dcb81402b21f307a176f3e363d200719a3c935d4a2f",
+      "decoded_as": "utf-8",
+      "title": "日本圍棋棋士列表 - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "窪内秀知",
+          "excerpt": "961 16歲 1975 宮本直毅 牛窪義高 ( 1947-05-24 ) 1947年5月24日 （ 79歲） 1963 16歲 1977 窪内秀知 牛之濱撮雄 ( 1948-01-22 ) 1948年1月22日 （ 78歲） 1963 15歲 1977 窪内秀知 遠藤隆博 ( 1948-04-09 ) 1948年4月9日 （ 78歲） 1965 17歲 1985 小坂田幸次 太田清道 ( 1948-07-27 ) 1948年7月27日 （ 78歲） 1965 17歲 1981 高川格 關山利一"
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "nagoya-library",
+      "requested_url": "https://www.library.city.nagoya.jp/reference/chosahoukoku/chosahoukoku_102.html",
+      "final_url": "https://www.library.city.nagoya.jp/reference/chosahoukoku/chosahoukoku_102.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:16.886249+00:00",
+      "body_file": "bodies/6672-nagoya-library.body",
+      "body_bytes": 9963,
+      "body_sha256": "f3274596e8abb23e5ff8c3d866ab315b205ade9d30baf87b01d4650588231516",
+      "decoded_as": "utf-8",
+      "title": "調査報告書 : 調査団報告書No.102 | 名古屋市図書館ホームページ",
+      "excerpts": [
+        {
+          "needle": "伊藤松和",
+          "excerpt": "碁年鑑』の各種特集で、江戸時代の囲碁棋士の情報を探してみた。1993年版に「江戸・明治著名棋士名鑑」のページがあり、「名古屋の生まれ」という伊藤松和を見つけた。名前を手掛かりに、江戸時代の囲碁棋士に関する他の本も見てみる。 調査結果 『囲碁年鑑』1993年版の略歴のほか、いくつか囲碁の本で「伊藤松和（いとうしょうわ）」が名古屋出身という記載が確認できた。 伊藤松和は、名古屋の商家出身。幼名は松次郎という。 12歳で尾州家の藩士が素質を見込んで出資し、囲碁の家元の1つ、本因坊家に入門。しばらくして"
+        },
+        {
+          "needle": "幼名は松次郎",
+          "excerpt": "993年版の略歴のほか、いくつか囲碁の本で「伊藤松和（いとうしょうわ）」が名古屋出身という記載が確認できた。 伊藤松和は、名古屋の商家出身。幼名は松次郎という。 12歳で尾州家の藩士が素質を見込んで出資し、囲碁の家元の1つ、本因坊家に入門。しばらくして修行に飽き自信を失い郷里に戻った松和は、親せきや知人の反対にあい再び上京する。刻苦勉励して文政5年（1822年）初段を許された。五段で郷里に戻り、知己に昔の恩を謝したといわれている。「尾張の松次郎」の名は高まり、天保2年（1831年）、尾州侯は御目"
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "cwi-jowa",
+      "requested_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "final_url": "https://homepages.cwi.nl/~aeb/go/games/games/ancient/Honinbo_Jowa/",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:20.391389+00:00",
+      "body_file": "bodies/6672-cwi-jowa.body",
+      "body_bytes": 62734,
+      "body_sha256": "03f9fcc681257638bb221e03ebdbe887c8a45823a6aa389c7f5c42ba3521846d",
+      "decoded_as": "utf-8",
+      "title": "Honinbo Jowa",
+      "excerpts": [
+        {
+          "needle": "伊藤松次郎",
+          "excerpt": " Zezan 石川新五右衛門 Ishikawa Shingoemon 伊東蜂三郎 Ito Hachisaburo = Ito Shigen 伊藤松次郎 Ito Matsujiro = Ito Showa 伊藤直記 Ito Naoki 伊藤秀助 Ito Shusuke 伊藤安次郎 Ito Yasujiro 葛野丈和 Kadono (or Kuzuno) Jowa = Honinbo Jowa 葛野松之助 Kadono Matsunosuke = Kadono Jowa 片山知的 Katayama "
+        },
+        {
+          "needle": "Ito Matsujiro = Ito Showa",
+          "excerpt": " 石川新五右衛門 Ishikawa Shingoemon 伊東蜂三郎 Ito Hachisaburo = Ito Shigen 伊藤松次郎 Ito Matsujiro = Ito Showa 伊藤直記 Ito Naoki 伊藤秀助 Ito Shusuke 伊藤安次郎 Ito Yasujiro 葛野丈和 Kadono (or Kuzuno) Jowa = Honinbo Jowa 葛野松之助 Kadono Matsunosuke = Kadono Jowa 片山知的 Katayama Chitek"
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "zh-shusaku",
+      "requested_url": "https://zh.wikipedia.org/wiki/本因坊秀策",
+      "final_url": "https://zh.wikipedia.org/wiki/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E7%A7%80%E7%AD%96",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:15:22.077005+00:00",
+      "body_file": "bodies/6672-zh-shusaku.body",
+      "body_bytes": 212786,
+      "body_sha256": "5209dd09c095ba9259cbc6865f95a5d086424de77afd896600fa4502d82dba43",
+      "decoded_as": "utf-8",
+      "title": "本因坊秀策 - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "伊藤松次郎",
+          "excerpt": "各場合皆用村長之子的禮遇。其後拜竹原 寶泉寺 住持葆真和尚為師，習碁、漢文與儒家文化，養成溫和儒雅、尊師重道的性格。 七歲時，到尾道港拜訪 伊藤松次郎 [ 1 ] ，松次郎驚為奇才，翌年推薦給 江戶 的本因坊丈和。後來丈和退休，開道場教導後輩，榮齋進步神速；十一歲時，取得初段認定回鄉，淺野公賜予當時一般家臣五人份的俸祿。回鄉不久後，再次前往江戶，途中與 井上安節因碩 的徒弟中川順節受二子四局全勝，自此「安藝小僧」的名號便傳開。十二歲其技連 仁孝天皇 都已聞曉，引起坊門注意。丈和看過棋譜後，與一百"
+        }
+      ]
+    },
+    {
+      "player_id": 6634,
+      "key": "zh-hans",
+      "requested_url": "https://zh.wikipedia.org/zh-hans/日本圍棋棋士列表",
+      "final_url": "https://zh.wikipedia.org/zh-hans/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:16:48.860631+00:00",
+      "body_file": "bodies/6634-zh-hans.body",
+      "body_bytes": 741463,
+      "body_sha256": "524442b8466e2aad917517b36412fc2632886af52f2cf9524107c302703fca92",
+      "decoded_as": "utf-8",
+      "title": "日本围棋棋士列表 - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "窪内秀知",
+          "excerpt": "1951 白石裕 （ 日语 ： 白石裕 ） 九段 1956 2018 谷田治巳 九段 1947 1964 2019 洼内秀知 （ 日语 ： 窪内秀知 ） 九段 1901 1925 2020 铃木越雄 八段 小坂田幸次 八段 刈谷启 八段 藤木人见 八段 赤木一夫 八段 亀山稔 八段 青柳英雄 八段 井上要 八段 徳永汎久 八段 冈桥弘忠 八段 1934 1954 2016 2021 森川满夫 八段 2019 山口赞石 七段 余田一雄 七段 西泽克晃 七段 小林将宏 七段 饭野靖峯 七段 滨田守哉"
+        },
+        {
+          "needle": "洼内秀知",
+          "excerpt": "961 16岁 1975 宫本直毅 牛洼义高 ( 1947-05-24 ) 1947年5月24日 （ 79岁） 1963 16岁 1977 洼内秀知 牛之滨撮雄 ( 1948-01-22 ) 1948年1月22日 （ 78岁） 1963 15岁 1977 洼内秀知 远藤隆博 ( 1948-04-09 ) 1948年4月9日 （ 78岁） 1965 17岁 1985 小坂田幸次 太田清道 ( 1948-07-27 ) 1948年7月27日 （ 78岁） 1965 17岁 1981 高川格 关山利一"
+        }
+      ]
+    },
+    {
+      "player_id": 6634,
+      "key": "zh-hant",
+      "requested_url": "https://zh.wikipedia.org/zh-hant/日本圍棋棋士列表",
+      "final_url": "https://zh.wikipedia.org/zh-hant/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:16:50.307244+00:00",
+      "body_file": "bodies/6634-zh-hant.body",
+      "body_bytes": 741590,
+      "body_sha256": "3b1057fbbe1ecf1f404bb0b1147a91ac699a910a7389286895b9771f47892a0c",
+      "decoded_as": "utf-8",
+      "title": "日本圍棋棋士列表 - 維基百科，自由的百科全書",
+      "excerpts": [
+        {
+          "needle": "窪內秀知",
+          "excerpt": "961 16歲 1975 宮本直毅 牛窪義高 ( 1947-05-24 ) 1947年5月24日 （ 79歲） 1963 16歲 1977 窪內秀知 牛之濱撮雄 ( 1948-01-22 ) 1948年1月22日 （ 78歲） 1963 15歲 1977 窪內秀知 遠藤隆博 ( 1948-04-09 ) 1948年4月9日 （ 78歲） 1965 17歲 1985 小坂田幸次 太田清道 ( 1948-07-27 ) 1948年7月27日 （ 78歲） 1965 17歲 1981 高川格 關山利一"
+        },
+        {
+          "needle": "窪内秀知",
+          "excerpt": "1951 白石裕 （ 日語 ： 白石裕 ） 九段 1956 2018 谷田治巳 九段 1947 1964 2019 窪內秀知 （ 日語 ： 窪内秀知 ） 九段 1901 1925 2020 鈴木越雄 八段 小坂田幸次 八段 刈谷啓 八段 藤木人見 八段 赤木一夫 八段 亀山稔 八段 青柳英雄 八段 井上要 八段 徳永汎久 八段 岡橋弘忠 八段 1934 1954 2016 2021 森川滿夫 八段 2019 山口賛石 七段 余田一雄 七段 西澤克晃 七段 小林將宏 七段 飯野靖峯 七段 濱田守哉"
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "zh-hans",
+      "requested_url": "https://zh.wikipedia.org/zh-hans/本因坊秀策",
+      "final_url": "https://zh.wikipedia.org/zh-hans/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E7%A7%80%E7%AD%96",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:16:51.630136+00:00",
+      "body_file": "bodies/6672-zh-hans.body",
+      "body_bytes": 213515,
+      "body_sha256": "cfe6743ccab1759211c12ac485364b023838c0e604a705d56af95577eab7d185",
+      "decoded_as": "utf-8",
+      "title": "本因坊秀策 - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "伊藤松次郎",
+          "excerpt": "各场合皆用村长之子的礼遇。其后拜竹原 宝泉寺 住持葆真和尚为师，习碁、汉文与儒家文化，养成温和儒雅、尊师重道的性格。 七岁时，到尾道港拜访 伊藤松次郎 [ 1 ] ，松次郎惊为奇才，翌年推荐给 江户 的本因坊丈和。后来丈和退休，开道场教导后辈，荣斋进步神速；十一岁时，取得初段认定回乡，浅野公赐予当时一般家臣五人份的俸禄。回乡不久后，再次前往江户，途中与 井上安节因硕 的徒弟中川顺节受二子四局全胜，自此“安艺小僧”的名号便传开。十二岁其技连 仁孝天皇 都已闻晓，引起坊门注意。丈和看过棋谱后，与一百"
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "zh-hant",
+      "requested_url": "https://zh.wikipedia.org/zh-hant/本因坊秀策",
+      "final_url": "https://zh.wikipedia.org/zh-hant/%E6%9C%AC%E5%9B%A0%E5%9D%8A%E7%A7%80%E7%AD%96",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:16:52.954618+00:00",
+      "body_file": "bodies/6672-zh-hant.body",
+      "body_bytes": 213621,
+      "body_sha256": "f77c57781a1f61a90aa16723ece8dec206c419c2cb956ed9a6ce18ba0c32680d",
+      "decoded_as": "utf-8",
+      "title": "本因坊秀策 - 維基百科，自由的百科全書",
+      "excerpts": [
+        {
+          "needle": "伊藤松次郎",
+          "excerpt": "各場合皆用村長之子的禮遇。其後拜竹原 寶泉寺 住持葆真和尚為師，習碁、漢文與儒家文化，養成溫和儒雅、尊師重道的性格。 七歲時，到尾道港拜訪 伊藤松次郎 [ 1 ] ，松次郎驚為奇才，翌年推薦給 江戶 的本因坊丈和。後來丈和退休，開道場教導後輩，榮齋進步神速；十一歲時，取得初段認定回鄉，淺野公賜予當時一般家臣五人份的俸祿。回鄉不久後，再次前往江戶，途中與 井上安節因碩 的徒弟中川順節受二子四局全勝，自此「安藝小僧」的名號便傳開。十二歲其技連 仁孝天皇 都已聞曉，引起坊門注意。丈和看過棋譜後，與一百"
+        }
+      ]
+    },
+    {
+      "player_id": 6634,
+      "key": "igorating-en",
+      "requested_url": "https://www.igorating.com/en/players/shuchi-kubouchi",
+      "final_url": "https://www.igorating.com/en/players/shuchi-kubouchi",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:17:18.990667+00:00",
+      "body_file": "bodies/6634-igorating-en.body",
+      "body_bytes": 24647,
+      "body_sha256": "2b5bff0e8547b74f647a1ad710973001ff8e0789d61c1e03630193eadc00205f",
+      "decoded_as": "utf-8",
+      "title": "Kubouchi Shuchi | Go Player Ratings (Japan)",
+      "excerpts": [
+        {
+          "needle": "Kubouchi Shuchi",
+          "excerpt": "Kubouchi Shuchi | Go Player Ratings (Japan) Go Player Ratings JA About ratings Players Women's See Korean ratings The data has not been updated recently. Go Player Ratings › Find a"
+        },
+        {
+          "needle": "Shuchi Kubouchi",
+          "excerpt": "t been updated recently. Go Player Ratings › Find a player › Kubouchi Shuchi Kubouchi Shuchi Kubouchi Shuchi (窪内秀知) has a rating of 1494. Retired. The rating shown is the rating at retirement. Kubouchi Shuchi 9 dan 窪内秀知 Kansai Ki-in Rating 1494 Rank "
+        },
+        {
+          "needle": "窪内秀知",
+          "excerpt": "gs › Find a player › Kubouchi Shuchi Kubouchi Shuchi Kubouchi Shuchi (窪内秀知) has a rating of 1494. Retired. The rating shown is the rating at retirement. Kubouchi Shuchi 9 dan 窪内秀知 Kansai Ki-in Rating 1494 Rank — 1-year change — Peak rating — Last 10 "
+        }
+      ]
+    },
+    {
+      "player_id": 6672,
+      "key": "note-jp",
+      "requested_url": "https://note.com/curon154/n/n155836d592a3",
+      "final_url": "https://note.com/curon154/n/n155836d592a3",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:17:30.445982+00:00",
+      "body_file": "bodies/6672-note-jp.body",
+      "body_bytes": 396184,
+      "body_sha256": "12e70ab082e8cf1fe91e2fdbacd64a97b24c610d6e7da77a24c732af2c2a0d18",
+      "decoded_as": "utf-8",
+      "title": "囲碁史記　第６１回　因島の神童本因坊秀策登場｜烏天狗クーロン",
+      "excerpts": [
+        {
+          "needle": "伊藤松次郎",
+          "excerpt": "ていたという。後年、秀策となった栄斎は帰郷の度に葆真と対局し、御城碁の自筆の棋譜を届けるなど、この頃の恩に報いている。 天保八年に、坊門五段伊藤松次郎が尾道を訪れる。人に頼まれ栄斎と打つことになるが、現れた九歳の少年を見て松次郎は不快の色をかくさず、初段近く打つと聞いて「初段では座敷ホイトだ」と放言したという。ホイトとはこの地方の放言で物乞いのことで、少しくらい強いのを鼻にかけ、あちこちの座敷をまわる物乞い同然の子供だと嘲笑ったのだ。 ところが、実際に打ってみて松次郎は驚いた。初段の力を認めざる"
+        }
+      ]
+    },
+    {
+      "player_id": 460,
+      "key": "nihon-official",
+      "requested_url": "https://www.nihonkiin.or.jp/player/htm/ki000389.html",
+      "final_url": "https://www.nihonkiin.or.jp/player/htm/ki000389.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:18:56.085367+00:00",
+      "body_file": "bodies/460-nihon-official.body",
+      "body_bytes": 36283,
+      "body_sha256": "68c62bdd837ea462525caf58483c9c794daabd77386479068a180b1deb254266",
+      "decoded_as": "utf-8",
+      "title": "大場　惇也 | 棋士 | 囲碁の日本棋院",
+      "excerpts": [
+        {
+          "needle": "大場",
+          "excerpt": "大場 惇也 | 棋士 | 囲碁の日本棋院 English(Information) MENU Language 検索 PCサイト ようこそ ゲスト さん 日本棋院IDマイページ ログイン 棋士コメント用ログイン 新規ID登録 (日本棋院IDマイページ) ホームページに設定する お知らせ 棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホ"
+        },
+        {
+          "needle": "惇也",
+          "excerpt": "大場 惇也 | 棋士 | 囲碁の日本棋院 English(Information) MENU Language 検索 PCサイト ようこそ ゲスト さん 日本棋院IDマイページ ログイン 棋士コメント用ログイン 新規ID登録 (日本棋院IDマイページ) ホームページに設定する お知らせ 棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム "
+        },
+        {
+          "needle": "OBA, Junya",
+          "excerpt": "知らせ 棋戦 棋士 大会・イベント 施設案内 出版・販売 会員・免状 日本棋院ホーム 棋士 大場 惇也 大場 惇也 （オオバ ジュンヤ / OBA, Junya） ファンメッセージ 性別 男 棋士段位 八段 出身地 東京都 所属 日本棋院中部総本部 プロフィール 1983年（昭和58年）10月1日生。東京都出身。故・菊池康郎氏（ 緑星囲碁学園 ）に師事。 2003年入段。 2004年二段、2005年三段、2006年四段、2007年五段、2009年六段、2023年七段、2025年八段。 日本棋院中"
+        }
+      ]
+    },
+    {
+      "player_id": 460,
+      "key": "kba-profile",
+      "requested_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000453",
+      "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20000453",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:18:58.886816+00:00",
+      "body_file": "bodies/460-kba-profile.body",
+      "body_bytes": 20013,
+      "body_sha256": "6c10beca7f876f8ceadd5cfc0bbb997176176c77f7dad1a22579529efe438802",
+      "decoded_as": "utf-8",
+      "title": "한국기원",
+      "excerpts": [
+        {
+          "needle": "오바 준야",
+          "excerpt": "상 기전정보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 오바 준야( 大場惇也 ) 6단 생년월일 1983년 10월 01일 소속 일본 통산전적 기사랭킹 승률 0.385 26전 10승 16패 -- (2026년 10월 현재) 특기사항 일본기원동경본원 소속 승단이력 ◆ 5단 / 2008.04.01 / ◆ 6단 / 2009.07.01 / 경력사항 2003년 04.01 입단 2004년 2"
+        },
+        {
+          "needle": "大場惇也",
+          "excerpt": "바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 오바 준야( 大場惇也 ) 6단 생년월일 1983년 10월 01일 소속 일본 통산전적 기사랭킹 승률 0.385 26전 10승 16패 -- (2026년 10월 현재) 특기사항 일본기원동경본원 소속 승단이력 ◆ 5단 / 2008.04.01 / ◆ 6단 / 2009.07.01 / 경력사항 2003년 04.01 입단 2004년 2단으로 승단 "
+        }
+      ]
+    },
+    {
+      "player_id": 460,
+      "key": "goratings-en",
+      "requested_url": "https://www.goratings.org/en/players/603.html",
+      "final_url": "https://www.goratings.org/en/players/603.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:00.561467+00:00",
+      "body_file": "bodies/460-goratings-en.body",
+      "body_bytes": 71299,
+      "body_sha256": "962e96629852e6ad25d0cfc5a7e7bdd705bb9ba66c4129957c23dbd1ff0755e6",
+      "decoded_as": "utf-8",
+      "title": "Oba Junya",
+      "excerpts": [
+        {
+          "needle": "Oba Junya",
+          "excerpt": "Oba Junya Oba Junya Back to main list Graph Data Wins 55 Losses 89 Total 144 Link https://www.nihonkiin.or.... Link https://www.baduk.or.kr/r... Date of Birth 1983-10-01 Game List "
+        },
+        {
+          "needle": "Junya Oba",
+          "excerpt": "Oba Junya Oba Junya Back to main list Graph Data Wins 55 Losses 89 Total 144 Link https://www.nihonkiin.or.... Link https://www.baduk.or.kr/r... Date of Birth 1983-10-01 Game List Date"
+        }
+      ]
+    },
+    {
+      "player_id": 460,
+      "key": "zh-hans-list",
+      "requested_url": "https://zh.wikipedia.org/zh-hans/日本圍棋棋士列表",
+      "final_url": "https://zh.wikipedia.org/zh-hans/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:02.247111+00:00",
+      "body_file": "bodies/460-zh-hans-list.body",
+      "body_bytes": 741463,
+      "body_sha256": "524442b8466e2aad917517b36412fc2632886af52f2cf9524107c302703fca92",
+      "decoded_as": "utf-8",
+      "title": "日本围棋棋士列表 - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "大场惇也",
+          "excerpt": "23岁 2023 冈信光 铃木嘉伦 ( 1976-01-16 ) 1976年1月16日 （ 50岁） 1994 18岁 2023 菊池康郎 大场惇也 ( 1983-10-01 ) 1983年10月1日 （ 43岁） 2003 19岁 2025 菊池康郎 大桥成哉 [ 1 ] [ 65 ] [ 66 ] ( 1990-07-06 ) 1990年7月6日 （ 36岁） 2005 14岁 2024 仲邑信也 富士田明彦 [ 67 ] [ 68 ] [ 69 ] [ 70 ] ( 1991-11-08 "
+        }
+      ]
+    },
+    {
+      "player_id": 460,
+      "key": "zh-hant-list",
+      "requested_url": "https://zh.wikipedia.org/zh-hant/日本圍棋棋士列表",
+      "final_url": "https://zh.wikipedia.org/zh-hant/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:03.690775+00:00",
+      "body_file": "bodies/460-zh-hant-list.body",
+      "body_bytes": 741590,
+      "body_sha256": "3b1057fbbe1ecf1f404bb0b1147a91ac699a910a7389286895b9771f47892a0c",
+      "decoded_as": "utf-8",
+      "title": "日本圍棋棋士列表 - 維基百科，自由的百科全書",
+      "excerpts": [
+        {
+          "needle": "大場惇也",
+          "excerpt": "23歲 2023 岡信光 鈴木嘉倫 ( 1976-01-16 ) 1976年1月16日 （ 50歲） 1994 18歲 2023 菊池康郎 大場惇也 ( 1983-10-01 ) 1983年10月1日 （ 43歲） 2003 19歲 2025 菊池康郎 大橋成哉 [ 1 ] [ 65 ] [ 66 ] ( 1990-07-06 ) 1990年7月6日 （ 36歲） 2005 14歲 2024 仲邑信也 富士田明彥 [ 67 ] [ 68 ] [ 69 ] [ 70 ] ( 1991-11-08 "
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "zh-hans-wiki",
+      "requested_url": "https://zh.wikipedia.org/zh-hans/李劼_(围棋棋手)",
+      "final_url": "https://zh.wikipedia.org/zh-hans/%E6%9D%8E%E5%8A%BC_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:05.134298+00:00",
+      "body_file": "bodies/4970-zh-hans-wiki.body",
+      "body_bytes": 80017,
+      "body_sha256": "dfcbd1fbbd67dffecd39911ff2625330a5bd50388703ef053b088354403f9b02",
+      "decoded_as": "utf-8",
+      "title": "李劼 (围棋棋手) - 维基百科，自由的百科全书",
+      "excerpts": [
+        {
+          "needle": "李劼",
+          "excerpt": "李劼 (围棋棋手) - 维基百科，自由的百科全书 跳转到内容 主菜单 主菜单 移至侧栏 隐藏 导航 首页 分类索引 特色内容 新闻动态 随机条目 联络我们 关于维基百科 贡献 帮助 维基社群 编辑入门 互助客栈 IRC即时聊天 最近更改 特殊页面 搜索 搜索 外观 资助维基百科 创建账号 登录 个人工具 资助维基百科 创建账号 登录 目录 移至侧栏 隐藏 序"
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "zh-hant-wiki",
+      "requested_url": "https://zh.wikipedia.org/zh-hant/李劼_(围棋棋手)",
+      "final_url": "https://zh.wikipedia.org/zh-hant/%E6%9D%8E%E5%8A%BC_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:06.254228+00:00",
+      "body_file": "bodies/4970-zh-hant-wiki.body",
+      "body_bytes": 80344,
+      "body_sha256": "d8ea03d3713b3b873f3bd8e31d8046235e3af0684368a61ea0afbc8e115d6068",
+      "decoded_as": "utf-8",
+      "title": "李劼 (圍棋棋手) - 維基百科，自由的百科全書",
+      "excerpts": [
+        {
+          "needle": "李劼",
+          "excerpt": "李劼 (圍棋棋手) - 維基百科，自由的百科全書 跳至內容 主選單 主選單 移至側邊欄 隱藏 導覽 首頁 分類索引 特色內容 新聞動態 隨機條目 聯絡我們 關於維基百科 貢獻 說明 維基社群 編輯入門 互助客棧 IRC即時聊天 近期變更 特殊頁面 搜尋 搜尋 外觀 資助維基百科 建立帳號 登入 個人工具 資助維基百科 建立帳號 登入 目次 移至側邊欄 隱藏 "
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "nihon-samsung",
+      "requested_url": "https://www.nihonkiin.or.jp/match/sansei/008.htm",
+      "final_url": "https://www.nihonkiin.or.jp/match/sansei/008.htm",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:08.165704+00:00",
+      "body_file": "bodies/4970-nihon-samsung.body",
+      "body_bytes": 104338,
+      "body_sha256": "9c3ac9e7775dd35f39605fda3beff9e90e44583fe834da365b69977ad9728bf0",
+      "decoded_as": "utf-8",
+      "title": "第8期 三星杯 本戦 | 棋戦 | 囲碁の日本棋院",
+      "excerpts": [
+        {
+          "needle": "李",
+          "excerpt": "姜東潤九段 韓国 中押し △ 朴常鎭九段 韓国 勝者 結果 相手 △ 檀嘯九段 中国 中押し 黄明宇八段 中国 △ 丁浩九段 中国 中押し 李志賢九段 韓国 廖元赫九段 中国 中押し △ 申眞諝九段 韓国 傳健恒七段 中国 中押し △ 睦鎭碩九段 韓国 決勝 準決勝 準々決勝 二回戦 一回戦 出場棋士 一回戦 対局日：2025年11月9日（日）（左側勝ち、△は先番） 勝者 結果 相手 △ 党毅飛九段 中国 中押し 申旻埈九段 韓国 楊鼎新九段 中国 中押し △ 許家元九段 日本 △ 芝野虎丸九段"
+        },
+        {
+          "needle": "劼",
+          "excerpt": "半 金 宋俊 五段 I組 大沢奈留美 二段 中押 △裵 允眞 初段 A組 梁 宰豪 九段 中押 △望月研一 四段 I組 張 豊猷 六段 李 劼 四段 B組 朴 昇賢 三段 中押 △祷 陽子 五段 J組 曹 大元 九段 井山裕太 三段 B組 △江 鋳久 九段 2目半 河野 臨 七段 J組 李 相澈 七段 山田晋次 三段 B組 △梁 建 六段 中押 金 賢貞 三段 J組 小松英樹 九段 金 孝貞 二段 D組 △高尾紳路 八段 中押 鄭 弘 九段 K組 円田秀樹 九段 高 在熙 七段 D組 △大場惇也"
+        }
+      ]
+    },
+    {
+      "player_id": 4970,
+      "key": "goratings-21-en",
+      "requested_url": "https://www.goratings.org/en/players/21.html",
+      "final_url": "https://www.goratings.org/en/players/21.html",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-09T00:19:18.870032+00:00",
+      "body_file": "bodies/4970-goratings-21-en.body",
+      "body_bytes": 121065,
+      "body_sha256": "42cea90ada41463ffe4840fbbda23a33659ed63ec2539206e21957605e87cbbd",
+      "decoded_as": "utf-8",
+      "title": "Li Jie",
+      "excerpts": [
+        {
+          "needle": "Li Jie",
+          "excerpt": "Li Jie Li Jie Back to main list Graph Data Wins 160 Losses 195 Total 355 Date of Birth 1983-12-04 Game List Date Rating Color Result Opponent Kifu 2016-12-28 3223 White Loss Zhang "
+        },
+        {
+          "needle": "2008-05-15",
+          "excerpt": "n 3213 ♂ | go4go | 2008-06-05 3244 Black Win Pan Fei 3223 ♂ | go4go | 2008-05-15 3244 White Loss Luo Xihe 3333 ♂ | go4go | 2008-04-17 3244 White Loss Piao Wenyao 3461 ♂ | go4go | 2008-04-05 3244 Black Loss Ding Wei 3400 ♂ | go4go | 2008-03-27 3244 Wh"
+        },
+        {
+          "needle": "2013-01-21",
+          "excerpt": "White Win Lan Tian 3266 ♂ 2013-03-09 3252 Black Loss Gu Lingyi 3466 ♂ 2013-01-21 3254 White Loss Byun Sangil 3392 ♂ | go4go | 2012-10-17 3258 Black Loss Tuo Jiaxi 3548 ♂ | go4go | 2012-08-14 3260 White Win Rui Naiwei 3202 ♀ | cwa | 2012-08-13 3260 Wh"
+        },
+        {
+          "needle": "2005-10-12",
+          "excerpt": "68 ♂ | go4go | 2005-10-15 3256 White Win Hong Minpyo 3300 ♂ | go4go | 2005-10-12 3255 White Loss Chen Yaoye 3428 ♂ | go4go | 2005-10-08 3255 White Loss Ma Xiaochun 3327 ♂ | go4go | 2005-09-25 3255 Black Loss Zhu Yi 3171 ♂ 2005-09-24 3255 Black Loss Z"
+        }
+      ]
+    }
+  ]
+}

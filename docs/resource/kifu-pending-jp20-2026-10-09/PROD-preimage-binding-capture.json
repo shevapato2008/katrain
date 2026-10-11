@@ -1,0 +1,232 @@
+{
+  "approved_name_snapshot_sha256": "7266bad14767a04c3a3158be289ba796dd49c6d63c14cd586da98fa7debf5207",
+  "captured_at": "2026-10-08T18:11:08.276976+00:00",
+  "catalog_sha256": "83512f432dd3bdd3a61132a0272f71348d6d1ff00226715785fb585151d4aad7",
+  "context_refreshed_at": "2026-10-08T18:11:08.276976+00:00",
+  "environment": "PROD",
+  "inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+  "known_aliases_sha256": "471c494adce2db12651717bf4aedc97039802954313ed4819b06ab5a4abc2c80",
+  "literal_target_NULL_captured_at": "2026-10-08T17:57:10.809377+00:00",
+  "scope": [
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 3785,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "5e04c7837cf5100c7bd1c2138ba3af26417dc97786c10aa54bce596b0daf1359",
+      "source_evidence_sha256": "b03634a5c8daa117335d576a2fdae8929c13b43087fdf34b86cffc3a1d66d9b4",
+      "source_name_sha256": "c6a1761f37871b22940bcf8f3a7d89a98b86ba65728988ad8811628d1fd0f45c"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 4235,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "bf2adce867ca045bc37f913921984d5a11babe1d2b49bba6a4eeede1389e3958",
+      "source_evidence_sha256": "7d02b574dc6eacab1bc47acd970b842fecb8a880b3adca14c48402e49e35bee2",
+      "source_name_sha256": "3e385a2c55b9d024fe5820fa450978c217033add737db60210daacdb17b58b83"
+    },
+    {
+      "lang": "tw",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 4340,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "68b6eb02dad3762089b78eed37ffaf5e7e7dc9f20b334867e2ecd513631e2599",
+      "source_evidence_sha256": "ae2efe1e2434ee6242dcafecb28b82309707712ae423375c5c13e494e138c5b7",
+      "source_name_sha256": "ecc919454680b41df203e82e1c4e10868ded1463bf0679b396df01d726b7b33b"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 4420,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "79233103334e844c69af841271c698a9cc57af13cf5f4366a4f6a48fb1e1f08e",
+      "source_evidence_sha256": "ee692b0a9d81f85b9ccb29ced77235aaae3a602dadd76f8580fee964583753a7",
+      "source_name_sha256": "13759a66311d25f291febc29fde7162f1633bd99874715ea9447410dddd8f26e"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 4771,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "870f0711db159db5c5746b181377ca9f1be3c345bbc2d9f3b5283d41601bd165",
+      "source_evidence_sha256": "c8b772ac667863434e5911c3c236ee4d2c1c275f7becc7041edb86bb37cc1810",
+      "source_name_sha256": "e8b1d118239d3c78d2d390f61491c18ba74929b8d45ef9057b4c2d6489767fa5"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 5297,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "c3b96e13801d623484cdc653a5c5e9835207f2f7edecead64fd0245004359252",
+      "source_evidence_sha256": "7bc1dbd23762c167e1273d23f2cf4ac8b92caa3bb789412618d27be665ea46a5",
+      "source_name_sha256": "7c3e8f6c2d3ffb3fd321a2d842bde890bd5d07666ff9d2cbeed73e356f282064"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 5397,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "c11c5f49925b3570cad40c4d2d9c91d633b8a2ed1a4239e5c6c1fcdb54f24b9c",
+      "source_evidence_sha256": "5b84d1c19c88bad3ff636b208446521619ec87125ec4fdddb5bbd80bab49e8ef",
+      "source_name_sha256": "7005911b6e72e56302f30e88de3b4bda875da3e451e88beb2000dd52982bd3b6"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 5398,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "8b4396837c69ae51520ee8e9a4d49cc2beb644a1466a736c7371fe065e645f4f",
+      "source_evidence_sha256": "c893ae6b4e9c65c93e4dc06a8449184de5022bf15ec921daf0c9154e94138d8a",
+      "source_name_sha256": "59b4bb1b4483b42cf180feba9e396f8bfb5039de021dbfa31281741c33566e5d"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 5675,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "17559f38233d833980809890d5ae004b6ba499aa61fa42fbc5c28cb57c1e732b",
+      "source_evidence_sha256": "20cab11bab7f263e4fb79c97010e5fe974e0bdf6d877e048d5067d65dfc3f459",
+      "source_name_sha256": "461df2df87598b592c59082e519d2685ac13b2fcbd0187bc148a9ef0f1bf21bd"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6259,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "c29efeca7a45f37e4745e1a6861b0154a45021d8bf15b9cfc97884af1ce1dbd9",
+      "source_evidence_sha256": "e04001e6893157e6e7da86872041d1e00a1b84d4df766f3101b82ed8f90b4745",
+      "source_name_sha256": "5ffbd153ca7feae48e67463201936e36ba3420a4143f8989ff0d43ea139ee6ca"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6599,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "8ed478789b10e57b7e403032a5b544cda010daa6c705aa537e1140d75e31e3b8",
+      "source_evidence_sha256": "d46297ee08c6fa1933258b1f8675ee172bf498ebbfaa0bc7fd694b3fe31bc9f7",
+      "source_name_sha256": "3051f634798b245ee99bd06e4401c052c9e8d8da914b95b05a5d2dd335c571a5"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6626,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "8638ce584880f032a355c8fa7f931cb37941e0e89c5d3384c74f9ae5c806f45f",
+      "source_evidence_sha256": "b9e1b29ec50c9957edb2b2d1e9a09e08f5f41307d49fcab50306bfd5f277ce8e",
+      "source_name_sha256": "db3ae3c8c6341523c1b15d16aab8e4214f09b0332a73cf99b664b8997a9d8047"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6629,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "8f45af885a0d3af689facffbc8f0cb9ea13615559945309de910e21c6c6bd761",
+      "source_evidence_sha256": "15427d6f29461d3fd5248a4d00eabc44fe1df7c40608e9e8dabe8363193773aa",
+      "source_name_sha256": "2976a1b416f2f09672f52c5a8d84d906a6ce1a09c6199e78842a789711c10514"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6633,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "18a6347634c4ed259a710d463ea1e189da4c175da8f8586d30e32ab2c1ca4840",
+      "source_evidence_sha256": "60047303c16d50af0c9a67933d3f0f0a666684dc2717989eea6a26d289b0e022",
+      "source_name_sha256": "b059e3719f077c67a495682010383efbfcd4fb4a0eca5f70e11e78c9d2b2d2be"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6634,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "e7752f9f70ceca1afb3b8abe4e7111dfdc218097ef57923ef995de04e37ad6e4",
+      "source_evidence_sha256": "0b2a14588c273effc28604e973a155bbc50bcd2921aacc92895380bf01e2f5c8",
+      "source_name_sha256": "8fd9d77cf09eca35c892f24edd47826727654f07354f8e925401ee91572e6e78"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6672,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "025e736545af695e27bea57b57e97c62cf9c8680f9eab3c5664d47c920761758",
+      "source_evidence_sha256": "3cd25ad93ef13fa7f250b7cc1e98c86c195fe2c7b140be0b256939e22ec59458",
+      "source_name_sha256": "e3e87b3a4c3a59ad42262f2d8181aceb8d1d9189792ee5b414f3c56144e106ff"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6686,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "95fb95bc2591df9020134f16d90066a56c3fc73adc306656c22e64e92e5030d3",
+      "source_evidence_sha256": "dbc62b925ca4d93469defe1e77952338d85af6490f85d6190d710cc7bf7acef5",
+      "source_name_sha256": "d561b0a36a45192ca60e8d2849a7710342883c80430d22965b7ae9e54b29d893"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6712,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "a963d01a5dacff020fe8864c5a8fba045079e0a5f3bf6285692892bc63c479e3",
+      "source_evidence_sha256": "78cb0fa91e406b647912afc6488b473fea6ac8116678237bd9005173dcc55b42",
+      "source_name_sha256": "ae2714e96ddf2de1857bab6949fe5642661f0e2fc35bef747c264738df3debe6"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6714,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "03c5e3ab852d8925345cbac038272979effeee4261dab8a4ad48fd2ddaeee224",
+      "source_evidence_sha256": "ed09bc898461d67784a0a3407d68c204ff05b5cfd9a73846e897f73994a1f775",
+      "source_name_sha256": "6eeeeebadf563caddd09b6ae98f8f8e43486bb42a950744d1c26413b5c293dff"
+    },
+    {
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "owner": {
+        "id": 6769,
+        "kind": "player"
+      },
+      "source_anchor_sha256": "d85d3e58b6e8a9e5795e36faf40986b0ca29729e625c521bbd3a35b0d9d347c8",
+      "source_evidence_sha256": "7706864f4e34c821a9bace31184efb44f5792a3e3f32ce55288bd2b5cfe48c0e",
+      "source_name_sha256": "745af9e5ba8bb75de00edd8fde5b8c7618810182161649a6ded85171c5122b70"
+    }
+  ]
+}

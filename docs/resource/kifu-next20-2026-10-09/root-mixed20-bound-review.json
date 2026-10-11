@@ -1,0 +1,37 @@
+{
+  "environments": [
+    {
+      "approved_input_file_sha256": "27eae76a17a409cdab7730727c0ab6c72af4a779cfe7cc5fc70502db00e701cf",
+      "batch_sha256": [
+        "81d27d9c0a5521993117f688d3f2949085e721b9c6e5a00dd2361f047a77af30",
+        "3c178fd2f71ca75f9f13229a9cf7d998754f3a7836b2429662299a78f5b998ae",
+        "66163c129eb2c71d44fb52052e476b77258e04b6b8bf752bb527a809e2c887ee"
+      ],
+      "capture_file_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+      "count": 20,
+      "environment": "TEST",
+      "game_slots": 1613,
+      "pending_input_file_sha256": "7d8c336c879c0047628cd77a3445d72177305a1013d5bd4ffe6b9bd95d6e1326",
+      "unique_albums": 1568
+    },
+    {
+      "approved_input_file_sha256": "5fd963ed40ce123d73df153b4479569e0c0569d008a1f15dec3fd3ea722a6789",
+      "batch_sha256": [
+        "5e694f76ea080c74651942db8f925ba04180b1b7c1cca541d04a09c62a888ee8",
+        "0eec400f3afec8923d57716044c4e04b2007a5fa08873d1c2b026a8824ab563b",
+        "44950ab2655c1633bd97727373ce86a40fa206c0fe416a807c85be8357286dff"
+      ],
+      "capture_file_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+      "count": 20,
+      "environment": "PROD",
+      "game_slots": 1613,
+      "pending_input_file_sha256": "f66042a331f64ff89a984e4e11f2a1e51e5308bdaf6f51960e9651b3200d776a",
+      "unique_albums": 1568
+    }
+  ],
+  "result": "approved_actual_post590_pages_bound_members_only",
+  "reviewed_at": "2026-10-08T19:52:26.278754+00:00",
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "source_rule_reviewed_at": "2026-10-08T19:28:10.663047+00:00"
+}

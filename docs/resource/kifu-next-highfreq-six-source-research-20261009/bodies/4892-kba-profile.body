@@ -1,0 +1,828 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="ko">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="title" content="한국기원">
+	<meta name="description" content="한국기원 공식 홈페이지. 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="keywords" content="한국기원, 바둑, 프로기사, 바둑뉴스, 기보, 대국, 랭킹">
+	<meta name="robots" content="index,follow">
+
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="한국기원">
+	<meta property="og:url" content="https://www.baduk.or.kr/">
+	<meta property="og:title" content="한국기원">
+	<meta property="og:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta property="og:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png"> 
+	<meta property="og:image:width" content="600">
+	<meta property="og:image:height" content="315">
+	<meta property="og:image:alt" content="한국기원 공식 홈페이지">
+	<meta property="og:locale" content="ko_KR">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="한국기원">
+	<meta name="twitter:description" content="한국기원 공식 홈페이지, 프로기사 정보, 대회 일정, 바둑 뉴스, 기보, 랭킹 제공, 바둑">
+	<meta name="twitter:image" content="https://www.baduk.or.kr/images/common/baduk_card_og_2026.png">
+
+	<link rel="canonical" href="https://www.baduk.or.kr/">
+	<link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.baduk.or.kr/">
+
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		"name": "한국기원",
+		"url": "https://www.baduk.or.kr/",
+		"logo": "https://www.baduk.or.kr/images/common/logo.png"
+	}
+	</script>
+
+
+
+	
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Script-Type" content="text/javascript">
+	<meta http-equiv="Content-Style-Type" content="text/css">
+	<title>한국기원</title>
+	<link href="/favicon.ico" rel="shortcut icon" />
+	<link href="/css/common.css" type="text/css" rel="stylesheet" />
+	<link href="/css/contents.css" type="text/css" rel="stylesheet" />
+	<script language="javascript" src="/js/common.js?ver=1"></script>
+	<script language="javascript" src="/js/jquery-3.7.1.min.js"></script>
+	<script language="javascript" src="/js/swiper.jquery.min.js"></script>
+	<script language="javascript" src="/js/prototype.js"></script>
+</head>
+
+<body>
+
+<div id="wrap">
+
+	<div class="eventWrap" id="topPopup" >
+		
+		
+
+<link rel="stylesheet" href="/common/swiper.min.css">
+
+<div class="innerEvent">	
+	<div class="swiper-container">
+		<div class="swiper-wrapper">
+			
+				<div class="swiper-slide">
+					<a href="https://badukland.co.kr" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/배너 시안 2.png" style="width:320px;height:150px"></a>
+				</div>
+				
+				<div class="swiper-slide">
+					<a href="https://w.baduk.or.kr/" target="_blank"><img src="https://www.baduk.or.kr/FileUpDown/homepage/banner/무제-1.jpg" style="width:320px;height:150px"></a>
+				</div>
+				
+		</div>
+	</div>
+
+	<span class="btn_slide prev"><button type="button" class="PP"></button></span>
+	<span class="btn_slide next"><button type="button" class="NN"></button></span> 
+</div>
+
+<script>
+	var swiper = new Swiper('.swiper-container', {
+		loop: true,
+		pagination: '.swiper-pagination',
+		slidesPerView: 3,
+		paginationClickable: true,
+		prevButton: '.PP',
+		nextButton: '.NN'
+	});
+</script>
+
+	</div>
+
+	<div id="header_wrap">
+		<div class="header_topa">
+			<div class="gnb_sub" id="allMenu" style="display:none" onclick="allMenuOnOff()">
+                <div class="innerContents">
+                    <dl>
+                        <dt >
+							<a href="/about/history.asp">기원소개</a>
+						</dt>
+                        <dd>
+                            <ul>
+								<li><a href="/about/history.asp"      >한국기원약사</a></li>
+								<li><a href="/about/business.asp"     >주요사업</a></li>
+								<li><a href="/about/management.asp"   >경영공시</a></li>
+								<li><a href="/about/since.asp"        >연혁</a></li>
+								<li><a href="/about/ceo.asp"          >역대총재/이사장</a></li>
+								<li><a href="/about/executive.asp"    >임원명단</a></li>
+								<li><a href="/about/organization.asp" >조직도</a></li>
+								<li><a href="/about/charactor.asp"    >캐릭터/CI</a></li>
+								<li><a href="/about/igf.asp"          >IGF</a></li>
+								<li><a href="/about/contact.asp"      >찾아오시는길</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/news/report.asp">바둑뉴스</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/news/report.asp"     >보도자료</a></li>
+								<li><a href="/news/summary.asp"    >바둑뉴스</a></li>
+								<li><a href="/news/monthly.asp"    >월간바둑</a></li>
+								<li><a href="/news/picture.asp"    >사진아카이브</a></li>
+								<li><a href="/news/newspaper.asp"  >언론사뉴스</a></li>
+								<!--<li><a href="http://oldmagazine.baduk.or.kr/" target="_blank">과거바둑잡지</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt class="nuxt-link-active">
+                            <a href="/record/diary.asp">기록실</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/record/diary.asp"         >대국결과</a></li>
+								<li><a href="/record/schedule.asp"      >대국일정</a></li>
+								<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+								<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+								<li><a href="/record/rankingYears.asp"  >연도별순위</a></li>
+								<li><a href="/record/rankingYear.asp"   >단일연도순위</a></li>
+								<li><a href="/record/player.asp"        class="nuxt-link-exact-active nuxt-link-active">기사정보</a></li>
+								<li><a href="/record/title.asp"         >타이틀현황</a></li>
+								<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+                            <a href="/gibo/gibo.asp">기보감상</a>
+                        </dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/gibo/gibo.asp" >전체기보</a></li>
+								<li><a href="https://goldengibo.baduk.or.kr/" target="_blank">도약기 기보</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/game/game.asp?etcKey=1">기전정보</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/game/game.asp?etcKey=1" >현행 기전</a></li>
+								<li><a href="/game/game.asp?etcKey=2" >중단 기전</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/square/board.asp">바둑인광장</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/square/board.asp"        >공지사항</a></li>
+								<li><a href="/square/amaApply.asp"     >아마단급</a></li>
+								<li><a href="/square/amaGame.asp"      >대회참가신청</a></li>
+								<li><a href="/square/explain.asp"      >공개해설신청</a></li>
+								<li><a href="/square/talk.asp"         >바둑토크</a></li>
+								<li><a href="/square/studentScore.asp" >통합연구생리그</a></li>
+								<li><a href="/square/site.asp"         >관련사이트</a></li>
+                            </ul>
+                        </dd>
+                    </dl>
+                    <dl>
+                        <dt >
+							<a href="/story/about.asp">바둑이야기</a>
+						</dt>
+                        <dd>
+                            <ul>
+                                <li><a href="/story/about.asp"     >바둑이란</a></li>
+								<li><a href="/story/bHistory.asp"  >바둑의 역사</a></li>
+								<li><a href="/story/howto.asp"     >대국방법</a></li>
+								<li><a href="/story/manner.asp"    >대국예절</a></li>
+								<li><a href="/story/badukRule.asp" >바둑규칙</a></li>
+								<li><a href="/story/gameRule.asp"  >경기규정</a></li>
+								<li><a href="/story/keyword.asp"   >바둑용어</a></li>
+								<!--<li><a href="https://archives.baduk.or.kr/archives/" target="_blank">바둑아카이브즈</a></li>-->
+                            </ul>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+			<div class="gnba">
+				<div class="popup_isShow">
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('X')" >팝업닫기<span class="close"></span></button>
+					<button type="button" id="topPopupBT" onclick="topPopupToggle('')"  style="display:none">팝업열기<span class="open"></span></button>
+				</div>
+				<div class="gnb">
+					<form action="/etc/search.asp" method="post" name="sForm">
+					<fieldset class="searchW">
+						<legend class="hidden">통함검색</legend>
+						<dl>
+							<dt>통합검색</dt>
+							<dd class="searchWa"><span class="inputa"><input type="searchW" name="searchKey" value="" placeholder="검색어를 입력하세요"></span><span class="btn_searcha"><button type="button" onclick="sForm.submit()"></button></span></dd>
+						</dl>
+					</fieldset>
+					</form>
+					<ul class="links">
+						<li><a href="https://www.tvbaduk.com/" target="_blank">바둑TV</a></li>
+						<li><a href="/news/monthly.asp">월간바둑</a></li>
+						<li><a href="https://www.badukmall.co.kr/" target="_blank">바둑몰</a></li>
+						<li><a href="https://badukland.co.kr/" target="_blank">바둑랜드</a></li>
+						<li><a href="https://www.facebook.com/KoreaBadukAssociation/" target="_blank" class="facebook"></a></li>
+						<li><a href="https://www.instagram.com/korea_baduk_association/" target="_blank" class="insta"></a></li>
+						<li class="spread" onclick="allMenuOnOff()"><button type="button"></button></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="header">
+			
+			
+
+			<div class="logo">
+				<h1><a href="/"><img src="/images/common/logo.png" alt="한국기원" /></a></h1>
+			</div>
+			<div class="navia">
+				<ul class="navi">
+					<li ><a href="/about/history.asp">기원소개</a></li>
+					<li ><a href="/news/report.asp">바둑뉴스</a></li>
+					<li class="selected"><a href="/record/diary.asp">기록실</a></li>
+					<li ><a href="/gibo/gibo.asp">기보감상</a></li>
+					<li ><a href="/game/game.asp">기전정보</a></li>
+					<li ><a href="/square/board.asp">바둑인광장</a></li>
+					<li ><a href="/story/about.asp">바둑이야기</a></li>
+				</ul>
+			</div> 
+		</div>
+	</div>
+       
+<div id="container">  
+	  
+	<div class="subVisaul03">
+		<div class="subTitle">기록실</div>
+	</div>
+
+	<div class="contents_wrap"> 
+		
+		
+
+<div class="lnb">
+	<ul>
+		
+
+			<li><a href="/record/diary.asp"         >대국결과</a></li>
+			<li><a href="/record/schedule.asp"      >대국일정</a></li>
+			<li><a href="/record/rankingPlayer.asp" >기사랭킹</a></li>
+			<!--<li><a href="/record/rankingMoney.asp"  >상금랭킹</a></li>-->
+			<li><a href="/record/rankingYear1.asp"  >부문별 순위</a></li>
+			<li><a href="/record/player.asp"        class="lnb_on">기사정보</a></li>
+			<li><a href="/record/title.asp"         >타이틀현황</a></li>
+			<li><a href="/record/titleGain.asp"     >타이틀기록</a></li>
+
+		
+	</ul>
+</div>
+
+
+		<div class="pageTitle">            
+			<h2>
+				<div class="ttbar"></div>
+				기사정보 상세
+			</h2>
+		</div>
+		
+		<div class="contents">
+			<div class="playerInfo">
+				<div class="playerPf">
+					<figure><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></figure>
+					<div class="playerTxt">
+						<p><span>박지은(<em>朴&#37589;恩</em>)</span> 9단</p>
+						<dl>
+							<dt>생년월일</dt>
+							<dd>1983년 10월 04일</dd>
+							<dt class="belong">소속</dt>
+							<dd class="belong">한국</dd>
+						</dl>
+					</div>
+				</div>
+				<div>
+					<table cellpadding="0" cellspacing="0" border="0" class="tb_player">
+					<thead>
+					<tr>
+						<th scope="col" class="back1">통산전적</th>
+						<th scope="col" class="back2">기사랭킹</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr>
+						<td><p class="point">승률 0.556</p>1,130전 627승 501패</td>
+						<td height="80"><p class="point">230위</p>(2026년 10월 현재)</td>
+					</tr>
+					</tbody>
+					</table>
+				</div> 
+			</div>
+
+			<div class="careera">
+				<dl class="career">
+					<dt><h3>특기사항</h3></dt>
+					<dd>
+						◆ 김동엽 문하<br>
+◆ 국내 최초 여류기사 九단 [2008년]<br>
+◆ 2003 ~ 2007 바둑대상 인기기사상<br>
+◆ 2007 ~ 2008, 2011 바둑대상 여자기사상<br>
+◆ 2015 국내 여자기사 첫 500승<br>
+◆ 2017 국내 여자기사 첫 1천대국
+					</dd>
+				</dl>
+				<dl class="career">
+					<dt><h3>승단이력</h3></dt>
+					<dd>
+						◆ 1단 <font color='#d5d5d5'> / </font>1997.11.16<font color='#d5d5d5'> / </font>승점회득<br>◆ 3단 <font color='#d5d5d5'> / </font>2000.11.07<font color='#d5d5d5'> / </font><br>◆ 4단 <font color='#d5d5d5'> / </font>2003.05.14<font color='#d5d5d5'> / </font>평균 60, 기성전<br>◆ 5단 <font color='#d5d5d5'> / </font>2004.01.07<font color='#d5d5d5'> / </font>제2회 정관장배 우승(2:0) 윤영선<br>◆ 6단 <font color='#d5d5d5'> / </font>2005.05.12<font color='#d5d5d5'> / </font>제17기 기성전 예선 1-1<br>◆ 7단 <font color='#d5d5d5'> / </font>2007.01.10<font color='#d5d5d5'> / </font>제35기 강원랜드배 명인전 예선<br>◆ 8단 <font color='#d5d5d5'> / </font>2007.07.19<font color='#d5d5d5'> / </font>제1회 대리배 세계여자바둑대회 우승(특별)<br>◆ 9단 <font color='#d5d5d5'> / </font>2008.01.17<font color='#d5d5d5'> / </font>제1회 원양부동산배 세계여자바둑대회우승<br>
+					</dd>
+				</dl>
+				<dl class="career end">
+					<dt><h3>경력사항</h3></dt>
+					<dd>
+						1999년 <br>
+- 제9기 신인왕전 본선<br>
+- 제1회 흥창배 본선<br>
+<br>
+2000년<br>
+- 제1회 여류명인전 우승 [생애 첫 우승]<br>
+- 제2회 흥창배 준우승<br>
+- 제2기 여류명인전 준우승<br>
+- 제19기 KBS바둑왕전 본선<br>
+- 제7기 여류프로국수전 본선<br>
+- 제1회 동방항공배 본선<br>
+<br>
+2001년<br>
+- 제36기 패왕전 본선<br>
+- 제1기 KT배 본선<br>
+<br>
+2002년<br>
+- 제1회 호작배 준우승<br>
+- 제1회 도요타덴소배 본선<br>
+- 제1회 정관장배 본선<br>
+<br>
+2003년<br>
+- 제5기 여류명인전 본선 <br>
+- 제5회 농심신라면배 한국대표 [최초 여류기사 국가대표]<br>
+- 제2회 정관장배 우승 - [생애 첫 세계대회 우승]<br>
+<br>
+2004년<br>
+- 제8기 SK가스배 신예프로10걸전 9위<br>
+- 제1회 중환배 본선진출 [특별초청]<br>
+- 제3회 정관장배 세계여자바둑최강전 한국대표<br>
+- 제10기 여류국수전 본선<br>
+<br>
+2005년<br>
+- 제7기 여류명인전 본선<br>
+- 제5기 오스람코리아배 신예연승최강전 4강<br>
+- 2005한국바둑리그 출전<br>
+- 제11기 프로여류국수전 본선<br>
+- 제9기 SK가스배 3위<br>
+<br>
+2006년 <br>
+- 제4기 정관장배 한국대표<br>
+- 제12기 여류국수전 본선<br>
+- 제8기 여류명인전 본선<br>
+- 제2기 십단전 본선<br>
+<br>
+2007년<br>
+- 제4기 전자랜드배 본선<br>
+- 제1기 지지옥션애 여류대표<br>
+- 제5회 정관장배 한국대표<br>
+- 제9기 STX배 여류명인전 본선<br>
+- 제1회 대리배 세계바둑여자 선수권대회 우승<br>
+- 제2기 여류기성전 본선<br>
+- 2007 바둑대상 여자기사상<br>
+<br>
+2008년<br>
+- 제2기 지지옥션배 여류대표<br>
+- 제6회 정관장배 한국대표<br>
+- 제1회 원양부동산배 우승 [국내 최초 여류기사 九단]<br>
+- 제13기 여류국수전 우승<br>
+- 제1회 세계마인드스포츠게임 여자개인전 동메달<br>
+- 제7회 정관장배 한국대표 선발<br>
+- 제14기 여류국수전 본선<br>
+- 2008 바둑대상 여자기사상<br>
+<br>
+2009년<br>
+- 2008 바둑대상 최고 여자인기기사상 수상<br>
+- 제11기 STX배 여류명인전 본선<br>
+- 제3기 지지옥션배 여류대표<br>
+- 제8회 정관장배 세계여자바둑최강전 한국대표 [4연승]<br>
+- 제14회 LG배 본선<br>
+- 제22회 후지쓰배 본선<br>
+- 제1회 비씨카드배 본선<br>
+<br>
+2010년<br>
+- 제6기 한국물가정보배 본선<br>
+- 제1기 궁륭산병성배 세계여자바둑 우승<br>
+- 제4기 지지옥션배 여류대표<br>
+- 제15기 천원전 본선<br>
+- 2010 한국바둑리그 출전<br>
+<br>
+2011년 <br>
+- 제13기 여류명인전 본선<br>
+- 제9회 정관장배 세계여자바둑최강전 한국대표<br>
+- 제1회 황룡사가원배 여자단체전 준우승<br>
+- 제16회 삼성화재배 본선<br>
+- 제2회 궁륭산병성배 우승<br>
+- 2011 바둑대상 여자기사상<br>
+<br>
+2012년<br>
+- 제17기 여류국수전 준우승<br>
+- 제1회 화정차업배 우승<br>
+- 2012 olleh배 본선2라운드<br>
+- 제6기 지지옥션배 본선 진출<br>
+<br>
+2013년<br>
+- 제2회 화정차업배 우승<br>
+- 제6기 여류기성전 준우승<br>
+- 제7기 지지옥션배 여류대표<br>
+- 제4회 궁륭산병성배 본선<br>
+<br>
+2014년<br>
+- 제4회 황룡사쌍등배 대표<br>
+- 제19기 여류국수전 준우승<br>
+- 2014 렛츠런파크배 본선<br>
+<br>
+2015년<br>
+- 제20회 여류명인전 본선<br>
+- 한국여자바둑리그 출전-부산 삼미건설(1지명) 준우승☆<br>
+<br>
+2016년<br>
+- 제17회 맥심배 본선<br>
+- 한국여자바둑리그 출전-경기 SG골프(1지명)<br>
+- 2016 중국 여자 을조리그 본선<br>
+- 제10회 지지옥션배 본선<br>
+- 제21회 여류국수전 본선<br>
+- 제7회 궁륭산병성배 세계여자대회 본선<br>
+<br>
+2017년<br>
+- 제6회 천태산농상은행배 단체전 우승<br>
+- 제18회 맥심배 본선<br>
+- 한국여자바둑리그 출전-충남 SG골프(1지명)<br>
+- 2017 중국 여자 을조리그 본선<br>
+- 제1회 한국제지 여자기성전 본선<br>
+- 제22기 하림배 프로여자국수전 본선<br>
+<br>
+2018년<br>
+- 제19회 맥심배 본선<br>
+- 제5회 대주배 시니어 최강자전 본선<br>
+- 한국여자바둑리그 출전-인제 하늘내린(1지명)<br>
+<br>
+2020년<br>
+- 제7기 대주배 남녀 프로시니어 최강자전 4강<br>
+- 한국여자바둑리그 출전-포항 포스코케미칼(1지명)<br>
+- 제14회기지지옥션배 신사 대 숙녀 연승대항전 출전<br>
+<br>
+2021년<br>
+- 제8기 대주배 남녀 시니어 최강자전 본선 16강<br>
+- 제15기 지지옥션배 신사 대 숙녀 연승대항전<br>
+<br>
+2024년<br>
+- 제10기 대주배 남녀 시니어 최강자전 본선 16강
+					</dd>
+				</dl>
+			</div>
+			
+
+			
+				<div class="playerNews">
+					<h4>최근뉴스</h4>
+					<div class="more"><a href="/news/summary.asp?keyWord=박지은">더보기</a></div>
+					<ul>
+						
+							<li>
+								<a onclick="viewPage_summary('SBA','518')">
+								<div class="newsList">
+									<figure><img src="https://senior.baduk.or.kr/WEB_FileUpLoad/snews/DSC04317.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>YS, 이창호 격파...GOGO양양 신바람 2연승 </dt>
+											<dd>관심이 집중된 1승 팀 간 경기 중에서 신생 올댓마인드는 노장 서봉수 9단이 쏘팔코사놀 박지은 9단을 꺾으며 2승째. 이어 가장 늦게 끝난 대결에서 양양은 김영삼 9단이 완주의 이창호 9단을 꺾는 기염을 토하며 신바람 2연승을 달렸다. </dd>
+										</dl>
+										<p class="foot"><span class="date">2026-09-28</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('SBA','493')">
+								<div class="newsList">
+									<figure><img src="https://senior.baduk.or.kr/WEB_FileUpLoad/snews/DSC01992.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>박지은, 서봉수에 1% '뒤집기 쇼' </dt>
+											<dd>5라운드까지 3승2패만 다섯 팀. 이 가운데 어느 팀이 선두로 치고나갈까에 비상한 관심이 쏠린 2025 인크레디웨어 레전드리그 6라운드 경기에서 수소도시완주와 사이버오로가 나란히 승리하며 공동 선두권을 형성했다. 
+</dd>
+										</dl>
+										<p class="foot"><span class="date">2025-10-10</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('SBA','485')">
+								<div class="newsList">
+									<figure><img src="https://senior.baduk.or.kr/WEB_FileUpLoad/snews/DSC01581.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>"공배 메울 때 떨렸어요"</dt>
+											<dd>한국 바둑의 남녀를 대표했던 두 레전드, 이창호 9단과 박지은 9단이 바둑판을 사이에 두고 두 번째 만남을 가졌다. 첫 대면은 지난 4월의 대주배 16강전. 그로부터 5개월 만의 재회는 단체전인 레전드리그에서 각기 양 팀의 주장 완장을 찬 신분으로 이뤄졌다(22일 오전 바둑TV 스튜디오).   </dd>
+										</dl>
+										<p class="foot"><span class="date">2025-09-22</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+							<li>
+								<a onclick="viewPage_summary('SBA','484')">
+								<div class="newsList">
+									<figure><img src="https://senior.baduk.or.kr/WEB_FileUpLoad/snews/DSC01519.jpg"></figure>
+									<div class="aticle">
+										<dl>
+											<dt>'원조 여전사', '정관장 여신'...'센 여동생들'의 등장  </dt>
+											<dd>그동안 공식 대국에 모습을 드러내지 않아 궁금함을 안겨줬던 '은둔 여왕' 박지은 9단이 첫 출전한 무대에서 팀 승리를 결정했다. 293수까지 두어 계가한 결과는 더도 말고 덜도 말고 딱 반집. 크게 불리했던 바둑을 후반에 극적으로 뒤집은 내용인 데다 데다 1-1 스코어에서 팀 승리를 결정한 반집이기에 그 짜릿함이 말도 못했다. 
+</dd>
+										</dl>
+										<p class="foot"><span class="date">2025-09-18</span><span class="league"></span></p>
+									</div>
+								</div>
+								</a>
+							</li>
+							
+					</ul>
+				</div>
+			
+				<div class="latestGame">
+					<h4>최근대국</h4>
+					<div class="more"><a href="/record/diary.asp?foreignKey=10000182">더보기</a></div>
+					<ul class="gameList">
+						
+							<li>
+								<dl>
+									<dt>2026 쏘팔코사놀 레전드리그 4-1</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/KimYungH.jpg" alt=""></p>
+												<figcaption>김영환</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">258수 백&nbsp;불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li>
+								<dl>
+									<dt>2026 쏘팔코사놀 레전드리그 3-1</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ChoHyeY.jpg" alt=""></p>
+												<figcaption>조혜연</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">240수 백&nbsp;불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li>
+								<dl>
+									<dt>2026 쏘팔코사놀 레전드리그 2-4</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/SeBongS.jpg"></p>
+												<figcaption>서봉수</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg" alt=""></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">243수 흑&nbsp;3.5집승</p>
+									</dd>
+								</dl>
+							</li>
+							
+					</ul>
+				</div> 
+			
+				<div class="latestGame">
+					<h4>최근기보</h4>
+					<div class="more"><a href="/gibo/gibo.asp?foreignKey=박지은">더보기</a></div>
+					<ul class="gameList">
+						
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202609/2026_rejeondeu_lg_4r1g-3_4r1g-3.sgf','51870','KimYungH.jpg','ParkJiE.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2026 레전드리그 4R1G-3</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/KimYungH.jpg"></p>
+												<figcaption>김영환</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">258수 백불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202609/2026_rejeondeu_lg_3r1g-1_3r1g-1.sgf','51842','ChoHyeY.jpg','ParkJiE.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2026 레전드리그 3R1G-1</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ChoHyeY.jpg"></p>
+												<figcaption>조혜연</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">240수 백불계승</p>
+									</dd>
+								</dl>
+							</li>
+							
+							<li onclick="javascript:gibo_load_new('https://open.cyberoro.com/gibo/202609/2026_rejeondeu_lg_2r4g-1_2r4g-1.sgf','51831','SeBongS.jpg','ParkJiE.jpg');" style="cursor:pointer">
+								<dl>
+									<dt>2026 레전드리그 2R4G-1</dt>
+									<dd>
+										<div class="versus">
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/SeBongS.jpg"></p>
+												<figcaption>서봉수</figcaption>
+											</figure>
+											<span>VS</span>
+											<figure>
+												<p><img src="https://www.baduk.or.kr/FileUpDown/player/ParkJiE.jpg"></p>
+												<figcaption>박지은</figcaption>
+											</figure>
+										</div>
+										<p class="gameResult">243수 흑3.5집승</p>
+									</dd>
+								</dl>
+							</li>
+							
+					</ul>
+				</div>
+			
+				<div class="playerPhoto">
+					<h4>사진아카이브</h4>
+					<div class="more"><a href="/news/picture.asp?keyWord=박지은">더보기</a></div> 
+					<ul>
+						
+							<li>
+								<button type="button" onclick="viewPage_picture('https://www.baduk.or.kr/FileUpDown/photo/view/[view]박지은-조혜연.10회 여류입단대회.1995.jpg','박지은-조혜연.10회 여류입단대회.1995','2013-01-14')">
+									<div class="photoBox">
+										<figure><img src="https://www.baduk.or.kr/FileUpDown/photo/view/[view]박지은-조혜연.10회 여류입단대회.1995.jpg">
+											<figcaption>박지은-조혜연.10회 여류입단대회.1995</figcaption>
+										</figure>
+										<p><span class="date">2013-01-14</span></p>
+									</div>
+								</button>
+							</li>
+							
+							<li>
+								<button type="button" onclick="viewPage_picture('https://www.baduk.or.kr/FileUpDown/photo/view/[view]이영신-박지은.1기 여류명인전 결승.1999.jpg','이영신-박지은.1기 여류명인전 결승.1999','2013-01-14')">
+									<div class="photoBox">
+										<figure><img src="https://www.baduk.or.kr/FileUpDown/photo/view/[view]이영신-박지은.1기 여류명인전 결승.1999.jpg">
+											<figcaption>이영신-박지은.1기 여류명인전 결승.1999</figcaption>
+										</figure>
+										<p><span class="date">2013-01-14</span></p>
+									</div>
+								</button>
+							</li>
+							
+							<li>
+								<button type="button" onclick="viewPage_picture('https://www.baduk.or.kr/FileUpDown/photo/view/[view]이영신-박지은.1기 여류명인전 결승.1999 (2).jpg','이영신-박지은.1기 여류명인전 결승.1999 (2)','2013-01-14')">
+									<div class="photoBox">
+										<figure><img src="https://www.baduk.or.kr/FileUpDown/photo/view/[view]이영신-박지은.1기 여류명인전 결승.1999 (2).jpg">
+											<figcaption>이영신-박지은.1기 여류명인전 결승.1999 (2)</figcaption>
+										</figure>
+										<p><span class="date">2013-01-14</span></p>
+									</div>
+								</button>
+							</li>
+							
+							<li>
+								<button type="button" onclick="viewPage_picture('https://www.baduk.or.kr/FileUpDown/photo/view/[view]박지은-이영신.1기 여류명인전 결승3국.1999.jpg','박지은-이영신.1기 여류명인전 결승3국.1999','2013-01-14')">
+									<div class="photoBox">
+										<figure><img src="https://www.baduk.or.kr/FileUpDown/photo/view/[view]박지은-이영신.1기 여류명인전 결승3국.1999.jpg">
+											<figcaption>박지은-이영신.1기 여류명인전 결승3국.1999</figcaption>
+										</figure>
+										<p><span class="date">2013-01-14</span></p>
+									</div>
+								</button>
+							</li>
+							
+							<li>
+								<button type="button" onclick="viewPage_picture('https://www.baduk.or.kr/FileUpDown/photo/view/[view]윤영선-박지은_312.jpg','윤영선-박지은_312','2013-01-14')">
+									<div class="photoBox">
+										<figure><img src="https://www.baduk.or.kr/FileUpDown/photo/view/[view]윤영선-박지은_312.jpg">
+											<figcaption>윤영선-박지은_312</figcaption>
+										</figure>
+										<p><span class="date">2013-01-14</span></p>
+									</div>
+								</button>
+							</li>
+							
+					</ul>
+					<!-- 사진보기(레이어) -->
+					<div class="modal-mask" id="bicPhoto" style="display:none;" onclick="bicPhoto.style.display='none'">
+						<div class="modal-wrapper">
+							<div class="modal-container">
+								<figure>
+									<img id="bicPhoto_img">
+									<figcaption><span id="bicPhoto_title"></span><span id="bicPhoto_wdate"></span></figcaption>
+								</figure>
+							</div>
+						</div>
+					</div>
+				</div>
+			
+
+		</div>
+	</div>
+</div>
+
+
+	
+	<div id="footer">
+		<div class="innerFoot">
+            <ul class="footerLinks">
+				<li><a href="/about/history.asp">한국기원소개</a></li>
+				<li><a href="/about/contact.asp">찾아오시는길</a></li>
+				<li><a href="/member/provision.asp">이용약관</a></li>
+				<li><a href="/member/privacy.asp">개인정보처리방침</a></li>
+            </ul>
+            <address>
+                주소 : 서울시 성동구 마장로 210 전화 : 02-3407-3800 팩스 : 02-3407-3875 이메일 : webmaster@baduk.or.kr 사업자등록번호 : 206-82-03412
+                출판 : 1967년 7월 7일 등록(라-906호)<br />
+                (재)한국기원 대표자: 정태순<br />
+                ⓒ 2010 ~ 2026 KOREA BADUK ASSOCIATION. All rights reserved.
+            </address>
+        </div>
+	</div>
+
+</div>
+
+</body>
+</html>
+
+<form method="post" name="f_summary">	
+	<input type="hidden" name="tabMenu">
+	<input type="hidden" name="news_div">
+	<input type="hidden" name="news_no">
+</form>
+
+<script>
+	//최근뉴스
+	function viewPage_summary(news_div, news_no){
+		f_summary.tabMenu.value = news_div;
+		f_summary.news_div.value = news_div;
+		f_summary.news_no.value = news_no;
+		f_summary.action = "/news/summary_view.asp";
+		f_summary.submit();
+	}
+	
+	//사진아카이브
+	function viewPage_picture(img, title, wdate){
+		document.all.bicPhoto.style.display = "block";
+		document.all.bicPhoto_img.src = img;
+		document.all.bicPhoto_title.innerHTML = title;
+		document.all.bicPhoto_wdate.innerHTML = wdate;
+	}
+</script>

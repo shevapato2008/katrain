@@ -1,0 +1,30 @@
+{
+  "status": "pending_root_registry_review",
+  "base_version": "2026-10-08-ret163-five-literal-EN-JP-supplements-v1",
+  "base_canonical_sha256": "e82b7fce9527f199005bba0b2aabf84f230018a8cbbaad64fe5a0a63af0b8ee9",
+  "new_entries": [
+    {
+      "id": "next20-namu-community-encyclopedia-ko",
+      "home_url": "https://namu.wiki/",
+      "language": "ko",
+      "tier": "encyclopedia",
+      "notes": "Community edited encyclopedia pages with Korean Go tournament brackets; not an official Go federation. Exact article passage, captured edition, and separate same-person Japanese identity source required per candidate."
+    },
+    {
+      "id": "next20-pairgo-organizer-en",
+      "home_url": "https://www.pairgo.or.jp/",
+      "language": "en",
+      "tier": "official",
+      "notes": "Actual English roster published by the World Pair Go Championship organizer; official only for its own event."
+    },
+    {
+      "id": "next20-jstart-korean-reference",
+      "home_url": "https://jstart.co.kr/",
+      "language": "ko",
+      "tier": "reference",
+      "notes": "Korean Japan-study magazine article prints 진 하쿠쇼(陳柏劭); publication is not a Go federation or specialist Go publisher and does not by itself pass the conventional-name tier gate."
+    }
+  ],
+  "proposal_file_sha256": "05ec7130e1a4ed3f9fbd50fdc0fbbacc00446ccf6f342bbce8c909a66a3245ae",
+  "conventional_gate_warning": "Jstart tier reference is retained as corroborating usage, not a conventional final source; owner 339 should use separately sourced positive Japanese-to-Korean generation if no qualifying Korean Go publication is found."
+}

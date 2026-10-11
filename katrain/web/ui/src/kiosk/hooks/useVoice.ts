@@ -17,7 +17,9 @@ export type VoiceName =
   | 'stone_offcenter'
   | 'suspected_move'
   | 'board_mismatch'
-  | 'judge_undecided';
+  | 'judge_undecided'
+  | 'local_confirm_physical'
+  | 'local_confirm_screen';
 
 export function useVoice() {
   // Only one voice line at a time — new line interrupts the previous.

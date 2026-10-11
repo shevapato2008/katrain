@@ -1,0 +1,19 @@
+{
+  "status": "pending_independent_root_name_review",
+  "producer_id": "/root/event_literal_fresh_binding",
+  "producer_model": "gpt-6-sol",
+  "produced_at": "2026-10-08T21:17:44.807893+00:00",
+  "raw_owners": 122,
+  "proposed_name_cells": 610,
+  "source_matrix_canonical_sha256": "d4a25340b2d2ac20ff138dd49c07f92ac726f882534e4dd5ad5de7ae88c8bab1",
+  "owner_manifest_canonical_sha256": "170cd67ab820c50575d7dd65cceb43bd300acb7f4a9ee596fcf553e6c2cc9747",
+  "postowner_capture_file_sha256": {
+    "TEST": "478e54e549e82c262acaea7f8eda3cd35a919dacdbd725d03d60c4a2757756cf",
+    "PROD": "0562cb99af9acd993901021a6a4d06484eaa72f2fad2104c7242bda24e1262f9"
+  },
+  "pending_artifact_canonical_sha256": {
+    "TEST": "502b6d0c451c477fa3e40f42d0527e08a372ab20dcc862f6fcc5d18e6281f272",
+    "PROD": "1a85987a02902d6332248c78221a5fe59474cae8149c8da3c960e063ed7d1726"
+  },
+  "approval": null
+}

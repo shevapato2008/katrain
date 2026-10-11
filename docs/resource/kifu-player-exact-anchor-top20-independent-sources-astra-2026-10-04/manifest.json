@@ -1,0 +1,394 @@
+{
+  "created_at_utc": "2026-10-04T12:24:44.782035+00:00",
+  "cwa_api_provenance": {
+    "file_sha256": "e27c85cbd4151a9512a9bd975e79430302f8f8cd7d66dc81d178b899b00a7fc1",
+    "path": "docs/resource/kifu-player-new33-independent-sources-2026-10-04/cwa-frontend-script.js"
+  },
+  "format": "kifu-player-anchor-top20-independent-source-manifest-v1",
+  "limits": [
+    "Firecrawl HTTP 402 prevented use; primary sites were obtained with direct HTTPS and web.run fallback.",
+    "Wikipedia is a secondary source for the historical Murashima identity; association profiles support the other 19 identities.",
+    "Identity profiles and promotion records support contextual attribution, not an independent match transcript for every game."
+  ],
+  "sources": [
+    {
+      "key": "cwa-chenyichun",
+      "metadata_file": {
+        "file_sha256": "8f434e478aada1503f86424080145db4cef385daf183c01ebdc04980e377c407",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-chenyichun.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-chenyichun.json",
+      "raw_sha256": "41aec81f951c474a0aae3bf96a3ac514f8dc2e9e16e7391a32ffecc131eef6fa",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000670",
+      "retrieved_at_utc": "2026-10-04T12:03:18.027046+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-chenyichun.txt",
+      "text_sha256": "d823cd4e1a432c95a5b896b5445a0d626ba0fb1bd69dec404d23cefda8815efc",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000670"
+    },
+    {
+      "key": "cwa-latest-cycle",
+      "metadata_file": {
+        "file_sha256": "3f6898df08cbf60b34215a5f189b36f82c02b116f90ebc6987b47b25d680d551",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-latest-cycle.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-latest-cycle.json",
+      "raw_sha256": "181ca6d2929d069e3dcbf06ba4a4d7930d523c00b2861ec622f7ac9c573c33ac",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/latest/update/cycle",
+      "retrieved_at_utc": "2026-10-04T12:10:37.337065+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-latest-cycle.txt",
+      "text_sha256": "49a13affd9f7f262ae947edcb7416b8ab62804c39212de1efa54d5e626dfce9a",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/latest/update/cycle"
+    },
+    {
+      "key": "cwa-lixiaoxi-older",
+      "metadata_file": {
+        "file_sha256": "2459ad027bb51ba273fb7518e6382947d0036f6d1c1b7e2dbde2603cc6e38eb4",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-older.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-older.json",
+      "raw_sha256": "d1cfbfc9ae57652ee7bce2275f964793b72088a17d6eee60cc27d7996546fc3d",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000409",
+      "retrieved_at_utc": "2026-10-04T12:03:41.627571+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-older.txt",
+      "text_sha256": "0ebc578f9aad43cd30c808aff22ca41186fd1104334e0df8b7d043cfbe4f5e98",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000409"
+    },
+    {
+      "key": "cwa-lixiaoxi-younger",
+      "metadata_file": {
+        "file_sha256": "d63078d159e397ee38ed5d6b952da6b394d3f56a3958f7db51dd4b7fcd3c135b",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-younger.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-younger.json",
+      "raw_sha256": "3ce9df6355a8ca5862f3b31fc495e3f30f8d9e7c6265a07927185be292dda2b1",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000756",
+      "retrieved_at_utc": "2026-10-04T12:03:41.442042+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-younger.txt",
+      "text_sha256": "719fb9904ea26cc145c1b9258b3caecf5ff1cc48d3a8dbfd7da77903278ae70e",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000756"
+    },
+    {
+      "key": "cwa-women-ranking",
+      "metadata_file": {
+        "file_sha256": "09a95e1707f2e25af47dca25b98376b1df44c1ab9f1d6e27f208cc1cf6c52645",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-women-ranking.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-women-ranking.json",
+      "raw_sha256": "3fcff8519612f696606a167db7421c47bb816f878e16c9f7db185db629ac8dbc",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/rank/list?pageSize=1000&page=1&playerGender=2&playerStatus=1&updateCycle=202608",
+      "retrieved_at_utc": "2026-10-04T12:10:37.840524+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-women-ranking.txt",
+      "text_sha256": "45b07d534de254e6d2a495a4ffabfe7ba575bb674642dc71d6dc976f841868f1",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/rank/list?pageSize=1000&page=1&playerGender=2&playerStatus=1&updateCycle=202608"
+    },
+    {
+      "key": "cwa-zhangtao-homophone",
+      "metadata_file": {
+        "file_sha256": "1fdc50daa68f04d3975717937d3c875b8e2ccadeac325c9f7735c56b743af3af",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao-homophone.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao-homophone.json",
+      "raw_sha256": "1cddb8de93215cbe27b7ac26be28ebd1ac3fad412c792b19d2d236726de8fdf0",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000460",
+      "retrieved_at_utc": "2026-10-04T12:05:45.006880+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao-homophone.txt",
+      "text_sha256": "4990e42397fd4d5e69a7455e60b1bc66eb02463f56acdbf8495c633cd05f1dc1",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000460"
+    },
+    {
+      "key": "cwa-zhangtao",
+      "metadata_file": {
+        "file_sha256": "d1d7a6b930100adc9d98d062024cc4dc405816b2ddeaaacdc3c5f6c0d523d4ba",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao.json",
+      "raw_sha256": "ba69b715d6a7feb3a59fcdd003723e20f72dc45aacf04c2c6c6c5033c1cb49a7",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000126",
+      "retrieved_at_utc": "2026-10-04T12:03:17.864371+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhangtao.txt",
+      "text_sha256": "7a18cfa25acf9c80a465d44708629c18e823a5d1ae044442d9db1d8f04184259",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000126"
+    },
+    {
+      "key": "cwa-zhouheyang",
+      "metadata_file": {
+        "file_sha256": "d8690e7194f6ad1e6b22fdfe0a6c0a2e7971f905317bda26636af89af8931b27",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhouheyang.meta.json"
+      },
+      "publisher": "China Weiqi Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhouheyang.json",
+      "raw_sha256": "9c280e32a3c479c89d70028549c10704e5f5013420d88cdbe6ba885edabf2c98",
+      "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000014",
+      "retrieved_at_utc": "2026-10-04T12:03:17.853455+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhouheyang.txt",
+      "text_sha256": "9e2f60d205456cbed35be2a78827f9197390abc040420099563edbb333d4d70c",
+      "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000014"
+    },
+    {
+      "key": "kansai-kubo",
+      "metadata_file": {
+        "file_sha256": "2c11fdda5ec46078e10b5f45c149b3f3b47b7bec612d70bd736a6e896cd7f092",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-kubo.meta.json"
+      },
+      "publisher": "Kansai Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-kubo.html",
+      "raw_sha256": "2218dec1b42869cd805f9176ad765736c80617ada50fa1b9cb148a3cc24090c2",
+      "resolved_url": "https://kansaikiin.jp/kisi_prof/kubokatsuaki.html",
+      "retrieved_at_utc": "2026-10-04T12:03:16.995480+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-kubo.txt",
+      "text_sha256": "f031d31b7d5cbc2dda90dd27518446b709a7b1ae79ea5a09e0d10414be104a9b",
+      "url": "https://kansaikiin.jp/kisi_prof/kubokatsuaki.html"
+    },
+    {
+      "key": "kansai-tanaka",
+      "metadata_file": {
+        "file_sha256": "09e6d1689539cac8590ba86b91deb3101e2b35c953453ea087943690b83a44a8",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tanaka.meta.json"
+      },
+      "publisher": "Kansai Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tanaka.html",
+      "raw_sha256": "add0026165daf28cc25fe74553a73da5e3cfacb5dfaa1a284ad9f4fbf37adc55",
+      "resolved_url": "https://kansaikiin.jp/kisi_prof/tanakakoyu.html",
+      "retrieved_at_utc": "2026-10-04T12:03:17.586450+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tanaka.txt",
+      "text_sha256": "f79ae829a808e0dc32320dfb2ab10e0b70db90084c4e5a5d3c5aaca133f52c9d",
+      "url": "https://kansaikiin.jp/kisi_prof/tanakakoyu.html"
+    },
+    {
+      "key": "kansai-taniguchi",
+      "metadata_file": {
+        "file_sha256": "badb4a7a6047fdffbba85787e3f39787bd1b0e2306d44fc74bf4fa5f2ca173f6",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-taniguchi.meta.json"
+      },
+      "publisher": "Kansai Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-taniguchi.html",
+      "raw_sha256": "159b64c443d96e8642d82853b0c42e239291aa9b3785f08499f531e708fd1e6e",
+      "resolved_url": "https://kansaikiin.jp/kisi_prof/taniguchitoru.html",
+      "retrieved_at_utc": "2026-10-04T12:03:15.752274+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-taniguchi.txt",
+      "text_sha256": "5da2babfb47d423d1e2012fdecea50c7d43a8d5024bee42c0efd8a901f1ab460",
+      "url": "https://kansaikiin.jp/kisi_prof/taniguchitoru.html"
+    },
+    {
+      "key": "kansai-tsuji",
+      "metadata_file": {
+        "file_sha256": "5bd48e42091fee8b877685baaf8dfd5c362fc694f7727a75bdfbbdc56e9c5449",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tsuji.meta.json"
+      },
+      "publisher": "Kansai Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tsuji.html",
+      "raw_sha256": "96883aa3411bf60d261b9dac2c52fde7c37d336c839bf92987f670db65708299",
+      "resolved_url": "https://kansaikiin.jp/kisi_prof/tsujishigehito.html",
+      "retrieved_at_utc": "2026-10-04T12:03:17.659468+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kansai-tsuji.txt",
+      "text_sha256": "0f36e1df847e6df28874024690a31e7ec7b0d8fb3d15a386e8360fdd2ff637e8",
+      "url": "https://kansaikiin.jp/kisi_prof/tsujishigehito.html"
+    },
+    {
+      "key": "kba-ha-chanseok",
+      "metadata_file": {
+        "file_sha256": "948a7858924b898dcfad9d96fdf729577a1080388cb1c12a45ba42eacfccad18",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-ha-chanseok.meta.json"
+      },
+      "publisher": "Korea Baduk Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-ha-chanseok.html",
+      "raw_sha256": "86465648c95cc039d3dd83efbcc3ac522d5a900b3ce825b932c01bc6d4bd178f",
+      "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000022",
+      "retrieved_at_utc": "2026-10-04T12:03:19.073990+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-ha-chanseok.txt",
+      "text_sha256": "f21d3f6ee7613539e8da5cb9eeac8f8c2da5438146e4821cb17675e6d3728dde",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000022"
+    },
+    {
+      "key": "kba-han-jongjin",
+      "metadata_file": {
+        "file_sha256": "cad952a189b36b28d46a6fedb58dc9849c069b51d8354fdd9c1c1aff86479917",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-jongjin.meta.json"
+      },
+      "publisher": "Korea Baduk Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-jongjin.html",
+      "raw_sha256": "896c27d6ca2f4f603880b5f64e8d09f124211493814ed19d848222b8d490875e",
+      "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000109",
+      "retrieved_at_utc": "2026-10-04T12:03:18.798962+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-jongjin.txt",
+      "text_sha256": "525905a2bb59085f352857ae4a358598ca56adb4fe45c027c193f5d0b81881ad",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000109"
+    },
+    {
+      "key": "kba-han-seungju",
+      "metadata_file": {
+        "file_sha256": "69080e3de14dd7da06c5050d91d0958843a851a3f15b67a77c70bbce975e64da",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-seungju.meta.json"
+      },
+      "publisher": "Korea Baduk Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-seungju.html",
+      "raw_sha256": "468e27286595eb2736a9c4755805da41ec1ce22d6b102ce5d8d302e97560b90b",
+      "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000744",
+      "retrieved_at_utc": "2026-10-04T12:03:17.910263+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-han-seungju.txt",
+      "text_sha256": "5d4099599bb3e9ad5ba3e8851aa03394c2747914e38a37e06c86c01752333f6f",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000744"
+    },
+    {
+      "key": "kba-hwang-jaeyeon",
+      "metadata_file": {
+        "file_sha256": "6e9799a6fca775c7a356da7d6a1c4668f7370023a38b397ecc2e7e71a74e8371",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-hwang-jaeyeon.meta.json"
+      },
+      "publisher": "Korea Baduk Association",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-hwang-jaeyeon.html",
+      "raw_sha256": "6b33d997a83ed660f5b78215f00932db8eb692958f4c59655146af11bbfffadb",
+      "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000686",
+      "retrieved_at_utc": "2026-10-04T12:03:18.055862+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-hwang-jaeyeon.txt",
+      "text_sha256": "90a81aed621dc050aa361bcca2a46bb9aee2bd7e055147c17dcd50872f65f38d",
+      "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000686"
+    },
+    {
+      "key": "nihon-cho",
+      "metadata_file": {
+        "file_sha256": "b1952fee86b8c1461685bf528d27e7e30e2ac57fac3249e40b717b391cde3a93",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-cho.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-cho.html",
+      "raw_sha256": "834f204384ebde9f89a234bcef15d6fae52dd995d9ee29dba4e5e2dd0d2ae245",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000187.html",
+      "retrieved_at_utc": "2026-10-04T12:03:15.685493+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-cho.txt",
+      "text_sha256": "4019958a9cd17fd0ac8f2954c013d5b0baa2f4fc508cdc2a591598c3035c6cd7",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000187.html"
+    },
+    {
+      "key": "nihon-kudo",
+      "metadata_file": {
+        "file_sha256": "edac8b60c37f299d8b006806a2ff8a2a9f27b2042935fe69460d1214a71770ac",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-kudo.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-kudo.html",
+      "raw_sha256": "42d3c0a0c5b572f050d298db9b8a9179192e901f8d09b3156e5ceed6dd1ff0d7",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000026.html",
+      "retrieved_at_utc": "2026-10-04T12:03:50.485448+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-kudo.txt",
+      "text_sha256": "7c40f1fad770a6e3ead9e8622d7a2e2cb60018b4b10bef6400ea174e4ab7cb9d",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000026.html"
+    },
+    {
+      "key": "nihon-nakaonoda",
+      "metadata_file": {
+        "file_sha256": "690d6d453981fd5585a786d9d94eeb0316af4657f9207ba75859a334968d7026",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-nakaonoda.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-nakaonoda.html",
+      "raw_sha256": "43cfcfad10559b91d9a32d25da14ff84edcf1297b5d103cd4864afa26de090ca",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000217.html",
+      "retrieved_at_utc": "2026-10-04T12:03:15.656810+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-nakaonoda.txt",
+      "text_sha256": "0e89cff15ea45bd202216137caa06c9ae77de0df5100992ca08e7aef1def8014",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000217.html"
+    },
+    {
+      "key": "nihon-okuda",
+      "metadata_file": {
+        "file_sha256": "cbcb085043e71e5289d3eda4ea30f5febc5d7c41af87da4e443b0e7fd8182c2a",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-okuda.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-okuda.html",
+      "raw_sha256": "5326811bfdff417160d912cc068158ddf40d9b80a0e4b1fb0ea9f8b33420336d",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000400.html",
+      "retrieved_at_utc": "2026-10-04T12:03:16.079941+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-okuda.txt",
+      "text_sha256": "498f62388a911922b9ff4ecded22f1705d18e4605969e4a166baed4f4f9fff77",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000400.html"
+    },
+    {
+      "key": "nihon-tsuruta",
+      "metadata_file": {
+        "file_sha256": "fea06ee95e6f648ba4594639dce3269a52ed52cbee8a916a656d5395066f6445",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-tsuruta.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-tsuruta.html",
+      "raw_sha256": "3b251a2f7ca295c0632ffb3dfc15be5e79441342b3b473a29d64fbf3a9e50967",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000433.html",
+      "retrieved_at_utc": "2026-10-04T12:03:15.640243+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-tsuruta.txt",
+      "text_sha256": "78b5a947a3929e2f3640f7031365ac9ccfff776da48684c3f8261faedd55e279",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000433.html"
+    },
+    {
+      "key": "nihon-yao",
+      "metadata_file": {
+        "file_sha256": "933ed32e7adee9f512977e6f208bf99aab54224e791544815a5ce3e14d3085d1",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yao.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yao.html",
+      "raw_sha256": "c4d98474bb770ac260d25a7c5bb70dd9a67fdea14c933ef9451a03b206ab448b",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000447.html",
+      "retrieved_at_utc": "2026-10-04T12:03:15.645245+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yao.txt",
+      "text_sha256": "137c454ef980c739e7d01f7adb6ce6d1c9d210ec75d5d35748c182011ff3e65a",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000447.html"
+    },
+    {
+      "key": "nihon-yokotsuka",
+      "metadata_file": {
+        "file_sha256": "d53ca5026997f1be3e15a5d7c2231b4b839d3237daecc3ae65f5e312dd055fe4",
+        "path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yokotsuka.meta.json"
+      },
+      "publisher": "Nihon Ki-in",
+      "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yokotsuka.html",
+      "raw_sha256": "d2e0fdee3efea8802230a3b3edc19f04301fe8e2cb45d2b8fb07dce3535b4236",
+      "resolved_url": "https://www.nihonkiin.or.jp/player/htm/ki000462.html",
+      "retrieved_at_utc": "2026-10-04T12:03:50.493130+00:00",
+      "status": 200,
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/nihon-yokotsuka.txt",
+      "text_sha256": "ba6ef541440e27a8b10c8430b5702f239189063ff427c6c0bafae4cad760d1a2",
+      "url": "https://www.nihonkiin.or.jp/player/htm/ki000462.html"
+    },
+    {
+      "key": "wiki-murashima",
+      "permanent_url": "https://ja.wikipedia.org/w/index.php?title=村島誼紀&oldid=110620171",
+      "publisher": "Japanese Wikipedia",
+      "retrieval_method": "web.run opened page, returned text saved verbatim",
+      "retrieved_date": "2026-10-04",
+      "supports": "Identity, original name Yoshikatsu/義勝, dates, Nihon Ki-in career and rank history.",
+      "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/wiki-murashima.web.txt",
+      "text_sha256": "2593daca4af155ec0cc6b834d35f8ebe0a974de638c72e2a947bcb107ef849f8",
+      "url": "https://ja.wikipedia.org/wiki/村島誼紀"
+    }
+  ]
+}

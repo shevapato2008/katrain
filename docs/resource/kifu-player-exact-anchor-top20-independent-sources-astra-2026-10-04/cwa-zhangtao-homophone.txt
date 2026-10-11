@@ -1,0 +1,46 @@
+{
+  "code": 0,
+  "data": {
+    "checkTeam": 0,
+    "chessPlayer": 1,
+    "createTime": "2024-05-06 16:38:31",
+    "dataStatus": 0,
+    "lastDate": 202608,
+    "playerAwards": [],
+    "playerBirthday": "1993-05-09",
+    "playerCity": "",
+    "playerEmail": "",
+    "playerExperiences": [
+      {
+        "playerNo": "CWA000460",
+        "upgradeDate": "2012-07-26",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z02"
+      },
+      {
+        "playerNo": "CWA000460",
+        "upgradeDate": "2008-07-24",
+        "upgradeEvents": "中国围棋协会",
+        "upgradeGrade": "Z01"
+      }
+    ],
+    "playerGender": 1,
+    "playerGrade": "Z02",
+    "playerIdType": 0,
+    "playerImage": "",
+    "playerLabels": [],
+    "playerName": "张弢",
+    "playerNameEn": "",
+    "playerNameNa": "",
+    "playerNo": "CWA000460",
+    "playerProfile": "",
+    "playerProvince": "",
+    "playerRating": "2179.90",
+    "playerStartDate": "2008-07-24",
+    "playerStatus": 2,
+    "playerType": 1,
+    "playerUnit": "",
+    "updateTime": "2026-02-26 13:50:15"
+  },
+  "msg": "操作成功"
+}

@@ -1,0 +1,11 @@
+{
+  "key": "cwa-zhouheyang",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhouheyang.json",
+  "raw_sha256": "9c280e32a3c479c89d70028549c10704e5f5013420d88cdbe6ba885edabf2c98",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000014",
+  "retrieved_at_utc": "2026-10-04T12:03:17.853455+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-zhouheyang.txt",
+  "text_sha256": "9e2f60d205456cbed35be2a78827f9197390abc040420099563edbb333d4d70c",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000014"
+}

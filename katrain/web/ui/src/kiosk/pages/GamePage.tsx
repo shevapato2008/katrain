@@ -11,6 +11,8 @@ import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import LocalConfirmGame from '../components/game/LocalConfirmGame';
+import { useLocalMoveConfirmation } from '../hooks/useLocalMoveConfirmation';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
@@ -381,6 +383,55 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     setPhysicalSession({ ...physicalSession, poseEverLocked: true });
   }
   const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
+  const confirmationGame = session.gameState;
+  const confirmationScope = `${sessionId}|${confirmationGame?.game_id}|${confirmationGame?.current_node_id}|${confirmationGame?.player_to_move}|${physicalPlay}`;
+  const latestConfirmationScope = useRef(confirmationScope);
+  useEffect(() => { latestConfirmationScope.current = confirmationScope; }, [confirmationScope]);
+  // Screen play must count thinking/selection time, including on a camera-enabled box.
+  // The ready operation is idempotent; a reload or transport retry never restarts the clock.
+  const readyLocalScreen = useRef<{ key: string; promise: Promise<unknown> } | null>(null);
+  const readyGameId = confirmationGame?.game_id;
+  const screenConfirmation = !physicalPlay && confirmationGame?.game_type === 'pvp_local'
+    && confirmationGame.local_confirmation?.enabled === true && !sessionIsGameOver && !confirmationGame.awaiting_count;
+  useEffect(() => {
+    if (!screenConfirmation || !sessionId || !readyGameId) return;
+    const key = `${sessionId}|${readyGameId}`;
+    const scope = latestConfirmationScope.current;
+    const promise = API.readyLocalGame(sessionId, readyGameId, 'screen', token ?? undefined);
+    readyLocalScreen.current = { key, promise };
+    void promise.then((response) => {
+      // Ready may finish before the game WebSocket is connected; apply its clock
+      // snapshot so the first player's display also starts immediately.
+      if (latestConfirmationScope.current === scope) session.setGameState(response.state);
+    }).catch(() => {
+      if (readyLocalScreen.current?.promise === promise) readyLocalScreen.current = null;
+    });
+  }, [screenConfirmation, sessionId, readyGameId, token, session.connectionLost, session.setGameState]);
+  const localConfirmation = useLocalMoveConfirmation({
+    scope: confirmationScope,
+    input: physicalPlay ? 'physical' : 'screen',
+    enabled: confirmationGame?.game_type === 'pvp_local' && confirmationGame.local_confirmation?.enabled === true
+      && !sessionIsGameOver && !confirmationGame.awaiting_count && !session.connectionLost
+      && (!physicalPlay || (visionStatus.cameraConnected && visionStatus.poseLocked)),
+    recognizing: confirmationGame?.local_confirmation?.status === 'recognizing',
+    submit: async (request) => {
+      if (!sessionId || !confirmationGame) throw new Error('No active game');
+      if (!physicalPlay) {
+        const key = `${sessionId}|${confirmationGame.game_id}`;
+        if (readyLocalScreen.current?.key === key) await readyLocalScreen.current.promise;
+        else await API.readyLocalGame(sessionId, confirmationGame.game_id, 'screen', token ?? undefined);
+      } else if (request.action === 'move') {
+        // A failed initial reference preparation can be retried by this explicit
+        // confirmation. A ready same-game bind preserves its reference and clock.
+        await API.visionBind(sessionId);
+      }
+      const response = await API.confirmLocalMove({ ...request, session_id: sessionId,
+        expected_game_id: confirmationGame.game_id, expected_node_id: confirmationGame.current_node_id,
+        color: confirmationGame.player_to_move === 'W' ? 'W' : 'B' }, token ?? undefined);
+      if (latestConfirmationScope.current === confirmationScope) session.setGameState(response.state);
+      return response;
+    },
+  });
 
   // Exact-board acknowledgements can race the game-state WebSocket in either order.
   // Keep a small versioned cache and consume the vision stream by monotonic `seq`
@@ -660,6 +711,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const isGameOver = !!endResultOf(gameState) && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
+  const localConfirmationLayout = localGame && !isGameOver && !gameState.awaiting_count
+    && gameState.local_confirmation?.enabled === true;
   const lobbyGame = gameState.game_type === 'pvp_lobby';
   const lobbyCountRetry = lobbyGame && !!gameState.degraded && !!gameState.awaiting_count;
   const lobbyAutoCountPending = lobbyGame && !!gameState.end_result && !!gameState.awaiting_count && !gameState.degraded;
@@ -958,6 +1011,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const handleBoardMove = async (x: number, y: number) => {
     // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
     if (isGameOver || lobbyAutoCountPending || lobbyCountRetry) return;
+    if (localConfirmationLayout) { localConfirmation.select(x, y); return; }
     if (onlineGame && (!myColor
       || gameState.player_to_move !== myColor
       || (onlinePhase != null && onlinePhase !== 'playing'))) return;
@@ -1308,7 +1362,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {physicalPlay && (
+      {physicalPlay && !localConfirmationLayout && (
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
@@ -1339,7 +1393,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             · 三颗常亮状态灯是 **L1 镜像栏**的东西(§5),L3 上没有它们的位置。
               它们**没有白丢**:出故障时那句话落在下面开关排右端的 `.ghint` 上
               (`GameControlPanel`),平时不占地方 —— 比三颗一直亮着的灯说得还清楚。 */}
-      <div className="kiosk-layout-a">
+      {localConfirmationLayout ? (
+        <LocalConfirmGame key={`${sessionId}|${gameState.game_id}`}
+          gameState={gameState} input={physicalPlay ? 'physical' : 'screen'}
+          point={localConfirmation.point} busy={localConfirmation.busy} failed={localConfirmation.failed}
+          analysisToggles={analysisToggles}
+          onToggle={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+          onSelect={handleBoardMove} onConfirm={() => { void localConfirmation.confirm(); }}
+          onPass={() => { void localConfirmation.pass(); }} onCount={() => { void handleAction('count'); }}
+          onResign={(color) => { void handleLocalResign(color); }} onExit={handleExit}
+          onPaintedNode={session.acknowledgePaintedNode} onExpired={() => { void handleTimeExpired(); }}
+          blocked={!!session.connectionLost || counting || (physicalPlay && (!visionStatus.cameraConnected || !visionStatus.poseLocked))}
+        />
+      ) : <div className="kiosk-layout-a">
         <div className="kiosk-board" data-testid="game-board">
           {/* 四条 28 刻度带。`坐标` 开关关掉时**只清字、不撤带** ——
               撤了带落子区就从 460 变 516,盘会当场跳一下。 */}
@@ -1426,6 +1492,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </div>
       </div>
 
+      }
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
           留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it
@@ -1642,7 +1709,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* 终局后整个卸掉,不只是「不再新弹」。`visionRecovery` 里**唯一**能清掉 blocking 的
           路径是收到 `synced`(visionRecovery.ts:84),而终局后那 26 分钟里 `synced` 是 0 条
           (RK3562 2026-09-20 实测) ⇒ 后端停止比对也清不掉已经开着的那个弹窗,只有卸载能。 */}
-      {physicalPlay && !isGameOver && (
+      {physicalPlay && !isGameOver && !localConfirmationLayout && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}

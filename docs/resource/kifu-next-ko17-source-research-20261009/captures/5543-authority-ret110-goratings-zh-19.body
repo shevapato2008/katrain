@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh"><head><title>王紫涵</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>王紫涵</h1><div id="lang-ctn"><div><a href="../../en/players/2445.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/2445.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/2445.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/2445.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">返回首页</a></p><h2>等级分曲线</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-2445.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>数据</h2><table><tr><th class="r">胜</th><td class="r">0</td></tr><tr><th class="r">负</th><td class="r">0</td></tr><tr><th class="r">总计</th><td class="r">0</td></tr><tr><th class="r">链接</th><td class="r" style="text-align: left;"><a href="https://www.haifong.org/profession/venue/B15AD71345F8FF8D7E2E8FC2D7037F82">https://www.haifong.org/p...</a></td></tr><tr><th class="r">生日</th><td class="r">-</td></tr></table><h2>对局列表</h2><table><tr><th>日期</th><th>等级分</th><th>黑白</th><th>对局结果</th><th colspan="4">对手</th><th>棋谱</th></tr></table>
+<p><small>联系：<a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://www.joedb.org/intro.html">joedb, the C++ database</a>.</small></p></body></html>

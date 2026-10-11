@@ -1,0 +1,232 @@
+{
+  "artifact_kind": "ko_name_source_only_research",
+  "queue_player_id": 5115,
+  "queue_order_slots": 17,
+  "selection_scope": "latest read-only PROD batch 597 shortlist; KO NULL with four physical verified rows; shortlist is not final qualification proof",
+  "canonical_name": "杨以伦",
+  "available_non_ko_anchor_names": {
+    "cn": "杨以伦",
+    "en": "Yang Yilun",
+    "jp": "杨以伦",
+    "tw": "楊以倫"
+  },
+  "status": "pending_no_direct_Korean_publication_found_in_bounded_checks",
+  "source_reading": {
+    "published_latin": "Yang Yilun",
+    "observed_romanization": "Yang Yilun",
+    "interpretation": "Source-published Latin only. No Korean spelling inferred. Regional system or Korean transcription is not assigned without source evidence.",
+    "source_capture_ids": [
+      "ret97-ugo-en",
+      "ret100-goratings-ko"
+    ]
+  },
+  "identity_bridges": [
+    {
+      "url": "https://db.u-go.net/2275/",
+      "final_url": "https://db.u-go.net/2275/",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at_utc": "2026-10-08T23:05:03.710526+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:01.933096+00:00",
+      "body_bytes": 3944,
+      "body_sha256": "3209f0358d3404761a9da4cb9406f09b09cc4b436499ebbc92c006efdfac2f5e",
+      "body_file": "captures/5115-authority-ret97-ugo-en-12.body",
+      "publisher": "ret97-ugo-en",
+      "source_role": "language_go",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret97-ugo-en",
+      "source_language": "en",
+      "evidence_ids": [
+        60320,
+        60321,
+        60323
+      ],
+      "body_text_excerpt": "u-go.net List of all players Yang Yilun Yang Yilun g4 • 杨以伦 Key name (used for sorting): Yang Yilun Citizenship: Affiliation: Unknown ID: 2275. Last changed: Dec. 17, 2016, 12:16 p.m. by ug. Send feedback",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    },
+    {
+      "url": "https://www.goratings.org/ja/players/1604.html",
+      "final_url": "https://www.goratings.org/ja/players/1604.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:05.813827+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:03.503263+00:00",
+      "body_bytes": 4972,
+      "body_sha256": "36081159bf796e4778a12e18684107cfb5de537a86e5d7ae26b792e82bd3c0fa",
+      "body_file": "captures/5115-authority-ret100-goratings-ja-19.body",
+      "publisher": "ret100-goratings-ja",
+      "source_role": "language_go",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret100-goratings-ja",
+      "source_language": "ja",
+      "evidence_ids": [
+        60322
+      ],
+      "body_text_excerpt": "杨以伦 杨以伦 トップへ戻る 推移グラフ データ 勝利 2 敗北 0 合計 2 生年月日 1951-05-10 対局データ 日付 レーティング 手番 対局結果 対局相手 棋譜 1985-04-26 3172 黒番 勝利 程征宇 3033 ♂ | go4go | 1984-03-03 3168 黒番 勝利 金伟斌 3036 ♂ | go4go | 問合せ先： Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/1604.html",
+      "final_url": "https://www.goratings.org/ko/players/1604.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:58.350304+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:56.712791+00:00",
+      "body_bytes": 4950,
+      "body_sha256": "c0f41414e1e62b9f40e5b28ad86fab116e4e256a62c58e6640007c8fb13ba121",
+      "body_file": "captures/5115-authority-ko.body",
+      "publisher": "ret100-goratings-ko",
+      "source_role": "language_go_localized_profile",
+      "capture_kind": "authority_page_capture",
+      "source_id": "ret100-goratings-ko",
+      "source_language": "ko",
+      "evidence_ids": null,
+      "body_text_excerpt": "Yang Yilun Yang Yilun 메인 페이지로 돌아가기 그래프 데이터 승리 2 패배 0 합계 2 생년월일 1951-05-10 대국 기록 날짜 레이팅 흑백 결과 상대 기보 1985-04-26 3172 흑번 승 청정위 3033 ♂ | go4go | 1984-03-03 3168 흑번 승 진웨이빈 3036 ♂ | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    }
+  ],
+  "searches": [
+    {
+      "url": "https://www.bing.com/search?q=%22%E6%9D%A8%E4%BB%A5%E4%BC%A6%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://www.bing.com/search?q=%22%E6%9D%A8%E4%BB%A5%E4%BC%A6%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "fetched_at_utc": "2026-10-08T23:04:48.282139+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:46.916398+00:00",
+      "body_bytes": 112209,
+      "body_sha256": "93675248ea4266fa5d7b41be3abae6749c7f390adfa811c4458735f6bd15f861",
+      "body_file": "captures/5115-search-bing.html",
+      "publisher": "bing",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"杨以伦\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"杨以伦\" 바둑 - Search Skip to content Accessibility Feedback All Search Images Videos Maps News More Shopping Flights Tools About 6 results Open links in new tab Any time socratic.org https://socratic.org › questions Question #0a1ce - Socratic The answer would be 2. I got this answer by separating the y-variable. So first, subtracted 6x from both sides, which resulted into … socratic.org https://socratic.org › questions Question #ec455 - Socratic See below. | x | <= 76 We have to solve this for both a positive values and a negative value in the absolute bars, since the absolute … socratic.org https://socratic.org › questions Question #c5c8b - Socratic Yes. the two fractions are equal to each other which forms a proportion. 16/12 = (16/4 )/ (12/4) (16/4)/(12/4) = 4/3 4/3 = 4/3 socratic.org https://socratic.org › questions What is the mean and median of all the non-prime numbers Dec 19, 2017 · A composite number is one that isn't prime. In the list of numbers from 90 to 100, the only prime number is 97. So our … socratic.org https://socratic.org › questions What is the average speed, on t in [0,5], of an object that The average speed is =9.53ms^-1 The speed is the integral of the acceleration. The acceleration is a (t)=5-2t The speed is v (t)=inta … socratic.org https://socratic.org › q",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22%E6%9D%A8%E4%BB%A5%E4%BC%A6%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22%E6%9D%A8%E4%BB%A5%E4%BC%A6%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:04:48.620810+00:00",
+      "request_started_at_utc": "2026-10-08T23:04:46.931027+00:00",
+      "body_bytes": 117340,
+      "body_sha256": "db1993c3e32a7bd72a79866eebcb362161d658549cda58fb2d4dfb2a5619f372",
+      "body_file": "captures/5115-search-naver.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"杨以伦\" 바둑",
+      "search_scope": "literal exact Han name plus 바둑 in web search engine; results are discovery evidence only",
+      "body_text_excerpt": "\"杨以伦\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"杨以伦\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"杨以伦\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 101바둑망 www.101weiqi.com › forum 새 창 열림 AI 출처 정보 101바둑망은 다양한 급수의 바둑 문제를 매일 제공하고, 사용자가 풀이와 토론을 통해 실력을 향상시킬 수 있는 온라인 커뮤니티입니다. 문제 풀이 기록과 지식 포인트 시스템을 통해 회원들의 활동을 확인하고 순위를 매길 수 있습니다. 네이버가 AI를 활용해 제공하는 설명으로 정확하지 않을 수 있어요. 자세히 보기 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Q-38433 - 문제집 새 창 열림 출처： · 中国棋手的死活题—— 杨以伦 死活题新作 初级 · 诘棋名家专著—— 杨以伦 死活题新作 ; 보이기댓글 목록( : 19), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 새 창 열림 Q-38428 - 문제집 새 창 열림 출처： · 中国棋手的死活题—— 杨以伦 死活题新作 初级 · 诘棋名家专著—— 杨以伦 死活题新作 ; 보이기댓글 목록( : 27), 내 댓글 : 注册三天之后, 以及在실력 테스트中有通关记录的棋友才能发言。 관련문서 더보기 kethics.com www.kethics.com › ksboard PDF 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 미래사회의 윤리와 도덕교육(인성교육) - 한국윤리학회 새 창 열림 489페이지 32MB 미래사회의 윤리와 도덕교육(인성교육) 人性向善: 未来社会的伦理与道德教育 주 최: 한국윤리학회, 경기도교육청, 서울특별시교육청, 한국학중앙연구원 현대한국연구소 2024년 9월 21일(토) ~ 25일(수) 장소: 한국학중앙연구원 제28차 한-중 윤리학 국제학술대회 第28届韩中伦理学国际学术大会 제28차 한-중 윤리학 국제학술대회 미래사회의 윤리와 도덕교육... 새 창 열림 브라우저를 업데이트하세요 최신 기술을 품은 네이버 웨일에서 빠른 ",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    },
+    {
+      "url": "https://search.naver.com/search.naver?query=%22Yang%20Yilun%22%20%EB%B0%94%EB%91%91",
+      "final_url": "https://search.naver.com/search.naver?query=%22Yang%20Yilun%22%20%EB%B0%94%EB%91%91",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "fetched_at_utc": "2026-10-08T23:05:41.422668+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:39.050298+00:00",
+      "body_bytes": 348207,
+      "body_sha256": "dc104b77fea75631d6581eadadf041b6d73eb0365477fc7aab5889ad33c6ca11",
+      "body_file": "captures/5115-search-naver-latin.html",
+      "publisher": "naver",
+      "source_role": "web_search_capture",
+      "capture_kind": "web_search_capture",
+      "query": "\"Yang Yilun\" 바둑",
+      "search_scope": "literal exact published Latin name plus 바둑 in Naver web search; discovery evidence only",
+      "body_text_excerpt": "\"Yang Yilun\" 바둑 : 네이버 검색 메뉴 영역으로 바로가기 본문 영역으로 바로가기 현재 PC에 최적화된 브라우저 웨일을 설치하세요 다운로드 7일 내 다시보지 않기 닫기 NAVER 검색 한글 입력기 입력도구 검색 검색 AI new 블로그 카페 클립 이미지 지식iN 동영상 쇼핑 새 창 열림 뉴스 어학사전 새 창 열림 더보기 지도 새 창 열림 인플루언서 검색옵션 공유 \"Yang Yilun\" 바둑 검색 결과 검색옵션 닫기 정렬 관련도순 최신순 기간 전체 1시간 1일 1주 1개월 3개월 6개월 1년 직접입력 옵션 펼치기 접기 기간 설정시작 ~ 기간 설정끝 년(Year) 월(Month) 일(Day) 적용 옵션 초기화 검색옵션 가이드 새 창 열림 '\"Yang Yilun\" 바둑' 에 대한 상세검색 결과를 보시겠습니까? 상세 검색결과 보기 inkbaduk.com inkbaduk.com › 프로 기보 › Yang Yilun vs 角仓康之 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 Yang Yilun vs 角仓康之 바둑 기보 (6th Japan-China Go Exchange, 1978-06-22) — inkbaduk 새 창 열림 Yang Yilun vs 角仓康之 6d ama 대국을 KataGo로 수순별 복기·관전. 6th Japan-China Go Exchange · 6 · 1978-06-22 · 결과 흑 8집반 승. 새 창 열림 Miura Hiroshi vs Yang Yilun 바둑 기보 (5th Japan-China Go Exchange, 1977-04-20) — inkbaduk 새 창 열림 Miura Hiroshi 6d ama vs Yang Yilun 대국을 KataGo로 수순별 복기·관전. 5th Japan-China Go Exchange · 3 · 1977-04-20 · 결과 흑 불계승. 관련문서 더보기 디시인사이드 갤러리 gall.dcinside.com › .. › HIT 메인 갤러리 본문 새 창 열림 Keep에 저장 Keep에 바로가기 새 창 열림 새 창 열림 점점 커져가는 미국 바둑 대회 개최 및 참가 후기 - HIT 갤러리 새 창 열림 2023.06.10. 뉴욕에서 바둑 도장을 하는데 와이프 스테파니하고 같이 애들을 수십명 대려옴 프로기사는 총 8명 옴 Yilun Yang 7단 Hai Li 5단 Han Han 5단 Ryan Li 3단 Eric Lui 2단 Andy Liu 초단 Stephanie Yin 초단 Alex Qi 초단 그리고 프로기사는 아니지만 온라인 바둑 도장을 운영중인 황인성 EGF 8단도 왔음 다면기는 매일매일 있었는데 그중 하루 골라서 원하는 프로 ",
+      "body_text_locator": "Visible search result text near the literal query in the captured response body; search engine result set is bounded and discovery-only."
+    }
+  ],
+  "additional_bounded_cross_checks": [
+    {
+      "publisher": "Korean Baduk Association",
+      "url": "https://www.baduk.or.kr/record/player_in.asp",
+      "method": "POST",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T21:25:25.328636+00:00",
+      "body_sha256": "fe86b432435c241b354b2286531cc7529fa9ebeccacb22684aa31e9bdbdab934",
+      "body_bytes": 80097,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/replacement-kba-china-list.body",
+      "source_role": "official_China_player_roster_bounded_literal_scan",
+      "locator": "Full saved response scanned for each exact original Han and published Latin string; this is a roster response scan, not exhaustive Korean usage search.",
+      "queries": [
+        "杨以伦",
+        "Yang Yilun"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 杨以伦; Yang Yilun. Exact matching strings present: []."
+    },
+    {
+      "publisher": "TVBaduk",
+      "url": "https://www.tvbaduk.com/info/gisa_info.asp?S_nation=2",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:21:09.198388+00:00",
+      "body_sha256": "f7747c8f22f5677d6839e5b8cbfd7b8d6710211142c3fe607ed189ee9931636a",
+      "body_bytes": 119151,
+      "body_file": "docs/resource/kifu-next-source20-roster3-20261009/captures/tvbaduk-nation2-index.body",
+      "source_role": "professional_Go_China_roster_index_bounded_literal_scan",
+      "locator": "Full saved China roster index scanned for exact original Han and published Latin string; bounded to this captured response.",
+      "queries": [
+        "杨以伦",
+        "Yang Yilun"
+      ],
+      "status": "not_found_in_this_capture",
+      "body_text_excerpt": "Literal scan terms: 杨以伦; Yang Yilun. Exact matching strings present: []."
+    },
+    {
+      "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+      "publisher": "Daum Cafe community roster (2012)",
+      "method": "GET",
+      "http_status": 200,
+      "fetched_at_utc": "2026-10-08T20:04:43.200019+00:00",
+      "body_bytes": 153004,
+      "body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "body_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list.body",
+      "source_role": "community_reference_only_not_official",
+      "queries": [
+        "杨以伦",
+        "Yang Yilun"
+      ],
+      "status": "not_found_in_saved_body",
+      "body_text_excerpt": "Literal scan terms: 杨以伦; Yang Yilun. Exact matching strings present: [].",
+      "locator": "Full saved community roster body scanned for the exact queue Han and English spellings. No same-person Korean name hit."
+    },
+    {
+      "url": "https://www.goratings.org/ko/players/1604.html",
+      "final_url": "https://www.goratings.org/ko/players/1604.html",
+      "method": "GET",
+      "http_status": 200,
+      "content_type": "text/html",
+      "fetched_at_utc": "2026-10-08T23:05:58.350304+00:00",
+      "request_started_at_utc": "2026-10-08T23:05:56.712791+00:00",
+      "body_bytes": 4950,
+      "body_sha256": "c0f41414e1e62b9f40e5b28ad86fab116e4e256a62c58e6640007c8fb13ba121",
+      "body_file": "captures/5115-authority-ko.body",
+      "publisher": "ret100-goratings-ko",
+      "source_role": "language_go_Korean_localization_path",
+      "capture_kind": "language_go_Korean_path_check",
+      "status": "English_fallback_not_Korean_form",
+      "displayed_heading": "Yang Yilun Yang Yilun",
+      "body_text_excerpt": "Yang Yilun Yang Yilun 메인 페이지로 돌아가기 그래프 데이터 승리 2 패배 0 합계 2 생년월일 1951-05-10 대국 기록 날짜 레이팅 흑백 결과 상대 기보 1985-04-26 3172 흑번 승 청정위 3033 ♂ | go4go | 1984-03-03 3168 흑번 승 진웨이빈 3036 ♂ | go4go | 문의 Rémi Coulom . Powered by joedb, the C++ database .",
+      "body_text_locator": "Visible heading/profile text around the exact same-person name in captured source; body file/hash preserves original response."
+    }
+  ],
+  "conclusion": {
+    "direct_korean_go_publication_of_name": "not_found_in_checked_sources",
+    "exact_korean_hangul_name": "not_found; no output guessed",
+    "global_absence_claim": false,
+    "next_step": "Keep pending. A future sourced Korean name may be accepted from a same-person Korean professional, tournament or publication source; otherwise keep reading evidence and run the rule work separately."
+  },
+  "review_status": "source_only_not_conventional_name_approved_not_candidate_signed"
+}

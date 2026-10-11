@@ -1,0 +1,11 @@
+{
+  "key": "cwa-rating-list",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-rating-list.json",
+  "raw_sha256": "351eba58ce729f942cde20f49d8dc2d6181bd424c633bac9046fce6e3999458d",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/rank/list",
+  "retrieved_at_utc": "2026-10-04T12:06:14.339930+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-rating-list.txt",
+  "text_sha256": "fbaff7d71e61ca6e9803ff7a15f6501290429598f2e07fa4a3555439c205fb6b",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/rank/list"
+}

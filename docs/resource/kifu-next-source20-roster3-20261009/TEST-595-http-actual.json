@@ -1,0 +1,87 @@
+{
+  "environment": "TEST",
+  "passed": true,
+  "cases": 10,
+  "results": [
+    {
+      "player_id": 12132,
+      "language": "cn",
+      "query": "陈瑞",
+      "total": 30,
+      "checked_cards": 20,
+      "elapsed_ms": 262
+    },
+    {
+      "player_id": 12132,
+      "language": "ko",
+      "query": "천루이",
+      "total": 30,
+      "checked_cards": 20,
+      "elapsed_ms": 196
+    },
+    {
+      "player_id": 12132,
+      "language": "en",
+      "query": "Chen Rui",
+      "total": 30,
+      "checked_cards": 20,
+      "elapsed_ms": 194
+    },
+    {
+      "player_id": 12132,
+      "language": "ru",
+      "query": "Chen Rui",
+      "total": 30,
+      "checked_cards": 20,
+      "elapsed_ms": 191
+    },
+    {
+      "player_id": 10816,
+      "language": "jp",
+      "query": "李晨碩",
+      "total": 5,
+      "checked_cards": 5,
+      "elapsed_ms": 170
+    },
+    {
+      "player_id": 10816,
+      "language": "en",
+      "query": "Li Chenshuo",
+      "total": 5,
+      "checked_cards": 5,
+      "elapsed_ms": 162
+    },
+    {
+      "player_id": 11073,
+      "language": "tw",
+      "query": "武珺",
+      "total": 7,
+      "checked_cards": 7,
+      "elapsed_ms": 166
+    },
+    {
+      "player_id": 11073,
+      "language": "en",
+      "query": "Wu Jun",
+      "total": 7,
+      "checked_cards": 7,
+      "elapsed_ms": 168
+    },
+    {
+      "player_id": 10818,
+      "language": "cn",
+      "query": "李晶彬",
+      "total": 7,
+      "checked_cards": 7,
+      "elapsed_ms": 213
+    },
+    {
+      "player_id": 10818,
+      "language": "en",
+      "query": "Li Jingbin",
+      "total": 7,
+      "checked_cards": 7,
+      "elapsed_ms": 153
+    }
+  ]
+}

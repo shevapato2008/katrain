@@ -1,0 +1,662 @@
+{
+  "basis_file": "TEST-final-gap-analysis.json",
+  "basis_sha256": "cf1d598e76a2cd5dbfc24bb2db3c8a8b5e103d57a86372529de2a94270cca44b",
+  "decisions": [
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "杨鼎新",
+      "display_reference_canonical_id": 21,
+      "display_reference_evidence_ids": {
+        "cn": 132133,
+        "en": 132137,
+        "jp": 132135,
+        "ko": 132136,
+        "tw": 132134
+      },
+      "five_names": {
+        "cn": "杨鼎新",
+        "en": "Yang Dingxin",
+        "jp": "ヤン・ディンシン",
+        "ko": "양딩신",
+        "tw": "楊鼎新"
+      },
+      "identity_link_proposed": false,
+      "raw": "杨鼎新",
+      "raw_id": 11916,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "吴清源",
+      "display_reference_canonical_id": 1,
+      "display_reference_evidence_ids": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "five_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      },
+      "identity_link_proposed": false,
+      "raw": "吴清源九段",
+      "raw_id": 10077,
+      "sources": [
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-es",
+          "url": "https://es.wikipedia.org/w/index.php?title=Go_Seigen&oldid=154961776"
+        },
+        {
+          "role": "language_go",
+          "source_id": "godokoro-es",
+          "url": "https://godokoro.es/que-es-el-go"
+        },
+        {
+          "role": "language_go",
+          "source_id": "cwi-go",
+          "url": "https://homepages.cwi.nl/~aeb/go/games/"
+        },
+        {
+          "role": "official",
+          "source_id": "baduk-mobile",
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001138"
+        },
+        {
+          "role": "reference",
+          "source_id": "pts-tw",
+          "url": "https://news.pts.org.tw/article/284957"
+        },
+        {
+          "role": "language_go",
+          "source_id": "rusgolib",
+          "url": "https://rusgolib.gofederation.ru/GoSeigen.html"
+        },
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-uk",
+          "url": "https://uk.wikipedia.org/w/index.php?title=Ґо_Сейґен&oldid=44688592"
+        },
+        {
+          "role": "reference",
+          "source_id": "asialogy-tr",
+          "url": "https://www.asialogy.com/go-seigen-kimdir/"
+        },
+        {
+          "role": "language_go",
+          "source_id": "dgob",
+          "url": "https://www.dgob.de/wp-content/uploads/dgoz/pdf/2014/dgoz2014_6_low.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "gofed-be",
+          "url": "https://www.gofed.be/files/belgo%2046.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "go-school-tr",
+          "url": "https://www.gookulu.com/go_oyunculari_ve_akis/"
+        },
+        {
+          "role": "official",
+          "source_id": "haifong",
+          "url": "https://www.haifong.org/game/classes/63843E924EECC1240CC2CD06877F0BE4"
+        },
+        {
+          "role": "official",
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"
+        },
+        {
+          "role": "official",
+          "source_id": "china-sport",
+          "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767277/c21440500/content.html"
+        }
+      ]
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "田中佑树",
+      "display_reference_canonical_id": 1045,
+      "display_reference_evidence_ids": {
+        "cn": 129478,
+        "en": 129482,
+        "jp": 129480,
+        "ko": 129481,
+        "tw": 129479
+      },
+      "five_names": {
+        "cn": "田中佑树",
+        "en": "Yuki Tanaka",
+        "jp": "田中 佑樹",
+        "ko": "유키 타나카",
+        "tw": "田中佑樹"
+      },
+      "identity_link_proposed": false,
+      "raw": "田中佑树",
+      "raw_id": 12663,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "大谷直辉",
+      "display_reference_canonical_id": 1049,
+      "display_reference_evidence_ids": {
+        "cn": 129563,
+        "en": 129567,
+        "jp": 129565,
+        "ko": 129566,
+        "tw": 129564
+      },
+      "five_names": {
+        "cn": "大谷直辉",
+        "en": "Naoki Otani",
+        "jp": "大谷 直輝",
+        "ko": "오오타니 나오키",
+        "tw": "大谷直輝"
+      },
+      "identity_link_proposed": false,
+      "raw": "大谷直辉",
+      "raw_id": 10280,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "吴清源",
+      "display_reference_canonical_id": 1,
+      "display_reference_evidence_ids": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "five_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      },
+      "identity_link_proposed": false,
+      "raw": "吴清源八段",
+      "raw_id": 10079,
+      "sources": [
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-es",
+          "url": "https://es.wikipedia.org/w/index.php?title=Go_Seigen&oldid=154961776"
+        },
+        {
+          "role": "language_go",
+          "source_id": "godokoro-es",
+          "url": "https://godokoro.es/que-es-el-go"
+        },
+        {
+          "role": "language_go",
+          "source_id": "cwi-go",
+          "url": "https://homepages.cwi.nl/~aeb/go/games/"
+        },
+        {
+          "role": "official",
+          "source_id": "baduk-mobile",
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001138"
+        },
+        {
+          "role": "reference",
+          "source_id": "pts-tw",
+          "url": "https://news.pts.org.tw/article/284957"
+        },
+        {
+          "role": "language_go",
+          "source_id": "rusgolib",
+          "url": "https://rusgolib.gofederation.ru/GoSeigen.html"
+        },
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-uk",
+          "url": "https://uk.wikipedia.org/w/index.php?title=Ґо_Сейґен&oldid=44688592"
+        },
+        {
+          "role": "reference",
+          "source_id": "asialogy-tr",
+          "url": "https://www.asialogy.com/go-seigen-kimdir/"
+        },
+        {
+          "role": "language_go",
+          "source_id": "dgob",
+          "url": "https://www.dgob.de/wp-content/uploads/dgoz/pdf/2014/dgoz2014_6_low.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "gofed-be",
+          "url": "https://www.gofed.be/files/belgo%2046.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "go-school-tr",
+          "url": "https://www.gookulu.com/go_oyunculari_ve_akis/"
+        },
+        {
+          "role": "official",
+          "source_id": "haifong",
+          "url": "https://www.haifong.org/game/classes/63843E924EECC1240CC2CD06877F0BE4"
+        },
+        {
+          "role": "official",
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"
+        },
+        {
+          "role": "official",
+          "source_id": "china-sport",
+          "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767277/c21440500/content.html"
+        }
+      ]
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "西冈正织",
+      "display_reference_canonical_id": 1069,
+      "display_reference_evidence_ids": {
+        "cn": 129728,
+        "en": 129732,
+        "jp": 129730,
+        "ko": 129731,
+        "tw": 129729
+      },
+      "five_names": {
+        "cn": "西冈正织",
+        "en": "Masao Nishioka",
+        "jp": "西岡 正織",
+        "ko": "니시오카 마사오",
+        "tw": "西岡正織"
+      },
+      "identity_link_proposed": false,
+      "raw": "西冈正织",
+      "raw_id": 13210,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "后藤一",
+      "display_reference_canonical_id": 1065,
+      "display_reference_evidence_ids": {
+        "cn": 129483,
+        "en": 129487,
+        "jp": 129485,
+        "ko": 129486,
+        "tw": 129484
+      },
+      "five_names": {
+        "cn": "后藤一",
+        "en": "Goto Hajime",
+        "jp": "後藤 一",
+        "ko": "고토 하지메",
+        "tw": "後藤一"
+      },
+      "identity_link_proposed": false,
+      "raw": "后藤一",
+      "raw_id": 10017,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "日野胜太",
+      "display_reference_canonical_id": 996,
+      "display_reference_evidence_ids": {
+        "cn": 70273,
+        "en": 70277,
+        "jp": 70275,
+        "ko": 70276,
+        "tw": 70274
+      },
+      "five_names": {
+        "cn": "日野胜太",
+        "en": "Hino Shota",
+        "jp": "日野 勝太",
+        "ko": "히노 쇼타",
+        "tw": "日野勝太"
+      },
+      "identity_link_proposed": false,
+      "raw": "日野胜太",
+      "raw_id": 11232,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "吴清源",
+      "display_reference_canonical_id": 1,
+      "display_reference_evidence_ids": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "five_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      },
+      "identity_link_proposed": false,
+      "raw": "吴清源七段",
+      "raw_id": 10076,
+      "sources": [
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-es",
+          "url": "https://es.wikipedia.org/w/index.php?title=Go_Seigen&oldid=154961776"
+        },
+        {
+          "role": "language_go",
+          "source_id": "godokoro-es",
+          "url": "https://godokoro.es/que-es-el-go"
+        },
+        {
+          "role": "language_go",
+          "source_id": "cwi-go",
+          "url": "https://homepages.cwi.nl/~aeb/go/games/"
+        },
+        {
+          "role": "official",
+          "source_id": "baduk-mobile",
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001138"
+        },
+        {
+          "role": "reference",
+          "source_id": "pts-tw",
+          "url": "https://news.pts.org.tw/article/284957"
+        },
+        {
+          "role": "language_go",
+          "source_id": "rusgolib",
+          "url": "https://rusgolib.gofederation.ru/GoSeigen.html"
+        },
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-uk",
+          "url": "https://uk.wikipedia.org/w/index.php?title=Ґо_Сейґен&oldid=44688592"
+        },
+        {
+          "role": "reference",
+          "source_id": "asialogy-tr",
+          "url": "https://www.asialogy.com/go-seigen-kimdir/"
+        },
+        {
+          "role": "language_go",
+          "source_id": "dgob",
+          "url": "https://www.dgob.de/wp-content/uploads/dgoz/pdf/2014/dgoz2014_6_low.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "gofed-be",
+          "url": "https://www.gofed.be/files/belgo%2046.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "go-school-tr",
+          "url": "https://www.gookulu.com/go_oyunculari_ve_akis/"
+        },
+        {
+          "role": "official",
+          "source_id": "haifong",
+          "url": "https://www.haifong.org/game/classes/63843E924EECC1240CC2CD06877F0BE4"
+        },
+        {
+          "role": "official",
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"
+        },
+        {
+          "role": "official",
+          "source_id": "china-sport",
+          "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767277/c21440500/content.html"
+        }
+      ]
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "滨角响",
+      "display_reference_canonical_id": 845,
+      "display_reference_evidence_ids": {
+        "cn": 132213,
+        "en": 132217,
+        "jp": 132215,
+        "ko": 132216,
+        "tw": 132214
+      },
+      "five_names": {
+        "cn": "滨角响",
+        "en": "Hibiki Hamakado",
+        "jp": "濱角響",
+        "ko": "하마카도 히비키",
+        "tw": "濱角響"
+      },
+      "identity_link_proposed": false,
+      "raw": "滨角响",
+      "raw_id": 12398,
+      "sources": []
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "吴清源",
+      "display_reference_canonical_id": 1,
+      "display_reference_evidence_ids": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "five_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      },
+      "identity_link_proposed": false,
+      "raw": "吴清源六段",
+      "raw_id": 10080,
+      "sources": [
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-es",
+          "url": "https://es.wikipedia.org/w/index.php?title=Go_Seigen&oldid=154961776"
+        },
+        {
+          "role": "language_go",
+          "source_id": "godokoro-es",
+          "url": "https://godokoro.es/que-es-el-go"
+        },
+        {
+          "role": "language_go",
+          "source_id": "cwi-go",
+          "url": "https://homepages.cwi.nl/~aeb/go/games/"
+        },
+        {
+          "role": "official",
+          "source_id": "baduk-mobile",
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001138"
+        },
+        {
+          "role": "reference",
+          "source_id": "pts-tw",
+          "url": "https://news.pts.org.tw/article/284957"
+        },
+        {
+          "role": "language_go",
+          "source_id": "rusgolib",
+          "url": "https://rusgolib.gofederation.ru/GoSeigen.html"
+        },
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-uk",
+          "url": "https://uk.wikipedia.org/w/index.php?title=Ґо_Сейґен&oldid=44688592"
+        },
+        {
+          "role": "reference",
+          "source_id": "asialogy-tr",
+          "url": "https://www.asialogy.com/go-seigen-kimdir/"
+        },
+        {
+          "role": "language_go",
+          "source_id": "dgob",
+          "url": "https://www.dgob.de/wp-content/uploads/dgoz/pdf/2014/dgoz2014_6_low.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "gofed-be",
+          "url": "https://www.gofed.be/files/belgo%2046.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "go-school-tr",
+          "url": "https://www.gookulu.com/go_oyunculari_ve_akis/"
+        },
+        {
+          "role": "official",
+          "source_id": "haifong",
+          "url": "https://www.haifong.org/game/classes/63843E924EECC1240CC2CD06877F0BE4"
+        },
+        {
+          "role": "official",
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"
+        },
+        {
+          "role": "official",
+          "source_id": "china-sport",
+          "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767277/c21440500/content.html"
+        }
+      ]
+    },
+    {
+      "action": "complete_existing_literal_first_pass",
+      "cleaned_name": "Janice Kim",
+      "display_reference_canonical_id": null,
+      "display_reference_evidence_ids": {
+        "decision_raw": "詹妮斯·金JaniceKim",
+        "decision_raw_id": 13226
+      },
+      "five_names": {
+        "en": "Janice Kim",
+        "jp": "ジャニス・キム",
+        "ko": "재니스 김"
+      },
+      "identity_link_proposed": false,
+      "raw": "Janice Kim",
+      "raw_id": 14506,
+      "sources": [
+        {
+          "kind": "sgf_archive",
+          "source": "https://19x19.com"
+        }
+      ]
+    },
+    {
+      "action": "reuse_qualified_canonical_display_without_identity_link",
+      "cleaned_name": "吴清源",
+      "display_reference_canonical_id": 1,
+      "display_reference_evidence_ids": {
+        "cn": 1,
+        "en": 5,
+        "jp": 2,
+        "ko": 3,
+        "tw": 6
+      },
+      "five_names": {
+        "cn": "吴清源",
+        "en": "Go Seigen",
+        "jp": "呉清源",
+        "ko": "우칭위안",
+        "tw": "吳清源"
+      },
+      "identity_link_proposed": false,
+      "raw": "吴清源五段",
+      "raw_id": 10078,
+      "sources": [
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-es",
+          "url": "https://es.wikipedia.org/w/index.php?title=Go_Seigen&oldid=154961776"
+        },
+        {
+          "role": "language_go",
+          "source_id": "godokoro-es",
+          "url": "https://godokoro.es/que-es-el-go"
+        },
+        {
+          "role": "language_go",
+          "source_id": "cwi-go",
+          "url": "https://homepages.cwi.nl/~aeb/go/games/"
+        },
+        {
+          "role": "official",
+          "source_id": "baduk-mobile",
+          "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=20001138"
+        },
+        {
+          "role": "reference",
+          "source_id": "pts-tw",
+          "url": "https://news.pts.org.tw/article/284957"
+        },
+        {
+          "role": "language_go",
+          "source_id": "rusgolib",
+          "url": "https://rusgolib.gofederation.ru/GoSeigen.html"
+        },
+        {
+          "role": "wikipedia_article",
+          "source_id": "wikipedia-uk",
+          "url": "https://uk.wikipedia.org/w/index.php?title=Ґо_Сейґен&oldid=44688592"
+        },
+        {
+          "role": "reference",
+          "source_id": "asialogy-tr",
+          "url": "https://www.asialogy.com/go-seigen-kimdir/"
+        },
+        {
+          "role": "language_go",
+          "source_id": "dgob",
+          "url": "https://www.dgob.de/wp-content/uploads/dgoz/pdf/2014/dgoz2014_6_low.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "gofed-be",
+          "url": "https://www.gofed.be/files/belgo%2046.pdf"
+        },
+        {
+          "role": "language_go",
+          "source_id": "go-school-tr",
+          "url": "https://www.gookulu.com/go_oyunculari_ve_akis/"
+        },
+        {
+          "role": "official",
+          "source_id": "haifong",
+          "url": "https://www.haifong.org/game/classes/63843E924EECC1240CC2CD06877F0BE4"
+        },
+        {
+          "role": "official",
+          "source_id": "nihon-kiin",
+          "url": "https://www.nihonkiin.or.jp/player/htm/ki001001.htm"
+        },
+        {
+          "role": "official",
+          "source_id": "china-sport",
+          "url": "https://www.sport.gov.cn/n20001280/n20745751/n20767277/c21440500/content.html"
+        }
+      ]
+    }
+  ],
+  "environment": "TEST",
+  "status": "supplemental_pending_independent_review"
+}

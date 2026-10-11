@@ -1,0 +1,127 @@
+{
+  "format": "kifu-event-after-korean-two-next-source-observations-v1",
+  "database_writes": 0,
+  "sources": [
+    {
+      "key": "cn-lanke-cwa-boundary",
+      "url": "https://wqwh.weiqi.org.cn/%E7%83%82%E6%9F%AF%E5%B1%B1%E4%B8%AD%E8%A7%85%E4%BB%99%E8%B8%AA/",
+      "publisher": "中国围棋协会",
+      "title": "烂柯山中觅仙踪",
+      "published_date": "2025-08-29",
+      "authority": "official association",
+      "facts": [
+        "The association names the Chinese domestic champion tournament and the world open separately. Shared Lanke branding does not make them one event type."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "cn-lanke-tenth-final",
+      "url": "https://ent.people.com.cn/n1/2024/0618/c1012-40258932.html",
+      "publisher": "人民网",
+      "title": "“衢州烂柯杯”中国围棋冠军赛收官 党毅飞生日夜捧得冠军",
+      "published_date": "2024-06-18",
+      "authority": "contemporaneous national press",
+      "facts": [
+        "The tenth domestic Chinese championship final was held on 2024-06-17. Dang Yifei beat Lian Xiao as White by one quarter stone. Organizers were the Chinese Weiqi Association, Zhejiang sports administration and Quzhou government.",
+        "The canonical Chinese type is 衢州烂柯杯中国围棋冠军赛."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "cn-lanke-history",
+      "url": "https://zh.wikipedia.org/wiki/%E8%A1%A2%E5%B7%9E%C2%B7%E7%83%82%E6%9F%AF%E6%9D%AF%E4%B8%AD%E5%9B%BD%E5%9B%B4%E6%A3%8B%E5%86%A0%E5%86%9B%E8%B5%9B",
+      "publisher": "Chinese Wikipedia",
+      "title": "衢州·烂柯杯中国围棋冠军赛",
+      "authority": "secondary encyclopedia",
+      "facts": [
+        "The page explicitly separates the world open and women elite event. Domestic editions two through seven correspond to 2008, 2010, 2012, 2014, 2016 and 2018; edition nine is 2022 and edition ten 2024.",
+        "The domestic event includes qualifying rounds, including documented online qualifiers in 2014. The eighth edition is a 2020 season whose final occurred in January 2021. No edition assignment follows from this chronology."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "cn-lanke-eighth-cross-year",
+      "url": "https://sports.sina.com.cn/go/2021-01-08/doc-iiznctkf0881788.shtml",
+      "publisher": "新浪体育",
+      "title": "第8届衢州烂柯杯圆满闭幕 许嘉阳捧杯揽50万奖金",
+      "published_date": "2021-01-08",
+      "authority": "contemporaneous event report",
+      "facts": [
+        "The eighth domestic championship final was played on 2021-01-08, Xu Jiayang defeating Yang Dingxin. The report explicitly distinguishes the previous-year early rounds from the January 2021 quarterfinals, semifinals and final.",
+        "The seven candidate DT values with both midnight timestamps and date-only strings denote the same calendar dates; preserve both SGF values and the original album display date."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "cn-lanke-children-boundary",
+      "url": "https://www.ttplus.cn/publish/app/data/2025/10/23/571779/os_news.html",
+      "publisher": "体坛周报",
+      "title": "2025衢州烂柯杯国际儿童友好围棋锦标赛衢州开赛",
+      "published_date": "2025-10-23",
+      "authority": "specialist contemporaneous report",
+      "facts": [
+        "The 2025 international child-friendly championship has professional individual and amateur team sections. It is distinct from the domestic Chinese champion tournament and world open. Its candidate records, including selection games, remain outside this decision."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "kr-kiwang-history",
+      "url": "https://ko.wikipedia.org/wiki/%EA%B8%B0%EC%99%95%EC%A0%84_(%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD)",
+      "publisher": "Korean Wikipedia",
+      "title": "기왕전 (대한민국)",
+      "authority": "secondary encyclopedia",
+      "facts": [
+        "Kiwang means 棋王戰, a Korean domestic tournament organized by Chosun Ilbo, beginning in 1974 and ending with its twentieth edition in 1996. The fifth edition ended in 1979, eighteenth in 1994, nineteenth in 1995 and twentieth in 1996.",
+        "It preceded the LG international tournament but is a separate domestic type in this catalog. A domestic twenty-fourth edition is impossible. Kiwang is neither Wangwi (王位戰) nor Giseong (棋聖戰)."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "kr-wangwi-boundary",
+      "url": "https://en.wikipedia.org/wiki/Wangwi",
+      "publisher": "English Wikipedia",
+      "title": "Wangwi",
+      "authority": "secondary encyclopedia",
+      "facts": [
+        "Wangwi is a separate South Korean tournament sponsored by Chung-ang Il-po. It remains the existing 韩国王位战 type; no Kiwang candidate is merged into it."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "kr-siptan-kba",
+      "url": "https://www.baduk.or.kr/game/game_view.asp?cmpt_code=6813",
+      "publisher": "한국기원 (Korea Baduk Association)",
+      "title": "원익배 십단전 tournament history",
+      "authority": "official tournament administrator",
+      "facts": [
+        "The official event is Wonik Siptan, organized by Kyunghyang and Baduk TV, sponsored by Wonik. The table gives eight title decisions, from first in 2006 through eighth in 2013, with best-of-three finals.",
+        "Official champions establish that candidate third through eighth finals in 2008–2013 belong to this tournament. It is separate from Japanese Judan, Taiwan UMC ten-dan, Korean female ten-dan and Korean Chunwon."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    },
+    {
+      "key": "kr-siptan-history",
+      "url": "https://en.wikipedia.org/wiki/Sibdan_Cup",
+      "publisher": "English Wikipedia",
+      "title": "Siptan",
+      "authority": "secondary encyclopedia",
+      "facts": [
+        "The Korean 十段戰 began in 2005, ran eight editions and ended in 2013. Editions span 2005–2006 through 2012–2013; thus a following-year final is expected, while DT 1900-01-01 is not a valid tournament date.",
+        "Siptan/Sibdan is the Korean ten-dan tournament; transliteration or similar title rank does not merge it with Japanese Judan or another country’s ten-dan event."
+      ],
+      "retrieved_date": "2026-10-04",
+      "retrieval_method": "web search and opened rendered page; factual observations, not a full-text archive"
+    }
+  ],
+  "limitations": [
+    "External sources establish series identity, chronology and selected anchors; no claim of external game-by-game authentication of every SGF."
+  ]
+}

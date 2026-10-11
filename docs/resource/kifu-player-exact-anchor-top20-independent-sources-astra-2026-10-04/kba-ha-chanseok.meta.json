@@ -1,0 +1,11 @@
+{
+  "key": "kba-ha-chanseok",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-ha-chanseok.html",
+  "raw_sha256": "86465648c95cc039d3dd83efbcc3ac522d5a900b3ce825b932c01bc6d4bd178f",
+  "resolved_url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000022",
+  "retrieved_at_utc": "2026-10-04T12:03:19.073990+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/kba-ha-chanseok.txt",
+  "text_sha256": "f21d3f6ee7613539e8da5cb9eeac8f8c2da5438146e4821cb17675e6d3728dde",
+  "url": "https://m.baduk.or.kr/record/gisa_info.asp?PRPL_CODE=10000022"
+}

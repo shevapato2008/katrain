@@ -1,0 +1,432 @@
+{
+  "prepared_at_utc": "2026-10-09T00:03:32.181086+00:00",
+  "queue_file": "kifu-next-player60-frequency-source-queue-20261009.json",
+  "queue_sha256": "3d106552787b98a73a9d32a2a91003c770c808bd5df4bfd2fb35397ed97f8d98",
+  "rows": [
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "尾崎春美",
+      "current_names": [],
+      "duplicate_lead": null,
+      "forms": {
+        "cn": [
+          "尾崎春美",
+          "source_seen"
+        ],
+        "en": [
+          "OZAKI, Harumi",
+          "official_person_page"
+        ],
+        "jp": [
+          "尾崎春美",
+          "official_person_page"
+        ],
+        "ko": [
+          null,
+          "hold_no_published_person_form"
+        ],
+        "tw": [
+          "尾崎春美",
+          "source_seen"
+        ]
+      },
+      "hold_reason": "No actual Korean published person form; do not infer transliteration from a rule here.",
+      "id": 4485,
+      "prod_visible_slots": 176,
+      "sources": [
+        {
+          "body_bytes": 34799,
+          "body_file": "bodies/4485-nihon-official.body",
+          "body_sha256": "dd1741581c164f7f4e4bb6eb248d02e3daa669eb773d0fdcb9bd8f234c44d3db",
+          "fetched_at_utc": "2026-10-09T00:01:37.654659+00:00",
+          "final_url": "https://www.nihonkiin.or.jp/player/htm/ki000104.html",
+          "key": "4485-nihon-official",
+          "name_excerpt": "尾崎　春美 | 棋士 | 囲碁の日本棋院 English(Information) MENU Language 検索 PCサイト ようこそ ゲスト さん 日本棋院IDマイページ ログイン 棋士コメント用ログイン 新規ID登録 (日本棋院IDマイページ) ホームページに設定する 日本棋院ホーム 棋士 尾崎　春美 尾崎　春美 （オザキ　ハルミ / OZ"
+        },
+        {
+          "body_bytes": 741463,
+          "body_file": "bodies/4485-zh-hans-list.body",
+          "body_sha256": "524442b8466e2aad917517b36412fc2632886af52f2cf9524107c302703fca92",
+          "fetched_at_utc": "2026-10-09T00:02:53.403607+00:00",
+          "final_url": "https://zh.wikipedia.org/zh-hans/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "key": "4485-zh-hans-list",
+          "name_excerpt": "7 细川千仭 谷村久仁子 四段（引退） 1976 2001 久井敬史 木谷好美 [ 235 ] 三段（引退） 1975 2018 尾崎春美 退役：中部总本部 [ 编辑 ] 棋士 段位 入段年 退役年 师从 桑田泰明 九段（引退） 1959 2010 土田正光 九段 1961 2005 木谷实 吉冈薰 九段（引退） 1980 2021 安永一 伊藤庸二 九段 1975 2024 酒井利雄 森岛薰 八段（引退） 1957 2002 宫木庆太郎 明户和巳 八段（引退） 1968 2"
+        },
+        {
+          "body_bytes": 741590,
+          "body_file": "bodies/4485-zh-hant-list.body",
+          "body_sha256": "3b1057fbbe1ecf1f404bb0b1147a91ac699a910a7389286895b9771f47892a0c",
+          "fetched_at_utc": "2026-10-09T00:02:56.809032+00:00",
+          "final_url": "https://zh.wikipedia.org/zh-hant/%E6%97%A5%E6%9C%AC%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+          "key": "4485-zh-hant-list",
+          "name_excerpt": "7 細川千仭 谷村久仁子 四段（引退） 1976 2001 久井敬史 木谷好美 [ 235 ] 三段（引退） 1975 2018 尾崎春美 退役：中部總本部 [ 編輯 ] 棋士 段位 入段年 退役年 師從 桑田泰明 九段（引退） 1959 2010 土田正光 九段 1961 2005 木谷實 吉岡薰 九段（引退） 1980 2021 安永一 伊藤庸二 九段 1975 2024 酒井利雄 森島薰 八段（引退） 1957 2002 宮木慶太郎 明戶和巳 八段（引退） 1968 2"
+        },
+        {
+          "body_bytes": 23815,
+          "body_file": "bodies/4485-igorating.body",
+          "body_sha256": "3ad510b5b452145467d494adc234d5df48c2510cf08b590802c0a78b920d53b9",
+          "fetched_at_utc": "2026-10-09T00:01:40.738321+00:00",
+          "final_url": "https://www.igorating.com/players/harumi-ozaki",
+          "key": "4485-igorating",
+          "name_excerpt": "尾崎春美｜囲碁棋士レーティング（日本） 囲碁棋士レーティング EN レートとは 韓国のレートを見る データ更新が遅れています 尾崎春美 尾崎春美（おざき はるみ）のレートは1270です。 引退。レートは引退時のものです。 尾崎春美 おざき はるみ 日本棋院 レート 1270 順位 － 1年変動 — 最高レート － 直近10局 ● 負け ● 負け ●"
+        }
+      ],
+      "stable_person_bridge": "Nihon Kiin player ID ki000104 gives Japanese name, kana オザキ ハルミ, Latin OZAKI, Harumi, 1927-12-20 birth and 2011-02-27 death; the Chinese Wikipedia Japan-player list carries the same name and career era.",
+      "status": "partial_source_research_ko_hold"
+    },
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "李劫",
+      "current_names": [],
+      "duplicate_lead": {
+        "canonical_name": "李劼",
+        "catalog_id": 4970,
+        "catalog_slots": 30
+      },
+      "forms": {
+        "cn": [
+          "李劼",
+          "different_catalog_ID_4970_source_name_only"
+        ],
+        "en": [
+          "Li Jie",
+          "ambiguous_same_spelling_hold"
+        ],
+        "jp": [
+          null,
+          "hold"
+        ],
+        "ko": [
+          null,
+          "hold"
+        ],
+        "tw": [
+          "李劼",
+          "different_catalog_ID_4970_source_name_only"
+        ]
+      },
+      "hold_reason": "Do not publish 李劼 forms onto local ID 4969 or merge IDs until exact saved-game identity evidence separates or joins the two.",
+      "id": 4969,
+      "prod_visible_slots": 169,
+      "sources": [
+        {
+          "body_bytes": 79095,
+          "body_file": "bodies/4969-zh-wiki-lejie.body",
+          "body_sha256": "22a48dfec60b8d387dfbe73d5c42f023e327e3f9a3b798a1f6af580ac702214f",
+          "fetched_at_utc": "2026-10-09T00:01:41.759809+00:00",
+          "final_url": "https://zh.wikipedia.org/wiki/%E6%9D%8E%E5%8A%BC_(%E5%9B%B4%E6%A3%8B%E6%A3%8B%E6%89%8B)",
+          "key": "4969-zh-wiki-lejie",
+          "name_excerpt": "李劼 (围棋棋手) - 维基百科，自由的百科全书 跳转到内容 搜索 搜索 李劼 (围棋棋手) 添加语言 添加链接 维基百科，自由的百科全书 关于名为李劼的其他人物，請見「 李劼 」。 李劼 (围棋棋手) 全名 李劼 出生 ( 1983-12-04 ) 1983年12月4日 （ 42歲） 四川省 成都市 國籍 中华人民共和国 師從 王剑坤 、 黄进先"
+        },
+        {
+          "body_bytes": 96047,
+          "body_file": "bodies/4969-sina-typo.body",
+          "body_sha256": "621fe5537a14b4bcee006fcf3bac4f07059e823fcedceecd375a07ec0d9f85af",
+          "fetched_at_utc": "2026-10-09T00:01:42.119417+00:00",
+          "final_url": "https://sports.sina.com.cn/go/2008-03-27/09213558712.shtml",
+          "key": "4969-sina-typo",
+          "name_excerpt": "正如许多人喜欢将李劼的名字写作“李劫”一样，李劼在职业生涯中也遭遇了一些“劫难”。近两年，国家队调整人员，李劼因为等级分排名较低而被调整出队。几乎同时，四川队在围甲降级，当杨一和古灵益都双双"
+        }
+      ],
+      "stable_person_bridge": "Wikipedia 李劼 article has Chengdu, 1983-12-04 and 2003 Mingren / 2008 Southwest King results; contemporary Sina article identifies 李劫 as a frequent wrong spelling of 李劼. The local catalog separately has ID 4970 李劼. This is an identity lead, not a binding of 4969 to 4970.",
+      "status": "hold_possible_duplicate_and_dirty_canonical"
+    },
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "洪爽义",
+      "current_names": [],
+      "duplicate_lead": {
+        "canonical_name": "洪性志",
+        "catalog_id": 175,
+        "relationship": "different person; Korean GoRatings 340 and catalog completed ID 175, do not combine"
+      },
+      "forms": {
+        "cn": [
+          "洪爽义",
+          "local_canonical_only"
+        ],
+        "en": [
+          "HONG Seokui",
+          "Kansai_official_person_page"
+        ],
+        "jp": [
+          "洪爽義",
+          "official_person_page"
+        ],
+        "ko": [
+          "홍석의",
+          "KBA_person_page"
+        ],
+        "tw": [
+          "洪爽義",
+          "official_person_page"
+        ]
+      },
+      "hold_reason": "CN simplified 洪爽义 appears as local canonical, but no independent exact simplified person form in this packet; bind owner 5385 by saved games before any name write.",
+      "id": 5385,
+      "prod_visible_slots": 162,
+      "sources": [
+        {
+          "body_bytes": 17226,
+          "body_file": "bodies/5385-kansai-official.body",
+          "body_sha256": "7d4c24b3986e212518bde9b5391f8893af8e7231c28ade874890219b33aed50a",
+          "fetched_at_utc": "2026-10-09T00:01:45.199397+00:00",
+          "final_url": "https://kansaikiin.jp/kisi_prof/honakiyoshi.html",
+          "key": "5385-kansai-official",
+          "name_excerpt": "洪　爽義｜プロ棋士｜一般財団法人関西棋院 ﻿ 施設・催事 大会・イベント 囲碁サロン 囲碁教室・さーくる こども囲碁道場 棋士・棋戦 プロ棋士 プロ棋戦 対局履歴検索 昇段基準 指導碁・棋力検定 棋士派遣 ネット利用 まいど！ 囲碁ネット中継 囲碁入門ゲーム 販売・各制度 通信販売 会員 支部 公認インストラクター 院生 囲碁文化継承基金 囲碁免状"
+        },
+        {
+          "body_bytes": 21750,
+          "body_file": "bodies/5385-kba-profile.body",
+          "body_sha256": "52096e554e179e2eb5e4ab4106206d21f9d87daf4bd344a032ebbb010349503f",
+          "fetched_at_utc": "2026-10-09T00:01:48.066683+00:00",
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=20002143",
+          "key": "5385-kba-profile",
+          "name_excerpt": "보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 홍석의( 洪爽義 ) 5단 생년월일 1986년 08월 10일 소속 일본 통산전적 기사랭킹 승률 0.667 3전 2승 1패 -- (2026년 10월 현재) 특기사항 승단이력 ◆ 1단 / 2015.07.01 / ◆ 2단 / 2017.11.01 / ◆ 3단 / 2019.10.01 / ◆ 4단 / 2021.06.11 / "
+        },
+        {
+          "body_bytes": 126621,
+          "body_file": "bodies/5385-goratings-en.body",
+          "body_sha256": "cc7d0e75251a4b545260c587edfac0e90113127661be6cd67416cce690230bed",
+          "fetched_at_utc": "2026-10-09T00:01:49.900405+00:00",
+          "final_url": "https://www.goratings.org/en/players/1428.html",
+          "key": "5385-goratings-en",
+          "name_excerpt": "Hong Seokui Hong Seokui Back to main list Graph Data Wins 217 Losses 119 Total 336 Link https://kansaikiin.jp/kis... Link https://www.baduk.or.kr/r... Date of Birth 1986-08-10"
+        },
+        {
+          "body_bytes": 128324,
+          "body_file": "bodies/5385-goratings-ko.body",
+          "body_sha256": "0a4663727ef7cdefbd46bb7474128242dc360f677d2375ed523578a222e65197",
+          "fetched_at_utc": "2026-10-09T00:01:51.700320+00:00",
+          "final_url": "https://www.goratings.org/ko/players/1428.html",
+          "key": "5385-goratings-ko",
+          "name_excerpt": "홍석의 홍석의 메인 페이지로 돌아가기 그래프 데이터 승리 217 패배 119 합계 336 링크 https://kansaikiin.jp/kis... 링크 https://www.baduk.or.kr/r... 생년월일 1986-08-10 대국 기록 날짜 레이팅 흑백 결과 상대 기보 2026-10-01 3254 흑번 승"
+        }
+      ],
+      "stable_person_bridge": "Kansai Kiin person profile honakiyoshi links 洪爽義 / ほん あきよし / HONG Seokui and birth 1986-08-10; KBA pkey=20002143 publishes 홍석의(洪爽義) with the same birth date and Japan affiliation; GoRatings stable ID 1428 links both professional profiles.",
+      "status": "source_forms_found_owner_binding_pending"
+    },
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "朴智恩",
+      "current_names": [],
+      "duplicate_lead": {
+        "canonical_names": [
+          "朴志恩",
+          "朴鋕恩"
+        ],
+        "catalog_ids": [
+          4880,
+          4924
+        ],
+        "catalog_slots": [
+          276,
+          1
+        ]
+      },
+      "forms": {
+        "cn": [
+          "朴智恩",
+          "Wikipedia_alias_not_target_approval"
+        ],
+        "en": [
+          "Park Jieun",
+          "already_completed_catalog_ID_4880"
+        ],
+        "jp": [
+          null,
+          "hold"
+        ],
+        "ko": [
+          "박지은",
+          "KBA_person_page"
+        ],
+        "tw": [
+          "朴鋕恩",
+          "Wikipedia_and_KBA_person"
+        ]
+      },
+      "hold_reason": "Do not translate or duplicate the identity on 4892 until exact game/player binding resolves the three local IDs.",
+      "id": 4892,
+      "prod_visible_slots": 127,
+      "sources": [
+        {
+          "body_bytes": 34026,
+          "body_file": "bodies/4892-kba-profile.body",
+          "body_sha256": "9b61d21a87828278ff2a10a033649b509c42380caa70df4076d3f066e2427dec",
+          "fetched_at_utc": "2026-10-09T00:01:54.297855+00:00",
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000182",
+          "key": "4892-kba-profile",
+          "name_excerpt": "보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 박지은( 朴鋕恩 ) 9단 생년월일 1983년 10월 04일 소속 한국 통산전적 기사랭킹 승률 0.556 1,130전 627승 501패 230위 (2026년 10월 현재) 특기사항 ◆ 김동엽 문하 ◆ 국내 최초 여류기사 九단 [2008년] ◆ 2003 ~ 2007 바둑대상 인기기사상 ◆ 2007 ~ 2008, 20"
+        },
+        {
+          "body_bytes": 73038,
+          "body_file": "bodies/4892-zh-wiki.body",
+          "body_sha256": "36050cb183aa4218515c7d0ae79fd0ddba040302f0c553b1ba06bdf8f1dc7c31",
+          "fetched_at_utc": "2026-10-09T00:01:55.410345+00:00",
+          "final_url": "https://zh.wikipedia.org/wiki/%E6%9C%B4%E9%8B%95%E6%81%A9",
+          "key": "4892-zh-wiki",
+          "name_excerpt": "朴鋕恩 - 维基百科，自由的百科全书 跳转到内容 搜索 搜索 朴鋕恩 6种语言 مصرى English Italiano 日本語 한국어 Русский 编辑链接 维基百科，自由的百科全书 朴鋕恩 出生 ( 1983-10-04 ) 1983年10月4日 （ 43歲） 南韓 京畿道 富川市 國籍 大韓民國 入段 1997年 段位 九段 所屬 韩国"
+        }
+      ],
+      "stable_person_bridge": "KBA player key 10000182 says 박지은(朴鋕恩), born 1983-10-04; Wikipedia 朴鋕恩 explicitly lists 朴志恩 and 朴智恩 as alternate renderings. The local catalog has completed ID 4880 朴志恩 with matching published Korean/Latin forms and separate ID 4924 朴鋕恩.",
+      "status": "hold_possible_duplicate"
+    },
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "赵惠莲",
+      "current_names": [],
+      "duplicate_lead": {
+        "canonical_names": [
+          "赵惠连",
+          "赵慧连"
+        ],
+        "catalog_ids": [
+          5962,
+          5963
+        ],
+        "catalog_slots": [
+          403,
+          1
+        ]
+      },
+      "forms": {
+        "cn": [
+          "赵惠连",
+          "Wikipedia_person_page_not_target_approval"
+        ],
+        "en": [
+          "Cho Hyeyeon",
+          "GoRatings_100_person_page"
+        ],
+        "jp": [
+          "趙惠連",
+          "Japanese_Wikipedia_person_page"
+        ],
+        "ko": [
+          "조혜연",
+          "KBA_person_page"
+        ],
+        "tw": [
+          "趙惠連",
+          "Wikipedia_person_page"
+        ]
+      },
+      "hold_reason": "Do not assign the official person to local 5961 without exact game identity. Distinguish the Go player from entertainer 조혜련 / 趙惠蓮.",
+      "id": 5961,
+      "prod_visible_slots": 125,
+      "sources": [
+        {
+          "body_bytes": 34145,
+          "body_file": "bodies/5961-kba-profile.body",
+          "body_sha256": "a8b9691d7b6f06270cba82b30ee6deffaceeda535ceb228e9dbfa2dac28b2a95",
+          "fetched_at_utc": "2026-10-09T00:01:57.978335+00:00",
+          "final_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000146",
+          "key": "5961-kba-profile",
+          "name_excerpt": "보 바둑인광장 바둑이야기 기록실 대국결과 대국일정 기사랭킹 부문별 순위 기사정보 타이틀현황 타이틀기록 기사정보 상세 조혜연( 趙惠連 ) 9단 생년월일 1985년 06월 07일 소속 한국 통산전적 기사랭킹 승률 0.570 1,325전 755승 569패 185위 (2026년 10월 현재) 특기사항 ◆ 조훈현, 이창호에 이어 역대 최연소 입단기록 3위(11세 10개월) ◆ 김원 문하 ◆ 2003~2004년 한국여자바둑석권(여류국수,"
+        },
+        {
+          "body_bytes": 70269,
+          "body_file": "bodies/5961-zh-hans.body",
+          "body_sha256": "fbb83a0f57dbaab765fd53c6734fca3083a34fb72c0b46927a9d3bb71bb484f1",
+          "fetched_at_utc": "2026-10-09T00:02:58.149611+00:00",
+          "final_url": "https://zh.wikipedia.org/zh-hans/%E8%B5%B5%E6%83%A0%E8%BF%9E",
+          "key": "5961-zh-hans",
+          "name_excerpt": "赵惠连 - 维基百科，自由的百科全书 跳转到内容 搜索 搜索 赵惠连 4种语言 Français 日本語 한국어 Русский 编辑链接 维基百科，自由的百科全书 赵惠连 （1985年6月7日—，韩语： 조혜연 ）， 韩国 职业 围棋 棋手，2010年晋升九段 [ 1 ] ，师从 金原 六段。 韩国女子国手战 两连霸。 高丽大学 英文专业毕业。 "
+        },
+        {
+          "body_bytes": 70355,
+          "body_file": "bodies/5961-zh-hant.body",
+          "body_sha256": "f2352636e5a46b430463618b81a18994eac864a642c422ac001665a4b68a6164",
+          "fetched_at_utc": "2026-10-09T00:02:59.293506+00:00",
+          "final_url": "https://zh.wikipedia.org/zh-hant/%E8%B5%B5%E6%83%A0%E8%BF%9E",
+          "key": "5961-zh-hant",
+          "name_excerpt": "趙惠連 - 維基百科，自由的百科全書 跳至內容 搜尋 搜尋 趙惠連 4種語言 Français 日本語 한국어 Русский 編輯連結 維基百科，自由的百科全書 趙惠連 （1985年6月7日—，韓語： 조혜연 ）， 韓國 職業 圍棋 棋手，2010年晉升九段 [ 1 ] ，師從 金原 六段。 韓國女子國手戰 兩連霸。 高麗大學 英文專業畢業。 參"
+        },
+        {
+          "body_bytes": 89599,
+          "body_file": "bodies/5961-ja-wiki.body",
+          "body_sha256": "62807e57bcee1d7ffa20e85d149c01c3543c72e18a552c596b6c40c9cb6e7dfd",
+          "fetched_at_utc": "2026-10-09T00:02:00.268050+00:00",
+          "final_url": "https://ja.wikipedia.org/wiki/%E8%B6%99%E6%83%A0%E9%80%A3",
+          "key": "5961-ja-wiki",
+          "name_excerpt": "趙惠連 - Wikipedia コンテンツにスキップ 検索 検索 趙惠連 4 個の言語版 Français 한국어 Русский 中文 リンクを編集 出典: フリー百科事典『ウィキペディア（Wikipedia）』 趙 惠連 （チョ・ヘヨン、조혜연、ちょう けいれん、 1985年 6月7日 - ）は、 韓国 の女流 囲碁棋士 。 京畿道 水原市 出"
+        },
+        {
+          "body_bytes": 295446,
+          "body_file": "bodies/5961-goratings-en.body",
+          "body_sha256": "2de25f300dc756b54b25ffa6ed5d8899ac9fabed5415059a596c0469ed3a9170",
+          "fetched_at_utc": "2026-10-09T00:02:02.210284+00:00",
+          "final_url": "https://www.goratings.org/en/players/100.html",
+          "key": "5961-goratings-en",
+          "name_excerpt": "Cho Hyeyeon Cho Hyeyeon Back to main list Graph Data Wins 303 Losses 240 Total 543 Link https://www.baduk.or.kr/r... Link http://senseis.xmp.net/?C... Link https://zh.wikipedi"
+        }
+      ],
+      "stable_person_bridge": "KBA player key 10000146 says 조혜연(趙惠連), born 1985-06-07; Chinese/Japanese Wikipedia and GoRatings ID 100 describe that Go player. Local completed ID 5962 赵惠连 already has 조혜연 / Cho Hyeyeon, while 5961 is 赵惠莲.",
+      "status": "hold_possible_duplicate_and_han_variant"
+    },
+    {
+      "current_authoritative_pages": [],
+      "current_canonical_name": "石井千治",
+      "current_names": [],
+      "duplicate_lead": {
+        "alias": "二代目中川亀三郎",
+        "relationship": "historical later name, not a second local player found in current catalog"
+      },
+      "forms": {
+        "cn": [
+          "石井千治",
+          "same_han_name_source"
+        ],
+        "en": [
+          "Ishii Senji",
+          "English_Hoensha_context_only"
+        ],
+        "jp": [
+          "石井千治",
+          "Japanese_Wikipedia_person_article"
+        ],
+        "ko": [
+          null,
+          "hold_no_published_person_form"
+        ],
+        "tw": [
+          "石井千治",
+          "same_han_name_source"
+        ]
+      },
+      "hold_reason": "Korean published personal form absent; English is contextual, so keep source-only pending stronger direct person-page proof.",
+      "id": 6630,
+      "prod_visible_slots": 106,
+      "sources": [
+        {
+          "body_bytes": 71297,
+          "body_file": "bodies/6630-ja-wiki.body",
+          "body_sha256": "0e0606f668e43c1a1fec892a02898bd03e7a31620b4530695ab607da6dfae0f1",
+          "fetched_at_utc": "2026-10-09T00:02:03.140899+00:00",
+          "final_url": "https://ja.wikipedia.org/wiki/%E7%9F%B3%E4%BA%95%E5%8D%83%E6%B2%BB",
+          "key": "6630-ja-wiki",
+          "name_excerpt": "石井千治 - Wikipedia コンテンツにスキップ 検索 検索 石井千治 言語を追加 リンクを追加 出典: フリー百科事典『ウィキペディア（Wikipedia）』 石井千治 （いしい せんじ、 1870年 1月6日 （ 明治 2年 12月5日 ） [ 1 ] - 1928年 （ 昭和 3年） 12月15日 ）は、 囲碁 の 棋士 、 二代目中川"
+        },
+        {
+          "body_bytes": 110863,
+          "body_file": "bodies/6630-en-hoensha.body",
+          "body_sha256": "f05cc636e2cdd872b3df6017cbe540c5d508ab50876bf50e3b01c989bff0fbfd",
+          "fetched_at_utc": "2026-10-09T00:02:04.638965+00:00",
+          "final_url": "https://en.wikipedia.org/wiki/Hoensha",
+          "key": "6630-en-hoensha",
+          "name_excerpt": "asujiro , and Takahashi Kinesaburo . The Three Wunderkinder were Ishii Senji , Sugioka Eijiro , and Tamura Yasuhisa ( Honinbo Shusai ). When Nihon Ki-in was established, the Hoensha was dissolved in 1924. President Years Run Honinbo Shuho 1"
+        }
+      ],
+      "stable_person_bridge": "Japanese Wikipedia person article states 石井千治 (いしい せんじ), second Nakagawa Kamesaburo and Hoensha president; English Hoensha article mentions Ishii Senji among the same three young pupils. This links historical identity and alias but no stable modern professional profile ID.",
+      "status": "partial_source_research_ko_hold"
+    }
+  ],
+  "selection": "six requested PROD high-frequency owner IDs, no SQL or candidate approval",
+  "status": "source_only_unapproved",
+  "warnings": [
+    "source forms are candidate research only",
+    "catalog neighbor IDs are duplicate leads, not merges",
+    "no five-language completion claim"
+  ]
+}

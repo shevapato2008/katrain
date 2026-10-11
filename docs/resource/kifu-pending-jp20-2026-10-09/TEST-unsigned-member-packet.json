@@ -1,0 +1,819 @@
+{
+  "CN_to_TW_count": 1,
+  "JP_to_CN_count": 19,
+  "approval_dependencies_missing": [
+    "signed_original_anchors",
+    "signed_two_rules",
+    "signed_inner_batches",
+    "outer_execution_approval"
+  ],
+  "approved_name_snapshot_sha256": "b627ada77c155e9031bdf8e47bb188436d373d4b7b581f892b89635178069a2e",
+  "catalog_sha256": "aedaab6720cf4035533827d63dc90669e3b5ee35e97855e5b72e02c42616a9d2",
+  "count": 20,
+  "environment": "TEST",
+  "foreign_alias_collisions": [],
+  "inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f",
+  "known_aliases_sha256": "379dade0003500a2660ecb44bcc1fa0b37242b7e47a20c6152ee2a4e21a37cf5",
+  "linked_games_sum": 1918,
+  "members": [
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+4E2D",
+          "output": "U+4E2D",
+          "position": 0
+        },
+        {
+          "input": "U+5C71",
+          "output": "U+5C71",
+          "position": 1
+        },
+        {
+          "input": "U+5B63",
+          "output": "U+5B63",
+          "position": 2
+        },
+        {
+          "input": "U+78E8",
+          "output": "U+78E8",
+          "position": 3
+        }
+      ],
+      "display_name": "中山季磨",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "中山季磨",
+      "owner": {
+        "id": 9583,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "e4c4b9cbb164de9b316c459b8ad6e598c1c22924f8b4f5636f35a2f2ebc71002",
+      "source_batch_id": 560,
+      "source_evidence_sha256": "df069d3d29d4f449cbafa58f72d8f34fb220d672b719888a06b980cde4d6524f",
+      "source_name_sha256": "fb3364150049963e47aca8c211571c1218f30efdfbb897d939c8d774ffe0186d",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5869",
+          "output": "U+5869",
+          "position": 0
+        },
+        {
+          "input": "U+5165",
+          "output": "U+5165",
+          "position": 1
+        },
+        {
+          "input": "U+9038",
+          "output": "U+9038",
+          "position": 2
+        },
+        {
+          "input": "U+9020",
+          "output": "U+9020",
+          "position": 3
+        }
+      ],
+      "display_name": "塩入逸造",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "塩入逸造",
+      "owner": {
+        "id": 10030,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "b496edab0ae3a70278d6d29548fb12f48764845e7b84e28a27b3d1cf1617b693",
+      "source_batch_id": 471,
+      "source_evidence_sha256": "8b431d3b992ca0867e5cdd48cbe812dd80d39d9840813d6ea839962390ad87c7",
+      "source_name_sha256": "249259bd99aad36cc60384204622711c11e6b721171fd00ee54ac2e92deba679",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5B89",
+          "output": "U+5B89",
+          "position": 0
+        },
+        {
+          "input": "U+4E1C",
+          "output": "U+6771",
+          "position": 1
+        },
+        {
+          "input": "U+9633",
+          "output": "U+967D",
+          "position": 2
+        },
+        {
+          "input": "U+5411",
+          "output": "U+5411",
+          "position": 3
+        }
+      ],
+      "display_name": "安東陽向",
+      "lang": "tw",
+      "name_preimage_sha256": null,
+      "original_name": "安东阳向",
+      "owner": {
+        "id": 10134,
+        "kind": "player"
+      },
+      "reference_kind": "verified_chinese_display",
+      "source_anchor_content_sha256": "a50bd3b1177478c8ff61df67eb4300045016882e0cbbc5462641c8a796ff4514",
+      "source_batch_id": 549,
+      "source_evidence_sha256": "5620d85e999311a59e6d81c85ffc05f7ecd70cac66e1602a5a1542a8d712abb3",
+      "source_name_sha256": "eeb5a417676b7cbcb5f8c369eeccee295fd7710fe41bd9b3bcf78d55bf00a8ef",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5C0F",
+          "output": "U+5C0F",
+          "position": 0
+        },
+        {
+          "input": "U+6749",
+          "output": "U+6749",
+          "position": 1
+        },
+        {
+          "input": "U+4E01",
+          "output": "U+4E01",
+          "position": 2
+        }
+      ],
+      "display_name": "小杉丁",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "小杉丁",
+      "owner": {
+        "id": 10211,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "7706b0175913c8611ac871d50d30da4827b613b9763e63c8349709a23bb17893",
+      "source_batch_id": 541,
+      "source_evidence_sha256": "0cf14fbaca961e64f6e4d26bfcaba969f8fa13a340fdcc70db689ec32175e9ed",
+      "source_name_sha256": "84708d5bd170906a56f0e925e114ff0194f59c24fd8bf8436bc6fef1bb7d9de8",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+65E5",
+          "output": "U+65E5",
+          "position": 0
+        },
+        {
+          "input": "U+4E0B",
+          "output": "U+4E0B",
+          "position": 1
+        },
+        {
+          "input": "U+5305",
+          "output": "U+5305",
+          "position": 2
+        },
+        {
+          "input": "U+592B",
+          "output": "U+592B",
+          "position": 3
+        }
+      ],
+      "display_name": "日下包夫",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "日下包夫",
+      "owner": {
+        "id": 10560,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "a7f2ac0dca798e509c5c086604b0f2339b456ad6c57d04bc5211d8872034dc48",
+      "source_batch_id": 468,
+      "source_evidence_sha256": "049895f2510927429ec1b43997817dded266f602c83c9c384a2f760832d4327b",
+      "source_name_sha256": "a306f444f26cd0c719828f1abdc8fb5b63573c30975e7f9da2e1f183deaf330a",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+6B66",
+          "output": "U+6B66",
+          "position": 0
+        },
+        {
+          "input": "U+7530",
+          "output": "U+7530",
+          "position": 1
+        },
+        {
+          "input": "U+535A",
+          "output": "U+535A",
+          "position": 2
+        },
+        {
+          "input": "U+611B",
+          "output": "U+611B",
+          "position": 3
+        }
+      ],
+      "display_name": "武田博愛",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "武田博愛",
+      "owner": {
+        "id": 11074,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "d1ff8b3b1fa99023d151dc6432bbdcd9fc0911fe7388c5848bd9d967573a8507",
+      "source_batch_id": 471,
+      "source_evidence_sha256": "cf9de9691119b0de7f7df18a6e4e71c1ffc1bcb6b1fabe70cf1131ed540cad60",
+      "source_name_sha256": "c26fdc98145bd45fbe1bdd4b8c97b8d587284a707b86ef3725ae98659978ee2f",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+6D5C",
+          "output": "U+6D5C",
+          "position": 0
+        },
+        {
+          "input": "U+5CF6",
+          "output": "U+5CF6",
+          "position": 1
+        },
+        {
+          "input": "U+4E45",
+          "output": "U+4E45",
+          "position": 2
+        },
+        {
+          "input": "U+7FA9",
+          "output": "U+7FA9",
+          "position": 3
+        }
+      ],
+      "display_name": "浜島久義",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "浜島久義",
+      "owner": {
+        "id": 11172,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "74e7bc4fc959db4cab11f15554a3ac492f8c19cc8800235a5292da7e32b79204",
+      "source_batch_id": 468,
+      "source_evidence_sha256": "e750b85223950771f0ed2452da5f7ffa2d4c5cab0cb672edbc1d1872ad75e02c",
+      "source_name_sha256": "cec4454a6e4e7a52c5866d914482b79e4874fd46ec2595016d5ec737a8fe2894",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+6D66",
+          "output": "U+6D66",
+          "position": 0
+        },
+        {
+          "input": "U+539F",
+          "output": "U+539F",
+          "position": 1
+        },
+        {
+          "input": "U+7E41",
+          "output": "U+7E41",
+          "position": 2
+        },
+        {
+          "input": "U+6CBB",
+          "output": "U+6CBB",
+          "position": 3
+        }
+      ],
+      "display_name": "浦原繁治",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "浦原繁治",
+      "owner": {
+        "id": 11173,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "cb6cdb53ec75ff7fcf83ac497c44b91aa0f6ec4bc92d24398a13af79a38cbb8a",
+      "source_batch_id": 542,
+      "source_evidence_sha256": "775368c15f8cac49f359c58ffe52876e8bf6d2e65ca81e3d8cc5f9dde94fc7f8",
+      "source_name_sha256": "f06fc69a9f73186f9866fff830d5c7f16a3a1b7cabaac60e3dcb8e383f6b9226",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+79E6",
+          "output": "U+79E6",
+          "position": 0
+        },
+        {
+          "input": "U+601D",
+          "output": "U+601D",
+          "position": 1
+        },
+        {
+          "input": "U+73A5",
+          "output": "U+73A5",
+          "position": 2
+        }
+      ],
+      "display_name": "秦思玥",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "秦思玥",
+      "owner": {
+        "id": 11448,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "834ad5bed09c4a4724111a865f9d5902d30432c743c61210b40dc26bf9d63307",
+      "source_batch_id": 552,
+      "source_evidence_sha256": "cd9a3156045c24e95046844a1770b627f5c21e3c1708b3e42c073dca56bfed4d",
+      "source_name_sha256": "d965c8ce05798295be67ab7d11a58535257b58c02843e506ed5cc4bd143c2c84",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+9234",
+          "output": "U+9234",
+          "position": 0
+        },
+        {
+          "input": "U+6728",
+          "output": "U+6728",
+          "position": 1
+        },
+        {
+          "input": "U+8D8A",
+          "output": "U+8D8A",
+          "position": 2
+        },
+        {
+          "input": "U+96C4",
+          "output": "U+96C4",
+          "position": 3
+        }
+      ],
+      "display_name": "鈴木越雄",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "鈴木越雄",
+      "owner": {
+        "id": 12025,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "e6ab23497a607272f13654544d8cec446d385111cceec252c2e7958fd528994f",
+      "source_batch_id": 473,
+      "source_evidence_sha256": "3b8aa7449cce62c7d73ce82d76ff359c0c485ea1c50af2c7bfe546ce7d17654c",
+      "source_name_sha256": "c739e8dc7bd7f3ee504db763a9ff44dbd6620d5679bb04a1e01c39560177e074",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5C0F",
+          "output": "U+5C0F",
+          "position": 0
+        },
+        {
+          "input": "U+677E",
+          "output": "U+677E",
+          "position": 1
+        },
+        {
+          "input": "U+4F38",
+          "output": "U+4F38",
+          "position": 2
+        },
+        {
+          "input": "U+662D",
+          "output": "U+662D",
+          "position": 3
+        }
+      ],
+      "display_name": "小松伸昭",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "小松伸昭",
+      "owner": {
+        "id": 12363,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "0911ed2d2d0f9a1feb000f1595c30463b77bee0869739bf80e50fd00c4488ebe",
+      "source_batch_id": 473,
+      "source_evidence_sha256": "33a2804b1047697b5edc53969a27180be2f4621f937c9e2b000852f78a0648cd",
+      "source_name_sha256": "761c2180d9380cbcdd9a23e9be478c9d8b5c99203137d62ebb98ee0b2be82e26",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+65E9",
+          "output": "U+65E9",
+          "position": 0
+        },
+        {
+          "input": "U+702C",
+          "output": "U+702C",
+          "position": 1
+        },
+        {
+          "input": "U+7384",
+          "output": "U+7384",
+          "position": 2
+        },
+        {
+          "input": "U+5802",
+          "output": "U+5802",
+          "position": 3
+        }
+      ],
+      "display_name": "早瀬玄堂",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "早瀬玄堂",
+      "owner": {
+        "id": 12390,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "504b1dcb22e05035418dafb772a61e2d3fa6de6ae01b37cdacdcbfdcd687c009",
+      "source_batch_id": 471,
+      "source_evidence_sha256": "8c60924f8851e92e91c576897d66181a1a721941cbfcf4499a8616d7f6d21acc",
+      "source_name_sha256": "4866149a8e6947ddca7ec43ee96b296a3d7216139b027ab531ac8499f384a6b3",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+798F",
+          "output": "U+798F",
+          "position": 0
+        },
+        {
+          "input": "U+539F",
+          "output": "U+539F",
+          "position": 1
+        },
+        {
+          "input": "U+7FA9",
+          "output": "U+7FA9",
+          "position": 2
+        },
+        {
+          "input": "U+864E",
+          "output": "U+864E",
+          "position": 3
+        }
+      ],
+      "display_name": "福原義虎",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "福原義虎",
+      "owner": {
+        "id": 12393,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "465a60fa6d6b75276e46754b82b394553d6b81b225ab3833070f092dcf64ae7d",
+      "source_batch_id": 471,
+      "source_evidence_sha256": "ce2cf7e9b30259c51fb7d1f429d9d3125ff78373ee0b51767c0fbe84f33abd83",
+      "source_name_sha256": "6108d393d01a29fb3f0f89e185cb6bac2b9f036c577300003a6e1d9ad46e42b4",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5927",
+          "output": "U+5927",
+          "position": 0
+        },
+        {
+          "input": "U+6FA4",
+          "output": "U+6FA4",
+          "position": 1
+        },
+        {
+          "input": "U+9280",
+          "output": "U+9280",
+          "position": 2
+        },
+        {
+          "input": "U+6B21",
+          "output": "U+6B21",
+          "position": 3
+        },
+        {
+          "input": "U+90CE",
+          "output": "U+90CE",
+          "position": 4
+        }
+      ],
+      "display_name": "大澤銀次郎",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "大澤銀次郎",
+      "owner": {
+        "id": 12402,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "d43a24fbffd3ac992ab81869802ebe5d2859139ad90d4c5d555281a49bdfee73",
+      "source_batch_id": 473,
+      "source_evidence_sha256": "436f5242155de7ab0387f9cd01684286606a09815cf33f29636136594b570351",
+      "source_name_sha256": "a3e588843835f8c6ba17e34b48220c74e10eacd3cb157aad3897f12687afeaab",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+7AAA",
+          "output": "U+7AAA",
+          "position": 0
+        },
+        {
+          "input": "U+5185",
+          "output": "U+5185",
+          "position": 1
+        },
+        {
+          "input": "U+79C0",
+          "output": "U+79C0",
+          "position": 2
+        },
+        {
+          "input": "U+77E5",
+          "output": "U+77E5",
+          "position": 3
+        }
+      ],
+      "display_name": "窪内秀知",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "窪内秀知",
+      "owner": {
+        "id": 12403,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "71156c44c374bce5216c4d42ce4ce64dc48b34a3af8e39564ed8ead712be6696",
+      "source_batch_id": 473,
+      "source_evidence_sha256": "a842ce6e428d196cb615e12fbf4f2a86ff6196e6c0d1c4d3a229d5038bcd275d",
+      "source_name_sha256": "4bef780df5b29c1be4c2708e278f07275b8c6a85fd190289eeaf730b5f2f092f",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+4F0A",
+          "output": "U+4F0A",
+          "position": 0
+        },
+        {
+          "input": "U+85E4",
+          "output": "U+85E4",
+          "position": 1
+        },
+        {
+          "input": "U+677E",
+          "output": "U+677E",
+          "position": 2
+        },
+        {
+          "input": "U+6B21",
+          "output": "U+6B21",
+          "position": 3
+        },
+        {
+          "input": "U+90CE",
+          "output": "U+90CE",
+          "position": 4
+        }
+      ],
+      "display_name": "伊藤松次郎",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "伊藤松次郎",
+      "owner": {
+        "id": 12441,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "e4e413c454feba991a4b51168b39f84eb50ddff607dd08d6a25378fc733db92c",
+      "source_batch_id": 471,
+      "source_evidence_sha256": "12afa0db7037c8f71076fad5888e87d473247e0d55f56780330d04c55d627174",
+      "source_name_sha256": "113fc26beea6923ca42aea9f341aac551f3268475f39249215d7f9240a9da46b",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+4E5D",
+          "output": "U+4E5D",
+          "position": 0
+        },
+        {
+          "input": "U+4E16",
+          "output": "U+4E16",
+          "position": 1
+        },
+        {
+          "input": "U+5B89",
+          "output": "U+5B89",
+          "position": 2
+        },
+        {
+          "input": "U+4E95",
+          "output": "U+4E95",
+          "position": 3
+        },
+        {
+          "input": "U+7B97",
+          "output": "U+7B97",
+          "position": 4
+        },
+        {
+          "input": "U+77E5",
+          "output": "U+77E5",
+          "position": 5
+        }
+      ],
+      "display_name": "九世安井算知",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "九世安井算知",
+      "owner": {
+        "id": 12455,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "0b7b92bae6779218e49f7f0fc27003241847d598a19529be5a77d12b5af5af26",
+      "source_batch_id": 473,
+      "source_evidence_sha256": "8b4b4c093b700d828bca91498bc0273b823d8df62c79e09c1f92aa85dd5b294d",
+      "source_name_sha256": "1d4e368109ce2b9be9be18f6b7f985d089c7d0cab8d991ed02577e4086df744e",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+5CB8",
+          "output": "U+5CB8",
+          "position": 0
+        },
+        {
+          "input": "U+672C",
+          "output": "U+672C",
+          "position": 1
+        },
+        {
+          "input": "U+5DE6",
+          "output": "U+5DE6",
+          "position": 2
+        },
+        {
+          "input": "U+4E00",
+          "output": "U+4E00",
+          "position": 3
+        },
+        {
+          "input": "U+90CE",
+          "output": "U+90CE",
+          "position": 4
+        }
+      ],
+      "display_name": "岸本左一郎",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "岸本左一郎",
+      "owner": {
+        "id": 12481,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "cef5e1a99b49686c1dcb1023956393cd06a7e23a0ee8f3419727043dbbf13aab",
+      "source_batch_id": 541,
+      "source_evidence_sha256": "80a6521ce48b780a71901b6357243650a9ca1a6c923f6cd161d8c6e400215355",
+      "source_name_sha256": "19fb258f81b5280307262405dd1af0900a79caa1ef37c482240b0162b55219b2",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+7530",
+          "output": "U+7530",
+          "position": 0
+        },
+        {
+          "input": "U+6751",
+          "output": "U+6751",
+          "position": 1
+        },
+        {
+          "input": "U+6607",
+          "output": "U+6607",
+          "position": 2
+        }
+      ],
+      "display_name": "田村昇",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "田村昇",
+      "owner": {
+        "id": 12483,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "0bb518baf1694cfebac5c5511fec872d5928a99fbccab4e03c550c6db62d697c",
+      "source_batch_id": 541,
+      "source_evidence_sha256": "015e6df6fc09e2782c63ac1e357a634fd0c1fe5c90da2162ce05a300fb16ed64",
+      "source_name_sha256": "48244bb54511968d2c6774584152d371ffda6876e0fa4d00b49c66d79009f9ac",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    },
+    {
+      "codepoint_changes": [
+        {
+          "input": "U+6751",
+          "output": "U+6751",
+          "position": 0
+        },
+        {
+          "input": "U+4E0A",
+          "output": "U+4E0A",
+          "position": 1
+        },
+        {
+          "input": "U+6587",
+          "output": "U+6587",
+          "position": 2
+        },
+        {
+          "input": "U+7965",
+          "output": "U+7965",
+          "position": 3
+        }
+      ],
+      "display_name": "村上文祥",
+      "lang": "cn",
+      "name_preimage_sha256": null,
+      "original_name": "村上文祥",
+      "owner": {
+        "id": 12538,
+        "kind": "player"
+      },
+      "reference_kind": "verified_japanese_display",
+      "source_anchor_content_sha256": "d2145abbe9bbfb03b2d76c60eaeec40a57f28fa3530b06546fbcde2bdf4889ae",
+      "source_batch_id": 541,
+      "source_evidence_sha256": "ca646890a7cde1fc73a9b768baecb26aef129291f0aa3d9c2a9ff700ec050993",
+      "source_name_sha256": "4957963b51461af54eed1b2e7d436987ae83366555fcb54a1ff46bd44e68c4ec",
+      "source_qualified_product_gate": true,
+      "verified_source_live_new_JP_branch": true
+    }
+  ],
+  "members_sha256": "a410ca0369d2b5873a2107e0f956755c5e68dd2abab23ed5f344bd248c738d57",
+  "preimage_capture_sha256": "67ab54bdd3e3d5455d68880f205ba2341a0afefa0173ebfefb86525312c402c1",
+  "source_capture_file": "TEST-jp-source-readonly.json",
+  "source_capture_file_sha256": "3d1f6462fd9eecd1bf24b33307d0025500e46ee091a179a6a733072ab060efc9",
+  "source_captured_at": "2026-10-08T17:57:15.179462+00:00",
+  "source_snapshot_exact_match": true,
+  "status": "pending_root_anchor_rule_batch_signatures",
+  "target_language_name_collisions": [],
+  "target_null_preimages": 20
+}

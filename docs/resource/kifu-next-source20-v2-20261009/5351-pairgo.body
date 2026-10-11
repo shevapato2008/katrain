@@ -1,0 +1,653 @@
+﻿<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>The 2nd World Students Pair Go Championship - The 26th International Amateur Pair Go Championship</title>
+<meta name="keywords" content="go, pair go, International Amateur Pair Go Championship, The 2nd World Students Pair Go Championship">
+<meta name="description" content="The 26th International Amateur Pair Go Championship">
+<link rel="stylesheet" href="../../common/css/reset.css">
+<link rel="stylesheet" href="../../common/css/common.css">
+<link rel="stylesheet" href="../../common/css/module.css">
+<link rel="stylesheet" href="../../common/css/amapair.css">
+<link rel="stylesheet" href="../../common/css/lightbox.css">
+<script src="../../common/js/jquery.js"></script>
+<script src="../../common/js/jquery.rollover.js"></script>
+<script src="../../common/js/jquery.floating-widget.js"></script>
+<script src="../../common/js/jquery.fancybox.js"></script>
+<script src="../../common/js/allocate.js"></script>
+<!--[if lt IE 9]>
+<script src="/common/js/html5shiv.js"></script>
+<script src="/common/js/IE9.js"></script>
+<![endif]-->
+</head>
+<body id="top">
+
+<header>
+	<div>
+		<p class="fl mt5"><a href="../../../home.htm"><img src="../../common/img/logomark.png" width="98" height="98" alt=""></a></p>
+		<p class="fr mt20"><a href="../../../home.php"><img src="../../common/img/template_headeren_btn.png" height="17" alt=""></a></p>
+</div>
+</header>
+
+<div id="container">
+		<h1 class="align_c"> <img src="../../common/img/26th/26thamapairTitle_e.png" alt="The 26th International Amateur Pair Go Championship" width="960" height="131" border="0" usemap="#Map" class="mb15">
+      <map name="Map">
+        <area shape="rect" coords="2,-11,964,110" href="../index_e.htm">
+      </map>
+  </h1>
+
+<div id="side1">
+	<ul>
+		<li><a href="http://www.pairgo.or.jp/amateur/26th/outline/index_e.htm">Outline</a></li>
+  <li><a href="http://www.pairgo.or.jp/amateur/26th/photo/index_e.htm">Photos</a></li>
+  <li><a href="http://www.pairgo.or.jp/amateur/26th/players/index_e.htm">Players</a></li>
+		<li><a href="http://www.pairgo.or.jp/amateur/26th/schedule/index_e.htm">Schedule</a></li>
+		<li><a href="http://www.pairgo.or.jp/amateur/26th/live/index_e.htm">Main game<br>records</a></li>
+		<li><a href="http://www.pairgo.or.jp/amateur/26th/worldstudents/index_e.htm">World students<br>Championship</a></li>
+		<li><a href="http://www.pairgo.or.jp/amateur/champions_finalist_e.htm">Past results</a></li>
+		<li><a href="http://www.pairgo.or.jp/amateur/26th/index_e.htm">Home</a></li>
+	</ul>
+</div>
+    <div id="main">
+      <div class="wrapper1">
+        <div class="wrapper2">
+					<p class="mb30"><img src="../../common/img/26th/wspg2nd_e.jpg" border="0" usemap="#Map2">
+  					<map name="Map2">
+    					<area shape="rect" coords="600,84,777,115" href="http://www.gnavi.co.jp/en/" target="_blank">
+  </map>
+</p>
+          <section>
+          
+<div class="wrapper3">
+<p class="fwb">Organizers: Japan Pair Go Association / World Pair Go Association<br> Cooperation: The All-Japan Students Go Association</p>
+<p class="mt10"> We are holding the 2nd World Students Pair Go Championship.<br> 32 players (15 university student pairs and one high school student pair) from 11 countries and territories will be competing. </p>
+
+<table class="tablephoto fs25 fwb mb0 mt30">
+<tr>
+<td colspan="2" class="align_c">
+Lew &amp; Choi pair (Korea)! Congratulations!</td>
+</tr>
+<tr>
+<td colspan="2">
+<img src="../../common/img/26th/winner_student.jpg" alt="" width="565" height="400"></td>
+</tr>
+</table>
+</div>
+
+
+<!--▼▼ライブ中継▼▼-->
+<h2>Live Broadcasts</h2>
+<section>
+<div class="wrapper3">
+<p style="border:#FC0 solid 2px; background:#FFFF99;" class="align_c fs16 pd15 align_c">
+<span class="attention4" style="line-height:1.5;">PANDA-EGG (free software for Windows) or<br>Pandanet[Go] (free app for Android) is  required to watch the games.<br>
+[ <a href="live_e.htm">Click here for the download page</a> ]</span></p>
+
+<div class="txbar-sa01 mt30">Round 4&nbsp;&nbsp;&nbsp;December 6th, 15:10 (JST) </div>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-4-1e">Zheng &amp; Sha pair (China) vs Ninomiya &amp; Togo pair (Japan)</a></p>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-4-2e">Lew &amp; Choi pair (Korea) vs Konagai &amp; Takashima pair (Japan)</a></p>
+
+<div class="txbar-sa01 mt30">Round 3&nbsp;&nbsp;&nbsp;December 6th, 13:30 (JST) </div>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-3-1e">Lew &amp; Choi pair (Korea) vs Jang &amp; Park pair (Korea)</a></p>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-3-2e">Leung &amp; Vashurov pair (UK/Russia) vs Akutsu &amp; Ishimura pair (Japan)</a></p>
+
+
+<div class="txbar-sa01 mt30">Round 2&nbsp;&nbsp;&nbsp;December 6th, 11:10 (JST) </div>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-2-1e">Ho &amp; Poh pair (Singapore) vs Leung &amp; Vashurov pair (UK/Russia)</a></p>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-2-2e">Pestarino &amp; Salerno pair (Argentina) vs Tsukada &amp; Ozeki pair (Japan)</a></p>
+
+<div class="txbar-sa01 mt30">Round 1&nbsp;&nbsp;&nbsp;December 6th, 9:30 (JST) </div>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-1-1e">Seres &amp; Marko pair (Hungary) vs Ho &amp; Poh pair (Singapore)</a></p>
+<p class="align_l fs16 mt20 ml30"><a href="http://ugi.pandanet.co.jp/?key=pairgo-2015-student-1-2e">Zheng &amp; Sha pair (China) vs Hu &amp; Tsai pair (C.Taipei)</a></p>
+</div>
+</section>
+
+<!--▲▲ライブ中継▲▲-->
+
+<!--results-->
+<h2>Tournament Results</h2>
+<section>
+<div class="wrapper3">
+
+<div id="results">
+<table>
+<tr>
+<th>Rank</th><th>Country</th><th colspan="2">Players</th>
+<th width="10%" class="fs13">Players No.</th><th>&nbsp;</th><th>1R</th><th>2R</th><th>3R</th><th>4R</th><th>Won</th>
+</tr>
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>1</strong></td>
+<td rowspan="2">KOR</td>
+<td class="img"><img src="../../common/img/26th/s08_w.jpg" width="75" height="90"></td><td class="t-name"><span>Lew Seunghee</span>&nbsp;(6-dan)<br>Soongsil University</td>
+<td rowspan="2">3</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>6</td>
+<td>2</td>
+<td>4</td>
+<td>16</td>
+<td rowspan="2">4</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s08_m.jpg" width="75" height="90"></td><td class="t-name"><span>Choi Inhyeok</span>&nbsp;(6-dan)<br>Myeongji University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>2</strong></td>
+<td rowspan="2">KOR</td>
+<td class="img"><img src="../../common/img/26th/s09_w.jpg" width="75" height="90"></td><td class="t-name"><span>Jang Yunjeong</span>&nbsp;(5-dan)<br>Sehan University</td>
+<td rowspan="2">4</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>14</td>
+<td>1</td>
+<td>3</td>
+<td>13</td>
+<td rowspan="2">3</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s09_m.jpg" width="75" height="90"></td><td class="t-name"><span>Park Jongwook</span>&nbsp;(6-dan)<br>Myeongji University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>3</strong></td>
+<td rowspan="2">CHN</td>
+<td class="img"><img src="../../common/img/26th/s06_w.jpg" width="75" height="90"></td><td class="t-name"><span>Zheng Lu</span>&nbsp;(6-dan)<br>Nankai University</td>
+<td rowspan="2">1</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>7</td>
+<td>4</td>
+<td>2</td>
+<td>12</td>
+<td rowspan="2">3</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s06_m.jpg" width="75" height="90"></td><td class="t-name"><span>Sha Xingyu</span>&nbsp;(6-dan)<br>Shanghai International Studies University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>4</strong></td>
+<td rowspan="2">JPN</td>
+<td class="img"><img src="../../common/img/26th/s05_w.jpg" width="75" height="90"></td><td class="t-name"><span>Yu Konagai</span>&nbsp;(6-dan)<br>The University of Tokyo  Secondary School attached to the Faculty of Education</td>
+<td rowspan="2">16</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>10</td>
+<td>12</td>
+<td>13</td>
+<td>3</td>
+<td rowspan="2">3</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s05_m.jpg" width="75" height="90"></td><td class="t-name"><span>Keigo Takashima</span>&nbsp;(6-dan)<br>Toin Gakuen</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>5</strong></td>
+<td rowspan="2">JPN</td>
+<td class="img"><img src="../../common/img/26th/s04_w.jpg" width="75" height="90"></td><td class="t-name"><span>Karin Tsukada</span>&nbsp;(6-dan)<br>Ritsumeikan University</td>
+<td rowspan="2">15</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>2</td>
+<td>11</td>
+<td>8</td>
+<td>14</td>
+<td rowspan="2">3</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s04_m.jpg" width="75" height="90"></td><td class="t-name"><span>Minoru Ozeki</span>&nbsp;(7-dan)<br>Senshu University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>6</strong></td>
+<td rowspan="2">CHN</td>
+<td class="img"><img src="../../common/img/26th/s07_w.jpg" width="75" height="90"></td><td class="t-name"><span>Ouyang Yizhuo</span>&nbsp;(5-dan)<br>Shanghai University of Finance and Economics</td>
+<td rowspan="2">2</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>15</td>
+<td>3</td>
+<td>1</td>
+<td>5</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s07_m.jpg" width="75" height="90"></td><td class="t-name"><span>Sui Zexiang</span>&nbsp;(6-dan)<br>Shanghai University of Finance and Economics</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>7</strong></td>
+<td rowspan="2">JPN</td>
+<td class="img"><img src="../../common/img/26th/s03_w.jpg" width="75" height="90"></td><td class="t-name"><span>Chihiro Akutsu</span>&nbsp;(5-dan)<br>Chuo University</td>
+<td rowspan="2">14</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>4</td>
+<td>7</td>
+<td>9</td>
+<td>15</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s03_m.jpg" width="75" height="90"></td><td class="t-name"><span>Ryusei Ishimura</span>&nbsp;(7-dan)<br>Nihon University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>8</strong></td>
+<td rowspan="2">JPN</td>
+<td class="img"><img src="../../common/img/26th/s02_w.jpg" width="75" height="90"></td><td class="t-name"><span>Shiori Mukoyama</span>&nbsp;(4-dan)<br>Ritsumeikan University</td>
+<td rowspan="2">13</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>11</td>
+<td>8</td>
+<td>16</td>
+<td>4</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s02_m.jpg" width="75" height="90"></td><td class="t-name"><span>Takayasu Hasegawa</span>&nbsp;(6-dan)<br>Ritsumeikan University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>9</strong></td>
+<td rowspan="2">JPN</td>
+<td class="img"><img src="../../common/img/26th/s01_w.jpg" width="75" height="90"></td><td class="t-name"><span>Kaho Ninomiya </span>&nbsp;(6-dan)<br> Waseda University</td>
+<td rowspan="2">12</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>9</td>
+<td>16</td>
+<td>10</td>
+<td>1</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s01_m.jpg" width="75" height="90"></td><td class="t-name"><span>Taikan Togo</span>&nbsp;(7-dan)<br>Hosei University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>10</strong></td>
+<td rowspan="2">HUN</td>
+<td class="img"><img src="../../common/img/26th/s13_w.jpg" width="75" height="90"></td><td class="t-name"><span>Julia Seres</span>&nbsp;(1-dan)<br>Budapest Business School</td>
+<td rowspan="2">8</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>5</td>
+<td>13</td>
+<td>15</td>
+<td>10</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s13_m.jpg" width="75" height="90"></td><td class="t-name"><span>Peter Marko</span>&nbsp;(4-dan)<br>Eotvos Lorand University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>11</strong></td>
+<td rowspan="2">TPE</td>
+<td class="img"><img src="../../common/img/26th/s12_w.jpg" width="75" height="90"></td><td class="t-name"><span>Hu Shih-Yun</span>&nbsp;(6-dan)<br>National Chung Cheng University</td>
+<td rowspan="2">7</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>1</td>
+<td>14</td>
+<td>11</td>
+<td>9</td>
+<td rowspan="2">2</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s12_m.jpg" width="75" height="90"></td><td class="t-name"><span>Tsai Tang-Yu</span>&nbsp;(6-dan)<br>Tamkang University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>12</strong></td>
+<td rowspan="2">USA</td>
+<td class="img"><img src="../../common/img/26th/s15_w.jpg" width="75" height="90"></td><td class="t-name"><span>Jenna Jansen</span>&nbsp;(1-dan)<br>MiraCosta College</td>
+<td rowspan="2">10</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>16</td>
+<td>6</td>
+<td>12</td>
+<td>8</td>
+<td rowspan="2">1</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s15_m.jpg" width="75" height="90"></td><td class="t-name"><span>Norman Tsai</span>&nbsp;(6-dan)<br>University of California, Los Angeles</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>13</strong></td>
+<td rowspan="2" class="fs14">UK<br>RUS</td>
+<td class="img"><img src="../../common/img/26th/s14_w.jpg" width="75" height="90"></td><td class="t-name"><span>Joanne Leung</span>&nbsp;(2-dan)<br>King's College London</td>
+<td rowspan="2">9</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>12</td>
+<td>5</td>
+<td>14</td>
+<td>7</td>
+<td rowspan="2">1</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s14_m.jpg" width="75" height="90"></td><td class="t-name"><span>Alexander Vashurov</span>(5-dan)<br>Peter The Great Saint-Petersburg Polytechnic University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>14</strong></td>
+<td rowspan="2">THA</td>
+<td class="img"><img src="../../common/img/26th/s11_w.jpg" width="75" height="90"></td><td class="t-name"><span>Sasapon Jomhong</span>&nbsp;(1-dan)<br>Rattana Bundit University</td>
+<td rowspan="2">6</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>3</td>
+<td>10</td>
+<td>5</td>
+<td>11</td>
+<td rowspan="2">1</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s11_m.jpg" width="75" height="90"></td><td class="t-name"><span>Panupat Ditthee</span>&nbsp;(3-dan)<br>Thammasat University</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+<!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>15</strong></td>
+<td rowspan="2">SIN</td>
+<td class="img"><img src="../../common/img/26th/s10_w.jpg" width="75" height="90"></td><td class="t-name"><span>Ho Li Ting</span>&nbsp;(2-dan)<br>Nanyang Technological University</td>
+<td rowspan="2">5</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>8</td>
+<td>9</td>
+<td>6</td>
+<td>2</td>
+<td rowspan="2">1</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s10_m.jpg" width="75" height="90"></td><td class="t-name"><span>Poh Song Yu</span>&nbsp;(1-dan)<br>National University of Singapore</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/won.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+</tr><!--1ペア-->
+<tr>
+<td bgcolor="#FCFF80" rowspan="2"><strong>16</strong></td>
+<td rowspan="2">ARG</td>
+<td class="img"><img src="../../common/img/26th/s16_w.jpg" width="75" height="90"></td><td class="t-name"><span>Julieta Pestarino</span>&nbsp;(12-kyu)<br>University Torcuato Di Tella</td>
+<td rowspan="2">11</td>
+<td bgcolor="#FFFDD6" class="fs12 align_c">Game<br>opponent<br>No.</td>
+<td>13</td>
+<td>15</td>
+<td>7</td>
+<td>6</td>
+<td rowspan="2">0</td>
+</tr>
+<tr>
+<td class="img"><img src="../../common/img/26th/s16_m.jpg" width="75" height="90"></td><td class="t-name"><span>Luciano Salerno</span>&nbsp;(2-dan)<br>Universidad del Salvador</td>
+<td bgcolor="#FFFDD6" class="fs14  align_c">Victory<br>or<br>Defeat</td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+<td><img src="../../common/img/lost.gif" alt="" width="15" height="15"></td>
+</tr>
+<!--1ペア-->
+</table>
+</div>
+</div><!-- #wrapper3 -->
+</section><!--results-->
+
+
+
+<h2 class="mb20">Asia</h2>
+<div class="wrapper3">
+	<div id="wspgctable">
+										<p class="txbar-sa02">China</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s06_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Zheng Lu</span>&nbsp;(6-dan)<br>Nankai University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s06_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Sha Xingyu</span>&nbsp;(6-dan)<br>Shanghai International Studies University</td>
+                      </tr>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s07_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Ouyang Yizhuo</span>&nbsp;(5-dan)<br>Shanghai University of Finance and Economics</td>
+                        <td class="t-img"><img src="../../common/img/26th/s07_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Sui Zexiang</span>&nbsp;(6-dan)<br>Shanghai University of Finance and Economics</td>
+                      </tr>
+                    </table>
+										
+										<p class="txbar-sa02">Korea</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s08_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Lew Seunghee</span>&nbsp;(6-dan)<br>Soongsil University </td>
+                        <td class="t-img"><img src="../../common/img/26th/s08_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Choi Inhyeok</span>&nbsp;(6-dan)<br>Myeongji University</td>
+                      </tr>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s09_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Jang Yunjeong</span>&nbsp;(5-dan)<br>Sehan University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s09_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Park Jongwook</span>&nbsp;(6-dan)<br>Myeongji University</td>
+                      </tr>
+                    </table>
+										<p class="txbar-sa02">Singapore</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s10_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Ho Li Ting</span>&nbsp;(2-dan)<br>Nanyang Technological University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s10_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Poh Song Yu</span>&nbsp;(1-dan)<br>National University of Singapore</td>
+                      </tr>
+                    </table>
+										
+										<p class="txbar-sa02">Thailand</p>
+                    <table border="0">
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s11_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Sasapon Jomhong</span>&nbsp;(1-dan)<br>Rattana Bundit University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s11_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Panupat	Ditthee</span>&nbsp;(3-dan)<br>Thammasat University</td>
+                      </tr>
+                    </table>
+										
+										<p class="txbar-sa02">Chinese Taipei</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s12_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Hu Shih-Yun</span>&nbsp;(6-dan)<br>National Chung Cheng University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s12_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Tsai Tang-Yu</span>&nbsp;(6-dan)<br>Tamkang University</td>
+                      </tr>
+                    </table>
+</div>
+</div>
+<h2 class="mb20">Europe</h2>
+<div class="wrapper3">
+	<div id="wspgctable">
+
+
+										<p class="txbar-sa02">Hungary</p>
+        						<table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s13_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Julia Seres</span>&nbsp;(1-dan)<br>Budapest Business School</td>
+                        <td class="t-img"><img src="../../common/img/26th/s13_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Peter Marko</span>&nbsp;(4-dan)<br>Eotvos Lorand University</td>
+                      </tr>
+              </table>
+										<div class="txbar-sa01 mt20 mb0">UK &amp; Russia</div>
+        						<table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s14_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Joanne Leung</span>&nbsp;(2-dan)<br>King's College London</td>
+												<td class="t-img"><img src="../../common/img/26th/s14_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Alexander Vashurov</span>(5-dan)<br>Peter The Great Saint-Petersburg Polytechnic University</td>
+                      </tr>
+              </table>
+
+</div>
+</div>
+<h2 class="mb20">North America</h2>
+<div class="wrapper3">
+	<div id="wspgctable">
+										<p class="txbar-sa02">USA</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s15_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Jenna Jansen</span>&nbsp;(1-dan)<br>MiraCosta College</td>
+                        <td class="t-img"><img src="../../common/img/26th/s15_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Norman Tsai</span>&nbsp;(6-dan)<br>University of California, Los Angeles</td>
+                      </tr>
+                    </table>
+</div>
+</div>
+<h2 class="mb20">Central and South America</h2>
+<div class="wrapper3">
+	<div id="wspgctable">
+										<p class="txbar-sa02">Argentina</p>
+                    <table>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s16_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Julieta Pestarino</span>&nbsp;(12-kyu)<br>University Torcuato Di Tella </td>
+                        <td class="t-img"><img src="../../common/img/26th/s16_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Luciano	Salerno</span>&nbsp;(2-dan)<br>Universidad del Salvador</td>
+                      </tr>
+                    </table>
+
+</div>
+</div>
+<h2 class="mb20">Japan</h2>
+<div class="wrapper3">
+	<div id="wspgctable">
+		<table border="0">
+                      <tr>
+                        <td class="t-img pd0"><img src="../../common/img/26th/s01_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Kaho Ninomiya	</span>&nbsp;(6-dan)<br>	Waseda University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s01_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Taikan Togo</span>&nbsp;(7-dan)<br>Hosei University</td>
+                      </tr>
+                			<tr>
+                        <td class="t-img"><img src="../../common/img/26th/s02_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Shiori Mukoyama</span>&nbsp;(4-dan)<br>Ritsumeikan University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s02_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Takayasu Hasegawa</span>&nbsp;(6-dan)<br>Ritsumeikan University</td>
+                </tr>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s03_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Chihiro	Akutsu</span>&nbsp;(5-dan)<br>Chuo University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s03_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Ryusei Ishimura</span>&nbsp;(7-dan)<br>Nihon University</td>
+                      </tr>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s04_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Karin Tsukada</span>&nbsp;(6-dan)<br>Ritsumeikan University</td>
+                        <td class="t-img"><img src="../../common/img/26th/s04_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Minoru Ozeki</span>&nbsp;(7-dan)<br>Senshu University</td>
+                      </tr>
+                      <tr>
+                        <td class="t-img"><img src="../../common/img/26th/s05_w.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Yu Konagai</span>&nbsp;(6-dan)<br>The University of Tokyo  Secondary School attached to the Faculty of Education</td>
+                        <td class="t-img"><img src="../../common/img/26th/s05_m.jpg" width="75" height="90"></td>
+                        <td class="t-name"><span>Keigo Takashima</span>&nbsp;(6-dan)<br>Toin Gakuen</td>
+                      </tr>
+                    </table>
+
+</div>          
+</div>          
+          </section>
+          
+          
+        </div>
+        <!-- #wrapper2-->
+      </div>
+      <!-- #wrapper1 -->
+			<p class="align_c mt20 mb20"><a href="#top" class="inlineLink">Page Top</a></p>
+    </div>
+    <!-- #main -->
+</div>
+<!-- #container -->
+
+<footer>
+	<small>Copyright&copy; Japan Pair Go Association </small>
+</footer>
+
+</body>
+</html>

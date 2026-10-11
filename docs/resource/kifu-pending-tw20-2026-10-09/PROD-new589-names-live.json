@@ -1,0 +1,187 @@
+{
+  "batch_id": 589,
+  "environment": "PROD",
+  "observed_at": "2026-10-08T18:54:28.762678+00:00",
+  "rows": [
+    {
+      "decision_kind": "generated",
+      "display_name": "中山季磨",
+      "evidence_id": 64017,
+      "lang": "cn",
+      "owner_id": 3785,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "塩入逸造",
+      "evidence_id": 64018,
+      "lang": "cn",
+      "owner_id": 4235,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "安東陽向",
+      "evidence_id": 64036,
+      "lang": "tw",
+      "owner_id": 4340,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "小杉丁",
+      "evidence_id": 64019,
+      "lang": "cn",
+      "owner_id": 4420,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "日下包夫",
+      "evidence_id": 64020,
+      "lang": "cn",
+      "owner_id": 4771,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "武田博愛",
+      "evidence_id": 64021,
+      "lang": "cn",
+      "owner_id": 5297,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "浜島久義",
+      "evidence_id": 64022,
+      "lang": "cn",
+      "owner_id": 5397,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "浦原繁治",
+      "evidence_id": 64023,
+      "lang": "cn",
+      "owner_id": 5398,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "秦思玥",
+      "evidence_id": 64024,
+      "lang": "cn",
+      "owner_id": 5675,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "鈴木越雄",
+      "evidence_id": 64025,
+      "lang": "cn",
+      "owner_id": 6259,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "小松伸昭",
+      "evidence_id": 64026,
+      "lang": "cn",
+      "owner_id": 6599,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "早瀬玄堂",
+      "evidence_id": 64027,
+      "lang": "cn",
+      "owner_id": 6626,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "福原義虎",
+      "evidence_id": 64028,
+      "lang": "cn",
+      "owner_id": 6629,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "大澤銀次郎",
+      "evidence_id": 64029,
+      "lang": "cn",
+      "owner_id": 6633,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "窪内秀知",
+      "evidence_id": 64030,
+      "lang": "cn",
+      "owner_id": 6634,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "伊藤松次郎",
+      "evidence_id": 64031,
+      "lang": "cn",
+      "owner_id": 6672,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "九世安井算知",
+      "evidence_id": 64032,
+      "lang": "cn",
+      "owner_id": 6686,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "岸本左一郎",
+      "evidence_id": 64033,
+      "lang": "cn",
+      "owner_id": 6712,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "田村昇",
+      "evidence_id": 64034,
+      "lang": "cn",
+      "owner_id": 6714,
+      "reference_url": null,
+      "status": "verified"
+    },
+    {
+      "decision_kind": "generated",
+      "display_name": "村上文祥",
+      "evidence_id": 64035,
+      "lang": "cn",
+      "owner_id": 6769,
+      "reference_url": null,
+      "status": "verified"
+    }
+  ]
+}

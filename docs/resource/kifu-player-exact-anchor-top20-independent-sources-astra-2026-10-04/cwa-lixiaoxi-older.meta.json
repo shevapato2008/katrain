@@ -1,0 +1,11 @@
+{
+  "key": "cwa-lixiaoxi-older",
+  "raw_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-older.json",
+  "raw_sha256": "d1cfbfc9ae57652ee7bce2275f964793b72088a17d6eee60cc27d7996546fc3d",
+  "resolved_url": "https://wqapi.cwql.org.cn/playerInfo/CWA000409",
+  "retrieved_at_utc": "2026-10-04T12:03:41.627571+00:00",
+  "status": 200,
+  "text_path": "docs/resource/kifu-player-exact-anchor-top20-independent-sources-astra-2026-10-04/cwa-lixiaoxi-older.txt",
+  "text_sha256": "0ebc578f9aad43cd30c808aff22ca41186fd1104334e0df8b7d043cfbe4f5e98",
+  "url": "https://wqapi.cwql.org.cn/playerInfo/CWA000409"
+}

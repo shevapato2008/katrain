@@ -151,6 +151,17 @@ class PhysicalPlayOrchestrator:
         if self._session_id is None:
             return
         self._latest_state = state
+        local_confirm = (
+            state.get("game_type") == "pvp_local" and not state.get("end_result") and not state.get("awaiting_count")
+        )
+        if hasattr(self._vision, "set_local_confirmation_mode"):
+            self._vision.set_local_confirmation_mode(
+                local_confirm, session_id=self._session_id, game_id=state.get("game_id")
+            )
+        if local_confirm:
+            self.dismiss_attention()
+            self._set_caught_up(True)
+            self._apply_points([])
         if state.get("game_type") == "pvp_lobby" and self.PAUSE_REASON_REMOTE_DISCONNECTED in self._pause_reasons:
             self._caught_up = True
             self._remove_pause_reason(self.PAUSE_REASON_REMOTE_DISCONNECTED)
@@ -374,6 +385,10 @@ class PhysicalPlayOrchestrator:
             return
         state = self._latest_state
         if not state:
+            return
+        if state.get("game_type") == "pvp_local" and not state.get("end_result") and not state.get("awaiting_count"):
+            # No continuous inference/LED reconciliation between confirmations.
+            # The local controller validates placement and all captures before commit.
             return
         observed = self._vision.get_detected_board()
         if observed is None:

@@ -1,0 +1,1428 @@
+{
+  "basis": {
+    "excluded_prepared_mixed20": [
+      229,
+      320,
+      385,
+      391,
+      446,
+      595,
+      600,
+      662,
+      4235,
+      4276,
+      4771,
+      4782,
+      5297,
+      5396,
+      5397,
+      6259,
+      6599,
+      6626,
+      6629,
+      6686
+    ],
+    "preceding_batch": 590,
+    "prod_file_sha256": "009ee2db0f7415ac8356461acc2a6d5f604f9f3207d5de9c96939abb09a4a521",
+    "prod_fresh_capture": "docs/resource/kifu-next20-2026-10-09/PROD-mixed20-fresh-post590-pages.json.gz",
+    "prod_inventory_sha256": "e038934b83c2733b02b6f3ab9b1e1da3e435eccc5ebf3d4c0d05080ce94e390a",
+    "test_file_sha256": "ab0ad9f8f839ce9451ec37d424c280aa2769abd4518282e958dd9385e36ce0fb",
+    "test_fresh_capture": "docs/resource/kifu-next20-2026-10-09/TEST-mixed20-fresh-post590-pages.json.gz",
+    "test_inventory_sha256": "ffa3752fa7c272382bd826053e3e59dcc24c002c29cea7833665e6eb47aa598f"
+  },
+  "limits": [
+    "No live database capture, target preimage, owner binding, signing, SQL, Git or approval in this source-only packet.",
+    "Only each missing Korean cell is researched; the four existing qualified languages are inventory context.",
+    "Daum page pairs Hangul and Hanzi directly, but it is a community post and requires root source-quality review.",
+    "Japanese proposals are generated from published complete kana and retained NIKL captures; root must review current conflicting publications before approval.",
+    "The first four high-slot Korean conflicts remain excluded, as directed."
+  ],
+  "players": [
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "earlier_korean_research": {
+        "archive_path": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5en-20261007-PROD.json.gz",
+        "generated_steps": "し→시; も→모; ひ→히; ら→라; あ→아; き→키; お→오. しもひら→시모히라; あきお→아키오. Reviewer verifies saved NIKL rule.",
+        "historical_research_status": "not_found_in_scope",
+        "negative_closure": {
+          "conclusion": "approved_not_found_in_scope",
+          "evidence_sha256": "068d59064660c925ab2858df18d02ed79a44b6ecbdf63e7c2f9e0a7b667927b3",
+          "known_leads": [
+            {
+              "candidate_name": "시모히라 아키오",
+              "check_id": "shimohira-wd-ko",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107695267&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "lang": "ko",
+          "owner": {
+            "id": 3771,
+            "kind": "player"
+          },
+          "reason": "Independently verified six saved HTTP 200 checks, exact response SHA and excerpts. Three KBA exact forms yielded no player rows; Korean Wikipedia exact title is missing and quoted phrase has zero hits. The same-person Korean Wikidata label remains a real discovery lead but does not alone attest published Korean Go usage. Japanese reading is supported by a specialist profile, with the Nihon Ki-in direct profile additionally checked where captured. Conclusion is limited to the documented finite checks.",
+          "registry_sha256": "819ca911f5390899e096ecb04733ed544c08528d59b2c1a6156db78494332d21",
+          "required_check_ids": [
+            "shimohira-kba-underscore",
+            "shimohira-kba-compact",
+            "shimohira-kba-kanji",
+            "shimohira-ko-title",
+            "shimohira-ko-phrase",
+            "shimohira-wd-ko"
+          ],
+          "required_checks": [
+            {
+              "check_id": "shimohira-kba-underscore",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `시모히라_아키오`",
+              "scan_id": "scan-shimohira-kba-underscore",
+              "searched_forms": [
+                "시모히라_아키오"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "shimohira-kba-compact",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `시모히라아키오`",
+              "scan_id": "scan-shimohira-kba-compact",
+              "searched_forms": [
+                "시모히라아키오"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "shimohira-kba-kanji",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `下平昭夫`",
+              "scan_id": "scan-shimohira-kba-kanji",
+              "searched_forms": [
+                "下平昭夫"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "shimohira-ko-title",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Korean Wikipedia title `시모히라 아키오`",
+              "scan_id": "scan-shimohira-ko-title",
+              "searched_forms": [
+                "시모히라 아키오"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&titles=%EC%8B%9C%EB%AA%A8%ED%9E%88%EB%9D%BC+%EC%95%84%ED%82%A4%EC%98%A4&prop=info&format=json"
+            },
+            {
+              "check_id": "shimohira-ko-phrase",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Quoted exact Korean Wikipedia phrase `시모히라 아키오`",
+              "scan_id": "scan-shimohira-ko-phrase",
+              "searched_forms": [
+                "시모히라 아키오"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%22%EC%8B%9C%EB%AA%A8%ED%9E%88%EB%9D%BC+%EC%95%84%ED%82%A4%EC%98%A4%22&srlimit=20&format=json"
+            },
+            {
+              "check_id": "shimohira-wd-ko",
+              "entity_field_scope": {
+                "entity_id": "Q107695267",
+                "fields": [
+                  "labels",
+                  "aliases",
+                  "sitelinks"
+                ],
+                "requested_lang": "ko",
+                "sitelink_site": "kowiki"
+              },
+              "method": "entity_api",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Q107695267 KO labels/aliases/kowiki fields; no fallback",
+              "scan_id": "scan-shimohira-wd-ko",
+              "searched_forms": [
+                "시모히라 아키오"
+              ],
+              "source_id": "wikidata",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107695267&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "retained_limitations": [
+            "Other Korean professional sites, alternate spellings, unquoted or broad Korean Wikipedia searches and later publications remain outside this finite scope.",
+            "Same-person Wikidata Korean label 시모히라 아키오 is genuine positive discovery; draft requires independent conventional-usage adjudication.",
+            "KBA exact-query empty pages cannot establish global absence."
+          ],
+          "reviewed_at": "2026-10-06T16:17:59.358017+00:00",
+          "reviewer_id": "/root/national15_sources_sol",
+          "reviewer_model": "gpt-6-sol",
+          "scope_boundary": "Only saved KBA ALL exact underscore/compact Hangul and original Japanese name, Korean Wikipedia exact title and quoted phrase, and same-person Q107695267 Korean Wikidata fields were checked. No broader absence claim.",
+          "scope_id": "ko-ja-generated-finite-v1",
+          "scope_sha256": "ebcb24984c8e0165395284723e61f5d3f6206dfe975b20117df4d13ca4db4fe4",
+          "scope_template_sha256": "89f53400f70f0d6e610bcc9d6e494eeed2569f904289b61253326ecb04cd600a",
+          "scope_version": "1",
+          "source_lang": "ja",
+          "version": 1
+        }
+      },
+      "evidence_kind": "generated_from_complete_japanese_kana_pending_root_review",
+      "japanese_profile": {
+        "content_type": "text/html",
+        "fetched_at": "2026-10-08T20:01:02.007645+00:00",
+        "final_url": "https://www.igorating.com/players/akio-shimohira",
+        "http_status": 200,
+        "raw_body_bytes": 26798,
+        "raw_body_file": "sources/3771-igo.body",
+        "raw_body_sha256": "b0c8fe4fbeb9461dc3960f67299768f962ce5d4ff73d3325347be7a3a1c170ea",
+        "url": "https://www.igorating.com/players/akio-shimohira"
+      },
+      "japanese_reading": "しもひら あきお",
+      "missing_language": "ko",
+      "normative_rule_capture": {
+        "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+        "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+        "rules": [
+          {
+            "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+            "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+          },
+          {
+            "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+          },
+          {
+            "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+          }
+        ]
+      },
+      "prod_player_id": 3771,
+      "qualified_existing_names": {
+        "cn": "下平昭夫",
+        "en": "Shimohira Akio",
+        "jp": "下平昭夫",
+        "tw": "下平昭夫"
+      },
+      "slots_per_environment": 111,
+      "source_only_proposal": "시모히라 아키오",
+      "source_status": "original_reading_and_rule_retained; current conflict publication review pending",
+      "test_player_id": 9569,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "earlier_korean_research": {
+        "archive_path": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5ep-20261007-PROD.json.gz",
+        "generated_steps": "た→다; い→이; な→나; か→카; し→시; ん→ㄴ. たいなか→다이나카; しん→신. Reviewer verifies saved NIKL rule.",
+        "historical_research_status": "not_found_in_scope",
+        "negative_closure": {
+          "conclusion": "approved_not_found_in_scope",
+          "evidence_sha256": "314d745ce5c6a02949af636a03fd1a073fd4ecae246f1334106c9d3b8f500a5c",
+          "known_leads": [
+            {
+              "candidate_name": "다이나카 신",
+              "check_id": "tainaka-wd-ko",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q11674266&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "lang": "ko",
+          "owner": {
+            "id": 6642,
+            "kind": "player"
+          },
+          "reason": "Independently verified six retained HTTP 200 responses against saved body SHA-256 and continuous excerpts. KBA exact ALL full, compact and Japanese-original forms returned no player link; Korean Wikipedia exact title is missing and quoted exact phrase has zero hits. Same-person Wikidata Korean label 다이나카 신 is a real positive discovery lead, but a multilingual database label alone does not establish conventional Korean Go publication. Japanese specialist profile confirms 鯛中新 and たいなか しん; saved NIKL rule supports the proposed generated rendering. Conclusion is limited to the recorded finite scope.",
+          "registry_sha256": "f97ed11d897ebc9b946321e0509fcd34e78d8ec4360b02e25c677ab2332145db",
+          "required_check_ids": [
+            "tainaka-kba-underscore",
+            "tainaka-kba-compact",
+            "tainaka-kba-kanji",
+            "tainaka-ko-title",
+            "tainaka-ko-phrase",
+            "tainaka-wd-ko"
+          ],
+          "required_checks": [
+            {
+              "check_id": "tainaka-kba-underscore",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `다이나카_신`",
+              "scan_id": "scan-tainaka-kba-underscore",
+              "searched_forms": [
+                "다이나카_신"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "tainaka-kba-compact",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `다이나카신`",
+              "scan_id": "scan-tainaka-kba-compact",
+              "searched_forms": [
+                "다이나카신"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "tainaka-kba-kanji",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `鯛中新`",
+              "scan_id": "scan-tainaka-kba-kanji",
+              "searched_forms": [
+                "鯛中新"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "tainaka-ko-title",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Korean Wikipedia title `다이나카 신`",
+              "scan_id": "scan-tainaka-ko-title",
+              "searched_forms": [
+                "다이나카 신"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&titles=%EB%8B%A4%EC%9D%B4%EB%82%98%EC%B9%B4+%EC%8B%A0&prop=info&format=json"
+            },
+            {
+              "check_id": "tainaka-ko-phrase",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Quoted exact Korean Wikipedia phrase `다이나카 신`",
+              "scan_id": "scan-tainaka-ko-phrase",
+              "searched_forms": [
+                "다이나카 신"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%22%EB%8B%A4%EC%9D%B4%EB%82%98%EC%B9%B4+%EC%8B%A0%22&srlimit=20&format=json"
+            },
+            {
+              "check_id": "tainaka-wd-ko",
+              "entity_field_scope": {
+                "entity_id": "Q11674266",
+                "fields": [
+                  "labels",
+                  "aliases",
+                  "sitelinks"
+                ],
+                "requested_lang": "ko",
+                "sitelink_site": "kowiki"
+              },
+              "method": "entity_api",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Q11674266 KO labels/aliases/kowiki fields; no fallback",
+              "scan_id": "scan-tainaka-wd-ko",
+              "searched_forms": [
+                "다이나카 신"
+              ],
+              "source_id": "wikidata",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q11674266&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "retained_limitations": [
+            "Other Korean professional sites, alternate spellings, unquoted or broad Korean Wikipedia searches and later publications remain outside this finite scope.",
+            "Same-person Wikidata Korean label 다이나카 신 is genuine positive discovery; draft requires independent conventional-usage adjudication.",
+            "KBA exact-query empty pages cannot establish global absence."
+          ],
+          "reviewed_at": "2026-10-06T16:56:12.165099+00:00",
+          "reviewer_id": "/root/national15_sources_sol",
+          "reviewer_model": "gpt-6-sol",
+          "scope_boundary": "Only saved KBA ALL exact underscore/compact Hangul and original Japanese name, Korean Wikipedia exact title and quoted phrase, and same-person Q11674266 Korean Wikidata fields were checked. No broader absence claim.",
+          "scope_id": "ko-ja-generated-finite-v1",
+          "scope_sha256": "eb6ad30dd3c72b58ea9d9f585633b8a37de95799cb02ea41dea31da0bebe2089",
+          "scope_template_sha256": "6a69b805385b4088b7de01688f5a3d144f930d52576edc57f134282b1608e464",
+          "scope_version": "1",
+          "source_lang": "ja",
+          "version": 1
+        }
+      },
+      "evidence_kind": "generated_from_complete_japanese_kana_pending_root_review",
+      "japanese_profile": {
+        "content_type": "text/html",
+        "fetched_at": "2026-10-08T20:01:02.057238+00:00",
+        "final_url": "https://www.igorating.com/players/shin-tainaka",
+        "http_status": 200,
+        "raw_body_bytes": 24925,
+        "raw_body_file": "sources/6642-igo.body",
+        "raw_body_sha256": "a54235494905a7a925c60337cd95ee549d7bd342939fe6065769197777f75ac5",
+        "url": "https://www.igorating.com/players/shin-tainaka"
+      },
+      "japanese_reading": "たいなか しん",
+      "missing_language": "ko",
+      "normative_rule_capture": {
+        "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+        "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+        "rules": [
+          {
+            "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+            "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+          },
+          {
+            "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+          },
+          {
+            "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+          }
+        ]
+      },
+      "prod_player_id": 6642,
+      "qualified_existing_names": {
+        "cn": "鲷中新",
+        "en": "Tainaka Shin",
+        "jp": "鯛中新",
+        "tw": "鯛中新"
+      },
+      "slots_per_environment": 105,
+      "source_only_proposal": "다이나카 신",
+      "source_status": "original_reading_and_rule_retained; current conflict publication review pending",
+      "test_player_id": 12411,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "earlier_korean_research": {
+        "archive_path": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5eq-20261007-PROD.json.gz",
+        "generated_steps": "ま→마; え→에; た→타; に→니; し→시; ん→ㄴ; ご→고. まえたに→마에타니; しんご→신고. Reviewer verifies saved NIKL rule.",
+        "historical_research_status": "not_found_in_scope",
+        "negative_closure": {
+          "conclusion": "approved_not_found_in_scope",
+          "evidence_sha256": "f8dad93712af41da210171ba2ed77745e5d35e8a67dc4c6ed49d9dcf616fec9d",
+          "known_leads": [
+            {
+              "candidate_name": "마에타니 신고",
+              "check_id": "maetani-wd-ko",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107695231&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "lang": "ko",
+          "owner": {
+            "id": 6635,
+            "kind": "player"
+          },
+          "reason": "Independently compared all six saved HTTP 200 bodies and SHA-256/excerpts: three exact KBA ALL request forms have no player result link, Korean Wikipedia exact title is missing and quoted exact phrase returns zero hits. Same-person Wikidata Korean label is real positive discovery but not independent Korean Go publication. Japanese specialist reading and saved NIKL rule support the proposed generated form. This closure applies only to the stated finite search scope.",
+          "registry_sha256": "f1cd068abf79d4f10861a23aafb9dd6c76949171b47cbb9253f600d7cd59e3be",
+          "required_check_ids": [
+            "maetani-kba-underscore",
+            "maetani-kba-compact",
+            "maetani-kba-kanji",
+            "maetani-ko-title",
+            "maetani-ko-phrase",
+            "maetani-wd-ko"
+          ],
+          "required_checks": [
+            {
+              "check_id": "maetani-kba-underscore",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `마에타니_신고`",
+              "scan_id": "scan-maetani-kba-underscore",
+              "searched_forms": [
+                "마에타니_신고"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "maetani-kba-compact",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `마에타니신고`",
+              "scan_id": "scan-maetani-kba-compact",
+              "searched_forms": [
+                "마에타니신고"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "maetani-kba-kanji",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `前谷信吾`",
+              "scan_id": "scan-maetani-kba-kanji",
+              "searched_forms": [
+                "前谷信吾"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "maetani-ko-title",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Korean Wikipedia title `마에타니 신고`",
+              "scan_id": "scan-maetani-ko-title",
+              "searched_forms": [
+                "마에타니 신고"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&titles=%EB%A7%88%EC%97%90%ED%83%80%EB%8B%88+%EC%8B%A0%EA%B3%A0&prop=info&format=json"
+            },
+            {
+              "check_id": "maetani-ko-phrase",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Quoted exact Korean Wikipedia phrase `마에타니 신고`",
+              "scan_id": "scan-maetani-ko-phrase",
+              "searched_forms": [
+                "마에타니 신고"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%22%EB%A7%88%EC%97%90%ED%83%80%EB%8B%88+%EC%8B%A0%EA%B3%A0%22&srlimit=20&format=json"
+            },
+            {
+              "check_id": "maetani-wd-ko",
+              "entity_field_scope": {
+                "entity_id": "Q107695231",
+                "fields": [
+                  "labels",
+                  "aliases",
+                  "sitelinks"
+                ],
+                "requested_lang": "ko",
+                "sitelink_site": "kowiki"
+              },
+              "method": "entity_api",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Q107695231 KO labels/aliases/kowiki fields; no fallback",
+              "scan_id": "scan-maetani-wd-ko",
+              "searched_forms": [
+                "마에타니 신고"
+              ],
+              "source_id": "wikidata",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107695231&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "retained_limitations": [
+            "Other Korean professional sites, alternate spellings, unquoted or broad Korean Wikipedia searches and later publications remain outside this finite scope.",
+            "Same-person Wikidata Korean label 마에타니 신고 is genuine positive discovery; draft requires independent conventional-usage adjudication.",
+            "KBA exact-query empty pages cannot establish global absence."
+          ],
+          "reviewed_at": "2026-10-06T17:14:11.645532+00:00",
+          "reviewer_id": "/root/national15_sources_sol",
+          "reviewer_model": "gpt-6-sol",
+          "scope_boundary": "Only saved KBA ALL exact underscore/compact Hangul and original Japanese name, Korean Wikipedia exact title and quoted phrase, and same-person Q107695231 Korean Wikidata fields were checked. No broader absence claim.",
+          "scope_id": "ko-ja-generated-finite-v1",
+          "scope_sha256": "a1bc91dbfe842a1edb92f7f2743d0d4af10ed4b36aca9de185177c2234850bcc",
+          "scope_template_sha256": "8bccad4b96b000d7780336ba6c29fa3067da1041634615445646a4a5b3dc6e26",
+          "scope_version": "1",
+          "source_lang": "ja",
+          "version": 1
+        }
+      },
+      "evidence_kind": "generated_from_complete_japanese_kana_pending_root_review",
+      "japanese_profile": {
+        "content_type": "text/html",
+        "fetched_at": "2026-10-08T20:01:02.044105+00:00",
+        "final_url": "https://www.igorating.com/players/shingo-maetani",
+        "http_status": 200,
+        "raw_body_bytes": 24154,
+        "raw_body_file": "sources/6635-igo.body",
+        "raw_body_sha256": "dcdc6876ff0162f9b7a952797b7cb0f7a0635cc600c4618dbc36ecdebe224139",
+        "url": "https://www.igorating.com/players/shingo-maetani"
+      },
+      "japanese_reading": "まえたに しんご",
+      "missing_language": "ko",
+      "normative_rule_capture": {
+        "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+        "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+        "rules": [
+          {
+            "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+            "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+          },
+          {
+            "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+          },
+          {
+            "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+          }
+        ]
+      },
+      "prod_player_id": 6635,
+      "qualified_existing_names": {
+        "cn": "前谷信吾",
+        "en": "Maetani Shingo",
+        "jp": "前谷信吾",
+        "tw": "前谷信吾"
+      },
+      "slots_per_environment": 84,
+      "source_only_proposal": "마에타니 신고",
+      "source_status": "original_reading_and_rule_retained; current conflict publication review pending",
+      "test_player_id": 12404,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "earlier_korean_research": {
+        "archive_path": "docs/resource/kifu-incremental-applied-2026-10-05/kifu-player-next5eq-20261007-PROD.json.gz",
+        "generated_steps": "か→가; わ→와; む→무; ら→라; ま→마; さ→사; み→미; ち→치. かわむら→가와무라; まさみち→마사미치. Reviewer verifies saved NIKL rule.",
+        "historical_research_status": "not_found_in_scope",
+        "negative_closure": {
+          "conclusion": "approved_not_found_in_scope",
+          "evidence_sha256": "1e5f8dca6a0f106e272267211455590515953cf9ea1c6d1553083413b56b66a1",
+          "known_leads": [
+            {
+              "candidate_name": "가와무라 마사미치",
+              "check_id": "kawamura-wd-ko",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107619138&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "lang": "ko",
+          "owner": {
+            "id": 4568,
+            "kind": "player"
+          },
+          "reason": "Independently compared all six saved HTTP 200 bodies and SHA-256/excerpts: three exact KBA ALL request forms have no player result link, Korean Wikipedia exact title is missing and quoted exact phrase returns zero hits. Same-person Wikidata Korean label is real positive discovery but not independent Korean Go publication. Japanese specialist reading and saved NIKL rule support the proposed generated form. This closure applies only to the stated finite search scope.",
+          "registry_sha256": "f1cd068abf79d4f10861a23aafb9dd6c76949171b47cbb9253f600d7cd59e3be",
+          "required_check_ids": [
+            "kawamura-kba-underscore",
+            "kawamura-kba-compact",
+            "kawamura-kba-kanji",
+            "kawamura-ko-title",
+            "kawamura-ko-phrase",
+            "kawamura-wd-ko"
+          ],
+          "required_checks": [
+            {
+              "check_id": "kawamura-kba-underscore",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `가와무라_마사미치`",
+              "scan_id": "scan-kawamura-kba-underscore",
+              "searched_forms": [
+                "가와무라_마사미치"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "kawamura-kba-compact",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `가와무라마사미치`",
+              "scan_id": "scan-kawamura-kba-compact",
+              "searched_forms": [
+                "가와무라마사미치"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "kawamura-kba-kanji",
+              "entity_field_scope": null,
+              "method": "POST",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "KBA exact category ALL keyWord `川村匡迪`",
+              "scan_id": "scan-kawamura-kba-kanji",
+              "searched_forms": [
+                "川村匡迪"
+              ],
+              "source_id": "korea-baduk",
+              "url": "https://www.baduk.or.kr/record/player_in.asp"
+            },
+            {
+              "check_id": "kawamura-ko-title",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Korean Wikipedia title `가와무라 마사미치`",
+              "scan_id": "scan-kawamura-ko-title",
+              "searched_forms": [
+                "가와무라 마사미치"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&titles=%EA%B0%80%EC%99%80%EB%AC%B4%EB%9D%BC+%EB%A7%88%EC%82%AC%EB%AF%B8%EC%B9%98&prop=info&format=json"
+            },
+            {
+              "check_id": "kawamura-ko-phrase",
+              "entity_field_scope": null,
+              "method": "GET",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Quoted exact Korean Wikipedia phrase `가와무라 마사미치`",
+              "scan_id": "scan-kawamura-ko-phrase",
+              "searched_forms": [
+                "가와무라 마사미치"
+              ],
+              "source_id": "wikipedia-ko",
+              "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%22%EA%B0%80%EC%99%80%EB%AC%B4%EB%9D%BC+%EB%A7%88%EC%82%AC%EB%AF%B8%EC%B9%98%22&srlimit=20&format=json"
+            },
+            {
+              "check_id": "kawamura-wd-ko",
+              "entity_field_scope": {
+                "entity_id": "Q107619138",
+                "fields": [
+                  "labels",
+                  "aliases",
+                  "sitelinks"
+                ],
+                "requested_lang": "ko",
+                "sitelink_site": "kowiki"
+              },
+              "method": "entity_api",
+              "next_page_url": "",
+              "page_count": 1,
+              "page_index": 1,
+              "pagination_basis": "Retained HTTP 200 response is the one page returned for this exact request; parameters, body and SHA are preserved.",
+              "pagination_exhausted": true,
+              "query": "Exact Q107619138 KO labels/aliases/kowiki fields; no fallback",
+              "scan_id": "scan-kawamura-wd-ko",
+              "searched_forms": [
+                "가와무라 마사미치"
+              ],
+              "source_id": "wikidata",
+              "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&ids=Q107619138&languages=ko&props=labels%7Caliases%7Csitelinks&format=json&languagefallback=0"
+            }
+          ],
+          "retained_limitations": [
+            "Other Korean professional sites, alternate spellings, unquoted or broad Korean Wikipedia searches and later publications remain outside this finite scope.",
+            "Same-person Wikidata Korean label 가와무라 마사미치 is genuine positive discovery; draft requires independent conventional-usage adjudication.",
+            "KBA exact-query empty pages cannot establish global absence."
+          ],
+          "reviewed_at": "2026-10-06T17:14:11.650397+00:00",
+          "reviewer_id": "/root/national15_sources_sol",
+          "reviewer_model": "gpt-6-sol",
+          "scope_boundary": "Only saved KBA ALL exact underscore/compact Hangul and original Japanese name, Korean Wikipedia exact title and quoted phrase, and same-person Q107619138 Korean Wikidata fields were checked. No broader absence claim.",
+          "scope_id": "ko-ja-generated-finite-v1",
+          "scope_sha256": "19cf5cebf2411e132e9e5a38d1eda45ddec66d22c932948f3687b6eb3ccb2b94",
+          "scope_template_sha256": "926156e57b8367fa2ba07ffda9a5c84382d3831832c31088fa35ac31cb7c044b",
+          "scope_version": "1",
+          "source_lang": "ja",
+          "version": 1
+        }
+      },
+      "evidence_kind": "generated_from_complete_japanese_kana_pending_root_review",
+      "japanese_profile": {
+        "content_type": "text/html",
+        "fetched_at": "2026-10-08T20:01:02.042644+00:00",
+        "final_url": "https://www.igorating.com/players/masamichi-kawamura",
+        "http_status": 200,
+        "raw_body_bytes": 26809,
+        "raw_body_file": "sources/4568-igo.body",
+        "raw_body_sha256": "27aceb647dca2926a3aa98047ad87487fe2890bcd56438d13e2ff9a671395b29",
+        "url": "https://www.igorating.com/players/masamichi-kawamura"
+      },
+      "japanese_reading": "かわむら まさみち",
+      "missing_language": "ko",
+      "normative_rule_capture": {
+        "file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+        "path": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+        "rules": [
+          {
+            "body_sha256": "91ca51068bdf397629c183aa6b537d3ace51ba1a852c72e9ba8cb358a0422f38",
+            "url": "https://korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000146"
+          },
+          {
+            "body_sha256": "94edbf8feed1569ed74c4700b4188511a7cccb226d879dd5d7fd1a49f3deb220",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000108"
+          },
+          {
+            "body_sha256": "66b46fad43c49262a56cdc572f63244229f006f221e5ff7bfe94f1311d346f55",
+            "url": "https://www.korean.go.kr/front/page/pageView.do?mn_id=97&page_id=P000129"
+          }
+        ]
+      },
+      "prod_player_id": 4568,
+      "qualified_existing_names": {
+        "cn": "川村匡迪",
+        "en": "Kawamura Masamichi",
+        "jp": "川村匡迪",
+        "tw": "川村匡迪"
+      },
+      "slots_per_environment": 78,
+      "source_only_proposal": "가와무라 마사미치",
+      "source_status": "original_reading_and_rule_retained; current conflict publication review pending",
+      "test_player_id": 10358,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "화웨이룽 华伟荣/華偉榮",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 4071,
+      "qualified_existing_names": {
+        "cn": "华伟荣",
+        "en": "Hua Weirong",
+        "jp": "华伟荣",
+        "tw": "華偉榮"
+      },
+      "slots_per_environment": 38,
+      "source_only_proposal": "화웨이룽",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 9867,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "천루이 陈瑞/陳瑞",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6366,
+      "qualified_existing_names": {
+        "cn": "陈瑞",
+        "en": "Chen Rui",
+        "jp": "陳瑞",
+        "tw": "陳瑞"
+      },
+      "slots_per_environment": 30,
+      "source_only_proposal": "천루이",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12132,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "황량위 黄良玉/黄良玉",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6547,
+      "qualified_existing_names": {
+        "cn": "黄良玉",
+        "en": "Huang Liangyu",
+        "jp": "黄良玉",
+        "tw": "黃良玉"
+      },
+      "slots_per_environment": 28,
+      "source_only_proposal": "황량위",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12311,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "차오스야오(여) 乔诗尧/喬詩堯",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 3820,
+      "qualified_existing_names": {
+        "cn": "乔诗尧",
+        "en": "Qiao Shiyao",
+        "jp": "乔诗尧",
+        "tw": "喬詩堯"
+      },
+      "slots_per_environment": 22,
+      "source_only_proposal": "차오스야오",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 9618,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "천후이민 陳惠民/陳惠民",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6329,
+      "qualified_existing_names": {
+        "cn": "陈惠民",
+        "en": "Chen Huimin",
+        "jp": "陳惠民",
+        "tw": "陳惠民"
+      },
+      "slots_per_environment": 22,
+      "source_only_proposal": "천후이민",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12095,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "왕쉐촨 王學傳/王學傳",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5495,
+      "qualified_existing_names": {
+        "cn": "王学传",
+        "en": "Wang Xuezhuan",
+        "jp": "王學傳",
+        "tw": "王學傳"
+      },
+      "slots_per_environment": 19,
+      "source_only_proposal": "왕쉐촨",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11269,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "자오젠난 赵健男/趙健男",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 368,
+      "qualified_existing_names": {
+        "cn": "赵健男",
+        "en": "Zhao Jiannan",
+        "jp": "趙健男",
+        "tw": "趙健男"
+      },
+      "slots_per_environment": 18,
+      "source_only_proposal": "자오젠난",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 369,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "왕보강 王伯刚/王伯剛",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5473,
+      "qualified_existing_names": {
+        "cn": "王伯刚",
+        "en": "Wang Bogang",
+        "jp": "王伯刚",
+        "tw": "王伯剛"
+      },
+      "slots_per_environment": 18,
+      "source_only_proposal": "왕보강",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11247,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "황진셴 黄进先/黃進先",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6552,
+      "qualified_existing_names": {
+        "cn": "黄进先",
+        "en": "Huang Jinxian",
+        "jp": "黄进先",
+        "tw": "黃進先"
+      },
+      "slots_per_environment": 18,
+      "source_only_proposal": "황진셴",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12316,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "선징(여) 沈静/沈靜",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5349,
+      "qualified_existing_names": {
+        "cn": "沈静",
+        "en": "Shen Jing",
+        "jp": "沈静",
+        "tw": "沈靜"
+      },
+      "slots_per_environment": 15,
+      "source_only_proposal": "선징",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11125,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "왕예후이 王业辉/王業輝",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5468,
+      "qualified_existing_names": {
+        "cn": "王业辉",
+        "en": "Wang Yehui",
+        "jp": "王业辉",
+        "tw": "王業輝"
+      },
+      "slots_per_environment": 15,
+      "source_only_proposal": "왕예후이",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11242,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "자오쯔지 赵子骥/趙子驥",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5952,
+      "qualified_existing_names": {
+        "cn": "赵子骥",
+        "en": "Zhao Ziji",
+        "jp": "赵子骥",
+        "tw": "趙子驥"
+      },
+      "slots_per_environment": 15,
+      "source_only_proposal": "자오쯔지",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11721,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "판시위 范希钰/范希鈺",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5790,
+      "qualified_existing_names": {
+        "cn": "范希钰",
+        "en": "Fan Xiyu",
+        "jp": "范希鈺",
+        "tw": "范希鈺"
+      },
+      "slots_per_environment": 14,
+      "source_only_proposal": "판시위",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 11559,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "리강 李钢/李鋼",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 5094,
+      "qualified_existing_names": {
+        "cn": "李钢",
+        "en": "Li Gang",
+        "jp": "李钢",
+        "tw": "李鋼"
+      },
+      "slots_per_environment": 12,
+      "source_only_proposal": "리강",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 10876,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "천더룽 陈德龙/陳德龍",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6322,
+      "qualified_existing_names": {
+        "cn": "陈德龙",
+        "en": "Chen Delong",
+        "jp": "陈德龙",
+        "tw": "陳德龍"
+      },
+      "slots_per_environment": 12,
+      "source_only_proposal": "천더룽",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12088,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    },
+    {
+      "authoritative_pages_status": "Current owner authoritative_pages JSON was not retained in the pinned r3 snapshot; no saved page-apply record matched this owner.",
+      "evidence_kind": "direct_korean_community_publication_pending_root_review",
+      "exact_published_line": "황번 黄贲/黃賁",
+      "korean_publication": {
+        "content_type": "text/html;charset=UTF-8",
+        "fetched_at": "2026-10-08T20:04:43.200019+00:00",
+        "final_url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA",
+        "http_status": 200,
+        "page_posted_at_display": "12.10.24",
+        "publisher": "Daum cafe 바둑과 사람, 고추잠자리",
+        "raw_body_bytes": 153004,
+        "raw_body_file": "sources/daum-korean-player-list.body",
+        "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+        "search_scrape_file": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/search-4071.json",
+        "search_scrape_file_sha256": "65c1018d2c89091352055d117108c6eda8e1f297d26d95eeeaa709856eee26e0",
+        "url": "https://m.cafe.daum.net/clubA7bodook/EMJA/3240?listURI=%2FclubA7bodook%2FEMJA"
+      },
+      "missing_language": "ko",
+      "prod_player_id": 6550,
+      "qualified_existing_names": {
+        "cn": "黄贲",
+        "en": "Huang Bi",
+        "jp": "黄贲",
+        "tw": "黃賁"
+      },
+      "slots_per_environment": 12,
+      "source_only_proposal": "황번",
+      "source_status": "direct_Korean_Hanzi_pair_on_community_page; not_professional_authority",
+      "test_player_id": 12314,
+      "write_permission": "source research only; root owns approval, SQL, Git and deployment"
+    }
+  ],
+  "produced_at": "2026-10-08T20:05:49.990862+00:00",
+  "producer_id": "/root/next20_packet_recovered",
+  "producer_model": "gpt-6-sol",
+  "scope": {
+    "direct_korean_community_names": 16,
+    "held_prior_conflicts": [
+      5244,
+      4499,
+      6496,
+      3900
+    ],
+    "japanese_rule_proposals": 4,
+    "people": 20,
+    "slots_per_environment": 686
+  },
+  "shared_source_pages": [
+    {
+      "authority": "community publication, not a professional registry",
+      "capture_metadata": "docs/resource/kifu-next-highfreq20-source-only-2026-10-09/sources/daum-korean-player-list-capture.json",
+      "owner_ids": [
+        4071,
+        6366,
+        6547,
+        6329,
+        3820,
+        5495,
+        368,
+        5473,
+        6552,
+        5952,
+        5468,
+        5349,
+        5790,
+        6550,
+        6322,
+        5094
+      ],
+      "raw_body_sha256": "e699546d23c8d9cbd0794f0041a23a48328277754c3050589329243fd1478a41",
+      "source": "Daum Korean/Hanzi Go-player list"
+    },
+    {
+      "authority": "normative rule source, not a publication of any individual's Korean name",
+      "capture_file": "docs/resource/kifu-next-throughput-2026-10-09/reused-NIKL-three-page-captures.json",
+      "capture_file_sha256": "8f8d6851e014fd6df950b7d2cfe6d9ce6a12b8d95f1165e75bc6c012ff25a436",
+      "owner_ids": [
+        3771,
+        6642,
+        6635,
+        4568
+      ],
+      "source": "NIKL official Japanese personal-name transcription rules"
+    }
+  ],
+  "status": "source_only_unbound_unapproved"
+}

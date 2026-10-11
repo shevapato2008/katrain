@@ -1,0 +1,12 @@
+{
+  "PROD": {
+    "path": "PROD-pending-conventional17-research.json.gz",
+    "sha256": "ca72f94ac428af3a91b74e316f480aae48f25801686b3f86fe944b06d0f843ca",
+    "records": 17
+  },
+  "TEST": {
+    "path": "TEST-pending-conventional17-research.json.gz",
+    "sha256": "9ba54badbb8c382ddf820d6af0673cae456f0d29e3d0d6b6bd930f4f45254dd3",
+    "records": 17
+  }
+}

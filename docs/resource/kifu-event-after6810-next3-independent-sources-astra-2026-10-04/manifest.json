@@ -1,0 +1,118 @@
+{
+  "format": "independent-source-capture-v1",
+  "sources": [
+    {
+      "key": "youshi-history",
+      "url": "https://www.haifong.org/news/content/5C0B8E819C04BC5F1D554375C86715E1",
+      "retrieved_utc": "2026-10-04T09:30:55.386956+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/youshi-history.html",
+      "file_sha256": "aef8bd84e84b86a6722b15142abcdcd98f536dc0cff68805c84af59a0e5264b4",
+      "bytes": 35650,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/youshi-history.txt",
+      "text_sha256": "132d6370d643f518917be18add4187ad1c5193cbdf6dab40dfbca76c1bdd84ab"
+    },
+    {
+      "key": "youshi-15-rules",
+      "url": "https://haifong.org/game/class_content/3854390B76776737CA4528BB9BD733B1",
+      "retrieved_utc": "2026-10-04T09:30:56.383935+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/youshi-15-rules.html",
+      "file_sha256": "4fa832ca1a4b0a4cc6d4a3e51994ae4dabacc81c12979a31fa957b790edae80a",
+      "bytes": 24679,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/youshi-15-rules.txt",
+      "text_sha256": "3298a93e3b73d179c8a0ac17fb43ef6359c85b14ea2e43761d04dc59672f2b91"
+    },
+    {
+      "key": "kbs-official-history",
+      "url": "https://www.baduk.or.kr/game/game_view.asp?cmpt_code=1106",
+      "retrieved_utc": "2026-10-04T09:30:55.853302+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/kbs-official-history.html",
+      "file_sha256": "4f0b21e6d100c264a93825b73832a93371b5ffd1873699d6ca83bd059db99c09",
+      "bytes": 32236,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/kbs-official-history.txt",
+      "text_sha256": "8757053184aed4822bd08f5cf19b30e2eff2b4496b314d4f4014247b3753c983"
+    },
+    {
+      "key": "kbs-41-game-anchor",
+      "url": "https://m.baduk.or.kr/news/B01_view.asp?news_no=4473",
+      "retrieved_utc": "2026-10-04T09:30:56.686428+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/kbs-41-game-anchor.html",
+      "file_sha256": "30af5c1b8c7aec7df40cd6aec26ca401f011ce8e847336afba8560258e199a86",
+      "bytes": 16067,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/kbs-41-game-anchor.txt",
+      "text_sha256": "233a9dc7b9d7e34f418a03dac8789ea9caeb36d4e962620d408c134f306a56e6"
+    },
+    {
+      "key": "umc-pro-history",
+      "url": "https://haifong.org/game/classes/2E725C23C4DE1EEF626BA6D71BDEC4B2",
+      "retrieved_utc": "2026-10-04T09:30:56.364038+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-history.html",
+      "file_sha256": "dde79a4a87504009f27e747f477367f2696f7a437e9229677c6d5ed22789039a",
+      "bytes": 21827,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-history.txt",
+      "text_sha256": "7c56b153ad41d55809c849d3a4c06df3c07b01ae3724925a57bfb9a23deb1fce"
+    },
+    {
+      "key": "umc-pro-3-rules",
+      "url": "https://www.haifong.org/game/class_content/F16675BC9683EED9628C7F55A5B53B8B",
+      "retrieved_utc": "2026-10-04T09:30:56.569068+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-3-rules.html",
+      "file_sha256": "2e717bd9269ef531e2fcb1ce542730fd6851ed21054f99b8116cdd90a14de242",
+      "bytes": 22111,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-3-rules.txt",
+      "text_sha256": "954d26d55f64097575b8c7a6483f1cfeacf8a8f9dfad19651f4aaac8d8fe13f9"
+    },
+    {
+      "key": "umc-rapid-distinct",
+      "url": "https://haifong.org/news/content/8BB86AE4EFB3EB5CA6C81764E83AEDF3",
+      "retrieved_utc": "2026-10-04T09:30:57.055168+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-rapid-distinct.html",
+      "file_sha256": "b60fe97533ecf9a84a655ef8634c3419a0ea162138019c214668f86edf9700b8",
+      "bytes": 19929,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-rapid-distinct.txt",
+      "text_sha256": "614e508798bf8c6828c3139e6afcab0738e0e51fcbfc6953a6aed5adbe39cd4c"
+    },
+    {
+      "key": "umc-pro-2022-09-results",
+      "url": "https://taiwangorg.blogspot.com/2022/01/20229.html",
+      "retrieved_utc": "2026-10-04T09:30:57.741615+00:00",
+      "retrieval_time_origin": "saved_file_mtime",
+      "capture_method": "requests GET full successful response body and BeautifulSoup plain text",
+      "status_code": 200,
+      "path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-2022-09-results.html",
+      "file_sha256": "dff0a70e0250fe88cfd5d927ddb46e46789a7f819bad72ebe3ef036336435bb0",
+      "bytes": 283652,
+      "text_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/umc-pro-2022-09-results.txt",
+      "text_sha256": "fd55cf2996eff647ba2e66ed3522300d54613ec64ce348537a0e65cadf821d37"
+    },
+    {
+      "key": "kbs-chinese-name-secondary",
+      "url": "https://zh.wikipedia.org/wiki/KBS%E6%9D%AF",
+      "access_method": "web__run open/search rendered content; direct requests GET returned HTTP 403 and no HTML archive is asserted",
+      "observation": "The Chinese article introduction uses KBS杯围棋王战. Used only as secondary evidence for Chinese display wording; its year table is not used for edition linking.",
+      "access_date": "2026-10-04",
+      "observation_path": "docs/resource/kifu-event-after6810-next3-independent-sources-astra-2026-10-04/kbs-chinese-name-secondary-observation.json",
+      "observation_sha256": "0e68b4ff4bc894993937b2dedf97d345a335352e9c5c7602ec71dd82d38000de"
+    }
+  ]
+}

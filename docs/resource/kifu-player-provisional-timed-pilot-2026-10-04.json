@@ -1,0 +1,349 @@
+{
+  "format": "kifu-player-provisional-timed-pilot-v1",
+  "date": "2026-10-04",
+  "environment": "prod read-only",
+  "selection": {
+    "population": "review_status=pending AND review_metadata.kind=provisional_person_link",
+    "raw_count": 3706,
+    "linked_slots": 207175,
+    "high_frequency": "top 10 by linked slot count DESC, raw_value ASC",
+    "hash_sample": "10 raw values with 10 <= slots <= 200, ordered by md5(raw_value)",
+    "sample_size": 20,
+    "sample_slots": 13633,
+    "selection_note": "Exact prior independent review filter: no exact item-level decision for these raws surfaced in the focused artifact scan; broad inventory mentions were not treated as reviews."
+  },
+  "timing": {
+    "started_utc": "2026-10-04 13:41:26",
+    "completed_utc": "2026-10-04 13:51:09",
+    "elapsed_minutes": 9.7,
+    "query_minutes_approx": 4.0,
+    "source_lookup_minutes_approx": 4.0,
+    "reasoning_and_bundle_minutes_approx": 1.7,
+    "safely_confirmed_raws": 17,
+    "yield": "17/20 (85%)",
+    "minutes_per_safely_confirmed_raw": 0.57,
+    "confirmed_linked_slots": 13535
+  },
+  "items": [
+    {
+      "raw_id": 11410,
+      "raw_value": "朴廷桓",
+      "player_id": 54,
+      "canonical_name": "朴廷桓",
+      "slots": 1526,
+      "sample": {
+        "date": "2007-06-11",
+        "event": "7kt-xrls-piaohongsgf",
+        "opponent": "洪性志",
+        "album_id": 74914
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E6%9C%B4%E5%BB%B7%E6%A1%93",
+      "reason": "Dedicated Go biography identifies Park Jung-hwan as a Korean professional Go player; raw equals canonical and the early game against Hong Seong-ji is plausible for his career."
+    },
+    {
+      "raw_id": 11547,
+      "raw_value": "李世石",
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "slots": 1405,
+      "sample": {
+        "date": "1991-06-02",
+        "event": "第12届韩国海泰杯全国儿童围棋王战",
+        "opponent": "韩钟振",
+        "album_id": 71133
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+      "reason": "Korean Baduk Association identifies 李世乭 (Lee Sedol); its ranking records explicitly pair 李世石 with Lee Sedol. The raw is the established Chinese name, and the children's event predates his professional entry plausibly."
+    },
+    {
+      "raw_id": 10721,
+      "raw_value": "山下敬吾",
+      "player_id": 242,
+      "canonical_name": "山下敬吾",
+      "slots": 1371,
+      "sample": {
+        "date": "1900-01-01",
+        "event": "大手合1994年2月号80,81",
+        "opponent": "溝上知親",
+        "album_id": 67687
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000322.htm",
+      "reason": "Nihon Ki-in player profile identifies Keigo Yamashita; raw equals canonical. Record event is a Japanese pro tournament with a named Japanese opponent. Date is a legacy placeholder, so year-level checking is unavailable."
+    },
+    {
+      "raw_id": 9972,
+      "raw_value": "古力",
+      "player_id": 201,
+      "canonical_name": "古力",
+      "slots": 1353,
+      "sample": {
+        "date": "1995-06-12",
+        "event": "1995年定段赛",
+        "opponent": "刘星",
+        "album_id": 68664
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%8F%A4%E5%8A%9B",
+      "reason": "Dedicated biography identifies Gu Li, Chinese Go professional, and notes entry into professional ranks in 1996. The 1995 qualification tournament against Liu Xing is a matching association context."
+    },
+    {
+      "raw_id": 10910,
+      "raw_value": "常昊",
+      "player_id": 877,
+      "canonical_name": "常昊",
+      "slots": 1319,
+      "sample": {
+        "date": "1985-06-15",
+        "event": "常昊的黑白世界",
+        "opponent": "陈祖德",
+        "album_id": 40493
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%B8%B8%E6%98%8A",
+      "reason": "Dedicated biography identifies Chang Hao, Chinese professional Go player, entered 1986; record is an early teaching/book game against senior professional Chen Zude. Timestamp precedes entry and record provenance warrants caution, but name and Go identity are unambiguous."
+    },
+    {
+      "raw_id": 10265,
+      "raw_value": "大竹英雄",
+      "player_id": 879,
+      "canonical_name": "大竹英雄",
+      "slots": 1303,
+      "sample": {
+        "date": "1900-01-01",
+        "event": "3rdHayagoChampionship",
+        "opponent": "坂田荣男",
+        "album_id": 33019
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%A4%A7%E7%AB%B9%E8%8B%B1%E9%9B%84",
+      "reason": "Dedicated biography identifies Hideo Otake, Nihon Ki-in professional. Same-name raw and canonical; named opponent is fellow Japanese titleholder Sakata. Legacy placeholder date limits chronology checking."
+    },
+    {
+      "raw_id": 13169,
+      "raw_value": "藤泽秀行",
+      "player_id": 880,
+      "canonical_name": "藤泽秀行",
+      "slots": 1258,
+      "sample": {
+        "date": "1900-01-01",
+        "event": "NihonKi-inChampionship,17th",
+        "opponent": "石田芳夫",
+        "album_id": 132021
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E8%97%A4%E6%B3%BD%E7%A7%80%E8%A1%8C",
+      "reason": "Dedicated biography identifies Hideyuki Fujisawa, Japanese Go professional; raw/canonical are the standard simplified Chinese form. Event and opponent Ishida Yoshio fit Japanese championship records; legacy placeholder date limits chronology checking."
+    },
+    {
+      "raw_id": 11119,
+      "raw_value": "徐奉洙",
+      "player_id": 108,
+      "canonical_name": "徐奉洙",
+      "slots": 1257,
+      "sample": {
+        "date": "1972-03-20",
+        "event": "4thMyeonginFinal",
+        "opponent": "ChoNam-ch'eol",
+        "album_id": 144042
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%BE%90%E5%A5%89%E6%B4%99",
+      "reason": "Dedicated biography identifies Seo Bong-soo, Korean professional, entered in 1970. 1972 final against Cho Nam-cheol is a plausible early-career Korean title match."
+    },
+    {
+      "raw_id": 10812,
+      "raw_value": "崔哲瀚",
+      "player_id": 4535,
+      "canonical_name": "崔哲瀚",
+      "slots": 1194,
+      "sample": {
+        "date": "1998-08-04",
+        "event": "第3届三星杯预选决胜轮",
+        "opponent": "赵善津",
+        "album_id": 51279
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%B4%94%E5%93%B2%E7%80%9A",
+      "reason": "Dedicated biography identifies Choi Cheol-han, Korean professional and 1997 entrant. The 1998 Samsung Cup qualifier against Cho Seon-jin fits his early career."
+    },
+    {
+      "raw_id": 12984,
+      "raw_value": "聂卫平",
+      "player_id": 5744,
+      "canonical_name": "聂卫平",
+      "slots": 1190,
+      "sample": {
+        "date": "1900-01-01",
+        "event": "聂棋圣“贺岁”指导棋聂卫平执白中盘胜檀啸",
+        "opponent": "檀啸",
+        "album_id": 119314
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://zh.wikipedia.org/wiki/%E8%81%82%E5%8D%AB%E5%B9%B3",
+      "reason": "Dedicated biography identifies Nie Weiping, Chinese Go professional; event title explicitly names him and opponent Tan Xiao. Raw equals canonical. Legacy placeholder date limits chronology checking."
+    },
+    {
+      "raw_id": 12771,
+      "raw_value": "知念熏",
+      "player_id": 5632,
+      "canonical_name": "知念熏",
+      "slots": 84,
+      "sample": {
+        "date": "1993-12-20",
+        "event": "1stCuibaoCup",
+        "opponent": "叶桂",
+        "album_id": 145776
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.nihonkiin.or.jp/player/htm/ki000323.htm",
+      "reason": "Nihon Ki-in profile identifies 知念かおり (Kaori Chinen); GoRatings also uses 知念薰. Raw is the Chinese transliteration; 1993 game in an international cup against Chinese pro Ye Gui fits her Go career."
+    },
+    {
+      "raw_id": 13640,
+      "raw_value": "金大熙",
+      "player_id": 6129,
+      "canonical_name": "金大熙",
+      "slots": 45,
+      "sample": {
+        "date": "2006-07-18",
+        "event": "第6届韩国新锐连胜最强战本赛",
+        "opponent": "陈时暎",
+        "album_id": 44098
+      },
+      "decision": "HOLD_REVIEW",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%9C%8D%E6%A3%8B%E6%A3%8B%E5%A3%AB%E5%88%97%E8%A1%A8",
+      "reason": "The Korean Go player list includes a Kim Dae-hee, and the game context is plausible, but this common Korean name has no dedicated profile in the inspected sources to exclude a homonym against this specific directory ID."
+    },
+    {
+      "raw_id": 11549,
+      "raw_value": "李世石九段",
+      "player_id": 4944,
+      "canonical_name": "李世石",
+      "slots": 35,
+      "sample": {
+        "date": "2006-05-07",
+        "event": "2006韩国联赛第二轮第2场",
+        "opponent": "许映皓五段",
+        "album_id": 101490
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000119",
+      "reason": "Official Korean profile confirms Lee Sedol as 李世乭; Korean Baduk Association ranking uses the paired Chinese reading 李世石. 九段 is a rank suffix, not another person. 2006 league game fits his career."
+    },
+    {
+      "raw_id": 13358,
+      "raw_value": "赵斐",
+      "player_id": 411,
+      "canonical_name": "赵斐",
+      "slots": 22,
+      "sample": {
+        "date": "2015-11-22",
+        "event": "2015凤凰世界巅峰对决少儿赛新浪网选决赛",
+        "opponent": "成家业",
+        "album_id": 47400
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.weiqi.org.cn/player/professional",
+      "reason": "China Weiqi Association professional roster includes 赵斐; sample describes a junior Go qualification final against 成家业. The uncommon full-name match and youth circuit context support the same identity."
+    },
+    {
+      "raw_id": 13834,
+      "raw_value": "金茜倩",
+      "player_id": 6221,
+      "canonical_name": "金茜倩",
+      "slots": 32,
+      "sample": {
+        "date": "1979-04-28",
+        "event": "全运会",
+        "opponent": "郭娟",
+        "album_id": 69887
+      },
+      "decision": "HOLD_REVIEW",
+      "source_url": "https://www.weiqi.org.cn/player/professional",
+      "reason": "The China Weiqi Association roster includes this name, and a 2005 mixed-pairs report names a Go player 金茜倩, but the sampled game date 1979 predates that coverage and no unique profile resolves whether this is the same person or a bad date/other homonym."
+    },
+    {
+      "raw_id": 14262,
+      "raw_value": "高宇",
+      "player_id": 6468,
+      "canonical_name": "高宇",
+      "slots": 21,
+      "sample": {
+        "date": "2008-11-08",
+        "event": "第2届钻石杯北方业余棋王赛第六轮",
+        "opponent": "张一鸣",
+        "album_id": 65297
+      },
+      "decision": "HOLD_REVIEW",
+      "source_url": "https://zh.wikipedia.org/wiki/%E5%85%A8%E5%9B%BD%E5%9B%B4%E6%A3%8B%E6%AE%B5%E4%BD%8D%E8%B5%9B",
+      "reason": "高宇 is a common name. Public Go player lists contain multiple Go players named 高宇; this game is in an amateur regional championship and does not uniquely bind the raw name to directory ID 6468."
+    },
+    {
+      "raw_id": 14442,
+      "raw_value": "黄进先",
+      "player_id": 6552,
+      "canonical_name": "黄进先",
+      "slots": 18,
+      "sample": {
+        "date": "1964-05-06",
+        "event": "1964全国围棋锦标赛第8轮",
+        "opponent": "陈锡明",
+        "album_id": 45004
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.weiqi.org.cn/player/professional",
+      "reason": "China Weiqi Association roster includes 黄进先. Career reporting identifies the veteran coach/player, and the 1964 national championship game against contemporary professional Chen Ximing matches his age and period."
+    },
+    {
+      "raw_id": 12323,
+      "raw_value": "洪性志五段",
+      "player_id": 175,
+      "canonical_name": "洪性志",
+      "slots": 19,
+      "sample": {
+        "date": "2006-06-12",
+        "event": "2006612_12",
+        "opponent": "曹薰铉九段",
+        "album_id": 38983
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000280",
+      "reason": "Official Korean Baduk Association profile identifies Hong Seong-ji (洪性志); 五段 is a rank suffix. 2006 opponent Cho Hun-hyeon and tournament context fit the same Korean professional."
+    },
+    {
+      "raw_id": 12477,
+      "raw_value": "玄釉斌",
+      "player_id": 5460,
+      "canonical_name": "玄釉斌",
+      "slots": 115,
+      "sample": {
+        "date": "2016-08-06",
+        "event": "2016利民杯世界星锐战第2站第1轮",
+        "opponent": "王泽锦",
+        "album_id": 140242
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.baduk.or.kr/record/player_view.asp?pkey=10000882",
+      "reason": "Official Korean profile identifies 현유빈 (玄釉斌), same exact Chinese characters, as a Korean professional. Event against Chinese pro Wang Zejin at the 2016 international youth event fits his junior career."
+    },
+    {
+      "raw_id": 10067,
+      "raw_value": "吴树浩",
+      "player_id": 131,
+      "canonical_name": "吴树浩",
+      "slots": 66,
+      "sample": {
+        "date": "2004-03-28",
+        "event": "第17届中国名人战预选赛",
+        "opponent": "刘菁",
+        "album_id": 111788
+      },
+      "decision": "CONFIRM_PROVISIONAL",
+      "source_url": "https://www.weiqi.org.cn/player/professional",
+      "reason": "China Weiqi Association roster includes 吴树浩; published tournament records show him in Chinese national team events. The 2004 名人战 qualifier against Liu Jing is a plausible Chinese professional circuit association."
+    }
+  ]
+}

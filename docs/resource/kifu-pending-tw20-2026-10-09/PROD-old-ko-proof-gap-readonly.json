@@ -1,0 +1,791 @@
+{
+  "observed_at": "2026-10-08T18:16:15.131708+00:00",
+  "environment": "PROD",
+  "count": 28,
+  "rows": [
+    {
+      "player_id": 3771,
+      "canonical_name": "下平昭夫",
+      "ko_name_id": 7050,
+      "ko_display_name": "시모히라 아키오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 26501,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 58692,
+          "batch_id": 277
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 58691,
+          "batch_id": 277
+        }
+      ]
+    },
+    {
+      "player_id": 3778,
+      "canonical_name": "中冈二郎",
+      "ko_name_id": 6790,
+      "ko_display_name": "나카오카 지로",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 23955,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 53150,
+          "batch_id": 259
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 53149,
+          "batch_id": 259
+        }
+      ]
+    },
+    {
+      "player_id": 3792,
+      "canonical_name": "中川新之",
+      "ko_name_id": 6795,
+      "ko_display_name": "나카가와 신지",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 23960,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 53160,
+          "batch_id": 259
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 53159,
+          "batch_id": 259
+        }
+      ]
+    },
+    {
+      "player_id": 3900,
+      "canonical_name": "佐藤直男",
+      "ko_name_id": 7040,
+      "ko_display_name": "사토 스나오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 26491,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 58672,
+          "batch_id": 277
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 58671,
+          "batch_id": 277
+        }
+      ]
+    },
+    {
+      "player_id": 3902,
+      "canonical_name": "佐藤馨",
+      "ko_name_id": 7005,
+      "ko_display_name": "사토 가오루",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 26456,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 58602,
+          "batch_id": 276
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 58601,
+          "batch_id": 276
+        }
+      ]
+    },
+    {
+      "player_id": 4121,
+      "canonical_name": "向井一男",
+      "ko_name_id": 6875,
+      "ko_display_name": "무카이 가즈오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 24805,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 55150,
+          "batch_id": 266
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 55149,
+          "batch_id": 266
+        }
+      ]
+    },
+    {
+      "player_id": 4266,
+      "canonical_name": "天宅信雄",
+      "ko_name_id": 7100,
+      "ko_display_name": "아마야케 노부오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 27306,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 60452,
+          "batch_id": 282
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 60451,
+          "batch_id": 282
+        }
+      ]
+    },
+    {
+      "player_id": 4421,
+      "canonical_name": "小杉清",
+      "ko_name_id": 6975,
+      "ko_display_name": "고스기 기요시",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 25676,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 56892,
+          "batch_id": 272
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 56891,
+          "batch_id": 272
+        }
+      ]
+    },
+    {
+      "player_id": 4499,
+      "canonical_name": "山崎祐男",
+      "ko_name_id": 6920,
+      "ko_display_name": "야마자키 마스오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 25605,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 56750,
+          "batch_id": 269
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 56749,
+          "batch_id": 269
+        }
+      ]
+    },
+    {
+      "player_id": 4568,
+      "canonical_name": "川村匡迪",
+      "ko_name_id": 7130,
+      "ko_display_name": "가와무라 마사미치",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 28086,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 62312,
+          "batch_id": 286
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 62311,
+          "batch_id": 286
+        }
+      ]
+    },
+    {
+      "player_id": 4587,
+      "canonical_name": "广江胜彦",
+      "ko_name_id": 7055,
+      "ko_display_name": "히로에 가쓰히코",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 27256,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 60352,
+          "batch_id": 280
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 60351,
+          "batch_id": 280
+        }
+      ]
+    },
+    {
+      "player_id": 4842,
+      "canonical_name": "本间明男",
+      "ko_name_id": 6970,
+      "ko_display_name": "혼마 아키오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 25671,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 56882,
+          "batch_id": 272
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 56881,
+          "batch_id": 272
+        }
+      ]
+    },
+    {
+      "player_id": 5158,
+      "canonical_name": "松本笃二",
+      "ko_name_id": 6805,
+      "ko_display_name": "마쓰모토 도쿠지",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 23970,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 53180,
+          "batch_id": 259
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 53179,
+          "batch_id": 259
+        }
+      ]
+    },
+    {
+      "player_id": 5237,
+      "canonical_name": "桑原宗久",
+      "ko_name_id": 6840,
+      "ko_display_name": "구와하라 무네히사",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 24020,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 53430,
+          "batch_id": 262
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 53429,
+          "batch_id": 262
+        }
+      ]
+    },
+    {
+      "player_id": 5244,
+      "canonical_name": "桥本谊",
+      "ko_name_id": 6695,
+      "ko_display_name": "하시모토 요시미",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 22360,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 49660,
+          "batch_id": 251
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 49659,
+          "batch_id": 251
+        }
+      ]
+    },
+    {
+      "player_id": 5413,
+      "canonical_name": "渡边英夫",
+      "ko_name_id": 6935,
+      "ko_display_name": "와타나베 히데오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 25620,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 56780,
+          "batch_id": 269
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 56779,
+          "batch_id": 269
+        }
+      ]
+    },
+    {
+      "player_id": 5877,
+      "canonical_name": "西上好彦",
+      "ko_name_id": 7025,
+      "ko_display_name": "니시가미 요시히코",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 26476,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 58642,
+          "batch_id": 276
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 58641,
+          "batch_id": 276
+        }
+      ]
+    },
+    {
+      "player_id": 6252,
+      "canonical_name": "铃木五良",
+      "ko_name_id": 6705,
+      "ko_display_name": "스즈키 고로",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 22370,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 49680,
+          "batch_id": 251
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 49679,
+          "batch_id": 251
+        }
+      ]
+    },
+    {
+      "player_id": 6260,
+      "canonical_name": "锅岛一郎",
+      "ko_name_id": 6700,
+      "ko_display_name": "나베시마 이치로",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 22365,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 49670,
+          "batch_id": 251
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 49669,
+          "batch_id": 251
+        }
+      ]
+    },
+    {
+      "player_id": 6261,
+      "canonical_name": "锅岛昭",
+      "ko_name_id": 7060,
+      "ko_display_name": "나베시마 아키라",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 27261,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 60362,
+          "batch_id": 280
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 60361,
+          "batch_id": 280
+        }
+      ]
+    },
+    {
+      "player_id": 6270,
+      "canonical_name": "长谷川章",
+      "ko_name_id": 6690,
+      "ko_display_name": "하세가와 아키라",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 22355,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 49650,
+          "batch_id": 251
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 49649,
+          "batch_id": 251
+        }
+      ]
+    },
+    {
+      "player_id": 6496,
+      "canonical_name": "高见泽忠夫",
+      "ko_name_id": 7520,
+      "ko_display_name": "다카미자와 다다오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 33080,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 73050,
+          "batch_id": 318
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 73049,
+          "batch_id": 318
+        }
+      ]
+    },
+    {
+      "player_id": 6581,
+      "canonical_name": "星野纪",
+      "ko_name_id": 6710,
+      "ko_display_name": "호시노 도시",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 22375,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 49690,
+          "batch_id": 251
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 49689,
+          "batch_id": 251
+        }
+      ]
+    },
+    {
+      "player_id": 6608,
+      "canonical_name": "细川千仞",
+      "ko_name_id": 7870,
+      "ko_display_name": "호소카와 센진",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 35990,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 79370,
+          "batch_id": 342
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 79369,
+          "batch_id": 342
+        }
+      ]
+    },
+    {
+      "player_id": 6627,
+      "canonical_name": "小野田千代太郎",
+      "ko_name_id": 7855,
+      "ko_display_name": "오노다 지요타로",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 35975,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 79340,
+          "batch_id": 342
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 79339,
+          "batch_id": 342
+        }
+      ]
+    },
+    {
+      "player_id": 6631,
+      "canonical_name": "酒井利雄",
+      "ko_name_id": 7110,
+      "ko_display_name": "사카이 도시오",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 27316,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 60472,
+          "batch_id": 282
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 60471,
+          "batch_id": 282
+        }
+      ]
+    },
+    {
+      "player_id": 6635,
+      "canonical_name": "前谷信吾",
+      "ko_name_id": 7125,
+      "ko_display_name": "마에타니 신고",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 28081,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 62302,
+          "batch_id": 286
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 62301,
+          "batch_id": 286
+        }
+      ]
+    },
+    {
+      "player_id": 6642,
+      "canonical_name": "鲷中新",
+      "ko_name_id": 7115,
+      "ko_display_name": "다이나카 신",
+      "ko_status": "verified",
+      "ko_decision_kind": "generated",
+      "ko_generation_rule_version": "nikl-ja-ko-personal-name-v1",
+      "evidence_id": 27321,
+      "evidence_review_status": "approved",
+      "evidence_payload_keys": [
+        "candidate",
+        "research"
+      ],
+      "normative_ja_ko_proof_present": false,
+      "name_journal": [
+        {
+          "change_id": 60482,
+          "batch_id": 282
+        }
+      ],
+      "evidence_journal": [
+        {
+          "change_id": 60481,
+          "batch_id": 282
+        }
+      ]
+    }
+  ]
+}

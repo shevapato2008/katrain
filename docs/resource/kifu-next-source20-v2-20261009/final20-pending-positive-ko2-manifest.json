@@ -1,0 +1,12 @@
+{
+  "PROD": {
+    "path": "PROD-post591-final20-pending-positive-ko2.json.gz",
+    "sha256": "f96110b02bd199cbf2ffcfc95b65c9163d831174ade1725eb087e44d56baa63e",
+    "validated_pending_research_count": 2
+  },
+  "TEST": {
+    "path": "TEST-post591-final20-pending-positive-ko2.json.gz",
+    "sha256": "f09d18312f7fed8c0f423f7f2df2eace8be200b27f2570c70abccb44d6ea6b3b",
+    "validated_pending_research_count": 2
+  }
+}

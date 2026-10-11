@@ -1,0 +1,2733 @@
+<!DOCTYPE html>
+<html lang="ko"><head><title>홍석의</title><link rel="icon" type="image/png" href="/apple-touch-icon.png"/><link href="/css/nv.d3.min.css" rel="stylesheet">
+<script src="/javascript/d3.min.js" charset="utf-8"></script>
+<script src="/javascript/nv.d3.min.js" charset="utf-8"></script>
+<meta name=viewport content="width=device-width, initial-scale=1"><meta charset="UTF-8"><style>
+body
+{
+ font-family: sans-serif;
+}
+
+p
+{
+ text-align:center;
+}
+
+h1,h2,h3
+{
+ color: #fff;
+ background-color: #777;
+ padding: 0.3em;
+ text-align: center;
+}
+
+table
+{
+ margin: 0px auto;
+ border-collapse: collapse;
+ color: black;
+ background-color: white;
+}
+
+th
+{
+ padding-left: 0.2em;
+ padding-right: 0.2em;
+ color: black;
+ background-color: #ccc;
+ font-family: sans-serif;
+ font-weight: bold;
+ border: 1px solid white;
+}
+
+th.missing
+{
+ background-color: white;
+}
+
+td
+{
+ padding-left:0.2em;
+ padding-right:0.2em;
+ border:1px solid white;
+ color:black;
+ background-color:#eee;
+ white-space:nowrap;
+}
+
+th.r
+{
+ text-align:right;
+}
+
+td.r
+{
+ text-align:right;
+}
+
+td.c
+{
+ text-align:center;
+}
+
+td.w
+{
+ color: white;
+ background-color: white;
+ border: none;
+}
+
+#graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#history-graph
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    width:100%;
+    height:75vh;
+}
+
+#chartContainer
+{
+    margin-left:auto;
+    margin-right:auto;
+    display:block;
+    max-width:100%;
+    height:auto;
+}
+
+#lang-ctn
+{
+  padding: 10px;
+  text-align: center;
+}
+
+#lang-ctn div
+{
+ background-color: #ccc;
+ display: inline-block;
+ padding-top: 10px;
+ padding-bottom: 5px;
+ padding-right: 5px;
+ padding-left: 5px;
+}
+
+.flag-lang
+{
+  margin-left: 3px;
+  margin-right: 3px;
+  width: 30px;
+  height: 20px;
+}
+
+.banner-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px auto;
+  background-color: #eee;
+  padding: 1rem;
+}
+
+.banner-container > * {
+  flex: 1 1 25rem;
+  min-width: 16rem;
+}
+
+.banner-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.store-badge {
+  height: 3em;
+  width: auto;
+  max-width: 100%;
+  margin: auto 6px;
+}
+
+.review-stars {
+  color: #f5c518;
+}
+</style></head><body><h1>홍석의</h1><div id="lang-ctn"><div><a href="../../en/players/1428.html"><img alt="en translation" class="flag-lang" src="/flags/en.svg" /></a><a href="../../zh/players/1428.html"><img alt="zh translation" class="flag-lang" src="/flags/zh.svg" /></a><a href="../../ja/players/1428.html"><img alt="ja translation" class="flag-lang" src="/flags/ja.svg" /></a><a href="../../ko/players/1428.html"><img alt="ko translation" class="flag-lang" src="/flags/ko.svg" /></a></div></div><p><a href="..">메인 페이지로 돌아가기</a></p><h2>그래프</h2>
+<div id='chartContainer'>
+<svg id='graph' style='height:450px; width:600px'> </svg>
+</div>
+<script type="text/javascript">
+var format = d3.time.format("%Y-%m-%d");
+var format2 = d3.time.format("%Y/%m/%d");
+d3.json('/players-json/data-1428.json', function(data) {
+nv.addGraph(function() {
+var chart = nv.models.lineChart()
+.x(function(d) { return format.parse(d[0]) })
+.y(function(d) { return d[1] })
+.margin({top:20, left: 50, right:50})
+.useInteractiveGuideline(true)
+.showYAxis(true)
+.showXAxis(true)
+.showLegend(false)
+;
+
+ chart.xAxis
+.tickFormat(function(d) {
+return format(new Date(d))
+});
+d3.select('#chartContainer svg')
+.datum(data)
+.call(chart);
+nv.utils.windowResize(function() { chart.update() });
+return chart;
+});
+});
+</script>
+<h2>데이터</h2><table><tr><th class="r">승리</th><td class="r">217</td></tr><tr><th class="r">패배</th><td class="r">119</td></tr><tr><th class="r">합계</th><td class="r">336</td></tr><tr><th class="r">링크</th><td class="r" style="text-align: left;"><a href="https://kansaikiin.jp/kisi_prof/honakiyoshi.html">https://kansaikiin.jp/kis...</a></td></tr><tr><th class="r">링크</th><td class="r" style="text-align: left;"><a href="https://www.baduk.or.kr/record/player_view.asp?pkey=20002143">https://www.baduk.or.kr/r...</a></td></tr><tr><th class="r">생년월일</th><td class="r">1986-08-10</td></tr></table><h2>대국 기록</h2><table><tr><th>날짜</th><th>레이팅</th><th>흑백</th><th>결과</th><th colspan="4">상대</th><th>기보</th></tr><tr><td>2026-10-01</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="181.html">요코다 시게아키</a></td>
+<td>2977</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-09-16</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1317.html">Kunisawa Hiroto</a></td>
+<td>3057</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-09-09</td><td>3254</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3060</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-09-03</td><td>3254</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1114.html">위정치</a></td>
+<td>3433</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/129053">go4go</a> | </td>
+</tr>
+<tr><td>2026-08-27</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1823.html">세키 고타로</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/upload/java_gibo/65jyuudan_hon_seki_20260827.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/128985">go4go</a> | </td>
+</tr>
+<tr><td>2026-08-06</td><td>3253</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="2219.html">미우라 타로</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/upload/java_gibo/51KiseisenB_Miura_Hon_20260806.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/128761">go4go</a> | </td>
+</tr>
+<tr><td>2026-07-23</td><td>3253</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3279</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/128129">go4go</a> | </td>
+</tr>
+<tr><td>2026-07-16</td><td>3253</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="602.html">린한제</a></td>
+<td>3253</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/128058">go4go</a> | </td>
+</tr>
+<tr><td>2026-07-08</td><td>3253</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1682.html">야하타 나오키</a></td>
+<td>2944</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/127926">go4go</a> | </td>
+</tr>
+<tr><td>2026-07-02</td><td>3253</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1583.html">우쓰미 고키</a></td>
+<td>3015</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-06-25</td><td>3253</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1345.html">오니시 겐야</a></td>
+<td>3121</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/127665">go4go</a> | </td>
+</tr>
+<tr><td>2026-05-25</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1609.html">오니시 류헤이</a></td>
+<td>3409</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/127093">go4go</a> | </td>
+</tr>
+<tr><td>2026-05-20</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3241</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-05-13</td><td>3254</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="861.html">후루야 유타카</a></td>
+<td>3019</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-04-22</td><td>3254</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1542.html">다카시마 유고</a></td>
+<td>3131</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/126652">go4go</a> | </td>
+</tr>
+<tr><td>2026-04-08</td><td>3253</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3244</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/126451">go4go</a> | </td>
+</tr>
+<tr><td>2026-04-02</td><td>3253</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1874.html">이 료우</a></td>
+<td>3238</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/126396">go4go</a> | </td>
+</tr>
+<tr><td>2026-03-11</td><td>3252</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1702.html">사토 유타</a></td>
+<td>3003</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-03-04</td><td>3252</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3211</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/126050">go4go</a> | </td>
+</tr>
+<tr><td>2026-02-19</td><td>3251</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1190.html">아다치 도시마사</a></td>
+<td>3240</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/52tengensen_hon_adati_20260219.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/125905">go4go</a> | </td>
+</tr>
+<tr><td>2026-02-12</td><td>3251</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1457.html">고야마 구야</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2026-01-28</td><td>3251</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1465.html">아베 요시키</a></td>
+<td>3106</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/125656">go4go</a> | </td>
+</tr>
+<tr><td>2026-01-14</td><td>3250</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="270.html">소노다 유이치</a></td>
+<td>2988</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/125310">go4go</a> | </td>
+</tr>
+<tr><td>2026-01-07</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1317.html">Kunisawa Hiroto</a></td>
+<td>3068</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/125222">go4go</a> | </td>
+</tr>
+<tr><td>2025-12-24</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1773.html">가와무라 가즈노리</a></td>
+<td>2622</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-12-17</td><td>3250</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="2204.html">후쿠오카 고타로</a></td>
+<td>3442</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/64yuudann_honn_hukuoka_20251217.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/124907">go4go</a> | </td>
+</tr>
+<tr><td>2025-12-10</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2360.html">후지타 레오</a></td>
+<td>2806</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-11-27</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1823.html">세키 고타로</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/64judansen2kaisen_seki_hon_20251127.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/124408">go4go</a> | </td>
+</tr>
+<tr><td>2025-11-19</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3240</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/124352">go4go</a> | </td>
+</tr>
+<tr><td>2025-11-13</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1224.html">후지사와 리나</a></td>
+<td>3244</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/64jyuudansen_fujisawa_hon_20251113.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/124196">go4go</a> | </td>
+</tr>
+<tr><td>2025-11-05</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1536.html">하라 마사카즈</a></td>
+<td>3118</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-10-22</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-10-15</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1877.html">쓰지 시게히토</a></td>
+<td>3196</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/123626">go4go</a> | </td>
+</tr>
+<tr><td>2025-09-01</td><td>3245</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1708.html">히로세 유이치</a></td>
+<td>3345</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50KiseiA_HonAkiy_HiroseY_20250901.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/122826">go4go</a> | </td>
+</tr>
+<tr><td>2025-08-21</td><td>3244</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="2143.html">Takatsu Masaaki</a></td>
+<td>2929</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/122553">go4go</a> | </td>
+</tr>
+<tr><td>2025-08-06</td><td>3244</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2462.html">가와바타 아쓰시</a></td>
+<td>2844</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-07-30</td><td>3244</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1004.html">하영일</a></td>
+<td>3109</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/122301">go4go</a> | </td>
+</tr>
+<tr><td>2025-07-24</td><td>3244</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1269.html">모토키 가쓰야</a></td>
+<td>3442</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50kiseisen_hon_motoki_20250724a.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/122223">go4go</a> | </td>
+</tr>
+<tr><td>2025-07-09</td><td>3244</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="838.html">야다 나오키</a></td>
+<td>3010</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-06-25</td><td>3244</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1204.html">이노우에 나오키</a></td>
+<td>2914</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/121803">go4go</a> | </td>
+</tr>
+<tr><td>2025-06-16</td><td>3243</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1262.html">쑨저</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50KiseisenA_Son_Hon_20250616.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/121701">go4go</a> | </td>
+</tr>
+<tr><td>2025-06-05</td><td>3243</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="2204.html">후쿠오카 고타로</a></td>
+<td>3415</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-05-29</td><td>3243</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1702.html">사토 유타</a></td>
+<td>3011</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/121449">go4go</a> | </td>
+</tr>
+<tr><td>2025-05-22</td><td>3243</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1071.html">후지타 아키히코</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/32agonkiriyamahaiyosen_hon_fujita_20250522.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/121340">go4go</a> | </td>
+</tr>
+<tr><td>2025-05-15</td><td>3243</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1188.html">이다 아쓰시</a></td>
+<td>3362</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50kisei_a_ida_hon_20250515.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/121265">go4go</a> | </td>
+</tr>
+<tr><td>2025-05-12</td><td>3242</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="602.html">린한제</a></td>
+<td>3261</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-04-23</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1264.html">다니구치 도루</a></td>
+<td>3167</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-04-17</td><td>3241</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="175.html">다카오 신지</a></td>
+<td>3310</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50kiseisenA_honakiy_takao_20250417.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/120752">go4go</a> | </td>
+</tr>
+<tr><td>2025-04-14</td><td>3241</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1457.html">고야마 구야</a></td>
+<td>3312</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-04-09</td><td>3241</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1577.html">Suzuki Keiji</a></td>
+<td>2691</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-03-24</td><td>3241</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2207.html">이시이 아카네</a></td>
+<td>2830</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2025-03-03</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3366</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50KiseisenA_Murakawa_Hon_20250303.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/120230">go4go</a> | </td>
+</tr>
+<tr><td>2025-02-21</td><td>3240</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1457.html">고야마 구야</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/50kiseia_koyama_kou_20250221.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/120019">go4go</a> | </td>
+</tr>
+<tr><td>2025-01-15</td><td>3240</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/119646">go4go</a> | </td>
+</tr>
+<tr><td>2025-01-08</td><td>3239</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1465.html">아베 요시키</a></td>
+<td>3115</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/119475">go4go</a> | </td>
+</tr>
+<tr><td>2024-12-23</td><td>3239</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1269.html">모토키 가쓰야</a></td>
+<td>3434</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/63Juudansen2_Motoki_Hon_20241223.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/119304">go4go</a> | </td>
+</tr>
+<tr><td>2024-12-19</td><td>3239</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3561</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/80honinbohfinal_iyama_hon_20241219.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/119222">go4go</a> | </td>
+</tr>
+<tr><td>2024-11-28</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="237.html">나카노 야스히로</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-11-20</td><td>3239</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1158.html">기와다 카즈오미</a></td>
+<td>2856</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-11-13</td><td>3239</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3248</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/118743">go4go</a> | </td>
+</tr>
+<tr><td>2024-10-30</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3249</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-10-24</td><td>3239</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="180.html">미조카미 도모치카</a></td>
+<td>3193</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-09-25</td><td>3239</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="237.html">나카노 야스히로</a></td>
+<td>3113</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-09-19</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3371</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/49kiseisenBplayoff_hon_murakawa_20240919.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117593">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-16</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3566</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-09-11</td><td>3239</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1578.html">Katsuma Shiro</a></td>
+<td>2600</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/117408">go4go</a> | </td>
+</tr>
+<tr><td>2024-09-05</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1707.html">오타케 유</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/49kiseib_kou_ootake_20240905.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/117262">go4go</a> | </td>
+</tr>
+<tr><td>2024-08-22</td><td>3239</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1823.html">세키 고타로</a></td>
+<td>3299</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/118843">go4go</a> | </td>
+</tr>
+<tr><td>2024-07-22</td><td>3240</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1142.html">스즈키 신지</a></td>
+<td>3269</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/49KiseiB_SuzukiShinji_HonA_20240722.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/116554">go4go</a> | </td>
+</tr>
+<tr><td>2024-06-13</td><td>3241</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="41.html">류시훈</a></td>
+<td>3182</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/116050">go4go</a> | </td>
+</tr>
+<tr><td>2024-05-29</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2064.html">Maeda Ryo</a></td>
+<td>2559</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-05-23</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="65.html">야마다 기미오</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-05-16</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1269.html">모토키 가쓰야</a></td>
+<td>3418</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115409">go4go</a> | </td>
+</tr>
+<tr><td>2024-05-08</td><td>3241</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1973.html">이와타 사에카</a></td>
+<td>2783</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115267">go4go</a> | </td>
+</tr>
+<tr><td>2024-04-01</td><td>3244</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1010.html">리이시우</a></td>
+<td>3143</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-03-21</td><td>3244</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1441.html">요코쓰카 리키</a></td>
+<td>3270</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-02-29</td><td>3245</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="108.html">장쉬</a></td>
+<td>3322</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/49KiseisenB_Hon_Chou_20240229.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/114188">go4go</a> | </td>
+</tr>
+<tr><td>2024-02-22</td><td>3245</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="889.html">안자이 노부아키</a></td>
+<td>3267</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115197">go4go</a> | </td>
+</tr>
+<tr><td>2024-02-19</td><td>3245</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3236</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-02-15</td><td>3245</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1823.html">세키 고타로</a></td>
+<td>3308</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2024-02-12</td><td>3245</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1660.html">고이케 요시히로</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/79honinbo_koike_honsogi_20240212.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/113977">go4go</a> | </td>
+</tr>
+<tr><td>2024-02-07</td><td>3246</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1933.html">오오카와 다쿠야</a></td>
+<td>3089</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/113925">go4go</a> | </td>
+</tr>
+<tr><td>2024-02-01</td><td>3246</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1933.html">오오카와 다쿠야</a></td>
+<td>3089</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/113820">go4go</a> | </td>
+</tr>
+<tr><td>2024-01-22</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1122.html">데라야마 레이</a></td>
+<td>3171</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/114349">go4go</a> | </td>
+</tr>
+<tr><td>2024-01-22</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1186.html">무라마쓰 히로키</a></td>
+<td>3168</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/114843">go4go</a> | </td>
+</tr>
+<tr><td>2024-01-15</td><td>3247</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="349.html">쓰루야마 아쓰시</a></td>
+<td>3200</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/79honinbosenyosenF_hon_tsuruyama_20240115.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/113485">go4go</a> | </td>
+</tr>
+<tr><td>2024-01-10</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2020.html">이마분 다로</a></td>
+<td>3142</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-12-07</td><td>3249</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1451.html">쉬자위안</a></td>
+<td>3492</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/62Juudansen_Kyo_Hon_20231207.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/112720">go4go</a> | </td>
+</tr>
+<tr><td>2023-11-19</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2146.html">우에노 리사</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/113947">go4go</a> | </td>
+</tr>
+<tr><td>2023-11-15</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="861.html">후루야 유타카</a></td>
+<td>3022</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-11-08</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1095.html">하타나카 호시노부</a></td>
+<td>3071</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-11-01</td><td>3250</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="314.html">구라하시 마사유키</a></td>
+<td>3108</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/112017">go4go</a> | </td>
+</tr>
+<tr><td>2023-10-19</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="108.html">장쉬</a></td>
+<td>3327</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/62JuudansenF_Hon_Chang_20231019.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/111707">go4go</a> | </td>
+</tr>
+<tr><td>2023-10-12</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2020.html">이마분 다로</a></td>
+<td>3138</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/112121">go4go</a> | </td>
+</tr>
+<tr><td>2023-09-27</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="275.html">유카와 미츠히사</a></td>
+<td>3021</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-09-20</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1317.html">Kunisawa Hiroto</a></td>
+<td>3047</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-09-06</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2020.html">이마분 다로</a></td>
+<td>3138</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-08-28</td><td>3250</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1346.html">사다 아쓰시</a></td>
+<td>3351</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/110858">go4go</a> | </td>
+</tr>
+<tr><td>2023-08-24</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1707.html">오타케 유</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/110742">go4go</a> | </td>
+</tr>
+<tr><td>2023-08-17</td><td>3250</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1230.html">쓰루타 가즈시</a></td>
+<td>3187</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/49meijinsenyosenA_hon_tsuruta_20230817.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/110561">go4go</a> | </td>
+</tr>
+<tr><td>2023-08-09</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2343.html">니시무라 진</a></td>
+<td>2993</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-08-02</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2343.html">니시무라 진</a></td>
+<td>2993</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/110273">go4go</a> | </td>
+</tr>
+<tr><td>2023-07-20</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="602.html">린한제</a></td>
+<td>3277</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/110115">go4go</a> | </td>
+</tr>
+<tr><td>2023-06-21</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2299.html">오모테 유토</a></td>
+<td>3134</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/109697">go4go</a> | </td>
+</tr>
+<tr><td>2023-06-15</td><td>3249</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="604.html">장리요우</a></td>
+<td>3147</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-06-08</td><td>3249</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1190.html">아다치 도시마사</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/agonkiriyamahai_adachi_honsokki_2023068.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/109517">go4go</a> | </td>
+</tr>
+<tr><td>2023-05-29</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1142.html">스즈키 신지</a></td>
+<td>3270</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-05-24</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="237.html">나카노 야스히로</a></td>
+<td>3116</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/109285">go4go</a> | </td>
+</tr>
+<tr><td>2023-05-17</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1943.html">다나카 고유</a></td>
+<td>3201</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/109184">go4go</a> | </td>
+</tr>
+<tr><td>2023-05-10</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2108.html">와타나베 간다이</a></td>
+<td>3134</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-05-04</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1328.html">고마쓰 다이키</a></td>
+<td>2940</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-04-27</td><td>3249</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="182.html">고노 린</a></td>
+<td>3341</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/ouza_kouno_hon_20230427.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/108818">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-20</td><td>3250</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3261</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/108680">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-10</td><td>3250</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1231.html">이치리키 료</a></td>
+<td>3608</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/tengensen_ichiriki_honsokki_20230410.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/108484">go4go</a> | </td>
+</tr>
+<tr><td>2023-04-05</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3233</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/108357">go4go</a> | </td>
+</tr>
+<tr><td>2023-03-16</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3359</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/107963">go4go</a> | </td>
+</tr>
+<tr><td>2023-03-09</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="316.html">쑤야오궈</a></td>
+<td>3188</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-02-16</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1190.html">아다치 도시마사</a></td>
+<td>3304</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2023-02-02</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="175.html">다카오 신지</a></td>
+<td>3311</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/tengen1_takao_kou_20230202.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/107127">go4go</a> | </td>
+</tr>
+<tr><td>2023-01-25</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1083.html">호시카와 다쿠미</a></td>
+<td>2866</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/106988">go4go</a> | </td>
+</tr>
+<tr><td>2023-01-19</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1227.html">누마다테 사키야</a></td>
+<td>3035</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/124674">go4go</a> | </td>
+</tr>
+<tr><td>2022-12-21</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1004.html">하영일</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-12-15</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="892.html">고야마 데루미</a></td>
+<td>2861</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/107746">go4go</a> | </td>
+</tr>
+<tr><td>2022-12-15</td><td>3248</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1441.html">요코쓰카 리키</a></td>
+<td>3259</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/108262">go4go</a> | </td>
+</tr>
+<tr><td>2022-11-17</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1095.html">하타나카 호시노부</a></td>
+<td>3062</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/105954">go4go</a> | </td>
+</tr>
+<tr><td>2022-11-09</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2108.html">와타나베 간다이</a></td>
+<td>3123</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-10-24</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2302.html">미토 슈헤이</a></td>
+<td>3077</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/107072">go4go</a> | </td>
+</tr>
+<tr><td>2022-10-20</td><td>3247</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="175.html">다카오 신지</a></td>
+<td>3313</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/61zyudan_takao_hon_20221020.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/105658">go4go</a> | </td>
+</tr>
+<tr><td>2022-10-12</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3232</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-09-01</td><td>3246</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1707.html">오타케 유</a></td>
+<td>3308</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-08-25</td><td>3245</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1464.html">와타나베 고키</a></td>
+<td>2990</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/104679">go4go</a> | </td>
+</tr>
+<tr><td>2022-08-18</td><td>3245</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2204.html">후쿠오카 고타로</a></td>
+<td>3303</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/61zyudan_hukuoka_hon_20220818.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/104533">go4go</a> | </td>
+</tr>
+<tr><td>2022-08-11</td><td>3245</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="182.html">고노 린</a></td>
+<td>3334</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/47kiseiA_kounor_honakiy_20220811.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/104377">go4go</a> | </td>
+</tr>
+<tr><td>2022-07-11</td><td>3244</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="64.html">야마시타 게이고</a></td>
+<td>3399</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/47kiseiA_honsogi_yamashitak_20220711.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/103746">go4go</a> | </td>
+</tr>
+<tr><td>2022-07-04</td><td>3243</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1231.html">이치리키 료</a></td>
+<td>3575</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115787">go4go</a> | </td>
+</tr>
+<tr><td>2022-06-22</td><td>3243</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1630.html">Yamazaki Yoshihiro</a></td>
+<td>2648</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/103508">go4go</a> | </td>
+</tr>
+<tr><td>2022-06-16</td><td>3243</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1933.html">오오카와 다쿠야</a></td>
+<td>3042</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/103418">go4go</a> | </td>
+</tr>
+<tr><td>2022-06-09</td><td>3243</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1262.html">쑨저</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiA_son_kou_2022.06.09.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/103317">go4go</a> | </td>
+</tr>
+<tr><td>2022-06-01</td><td>3242</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1555.html">니시야마 시즈카</a></td>
+<td>2664</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-05-26</td><td>3242</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3284</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115785">go4go</a> | </td>
+</tr>
+<tr><td>2022-05-19</td><td>3242</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="93.html">하네 나오키</a></td>
+<td>3293</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiA_hon_hane_2022.05.19.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/103318">go4go</a> | </td>
+</tr>
+<tr><td>2022-05-11</td><td>3242</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1606.html">Iida Junya</a></td>
+<td>2849</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-05-05</td><td>3242</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1231.html">이치리키 료</a></td>
+<td>3573</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/29agonkiriyama_ichiriki_honsongi_20220505.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/102960">go4go</a> | </td>
+</tr>
+<tr><td>2022-04-28</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="316.html">쑤야오궈</a></td>
+<td>3194</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/47kisei_so_hon_20220428.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/102909">go4go</a> | </td>
+</tr>
+<tr><td>2022-04-21</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="52.html">고마쓰 히데키</a></td>
+<td>3051</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-04-06</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3115</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115781">go4go</a> | </td>
+</tr>
+<tr><td>2022-03-30</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1561.html">프랜시스 마이어</a></td>
+<td>2746</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-03-21</td><td>3241</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1707.html">오타케 유</a></td>
+<td>3300</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-03-16</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2020.html">이마분 다로</a></td>
+<td>3099</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/102106">go4go</a> | </td>
+</tr>
+<tr><td>2022-03-03</td><td>3240</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1609.html">오니시 류헤이</a></td>
+<td>3331</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/47kiseiA_ohnichir_honsongi_20220303.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/101797">go4go</a> | </td>
+</tr>
+<tr><td>2022-02-23</td><td>3240</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="237.html">나카노 야스히로</a></td>
+<td>3124</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2022-02-17</td><td>3240</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1069.html">시다 다쓰야</a></td>
+<td>3298</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/47kisei_honsogi_sida_20220217.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/101566">go4go</a> | </td>
+</tr>
+<tr><td>2022-02-09</td><td>3241</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1346.html">사다 아쓰시</a></td>
+<td>3358</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/101346">go4go</a> | </td>
+</tr>
+<tr><td>2022-02-03</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="335.html">오가타 마사키</a></td>
+<td>3111</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115773">go4go</a> | </td>
+</tr>
+<tr><td>2022-01-27</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3365</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/101292">go4go</a> | </td>
+</tr>
+<tr><td>2022-01-20</td><td>3241</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="779.html">나카무라 신야</a></td>
+<td>3041</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/115645">go4go</a> | </td>
+</tr>
+<tr><td>2021-12-22</td><td>3243</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1264.html">다니구치 도루</a></td>
+<td>3140</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/100603">go4go</a> | </td>
+</tr>
+<tr><td>2021-12-02</td><td>3244</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1607.html">와타나베 유</a></td>
+<td>2977</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/100316">go4go</a> | </td>
+</tr>
+<tr><td>2021-11-24</td><td>3245</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1606.html">Iida Junya</a></td>
+<td>2856</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-11-17</td><td>3245</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="838.html">야다 나오키</a></td>
+<td>3007</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/99911">go4go</a> | </td>
+</tr>
+<tr><td>2021-11-03</td><td>3245</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2020.html">이마분 다로</a></td>
+<td>3096</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-10-25</td><td>3246</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="2206.html">다카오 마리</a></td>
+<td>2858</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/101333">go4go</a> | </td>
+</tr>
+<tr><td>2021-10-14</td><td>3246</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3317</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/99446">go4go</a> | </td>
+</tr>
+<tr><td>2021-10-04</td><td>3247</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1609.html">오니시 류헤이</a></td>
+<td>3340</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-09-29</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3094</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-09-22</td><td>3247</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2143.html">Takatsu Masaaki</a></td>
+<td>2959</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-09-09</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="602.html">린한제</a></td>
+<td>3285</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiB_kou_rin_2021.09.09%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/98566">go4go</a> | </td>
+</tr>
+<tr><td>2021-09-01</td><td>3248</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3363</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/98355">go4go</a> | </td>
+</tr>
+<tr><td>2021-08-19</td><td>3248</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1071.html">후지타 아키히코</a></td>
+<td>3291</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-07-14</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1630.html">Yamazaki Yoshihiro</a></td>
+<td>2652</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/97566">go4go</a> | </td>
+</tr>
+<tr><td>2021-07-07</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3202</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/97494">go4go</a> | </td>
+</tr>
+<tr><td>2021-06-30</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="360.html">후지이 슈야</a></td>
+<td>3153</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/97441">go4go</a> | </td>
+</tr>
+<tr><td>2021-06-24</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1660.html">고이케 요시히로</a></td>
+<td>3250</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-06-16</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1264.html">다니구치 도루</a></td>
+<td>3138</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-05-31</td><td>3250</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1190.html">아다치 도시마사</a></td>
+<td>3285</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-05-27</td><td>3250</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="283.html">천자루이(銳)</a></td>
+<td>2908</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-05-20</td><td>3249</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1069.html">시다 다쓰야</a></td>
+<td>3294</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-04-28</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="962.html">곤노 다메토</a></td>
+<td>2732</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/96422">go4go</a> | </td>
+</tr>
+<tr><td>2021-04-22</td><td>3249</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="352.html">마쓰모토 다케히사</a></td>
+<td>3156</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-04-15</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="276.html">미무라 도모야쓰</a></td>
+<td>3203</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-04-07</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="861.html">후루야 유타카</a></td>
+<td>3038</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-03-25</td><td>3248</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1609.html">오니시 류헤이</a></td>
+<td>3339</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/97943">go4go</a> | </td>
+</tr>
+<tr><td>2021-03-11</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1269.html">모토키 가쓰야</a></td>
+<td>3374</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-02-24</td><td>3247</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="360.html">후지이 슈야</a></td>
+<td>3152</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/95412">go4go</a> | </td>
+</tr>
+<tr><td>2021-02-18</td><td>3247</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1071.html">후지타 아키히코</a></td>
+<td>3288</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-01-28</td><td>3247</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3095</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/96901">go4go</a> | </td>
+</tr>
+<tr><td>2021-01-21</td><td>3247</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1536.html">하라 마사카즈</a></td>
+<td>3075</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2021-01-13</td><td>3247</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1346.html">사다 아쓰시</a></td>
+<td>3332</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/94837">go4go</a> | </td>
+</tr>
+<tr><td>2021-01-06</td><td>3247</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="707.html">고니시 가즈코</a></td>
+<td>2714</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-12-24</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1464.html">와타나베 고키</a></td>
+<td>3039</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/94588">go4go</a> | </td>
+</tr>
+<tr><td>2020-12-09</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="939.html">Endo Takahiro</a></td>
+<td>2614</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-11-25</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1307.html">Hashimoto Kan</a></td>
+<td>2816</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-11-11</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="275.html">유카와 미츠히사</a></td>
+<td>3052</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/93530">go4go</a> | </td>
+</tr>
+<tr><td>2020-11-04</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3115</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-10-28</td><td>3248</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2143.html">Takatsu Masaaki</a></td>
+<td>2947</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-10-19</td><td>3248</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3365</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-10-05</td><td>3248</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1540.html">시바노 도라마루</a></td>
+<td>3493</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/45kiseitonamento_hon_sibano.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/93146">go4go</a> | </td>
+</tr>
+<tr><td>2020-10-01</td><td>3248</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3336</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/95162">go4go</a> | </td>
+</tr>
+<tr><td>2020-09-07</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3337</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/45kiseic_hon_seto%281%29.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/92562">go4go</a> | </td>
+</tr>
+<tr><td>2020-09-03</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1006.html">손 히데요</a></td>
+<td>2729</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-08-26</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1654.html">Sumi Shinsuke</a></td>
+<td>2625</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-08-20</td><td>3249</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1554.html">장루이제</a></td>
+<td>3190</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-08-12</td><td>3249</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="838.html">야다 나오키</a></td>
+<td>2994</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-08-06</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="98.html">조치훈</a></td>
+<td>3190</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiC_chou_kou_2020.08.06.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/91799">go4go</a> | </td>
+</tr>
+<tr><td>2020-07-27</td><td>3248</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1142.html">스즈키 신지</a></td>
+<td>3295</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-07-16</td><td>3247</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="913.html">무라카와 다이스케</a></td>
+<td>3361</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/91496">go4go</a> | </td>
+</tr>
+<tr><td>2020-07-01</td><td>3247</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1080.html">Ushikubo Yoshitaka</a></td>
+<td>2656</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-06-24</td><td>3246</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1542.html">다카시마 유고</a></td>
+<td>3042</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/91277">go4go</a> | </td>
+</tr>
+<tr><td>2020-06-17</td><td>3246</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3120</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/91229">go4go</a> | </td>
+</tr>
+<tr><td>2020-06-10</td><td>3246</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1588.html">Fujiwara Katsuya</a></td>
+<td>2635</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-06-04</td><td>3246</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1754.html">우에노 아사미</a></td>
+<td>3205</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/90997">go4go</a> | </td>
+</tr>
+<tr><td>2020-03-25</td><td>3242</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1317.html">Kunisawa Hiroto</a></td>
+<td>3026</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-03-09</td><td>3242</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1122.html">데라야마 레이</a></td>
+<td>3179</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-03-04</td><td>3241</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3125</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/89759">go4go</a> | </td>
+</tr>
+<tr><td>2020-02-12</td><td>3240</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="707.html">고니시 가즈코</a></td>
+<td>2737</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/89400">go4go</a> | </td>
+</tr>
+<tr><td>2020-02-06</td><td>3239</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1070.html">만나미 나오</a></td>
+<td>2868</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/kiseiFT_mannami_kou_2020.02.06.sgf">nihon_kiin</a> | </td>
+</tr>
+<tr><td>2020-01-29</td><td>3238</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1095.html">하타나카 호시노부</a></td>
+<td>3059</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2020-01-23</td><td>3238</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="108.html">장쉬</a></td>
+<td>3375</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/90894">go4go</a> | </td>
+</tr>
+<tr><td>2020-01-15</td><td>3238</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="914.html">김병민</a></td>
+<td>2779</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-12-19</td><td>3236</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1778.html">도리이 유타</a></td>
+<td>2917</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-12-12</td><td>3236</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="41.html">류시훈</a></td>
+<td>3183</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/93406">go4go</a> | </td>
+</tr>
+<tr><td>2019-11-27</td><td>3235</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1234.html">호시카와 코요</a></td>
+<td>2869</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-11-07</td><td>3234</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1973.html">이와타 사에카</a></td>
+<td>2770</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-10-31</td><td>3234</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="362.html">Sakaguchi Ryuzo</a></td>
+<td>2732</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-10-23</td><td>3234</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1465.html">아베 요시키</a></td>
+<td>3072</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/86942">go4go</a> | </td>
+</tr>
+<tr><td>2019-10-16</td><td>3233</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1307.html">Hashimoto Kan</a></td>
+<td>2810</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-10-09</td><td>3233</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="939.html">Endo Takahiro</a></td>
+<td>2624</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-10-02</td><td>3233</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="911.html">아라가키 슌</a></td>
+<td>2954</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-09-25</td><td>3233</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3110</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/86346">go4go</a> | </td>
+</tr>
+<tr><td>2019-09-19</td><td>3233</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="792.html">미타니 데츠야</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://u-gen.nihonkiin.or.jp/kifu_new/giboviewer/giboviewer.asp?gibo=http://u-gen.nihonkiin.or.jp/upload/java_gibo/45meijinfinal_hon_mitani.sgf">nihon_kiin</a> | <a href ="https://www.go4go.net/go/games/sgfview/86200">go4go</a> | </td>
+</tr>
+<tr><td>2019-09-12</td><td>3232</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1349.html">다구치 미세이</a></td>
+<td>2589</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-08-21</td><td>3232</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1578.html">Katsuma Shiro</a></td>
+<td>2706</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-07-31</td><td>3232</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3114</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/85458">go4go</a> | </td>
+</tr>
+<tr><td>2019-07-18</td><td>3231</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1583.html">우쓰미 고키</a></td>
+<td>3026</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-06-26</td><td>3231</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1004.html">하영일</a></td>
+<td>3049</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-06-20</td><td>3231</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="360.html">후지이 슈야</a></td>
+<td>3137</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-06-13</td><td>3231</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="301.html">사카이 히데유키</a></td>
+<td>3226</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-06-05</td><td>3231</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1748.html">Takiguchi Masaki</a></td>
+<td>2801</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-05-23</td><td>3230</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1114.html">위정치</a></td>
+<td>3397</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88024">go4go</a> | </td>
+</tr>
+<tr><td>2019-04-25</td><td>3230</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1607.html">와타나베 유</a></td>
+<td>2905</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-04-18</td><td>3230</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1031.html">홍맑은샘</a></td>
+<td>3038</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-04-04</td><td>3230</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="285.html">야마다 다쿠지</a></td>
+<td>3036</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88018">go4go</a> | </td>
+</tr>
+<tr><td>2019-03-28</td><td>3230</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1307.html">Hashimoto Kan</a></td>
+<td>2813</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/83494">go4go</a> | </td>
+</tr>
+<tr><td>2019-03-06</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1234.html">호시카와 코요</a></td>
+<td>2866</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-02-27</td><td>3229</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="704.html">Araki Masako</a></td>
+<td>2181</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-01-30</td><td>3228</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1583.html">우쓰미 고키</a></td>
+<td>3024</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2019-01-24</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1353.html">다케우치 고스케</a></td>
+<td>3102</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/88006">go4go</a> | </td>
+</tr>
+<tr><td>2019-01-16</td><td>3228</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1500.html">신타니 요스케</a></td>
+<td>2854</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-12-19</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1174.html">Oda Hiromitsu</a></td>
+<td>2719</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-12-13</td><td>3227</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3152</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-12-05</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1578.html">Katsuma Shiro</a></td>
+<td>2730</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-11-28</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1131.html">다카시마 다케시</a></td>
+<td>2768</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-11-22</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3236</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-11-15</td><td>3227</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="93.html">하네 나오키</a></td>
+<td>3348</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/84905">go4go</a> | </td>
+</tr>
+<tr><td>2018-11-07</td><td>3227</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1346.html">사다 아쓰시</a></td>
+<td>3244</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-10-24</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3133</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/78331">go4go</a> | </td>
+</tr>
+<tr><td>2018-10-18</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1031.html">홍맑은샘</a></td>
+<td>3042</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-10-10</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1774.html">Ono Ayako</a></td>
+<td>2556</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-10-03</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1675.html">Honda Goro</a></td>
+<td>2630</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-09-27</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="2143.html">Takatsu Masaaki</a></td>
+<td>2940</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-09-24</td><td>3227</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="289.html">기요나리 데츠야</a></td>
+<td>3135</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-09-05</td><td>3227</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="275.html">유카와 미츠히사</a></td>
+<td>3083</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/76982">go4go</a> | </td>
+</tr>
+<tr><td>2018-08-29</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="270.html">소노다 유이치</a></td>
+<td>3033</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-08-01</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1748.html">Takiguchi Masaki</a></td>
+<td>2803</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-07-26</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1813.html">Yoshida Shoji</a></td>
+<td>2809</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-07-04</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1545.html">오타료</a></td>
+<td>2862</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-06-27</td><td>3228</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1095.html">하타나카 호시노부</a></td>
+<td>3053</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-06-06</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="881.html">Imai Kazuhiro</a></td>
+<td>2806</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-05-23</td><td>3227</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3287</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-04-25</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="181.html">요코다 시게아키</a></td>
+<td>3072</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/73780">go4go</a> | </td>
+</tr>
+<tr><td>2018-04-04</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1989.html">사토 요헤이</a></td>
+<td>2907</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/73240">go4go</a> | </td>
+</tr>
+<tr><td>2018-03-07</td><td>3227</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3292</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/72412">go4go</a> | </td>
+</tr>
+<tr><td>2018-02-28</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1395.html">Sakakibara Masateru</a></td>
+<td>2788</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-02-01</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1530.html">오타니 나오키</a></td>
+<td>3065</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2018-01-11</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="884.html">구와모토 신페이</a></td>
+<td>2817</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-12-14</td><td>3227</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="301.html">사카이 히데유키</a></td>
+<td>3240</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/70561">go4go</a> | </td>
+</tr>
+<tr><td>2017-12-07</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1536.html">하라 마사카즈</a></td>
+<td>3024</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-11-29</td><td>3227</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/68676">go4go</a> | </td>
+</tr>
+<tr><td>2017-11-23</td><td>3227</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="108.html">장쉬</a></td>
+<td>3383</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/79127">go4go</a> | </td>
+</tr>
+<tr><td>2017-11-15</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2107.html">Sato Akira</a></td>
+<td>2155</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-11-13</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="202.html">이마무라 도시야</a></td>
+<td>3224</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-11-09</td><td>3228</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1009.html">야나기사와 사토시</a></td>
+<td>2940</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-11-02</td><td>3228</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3163</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/68151">go4go</a> | </td>
+</tr>
+<tr><td>2017-10-30</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="699.html">사카키바라 후미코</a></td>
+<td>2541</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-10-30</td><td>3228</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="339.html">세키야마 도시미치</a></td>
+<td>2894</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-10-25</td><td>3228</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="911.html">아라가키 슌</a></td>
+<td>2978</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/67963">go4go</a> | </td>
+</tr>
+<tr><td>2017-10-18</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="2064.html">Maeda Ryo</a></td>
+<td>2525</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-09-21</td><td>3228</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1142.html">스즈키 신지</a></td>
+<td>3280</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-09-14</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1464.html">와타나베 고키</a></td>
+<td>3074</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/67374">go4go</a> | </td>
+</tr>
+<tr><td>2017-09-06</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1630.html">Yamazaki Yoshihiro</a></td>
+<td>2669</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-08-23</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1332.html">데구치 마리코</a></td>
+<td>2564</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-08-17</td><td>3229</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3164</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/65464">go4go</a> | </td>
+</tr>
+<tr><td>2017-08-02</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1264.html">다니구치 도루</a></td>
+<td>3084</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-07-27</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3162</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-07-26</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1584.html">니시 다케노부</a></td>
+<td>3162</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/67384">go4go</a> | </td>
+</tr>
+<tr><td>2017-07-19</td><td>3229</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1536.html">하라 마사카즈</a></td>
+<td>3014</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-07-13</td><td>3229</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1535.html">우바이이</a></td>
+<td>3166</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-07-05</td><td>3228</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="254.html">하세가와 스나오</a></td>
+<td>2888</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-06-21</td><td>3227</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1204.html">이노우에 나오키</a></td>
+<td>2849</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-06-14</td><td>3227</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="704.html">Araki Masako</a></td>
+<td>2186</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-06-07</td><td>3226</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1583.html">우쓰미 고키</a></td>
+<td>2986</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-05-17</td><td>3225</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1005.html">호시카와 마나부</a></td>
+<td>2718</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-04-20</td><td>3223</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1002.html">김병준</a></td>
+<td>2873</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-04-13</td><td>3222</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1270.html">Tobita Saki</a></td>
+<td>2658</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-02-22</td><td>3218</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="181.html">요코다 시게아키</a></td>
+<td>3069</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td></td>
+</tr>
+<tr><td>2017-02-15</td><td>3218</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="301.html">사카이 히데유키</a></td>
+<td>3234</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/62448">go4go</a> | </td>
+</tr>
+<tr><td>2016-11-17</td><td>3214</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="251.html">유키 사토시</a></td>
+<td>3255</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/103852">go4go</a> | </td>
+</tr>
+<tr><td>2015-10-30</td><td>3204</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1543.html">알리 자바린</a></td>
+<td>2854</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="egf flag" src="/flags/egf.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/51037">go4go</a> | </td>
+</tr>
+<tr><td>2015-06-18</td><td>3200</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="98.html">조치훈</a></td>
+<td>3264</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/51091">go4go</a> | </td>
+</tr>
+<tr><td>2015-02-28</td><td>3198</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3544</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46316">go4go</a> | </td>
+</tr>
+<tr><td>2015-02-16</td><td>3198</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="1328.html">고마쓰 다이키</a></td>
+<td>2962</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46308">go4go</a> | </td>
+</tr>
+<tr><td>2015-01-26</td><td>3199</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="335.html">오가타 마사키</a></td>
+<td>3160</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/47101">go4go</a> | </td>
+</tr>
+<tr><td>2015-01-26</td><td>3199</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="284.html">오야 고이치</a></td>
+<td>3050</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46735">go4go</a> | </td>
+</tr>
+<tr><td>2014-12-21</td><td>3200</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3536</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46322">go4go</a> | </td>
+</tr>
+<tr><td>2014-11-20</td><td>3201</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="872.html">다카나시 세이겐</a></td>
+<td>2947</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46312">go4go</a> | </td>
+</tr>
+<tr><td>2014-11-20</td><td>3201</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="795.html">고노 다카시</a></td>
+<td>3076</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/45678">go4go</a> | </td>
+</tr>
+<tr><td>2014-10-06</td><td>3202</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="600.html">모치즈키 겐이치</a></td>
+<td>3102</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/45230">go4go</a> | </td>
+</tr>
+<tr><td>2014-10-06</td><td>3202</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="792.html">미타니 데츠야</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/44769">go4go</a> | </td>
+</tr>
+<tr><td>2014-07-31</td><td>3201</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="994.html">무카이 지아키</a></td>
+<td>2963</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/44073">go4go</a> | </td>
+</tr>
+<tr><td>2014-07-31</td><td>3201</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="891.html">Makihata Taeko</a></td>
+<td>2735</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/43521">go4go</a> | </td>
+</tr>
+<tr><td>2014-07-10</td><td>3201</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="108.html">장쉬</a></td>
+<td>3330</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/43071">go4go</a> | </td>
+</tr>
+<tr><td>2014-05-22</td><td>3200</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="937.html">Yanaka Katsunori</a></td>
+<td>2866</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/43024">go4go</a> | </td>
+</tr>
+<tr><td>2014-05-01</td><td>3200</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="158.html">오타케 히데오</a></td>
+<td>3042</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/42861">go4go</a> | </td>
+</tr>
+<tr><td>2014-02-23</td><td>3199</td>
+<td>흑번</td>
+<td>패</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3520</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.cyberoro.com/gibo_new/giboviewer/giboviewer.asp?wh=kiwon&gibo=https://open.cyberoro.com/gibo/201402/140223-proama-hongsiu-.sgf&gibonum=19255&bimg=&wimg=">kba</a> | <a href ="https://www.go4go.net/go/games/sgfview/46317">go4go</a> | </td>
+</tr>
+<tr><td>2013-12-08</td><td>3198</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="601.html">이야마 유타</a></td>
+<td>3521</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/46321">go4go</a> | </td>
+</tr>
+<tr><td>2013-08-08</td><td>3194</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1071.html">후지타 아키히코</a></td>
+<td>3214</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/38516">go4go</a> | </td>
+</tr>
+<tr><td>2013-06-24</td><td>3193</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="128.html">세토 다이키</a></td>
+<td>3246</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/36831">go4go</a> | </td>
+</tr>
+<tr><td>2013-05-20</td><td>3193</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="816.html">린쯔위안</a></td>
+<td>3223</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/41900">go4go</a> | </td>
+</tr>
+<tr><td>2013-04-15</td><td>3193</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="1119.html">사카모토 야수오</a></td>
+<td>2735</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56103">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-25</td><td>3192</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="273.html">이시다 아쓰시</a></td>
+<td>3015</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56102">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-25</td><td>3192</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="780.html">우에키 요시오</a></td>
+<td>2941</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56101">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-11</td><td>3192</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1472.html">Minematsu Masaki</a></td>
+<td>2501</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56099">go4go</a> | </td>
+</tr>
+<tr><td>2013-03-11</td><td>3192</td>
+<td>백번</td>
+<td>승</td>
+<td><a href="1125.html">Oda Teppei</a></td>
+<td>2723</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56097">go4go</a> | </td>
+</tr>
+<tr><td>2013-02-25</td><td>3191</td>
+<td>흑번</td>
+<td>승</td>
+<td><a href="701.html">다네무라 사유리</a></td>
+<td>2639</td>
+<td class="c"><span style="color:#FE0097">♀</span></td><td class="c"><img alt="jp flag" src="/flags/jp.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.go4go.net/go/games/sgfview/56093">go4go</a> | </td>
+</tr>
+<tr><td>2009-03-01</td><td>3137</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="1165.html">박시열</a></td>
+<td>3189</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.cyberoro.com/gibo_new/giboviewer/giboviewer.asp?wh=kiwon&gibo=https://open.cyberoro.com/gibo/200903/090301-bc64-parksy.sgf&gibonum=8268&bimg=&wimg=">kba</a> | <a href ="https://www.go4go.net/go/games/sgfview/39855">go4go</a> | </td>
+</tr>
+<tr><td>2005-02-16</td><td>3099</td>
+<td>백번</td>
+<td>패</td>
+<td><a href="983.html">김남훈</a></td>
+<td>3127</td>
+<td class="c"><span style="color:#0295FF">♂</span></td><td class="c"><img alt="kr flag" src="/flags/kr.svg" style="height:1em;vertical-align:middle"/></td><td>
+ | <a href ="https://www.cyberoro.com/gibo_new/giboviewer/giboviewer.asp?wh=kiwon&gibo=https://open.cyberoro.com/gibo/test/050216kta01-08-02.sgf&gibonum=3207&bimg=&wimg=">kba</a> | </td>
+</tr>
+</table>
+<p><small>문의<a href="https://www.remi-coulom.fr/">Rémi Coulom</a>. Powered by <a href="https://github.com/Remi-Coulom/joedb">joedb, the C++ database</a>.</small></p></body></html>

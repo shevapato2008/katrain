@@ -251,20 +251,45 @@ async def bind_session(
     # 实体盘的局:在绑上之前一颗子也放不进去,所以这里才是「棋盘可用」那一刻,钟从这里起步。
     # (Fan 2026-09-20:「我要看到电子棋盘再开始计时」。RK3562 实测建局→绑定隔了 69 秒,
     #  那段时间用户还在标定屏,却已经被扣时。)`start_clock` 幂等,重连再绑不会重置。
-    if session.katrain.start_clock():
-        logger.info("Clock started for session %s (vision bound)", body.session_id)
-
     # Set expected board from current game state
     game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:
         vision.set_expected_from_stones(
             game_state["stones"],
+            game_state["board_size"][0],
             expected_node_id=game_state.get("current_node_id"),
         )
 
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
         orchestrator.on_bind(body.session_id, session)
+
+    if game_state.get("game_type") == "pvp_local" and not game_state.get("end_result"):
+        from katrain.web.core.local_confirmation import local_confirmation_for
+
+        if not vision.supports_local_confirmation:
+            session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
+            session.katrain.update_state()
+            raise HTTPException(status_code=409, detail="Full local recognition pipeline is unavailable")
+        if vision.local_confirmation_bootstrap_state == "unavailable":
+            # This bind is an explicit retry after the player corrected the setup.
+            vision.set_local_confirmation_mode(False, session_id=body.session_id, game_id=game_state["game_id"])
+        vision.set_local_confirmation_mode(True, session_id=body.session_id, game_id=game_state["game_id"])
+        deadline = asyncio.get_running_loop().time() + 8.5
+        while not vision.local_confirmation_ready:
+            if (
+                vision.local_confirmation_bootstrap_state == "unavailable"
+                or asyncio.get_running_loop().time() >= deadline
+            ):
+                session.katrain.local_confirmation_state = {"status": "idle", "reason": "unavailable", "points": []}
+                session.katrain.update_state()
+                raise HTTPException(
+                    status_code=409, detail="Reference frame preparation failed; clear the board and retry"
+                )
+            await asyncio.sleep(0.05)
+        local_confirmation_for(session).ready(game_state["game_id"], "physical", vision)
+    elif session.katrain.start_clock():
+        logger.info("Clock started for session %s (vision bound)", body.session_id)
 
     return {"ok": True, "session_id": body.session_id}
 

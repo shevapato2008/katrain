@@ -1,0 +1,17 @@
+{
+  "reviewer_id": "/root",
+  "reviewer_model": "gpt-6",
+  "reviewed_at": "2026-10-08T21:51:11.673801+00:00",
+  "allow_apply": true,
+  "manifest_sha256": "e17d01d1a264e449084a01630f126dee8c0e0bf65d8b79f2b307b5dcf800308b",
+  "bundle_sha256": {
+    "PROD": "33190cbfcf5af5928c18643162e779dcc900da6d07e20c6c7b8619c8efe95e52",
+    "TEST": "09a9505e139fad123927bd06cdd627403c86eb4df1e702a9f92857a520752cc9"
+  },
+  "image_ids": {
+    "PROD": "sha256:6ffe9b6dad44ae280dc756d8468f1695337ca786541976413b515e614ebab3c5",
+    "TEST": "sha256:61ffcb3f86e9733b63eb7b25c2e34005e651e5ab1da4e7ad353d64f5815df1f1"
+  },
+  "helper_review_file_sha256": "274245a40ad602dcd3b0bfd5becd85bb3f0fab7f3540c5e3aa05e190843baba5",
+  "execution_conditions": "Native TEST baseline+dryrun mustpass beforeTESTapply; TESTverifythenPROD baseline+dryrunmustpass beforePRODapply; no reapply."
+}

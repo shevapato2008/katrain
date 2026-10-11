@@ -1,0 +1,22 @@
+{
+  "reviewer_id": "/root",
+  "reviewed_at": "2026-10-08T18:45:47.819351+00:00",
+  "result": "approved_sources_readings_rules_outputs",
+  "scope": "20 same-owner Korean proof repairs perenv; existingnamebytespreserved, sources/readings actual, finiteconflicts reviewed, noaliases/FK/identity merge",
+  "environments": [
+    {
+      "environment": "TEST",
+      "count": 20,
+      "request_sha256": "183d89693803713537e5471a9e74dfe379965db3e6bfada2cf32b0d78ad1258d",
+      "research_sha256": "43601ea331d39d39f35852aae71e915e1e735d6c40a919fe85c5dfdb30622f65",
+      "approved_candidates_sha256": "5c6ad60a6097e8dfedf239495f70290ac9b1a242e81f47f552bae860614ed185"
+    },
+    {
+      "environment": "PROD",
+      "count": 20,
+      "request_sha256": "fb93012f3278b695dff28b11505cf73ba10f2ece9f1d55b1a6fef80ce43c3b98",
+      "research_sha256": "3b4ffeea0d138105af67c86958d9ade1423f7229af4938eb68c013587a9145fa",
+      "approved_candidates_sha256": "914e62d0862e0f0afe76c5b33e5f93a9c0a33f2c0f157ad1a0ab144b1c597fa1"
+    }
+  ]
+}

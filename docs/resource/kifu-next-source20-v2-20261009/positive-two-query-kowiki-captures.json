@@ -1,0 +1,74 @@
+[
+  {
+    "player_id": 6635,
+    "role": "original_go",
+    "query": "前谷信吾 바둑",
+    "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%E5%89%8D%E8%B0%B7%E4%BF%A1%E5%90%BE+%EB%B0%94%EB%91%91&srlimit=20&format=json",
+    "method": "GET",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:40:01.400013+00:00",
+    "body_file": "6635-original_go-kowiki-search.body",
+    "body_sha256": "f29dff2eb41e97edeb9ad80e195b4e2320b72eea1f8e176d060f0b1013859d0f",
+    "totalhits": 3,
+    "returned_titles": [
+      "이여빈",
+      "혼인보",
+      "혼노지의 변"
+    ]
+  },
+  {
+    "player_id": 6635,
+    "role": "candidate_go",
+    "query": "마에타니 신고 바둑",
+    "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%EB%A7%88%EC%97%90%ED%83%80%EB%8B%88+%EC%8B%A0%EA%B3%A0+%EB%B0%94%EB%91%91&srlimit=20&format=json",
+    "method": "GET",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:40:02.434551+00:00",
+    "body_file": "6635-candidate_go-kowiki-search.body",
+    "body_sha256": "cd1e2101d8c381c992e7877abf2b648fdd666b8dda4cf8b2f9db3e8d4b8304e1",
+    "totalhits": 15,
+    "returned_titles": [
+      "2026년",
+      "후지와라 케이지",
+      "2014년",
+      "전남광주통합특별시의 고등학교 목록",
+      "1984년",
+      "고길동",
+      "2025년",
+      "2008년",
+      "고쿠라키타구",
+      "2018년",
+      "박근혜 정부",
+      "장융밍",
+      "2023년",
+      "혼노지의 변",
+      "키요하라 카야"
+    ]
+  },
+  {
+    "player_id": 4568,
+    "role": "original_go",
+    "query": "川村匡迪 바둑",
+    "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%E5%B7%9D%E6%9D%91%E5%8C%A1%E8%BF%AA+%EB%B0%94%EB%91%91&srlimit=20&format=json",
+    "method": "GET",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:40:03.380328+00:00",
+    "body_file": "4568-original_go-kowiki-search.body",
+    "body_sha256": "688d401ed6447a04b61b8b5aea327e975f2f69ec5596d800d49a0b230236ea4b",
+    "totalhits": 0,
+    "returned_titles": []
+  },
+  {
+    "player_id": 4568,
+    "role": "candidate_go",
+    "query": "가와무라 마사미치 바둑",
+    "url": "https://ko.wikipedia.org/w/api.php?action=query&list=search&srsearch=%EA%B0%80%EC%99%80%EB%AC%B4%EB%9D%BC+%EB%A7%88%EC%82%AC%EB%AF%B8%EC%B9%98+%EB%B0%94%EB%91%91&srlimit=20&format=json",
+    "method": "GET",
+    "http_status": 200,
+    "fetched_at": "2026-10-08T20:40:04.362143+00:00",
+    "body_file": "4568-candidate_go-kowiki-search.body",
+    "body_sha256": "1dc6cdf2208e7868bd97b2a51346d192ac132f20749b29646472cf3e7a539ac5",
+    "totalhits": 0,
+    "returned_titles": []
+  }
+]

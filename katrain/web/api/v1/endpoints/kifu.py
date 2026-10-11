@@ -300,6 +300,11 @@ async def list_kifu_albums(
         if exact_player:
             player_id = next(iter(player_ids))
             needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id)
+        elif (len(player_ids) == 1 and raw_players and not event_ids
+              and not raw_event_name_ids and not selected_event_ids):
+            player_id = next(iter(player_ids))
+            needle = or_(KifuAlbum.black_player_id == player_id, KifuAlbum.white_player_id == player_id,
+                         strict_raw_player_search_clause(db, raw_players, q, names=raw_name_rows))
         elif shared_players:
             needle = or_(KifuAlbum.black_player_id.in_(shared_player_ids),
                          KifuAlbum.white_player_id.in_(shared_player_ids))

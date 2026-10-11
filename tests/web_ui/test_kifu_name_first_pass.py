@@ -1008,7 +1008,8 @@ def test_first_pass_shared_display_does_not_accept_old_raw_profile(engine):
         dry_run_bundle(engine, incoming, db_registry(), inv, incoming_records)
 
 
-def test_first_pass_raw_player_can_share_existing_canonical_display(engine):
+def test_first_pass_raw_player_can_share_existing_canonical_display(engine, monkeypatch):
+    monkeypatch.setenv("KIFU_STRICT_NAMES", "1")
     inv, bundle, records = bound_raw_player_bundle(engine)
     with Session(engine) as db:
         evidence = _evidence(db, "player", 17, "en", "Lee Wonhyuk")
@@ -1020,11 +1021,16 @@ def test_first_pass_raw_player_can_share_existing_canonical_display(engine):
     assert dry_run_bundle(engine, bundle, db_registry(), inv, records)["ready"]
     assert apply_bundle(engine, bundle, db_registry(), inv, records)["status"] == "applied"
     with Session(engine) as db:
+        db.add(KifuAlbum(id=99, player_black="Other", player_white="Someone Else",
+                         event="Lee Wonhyuk Memorial Cup", search_text="lee wonhyuk memorial cup",
+                         sgf_content="(;PB[Other]PW[Someone Else])",
+                         source_path="unrelated-title.sgf"))
+        db.commit()
         from katrain.web.kifu.identity import strict_matching_names
         assert strict_matching_names(db, "Lee Wonhyuk")[:3] == ({17}, set(), {"李元赫九段"})
-        assert {item.id for item in _list(db, "Lee Wonhyuk", "en").items if item.id in {11, 12, 15}} == {
-            11, 12, 15,
-        }
+        listing = _list(db, "Lee Wonhyuk", "en")
+        assert listing.total == 3
+        assert {item.id for item in listing.items} == {11, 12, 15}
 
 
 def test_first_pass_shared_display_requires_exact_literal_basis(engine):

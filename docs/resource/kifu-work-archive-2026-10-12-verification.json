@@ -28,5 +28,15 @@
     "public_cards_per_environment": 171013,
     "new_database_migrations_executed_during_archiving": false,
     "name_coverage_is_not_full_manual_semantic_verification": true
+  },
+  "docker_context_check": {
+    "result": "independently_reviewed_no_missing_runtime_resources",
+    "git_archives_retained": true,
+    "preserved_defaults": [
+      "docs/resource/kifu-name-source-registry.json",
+      "docs/resource/kifu-name-seed.json"
+    ],
+    "runtime_glossaries_preserved": "katrain/web/kifu/data/",
+    "production_code_changed": false
   }
 }

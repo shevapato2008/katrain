@@ -73,3 +73,25 @@ SmartBox 主工作区已有他人的 `provisioning/provision.sh`、`vendor/herme
 - [视觉 drop-in](/Users/fan/Repositories/smartbox-software/provisioning/systemd/smartbox-katrain.service.d/20-vision-led.conf)：reference `on`、RKNN/曝光/设备状态路径。
 - [SessionManager](../../../katrain/web/session.py)、[vision status](../../../katrain/web/api/v1/endpoints/vision.py)、[确认契约](../../../katrain/web/ui/src/api.ts)：当前会话与验收接口边界。
 - [近期云端发布记录](../../operations/report-polish-2026-10-08.md)：保留有效配置/覆盖和实际资源核验的既有做法；具体基线以上述本次实时读取为准。
+
+## RK3562 恢复连接后的增量决策
+
+2026-10-12，用户确认连接恢复并明确要求现在部署。主代理已读取设备身份 `gzpeite / GZPEITE RK3562 P04 Board`、原生服务端口 **8081** 和有效启动配置。此前网络阻塞已解除；以下允许执行的决定不代表设备已切换，实际结果另记于 [RK-RELEASE.md](./RK-RELEASE.md)。
+
+**允许仅发布本地逐手确认增量。** 使用产品提交 `0b086a7c19a403d5e3a01e86e58e7c42d6a224cf` 中实现提交 `26cb632f9` 涉及的 9 个 Python 文件，以及两段新语音；同时交付同源完整 web 和严格 2D kiosk 静态资源：
+
+- `katrain/vision/{ipc,service,worker_inprocess}.py`
+- `katrain/web/api/v1/endpoints/vision.py`
+- `katrain/web/core/{local_confirmation,physical_play_orchestrator}.py`
+- `katrain/web/{interface,models,server}.py`
+- `katrain/sounds/voice/local_confirm_{physical,screen}.mp3`
+
+逐文件只读 SHA256 比对确认：待覆盖的既有 Python 文件全部精确匹配板端所记录的 `56f53fa4` 基线，新增 controller 和语音原来不存在。板端 `worker.py`、`requirements.txt`、`session.py` 与新旧版本均一致；`auth.py`、`migrations.py`、`models_db.py` 已等于产品提交，均无需改写。四个另有差异的棋谱文件分别可对应已合入祖先提交 `a3780bc6`、`3802866d`、`3b91b4af`、`d27e33d4`，不存在此次必须覆盖的未知硬件修补。其现有接口字段兼容本次静态资源，因此保留棋谱模块与其余板端基线，不借此次发布扩大为模块升级、数据库迁移或环境安装。
+
+设备没有 Git checkout 可供 `HEAD` 证明版本；记录须写清“**0b086a7c1 的本地确认增量及同源静态，保留板端其余基线**”，不能声称全源码树已经等于该提交。有效 reference `on`、RKNN `go4_s`、曝光 `off`、硬件状态路径、unit、venv、模型及其他棋种全部保留。
+
+根盘当时可用 **688,728 KiB**，现役两套静态合计 **46,296 KiB**，候选两套静态合计 **45,747,575 bytes**。足够容纳独立候选 staging、两套旧静态完整回滚副本和 11 个源文件的有/无文件清单及备份；所需额外空间明显少于 150 MB。只传这些文件，不将 224 MB 总包传到设备再解包，不清理其他发布物或数据。由主代理在切换前复核空间和 checksum dry-run，停掉本次 web 服务后完成限定文件替换，再启动原 unit；失败只恢复这次所动文件。
+
+当前只有 launcher 的既有 renderer，vision 为 `unbound` 且无绑定 session，8081 没有 established TCP。按用户明确“现在部署”与这些一致的空闲证据，切换前复核未变化即可继续；不为证明进程内 `_sessions` 严格为空而安装调试器或注入进程。若出现游戏 URL、绑定或连接，先读取对应会话并按前述既有局保护规则停止切换。整个进程生命周期的 journal 没有可见 HTTP access/startup 日志，故“未见 POST”不作为绝对没有局的证明。
+
+发布前 health 正常且本地引擎 reachable；相机连接/ready、geometry、recognition 和 LED 均为 false，model ready 为 true。这是发布前已存在的硬件未就绪状态。它不阻止软件增量部署，但必须在结果中保留为设备验收限制；不重装、不重新标定、不制造实体确认通过的记录。验收使用既有唯一 renderer、真实 8081 页面及新路由/资产，避免再开第二个渲染器。

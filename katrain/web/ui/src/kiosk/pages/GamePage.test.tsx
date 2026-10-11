@@ -272,6 +272,26 @@ describe('GamePage', () => {
     expect(document.querySelector('img[src="/api/v1/vision/stream"]')).toBeNull();
   });
 
+  it('local screen confirmation selects repeatedly and only submits the last point', async () => {
+    localStorage.setItem('kiosk_play_on_board', 'false');
+    mockGameState = makeGameState({ game_type: 'pvp_local', local_confirmation: { enabled: true, status: 'idle' },
+      players_info: { B: { ...basePlayer, player_type: 'player:human', name: '张三' }, W: { ...basePlayer, player_type: 'player:human', name: '李四' } } });
+    const confirm = vi.spyOn(API, 'confirmLocalMove').mockResolvedValue({ accepted: true, session_id: 'test-session', state: mockGameState });
+    const ready = vi.spyOn(API, 'readyLocalGame').mockResolvedValue({ session_id: 'test-session', state: mockGameState });
+    renderPage();
+    await act(async () => { await capturedBoardProps.current?.onMove?.(3, 3); });
+    await act(async () => { await capturedBoardProps.current?.onMove?.(4, 5); });
+    expect(mockOnMove).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /确认落子/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    expect(confirm.mock.calls[0][0]).toMatchObject({ session_id: 'test-session', expected_game_id: 'test-game', expected_node_id: 5, color: 'B', input: 'screen', coords: [4, 5] });
+    expect(mockPlaySound).not.toHaveBeenCalled();
+    expect(mockAcknowledgePaintedNode).not.toHaveBeenCalled(); // Board owns the real paint acknowledgement.
+    confirm.mockRestore();
+    ready.mockRestore();
+  });
+
   it('实体盘对局页不显示重置识别按钮', () => {
     mockIsVisionEnabled = true;
     mockGameState = makeGameState({

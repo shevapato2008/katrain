@@ -15,6 +15,24 @@ export interface PlayerInfo {
 
 export type GameType = 'free' | 'ranked' | 'rated' | 'ai_ladder_ranked' | 'pvp_local' | 'pvp_online' | 'pvp_lobby';
 
+export interface LocalConfirmationState {
+  enabled: boolean;
+  status: 'idle' | 'recognizing';
+  reason?: 'no_stone' | 'multiple_stones' | 'capture_remaining' | 'timeout' | 'illegal_move' | 'unavailable' | null;
+  points?: { row: number; col: number }[];
+}
+
+export interface LocalConfirmRequest {
+  session_id: string;
+  expected_game_id: string;
+  expected_node_id: number;
+  color: 'B' | 'W';
+  request_id: string;
+  input: 'screen' | 'physical';
+  action: 'move' | 'pass';
+  coords: [number, number] | null;
+}
+
 export interface GameState {
   game_id: string;
   board_size: [number, number];
@@ -109,6 +127,7 @@ export interface GameState {
     max_visits?: number;
   };
   game_type?: GameType;
+  local_confirmation?: LocalConfirmationState;
   analysis_allowed?: boolean;
   /**
    * 服务端这一局**交付不交付**分析结果。与 `analysis_allowed` 是两件事，别合并：
@@ -519,6 +538,10 @@ export const API = {
       coords: coords ? [coords.x, coords.y] : null,
       pass_move: coords === null,
     }, token),
+  confirmLocalMove: (request: LocalConfirmRequest, token?: string): Promise<SessionResponse & { accepted: boolean }> =>
+    apiPost('/api/local/confirm', request, token),
+  readyLocalGame: (session_id: string, expected_game_id: string, input: 'screen' | 'physical', token?: string): Promise<SessionResponse> =>
+    apiPost('/api/local/ready', { session_id, expected_game_id, input }, token),
   undo: (sessionId: string, nTimes: number | string = 1): Promise<SessionResponse> =>
     apiPost("/api/undo", { session_id: sessionId, n_times: nTimes }),
   redo: (sessionId: string, nTimes: number = 1): Promise<SessionResponse> =>

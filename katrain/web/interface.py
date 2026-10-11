@@ -266,6 +266,8 @@ class WebKaTrain(KaTrainBase):
         self.analysis_engine_instance = None
         self.pondering = False
         self.timer_paused = True
+        self.local_confirmation_in_progress = False
+        self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
         # 没写过的局(星阵人机、大厅房间)继承 config.json 默认时限且不暂停,前端不许把它当计时局。
         self.timer_configured = False
@@ -715,7 +717,9 @@ class WebKaTrain(KaTrainBase):
                 "max_visits": self.config("engine/max_visits"),
             },
             "timer": {
-                "paused": self.timer_paused,
+                "paused": self.timer_paused
+                or self.local_confirmation_in_progress
+                or (self.game_type == "pvp_local" and not self.clock_started),
                 "main_time_used": self.main_time_used_by_player.get(cn.next_player, 0),
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
@@ -737,11 +741,17 @@ class WebKaTrain(KaTrainBase):
             # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
             # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
             "awaiting_count": is_awaiting_count(self) or bool(getattr(self, "pvp_lobby_awaiting_count", False)),
+            "local_confirmation": {
+                "enabled": self.game_type == "pvp_local",
+                **self.local_confirmation_state,
+            },
             "degraded": bool(getattr(self, "pvp_lobby_degraded", False)),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "platform_my_color": getattr(self, "platform_my_color", None),
-            "platform_phase": getattr(getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)),
+            "platform_phase": getattr(
+                getattr(self, "platform_phase", None), "value", getattr(self, "platform_phase", None)
+            ),
             "analysis_allowed": self.analysis_allowed and not getattr(self, "pvp_bot_session", False),
             # 与 `analysis_allowed` 是两件事，别合并：
             #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
@@ -801,6 +811,8 @@ class WebKaTrain(KaTrainBase):
             # a casual game against a hand-picked weak AI would be stored as a rated one
             # and settled into the promotion ledger.
             self.game_type = game_type if game_type is not None else "free"
+            self.local_confirmation_in_progress = False
+            self.local_confirmation_state = {"status": "idle", "reason": None, "points": []}
             # G1/G2: a brand new game is never engine-controlled until a platform explicitly
             # says otherwise (via edit_game's platform_engine_color kwarg). Without this reset,
             # a session that finishes an engine game and then starts a plain local game (same
@@ -988,6 +1000,7 @@ class WebKaTrain(KaTrainBase):
                     broadcast_now = [post_broadcast] if post_broadcast is not None else []
 
             if schedule_delayed:
+
                 def _delayed_broadcast():
                     time.sleep(0.25)
                     with self._broadcast_lock:
@@ -1097,7 +1110,12 @@ class WebKaTrain(KaTrainBase):
                     self.clock_started = True
                 else:
                     return
-            if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
+            if (
+                self.timer_paused
+                or self.local_confirmation_in_progress
+                or self.play_analyze_mode != MODE_PLAY
+                or not self.game
+            ):
                 return
 
             cn = self.game.current_node
@@ -1330,10 +1348,7 @@ class WebKaTrain(KaTrainBase):
                 expected_node_id = id(committed_node)
 
                 def _play_committed_sound(state):
-                    if (
-                        state.get("game_id") == expected_game_id
-                        and state.get("current_node_id") == expected_node_id
-                    ):
+                    if state.get("game_id") == expected_game_id and state.get("current_node_id") == expected_node_id:
                         try:
                             self.play_stone_sound(sound_name, after_node_id=expected_node_id)
                         except Exception as e:
@@ -1834,6 +1849,7 @@ class WebKaTrain(KaTrainBase):
             self.update_timer()
             if (
                 self.timer_paused
+                or self.local_confirmation_in_progress
                 or self.play_analyze_mode != MODE_PLAY
                 or not self.game
                 or self.game.current_node.children
